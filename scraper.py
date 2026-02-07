@@ -7,6 +7,10 @@ import os
 from datetime import datetime
 from io import StringIO
 from bs4 import BeautifulSoup
+import urllib3
+
+# Disable SSL warnings for the Invesco workaround
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # --- CONFIG ---
 CONFIG_FILE = 'config.json'
@@ -14,145 +18,185 @@ DATA_DIR_LATEST = 'data/latest'
 DATA_DIR_HISTORY = 'data/history'
 TODAY = datetime.now().strftime('%Y-%m-%d')
 
-# Robust Headers
-HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-    'Accept-Language': 'en-US,en;q=0.9',
-    'Referer': 'https://www.google.com/',
-    'Upgrade-Insecure-Requests': '1'
-}
+# Header rotation to avoid detection
+USER_AGENTS = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/119.0'
+]
 
-def setup_session():
-    """
-    Sets up the session and visits Invesco to get the 'Investor' cookie.
-    """
+def get_session():
     session = requests.Session()
-    session.headers.update(HEADERS)
-    
-    # Prime Invesco Cookie
-    try:
-        session.get("https://www.invesco.com/us/en/financial-products/etfs.html", timeout=10)
-    except:
-        pass
+    session.headers.update({
+        'User-Agent': random.choice(USER_AGENTS),
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Referer': 'https://www.google.com/',
+        'Connection': 'keep-alive'
+    })
     return session
+
+def find_holdings_table(dfs):
+    """
+    Smart Table Finder: Loops through all tables found on a page.
+    Returns the one that contains 'Ticker', 'Symbol', or 'Holding'.
+    """
+    if not dfs:
+        return None
+    
+    for i, df in enumerate(dfs):
+        # Clean column names for checking
+        cols = [str(c).strip().lower() for c in df.columns]
+        
+        # Check if this table looks like a holdings list
+        if any(keyword in cols for keyword in ['ticker', 'symbol', 'holding', 'stockticker']):
+            print(f"      -> Found valid holdings in Table #{i}")
+            return df
+            
+    print("      -> ⚠️ Could not identify holdings table. Using Table #0 as fallback.")
+    return dfs[0]
 
 def clean_dataframe(df, ticker):
     if df is None or df.empty:
         return None
 
-    # Standardize columns
+    # 1. Standardize columns
     df.columns = [str(c).strip().lower() for c in df.columns]
     
+    # 2. Rename columns to standard format
     col_map = {
         'stockticker': 'ticker', 'symbol': 'ticker', 'holding': 'ticker', 'ticker': 'ticker',
-        'securityname': 'name', 'company': 'name', 'security name': 'name', 'security_name': 'name',
-        'weightings': 'weight', '% tna': 'weight', 'weight': 'weight', '% of net assets': 'weight', '%_of_net_assets': 'weight'
+        'securityname': 'name', 'company': 'name', 'security name': 'name', 'security_name': 'name', 'security': 'name',
+        'weightings': 'weight', '% tna': 'weight', 'weight': 'weight', '% of net assets': 'weight', '%_of_net_assets': 'weight', '% net assets': 'weight'
     }
     df.rename(columns=col_map, inplace=True)
 
+    # 3. Validation
     if 'ticker' not in df.columns or 'weight' not in df.columns:
+        print(f"      -> Missing columns in {ticker}. Found: {list(df.columns)}")
         return None
 
-    # Clean Rows
-    stop_words = ["cash", "usd", "liquidity", "government", "treasury", "money market", "net other"]
+    # 4. Filter Garbage Rows
+    stop_words = ["cash", "usd", "liquidity", "government", "treasury", "money market", "net other", "total"]
+    # Ensure columns are strings before searching
+    df['name'] = df['name'].astype(str)
+    df['ticker'] = df['ticker'].astype(str)
+    
     pattern = '|'.join(stop_words)
-    mask = df['name'].astype(str).str.contains(pattern, case=False, na=False) | \
-           df['ticker'].astype(str).str.contains(pattern, case=False, na=False)
+    mask = df['name'].str.contains(pattern, case=False, na=False) | \
+           df['ticker'].str.contains(pattern, case=False, na=False)
     df = df[~mask].copy()
 
-    # FIX: Use .str.strip() instead of .strip()
-    df['ticker'] = df['ticker'].astype(str).str.replace(' USD', '', regex=False)
-    df['ticker'] = df['ticker'].str.replace('.UN', '', regex=False).str.upper().str.strip()
+    # 5. Clean Ticker (THE FIX: Force string + use .str accessor everywhere)
+    df['ticker'] = df['ticker'].str.replace(' USD', '', regex=False)
+    df['ticker'] = df['ticker'].str.replace('.UN', '', regex=False)
+    df['ticker'] = df['ticker'].str.upper()
+    df['ticker'] = df['ticker'].str.strip() # <--- This was the fix
 
-    # Format Weight
+    # 6. Clean Weight
     if df['weight'].dtype == object:
         df['weight'] = df['weight'].astype(str).str.replace('%', '').str.replace(',', '')
+    
     df['weight'] = pd.to_numeric(df['weight'], errors='coerce')
+    
+    # Fix percentages > 1.0 (e.g. 5.5 -> 0.055)
+    # Note: Some ETFs sum to 100, some to 1. We assume anything > 1 is a percentage.
     if df['weight'].max() > 1.0:
         df['weight'] = df['weight'] / 100.0
 
     df['ETF_Ticker'] = ticker
     df['Date_Scraped'] = TODAY
+    
     return df[['ETF_Ticker', 'ticker', 'name', 'weight', 'Date_Scraped']]
 
-def find_correct_table(dfs):
-    """
-    Loops through a list of tables to find the one that actually looks like holdings.
-    """
-    for df in dfs:
-        # Check if columns look right
-        cols = [str(c).strip().lower() for c in df.columns]
-        if any(k in cols for k in ['ticker', 'symbol', 'holding']):
-            return df
-    return dfs[0] if dfs else pd.DataFrame() # Fallback
-
 def main():
-    with open(CONFIG_FILE, 'r') as f:
-        etfs = json.load(f)
+    try:
+        with open(CONFIG_FILE, 'r') as f:
+            etfs = json.load(f)
+    except:
+        print("❌ Config file not found.")
+        return
 
-    session = setup_session()
+    session = get_session()
+    
     os.makedirs(DATA_DIR_LATEST, exist_ok=True)
     archive_path = os.path.join(DATA_DIR_HISTORY, *TODAY.split('-'))
     os.makedirs(archive_path, exist_ok=True)
+
     master_list = []
 
     for etf in etfs:
         if not etf.get('enabled', True): continue
+        
         ticker = etf['ticker']
         print(f"➳ Processing {ticker}...")
         
         try:
             df = None
+            
+            # --- STRATEGY: PACER ---
             if etf['scraper_type'] == 'pacer_csv':
-                r = session.get(etf['url'])
-                content = r.text.splitlines()
-                start = 0
-                for i, line in enumerate(content):
-                    if "Ticker" in line or "StockTicker" in line:
-                        start = i; break
-                df = pd.read_csv(StringIO('\n'.join(content[start:])))
+                r = session.get(etf['url'], timeout=20)
+                if r.status_code == 200:
+                    content = r.text.splitlines()
+                    # Find header row
+                    start = 0
+                    for i, line in enumerate(content):
+                        if "Ticker" in line or "StockTicker" in line:
+                            start = i; break
+                    df = pd.read_csv(StringIO('\n'.join(content[start:])))
+                else:
+                    print(f"      -> HTTP Error {r.status_code}")
 
+            # --- STRATEGY: FIRST TRUST / ALPHA ---
             elif etf['scraper_type'] in ['first_trust', 'alpha_architect']:
-                r = session.get(etf['url'])
+                r = session.get(etf['url'], timeout=20)
                 dfs = pd.read_html(r.text)
-                df = find_correct_table(dfs)
+                df = find_holdings_table(dfs)
 
+            # --- STRATEGY: INVESCO ---
             elif etf['scraper_type'] == 'invesco':
-                # Try Magic Link first
-                magic_link = f"https://www.invesco.com/us/en/financial-products/etfs/holdings/main/holdings/0?ticker={ticker}&action=download"
+                # Try the direct download link pattern
+                # This often bypasses the JS wall
+                dl_link = f"https://www.invesco.com/us/en/financial-products/etfs/holdings/main/holdings/0?ticker={ticker}&action=download"
+                
                 try:
-                    r = session.get(magic_link, timeout=10)
-                    df = pd.read_csv(StringIO(r.text))
-                except:
-                    # Fallback: Scrape for "download" link
-                    r = session.get(etf['url'])
-                    soup = BeautifulSoup(r.text, 'html.parser')
-                    dl_link = None
-                    for a in soup.find_all('a', href=True):
-                        if 'action=download' in a['href']:
-                            dl_link = "https://www.invesco.com" + a['href'] if not a['href'].startswith('http') else a['href']
-                            break
-                    if dl_link:
-                        r = session.get(dl_link)
+                    r = session.get(dl_link, timeout=15, verify=False) # Verify=False helps with some Invesco redirects
+                    if r.status_code == 200 and len(r.content) > 100:
                         df = pd.read_csv(StringIO(r.text))
+                        print("      -> Magic Link worked!")
+                    else:
+                        raise Exception("Magic link empty")
+                except:
+                    print("      -> Magic link failed. Trying page scrape...")
+                    # Fallback: Parse visible HTML
+                    # Note: This often fails on Invesco due to JS, but worth a shot for some funds
+                    r = session.get(etf['url'], timeout=15)
+                    dfs = pd.read_html(r.text)
+                    df = find_holdings_table(dfs)
 
-            # Clean and Save
+            # --- SAVE ---
             clean_df = clean_dataframe(df, ticker)
             
             if clean_df is not None and not clean_df.empty:
                 save_path = os.path.join(DATA_DIR_LATEST, f"{ticker}.csv")
                 clean_df.to_csv(save_path, index=False)
                 master_list.append(clean_df)
-                print(f"    ✅ Success! Saved {len(clean_df)} rows.")
+                print(f"    ✅ Success: {len(clean_df)} rows saved.")
             else:
-                print(f"    ⚠️ Data not found for {ticker}")
+                print(f"    ⚠️ Failed to extract data.")
 
         except Exception as e:
-            print(f"    ❌ Error on {ticker}: {e}")
+            print(f"    ❌ Critical Error: {e}")
         
+        # Be nice to the servers
         time.sleep(random.uniform(2, 5))
 
+    # Save Master Archive
     if master_list:
         full_df = pd.concat(master_list)
         full_df.to_csv(os.path.join(archive_path, 'master_archive.csv'), index=False)
+        print("\n📜 Daily Archive Complete.")
+
+if __name__ == "__main__":
+    main()
