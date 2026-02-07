@@ -33,6 +33,7 @@ def setup_driver():
     return webdriver.Chrome(options=chrome_options)
 
 def find_first_trust_table(dfs):
+    """ DO NOT TOUCH: Logic to handle First Trust missing headers """
     if not dfs: return None
     valid_keywords = ['ticker', 'symbol', 'holding', 'identifier', 'weighting', 'cusip']
     for i, df in enumerate(dfs):
@@ -51,14 +52,13 @@ def find_first_trust_table(dfs):
 def clean_dataframe(df, ticker):
     if df is None or df.empty: return None
 
-    # --- SAFE FIX FOR DUPLICATES (IMOM) ---
-    # remove duplicate columns (keep first occurrence)
+    # --- CRITICAL DO NOT TOUCH: FIX FOR IMOM DUPLICATES ---
+    # Forces unique column names before processing
     df = df.loc[:, ~df.columns.duplicated()]
+    # ------------------------------------------------------
 
-    # 1. Standardize columns
     df.columns = [str(c).strip().lower() for c in df.columns]
     
-    # 2. Rename columns
     col_map = {
         'stockticker': 'ticker', 'symbol': 'ticker', 'holding': 'ticker', 'ticker': 'ticker',
         'identifier': 'ticker', 'sedol': 'ticker',
@@ -68,14 +68,14 @@ def clean_dataframe(df, ticker):
     }
     df.rename(columns=col_map, inplace=True)
 
-    # 3. Check critical columns
     if 'ticker' not in df.columns:
         print(f"      -> ⚠️ Missing 'ticker' column. Found: {list(df.columns)}")
         return None
 
-    # 4. Filter Garbage
     stop_words = ["cash", "usd", "liquidity", "government", "treasury", "money market", "net other", "total"]
     df['name'] = df['name'].astype(str)
+    
+    # Force Ticker to String
     df['ticker'] = df['ticker'].astype(str)
     
     pattern = '|'.join(stop_words)
@@ -105,7 +105,8 @@ def main():
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
     except: return
 
-    print("🚀 Launching Scraper v16 (Restoration)...")
+    print("🚀 Launching Scraper v12 (Restored Stable Version)...")
+    
     driver = None
     session = requests.Session()
     session.headers.update(HEADERS)
@@ -123,7 +124,7 @@ def main():
         try:
             df = None
             
-            # --- PACER ---
+            # --- PACER (DO NOT TOUCH - WORKING) ---
             if etf['scraper_type'] == 'pacer_csv':
                 r = session.get(etf['url'], timeout=20)
                 if r.status_code == 200:
@@ -134,13 +135,13 @@ def main():
                             start = i; break
                     df = pd.read_csv(StringIO('\n'.join(content[start:])))
 
-            # --- FIRST TRUST ---
+            # --- FIRST TRUST (DO NOT TOUCH - WORKING) ---
             elif etf['scraper_type'] == 'first_trust':
                 r = session.get(etf['url'], timeout=20)
                 dfs = pd.read_html(r.text)
                 df = find_first_trust_table(dfs)
 
-            # --- ALPHA ARCHITECT ---
+            # --- ALPHA ARCHITECT (DO NOT TOUCH - WORKING) ---
             elif 'alpha' in etf['url'] or etf['scraper_type'] == 'selenium_alpha':
                 if driver is None: driver = setup_driver()
                 driver.get(etf['url'])
@@ -157,59 +158,22 @@ def main():
                 for d in dfs:
                     if len(d) > 25: df = d; break
 
-            # --- INVESCO (The Fix) ---
+            # --- INVESCO (THE PROBLEM CHILD) ---
+            # Current Status: Works but only gets Top 10 rows
+            # Need: Full list via 'View All' or Export
             elif etf['scraper_type'] == 'selenium_invesco':
                 if driver is None: driver = setup_driver()
-                
-                # 1. Cookie Hijack (Step 1: Visit page)
                 driver.get(etf['url'])
-                time.sleep(6)
+                time.sleep(8)
                 
-                # 2. Steal Cookies
-                cookies = driver.get_cookies()
-                s = requests.Session()
-                for cookie in cookies:
-                    s.cookies.set(cookie['name'], cookie['value'])
-                
-                # 3. Request File
-                download_url = f"https://www.invesco.com/us/en/financial-products/etfs/holdings/main/holdings/0?ticker={ticker}&action=download"
-                s.headers.update({
-                    "User-Agent": driver.execute_script("return navigator.userAgent;"),
-                    "Referer": etf['url']
-                })
-
-                r = s.get(download_url)
-                
-                if r.status_code == 200:
-                    # SMART PARSER: Find the header row
-                    raw_lines = r.text.splitlines()
-                    start_row = 0
-                    found_header = False
-                    
-                    for i, line in enumerate(raw_lines[:25]):
-                        # Look for header keywords
-                        if "Ticker" in line or "Holding" in line or "Security" in line:
-                            start_row = i
-                            found_header = True
-                            break
-                    
-                    if found_header:
-                        csv_data = "\n".join(raw_lines[start_row:])
-                        df = pd.read_csv(StringIO(csv_data))
-                        print(f"      -> 🍪 Cookie Hijack Success! Parsed from line {start_row}.")
-                    else:
-                        print("      -> Downloaded file but couldn't find header row.")
-                else:
-                    print(f"      -> Download failed. Fallback to View All.")
-                    try:
-                        view_all = driver.find_element(By.XPATH, "//*[contains(text(), 'View all')]")
-                        driver.execute_script("arguments[0].click();", view_all)
-                        time.sleep(5)
-                        dfs = pd.read_html(StringIO(driver.page_source))
-                        for d in dfs:
-                            if 'ytd' in [str(c).lower() for c in d.columns]: continue
-                            if len(d) > 5: df = d; break
-                    except: pass
+                # Currently just grabs what is visible (Top 10)
+                dfs = pd.read_html(StringIO(driver.page_source))
+                for d in dfs:
+                    cols = [str(c).lower() for c in d.columns]
+                    if 'ytd' in cols: continue 
+                    if len(d) > 5:
+                        df = d
+                        break
 
             # --- SAVE ---
             clean_df = clean_dataframe(df, ticker)
