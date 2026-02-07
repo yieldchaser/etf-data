@@ -16,14 +16,13 @@ DATA_DIR_LATEST = 'data/latest'
 DATA_DIR_HISTORY = 'data/history'
 TODAY = datetime.now().strftime('%Y-%m-%d')
 
-# Headers that worked for Pacer/First Trust
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
 }
 
 def setup_driver():
-    """ Launches Headless Chrome for Alpha Architect & Invesco """
+    """ Launches Headless Chrome """
     chrome_options = Options()
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
@@ -33,11 +32,34 @@ def setup_driver():
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
     return webdriver.Chrome(options=chrome_options)
 
+def find_first_trust_table(dfs):
+    """
+    Specific logic for First Trust (FPX/FPXI) to handle missing headers.
+    """
+    if not dfs: return None
+    
+    valid_keywords = ['ticker', 'symbol', 'holding', 'identifier', 'weighting', 'cusip']
+    
+    for i, df in enumerate(dfs):
+        # 1. Check existing headers
+        cols = [str(c).strip().lower() for c in df.columns]
+        if any(k in cols for k in valid_keywords):
+            return df
+        
+        # 2. Check Row 0 (Header Promotion)
+        # This fixes the "Missing columns: ['0']" error
+        if not df.empty:
+            first_row = [str(x).strip().lower() for x in df.iloc[0].values]
+            if any(k in first_row for k in valid_keywords):
+                print(f"      -> Promoting header in Table #{i}")
+                new_header = df.iloc[0]
+                df = df[1:] 
+                df.columns = new_header
+                return df
+    return None
+
 def clean_dataframe(df, ticker):
     if df is None or df.empty: return None
-
-    # FIX IMOM CRASH: Drop duplicate columns immediately
-    df = df.loc[:, ~df.columns.duplicated()]
 
     # 1. Standardize columns
     df.columns = [str(c).strip().lower() for c in df.columns]
@@ -52,29 +74,33 @@ def clean_dataframe(df, ticker):
     }
     df.rename(columns=col_map, inplace=True)
 
-    # 3. Check critical columns
+    # 3. FIX IMOM CRASH: Remove Duplicate Columns
+    # If we have two 'ticker' columns, keep the first one
+    df = df.loc[:, ~df.columns.duplicated()]
+
+    # 4. Check critical columns
     if 'ticker' not in df.columns:
         print(f"      -> ⚠️ Missing 'ticker' column. Found: {list(df.columns)}")
         return None
 
-    # 4. Filter Garbage
+    # 5. Filter Garbage
     stop_words = ["cash", "usd", "liquidity", "government", "treasury", "money market", "net other", "total"]
     df['name'] = df['name'].astype(str)
-    df['ticker'] = df['ticker'].astype(str)
     
-    # Ensure Ticker is clean before checking
-    df['ticker'] = df['ticker'].str.upper().str.strip()
+    # Force Ticker to String
+    df['ticker'] = df['ticker'].astype(str)
     
     pattern = '|'.join(stop_words)
     mask = df['name'].str.contains(pattern, case=False, na=False) | \
            df['ticker'].str.contains(pattern, case=False, na=False)
     df = df[~mask].copy()
 
-    # 5. Clean Ticker Specifics
+    # 6. Clean Ticker
     df['ticker'] = df['ticker'].str.replace(' USD', '', regex=False)
     df['ticker'] = df['ticker'].str.replace('.UN', '', regex=False)
+    df['ticker'] = df['ticker'].str.upper().str.strip()
 
-    # 6. Clean Weight
+    # 7. Clean Weight
     if 'weight' in df.columns:
         if df['weight'].dtype == object:
             df['weight'] = df['weight'].astype(str).str.replace('%', '').str.replace(',', '')
@@ -96,9 +122,10 @@ def main():
         print("❌ Config file not found.")
         return
 
-    # Prepare Selenium Driver (Only used for Alpha & Invesco)
-    print("🚀 Launching Scraper v11 (Restoration)...")
-    driver = setup_driver()
+    print("🚀 Launching Scraper v12 (The Fixer)...")
+    
+    # We only start Selenium if we need it (for Alpha Architect)
+    driver = None
     session = requests.Session()
     session.headers.update(HEADERS)
     
@@ -115,75 +142,59 @@ def main():
         try:
             df = None
             
-            # --- STRATEGY 1: PACER (Reverted to Request/CSV) ---
+            # --- PACER (Requests/CSV) ---
             if etf['scraper_type'] == 'pacer_csv':
-                try:
-                    # Direct CSV download - Simple and Fast
-                    r = session.get(etf['url'], timeout=20)
-                    if r.status_code == 200:
-                        content = r.text.splitlines()
-                        start = 0
-                        for i, line in enumerate(content[:20]):
-                            if "Ticker" in line or "Symbol" in line:
-                                start = i; break
-                        df = pd.read_csv(StringIO('\n'.join(content[start:])))
-                    else:
-                        print(f"      -> HTTP {r.status_code} Error")
-                except Exception as e:
-                    print(f"      -> Pacer Error: {e}")
+                r = session.get(etf['url'], timeout=20)
+                if r.status_code == 200:
+                    content = r.text.splitlines()
+                    start = 0
+                    for i, line in enumerate(content[:20]):
+                        if "Ticker" in line or "Symbol" in line:
+                            start = i; break
+                    df = pd.read_csv(StringIO('\n'.join(content[start:])))
 
-            # --- STRATEGY 2: FIRST TRUST (Reverted to Request/Pandas) ---
+            # --- FIRST TRUST (Requests/Pandas + Header Fix) ---
             elif etf['scraper_type'] == 'first_trust':
-                try:
-                    r = session.get(etf['url'], timeout=20)
-                    dfs = pd.read_html(r.text)
-                    # Find the table with 'Identifier' or 'Ticker'
-                    for d in dfs:
-                        cols = [str(c).lower() for c in d.columns]
-                        if any(k in cols for k in ['ticker', 'identifier', 'symbol']):
-                            df = d; break
-                    if df is None and dfs: 
-                        # Try header promotion (worked in v7)
-                        d = dfs[0]
-                        if not d.empty:
-                            new_header = d.iloc[0]
-                            d = d[1:]
-                            d.columns = new_header
-                            df = d
-                except Exception as e:
-                    print(f"      -> First Trust Error: {e}")
+                r = session.get(etf['url'], timeout=20)
+                dfs = pd.read_html(r.text)
+                df = find_first_trust_table(dfs)
 
-            # --- STRATEGY 3: ALPHA ARCHITECT (Selenium Click) ---
+            # --- ALPHA ARCHITECT (Selenium) ---
             elif 'alpha' in etf['url'] or etf['scraper_type'] == 'selenium_alpha':
+                if driver is None: driver = setup_driver() # Lazy load driver
+                
+                driver.get(etf['url'])
+                time.sleep(5)
+                
+                # Click "All"
                 try:
-                    page_url = f"https://funds.alphaarchitect.com/{ticker.lower()}/#fund-holdings"
-                    driver.get(page_url)
-                    time.sleep(5)
-                    
-                    # Click "All"
                     selects = driver.find_elements(By.TAG_NAME, "select")
                     for s in selects:
                         try:
                             Select(s).select_by_visible_text("All")
                             time.sleep(2)
                         except: pass
-                    
-                    # Scrape Table
-                    dfs = pd.read_html(StringIO(driver.page_source))
-                    for d in dfs:
-                        if len(d) > 20: df = d; break
-                except Exception as e:
-                    print(f"      -> Alpha Architect Error: {e}")
+                except: pass
+                
+                # Scrape
+                dfs = pd.read_html(StringIO(driver.page_source))
+                for d in dfs:
+                    if len(d) > 25: df = d; break
 
-            # --- STRATEGY 4: INVESCO (Selenium Simple) ---
+            # --- INVESCO (Selenium Simple) ---
             elif etf['scraper_type'] == 'selenium_invesco':
-                try:
-                    driver.get(etf['url'])
-                    time.sleep(10) # Give it time
-                    dfs = pd.read_html(StringIO(driver.page_source))
-                    if dfs: df = dfs[0] # Take what we can get (usually top 10)
-                except Exception as e:
-                    print(f"      -> Invesco Error: {e}")
+                if driver is None: driver = setup_driver()
+                driver.get(etf['url'])
+                time.sleep(8)
+                
+                dfs = pd.read_html(StringIO(driver.page_source))
+                # Skip Performance Tables (YTD, 1y, etc.)
+                for d in dfs:
+                    cols = [str(c).lower() for c in d.columns]
+                    if 'ytd' in cols or '1y' in cols: continue # Skip performance
+                    if len(d) > 5:
+                        df = d
+                        break
 
             # --- SAVE ---
             clean_df = clean_dataframe(df, ticker)
@@ -197,9 +208,9 @@ def main():
                 print(f"    ⚠️ Data not found.")
 
         except Exception as e:
-            print(f"    ❌ Critical Error: {e}")
+            print(f"    ❌ Error: {e}")
 
-    driver.quit()
+    if driver: driver.quit()
 
     if master_list:
         full_df = pd.concat(master_list)
