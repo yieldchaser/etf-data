@@ -1,0 +1,36 @@
+name: Daily ETF Scrape
+
+on:
+  schedule:
+    - [cite_start]cron: '0 6 * * *'   # Runs every day at 6:00 AM UTC [cite: 86]
+  workflow_dispatch:      # Adds a button to run it manually
+
+permissions:
+  contents: write         # Gives the bot permission to save the CSVs
+
+jobs:
+  scrape-and-commit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install libraries
+        run: pip install -r requirements.txt
+
+      - name: Run Scraper
+        run: python scraper.py
+
+      - name: Save Data
+        run: |
+          git config --global user.name "ETF-Bot"
+          git config --global user.email "bot@github.com"
+          git add data/
+          git commit -m "Auto-update: $(date +'%Y-%m-%d')" || exit 0
+          git push

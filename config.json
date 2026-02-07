@@ -1,0 +1,98 @@
+[
+    {
+        "ticker": "FPX",
+        "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FPX",
+        "scraper_type": "first_trust",
+        "enabled": true
+    },
+    {
+        "ticker": "FPXI",
+        "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FPXI",
+        "scraper_type": "first_trust",
+        "enabled": true
+    },
+    {
+        "ticker": "CSD",
+        "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-spin-off-etf.html",
+        "scraper_type": "invesco",
+        "enabled": true
+    },
+    {
+        "ticker": "QMOM",
+        "url": "https://funds.alphaarchitect.com/qmom/#fund-holdings",
+        "scraper_type": "alpha_architect",
+        "enabled": true
+    },
+    {
+        "ticker": "IMOM",
+        "url": "https://funds.alphaarchitect.com/imom/#fund-holdings",
+        "scraper_type": "alpha_architect",
+        "enabled": true
+    },
+    {
+        "ticker": "XSMO",
+        "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-smallcap-momentum-etf.html",
+        "scraper_type": "invesco",
+        "enabled": true
+    },
+    {
+        "ticker": "XMMO",
+        "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-midcap-momentum-etf.html",
+        "scraper_type": "invesco",
+        "enabled": true
+    },
+    {
+        "ticker": "PIE",
+        "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-dorsey-wright-emerging-markets-momentum-etf.html",
+        "scraper_type": "invesco",
+        "enabled": true
+    },
+    {
+        "ticker": "COWZ",
+        "url": "https://www.paceretfs.com/usbank/live/fsb0.pacer.x330.COWZ_Holdings.csv",
+        "scraper_type": "pacer_csv",
+        "enabled": true
+    },
+    {
+        "ticker": "CALF",
+        "url": "https://www.paceretfs.com/usbank/live/fsb0.pacer.x330.CALF_Holdings.csv",
+        "scraper_type": "pacer_csv",
+        "enabled": true
+    },
+    {
+        "ticker": "SPMO",
+        "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-500-momentum-etf.html",
+        "scraper_type": "invesco",
+        "enabled": true
+    },
+    {
+        "ticker": "SPHQ",
+        "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-500-quality-etf.html",
+        "scraper_type": "invesco",
+        "enabled": true
+    },
+    {
+        "ticker": "RPG",
+        "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-500-pure-growth-etf.html",
+        "scraper_type": "invesco",
+        "enabled": true
+    },
+    {
+        "ticker": "XLG",
+        "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-500-top-50-etf.html",
+        "scraper_type": "invesco",
+        "enabled": true
+    },
+    {
+        "ticker": "QQQM",
+        "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-nasdaq-100-etf.html",
+        "scraper_type": "invesco",
+        "enabled": true
+    },
+    {
+        "ticker": "SPHB",
+        "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-500-high-beta-etf.html",
+        "scraper_type": "invesco",
+        "enabled": true
+    }
+]
