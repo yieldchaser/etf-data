@@ -2,11 +2,11 @@ name: Daily ETF Scrape
 
 on:
   schedule:
-    - [cite_start]cron: '0 6 * * *'   # Runs every day at 6:00 AM UTC [cite: 86]
-  workflow_dispatch:      # Adds a button to run it manually
+    - cron: '0 6 * * *'
+  workflow_dispatch:
 
 permissions:
-  contents: write         # Gives the bot permission to save the CSVs
+  contents: write
 
 jobs:
   scrape-and-commit:
