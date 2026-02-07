@@ -181,17 +181,17 @@ def main():
                 for d in dfs:
                     if len(d) > 25: df = d; break
 
-            # --- INVESCO (API COOKIE METHOD - FINAL) ---
+                        # --- INVESCO FINAL (REAL BROWSER DOWNLOAD EMULATION) ---
             elif etf['scraper_type'] == 'selenium_invesco':
                 if driver is None:
                     driver = setup_driver()
 
                 driver.get(etf['url'])
-                time.sleep(5)
+                time.sleep(6)
 
-                print("      -> Fetching via internal holdings API")
+                print("      -> Initiating real browser download...")
 
-                # steal cookies from selenium
+                # get cookies from real selenium session
                 cookies = driver.get_cookies()
                 s = requests.Session()
 
@@ -200,21 +200,36 @@ def main():
 
                 download_url = f"https://www.invesco.com/us/en/financial-products/etfs/holdings/0?ticker={ticker}&action=download"
 
-                s.headers.update({
+                headers = {
                     "User-Agent": driver.execute_script("return navigator.userAgent;"),
+                    "Accept": "text/csv,application/vnd.ms-excel,application/octet-stream",
                     "Referer": etf['url'],
-                    "Accept": "text/csv,application/json,text/plain,*/*"
-                })
+                    "Origin": "https://www.invesco.com",
+                    "Connection": "keep-alive"
+                }
 
-                r = s.get(download_url)
+                r = s.get(download_url, headers=headers)
 
-                if r.status_code == 200 and len(r.text) > 500:
-                    print("      -> API download success")
+                text = r.text
 
-                    lines = r.text.splitlines()
+                # detect bot-block html
+                if "<!doctype html" in text.lower():
+                    print("      -> Blocked by WAF. Retrying with browser fetch...")
 
+                    # use selenium to fetch via JS (bypasses WAF)
+                    text = driver.execute_script(f"""
+                        return fetch("{download_url}", {{
+                            credentials: 'include'
+                        }}).then(r => r.text());
+                    """)
+
+                if "Ticker" in text or "Holding" in text:
+                    print("      -> CSV received")
+
+                    lines = text.splitlines()
                     start = 0
-                    for i, line in enumerate(lines[:30]):
+
+                    for i, line in enumerate(lines[:40]):
                         if "Ticker" in line or "Holding" in line or "Security" in line:
                             start = i
                             break
@@ -223,13 +238,14 @@ def main():
 
                     df = pd.read_csv(
                         StringIO(csv_data),
-                        engine="python",   # handles messy CSV
+                        engine="python",
                         on_bad_lines="skip"
                     )
 
                 else:
-                    print(f"      -> API failed {r.status_code}")
+                    print("      -> FAILED to retrieve holdings")
                     df = None
+
 
 
 
