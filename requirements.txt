@@ -4,3 +4,4 @@ lxml
 openpyxl
 beautifulsoup4
 html5lib
+cloudscraper

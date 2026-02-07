@@ -12,12 +12,6 @@
         "enabled": true
     },
     {
-        "ticker": "CSD",
-        "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-spin-off-etf.html",
-        "scraper_type": "invesco",
-        "enabled": true
-    },
-    {
         "ticker": "QMOM",
         "url": "https://funds.alphaarchitect.com/wp-content/plugins/etf-holdings/export.php?ticker=QMOM",
         "scraper_type": "direct_csv",
@@ -27,24 +21,6 @@
         "ticker": "IMOM",
         "url": "https://funds.alphaarchitect.com/wp-content/plugins/etf-holdings/export.php?ticker=IMOM",
         "scraper_type": "direct_csv",
-        "enabled": true
-    },
-    {
-        "ticker": "XSMO",
-        "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-smallcap-momentum-etf.html",
-        "scraper_type": "invesco",
-        "enabled": true
-    },
-    {
-        "ticker": "XMMO",
-        "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-midcap-momentum-etf.html",
-        "scraper_type": "invesco",
-        "enabled": true
-    },
-    {
-        "ticker": "PIE",
-        "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-dorsey-wright-emerging-markets-momentum-etf.html",
-        "scraper_type": "invesco",
         "enabled": true
     },
     {
@@ -62,6 +38,30 @@
     {
         "ticker": "SPMO",
         "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-500-momentum-etf.html",
+        "scraper_type": "invesco",
+        "enabled": true
+    },
+    {
+        "ticker": "CSD",
+        "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-spin-off-etf.html",
+        "scraper_type": "invesco",
+        "enabled": true
+    },
+    {
+        "ticker": "XSMO",
+        "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-smallcap-momentum-etf.html",
+        "scraper_type": "invesco",
+        "enabled": true
+    },
+    {
+        "ticker": "XMMO",
+        "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-midcap-momentum-etf.html",
+        "scraper_type": "invesco",
+        "enabled": true
+    },
+    {
+        "ticker": "PIE",
+        "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-dorsey-wright-emerging-markets-momentum-etf.html",
         "scraper_type": "invesco",
         "enabled": true
     },
