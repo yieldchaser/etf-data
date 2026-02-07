@@ -19,14 +19,14 @@
     },
     {
         "ticker": "QMOM",
-        "url": "https://funds.alphaarchitect.com/qmom/#fund-holdings",
-        "scraper_type": "alpha_architect",
+        "url": "https://funds.alphaarchitect.com/wp-content/plugins/etf-holdings/export.php?ticker=QMOM",
+        "scraper_type": "direct_csv",
         "enabled": true
     },
     {
         "ticker": "IMOM",
-        "url": "https://funds.alphaarchitect.com/imom/#fund-holdings",
-        "scraper_type": "alpha_architect",
+        "url": "https://funds.alphaarchitect.com/wp-content/plugins/etf-holdings/export.php?ticker=IMOM",
+        "scraper_type": "direct_csv",
         "enabled": true
     },
     {
