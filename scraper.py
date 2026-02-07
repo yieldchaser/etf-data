@@ -51,13 +51,14 @@ def find_first_trust_table(dfs):
 def clean_dataframe(df, ticker):
     if df is None or df.empty: return None
 
-    # FIX IMOM: Remove duplicates immediately
-    df = df.loc[:, ~df.columns.duplicated()]
-
-    # 1. Standardize columns
+    # --- NUCLEAR FIX FOR IMOM DUPLICATES ---
+    # 1. Force unique column names by appending numbers to duplicates
+    df.columns = pd.io.parsers.ParserBase({'names':df.columns})._maybe_dedup_names(df.columns)
+    
+    # 2. Standardize columns
     df.columns = [str(c).strip().lower() for c in df.columns]
     
-    # 2. Rename columns
+    # 3. Rename columns
     col_map = {
         'stockticker': 'ticker', 'symbol': 'ticker', 'holding': 'ticker', 'ticker': 'ticker',
         'identifier': 'ticker', 'sedol': 'ticker',
@@ -67,10 +68,18 @@ def clean_dataframe(df, ticker):
     }
     df.rename(columns=col_map, inplace=True)
 
+    # 4. If we still have multiple 'ticker' columns, keep the first one
+    # This prevents the 'DataFrame object has no attribute str' error
+    if not isinstance(df['ticker'], pd.Series):
+        print("      -> Detected duplicate 'ticker' columns. Keeping the first one.")
+        df = df.loc[:, ~df.columns.duplicated()]
+
+    # 5. Check critical columns
     if 'ticker' not in df.columns:
         print(f"      -> ⚠️ Missing 'ticker' column. Found: {list(df.columns)}")
         return None
 
+    # 6. Filter Garbage
     stop_words = ["cash", "usd", "liquidity", "government", "treasury", "money market", "net other", "total"]
     df['name'] = df['name'].astype(str)
     df['ticker'] = df['ticker'].astype(str)
@@ -102,7 +111,7 @@ def main():
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
     except: return
 
-    print("🚀 Launching Scraper v14 (The Cookie Monster)...")
+    print("🚀 Launching Scraper v15 (Final Polish)...")
     driver = None
     session = requests.Session()
     session.headers.update(HEADERS)
@@ -120,7 +129,7 @@ def main():
         try:
             df = None
             
-            # --- PACER (Requests) ---
+            # --- PACER ---
             if etf['scraper_type'] == 'pacer_csv':
                 r = session.get(etf['url'], timeout=20)
                 if r.status_code == 200:
@@ -131,13 +140,13 @@ def main():
                             start = i; break
                     df = pd.read_csv(StringIO('\n'.join(content[start:])))
 
-            # --- FIRST TRUST (Requests + Header Fix) ---
+            # --- FIRST TRUST ---
             elif etf['scraper_type'] == 'first_trust':
                 r = session.get(etf['url'], timeout=20)
                 dfs = pd.read_html(r.text)
                 df = find_first_trust_table(dfs)
 
-            # --- ALPHA ARCHITECT (Selenium) ---
+            # --- ALPHA ARCHITECT ---
             elif 'alpha' in etf['url'] or etf['scraper_type'] == 'selenium_alpha':
                 if driver is None: driver = setup_driver()
                 driver.get(etf['url'])
@@ -154,25 +163,20 @@ def main():
                 for d in dfs:
                     if len(d) > 25: df = d; break
 
-            # --- INVESCO (The Cookie Hijack) ---
+            # --- INVESCO (The Fix) ---
             elif etf['scraper_type'] == 'selenium_invesco':
                 if driver is None: driver = setup_driver()
                 
-                # 1. Visit the page to get the "Session Cookies"
+                # 1. Cookie Hijack
                 driver.get(etf['url'])
-                time.sleep(6) # Wait for Invesco to assign cookies
-                
-                # 2. Steal the Cookies
+                time.sleep(6)
                 cookies = driver.get_cookies()
                 s = requests.Session()
                 for cookie in cookies:
                     s.cookies.set(cookie['name'], cookie['value'])
                 
-                # 3. Use the Magic Link WITH the stolen cookies
-                # This makes Invesco think we are the browser
                 download_url = f"https://www.invesco.com/us/en/financial-products/etfs/holdings/main/holdings/0?ticker={ticker}&action=download"
                 
-                # Update headers to match the browser
                 s.headers.update({
                     "User-Agent": driver.execute_script("return navigator.userAgent;"),
                     "Referer": etf['url']
@@ -182,11 +186,20 @@ def main():
                 r = s.get(download_url)
                 
                 if r.status_code == 200 and len(r.content) > 100:
-                    df = pd.read_csv(StringIO(r.text))
-                    print("      -> 🍪 Cookie Hijack Success!")
+                    # SMART PARSER: Skip garbage lines until we find the header
+                    raw_lines = r.text.splitlines()
+                    start_row = 0
+                    for i, line in enumerate(raw_lines[:25]):
+                        # Look for header keywords
+                        if "Ticker" in line or "Holding" in line or "Security" in line:
+                            start_row = i
+                            break
+                    
+                    csv_data = "\n".join(raw_lines[start_row:])
+                    df = pd.read_csv(StringIO(csv_data))
+                    print(f"      -> 🍪 Success! Parsed from line {start_row}.")
                 else:
-                    print(f"      -> Cookie method failed ({r.status_code}). Fallback to View All.")
-                    # Fallback: Click View All if API fails
+                    print(f"      -> Download failed. Fallback to View All.")
                     try:
                         view_all = driver.find_element(By.XPATH, "//*[contains(text(), 'View all')]")
                         driver.execute_script("arguments[0].click();", view_all)
