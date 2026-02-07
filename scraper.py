@@ -14,13 +14,28 @@ DATA_DIR_LATEST = 'data/latest'
 DATA_DIR_HISTORY = 'data/history'
 TODAY = datetime.now().strftime('%Y-%m-%d')
 
-# Headers to mimic a real Chrome browser on Windows
+# Robust Headers
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
     'Accept-Language': 'en-US,en;q=0.9',
-    'Referer': 'https://www.google.com/'
+    'Referer': 'https://www.google.com/',
+    'Upgrade-Insecure-Requests': '1'
 }
+
+def setup_session():
+    """
+    Sets up the session and visits Invesco to get the 'Investor' cookie.
+    """
+    session = requests.Session()
+    session.headers.update(HEADERS)
+    
+    # Prime Invesco Cookie
+    try:
+        session.get("https://www.invesco.com/us/en/financial-products/etfs.html", timeout=10)
+    except:
+        pass
+    return session
 
 def clean_dataframe(df, ticker):
     if df is None or df.empty:
@@ -29,7 +44,6 @@ def clean_dataframe(df, ticker):
     # Standardize columns
     df.columns = [str(c).strip().lower() for c in df.columns]
     
-    # Column mapping
     col_map = {
         'stockticker': 'ticker', 'symbol': 'ticker', 'holding': 'ticker', 'ticker': 'ticker',
         'securityname': 'name', 'company': 'name', 'security name': 'name', 'security_name': 'name',
@@ -37,21 +51,19 @@ def clean_dataframe(df, ticker):
     }
     df.rename(columns=col_map, inplace=True)
 
-    # Required columns check
     if 'ticker' not in df.columns or 'weight' not in df.columns:
-        print(f"    ⚠️ Data found but missing columns. Found: {df.columns.tolist()}")
         return None
 
-    # Cleaning rules
+    # Clean Rows
     stop_words = ["cash", "usd", "liquidity", "government", "treasury", "money market", "net other"]
     pattern = '|'.join(stop_words)
     mask = df['name'].astype(str).str.contains(pattern, case=False, na=False) | \
            df['ticker'].astype(str).str.contains(pattern, case=False, na=False)
     df = df[~mask].copy()
 
-    # Normalize Ticker
+    # FIX: Use .str.strip() instead of .strip()
     df['ticker'] = df['ticker'].astype(str).str.replace(' USD', '', regex=False)
-    df['ticker'] = df['ticker'].str.replace('.UN', '', regex=False).str.upper().strip()
+    df['ticker'] = df['ticker'].str.replace('.UN', '', regex=False).str.upper().str.strip()
 
     # Format Weight
     if df['weight'].dtype == object:
@@ -64,57 +76,29 @@ def clean_dataframe(df, ticker):
     df['Date_Scraped'] = TODAY
     return df[['ETF_Ticker', 'ticker', 'name', 'weight', 'Date_Scraped']]
 
-def get_invesco_data(session, ticker, url):
+def find_correct_table(dfs):
     """
-    Strategy: Try the 'Magic' hidden download link first.
-    If that fails, fall back to parsing the visible page.
+    Loops through a list of tables to find the one that actually looks like holdings.
     """
-    # 1. Try "Magic" Direct Download Link
-    magic_link = f"https://www.invesco.com/us/en/financial-products/etfs/holdings/main/holdings/0?ticker={ticker}&action=download"
-    try:
-        print(f"    Trying Magic Link for {ticker}...")
-        r = session.get(magic_link, timeout=15)
-        if r.status_code == 200 and len(r.content) > 50:
-            return pd.read_csv(StringIO(r.text))
-    except:
-        pass
-
-    # 2. Fallback: Scrape the main page for a dynamic link
-    try:
-        print(f"    Magic link failed. Scraping page for {ticker}...")
-        r = session.get(url, timeout=15)
-        soup = BeautifulSoup(r.text, 'html.parser')
-        
-        # Look for any link containing 'download'
-        for a in soup.find_all('a', href=True):
-            if 'download' in a['href'].lower():
-                dl_url = a['href']
-                if not dl_url.startswith('http'):
-                    dl_url = 'https://www.invesco.com' + dl_url
-                
-                r_dl = session.get(dl_url, timeout=15)
-                return pd.read_csv(StringIO(r_dl.text))
-    except Exception as e:
-        print(f"    ❌ Invesco scrape error: {e}")
-    
-    return None
+    for df in dfs:
+        # Check if columns look right
+        cols = [str(c).strip().lower() for c in df.columns]
+        if any(k in cols for k in ['ticker', 'symbol', 'holding']):
+            return df
+    return dfs[0] if dfs else pd.DataFrame() # Fallback
 
 def main():
     with open(CONFIG_FILE, 'r') as f:
         etfs = json.load(f)
 
-    session = requests.Session()
-    session.headers.update(HEADERS)
-
+    session = setup_session()
     os.makedirs(DATA_DIR_LATEST, exist_ok=True)
     archive_path = os.path.join(DATA_DIR_HISTORY, *TODAY.split('-'))
     os.makedirs(archive_path, exist_ok=True)
-
     master_list = []
 
     for etf in etfs:
         if not etf.get('enabled', True): continue
-        
         ticker = etf['ticker']
         print(f"➳ Processing {ticker}...")
         
@@ -122,27 +106,36 @@ def main():
             df = None
             if etf['scraper_type'] == 'pacer_csv':
                 r = session.get(etf['url'])
-                # Skip garbage rows
                 content = r.text.splitlines()
                 start = 0
                 for i, line in enumerate(content):
                     if "Ticker" in line or "StockTicker" in line:
-                        start = i
-                        break
+                        start = i; break
                 df = pd.read_csv(StringIO('\n'.join(content[start:])))
 
-            elif etf['scraper_type'] == 'first_trust':
+            elif etf['scraper_type'] in ['first_trust', 'alpha_architect']:
                 r = session.get(etf['url'])
                 dfs = pd.read_html(r.text)
-                df = dfs[0]
-
-            elif etf['scraper_type'] == 'alpha_architect':
-                r = session.get(etf['url'])
-                dfs = pd.read_html(r.text)
-                df = dfs[0]
+                df = find_correct_table(dfs)
 
             elif etf['scraper_type'] == 'invesco':
-                df = get_invesco_data(session, ticker, etf['url'])
+                # Try Magic Link first
+                magic_link = f"https://www.invesco.com/us/en/financial-products/etfs/holdings/main/holdings/0?ticker={ticker}&action=download"
+                try:
+                    r = session.get(magic_link, timeout=10)
+                    df = pd.read_csv(StringIO(r.text))
+                except:
+                    # Fallback: Scrape for "download" link
+                    r = session.get(etf['url'])
+                    soup = BeautifulSoup(r.text, 'html.parser')
+                    dl_link = None
+                    for a in soup.find_all('a', href=True):
+                        if 'action=download' in a['href']:
+                            dl_link = "https://www.invesco.com" + a['href'] if not a['href'].startswith('http') else a['href']
+                            break
+                    if dl_link:
+                        r = session.get(dl_link)
+                        df = pd.read_csv(StringIO(r.text))
 
             # Clean and Save
             clean_df = clean_dataframe(df, ticker)
@@ -153,17 +146,13 @@ def main():
                 master_list.append(clean_df)
                 print(f"    ✅ Success! Saved {len(clean_df)} rows.")
             else:
-                print(f"    ⚠️ Failed to extract data for {ticker}")
+                print(f"    ⚠️ Data not found for {ticker}")
 
         except Exception as e:
-            print(f"    ❌ Critical Error on {ticker}: {e}")
+            print(f"    ❌ Error on {ticker}: {e}")
         
         time.sleep(random.uniform(2, 5))
 
     if master_list:
         full_df = pd.concat(master_list)
         full_df.to_csv(os.path.join(archive_path, 'master_archive.csv'), index=False)
-        print("📜 Master Archive Created.")
-
-if __name__ == "__main__":
-    main()
