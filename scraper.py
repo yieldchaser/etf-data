@@ -8,9 +8,8 @@ from io import StringIO
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
+import requests
 
 # --- CONFIG ---
 CONFIG_FILE = 'config.json'
@@ -19,25 +18,22 @@ DATA_DIR_HISTORY = 'data/history'
 TODAY = datetime.now().strftime('%Y-%m-%d')
 
 def setup_driver():
-    """
-    Launches a HEADLESS Chrome Browser.
-    This is a real browser, not a simulation.
-    """
+    """ Launches Headless Chrome """
     chrome_options = Options()
-    chrome_options.add_argument("--headless") # Run in background
+    chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--window-size=1920,1080")
-    # Hide automation flags to look like a human
     chrome_options.add_argument("--disable-blink-features=AutomationControlled") 
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-    
-    driver = webdriver.Chrome(options=chrome_options)
-    return driver
+    return webdriver.Chrome(options=chrome_options)
 
 def clean_dataframe(df, ticker):
     if df is None or df.empty: return None
-    
+
+    # 0. Remove Duplicate Columns (Fixes the IMOM crash)
+    df = df.loc[:, ~df.columns.duplicated()]
+
     # 1. Standardize columns
     df.columns = [str(c).strip().lower() for c in df.columns]
     
@@ -83,38 +79,6 @@ def clean_dataframe(df, ticker):
     df['Date_Scraped'] = TODAY
     return df[['ETF_Ticker', 'ticker', 'name', 'weight', 'Date_Scraped']]
 
-def scrape_alpha_architect(driver, url):
-    """
-    Specific logic to click the "Show All" dropdown.
-    """
-    driver.get(url)
-    time.sleep(5) # Let JS load
-    
-    try:
-        # Try to find the "Show entries" dropdown
-        # It usually has a name like 'table_id_length'
-        select_elements = driver.find_elements(By.TAG_NAME, "select")
-        for select in select_elements:
-            try:
-                # Select "All" (value usually '-1' or 'All')
-                dropdown = Select(select)
-                dropdown.select_by_visible_text("All")
-                print("      -> Clicked 'Show All'...")
-                time.sleep(3) # Wait for table to expand
-                break
-            except:
-                continue
-    except Exception as e:
-        print(f"      -> Warning: Could not click dropdown ({str(e)})")
-
-    # Now scrape the full page source
-    dfs = pd.read_html(StringIO(driver.page_source))
-    # Find the big table
-    for df in dfs:
-        if len(df) > 15: # If it has more than 15 rows, it's likely the full table now
-            return df
-    return dfs[0] if dfs else None
-
 def main():
     try:
         with open(CONFIG_FILE, 'r') as f:
@@ -123,8 +87,7 @@ def main():
         print("❌ Config file not found.")
         return
 
-    # LAUNCH BROWSER
-    print("🚀 Launching Headless Chrome...")
+    print("🚀 Launching Hybrid Scraper...")
     driver = setup_driver()
     
     os.makedirs(DATA_DIR_LATEST, exist_ok=True)
@@ -140,53 +103,76 @@ def main():
         try:
             df = None
             
-            # --- STRATEGY 1: PACER (Keep using direct CSV, it works) ---
+            # --- STRATEGY 1: PACER (Simple CSV) ---
             if etf['scraper_type'] == 'pacer_csv':
-                # Use pandas directly for CSVs
+                # Pacer works best with standard requests
                 try:
                     df = pd.read_csv(etf['url'], skiprows=lambda x: x < 10 and 'Ticker' not in str(x))
-                    # Quick fix to find header if logic above fails
-                    if 'Ticker' not in df.columns:
+                    # Fallback if header missed
+                    if 'Ticker' not in df.columns and 'Symbol' not in df.columns:
                          df = pd.read_csv(etf['url'])
-                except:
-                    driver.get(etf['url'])
-                    df = pd.read_csv(StringIO(driver.find_element(By.TAG_NAME, 'pre').text))
+                except Exception as e:
+                    print(f"    ⚠️ Pacer CSV error: {e}")
 
-            # --- STRATEGY 2: ALPHA ARCHITECT (Selenium Interaction) ---
+            # --- STRATEGY 2: ALPHA ARCHITECT (Selenium Click) ---
             elif 'alpha' in etf['url'] or etf['scraper_type'] == 'direct_csv':
-                # Revert to standard page URL for Selenium interaction
                 page_url = f"https://funds.alphaarchitect.com/{ticker.lower()}/#fund-holdings"
-                df = scrape_alpha_architect(driver, page_url)
-
-            # --- STRATEGY 3: GENERIC / INVESCO / FIRST TRUST ---
-            else:
-                driver.get(etf['url'])
-                time.sleep(8) # Wait generous time for Invesco JS to render
+                driver.get(page_url)
+                time.sleep(5)
                 
-                # Check for "Magic" Invesco Download Link in DOM
+                # Click "All"
                 try:
-                    links = driver.find_elements(By.TAG_NAME, "a")
-                    for link in links:
-                        href = link.get_attribute('href')
-                        if href and "action=download" in href:
-                            print("      -> Found hidden download link, grabbing...")
-                            driver.get(href)
-                            time.sleep(3)
-                            df = pd.read_csv(StringIO(driver.page_source)) # Sometimes raw csv renders in browser
-                            break
-                except:
-                    pass
+                    selects = driver.find_elements(By.TAG_NAME, "select")
+                    for s in selects:
+                        try:
+                            Select(s).select_by_visible_text("All")
+                            time.sleep(2)
+                        except: pass
+                except: pass
                 
-                if df is None:
-                    # Fallback: Parse visible table
+                # Scrape Table
+                dfs = pd.read_html(StringIO(driver.page_source))
+                for d in dfs:
+                    if len(d) > 20: # Look for the big table
+                        df = d; break
+
+            # --- STRATEGY 3: INVESCO (Secret JSON API) ---
+            elif etf['scraper_type'] == 'invesco':
+                # Invesco loads data via this hidden API
+                api_url = f"https://www.invesco.com/us/en/financial-products/etfs/holdings/main/holdings/0?ticker={ticker}"
+                driver.get(api_url)
+                time.sleep(2)
+                
+                # The browser will display raw JSON in the body
+                raw_text = driver.find_element(By.TAG_NAME, "body").text
+                try:
+                    data = json.loads(raw_text)
+                    # The JSON structure usually has 'holdings' or 'result'
+                    # We convert the list of dicts to DataFrame
+                    if isinstance(data, list):
+                        df = pd.DataFrame(data)
+                    elif 'holdings' in data:
+                         df = pd.DataFrame(data['holdings'])
+                    elif 'result' in data:
+                         df = pd.DataFrame(data['result'])
+                except:
+                    print("    ⚠️ JSON parse failed, trying fallback...")
+                    # Fallback to visual scrape if JSON fails
+                    driver.get(etf['url'])
+                    time.sleep(8)
                     dfs = pd.read_html(StringIO(driver.page_source))
-                    # Smart Table Finder
-                    for d in dfs:
-                        cols = [str(c).lower() for c in d.columns]
-                        if any(k in cols for k in ['ticker', 'symbol', 'identifier', 'holding']):
-                            df = d
-                            break
-                    if df is None and dfs: df = dfs[0]
+                    df = dfs[0] if dfs else None
+
+            # --- STRATEGY 4: FIRST TRUST (Selenium Wait) ---
+            elif etf['scraper_type'] == 'first_trust' or 'ftportfolios' in etf['url']:
+                driver.get(etf['url'])
+                time.sleep(10) # Wait for table to render
+                dfs = pd.read_html(StringIO(driver.page_source))
+                for d in dfs:
+                    cols = [str(c).lower() for c in d.columns]
+                    if any(k in cols for k in ['ticker', 'identifier', 'symbol']):
+                        df = d
+                        break
 
             # --- SAVE ---
             clean_df = clean_dataframe(df, ticker)
@@ -197,7 +183,7 @@ def main():
                 master_list.append(clean_df)
                 print(f"    ✅ Success: {len(clean_df)} rows saved.")
             else:
-                print(f"    ⚠️ Data not found.")
+                print(f"    ⚠️ Data not found / Table empty.")
 
         except Exception as e:
             print(f"    ❌ Error: {e}")
