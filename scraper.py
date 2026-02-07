@@ -181,68 +181,51 @@ def main():
                 for d in dfs:
                     if len(d) > 25: df = d; break
 
-            # --- INVESCO (FULL HOLDINGS FIX) ---
+            # --- INVESCO (API COOKIE METHOD - FINAL) ---
             elif etf['scraper_type'] == 'selenium_invesco':
                 if driver is None:
                     driver = setup_driver()
 
                 driver.get(etf['url'])
+                time.sleep(5)
 
-                from selenium.webdriver.support.ui import WebDriverWait
-                from selenium.webdriver.support import expected_conditions as EC
+                print("      -> Fetching via internal holdings API")
 
-                wait = WebDriverWait(driver, 20)
+                # steal cookies from selenium
+                cookies = driver.get_cookies()
+                s = requests.Session()
 
-                # wait for table to load
-                wait.until(EC.presence_of_element_located((By.TAG_NAME, "table")))
-                time.sleep(3)
+                for c in cookies:
+                    s.cookies.set(c['name'], c['value'])
 
-                # try clicking View All
-                expanded = False
-                try:
-                    view_all = wait.until(EC.element_to_be_clickable((
-                        By.XPATH,
-                        "//button[contains(., 'View') and contains(., 'All')] | //a[contains(., 'View') and contains(., 'All')]"
-                    )))
-                    driver.execute_script("arguments[0].click();", view_all)
-                    print("      -> Clicked View All")
-                    expanded = True
-                    time.sleep(6)
-                except:
-                    print("      -> View All not found")
+                download_url = f"https://www.invesco.com/us/en/financial-products/etfs/holdings/0?ticker={ticker}&action=download"
 
-                # try dropdown = All
-                try:
-                    selects = driver.find_elements(By.TAG_NAME, "select")
-                    for s in selects:
-                        try:
-                            Select(s).select_by_visible_text("All")
-                            print("      -> Selected 'All'")
-                            expanded = True
-                            time.sleep(5)
-                        except:
-                            pass
-                except:
-                    pass
+                s.headers.update({
+                    "User-Agent": driver.execute_script("return navigator.userAgent;"),
+                    "Referer": etf['url'],
+                    "Accept": "text/csv,application/json,text/plain,*/*"
+                })
 
-                # force lazy load via scroll
-                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                time.sleep(3)
-                driver.execute_script("window.scrollTo(0, 0);")
-                time.sleep(2)
+                r = s.get(download_url)
 
-                # scrape tables again
-                dfs = pd.read_html(StringIO(driver.page_source))
+                if r.status_code == 200 and len(r.text) > 500:
+                    print("      -> API download success")
 
-                for d in dfs:
-                    cols = [str(c).lower() for c in d.columns]
+                    lines = r.text.splitlines()
 
-                    if 'ytd' in cols or '1y' in cols:
-                        continue
+                    start = 0
+                    for i, line in enumerate(lines[:30]):
+                        if "Ticker" in line or "Holding" in line or "Security" in line:
+                            start = i
+                            break
 
-                    if len(d) > 20:   # full holdings always >20
-                        df = d
-                        break
+                    csv_data = "\n".join(lines[start:])
+                    df = pd.read_csv(StringIO(csv_data))
+
+                else:
+                    print(f"      -> API failed {r.status_code}")
+                    df = None
+
 
 
             # --- SAVE ---
