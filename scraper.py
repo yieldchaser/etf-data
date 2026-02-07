@@ -220,7 +220,12 @@ def main():
                             break
 
                     csv_data = "\n".join(lines[start:])
-                    df = pd.read_csv(StringIO(csv_data))
+
+                    df = pd.read_csv(
+                        StringIO(csv_data),
+                        engine="python",   # handles messy CSV
+                        on_bad_lines="skip"
+                    )
 
                 else:
                     print(f"      -> API failed {r.status_code}")
