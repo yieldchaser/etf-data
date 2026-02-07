@@ -8,6 +8,8 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import requests
 
 # --- CONFIG ---
@@ -36,8 +38,10 @@ def find_first_trust_table(dfs):
     if not dfs: return None
     valid_keywords = ['ticker', 'symbol', 'holding', 'identifier', 'weighting', 'cusip']
     for i, df in enumerate(dfs):
+        # Check Headers
         cols = [str(c).strip().lower() for c in df.columns]
         if any(k in cols for k in valid_keywords): return df
+        # Check Row 0 (Header Promotion)
         if not df.empty:
             first_row = [str(x).strip().lower() for x in df.iloc[0].values]
             if any(k in first_row for k in valid_keywords):
@@ -50,9 +54,16 @@ def find_first_trust_table(dfs):
 
 def clean_dataframe(df, ticker):
     if df is None or df.empty: return None
-    df = df.loc[:, ~df.columns.duplicated()] # Fix duplicates
+
+    # --- CRITICAL FIX FOR IMOM ---
+    # Remove duplicate columns immediately
+    df = df.loc[:, ~df.columns.duplicated()]
+    # -----------------------------
+
+    # 1. Standardize columns
     df.columns = [str(c).strip().lower() for c in df.columns]
     
+    # 2. Rename columns
     col_map = {
         'stockticker': 'ticker', 'symbol': 'ticker', 'holding': 'ticker', 'ticker': 'ticker',
         'identifier': 'ticker', 'sedol': 'ticker',
@@ -62,12 +73,16 @@ def clean_dataframe(df, ticker):
     }
     df.rename(columns=col_map, inplace=True)
 
+    # 3. Check critical columns
     if 'ticker' not in df.columns:
         print(f"      -> ⚠️ Missing 'ticker' column. Found: {list(df.columns)}")
         return None
 
+    # 4. Filter Garbage
     stop_words = ["cash", "usd", "liquidity", "government", "treasury", "money market", "net other", "total"]
     df['name'] = df['name'].astype(str)
+    
+    # Force Ticker to String (Fixes 'str' error)
     df['ticker'] = df['ticker'].astype(str)
     
     pattern = '|'.join(stop_words)
@@ -75,10 +90,12 @@ def clean_dataframe(df, ticker):
            df['ticker'].str.contains(pattern, case=False, na=False)
     df = df[~mask].copy()
 
+    # 5. Clean Ticker
     df['ticker'] = df['ticker'].str.replace(' USD', '', regex=False)
     df['ticker'] = df['ticker'].str.replace('.UN', '', regex=False)
     df['ticker'] = df['ticker'].str.upper().str.strip()
 
+    # 6. Clean Weight
     if 'weight' in df.columns:
         if df['weight'].dtype == object:
             df['weight'] = df['weight'].astype(str).str.replace('%', '').str.replace(',', '')
@@ -97,7 +114,7 @@ def main():
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
     except: return
 
-    print("🚀 Launching Scraper v13 (The Invesco Fix)...")
+    print("🚀 Launching Final Scraper...")
     driver = None
     session = requests.Session()
     session.headers.update(HEADERS)
@@ -137,6 +154,7 @@ def main():
                 if driver is None: driver = setup_driver()
                 driver.get(etf['url'])
                 time.sleep(5)
+                # Try clicking "All"
                 try:
                     selects = driver.find_elements(By.TAG_NAME, "select")
                     for s in selects:
@@ -145,40 +163,36 @@ def main():
                             time.sleep(2)
                         except: pass
                 except: pass
+                
                 dfs = pd.read_html(StringIO(driver.page_source))
                 for d in dfs:
                     if len(d) > 25: df = d; break
 
-            # --- INVESCO (The Fix) ---
+            # --- INVESCO (Safety Net) ---
             elif etf['scraper_type'] == 'selenium_invesco':
                 if driver is None: driver = setup_driver()
+                driver.get(etf['url'])
+                time.sleep(8)
                 
-                # Try the "Magic Link" via Selenium (Bypasses 403)
-                magic_url = f"https://www.invesco.com/us/en/financial-products/etfs/holdings/main/holdings/0?ticker={ticker}&action=download"
-                driver.get(magic_url)
-                
-                # Check if we got raw CSV text in the browser body
-                body_text = driver.find_element(By.TAG_NAME, 'body').text
-                if "Ticker" in body_text or "Company" in body_text:
-                    df = pd.read_csv(StringIO(body_text))
-                    print("      -> Magic Link worked via Selenium!")
-                else:
-                    print("      -> Magic Link failed. Trying 'View All' click...")
-                    # Fallback: Go to main page and click "View All"
-                    driver.get(etf['url'])
-                    time.sleep(6)
-                    try:
-                        # Try to click the "View All" button or "Export"
-                        # Finding button by text is robust
-                        buttons = driver.find_elements(By.XPATH, "//button[contains(text(), 'View all')]")
-                        if buttons:
-                            driver.execute_script("arguments[0].click();", buttons[0])
-                            time.sleep(5) # Wait for table to expand
-                    except: pass
-                    
-                    dfs = pd.read_html(StringIO(driver.page_source))
-                    for d in dfs:
-                        if len(d) > 15: df = d; break
+                # Attempt 1: Click "View all"
+                try:
+                    # Find any button/link with "View all" text
+                    view_all = driver.find_element(By.XPATH, "//*[contains(text(), 'View all')]")
+                    driver.execute_script("arguments[0].click();", view_all)
+                    print("      -> Clicked 'View All'. Waiting...")
+                    time.sleep(5)
+                except:
+                    print("      -> 'View All' button not found. Scraping default view.")
+
+                # Scrape whatever is visible (Full list or Top 10)
+                dfs = pd.read_html(StringIO(driver.page_source))
+                # Logic: Find the holdings table, ignore performance tables
+                for d in dfs:
+                    cols = [str(c).lower() for c in d.columns]
+                    if 'ytd' in cols: continue # Skip performance table
+                    if 'ticker' in cols or 'company' in cols:
+                        df = d
+                        break
 
             # --- SAVE ---
             clean_df = clean_dataframe(df, ticker)
