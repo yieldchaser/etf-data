@@ -181,20 +181,69 @@ def main():
                 for d in dfs:
                     if len(d) > 25: df = d; break
 
-            # --- INVESCO (Selenium Simple) ---
+            # --- INVESCO (FULL HOLDINGS FIX) ---
             elif etf['scraper_type'] == 'selenium_invesco':
-                if driver is None: driver = setup_driver()
+                if driver is None:
+                    driver = setup_driver()
+
                 driver.get(etf['url'])
-                time.sleep(8)
-                
+
+                from selenium.webdriver.support.ui import WebDriverWait
+                from selenium.webdriver.support import expected_conditions as EC
+
+                wait = WebDriverWait(driver, 20)
+
+                # wait for table to load
+                wait.until(EC.presence_of_element_located((By.TAG_NAME, "table")))
+                time.sleep(3)
+
+                # try clicking View All
+                expanded = False
+                try:
+                    view_all = wait.until(EC.element_to_be_clickable((
+                        By.XPATH,
+                        "//button[contains(., 'View') and contains(., 'All')] | //a[contains(., 'View') and contains(., 'All')]"
+                    )))
+                    driver.execute_script("arguments[0].click();", view_all)
+                    print("      -> Clicked View All")
+                    expanded = True
+                    time.sleep(6)
+                except:
+                    print("      -> View All not found")
+
+                # try dropdown = All
+                try:
+                    selects = driver.find_elements(By.TAG_NAME, "select")
+                    for s in selects:
+                        try:
+                            Select(s).select_by_visible_text("All")
+                            print("      -> Selected 'All'")
+                            expanded = True
+                            time.sleep(5)
+                        except:
+                            pass
+                except:
+                    pass
+
+                # force lazy load via scroll
+                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                time.sleep(3)
+                driver.execute_script("window.scrollTo(0, 0);")
+                time.sleep(2)
+
+                # scrape tables again
                 dfs = pd.read_html(StringIO(driver.page_source))
-                # Skip Performance Tables (YTD, 1y, etc.)
+
                 for d in dfs:
                     cols = [str(c).lower() for c in d.columns]
-                    if 'ytd' in cols or '1y' in cols: continue # Skip performance
-                    if len(d) > 5:
+
+                    if 'ytd' in cols or '1y' in cols:
+                        continue
+
+                    if len(d) > 20:   # full holdings always >20
                         df = d
                         break
+
 
             # --- SAVE ---
             clean_df = clean_dataframe(df, ticker)
