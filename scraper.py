@@ -36,7 +36,7 @@ def find_holdings_table(dfs):
     """
     Smarter Table Finder: 
     1. Checks headers.
-    2. Checks the first row of data (in case headers were missed).
+    2. Checks the first row of data (Header Promotion).
     """
     if not dfs:
         return None
@@ -44,6 +44,10 @@ def find_holdings_table(dfs):
     valid_keywords = ['ticker', 'symbol', 'holding', 'identifier', 'weighting']
     
     for i, df in enumerate(dfs):
+        # Skip small tables (like "Effective Date" box)
+        if len(df) < 5:
+            continue
+
         # Strategy A: Check current Column Names
         cols = [str(c).strip().lower() for c in df.columns]
         if any(k in cols for k in valid_keywords):
@@ -51,18 +55,16 @@ def find_holdings_table(dfs):
             return df
         
         # Strategy B: Check Row 0 (Promote Header)
-        # Sometimes pandas reads the header as the first row of data
         if not df.empty:
             first_row = [str(x).strip().lower() for x in df.iloc[0].values]
             if any(k in first_row for k in valid_keywords):
                 print(f"      -> Found valid table (Row 0 matches) in Table #{i}. Promoting header.")
-                new_header = df.iloc[0] # Grab the first row for the header
-                df = df[1:] # Take the data less the header row
-                df.columns = new_header # Set the header row as the df header
+                new_header = df.iloc[0]
+                df = df[1:] 
+                df.columns = new_header
                 return df
 
-    print("      -> ⚠️ Could not identify holdings table. Fallback to Table #0.")
-    return dfs[0]
+    return None
 
 def clean_dataframe(df, ticker):
     if df is None or df.empty:
@@ -74,10 +76,10 @@ def clean_dataframe(df, ticker):
     # 2. Rename columns to standard format
     col_map = {
         'stockticker': 'ticker', 'symbol': 'ticker', 'holding': 'ticker', 'ticker': 'ticker',
-        'identifier': 'ticker', # First Trust Keyword
-        'securityname': 'name', 'company': 'name', 'security name': 'name', 'security_name': 'name', 'security': 'name',
+        'identifier': 'ticker', 
+        'securityname': 'name', 'company': 'name', 'security name': 'name', 'security_name': 'name', 'security': 'name', 'name': 'name',
         'weightings': 'weight', '% tna': 'weight', 'weight': 'weight', '% of net assets': 'weight', 
-        'weighting': 'weight', # First Trust Keyword
+        'weighting': 'weight', 
         '%_of_net_assets': 'weight', '% net assets': 'weight'
     }
     df.rename(columns=col_map, inplace=True)
@@ -152,16 +154,31 @@ def main():
                             start = i; break
                     df = pd.read_csv(StringIO('\n'.join(content[start:])))
 
-            # --- FIRST TRUST / ALPHA ---
-            elif etf['scraper_type'] in ['first_trust', 'alpha_architect']:
+            # --- FIRST TRUST ---
+            elif etf['scraper_type'] == 'first_trust':
                 r = session.get(etf['url'], timeout=20)
-                # Force pandas to look for header in the first few rows
                 dfs = pd.read_html(r.text, flavor='bs4') 
                 df = find_holdings_table(dfs)
 
+            # --- ALPHA ARCHITECT (QMOM/IMOM) ---
+            elif etf['scraper_type'] == 'alpha_architect':
+                # Use the DIRECT CSV Export endpoint
+                # Pattern: https://funds.alphaarchitect.com/wp-content/plugins/etf-holdings/export.php?ticker=QMOM
+                csv_url = f"https://funds.alphaarchitect.com/wp-content/plugins/etf-holdings/export.php?ticker={ticker}"
+                print(f"      -> Fetching CSV from {csv_url}")
+                
+                r = session.get(csv_url, timeout=20)
+                if r.status_code == 200:
+                    df = pd.read_csv(StringIO(r.text))
+                else:
+                    # Fallback to table scrape if CSV fails
+                    print("      -> CSV failed, trying table scrape...")
+                    r = session.get(etf['url'], timeout=20)
+                    dfs = pd.read_html(r.text)
+                    df = find_holdings_table(dfs)
+
             # --- INVESCO ---
             elif etf['scraper_type'] == 'invesco':
-                # Try Magic Link
                 dl_link = f"https://www.invesco.com/us/en/financial-products/etfs/holdings/main/holdings/0?ticker={ticker}&action=download"
                 try:
                     r = session.get(dl_link, timeout=15, verify=False)
