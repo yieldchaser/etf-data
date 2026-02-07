@@ -6,7 +6,6 @@ import json
 import os
 from datetime import datetime
 from io import StringIO
-from bs4 import BeautifulSoup
 import urllib3
 
 # Disable SSL warnings
@@ -22,7 +21,6 @@ TODAY = datetime.now().strftime('%Y-%m-%d')
 USER_AGENTS = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/119.0'
 ]
 
 def get_session():
@@ -31,30 +29,38 @@ def get_session():
         'User-Agent': random.choice(USER_AGENTS),
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
-        'Referer': 'https://www.google.com/',
     })
     return session
 
 def find_holdings_table(dfs):
     """
-    Updated to find First Trust tables by looking for 'Identifier' and 'Weighting'
+    Smarter Table Finder: 
+    1. Checks headers.
+    2. Checks the first row of data (in case headers were missed).
     """
     if not dfs:
         return None
     
-    # Keywords to identify a valid holdings table
-    # Added 'identifier' and 'weighting' specifically for First Trust
-    valid_keywords = ['ticker', 'symbol', 'holding', 'stockticker', 'identifier', 'weighting']
+    valid_keywords = ['ticker', 'symbol', 'holding', 'identifier', 'weighting']
     
     for i, df in enumerate(dfs):
-        # Clean column names for checking
+        # Strategy A: Check current Column Names
         cols = [str(c).strip().lower() for c in df.columns]
-        
-        # Check if this table has any of our keywords
         if any(k in cols for k in valid_keywords):
-            print(f"      -> Found valid holdings in Table #{i} (Columns: {cols})")
+            print(f"      -> Found valid table (Headers match) in Table #{i}")
             return df
-            
+        
+        # Strategy B: Check Row 0 (Promote Header)
+        # Sometimes pandas reads the header as the first row of data
+        if not df.empty:
+            first_row = [str(x).strip().lower() for x in df.iloc[0].values]
+            if any(k in first_row for k in valid_keywords):
+                print(f"      -> Found valid table (Row 0 matches) in Table #{i}. Promoting header.")
+                new_header = df.iloc[0] # Grab the first row for the header
+                df = df[1:] # Take the data less the header row
+                df.columns = new_header # Set the header row as the df header
+                return df
+
     print("      -> ⚠️ Could not identify holdings table. Fallback to Table #0.")
     return dfs[0]
 
@@ -68,10 +74,10 @@ def clean_dataframe(df, ticker):
     # 2. Rename columns to standard format
     col_map = {
         'stockticker': 'ticker', 'symbol': 'ticker', 'holding': 'ticker', 'ticker': 'ticker',
-        'identifier': 'ticker', # <--- FIXED: First Trust uses 'Identifier'
+        'identifier': 'ticker', # First Trust Keyword
         'securityname': 'name', 'company': 'name', 'security name': 'name', 'security_name': 'name', 'security': 'name',
         'weightings': 'weight', '% tna': 'weight', 'weight': 'weight', '% of net assets': 'weight', 
-        'weighting': 'weight', # <--- FIXED: First Trust uses 'Weighting'
+        'weighting': 'weight', # First Trust Keyword
         '%_of_net_assets': 'weight', '% net assets': 'weight'
     }
     df.rename(columns=col_map, inplace=True)
@@ -149,9 +155,8 @@ def main():
             # --- FIRST TRUST / ALPHA ---
             elif etf['scraper_type'] in ['first_trust', 'alpha_architect']:
                 r = session.get(etf['url'], timeout=20)
-                # Parse all tables
-                dfs = pd.read_html(r.text)
-                # Find the one with 'Identifier' or 'Ticker'
+                # Force pandas to look for header in the first few rows
+                dfs = pd.read_html(r.text, flavor='bs4') 
                 df = find_holdings_table(dfs)
 
             # --- INVESCO ---
