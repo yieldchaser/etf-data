@@ -22,14 +22,19 @@ HEADERS = {
 }
 
 def setup_driver():
-    """ Launches Headless Chrome """
+    """ Launches Headless Chrome (Stabilized for GitHub Actions) """
     chrome_options = Options()
-    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--headless=new") # Updated headless mode
     chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--disable-dev-shm-usage") # Critical for Linux/Docker
+    chrome_options.add_argument("--disable-gpu") # Critical for stability
     chrome_options.add_argument("--window-size=1920,1080")
     chrome_options.add_argument("--disable-blink-features=AutomationControlled") 
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+    
+    # Set page load strategy to eager (don't wait for every image to load)
+    chrome_options.page_load_strategy = 'eager'
+    
     return webdriver.Chrome(options=chrome_options)
 
 def find_first_trust_table(dfs):
@@ -51,7 +56,7 @@ def find_first_trust_table(dfs):
 def clean_dataframe(df, ticker):
     if df is None or df.empty: return None
 
-    # FIX IMOM CRASH: Remove Duplicate Columns
+    # FIX IMOM CRASH
     df = df.loc[:, ~df.columns.duplicated()]
 
     df.columns = [str(c).strip().lower() for c in df.columns]
@@ -71,8 +76,6 @@ def clean_dataframe(df, ticker):
 
     stop_words = ["cash", "usd", "liquidity", "government", "treasury", "money market", "net other", "total"]
     df['name'] = df['name'].astype(str)
-    
-    # Force Ticker to String
     df['ticker'] = df['ticker'].astype(str)
     
     pattern = '|'.join(stop_words)
@@ -104,7 +107,7 @@ def main():
         print("❌ Config file not found.")
         return
 
-    print("🚀 Launching Scraper V12.2 (Restored)...")
+    print("🚀 Launching Scraper V12.3 (Stabilized Driver)...")
     
     driver = None
     session = requests.Session()
@@ -123,7 +126,7 @@ def main():
         try:
             df = None
             
-            # --- PACER (Requests/CSV) ---
+            # --- PACER ---
             if etf['scraper_type'] == 'pacer_csv':
                 r = session.get(etf['url'], timeout=20)
                 if r.status_code == 200:
@@ -134,17 +137,18 @@ def main():
                             start = i; break
                     df = pd.read_csv(StringIO('\n'.join(content[start:])))
 
-            # --- FIRST TRUST (Requests/Pandas + Header Fix) ---
+            # --- FIRST TRUST ---
             elif etf['scraper_type'] == 'first_trust':
                 r = session.get(etf['url'], timeout=20)
                 dfs = pd.read_html(r.text)
                 df = find_first_trust_table(dfs)
 
-            # --- ALPHA ARCHITECT (Selenium) ---
+            # --- ALPHA ARCHITECT ---
             elif 'alpha' in etf['url'] or etf['scraper_type'] == 'selenium_alpha':
-                if driver is None: driver = setup_driver()
+                if driver is None: driver = setup_driver() 
                 driver.get(etf['url'])
                 time.sleep(5)
+                
                 try:
                     selects = driver.find_elements(By.TAG_NAME, "select")
                     for s in selects:
@@ -153,11 +157,12 @@ def main():
                             time.sleep(2)
                         except: pass
                 except: pass
+                
                 dfs = pd.read_html(StringIO(driver.page_source))
                 for d in dfs:
                     if len(d) > 25: df = d; break
 
-            # --- INVESCO (The Safe Hybrid) ---
+            # --- INVESCO (Safe Hybrid) ---
             elif etf['scraper_type'] == 'selenium_invesco':
                 if driver is None: driver = setup_driver()
                 driver.get(etf['url'])
@@ -171,7 +176,7 @@ def main():
                     s.headers.update({"User-Agent": driver.execute_script("return navigator.userAgent;")})
                     
                     dl_url = f"https://www.invesco.com/us/en/financial-products/etfs/holdings/main/holdings/0?ticker={ticker}&action=download"
-                    r = s.get(dl_url, timeout=15) # Increased timeout
+                    r = s.get(dl_url, timeout=15)
                     
                     if r.status_code == 200:
                         lines = r.text.splitlines()
@@ -209,6 +214,11 @@ def main():
 
         except Exception as e:
             print(f"    ❌ Error: {e}")
+            # If driver crashed, force restart next loop
+            if driver:
+                try: driver.quit()
+                except: pass
+                driver = None
 
     if driver: driver.quit()
 
