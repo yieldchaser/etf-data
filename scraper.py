@@ -33,12 +33,14 @@ def setup_driver():
     return webdriver.Chrome(options=chrome_options)
 
 def find_first_trust_table(dfs):
-    """ DO NOT TOUCH: Logic to handle First Trust missing headers """
+    """ Specific logic for First Trust (FPX/FPXI) to handle missing headers. """
     if not dfs: return None
     valid_keywords = ['ticker', 'symbol', 'holding', 'identifier', 'weighting', 'cusip']
     for i, df in enumerate(dfs):
+        # 1. Check existing headers
         cols = [str(c).strip().lower() for c in df.columns]
         if any(k in cols for k in valid_keywords): return df
+        # 2. Check Row 0 (Header Promotion)
         if not df.empty:
             first_row = [str(x).strip().lower() for x in df.iloc[0].values]
             if any(k in first_row for k in valid_keywords):
@@ -52,13 +54,10 @@ def find_first_trust_table(dfs):
 def clean_dataframe(df, ticker):
     if df is None or df.empty: return None
 
-    # --- CRITICAL DO NOT TOUCH: FIX FOR IMOM DUPLICATES ---
-    # Forces unique column names before processing
-    df = df.loc[:, ~df.columns.duplicated()]
-    # ------------------------------------------------------
-
+    # 1. Standardize columns
     df.columns = [str(c).strip().lower() for c in df.columns]
     
+    # 2. Rename columns
     col_map = {
         'stockticker': 'ticker', 'symbol': 'ticker', 'holding': 'ticker', 'ticker': 'ticker',
         'identifier': 'ticker', 'sedol': 'ticker',
@@ -68,10 +67,15 @@ def clean_dataframe(df, ticker):
     }
     df.rename(columns=col_map, inplace=True)
 
+    # 3. FIX IMOM CRASH: Remove Duplicate Columns (Keep first)
+    df = df.loc[:, ~df.columns.duplicated()]
+
+    # 4. Check critical columns
     if 'ticker' not in df.columns:
         print(f"      -> ⚠️ Missing 'ticker' column. Found: {list(df.columns)}")
         return None
 
+    # 5. Filter Garbage
     stop_words = ["cash", "usd", "liquidity", "government", "treasury", "money market", "net other", "total"]
     df['name'] = df['name'].astype(str)
     
@@ -83,10 +87,12 @@ def clean_dataframe(df, ticker):
            df['ticker'].str.contains(pattern, case=False, na=False)
     df = df[~mask].copy()
 
+    # 6. Clean Ticker
     df['ticker'] = df['ticker'].str.replace(' USD', '', regex=False)
     df['ticker'] = df['ticker'].str.replace('.UN', '', regex=False)
     df['ticker'] = df['ticker'].str.upper().str.strip()
 
+    # 7. Clean Weight
     if 'weight' in df.columns:
         if df['weight'].dtype == object:
             df['weight'] = df['weight'].astype(str).str.replace('%', '').str.replace(',', '')
@@ -103,9 +109,11 @@ def clean_dataframe(df, ticker):
 def main():
     try:
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
-    except: return
+    except:
+        print("❌ Config file not found.")
+        return
 
-    print("🚀 Launching Scraper v12.1 (Surgical Invesco Fix)...")
+    print("🚀 Launching Scraper v12.2 (Safe Mode)...")
     
     driver = None
     session = requests.Session()
@@ -124,7 +132,7 @@ def main():
         try:
             df = None
             
-            # --- PACER (DO NOT TOUCH - WORKING) ---
+            # --- PACER (Requests/CSV) ---
             if etf['scraper_type'] == 'pacer_csv':
                 r = session.get(etf['url'], timeout=20)
                 if r.status_code == 200:
@@ -135,15 +143,15 @@ def main():
                             start = i; break
                     df = pd.read_csv(StringIO('\n'.join(content[start:])))
 
-            # --- FIRST TRUST (DO NOT TOUCH - WORKING) ---
+            # --- FIRST TRUST (Requests/Pandas + Header Fix) ---
             elif etf['scraper_type'] == 'first_trust':
                 r = session.get(etf['url'], timeout=20)
                 dfs = pd.read_html(r.text)
                 df = find_first_trust_table(dfs)
 
-            # --- ALPHA ARCHITECT (DO NOT TOUCH - WORKING) ---
+            # --- ALPHA ARCHITECT (Selenium) ---
             elif 'alpha' in etf['url'] or etf['scraper_type'] == 'selenium_alpha':
-                if driver is None: driver = setup_driver()
+                if driver is None: driver = setup_driver() 
                 driver.get(etf['url'])
                 time.sleep(5)
                 try:
@@ -158,52 +166,50 @@ def main():
                 for d in dfs:
                     if len(d) > 25: df = d; break
 
-            # --- INVESCO (UPDATED SURGICAL FIX) ---
+            # --- INVESCO (SAFE HYBRID) ---
             elif etf['scraper_type'] == 'selenium_invesco':
                 if driver is None: driver = setup_driver()
-                
-                # 1. Visit page to get Cookies (Bypasses WAF)
                 driver.get(etf['url'])
                 time.sleep(8)
                 
-                # 2. Hijack Cookies
-                s = requests.Session()
-                for cookie in driver.get_cookies():
-                    s.cookies.set(cookie['name'], cookie['value'])
-                s.headers.update({"User-Agent": driver.execute_script("return navigator.userAgent;")})
-                
-                # 3. Download CSV
-                dl_url = f"https://www.invesco.com/us/en/financial-products/etfs/holdings/main/holdings/0?ticker={ticker}&action=download"
-                r = s.get(dl_url)
+                # ATTEMPT 1: Try to get the FULL CSV (Smart Cookie Hijack)
+                try:
+                    # Steal cookies
+                    s = requests.Session()
+                    for c in driver.get_cookies():
+                        s.cookies.set(c['name'], c['value'])
+                    s.headers.update({"User-Agent": driver.execute_script("return navigator.userAgent;")})
+                    
+                    # Hit download link
+                    dl_url = f"https://www.invesco.com/us/en/financial-products/etfs/holdings/main/holdings/0?ticker={ticker}&action=download"
+                    r = s.get(dl_url, timeout=10)
+                    
+                    if r.status_code == 200:
+                        lines = r.text.splitlines()
+                        # Find the real header row (skips garbage at top)
+                        start_row = 0
+                        for i, line in enumerate(lines[:30]):
+                            if "Ticker" in line or "Holding" in line or "Company" in line:
+                                start_row = i
+                                break
+                        
+                        # Only parse if we found a header
+                        if start_row > 0 or "Ticker" in lines[0]:
+                            df = pd.read_csv(StringIO("\n".join(lines[start_row:])))
+                            print("      -> 🍪 Success: Downloaded full CSV.")
+                except Exception as e:
+                    print(f"      -> CSV Download failed ({str(e)}). Falling back...")
 
-                if r.status_code == 200:
-                    # 4. SMART PARSER (Fixes 'Saw 13' Error)
-                    lines = r.text.splitlines()
-                    start_row = 0
-                    found_header = False
-                    
-                    # Scan first 30 lines for 'Ticker' to find where data actually starts
-                    for i, line in enumerate(lines[:30]):
-                        if "Ticker" in line or "Holding" in line or "Company" in line:
-                            start_row = i
-                            found_header = True
-                            break
-                    
-                    if found_header:
-                        print(f"      -> 🍪 Downloaded & Parsed (Header at line {start_row})")
-                        df = pd.read_csv(StringIO("\n".join(lines[start_row:])))
-                    else:
-                        print("      -> Downloaded but header not found. Falling back.")
-                        # Safe Fallback to V12 Logic (Top 10 rows)
-                        dfs = pd.read_html(StringIO(driver.page_source))
-                        for d in dfs:
-                            if len(d) > 5: df = d; break
-                else:
-                    print(f"      -> Download failed ({r.status_code}). Using visible table.")
-                    # Safe Fallback to V12 Logic (Top 10 rows)
+                # ATTEMPT 2: Fallback to Visible Table (V12 Logic)
+                # If Attempt 1 failed (or df is still None), do this:
+                if df is None:
+                    print("      -> Using fallback (Top 10 rows).")
                     dfs = pd.read_html(StringIO(driver.page_source))
                     for d in dfs:
-                        if len(d) > 5: df = d; break
+                        if 'ytd' in [str(c).lower() for c in d.columns]: continue
+                        if len(d) > 5:
+                            df = d
+                            break
 
             # --- SAVE ---
             clean_df = clean_dataframe(df, ticker)
