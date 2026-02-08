@@ -181,70 +181,46 @@ def main():
                 for d in dfs:
                     if len(d) > 25: df = d; break
 
-                        # --- INVESCO FINAL (REAL BROWSER DOWNLOAD EMULATION) ---
+            # --- INVESCO (OFFICIAL JSON ENDPOINT - FINAL SOLUTION) ---
             elif etf['scraper_type'] == 'selenium_invesco':
-                if driver is None:
-                    driver = setup_driver()
 
-                driver.get(etf['url'])
-                time.sleep(6)
+                print("      -> Fetching from official Invesco holdings endpoint")
 
-                print("      -> Initiating real browser download...")
-
-                # get cookies from real selenium session
-                cookies = driver.get_cookies()
-                s = requests.Session()
-
-                for c in cookies:
-                    s.cookies.set(c['name'], c['value'])
-
-                download_url = f"https://www.invesco.com/us/en/financial-products/etfs/holdings/0?ticker={ticker}&action=download"
+                api_url = f"https://www.invesco.com/portal/site/us/financial-products/etfs/holdings?audienceType=Investor&ticker={ticker}"
 
                 headers = {
-                    "User-Agent": driver.execute_script("return navigator.userAgent;"),
-                    "Accept": "text/csv,application/vnd.ms-excel,application/octet-stream",
-                    "Referer": etf['url'],
-                    "Origin": "https://www.invesco.com",
-                    "Connection": "keep-alive"
+                    "User-Agent": "Mozilla/5.0",
+                    "Accept": "application/json"
                 }
 
-                r = s.get(download_url, headers=headers)
+                r = requests.get(api_url, headers=headers, timeout=30)
 
-                text = r.text
-
-                # detect bot-block html
-                if "<!doctype html" in text.lower():
-                    print("      -> Blocked by WAF. Retrying with browser fetch...")
-
-                    # use selenium to fetch via JS (bypasses WAF)
-                    text = driver.execute_script(f"""
-                        return fetch("{download_url}", {{
-                            credentials: 'include'
-                        }}).then(r => r.text());
-                    """)
-
-                if "Ticker" in text or "Holding" in text:
-                    print("      -> CSV received")
-
-                    lines = text.splitlines()
-                    start = 0
-
-                    for i, line in enumerate(lines[:40]):
-                        if "Ticker" in line or "Holding" in line or "Security" in line:
-                            start = i
-                            break
-
-                    csv_data = "\n".join(lines[start:])
-
-                    df = pd.read_csv(
-                        StringIO(csv_data),
-                        engine="python",
-                        on_bad_lines="skip"
-                    )
-
-                else:
-                    print("      -> FAILED to retrieve holdings")
+                if r.status_code != 200:
+                    print("      -> API request failed")
                     df = None
+                else:
+                    data = r.json()
+
+                    try:
+                        holdings = data["data"]["holdings"]
+                    except:
+                        print("      -> Holdings not found in JSON")
+                        df = None
+                    else:
+                        df = pd.DataFrame(holdings)
+
+                        # standardize expected columns
+                        rename_map = {
+                            "ticker": "ticker",
+                            "holdingTicker": "ticker",
+                            "securityName": "name",
+                            "holdingName": "name",
+                            "weight": "weight",
+                            "marketPercent": "weight"
+                        }
+
+                        df.rename(columns=rename_map, inplace=True)
+
 
 
 
