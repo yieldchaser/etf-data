@@ -22,7 +22,7 @@ HEADERS = {
 }
 
 def setup_driver():
-    """ Launches Headless Chrome with Strict Timeouts """
+    """ Launches Headless Chrome with Strict Timeouts (Fixed QMOM) """
     chrome_options = Options()
     chrome_options.add_argument("--headless=new") 
     chrome_options.add_argument("--no-sandbox")
@@ -36,8 +36,7 @@ def setup_driver():
     
     driver = webdriver.Chrome(options=chrome_options)
     
-    # CRITICAL FIX: Hard limit on page loading. 
-    # If it takes >30s, we cut it off and scrape anyway.
+    # CRITICAL QMOM FIX: Hard limit on page loading. 
     driver.set_page_load_timeout(30) 
     
     return driver
@@ -64,9 +63,7 @@ def clean_dataframe(df, ticker):
     # 1. Standardize columns
     df.columns = [str(c).strip().lower() for c in df.columns]
     
-    # 2. Deduplicate Columns (Fixes IMOM Crash)
-    df = df.loc[:, ~df.columns.duplicated()]
-
+    # 2. Rename columns
     col_map = {
         'stockticker': 'ticker', 'symbol': 'ticker', 'holding': 'ticker', 'ticker': 'ticker',
         'identifier': 'ticker', 'sedol': 'ticker',
@@ -76,12 +73,23 @@ def clean_dataframe(df, ticker):
     }
     df.rename(columns=col_map, inplace=True)
 
+    # 3. CRITICAL IMOM FIX: Nuclear Deduplication
+    # If we have two 'ticker' columns, keep the first one
+    df = df.loc[:, ~df.columns.duplicated()]
+    
+    # Double Check: If 'ticker' is STILL a DataFrame (rare edge case), force select the first one
+    if isinstance(df['ticker'], pd.DataFrame):
+        print("      -> ⚠️ Found duplicate 'ticker' columns. Forcing selection of first column.")
+        df['ticker'] = df['ticker'].iloc[:, 0]
+
     if 'ticker' not in df.columns:
         print(f"      -> ⚠️ Missing 'ticker' column. Found: {list(df.columns)}")
         return None
 
     stop_words = ["cash", "usd", "liquidity", "government", "treasury", "money market", "net other", "total"]
     df['name'] = df['name'].astype(str)
+    
+    # 4. Safe String Conversion
     df['ticker'] = df['ticker'].astype(str)
     
     pattern = '|'.join(stop_words)
@@ -113,7 +121,7 @@ def main():
         print("❌ Config file not found.")
         return
 
-    print("🚀 Launching Scraper V12.6 (Timeout Cut-Off)...")
+    print("🚀 Launching Scraper V12.7 (The Convergence)...")
     
     driver = None
     session = requests.Session()
@@ -153,15 +161,14 @@ def main():
             elif 'alpha' in etf['url'] or etf['scraper_type'] == 'selenium_alpha':
                 if driver is None: driver = setup_driver() 
                 
-                # TIMEOUT HANDLER:
+                # TIMEOUT HANDLER (QMOM Fix):
                 try:
                     driver.get(etf['url'])
                 except:
-                    # If page loads too slow (>30s), stop it and scrape anyway
-                    print("      -> Page load timed out. Stopping load and scraping...")
+                    print("      -> Page load timed out (Expected for QMOM). Stopping load...")
                     driver.execute_script("window.stop();")
                 
-                time.sleep(2) # Brief settle time
+                time.sleep(2) 
                 
                 # Expand "All"
                 try:
@@ -185,12 +192,12 @@ def main():
                 try:
                     driver.get(etf['url'])
                 except:
-                    print("      -> Page load timed out. Stopping load and scraping...")
+                    print("      -> Page load timed out. Stopping load...")
                     driver.execute_script("window.stop();")
                 
                 time.sleep(5)
                 
-                # Attempt 1: Full Download (Smart Cookie)
+                # Attempt 1: Full Download
                 try:
                     s = requests.Session()
                     for c in driver.get_cookies():
@@ -198,55 +205,3 @@ def main():
                     s.headers.update({"User-Agent": driver.execute_script("return navigator.userAgent;")})
                     
                     dl_url = f"https://www.invesco.com/us/en/financial-products/etfs/holdings/main/holdings/0?ticker={ticker}&action=download"
-                    r = s.get(dl_url, timeout=10)
-                    
-                    if r.status_code == 200:
-                        lines = r.text.splitlines()
-                        start_row = 0
-                        found = False
-                        for i, line in enumerate(lines[:30]):
-                            if "Ticker" in line or "Holding" in line or "Company" in line:
-                                start_row = i
-                                found = True
-                                break
-                        if found:
-                            df = pd.read_csv(StringIO("\n".join(lines[start_row:])))
-                            print("      -> 🍪 Downloaded Full CSV")
-                except:
-                    pass
-
-                # Attempt 2: Fallback (Top 10)
-                if df is None:
-                    print("      -> Using Fallback (Top 10)")
-                    dfs = pd.read_html(StringIO(driver.page_source))
-                    for d in dfs:
-                        if 'ytd' in [str(c).lower() for c in d.columns]: continue
-                        if len(d) > 5: df = d; break
-
-            # --- SAVE ---
-            clean_df = clean_dataframe(df, ticker)
-            
-            if clean_df is not None and not clean_df.empty:
-                save_path = os.path.join(DATA_DIR_LATEST, f"{ticker}.csv")
-                clean_df.to_csv(save_path, index=False)
-                master_list.append(clean_df)
-                print(f"    ✅ Success: {len(clean_df)} rows saved.")
-            else:
-                print(f"    ⚠️ Data not found.")
-
-        except Exception as e:
-            print(f"    ❌ Error: {e}")
-            if driver:
-                try: driver.quit()
-                except: pass
-                driver = None
-
-    if driver: driver.quit()
-
-    if master_list:
-        full_df = pd.concat(master_list)
-        full_df.to_csv(os.path.join(archive_path, 'master_archive.csv'), index=False)
-        print("\n📜 Daily Archive Complete.")
-
-if __name__ == "__main__":
-    main()
