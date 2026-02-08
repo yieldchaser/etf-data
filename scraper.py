@@ -22,20 +22,25 @@ HEADERS = {
 }
 
 def setup_driver():
-    """ Launches Headless Chrome (Restored V12 + Eager Mode) """
+    """ Launches Headless Chrome with Strict Timeouts """
     chrome_options = Options()
-    chrome_options.add_argument("--headless") 
+    chrome_options.add_argument("--headless=new") 
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--window-size=1920,1080")
-    chrome_options.add_argument("--disable-blink-features=AutomationControlled") 
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
     
-    # MAGIC FIX FOR QMOM TIMEOUTS:
-    # 'eager' means: Don't wait for every image/ad to load. Just get the HTML and go.
+    # Eager strategy: Access DOM as soon as possible
     chrome_options.page_load_strategy = 'eager'
     
-    return webdriver.Chrome(options=chrome_options)
+    driver = webdriver.Chrome(options=chrome_options)
+    
+    # CRITICAL FIX: Hard limit on page loading. 
+    # If it takes >30s, we cut it off and scrape anyway.
+    driver.set_page_load_timeout(30) 
+    
+    return driver
 
 def find_first_trust_table(dfs):
     if not dfs: return None
@@ -56,10 +61,12 @@ def find_first_trust_table(dfs):
 def clean_dataframe(df, ticker):
     if df is None or df.empty: return None
 
-    # 1. Standardize columns FIRST
+    # 1. Standardize columns
     df.columns = [str(c).strip().lower() for c in df.columns]
     
-    # 2. Rename columns
+    # 2. Deduplicate Columns (Fixes IMOM Crash)
+    df = df.loc[:, ~df.columns.duplicated()]
+
     col_map = {
         'stockticker': 'ticker', 'symbol': 'ticker', 'holding': 'ticker', 'ticker': 'ticker',
         'identifier': 'ticker', 'sedol': 'ticker',
@@ -68,9 +75,6 @@ def clean_dataframe(df, ticker):
         'weighting': 'weight', '%_of_net_assets': 'weight', '% net assets': 'weight'
     }
     df.rename(columns=col_map, inplace=True)
-
-    # 3. FIX IMOM CRASH: Deduplicate AFTER renaming
-    df = df.loc[:, ~df.columns.duplicated()]
 
     if 'ticker' not in df.columns:
         print(f"      -> ⚠️ Missing 'ticker' column. Found: {list(df.columns)}")
@@ -109,7 +113,7 @@ def main():
         print("❌ Config file not found.")
         return
 
-    print("🚀 Launching Scraper V12.5 (QMOM Eager Fix)...")
+    print("🚀 Launching Scraper V12.6 (Timeout Cut-Off)...")
     
     driver = None
     session = requests.Session()
@@ -148,10 +152,18 @@ def main():
             # --- ALPHA ARCHITECT (QMOM/IMOM) ---
             elif 'alpha' in etf['url'] or etf['scraper_type'] == 'selenium_alpha':
                 if driver is None: driver = setup_driver() 
-                driver.get(etf['url'])
-                time.sleep(5)
                 
-                # Try to expand table
+                # TIMEOUT HANDLER:
+                try:
+                    driver.get(etf['url'])
+                except:
+                    # If page loads too slow (>30s), stop it and scrape anyway
+                    print("      -> Page load timed out. Stopping load and scraping...")
+                    driver.execute_script("window.stop();")
+                
+                time.sleep(2) # Brief settle time
+                
+                # Expand "All"
                 try:
                     selects = driver.find_elements(By.TAG_NAME, "select")
                     for s in selects:
@@ -168,8 +180,15 @@ def main():
             # --- INVESCO ---
             elif etf['scraper_type'] == 'selenium_invesco':
                 if driver is None: driver = setup_driver()
-                driver.get(etf['url'])
-                time.sleep(8)
+                
+                # TIMEOUT HANDLER:
+                try:
+                    driver.get(etf['url'])
+                except:
+                    print("      -> Page load timed out. Stopping load and scraping...")
+                    driver.execute_script("window.stop();")
+                
+                time.sleep(5)
                 
                 # Attempt 1: Full Download (Smart Cookie)
                 try:
@@ -179,7 +198,7 @@ def main():
                     s.headers.update({"User-Agent": driver.execute_script("return navigator.userAgent;")})
                     
                     dl_url = f"https://www.invesco.com/us/en/financial-products/etfs/holdings/main/holdings/0?ticker={ticker}&action=download"
-                    r = s.get(dl_url, timeout=15)
+                    r = s.get(dl_url, timeout=10)
                     
                     if r.status_code == 200:
                         lines = r.text.splitlines()
