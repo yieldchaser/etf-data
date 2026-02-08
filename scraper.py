@@ -181,49 +181,20 @@ def main():
                 for d in dfs:
                     if len(d) > 25: df = d; break
 
-            # --- INVESCO (OFFICIAL JSON ENDPOINT - FINAL SOLUTION) ---
+            # --- INVESCO (Selenium Simple) ---
             elif etf['scraper_type'] == 'selenium_invesco':
-
-                print("      -> Fetching from official Invesco holdings endpoint")
-
-                api_url = f"https://www.invesco.com/portal/site/us/financial-products/etfs/holdings?audienceType=Investor&ticker={ticker}"
-
-                headers = {
-                    "User-Agent": "Mozilla/5.0",
-                    "Accept": "application/json"
-                }
-
-                r = requests.get(api_url, headers=headers, timeout=30)
-
-                if r.status_code != 200:
-                    print("      -> API request failed")
-                    df = None
-                else:
-                    data = r.json()
-
-                    try:
-                        holdings = data["data"]["holdings"]
-                    except:
-                        print("      -> Holdings not found in JSON")
-                        df = None
-                    else:
-                        df = pd.DataFrame(holdings)
-
-                        # standardize expected columns
-                        rename_map = {
-                            "ticker": "ticker",
-                            "holdingTicker": "ticker",
-                            "securityName": "name",
-                            "holdingName": "name",
-                            "weight": "weight",
-                            "marketPercent": "weight"
-                        }
-
-                        df.rename(columns=rename_map, inplace=True)
-
-
-
-
+                if driver is None: driver = setup_driver()
+                driver.get(etf['url'])
+                time.sleep(8)
+                
+                dfs = pd.read_html(StringIO(driver.page_source))
+                # Skip Performance Tables (YTD, 1y, etc.)
+                for d in dfs:
+                    cols = [str(c).lower() for c in d.columns]
+                    if 'ytd' in cols or '1y' in cols: continue # Skip performance
+                    if len(d) > 5:
+                        df = d
+                        break
 
             # --- SAVE ---
             clean_df = clean_dataframe(df, ticker)
