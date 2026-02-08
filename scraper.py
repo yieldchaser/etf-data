@@ -22,17 +22,17 @@ HEADERS = {
 }
 
 def setup_driver():
-    """ Launches Headless Chrome (Stabilized for GitHub Actions) """
+    """ Launches Headless Chrome (Restored V12 + Eager Mode) """
     chrome_options = Options()
-    chrome_options.add_argument("--headless=new") # Updated headless mode
+    chrome_options.add_argument("--headless") 
     chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage") # Critical for Linux/Docker
-    chrome_options.add_argument("--disable-gpu") # Critical for stability
+    chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--window-size=1920,1080")
     chrome_options.add_argument("--disable-blink-features=AutomationControlled") 
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
     
-    # Set page load strategy to eager (don't wait for every image to load)
+    # MAGIC FIX FOR QMOM TIMEOUTS:
+    # 'eager' means: Don't wait for every image/ad to load. Just get the HTML and go.
     chrome_options.page_load_strategy = 'eager'
     
     return webdriver.Chrome(options=chrome_options)
@@ -56,11 +56,10 @@ def find_first_trust_table(dfs):
 def clean_dataframe(df, ticker):
     if df is None or df.empty: return None
 
-    # FIX IMOM CRASH
-    df = df.loc[:, ~df.columns.duplicated()]
-
+    # 1. Standardize columns FIRST
     df.columns = [str(c).strip().lower() for c in df.columns]
     
+    # 2. Rename columns
     col_map = {
         'stockticker': 'ticker', 'symbol': 'ticker', 'holding': 'ticker', 'ticker': 'ticker',
         'identifier': 'ticker', 'sedol': 'ticker',
@@ -69,6 +68,9 @@ def clean_dataframe(df, ticker):
         'weighting': 'weight', '%_of_net_assets': 'weight', '% net assets': 'weight'
     }
     df.rename(columns=col_map, inplace=True)
+
+    # 3. FIX IMOM CRASH: Deduplicate AFTER renaming
+    df = df.loc[:, ~df.columns.duplicated()]
 
     if 'ticker' not in df.columns:
         print(f"      -> ⚠️ Missing 'ticker' column. Found: {list(df.columns)}")
@@ -107,7 +109,7 @@ def main():
         print("❌ Config file not found.")
         return
 
-    print("🚀 Launching Scraper V12.3 (Stabilized Driver)...")
+    print("🚀 Launching Scraper V12.5 (QMOM Eager Fix)...")
     
     driver = None
     session = requests.Session()
@@ -143,12 +145,13 @@ def main():
                 dfs = pd.read_html(r.text)
                 df = find_first_trust_table(dfs)
 
-            # --- ALPHA ARCHITECT ---
+            # --- ALPHA ARCHITECT (QMOM/IMOM) ---
             elif 'alpha' in etf['url'] or etf['scraper_type'] == 'selenium_alpha':
                 if driver is None: driver = setup_driver() 
                 driver.get(etf['url'])
                 time.sleep(5)
                 
+                # Try to expand table
                 try:
                     selects = driver.find_elements(By.TAG_NAME, "select")
                     for s in selects:
@@ -162,13 +165,13 @@ def main():
                 for d in dfs:
                     if len(d) > 25: df = d; break
 
-            # --- INVESCO (Safe Hybrid) ---
+            # --- INVESCO ---
             elif etf['scraper_type'] == 'selenium_invesco':
                 if driver is None: driver = setup_driver()
                 driver.get(etf['url'])
                 time.sleep(8)
                 
-                # Attempt 1: Smart Cookie (Full Download)
+                # Attempt 1: Full Download (Smart Cookie)
                 try:
                     s = requests.Session()
                     for c in driver.get_cookies():
@@ -214,7 +217,6 @@ def main():
 
         except Exception as e:
             print(f"    ❌ Error: {e}")
-            # If driver crashed, force restart next loop
             if driver:
                 try: driver.quit()
                 except: pass
