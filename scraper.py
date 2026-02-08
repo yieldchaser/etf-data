@@ -92,9 +92,10 @@ def clean_dataframe(df, ticker):
     # 4. Safe String Conversion
     df['ticker'] = df['ticker'].astype(str)
     
+    # Safe regex mask (no backslashes)
     pattern = '|'.join(stop_words)
-    mask = df['name'].str.contains(pattern, case=False, na=False) | \
-           df['ticker'].str.contains(pattern, case=False, na=False)
+    mask = (df['name'].str.contains(pattern, case=False, na=False) | 
+            df['ticker'].str.contains(pattern, case=False, na=False))
     df = df[~mask].copy()
 
     df['ticker'] = df['ticker'].str.replace(' USD', '', regex=False)
@@ -205,3 +206,55 @@ def main():
                     s.headers.update({"User-Agent": driver.execute_script("return navigator.userAgent;")})
                     
                     dl_url = f"https://www.invesco.com/us/en/financial-products/etfs/holdings/main/holdings/0?ticker={ticker}&action=download"
+                    r = s.get(dl_url, timeout=10)
+                    
+                    if r.status_code == 200:
+                        lines = r.text.splitlines()
+                        start_row = 0
+                        found = False
+                        for i, line in enumerate(lines[:30]):
+                            if "Ticker" in line or "Holding" in line or "Company" in line:
+                                start_row = i
+                                found = True
+                                break
+                        if found:
+                            df = pd.read_csv(StringIO("\n".join(lines[start_row:])))
+                            print("      -> 🍪 Downloaded Full CSV")
+                except:
+                    pass
+
+                # Attempt 2: Fallback
+                if df is None:
+                    print("      -> Using Fallback (Top 10)")
+                    dfs = pd.read_html(StringIO(driver.page_source))
+                    for d in dfs:
+                        if 'ytd' in [str(c).lower() for c in d.columns]: continue
+                        if len(d) > 5: df = d; break
+
+            # --- SAVE ---
+            clean_df = clean_dataframe(df, ticker)
+            
+            if clean_df is not None and not clean_df.empty:
+                save_path = os.path.join(DATA_DIR_LATEST, f"{ticker}.csv")
+                clean_df.to_csv(save_path, index=False)
+                master_list.append(clean_df)
+                print(f"    ✅ Success: {len(clean_df)} rows saved.")
+            else:
+                print(f"    ⚠️ Data not found.")
+
+        except Exception as e:
+            print(f"    ❌ Error: {e}")
+            if driver:
+                try: driver.quit()
+                except: pass
+                driver = None
+
+    if driver: driver.quit()
+
+    if master_list:
+        full_df = pd.concat(master_list)
+        full_df.to_csv(os.path.join(archive_path, 'master_archive.csv'), index=False)
+        print("\n📜 Daily Archive Complete.")
+
+if __name__ == "__main__":
+    main()
