@@ -33,21 +33,11 @@ def setup_driver():
     return webdriver.Chrome(options=chrome_options)
 
 def find_first_trust_table(dfs):
-    """
-    Specific logic for First Trust (FPX/FPXI) to handle missing headers.
-    """
     if not dfs: return None
-    
     valid_keywords = ['ticker', 'symbol', 'holding', 'identifier', 'weighting', 'cusip']
-    
     for i, df in enumerate(dfs):
-        # 1. Check existing headers
         cols = [str(c).strip().lower() for c in df.columns]
-        if any(k in cols for k in valid_keywords):
-            return df
-        
-        # 2. Check Row 0 (Header Promotion)
-        # This fixes the "Missing columns: ['0']" error
+        if any(k in cols for k in valid_keywords): return df
         if not df.empty:
             first_row = [str(x).strip().lower() for x in df.iloc[0].values]
             if any(k in first_row for k in valid_keywords):
@@ -61,10 +51,11 @@ def find_first_trust_table(dfs):
 def clean_dataframe(df, ticker):
     if df is None or df.empty: return None
 
-    # 1. Standardize columns
+    # FIX IMOM CRASH: Remove Duplicate Columns
+    df = df.loc[:, ~df.columns.duplicated()]
+
     df.columns = [str(c).strip().lower() for c in df.columns]
     
-    # 2. Rename columns
     col_map = {
         'stockticker': 'ticker', 'symbol': 'ticker', 'holding': 'ticker', 'ticker': 'ticker',
         'identifier': 'ticker', 'sedol': 'ticker',
@@ -74,16 +65,10 @@ def clean_dataframe(df, ticker):
     }
     df.rename(columns=col_map, inplace=True)
 
-    # 3. FIX IMOM CRASH: Remove Duplicate Columns
-    # If we have two 'ticker' columns, keep the first one
-    df = df.loc[:, ~df.columns.duplicated()]
-
-    # 4. Check critical columns
     if 'ticker' not in df.columns:
         print(f"      -> ⚠️ Missing 'ticker' column. Found: {list(df.columns)}")
         return None
 
-    # 5. Filter Garbage
     stop_words = ["cash", "usd", "liquidity", "government", "treasury", "money market", "net other", "total"]
     df['name'] = df['name'].astype(str)
     
@@ -95,12 +80,10 @@ def clean_dataframe(df, ticker):
            df['ticker'].str.contains(pattern, case=False, na=False)
     df = df[~mask].copy()
 
-    # 6. Clean Ticker
     df['ticker'] = df['ticker'].str.replace(' USD', '', regex=False)
     df['ticker'] = df['ticker'].str.replace('.UN', '', regex=False)
     df['ticker'] = df['ticker'].str.upper().str.strip()
 
-    # 7. Clean Weight
     if 'weight' in df.columns:
         if df['weight'].dtype == object:
             df['weight'] = df['weight'].astype(str).str.replace('%', '').str.replace(',', '')
@@ -116,15 +99,13 @@ def clean_dataframe(df, ticker):
 
 def main():
     try:
-        with open(CONFIG_FILE, 'r') as f:
-            etfs = json.load(f)
+        with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
     except:
         print("❌ Config file not found.")
         return
 
-    print("🚀 Launching Scraper v12 (The Fixer)...")
+    print("🚀 Launching Scraper V12.2 (Restored)...")
     
-    # We only start Selenium if we need it (for Alpha Architect)
     driver = None
     session = requests.Session()
     session.headers.update(HEADERS)
@@ -161,12 +142,9 @@ def main():
 
             # --- ALPHA ARCHITECT (Selenium) ---
             elif 'alpha' in etf['url'] or etf['scraper_type'] == 'selenium_alpha':
-                if driver is None: driver = setup_driver() # Lazy load driver
-                
+                if driver is None: driver = setup_driver()
                 driver.get(etf['url'])
                 time.sleep(5)
-                
-                # Click "All"
                 try:
                     selects = driver.find_elements(By.TAG_NAME, "select")
                     for s in selects:
@@ -175,26 +153,48 @@ def main():
                             time.sleep(2)
                         except: pass
                 except: pass
-                
-                # Scrape
                 dfs = pd.read_html(StringIO(driver.page_source))
                 for d in dfs:
                     if len(d) > 25: df = d; break
 
-            # --- INVESCO (Selenium Simple) ---
+            # --- INVESCO (The Safe Hybrid) ---
             elif etf['scraper_type'] == 'selenium_invesco':
                 if driver is None: driver = setup_driver()
                 driver.get(etf['url'])
                 time.sleep(8)
                 
-                dfs = pd.read_html(StringIO(driver.page_source))
-                # Skip Performance Tables (YTD, 1y, etc.)
-                for d in dfs:
-                    cols = [str(c).lower() for c in d.columns]
-                    if 'ytd' in cols or '1y' in cols: continue # Skip performance
-                    if len(d) > 5:
-                        df = d
-                        break
+                # Attempt 1: Smart Cookie (Full Download)
+                try:
+                    s = requests.Session()
+                    for c in driver.get_cookies():
+                        s.cookies.set(c['name'], c['value'])
+                    s.headers.update({"User-Agent": driver.execute_script("return navigator.userAgent;")})
+                    
+                    dl_url = f"https://www.invesco.com/us/en/financial-products/etfs/holdings/main/holdings/0?ticker={ticker}&action=download"
+                    r = s.get(dl_url, timeout=15) # Increased timeout
+                    
+                    if r.status_code == 200:
+                        lines = r.text.splitlines()
+                        start_row = 0
+                        found = False
+                        for i, line in enumerate(lines[:30]):
+                            if "Ticker" in line or "Holding" in line or "Company" in line:
+                                start_row = i
+                                found = True
+                                break
+                        if found:
+                            df = pd.read_csv(StringIO("\n".join(lines[start_row:])))
+                            print("      -> 🍪 Downloaded Full CSV")
+                except:
+                    pass
+
+                # Attempt 2: Fallback (Top 10)
+                if df is None:
+                    print("      -> Using Fallback (Top 10)")
+                    dfs = pd.read_html(StringIO(driver.page_source))
+                    for d in dfs:
+                        if 'ytd' in [str(c).lower() for c in d.columns]: continue
+                        if len(d) > 5: df = d; break
 
             # --- SAVE ---
             clean_df = clean_dataframe(df, ticker)
