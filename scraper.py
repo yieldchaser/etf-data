@@ -37,10 +37,8 @@ def find_first_trust_table(dfs):
     if not dfs: return None
     valid_keywords = ['ticker', 'symbol', 'holding', 'identifier', 'weighting', 'cusip']
     for i, df in enumerate(dfs):
-        # 1. Check existing headers
         cols = [str(c).strip().lower() for c in df.columns]
         if any(k in cols for k in valid_keywords): return df
-        # 2. Check Row 0 (Header Promotion)
         if not df.empty:
             first_row = [str(x).strip().lower() for x in df.iloc[0].values]
             if any(k in first_row for k in valid_keywords):
@@ -54,10 +52,11 @@ def find_first_trust_table(dfs):
 def clean_dataframe(df, ticker):
     if df is None or df.empty: return None
 
-    # 1. Standardize columns
+    # FIX IMOM CRASH: Remove Duplicate Columns (Keep first)
+    df = df.loc[:, ~df.columns.duplicated()]
+
     df.columns = [str(c).strip().lower() for c in df.columns]
     
-    # 2. Rename columns
     col_map = {
         'stockticker': 'ticker', 'symbol': 'ticker', 'holding': 'ticker', 'ticker': 'ticker',
         'identifier': 'ticker', 'sedol': 'ticker',
@@ -67,19 +66,12 @@ def clean_dataframe(df, ticker):
     }
     df.rename(columns=col_map, inplace=True)
 
-    # 3. FIX IMOM CRASH: Remove Duplicate Columns (Keep first)
-    df = df.loc[:, ~df.columns.duplicated()]
-
-    # 4. Check critical columns
     if 'ticker' not in df.columns:
         print(f"      -> ⚠️ Missing 'ticker' column. Found: {list(df.columns)}")
         return None
 
-    # 5. Filter Garbage
     stop_words = ["cash", "usd", "liquidity", "government", "treasury", "money market", "net other", "total"]
     df['name'] = df['name'].astype(str)
-    
-    # Force Ticker to String
     df['ticker'] = df['ticker'].astype(str)
     
     pattern = '|'.join(stop_words)
@@ -87,12 +79,10 @@ def clean_dataframe(df, ticker):
            df['ticker'].str.contains(pattern, case=False, na=False)
     df = df[~mask].copy()
 
-    # 6. Clean Ticker
     df['ticker'] = df['ticker'].str.replace(' USD', '', regex=False)
     df['ticker'] = df['ticker'].str.replace('.UN', '', regex=False)
     df['ticker'] = df['ticker'].str.upper().str.strip()
 
-    # 7. Clean Weight
     if 'weight' in df.columns:
         if df['weight'].dtype == object:
             df['weight'] = df['weight'].astype(str).str.replace('%', '').str.replace(',', '')
@@ -172,36 +162,31 @@ def main():
                 driver.get(etf['url'])
                 time.sleep(8)
                 
-                # ATTEMPT 1: Try to get the FULL CSV (Smart Cookie Hijack)
+                # ATTEMPT 1: Cookie Hijack
                 try:
-                    # Steal cookies
                     s = requests.Session()
                     for c in driver.get_cookies():
                         s.cookies.set(c['name'], c['value'])
                     s.headers.update({"User-Agent": driver.execute_script("return navigator.userAgent;")})
                     
-                    # Hit download link
                     dl_url = f"https://www.invesco.com/us/en/financial-products/etfs/holdings/main/holdings/0?ticker={ticker}&action=download"
                     r = s.get(dl_url, timeout=10)
                     
                     if r.status_code == 200:
                         lines = r.text.splitlines()
-                        # Find the real header row (skips garbage at top)
                         start_row = 0
                         for i, line in enumerate(lines[:30]):
                             if "Ticker" in line or "Holding" in line or "Company" in line:
                                 start_row = i
                                 break
                         
-                        # Only parse if we found a header
                         if start_row > 0 or "Ticker" in lines[0]:
                             df = pd.read_csv(StringIO("\n".join(lines[start_row:])))
                             print("      -> 🍪 Success: Downloaded full CSV.")
-                except Exception as e:
-                    print(f"      -> CSV Download failed ({str(e)}). Falling back...")
+                except:
+                    print("      -> CSV Download failed. Falling back...")
 
-                # ATTEMPT 2: Fallback to Visible Table (V12 Logic)
-                # If Attempt 1 failed (or df is still None), do this:
+                # ATTEMPT 2: Fallback (Top 10 rows)
                 if df is None:
                     print("      -> Using fallback (Top 10 rows).")
                     dfs = pd.read_html(StringIO(driver.page_source))
