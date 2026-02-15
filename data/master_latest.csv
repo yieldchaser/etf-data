@@ -1,0 +1,763 @@
+ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
+SPMO,NVDA,NVIDIA Corp,0.0946,Unknown,2026-02-15
+SPMO,AVGO,Broadcom Inc,0.0943,Unknown,2026-02-15
+SPMO,META,Meta Platforms Inc,0.0776,Unknown,2026-02-15
+SPMO,JPM,JPMorgan Chase & Co,0.052300000000000006,Unknown,2026-02-15
+SPMO,WMT,Walmart Inc,0.0426,Unknown,2026-02-15
+SPMO,PLTR,Palantir Technologies Inc,0.0337,Unknown,2026-02-15
+SPMO,V,Visa Inc,0.0323,Unknown,2026-02-15
+SPMO,NFLX,Netflix Inc,0.030299999999999997,Unknown,2026-02-15
+SPMO,GEV,GE Vernova Inc,0.0255,Unknown,2026-02-15
+SPMO,GE,General Electric Co,0.024,Unknown,2026-02-15
+SPMO,CSCO,Cisco Systems Inc,0.022400000000000003,Unknown,2026-02-15
+SPMO,PM,Philip Morris International Inc,0.0207,Unknown,2026-02-15
+SPMO,ORCL,Oracle Corp,0.0194,Unknown,2026-02-15
+SPMO,T,AT&T Inc,0.017,Unknown,2026-02-15
+SPMO,RTX,RTX Corp,0.0163,Unknown,2026-02-15
+SPMO,GS,Goldman Sachs Group Inc/The,0.015600000000000001,Unknown,2026-02-15
+SPMO,WFC,Wells Fargo & Co,0.0146,Unknown,2026-02-15
+SPMO,GILD,Gilead Sciences Inc,0.014499999999999999,Unknown,2026-02-15
+SPMO,IBM,International Business Machines Corp,0.0132,Unknown,2026-02-15
+SPMO,APH,Amphenol Corp,0.0129,Unknown,2026-02-15
+SPMO,C,Citigroup Inc,0.0125,Unknown,2026-02-15
+SPMO,SCHW,Charles Schwab Corp/The,0.0124,Unknown,2026-02-15
+SPMO,WELL,Welltower Inc,0.0121,Unknown,2026-02-15
+SPMO,MS,Morgan Stanley,0.011200000000000002,Unknown,2026-02-15
+SPMO,CME,CME Group Inc,0.011000000000000001,Unknown,2026-02-15
+SPMO,DE,Deere & Co,0.0095,Unknown,2026-02-15
+SPMO,BKNG,Booking Holdings Inc,0.0092,Unknown,2026-02-15
+SPMO,HWM,Howmet Aerospace Inc,0.0089,Unknown,2026-02-15
+SPMO,CRWD,Crowdstrike Holdings Inc,0.008100000000000001,Unknown,2026-02-15
+SPMO,MO,Altria Group Inc,0.008100000000000001,Unknown,2026-02-15
+SPMO,BSX,Boston Scientific Corp,0.008100000000000001,Unknown,2026-02-15
+SPMO,GLW,Corning Inc,0.0076,Unknown,2026-02-15
+SPMO,BLK,Blackrock Inc,0.0076,Unknown,2026-02-15
+SPMO,BK,Bank of New York Mellon Corp/The,0.0075,Unknown,2026-02-15
+SPMO,RCL,Royal Caribbean Cruises Ltd,0.0074,Unknown,2026-02-15
+SPMO,DASH,DoorDash Inc,0.0068000000000000005,Unknown,2026-02-15
+SPMO,COF,Capital One Financial Corp,0.0066,Unknown,2026-02-15
+SPMO,JCI,Johnson Controls International plc,0.0058,Unknown,2026-02-15
+SPMO,WMB,Williams Cos Inc/The,0.0058,Unknown,2026-02-15
+SPMO,PH,Parker-Hannifin Corp,0.0058,Unknown,2026-02-15
+SPMO,TMUS,T-Mobile US Inc,0.0055000000000000005,Unknown,2026-02-15
+SPMO,STX,Seagate Technology Holdings PLC,0.0054,Unknown,2026-02-15
+SPMO,TT,Trane Technologies PLC,0.0052,Unknown,2026-02-15
+SPMO,ORLY,O'Reilly Automotive Inc,0.0051,Unknown,2026-02-15
+SPMO,CAH,Cardinal Health Inc,0.0048,Unknown,2026-02-15
+SPMO,ICE,Intercontinental Exchange Inc,0.0048,Unknown,2026-02-15
+SPMO,CEG,Constellation Energy Corp,0.0048,Unknown,2026-02-15
+SPMO,VST,Vistra Corp,0.0045000000000000005,Unknown,2026-02-15
+SPMO,PWR,Quanta Services Inc,0.0044,Unknown,2026-02-15
+SPMO,ETR,Entergy Corp,0.0039000000000000003,Unknown,2026-02-15
+SPMO,KMI,Kinder Morgan Inc,0.0039000000000000003,Unknown,2026-02-15
+SPMO,TDG,TransDigm Group Inc,0.0038,Unknown,2026-02-15
+SPMO,FTNT,Fortinet Inc,0.0037,Unknown,2026-02-15
+SPMO,TPR,Tapestry Inc,0.0036,Unknown,2026-02-15
+SPMO,HLT,Hilton Worldwide Holdings Inc,0.0036,Unknown,2026-02-15
+SPMO,TEL,TE Connectivity PLC,0.0036,Unknown,2026-02-15
+SPMO,AXON,Axon Enterprise Inc,0.0033,Unknown,2026-02-15
+SPMO,IBKR,Interactive Brokers Group Inc,0.0032,Unknown,2026-02-15
+SPMO,FAST,Fastenal Co,0.003,Unknown,2026-02-15
+SPMO,XEL,Xcel Energy Inc,0.0029,Unknown,2026-02-15
+SPMO,EBAY,eBay Inc,0.0028000000000000004,Unknown,2026-02-15
+SPMO,NRG,NRG Energy Inc,0.0027,Unknown,2026-02-15
+SPMO,EXC,Exelon Corp,0.0027,Unknown,2026-02-15
+SPMO,NDAQ,Nasdaq Inc,0.0027,Unknown,2026-02-15
+SPMO,CTVA,Corteva Inc,0.0026,Unknown,2026-02-15
+SPMO,WEC,WEC Energy Group Inc,0.0026,Unknown,2026-02-15
+SPMO,JBL,Jabil Inc,0.0025,Unknown,2026-02-15
+SPMO,CCL,Carnival Corp,0.0023,Unknown,2026-02-15
+SPMO,UAL,United Airlines Holdings Inc,0.0023,Unknown,2026-02-15
+SPMO,CNP,CenterPoint Energy Inc,0.0023,Unknown,2026-02-15
+SPMO,KR,Kroger Co/The,0.0023,Unknown,2026-02-15
+SPMO,RSG,Republic Services Inc,0.0022,Unknown,2026-02-15
+SPMO,CBRE,CBRE Group Inc,0.0022,Unknown,2026-02-15
+SPMO,EQT,EQT Corp,0.0022,Unknown,2026-02-15
+SPMO,TTWO,Take-Two Interactive Software Inc,0.0021,Unknown,2026-02-15
+SPMO,VTR,Ventas Inc,0.0021,Unknown,2026-02-15
+SPMO,AEE,Ameren Corp,0.002,Unknown,2026-02-15
+SPMO,STT,State Street Corp,0.002,Unknown,2026-02-15
+SPMO,NTRS,Northern Trust Corp,0.0019,Unknown,2026-02-15
+SPMO,RJF,Raymond James Financial Inc,0.0018,Unknown,2026-02-15
+SPMO,ATO,Atmos Energy Corp,0.0018,Unknown,2026-02-15
+SPMO,LYV,Live Nation Entertainment Inc,0.0018,Unknown,2026-02-15
+SPMO,TDY,Teledyne Technologies Inc,0.0017000000000000001,Unknown,2026-02-15
+SPMO,CBOE,Cboe Global Markets Inc,0.0017000000000000001,Unknown,2026-02-15
+SPMO,NI,NiSource Inc,0.0017000000000000001,Unknown,2026-02-15
+SPMO,PPL,PPL Corp,0.0015,Unknown,2026-02-15
+SPMO,DRI,Darden Restaurants Inc,0.0015,Unknown,2026-02-15
+SPMO,EXE,Expand Energy Corp,0.0014000000000000002,Unknown,2026-02-15
+SPMO,VRSN,VeriSign Inc,0.0013,Unknown,2026-02-15
+SPMO,EVRG,Evergy Inc,0.0012,Unknown,2026-02-15
+SPMO,WRB,W R Berkley Corp,0.0012,Unknown,2026-02-15
+SPMO,FFIV,F5 Inc,0.0011,Unknown,2026-02-15
+SPMO,RL,Ralph Lauren Corp,0.001,Unknown,2026-02-15
+SPMO,TRMB,Trimble Inc,0.001,Unknown,2026-02-15
+SPMO,TKO,TKO Group Holdings Inc,0.001,Unknown,2026-02-15
+SPMO,PODD,Insulet Corp,0.0009,Unknown,2026-02-15
+SPMO,GL,Globe Life Inc,0.0009,Unknown,2026-02-15
+SPMO,FOXA,Fox Corp,0.0008,Unknown,2026-02-15
+SPMO,AGPXX,Invesco Government & Agency Portfolio,0.0005,Unknown,2026-02-15
+SPMO,FOX,Fox Corp,0.0005,Unknown,2026-02-15
+SPMO,USD,CASH & EQUIVALENTS,0.0,Unknown,2026-02-15
+CSD,SNDK,Sandisk Corporation,0.08869999999999999,2026-02-12,2026-02-15
+CSD,CR,Crane Company,0.0678,2026-02-12,2026-02-15
+CSD,GEV,GE Vernova Inc.,0.0646,2026-02-12,2026-02-15
+CSD,SOLS,"Solstice Advanced Materials, Inc.",0.0632,2026-02-12,2026-02-15
+CSD,CEG,Constellation Energy Corporation,0.0572,2026-02-12,2026-02-15
+CSD,Q,"Qnity Electronics, Inc.",0.0542,2026-02-12,2026-02-15
+CSD,ESAB,ESAB Corporation,0.0466,2026-02-12,2026-02-15
+CSD,GEHC,GE HealthCare Technologies Inc.,0.044800000000000006,2026-02-12,2026-02-15
+CSD,VLTO,Veralto Corporation,0.0429,2026-02-12,2026-02-15
+CSD,ECG,"Everus Construction Group, Inc.",0.039599999999999996,2026-02-12,2026-02-15
+CSD,AMTM,"Amentum Holdings, Inc.",0.0391,2026-02-12,2026-02-15
+CSD,SOLV,Solventum Corporation,0.038,2026-02-12,2026-02-15
+CSD,LLYVK,"Liberty Live Holdings, Inc.",0.0377,2026-02-12,2026-02-15
+CSD,MRP,"Millrose Properties, Inc.",0.0375,2026-02-12,2026-02-15
+CSD,KNF,Knife River Corporation,0.0368,2026-02-12,2026-02-15
+CSD,UHAL.B,U-Haul Holding Company,0.032799999999999996,2026-02-12,2026-02-15
+CSD,RAL,Ralliant Corporation,0.0313,2026-02-12,2026-02-15
+CSD,NATL,NCR Atleos Corporation,0.0298,2026-02-12,2026-02-15
+CSD,VSNT,"Versant Media Group, Inc.",0.029300000000000003,2026-02-12,2026-02-15
+CSD,PHIN,PHINIA Inc.,0.0291,2026-02-12,2026-02-15
+CSD,CURB,Curbline Properties Corp.,0.0258,2026-02-12,2026-02-15
+CSD,RXO,"RXO, Inc.",0.022400000000000003,2026-02-12,2026-02-15
+CSD,MBC,"MasterBrand, Inc.",0.015700000000000002,2026-02-12,2026-02-15
+CSD,FTRE,Fortrea Holdings Inc.,0.0103,2026-02-12,2026-02-15
+CSD,VSTS,Vestis Corporation,0.0070999999999999995,2026-02-12,2026-02-15
+XSMO,IDCC,InterDigital Inc,0.038599999999999995,Unknown,2026-02-15
+XSMO,AWI,Armstrong World Industries Inc,0.0311,Unknown,2026-02-15
+XSMO,EAT,Brinker International Inc,0.030299999999999997,Unknown,2026-02-15
+XSMO,ESE,ESCO Technologies Inc,0.024900000000000002,Unknown,2026-02-15
+XSMO,SNEX,StoneX Group Inc,0.024300000000000002,Unknown,2026-02-15
+XSMO,CTRE,CareTrust REIT Inc,0.0236,Unknown,2026-02-15
+XSMO,ZWS,Zurn Elkay Water Solutions Corp,0.023,Unknown,2026-02-15
+XSMO,SANM,Sanmina Corp,0.0225,Unknown,2026-02-15
+XSMO,JBTM,JBT Marel Corp,0.022099999999999998,Unknown,2026-02-15
+XSMO,GVA,Granite Construction Inc,0.0195,Unknown,2026-02-15
+XSMO,TDS,Telephone and Data Systems Inc,0.018600000000000002,Unknown,2026-02-15
+XSMO,SITM,SiTime Corp,0.0181,Unknown,2026-02-15
+XSMO,GTES,Gates Industrial Corp PLC,0.0172,Unknown,2026-02-15
+XSMO,SMTC,Semtech Corp,0.0169,Unknown,2026-02-15
+XSMO,FSS,Federal Signal Corp,0.016200000000000003,Unknown,2026-02-15
+XSMO,SXT,Sensient Technologies Corp,0.0149,Unknown,2026-02-15
+XSMO,CALM,Cal-Maine Foods Inc,0.0138,Unknown,2026-02-15
+XSMO,OSIS,OSI Systems Inc,0.0124,Unknown,2026-02-15
+XSMO,VIAV,Viavi Solutions Inc,0.0124,Unknown,2026-02-15
+XSMO,VIRT,Virtu Financial Inc,0.0124,Unknown,2026-02-15
+XSMO,NPO,Enpro Inc,0.012199999999999999,Unknown,2026-02-15
+XSMO,SKYW,SkyWest Inc,0.0121,Unknown,2026-02-15
+XSMO,FTDR,Frontdoor Inc,0.0121,Unknown,2026-02-15
+XSMO,TGTX,TG Therapeutics Inc,0.0118,Unknown,2026-02-15
+XSMO,LRN,Stride Inc,0.011399999999999999,Unknown,2026-02-15
+XSMO,AZZ,AZZ Inc,0.0113,Unknown,2026-02-15
+XSMO,ECG,Everus Construction Group Inc,0.011200000000000002,Unknown,2026-02-15
+XSMO,MRCY,Mercury Systems Inc,0.0111,Unknown,2026-02-15
+XSMO,BOOT,Boot Barn Holdings Inc,0.011000000000000001,Unknown,2026-02-15
+XSMO,PTGX,Protagonist Therapeutics Inc,0.010700000000000001,Unknown,2026-02-15
+XSMO,URBN,Urban Outfitters Inc,0.0104,Unknown,2026-02-15
+XSMO,POWL,Powell Industries Inc,0.0101,Unknown,2026-02-15
+XSMO,CAKE,Cheesecake Factory Inc/The,0.01,Unknown,2026-02-15
+XSMO,PJT,PJT Partners Inc,0.009899999999999999,Unknown,2026-02-15
+XSMO,AROC,Archrock Inc,0.009899999999999999,Unknown,2026-02-15
+XSMO,HWKN,Hawkins Inc,0.0098,Unknown,2026-02-15
+XSMO,PIPR,Piper Sandler Cos,0.0097,Unknown,2026-02-15
+XSMO,PLMR,Palomar Holdings Inc,0.0097,Unknown,2026-02-15
+XSMO,ABCB,Ameris Bancorp,0.0095,Unknown,2026-02-15
+XSMO,MWA,Mueller Water Products Inc,0.0095,Unknown,2026-02-15
+XSMO,CHEF,Chefs' Warehouse Inc/The,0.0095,Unknown,2026-02-15
+XSMO,ATGE,Adtalem Global Education Inc,0.0095,Unknown,2026-02-15
+XSMO,MDU,MDU Resources Group Inc,0.009399999999999999,Unknown,2026-02-15
+XSMO,VCTR,Victory Capital Holdings Inc,0.0092,Unknown,2026-02-15
+XSMO,ITRI,Itron Inc,0.0091,Unknown,2026-02-15
+XSMO,MYRG,MYR Group Inc,0.0091,Unknown,2026-02-15
+XSMO,CWEN,Clearway Energy Inc,0.0089,Unknown,2026-02-15
+XSMO,PATK,Patrick Industries Inc,0.0086,Unknown,2026-02-15
+XSMO,ADMA,ADMA Biologics Inc,0.0086,Unknown,2026-02-15
+XSMO,PSMT,PriceSmart Inc,0.0086,Unknown,2026-02-15
+XSMO,OPLN,OPENLANE Inc,0.0084,Unknown,2026-02-15
+XSMO,SHAK,Shake Shack Inc,0.0079,Unknown,2026-02-15
+XSMO,DORM,Dorman Products Inc,0.0078000000000000005,Unknown,2026-02-15
+XSMO,CALX,Calix Inc,0.0077,Unknown,2026-02-15
+XSMO,STEP,StepStone Group Inc,0.0077,Unknown,2026-02-15
+XSMO,UNFI,United Natural Foods Inc,0.0076,Unknown,2026-02-15
+XSMO,DXPE,DXP Enterprises Inc/TX,0.0076,Unknown,2026-02-15
+XSMO,CORT,Corcept Therapeutics Inc,0.0075,Unknown,2026-02-15
+XSMO,GPI,Group 1 Automotive Inc,0.0074,Unknown,2026-02-15
+XSMO,ENVA,Enova International Inc,0.0073,Unknown,2026-02-15
+XSMO,LGND,Ligand Pharmaceuticals Inc,0.0069,Unknown,2026-02-15
+XSMO,EYE,National Vision Holdings Inc,0.0068000000000000005,Unknown,2026-02-15
+XSMO,OUT,Outfront Media Inc,0.0067,Unknown,2026-02-15
+XSMO,CSGS,CSG Systems International Inc,0.0067,Unknown,2026-02-15
+XSMO,YOU,Clear Secure Inc,0.0066,Unknown,2026-02-15
+XSMO,BXMT,Blackstone Mortgage Trust Inc,0.0064,Unknown,2026-02-15
+XSMO,PBI,Pitney Bowes Inc,0.0058,Unknown,2026-02-15
+XSMO,SPNT,SiriusPoint Ltd,0.0058,Unknown,2026-02-15
+XSMO,CPRX,Catalyst Pharmaceuticals Inc,0.0055000000000000005,Unknown,2026-02-15
+XSMO,FBNC,First Bancorp/Southern Pines NC,0.0055000000000000005,Unknown,2026-02-15
+XSMO,GEO,GEO Group Inc/The,0.0055000000000000005,Unknown,2026-02-15
+XSMO,FDP,Fresh Del Monte Produce Inc,0.0054,Unknown,2026-02-15
+XSMO,HCI,HCI Group Inc,0.0054,Unknown,2026-02-15
+XSMO,CENX,Century Aluminum Co,0.0053,Unknown,2026-02-15
+XSMO,PHIN,Phinia Inc,0.0052,Unknown,2026-02-15
+XSMO,CARG,Cargurus Inc,0.0052,Unknown,2026-02-15
+XSMO,AAMI,Acadian Asset Management Inc,0.0052,Unknown,2026-02-15
+XSMO,CRK,Comstock Resources Inc,0.005,Unknown,2026-02-15
+XSMO,HMN,Horace Mann Educators Corp,0.0048,Unknown,2026-02-15
+XSMO,BANF,BancFirst Corp,0.0048,Unknown,2026-02-15
+XSMO,CNK,Cinemark Holdings Inc,0.004699999999999999,Unknown,2026-02-15
+XSMO,CXW,CoreCivic Inc,0.0046,Unknown,2026-02-15
+XSMO,ATEN,A10 Networks Inc,0.0045000000000000005,Unknown,2026-02-15
+XSMO,ALG,Alamo Group Inc,0.0045000000000000005,Unknown,2026-02-15
+XSMO,MD,Pediatrix Medical Group Inc,0.0045000000000000005,Unknown,2026-02-15
+XSMO,EZPW,EZCORP Inc,0.0043,Unknown,2026-02-15
+XSMO,WOR,Worthington Enterprises Inc,0.0038,Unknown,2026-02-15
+XSMO,EXTR,Extreme Networks Inc,0.0037,Unknown,2026-02-15
+XSMO,CWEN/A,Clearway Energy Inc,0.0037,Unknown,2026-02-15
+XSMO,BKE,Buckle Inc/The,0.0036,Unknown,2026-02-15
+XSMO,CASH,Pathward Financial Inc,0.0036,Unknown,2026-02-15
+XSMO,PRDO,Perdoceo Education Corp,0.0034999999999999996,Unknown,2026-02-15
+XSMO,TILE,Interface Inc,0.0034000000000000002,Unknown,2026-02-15
+XSMO,WT,WisdomTree Inc,0.0034000000000000002,Unknown,2026-02-15
+XSMO,WWW,Wolverine World Wide Inc,0.0034000000000000002,Unknown,2026-02-15
+XSMO,UNIT,Uniti Group Inc,0.0033,Unknown,2026-02-15
+XSMO,MCRI,Monarch Casino & Resort Inc,0.0032,Unknown,2026-02-15
+XSMO,AORT,Artivion Inc,0.0031,Unknown,2026-02-15
+XSMO,EFC,Ellington Financial Inc,0.0027,Unknown,2026-02-15
+XSMO,PAYO,Payoneer Global Inc,0.0027,Unknown,2026-02-15
+XSMO,JBGS,JBG SMITH Properties,0.0026,Unknown,2026-02-15
+XSMO,PAHC,Phibro Animal Health Corp,0.0026,Unknown,2026-02-15
+XSMO,TR,Tootsie Roll Industries Inc,0.0023,Unknown,2026-02-15
+XSMO,SAH,Sonic Automotive Inc,0.0019,Unknown,2026-02-15
+XSMO,UFCS,United Fire Group Inc,0.0017000000000000001,Unknown,2026-02-15
+XSMO,NPK,National Presto Industries Inc,0.0017000000000000001,Unknown,2026-02-15
+XSMO,HAFC,Hanmi Financial Corp,0.0015,Unknown,2026-02-15
+XSMO,CBRL,Cracker Barrel Old Country Store Inc,0.0015,Unknown,2026-02-15
+XSMO,WRLD,World Acceptance Corp,0.0009,Unknown,2026-02-15
+XSMO,GOGO,Gogo Inc,0.0007000000000000001,Unknown,2026-02-15
+XSMO,AGPXX,Invesco Government & Agency Portfolio,0.0004,Unknown,2026-02-15
+XMMO,LITE,Lumentum Holdings Inc,0.06,Unknown,2026-02-15
+XMMO,USFD,US Foods Holding Corp,0.0432,Unknown,2026-02-15
+XMMO,CW,Curtiss-Wright Corp,0.0431,Unknown,2026-02-15
+XMMO,WWD,Woodward Inc,0.041100000000000005,Unknown,2026-02-15
+XMMO,TWLO,Twilio Inc,0.0323,Unknown,2026-02-15
+XMMO,TLN,Talen Energy Corp,0.0323,Unknown,2026-02-15
+XMMO,CASY,Casey's General Stores Inc,0.028900000000000002,Unknown,2026-02-15
+XMMO,FLEX,Flex Ltd,0.0282,Unknown,2026-02-15
+XMMO,CRS,Carpenter Technology Corp,0.0255,Unknown,2026-02-15
+XMMO,RBA,RB Global Inc,0.0254,Unknown,2026-02-15
+XMMO,BWXT,BWX Technologies Inc,0.0253,Unknown,2026-02-15
+XMMO,MTZ,MasTec Inc,0.0236,Unknown,2026-02-15
+XMMO,SGI,Somnigroup International Inc,0.0232,Unknown,2026-02-15
+XMMO,PFGC,Performance Food Group Co,0.0229,Unknown,2026-02-15
+XMMO,APG,API Group Corp,0.0204,Unknown,2026-02-15
+XMMO,RBC,RBC Bearings Inc,0.0203,Unknown,2026-02-15
+XMMO,DTM,DT Midstream Inc,0.017,Unknown,2026-02-15
+XMMO,PEN,Penumbra Inc,0.0165,Unknown,2026-02-15
+XMMO,WPC,WP Carey Inc,0.015600000000000001,Unknown,2026-02-15
+XMMO,NFG,National Fuel Gas Co,0.0149,Unknown,2026-02-15
+XMMO,FIVE,Five Below Inc,0.0146,Unknown,2026-02-15
+XMMO,UGI,UGI Corp,0.013999999999999999,Unknown,2026-02-15
+XMMO,EXEL,Exelixis Inc,0.013500000000000002,Unknown,2026-02-15
+XMMO,GWRE,Guidewire Software Inc,0.0134,Unknown,2026-02-15
+XMMO,ACM,AECOM,0.0128,Unknown,2026-02-15
+XMMO,FHN,First Horizon Corp,0.0127,Unknown,2026-02-15
+XMMO,OHI,Omega Healthcare Investors Inc,0.012,Unknown,2026-02-15
+XMMO,IDA,IDACORP Inc,0.0118,Unknown,2026-02-15
+XMMO,SF,Stifel Financial Corp,0.0115,Unknown,2026-02-15
+XMMO,BJ,BJ's Wholesale Club Holdings Inc,0.0111,Unknown,2026-02-15
+XMMO,UNM,Unum Group,0.0111,Unknown,2026-02-15
+XMMO,OGE,OGE Energy Corp,0.011000000000000001,Unknown,2026-02-15
+XMMO,PLNT,Planet Fitness Inc,0.0104,Unknown,2026-02-15
+XMMO,SNX,TD SYNNEX Corp,0.0103,Unknown,2026-02-15
+XMMO,ARMK,ARAMARK Holdings Corp,0.0101,Unknown,2026-02-15
+XMMO,EHC,Encompass Health Corp,0.0097,Unknown,2026-02-15
+XMMO,WTS,Watts Water Technologies Inc,0.009399999999999999,Unknown,2026-02-15
+XMMO,HLI,Houlihan Lokey Inc,0.009300000000000001,Unknown,2026-02-15
+XMMO,TXNM,TXNM Energy Inc,0.0091,Unknown,2026-02-15
+XMMO,AIT,Applied Industrial Technologies Inc,0.0091,Unknown,2026-02-15
+XMMO,SEIC,SEI Investments Co,0.0088,Unknown,2026-02-15
+XMMO,SFM,Sprouts Farmers Market Inc,0.0088,Unknown,2026-02-15
+XMMO,AM,Antero Midstream Corp,0.0087,Unknown,2026-02-15
+XMMO,AYI,Acuity Inc,0.0084,Unknown,2026-02-15
+XMMO,R,Ryder System Inc,0.0084,Unknown,2026-02-15
+XMMO,ORI,Old Republic International Corp,0.008100000000000001,Unknown,2026-02-15
+XMMO,ESAB,Esab Corp,0.0077,Unknown,2026-02-15
+XMMO,FHI,Federated Hermes Inc,0.0075,Unknown,2026-02-15
+XMMO,AVAV,AeroVironment Inc,0.0072,Unknown,2026-02-15
+XMMO,OLLI,Ollie's Bargain Outlet Holdings Inc,0.0070999999999999995,Unknown,2026-02-15
+XMMO,THG,Hanover Insurance Group Inc/The,0.006999999999999999,Unknown,2026-02-15
+XMMO,DUOL,Duolingo Inc,0.006999999999999999,Unknown,2026-02-15
+XMMO,FCFS,FirstCash Holdings Inc,0.0066,Unknown,2026-02-15
+XMMO,MASI,Masimo Corp,0.006500000000000001,Unknown,2026-02-15
+XMMO,BYD,Boyd Gaming Corp,0.0064,Unknown,2026-02-15
+XMMO,CHWY,Chewy Inc,0.0063,Unknown,2026-02-15
+XMMO,SLM,SLM Corp,0.0062,Unknown,2026-02-15
+XMMO,CART,Maplebear Inc,0.0060999999999999995,Unknown,2026-02-15
+XMMO,ALK,Alaska Air Group Inc,0.006,Unknown,2026-02-15
+XMMO,BDC,Belden Inc,0.006,Unknown,2026-02-15
+XMMO,EPR,EPR Properties,0.0058,Unknown,2026-02-15
+XMMO,G,Genpact Ltd,0.005600000000000001,Unknown,2026-02-15
+XMMO,HIMS,Hims & Hers Health Inc,0.0053,Unknown,2026-02-15
+XMMO,SR,Spire Inc,0.005,Unknown,2026-02-15
+XMMO,TNL,Travel + Leisure Co,0.0049,Unknown,2026-02-15
+XMMO,NEU,NewMarket Corp,0.0049,Unknown,2026-02-15
+XMMO,JHG,Janus Henderson Group PLC,0.0048,Unknown,2026-02-15
+XMMO,PEGA,Pegasystems Inc,0.0046,Unknown,2026-02-15
+XMMO,DOCS,Doximity Inc,0.0045000000000000005,Unknown,2026-02-15
+XMMO,SBRA,Sabra Health Care REIT Inc,0.0044,Unknown,2026-02-15
+XMMO,EXLS,ExlService Holdings Inc,0.0044,Unknown,2026-02-15
+XMMO,VNO,Vornado Realty Trust,0.0042,Unknown,2026-02-15
+XMMO,FOUR,Shift4 Payments Inc,0.0039000000000000003,Unknown,2026-02-15
+XMMO,KD,Kyndryl Holdings Inc,0.0026,Unknown,2026-02-15
+XMMO,CAR,Avis Budget Group Inc,0.0021,Unknown,2026-02-15
+XMMO,PPC,Pilgrim's Pride Corp,0.0017000000000000001,Unknown,2026-02-15
+XMMO,AGPXX,Invesco Government & Agency Portfolio,0.0001,Unknown,2026-02-15
+XMMO,FITB,Fifth Third Bancorp,0.0,Unknown,2026-02-15
+PIE,TPE: 2345,Accton Technology Corporation,0.0318,2026-02-12,2026-02-15
+PIE,TPE: 2330,Taiwan Semiconductor Manufacturing Company Limited,0.031400000000000004,2026-02-12,2026-02-15
+PIE,TPE: 5434,"Topco Scientific Co.,Ltd.",0.0245,2026-02-12,2026-02-15
+PIE,TPE: 2404,"United Integrated Services Co., Ltd.",0.0233,2026-02-12,2026-02-15
+PIE,BMV: GENTERA,"Gentera, S.A.B. de C.V.",0.0227,2026-02-12,2026-02-15
+PIE,,TISCO Financial Group PCL Units Non-Voting Depository Receipt,0.0222,2026-02-12,2026-02-15
+PIE,TPE: 6257,Sigurd Microelectronics Corporation,0.022000000000000002,2026-02-12,2026-02-15
+PIE,TPE: 6919,"Caliway Biopharmaceuticals Co., Ltd.",0.0207,2026-02-12,2026-02-15
+PIE,TPE: 6691,"Yankey Engineering Co., Ltd.",0.0199,2026-02-12,2026-02-15
+PIE,TPE: 2408,Nanya Technology Corporation,0.018600000000000002,2026-02-12,2026-02-15
+PIE,BVMF: CURY3,Cury Construtora e Incorporadora S.A.,0.018500000000000003,2026-02-12,2026-02-15
+PIE,TERA.E.IS,Tera Yatirim Menkul Degerler AS,0.0177,2026-02-12,2026-02-15
+PIE,TPE: 8112,"Supreme Electronics Co., Ltd.",0.0171,2026-02-12,2026-02-15
+PIE,TPE: 6191,Global Brands Manufacture Ltd.,0.0154,2026-02-12,2026-02-15
+PIE,JSE: VKE,Vukile Property Fund Limited,0.0152,2026-02-12,2026-02-15
+PIE,BVMF: DIRR3,Direcional Engenharia S.A.,0.015,2026-02-12,2026-02-15
+PIE,TPE: 2344,Winbond Electronics Corporation,0.015,2026-02-12,2026-02-15
+PIE,CCOZF,China Coal Energy Company Limited,0.0144,2026-02-12,2026-02-15
+PIE,HKG: 1258,China Nonferrous Mining Corporation Limited,0.014199999999999999,2026-02-12,2026-02-15
+PIE,IDX: ENRG,PT Energi Mega Persada Tbk,0.014199999999999999,2026-02-12,2026-02-15
+PIE,CUAEF,China Shenhua Energy Company Limited,0.014199999999999999,2026-02-12,2026-02-15
+PIE,ICT.PM,International Container Terminal Services Inc,0.0134,2026-02-12,2026-02-15
+PIE,HKG: 1378,China Hongqiao Group Limited,0.0129,2026-02-12,2026-02-15
+PIE,PCCYF,PetroChina Company Limited,0.0126,2026-02-12,2026-02-15
+PIE,BMV: Q,"QuÃ¡litas Controladora, S.A.B. de C.V.",0.0126,2026-02-12,2026-02-15
+SPHQ,COST,Costco Wholesale Corp,0.0489,Unknown,2026-02-15
+SPHQ,V,Visa Inc,0.0475,Unknown,2026-02-15
+SPHQ,MA,Mastercard Inc,0.0467,Unknown,2026-02-15
+SPHQ,GE,General Electric Co,0.0462,Unknown,2026-02-15
+SPHQ,AAPL,Apple Inc,0.044800000000000006,Unknown,2026-02-15
+SPHQ,PG,Procter & Gamble Co/The,0.0393,Unknown,2026-02-15
+SPHQ,LRCX,Lam Research Corp,0.0378,Unknown,2026-02-15
+SPHQ,KO,Coca-Cola Co/The,0.0345,Unknown,2026-02-15
+SPHQ,CAT,Caterpillar Inc,0.0332,Unknown,2026-02-15
+SPHQ,MRK,Merck & Co Inc,0.0323,Unknown,2026-02-15
+SPHQ,CSCO,Cisco Systems Inc,0.029900000000000003,Unknown,2026-02-15
+SPHQ,KLAC,KLA Corp,0.0279,Unknown,2026-02-15
+SPHQ,GILD,Gilead Sciences Inc,0.027200000000000002,Unknown,2026-02-15
+SPHQ,GEV,GE Vernova Inc,0.0245,Unknown,2026-02-15
+SPHQ,AMAT,Applied Materials Inc,0.024,Unknown,2026-02-15
+SPHQ,TJX,TJX Cos Inc/The,0.0182,Unknown,2026-02-15
+SPHQ,QCOM,QUALCOMM Inc,0.0161,Unknown,2026-02-15
+SPHQ,ADBE,Adobe Inc,0.0159,Unknown,2026-02-15
+SPHQ,ETN,Eaton Corp PLC,0.015300000000000001,Unknown,2026-02-15
+SPHQ,PGR,Progressive Corp/The,0.0148,Unknown,2026-02-15
+SPHQ,WDC,Western Digital Corp,0.014499999999999999,Unknown,2026-02-15
+SPHQ,MMM,3M Co,0.0144,Unknown,2026-02-15
+SPHQ,ACN,Accenture PLC,0.0134,Unknown,2026-02-15
+SPHQ,NEM,Newmont Corp,0.013300000000000001,Unknown,2026-02-15
+SPHQ,APP,AppLovin Corp,0.0132,Unknown,2026-02-15
+SPHQ,TT,Trane Technologies PLC,0.0125,Unknown,2026-02-15
+SPHQ,PH,Parker-Hannifin Corp,0.0121,Unknown,2026-02-15
+SPHQ,ITW,Illinois Tool Works Inc,0.011200000000000002,Unknown,2026-02-15
+SPHQ,JCI,Johnson Controls International plc,0.0103,Unknown,2026-02-15
+SPHQ,UPS,United Parcel Service Inc,0.0095,Unknown,2026-02-15
+SPHQ,CEG,Constellation Energy Corp,0.009000000000000001,Unknown,2026-02-15
+SPHQ,MNST,Monster Beverage Corp,0.0089,Unknown,2026-02-15
+SPHQ,FTNT,Fortinet Inc,0.0088,Unknown,2026-02-15
+SPHQ,CL,Colgate-Palmolive Co,0.0083,Unknown,2026-02-15
+SPHQ,MDLZ,Mondelez International Inc,0.0083,Unknown,2026-02-15
+SPHQ,MCO,Moody's Corp,0.008,Unknown,2026-02-15
+SPHQ,MSI,Motorola Solutions Inc,0.0078000000000000005,Unknown,2026-02-15
+SPHQ,COR,Cencora Inc,0.0078000000000000005,Unknown,2026-02-15
+SPHQ,ZTS,Zoetis Inc,0.0074,Unknown,2026-02-15
+SPHQ,CTAS,Cintas Corp,0.0070999999999999995,Unknown,2026-02-15
+SPHQ,IDXX,IDEXX Laboratories Inc,0.0069,Unknown,2026-02-15
+SPHQ,ALL,Allstate Corp/The,0.0069,Unknown,2026-02-15
+SPHQ,AMP,Ameriprise Financial Inc,0.0062,Unknown,2026-02-15
+SPHQ,EOG,EOG Resources Inc,0.0060999999999999995,Unknown,2026-02-15
+SPHQ,FAST,Fastenal Co,0.0055000000000000005,Unknown,2026-02-15
+SPHQ,GWW,WW Grainger Inc,0.0055000000000000005,Unknown,2026-02-15
+SPHQ,AME,AMETEK Inc,0.0053,Unknown,2026-02-15
+SPHQ,CTVA,Corteva Inc,0.0052,Unknown,2026-02-15
+SPHQ,EBAY,eBay Inc,0.0052,Unknown,2026-02-15
+SPHQ,ABNB,Airbnb Inc,0.0051,Unknown,2026-02-15
+SPHQ,EA,Electronic Arts Inc,0.0046,Unknown,2026-02-15
+SPHQ,KMB,Kimberly-Clark Corp,0.0045000000000000005,Unknown,2026-02-15
+SPHQ,ROK,Rockwell Automation Inc,0.0044,Unknown,2026-02-15
+SPHQ,EME,EMCOR Group Inc,0.0043,Unknown,2026-02-15
+SPHQ,RMD,ResMed Inc,0.0038,Unknown,2026-02-15
+SPHQ,ACGL,Arch Capital Group Ltd,0.0037,Unknown,2026-02-15
+SPHQ,KVUE,Kenvue Inc,0.0034999999999999996,Unknown,2026-02-15
+SPHQ,WSM,Williams-Sonoma Inc,0.0033,Unknown,2026-02-15
+SPHQ,PPG,PPG Industries Inc,0.003,Unknown,2026-02-15
+SPHQ,EXPE,Expedia Group Inc,0.003,Unknown,2026-02-15
+SPHQ,NTAP,NetApp Inc,0.0029,Unknown,2026-02-15
+SPHQ,DOV,Dover Corp,0.0029,Unknown,2026-02-15
+SPHQ,HUBB,Hubbell Inc,0.0029,Unknown,2026-02-15
+SPHQ,STE,STERIS PLC,0.0029,Unknown,2026-02-15
+SPHQ,ULTA,Ulta Beauty Inc,0.0029,Unknown,2026-02-15
+SPHQ,DLTR,Dollar Tree Inc,0.0028000000000000004,Unknown,2026-02-15
+SPHQ,CHD,Church & Dwight Co Inc,0.0027,Unknown,2026-02-15
+SPHQ,STZ,Constellation Brands Inc,0.0026,Unknown,2026-02-15
+SPHQ,LII,Lennox International Inc,0.0024,Unknown,2026-02-15
+SPHQ,INCY,Incyte Corp,0.0023,Unknown,2026-02-15
+SPHQ,NVR,NVR Inc,0.0023,Unknown,2026-02-15
+SPHQ,LDOS,Leidos Holdings Inc,0.0021,Unknown,2026-02-15
+SPHQ,TROW,T Rowe Price Group Inc,0.0021,Unknown,2026-02-15
+SPHQ,WAT,Waters Corp,0.0021,Unknown,2026-02-15
+SPHQ,CHRW,CH Robinson Worldwide Inc,0.002,Unknown,2026-02-15
+SPHQ,J,Jacobs Solutions Inc,0.002,Unknown,2026-02-15
+SPHQ,BR,Broadridge Financial Solutions Inc,0.002,Unknown,2026-02-15
+SPHQ,EXPD,Expeditors International of Washington Inc,0.002,Unknown,2026-02-15
+SPHQ,SNA,Snap-on Inc,0.002,Unknown,2026-02-15
+SPHQ,DECK,Deckers Outdoor Corp,0.0019,Unknown,2026-02-15
+SPHQ,LULU,Lululemon Athletica Inc,0.0018,Unknown,2026-02-15
+SPHQ,TRMB,Trimble Inc,0.0018,Unknown,2026-02-15
+SPHQ,CF,CF Industries Holdings Inc,0.0018,Unknown,2026-02-15
+SPHQ,RL,Ralph Lauren Corp,0.0016,Unknown,2026-02-15
+SPHQ,SOLV,Solventum Corp,0.0015,Unknown,2026-02-15
+SPHQ,JBHT,JB Hunt Transport Services Inc,0.0015,Unknown,2026-02-15
+SPHQ,IT,Gartner Inc,0.0014000000000000002,Unknown,2026-02-15
+SPHQ,FFIV,F5 Inc,0.0013,Unknown,2026-02-15
+SPHQ,BBY,Best Buy Co Inc,0.0013,Unknown,2026-02-15
+SPHQ,TYL,Tyler Technologies Inc,0.0013,Unknown,2026-02-15
+SPHQ,ZBRA,Zebra Technologies Corp,0.0013,Unknown,2026-02-15
+SPHQ,RVTY,Revvity Inc,0.0012,Unknown,2026-02-15
+SPHQ,JKHY,Jack Henry & Associates Inc,0.0012,Unknown,2026-02-15
+SPHQ,GNRC,Generac Holdings Inc,0.0011,Unknown,2026-02-15
+SPHQ,POOL,Pool Corp,0.001,Unknown,2026-02-15
+SPHQ,TECH,Bio-Techne Corp,0.001,Unknown,2026-02-15
+SPHQ,ERIE,Erie Indemnity Co,0.0009,Unknown,2026-02-15
+SPHQ,SWKS,Skyworks Solutions Inc,0.0009,Unknown,2026-02-15
+SPHQ,FDS,FactSet Research Systems Inc,0.0007000000000000001,Unknown,2026-02-15
+SPHQ,PAYC,Paycom Software Inc,0.0006,Unknown,2026-02-15
+SPHQ,AGPXX,Invesco Government & Agency Portfolio,0.0005,Unknown,2026-02-15
+SPHQ,USD,CASH & EQUIVALENTS,0.0,Unknown,2026-02-15
+RPG,SNDK,Sandisk Corp/DE,0.041299999999999996,Unknown,2026-02-15
+RPG,FIX,Comfort Systems USA Inc,0.0316,Unknown,2026-02-15
+RPG,BRK/B,Berkshire Hathaway Inc,0.0275,Unknown,2026-02-15
+RPG,HWM,Howmet Aerospace Inc,0.025699999999999997,Unknown,2026-02-15
+RPG,MPWR,Monolithic Power Systems Inc,0.0248,Unknown,2026-02-15
+RPG,APH,Amphenol Corp,0.023799999999999998,Unknown,2026-02-15
+RPG,HCA,HCA Healthcare Inc,0.022000000000000002,Unknown,2026-02-15
+RPG,MU,Micron Technology Inc,0.0216,Unknown,2026-02-15
+RPG,IBKR,Interactive Brokers Group Inc,0.021400000000000002,Unknown,2026-02-15
+RPG,KLAC,KLA Corp,0.0212,Unknown,2026-02-15
+RPG,CCL,Carnival Corp,0.021,Unknown,2026-02-15
+RPG,LLY,Eli Lilly & Co,0.0204,Unknown,2026-02-15
+RPG,TKO,TKO Group Holdings Inc,0.0202,Unknown,2026-02-15
+RPG,CIEN,Ciena Corp,0.0199,Unknown,2026-02-15
+RPG,TPR,Tapestry Inc,0.019799999999999998,Unknown,2026-02-15
+RPG,NEM,Newmont Corp,0.0196,Unknown,2026-02-15
+RPG,EME,EMCOR Group Inc,0.0195,Unknown,2026-02-15
+RPG,RCL,Royal Caribbean Cruises Ltd,0.0195,Unknown,2026-02-15
+RPG,INCY,Incyte Corp,0.0191,Unknown,2026-02-15
+RPG,NVDA,NVIDIA Corp,0.0187,Unknown,2026-02-15
+RPG,WYNN,Wynn Resorts Ltd,0.018600000000000002,Unknown,2026-02-15
+RPG,ANET,Arista Networks Inc,0.018500000000000003,Unknown,2026-02-15
+RPG,LRCX,Lam Research Corp,0.0183,Unknown,2026-02-15
+RPG,PWR,Quanta Services Inc,0.0177,Unknown,2026-02-15
+RPG,FSLR,First Solar Inc,0.0177,Unknown,2026-02-15
+RPG,RTX,RTX Corp,0.0175,Unknown,2026-02-15
+RPG,GEV,GE Vernova Inc,0.0173,Unknown,2026-02-15
+RPG,RL,Ralph Lauren Corp,0.0171,Unknown,2026-02-15
+RPG,CRWD,Crowdstrike Holdings Inc,0.017,Unknown,2026-02-15
+RPG,PLTR,Palantir Technologies Inc,0.0169,Unknown,2026-02-15
+RPG,AVGO,Broadcom Inc,0.0169,Unknown,2026-02-15
+RPG,LVS,Las Vegas Sands Corp,0.0166,Unknown,2026-02-15
+RPG,HLT,Hilton Worldwide Holdings Inc,0.015,Unknown,2026-02-15
+RPG,ULTA,Ulta Beauty Inc,0.0146,Unknown,2026-02-15
+RPG,META,Meta Platforms Inc,0.0144,Unknown,2026-02-15
+RPG,VST,Vistra Corp,0.014199999999999999,Unknown,2026-02-15
+RPG,CAT,Caterpillar Inc,0.014199999999999999,Unknown,2026-02-15
+RPG,MAR,Marriott International Inc/MD,0.013999999999999999,Unknown,2026-02-15
+RPG,IDXX,IDEXX Laboratories Inc,0.0137,Unknown,2026-02-15
+RPG,EXPE,Expedia Group Inc,0.013600000000000001,Unknown,2026-02-15
+RPG,AMD,Advanced Micro Devices Inc,0.013500000000000002,Unknown,2026-02-15
+RPG,PODD,Insulet Corp,0.013500000000000002,Unknown,2026-02-15
+RPG,MNST,Monster Beverage Corp,0.0134,Unknown,2026-02-15
+RPG,HOOD,Robinhood Markets Inc,0.0131,Unknown,2026-02-15
+RPG,UBER,Uber Technologies Inc,0.013000000000000001,Unknown,2026-02-15
+RPG,APP,AppLovin Corp,0.0129,Unknown,2026-02-15
+RPG,WELL,Welltower Inc,0.0127,Unknown,2026-02-15
+RPG,AMAT,Applied Materials Inc,0.0125,Unknown,2026-02-15
+RPG,TDG,TransDigm Group Inc,0.011200000000000002,Unknown,2026-02-15
+RPG,DDOG,Datadog Inc,0.0106,Unknown,2026-02-15
+RPG,DASH,DoorDash Inc,0.0104,Unknown,2026-02-15
+RPG,GOOGL,Alphabet Inc,0.0104,Unknown,2026-02-15
+RPG,ORLY,O'Reilly Automotive Inc,0.0102,Unknown,2026-02-15
+RPG,ROL,Rollins Inc,0.009300000000000001,Unknown,2026-02-15
+RPG,VRSN,VeriSign Inc,0.009300000000000001,Unknown,2026-02-15
+RPG,NFLX,Netflix Inc,0.0084,Unknown,2026-02-15
+RPG,BKNG,Booking Holdings Inc,0.0083,Unknown,2026-02-15
+RPG,GOOG,Alphabet Inc,0.0083,Unknown,2026-02-15
+RPG,ISRG,Intuitive Surgical Inc,0.008199999999999999,Unknown,2026-02-15
+RPG,MSFT,Microsoft Corp,0.0078000000000000005,Unknown,2026-02-15
+RPG,AGPXX,Invesco Government & Agency Portfolio,0.0003,Unknown,2026-02-15
+XLG,NVDA,NVIDIA Corp,0.12960000000000002,Unknown,2026-02-15
+XLG,AAPL,Apple Inc,0.1103,Unknown,2026-02-15
+XLG,MSFT,Microsoft Corp,0.0852,Unknown,2026-02-15
+XLG,AMZN,Amazon.com Inc,0.0554,Unknown,2026-02-15
+XLG,GOOGL,Alphabet Inc,0.0513,Unknown,2026-02-15
+XLG,AVGO,Broadcom Inc,0.0446,Unknown,2026-02-15
+XLG,GOOG,Alphabet Inc,0.040999999999999995,Unknown,2026-02-15
+XLG,META,Meta Platforms Inc,0.0404,Unknown,2026-02-15
+XLG,TSLA,Tesla Inc,0.0334,Unknown,2026-02-15
+XLG,BRK/B,Berkshire Hathaway Inc,0.0262,Unknown,2026-02-15
+XLG,LLY,Eli Lilly & Co,0.0235,Unknown,2026-02-15
+XLG,JPM,JPMorgan Chase & Co,0.0235,Unknown,2026-02-15
+XLG,XOM,Exxon Mobil Corp,0.0182,Unknown,2026-02-15
+XLG,JNJ,Johnson & Johnson,0.0168,Unknown,2026-02-15
+XLG,WMT,Walmart Inc,0.0167,Unknown,2026-02-15
+XLG,V,Visa Inc,0.015600000000000001,Unknown,2026-02-15
+XLG,COST,Costco Wholesale Corp,0.0127,Unknown,2026-02-15
+XLG,MA,Mastercard Inc,0.0123,Unknown,2026-02-15
+XLG,ABBV,AbbVie Inc,0.0116,Unknown,2026-02-15
+XLG,HD,Home Depot Inc/The,0.0111,Unknown,2026-02-15
+XLG,PG,Procter & Gamble Co/The,0.0108,Unknown,2026-02-15
+XLG,CAT,Caterpillar Inc,0.0101,Unknown,2026-02-15
+XLG,BAC,Bank of America Corp,0.0101,Unknown,2026-02-15
+XLG,CVX,Chevron Corp,0.0098,Unknown,2026-02-15
+XLG,AMD,Advanced Micro Devices Inc,0.0096,Unknown,2026-02-15
+XLG,GE,General Electric Co,0.009399999999999999,Unknown,2026-02-15
+XLG,NFLX,Netflix Inc,0.0092,Unknown,2026-02-15
+XLG,KO,Coca-Cola Co/The,0.0087,Unknown,2026-02-15
+XLG,MRK,Merck & Co Inc,0.0084,Unknown,2026-02-15
+XLG,CSCO,Cisco Systems Inc,0.0084,Unknown,2026-02-15
+XLG,PLTR,Palantir Technologies Inc,0.0084,Unknown,2026-02-15
+XLG,PM,Philip Morris International Inc,0.0084,Unknown,2026-02-15
+XLG,WFC,Wells Fargo & Co,0.0078000000000000005,Unknown,2026-02-15
+XLG,GS,Goldman Sachs Group Inc/The,0.0077,Unknown,2026-02-15
+XLG,ORCL,Oracle Corp,0.0075,Unknown,2026-02-15
+XLG,UNH,UnitedHealth Group Inc,0.0073,Unknown,2026-02-15
+XLG,IBM,International Business Machines Corp,0.006999999999999999,Unknown,2026-02-15
+XLG,MCD,McDonald's Corp,0.0067,Unknown,2026-02-15
+XLG,PEP,PepsiCo Inc,0.006500000000000001,Unknown,2026-02-15
+XLG,LIN,Linde PLC,0.0063,Unknown,2026-02-15
+XLG,VZ,Verizon Communications Inc,0.006,Unknown,2026-02-15
+XLG,T,AT&T Inc,0.0058,Unknown,2026-02-15
+XLG,TXN,Texas Instruments Inc,0.0058,Unknown,2026-02-15
+XLG,ABT,Abbott Laboratories,0.005600000000000001,Unknown,2026-02-15
+XLG,DIS,Walt Disney Co/The,0.0052,Unknown,2026-02-15
+XLG,CRM,Salesforce Inc,0.005,Unknown,2026-02-15
+XLG,ISRG,Intuitive Surgical Inc,0.0048,Unknown,2026-02-15
+XLG,ACN,Accenture PLC,0.004,Unknown,2026-02-15
+XLG,INTU,Intuit Inc,0.0032,Unknown,2026-02-15
+XLG,ADBE,Adobe Inc,0.0031,Unknown,2026-02-15
+XLG,NOW,ServiceNow Inc,0.0031,Unknown,2026-02-15
+XLG,AGPXX,Invesco Government & Agency Portfolio,0.0006,Unknown,2026-02-15
+QQQM,NVDA,NVIDIA Corp,0.08960000000000001,Unknown,2026-02-15
+QQQM,AAPL,Apple Inc,0.07629999999999999,Unknown,2026-02-15
+QQQM,MSFT,Microsoft Corp,0.058899999999999994,Unknown,2026-02-15
+QQQM,AMZN,Amazon.com Inc,0.0421,Unknown,2026-02-15
+QQQM,TSLA,Tesla Inc,0.040999999999999995,Unknown,2026-02-15
+QQQM,META,Meta Platforms Inc,0.037599999999999995,Unknown,2026-02-15
+QQQM,WMT,Walmart Inc,0.0356,Unknown,2026-02-15
+QQQM,GOOGL,Alphabet Inc,0.0354,Unknown,2026-02-15
+QQQM,GOOG,Alphabet Inc,0.033,Unknown,2026-02-15
+QQQM,AVGO,Broadcom Inc,0.0308,Unknown,2026-02-15
+QQQM,MU,Micron Technology Inc,0.0254,Unknown,2026-02-15
+QQQM,COST,Costco Wholesale Corp,0.0241,Unknown,2026-02-15
+QQQM,AMD,Advanced Micro Devices Inc,0.0183,Unknown,2026-02-15
+QQQM,NFLX,Netflix Inc,0.0175,Unknown,2026-02-15
+QQQM,CSCO,Cisco Systems Inc,0.0161,Unknown,2026-02-15
+QQQM,PLTR,Palantir Technologies Inc,0.0161,Unknown,2026-02-15
+QQQM,LRCX,Lam Research Corp,0.0158,Unknown,2026-02-15
+QQQM,AMAT,Applied Materials Inc,0.014199999999999999,Unknown,2026-02-15
+QQQM,TMUS,T-Mobile US Inc,0.0131,Unknown,2026-02-15
+QQQM,PEP,PepsiCo Inc,0.0124,Unknown,2026-02-15
+QQQM,INTC,Intel Corp,0.0121,Unknown,2026-02-15
+QQQM,LIN,Linde PLC,0.012,Unknown,2026-02-15
+QQQM,TXN,Texas Instruments Inc,0.011000000000000001,Unknown,2026-02-15
+QQQM,AMGN,Amgen Inc,0.010700000000000001,Unknown,2026-02-15
+QQQM,KLAC,KLA Corp,0.0104,Unknown,2026-02-15
+QQQM,GILD,Gilead Sciences Inc,0.0103,Unknown,2026-02-15
+QQQM,ISRG,Intuitive Surgical Inc,0.0092,Unknown,2026-02-15
+QQQM,ADI,Analog Devices Inc,0.0088,Unknown,2026-02-15
+QQQM,HON,Honeywell International Inc,0.0083,Unknown,2026-02-15
+QQQM,QCOM,QUALCOMM Inc,0.008100000000000001,Unknown,2026-02-15
+QQQM,SHOP,Shopify Inc,0.0074,Unknown,2026-02-15
+QQQM,BKNG,Booking Holdings Inc,0.0073,Unknown,2026-02-15
+QQQM,ASML,ASML Holding NV,0.0067,Unknown,2026-02-15
+QQQM,VRTX,Vertex Pharmaceuticals Inc,0.0064,Unknown,2026-02-15
+QQQM,CMCSA,Comcast Corp,0.0063,Unknown,2026-02-15
+QQQM,PANW,Palo Alto Networks Inc,0.0062,Unknown,2026-02-15
+QQQM,APP,AppLovin Corp,0.0060999999999999995,Unknown,2026-02-15
+QQQM,INTU,Intuit Inc,0.006,Unknown,2026-02-15
+QQQM,SBUX,Starbucks Corp,0.006,Unknown,2026-02-15
+QQQM,ADBE,Adobe Inc,0.006,Unknown,2026-02-15
+QQQM,CRWD,Crowdstrike Holdings Inc,0.005600000000000001,Unknown,2026-02-15
+QQQM,MELI,MercadoLibre Inc,0.0055000000000000005,Unknown,2026-02-15
+QQQM,CEG,Constellation Energy Corp,0.0054,Unknown,2026-02-15
+QQQM,WDC,Western Digital Corp,0.0053,Unknown,2026-02-15
+QQQM,MAR,Marriott International Inc/MD,0.0052,Unknown,2026-02-15
+QQQM,STX,Seagate Technology Holdings PLC,0.005,Unknown,2026-02-15
+QQQM,ADP,Automatic Data Processing Inc,0.0046,Unknown,2026-02-15
+QQQM,REGN,Regeneron Pharmaceuticals Inc,0.0044,Unknown,2026-02-15
+QQQM,ORLY,O'Reilly Automotive Inc,0.0044,Unknown,2026-02-15
+QQQM,MDLZ,Mondelez International Inc,0.0043,Unknown,2026-02-15
+QQQM,MNST,Monster Beverage Corp,0.0043,Unknown,2026-02-15
+QQQM,CTAS,Cintas Corp,0.0043,Unknown,2026-02-15
+QQQM,SNPS,Synopsys Inc,0.0043,Unknown,2026-02-15
+QQQM,CDNS,Cadence Design Systems Inc,0.0043,Unknown,2026-02-15
+QQQM,CSX,CSX Corp,0.0040999999999999995,Unknown,2026-02-15
+QQQM,WBD,Warner Bros Discovery Inc,0.0038,Unknown,2026-02-15
+QQQM,AEP,American Electric Power Co Inc,0.0037,Unknown,2026-02-15
+QQQM,MRVL,Marvell Technology Inc,0.0037,Unknown,2026-02-15
+QQQM,PDD,PDD Holdings Inc,0.0036,Unknown,2026-02-15
+QQQM,PCAR,PACCAR Inc,0.0036,Unknown,2026-02-15
+QQQM,DASH,DoorDash Inc,0.0036,Unknown,2026-02-15
+QQQM,ROST,Ross Stores Inc,0.0034000000000000002,Unknown,2026-02-15
+QQQM,FTNT,Fortinet Inc,0.0034000000000000002,Unknown,2026-02-15
+QQQM,NXPI,NXP Semiconductors NV,0.0033,Unknown,2026-02-15
+QQQM,BKR,Baker Hughes Co,0.0033,Unknown,2026-02-15
+QQQM,MPWR,Monolithic Power Systems Inc,0.003,Unknown,2026-02-15
+QQQM,FER,Ferrovial SE,0.0029,Unknown,2026-02-15
+QQQM,FAST,Fastenal Co,0.0029,Unknown,2026-02-15
+QQQM,EA,Electronic Arts Inc,0.0027,Unknown,2026-02-15
+QQQM,ABNB,Airbnb Inc,0.0027,Unknown,2026-02-15
+QQQM,IDXX,IDEXX Laboratories Inc,0.0027,Unknown,2026-02-15
+QQQM,EXC,Exelon Corp,0.0026,Unknown,2026-02-15
+QQQM,FANG,Diamondback Energy Inc,0.0026,Unknown,2026-02-15
+QQQM,ADSK,Autodesk Inc,0.0026,Unknown,2026-02-15
+QQQM,XEL,Xcel Energy Inc,0.0025,Unknown,2026-02-15
+QQQM,CCEP,Coca-Cola Europacific Partners PLC,0.0025,Unknown,2026-02-15
+QQQM,MCHP,Microchip Technology Inc,0.0023,Unknown,2026-02-15
+QQQM,DDOG,Datadog Inc,0.0022,Unknown,2026-02-15
+QQQM,ALNY,Alnylam Pharmaceuticals Inc,0.0022,Unknown,2026-02-15
+QQQM,KDP,Keurig Dr Pepper Inc,0.0022,Unknown,2026-02-15
+QQQM,ODFL,Old Dominion Freight Line Inc,0.0021,Unknown,2026-02-15
+QQQM,TRI,Thomson Reuters Corp,0.0021,Unknown,2026-02-15
+QQQM,PYPL,PayPal Holdings Inc,0.002,Unknown,2026-02-15
+QQQM,GEHC,GE HealthCare Technologies Inc,0.002,Unknown,2026-02-15
+QQQM,CPRT,Copart Inc,0.0019,Unknown,2026-02-15
+QQQM,TTWO,Take-Two Interactive Software Inc,0.0019,Unknown,2026-02-15
+QQQM,ROP,Roper Technologies Inc,0.0019,Unknown,2026-02-15
+QQQM,AXON,Axon Enterprise Inc,0.0019,Unknown,2026-02-15
+QQQM,PAYX,Paychex Inc,0.0018,Unknown,2026-02-15
+QQQM,MSTR,Strategy Inc,0.0018,Unknown,2026-02-15
+QQQM,CTSH,Cognizant Technology Solutions Corp,0.0017000000000000001,Unknown,2026-02-15
+QQQM,INSM,Insmed Inc,0.0017000000000000001,Unknown,2026-02-15
+QQQM,CHTR,Charter Communications Inc,0.0017000000000000001,Unknown,2026-02-15
+QQQM,WDAY,Workday Inc,0.0017000000000000001,Unknown,2026-02-15
+QQQM,KHC,Kraft Heinz Co/The,0.0016,Unknown,2026-02-15
+QQQM,ZS,Zscaler Inc,0.0015,Unknown,2026-02-15
+QQQM,DXCM,Dexcom Inc,0.0014000000000000002,Unknown,2026-02-15
+QQQM,VRSK,Verisk Analytics Inc,0.0014000000000000002,Unknown,2026-02-15
+QQQM,NQH6,CME E-Mini NASDAQ 100 Index Future,0.0012,Unknown,2026-02-15
+QQQM,CSGP,CoStar Group Inc,0.001,Unknown,2026-02-15
+QQQM,AGPXX,Invesco Government & Agency Portfolio,0.001,Unknown,2026-02-15
+QQQM,ARM,ARM Holdings PLC,0.0009,Unknown,2026-02-15
+QQQM,TEAM,Atlassian Corp,0.0008,Unknown,2026-02-15
+QQQM,,CASH COLLATERAL,0.0004,Unknown,2026-02-15
+QQQM,USD,CASH & EQUIVALENTS,0.0,Unknown,2026-02-15
+SPHB,MU,Micron Technology Inc,0.0215,Unknown,2026-02-15
+SPHB,TER,Teradyne Inc,0.0184,Unknown,2026-02-15
+SPHB,MCHP,Microchip Technology Inc,0.0178,Unknown,2026-02-15
+SPHB,WDC,Western Digital Corp,0.0167,Unknown,2026-02-15
+SPHB,ON,ON Semiconductor Corp,0.0166,Unknown,2026-02-15
+SPHB,MPWR,Monolithic Power Systems Inc,0.0163,Unknown,2026-02-15
+SPHB,LRCX,Lam Research Corp,0.015600000000000001,Unknown,2026-02-15
+SPHB,GEV,GE Vernova Inc,0.0147,Unknown,2026-02-15
+SPHB,TSLA,Tesla Inc,0.0138,Unknown,2026-02-15
+SPHB,ALB,Albemarle Corp,0.013600000000000001,Unknown,2026-02-15
+SPHB,FCX,Freeport-McMoRan Inc,0.013600000000000001,Unknown,2026-02-15
+SPHB,AMAT,Applied Materials Inc,0.013500000000000002,Unknown,2026-02-15
+SPHB,UAL,United Airlines Holdings Inc,0.0132,Unknown,2026-02-15
+SPHB,WBD,Warner Bros Discovery Inc,0.0131,Unknown,2026-02-15
+SPHB,ADI,Analog Devices Inc,0.0127,Unknown,2026-02-15
+SPHB,CCL,Carnival Corp,0.0125,Unknown,2026-02-15
+SPHB,NCLH,Norwegian Cruise Line Holdings Ltd,0.0124,Unknown,2026-02-15
+SPHB,NXPI,NXP Semiconductors NV,0.0124,Unknown,2026-02-15
+SPHB,DAL,Delta Air Lines Inc,0.012,Unknown,2026-02-15
+SPHB,STX,Seagate Technology Holdings PLC,0.012,Unknown,2026-02-15
+SPHB,KLAC,KLA Corp,0.011899999999999999,Unknown,2026-02-15
+SPHB,RCL,Royal Caribbean Cruises Ltd,0.0118,Unknown,2026-02-15
+SPHB,DOW,Dow Inc,0.011699999999999999,Unknown,2026-02-15
+SPHB,SWK,Stanley Black & Decker Inc,0.011699999999999999,Unknown,2026-02-15
+SPHB,LUV,Southwest Airlines Co,0.0115,Unknown,2026-02-15
+SPHB,TPR,Tapestry Inc,0.011200000000000002,Unknown,2026-02-15
+SPHB,INTC,Intel Corp,0.011200000000000002,Unknown,2026-02-15
+SPHB,DECK,Deckers Outdoor Corp,0.0111,Unknown,2026-02-15
+SPHB,VST,Vistra Corp,0.0109,Unknown,2026-02-15
+SPHB,TXN,Texas Instruments Inc,0.0109,Unknown,2026-02-15
+SPHB,NVDA,NVIDIA Corp,0.0108,Unknown,2026-02-15
+SPHB,APA,APA Corp,0.0105,Unknown,2026-02-15
+SPHB,ZBRA,Zebra Technologies Corp,0.0105,Unknown,2026-02-15
+SPHB,TPL,Texas Pacific Land Corp,0.0102,Unknown,2026-02-15
+SPHB,AVGO,Broadcom Inc,0.0102,Unknown,2026-02-15
+SPHB,ANET,Arista Networks Inc,0.01,Unknown,2026-02-15
+SPHB,APO,Apollo Global Management Inc,0.009899999999999999,Unknown,2026-02-15
+SPHB,SMCI,Super Micro Computer Inc,0.009899999999999999,Unknown,2026-02-15
+SPHB,EME,EMCOR Group Inc,0.0098,Unknown,2026-02-15
+SPHB,IBKR,Interactive Brokers Group Inc,0.0098,Unknown,2026-02-15
+SPHB,ALGN,Align Technology Inc,0.0097,Unknown,2026-02-15
+SPHB,KEYS,Keysight Technologies Inc,0.0097,Unknown,2026-02-15
+SPHB,CFG,Citizens Financial Group Inc,0.0097,Unknown,2026-02-15
+SPHB,EL,Estee Lauder Cos Inc/The,0.0097,Unknown,2026-02-15
+SPHB,NUE,Nucor Corp,0.0097,Unknown,2026-02-15
+SPHB,IVZ,Invesco Ltd,0.0097,Unknown,2026-02-15
+SPHB,NRG,NRG Energy Inc,0.0096,Unknown,2026-02-15
+SPHB,DD,DuPont de Nemours Inc,0.0096,Unknown,2026-02-15
+SPHB,CPAY,Corpay Inc,0.0096,Unknown,2026-02-15
+SPHB,STLD,Steel Dynamics Inc,0.0095,Unknown,2026-02-15
+SPHB,JBL,Jabil Inc,0.0095,Unknown,2026-02-15
+SPHB,PH,Parker-Hannifin Corp,0.0095,Unknown,2026-02-15
+SPHB,SYF,Synchrony Financial,0.009399999999999999,Unknown,2026-02-15
+SPHB,AMD,Advanced Micro Devices Inc,0.009399999999999999,Unknown,2026-02-15
+SPHB,KEY,KeyCorp,0.009300000000000001,Unknown,2026-02-15
+SPHB,KKR,KKR & Co Inc,0.0092,Unknown,2026-02-15
+SPHB,HPE,Hewlett Packard Enterprise Co,0.0092,Unknown,2026-02-15
+SPHB,RL,Ralph Lauren Corp,0.0092,Unknown,2026-02-15
+SPHB,HWM,Howmet Aerospace Inc,0.0091,Unknown,2026-02-15
+SPHB,SNPS,Synopsys Inc,0.009000000000000001,Unknown,2026-02-15
+SPHB,GS,Goldman Sachs Group Inc/The,0.009000000000000001,Unknown,2026-02-15
+SPHB,META,Meta Platforms Inc,0.009000000000000001,Unknown,2026-02-15
+SPHB,ETN,Eaton Corp PLC,0.0089,Unknown,2026-02-15
+SPHB,WSM,Williams-Sonoma Inc,0.0087,Unknown,2026-02-15
+SPHB,PLTR,Palantir Technologies Inc,0.0087,Unknown,2026-02-15
+SPHB,HOOD,Robinhood Markets Inc,0.0087,Unknown,2026-02-15
+SPHB,DELL,Dell Technologies Inc,0.0086,Unknown,2026-02-15
+SPHB,MGM,MGM Resorts International,0.0086,Unknown,2026-02-15
+SPHB,COF,Capital One Financial Corp,0.0086,Unknown,2026-02-15
+SPHB,APP,AppLovin Corp,0.0085,Unknown,2026-02-15
+SPHB,BX,Blackstone Inc,0.0085,Unknown,2026-02-15
+SPHB,SWKS,Skyworks Solutions Inc,0.0085,Unknown,2026-02-15
+SPHB,EMR,Emerson Electric Co,0.0084,Unknown,2026-02-15
+SPHB,C,Citigroup Inc,0.0083,Unknown,2026-02-15
+SPHB,MS,Morgan Stanley,0.008100000000000001,Unknown,2026-02-15
+SPHB,HBAN,Huntington Bancshares Inc/OH,0.008100000000000001,Unknown,2026-02-15
+SPHB,URI,United Rentals Inc,0.0079,Unknown,2026-02-15
+SPHB,APH,Amphenol Corp,0.0078000000000000005,Unknown,2026-02-15
+SPHB,CEG,Constellation Energy Corp,0.0078000000000000005,Unknown,2026-02-15
+SPHB,CRL,Charles River Laboratories International Inc,0.0077,Unknown,2026-02-15
+SPHB,XYZ,Block Inc,0.0076,Unknown,2026-02-15
+SPHB,CDNS,Cadence Design Systems Inc,0.0075,Unknown,2026-02-15
+SPHB,AXP,American Express Co,0.0074,Unknown,2026-02-15
+SPHB,CRWD,Crowdstrike Holdings Inc,0.0072,Unknown,2026-02-15
+SPHB,ABNB,Airbnb Inc,0.0072,Unknown,2026-02-15
+SPHB,AAPL,Apple Inc,0.0072,Unknown,2026-02-15
+SPHB,EPAM,EPAM Systems Inc,0.0070999999999999995,Unknown,2026-02-15
+SPHB,EXPE,Expedia Group Inc,0.0070999999999999995,Unknown,2026-02-15
+SPHB,QCOM,QUALCOMM Inc,0.0069,Unknown,2026-02-15
+SPHB,GPN,Global Payments Inc,0.0068000000000000005,Unknown,2026-02-15
+SPHB,NTAP,NetApp Inc,0.0067,Unknown,2026-02-15
+SPHB,AMZN,Amazon.com Inc,0.0066,Unknown,2026-02-15
+SPHB,DASH,DoorDash Inc,0.0066,Unknown,2026-02-15
+SPHB,COIN,Coinbase Global Inc,0.0066,Unknown,2026-02-15
+SPHB,TRMB,Trimble Inc,0.0066,Unknown,2026-02-15
+SPHB,BBY,Best Buy Co Inc,0.0066,Unknown,2026-02-15
+SPHB,ORCL,Oracle Corp,0.0060999999999999995,Unknown,2026-02-15
+SPHB,TTD,Trade Desk Inc/The,0.0055000000000000005,Unknown,2026-02-15
+SPHB,DDOG,Datadog Inc,0.0052,Unknown,2026-02-15
+SPHB,NOW,ServiceNow Inc,0.0048,Unknown,2026-02-15
+SPHB,AGPXX,Invesco Government & Agency Portfolio,0.001,Unknown,2026-02-15
+SPHB,USD,CASH & EQUIVALENTS,0.0,Unknown,2026-02-15
