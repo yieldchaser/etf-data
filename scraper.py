@@ -55,7 +55,6 @@ def clean_dataframe(df, ticker, h_date=TODAY):
     mappings = {
         'ticker': ['symbol', 'identifier', 'stock ticker', 'ticker'],
         'name': ['security name', 'company', 'holding', 'description', 'name'],
-        # ADDED '% of net assets' HERE:
         'weight': ['weighting', '% weight', 'weight %', '% net assets', '% of net assets', 'weight']
     }
     for target, keywords in mappings.items():
@@ -66,7 +65,6 @@ def clean_dataframe(df, ticker, h_date=TODAY):
 
     if 'ticker' not in df.columns: return None
     
-    # Safety Check: If weight is missing, add it as 0.0 instead of crashing
     if 'weight' not in df.columns:
         df['weight'] = 0.0
     
@@ -114,4 +112,53 @@ def main():
                 content = r.text.splitlines()
                 start = 0
                 for i, line in enumerate(content[:20]):
-                    if "Ticker" in line or "Symbol" in line: start
+                    if "Ticker" in line or "Symbol" in line: start = i; break
+                df = pd.read_csv(StringIO('\n'.join(content[start:])))
+
+            # --- ALPHA ARCHITECT ---
+            elif etf['scraper_type'] == 'selenium_alpha':
+                driver.get(etf['url'])
+                time.sleep(3)
+                h_date = extract_date_from_text(driver.find_element(By.TAG_NAME, "body").text)
+                try:
+                    selects = driver.find_elements(By.TAG_NAME, "select")
+                    for s in selects:
+                        try: 
+                            Select(s).select_by_visible_text("All")
+                            time.sleep(1)
+                        except: pass
+                except: pass
+                dfs = pd.read_html(StringIO(driver.page_source))
+                for d in dfs: 
+                    if len(d) > 25: df = d; break
+
+            # --- FIRST TRUST ---
+            elif etf['scraper_type'] == 'first_trust':
+                driver.get(etf['url'])
+                time.sleep(5) 
+                h_date = extract_date_from_text(driver.find_element(By.TAG_NAME, "body").text)
+                dfs = pd.read_html(StringIO(driver.page_source))
+                df = find_first_trust_table(dfs)
+            
+            # --- OTHERS ---
+            else:
+                r = requests.get(etf['url'], headers=HEADERS, timeout=15)
+                h_date = extract_date_from_text(r.text)
+                dfs = pd.read_html(StringIO(r.text))
+                for d in dfs:
+                    if len(d) > 20: df = d; break
+
+            clean_df = clean_dataframe(df, ticker, h_date)
+            if clean_df is not None:
+                clean_df.to_csv(os.path.join(DATA_DIR_LATEST, f"{ticker}.csv"), index=False)
+                print(f"    ✅ Success: {len(clean_df)} rows | Date: {h_date}")
+            else:
+                print(f"    ⚠️ No valid data for {ticker}")
+
+        except Exception as e:
+            print(f"    ❌ Error: {e}")
+
+    driver.quit()
+
+if __name__ == "__main__":
+    main()
