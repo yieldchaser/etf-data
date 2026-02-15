@@ -186,4 +186,68 @@ def main():
                 r = requests.get(etf['url'], headers=HEADERS, timeout=15)
                 content = r.text.splitlines()
                 start = 0
-                for i, line in enumerate(content
+                for i, line in enumerate(content[:20]):
+                    if "Ticker" in line or "Symbol" in line: start = i; break
+                df = pd.read_csv(StringIO('\n'.join(content[start:])))
+
+            elif etf['scraper_type'] == 'selenium_alpha':
+                driver.get(etf['url'])
+                time.sleep(3)
+                # Primary Alpha Date
+                text = driver.find_element(By.TAG_NAME, "body").text
+                h_date = clean_date_string(text) or TODAY
+                
+                try:
+                    selects = driver.find_elements(By.TAG_NAME, "select")
+                    for s in selects:
+                        try: Select(s).select_by_visible_text("All"); time.sleep(1)
+                        except: pass
+                except: pass
+                dfs = pd.read_html(StringIO(driver.page_source))
+                for d in dfs: 
+                    if len(d) > 25: df = d; break
+
+            elif etf['scraper_type'] == 'first_trust':
+                driver.get(etf['url'])
+                time.sleep(5) 
+                # Primary First Trust Date
+                text = driver.find_element(By.TAG_NAME, "body").text
+                h_date = clean_date_string(text) or TODAY
+                
+                dfs = pd.read_html(StringIO(driver.page_source))
+                df = find_first_trust_table(dfs)
+            
+            else: 
+                r = requests.get(etf['url'], headers=HEADERS, timeout=15)
+                # Primary Request Date
+                h_date = clean_date_string(r.text) or TODAY
+                dfs = pd.read_html(StringIO(r.text))
+                for d in dfs:
+                    if len(d) > 20: df = d; break
+
+            clean_df = clean_dataframe(df, ticker, h_date)
+            if clean_df is not None:
+                clean_df.to_csv(os.path.join(DATA_DIR_LATEST, f"{ticker}.csv"), index=False)
+                print(f"    ✅ Primary: {len(clean_df)} rows | Date: {h_date}")
+
+            # --- BACKUP TRACK (Invesco Context Fix) ---
+            if 'backup_url' in etf:
+                b_df, b_date = scrape_invesco_backup(driver, etf['backup_url'], ticker)
+                if b_df is not None:
+                    clean_backup = clean_dataframe(b_df, ticker, b_date)
+                    if clean_backup is not None:
+                        clean_backup['Holdings_As_Of'] = b_date
+                        clean_backup.to_csv(os.path.join(DATA_DIR_BACKUP, f"{ticker}_official_backup.csv"), index=False)
+                        print(f"      -> 🛡️ Backup Saved: {len(clean_backup)} rows | Date: {b_date}")
+                    else:
+                        print(f"      -> Backup Data Invalid")
+                else:
+                    print(f"      -> Backup: No Table Found")
+
+        except Exception as e:
+            print(f"    ❌ Error: {e}")
+
+    driver.quit()
+
+if __name__ == "__main__":
+    main()
