@@ -36,44 +36,32 @@ def clean_date_string(date_text):
         except: continue
     return None
 
-def extract_invesco_date_sniper(driver):
+def extract_invesco_nuclear_date(driver):
     """ 
-    Sniper Strategy: 
-    1. Waits specifically for '# of holdings' text.
-    2. Grabs that specific element.
-    3. Extracts the date from it.
+    Nuclear Strategy:
+    1. Scrolls to bottom to force load.
+    2. Grabs RAW HTML source.
+    3. Regex searches the source code directly.
     """
     try:
-        # 1. Wait specifically for the "Fund Details" specific text to load
-        # This prevents grabbing the page before the bottom section is ready
-        WebDriverWait(driver, 15).until(
-            EC.text_to_be_present_in_element((By.TAG_NAME, "body"), "# of holdings")
-        )
+        # 1. Force Scroll to Bottom (Triggers lazy loading)
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        time.sleep(3) # Wait for potential load
         
-        # 2. Find the element containing "# of holdings"
-        # We use XPATH to find the exact node
-        elements = driver.find_elements(By.XPATH, "//*[contains(text(), '# of holdings')]")
+        # 2. Grab Raw Source Code
+        html = driver.page_source
         
-        for el in elements:
-            text = el.text
-            # Debug Print to see what the bot sees
-            print(f"      -> Found Tag: '{text}'") 
+        # 3. Regex Search the Raw HTML
+        # Look specifically for "# of holdings (as of MM/DD/YYYY)"
+        # matching your exact screenshot structure
+        match = re.search(r"# of holdings\s*\(as of\s*(\d{1,2}/\d{1,2}/\d{4})\)", html, re.IGNORECASE)
+        
+        if match:
+            print(f"      -> Nuclear Hit: {match.group(1)}")
+            return clean_date_string(match.group(1))
             
-            # Look for date in this specific string
-            match = re.search(r"\(as of\s*(\d{1,2}/\d{1,2}/\d{4})\)", text)
-            if match:
-                print(f"      -> Sniper Match: {match.group(1)}")
-                return clean_date_string(match.group(1))
-                
     except Exception as e:
-        print(f"      -> Sniper Missed: {e}")
-        pass
-
-    # Backup: Try the Table Header "Etf holdings as of..."
-    try:
-        header_el = driver.find_element(By.XPATH, "//*[contains(text(), 'Etf holdings as of')]")
-        return clean_date_string(header_el.text)
-    except: pass
+        print(f"      -> Nuclear Failed: {e}")
 
     return TODAY
 
@@ -82,8 +70,8 @@ def scrape_invesco_backup(driver, url, ticker):
         print(f"      -> 🛡️ Running Backup Scraper for {ticker}...")
         driver.get(url)
         
-        # 1. Grab Date using SNIPER
-        h_date = extract_invesco_date_sniper(driver)
+        # 1. Grab Date using NUCLEAR Strategy
+        h_date = extract_invesco_nuclear_date(driver)
 
         # 2. Extract Visible Table
         print(f"      -> Downloading from visible table...")
@@ -172,7 +160,7 @@ def main():
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
     except: return
 
-    print(f"🚀 Launching Scraper V15.9 (Sniper # of Holdings) - {TODAY}")
+    print(f"🚀 Launching Scraper V16.0 (Nuclear Source Scan) - {TODAY}")
     driver = setup_driver()
     os.makedirs(DATA_DIR_LATEST, exist_ok=True)
     os.makedirs(DATA_DIR_BACKUP, exist_ok=True)
@@ -234,7 +222,7 @@ def main():
                 clean_df.to_csv(os.path.join(DATA_DIR_LATEST, f"{ticker}.csv"), index=False)
                 print(f"    ✅ Primary: {len(clean_df)} rows | Date: {h_date}")
 
-            # --- BACKUP TRACK (SNIPER) ---
+            # --- BACKUP TRACK (NUCLEAR SCAN) ---
             if 'backup_url' in etf:
                 b_df, b_date = scrape_invesco_backup(driver, etf['backup_url'], ticker)
                 if b_df is not None:
