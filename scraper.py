@@ -24,15 +24,13 @@ HEADERS = {
 }
 
 def clean_date_string(date_text):
-    """ Converts 'February 12, 2026' or '02/12/2026' to '2026-02-12' """
+    """ Converts various date formats to YYYY-MM-DD """
     if not date_text: return None
-    # Remove "as of" and extra spaces
     clean = re.sub(r"(?i)as of|date|[:,-]", " ", date_text).strip()
     
-    # Try Regex Extraction first (for mixed text like "Data as of 02/12/2026")
-    match = re.search(r"(\d{1,2}/\d{1,2}/\d{4})|([A-Z][a-z]+\s+\d{1,2}\s+\d{4})", clean)
-    if match:
-        clean = match.group(0)
+    # Try Regex Extraction
+    match = re.search(r"(\d{1,2}/\d{1,2}/\d{4})|([A-Z][a-z]+\s+\d{1,2},?\s+\d{4})", clean)
+    if match: clean = match.group(0).replace(',', '')
 
     for fmt in ("%m/%d/%Y", "%B %d %Y", "%b %d %Y", "%m %d %Y"):
         try:
@@ -40,29 +38,31 @@ def clean_date_string(date_text):
         except: continue
     return None
 
-def extract_holdings_date_context(driver):
+def extract_invesco_date_radius(driver):
     """ 
-    XPATH Hunter: Finds 'Holdings' and looks for the NEXT 'as of' date.
+    Radius Hunter: Gets all text, finds 'Holdings', checks next 5 lines for a date.
+    Best for finding 'Holdings... as of MM/DD/YYYY' while ignoring 'YTD as of'.
     """
-    found_date = TODAY
     try:
-        # Strategy 1: Look for "as of" element that immediately follows a "Holdings" element
-        # This skips the "YTD as of" which is at the top of the page
-        target = driver.find_element(By.XPATH, "//*[contains(text(), 'Holdings')]/following::*[contains(text(), 'as of')][1]")
-        parsed = clean_date_string(target.text)
-        if parsed: return parsed
-    except: pass
-    
-    try:
-        # Strategy 2: Broad Regex on the Body Text (Fallback)
-        # We increase the buffer to 500 chars to account for large headers
+        # Get full page text and split by lines
         text = driver.find_element(By.TAG_NAME, "body").text
-        match = re.search(r"Holdings[\s\S]{0,500}?(?:as of|date)[\s:]*([A-Z][a-z]+\s+\d{1,2},?\s+\d{4}|\d{1,2}/\d{1,2}/\d{4})", text, re.IGNORECASE)
-        if match:
-            parsed = clean_date_string(match.group(1))
-            if parsed: return parsed
-    except: pass
+        lines = text.split('\n')
+        
+        for i, line in enumerate(lines):
+            # 1. Find the anchor word "Holdings" or "Portfolio"
+            if "Holdings" in line or "Portfolio" in line:
+                
+                # 2. Check this line AND the next 5 lines for a date
+                # This creates a "search radius" around the word Holdings
+                search_block = " ".join(lines[i:i+6])
+                
+                # 3. Look for "as of" pattern within this block
+                match = re.search(r"(?:as of|date)[\s:]*([A-Z][a-z]+\s+\d{1,2},?\s+\d{4}|\d{1,2}/\d{1,2}/\d{4})", search_block, re.IGNORECASE)
+                if match:
+                    parsed = clean_date_string(match.group(1))
+                    if parsed: return parsed
 
+    except: pass
     return TODAY
 
 def scrape_invesco_backup(driver, url, ticker):
@@ -71,8 +71,8 @@ def scrape_invesco_backup(driver, url, ticker):
         driver.get(url)
         time.sleep(5)
         
-        # 1. Grab Date using Context Aware Hunter
-        h_date = extract_holdings_date_context(driver)
+        # 1. Grab Date using Radius Hunter
+        h_date = extract_invesco_date_radius(driver)
 
         # 2. Extract Visible Table
         print(f"      -> Downloading from visible table...")
@@ -85,7 +85,7 @@ def scrape_invesco_backup(driver, url, ticker):
             if any(k in cols for k in valid_keywords):
                 df = d; break
             
-            # Promote Header logic
+            # Promote Header logic (Scan first 5 rows)
             for i in range(min(5, len(d))):
                 row_values = [str(x).strip().lower() for x in d.iloc[i].values]
                 if any(k in row_values for k in valid_keywords):
@@ -162,7 +162,7 @@ def main():
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
     except: return
 
-    print(f"🚀 Launching Scraper V15.4 (XPATH Context Fix) - {TODAY}")
+    print(f"🚀 Launching Scraper V15.5 (Line Scanner Fix) - {TODAY}")
     driver = setup_driver()
     os.makedirs(DATA_DIR_LATEST, exist_ok=True)
     os.makedirs(DATA_DIR_BACKUP, exist_ok=True)
@@ -230,7 +230,7 @@ def main():
                 clean_df.to_csv(os.path.join(DATA_DIR_LATEST, f"{ticker}.csv"), index=False)
                 print(f"    ✅ Primary: {len(clean_df)} rows | Date: {h_date}")
 
-            # --- BACKUP TRACK (Invesco Context Fix) ---
+            # --- BACKUP TRACK (Invesco Line Scanner) ---
             if 'backup_url' in etf:
                 b_df, b_date = scrape_invesco_backup(driver, etf['backup_url'], ticker)
                 if b_df is not None:
