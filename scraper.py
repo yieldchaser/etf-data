@@ -15,7 +15,6 @@ from selenium.webdriver.support import expected_conditions as EC
 # --- CONFIG ---
 CONFIG_FILE = 'config.json'
 DATA_DIR_LATEST = 'data/latest'
-DATA_DIR_BACKUP = 'data/invesco_backup'
 TODAY = datetime.now().strftime('%Y-%m-%d')
 
 HEADERS = {
@@ -23,11 +22,12 @@ HEADERS = {
 }
 
 def extract_holdings_date(text):
-    """ Scans text for dates following keywords. Standardizes to YYYY-MM-DD. """
+    """Targets 'as of', 'effective', and 'holdings' patterns across all families."""
     if not text: return "Unknown"
     text = " ".join(text.split())
+    # Broad regex to catch formats like Feb 12, 2026 or 02/17/2026
     patterns = [
-        r"(?:as of|effective|holdings as of|date of)\s*[:\s]*([A-Z][a-z]+\s+\d{1,2},?\s+\d{4})", 
+        r"(?:as of|effective|holdings as of|date of|as of date)\s*[:\s]*([A-Z][a-z]+\s+\d{1,2},?\s+\d{4})", 
         r"(?:as of|effective|holdings as of|date of)\s*[:\s]*(\d{1,2}/\d{1,2}/\d{4})",
         r"(?:as of|effective|holdings as of|date of)\s*[:\s]*(\d{1,2}-[A-Z][a-z]+-\d{4})"
     ]
@@ -42,24 +42,22 @@ def extract_holdings_date(text):
     return "Unknown"
 
 def clean_dataframe(df, ticker, h_date="Unknown"):
-    """ The missing function! Standardizes columns across all families. """
     if df is None or df.empty: return None
     df.columns = [str(c).strip().lower() for c in df.columns]
-
+    
+    # Precise mappings based on screenshots
     mappings = {
-        'ticker': ['symbol', 'identifier', 'stock ticker', 'holding ticker', 'ticker'],
+        'ticker': ['symbol', 'identifier', 'stock ticker', 'ticker'],
         'name': ['security name', 'company', 'holding', 'description', 'name'],
-        'weight': ['% weight', 'weighting', 'weight %', '% net assets', '% tna', 'weight']
+        'weight': ['% weight', 'weighting', 'weight %', '% net assets', 'weight']
     }
-
     for target, keywords in mappings.items():
         for col in df.columns:
             if any(k in col for k in keywords):
                 df.rename(columns={col: target}, inplace=True)
                 break
-
+    
     if 'ticker' not in df.columns: return None
-
     if 'weight' in df.columns:
         df['weight'] = df['weight'].astype(str).str.replace('%', '').str.replace(',', '')
         df['weight'] = pd.to_numeric(df['weight'], errors='coerce').fillna(0.0)
@@ -76,17 +74,16 @@ def setup_driver():
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--window-size=1920,1080")
-    options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+    # Impersonate a real browser to bypass Alpha Architect/First Trust blocks
+    options.add_argument("user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
     return webdriver.Chrome(options=options)
 
 def main():
     try:
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
-    except Exception as e:
-        print(f"Error loading config: {e}")
-        return
+    except: return
 
-    print(f"🚀 Launching Scraper V13.7 (Fixed Missing Function) - {TODAY}")
+    print(f"🚀 Launching Scraper V13.8 (Explicit Wait Fix) - {TODAY}")
     driver = None
     os.makedirs(DATA_DIR_LATEST, exist_ok=True)
 
@@ -97,17 +94,28 @@ def main():
         
         try:
             df, h_date = None, "Unknown"
-            # Route specific families through Selenium for rendering
-            needs_selenium = etf['scraper_type'] in ['pacer_csv', 'selenium_alpha', 'first_trust'] or ticker in ['COWZ', 'CALF', 'FPX', 'FPXI', 'QMOM', 'IMOM']
+            # Families requiring Selenium due to dynamic JS loading
+            is_pacer = ticker in ['COWZ', 'CALF']
+            is_first_trust = etf['scraper_type'] == 'first_trust'
+            is_alpha = etf['scraper_type'] == 'selenium_alpha'
             
-            if needs_selenium:
+            if is_pacer or is_first_trust or is_alpha:
                 if driver is None: driver = setup_driver()
                 driver.get(etf['url'])
-                time.sleep(5) 
-                body_element = driver.find_element(By.TAG_NAME, "body")
-                h_date = extract_holdings_date(body_element.text)
+                
+                # Targeted waits for each family's unique table ID/Class
+                if is_pacer: 
+                    # Pacer requires clicking the 'Portfolio' tab or waiting for the specific table ID
+                    WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.CLASS_NAME, "table")))
+                elif is_first_trust:
+                    WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.ID, "HoldingsTable")))
+                
+                time.sleep(3) # Final buffer for internal JS sorting
+                page_text = driver.find_element(By.TAG_NAME, "body").text
+                h_date = extract_holdings_date(page_text)
                 dfs = pd.read_html(StringIO(driver.page_source))
             else:
+                # Standard Requests for Invesco/StockAnalysis
                 r = requests.get(etf['url'], headers=HEADERS, timeout=15)
                 h_date = extract_holdings_date(r.text)
                 dfs = pd.read_html(StringIO(r.text))
@@ -122,10 +130,10 @@ def main():
                 clean_df.to_csv(os.path.join(DATA_DIR_LATEST, f"{ticker}.csv"), index=False)
                 print(f"    ✅ Success: {len(clean_df)} rows | As Of: {h_date}")
             else:
-                print(f"    ⚠️ No valid data found for {ticker}")
+                print(f"    ⚠️ No valid table found for {ticker}")
 
         except Exception as e:
-            print(f"    ❌ Failed: {e}")
+            print(f"    ❌ Error: {e}")
 
     if driver: driver.quit()
 
