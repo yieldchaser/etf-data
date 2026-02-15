@@ -16,7 +16,7 @@ from selenium.webdriver.support.ui import Select
 # --- CONFIG ---
 CONFIG_FILE = 'config.json'
 DATA_DIR_LATEST = 'data/latest'
-DATA_DIR_HISTORY = 'data/history' # Added history dir tracking
+DATA_DIR_HISTORY = 'data/history'
 DATA_DIR_BACKUP = 'data/invesco_backup'
 TODAY = datetime.now().strftime('%Y-%m-%d')
 
@@ -132,18 +132,15 @@ def check_if_new_data(ticker, new_date):
     """
     file_path = os.path.join(DATA_DIR_LATEST, f"{ticker}.csv")
     if not os.path.exists(file_path):
-        return True # File doesn't exist, so it is new
-    
+        return True 
     try:
-        # Read only the header and first few rows to check date (efficient)
         existing_df = pd.read_csv(file_path, nrows=1)
         if 'Holdings_As_Of' in existing_df.columns:
             old_date = str(existing_df['Holdings_As_Of'].iloc[0])
             if old_date == str(new_date):
-                return False # Dates match, no need to save
+                return False 
     except: pass
-    
-    return True # Default to saving if check fails
+    return True
 
 def setup_driver():
     options = Options()
@@ -158,12 +155,13 @@ def main():
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
     except: return
 
-    print(f"🚀 Launching Scraper V16.1 (Smart Deduplication) - {TODAY}")
+    print(f"🚀 Launching Scraper V16.2 (Perfect History Logic) - {TODAY}")
     driver = setup_driver()
     os.makedirs(DATA_DIR_LATEST, exist_ok=True)
     os.makedirs(DATA_DIR_BACKUP, exist_ok=True)
     
-    # Create daily archive folder only if we actually have new data
+    # Create daily archive folder
+    # We create folders like data/history/2026/02/15/
     archive_path = os.path.join(DATA_DIR_HISTORY, *TODAY.split('-'))
     
     master_list = []
@@ -229,27 +227,26 @@ def main():
                     clean_backup = clean_dataframe(b_df, ticker, b_date)
                     if clean_backup is not None:
                         clean_backup['Holdings_As_Of'] = b_date
-                        # Always save backup for inspection, or apply deduplication here too?
-                        # For now, let's just save backups to be safe.
                         clean_backup.to_csv(os.path.join(DATA_DIR_BACKUP, f"{ticker}_official_backup.csv"), index=False)
                         print(f"      -> 🛡️ Backup Saved: {len(clean_backup)} rows | Date: {b_date}")
                     
-                        # Prefer Backup if Primary failed or is empty, or if Backup date is newer?
-                        # For Invesco, we trust the Backup Date (Nuclear Hit) more.
+                        # Trust Backup Date more for Invesco
                         if clean_df is None or (b_date > h_date):
                              clean_df = clean_backup
                              h_date = b_date
 
             # --- SMART SAVE LOGIC ---
             if clean_df is not None:
+                # 1. Deduplication for Individual Files (Save space/commits)
                 if check_if_new_data(ticker, h_date):
-                    # It is NEW! Save it.
                     clean_df.to_csv(os.path.join(DATA_DIR_LATEST, f"{ticker}.csv"), index=False)
-                    master_list.append(clean_df) # Add to daily archive list
                     print(f"    ✅ New Data Saved: {len(clean_df)} rows | Date: {h_date}")
                 else:
-                    # It is OLD. Skip it.
-                    print(f"    💤 Data unchanged ({h_date}). Skipping save.")
+                    print(f"    💤 Data unchanged ({h_date}). Skipping individual save.")
+
+                # 2. Master List Append (ALWAYS add to master for complete daily snapshot)
+                master_list.append(clean_df)
+
             else:
                  print(f"    ⚠️ No valid data found.")
 
@@ -258,14 +255,14 @@ def main():
 
     driver.quit()
 
-    # --- SAVE DAILY ARCHIVE (Only if we actually had new data) ---
+    # --- SAVE DAILY ARCHIVE ---
     if master_list:
         os.makedirs(archive_path, exist_ok=True)
         full_df = pd.concat(master_list)
         full_df.to_csv(os.path.join(archive_path, 'master_archive.csv'), index=False)
-        print(f"\n📜 Daily Archive Created: {len(master_list)} ETFs updated.")
+        print(f"\n📜 Daily Archive Created: {len(master_list)} ETFs in snapshot.")
     else:
-        print("\n📜 No new data today. No archive created.")
+        print("\n📜 Critical: No data found for any ETF.")
 
 if __name__ == "__main__":
     main()
