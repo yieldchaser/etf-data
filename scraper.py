@@ -9,12 +9,13 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
 import requests
+import re
 
 # --- CONFIG ---
 CONFIG_FILE = 'config.json'
 DATA_DIR_LATEST = 'data/latest'
 DATA_DIR_HISTORY = 'data/history'
-DATA_DIR_BACKUP = 'data/invesco_backup' # New backup folder
+DATA_DIR_BACKUP = 'data/invesco_backup'
 TODAY = datetime.now().strftime('%Y-%m-%d')
 
 HEADERS = {
@@ -23,7 +24,7 @@ HEADERS = {
 }
 
 def setup_driver():
-    """ Launches Headless Chrome with Strict Timeouts """
+    """ Launches Headless Chrome """
     chrome_options = Options()
     chrome_options.add_argument("--headless=new") 
     chrome_options.add_argument("--no-sandbox")
@@ -31,8 +32,6 @@ def setup_driver():
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--window-size=1920,1080")
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-    
-    # Eager strategy for speed
     chrome_options.page_load_strategy = 'eager'
     
     driver = webdriver.Chrome(options=chrome_options)
@@ -62,7 +61,7 @@ def scrape_invesco_backup(driver, url, ticker):
         driver.get(url)
         time.sleep(5)
         
-        # Try full download first (Smart Cookie)
+        # Try full download first
         try:
             s = requests.Session()
             for c in driver.get_cookies():
@@ -76,12 +75,8 @@ def scrape_invesco_backup(driver, url, ticker):
                 found = False
                 for i, line in enumerate(lines[:30]):
                     if "Ticker" in line or "Holding" in line or "Company" in line:
-                        start_row = i
-                        found = True
-                        break
-                if found:
-                    df = pd.read_csv(StringIO("\n".join(lines[start_row:])))
-                    return df
+                        start_row = i; found = True; break
+                if found: return pd.read_csv(StringIO("\n".join(lines[start_row:])))
         except: pass
 
         # Fallback to visible table
@@ -100,12 +95,18 @@ def clean_dataframe(df, ticker):
     # 1. Standardize columns
     df.columns = [str(c).strip().lower() for c in df.columns]
     
-    # 2. Rename columns (Expanded for new sources)
+    # 2. Dynamic Rename (The "Magnet" Logic)
+    # If any column has "weight" in the name, rename it to 'weight'
+    for col in df.columns:
+        if 'weight' in col:
+            df.rename(columns={col: 'weight'}, inplace=True)
+    
+    # Specific maps for Ticker/Name
     col_map = {
-        'stockticker': 'ticker', 'symbol': 'ticker', 'holding': 'ticker', 'ticker': 'ticker',
+        'stockticker': 'ticker', 'symbol': 'ticker', 'holding': 'ticker', 
         'identifier': 'ticker', 'sedol': 'ticker',
-        'securityname': 'name', 'company': 'name', 'security name': 'name', 'security_name': 'name', 'security': 'name', 'name': 'name', 'company_name': 'name',
-        'weightings': 'weight', '% tna': 'weight', 'weight': 'weight', '% of net assets': 'weight', 'weighting': 'weight', '%_of_net_assets': 'weight', '% net assets': 'weight', 'weight_%': 'weight', '%_weight': 'weight'
+        'securityname': 'name', 'company': 'name', 'security name': 'name', 
+        'security_name': 'name', 'security': 'name', 'company_name': 'name'
     }
     df.rename(columns=col_map, inplace=True)
 
@@ -120,7 +121,8 @@ def clean_dataframe(df, ticker):
     df['name'] = df['name'].astype(str)
     df['ticker'] = df['ticker'].astype(str)
     
-    pattern = '|'.join(stop_words)
+    # Safe regex escape
+    pattern = '|'.join([re.escape(w) for w in stop_words])
     mask = (df['name'].str.contains(pattern, case=False, na=False) | 
             df['ticker'].str.contains(pattern, case=False, na=False))
     df = df[~mask].copy()
@@ -131,11 +133,12 @@ def clean_dataframe(df, ticker):
     df['ticker'] = df['ticker'].str.upper().str.strip()
 
     if 'weight' in df.columns:
-        if df['weight'].dtype == object:
-            df['weight'] = df['weight'].astype(str).str.replace('%', '').str.replace(',', '')
+        # Convert to string first to handle % signs
+        df['weight'] = df['weight'].astype(str).str.replace('%', '').str.replace(',', '')
         df['weight'] = pd.to_numeric(df['weight'], errors='coerce')
-        # Handle cases where weight is 3.5 (percent) vs 0.035 (decimal)
-        # Assuming if max > 1, it is a percentage
+        
+        # Logic: If max value is > 1.0 (like 8.96), it's a percentage -> divide by 100
+        # If max value is <= 1.0 (like 0.0896), it's already a decimal -> leave it
         if df['weight'].max() > 1.0:
             df['weight'] = df['weight'] / 100.0
     else:
@@ -150,7 +153,7 @@ def main():
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
     except: return
 
-    print("🚀 Launching Scraper V13.0 (Dual-Track System)...")
+    print("🚀 Launching Scraper V13.1 (Weight Column Fix)...")
     
     driver = None
     session = requests.Session()
@@ -206,24 +209,20 @@ def main():
                 for d in dfs: 
                     if len(d) > 25: df = d; break
 
-            # 4. CompaniesMarketCap (New Third-Party)
+            # 4. CompaniesMarketCap
             elif etf['scraper_type'] == 'companies_market_cap':
                 r = session.get(etf['url'], timeout=20)
-                # This site usually has a clean table class="table"
                 dfs = pd.read_html(r.text)
                 for d in dfs:
-                    if len(d) > 30: # Look for the big table
+                    if len(d) > 30: 
                         df = d
-                        # Rename specifically for this site if needed
-                        if 'Name' in df.columns and 'Ticker' in df.columns:
-                            break
+                        break
 
-            # 5. StockAnalysis (New Third-Party)
+            # 5. StockAnalysis
             elif etf['scraper_type'] == 'stock_analysis':
                 r = session.get(etf['url'], timeout=20)
                 dfs = pd.read_html(r.text)
                 for d in dfs:
-                    # StockAnalysis tables often have "No." "Symbol" "Name"
                     if 'Symbol' in d.columns and 'Name' in d.columns:
                         d.rename(columns={'Symbol': 'Ticker'}, inplace=True)
                         df = d
@@ -237,7 +236,7 @@ def main():
                 if clean_backup is not None:
                     backup_path = os.path.join(DATA_DIR_BACKUP, f"{ticker}_official_backup.csv")
                     clean_backup.to_csv(backup_path, index=False)
-                    print(f"      -> 🛡️ Backup saved to {backup_path}")
+                    print(f"      -> 🛡️ Backup saved.")
 
             # --- SAVE PRIMARY DATA ---
             clean_df = clean_dataframe(df, ticker)
