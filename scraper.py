@@ -9,6 +9,7 @@ from io import StringIO
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import Select # Added back for Alpha Architect
 
 # --- CONFIG ---
 CONFIG_FILE = 'config.json'
@@ -90,7 +91,7 @@ def main():
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
     except: return
 
-    print(f"🚀 Launching Scraper V14.4 (Syntax Fixed) - {TODAY}")
+    print(f"🚀 Launching Scraper V14.5 (QMOM/IMOM Restoration) - {TODAY}")
     driver = setup_driver()
     os.makedirs(DATA_DIR_LATEST, exist_ok=True)
 
@@ -102,14 +103,13 @@ def main():
         try:
             df, h_date = None, TODAY
             
+            # --- PACER (CSV Method) ---
             if etf['scraper_type'] == 'pacer_csv':
-                # Get Date from website text
                 driver.get(etf['url'])
                 time.sleep(3)
                 h_date = extract_date_from_text(driver.find_element(By.TAG_NAME, "body").text)
                 
-                # Get Data via CSV download link
-                # Note: Assuming 'url' in config for pacer_csv is the direct CSV download link
+                # Direct CSV Download
                 r = requests.get(etf['url'], headers=HEADERS, timeout=15)
                 content = r.text.splitlines()
                 start = 0
@@ -117,19 +117,36 @@ def main():
                     if "Ticker" in line or "Symbol" in line: start = i; break
                 df = pd.read_csv(StringIO('\n'.join(content[start:])))
 
-            elif etf['scraper_type'] in ['selenium_alpha', 'first_trust']:
+            # --- ALPHA ARCHITECT (QMOM/IMOM) ---
+            elif etf['scraper_type'] == 'selenium_alpha':
+                # Restored Logic: Interaction with Dropdowns
+                driver.get(etf['url'])
+                time.sleep(3)
+                h_date = extract_date_from_text(driver.find_element(By.TAG_NAME, "body").text)
+                
+                try:
+                    # The Magic Step: Find dropdowns and select "All"
+                    selects = driver.find_elements(By.TAG_NAME, "select")
+                    for s in selects:
+                        try: 
+                            Select(s).select_by_visible_text("All")
+                            time.sleep(1)
+                        except: pass
+                except: pass
+                
+                dfs = pd.read_html(StringIO(driver.page_source))
+                for d in dfs: 
+                    if len(d) > 25: df = d; break
+
+            # --- FIRST TRUST ---
+            elif etf['scraper_type'] == 'first_trust':
                 driver.get(etf['url'])
                 time.sleep(5) 
-                page_text = driver.find_element(By.TAG_NAME, "body").text
-                h_date = extract_date_from_text(page_text)
+                h_date = extract_date_from_text(driver.find_element(By.TAG_NAME, "body").text)
                 dfs = pd.read_html(StringIO(driver.page_source))
-                
-                if etf['scraper_type'] == 'first_trust':
-                    df = find_first_trust_table(dfs)
-                else: # Alpha Architect
-                    for d in dfs:
-                        if len(d) > 20: df = d; break
+                df = find_first_trust_table(dfs)
             
+            # --- INVESCO / STOCK ANALYSIS ---
             else:
                 r = requests.get(etf['url'], headers=HEADERS, timeout=15)
                 h_date = extract_date_from_text(r.text)
