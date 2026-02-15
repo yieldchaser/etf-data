@@ -1,11 +1,26 @@
 ETF_Ticker,ticker,name,weight,Date_Scraped
-PIE,2330,Taiwan Semiconductor Manufacturing Co Ltd,0.0301,2026-02-08
-PIE,5434,Topco Scientific Co Ltd,0.0258,2026-02-08
-PIE,2345,Accton Technology Corp,0.0256,2026-02-08
-PIE,2404,United Integrated Services Co Ltd,0.0242,2026-02-08
-PIE,GENTERA*,Gentera SAB de CV,0.0231,2026-02-08
-PIE,TISCO-R,Tisco Financial Group PCL,0.022799999999999997,2026-02-08
-PIE,6919,Caliway Biopharmaceuticals Co Ltd,0.0226,2026-02-08
-PIE,6257,Sigurd Microelectronics Corp,0.0223,2026-02-08
-PIE,6691,Yankey Engineering Co Ltd,0.0203,2026-02-08
-PIE,2408,Nanya Technology Corp,0.0191,2026-02-08
+PIE,TPE: 2345,Accton Technology Corporation,0.0,2026-02-15
+PIE,TPE: 2330,Taiwan Semiconductor Manufacturing Company Limited,0.0,2026-02-15
+PIE,TPE: 5434,"Topco Scientific Co.,Ltd.",0.0,2026-02-15
+PIE,TPE: 2404,"United Integrated Services Co., Ltd.",0.0,2026-02-15
+PIE,BMV: GENTERA,"Gentera, S.A.B. de C.V.",0.0,2026-02-15
+PIE,NAN,TISCO Financial Group PCL Units Non-Voting Depository Receipt,0.0,2026-02-15
+PIE,TPE: 6257,Sigurd Microelectronics Corporation,0.0,2026-02-15
+PIE,TPE: 6919,"Caliway Biopharmaceuticals Co., Ltd.",0.0,2026-02-15
+PIE,TPE: 6691,"Yankey Engineering Co., Ltd.",0.0,2026-02-15
+PIE,TPE: 2408,Nanya Technology Corporation,0.0,2026-02-15
+PIE,BVMF: CURY3,Cury Construtora e Incorporadora S.A.,0.0,2026-02-15
+PIE,TERA.E.IS,Tera Yatirim Menkul Degerler AS,0.0,2026-02-15
+PIE,TPE: 8112,"Supreme Electronics Co., Ltd.",0.0,2026-02-15
+PIE,TPE: 6191,Global Brands Manufacture Ltd.,0.0,2026-02-15
+PIE,JSE: VKE,Vukile Property Fund Limited,0.0,2026-02-15
+PIE,BVMF: DIRR3,Direcional Engenharia S.A.,0.0,2026-02-15
+PIE,TPE: 2344,Winbond Electronics Corporation,0.0,2026-02-15
+PIE,CCOZF,China Coal Energy Company Limited,0.0,2026-02-15
+PIE,HKG: 1258,China Nonferrous Mining Corporation Limited,0.0,2026-02-15
+PIE,IDX: ENRG,PT Energi Mega Persada Tbk,0.0,2026-02-15
+PIE,CUAEF,China Shenhua Energy Company Limited,0.0,2026-02-15
+PIE,ICT.PM,International Container Terminal Services Inc,0.0,2026-02-15
+PIE,HKG: 1378,China Hongqiao Group Limited,0.0,2026-02-15
+PIE,PCCYF,PetroChina Company Limited,0.0,2026-02-15
+PIE,BMV: Q,"QuÃ¡litas Controladora, S.A.B. de C.V.",0.0,2026-02-15

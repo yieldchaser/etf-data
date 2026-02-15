@@ -1,11 +1,103 @@
 ETF_Ticker,ticker,name,weight,Date_Scraped
-QQQM,NVDA,NVIDIA Corp,0.0832,2026-02-08
-QQQM,AAPL,Apple Inc,0.0812,2026-02-08
-QQQM,MSFT,Microsoft Corp,0.0583,2026-02-08
-QQQM,AMZN,Amazon.com Inc,0.047400000000000005,2026-02-08
-QQQM,META,Meta Platforms Inc,0.0392,2026-02-08
-QQQM,GOOGL,Alphabet Inc,0.0384,2026-02-08
-QQQM,GOOG,Alphabet Inc,0.035699999999999996,2026-02-08
-QQQM,TSLA,Tesla Inc,0.035,2026-02-08
-QQQM,WMT,Walmart Inc,0.0341,2026-02-08
-QQQM,AVGO,Broadcom Inc,0.0292,2026-02-08
+QQQM,NVDA,NVIDIA Corp,0.0,2026-02-15
+QQQM,AAPL,Apple Inc,0.0,2026-02-15
+QQQM,MSFT,Microsoft Corp,0.0,2026-02-15
+QQQM,AMZN,Amazon.com Inc,0.0,2026-02-15
+QQQM,TSLA,Tesla Inc,0.0,2026-02-15
+QQQM,META,Meta Platforms Inc,0.0,2026-02-15
+QQQM,WMT,Walmart Inc,0.0,2026-02-15
+QQQM,GOOGL,Alphabet Inc,0.0,2026-02-15
+QQQM,GOOG,Alphabet Inc,0.0,2026-02-15
+QQQM,AVGO,Broadcom Inc,0.0,2026-02-15
+QQQM,MU,Micron Technology Inc,0.0,2026-02-15
+QQQM,COST,Costco Wholesale Corp,0.0,2026-02-15
+QQQM,AMD,Advanced Micro Devices Inc,0.0,2026-02-15
+QQQM,NFLX,Netflix Inc,0.0,2026-02-15
+QQQM,CSCO,Cisco Systems Inc,0.0,2026-02-15
+QQQM,PLTR,Palantir Technologies Inc,0.0,2026-02-15
+QQQM,LRCX,Lam Research Corp,0.0,2026-02-15
+QQQM,AMAT,Applied Materials Inc,0.0,2026-02-15
+QQQM,TMUS,T-Mobile US Inc,0.0,2026-02-15
+QQQM,PEP,PepsiCo Inc,0.0,2026-02-15
+QQQM,INTC,Intel Corp,0.0,2026-02-15
+QQQM,LIN,Linde PLC,0.0,2026-02-15
+QQQM,TXN,Texas Instruments Inc,0.0,2026-02-15
+QQQM,AMGN,Amgen Inc,0.0,2026-02-15
+QQQM,KLAC,KLA Corp,0.0,2026-02-15
+QQQM,GILD,Gilead Sciences Inc,0.0,2026-02-15
+QQQM,ISRG,Intuitive Surgical Inc,0.0,2026-02-15
+QQQM,ADI,Analog Devices Inc,0.0,2026-02-15
+QQQM,HON,Honeywell International Inc,0.0,2026-02-15
+QQQM,QCOM,QUALCOMM Inc,0.0,2026-02-15
+QQQM,SHOP,Shopify Inc,0.0,2026-02-15
+QQQM,BKNG,Booking Holdings Inc,0.0,2026-02-15
+QQQM,ASML,ASML Holding NV,0.0,2026-02-15
+QQQM,VRTX,Vertex Pharmaceuticals Inc,0.0,2026-02-15
+QQQM,CMCSA,Comcast Corp,0.0,2026-02-15
+QQQM,PANW,Palo Alto Networks Inc,0.0,2026-02-15
+QQQM,APP,AppLovin Corp,0.0,2026-02-15
+QQQM,INTU,Intuit Inc,0.0,2026-02-15
+QQQM,SBUX,Starbucks Corp,0.0,2026-02-15
+QQQM,ADBE,Adobe Inc,0.0,2026-02-15
+QQQM,CRWD,Crowdstrike Holdings Inc,0.0,2026-02-15
+QQQM,MELI,MercadoLibre Inc,0.0,2026-02-15
+QQQM,CEG,Constellation Energy Corp,0.0,2026-02-15
+QQQM,WDC,Western Digital Corp,0.0,2026-02-15
+QQQM,MAR,Marriott International Inc/MD,0.0,2026-02-15
+QQQM,STX,Seagate Technology Holdings PLC,0.0,2026-02-15
+QQQM,ADP,Automatic Data Processing Inc,0.0,2026-02-15
+QQQM,REGN,Regeneron Pharmaceuticals Inc,0.0,2026-02-15
+QQQM,ORLY,O'Reilly Automotive Inc,0.0,2026-02-15
+QQQM,MDLZ,Mondelez International Inc,0.0,2026-02-15
+QQQM,MNST,Monster Beverage Corp,0.0,2026-02-15
+QQQM,CTAS,Cintas Corp,0.0,2026-02-15
+QQQM,SNPS,Synopsys Inc,0.0,2026-02-15
+QQQM,CDNS,Cadence Design Systems Inc,0.0,2026-02-15
+QQQM,CSX,CSX Corp,0.0,2026-02-15
+QQQM,WBD,Warner Bros Discovery Inc,0.0,2026-02-15
+QQQM,AEP,American Electric Power Co Inc,0.0,2026-02-15
+QQQM,MRVL,Marvell Technology Inc,0.0,2026-02-15
+QQQM,PDD,PDD Holdings Inc,0.0,2026-02-15
+QQQM,PCAR,PACCAR Inc,0.0,2026-02-15
+QQQM,DASH,DoorDash Inc,0.0,2026-02-15
+QQQM,ROST,Ross Stores Inc,0.0,2026-02-15
+QQQM,FTNT,Fortinet Inc,0.0,2026-02-15
+QQQM,NXPI,NXP Semiconductors NV,0.0,2026-02-15
+QQQM,BKR,Baker Hughes Co,0.0,2026-02-15
+QQQM,MPWR,Monolithic Power Systems Inc,0.0,2026-02-15
+QQQM,FER,Ferrovial SE,0.0,2026-02-15
+QQQM,FAST,Fastenal Co,0.0,2026-02-15
+QQQM,EA,Electronic Arts Inc,0.0,2026-02-15
+QQQM,ABNB,Airbnb Inc,0.0,2026-02-15
+QQQM,IDXX,IDEXX Laboratories Inc,0.0,2026-02-15
+QQQM,EXC,Exelon Corp,0.0,2026-02-15
+QQQM,FANG,Diamondback Energy Inc,0.0,2026-02-15
+QQQM,ADSK,Autodesk Inc,0.0,2026-02-15
+QQQM,XEL,Xcel Energy Inc,0.0,2026-02-15
+QQQM,CCEP,Coca-Cola Europacific Partners PLC,0.0,2026-02-15
+QQQM,MCHP,Microchip Technology Inc,0.0,2026-02-15
+QQQM,DDOG,Datadog Inc,0.0,2026-02-15
+QQQM,ALNY,Alnylam Pharmaceuticals Inc,0.0,2026-02-15
+QQQM,KDP,Keurig Dr Pepper Inc,0.0,2026-02-15
+QQQM,ODFL,Old Dominion Freight Line Inc,0.0,2026-02-15
+QQQM,TRI,Thomson Reuters Corp,0.0,2026-02-15
+QQQM,PYPL,PayPal Holdings Inc,0.0,2026-02-15
+QQQM,GEHC,GE HealthCare Technologies Inc,0.0,2026-02-15
+QQQM,CPRT,Copart Inc,0.0,2026-02-15
+QQQM,TTWO,Take-Two Interactive Software Inc,0.0,2026-02-15
+QQQM,ROP,Roper Technologies Inc,0.0,2026-02-15
+QQQM,AXON,Axon Enterprise Inc,0.0,2026-02-15
+QQQM,PAYX,Paychex Inc,0.0,2026-02-15
+QQQM,MSTR,Strategy Inc,0.0,2026-02-15
+QQQM,CTSH,Cognizant Technology Solutions Corp,0.0,2026-02-15
+QQQM,INSM,Insmed Inc,0.0,2026-02-15
+QQQM,CHTR,Charter Communications Inc,0.0,2026-02-15
+QQQM,WDAY,Workday Inc,0.0,2026-02-15
+QQQM,KHC,Kraft Heinz Co/The,0.0,2026-02-15
+QQQM,ZS,Zscaler Inc,0.0,2026-02-15
+QQQM,DXCM,Dexcom Inc,0.0,2026-02-15
+QQQM,VRSK,Verisk Analytics Inc,0.0,2026-02-15
+QQQM,NQH6,CME E-Mini NASDAQ 100 Index Future,0.0,2026-02-15
+QQQM,CSGP,CoStar Group Inc,0.0,2026-02-15
+QQQM,ARM,ARM Holdings PLC,0.0,2026-02-15
+QQQM,TEAM,Atlassian Corp,0.0,2026-02-15

@@ -1,11 +1,77 @@
 ETF_Ticker,ticker,name,weight,Date_Scraped
-XMMO,LITE,Lumentum Holdings Inc,0.050499999999999996,2026-02-08
-XMMO,CIEN,Ciena Corp,0.045700000000000005,2026-02-08
-XMMO,WWD,Woodward Inc,0.039599999999999996,2026-02-08
-XMMO,CW,Curtiss-Wright Corp,0.0387,2026-02-08
-XMMO,USFD,US Foods Holding Corp,0.0362,2026-02-08
-XMMO,TWLO,Twilio Inc,0.0311,2026-02-08
-XMMO,RBA,RB Global Inc,0.027999999999999997,2026-02-08
-XMMO,TLN,Talen Energy Corp,0.0277,2026-02-08
-XMMO,CASY,Casey's General Stores Inc,0.0277,2026-02-08
-XMMO,FLEX,Flex Ltd,0.0264,2026-02-08
+XMMO,LITE,Lumentum Holdings Inc,0.0,2026-02-15
+XMMO,USFD,US Foods Holding Corp,0.0,2026-02-15
+XMMO,CW,Curtiss-Wright Corp,0.0,2026-02-15
+XMMO,WWD,Woodward Inc,0.0,2026-02-15
+XMMO,TWLO,Twilio Inc,0.0,2026-02-15
+XMMO,TLN,Talen Energy Corp,0.0,2026-02-15
+XMMO,CASY,Casey's General Stores Inc,0.0,2026-02-15
+XMMO,FLEX,Flex Ltd,0.0,2026-02-15
+XMMO,CRS,Carpenter Technology Corp,0.0,2026-02-15
+XMMO,RBA,RB Global Inc,0.0,2026-02-15
+XMMO,BWXT,BWX Technologies Inc,0.0,2026-02-15
+XMMO,MTZ,MasTec Inc,0.0,2026-02-15
+XMMO,SGI,Somnigroup International Inc,0.0,2026-02-15
+XMMO,PFGC,Performance Food Group Co,0.0,2026-02-15
+XMMO,APG,API Group Corp,0.0,2026-02-15
+XMMO,RBC,RBC Bearings Inc,0.0,2026-02-15
+XMMO,DTM,DT Midstream Inc,0.0,2026-02-15
+XMMO,PEN,Penumbra Inc,0.0,2026-02-15
+XMMO,WPC,WP Carey Inc,0.0,2026-02-15
+XMMO,NFG,National Fuel Gas Co,0.0,2026-02-15
+XMMO,FIVE,Five Below Inc,0.0,2026-02-15
+XMMO,UGI,UGI Corp,0.0,2026-02-15
+XMMO,EXEL,Exelixis Inc,0.0,2026-02-15
+XMMO,GWRE,Guidewire Software Inc,0.0,2026-02-15
+XMMO,ACM,AECOM,0.0,2026-02-15
+XMMO,FHN,First Horizon Corp,0.0,2026-02-15
+XMMO,OHI,Omega Healthcare Investors Inc,0.0,2026-02-15
+XMMO,IDA,IDACORP Inc,0.0,2026-02-15
+XMMO,SF,Stifel Financial Corp,0.0,2026-02-15
+XMMO,BJ,BJ's Wholesale Club Holdings Inc,0.0,2026-02-15
+XMMO,UNM,Unum Group,0.0,2026-02-15
+XMMO,OGE,OGE Energy Corp,0.0,2026-02-15
+XMMO,PLNT,Planet Fitness Inc,0.0,2026-02-15
+XMMO,SNX,TD SYNNEX Corp,0.0,2026-02-15
+XMMO,ARMK,ARAMARK Holdings Corp,0.0,2026-02-15
+XMMO,EHC,Encompass Health Corp,0.0,2026-02-15
+XMMO,WTS,Watts Water Technologies Inc,0.0,2026-02-15
+XMMO,HLI,Houlihan Lokey Inc,0.0,2026-02-15
+XMMO,TXNM,TXNM Energy Inc,0.0,2026-02-15
+XMMO,AIT,Applied Industrial Technologies Inc,0.0,2026-02-15
+XMMO,SEIC,SEI Investments Co,0.0,2026-02-15
+XMMO,SFM,Sprouts Farmers Market Inc,0.0,2026-02-15
+XMMO,AM,Antero Midstream Corp,0.0,2026-02-15
+XMMO,AYI,Acuity Inc,0.0,2026-02-15
+XMMO,R,Ryder System Inc,0.0,2026-02-15
+XMMO,ORI,Old Republic International Corp,0.0,2026-02-15
+XMMO,ESAB,Esab Corp,0.0,2026-02-15
+XMMO,FHI,Federated Hermes Inc,0.0,2026-02-15
+XMMO,AVAV,AeroVironment Inc,0.0,2026-02-15
+XMMO,OLLI,Ollie's Bargain Outlet Holdings Inc,0.0,2026-02-15
+XMMO,THG,Hanover Insurance Group Inc/The,0.0,2026-02-15
+XMMO,DUOL,Duolingo Inc,0.0,2026-02-15
+XMMO,MASI,Masimo Corp,0.0,2026-02-15
+XMMO,BYD,Boyd Gaming Corp,0.0,2026-02-15
+XMMO,CHWY,Chewy Inc,0.0,2026-02-15
+XMMO,SLM,SLM Corp,0.0,2026-02-15
+XMMO,CART,Maplebear Inc,0.0,2026-02-15
+XMMO,ALK,Alaska Air Group Inc,0.0,2026-02-15
+XMMO,BDC,Belden Inc,0.0,2026-02-15
+XMMO,EPR,EPR Properties,0.0,2026-02-15
+XMMO,G,Genpact Ltd,0.0,2026-02-15
+XMMO,HIMS,Hims & Hers Health Inc,0.0,2026-02-15
+XMMO,SR,Spire Inc,0.0,2026-02-15
+XMMO,TNL,Travel + Leisure Co,0.0,2026-02-15
+XMMO,NEU,NewMarket Corp,0.0,2026-02-15
+XMMO,JHG,Janus Henderson Group PLC,0.0,2026-02-15
+XMMO,PEGA,Pegasystems Inc,0.0,2026-02-15
+XMMO,DOCS,Doximity Inc,0.0,2026-02-15
+XMMO,SBRA,Sabra Health Care REIT Inc,0.0,2026-02-15
+XMMO,EXLS,ExlService Holdings Inc,0.0,2026-02-15
+XMMO,VNO,Vornado Realty Trust,0.0,2026-02-15
+XMMO,FOUR,Shift4 Payments Inc,0.0,2026-02-15
+XMMO,KD,Kyndryl Holdings Inc,0.0,2026-02-15
+XMMO,CAR,Avis Budget Group Inc,0.0,2026-02-15
+XMMO,PPC,Pilgrim's Pride Corp,0.0,2026-02-15
+XMMO,FITB,Fifth Third Bancorp,0.0,2026-02-15

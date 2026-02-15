@@ -1,11 +1,52 @@
 ETF_Ticker,ticker,name,weight,Date_Scraped
-XLG,NVDA,NVIDIA Corp,0.11900000000000001,2026-02-08
-XLG,AAPL,Apple Inc,0.1162,2026-02-08
-XLG,MSFT,Microsoft Corp,0.0834,2026-02-08
-XLG,AMZN,Amazon.com Inc,0.0617,2026-02-08
-XLG,GOOGL,Alphabet Inc,0.054900000000000004,2026-02-08
-XLG,GOOG,Alphabet Inc,0.043899999999999995,2026-02-08
-XLG,AVGO,Broadcom Inc,0.0418,2026-02-08
-XLG,META,Meta Platforms Inc,0.0416,2026-02-08
-XLG,TSLA,Tesla Inc,0.0318,2026-02-08
-XLG,BRK/B,Berkshire Hathaway Inc,0.0263,2026-02-08
+XLG,NVDA,NVIDIA Corp,0.0,2026-02-15
+XLG,AAPL,Apple Inc,0.0,2026-02-15
+XLG,MSFT,Microsoft Corp,0.0,2026-02-15
+XLG,AMZN,Amazon.com Inc,0.0,2026-02-15
+XLG,GOOGL,Alphabet Inc,0.0,2026-02-15
+XLG,AVGO,Broadcom Inc,0.0,2026-02-15
+XLG,GOOG,Alphabet Inc,0.0,2026-02-15
+XLG,META,Meta Platforms Inc,0.0,2026-02-15
+XLG,TSLA,Tesla Inc,0.0,2026-02-15
+XLG,BRK/B,Berkshire Hathaway Inc,0.0,2026-02-15
+XLG,LLY,Eli Lilly & Co,0.0,2026-02-15
+XLG,JPM,JPMorgan Chase & Co,0.0,2026-02-15
+XLG,XOM,Exxon Mobil Corp,0.0,2026-02-15
+XLG,JNJ,Johnson & Johnson,0.0,2026-02-15
+XLG,WMT,Walmart Inc,0.0,2026-02-15
+XLG,V,Visa Inc,0.0,2026-02-15
+XLG,COST,Costco Wholesale Corp,0.0,2026-02-15
+XLG,MA,Mastercard Inc,0.0,2026-02-15
+XLG,ABBV,AbbVie Inc,0.0,2026-02-15
+XLG,HD,Home Depot Inc/The,0.0,2026-02-15
+XLG,PG,Procter & Gamble Co/The,0.0,2026-02-15
+XLG,CAT,Caterpillar Inc,0.0,2026-02-15
+XLG,BAC,Bank of America Corp,0.0,2026-02-15
+XLG,CVX,Chevron Corp,0.0,2026-02-15
+XLG,AMD,Advanced Micro Devices Inc,0.0,2026-02-15
+XLG,GE,General Electric Co,0.0,2026-02-15
+XLG,NFLX,Netflix Inc,0.0,2026-02-15
+XLG,KO,Coca-Cola Co/The,0.0,2026-02-15
+XLG,MRK,Merck & Co Inc,0.0,2026-02-15
+XLG,CSCO,Cisco Systems Inc,0.0,2026-02-15
+XLG,PLTR,Palantir Technologies Inc,0.0,2026-02-15
+XLG,PM,Philip Morris International Inc,0.0,2026-02-15
+XLG,WFC,Wells Fargo & Co,0.0,2026-02-15
+XLG,GS,Goldman Sachs Group Inc/The,0.0,2026-02-15
+XLG,ORCL,Oracle Corp,0.0,2026-02-15
+XLG,UNH,UnitedHealth Group Inc,0.0,2026-02-15
+XLG,IBM,International Business Machines Corp,0.0,2026-02-15
+XLG,MCD,McDonald's Corp,0.0,2026-02-15
+XLG,PEP,PepsiCo Inc,0.0,2026-02-15
+XLG,LIN,Linde PLC,0.0,2026-02-15
+XLG,VZ,Verizon Communications Inc,0.0,2026-02-15
+XLG,T,AT&T Inc,0.0,2026-02-15
+XLG,TXN,Texas Instruments Inc,0.0,2026-02-15
+XLG,ABT,Abbott Laboratories,0.0,2026-02-15
+XLG,DIS,Walt Disney Co/The,0.0,2026-02-15
+XLG,CRM,Salesforce Inc,0.0,2026-02-15
+XLG,ISRG,Intuitive Surgical Inc,0.0,2026-02-15
+XLG,ACN,Accenture PLC,0.0,2026-02-15
+XLG,INTU,Intuit Inc,0.0,2026-02-15
+XLG,ADBE,Adobe Inc,0.0,2026-02-15
+XLG,NOW,ServiceNow Inc,0.0,2026-02-15

@@ -1,11 +1,110 @@
 ETF_Ticker,ticker,name,weight,Date_Scraped
-XSMO,IDCC,InterDigital Inc,0.038,2026-02-08
-XSMO,AWI,Armstrong World Industries Inc,0.0311,2026-02-08
-XSMO,EAT,Brinker International Inc,0.0304,2026-02-08
-XSMO,ZWS,Zurn Elkay Water Solutions Corp,0.0232,2026-02-08
-XSMO,SANM,Sanmina Corp,0.0231,2026-02-08
-XSMO,CTRE,CareTrust REIT Inc,0.0231,2026-02-08
-XSMO,SNEX,StoneX Group Inc,0.0225,2026-02-08
-XSMO,JBTM,JBT Marel Corp,0.022400000000000003,2026-02-08
-XSMO,ESE,ESCO Technologies Inc,0.0222,2026-02-08
-XSMO,GVA,Granite Construction Inc,0.019299999999999998,2026-02-08
+XSMO,IDCC,InterDigital Inc,0.0,2026-02-15
+XSMO,AWI,Armstrong World Industries Inc,0.0,2026-02-15
+XSMO,EAT,Brinker International Inc,0.0,2026-02-15
+XSMO,ESE,ESCO Technologies Inc,0.0,2026-02-15
+XSMO,SNEX,StoneX Group Inc,0.0,2026-02-15
+XSMO,CTRE,CareTrust REIT Inc,0.0,2026-02-15
+XSMO,ZWS,Zurn Elkay Water Solutions Corp,0.0,2026-02-15
+XSMO,SANM,Sanmina Corp,0.0,2026-02-15
+XSMO,JBTM,JBT Marel Corp,0.0,2026-02-15
+XSMO,GVA,Granite Construction Inc,0.0,2026-02-15
+XSMO,TDS,Telephone and Data Systems Inc,0.0,2026-02-15
+XSMO,SITM,SiTime Corp,0.0,2026-02-15
+XSMO,GTES,Gates Industrial Corp PLC,0.0,2026-02-15
+XSMO,SMTC,Semtech Corp,0.0,2026-02-15
+XSMO,FSS,Federal Signal Corp,0.0,2026-02-15
+XSMO,SXT,Sensient Technologies Corp,0.0,2026-02-15
+XSMO,CALM,Cal-Maine Foods Inc,0.0,2026-02-15
+XSMO,OSIS,OSI Systems Inc,0.0,2026-02-15
+XSMO,VIAV,Viavi Solutions Inc,0.0,2026-02-15
+XSMO,VIRT,Virtu Financial Inc,0.0,2026-02-15
+XSMO,NPO,Enpro Inc,0.0,2026-02-15
+XSMO,SKYW,SkyWest Inc,0.0,2026-02-15
+XSMO,FTDR,Frontdoor Inc,0.0,2026-02-15
+XSMO,TGTX,TG Therapeutics Inc,0.0,2026-02-15
+XSMO,LRN,Stride Inc,0.0,2026-02-15
+XSMO,AZZ,AZZ Inc,0.0,2026-02-15
+XSMO,ECG,Everus Construction Group Inc,0.0,2026-02-15
+XSMO,MRCY,Mercury Systems Inc,0.0,2026-02-15
+XSMO,BOOT,Boot Barn Holdings Inc,0.0,2026-02-15
+XSMO,PTGX,Protagonist Therapeutics Inc,0.0,2026-02-15
+XSMO,URBN,Urban Outfitters Inc,0.0,2026-02-15
+XSMO,POWL,Powell Industries Inc,0.0,2026-02-15
+XSMO,CAKE,Cheesecake Factory Inc/The,0.0,2026-02-15
+XSMO,PJT,PJT Partners Inc,0.0,2026-02-15
+XSMO,AROC,Archrock Inc,0.0,2026-02-15
+XSMO,HWKN,Hawkins Inc,0.0,2026-02-15
+XSMO,PIPR,Piper Sandler Cos,0.0,2026-02-15
+XSMO,PLMR,Palomar Holdings Inc,0.0,2026-02-15
+XSMO,ABCB,Ameris Bancorp,0.0,2026-02-15
+XSMO,MWA,Mueller Water Products Inc,0.0,2026-02-15
+XSMO,CHEF,Chefs' Warehouse Inc/The,0.0,2026-02-15
+XSMO,ATGE,Adtalem Global Education Inc,0.0,2026-02-15
+XSMO,MDU,MDU Resources Group Inc,0.0,2026-02-15
+XSMO,VCTR,Victory Capital Holdings Inc,0.0,2026-02-15
+XSMO,ITRI,Itron Inc,0.0,2026-02-15
+XSMO,MYRG,MYR Group Inc,0.0,2026-02-15
+XSMO,CWEN,Clearway Energy Inc,0.0,2026-02-15
+XSMO,PATK,Patrick Industries Inc,0.0,2026-02-15
+XSMO,ADMA,ADMA Biologics Inc,0.0,2026-02-15
+XSMO,PSMT,PriceSmart Inc,0.0,2026-02-15
+XSMO,OPLN,OPENLANE Inc,0.0,2026-02-15
+XSMO,SHAK,Shake Shack Inc,0.0,2026-02-15
+XSMO,DORM,Dorman Products Inc,0.0,2026-02-15
+XSMO,CALX,Calix Inc,0.0,2026-02-15
+XSMO,STEP,StepStone Group Inc,0.0,2026-02-15
+XSMO,UNFI,United Natural Foods Inc,0.0,2026-02-15
+XSMO,DXPE,DXP Enterprises Inc/TX,0.0,2026-02-15
+XSMO,CORT,Corcept Therapeutics Inc,0.0,2026-02-15
+XSMO,GPI,Group 1 Automotive Inc,0.0,2026-02-15
+XSMO,ENVA,Enova International Inc,0.0,2026-02-15
+XSMO,LGND,Ligand Pharmaceuticals Inc,0.0,2026-02-15
+XSMO,EYE,National Vision Holdings Inc,0.0,2026-02-15
+XSMO,OUT,Outfront Media Inc,0.0,2026-02-15
+XSMO,CSGS,CSG Systems International Inc,0.0,2026-02-15
+XSMO,YOU,Clear Secure Inc,0.0,2026-02-15
+XSMO,BXMT,Blackstone Mortgage Trust Inc,0.0,2026-02-15
+XSMO,PBI,Pitney Bowes Inc,0.0,2026-02-15
+XSMO,SPNT,SiriusPoint Ltd,0.0,2026-02-15
+XSMO,CPRX,Catalyst Pharmaceuticals Inc,0.0,2026-02-15
+XSMO,FBNC,First Bancorp/Southern Pines NC,0.0,2026-02-15
+XSMO,GEO,GEO Group Inc/The,0.0,2026-02-15
+XSMO,FDP,Fresh Del Monte Produce Inc,0.0,2026-02-15
+XSMO,HCI,HCI Group Inc,0.0,2026-02-15
+XSMO,CENX,Century Aluminum Co,0.0,2026-02-15
+XSMO,PHIN,Phinia Inc,0.0,2026-02-15
+XSMO,CARG,Cargurus Inc,0.0,2026-02-15
+XSMO,AAMI,Acadian Asset Management Inc,0.0,2026-02-15
+XSMO,CRK,Comstock Resources Inc,0.0,2026-02-15
+XSMO,HMN,Horace Mann Educators Corp,0.0,2026-02-15
+XSMO,BANF,BancFirst Corp,0.0,2026-02-15
+XSMO,CNK,Cinemark Holdings Inc,0.0,2026-02-15
+XSMO,CXW,CoreCivic Inc,0.0,2026-02-15
+XSMO,ATEN,A10 Networks Inc,0.0,2026-02-15
+XSMO,ALG,Alamo Group Inc,0.0,2026-02-15
+XSMO,MD,Pediatrix Medical Group Inc,0.0,2026-02-15
+XSMO,EZPW,EZCORP Inc,0.0,2026-02-15
+XSMO,WOR,Worthington Enterprises Inc,0.0,2026-02-15
+XSMO,EXTR,Extreme Networks Inc,0.0,2026-02-15
+XSMO,CWEN/A,Clearway Energy Inc,0.0,2026-02-15
+XSMO,BKE,Buckle Inc/The,0.0,2026-02-15
+XSMO,PRDO,Perdoceo Education Corp,0.0,2026-02-15
+XSMO,TILE,Interface Inc,0.0,2026-02-15
+XSMO,WT,WisdomTree Inc,0.0,2026-02-15
+XSMO,WWW,Wolverine World Wide Inc,0.0,2026-02-15
+XSMO,UNIT,Uniti Group Inc,0.0,2026-02-15
+XSMO,MCRI,Monarch Casino & Resort Inc,0.0,2026-02-15
+XSMO,AORT,Artivion Inc,0.0,2026-02-15
+XSMO,EFC,Ellington Financial Inc,0.0,2026-02-15
+XSMO,PAYO,Payoneer Global Inc,0.0,2026-02-15
+XSMO,JBGS,JBG SMITH Properties,0.0,2026-02-15
+XSMO,PAHC,Phibro Animal Health Corp,0.0,2026-02-15
+XSMO,TR,Tootsie Roll Industries Inc,0.0,2026-02-15
+XSMO,SAH,Sonic Automotive Inc,0.0,2026-02-15
+XSMO,UFCS,United Fire Group Inc,0.0,2026-02-15
+XSMO,NPK,National Presto Industries Inc,0.0,2026-02-15
+XSMO,HAFC,Hanmi Financial Corp,0.0,2026-02-15
+XSMO,CBRL,Cracker Barrel Old Country Store Inc,0.0,2026-02-15
+XSMO,WRLD,World Acceptance Corp,0.0,2026-02-15
+XSMO,GOGO,Gogo Inc,0.0,2026-02-15

@@ -1,0 +1,11 @@
+ETF_Ticker,ticker,name,weight,Date_Scraped
+SPHQ,COST,Costco Wholesale Corp,0.0489,2026-02-15
+SPHQ,V,Visa Inc,0.0475,2026-02-15
+SPHQ,MA,Mastercard Inc,0.0467,2026-02-15
+SPHQ,GE,General Electric Co,0.0462,2026-02-15
+SPHQ,AAPL,Apple Inc,0.044800000000000006,2026-02-15
+SPHQ,PG,Procter & Gamble Co/The,0.0393,2026-02-15
+SPHQ,LRCX,Lam Research Corp,0.0378,2026-02-15
+SPHQ,KO,Coca-Cola Co/The,0.0345,2026-02-15
+SPHQ,CAT,Caterpillar Inc,0.0332,2026-02-15
+SPHQ,MRK,Merck & Co Inc,0.0323,2026-02-15

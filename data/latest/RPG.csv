@@ -1,11 +1,61 @@
 ETF_Ticker,ticker,name,weight,Date_Scraped
-RPG,SNDK,Sandisk Corp/DE,0.039900000000000005,2026-02-08
-RPG,FIX,Comfort Systems USA Inc,0.029500000000000002,2026-02-08
-RPG,BRK/B,Berkshire Hathaway Inc,0.0294,2026-02-08
-RPG,MPWR,Monolithic Power Systems Inc,0.0262,2026-02-08
-RPG,HWM,Howmet Aerospace Inc,0.0232,2026-02-08
-RPG,APH,Amphenol Corp,0.022400000000000003,2026-02-08
-RPG,HCA,HCA Healthcare Inc,0.0223,2026-02-08
-RPG,TKO,TKO Group Holdings Inc,0.0223,2026-02-08
-RPG,IBKR,Interactive Brokers Group Inc,0.0215,2026-02-08
-RPG,CCL,Carnival Corp,0.021400000000000002,2026-02-08
+RPG,SNDK,Sandisk Corp/DE,0.0,2026-02-15
+RPG,FIX,Comfort Systems USA Inc,0.0,2026-02-15
+RPG,BRK/B,Berkshire Hathaway Inc,0.0,2026-02-15
+RPG,HWM,Howmet Aerospace Inc,0.0,2026-02-15
+RPG,MPWR,Monolithic Power Systems Inc,0.0,2026-02-15
+RPG,APH,Amphenol Corp,0.0,2026-02-15
+RPG,HCA,HCA Healthcare Inc,0.0,2026-02-15
+RPG,MU,Micron Technology Inc,0.0,2026-02-15
+RPG,IBKR,Interactive Brokers Group Inc,0.0,2026-02-15
+RPG,KLAC,KLA Corp,0.0,2026-02-15
+RPG,CCL,Carnival Corp,0.0,2026-02-15
+RPG,LLY,Eli Lilly & Co,0.0,2026-02-15
+RPG,TKO,TKO Group Holdings Inc,0.0,2026-02-15
+RPG,CIEN,Ciena Corp,0.0,2026-02-15
+RPG,TPR,Tapestry Inc,0.0,2026-02-15
+RPG,NEM,Newmont Corp,0.0,2026-02-15
+RPG,EME,EMCOR Group Inc,0.0,2026-02-15
+RPG,RCL,Royal Caribbean Cruises Ltd,0.0,2026-02-15
+RPG,INCY,Incyte Corp,0.0,2026-02-15
+RPG,NVDA,NVIDIA Corp,0.0,2026-02-15
+RPG,WYNN,Wynn Resorts Ltd,0.0,2026-02-15
+RPG,ANET,Arista Networks Inc,0.0,2026-02-15
+RPG,LRCX,Lam Research Corp,0.0,2026-02-15
+RPG,PWR,Quanta Services Inc,0.0,2026-02-15
+RPG,FSLR,First Solar Inc,0.0,2026-02-15
+RPG,RTX,RTX Corp,0.0,2026-02-15
+RPG,GEV,GE Vernova Inc,0.0,2026-02-15
+RPG,RL,Ralph Lauren Corp,0.0,2026-02-15
+RPG,CRWD,Crowdstrike Holdings Inc,0.0,2026-02-15
+RPG,PLTR,Palantir Technologies Inc,0.0,2026-02-15
+RPG,AVGO,Broadcom Inc,0.0,2026-02-15
+RPG,LVS,Las Vegas Sands Corp,0.0,2026-02-15
+RPG,HLT,Hilton Worldwide Holdings Inc,0.0,2026-02-15
+RPG,ULTA,Ulta Beauty Inc,0.0,2026-02-15
+RPG,META,Meta Platforms Inc,0.0,2026-02-15
+RPG,VST,Vistra Corp,0.0,2026-02-15
+RPG,CAT,Caterpillar Inc,0.0,2026-02-15
+RPG,MAR,Marriott International Inc/MD,0.0,2026-02-15
+RPG,IDXX,IDEXX Laboratories Inc,0.0,2026-02-15
+RPG,EXPE,Expedia Group Inc,0.0,2026-02-15
+RPG,AMD,Advanced Micro Devices Inc,0.0,2026-02-15
+RPG,PODD,Insulet Corp,0.0,2026-02-15
+RPG,MNST,Monster Beverage Corp,0.0,2026-02-15
+RPG,HOOD,Robinhood Markets Inc,0.0,2026-02-15
+RPG,UBER,Uber Technologies Inc,0.0,2026-02-15
+RPG,APP,AppLovin Corp,0.0,2026-02-15
+RPG,WELL,Welltower Inc,0.0,2026-02-15
+RPG,AMAT,Applied Materials Inc,0.0,2026-02-15
+RPG,TDG,TransDigm Group Inc,0.0,2026-02-15
+RPG,DDOG,Datadog Inc,0.0,2026-02-15
+RPG,DASH,DoorDash Inc,0.0,2026-02-15
+RPG,GOOGL,Alphabet Inc,0.0,2026-02-15
+RPG,ORLY,O'Reilly Automotive Inc,0.0,2026-02-15
+RPG,ROL,Rollins Inc,0.0,2026-02-15
+RPG,VRSN,VeriSign Inc,0.0,2026-02-15
+RPG,NFLX,Netflix Inc,0.0,2026-02-15
+RPG,BKNG,Booking Holdings Inc,0.0,2026-02-15
+RPG,GOOG,Alphabet Inc,0.0,2026-02-15
+RPG,ISRG,Intuitive Surgical Inc,0.0,2026-02-15
+RPG,MSFT,Microsoft Corp,0.0,2026-02-15
