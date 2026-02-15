@@ -20,9 +20,8 @@ HEADERS = {
 }
 
 def extract_date_from_text(text):
-    """ Universal date hunter for Invesco, First Trust, and others """
+    """ Universal date hunter for all sources """
     if not text: return TODAY
-    # Regex for 'February 12, 2026' OR '2/13/2026'
     pattern = r"([A-Z][a-z]+\s+\d{1,2},?\s+\d{4})|(\d{1,2}/\d{1,2}/\d{4})"
     match = re.search(pattern, text)
     if match:
@@ -33,11 +32,28 @@ def extract_date_from_text(text):
             except: continue
     return TODAY
 
+def find_first_trust_table(dfs):
+    """ RESTORED: The exact V13.2 logic to fix FPX/FPXI headers """
+    if not dfs: return None
+    valid_keywords = ['ticker', 'symbol', 'holding', 'identifier', 'weighting', 'cusip']
+    for i, df in enumerate(dfs):
+        cols = [str(c).strip().lower() for c in df.columns]
+        if any(k in cols for k in valid_keywords): return df
+        if not df.empty:
+            # Promote first row to header if keywords are found there
+            first_row = [str(x).strip().lower() for x in df.iloc[0].values]
+            if any(k in first_row for k in valid_keywords):
+                print(f"      -> Promoting header in Table #{i}")
+                new_header = df.iloc[0]
+                df = df[1:] 
+                df.columns = new_header
+                return df
+    return None
+
 def clean_dataframe(df, ticker, h_date=TODAY):
     if df is None or df.empty: return None
     df.columns = [str(c).strip().lower() for c in df.columns]
 
-    # Standard column mapping (Enhanced for First Trust 'Identifier' and 'Weighting')
     mappings = {
         'ticker': ['symbol', 'identifier', 'stock ticker', 'ticker'],
         'name': ['security name', 'company', 'holding', 'description', 'name'],
@@ -65,7 +81,7 @@ def setup_driver():
     options = Options()
     options.add_argument("--headless=new")
     options.add_argument("--no-sandbox")
-    options.add_argument("--window-size=1920,1080") # Set size for First Trust layout
+    options.add_argument("--window-size=1920,1080")
     return webdriver.Chrome(options=options)
 
 def main():
@@ -73,7 +89,7 @@ def main():
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
     except: return
 
-    print(f"🚀 Launching Scraper V14.1 (Fixing First Trust Family) - {TODAY}")
+    print(f"🚀 Launching Scraper V14.2 (Restored FPX Table Logic) - {TODAY}")
     driver = setup_driver()
     os.makedirs(DATA_DIR_LATEST, exist_ok=True)
 
@@ -85,27 +101,27 @@ def main():
         try:
             df, h_date = None, TODAY
             
-            # --- SCRAPING LOGIC ---
+            # Use Selenium for families requiring JS or header promotion
             if etf['scraper_type'] in ['pacer_csv', 'selenium_alpha', 'first_trust']:
                 driver.get(etf['url'])
-                time.sleep(5) # Reliable V12 wait
-                
-                # Get Date from the page text (Handles First Trust and Invesco CMC)
+                time.sleep(5) 
                 page_text = driver.find_element(By.TAG_NAME, "body").text
                 h_date = extract_date_from_text(page_text)
-                
                 dfs = pd.read_html(StringIO(driver.page_source))
+                
+                # RESTORED: Specific First Trust Table Hunting
+                if etf['scraper_type'] == 'first_trust':
+                    df = find_first_trust_table(dfs)
+                else:
+                    for d in dfs:
+                        if len(d) > 20: df = d; break
             else:
+                # StockAnalysis / Invesco CMC
                 r = requests.get(etf['url'], headers=HEADERS, timeout=15)
                 h_date = extract_date_from_text(r.text)
                 dfs = pd.read_html(StringIO(r.text))
-
-            for d in dfs:
-                # First Trust tables often have "Shares / Quantity"
-                if any(k in str(d.columns).lower() for k in ['identifier', 'weighting', 'shares / quantity']):
-                    df = d; break
-                if len(d) > 20: 
-                    df = d; break
+                for d in dfs:
+                    if len(d) > 20: df = d; break
 
             clean_df = clean_dataframe(df, ticker, h_date)
             if clean_df is not None:
