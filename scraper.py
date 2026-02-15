@@ -36,69 +36,54 @@ def clean_date_string(date_text):
         except: continue
     return None
 
-def extract_invesco_scored_date(driver):
+def extract_invesco_date_sniper(driver):
     """ 
-    Scoring System: Finds all dates and scores them based on nearby words.
-    Holdings/Portfolio = High Score
-    NAV/Price/YTD = Low Score
+    Sniper Strategy: 
+    1. Waits specifically for '# of holdings' text.
+    2. Grabs that specific element.
+    3. Extracts the date from it.
     """
     try:
-        # Get full page text
-        text = driver.find_element(By.TAG_NAME, "body").text
+        # 1. Wait specifically for the "Fund Details" specific text to load
+        # This prevents grabbing the page before the bottom section is ready
+        WebDriverWait(driver, 15).until(
+            EC.text_to_be_present_in_element((By.TAG_NAME, "body"), "# of holdings")
+        )
         
-        # Find ALL dates (MM/DD/YYYY or Month DD, YYYY)
-        # We capture the index (location) of each match to check context
-        pattern = r"(\d{1,2}/\d{1,2}/\d{4})|([A-Z][a-z]+\s+\d{1,2},?\s+\d{4})"
-        matches = []
-        for m in re.finditer(pattern, text):
-            matches.append(m)
-            
-        best_date = TODAY
-        highest_score = -1
+        # 2. Find the element containing "# of holdings"
+        # We use XPATH to find the exact node
+        elements = driver.find_elements(By.XPATH, "//*[contains(text(), '# of holdings')]")
         
-        for m in matches:
-            date_str = m.group(0)
-            clean_dt = clean_date_string(date_str)
-            if not clean_dt: continue
+        for el in elements:
+            text = el.text
+            # Debug Print to see what the bot sees
+            print(f"      -> Found Tag: '{text}'") 
             
-            # Check context (50 chars before the date)
-            start = max(0, m.start() - 100)
-            end = m.start()
-            context = text[start:end].lower()
-            
-            score = 0
-            # POSITIVE keywords (It's the holdings date)
-            if "holdings" in context: score += 50
-            if "portfolio" in context: score += 50
-            if "# of" in context: score += 20
-            
-            # NEGATIVE keywords (It's a price/NAV/YTD date)
-            if "ytd" in context: score -= 100
-            if "nav" in context: score -= 100
-            if "price" in context: score -= 100
-            if "inception" in context: score -= 100
-            if "market value" in context: score -= 50
-            
-            # If this is the best score so far, keep it
-            if score > highest_score:
-                highest_score = score
-                best_date = clean_dt
+            # Look for date in this specific string
+            match = re.search(r"\(as of\s*(\d{1,2}/\d{1,2}/\d{4})\)", text)
+            if match:
+                print(f"      -> Sniper Match: {match.group(1)}")
+                return clean_date_string(match.group(1))
                 
-        # Only return if we found a positive match (score > 0), else default fallback
-        if highest_score > 0:
-            return best_date
+    except Exception as e:
+        print(f"      -> Sniper Missed: {e}")
+        pass
 
+    # Backup: Try the Table Header "Etf holdings as of..."
+    try:
+        header_el = driver.find_element(By.XPATH, "//*[contains(text(), 'Etf holdings as of')]")
+        return clean_date_string(header_el.text)
     except: pass
+
     return TODAY
 
 def scrape_invesco_backup(driver, url, ticker):
     try:
         print(f"      -> 🛡️ Running Backup Scraper for {ticker}...")
         driver.get(url)
-        time.sleep(5)
         
-        # 1. Grab Date using SCORING System
-        h_date = extract_invesco_scored_date(driver)
+        # 1. Grab Date using SNIPER
+        h_date = extract_invesco_date_sniper(driver)
 
         # 2. Extract Visible Table
         print(f"      -> Downloading from visible table...")
@@ -187,7 +172,7 @@ def main():
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
     except: return
 
-    print(f"🚀 Launching Scraper V15.8 (Proximity Scoring Fix) - {TODAY}")
+    print(f"🚀 Launching Scraper V15.9 (Sniper # of Holdings) - {TODAY}")
     driver = setup_driver()
     os.makedirs(DATA_DIR_LATEST, exist_ok=True)
     os.makedirs(DATA_DIR_BACKUP, exist_ok=True)
@@ -249,7 +234,7 @@ def main():
                 clean_df.to_csv(os.path.join(DATA_DIR_LATEST, f"{ticker}.csv"), index=False)
                 print(f"    ✅ Primary: {len(clean_df)} rows | Date: {h_date}")
 
-            # --- BACKUP TRACK (SCORING SYSTEM) ---
+            # --- BACKUP TRACK (SNIPER) ---
             if 'backup_url' in etf:
                 b_df, b_date = scrape_invesco_backup(driver, etf['backup_url'], ticker)
                 if b_df is not None:
