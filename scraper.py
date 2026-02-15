@@ -36,33 +36,57 @@ def clean_date_string(date_text):
         except: continue
     return None
 
-def extract_invesco_date_v15_7(driver):
+def extract_invesco_scored_date(driver):
     """ 
-    Priority 1: Look for '# of holdings (as of DATE)' -> From 'Fund details' section
-    Priority 2: Look for 'Etf holdings as of DATE' -> From Table Header
-    Priority 3: Look for 'Holdings' anchor and scan forward
+    Scoring System: Finds all dates and scores them based on nearby words.
+    Holdings/Portfolio = High Score
+    NAV/Price/YTD = Low Score
     """
     try:
+        # Get full page text
         text = driver.find_element(By.TAG_NAME, "body").text
         
-        # 1. THE USER'S KEY: "# of holdings (as of 02/12/2026)"
-        # This is extremely specific and avoids YTD/Price confusion
-        match_details = re.search(r"# of holdings\s*\(as of\s*(\d{1,2}/\d{1,2}/\d{4})\)", text, re.IGNORECASE)
-        if match_details:
-            return clean_date_string(match_details.group(1))
-
-        # 2. Table Header Strategy: "Etf holdings as of February 12, 2026"
-        match_header = re.search(r"Etf holdings as of\s*([A-Z][a-z]+\s+\d{1,2},?\s+\d{4})", text, re.IGNORECASE)
-        if match_header:
-            return clean_date_string(match_header.group(1))
-
-        # 3. Fallback: Anchor Strategy (Holdings... as of)
-        start_index = text.find("Holdings")
-        if start_index != -1:
-            scan_text = text[start_index : start_index + 500]
-            match_anchor = re.search(r"(?:as of|date)[\s:]*([A-Z][a-z]+\s+\d{1,2},?\s+\d{4}|\d{1,2}/\d{1,2}/\d{4})", scan_text, re.IGNORECASE)
-            if match_anchor:
-                return clean_date_string(match_anchor.group(1))
+        # Find ALL dates (MM/DD/YYYY or Month DD, YYYY)
+        # We capture the index (location) of each match to check context
+        pattern = r"(\d{1,2}/\d{1,2}/\d{4})|([A-Z][a-z]+\s+\d{1,2},?\s+\d{4})"
+        matches = []
+        for m in re.finditer(pattern, text):
+            matches.append(m)
+            
+        best_date = TODAY
+        highest_score = -1
+        
+        for m in matches:
+            date_str = m.group(0)
+            clean_dt = clean_date_string(date_str)
+            if not clean_dt: continue
+            
+            # Check context (50 chars before the date)
+            start = max(0, m.start() - 100)
+            end = m.start()
+            context = text[start:end].lower()
+            
+            score = 0
+            # POSITIVE keywords (It's the holdings date)
+            if "holdings" in context: score += 50
+            if "portfolio" in context: score += 50
+            if "# of" in context: score += 20
+            
+            # NEGATIVE keywords (It's a price/NAV/YTD date)
+            if "ytd" in context: score -= 100
+            if "nav" in context: score -= 100
+            if "price" in context: score -= 100
+            if "inception" in context: score -= 100
+            if "market value" in context: score -= 50
+            
+            # If this is the best score so far, keep it
+            if score > highest_score:
+                highest_score = score
+                best_date = clean_dt
+                
+        # Only return if we found a positive match (score > 0), else default fallback
+        if highest_score > 0:
+            return best_date
 
     except: pass
     return TODAY
@@ -73,8 +97,8 @@ def scrape_invesco_backup(driver, url, ticker):
         driver.get(url)
         time.sleep(5)
         
-        # 1. Grab Date using the V15.7 Logic
-        h_date = extract_invesco_date_v15_7(driver)
+        # 1. Grab Date using SCORING System
+        h_date = extract_invesco_scored_date(driver)
 
         # 2. Extract Visible Table
         print(f"      -> Downloading from visible table...")
@@ -87,7 +111,6 @@ def scrape_invesco_backup(driver, url, ticker):
             if any(k in cols for k in valid_keywords):
                 df = d; break
             
-            # Promote Header logic
             for i in range(min(5, len(d))):
                 row_values = [str(x).strip().lower() for x in d.iloc[i].values]
                 if any(k in row_values for k in valid_keywords):
@@ -164,7 +187,7 @@ def main():
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
     except: return
 
-    print(f"🚀 Launching Scraper V15.7 (Fund Details Regex) - {TODAY}")
+    print(f"🚀 Launching Scraper V15.8 (Proximity Scoring Fix) - {TODAY}")
     driver = setup_driver()
     os.makedirs(DATA_DIR_LATEST, exist_ok=True)
     os.makedirs(DATA_DIR_BACKUP, exist_ok=True)
@@ -181,7 +204,6 @@ def main():
             if etf['scraper_type'] == 'pacer_csv':
                 driver.get(etf['url'])
                 time.sleep(3)
-                # Primary Pacer Date
                 text = driver.find_element(By.TAG_NAME, "body").text
                 h_date = clean_date_string(text) or TODAY
                 
@@ -195,7 +217,6 @@ def main():
             elif etf['scraper_type'] == 'selenium_alpha':
                 driver.get(etf['url'])
                 time.sleep(3)
-                # Primary Alpha Date
                 text = driver.find_element(By.TAG_NAME, "body").text
                 h_date = clean_date_string(text) or TODAY
                 try:
@@ -211,16 +232,13 @@ def main():
             elif etf['scraper_type'] == 'first_trust':
                 driver.get(etf['url'])
                 time.sleep(5) 
-                # Primary First Trust Date
                 text = driver.find_element(By.TAG_NAME, "body").text
                 h_date = clean_date_string(text) or TODAY
-                
                 dfs = pd.read_html(StringIO(driver.page_source))
                 df = find_first_trust_table(dfs)
             
             else: 
                 r = requests.get(etf['url'], headers=HEADERS, timeout=15)
-                # Primary Request Date
                 h_date = clean_date_string(r.text) or TODAY
                 dfs = pd.read_html(StringIO(r.text))
                 for d in dfs:
@@ -231,7 +249,7 @@ def main():
                 clean_df.to_csv(os.path.join(DATA_DIR_LATEST, f"{ticker}.csv"), index=False)
                 print(f"    ✅ Primary: {len(clean_df)} rows | Date: {h_date}")
 
-            # --- BACKUP TRACK (Invesco Only) ---
+            # --- BACKUP TRACK (SCORING SYSTEM) ---
             if 'backup_url' in etf:
                 b_df, b_date = scrape_invesco_backup(driver, etf['backup_url'], ticker)
                 if b_df is not None:
