@@ -1,11 +1,11 @@
 ETF_Ticker,ticker,name,weight,Date_Scraped
-CSD,SNDK,Sandisk Corp/DE,0.0,2026-02-15
-CSD,CR,Crane Co,0.0,2026-02-15
-CSD,GEV,GE Vernova Inc,0.0,2026-02-15
-CSD,SOLS,Solstice Advanced Materials Inc,0.0,2026-02-15
-CSD,CEG,Constellation Energy Corp,0.0,2026-02-15
-CSD,Q,Qnity Electronics Inc,0.0,2026-02-15
-CSD,ESAB,Esab Corp,0.0,2026-02-15
-CSD,GEHC,GE HealthCare Technologies Inc,0.0,2026-02-15
-CSD,VLTO,Veralto Corp,0.0,2026-02-15
-CSD,ECG,Everus Construction Group Inc,0.0,2026-02-15
+CSD,SNDK,Sandisk Corp/DE,0.08869999999999999,2026-02-15
+CSD,CR,Crane Co,0.0678,2026-02-15
+CSD,GEV,GE Vernova Inc,0.0646,2026-02-15
+CSD,SOLS,Solstice Advanced Materials Inc,0.0632,2026-02-15
+CSD,CEG,Constellation Energy Corp,0.0572,2026-02-15
+CSD,Q,Qnity Electronics Inc,0.0542,2026-02-15
+CSD,ESAB,Esab Corp,0.0466,2026-02-15
+CSD,GEHC,GE HealthCare Technologies Inc,0.044800000000000006,2026-02-15
+CSD,VLTO,Veralto Corp,0.0429,2026-02-15
+CSD,ECG,Everus Construction Group Inc,0.039599999999999996,2026-02-15

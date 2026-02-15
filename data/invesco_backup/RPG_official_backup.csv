@@ -1,11 +1,11 @@
 ETF_Ticker,ticker,name,weight,Date_Scraped
-RPG,SNDK,Sandisk Corp/DE,0.0,2026-02-15
-RPG,FIX,Comfort Systems USA Inc,0.0,2026-02-15
-RPG,BRK/B,Berkshire Hathaway Inc,0.0,2026-02-15
-RPG,HWM,Howmet Aerospace Inc,0.0,2026-02-15
-RPG,MPWR,Monolithic Power Systems Inc,0.0,2026-02-15
-RPG,APH,Amphenol Corp,0.0,2026-02-15
-RPG,HCA,HCA Healthcare Inc,0.0,2026-02-15
-RPG,MU,Micron Technology Inc,0.0,2026-02-15
-RPG,IBKR,Interactive Brokers Group Inc,0.0,2026-02-15
-RPG,KLAC,KLA Corp,0.0,2026-02-15
+RPG,SNDK,Sandisk Corp/DE,0.041299999999999996,2026-02-15
+RPG,FIX,Comfort Systems USA Inc,0.0316,2026-02-15
+RPG,BRK/B,Berkshire Hathaway Inc,0.0275,2026-02-15
+RPG,HWM,Howmet Aerospace Inc,0.025699999999999997,2026-02-15
+RPG,MPWR,Monolithic Power Systems Inc,0.0248,2026-02-15
+RPG,APH,Amphenol Corp,0.023799999999999998,2026-02-15
+RPG,HCA,HCA Healthcare Inc,0.022000000000000002,2026-02-15
+RPG,MU,Micron Technology Inc,0.0216,2026-02-15
+RPG,IBKR,Interactive Brokers Group Inc,0.021400000000000002,2026-02-15
+RPG,KLAC,KLA Corp,0.0212,2026-02-15
