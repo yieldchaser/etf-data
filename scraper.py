@@ -16,6 +16,7 @@ from selenium.webdriver.support.ui import Select
 # --- CONFIG ---
 CONFIG_FILE = 'config.json'
 DATA_DIR_LATEST = 'data/latest'
+DATA_DIR_HISTORY = 'data/history' # Added history dir tracking
 DATA_DIR_BACKUP = 'data/invesco_backup'
 TODAY = datetime.now().strftime('%Y-%m-%d')
 
@@ -37,53 +38,33 @@ def clean_date_string(date_text):
     return None
 
 def extract_invesco_nuclear_date(driver):
-    """ 
-    Nuclear Strategy:
-    1. Scrolls to bottom to force load.
-    2. Grabs RAW HTML source.
-    3. Regex searches the source code directly.
-    """
+    """ Nuclear Strategy: Scrolls, grabs Source, Regexes """
     try:
-        # 1. Force Scroll to Bottom (Triggers lazy loading)
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(3) # Wait for potential load
-        
-        # 2. Grab Raw Source Code
+        time.sleep(3) 
         html = driver.page_source
-        
-        # 3. Regex Search the Raw HTML
-        # Look specifically for "# of holdings (as of MM/DD/YYYY)"
-        # matching your exact screenshot structure
         match = re.search(r"# of holdings\s*\(as of\s*(\d{1,2}/\d{1,2}/\d{4})\)", html, re.IGNORECASE)
-        
         if match:
             print(f"      -> Nuclear Hit: {match.group(1)}")
             return clean_date_string(match.group(1))
-            
     except Exception as e:
         print(f"      -> Nuclear Failed: {e}")
-
     return TODAY
 
 def scrape_invesco_backup(driver, url, ticker):
     try:
         print(f"      -> 🛡️ Running Backup Scraper for {ticker}...")
         driver.get(url)
-        
-        # 1. Grab Date using NUCLEAR Strategy
         h_date = extract_invesco_nuclear_date(driver)
-
-        # 2. Extract Visible Table
+        
         print(f"      -> Downloading from visible table...")
         df = None
         dfs = pd.read_html(StringIO(driver.page_source))
-        
         for d in dfs:
             valid_keywords = ['ticker', 'symbol', 'holding', 'identifier', 'weight', '% of net assets']
             cols = [str(c).strip().lower() for c in d.columns]
             if any(k in cols for k in valid_keywords):
                 df = d; break
-            
             for i in range(min(5, len(d))):
                 row_values = [str(x).strip().lower() for x in d.iloc[i].values]
                 if any(k in row_values for k in valid_keywords):
@@ -93,12 +74,9 @@ def scrape_invesco_backup(driver, url, ticker):
                     df = d
                     break
             if df is not None: break
-
         return df, h_date
-
     except Exception as e:
         print(f"      -> Backup Failed: {e}")
-    
     return None, TODAY
 
 def find_first_trust_table(dfs):
@@ -144,8 +122,28 @@ def clean_dataframe(df, ticker, h_date=TODAY):
     df['ETF_Ticker'] = ticker
     df['Holdings_As_Of'] = h_date
     df['Date_Scraped'] = TODAY
-    
     return df[['ETF_Ticker', 'ticker', 'name', 'weight', 'Holdings_As_Of', 'Date_Scraped']]
+
+def check_if_new_data(ticker, new_date):
+    """ 
+    Smart Deduplication:
+    Checks if the data on disk (data/latest/TICKER.csv) has the same 'Holdings_As_Of' date.
+    Returns: True (Save it) / False (Skip it)
+    """
+    file_path = os.path.join(DATA_DIR_LATEST, f"{ticker}.csv")
+    if not os.path.exists(file_path):
+        return True # File doesn't exist, so it is new
+    
+    try:
+        # Read only the header and first few rows to check date (efficient)
+        existing_df = pd.read_csv(file_path, nrows=1)
+        if 'Holdings_As_Of' in existing_df.columns:
+            old_date = str(existing_df['Holdings_As_Of'].iloc[0])
+            if old_date == str(new_date):
+                return False # Dates match, no need to save
+    except: pass
+    
+    return True # Default to saving if check fails
 
 def setup_driver():
     options = Options()
@@ -160,10 +158,15 @@ def main():
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
     except: return
 
-    print(f"🚀 Launching Scraper V16.0 (Nuclear Source Scan) - {TODAY}")
+    print(f"🚀 Launching Scraper V16.1 (Smart Deduplication) - {TODAY}")
     driver = setup_driver()
     os.makedirs(DATA_DIR_LATEST, exist_ok=True)
     os.makedirs(DATA_DIR_BACKUP, exist_ok=True)
+    
+    # Create daily archive folder only if we actually have new data
+    archive_path = os.path.join(DATA_DIR_HISTORY, *TODAY.split('-'))
+    
+    master_list = []
 
     for etf in etfs:
         if not etf.get('enabled', True): continue
@@ -179,7 +182,6 @@ def main():
                 time.sleep(3)
                 text = driver.find_element(By.TAG_NAME, "body").text
                 h_date = clean_date_string(text) or TODAY
-                
                 r = requests.get(etf['url'], headers=HEADERS, timeout=15)
                 content = r.text.splitlines()
                 start = 0
@@ -217,29 +219,53 @@ def main():
                 for d in dfs:
                     if len(d) > 20: df = d; break
 
+            # --- PROCESS PRIMARY ---
             clean_df = clean_dataframe(df, ticker, h_date)
-            if clean_df is not None:
-                clean_df.to_csv(os.path.join(DATA_DIR_LATEST, f"{ticker}.csv"), index=False)
-                print(f"    ✅ Primary: {len(clean_df)} rows | Date: {h_date}")
-
-            # --- BACKUP TRACK (NUCLEAR SCAN) ---
+            
+            # --- BACKUP TRACK (Invesco) ---
             if 'backup_url' in etf:
                 b_df, b_date = scrape_invesco_backup(driver, etf['backup_url'], ticker)
                 if b_df is not None:
                     clean_backup = clean_dataframe(b_df, ticker, b_date)
                     if clean_backup is not None:
                         clean_backup['Holdings_As_Of'] = b_date
+                        # Always save backup for inspection, or apply deduplication here too?
+                        # For now, let's just save backups to be safe.
                         clean_backup.to_csv(os.path.join(DATA_DIR_BACKUP, f"{ticker}_official_backup.csv"), index=False)
                         print(f"      -> 🛡️ Backup Saved: {len(clean_backup)} rows | Date: {b_date}")
-                    else:
-                        print(f"      -> Backup Data Invalid")
+                    
+                        # Prefer Backup if Primary failed or is empty, or if Backup date is newer?
+                        # For Invesco, we trust the Backup Date (Nuclear Hit) more.
+                        if clean_df is None or (b_date > h_date):
+                             clean_df = clean_backup
+                             h_date = b_date
+
+            # --- SMART SAVE LOGIC ---
+            if clean_df is not None:
+                if check_if_new_data(ticker, h_date):
+                    # It is NEW! Save it.
+                    clean_df.to_csv(os.path.join(DATA_DIR_LATEST, f"{ticker}.csv"), index=False)
+                    master_list.append(clean_df) # Add to daily archive list
+                    print(f"    ✅ New Data Saved: {len(clean_df)} rows | Date: {h_date}")
                 else:
-                    print(f"      -> Backup: No Table Found")
+                    # It is OLD. Skip it.
+                    print(f"    💤 Data unchanged ({h_date}). Skipping save.")
+            else:
+                 print(f"    ⚠️ No valid data found.")
 
         except Exception as e:
             print(f"    ❌ Error: {e}")
 
     driver.quit()
+
+    # --- SAVE DAILY ARCHIVE (Only if we actually had new data) ---
+    if master_list:
+        os.makedirs(archive_path, exist_ok=True)
+        full_df = pd.concat(master_list)
+        full_df.to_csv(os.path.join(archive_path, 'master_archive.csv'), index=False)
+        print(f"\n📜 Daily Archive Created: {len(master_list)} ETFs updated.")
+    else:
+        print("\n📜 No new data today. No archive created.")
 
 if __name__ == "__main__":
     main()
