@@ -26,9 +26,9 @@ HEADERS = {
 def clean_date_string(date_text):
     """ Converts various date formats to YYYY-MM-DD """
     if not date_text: return None
+    # Remove junk
     clean = re.sub(r"(?i)as of|date|[:,-]", " ", date_text).strip()
-    
-    # Try Regex Extraction
+    # Try regex extraction
     match = re.search(r"(\d{1,2}/\d{1,2}/\d{4})|([A-Z][a-z]+\s+\d{1,2},?\s+\d{4})", clean)
     if match: clean = match.group(0).replace(',', '')
 
@@ -38,29 +38,34 @@ def clean_date_string(date_text):
         except: continue
     return None
 
-def extract_invesco_date_radius(driver):
+def extract_invesco_anchor_date(driver):
     """ 
-    Radius Hunter: Gets all text, finds 'Holdings', checks next 5 lines for a date.
-    Best for finding 'Holdings... as of MM/DD/YYYY' while ignoring 'YTD as of'.
+    Anchor Strategy: Finds 'Holdings', then scans forward for the FIRST date match.
+    Guarantees we skip 'YTD' (which is before) and grab 'Holdings' date.
     """
     try:
-        # Get full page text and split by lines
+        # Get all text from the body
         text = driver.find_element(By.TAG_NAME, "body").text
-        lines = text.split('\n')
         
-        for i, line in enumerate(lines):
-            # 1. Find the anchor word "Holdings" or "Portfolio"
-            if "Holdings" in line or "Portfolio" in line:
-                
-                # 2. Check this line AND the next 5 lines for a date
-                # This creates a "search radius" around the word Holdings
-                search_block = " ".join(lines[i:i+6])
-                
-                # 3. Look for "as of" pattern within this block
-                match = re.search(r"(?:as of|date)[\s:]*([A-Z][a-z]+\s+\d{1,2},?\s+\d{4}|\d{1,2}/\d{1,2}/\d{4})", search_block, re.IGNORECASE)
-                if match:
-                    parsed = clean_date_string(match.group(1))
-                    if parsed: return parsed
+        # Define Anchors (Words that signify the start of the holdings section)
+        anchors = ["Holdings", "Portfolio", "Top 10 Holdings"]
+        
+        start_index = -1
+        for anchor in anchors:
+            idx = text.find(anchor)
+            if idx != -1:
+                start_index = idx
+                break
+        
+        # If we found an anchor, slice the text to start looking FROM there
+        if start_index != -1:
+            # Look at the next 1000 characters after "Holdings"
+            scan_text = text[start_index : start_index + 1000]
+            
+            # Find the FIRST date pattern in this slice
+            match = re.search(r"(?:as of|date)[\s:]*([A-Z][a-z]+\s+\d{1,2},?\s+\d{4}|\d{1,2}/\d{1,2}/\d{4})", scan_text, re.IGNORECASE)
+            if match:
+                return clean_date_string(match.group(1)) or TODAY
 
     except: pass
     return TODAY
@@ -71,8 +76,8 @@ def scrape_invesco_backup(driver, url, ticker):
         driver.get(url)
         time.sleep(5)
         
-        # 1. Grab Date using Radius Hunter
-        h_date = extract_invesco_date_radius(driver)
+        # 1. Grab Date using Anchor Strategy
+        h_date = extract_invesco_anchor_date(driver)
 
         # 2. Extract Visible Table
         print(f"      -> Downloading from visible table...")
@@ -85,7 +90,7 @@ def scrape_invesco_backup(driver, url, ticker):
             if any(k in cols for k in valid_keywords):
                 df = d; break
             
-            # Promote Header logic (Scan first 5 rows)
+            # Promote Header logic
             for i in range(min(5, len(d))):
                 row_values = [str(x).strip().lower() for x in d.iloc[i].values]
                 if any(k in row_values for k in valid_keywords):
@@ -162,7 +167,7 @@ def main():
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
     except: return
 
-    print(f"🚀 Launching Scraper V15.5 (Line Scanner Fix) - {TODAY}")
+    print(f"🚀 Launching Scraper V15.6 (Anchor Strategy) - {TODAY}")
     driver = setup_driver()
     os.makedirs(DATA_DIR_LATEST, exist_ok=True)
     os.makedirs(DATA_DIR_BACKUP, exist_ok=True)
@@ -230,7 +235,7 @@ def main():
                 clean_df.to_csv(os.path.join(DATA_DIR_LATEST, f"{ticker}.csv"), index=False)
                 print(f"    ✅ Primary: {len(clean_df)} rows | Date: {h_date}")
 
-            # --- BACKUP TRACK (Invesco Line Scanner) ---
+            # --- BACKUP TRACK (Invesco Anchor) ---
             if 'backup_url' in etf:
                 b_df, b_date = scrape_invesco_backup(driver, etf['backup_url'], ticker)
                 if b_df is not None:
