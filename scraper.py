@@ -9,6 +9,8 @@ from io import StringIO
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 # --- CONFIG ---
 CONFIG_FILE = 'config.json'
@@ -22,24 +24,23 @@ HEADERS = {
 
 def extract_holdings_date(text):
     """
-    Scans text for dates following keywords like 'as of', 'effective', etc.
-    Standardizes various formats (Feb 12, 2026, 02/12/2026, etc.) into YYYY-MM-DD.
+    Enhanced Date Hunter: Scans for multiple date formats across all families.
     """
     if not text: return "Unknown"
-    text = " ".join(text.split()) # Clean whitespace
+    text = " ".join(text.split())
     
-    # regex patterns for date extraction
+    # Expanded patterns to catch Pacer, Invesco, and StockAnalysis variations
     patterns = [
-        r"(?:as of|effective|holdings as of|date of)\s+([A-Z][a-z]+\s+\d{1,2},?\s+\d{4})", 
-        r"(?:as of|effective|holdings as of|date of)\s+(\d{1,2}/\d{1,2}/\d{4})",
-        r"(?:as of|effective)\s+date\s*[:\s]*(\d{1,2}/\d{1,2}/\d{4})"
+        r"(?:as of|effective|holdings as of|date of|as of date)\s*[:\s]*([A-Z][a-z]+\s+\d{1,2},?\s+\d{4})", 
+        r"(?:as of|effective|holdings as of|date of)\s*[:\s]*(\d{1,2}/\d{1,2}/\d{4})",
+        r"(?:as of|effective|holdings as of)\s*[:\s]*(\d{4}-\d{2}-\d{2})"
     ]
     
     for p in patterns:
         match = re.search(p, text, re.IGNORECASE)
         if match:
             raw_date = match.group(1).replace(',', '')
-            for fmt in ("%B %d %Y", "%m/%d/%Y", "%b %d %Y", "%d %b %Y"):
+            for fmt in ("%B %d %Y", "%m/%d/%Y", "%Y-%m-%d", "%b %d %Y"):
                 try:
                     return datetime.strptime(raw_date, fmt).strftime('%Y-%m-%d')
                 except: continue
@@ -49,7 +50,6 @@ def clean_dataframe(df, ticker, h_date="Unknown"):
     if df is None or df.empty: return None
     df.columns = [str(c).strip().lower() for c in df.columns]
 
-    # Broad keyword mapping to catch weights and tickers across families
     mappings = {
         'ticker': ['symbol', 'identifier', 'stock ticker', 'holding ticker', 'ticker'],
         'name': ['security name', 'company', 'holding', 'description', 'name'],
@@ -64,7 +64,6 @@ def clean_dataframe(df, ticker, h_date="Unknown"):
 
     if 'ticker' not in df.columns: return None
 
-    # Handle numeric weights correctly
     if 'weight' in df.columns:
         df['weight'] = df['weight'].astype(str).str.replace('%', '').str.replace(',', '')
         df['weight'] = pd.to_numeric(df['weight'], errors='coerce').fillna(0.0)
@@ -79,14 +78,16 @@ def setup_driver():
     options = Options()
     options.add_argument("--headless=new")
     options.add_argument("--no-sandbox")
-    return webdriver.Chrome(options=options)
+    options.add_argument("--disable-dev-shm-usage")
+    driver = webdriver.Chrome(options=options)
+    return driver
 
 def main():
     try:
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
     except: return
 
-    print(f"🚀 Running Scraper V13.4 - {TODAY}")
+    print(f"🚀 Running Scraper V13.5 (Pacer & Date Fixes) - {TODAY}")
     driver = None
     os.makedirs(DATA_DIR_LATEST, exist_ok=True)
     os.makedirs(DATA_DIR_BACKUP, exist_ok=True)
@@ -97,32 +98,35 @@ def main():
         print(f"➳ {ticker}...")
         
         try:
-            r = requests.get(etf['url'], headers=HEADERS, timeout=20)
-            page_text = r.text
-            h_date = extract_holdings_date(page_text)
-            
-            # Use pandas to read tables directly where possible
-            dfs = pd.read_html(StringIO(page_text))
-            df = None
-            for d in dfs:
-                if len(d) > 5: # Valid data tables usually have multiple rows
-                    df = d
-                    break
-            
-            # Special handling for Invesco Backups
-            if 'backup_url' in etf:
-                if driver is None: driver = setup_driver()
-                driver.get(etf['backup_url'])
-                time.sleep(3)
-                backup_text = driver.find_element(By.TAG_NAME, "body").text
-                b_date = extract_holdings_date(backup_text)
-                # Invesco specific download logic can be added here
-                print(f"      🛡️ Backup Date: {b_date}")
+            df, h_date = None, "Unknown"
 
+            # Use Selenium for PACER and any failing primary sources
+            if etf['scraper_type'] in ['pacer_csv', 'selenium_alpha'] or ticker in ['COWZ', 'CALF']:
+                if driver is None: driver = setup_driver()
+                driver.get(etf['url'])
+                # Wait for content to load for Pacer
+                WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+                page_source = driver.page_source
+                page_text = driver.find_element(By.TAG_NAME, "body").text
+                h_date = extract_holdings_date(page_text)
+                dfs = pd.read_html(StringIO(page_source))
+                for d in dfs:
+                    if len(d) > 5: df = d; break
+            else:
+                # Standard Requests logic for everything else
+                r = requests.get(etf['url'], headers=HEADERS, timeout=20)
+                h_date = extract_holdings_date(r.text)
+                dfs = pd.read_html(StringIO(r.text))
+                for d in dfs:
+                    if len(d) > 10: df = d; break
+
+            # Process Data
             clean_df = clean_dataframe(df, ticker, h_date)
             if clean_df is not None:
                 clean_df.to_csv(os.path.join(DATA_DIR_LATEST, f"{ticker}.csv"), index=False)
                 print(f"    ✅ Rows: {len(clean_df)} | As Of: {h_date}")
+            else:
+                print(f"    ⚠️ No valid table found for {ticker}")
 
         except Exception as e:
             print(f"    ❌ Failed: {e}")
