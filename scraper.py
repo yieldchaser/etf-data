@@ -14,6 +14,7 @@ from selenium.webdriver.support.ui import Select
 # --- CONFIG ---
 CONFIG_FILE = 'config.json'
 DATA_DIR_LATEST = 'data/latest'
+DATA_DIR_BACKUP = 'data/invesco_backup'
 TODAY = datetime.now().strftime('%Y-%m-%d')
 
 HEADERS = {
@@ -21,6 +22,7 @@ HEADERS = {
 }
 
 def extract_date_from_text(text):
+    """ Universal Date Hunter: Handles '02/12/2026' and 'February 12, 2026' """
     if not text: return TODAY
     pattern = r"(\d{1,2}/\d{1,2}/\d{4})|([A-Z][a-z]+\s+\d{1,2},?\s+\d{4})"
     match = re.search(pattern, text)
@@ -31,6 +33,51 @@ def extract_date_from_text(text):
                 return datetime.strptime(raw, fmt).strftime('%Y-%m-%d')
             except: continue
     return TODAY
+
+def scrape_invesco_backup(driver, url, ticker):
+    """ Dedicated Backup Scraper: Grabs Date + Data """
+    try:
+        print(f"      -> 🛡️ Running Backup Scraper for {ticker}...")
+        driver.get(url)
+        time.sleep(5) # Wait for Invesco page to render
+        
+        # 1. Grab the Date from the text (Fixing your missing date issue)
+        page_text = driver.find_element(By.TAG_NAME, "body").text
+        h_date = extract_date_from_text(page_text)
+        
+        # 2. Try Downloading the CSV using requests (Reliable)
+        try:
+            s = requests.Session()
+            # Copy cookies from Selenium to Requests to pass auth/checks
+            for c in driver.get_cookies():
+                s.cookies.set(c['name'], c['value'])
+            s.headers.update({"User-Agent": driver.execute_script("return navigator.userAgent;")})
+            
+            # The Magic Invesco Download Link
+            dl_url = f"https://www.invesco.com/us/en/financial-products/etfs/holdings/main/holdings/0?ticker={ticker}&action=download"
+            r = s.get(dl_url, timeout=10)
+            
+            if r.status_code == 200:
+                lines = r.text.splitlines()
+                # Find where the actual data starts
+                start_row = 0
+                for i, line in enumerate(lines[:30]):
+                    if "Ticker" in line or "Holding" in line or "Company" in line:
+                        start_row = i; break
+                
+                df = pd.read_csv(StringIO("\n".join(lines[start_row:])))
+                return df, h_date
+        except: pass
+
+        # 3. Fallback: Read Visible Table if download fails
+        dfs = pd.read_html(StringIO(driver.page_source))
+        for d in dfs:
+            if len(d) > 5: return d, h_date
+            
+    except Exception as e:
+        print(f"      -> Backup Scraper Failed: {e}")
+    
+    return None, TODAY
 
 def find_first_trust_table(dfs):
     if not dfs: return None
@@ -65,8 +112,7 @@ def clean_dataframe(df, ticker, h_date=TODAY):
 
     if 'ticker' not in df.columns: return None
     
-    if 'weight' not in df.columns:
-        df['weight'] = 0.0
+    if 'weight' not in df.columns: df['weight'] = 0.0
     
     if 'weight' in df.columns:
         df['weight'] = df['weight'].astype(str).str.replace('%', '').str.replace(',', '')
@@ -91,9 +137,10 @@ def main():
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
     except: return
 
-    print(f"🚀 Launching Scraper V14.6 (QMOM Keyword Fix) - {TODAY}")
+    print(f"🚀 Launching Scraper V14.7 (Final Invesco Backup Date Fix) - {TODAY}")
     driver = setup_driver()
     os.makedirs(DATA_DIR_LATEST, exist_ok=True)
+    os.makedirs(DATA_DIR_BACKUP, exist_ok=True)
 
     for etf in etfs:
         if not etf.get('enabled', True): continue
@@ -103,7 +150,7 @@ def main():
         try:
             df, h_date = None, TODAY
             
-            # --- PACER ---
+            # --- PRIMARY SCRAPERS ---
             if etf['scraper_type'] == 'pacer_csv':
                 driver.get(etf['url'])
                 time.sleep(3)
@@ -115,7 +162,6 @@ def main():
                     if "Ticker" in line or "Symbol" in line: start = i; break
                 df = pd.read_csv(StringIO('\n'.join(content[start:])))
 
-            # --- ALPHA ARCHITECT ---
             elif etf['scraper_type'] == 'selenium_alpha':
                 driver.get(etf['url'])
                 time.sleep(3)
@@ -123,16 +169,13 @@ def main():
                 try:
                     selects = driver.find_elements(By.TAG_NAME, "select")
                     for s in selects:
-                        try: 
-                            Select(s).select_by_visible_text("All")
-                            time.sleep(1)
+                        try: Select(s).select_by_visible_text("All"); time.sleep(1)
                         except: pass
                 except: pass
                 dfs = pd.read_html(StringIO(driver.page_source))
                 for d in dfs: 
                     if len(d) > 25: df = d; break
 
-            # --- FIRST TRUST ---
             elif etf['scraper_type'] == 'first_trust':
                 driver.get(etf['url'])
                 time.sleep(5) 
@@ -140,20 +183,28 @@ def main():
                 dfs = pd.read_html(StringIO(driver.page_source))
                 df = find_first_trust_table(dfs)
             
-            # --- OTHERS ---
-            else:
+            else: # Invesco / StockAnalysis / Others
                 r = requests.get(etf['url'], headers=HEADERS, timeout=15)
                 h_date = extract_date_from_text(r.text)
                 dfs = pd.read_html(StringIO(r.text))
                 for d in dfs:
                     if len(d) > 20: df = d; break
 
+            # Save Primary
             clean_df = clean_dataframe(df, ticker, h_date)
             if clean_df is not None:
                 clean_df.to_csv(os.path.join(DATA_DIR_LATEST, f"{ticker}.csv"), index=False)
-                print(f"    ✅ Success: {len(clean_df)} rows | Date: {h_date}")
+                print(f"    ✅ Primary: {len(clean_df)} rows | Date: {h_date}")
             else:
-                print(f"    ⚠️ No valid data for {ticker}")
+                print(f"    ⚠️ Primary Data Missing")
+
+            # --- BACKUP SCRAPER (Specifically for Invesco) ---
+            if 'backup_url' in etf:
+                b_df, b_date = scrape_invesco_backup(driver, etf['backup_url'], ticker)
+                clean_backup = clean_dataframe(b_df, ticker, b_date)
+                if clean_backup is not None:
+                    clean_backup.to_csv(os.path.join(DATA_DIR_BACKUP, f"{ticker}_official_backup.csv"), index=False)
+                    print(f"      -> 🛡️ Backup Saved | Date: {b_date}")
 
         except Exception as e:
             print(f"    ❌ Error: {e}")
