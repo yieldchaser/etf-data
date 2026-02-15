@@ -37,62 +37,72 @@
     },
     {
         "ticker": "SPMO",
-        "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-500-momentum-etf.html",
-        "scraper_type": "selenium_invesco",
+        "url": "https://companiesmarketcap.com/invesco-sp-500-momentum-etf/holdings/",
+        "backup_url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-500-momentum-etf.html",
+        "scraper_type": "companies_market_cap",
         "enabled": true
     },
     {
         "ticker": "CSD",
-        "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-spin-off-etf.html",
-        "scraper_type": "selenium_invesco",
+        "url": "https://stockanalysis.com/etf/csd/holdings/",
+        "backup_url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-spin-off-etf.html",
+        "scraper_type": "stock_analysis",
         "enabled": true
     },
     {
         "ticker": "XSMO",
-        "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-smallcap-momentum-etf.html",
-        "scraper_type": "selenium_invesco",
+        "url": "https://companiesmarketcap.com/invesco-sp-smallcap-momentum-etf/holdings/",
+        "backup_url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-smallcap-momentum-etf.html",
+        "scraper_type": "companies_market_cap",
         "enabled": true
     },
     {
         "ticker": "XMMO",
-        "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-midcap-momentum-etf.html",
-        "scraper_type": "selenium_invesco",
+        "url": "https://companiesmarketcap.com/invesco-sp-midcap-momentum-etf/holdings/",
+        "backup_url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-midcap-momentum-etf.html",
+        "scraper_type": "companies_market_cap",
         "enabled": true
     },
     {
         "ticker": "PIE",
-        "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-dorsey-wright-emerging-markets-momentum-etf.html",
-        "scraper_type": "selenium_invesco",
+        "url": "https://stockanalysis.com/etf/pie/holdings/",
+        "backup_url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-dorsey-wright-emerging-markets-momentum-etf.html",
+        "scraper_type": "stock_analysis",
         "enabled": true
     },
     {
         "ticker": "SPHQ",
-        "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-500-quality-etf.html",
-        "scraper_type": "selenium_invesco",
+        "url": "https://companiesmarketcap.com/invesco-sp-500-quality-etf/holdings/",
+        "backup_url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-500-quality-etf.html",
+        "scraper_type": "companies_market_cap",
         "enabled": true
     },
     {
         "ticker": "RPG",
-        "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-500-pure-growth-etf.html",
-        "scraper_type": "selenium_invesco",
+        "url": "https://companiesmarketcap.com/invesco-sp-500-pure-growth-etf/holdings/",
+        "backup_url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-500-pure-growth-etf.html",
+        "scraper_type": "companies_market_cap",
         "enabled": true
     },
     {
         "ticker": "XLG",
-        "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-500-top-50-etf.html",
-        "scraper_type": "selenium_invesco",
+        "url": "https://companiesmarketcap.com/invesco-sp-500-top-50-etf/holdings/",
+        "backup_url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-500-top-50-etf.html",
+        "scraper_type": "companies_market_cap",
         "enabled": true
     },
     {
         "ticker": "QQQM",
-        "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-nasdaq-100-etf.html",
-        "scraper_type": "selenium_invesco",
+        "url": "https://companiesmarketcap.com/invesco-nasdaq-100-etf/holdings/",
+        "backup_url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-nasdaq-100-etf.html",
+        "scraper_type": "companies_market_cap",
         "enabled": true
     },
     {
         "ticker": "SPHB",
-        "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-500-high-beta-etf.html",
-        "scraper_type": "selenium_invesco",
+        "url": "https://companiesmarketcap.com/invesco-sp-500-high-beta-etf/holdings/",
+        "backup_url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-500-high-beta-etf.html",
+        "scraper_type": "companies_market_cap",
         "enabled": true
     }
 ]
