@@ -26,9 +26,7 @@ HEADERS = {
 def clean_date_string(date_text):
     """ Converts various date formats to YYYY-MM-DD """
     if not date_text: return None
-    # Remove junk
     clean = re.sub(r"(?i)as of|date|[:,-]", " ", date_text).strip()
-    # Try regex extraction
     match = re.search(r"(\d{1,2}/\d{1,2}/\d{4})|([A-Z][a-z]+\s+\d{1,2},?\s+\d{4})", clean)
     if match: clean = match.group(0).replace(',', '')
 
@@ -38,34 +36,33 @@ def clean_date_string(date_text):
         except: continue
     return None
 
-def extract_invesco_anchor_date(driver):
+def extract_invesco_date_v15_7(driver):
     """ 
-    Anchor Strategy: Finds 'Holdings', then scans forward for the FIRST date match.
-    Guarantees we skip 'YTD' (which is before) and grab 'Holdings' date.
+    Priority 1: Look for '# of holdings (as of DATE)' -> From 'Fund details' section
+    Priority 2: Look for 'Etf holdings as of DATE' -> From Table Header
+    Priority 3: Look for 'Holdings' anchor and scan forward
     """
     try:
-        # Get all text from the body
         text = driver.find_element(By.TAG_NAME, "body").text
         
-        # Define Anchors (Words that signify the start of the holdings section)
-        anchors = ["Holdings", "Portfolio", "Top 10 Holdings"]
-        
-        start_index = -1
-        for anchor in anchors:
-            idx = text.find(anchor)
-            if idx != -1:
-                start_index = idx
-                break
-        
-        # If we found an anchor, slice the text to start looking FROM there
+        # 1. THE USER'S KEY: "# of holdings (as of 02/12/2026)"
+        # This is extremely specific and avoids YTD/Price confusion
+        match_details = re.search(r"# of holdings\s*\(as of\s*(\d{1,2}/\d{1,2}/\d{4})\)", text, re.IGNORECASE)
+        if match_details:
+            return clean_date_string(match_details.group(1))
+
+        # 2. Table Header Strategy: "Etf holdings as of February 12, 2026"
+        match_header = re.search(r"Etf holdings as of\s*([A-Z][a-z]+\s+\d{1,2},?\s+\d{4})", text, re.IGNORECASE)
+        if match_header:
+            return clean_date_string(match_header.group(1))
+
+        # 3. Fallback: Anchor Strategy (Holdings... as of)
+        start_index = text.find("Holdings")
         if start_index != -1:
-            # Look at the next 1000 characters after "Holdings"
-            scan_text = text[start_index : start_index + 1000]
-            
-            # Find the FIRST date pattern in this slice
-            match = re.search(r"(?:as of|date)[\s:]*([A-Z][a-z]+\s+\d{1,2},?\s+\d{4}|\d{1,2}/\d{1,2}/\d{4})", scan_text, re.IGNORECASE)
-            if match:
-                return clean_date_string(match.group(1)) or TODAY
+            scan_text = text[start_index : start_index + 500]
+            match_anchor = re.search(r"(?:as of|date)[\s:]*([A-Z][a-z]+\s+\d{1,2},?\s+\d{4}|\d{1,2}/\d{1,2}/\d{4})", scan_text, re.IGNORECASE)
+            if match_anchor:
+                return clean_date_string(match_anchor.group(1))
 
     except: pass
     return TODAY
@@ -76,8 +73,8 @@ def scrape_invesco_backup(driver, url, ticker):
         driver.get(url)
         time.sleep(5)
         
-        # 1. Grab Date using Anchor Strategy
-        h_date = extract_invesco_anchor_date(driver)
+        # 1. Grab Date using the V15.7 Logic
+        h_date = extract_invesco_date_v15_7(driver)
 
         # 2. Extract Visible Table
         print(f"      -> Downloading from visible table...")
@@ -87,172 +84,4 @@ def scrape_invesco_backup(driver, url, ticker):
         for d in dfs:
             valid_keywords = ['ticker', 'symbol', 'holding', 'identifier', 'weight', '% of net assets']
             cols = [str(c).strip().lower() for c in d.columns]
-            if any(k in cols for k in valid_keywords):
-                df = d; break
-            
-            # Promote Header logic
-            for i in range(min(5, len(d))):
-                row_values = [str(x).strip().lower() for x in d.iloc[i].values]
-                if any(k in row_values for k in valid_keywords):
-                    new_header = d.iloc[i]
-                    d = d[i+1:].copy()
-                    d.columns = new_header
-                    df = d
-                    break
-            if df is not None: break
-
-        return df, h_date
-
-    except Exception as e:
-        print(f"      -> Backup Failed: {e}")
-    
-    return None, TODAY
-
-def find_first_trust_table(dfs):
-    if not dfs: return None
-    valid_keywords = ['ticker', 'symbol', 'holding', 'identifier', 'weighting', 'cusip']
-    for df in dfs:
-        cols = [str(c).strip().lower() for c in df.columns]
-        if any(k in cols for k in valid_keywords): return df
-        if not df.empty:
-            first_row = [str(x).strip().lower() for x in df.iloc[0].values]
-            if any(k in first_row for k in valid_keywords):
-                new_header = df.iloc[0]
-                df_clean = df[1:].copy() 
-                df_clean.columns = new_header
-                return df_clean
-    return None
-
-def clean_dataframe(df, ticker, h_date=TODAY):
-    if df is None or df.empty: return None
-    df = df.copy() 
-    df.columns = [str(c).strip().lower() for c in df.columns]
-
-    mappings = {
-        'ticker': ['symbol', 'identifier', 'stock ticker', 'ticker'],
-        'name': ['security name', 'company', 'holding', 'description', 'name'],
-        'weight': ['weighting', '% weight', 'weight %', '% net assets', '% of net assets', 'weight']
-    }
-    for target, keywords in mappings.items():
-        for col in df.columns:
-            if any(k in col for k in keywords):
-                df.rename(columns={col: target}, inplace=True)
-                break
-
-    if 'ticker' not in df.columns: return None
-    if 'weight' not in df.columns: df['weight'] = 0.0
-    
-    if 'weight' in df.columns:
-        df['weight'] = df['weight'].astype(str).str.replace('%', '').str.replace(',', '')
-        df['weight'] = pd.to_numeric(df['weight'], errors='coerce').fillna(0.0)
-        if df['weight'].max() > 1.0: df['weight'] = df['weight'] / 100.0
-    
-    # FORCE DATE STAMP
-    df['ETF_Ticker'] = ticker
-    df['Holdings_As_Of'] = h_date
-    df['Date_Scraped'] = TODAY
-    
-    return df[['ETF_Ticker', 'ticker', 'name', 'weight', 'Holdings_As_Of', 'Date_Scraped']]
-
-def setup_driver():
-    options = Options()
-    options.add_argument("--headless=new")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--window-size=1920,1080")
-    return webdriver.Chrome(options=options)
-
-def main():
-    try:
-        with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
-    except: return
-
-    print(f"🚀 Launching Scraper V15.6 (Anchor Strategy) - {TODAY}")
-    driver = setup_driver()
-    os.makedirs(DATA_DIR_LATEST, exist_ok=True)
-    os.makedirs(DATA_DIR_BACKUP, exist_ok=True)
-
-    for etf in etfs:
-        if not etf.get('enabled', True): continue
-        ticker = etf['ticker']
-        print(f"➳ {ticker}...")
-        
-        try:
-            # --- PRIMARY TRACK ---
-            df, h_date = None, TODAY
-            
-            if etf['scraper_type'] == 'pacer_csv':
-                driver.get(etf['url'])
-                time.sleep(3)
-                # Primary Pacer Date
-                text = driver.find_element(By.TAG_NAME, "body").text
-                h_date = clean_date_string(text) or TODAY
-                
-                r = requests.get(etf['url'], headers=HEADERS, timeout=15)
-                content = r.text.splitlines()
-                start = 0
-                for i, line in enumerate(content[:20]):
-                    if "Ticker" in line or "Symbol" in line: start = i; break
-                df = pd.read_csv(StringIO('\n'.join(content[start:])))
-
-            elif etf['scraper_type'] == 'selenium_alpha':
-                driver.get(etf['url'])
-                time.sleep(3)
-                # Primary Alpha Date
-                text = driver.find_element(By.TAG_NAME, "body").text
-                h_date = clean_date_string(text) or TODAY
-                
-                try:
-                    selects = driver.find_elements(By.TAG_NAME, "select")
-                    for s in selects:
-                        try: Select(s).select_by_visible_text("All"); time.sleep(1)
-                        except: pass
-                except: pass
-                dfs = pd.read_html(StringIO(driver.page_source))
-                for d in dfs: 
-                    if len(d) > 25: df = d; break
-
-            elif etf['scraper_type'] == 'first_trust':
-                driver.get(etf['url'])
-                time.sleep(5) 
-                # Primary First Trust Date
-                text = driver.find_element(By.TAG_NAME, "body").text
-                h_date = clean_date_string(text) or TODAY
-                
-                dfs = pd.read_html(StringIO(driver.page_source))
-                df = find_first_trust_table(dfs)
-            
-            else: 
-                r = requests.get(etf['url'], headers=HEADERS, timeout=15)
-                # Primary Request Date
-                h_date = clean_date_string(r.text) or TODAY
-                dfs = pd.read_html(StringIO(r.text))
-                for d in dfs:
-                    if len(d) > 20: df = d; break
-
-            clean_df = clean_dataframe(df, ticker, h_date)
-            if clean_df is not None:
-                clean_df.to_csv(os.path.join(DATA_DIR_LATEST, f"{ticker}.csv"), index=False)
-                print(f"    ✅ Primary: {len(clean_df)} rows | Date: {h_date}")
-
-            # --- BACKUP TRACK (Invesco Anchor) ---
-            if 'backup_url' in etf:
-                b_df, b_date = scrape_invesco_backup(driver, etf['backup_url'], ticker)
-                if b_df is not None:
-                    clean_backup = clean_dataframe(b_df, ticker, b_date)
-                    if clean_backup is not None:
-                        clean_backup['Holdings_As_Of'] = b_date
-                        clean_backup.to_csv(os.path.join(DATA_DIR_BACKUP, f"{ticker}_official_backup.csv"), index=False)
-                        print(f"      -> 🛡️ Backup Saved: {len(clean_backup)} rows | Date: {b_date}")
-                    else:
-                        print(f"      -> Backup Data Invalid")
-                else:
-                    print(f"      -> Backup: No Table Found")
-
-        except Exception as e:
-            print(f"    ❌ Error: {e}")
-
-    driver.quit()
-
-if __name__ == "__main__":
-    main()
+            if any(k in cols for
