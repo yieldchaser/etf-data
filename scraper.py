@@ -23,17 +23,44 @@ HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 }
 
-def extract_date_from_text(text):
+def extract_holdings_date_context(text):
+    """ 
+    Smart Hunter: Finds the date specifically associated with 'Holdings'.
+    Ignores 'Price' or 'Performance' dates which might be newer.
+    """
     if not text: return TODAY
-    # Strict regex for "as of MM/DD/YYYY" or "Month DD, YYYY"
-    pattern = r"(\d{1,2}/\d{1,2}/\d{4})|([A-Z][a-z]+\s+\d{1,2},?\s+\d{4})"
-    match = re.search(pattern, text)
+    
+    # 1. Targeted Regex: Look for "Holdings" followed closely by a date
+    # Matches: "Holdings... as of 02/12/2026" or "Holdings (newline) as of 02/12/2026"
+    # [\s\S]{0,200}? means "scan up to 200 chars (including newlines) after 'Holdings'"
+    target_pattern = r"Holdings[\s\S]{0,200}?(?:as of|date)[\s:]*(\d{1,2}/\d{1,2}/\d{4})"
+    match = re.search(target_pattern, text, re.IGNORECASE)
+    
     if match:
-        raw = match.group(0).replace(',', '')
-        for fmt in ("%m/%d/%Y", "%B %d %Y", "%b %d %Y"):
-            try:
-                return datetime.strptime(raw, fmt).strftime('%Y-%m-%d')
-            except: continue
+        raw = match.group(1)
+        try:
+            return datetime.strptime(raw, "%m/%d/%Y").strftime('%Y-%m-%d')
+        except: pass
+
+    # 2. Backup: If "Holdings" context fails, look for specific "Effective Date" (Alpha Architect)
+    effective_pattern = r"Effective Date[\s\S]{0,50}?(\d{1,2}/\d{1,2}/\d{4})"
+    match_eff = re.search(effective_pattern, text, re.IGNORECASE)
+    if match_eff:
+        try: return datetime.strptime(match_eff.group(1), "%m/%d/%Y").strftime('%Y-%m-%d')
+        except: pass
+
+    # 3. Last Resort: Just find the first "as of MM/DD/YYYY" (Standard fallback)
+    # Be careful not to pick future dates or very old dates
+    simple_pattern = r"as of\s*(\d{1,2}/\d{1,2}/\d{4})"
+    matches = re.findall(simple_pattern, text, re.IGNORECASE)
+    for m in matches:
+        try:
+            dt = datetime.strptime(m, "%m/%d/%Y")
+            # If date is reasonable (not in future, not older than a year), use it
+            if dt <= datetime.now(): 
+                return dt.strftime('%Y-%m-%d')
+        except: continue
+        
     return TODAY
 
 def scrape_invesco_backup(driver, url, ticker):
@@ -41,41 +68,29 @@ def scrape_invesco_backup(driver, url, ticker):
         print(f"      -> 🛡️ Running Backup Scraper for {ticker}...")
         driver.get(url)
         
-        # --- THE FIX: WAIT FOR TEXT, NOT JUST BODY ---
-        h_date = TODAY
+        # 1. Wait for page & Grab Text
         try:
-            # Wait up to 10s for the specific "as of" text to appear anywhere
-            WebDriverWait(driver, 10).until(
-                EC.text_to_be_present_in_element((By.TAG_NAME, "body"), "as of")
-            )
-            # Find the specific element containing the date to ensure we get it
-            date_element = driver.find_element(By.XPATH, "//*[contains(text(), 'as of') or contains(text(), 'As of')]")
-            h_date = extract_date_from_text(date_element.text)
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+            time.sleep(3) 
+            page_text = driver.find_element(By.TAG_NAME, "body").text
             
-            # Fallback: If specific element fails, scan whole body (now that we know it loaded)
-            if h_date == TODAY:
-                h_date = extract_date_from_text(driver.find_element(By.TAG_NAME, "body").text)
-                
-        except Exception as e:
-            # If wait times out, just try grabbing body text anyway
-            try: h_date = extract_date_from_text(driver.find_element(By.TAG_NAME, "body").text)
-            except: pass
+            # USE NEW CONTEXT LOGIC
+            h_date = extract_holdings_date_context(page_text)
+            
+        except: h_date = TODAY
 
-        # --- TABLE EXTRACTION (Visible Only - No broken downloads) ---
+        # 2. Extract Visible Table (Smart Header Hunt)
         print(f"      -> Downloading from visible table...")
         df = None
         dfs = pd.read_html(StringIO(driver.page_source))
         
         for d in dfs:
-            # HEADER PROMOTION LOGIC: Scan first 5 rows for 'Ticker' or 'Weight'
             valid_keywords = ['ticker', 'symbol', 'holding', 'identifier', 'weight', '% of net assets']
-            
-            # Check current header
             cols = [str(c).strip().lower() for c in d.columns]
             if any(k in cols for k in valid_keywords):
                 df = d; break
             
-            # Check first 5 rows (The "Promote Header" Trick)
+            # Promote Header logic
             for i in range(min(5, len(d))):
                 row_values = [str(x).strip().lower() for x in d.iloc[i].values]
                 if any(k in row_values for k in valid_keywords):
@@ -152,7 +167,7 @@ def main():
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
     except: return
 
-    print(f"🚀 Launching Scraper V15.1 (Invesco Date Hunter) - {TODAY}")
+    print(f"🚀 Launching Scraper V15.3 (Context-Aware Date Fix) - {TODAY}")
     driver = setup_driver()
     os.makedirs(DATA_DIR_LATEST, exist_ok=True)
     os.makedirs(DATA_DIR_BACKUP, exist_ok=True)
@@ -169,7 +184,8 @@ def main():
             if etf['scraper_type'] == 'pacer_csv':
                 driver.get(etf['url'])
                 time.sleep(3)
-                h_date = extract_date_from_text(driver.find_element(By.TAG_NAME, "body").text)
+                # Pacer usually has "as of" right at top
+                h_date = extract_holdings_date_context(driver.find_element(By.TAG_NAME, "body").text)
                 r = requests.get(etf['url'], headers=HEADERS, timeout=15)
                 content = r.text.splitlines()
                 start = 0
@@ -180,7 +196,7 @@ def main():
             elif etf['scraper_type'] == 'selenium_alpha':
                 driver.get(etf['url'])
                 time.sleep(3)
-                h_date = extract_date_from_text(driver.find_element(By.TAG_NAME, "body").text)
+                h_date = extract_holdings_date_context(driver.find_element(By.TAG_NAME, "body").text)
                 try:
                     selects = driver.find_elements(By.TAG_NAME, "select")
                     for s in selects:
@@ -194,13 +210,14 @@ def main():
             elif etf['scraper_type'] == 'first_trust':
                 driver.get(etf['url'])
                 time.sleep(5) 
-                h_date = extract_date_from_text(driver.find_element(By.TAG_NAME, "body").text)
+                h_date = extract_holdings_date_context(driver.find_element(By.TAG_NAME, "body").text)
                 dfs = pd.read_html(StringIO(driver.page_source))
                 df = find_first_trust_table(dfs)
             
             else: 
                 r = requests.get(etf['url'], headers=HEADERS, timeout=15)
-                h_date = extract_date_from_text(r.text)
+                # Use plain text extraction first
+                h_date = extract_holdings_date_context(r.text)
                 dfs = pd.read_html(StringIO(r.text))
                 for d in dfs:
                     if len(d) > 20: df = d; break
@@ -210,7 +227,7 @@ def main():
                 clean_df.to_csv(os.path.join(DATA_DIR_LATEST, f"{ticker}.csv"), index=False)
                 print(f"    ✅ Primary: {len(clean_df)} rows | Date: {h_date}")
 
-            # --- BACKUP TRACK (Invesco Only) ---
+            # --- BACKUP TRACK ---
             if 'backup_url' in etf:
                 b_df, b_date = scrape_invesco_backup(driver, etf['backup_url'], ticker)
                 if b_df is not None:
@@ -220,7 +237,7 @@ def main():
                         clean_backup.to_csv(os.path.join(DATA_DIR_BACKUP, f"{ticker}_official_backup.csv"), index=False)
                         print(f"      -> 🛡️ Backup Saved: {len(clean_backup)} rows | Date: {b_date}")
                     else:
-                        print(f"      -> Backup Data Invalid (Table Found, Columns Missing)")
+                        print(f"      -> Backup Data Invalid")
                 else:
                     print(f"      -> Backup: No Table Found")
 
