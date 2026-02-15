@@ -18,7 +18,7 @@ CONFIG_FILE = 'config.json'
 DATA_DIR_LATEST = 'data/latest'
 DATA_DIR_HISTORY = 'data/history'
 DATA_DIR_BACKUP = 'data/invesco_backup'
-GIANT_HISTORY_FILE = 'data/all_history.csv' # <--- NEW GIANT FILE
+GIANT_HISTORY_FILE = 'data/all_history.csv' 
 TODAY = datetime.now().strftime('%Y-%m-%d')
 
 HEADERS = {
@@ -26,30 +26,23 @@ HEADERS = {
 }
 
 def clean_date_string(date_text):
-    """ Converts various date formats to YYYY-MM-DD """
     if not date_text: return None
     clean = re.sub(r"(?i)as of|date|[:,-]", " ", date_text).strip()
     match = re.search(r"(\d{1,2}/\d{1,2}/\d{4})|([A-Z][a-z]+\s+\d{1,2},?\s+\d{4})", clean)
     if match: clean = match.group(0).replace(',', '')
-
     for fmt in ("%m/%d/%Y", "%B %d %Y", "%b %d %Y", "%m %d %Y"):
-        try:
-            return datetime.strptime(clean, fmt).strftime('%Y-%m-%d')
+        try: return datetime.strptime(clean, fmt).strftime('%Y-%m-%d')
         except: continue
     return None
 
 def extract_invesco_nuclear_date(driver):
-    """ Nuclear Strategy: Scrolls, grabs Source, Regexes """
     try:
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(3) 
         html = driver.page_source
         match = re.search(r"# of holdings\s*\(as of\s*(\d{1,2}/\d{1,2}/\d{4})\)", html, re.IGNORECASE)
-        if match:
-            print(f"      -> Nuclear Hit: {match.group(1)}")
-            return clean_date_string(match.group(1))
-    except Exception as e:
-        print(f"      -> Nuclear Failed: {e}")
+        if match: return clean_date_string(match.group(1))
+    except: pass
     return TODAY
 
 def scrape_invesco_backup(driver, url, ticker):
@@ -76,9 +69,7 @@ def scrape_invesco_backup(driver, url, ticker):
                     break
             if df is not None: break
         return df, h_date
-    except Exception as e:
-        print(f"      -> Backup Failed: {e}")
-    return None, TODAY
+    except: return None, TODAY
 
 def find_first_trust_table(dfs):
     if not dfs: return None
@@ -99,7 +90,6 @@ def clean_dataframe(df, ticker, h_date=TODAY):
     if df is None or df.empty: return None
     df = df.copy() 
     df.columns = [str(c).strip().lower() for c in df.columns]
-
     mappings = {
         'ticker': ['symbol', 'identifier', 'stock ticker', 'ticker'],
         'name': ['security name', 'company', 'holding', 'description', 'name'],
@@ -110,7 +100,6 @@ def clean_dataframe(df, ticker, h_date=TODAY):
             if any(k in col for k in keywords):
                 df.rename(columns={col: target}, inplace=True)
                 break
-
     if 'ticker' not in df.columns: return None
     if 'weight' not in df.columns: df['weight'] = 0.0
     
@@ -125,48 +114,32 @@ def clean_dataframe(df, ticker, h_date=TODAY):
     return df[['ETF_Ticker', 'ticker', 'name', 'weight', 'Holdings_As_Of', 'Date_Scraped']]
 
 def check_if_new_data(ticker, new_date):
-    """ Smart Deduplication """
     file_path = os.path.join(DATA_DIR_LATEST, f"{ticker}.csv")
-    if not os.path.exists(file_path):
-        return True 
+    if not os.path.exists(file_path): return True 
     try:
         existing_df = pd.read_csv(file_path, nrows=1)
         if 'Holdings_As_Of' in existing_df.columns:
             old_date = str(existing_df['Holdings_As_Of'].iloc[0])
-            if old_date == str(new_date):
-                return False 
+            if old_date == str(new_date): return False 
     except: pass
     return True
 
 def update_giant_history(new_dfs):
-    """ Updates the single GIANT history file with new data """
     if not new_dfs: return
-    
-    print("\n🦕 Updating Giant History File...")
-    
-    # 1. Combine new data
+    print(f"\n🦕 Updating Giant History File with {len(new_dfs)} datasets...")
     new_data = pd.concat(new_dfs)
     
-    # 2. Load existing giant file if it exists
     if os.path.exists(GIANT_HISTORY_FILE):
         try:
             existing_data = pd.read_csv(GIANT_HISTORY_FILE)
-            # Combine
             combined = pd.concat([existing_data, new_data])
-        except:
-            combined = new_data
+        except: combined = new_data
     else:
         combined = new_data
     
-    # 3. Deduplicate based on content, NOT scrap date
-    # If we have the same Ticker + Holdings Date + Holding Ticker, keep only one.
-    before_len = len(combined)
     combined.drop_duplicates(subset=['ETF_Ticker', 'ticker', 'Holdings_As_Of'], keep='last', inplace=True)
-    after_len = len(combined)
-    
-    # 4. Save
     combined.to_csv(GIANT_HISTORY_FILE, index=False)
-    print(f"    ✅ Giant History Updated: {after_len} rows total (Added {after_len - (len(existing_data) if os.path.exists(GIANT_HISTORY_FILE) else 0)} unique rows)")
+    print(f"    ✅ Giant History Saved: {len(combined)} total rows.")
 
 def setup_driver():
     options = Options()
@@ -181,14 +154,14 @@ def main():
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
     except: return
 
-    print(f"🚀 Launching Scraper V17.0 (Giant History) - {TODAY}")
+    print(f"🚀 Launching Scraper V17.1 (Force Giant History) - {TODAY}")
     driver = setup_driver()
     os.makedirs(DATA_DIR_LATEST, exist_ok=True)
     os.makedirs(DATA_DIR_BACKUP, exist_ok=True)
     
     archive_path = os.path.join(DATA_DIR_HISTORY, *TODAY.split('-'))
     master_list = []
-    new_data_list = [] # List specifically for Giant History (only new stuff)
+    new_data_list = []
 
     for etf in etfs:
         if not etf.get('enabled', True): continue
@@ -196,12 +169,10 @@ def main():
         print(f"➳ {ticker}...")
         
         try:
-            # --- PRIMARY TRACK ---
             df, h_date = None, TODAY
             
             if etf['scraper_type'] == 'pacer_csv':
-                driver.get(etf['url'])
-                time.sleep(3)
+                driver.get(etf['url']); time.sleep(3)
                 text = driver.find_element(By.TAG_NAME, "body").text
                 h_date = clean_date_string(text) or TODAY
                 r = requests.get(etf['url'], headers=HEADERS, timeout=15)
@@ -212,8 +183,7 @@ def main():
                 df = pd.read_csv(StringIO('\n'.join(content[start:])))
 
             elif etf['scraper_type'] == 'selenium_alpha':
-                driver.get(etf['url'])
-                time.sleep(3)
+                driver.get(etf['url']); time.sleep(3)
                 text = driver.find_element(By.TAG_NAME, "body").text
                 h_date = clean_date_string(text) or TODAY
                 try:
@@ -227,8 +197,7 @@ def main():
                     if len(d) > 25: df = d; break
 
             elif etf['scraper_type'] == 'first_trust':
-                driver.get(etf['url'])
-                time.sleep(5) 
+                driver.get(etf['url']); time.sleep(5) 
                 text = driver.find_element(By.TAG_NAME, "body").text
                 h_date = clean_date_string(text) or TODAY
                 dfs = pd.read_html(StringIO(driver.page_source))
@@ -241,10 +210,8 @@ def main():
                 for d in dfs:
                     if len(d) > 20: df = d; break
 
-            # --- PROCESS PRIMARY ---
             clean_df = clean_dataframe(df, ticker, h_date)
             
-            # --- BACKUP TRACK (Invesco) ---
             if 'backup_url' in etf:
                 b_df, b_date = scrape_invesco_backup(driver, etf['backup_url'], ticker)
                 if b_df is not None:
@@ -253,44 +220,42 @@ def main():
                         clean_backup['Holdings_As_Of'] = b_date
                         clean_backup.to_csv(os.path.join(DATA_DIR_BACKUP, f"{ticker}_official_backup.csv"), index=False)
                         print(f"      -> 🛡️ Backup Saved: {len(clean_backup)} rows | Date: {b_date}")
-                    
                         if clean_df is None or (b_date > h_date):
                              clean_df = clean_backup
                              h_date = b_date
 
-            # --- SMART SAVE LOGIC ---
             if clean_df is not None:
-                # Always add to daily snapshot list
-                master_list.append(clean_df)
-
-                # Check if it's actually NEW
+                master_list.append(clean_df) # Always add to daily snapshot
+                
                 if check_if_new_data(ticker, h_date):
                     clean_df.to_csv(os.path.join(DATA_DIR_LATEST, f"{ticker}.csv"), index=False)
                     print(f"    ✅ New Data Saved: {len(clean_df)} rows | Date: {h_date}")
-                    new_data_list.append(clean_df) # Only append NEW data to giant history
+                    new_data_list.append(clean_df)
                 else:
                     print(f"    💤 Data unchanged ({h_date}). Skipping individual save.")
 
-            else:
-                 print(f"    ⚠️ No valid data found.")
+            else: print(f"    ⚠️ No valid data found.")
 
-        except Exception as e:
-            print(f"    ❌ Error: {e}")
+        except Exception as e: print(f"    ❌ Error: {e}")
 
     driver.quit()
 
-    # --- SAVE DAILY ARCHIVE ---
     if master_list:
         os.makedirs(archive_path, exist_ok=True)
         full_df = pd.concat(master_list)
         full_df.to_csv(os.path.join(archive_path, 'master_archive.csv'), index=False)
         print(f"\n📜 Daily Archive Created: {len(master_list)} ETFs in snapshot.")
     
-    # --- UPDATE GIANT HISTORY ---
+    # --- UPDATE GIANT HISTORY (With Initialization Logic) ---
+    # Case 1: We have NEW data -> Update as normal
     if new_data_list:
         update_giant_history(new_data_list)
+    # Case 2: No new data, BUT file doesn't exist yet -> Initialize it!
+    elif not os.path.exists(GIANT_HISTORY_FILE) and master_list:
+        print("\n🦕 Initializing Giant History File for the first time...")
+        update_giant_history(master_list)
     else:
-        print("\n🦕 Giant History: No new data to append.")
+        print("\n🦕 Giant History: No new data to append (and file already exists).")
 
 if __name__ == "__main__":
     main()
