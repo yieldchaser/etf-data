@@ -95,39 +95,40 @@ def clean_dataframe(df, ticker):
     # 1. Standardize columns
     df.columns = [str(c).strip().lower() for c in df.columns]
     
-    # 2. Dynamic Rename (The "Magnet" Logic)
-    # If any column has "weight" in the name, rename it to 'weight'
-    for col in df.columns:
-        if 'weight' in col:
-            df.rename(columns={col: 'weight'}, inplace=True)
-    
-    # Specific maps for Ticker/Name
+    # 2. RESTORE V12 LOGIC (Explicit Mapping) + V13 MAGNET
     col_map = {
         'stockticker': 'ticker', 'symbol': 'ticker', 'holding': 'ticker', 
         'identifier': 'ticker', 'sedol': 'ticker',
         'securityname': 'name', 'company': 'name', 'security name': 'name', 
-        'security_name': 'name', 'security': 'name', 'company_name': 'name'
+        'security_name': 'name', 'security': 'name', 'company_name': 'name',
+        # V12 CRITICAL RESTORATION:
+        '% net assets': 'weight', '% tna': 'weight', 'weighting': 'weight', 
+        '% portfolio weight': 'weight', '% weight': 'weight'
     }
     df.rename(columns=col_map, inplace=True)
 
-    # 3. Deduplicate
+    # 3. Dynamic Rename (Magnet) - Catch anything else
+    for col in df.columns:
+        if 'weight' in col and col != 'weight':
+            df.rename(columns={col: 'weight'}, inplace=True)
+
+    # 4. Deduplicate
     df = df.loc[:, ~df.columns.duplicated()]
     
     if 'ticker' not in df.columns:
         return None
 
-    # 4. Filter Garbage
+    # 5. Filter Garbage
     stop_words = ["cash", "usd", "liquidity", "government", "treasury", "money market", "net other", "total"]
     df['name'] = df['name'].astype(str)
     df['ticker'] = df['ticker'].astype(str)
     
-    # Safe regex escape
     pattern = '|'.join([re.escape(w) for w in stop_words])
     mask = (df['name'].str.contains(pattern, case=False, na=False) | 
             df['ticker'].str.contains(pattern, case=False, na=False))
     df = df[~mask].copy()
 
-    # 5. Clean Ticker & Weight
+    # 6. Clean Ticker & Weight
     df['ticker'] = df['ticker'].str.replace(' USD', '', regex=False)
     df['ticker'] = df['ticker'].str.replace('.UN', '', regex=False)
     df['ticker'] = df['ticker'].str.upper().str.strip()
@@ -138,7 +139,6 @@ def clean_dataframe(df, ticker):
         df['weight'] = pd.to_numeric(df['weight'], errors='coerce')
         
         # Logic: If max value is > 1.0 (like 8.96), it's a percentage -> divide by 100
-        # If max value is <= 1.0 (like 0.0896), it's already a decimal -> leave it
         if df['weight'].max() > 1.0:
             df['weight'] = df['weight'] / 100.0
     else:
@@ -153,7 +153,7 @@ def main():
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
     except: return
 
-    print("🚀 Launching Scraper V13.1 (Weight Column Fix)...")
+    print("🚀 Launching Scraper V13.2 (Restored Backup Logic)...")
     
     driver = None
     session = requests.Session()
