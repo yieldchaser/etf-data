@@ -20,9 +20,8 @@ HEADERS = {
 }
 
 def extract_date_from_text(text):
-    """ Standardized date hunter for Pacer (MM/DD/YYYY) and others """
+    """ Standardized date hunter for Pacer (MM/DD/YYYY) and Invesco/StockAnalysis """
     if not text: return TODAY
-    # Focus on Pacer format: 02/17/2026 or Invesco format: February 12, 2026
     pattern = r"(\d{1,2}/\d{1,2}/\d{4})|([A-Z][a-z]+\s+\d{1,2},?\s+\d{4})"
     match = re.search(pattern, text)
     if match:
@@ -44,15 +43,15 @@ def find_first_trust_table(dfs):
             first_row = [str(x).strip().lower() for x in df.iloc[0].values]
             if any(k in first_row for k in valid_keywords):
                 new_header = df.iloc[0]
-                df = df[1:].copy() 
-                df.columns = new_header
-                return df
+                df_clean = df[1:].copy() 
+                df_clean.columns = new_header
+                return df_clean
     return None
 
 def clean_dataframe(df, ticker, h_date=TODAY):
-    """ Standardizes columns and fixes SettingWithCopyWarnings """
+    """ Standardizes columns and fixes weight formatting """
     if df is None or df.empty: return None
-    df = df.copy() # Avoid SettingWithCopyWarning
+    df = df.copy() 
     df.columns = [str(c).strip().lower() for c in df.columns]
 
     mappings = {
@@ -82,6 +81,7 @@ def setup_driver():
     options = Options()
     options.add_argument("--headless=new")
     options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--window-size=1920,1080")
     return webdriver.Chrome(options=options)
 
@@ -90,7 +90,7 @@ def main():
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
     except: return
 
-    print(f"🚀 Launching Scraper V14.3 (Pacer Restoration) - {TODAY}")
+    print(f"🚀 Launching Scraper V14.4 (Syntax Fixed) - {TODAY}")
     driver = setup_driver()
     os.makedirs(DATA_DIR_LATEST, exist_ok=True)
 
@@ -102,15 +102,14 @@ def main():
         try:
             df, h_date = None, TODAY
             
-            # --- PACER RESTORATION (The CSV Method) ---
             if etf['scraper_type'] == 'pacer_csv':
-                # First, get the date from the website text
+                # Get Date from website text
                 driver.get(etf['url'])
                 time.sleep(3)
                 h_date = extract_date_from_text(driver.find_element(By.TAG_NAME, "body").text)
                 
-                # Second, grab the actual data via CSV (Reliable V12 style)
-                # We assume the CSV link is the one provided in config
+                # Get Data via CSV download link
+                # Note: Assuming 'url' in config for pacer_csv is the direct CSV download link
                 r = requests.get(etf['url'], headers=HEADERS, timeout=15)
                 content = r.text.splitlines()
                 start = 0
@@ -118,6 +117,37 @@ def main():
                     if "Ticker" in line or "Symbol" in line: start = i; break
                 df = pd.read_csv(StringIO('\n'.join(content[start:])))
 
-            # --- FIRST TRUST & ALPHA ARCHITECT ---
             elif etf['scraper_type'] in ['selenium_alpha', 'first_trust']:
-                driver.
+                driver.get(etf['url'])
+                time.sleep(5) 
+                page_text = driver.find_element(By.TAG_NAME, "body").text
+                h_date = extract_date_from_text(page_text)
+                dfs = pd.read_html(StringIO(driver.page_source))
+                
+                if etf['scraper_type'] == 'first_trust':
+                    df = find_first_trust_table(dfs)
+                else: # Alpha Architect
+                    for d in dfs:
+                        if len(d) > 20: df = d; break
+            
+            else:
+                r = requests.get(etf['url'], headers=HEADERS, timeout=15)
+                h_date = extract_date_from_text(r.text)
+                dfs = pd.read_html(StringIO(r.text))
+                for d in dfs:
+                    if len(d) > 20: df = d; break
+
+            clean_df = clean_dataframe(df, ticker, h_date)
+            if clean_df is not None:
+                clean_df.to_csv(os.path.join(DATA_DIR_LATEST, f"{ticker}.csv"), index=False)
+                print(f"    ✅ Success: {len(clean_df)} rows | Date: {h_date}")
+            else:
+                print(f"    ⚠️ No valid data for {ticker}")
+
+        except Exception as e:
+            print(f"    ❌ Error: {e}")
+
+    driver.quit()
+
+if __name__ == "__main__":
+    main()
