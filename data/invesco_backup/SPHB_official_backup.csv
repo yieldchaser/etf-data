@@ -1,11 +1,11 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-SPHB,MU,Micron Technology Inc,0.0,2026-02-15,2026-02-15
-SPHB,TER,Teradyne Inc,0.0,2026-02-15,2026-02-15
-SPHB,MCHP,Microchip Technology Inc,0.0,2026-02-15,2026-02-15
-SPHB,WDC,Western Digital Corp,0.0,2026-02-15,2026-02-15
-SPHB,ON,ON Semiconductor Corp,0.0,2026-02-15,2026-02-15
-SPHB,MPWR,Monolithic Power Systems Inc,0.0,2026-02-15,2026-02-15
-SPHB,LRCX,Lam Research Corp,0.0,2026-02-15,2026-02-15
-SPHB,GEV,GE Vernova Inc,0.0,2026-02-15,2026-02-15
-SPHB,TSLA,Tesla Inc,0.0,2026-02-15,2026-02-15
-SPHB,ALB,Albemarle Corp,0.0,2026-02-15,2026-02-15
+SPHB,MU,Micron Technology Inc,0.0,2026-02-12,2026-02-15
+SPHB,TER,Teradyne Inc,0.0,2026-02-12,2026-02-15
+SPHB,MCHP,Microchip Technology Inc,0.0,2026-02-12,2026-02-15
+SPHB,WDC,Western Digital Corp,0.0,2026-02-12,2026-02-15
+SPHB,ON,ON Semiconductor Corp,0.0,2026-02-12,2026-02-15
+SPHB,MPWR,Monolithic Power Systems Inc,0.0,2026-02-12,2026-02-15
+SPHB,LRCX,Lam Research Corp,0.0,2026-02-12,2026-02-15
+SPHB,GEV,GE Vernova Inc,0.0,2026-02-12,2026-02-15
+SPHB,TSLA,Tesla Inc,0.0,2026-02-12,2026-02-15
+SPHB,ALB,Albemarle Corp,0.0,2026-02-12,2026-02-15
