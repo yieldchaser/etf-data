@@ -18,6 +18,7 @@ CONFIG_FILE = 'config.json'
 DATA_DIR_LATEST = 'data/latest'
 DATA_DIR_HISTORY = 'data/history'
 DATA_DIR_BACKUP = 'data/invesco_backup'
+GIANT_HISTORY_FILE = 'data/all_history.csv' # <--- NEW GIANT FILE
 TODAY = datetime.now().strftime('%Y-%m-%d')
 
 HEADERS = {
@@ -118,18 +119,13 @@ def clean_dataframe(df, ticker, h_date=TODAY):
         df['weight'] = pd.to_numeric(df['weight'], errors='coerce').fillna(0.0)
         if df['weight'].max() > 1.0: df['weight'] = df['weight'] / 100.0
     
-    # FORCE DATE STAMP
     df['ETF_Ticker'] = ticker
     df['Holdings_As_Of'] = h_date
     df['Date_Scraped'] = TODAY
     return df[['ETF_Ticker', 'ticker', 'name', 'weight', 'Holdings_As_Of', 'Date_Scraped']]
 
 def check_if_new_data(ticker, new_date):
-    """ 
-    Smart Deduplication:
-    Checks if the data on disk (data/latest/TICKER.csv) has the same 'Holdings_As_Of' date.
-    Returns: True (Save it) / False (Skip it)
-    """
+    """ Smart Deduplication """
     file_path = os.path.join(DATA_DIR_LATEST, f"{ticker}.csv")
     if not os.path.exists(file_path):
         return True 
@@ -141,6 +137,36 @@ def check_if_new_data(ticker, new_date):
                 return False 
     except: pass
     return True
+
+def update_giant_history(new_dfs):
+    """ Updates the single GIANT history file with new data """
+    if not new_dfs: return
+    
+    print("\n🦕 Updating Giant History File...")
+    
+    # 1. Combine new data
+    new_data = pd.concat(new_dfs)
+    
+    # 2. Load existing giant file if it exists
+    if os.path.exists(GIANT_HISTORY_FILE):
+        try:
+            existing_data = pd.read_csv(GIANT_HISTORY_FILE)
+            # Combine
+            combined = pd.concat([existing_data, new_data])
+        except:
+            combined = new_data
+    else:
+        combined = new_data
+    
+    # 3. Deduplicate based on content, NOT scrap date
+    # If we have the same Ticker + Holdings Date + Holding Ticker, keep only one.
+    before_len = len(combined)
+    combined.drop_duplicates(subset=['ETF_Ticker', 'ticker', 'Holdings_As_Of'], keep='last', inplace=True)
+    after_len = len(combined)
+    
+    # 4. Save
+    combined.to_csv(GIANT_HISTORY_FILE, index=False)
+    print(f"    ✅ Giant History Updated: {after_len} rows total (Added {after_len - (len(existing_data) if os.path.exists(GIANT_HISTORY_FILE) else 0)} unique rows)")
 
 def setup_driver():
     options = Options()
@@ -155,16 +181,14 @@ def main():
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
     except: return
 
-    print(f"🚀 Launching Scraper V16.2 (Perfect History Logic) - {TODAY}")
+    print(f"🚀 Launching Scraper V17.0 (Giant History) - {TODAY}")
     driver = setup_driver()
     os.makedirs(DATA_DIR_LATEST, exist_ok=True)
     os.makedirs(DATA_DIR_BACKUP, exist_ok=True)
     
-    # Create daily archive folder
-    # We create folders like data/history/2026/02/15/
     archive_path = os.path.join(DATA_DIR_HISTORY, *TODAY.split('-'))
-    
     master_list = []
+    new_data_list = [] # List specifically for Giant History (only new stuff)
 
     for etf in etfs:
         if not etf.get('enabled', True): continue
@@ -230,22 +254,22 @@ def main():
                         clean_backup.to_csv(os.path.join(DATA_DIR_BACKUP, f"{ticker}_official_backup.csv"), index=False)
                         print(f"      -> 🛡️ Backup Saved: {len(clean_backup)} rows | Date: {b_date}")
                     
-                        # Trust Backup Date more for Invesco
                         if clean_df is None or (b_date > h_date):
                              clean_df = clean_backup
                              h_date = b_date
 
             # --- SMART SAVE LOGIC ---
             if clean_df is not None:
-                # 1. Deduplication for Individual Files (Save space/commits)
+                # Always add to daily snapshot list
+                master_list.append(clean_df)
+
+                # Check if it's actually NEW
                 if check_if_new_data(ticker, h_date):
                     clean_df.to_csv(os.path.join(DATA_DIR_LATEST, f"{ticker}.csv"), index=False)
                     print(f"    ✅ New Data Saved: {len(clean_df)} rows | Date: {h_date}")
+                    new_data_list.append(clean_df) # Only append NEW data to giant history
                 else:
                     print(f"    💤 Data unchanged ({h_date}). Skipping individual save.")
-
-                # 2. Master List Append (ALWAYS add to master for complete daily snapshot)
-                master_list.append(clean_df)
 
             else:
                  print(f"    ⚠️ No valid data found.")
@@ -261,8 +285,12 @@ def main():
         full_df = pd.concat(master_list)
         full_df.to_csv(os.path.join(archive_path, 'master_archive.csv'), index=False)
         print(f"\n📜 Daily Archive Created: {len(master_list)} ETFs in snapshot.")
+    
+    # --- UPDATE GIANT HISTORY ---
+    if new_data_list:
+        update_giant_history(new_data_list)
     else:
-        print("\n📜 Critical: No data found for any ETF.")
+        print("\n🦕 Giant History: No new data to append.")
 
 if __name__ == "__main__":
     main()
