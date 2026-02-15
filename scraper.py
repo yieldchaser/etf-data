@@ -23,245 +23,174 @@ HEADERS = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
 }
 
+def extract_holdings_date(text):
+    """
+    Smart Date Hunter: Scans text for dates following 'as of', 'effective', etc.
+    Future-proofed to handle various formats and text layouts.
+    """
+    if not text: return None
+    
+    # 1. Clean the text (remove extra spaces/newlines)
+    text = " ".join(text.split())
+    
+    # 2. Look for keywords + a date pattern
+    # Patterns: Month DD, YYYY | MM/DD/YYYY | DD-Mon-YYYY
+    date_patterns = [
+        r"(?:as of|effective|holdings as of|date of)\s+([A-Z][a-z]+\s+\d{1,2},?\s+\d{4})", # Feb 12, 2026
+        r"(?:as of|effective|holdings as of|date of)\s+(\d{1,2}/\d{1,2}/\d{4})",         # 02/17/2026
+        r"(?:as of|effective|holdings as of|date of)\s+(\d{4}-\d{2}-\d{2})"             # 2026-02-12
+    ]
+    
+    for pattern in date_patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            raw_date = match.group(1)
+            try:
+                # Standardize to YYYY-MM-DD
+                for fmt in ("%B %d, %Y", "%m/%d/%Y", "%Y-%m-%d", "%b %d, %Y"):
+                    try:
+                        return datetime.strptime(raw_date.replace(',', ''), fmt.replace(',', '')).strftime('%Y-%m-%d')
+                    except: continue
+            except: pass
+    return None
+
 def setup_driver():
-    """ Launches Headless Chrome """
     chrome_options = Options()
     chrome_options.add_argument("--headless=new") 
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--window-size=1920,1080")
-    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
     chrome_options.page_load_strategy = 'eager'
-    
     driver = webdriver.Chrome(options=chrome_options)
     driver.set_page_load_timeout(30) 
     return driver
 
-def find_first_trust_table(dfs):
-    if not dfs: return None
-    valid_keywords = ['ticker', 'symbol', 'holding', 'identifier', 'weighting', 'cusip']
-    for i, df in enumerate(dfs):
-        cols = [str(c).strip().lower() for c in df.columns]
-        if any(k in cols for k in valid_keywords): return df
-        if not df.empty:
-            first_row = [str(x).strip().lower() for x in df.iloc[0].values]
-            if any(k in first_row for k in valid_keywords):
-                print(f"      -> Promoting header in Table #{i}")
-                new_header = df.iloc[0]
-                df = df[1:] 
-                df.columns = new_header
-                return df
-    return None
-
-def scrape_invesco_backup(driver, url, ticker):
-    """ The Backup Track: Scrapes Top 10 from Official Invesco Site """
-    try:
-        print(f"      -> 🛡️ Running Backup Scraper for {ticker}...")
-        driver.get(url)
-        time.sleep(5)
-        
-        # Try full download first
-        try:
-            s = requests.Session()
-            for c in driver.get_cookies():
-                s.cookies.set(c['name'], c['value'])
-            s.headers.update({"User-Agent": driver.execute_script("return navigator.userAgent;")})
-            dl_url = f"https://www.invesco.com/us/en/financial-products/etfs/holdings/main/holdings/0?ticker={ticker}&action=download"
-            r = s.get(dl_url, timeout=10)
-            if r.status_code == 200:
-                lines = r.text.splitlines()
-                start_row = 0
-                found = False
-                for i, line in enumerate(lines[:30]):
-                    if "Ticker" in line or "Holding" in line or "Company" in line:
-                        start_row = i; found = True; break
-                if found: return pd.read_csv(StringIO("\n".join(lines[start_row:])))
-        except: pass
-
-        # Fallback to visible table
-        dfs = pd.read_html(StringIO(driver.page_source))
-        for d in dfs:
-            if 'ytd' in [str(c).lower() for c in d.columns]: continue
-            if len(d) > 5: return d
-            
-    except Exception as e:
-        print(f"      -> Backup Scraper Failed: {e}")
-    return None
-
-def clean_dataframe(df, ticker):
+def clean_dataframe(df, ticker, holdings_date=None):
     if df is None or df.empty: return None
 
-    # 1. Standardize columns
     df.columns = [str(c).strip().lower() for c in df.columns]
     
-    # 2. RESTORE V12 LOGIC (Explicit Mapping) + V13 MAGNET
     col_map = {
         'stockticker': 'ticker', 'symbol': 'ticker', 'holding': 'ticker', 
-        'identifier': 'ticker', 'sedol': 'ticker',
-        'securityname': 'name', 'company': 'name', 'security name': 'name', 
-        'security_name': 'name', 'security': 'name', 'company_name': 'name',
-        # V12 CRITICAL RESTORATION:
+        'identifier': 'ticker', 'securityname': 'name', 'company': 'name',
         '% net assets': 'weight', '% tna': 'weight', 'weighting': 'weight', 
         '% portfolio weight': 'weight', '% weight': 'weight'
     }
     df.rename(columns=col_map, inplace=True)
 
-    # 3. Dynamic Rename (Magnet) - Catch anything else
     for col in df.columns:
         if 'weight' in col and col != 'weight':
             df.rename(columns={col: 'weight'}, inplace=True)
 
-    # 4. Deduplicate
     df = df.loc[:, ~df.columns.duplicated()]
-    
-    if 'ticker' not in df.columns:
-        return None
+    if 'ticker' not in df.columns: return None
 
-    # 5. Filter Garbage
-    stop_words = ["cash", "usd", "liquidity", "government", "treasury", "money market", "net other", "total"]
-    df['name'] = df['name'].astype(str)
-    df['ticker'] = df['ticker'].astype(str)
-    
-    pattern = '|'.join([re.escape(w) for w in stop_words])
-    mask = (df['name'].str.contains(pattern, case=False, na=False) | 
-            df['ticker'].str.contains(pattern, case=False, na=False))
-    df = df[~mask].copy()
-
-    # 6. Clean Ticker & Weight
-    df['ticker'] = df['ticker'].str.replace(' USD', '', regex=False)
-    df['ticker'] = df['ticker'].str.replace('.UN', '', regex=False)
-    df['ticker'] = df['ticker'].str.upper().str.strip()
-
+    # Cleaning weights
     if 'weight' in df.columns:
-        # Convert to string first to handle % signs
         df['weight'] = df['weight'].astype(str).str.replace('%', '').str.replace(',', '')
         df['weight'] = pd.to_numeric(df['weight'], errors='coerce')
-        
-        # Logic: If max value is > 1.0 (like 8.96), it's a percentage -> divide by 100
-        if df['weight'].max() > 1.0:
-            df['weight'] = df['weight'] / 100.0
+        if df['weight'].max() > 1.0: df['weight'] = df['weight'] / 100.0
     else:
         df['weight'] = 0.0
 
     df['ETF_Ticker'] = ticker
+    df['Holdings_As_Of'] = holdings_date if holdings_date else "Unknown"
     df['Date_Scraped'] = TODAY
-    return df[['ETF_Ticker', 'ticker', 'name', 'weight', 'Date_Scraped']]
+    
+    return df[['ETF_Ticker', 'ticker', 'name', 'weight', 'Holdings_As_Of', 'Date_Scraped']]
+
+def scrape_invesco_backup(driver, url, ticker):
+    try:
+        print(f"      -> 🛡️ Running Backup Scraper for {ticker}...")
+        driver.get(url)
+        time.sleep(5)
+        
+        # Extract Holdings Date from page text
+        page_text = driver.find_element(By.TAG_NAME, "body").text
+        h_date = extract_holdings_date(page_text)
+
+        # Download logic
+        dl_url = f"https://www.invesco.com/us/en/financial-products/etfs/holdings/main/holdings/0?ticker={ticker}&action=download"
+        r = requests.get(dl_url, headers=HEADERS, timeout=10)
+        if r.status_code == 200:
+            lines = r.text.splitlines()
+            for i, line in enumerate(lines[:30]):
+                if "Ticker" in line or "Holding" in line:
+                    return pd.read_csv(StringIO("\n".join(lines[i:]))), h_date
+    except Exception as e:
+        print(f"      -> Backup Failed: {e}")
+    return None, None
 
 def main():
     try:
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
     except: return
 
-    print("🚀 Launching Scraper V13.2 (Restored Backup Logic)...")
-    
+    print("🚀 Launching Scraper V13.3 (House Cleaning - Smart Dates)...")
     driver = None
     session = requests.Session()
     session.headers.update(HEADERS)
     
     os.makedirs(DATA_DIR_LATEST, exist_ok=True)
-    os.makedirs(DATA_DIR_HISTORY, exist_ok=True)
     os.makedirs(DATA_DIR_BACKUP, exist_ok=True)
-    
-    archive_path = os.path.join(DATA_DIR_HISTORY, *TODAY.split('-'))
-    os.makedirs(archive_path, exist_ok=True)
     master_list = []
 
     for etf in etfs:
         if not etf.get('enabled', True): continue
         ticker = etf['ticker']
         print(f"➳ Processing {ticker}...")
+        df, h_date = None, None
         
         try:
-            df = None
-            
-            # --- TRACK A: PRIMARY SOURCES ---
-            
-            # 1. Pacer (CSV)
+            # --- PRIMARY TRACK ---
             if etf['scraper_type'] == 'pacer_csv':
-                r = session.get(etf['url'], timeout=20)
-                if r.status_code == 200:
-                    content = r.text.splitlines()
-                    start = 0
-                    for i, line in enumerate(content[:20]):
-                        if "Ticker" in line or "Symbol" in line: start = i; break
-                    df = pd.read_csv(StringIO('\n'.join(content[start:])))
+                r = session.get(etf['url'])
+                h_date = extract_holdings_date(r.text[:500]) # Look in header of CSV
+                df = pd.read_csv(StringIO(r.text), skiprows=3) # Standard Pacer skip
 
-            # 2. First Trust (HTML)
+            elif etf['scraper_type'] in ['stock_analysis', 'companies_market_cap']:
+                r = session.get(etf['url'])
+                h_date = extract_holdings_date(r.text)
+                dfs = pd.read_html(StringIO(r.text))
+                for d in dfs:
+                    if len(d) > 20: df = d; break
+
             elif etf['scraper_type'] == 'first_trust':
-                r = session.get(etf['url'], timeout=20)
-                dfs = pd.read_html(r.text)
-                df = find_first_trust_table(dfs)
+                r = session.get(etf['url'])
+                h_date = extract_holdings_date(r.text)
+                dfs = pd.read_html(StringIO(r.text))
+                for d in dfs:
+                    if 'Identifier' in str(d.columns): df = d; break
 
-            # 3. Alpha Architect (Selenium)
             elif etf['scraper_type'] == 'selenium_alpha':
-                if driver is None: driver = setup_driver() 
-                try: driver.get(etf['url'])
-                except: driver.execute_script("window.stop();")
-                time.sleep(2)
-                try:
-                    selects = driver.find_elements(By.TAG_NAME, "select")
-                    for s in selects:
-                        try: Select(s).select_by_visible_text("All"); time.sleep(2)
-                        except: pass
-                except: pass
+                if driver is None: driver = setup_driver()
+                driver.get(etf['url'])
+                time.sleep(3)
+                h_date = extract_holdings_date(driver.find_element(By.TAG_NAME, "body").text)
                 dfs = pd.read_html(StringIO(driver.page_source))
-                for d in dfs: 
-                    if len(d) > 25: df = d; break
-
-            # 4. CompaniesMarketCap
-            elif etf['scraper_type'] == 'companies_market_cap':
-                r = session.get(etf['url'], timeout=20)
-                dfs = pd.read_html(r.text)
                 for d in dfs:
-                    if len(d) > 30: 
-                        df = d
-                        break
+                    if len(d) > 20: df = d; break
 
-            # 5. StockAnalysis
-            elif etf['scraper_type'] == 'stock_analysis':
-                r = session.get(etf['url'], timeout=20)
-                dfs = pd.read_html(r.text)
-                for d in dfs:
-                    if 'Symbol' in d.columns and 'Name' in d.columns:
-                        d.rename(columns={'Symbol': 'Ticker'}, inplace=True)
-                        df = d
-                        break
-
-            # --- TRACK B: BACKUP FOR INVESCO ---
+            # --- BACKUP TRACK ---
             if 'backup_url' in etf:
                 if driver is None: driver = setup_driver()
-                backup_df = scrape_invesco_backup(driver, etf['backup_url'], ticker)
-                clean_backup = clean_dataframe(backup_df, ticker)
-                if clean_backup is not None:
-                    backup_path = os.path.join(DATA_DIR_BACKUP, f"{ticker}_official_backup.csv")
-                    clean_backup.to_csv(backup_path, index=False)
-                    print(f"      -> 🛡️ Backup saved.")
+                b_df, b_date = scrape_invesco_backup(driver, etf['backup_url'], ticker)
+                clean_b = clean_dataframe(b_df, ticker, b_date)
+                if clean_b is not None:
+                    clean_b.to_csv(os.path.join(DATA_DIR_BACKUP, f"{ticker}_official_backup.csv"), index=False)
 
-            # --- SAVE PRIMARY DATA ---
-            clean_df = clean_dataframe(df, ticker)
-            
-            if clean_df is not None and not clean_df.empty:
-                save_path = os.path.join(DATA_DIR_LATEST, f"{ticker}.csv")
-                clean_df.to_csv(save_path, index=False)
+            # --- CLEAN & SAVE ---
+            clean_df = clean_dataframe(df, ticker, h_date)
+            if clean_df is not None:
+                clean_df.to_csv(os.path.join(DATA_DIR_LATEST, f"{ticker}.csv"), index=False)
                 master_list.append(clean_df)
-                print(f"    ✅ Success: {len(clean_df)} rows saved.")
-            else:
-                print(f"    ⚠️ Primary Data not found.")
+                print(f"    ✅ Success: {len(clean_df)} rows. Holdings Date: {h_date}")
 
         except Exception as e:
             print(f"    ❌ Error: {e}")
-            if driver:
-                try: driver.quit()
-                except: pass
-                driver = None
 
     if driver: driver.quit()
-
     if master_list:
-        full_df = pd.concat(master_list)
-        full_df.to_csv(os.path.join(archive_path, 'master_archive.csv'), index=False)
-        print("\n📜 Daily Archive Complete.")
+        pd.concat(master_list).to_csv('data/master_latest.csv', index=False)
 
 if __name__ == "__main__":
     main()
