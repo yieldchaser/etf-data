@@ -1,0 +1,34 @@
+name: Daily ETF Scrape
+
+on:
+  schedule:
+    - cron: '30 12 * * 1-5' # Runs at 12:30 UTC Mon-Fri
+  workflow_dispatch:      # This adds the Manual Button
+
+jobs:
+  scrape-and-commit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install libraries
+        run: |
+          pip install pandas requests lxml openpyxl beautifulsoup4 html5lib selenium
+
+      - name: Run Scraper
+        run: python scraper.py
+
+      - name: Save Data
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Auto-update: V13 Data"
+          file_pattern: "data/*"
