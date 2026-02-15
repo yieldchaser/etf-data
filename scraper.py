@@ -9,6 +9,8 @@ from io import StringIO
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
 
 # --- CONFIG ---
@@ -37,20 +39,35 @@ def scrape_invesco_backup(driver, url, ticker):
     try:
         print(f"      -> 🛡️ Running Backup Scraper for {ticker}...")
         driver.get(url)
-        time.sleep(5)
         
-        # 1. Grab Date from Page Text
+        # 1. Wait for page load & Grab Date
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         page_text = driver.find_element(By.TAG_NAME, "body").text
         h_date = extract_date_from_text(page_text)
         
-        # 2. Download CSV
+        # 2. Find the REAL Download Link
+        download_url = None
+        try:
+            # Look for "Export data" or "Download" link
+            links = driver.find_elements(By.TAG_NAME, "a")
+            for link in links:
+                href = link.get_attribute("href")
+                if href and ("action=download" in href or "download" in href.lower()):
+                    download_url = href
+                    break
+        except: pass
+        
+        # If no link found, use the standard guess
+        if not download_url:
+            download_url = f"https://www.invesco.com/us/en/financial-products/etfs/holdings/main/holdings/0?ticker={ticker}&action=download"
+
+        # 3. Download using Requests (With Session Cookies)
         s = requests.Session()
         for c in driver.get_cookies():
             s.cookies.set(c['name'], c['value'])
         s.headers.update({"User-Agent": driver.execute_script("return navigator.userAgent;")})
         
-        dl_url = f"https://www.invesco.com/us/en/financial-products/etfs/holdings/main/holdings/0?ticker={ticker}&action=download"
-        r = s.get(dl_url, timeout=10)
+        r = s.get(download_url, timeout=15)
         
         if r.status_code == 200:
             lines = r.text.splitlines()
@@ -60,8 +77,14 @@ def scrape_invesco_backup(driver, url, ticker):
                     start_row = i; break
             
             df = pd.read_csv(StringIO("\n".join(lines[start_row:])))
-            return df, h_date # Return Data AND Date
-            
+            return df, h_date
+
+        # 4. Fallback: If download fails, grab the visible table
+        print(f"      -> Download failed ({r.status_code}), trying visible table...")
+        dfs = pd.read_html(StringIO(driver.page_source))
+        for d in dfs:
+            if len(d) > 5: return d, h_date
+
     except Exception as e:
         print(f"      -> Backup Failed: {e}")
     
@@ -99,6 +122,7 @@ def clean_dataframe(df, ticker, h_date=TODAY):
                 break
 
     if 'ticker' not in df.columns: return None
+    
     if 'weight' not in df.columns: df['weight'] = 0.0
     
     if 'weight' in df.columns:
@@ -106,12 +130,11 @@ def clean_dataframe(df, ticker, h_date=TODAY):
         df['weight'] = pd.to_numeric(df['weight'], errors='coerce').fillna(0.0)
         if df['weight'].max() > 1.0: df['weight'] = df['weight'] / 100.0
     
-    # EXPLICITLY SET DATE COLUMNS
+    # FORCE THE DATE
     df['ETF_Ticker'] = ticker
     df['Holdings_As_Of'] = h_date
     df['Date_Scraped'] = TODAY
     
-    # Ensure correct column order
     return df[['ETF_Ticker', 'ticker', 'name', 'weight', 'Holdings_As_Of', 'Date_Scraped']]
 
 def setup_driver():
@@ -127,7 +150,7 @@ def main():
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
     except: return
 
-    print(f"🚀 Launching Scraper V14.8 (Backup Date Lock) - {TODAY}")
+    print(f"🚀 Launching Scraper V14.9 (Invesco Backup Fix) - {TODAY}")
     driver = setup_driver()
     os.makedirs(DATA_DIR_LATEST, exist_ok=True)
     os.makedirs(DATA_DIR_BACKUP, exist_ok=True)
@@ -173,30 +196,31 @@ def main():
                 dfs = pd.read_html(StringIO(driver.page_source))
                 df = find_first_trust_table(dfs)
             
-            else: # Invesco Primary / StockAnalysis
+            else: 
                 r = requests.get(etf['url'], headers=HEADERS, timeout=15)
                 h_date = extract_date_from_text(r.text)
                 dfs = pd.read_html(StringIO(r.text))
                 for d in dfs:
                     if len(d) > 20: df = d; break
 
-            # Save Primary
             clean_df = clean_dataframe(df, ticker, h_date)
             if clean_df is not None:
                 clean_df.to_csv(os.path.join(DATA_DIR_LATEST, f"{ticker}.csv"), index=False)
                 print(f"    ✅ Primary: {len(clean_df)} rows | Date: {h_date}")
 
-            # --- BACKUP SCRAPER (WITH DATE LOCK) ---
+            # --- BACKUP SCRAPER (DYNAMIC LINK) ---
             if 'backup_url' in etf:
                 b_df, b_date = scrape_invesco_backup(driver, etf['backup_url'], ticker)
-                clean_backup = clean_dataframe(b_df, ticker, b_date)
                 
-                if clean_backup is not None:
-                    # Double Check: Ensure 'Holdings_As_Of' is actually set to the scraped date
-                    clean_backup['Holdings_As_Of'] = b_date
-                    
-                    clean_backup.to_csv(os.path.join(DATA_DIR_BACKUP, f"{ticker}_official_backup.csv"), index=False)
-                    print(f"      -> 🛡️ Backup Saved: {len(clean_backup)} rows | Date: {b_date}")
+                if b_df is not None:
+                    clean_backup = clean_dataframe(b_df, ticker, b_date)
+                    if clean_backup is not None:
+                        clean_backup.to_csv(os.path.join(DATA_DIR_BACKUP, f"{ticker}_official_backup.csv"), index=False)
+                        print(f"      -> 🛡️ Backup Saved: {len(clean_backup)} rows | Date: {b_date}")
+                    else:
+                        print(f"      -> Backup Data Invalid")
+                else:
+                    print(f"      -> Backup Returned No Data")
 
         except Exception as e:
             print(f"    ❌ Error: {e}")
