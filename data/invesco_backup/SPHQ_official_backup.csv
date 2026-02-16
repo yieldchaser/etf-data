@@ -1,8 +1,8 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
 SPHQ,COST,Costco Wholesale Corp,0.0,2026-02-12,2026-02-16
+SPHQ,GE,General Electric Co,0.0,2026-02-12,2026-02-16
 SPHQ,V,Visa Inc,0.0,2026-02-12,2026-02-16
 SPHQ,MA,Mastercard Inc,0.0,2026-02-12,2026-02-16
-SPHQ,GE,General Electric Co,0.0,2026-02-12,2026-02-16
 SPHQ,AAPL,Apple Inc,0.0,2026-02-12,2026-02-16
 SPHQ,PG,Procter & Gamble Co/The,0.0,2026-02-12,2026-02-16
 SPHQ,LRCX,Lam Research Corp,0.0,2026-02-12,2026-02-16
