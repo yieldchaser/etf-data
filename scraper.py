@@ -55,7 +55,8 @@ def scrape_invesco_backup(driver, url, ticker):
         df = None
         dfs = pd.read_html(StringIO(driver.page_source))
         for d in dfs:
-            valid_keywords = ['ticker', 'symbol', 'holding', 'identifier', 'weight', '% of net assets']
+            # FIX: Added '% tna' and '% market value' to detection list
+            valid_keywords = ['ticker', 'symbol', 'holding', 'identifier', 'weight', '% of net assets', '% tna', '% market value']
             cols = [str(c).strip().lower() for c in d.columns]
             if any(k in cols for k in valid_keywords):
                 df = d; break
@@ -90,10 +91,12 @@ def clean_dataframe(df, ticker, h_date=TODAY):
     if df is None or df.empty: return None
     df = df.copy() 
     df.columns = [str(c).strip().lower() for c in df.columns]
+    
+    # FIX: Added '% tna' to the weight mapping list
     mappings = {
         'ticker': ['symbol', 'identifier', 'stock ticker', 'ticker'],
         'name': ['security name', 'company', 'holding', 'description', 'name'],
-        'weight': ['weighting', '% weight', 'weight %', '% net assets', '% of net assets', 'weight']
+        'weight': ['weighting', '% weight', 'weight %', '% net assets', '% of net assets', 'weight', '% tna', '% market value']
     }
     for target, keywords in mappings.items():
         for col in df.columns:
@@ -104,8 +107,13 @@ def clean_dataframe(df, ticker, h_date=TODAY):
     if 'weight' not in df.columns: df['weight'] = 0.0
     
     if 'weight' in df.columns:
-        df['weight'] = df['weight'].astype(str).str.replace('%', '').str.replace(',', '')
+        # Clean % signs and commas
+        df['weight'] = df['weight'].astype(str).str.replace('%', '', regex=False).str.replace(',', '', regex=False)
         df['weight'] = pd.to_numeric(df['weight'], errors='coerce').fillna(0.0)
+        # Normalization check: if weight > 1 (e.g., 5.5 instead of 0.055), divide by 100
+        # BUT: Ensure we don't divide if it's already decimal. 
+        # Most web tables (like Invesco % TNA) come as "12.76" which means 12.76%. 
+        # My logic handles this: if max > 1.0, assume it's percentage format.
         if df['weight'].max() > 1.0: df['weight'] = df['weight'] / 100.0
     
     df['ETF_Ticker'] = ticker
@@ -137,6 +145,7 @@ def update_giant_history(new_dfs):
     else:
         combined = new_data
     
+    # Deduplicate based on Ticker + ETF + Date
     combined.drop_duplicates(subset=['ETF_Ticker', 'ticker', 'Holdings_As_Of'], keep='last', inplace=True)
     combined.to_csv(GIANT_HISTORY_FILE, index=False)
     print(f"    ✅ Giant History Saved: {len(combined)} total rows.")
@@ -154,7 +163,7 @@ def main():
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
     except: return
 
-    print(f"🚀 Launching Scraper V17.1 (Force Giant History) - {TODAY}")
+    print(f"🚀 Launching Scraper V17.2 (Fixed Invesco Weights) - {TODAY}")
     driver = setup_driver()
     os.makedirs(DATA_DIR_LATEST, exist_ok=True)
     os.makedirs(DATA_DIR_BACKUP, exist_ok=True)
@@ -210,29 +219,43 @@ def main():
                 for d in dfs:
                     if len(d) > 20: df = d; break
 
+            # --- CLEANING ---
             clean_df = clean_dataframe(df, ticker, h_date)
             
+            # --- BACKUP LOGIC (Invesco / Others) ---
             if 'backup_url' in etf:
                 b_df, b_date = scrape_invesco_backup(driver, etf['backup_url'], ticker)
                 if b_df is not None:
                     clean_backup = clean_dataframe(b_df, ticker, b_date)
                     if clean_backup is not None:
                         clean_backup['Holdings_As_Of'] = b_date
+                        
+                        # FORCE SAVE BACKUP to verify the fix works
                         clean_backup.to_csv(os.path.join(DATA_DIR_BACKUP, f"{ticker}_official_backup.csv"), index=False)
                         print(f"      -> 🛡️ Backup Saved: {len(clean_backup)} rows | Date: {b_date}")
-                        if clean_df is None or (b_date > h_date):
+                        
+                        # Use Backup if Primary Failed OR if Backup is Newer
+                        if clean_df is None or clean_df.empty or (b_date > h_date):
+                             clean_df = clean_backup
+                             h_date = b_date
+                        # NEW: Use Backup if Primary has 0 rows but Backup has data
+                        elif len(clean_df) < 5 and len(clean_backup) > 5:
                              clean_df = clean_backup
                              h_date = b_date
 
             if clean_df is not None:
-                master_list.append(clean_df) # Always add to daily snapshot
+                master_list.append(clean_df) 
                 
+                # We check if data is new, BUT if the file exists and has 0.0 weights, we consider it 'bad' and overwrite
+                # Simple logic: Just overwrite today to be safe.
                 if check_if_new_data(ticker, h_date):
                     clean_df.to_csv(os.path.join(DATA_DIR_LATEST, f"{ticker}.csv"), index=False)
                     print(f"    ✅ New Data Saved: {len(clean_df)} rows | Date: {h_date}")
                     new_data_list.append(clean_df)
                 else:
-                    print(f"    💤 Data unchanged ({h_date}). Skipping individual save.")
+                    # If date matches but previous file might have 0.0 weights, let's overwrite anyway to fix the bug
+                    clean_df.to_csv(os.path.join(DATA_DIR_LATEST, f"{ticker}.csv"), index=False)
+                    print(f"    ✅ (Forced Update) Saved: {len(clean_df)} rows | Date: {h_date}")
 
             else: print(f"    ⚠️ No valid data found.")
 
@@ -246,16 +269,13 @@ def main():
         full_df.to_csv(os.path.join(archive_path, 'master_archive.csv'), index=False)
         print(f"\n📜 Daily Archive Created: {len(master_list)} ETFs in snapshot.")
     
-    # --- UPDATE GIANT HISTORY (With Initialization Logic) ---
-    # Case 1: We have NEW data -> Update as normal
     if new_data_list:
         update_giant_history(new_data_list)
-    # Case 2: No new data, BUT file doesn't exist yet -> Initialize it!
     elif not os.path.exists(GIANT_HISTORY_FILE) and master_list:
         print("\n🦕 Initializing Giant History File for the first time...")
         update_giant_history(master_list)
     else:
-        print("\n🦕 Giant History: No new data to append (and file already exists).")
+        print("\n🦕 Giant History: No new data to append.")
 
 if __name__ == "__main__":
     main()
