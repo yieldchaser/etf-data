@@ -55,7 +55,6 @@ def scrape_invesco_backup(driver, url, ticker):
         df = None
         dfs = pd.read_html(StringIO(driver.page_source))
         for d in dfs:
-            # FIX: Added '% tna' and '% market value' to detection list
             valid_keywords = ['ticker', 'symbol', 'holding', 'identifier', 'weight', '% of net assets', '% tna', '% market value']
             cols = [str(c).strip().lower() for c in d.columns]
             if any(k in cols for k in valid_keywords):
@@ -92,7 +91,6 @@ def clean_dataframe(df, ticker, h_date=TODAY):
     df = df.copy() 
     df.columns = [str(c).strip().lower() for c in df.columns]
     
-    # FIX: Added '% tna' to the weight mapping list
     mappings = {
         'ticker': ['symbol', 'identifier', 'stock ticker', 'ticker'],
         'name': ['security name', 'company', 'holding', 'description', 'name'],
@@ -107,13 +105,8 @@ def clean_dataframe(df, ticker, h_date=TODAY):
     if 'weight' not in df.columns: df['weight'] = 0.0
     
     if 'weight' in df.columns:
-        # Clean % signs and commas
         df['weight'] = df['weight'].astype(str).str.replace('%', '', regex=False).str.replace(',', '', regex=False)
         df['weight'] = pd.to_numeric(df['weight'], errors='coerce').fillna(0.0)
-        # Normalization check: if weight > 1 (e.g., 5.5 instead of 0.055), divide by 100
-        # BUT: Ensure we don't divide if it's already decimal. 
-        # Most web tables (like Invesco % TNA) come as "12.76" which means 12.76%. 
-        # My logic handles this: if max > 1.0, assume it's percentage format.
         if df['weight'].max() > 1.0: df['weight'] = df['weight'] / 100.0
     
     df['ETF_Ticker'] = ticker
@@ -136,7 +129,6 @@ def update_giant_history(new_dfs):
     if not new_dfs: return
     print(f"\n🦕 Updating Giant History File with {len(new_dfs)} datasets...")
     new_data = pd.concat(new_dfs)
-    
     if os.path.exists(GIANT_HISTORY_FILE):
         try:
             existing_data = pd.read_csv(GIANT_HISTORY_FILE)
@@ -144,8 +136,6 @@ def update_giant_history(new_dfs):
         except: combined = new_data
     else:
         combined = new_data
-    
-    # Deduplicate based on Ticker + ETF + Date
     combined.drop_duplicates(subset=['ETF_Ticker', 'ticker', 'Holdings_As_Of'], keep='last', inplace=True)
     combined.to_csv(GIANT_HISTORY_FILE, index=False)
     print(f"    ✅ Giant History Saved: {len(combined)} total rows.")
@@ -163,13 +153,14 @@ def main():
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
     except: return
 
-    print(f"🚀 Launching Scraper V17.2 (Fixed Invesco Weights) - {TODAY}")
+    print(f"🚀 Launching Scraper V17.3 (Backup History Enabled) - {TODAY}")
     driver = setup_driver()
     os.makedirs(DATA_DIR_LATEST, exist_ok=True)
     os.makedirs(DATA_DIR_BACKUP, exist_ok=True)
     
     archive_path = os.path.join(DATA_DIR_HISTORY, *TODAY.split('-'))
     master_list = []
+    backup_list = []  # <--- NEW LIST FOR BACKUP HISTORY
     new_data_list = []
 
     for etf in etfs:
@@ -180,6 +171,7 @@ def main():
         try:
             df, h_date = None, TODAY
             
+            # --- SCRAPER SELECTION ---
             if etf['scraper_type'] == 'pacer_csv':
                 driver.get(etf['url']); time.sleep(3)
                 text = driver.find_element(By.TAG_NAME, "body").text
@@ -219,10 +211,10 @@ def main():
                 for d in dfs:
                     if len(d) > 20: df = d; break
 
-            # --- CLEANING ---
+            # --- CLEAN PRIMARY ---
             clean_df = clean_dataframe(df, ticker, h_date)
             
-            # --- BACKUP LOGIC (Invesco / Others) ---
+            # --- RUN BACKUP SCRAPER ---
             if 'backup_url' in etf:
                 b_df, b_date = scrape_invesco_backup(driver, etf['backup_url'], ticker)
                 if b_df is not None:
@@ -230,15 +222,17 @@ def main():
                     if clean_backup is not None:
                         clean_backup['Holdings_As_Of'] = b_date
                         
-                        # FORCE SAVE BACKUP to verify the fix works
+                        # 1. SAVE TO LATEST BACKUP (Overwrites daily)
                         clean_backup.to_csv(os.path.join(DATA_DIR_BACKUP, f"{ticker}_official_backup.csv"), index=False)
-                        print(f"      -> 🛡️ Backup Saved: {len(clean_backup)} rows | Date: {b_date}")
+                        print(f"      -> 🛡️ Backup Saved: {len(clean_backup)} rows")
                         
-                        # Use Backup if Primary Failed OR if Backup is Newer
+                        # 2. ADD TO BACKUP HISTORY LIST (New!)
+                        backup_list.append(clean_backup)
+
+                        # 3. DECIDE: Use Backup or Primary?
                         if clean_df is None or clean_df.empty or (b_date > h_date):
                              clean_df = clean_backup
                              h_date = b_date
-                        # NEW: Use Backup if Primary has 0 rows but Backup has data
                         elif len(clean_df) < 5 and len(clean_backup) > 5:
                              clean_df = clean_backup
                              h_date = b_date
@@ -246,14 +240,11 @@ def main():
             if clean_df is not None:
                 master_list.append(clean_df) 
                 
-                # We check if data is new, BUT if the file exists and has 0.0 weights, we consider it 'bad' and overwrite
-                # Simple logic: Just overwrite today to be safe.
                 if check_if_new_data(ticker, h_date):
                     clean_df.to_csv(os.path.join(DATA_DIR_LATEST, f"{ticker}.csv"), index=False)
                     print(f"    ✅ New Data Saved: {len(clean_df)} rows | Date: {h_date}")
                     new_data_list.append(clean_df)
                 else:
-                    # If date matches but previous file might have 0.0 weights, let's overwrite anyway to fix the bug
                     clean_df.to_csv(os.path.join(DATA_DIR_LATEST, f"{ticker}.csv"), index=False)
                     print(f"    ✅ (Forced Update) Saved: {len(clean_df)} rows | Date: {h_date}")
 
@@ -263,19 +254,29 @@ def main():
 
     driver.quit()
 
+    # --- SAVE HISTORY FILES ---
     if master_list:
         os.makedirs(archive_path, exist_ok=True)
+        
+        # 1. Save the MASTER Archive (Used by Excel)
         full_df = pd.concat(master_list)
         full_df.to_csv(os.path.join(archive_path, 'master_archive.csv'), index=False)
-        print(f"\n📜 Daily Archive Created: {len(master_list)} ETFs in snapshot.")
-    
+        print(f"\n📜 Daily Master Archive Created.")
+        
+        # 2. Save the BACKUP Archive (Safety Net - NEW!)
+        if backup_list:
+            backup_df = pd.concat(backup_list)
+            backup_df.to_csv(os.path.join(archive_path, 'raw_invesco_backups.csv'), index=False)
+            print(f"🛡️ Daily Backup Archive Created (Just in case).")
+
+    # --- UPDATE GIANT HISTORY ---
     if new_data_list:
         update_giant_history(new_data_list)
     elif not os.path.exists(GIANT_HISTORY_FILE) and master_list:
-        print("\n🦕 Initializing Giant History File for the first time...")
+        print("\n🦕 Initializing Giant History File...")
         update_giant_history(master_list)
     else:
-        print("\n🦕 Giant History: No new data to append.")
+        print("\n🦕 Giant History: No new data.")
 
 if __name__ == "__main__":
     main()
