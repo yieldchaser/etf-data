@@ -1,26 +1,26 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-PIE,TPE: 2345,Accton Technology Corporation,0.0311,2026-02-20,2026-02-23
-PIE,TPE: 2330,Taiwan Semiconductor Manufacturing Company Limited,0.030600000000000002,2026-02-20,2026-02-23
-PIE,TPE: 5434,"Topco Scientific Co.,Ltd.",0.0239,2026-02-20,2026-02-23
-PIE,BMV: GENTERA,"Gentera, S.A.B. de C.V.",0.0229,2026-02-20,2026-02-23
-PIE,TPE: 2404,"United Integrated Services Co., Ltd.",0.0227,2026-02-20,2026-02-23
-PIE,TISCO-R.BK,TISCO Financial Group PCL Units Non-Voting Depository Receipt,0.0226,2026-02-20,2026-02-23
-PIE,TPE: 6257,Sigurd Microelectronics Corporation,0.021400000000000002,2026-02-20,2026-02-23
-PIE,TPE: 6919,"Caliway Biopharmaceuticals Co., Ltd.",0.0202,2026-02-20,2026-02-23
-PIE,TPE: 6691,"Yankey Engineering Co., Ltd.",0.0194,2026-02-20,2026-02-23
-PIE,BVMF: CURY3,Cury Construtora e Incorporadora S.A.,0.0191,2026-02-20,2026-02-23
-PIE,TPE: 2408,Nanya Technology Corporation,0.0182,2026-02-20,2026-02-23
-PIE,TERA.E.IS,Tera Yatirim Menkul Degerler AS,0.018000000000000002,2026-02-20,2026-02-23
-PIE,TPE: 8112,"Supreme Electronics Co., Ltd.",0.0168,2026-02-20,2026-02-23
-PIE,IDX: ENRG,PT Energi Mega Persada Tbk,0.015700000000000002,2026-02-20,2026-02-23
-PIE,BVMF: DIRR3,Direcional Engenharia S.A.,0.015600000000000001,2026-02-20,2026-02-23
-PIE,JSE: VKE,Vukile Property Fund Limited,0.0152,2026-02-20,2026-02-23
-PIE,TPE: 6191,Global Brands Manufacture Ltd.,0.0151,2026-02-20,2026-02-23
-PIE,TPE: 2344,Winbond Electronics Corporation,0.0148,2026-02-20,2026-02-23
-PIE,AGPXX,Short-Term Investment Trust - Invesco Government & Agency Portfolio,0.0144,2026-02-20,2026-02-23
-PIE,HKG: 1258,China Nonferrous Mining Corporation Limited,0.0139,2026-02-20,2026-02-23
-PIE,HKG: 1088,China Shenhua Energy Company Limited,0.0138,2026-02-20,2026-02-23
-PIE,HKG: 1898,China Coal Energy Company Limited,0.0137,2026-02-20,2026-02-23
-PIE,ICT.PM,International Container Terminal Services Inc,0.0131,2026-02-20,2026-02-23
-PIE,BMV: Q,"QuÃ¡litas Controladora, S.A.B. de C.V.",0.0128,2026-02-20,2026-02-23
-PIE,HKG: 1378,China Hongqiao Group Limited,0.0127,2026-02-20,2026-02-23
+PIE,TPE: 2345,Accton Technology Corporation,0.0311,2026-02-23,2026-02-24
+PIE,TPE: 2330,Taiwan Semiconductor Manufacturing Company Limited,0.030600000000000002,2026-02-23,2026-02-24
+PIE,TPE: 5434,"Topco Scientific Co.,Ltd.",0.0239,2026-02-23,2026-02-24
+PIE,BMV: GENTERA,"Gentera, S.A.B. de C.V.",0.0229,2026-02-23,2026-02-24
+PIE,TPE: 2404,"United Integrated Services Co., Ltd.",0.0227,2026-02-23,2026-02-24
+PIE,TISCO-R.BK,TISCO Financial Group PCL Units Non-Voting Depository Receipt,0.0226,2026-02-23,2026-02-24
+PIE,TPE: 6257,Sigurd Microelectronics Corporation,0.021400000000000002,2026-02-23,2026-02-24
+PIE,TPE: 6919,"Caliway Biopharmaceuticals Co., Ltd.",0.0202,2026-02-23,2026-02-24
+PIE,TPE: 6691,"Yankey Engineering Co., Ltd.",0.0194,2026-02-23,2026-02-24
+PIE,BVMF: CURY3,Cury Construtora e Incorporadora S.A.,0.0191,2026-02-23,2026-02-24
+PIE,TPE: 2408,Nanya Technology Corporation,0.0182,2026-02-23,2026-02-24
+PIE,TERA.E.IS,Tera Yatirim Menkul Degerler AS,0.018000000000000002,2026-02-23,2026-02-24
+PIE,TPE: 8112,"Supreme Electronics Co., Ltd.",0.0168,2026-02-23,2026-02-24
+PIE,IDX: ENRG,PT Energi Mega Persada Tbk,0.015700000000000002,2026-02-23,2026-02-24
+PIE,BVMF: DIRR3,Direcional Engenharia S.A.,0.015600000000000001,2026-02-23,2026-02-24
+PIE,JSE: VKE,Vukile Property Fund Limited,0.0152,2026-02-23,2026-02-24
+PIE,TPE: 6191,Global Brands Manufacture Ltd.,0.0151,2026-02-23,2026-02-24
+PIE,TPE: 2344,Winbond Electronics Corporation,0.0148,2026-02-23,2026-02-24
+PIE,AGPXX,Short-Term Investment Trust - Invesco Government & Agency Portfolio,0.0144,2026-02-23,2026-02-24
+PIE,HKG: 1258,China Nonferrous Mining Corporation Limited,0.0139,2026-02-23,2026-02-24
+PIE,HKG: 1088,China Shenhua Energy Company Limited,0.0138,2026-02-23,2026-02-24
+PIE,HKG: 1898,China Coal Energy Company Limited,0.0137,2026-02-23,2026-02-24
+PIE,ICT.PM,International Container Terminal Services Inc,0.0131,2026-02-23,2026-02-24
+PIE,BMV: Q,"QuÃ¡litas Controladora, S.A.B. de C.V.",0.0128,2026-02-23,2026-02-24
+PIE,HKG: 1378,China Hongqiao Group Limited,0.0127,2026-02-23,2026-02-24
