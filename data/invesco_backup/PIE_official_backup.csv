@@ -1,11 +1,11 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-PIE,2345,Accton Technology Corp,0.0315,2026-02-20,2026-02-24
-PIE,2330,Taiwan Semiconductor Manufacturing Co Ltd,0.031200000000000002,2026-02-20,2026-02-24
-PIE,5434,Topco Scientific Co Ltd,0.0239,2026-02-20,2026-02-24
-PIE,GENTERA*,Gentera SAB de CV,0.0229,2026-02-20,2026-02-24
-PIE,2404,United Integrated Services Co Ltd,0.0227,2026-02-20,2026-02-24
-PIE,TISCO-R,Tisco Financial Group PCL,0.0223,2026-02-20,2026-02-24
-PIE,6257,Sigurd Microelectronics Corp,0.0213,2026-02-20,2026-02-24
-PIE,6919,Caliway Biopharmaceuticals Co Ltd,0.0203,2026-02-20,2026-02-24
-PIE,6691,Yankey Engineering Co Ltd,0.019299999999999998,2026-02-20,2026-02-24
-PIE,CURY3,Cury Construtora e Incorporadora SA,0.0192,2026-02-20,2026-02-24
+PIE,2330,Taiwan Semiconductor Manufacturing Co Ltd,0.0298,2026-02-20,2026-02-25
+PIE,2345,Accton Technology Corp,0.029300000000000003,2026-02-20,2026-02-25
+PIE,5434,Topco Scientific Co Ltd,0.024399999999999998,2026-02-20,2026-02-25
+PIE,2404,United Integrated Services Co Ltd,0.0231,2026-02-20,2026-02-25
+PIE,GENTERA*,Gentera SAB de CV,0.022799999999999997,2026-02-20,2026-02-25
+PIE,TISCO-R,Tisco Financial Group PCL,0.0222,2026-02-20,2026-02-25
+PIE,6257,Sigurd Microelectronics Corp,0.021400000000000002,2026-02-20,2026-02-25
+PIE,6919,Caliway Biopharmaceuticals Co Ltd,0.0204,2026-02-20,2026-02-25
+PIE,TERA,Tera Yatirim Menkul Degerler AS,0.0197,2026-02-20,2026-02-25
+PIE,6691,Yankey Engineering Co Ltd,0.0192,2026-02-20,2026-02-25
