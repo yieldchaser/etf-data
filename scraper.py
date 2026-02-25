@@ -153,7 +153,7 @@ def main():
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
     except: return
 
-    print(f"🚀 Launching Scraper V17.3 (Backup History Enabled) - {TODAY}")
+    print(f"🚀 Launching Scraper V17.4 (Anti-Trojan Enabled) - {TODAY}")
     driver = setup_driver()
     os.makedirs(DATA_DIR_LATEST, exist_ok=True)
     os.makedirs(DATA_DIR_BACKUP, exist_ok=True)
@@ -230,12 +230,19 @@ def main():
                         backup_list.append(clean_backup)
 
                         # 3. DECIDE: Use Backup or Primary?
-                        if clean_df is None or clean_df.empty or (b_date > h_date):
+                        if clean_df is None or clean_df.empty:
                              clean_df = clean_backup
                              h_date = b_date
                         elif len(clean_df) < 5 and len(clean_backup) > 5:
                              clean_df = clean_backup
                              h_date = b_date
+                        elif b_date > h_date:
+                             # TROJAN HORSE FIX: Don't let a Top-10 preview overwrite a full list!
+                             if len(clean_backup) <= 15 and len(clean_df) > 15:
+                                 print(f"      -> ⚠️ Backup newer ({b_date}) but only {len(clean_backup)} rows. Keeping Primary ({len(clean_df)} rows).")
+                             else:
+                                 clean_df = clean_backup
+                                 h_date = b_date
 
             if clean_df is not None:
                 master_list.append(clean_df) 
