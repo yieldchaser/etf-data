@@ -1,26 +1,26 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-PIE,TPE: 2330,Taiwan Semiconductor Manufacturing Company Limited,0.0302,2026-03-04,2026-03-05
-PIE,TPE: 2345,Accton Technology Corporation,0.028999999999999998,2026-03-04,2026-03-05
-PIE,TPE: 2404,"United Integrated Services Co., Ltd.",0.025099999999999997,2026-03-04,2026-03-05
-PIE,TPE: 5434,"Topco Scientific Co.,Ltd.",0.023799999999999998,2026-03-04,2026-03-05
-PIE,TPE: 6257,Sigurd Microelectronics Corporation,0.022400000000000003,2026-03-04,2026-03-05
-PIE,IDX: ENRG,PT Energi Mega Persada Tbk,0.021400000000000002,2026-03-04,2026-03-05
-PIE,TISCO-R.BK,TISCO Financial Group PCL Units Non-Voting Depository Receipt,0.0212,2026-03-04,2026-03-05
-PIE,TPE: 6691,"Yankey Engineering Co., Ltd.",0.0212,2026-03-04,2026-03-05
-PIE,TERA.E.IS,Tera Yatirim Menkul Degerler AS,0.0202,2026-03-04,2026-03-05
-PIE,BMV: GENTERA,"Gentera, S.A.B. de C.V.",0.020099999999999996,2026-03-04,2026-03-05
-PIE,TPE: 6919,"Caliway Biopharmaceuticals Co., Ltd.",0.0195,2026-03-04,2026-03-05
-PIE,TPE: 2408,Nanya Technology Corporation,0.0179,2026-03-04,2026-03-05
-PIE,BVMF: CURY3,Cury Construtora e Incorporadora S.A.,0.0171,2026-03-04,2026-03-05
-PIE,TPE: 2344,Winbond Electronics Corporation,0.0165,2026-03-04,2026-03-05
-PIE,TPE: 8112,"Supreme Electronics Co., Ltd.",0.0163,2026-03-04,2026-03-05
-PIE,TPE: 6191,Global Brands Manufacture Ltd.,0.015600000000000001,2026-03-04,2026-03-05
-PIE,HKG: 1898,China Coal Energy Company Limited,0.0149,2026-03-04,2026-03-05
-PIE,BVMF: DIRR3,Direcional Engenharia S.A.,0.0144,2026-03-04,2026-03-05
-PIE,JSE: VKE,Vukile Property Fund Limited,0.013999999999999999,2026-03-04,2026-03-05
-PIE,HKG: 1088,China Shenhua Energy Company Limited,0.0139,2026-03-04,2026-03-05
-PIE,HKG: 1258,China Nonferrous Mining Corporation Limited,0.0129,2026-03-04,2026-03-05
-PIE,HKG: 1378,China Hongqiao Group Limited,0.0129,2026-03-04,2026-03-05
-PIE,HKG: 0857,PetroChina Company Limited,0.0128,2026-03-04,2026-03-05
-PIE,ICT.PM,International Container Terminal Services Inc,0.0127,2026-03-04,2026-03-05
-PIE,GMEXICOB.MX,Grupo Mexico SAB de CV Class B,0.0125,2026-03-04,2026-03-05
+PIE,TPE: 2330,Taiwan Semiconductor Manufacturing Company Limited,0.0305,2026-03-05,2026-03-06
+PIE,TPE: 2345,Accton Technology Corporation,0.029900000000000003,2026-03-05,2026-03-06
+PIE,TPE: 2404,"United Integrated Services Co., Ltd.",0.024399999999999998,2026-03-05,2026-03-06
+PIE,TPE: 5434,"Topco Scientific Co.,Ltd.",0.024300000000000002,2026-03-05,2026-03-06
+PIE,TPE: 6257,Sigurd Microelectronics Corporation,0.0231,2026-03-05,2026-03-06
+PIE,TISCO-R.BK,TISCO Financial Group PCL Units Non-Voting Depository Receipt,0.0222,2026-03-05,2026-03-06
+PIE,IDX: ENRG,PT Energi Mega Persada Tbk,0.0218,2026-03-05,2026-03-06
+PIE,TPE: 6691,"Yankey Engineering Co., Ltd.",0.0213,2026-03-05,2026-03-06
+PIE,TERA.E.IS,Tera Yatirim Menkul Degerler AS,0.0212,2026-03-05,2026-03-06
+PIE,BMV: GENTERA,"Gentera, S.A.B. de C.V.",0.0206,2026-03-05,2026-03-06
+PIE,TPE: 6919,"Caliway Biopharmaceuticals Co., Ltd.",0.0189,2026-03-05,2026-03-06
+PIE,BVMF: CURY3,Cury Construtora e Incorporadora S.A.,0.0168,2026-03-05,2026-03-06
+PIE,TPE: 2408,Nanya Technology Corporation,0.0163,2026-03-05,2026-03-06
+PIE,TPE: 8112,"Supreme Electronics Co., Ltd.",0.0161,2026-03-05,2026-03-06
+PIE,HKG: 1898,China Coal Energy Company Limited,0.015600000000000001,2026-03-05,2026-03-06
+PIE,TPE: 6191,Global Brands Manufacture Ltd.,0.0155,2026-03-05,2026-03-06
+PIE,TPE: 2344,Winbond Electronics Corporation,0.015,2026-03-05,2026-03-06
+PIE,HKG: 1088,China Shenhua Energy Company Limited,0.014499999999999999,2026-03-05,2026-03-06
+PIE,JSE: VKE,Vukile Property Fund Limited,0.0141,2026-03-05,2026-03-06
+PIE,BVMF: DIRR3,Direcional Engenharia S.A.,0.0141,2026-03-05,2026-03-06
+PIE,HKG: 0857,PetroChina Company Limited,0.0141,2026-03-05,2026-03-06
+PIE,ICT.PM,International Container Terminal Services Inc,0.0139,2026-03-05,2026-03-06
+PIE,TPE: 3665,BizLink Holding Inc.,0.013600000000000001,2026-03-05,2026-03-06
+PIE,HKG: 1378,China Hongqiao Group Limited,0.013000000000000001,2026-03-05,2026-03-06
+PIE,HKG: 1258,China Nonferrous Mining Corporation Limited,0.0129,2026-03-05,2026-03-06
