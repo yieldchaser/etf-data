@@ -1,11 +1,11 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-PIE,2345,Accton Technology Corp,0.0319,2026-03-06,2026-03-11
-PIE,2330,Taiwan Semiconductor Manufacturing Co Ltd,0.0316,2026-03-06,2026-03-11
-PIE,2404,United Integrated Services Co Ltd,0.027999999999999997,2026-03-06,2026-03-11
-PIE,5434,Topco Scientific Co Ltd,0.024700000000000003,2026-03-06,2026-03-11
-PIE,TERA,Tera Yatirim Menkul Degerler AS,0.0223,2026-03-06,2026-03-11
-PIE,TISCO-R,Tisco Financial Group PCL,0.0219,2026-03-06,2026-03-11
-PIE,6257,Sigurd Microelectronics Corp,0.0213,2026-03-06,2026-03-11
-PIE,6691,Yankey Engineering Co Ltd,0.0207,2026-03-06,2026-03-11
-PIE,GENTERA*,Gentera SAB de CV,0.0206,2026-03-06,2026-03-11
-PIE,8112,Supreme Electronics Co Ltd,0.018000000000000002,2026-03-06,2026-03-11
+PIE,2345,Accton Technology Corp,0.0316,2026-03-09,2026-03-11
+PIE,2330,Taiwan Semiconductor Manufacturing Co Ltd,0.0308,2026-03-09,2026-03-11
+PIE,2404,United Integrated Services Co Ltd,0.0262,2026-03-09,2026-03-11
+PIE,5434,Topco Scientific Co Ltd,0.0242,2026-03-09,2026-03-11
+PIE,TERA,Tera Yatirim Menkul Degerler AS,0.0235,2026-03-09,2026-03-11
+PIE,TISCO-R,Tisco Financial Group PCL,0.022099999999999998,2026-03-09,2026-03-11
+PIE,6257,Sigurd Microelectronics Corp,0.0219,2026-03-09,2026-03-11
+PIE,GENTERA*,Gentera SAB de CV,0.0213,2026-03-09,2026-03-11
+PIE,6691,Yankey Engineering Co Ltd,0.0202,2026-03-09,2026-03-11
+PIE,8112,Supreme Electronics Co Ltd,0.0187,2026-03-09,2026-03-11
