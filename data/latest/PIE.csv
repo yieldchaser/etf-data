@@ -1,26 +1,26 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-PIE,TPE: 2345,Accton Technology Corporation,0.035,2026-03-24,2026-03-24
-PIE,TPE: 2330,Taiwan Semiconductor Manufacturing Company Limited,0.030699999999999998,2026-03-24,2026-03-24
-PIE,TERA.E.IS,Tera Yatirim Menkul Degerler AS,0.0252,2026-03-24,2026-03-24
-PIE,TPE: 5434,"Topco Scientific Co.,Ltd.",0.025099999999999997,2026-03-24,2026-03-24
-PIE,TPE: 6257,Sigurd Microelectronics Corporation,0.0235,2026-03-24,2026-03-24
-PIE,TPE: 2404,"United Integrated Services Co., Ltd.",0.022799999999999997,2026-03-24,2026-03-24
-PIE,TPE: 8112,"Supreme Electronics Co., Ltd.",0.022099999999999998,2026-03-24,2026-03-24
-PIE,TISCO-R.BK,TISCO Financial Group PCL Units Non-Voting Depository Receipt,0.0219,2026-03-24,2026-03-24
-PIE,TPE: 6691,"Yankey Engineering Co., Ltd.",0.0204,2026-03-24,2026-03-24
-PIE,BMV: GENTERA,"Gentera, S.A.B. de C.V.",0.0204,2026-03-24,2026-03-24
-PIE,TPE: 2344,Winbond Electronics Corporation,0.0175,2026-03-24,2026-03-24
-PIE,TPE: 2408,Nanya Technology Corporation,0.0174,2026-03-24,2026-03-24
-PIE,HKG: 1898,China Coal Energy Company Limited,0.017,2026-03-24,2026-03-24
-PIE,BVMF: CURY3,Cury Construtora e Incorporadora S.A.,0.016200000000000003,2026-03-24,2026-03-24
-PIE,HKG: 1088,China Shenhua Energy Company Limited,0.0161,2026-03-24,2026-03-24
-PIE,6944.TWO,Mega Union Technology Inc,0.0152,2026-03-24,2026-03-24
-PIE,TPE: 6515,"WinWay Technology Co., Ltd.",0.015,2026-03-24,2026-03-24
-PIE,TPE: 3665,BizLink Holding Inc.,0.0148,2026-03-24,2026-03-24
-PIE,TPE: 6191,Global Brands Manufacture Ltd.,0.0147,2026-03-24,2026-03-24
-PIE,HKG: 0857,PetroChina Company Limited,0.0147,2026-03-24,2026-03-24
-PIE,IDX: ENRG,PT Energi Mega Persada Tbk,0.0147,2026-03-24,2026-03-24
-PIE,TPE: 6919,"Caliway Biopharmaceuticals Co., Ltd.",0.0138,2026-03-24,2026-03-24
-PIE,ICT.PM,International Container Terminal Services Inc,0.013500000000000002,2026-03-24,2026-03-24
-PIE,BVMF: DIRR3,Direcional Engenharia S.A.,0.013300000000000001,2026-03-24,2026-03-24
-PIE,TPE: 3037,Unimicron Technology Corp.,0.0132,2026-03-24,2026-03-24
+PIE,TPE: 2345,Accton Technology Corporation,0.0351,2026-03-24,2026-03-25
+PIE,TPE: 2330,Taiwan Semiconductor Manufacturing Company Limited,0.0302,2026-03-24,2026-03-25
+PIE,TERA.E.IS,Tera Yatirim Menkul Degerler AS,0.026000000000000002,2026-03-24,2026-03-25
+PIE,TPE: 5434,"Topco Scientific Co.,Ltd.",0.025,2026-03-24,2026-03-25
+PIE,TPE: 2404,"United Integrated Services Co., Ltd.",0.0233,2026-03-24,2026-03-25
+PIE,TPE: 6257,Sigurd Microelectronics Corporation,0.0232,2026-03-24,2026-03-25
+PIE,TISCO-R.BK,TISCO Financial Group PCL Units Non-Voting Depository Receipt,0.022400000000000003,2026-03-24,2026-03-25
+PIE,TPE: 8112,"Supreme Electronics Co., Ltd.",0.021099999999999997,2026-03-24,2026-03-25
+PIE,BMV: GENTERA,"Gentera, S.A.B. de C.V.",0.0209,2026-03-24,2026-03-25
+PIE,TPE: 6691,"Yankey Engineering Co., Ltd.",0.020499999999999997,2026-03-24,2026-03-25
+PIE,HKG: 1898,China Coal Energy Company Limited,0.0177,2026-03-24,2026-03-25
+PIE,HKG: 1088,China Shenhua Energy Company Limited,0.0165,2026-03-24,2026-03-25
+PIE,TPE: 6515,"WinWay Technology Co., Ltd.",0.016399999999999998,2026-03-24,2026-03-25
+PIE,BVMF: CURY3,Cury Construtora e Incorporadora S.A.,0.016,2026-03-24,2026-03-25
+PIE,TPE: 3665,BizLink Holding Inc.,0.015600000000000001,2026-03-24,2026-03-25
+PIE,HKG: 0857,PetroChina Company Limited,0.0154,2026-03-24,2026-03-25
+PIE,TPE: 2408,Nanya Technology Corporation,0.0154,2026-03-24,2026-03-25
+PIE,TPE: 2344,Winbond Electronics Corporation,0.0152,2026-03-24,2026-03-25
+PIE,6944.TWO,Mega Union Technology Inc,0.0152,2026-03-24,2026-03-25
+PIE,IDX: ENRG,PT Energi Mega Persada Tbk,0.0152,2026-03-24,2026-03-25
+PIE,TPE: 6191,Global Brands Manufacture Ltd.,0.014499999999999999,2026-03-24,2026-03-25
+PIE,ICT.PM,International Container Terminal Services Inc,0.0138,2026-03-24,2026-03-25
+PIE,TPE: 6919,"Caliway Biopharmaceuticals Co., Ltd.",0.013300000000000001,2026-03-24,2026-03-25
+PIE,BVMF: DIRR3,Direcional Engenharia S.A.,0.0131,2026-03-24,2026-03-25
+PIE,JSE: VKE,Vukile Property Fund Limited,0.0129,2026-03-24,2026-03-25
