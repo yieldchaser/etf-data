@@ -1,26 +1,26 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-PIE,TPE: 2345,Accton Technology Corporation,0.030699999999999998,2026-04-13,2026-04-14
-PIE,TPE: 2330,Taiwan Semiconductor Manufacturing Company Limited,0.0281,2026-04-13,2026-04-14
-PIE,TPE: 5434,"Topco Scientific Co.,Ltd.",0.0281,2026-04-13,2026-04-14
-PIE,TPE: 6257,Sigurd Microelectronics Corporation,0.0275,2026-04-13,2026-04-14
-PIE,TPE: 2404,"United Integrated Services Co., Ltd.",0.0274,2026-04-13,2026-04-14
-PIE,TPE: 6196,Marketech International Corp.,0.026600000000000002,2026-04-13,2026-04-14
-PIE,TISCO-R.BK,TISCO Financial Group PCL Units Non-Voting Depository Receipt,0.024900000000000002,2026-04-13,2026-04-14
-PIE,TPE: 6691,"Yankey Engineering Co., Ltd.",0.022000000000000002,2026-04-13,2026-04-14
-PIE,BMV: GENTERA,"Gentera, S.A.B. de C.V.",0.022000000000000002,2026-04-13,2026-04-14
-PIE,ASELS.E.IS,Aselsan Elektronik Sanayi Ve Ticaret AS,0.0197,2026-04-13,2026-04-14
-PIE,TPE: 6515,"WinWay Technology Co., Ltd.",0.0183,2026-04-13,2026-04-14
-PIE,TPE: 8112,"Supreme Electronics Co., Ltd.",0.0173,2026-04-13,2026-04-14
-PIE,HKG: 2616,CStone Pharmaceuticals,0.0167,2026-04-13,2026-04-14
-PIE,HKG: 1681,Consun Pharmaceutical Group Limited,0.016399999999999998,2026-04-13,2026-04-14
-PIE,TPE: 3665,BizLink Holding Inc.,0.016200000000000003,2026-04-13,2026-04-14
-PIE,TPE: 3044,Tripod Technology Corporation,0.0159,2026-04-13,2026-04-14
-PIE,HKG: 2276,"Shanghai Conant Optical Co., Ltd.",0.0159,2026-04-13,2026-04-14
-PIE,6944.TWO,Mega Union Technology Inc,0.0151,2026-04-13,2026-04-14
-PIE,AGPXX,Short-Term Investment Trust - Invesco Government & Agency Portfolio,0.0147,2026-04-13,2026-04-14
-PIE,HKG: 1898,China Coal Energy Company Limited,0.014499999999999999,2026-04-13,2026-04-14
-PIE,TPE: 2337,"Macronix International Co., Ltd.",0.013600000000000001,2026-04-13,2026-04-14
-PIE,TPE: 3037,Unimicron Technology Corp.,0.013600000000000001,2026-04-13,2026-04-14
-PIE,TPE: 2383,"Elite Material Co., Ltd.",0.013300000000000001,2026-04-13,2026-04-14
-PIE,TPE: 2408,Nanya Technology Corporation,0.0132,2026-04-13,2026-04-14
-PIE,HKG: 1088,China Shenhua Energy Company Limited,0.0128,2026-04-13,2026-04-14
+PIE,TPE: 2345,Accton Technology Corporation,0.030699999999999998,2026-04-14,2026-04-14
+PIE,TPE: 2330,Taiwan Semiconductor Manufacturing Company Limited,0.0281,2026-04-14,2026-04-14
+PIE,TPE: 5434,"Topco Scientific Co.,Ltd.",0.0281,2026-04-14,2026-04-14
+PIE,TPE: 6257,Sigurd Microelectronics Corporation,0.0275,2026-04-14,2026-04-14
+PIE,TPE: 2404,"United Integrated Services Co., Ltd.",0.0274,2026-04-14,2026-04-14
+PIE,TPE: 6196,Marketech International Corp.,0.026600000000000002,2026-04-14,2026-04-14
+PIE,TISCO-R.BK,TISCO Financial Group PCL Units Non-Voting Depository Receipt,0.024900000000000002,2026-04-14,2026-04-14
+PIE,TPE: 6691,"Yankey Engineering Co., Ltd.",0.022000000000000002,2026-04-14,2026-04-14
+PIE,BMV: GENTERA,"Gentera, S.A.B. de C.V.",0.022000000000000002,2026-04-14,2026-04-14
+PIE,ASELS.E.IS,Aselsan Elektronik Sanayi Ve Ticaret AS,0.0197,2026-04-14,2026-04-14
+PIE,TPE: 6515,"WinWay Technology Co., Ltd.",0.0183,2026-04-14,2026-04-14
+PIE,TPE: 8112,"Supreme Electronics Co., Ltd.",0.0173,2026-04-14,2026-04-14
+PIE,HKG: 2616,CStone Pharmaceuticals,0.0167,2026-04-14,2026-04-14
+PIE,HKG: 1681,Consun Pharmaceutical Group Limited,0.016399999999999998,2026-04-14,2026-04-14
+PIE,TPE: 3665,BizLink Holding Inc.,0.016200000000000003,2026-04-14,2026-04-14
+PIE,TPE: 3044,Tripod Technology Corporation,0.0159,2026-04-14,2026-04-14
+PIE,HKG: 2276,"Shanghai Conant Optical Co., Ltd.",0.0159,2026-04-14,2026-04-14
+PIE,6944.TWO,Mega Union Technology Inc,0.0151,2026-04-14,2026-04-14
+PIE,AGPXX,Short-Term Investment Trust - Invesco Government & Agency Portfolio,0.0147,2026-04-14,2026-04-14
+PIE,HKG: 1898,China Coal Energy Company Limited,0.014499999999999999,2026-04-14,2026-04-14
+PIE,TPE: 2337,"Macronix International Co., Ltd.",0.013600000000000001,2026-04-14,2026-04-14
+PIE,TPE: 3037,Unimicron Technology Corp.,0.013600000000000001,2026-04-14,2026-04-14
+PIE,TPE: 2383,"Elite Material Co., Ltd.",0.013300000000000001,2026-04-14,2026-04-14
+PIE,TPE: 2408,Nanya Technology Corporation,0.0132,2026-04-14,2026-04-14
+PIE,HKG: 1088,China Shenhua Energy Company Limited,0.0128,2026-04-14,2026-04-14
