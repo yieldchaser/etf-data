@@ -1,26 +1,26 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-PIE,TPE: 2345,Accton Technology Corporation,0.036699999999999997,2026-04-21,2026-04-22
-PIE,TPE: 5434,"Topco Scientific Co.,Ltd.",0.030899999999999997,2026-04-21,2026-04-22
-PIE,TPE: 2404,"United Integrated Services Co., Ltd.",0.0298,2026-04-21,2026-04-22
-PIE,TPE: 6196,Marketech International Corp.,0.028900000000000002,2026-04-21,2026-04-22
-PIE,TPE: 2330,Taiwan Semiconductor Manufacturing Company Limited,0.027999999999999997,2026-04-21,2026-04-22
-PIE,TPE: 6257,Sigurd Microelectronics Corporation,0.0274,2026-04-21,2026-04-22
-PIE,TISCO-R.BK,TISCO Financial Group PCL Units Non-Voting Depository Receipt,0.0233,2026-04-21,2026-04-22
-PIE,TPE: 6691,"Yankey Engineering Co., Ltd.",0.0232,2026-04-21,2026-04-22
-PIE,TPE: 6515,"WinWay Technology Co., Ltd.",0.0227,2026-04-21,2026-04-22
-PIE,ASELS.E.IS,Aselsan Elektronik Sanayi ve Ticaret AS,0.020499999999999997,2026-04-21,2026-04-22
-PIE,BMV: GENTERA,"Gentera, S.A.B. de C.V.",0.0189,2026-04-21,2026-04-22
-PIE,TPE: 8112,"Supreme Electronics Co., Ltd.",0.0176,2026-04-21,2026-04-22
-PIE,TPE: 3665,BizLink Holding Inc.,0.0176,2026-04-21,2026-04-22
-PIE,HKG: 2616,CStone Pharmaceuticals,0.0169,2026-04-21,2026-04-22
-PIE,TPE: 3044,Tripod Technology Corporation,0.0167,2026-04-21,2026-04-22
-PIE,HKG: 2276,"Shanghai Conant Optical Co., Ltd.",0.0159,2026-04-21,2026-04-22
-PIE,HKG: 1681,Consun Pharmaceutical Group Limited,0.0149,2026-04-21,2026-04-22
-PIE,TPE: 2383,"Elite Material Co., Ltd.",0.0147,2026-04-21,2026-04-22
-PIE,TPE: 2360,Chroma ATE Inc.,0.014199999999999999,2026-04-21,2026-04-22
-PIE,6944.TWO,Mega Union Technology Inc,0.0141,2026-04-21,2026-04-22
-PIE,HKG: 1898,China Coal Energy Company Limited,0.013999999999999999,2026-04-21,2026-04-22
-PIE,TPE: 3037,Unimicron Technology Corp.,0.013500000000000002,2026-04-21,2026-04-22
-PIE,TPE: 2408,Nanya Technology Corporation,0.0132,2026-04-21,2026-04-22
-PIE,HKG: 1088,China Shenhua Energy Company Limited,0.0123,2026-04-21,2026-04-22
-PIE,TPE: 2337,"Macronix International Co., Ltd.",0.012199999999999999,2026-04-21,2026-04-22
+PIE,TPE: 2345,Accton Technology Corporation,0.036699999999999997,2026-04-22,2026-04-22
+PIE,TPE: 5434,"Topco Scientific Co.,Ltd.",0.030899999999999997,2026-04-22,2026-04-22
+PIE,TPE: 2404,"United Integrated Services Co., Ltd.",0.0298,2026-04-22,2026-04-22
+PIE,TPE: 6196,Marketech International Corp.,0.028900000000000002,2026-04-22,2026-04-22
+PIE,TPE: 2330,Taiwan Semiconductor Manufacturing Company Limited,0.027999999999999997,2026-04-22,2026-04-22
+PIE,TPE: 6257,Sigurd Microelectronics Corporation,0.0274,2026-04-22,2026-04-22
+PIE,TISCO-R.BK,TISCO Financial Group PCL Units Non-Voting Depository Receipt,0.0233,2026-04-22,2026-04-22
+PIE,TPE: 6691,"Yankey Engineering Co., Ltd.",0.0232,2026-04-22,2026-04-22
+PIE,TPE: 6515,"WinWay Technology Co., Ltd.",0.0227,2026-04-22,2026-04-22
+PIE,ASELS.E.IS,Aselsan Elektronik Sanayi ve Ticaret AS,0.020499999999999997,2026-04-22,2026-04-22
+PIE,BMV: GENTERA,"Gentera, S.A.B. de C.V.",0.0189,2026-04-22,2026-04-22
+PIE,TPE: 8112,"Supreme Electronics Co., Ltd.",0.0176,2026-04-22,2026-04-22
+PIE,TPE: 3665,BizLink Holding Inc.,0.0176,2026-04-22,2026-04-22
+PIE,HKG: 2616,CStone Pharmaceuticals,0.0169,2026-04-22,2026-04-22
+PIE,TPE: 3044,Tripod Technology Corporation,0.0167,2026-04-22,2026-04-22
+PIE,HKG: 2276,"Shanghai Conant Optical Co., Ltd.",0.0159,2026-04-22,2026-04-22
+PIE,HKG: 1681,Consun Pharmaceutical Group Limited,0.0149,2026-04-22,2026-04-22
+PIE,TPE: 2383,"Elite Material Co., Ltd.",0.0147,2026-04-22,2026-04-22
+PIE,TPE: 2360,Chroma ATE Inc.,0.014199999999999999,2026-04-22,2026-04-22
+PIE,6944.TWO,Mega Union Technology Inc,0.0141,2026-04-22,2026-04-22
+PIE,HKG: 1898,China Coal Energy Company Limited,0.013999999999999999,2026-04-22,2026-04-22
+PIE,TPE: 3037,Unimicron Technology Corp.,0.013500000000000002,2026-04-22,2026-04-22
+PIE,TPE: 2408,Nanya Technology Corporation,0.0132,2026-04-22,2026-04-22
+PIE,HKG: 1088,China Shenhua Energy Company Limited,0.0123,2026-04-22,2026-04-22
+PIE,TPE: 2337,"Macronix International Co., Ltd.",0.012199999999999999,2026-04-22,2026-04-22
