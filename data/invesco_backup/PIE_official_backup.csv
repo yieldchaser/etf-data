@@ -1,11 +1,11 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-PIE,2345,Accton Technology Corp,0.0378,2026-04-29,2026-05-01
-PIE,5434,Topco Scientific Co Ltd,0.029500000000000002,2026-04-29,2026-05-01
-PIE,6196,Marketech International Corp,0.029300000000000003,2026-04-29,2026-05-01
-PIE,2330,Taiwan Semiconductor Manufacturing Co Ltd,0.0292,2026-04-29,2026-05-01
-PIE,2404,United Integrated Services Co Ltd,0.0271,2026-04-29,2026-05-01
-PIE,6257,Sigurd Microelectronics Corp,0.026600000000000002,2026-04-29,2026-05-01
-PIE,TISCO-R,Tisco Financial Group PCL,0.0233,2026-04-29,2026-05-01
-PIE,6691,Yankey Engineering Co Ltd,0.0217,2026-04-29,2026-05-01
-PIE,6515,WinWay Technology Co Ltd,0.0216,2026-04-29,2026-05-01
-PIE,ASELS,Aselsan Elektronik Sanayi Ve Ticaret AS,0.0207,2026-04-29,2026-05-01
+PIE,2345,Accton Technology Corp,0.039,2026-04-29,2026-05-01
+PIE,6196,Marketech International Corp,0.0297,2026-04-29,2026-05-01
+PIE,5434,Topco Scientific Co Ltd,0.0292,2026-04-29,2026-05-01
+PIE,2330,Taiwan Semiconductor Manufacturing Co Ltd,0.028999999999999998,2026-04-29,2026-05-01
+PIE,6257,Sigurd Microelectronics Corp,0.027000000000000003,2026-04-29,2026-05-01
+PIE,2404,United Integrated Services Co Ltd,0.0269,2026-04-29,2026-05-01
+PIE,TISCO-R,Tisco Financial Group PCL,0.0227,2026-04-29,2026-05-01
+PIE,6515,WinWay Technology Co Ltd,0.0223,2026-04-29,2026-05-01
+PIE,6691,Yankey Engineering Co Ltd,0.0215,2026-04-29,2026-05-01
+PIE,ASELS,Aselsan Elektronik Sanayi Ve Ticaret AS,0.020099999999999996,2026-04-29,2026-05-01
