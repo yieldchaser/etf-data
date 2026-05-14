@@ -1,11 +1,11 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-PIE,2345,Accton Technology Corp,0.0405,2026-05-11,2026-05-14
-PIE,6196,Marketech International Corp,0.031400000000000004,2026-05-11,2026-05-14
-PIE,6257,Sigurd Microelectronics Corp,0.0304,2026-05-11,2026-05-14
-PIE,5434,Topco Scientific Co Ltd,0.029300000000000003,2026-05-11,2026-05-14
-PIE,2330,Taiwan Semiconductor Manufacturing Co Ltd,0.0287,2026-05-11,2026-05-14
-PIE,2404,United Integrated Services Co Ltd,0.0268,2026-05-11,2026-05-14
-PIE,TISCO-R,Tisco Financial Group PCL,0.023,2026-05-11,2026-05-14
-PIE,6691,Yankey Engineering Co Ltd,0.0208,2026-05-11,2026-05-14
-PIE,6515,WinWay Technology Co Ltd,0.02,2026-05-11,2026-05-14
-PIE,ASELS,Aselsan Elektronik Sanayi Ve Ticaret AS,0.0197,2026-05-11,2026-05-14
+PIE,2345,Accton Technology Corp,0.04019999999999999,2026-05-12,2026-05-14
+PIE,6196,Marketech International Corp,0.0318,2026-05-12,2026-05-14
+PIE,6257,Sigurd Microelectronics Corp,0.0308,2026-05-12,2026-05-14
+PIE,5434,Topco Scientific Co Ltd,0.0287,2026-05-12,2026-05-14
+PIE,2330,Taiwan Semiconductor Manufacturing Co Ltd,0.0287,2026-05-12,2026-05-14
+PIE,2404,United Integrated Services Co Ltd,0.027999999999999997,2026-05-12,2026-05-14
+PIE,TISCO-R,Tisco Financial Group PCL,0.0227,2026-05-12,2026-05-14
+PIE,6691,Yankey Engineering Co Ltd,0.0209,2026-05-12,2026-05-14
+PIE,3044,Tripod Technology Corp,0.0202,2026-05-12,2026-05-14
+PIE,6515,WinWay Technology Co Ltd,0.0202,2026-05-12,2026-05-14
