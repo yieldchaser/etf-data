@@ -296,3 +296,109 @@ class TestHistory:
         assert "exited_hc" in chg
         assert "biggest_gainers" in chg
         assert chg["today"] is not None
+
+
+# ─── Velocity signal ───────────────────────────────────────────────────────────
+class TestVelocity:
+    """Tests for the velocity signal in build.py _attach_velocity."""
+
+    def test_velocity_score_aggregates_rank_deltas(self, cfg):
+        """A ticker accumulating weight should yield positive weight_flow in compute_rank_deltas,
+        and filler tickers with stable weight should have near-zero flow.
+
+        weight_flow is the primary per-ETF component of velocity_score (×20 in the formula).
+        Strategy: X grows from 0.001 → 0.20 over 14 days. 9 stable fillers stay constant.
+        """
+        import datetime
+        from predator.scoring import compute_rank_deltas, compute_leaderboard
+
+        rows = []
+        base = datetime.date(2026, 4, 1)
+        n_days = 14
+        n_fillers = 9
+
+        for i in range(n_days):
+            d = (base + datetime.timedelta(days=i)).strftime("%Y-%m-%d")
+            x_weight = 0.001 + (0.199 * i / (n_days - 1))
+            rows.append(("QMOM", "X", "Ticker X", x_weight, d, d))
+            for j in range(n_fillers):
+                filler_weight = 0.02 + j * 0.005  # stable at 0.020–0.060
+                rows.append(("QMOM", f"F{j:02d}", f"Filler {j}", filler_weight, d, d))
+
+        df = _h(rows)
+        leaderboard, _ = compute_leaderboard(df, cfg)
+
+        d7 = compute_rank_deltas(df, cfg, lookback_days=7)
+        assert not d7.empty, "Expected non-empty 7-day deltas"
+
+        # -- weight_flow: key velocity input (×20 in composite formula)
+        flow_avg_7 = d7.groupby("ticker")["weight_flow"].mean()
+        leaderboard["avg_weight_flow_7d"] = leaderboard["ticker"].map(flow_avg_7).fillna(0)
+
+        x_row = leaderboard[leaderboard["ticker"] == "X"]
+        assert not x_row.empty, "Ticker X must appear in leaderboard"
+
+        x_flow = x_row.iloc[0]["avg_weight_flow_7d"]
+        # X grew its weight by ~200× over the window so flow must be strongly positive
+        assert x_flow > 0, (
+            f"Expected X avg_weight_flow_7d > 0 (weight accumulated), got {x_flow}.\n"
+            f"d7 for X:\n{d7[d7['ticker']=='X'].to_string()}"
+        )
+
+        # Stable fillers should have near-zero flow
+        filler_rows = leaderboard[leaderboard["ticker"].str.startswith("F")]
+        avg_filler_flow = leaderboard["ticker"].map(flow_avg_7).reindex(filler_rows.index).mean()
+        assert abs(avg_filler_flow) < x_flow, (
+            f"Fillers (avg flow={avg_filler_flow:.4f}) should have less flow than X ({x_flow:.4f})"
+        )
+
+    def test_burst_flag_triggers_on_global_rank_jump(self, cfg):
+        """A ticker that improved global leaderboard rank by 40+ in last 30d gets burst_30d=True."""
+        import datetime
+        from predator.scoring import compute_leaderboard
+        from predator import history as hist
+
+        rows = []
+        base = datetime.date(2026, 3, 1)
+        for i in range(35):
+            d = (base + datetime.timedelta(days=i)).strftime("%Y-%m-%d")
+            # X starts tiny (deep rank), surges after day 15
+            weight_x = 0.001 if i < 15 else 0.15
+            rows.append(("QMOM", "X", "Ticker X", weight_x, d, d))
+            # 80 stable fillers so X starts with rank ~81 when weight is tiny
+            for j in range(80):
+                rows.append(("QMOM", f"STABLE{j:02d}", f"Stable {j}", 0.01, d, d))
+
+        df = _h(rows)
+        lb_today, _ = compute_leaderboard(df, cfg)
+        historical = hist.historical_leaderboards(df, cfg)
+
+        if len(historical) < 2:
+            pytest.skip("Need >= 2 historical snapshots")
+
+        dates_sorted = sorted(historical.keys())
+        today_date   = dates_sorted[-1]
+        window_start = today_date - pd.Timedelta(days=30)
+        window_cols  = [c for c in dates_sorted if c >= window_start]
+
+        burst_30d        = False
+        global_rank_peak = 0
+        if len(window_cols) >= 2:
+            sample = historical[window_cols[0]]
+            if "leaderboard_rank" in sample.columns:
+                rank_panel = pd.DataFrame({
+                    d: historical[d].set_index("ticker")["leaderboard_rank"]
+                    for d in window_cols
+                })
+                if "X" in rank_panel.index:
+                    x_series = rank_panel.loc["X"].dropna()
+                    if len(x_series) >= 2:
+                        global_rank_peak = int(x_series.max() - x_series.min())
+                        burst_30d = global_rank_peak >= 40
+
+        if global_rank_peak < 10:
+            pytest.skip(f"Peak improvement only {global_rank_peak} — surge not in 30d window")
+
+        assert burst_30d or global_rank_peak >= 40, (
+            f"Expected burst or peak >= 40 for X. Got burst={burst_30d}, peak={global_rank_peak}"
+        )

@@ -7,11 +7,11 @@
     {
       "ticker": "TPRO.IM",
       "company": "Technoprobe SpA",
-      "final_score": 224.0,
+      "final_score": 336.0,
       "etf_count": 2,
       "tiers": "Quant + Scout",
-      "score_delta": 105.0,
-      "score_delta_pct": 0.8824,
+      "score_delta": 157.0,
+      "score_delta_pct": 0.8771,
       "score_streak": 2
     },
     {
@@ -35,24 +35,24 @@
       "score_streak": 1
     },
     {
+      "ticker": "TRPZ.IT",
+      "company": "Turpaz Industries Ltd",
+      "final_score": 140.0,
+      "etf_count": 1,
+      "tiers": "Quant",
+      "score_delta": 27.0,
+      "score_delta_pct": 0.2389,
+      "score_streak": 2
+    },
+    {
       "ticker": "SATS",
       "company": "EchoStar Corp",
-      "final_score": 154.0,
+      "final_score": 161.0,
       "etf_count": 2,
       "tiers": "Quant + Trend",
       "score_delta": 30.0,
-      "score_delta_pct": 0.2419,
+      "score_delta_pct": 0.229,
       "score_streak": 4
-    },
-    {
-      "ticker": "TRPZ.IT",
-      "company": "Turpaz Industries Ltd",
-      "final_score": 93.0,
-      "etf_count": 1,
-      "tiers": "Quant",
-      "score_delta": 18.0,
-      "score_delta_pct": 0.24,
-      "score_streak": 2
     },
     {
       "ticker": "PWR",
@@ -67,51 +67,51 @@
     {
       "ticker": "SLR.SM",
       "company": "Solaria Energia y Medio Ambiente SA",
-      "final_score": 93.0,
+      "final_score": 140.0,
       "etf_count": 1,
       "tiers": "Quant",
-      "score_delta": 16.0,
-      "score_delta_pct": 0.2078,
+      "score_delta": 24.0,
+      "score_delta_pct": 0.2069,
       "score_streak": 1
     },
     {
       "ticker": "FRO",
       "company": "Frontline PLC",
-      "final_score": 94.0,
+      "final_score": 141.0,
       "etf_count": 1,
       "tiers": "Quant",
-      "score_delta": 16.0,
+      "score_delta": 24.0,
       "score_delta_pct": 0.2051,
       "score_streak": 1
     },
     {
       "ticker": "5020.JP",
       "company": "ENEOS Holdings Inc",
-      "final_score": 327.0,
+      "final_score": 490.0,
       "etf_count": 1,
       "tiers": "Quant",
-      "score_delta": 32.0,
-      "score_delta_pct": 0.1085,
+      "score_delta": 48.0,
+      "score_delta_pct": 0.1086,
       "score_streak": 1
     },
     {
-      "ticker": "SOBO",
-      "company": "South Bow Corporation",
-      "final_score": 23.0,
+      "ticker": "WCP.CN",
+      "company": "Whitecap Resources Inc.",
+      "final_score": 89.0,
       "etf_count": 1,
       "tiers": "Scout",
-      "score_delta": 2.0,
-      "score_delta_pct": 0.0952,
+      "score_delta": 7.0,
+      "score_delta_pct": 0.0854,
       "score_streak": 1
     },
     {
       "ticker": "3986.HK",
       "company": "GigaDevice Semiconductor Inc. (Class H)",
-      "final_score": 86.0,
+      "final_score": 130.0,
       "etf_count": 1,
       "tiers": "Scout",
-      "score_delta": 6.0,
-      "score_delta_pct": 0.075,
+      "score_delta": 10.0,
+      "score_delta_pct": 0.0833,
       "score_streak": 1
     },
     {
@@ -127,21 +127,11 @@
     {
       "ticker": "6269.JP",
       "company": "Modec Inc",
-      "final_score": 293.0,
+      "final_score": 439.0,
       "etf_count": 1,
       "tiers": "Quant",
-      "score_delta": 20.0,
-      "score_delta_pct": 0.0733,
-      "score_streak": 1
-    },
-    {
-      "ticker": "WCP.CN",
-      "company": "Whitecap Resources Inc.",
-      "final_score": 59.0,
-      "etf_count": 1,
-      "tiers": "Scout",
-      "score_delta": 4.0,
-      "score_delta_pct": 0.0727,
+      "score_delta": 29.0,
+      "score_delta_pct": 0.0707,
       "score_streak": 1
     },
     {
@@ -152,6 +142,16 @@
       "tiers": "Quality + Trend",
       "score_delta": 7.0,
       "score_delta_pct": 0.0673,
+      "score_streak": 1
+    },
+    {
+      "ticker": "SOBO",
+      "company": "South Bow Corporation",
+      "final_score": 34.0,
+      "etf_count": 1,
+      "tiers": "Scout",
+      "score_delta": 2.0,
+      "score_delta_pct": 0.0625,
       "score_streak": 1
     }
   ],
@@ -249,11 +249,11 @@
     {
       "ticker": "FORM",
       "company": "FormFactor Inc",
-      "final_score": 203.0,
+      "final_score": 200.0,
       "etf_count": 2,
       "tiers": "Quant",
-      "score_delta": -198.0,
-      "score_delta_pct": -0.4938,
+      "score_delta": -199.0,
+      "score_delta_pct": -0.4987,
       "score_streak": -4
     },
     {
@@ -279,31 +279,31 @@
     {
       "ticker": "BPE.IM",
       "company": "BPER Banca SPA",
-      "final_score": 73.0,
+      "final_score": 110.0,
       "etf_count": 1,
       "tiers": "Quant",
-      "score_delta": -22.0,
-      "score_delta_pct": -0.2316,
+      "score_delta": -32.0,
+      "score_delta_pct": -0.2254,
       "score_streak": -1
     },
     {
       "ticker": "HAUTO.NO",
       "company": "Hoegh Autoliners ASA",
-      "final_score": 100.0,
+      "final_score": 150.0,
       "etf_count": 1,
       "tiers": "Quant",
-      "score_delta": -26.0,
+      "score_delta": -39.0,
       "score_delta_pct": -0.2063,
-      "score_streak": -2
+      "score_streak": -3
     },
     {
       "ticker": "ENLT.IT",
       "company": "Enlight Renewable Energy Ltd",
-      "final_score": 75.0,
+      "final_score": 113.0,
       "etf_count": 1,
       "tiers": "Quant",
-      "score_delta": -19.0,
-      "score_delta_pct": -0.2021,
+      "score_delta": -28.0,
+      "score_delta_pct": -0.1986,
       "score_streak": -5
     }
   ],
@@ -311,87 +311,87 @@
     {
       "ticker": "8058.JP",
       "company": "Mitsubishi Corp",
-      "final_score": 331.0,
-      "etf_count": 1,
-      "tiers": "Quant",
-      "score_delta": 1.0
-    },
-    {
-      "ticker": "8031.JP",
-      "company": "Mitsui & Co Ltd",
-      "final_score": 329.0,
-      "etf_count": 1,
-      "tiers": "Quant",
-      "score_delta": 1.0
-    },
-    {
-      "ticker": "5020.JP",
-      "company": "ENEOS Holdings Inc",
-      "final_score": 327.0,
-      "etf_count": 1,
-      "tiers": "Quant",
-      "score_delta": 32.0
-    },
-    {
-      "ticker": "6963.JP",
-      "company": "Rohm Co Ltd",
-      "final_score": 301.0,
-      "etf_count": 1,
-      "tiers": "Quant",
-      "score_delta": -29.0
-    },
-    {
-      "ticker": "WDS.AU",
-      "company": "Woodside Energy Group Ltd",
-      "final_score": 298.0,
-      "etf_count": 1,
-      "tiers": "Quant",
-      "score_delta": 3.0
-    },
-    {
-      "ticker": "1605.JP",
-      "company": "Inpex Corp",
-      "final_score": 297.0,
-      "etf_count": 1,
-      "tiers": "Quant",
-      "score_delta": 1.0
-    },
-    {
-      "ticker": "REP.SM",
-      "company": "Repsol SA",
-      "final_score": 297.0,
+      "final_score": 497.0,
       "etf_count": 1,
       "tiers": "Quant",
       "score_delta": 2.0
     },
     {
-      "ticker": "7735.JP",
-      "company": "SCREEN Holdings Co Ltd",
-      "final_score": 294.0,
+      "ticker": "8031.JP",
+      "company": "Mitsui & Co Ltd",
+      "final_score": 494.0,
       "etf_count": 1,
       "tiers": "Quant",
-      "score_delta": -5.0
+      "score_delta": 2.0
+    },
+    {
+      "ticker": "5020.JP",
+      "company": "ENEOS Holdings Inc",
+      "final_score": 490.0,
+      "etf_count": 1,
+      "tiers": "Quant",
+      "score_delta": 48.0
+    },
+    {
+      "ticker": "6963.JP",
+      "company": "Rohm Co Ltd",
+      "final_score": 451.0,
+      "etf_count": 1,
+      "tiers": "Quant",
+      "score_delta": -44.0
+    },
+    {
+      "ticker": "WDS.AU",
+      "company": "Woodside Energy Group Ltd",
+      "final_score": 447.0,
+      "etf_count": 1,
+      "tiers": "Quant",
+      "score_delta": 4.0
+    },
+    {
+      "ticker": "1605.JP",
+      "company": "Inpex Corp",
+      "final_score": 446.0,
+      "etf_count": 1,
+      "tiers": "Quant",
+      "score_delta": 2.0
+    },
+    {
+      "ticker": "REP.SM",
+      "company": "Repsol SA",
+      "final_score": 446.0,
+      "etf_count": 1,
+      "tiers": "Quant",
+      "score_delta": 4.0
+    },
+    {
+      "ticker": "7735.JP",
+      "company": "SCREEN Holdings Co Ltd",
+      "final_score": 441.0,
+      "etf_count": 1,
+      "tiers": "Quant",
+      "score_delta": -8.0
     },
     {
       "ticker": "6269.JP",
       "company": "Modec Inc",
-      "final_score": 293.0,
+      "final_score": 439.0,
       "etf_count": 1,
       "tiers": "Quant",
-      "score_delta": 20.0
+      "score_delta": 29.0
     },
     {
       "ticker": "PLS.AU",
       "company": "PLS Group Ltd",
-      "final_score": 275.0,
+      "final_score": 413.0,
       "etf_count": 1,
       "tiers": "Quant",
-      "score_delta": -20.0
+      "score_delta": -30.0
     },
     {
       "ticker": "SAND.SS",
       "company": "Sandvik AB",
-      "final_score": 274.0,
+      "final_score": 411.0,
       "etf_count": 1,
       "tiers": "Quant",
       "score_delta": -1.0
@@ -399,18 +399,215 @@
     {
       "ticker": "6920.JP",
       "company": "Lasertec Corp",
-      "final_score": 269.0,
+      "final_score": 403.0,
       "etf_count": 1,
       "tiers": "Quant",
-      "score_delta": -3.0
+      "score_delta": -5.0
     },
     {
       "ticker": "6146.JP",
       "company": "Disco Corp",
-      "final_score": 268.0,
+      "final_score": 402.0,
       "etf_count": 1,
       "tiers": "Quant",
-      "score_delta": -4.0
+      "score_delta": -7.0
+    }
+  ],
+  "top_velocity": [
+    {
+      "ticker": "MPC",
+      "company": "Marathon Petroleum Corp",
+      "velocity_score": 163.91,
+      "avg_rank_delta_7d": 11.0,
+      "global_rank_delta_30d": 196,
+      "global_rank_peak_30d": 293,
+      "etf_count_delta_30d": 1,
+      "burst_30d": true,
+      "final_score": 163,
+      "etf_count": 2,
+      "tiers": "Quality + Quant"
+    },
+    {
+      "ticker": "HAL",
+      "company": "Halliburton Co",
+      "velocity_score": 163.72,
+      "avg_rank_delta_7d": 8.5,
+      "global_rank_delta_30d": 371,
+      "global_rank_peak_30d": 529,
+      "etf_count_delta_30d": 1,
+      "burst_30d": true,
+      "final_score": 114,
+      "etf_count": 2,
+      "tiers": "Quality + Quant"
+    },
+    {
+      "ticker": "VLO",
+      "company": "Valero Energy Corp",
+      "velocity_score": 161.47,
+      "avg_rank_delta_7d": 6.5,
+      "global_rank_delta_30d": 210,
+      "global_rank_peak_30d": 351,
+      "etf_count_delta_30d": 1,
+      "burst_30d": true,
+      "final_score": 137,
+      "etf_count": 2,
+      "tiers": "Quality + Quant"
+    },
+    {
+      "ticker": "PWR",
+      "company": "Quanta Services Inc",
+      "velocity_score": 159.57,
+      "avg_rank_delta_7d": 2.33,
+      "global_rank_delta_30d": 355,
+      "global_rank_peak_30d": 368,
+      "etf_count_delta_30d": 1,
+      "burst_30d": true,
+      "final_score": 156,
+      "etf_count": 3,
+      "tiers": "Quant + Trend"
+    },
+    {
+      "ticker": "PL",
+      "company": "Planet Labs PBC (Class A)",
+      "velocity_score": 157.97,
+      "avg_rank_delta_7d": 2.5,
+      "global_rank_delta_30d": 455,
+      "global_rank_peak_30d": 559,
+      "etf_count_delta_30d": 1,
+      "burst_30d": true,
+      "final_score": 152,
+      "etf_count": 2,
+      "tiers": "Quant + Scout"
+    },
+    {
+      "ticker": "DELL",
+      "company": "Dell Technologies Inc",
+      "velocity_score": 153.51,
+      "avg_rank_delta_7d": -0.5,
+      "global_rank_delta_30d": 388,
+      "global_rank_peak_30d": 471,
+      "etf_count_delta_30d": 1,
+      "burst_30d": true,
+      "final_score": 168,
+      "etf_count": 2,
+      "tiers": "Quant + Trend"
+    },
+    {
+      "ticker": "MP",
+      "company": "MP Materials Corp",
+      "velocity_score": 144.68,
+      "avg_rank_delta_7d": -9.0,
+      "global_rank_delta_30d": 210,
+      "global_rank_peak_30d": 296,
+      "etf_count_delta_30d": 1,
+      "burst_30d": true,
+      "final_score": 104,
+      "etf_count": 2,
+      "tiers": "Quant"
+    },
+    {
+      "ticker": "ALB",
+      "company": "Albemarle Corp",
+      "velocity_score": 138.77,
+      "avg_rank_delta_7d": -10.67,
+      "global_rank_delta_30d": 358,
+      "global_rank_peak_30d": 451,
+      "etf_count_delta_30d": 1,
+      "burst_30d": true,
+      "final_score": 83,
+      "etf_count": 3,
+      "tiers": "Quant + Trend"
+    },
+    {
+      "ticker": "APA",
+      "company": "APA Corp",
+      "velocity_score": 113.4,
+      "avg_rank_delta_7d": 5.33,
+      "global_rank_delta_30d": 107,
+      "global_rank_peak_30d": 198,
+      "etf_count_delta_30d": 1,
+      "burst_30d": true,
+      "final_score": 180,
+      "etf_count": 3,
+      "tiers": "Quality + Quant + Trend"
+    },
+    {
+      "ticker": "FTNT",
+      "company": "Fortinet Inc",
+      "velocity_score": 102.44,
+      "avg_rank_delta_7d": 2.0,
+      "global_rank_delta_30d": 131,
+      "global_rank_peak_30d": 131,
+      "etf_count_delta_30d": 0,
+      "burst_30d": true,
+      "final_score": 44,
+      "etf_count": 2,
+      "tiers": "Blob + Quality"
+    },
+    {
+      "ticker": "DDOG",
+      "company": "Datadog Inc",
+      "velocity_score": 89.45,
+      "avg_rank_delta_7d": 4.33,
+      "global_rank_delta_30d": 105,
+      "global_rank_peak_30d": 127,
+      "etf_count_delta_30d": 0,
+      "burst_30d": true,
+      "final_score": 25,
+      "etf_count": 3,
+      "tiers": "Blob + Trend"
+    },
+    {
+      "ticker": "NVT",
+      "company": "nVent Electric PLC",
+      "velocity_score": 88.2,
+      "avg_rank_delta_7d": 0.0,
+      "global_rank_delta_30d": 106,
+      "global_rank_peak_30d": 120,
+      "etf_count_delta_30d": 1,
+      "burst_30d": true,
+      "final_score": 301,
+      "etf_count": 2,
+      "tiers": "Quant"
+    },
+    {
+      "ticker": "ON",
+      "company": "ON Semiconductor Corp",
+      "velocity_score": 82.07,
+      "avg_rank_delta_7d": 6.0,
+      "global_rank_delta_30d": 97,
+      "global_rank_peak_30d": 97,
+      "etf_count_delta_30d": 0,
+      "burst_30d": true,
+      "final_score": 56,
+      "etf_count": 2,
+      "tiers": "Quality + Trend"
+    },
+    {
+      "ticker": "CRWD",
+      "company": "Crowdstrike Holdings Inc",
+      "velocity_score": 81.94,
+      "avg_rank_delta_7d": 7.67,
+      "global_rank_delta_30d": 95,
+      "global_rank_peak_30d": 98,
+      "etf_count_delta_30d": 0,
+      "burst_30d": true,
+      "final_score": 37,
+      "etf_count": 3,
+      "tiers": "Blob + Trend"
+    },
+    {
+      "ticker": "AMD",
+      "company": "Advanced Micro Devices Inc",
+      "velocity_score": 77.02,
+      "avg_rank_delta_7d": 0.2,
+      "global_rank_delta_30d": 100,
+      "global_rank_peak_30d": 102,
+      "etf_count_delta_30d": 0,
+      "burst_30d": true,
+      "final_score": 139,
+      "etf_count": 5,
+      "tiers": "Blob + Trend"
     }
   ]
 }

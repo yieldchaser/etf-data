@@ -193,6 +193,84 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     else:
         score_deltas_by_period["YTD"] = {}
 
+    # ── VELOCITY signal — captures both steady accumulation AND burst moves ─────
+    def _attach_velocity(leaderboard: pd.DataFrame,
+                         deltas_by_period: dict,
+                         historical: dict) -> pd.DataFrame:
+        """Add velocity columns. Catches STX-style +55-ranks-in-12-days bursts
+        that a naive 7d-only delta would miss."""
+
+        # 1. Per-ETF rank/weight motion
+        d7  = deltas_by_period.get(7)
+        d30 = deltas_by_period.get(30)
+        rank_avg_7  = d7.groupby("ticker")["rank_delta"].mean()  if d7  is not None and not d7.empty  else pd.Series(dtype=float)
+        flow_avg_7  = d7.groupby("ticker")["weight_flow"].mean() if d7  is not None and not d7.empty  else pd.Series(dtype=float)
+        rank_avg_30 = d30.groupby("ticker")["rank_delta"].mean() if d30 is not None and not d30.empty else pd.Series(dtype=float)
+
+        # 2. Global leaderboard rank trajectory (requires leaderboard_rank col in historical snapshots)
+        dates_sorted = sorted(historical.keys())
+        today_date = dates_sorted[-1]
+        window_start = today_date - pd.Timedelta(days=30)
+        window_cols = [c for c in dates_sorted if c >= window_start]
+
+        global_rank_delta_30 = pd.Series(dtype=float)
+        peak_improvement_30  = pd.Series(dtype=float)
+        best_in_window       = pd.Series(dtype=float)
+
+        if len(window_cols) >= 2:
+            # Check historical snapshots have leaderboard_rank
+            sample = historical[window_cols[0]]
+            if "leaderboard_rank" in sample.columns:
+                rank_panel_rows = {}
+                for d in window_cols:
+                    rank_panel_rows[d] = historical[d].set_index("ticker")["leaderboard_rank"]
+                rank_panel = pd.DataFrame(rank_panel_rows)
+                first_col        = rank_panel.iloc[:, 0]
+                worst_in_window  = rank_panel.max(axis=1)
+                best_in_window   = rank_panel.min(axis=1)
+                current          = rank_panel.iloc[:, -1]
+                global_rank_delta_30 = (first_col - current).round(0)        # positive = improved
+                peak_improvement_30  = (worst_in_window - best_in_window).round(0)
+
+        # 3. ETF count change vs ~30d ago
+        past_counts = pd.Series(dtype=float)
+        if len(dates_sorted) >= 2:
+            target    = today_date - pd.Timedelta(days=30)
+            past_date = min(dates_sorted, key=lambda d: abs((d - target).total_seconds()))
+            if "etf_count" in historical[past_date].columns:
+                past_counts = historical[past_date].set_index("ticker")["etf_count"]
+
+        # 4. Attach all raw signals
+        leaderboard["avg_rank_delta_7d"]     = leaderboard["ticker"].map(rank_avg_7).fillna(0).round(2)
+        leaderboard["avg_weight_flow_7d"]    = leaderboard["ticker"].map(flow_avg_7).fillna(0).round(4)
+        leaderboard["avg_rank_delta_30d"]    = leaderboard["ticker"].map(rank_avg_30).fillna(0).round(2)
+        leaderboard["global_rank_delta_30d"] = leaderboard["ticker"].map(global_rank_delta_30).fillna(0).astype(int)
+        leaderboard["global_rank_peak_30d"]  = leaderboard["ticker"].map(peak_improvement_30).fillna(0).astype(int)
+        leaderboard["global_rank_best_30d"]  = leaderboard["ticker"].map(best_in_window).fillna(leaderboard["leaderboard_rank"]).astype(int)
+        leaderboard["etf_count_30d_ago"]     = leaderboard["ticker"].map(past_counts).fillna(leaderboard["etf_count"]).astype(int)
+        leaderboard["etf_count_delta_30d"]   = (leaderboard["etf_count"] - leaderboard["etf_count_30d_ago"]).astype(int)
+        # Burst: peak improvement of >=40 global ranks at any point in last 30d
+        leaderboard["burst_30d"]             = leaderboard["global_rank_peak_30d"] >= 40
+
+        # 5. Composite velocity score
+        # Tuning: global rank Δ30d of +50 → +25; peak +50 → +12.5;
+        #         per-ETF avg Δ7d of +5 → +5; weight flow +20% → +4;
+        #         ETFs added 30d +1 → +5; score streak +2d → +2
+        leaderboard["velocity_score"] = (
+            leaderboard["global_rank_delta_30d"].fillna(0).clip(-200, 200) * 0.5 +
+            leaderboard["global_rank_peak_30d"].fillna(0).clip(0, 200) * 0.25 +
+            leaderboard["avg_rank_delta_7d"].fillna(0) * 1.0 +
+            leaderboard["avg_weight_flow_7d"].fillna(0) * 20.0 +
+            leaderboard["etf_count_delta_30d"].fillna(0) * 5.0 +
+            leaderboard["score_streak"].fillna(0).clip(-10, 10) * 1.0
+        ).round(2)
+        return leaderboard
+
+    leaderboard = _attach_velocity(leaderboard, deltas_by_period, historical)
+    print(f"  velocity_score: range [{leaderboard['velocity_score'].min():.1f}, {leaderboard['velocity_score'].max():.1f}]")
+    burst_count = int(leaderboard['burst_30d'].sum())
+    print(f"  burst_30d:      {burst_count} tickers with >=40 peak rank improvement")
+
     # ── leaderboard.json — main payload for the site ──────────────────────────
     lb_records = leaderboard.to_dict(orient="records")
     # Attach per-period score deltas to every record
@@ -231,6 +309,26 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         (output_dir / "holdings_latest.json").write_text(
             _dumps(latest_out.to_dict(orient="records"), separators=(",", ":"))
         )
+
+    # Top velocity movers (15 names, held by 2+ ETFs)
+    if 'velocity_score' in leaderboard.columns:
+        top_vel = leaderboard[leaderboard['etf_count'] >= 2].sort_values('velocity_score', ascending=False).head(15)
+        chg['top_velocity'] = [
+            {
+                'ticker':               str(r['ticker']),
+                'company':              str(r.get('company', '')),
+                'velocity_score':       float(r['velocity_score']),
+                'avg_rank_delta_7d':    float(r['avg_rank_delta_7d']),
+                'global_rank_delta_30d': int(r.get('global_rank_delta_30d', 0)),
+                'global_rank_peak_30d': int(r.get('global_rank_peak_30d', 0)),
+                'etf_count_delta_30d':  int(r['etf_count_delta_30d']),
+                'burst_30d':            bool(r.get('burst_30d', False)),
+                'final_score':          int(r['final_score']),
+                'etf_count':            int(r['etf_count']),
+                'tiers':                str(r.get('tiers', '')),
+            }
+            for _, r in top_vel.iterrows()
+        ]
 
     # ── changelog.json — entries / exits / movers ─────────────────────────────
     (output_dir / "changelog.json").write_text(_dumps(chg, indent=2))
