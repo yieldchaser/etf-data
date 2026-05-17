@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Predator Protocol · Cross-ETF Conviction Scanner</title>
+  <meta name="description" content="Cross-ETF conviction scanner. Tracks 16 smart-beta ETFs to detect early institutional accumulation. Live from yieldchaser/etf-data.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📈%3C/text%3E%3C/svg%3E">
+  <meta name="color-scheme" content="dark">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+  <style>
+    :root {
+      --bg: #000;
+      --surface: #0a0a0a;
+      --surface-2: #111;
+      --border: rgba(255,255,255,0.06);
+      --border-2: rgba(255,255,255,0.10);
+      --text: #e4e4e7;
+      --text-2: #a1a1aa;
+      --text-3: #52525b;
+      --cyan: #22d3ee;
+      --up: #34d399;
+      --down: #fb7185;
+      --amber: #fbbf24;
+      --blue: #60a5fa;
+    }
+    html, body { background: var(--bg); color: var(--text); }
+    body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Inter", sans-serif; }
+    .num, table td, .mono { font-variant-numeric: tabular-nums; }
+    .font-mono { font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; }
+
+    .label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); }
+    .label-cyan { color: var(--cyan); }
+    .chip { display: inline-flex; align-items: center; padding: 1px 6px; border-radius: 4px; font-size: 10.5px; font-weight: 500; line-height: 1.5; white-space: nowrap; letter-spacing: 0.02em; }
+
+    .pct-bar { position: relative; width: 64px; height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
+    .pct-bar > i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--down); border-radius: 2px; display: block; }
+    .pct-bar.hi > i { background: var(--up); }
+    .pct-bar.mid > i { background: var(--amber); }
+
+    /* Tooltip */
+    [data-tip] { position: relative; }
+    [data-tip]:hover::after {
+      content: attr(data-tip); position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+      background: var(--surface-2); border: 1px solid var(--border-2); color: var(--text); padding: 4px 8px; border-radius: 6px;
+      font-size: 11px; white-space: nowrap; z-index: 50; pointer-events: none;
+    }
+
+    .row-hover:hover { background: rgba(34, 211, 238, 0.025); }
+    .row-open { background: rgba(34, 211, 238, 0.04); }
+
+    /* Scrollbar */
+    .scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
+    .scrollbar::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+    .scrollbar::-webkit-scrollbar-track { background: transparent; }
+
+    /* Sort indicators */
+    .sort-asc::after  { content: "▲"; margin-left: 4px; opacity: 0.6; font-size: 9px; }
+    .sort-desc::after { content: "▼"; margin-left: 4px; opacity: 0.6; font-size: 9px; }
+
+    details > summary::-webkit-details-marker { display: none; }
+    details > summary::marker { content: ""; }
+
+    [x-cloak] { display: none !important; }
+
+    .tab-active { background: rgba(34, 211, 238, 0.08); color: var(--cyan); border-color: rgba(34, 211, 238, 0.3); }
+
+    /* Sparkline */
+    .spark { display: inline-block; height: 18px; width: 80px; vertical-align: middle; }
+
+    /* Loading state */
+    @keyframes pulse-fade { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+    .pulse-load { animation: pulse-fade 1.4s ease-in-out infinite; }
+  </style>
+</head>
+<body>
+
+<div x-data="app()" x-init="load()" x-cloak class="max-w-[1500px] mx-auto px-3 sm:px-5 py-4 sm:py-6">
+
+  <!-- ── HEADER ─────────────────────────────────────────────────────────── -->
+  <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5 pb-4 border-b" style="border-color: var(--border)">
+    <div>
+      <div class="flex items-center gap-3 mb-1">
+        <h1 class="text-base font-medium tracking-tight" style="color: var(--cyan)">PREDATOR PROTOCOL</h1>
+        <span class="label">cross-etf conviction scanner</span>
+      </div>
+      <div class="text-xs flex flex-wrap items-center gap-x-4 gap-y-1" style="color: var(--text-2)">
+        <span><span class="num font-mono" x-text="meta.etfs?.length || 16"></span> smart-beta ETFs</span>
+        <span>·</span>
+        <span><span class="num font-mono" x-text="(meta.source_rows_raw || 0).toLocaleString()"></span> holdings rows</span>
+        <span>·</span>
+        <span><span class="num font-mono" x-text="meta.snapshot_dates_in_window?.length || 0"></span> daily snapshots</span>
+      </div>
+    </div>
+    <div class="text-xs sm:text-right flex flex-row sm:flex-col gap-x-4" style="color: var(--text-2)">
+      <div>Holdings <span class="num font-mono" style="color: var(--text)" x-text="meta.latest_holdings_as_of || '—'"></span></div>
+      <div>Built <span class="num font-mono" x-text="formatBuilt(meta.generated_at_utc)"></span></div>
+    </div>
+  </header>
+
+  <!-- ── KPI STRIP ──────────────────────────────────────────────────────── -->
+  <section class="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3 mb-5">
+    <template x-for="kpi in kpis" :key="kpi.label">
+      <div class="rounded-lg px-3 py-2.5 border" style="background: var(--surface); border-color: var(--border)">
+        <div class="label" x-text="kpi.label"></div>
+        <div class="flex items-baseline gap-2 mt-0.5">
+          <div class="text-xl sm:text-2xl font-medium num font-mono" :style="`color: ${kpi.color || 'var(--text)'}`" x-text="kpi.value"></div>
+          <div class="text-xs num font-mono" :style="`color: ${kpi.deltaColor}`" x-show="kpi.delta !== undefined && kpi.delta !== null" x-text="formatDelta(kpi.delta)"></div>
+        </div>
+      </div>
+    </template>
+  </section>
+
+  <!-- ── TABS ───────────────────────────────────────────────────────────── -->
+  <nav class="flex gap-1 mb-3 text-xs">
+    <template x-for="t in tabs" :key="t.id">
+      <button @click="activeTab = t.id"
+              :class="activeTab === t.id ? 'tab-active' : ''"
+              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition"
+              :style="activeTab === t.id ? '' : 'color: var(--text-2); border-color: var(--border)'">
+        <span x-text="t.label"></span>
+        <span class="num font-mono ml-1 opacity-60" x-show="t.count !== undefined" x-text="`(${t.count})`"></span>
+      </button>
+    </template>
+  </nav>
+
+  <!-- ═════════════ TAB 1: LEADERBOARD ═════════════════════════════════════ -->
+  <section x-show="activeTab === 'leaderboard'">
+
+    <!-- Filter bar -->
+    <div class="rounded-lg p-2.5 mb-3 border flex flex-col sm:flex-row gap-2 items-stretch" style="background: var(--surface); border-color: var(--border)">
+      <div class="flex gap-1 flex-wrap">
+        <button @click="toggleFlag('HIGH_CONVICTION')"
+                :class="flag === 'HIGH_CONVICTION' ? 'border-emerald-500/40 text-emerald-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-emerald-500/30"
+                style="border-color: var(--border-2)"
+                x-text="`HC ${counts.HIGH_CONVICTION || 0}`"></button>
+        <button @click="toggleFlag('SPECULATIVE_BETA')"
+                :class="flag === 'SPECULATIVE_BETA' ? 'border-amber-500/40 text-amber-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-amber-500/30"
+                style="border-color: var(--border-2)"
+                x-text="`SPEC β ${counts.SPECULATIVE_BETA || 0}`"></button>
+        <button @click="newOnly = !newOnly"
+                :class="newOnly ? 'border-blue-500/40 text-blue-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-blue-500/30"
+                style="border-color: var(--border-2)"
+                x-text="`NEW ${counts.NEW || 0}`"></button>
+        <select x-model="selectedTier" class="chip border px-2 py-1 bg-transparent" style="border-color: var(--border-2)">
+          <option value="" style="background: #000">all tiers</option>
+          <template x-for="t in ['Scout','Quant','Quality','Trend','Blob']" :key="t">
+            <option :value="t" x-text="t" style="background: #000"></option>
+          </template>
+        </select>
+        <button @click="reset()" class="chip border px-2 py-1 hover:border-zinc-500" style="border-color: var(--border-2); color: var(--text-2)">clear</button>
+      </div>
+      <input x-model="q" type="search" placeholder="search ticker or company…"
+             class="flex-1 bg-transparent border rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500/40"
+             style="border-color: var(--border-2); color: var(--text)">
+      <div class="text-xs num font-mono self-center whitespace-nowrap pr-1" style="color: var(--text-3)">
+        <span x-text="filtered.length"></span> / <span x-text="leaderboard.length"></span>
+      </div>
+    </div>
+
+    <!-- Main table -->
+    <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+      <div class="overflow-x-auto scrollbar">
+        <table class="w-full text-sm">
+          <thead class="text-[10px] uppercase tracking-wider" style="background: #050505; color: var(--text-3)">
+            <tr style="border-bottom: 1px solid var(--border)">
+              <th class="text-left px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('leaderboard_rank')" :class="sortClass('leaderboard_rank')">#</th>
+              <th class="text-left px-3 py-2">Ticker</th>
+              <th class="text-left px-3 py-2 hidden sm:table-cell">Company</th>
+              <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('final_score')" :class="sortClass('final_score')">Score</th>
+              <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell" @click="sort('score_delta_pct')" :class="sortClass('score_delta_pct')">Day Δ%</th>
+              <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300 hidden md:table-cell" @click="sort('etf_count')" :class="sortClass('etf_count')">ETFs</th>
+              <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell" @click="sort('total_weight')" :class="sortClass('total_weight')">Weight</th>
+              <th class="text-left px-3 py-2 hidden xl:table-cell">Strategies</th>
+              <th class="text-center px-3 py-2 hidden md:table-cell">Streak</th>
+              <th class="text-left px-3 py-2 hidden xl:table-cell">Level</th>
+              <th class="text-left px-3 py-2">Flag</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="row in paged" :key="row.ticker">
+              <template>
+                <tr @click="toggle(row.ticker)"
+                    :class="open === row.ticker ? 'row-open' : 'row-hover'"
+                    class="cursor-pointer transition"
+                    style="border-bottom: 1px solid rgba(255,255,255,0.03)">
+                  <td class="px-3 py-2 num font-mono" style="color: var(--text-3)" x-text="row.leaderboard_rank"></td>
+                  <td class="px-3 py-2 font-medium font-mono" x-text="row.ticker"></td>
+                  <td class="px-3 py-2 hidden sm:table-cell truncate max-w-[260px]" :title="row.company" style="color: var(--text-2)" x-text="row.company"></td>
+                  <td class="px-3 py-2 text-right num font-mono font-medium" x-text="fmt1(row.final_score)"></td>
+                  <td class="px-3 py-2 text-right num font-mono hidden lg:table-cell" :style="`color: ${flowColor(row.score_delta_pct)}`" x-text="fmtPct(row.score_delta_pct)"></td>
+                  <td class="px-3 py-2 text-right num font-mono hidden md:table-cell" x-text="row.etf_count"></td>
+                  <td class="px-3 py-2 text-right num font-mono hidden lg:table-cell" style="color: var(--text-2)" x-text="fmtWeight(row.total_weight)"></td>
+                  <td class="px-3 py-2 hidden xl:table-cell">
+                    <div class="flex flex-wrap gap-1">
+                      <template x-for="t in (row.tiers || '').split(' + ').filter(Boolean)" :key="t">
+                        <span class="chip" :style="tierChipStyle(t)" x-text="t"></span>
+                      </template>
+                    </div>
+                  </td>
+                  <td class="px-3 py-2 text-center hidden md:table-cell">
+                    <span class="num font-mono text-xs" :style="`color: ${streakColor(row.score_streak)}`" x-text="fmtStreak(row.score_streak)"></span>
+                  </td>
+                  <td class="px-3 py-2 hidden xl:table-cell">
+                    <div class="flex items-center gap-2">
+                      <div class="pct-bar" :class="row.score_percentile >= 0.66 ? 'hi' : (row.score_percentile >= 0.33 ? 'mid' : '')">
+                        <i :style="`width: ${(row.score_percentile || 0) * 100}%`"></i>
+                      </div>
+                      <span class="text-[10px] num font-mono" style="color: var(--text-3)" x-show="row.score_percentile !== null" x-text="`${Math.round((row.score_percentile || 0) * 100)}%`"></span>
+                    </div>
+                  </td>
+                  <td class="px-3 py-2">
+                    <div class="flex gap-1 flex-wrap">
+                      <span x-show="row.flag === 'HIGH_CONVICTION'" class="chip"
+                            :data-tip="`HC for ${row.hc_streak} days`"
+                            style="background: rgba(52, 211, 153, 0.10); color: var(--up); border: 1px solid rgba(52, 211, 153, 0.25)">HC</span>
+                      <span x-show="row.flag === 'SPECULATIVE_BETA'" class="chip"
+                            style="background: rgba(251, 191, 36, 0.10); color: var(--amber); border: 1px solid rgba(251, 191, 36, 0.25)">SPEC</span>
+                      <span x-show="row.any_new" class="chip"
+                            style="background: rgba(96, 165, 250, 0.10); color: var(--blue); border: 1px solid rgba(96, 165, 250, 0.25)">NEW</span>
+                    </div>
+                  </td>
+                </tr>
+                <!-- Expanded row -->
+                <tr x-show="open === row.ticker" x-transition.opacity style="background: #050505; border-bottom: 1px solid var(--border)">
+                  <td colspan="11" class="px-4 py-4">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3 text-xs">
+                      <div>
+                        <div class="label">Company</div>
+                        <div class="text-sm mt-0.5" x-text="row.company"></div>
+                      </div>
+                      <div>
+                        <div class="label">Score breakdown</div>
+                        <div class="text-sm num font-mono mt-0.5">
+                          <span x-text="fmt1(row.final_score)"></span>
+                          <span x-show="row.score_delta" :style="`color: ${flowColor(row.score_delta_pct)}`" class="ml-1.5 text-xs" x-text="`(${row.score_delta > 0 ? '+' : ''}${fmt1(row.score_delta)} vs ${meta.snapshot_dates_in_window?.slice(-2)[0] || '—'})`"></span>
+                        </div>
+                      </div>
+                      <div>
+                        <div class="label">HC streak</div>
+                        <div class="text-sm num font-mono mt-0.5" :style="row.hc_streak > 0 ? 'color: var(--up)' : ''" x-text="`${row.hc_streak || 0} days`"></div>
+                      </div>
+                      <div>
+                        <div class="label">Best rank across ETFs</div>
+                        <div class="text-sm num font-mono mt-0.5" x-text="`#${row.best_rank}`"></div>
+                      </div>
+                    </div>
+                    <div class="overflow-x-auto scrollbar">
+                      <table class="w-full text-xs">
+                        <thead style="color: var(--text-3)">
+                          <tr style="border-bottom: 1px solid var(--border)">
+                            <th class="text-left py-1.5 pr-3 label">ETF</th>
+                            <th class="text-left py-1.5 pr-3 label">Tier</th>
+                            <th class="text-right py-1.5 pr-3 label">Rank</th>
+                            <th class="text-right py-1.5 pr-3 label">7d Δ</th>
+                            <th class="text-right py-1.5 pr-3 label">Weight</th>
+                            <th class="text-right py-1.5 pr-3 label">Flow</th>
+                            <th class="text-right py-1.5 pr-3 label">Score</th>
+                            <th class="text-left py-1.5 label">Flags</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <template x-for="h in detailsFor(row.ticker)" :key="h.ETF_Ticker">
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03)">
+                              <td class="py-1.5 pr-3 font-medium font-mono" x-text="h.ETF_Ticker"></td>
+                              <td class="py-1.5 pr-3"><span class="chip" :style="tierChipStyle(h.tier)" x-text="h.tier"></span></td>
+                              <td class="py-1.5 pr-3 text-right num font-mono" x-text="`#${h.rank}`"></td>
+                              <td class="py-1.5 pr-3 text-right num font-mono" :style="`color: ${rankDeltaColor(h.rank_delta)}`" x-text="fmtRankDelta(h.rank_delta)"></td>
+                              <td class="py-1.5 pr-3 text-right num font-mono" style="color: var(--text-2)" x-text="fmtWeight(h.weight)"></td>
+                              <td class="py-1.5 pr-3 text-right num font-mono" :style="`color: ${flowColor(h.weight_flow)}`" x-text="fmtFlow(h.weight_flow)"></td>
+                              <td class="py-1.5 pr-3 text-right num font-mono" x-text="fmt1(h.score)"></td>
+                              <td class="py-1.5">
+                                <span x-show="h.is_new" class="chip" style="background: rgba(96, 165, 250, 0.10); color: var(--blue); border: 1px solid rgba(96, 165, 250, 0.25)">NEW</span>
+                              </td>
+                            </tr>
+                          </template>
+                        </tbody>
+                      </table>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </template>
+          </tbody>
+        </table>
+      </div>
+      <!-- Pagination -->
+      <div class="px-3 py-2 flex items-center justify-between text-xs" style="border-top: 1px solid var(--border); color: var(--text-3)">
+        <div>
+          <span class="num font-mono" x-text="(page-1)*pageSize + 1"></span>–<span class="num font-mono" x-text="Math.min(page*pageSize, filtered.length)"></span>
+          of <span class="num font-mono" x-text="filtered.length"></span>
+        </div>
+        <div class="flex gap-1">
+          <button @click="page = Math.max(1, page-1)" :disabled="page === 1" class="px-2 py-1 border rounded disabled:opacity-30 hover:border-zinc-500" style="border-color: var(--border-2)">‹ prev</button>
+          <span class="px-2 py-1 num font-mono">page <span x-text="page"></span> / <span x-text="totalPages"></span></span>
+          <button @click="page = Math.min(totalPages, page+1)" :disabled="page === totalPages" class="px-2 py-1 border rounded disabled:opacity-30 hover:border-zinc-500" style="border-color: var(--border-2)">next ›</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════════ TAB 2: ETFs ════════════════════════════════════════════ -->
+  <section x-show="activeTab === 'etfs'">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-3">
+      <!-- ETF picker -->
+      <aside class="lg:col-span-1 rounded-lg border p-2" style="background: var(--surface); border-color: var(--border)">
+        <div class="label mb-2 px-1">16 ETFs · tap to inspect</div>
+        <template x-for="etfRow in etfSummary" :key="etfRow.etf">
+          <button @click="activeETF = etfRow.etf"
+                  :class="activeETF === etfRow.etf ? 'tab-active' : ''"
+                  class="w-full flex items-center justify-between px-2 py-1.5 rounded-md text-left text-xs hover:bg-white/5 transition"
+                  style="color: var(--text)">
+            <span class="flex items-center gap-2">
+              <span class="font-mono font-medium" x-text="etfRow.etf"></span>
+              <span class="chip" :style="tierChipStyle(etfRow.tier)" x-text="etfRow.tier"></span>
+            </span>
+            <span class="num font-mono text-[10px]" style="color: var(--text-3)" x-text="`${etfRow.count}`"></span>
+          </button>
+        </template>
+      </aside>
+
+      <!-- ETF detail -->
+      <div class="lg:col-span-3 rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+        <div class="px-3 py-2.5 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
+          <div>
+            <div class="text-base font-medium font-mono" :style="`color: var(--cyan)`" x-text="activeETF"></div>
+            <div class="text-xs" style="color: var(--text-2)" x-text="`${etfHoldings.length} holdings · tier ${currentETFTier}`"></div>
+          </div>
+          <div class="text-xs label">holdings as of <span class="num font-mono" style="color: var(--text-2)" x-text="etfHoldings[0]?.Holdings_As_Of || '—'"></span></div>
+        </div>
+        <div class="overflow-x-auto scrollbar max-h-[70vh]">
+          <table class="w-full text-xs">
+            <thead class="sticky top-0 z-10" style="background: #050505; color: var(--text-3)">
+              <tr style="border-bottom: 1px solid var(--border)">
+                <th class="text-left px-3 py-2 label">Rank</th>
+                <th class="text-left px-3 py-2 label">Ticker</th>
+                <th class="text-left px-3 py-2 label">Name</th>
+                <th class="text-right px-3 py-2 label">7d Δ</th>
+                <th class="text-right px-3 py-2 label">Weight</th>
+                <th class="text-right px-3 py-2 label">Flow</th>
+                <th class="text-right px-3 py-2 label">Score</th>
+                <th class="text-left px-3 py-2 label">Flags</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="h in etfHoldings" :key="`${h.ETF_Ticker}-${h.ticker}`">
+                <tr class="row-hover" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
+                  <td class="px-3 py-1.5 num font-mono" style="color: var(--text-3)" x-text="`#${h.rank}`"></td>
+                  <td class="px-3 py-1.5 font-medium font-mono" x-text="h.ticker"></td>
+                  <td class="px-3 py-1.5 truncate max-w-[280px]" style="color: var(--text-2)" :title="h.name" x-text="h.name"></td>
+                  <td class="px-3 py-1.5 text-right num font-mono" :style="`color: ${rankDeltaColor(h.rank_delta)}`" x-text="fmtRankDelta(h.rank_delta)"></td>
+                  <td class="px-3 py-1.5 text-right num font-mono" x-text="fmtWeight(h.weight)"></td>
+                  <td class="px-3 py-1.5 text-right num font-mono" :style="`color: ${flowColor(h.weight_flow)}`" x-text="fmtFlow(h.weight_flow)"></td>
+                  <td class="px-3 py-1.5 text-right num font-mono" x-text="fmt1(h.score)"></td>
+                  <td class="px-3 py-1.5">
+                    <span x-show="h.is_new" class="chip" style="background: rgba(96, 165, 250, 0.10); color: var(--blue); border: 1px solid rgba(96, 165, 250, 0.25)">NEW</span>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════════ TAB 3: CHANGES ════════════════════════════════════════ -->
+  <section x-show="activeTab === 'changes'">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+      <!-- Entries to HC -->
+      <div class="rounded-lg border" style="background: var(--surface); border-color: var(--border)">
+        <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
+          <div class="label-cyan label">Entered HIGH CONVICTION</div>
+          <div class="text-xs num font-mono" style="color: var(--text-3)" x-text="`${changelog.entered_hc?.length || 0} names · ${changelog.today} vs ${changelog.yesterday}`"></div>
+        </div>
+        <div x-show="!changelog.entered_hc?.length" class="px-3 py-6 text-center text-xs" style="color: var(--text-3)">No entries today</div>
+        <template x-for="r in changelog.entered_hc" :key="r.ticker">
+          <div class="px-3 py-2 flex items-center justify-between text-xs hover:bg-white/5 transition" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
+            <div class="flex items-center gap-3">
+              <span class="font-mono font-medium" x-text="r.ticker"></span>
+              <span style="color: var(--text-2)" class="truncate max-w-[260px]" x-text="r.company"></span>
+            </div>
+            <div class="flex items-center gap-3 num font-mono">
+              <span style="color: var(--text-3)" x-text="`${r.etf_count} ETFs`"></span>
+              <span x-text="fmt1(r.final_score)"></span>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- Exits from HC -->
+      <div class="rounded-lg border" style="background: var(--surface); border-color: var(--border)">
+        <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
+          <div class="label-cyan label">Exited HIGH CONVICTION</div>
+          <div class="text-xs num font-mono" style="color: var(--text-3)" x-text="`${changelog.exited_hc?.length || 0} names`"></div>
+        </div>
+        <div x-show="!changelog.exited_hc?.length" class="px-3 py-6 text-center text-xs" style="color: var(--text-3)">No exits today</div>
+        <template x-for="r in changelog.exited_hc" :key="r.ticker">
+          <div class="px-3 py-2 flex items-center justify-between text-xs hover:bg-white/5 transition" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
+            <div class="flex items-center gap-3">
+              <span class="font-mono font-medium" x-text="r.ticker"></span>
+              <span style="color: var(--text-2)" class="truncate max-w-[260px]" x-text="r.company"></span>
+            </div>
+            <div class="flex items-center gap-3 num font-mono">
+              <span style="color: var(--text-3)" x-text="`${r.etf_count || '—'} ETFs`"></span>
+              <span x-text="fmt1(r.final_score)"></span>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- Biggest gainers -->
+      <div class="rounded-lg border" style="background: var(--surface); border-color: var(--border)">
+        <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
+          <div class="label-cyan label">Biggest score gainers</div>
+          <div class="text-xs num font-mono" style="color: var(--text-3)" x-text="`${changelog.biggest_gainers?.length || 0}`"></div>
+        </div>
+        <template x-for="r in changelog.biggest_gainers" :key="r.ticker">
+          <div class="px-3 py-2 flex items-center justify-between text-xs hover:bg-white/5 transition" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
+            <div class="flex items-center gap-3">
+              <span class="font-mono font-medium" x-text="r.ticker"></span>
+              <span style="color: var(--text-2)" class="truncate max-w-[240px]" x-text="r.company"></span>
+            </div>
+            <div class="flex items-center gap-3 num font-mono">
+              <span :style="`color: ${flowColor(r.score_delta_pct)}`" x-text="fmtPct(r.score_delta_pct)"></span>
+              <span x-text="fmt1(r.final_score)"></span>
+              <span class="num font-mono text-[10px]" :style="`color: ${streakColor(r.score_streak)}`" x-text="fmtStreak(r.score_streak)"></span>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- Biggest losers -->
+      <div class="rounded-lg border" style="background: var(--surface); border-color: var(--border)">
+        <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
+          <div class="label-cyan label">Biggest score losers</div>
+          <div class="text-xs num font-mono" style="color: var(--text-3)" x-text="`${changelog.biggest_losers?.length || 0}`"></div>
+        </div>
+        <template x-for="r in changelog.biggest_losers" :key="r.ticker">
+          <div class="px-3 py-2 flex items-center justify-between text-xs hover:bg-white/5 transition" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
+            <div class="flex items-center gap-3">
+              <span class="font-mono font-medium" x-text="r.ticker"></span>
+              <span style="color: var(--text-2)" class="truncate max-w-[240px]" x-text="r.company"></span>
+            </div>
+            <div class="flex items-center gap-3 num font-mono">
+              <span :style="`color: ${flowColor(r.score_delta_pct)}`" x-text="fmtPct(r.score_delta_pct)"></span>
+              <span x-text="fmt1(r.final_score)"></span>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- New entrants this week -->
+      <div class="lg:col-span-2 rounded-lg border" style="background: var(--surface); border-color: var(--border)">
+        <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
+          <div class="label-cyan label">New tickers this week</div>
+          <div class="text-xs num font-mono" style="color: var(--text-3)" x-text="`${changelog.new_entrants?.length || 0} names · not seen 7+ days ago`"></div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          <template x-for="r in changelog.new_entrants" :key="r.ticker">
+            <div class="px-3 py-2 text-xs hover:bg-white/5 transition flex items-center justify-between" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
+              <div class="flex flex-col">
+                <span class="font-mono font-medium" x-text="r.ticker"></span>
+                <span style="color: var(--text-2)" class="truncate max-w-[220px]" x-text="r.company"></span>
+              </div>
+              <div class="num font-mono text-right">
+                <div x-text="fmt1(r.final_score)"></div>
+                <div style="color: var(--text-3)" class="text-[10px]" x-text="r.tiers"></div>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FOOTER ─────────────────────────────────────────────────────────── -->
+  <footer class="mt-6 pt-4 text-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2" style="border-top: 1px solid var(--border); color: var(--text-3)">
+    <div>
+      Data: <a class="hover:underline" style="color: var(--text-2)" href="https://github.com/yieldchaser/etf-data" target="_blank" rel="noopener">yieldchaser/etf-data</a>
+      · Algorithm: <code class="px-1 rounded" style="background: var(--surface); color: var(--text-2)">config.yaml</code>
+      · Scraper: V17.4
+    </div>
+    <div>Click any row for per-ETF breakdown · Sort columns by header click</div>
+  </footer>
+
+  <!-- Error toast -->
+  <div x-show="error" x-cloak class="fixed bottom-4 right-4 max-w-md text-sm rounded-lg px-4 py-3" style="background: rgba(251, 113, 133, 0.12); border: 1px solid rgba(251, 113, 133, 0.30); color: var(--down)">
+    <div class="font-medium mb-1">Could not load data</div>
+    <div class="text-xs opacity-90" x-text="error"></div>
+  </div>
+</div>
+
+<script>
+function app() {
+  return {
+    leaderboard: [], holdings: [], changelog: {}, meta: {},
+    loading: true, error: '',
+    activeTab: 'leaderboard',
+    flag: '', selectedTier: '', newOnly: false, q: '',
+    sortKey: 'leaderboard_rank', sortDir: 'asc',
+    page: 1, pageSize: 50, open: null,
+    activeETF: 'QQQM',
+
+    async load() {
+      try {
+        const [lb, hd, chg, mt] = await Promise.all([
+          fetch('data/leaderboard.json').then(r => r.ok ? r.json() : Promise.reject(r.status)),
+          fetch('data/holdings_latest.json').then(r => r.ok ? r.json() : Promise.reject(r.status)),
+          fetch('data/changelog.json').then(r => r.ok ? r.json() : Promise.reject(r.status)),
+          fetch('data/metadata.json').then(r => r.ok ? r.json() : Promise.reject(r.status)),
+        ]);
+        this.leaderboard = lb; this.holdings = hd; this.changelog = chg; this.meta = mt;
+      } catch (e) {
+        this.error = `${e}. Run \`python -m predator.build\` then refresh.`;
+      } finally { this.loading = false; }
+    },
+
+    get counts() {
+      return {
+        HIGH_CONVICTION: this.leaderboard.filter(r => r.flag === 'HIGH_CONVICTION').length,
+        SPECULATIVE_BETA: this.leaderboard.filter(r => r.flag === 'SPECULATIVE_BETA').length,
+        NEW: this.leaderboard.filter(r => r.any_new).length,
+      };
+    },
+
+    get kpis() {
+      const c = this.counts;
+      const yc = this.meta.flag_counts_yesterday || {};
+      return [
+        { label: 'names tracked', value: this.leaderboard.length.toString() },
+        { label: 'high conviction', value: c.HIGH_CONVICTION,
+          color: 'var(--up)',
+          delta: yc.HIGH_CONVICTION !== undefined ? c.HIGH_CONVICTION - (yc.HIGH_CONVICTION || 0) : null,
+          deltaColor: this.deltaColor(c.HIGH_CONVICTION - (yc.HIGH_CONVICTION || 0)) },
+        { label: 'speculative β', value: c.SPECULATIVE_BETA,
+          color: 'var(--amber)',
+          delta: yc.SPECULATIVE_BETA !== undefined ? c.SPECULATIVE_BETA - (yc.SPECULATIVE_BETA || 0) : null,
+          deltaColor: this.deltaColor(c.SPECULATIVE_BETA - (yc.SPECULATIVE_BETA || 0)) },
+        { label: 'new entrants', value: c.NEW, color: 'var(--blue)' },
+        { label: 'changes today', value: (this.changelog.entered_hc?.length || 0) + (this.changelog.exited_hc?.length || 0),
+          color: 'var(--cyan)' },
+      ];
+    },
+
+    get tabs() {
+      return [
+        { id: 'leaderboard', label: 'leaderboard', count: this.leaderboard.length },
+        { id: 'etfs',        label: 'etfs',        count: this.meta.etfs?.length },
+        { id: 'changes',     label: 'changes',     count: (this.changelog.entered_hc?.length || 0) + (this.changelog.exited_hc?.length || 0) + (this.changelog.new_entrants?.length || 0) },
+      ];
+    },
+
+    toggleFlag(f) { this.flag = (this.flag === f) ? '' : f; this.page = 1; },
+    reset() { this.flag = ''; this.newOnly = false; this.selectedTier = ''; this.q = ''; this.page = 1; },
+
+    get filtered() {
+      const q = this.q.trim().toLowerCase(), tier = this.selectedTier;
+      let r = this.leaderboard;
+      if (this.flag)    r = r.filter(x => x.flag === this.flag);
+      if (this.newOnly) r = r.filter(x => x.any_new);
+      if (tier)         r = r.filter(x => (x.tiers || '').split(' + ').includes(tier));
+      if (q)            r = r.filter(x => (x.ticker || '').toLowerCase().includes(q) || (x.company || '').toLowerCase().includes(q));
+      const dir = this.sortDir === 'asc' ? 1 : -1;
+      const k = this.sortKey;
+      return [...r].sort((a, b) => {
+        const av = a[k], bv = b[k];
+        if (av == null && bv == null) return 0;
+        if (av == null) return 1;
+        if (bv == null) return -1;
+        if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir;
+        return String(av).localeCompare(String(bv)) * dir;
+      });
+    },
+
+    get totalPages() { return Math.max(1, Math.ceil(this.filtered.length / this.pageSize)); },
+    get paged() { if (this.page > this.totalPages) this.page = 1; const s = (this.page - 1) * this.pageSize; return this.filtered.slice(s, s + this.pageSize); },
+
+    sort(k) {
+      if (this.sortKey === k) { this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc'; }
+      else { this.sortKey = k; this.sortDir = (k === 'leaderboard_rank') ? 'asc' : 'desc'; }
+      this.page = 1;
+    },
+    sortClass(k) { return (this.sortKey !== k) ? '' : (this.sortDir === 'asc' ? 'sort-asc' : 'sort-desc'); },
+
+    toggle(t) { this.open = (this.open === t) ? null : t; },
+    detailsFor(t) { return this.holdings.filter(h => h.ticker === t).sort((a, b) => (b.score || 0) - (a.score || 0)); },
+
+    // ETF tab
+    get etfSummary() {
+      const tierMap = {};
+      (this.meta.config_snapshot?.tiers || []).forEach(t => t.etfs.forEach(e => tierMap[e] = t.name));
+      const counts = {};
+      this.holdings.forEach(h => { counts[h.ETF_Ticker] = (counts[h.ETF_Ticker] || 0) + 1; });
+      return (this.meta.etfs || []).map(e => ({ etf: e, tier: tierMap[e] || '', count: counts[e] || 0 }));
+    },
+    get currentETFTier() { return this.etfSummary.find(e => e.etf === this.activeETF)?.tier || ''; },
+    get etfHoldings() {
+      return this.holdings.filter(h => h.ETF_Ticker === this.activeETF).sort((a, b) => a.rank - b.rank);
+    },
+
+    // Formatting
+    fmt1(n) { return (n == null || !isFinite(n)) ? '—' : Number(n).toFixed(1); },
+    fmtPct(n) { if (n == null || !isFinite(n)) return '—'; const v = Number(n) * 100; return (v >= 0 ? '+' : '') + v.toFixed(1) + '%'; },
+    fmtWeight(n) { if (n == null || !isFinite(n)) return '—'; return (Number(n) * 100).toFixed(2) + '%'; },
+    fmtFlow(n) { if (n == null || !isFinite(n)) return '—'; const v = Number(n) * 100; if (Math.abs(v) > 9999) return '—'; return (v >= 0 ? '+' : '') + v.toFixed(1) + '%'; },
+    fmtRankDelta(n) { if (n == null || !isFinite(n)) return '—'; const v = Number(n); if (v === 0) return '0'; return v > 0 ? `▲${v}` : `▼${Math.abs(v)}`; },
+    fmtStreak(n) { if (n == null || n === 0) return '—'; const v = Number(n); return v > 0 ? `▲${v}` : `▼${Math.abs(v)}`; },
+
+    flowColor(n) { if (n == null || !isFinite(n)) return 'var(--text-3)'; if (n > 0.02) return 'var(--up)'; if (n < -0.02) return 'var(--down)'; return 'var(--text-2)'; },
+    rankDeltaColor(n) { if (n == null || !isFinite(n)) return 'var(--text-3)'; if (n > 0) return 'var(--up)'; if (n < 0) return 'var(--down)'; return 'var(--text-3)'; },
+    streakColor(n) { if (n == null || n === 0) return 'var(--text-3)'; return n > 0 ? 'var(--up)' : 'var(--down)'; },
+    deltaColor(n) { if (n == null || n === 0) return 'var(--text-3)'; return n > 0 ? 'var(--up)' : 'var(--down)'; },
+    formatDelta(n) { if (n == null) return ''; const v = Number(n); if (v === 0) return '±0'; return v > 0 ? `▲${v}` : `▼${Math.abs(v)}`; },
+
+    tierChipStyle(t) {
+      const base = 'padding: 1px 5px; font-size: 10px; border-radius: 3px; ';
+      switch (t) {
+        case 'Scout':   return base + 'background: rgba(168, 85, 247, 0.12); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.25)';
+        case 'Quant':   return base + 'background: rgba(99, 102, 241, 0.12); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.25)';
+        case 'Quality': return base + 'background: rgba(20, 184, 166, 0.12); color: #5eead4; border: 1px solid rgba(20, 184, 166, 0.25)';
+        case 'Trend':   return base + 'background: rgba(251, 191, 36, 0.10); color: #fcd34d; border: 1px solid rgba(251, 191, 36, 0.25)';
+        case 'Blob':    return base + 'background: rgba(255, 255, 255, 0.04); color: #a1a1aa; border: 1px solid rgba(255, 255, 255, 0.10)';
+        default:        return base + 'background: rgba(255, 255, 255, 0.04); color: #a1a1aa; border: 1px solid rgba(255, 255, 255, 0.10)';
+      }
+    },
+
+    formatBuilt(iso) {
+      if (!iso) return '—';
+      const d = new Date(iso); if (isNaN(d)) return '—';
+      const pad = n => String(n).padStart(2, '0');
+      return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())} UTC`;
+    },
+  };
+}
+</script>
+</body>
+</html>

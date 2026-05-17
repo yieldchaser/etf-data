@@ -5,3 +5,8 @@ openpyxl
 beautifulsoup4
 html5lib
 selenium
+
+# Predator Protocol site additions
+pyyaml>=6.0
+pyarrow>=15.0
+pytest>=7.0

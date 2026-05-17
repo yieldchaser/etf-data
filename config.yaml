@@ -1,0 +1,101 @@
+# Predator Protocol — scoring & sanitizer configuration.
+# CALIBRATED to match the Excel Power Query (`Master_Leaderboard`) exactly.
+# Source M code transcribed from Equity_Indices_.xlsb Advanced Editor screenshots.
+#
+# Push a change here → site auto-rebuilds.
+
+# =============================================================================
+# SANITIZER — mirrors the Power Query `Filtered Rows` step verbatim.
+# Plus the documented GOOG → GOOGL `FixGoogle` normalization.
+# =============================================================================
+sanitizer:
+  # Power Query: [Ticker] <> "$USD" and [Ticker] <> "USD"
+  blocked_tickers:
+    - USD
+    - $USD
+
+  # Power Query: [Company] <> "Short-Term Investment Trust - Invesco Government & Agency Portfolio"
+  # Exact company-name match (case-insensitive). This is how the Excel filters AGPXX.
+  blocked_name_exact:
+    - "Short-Term Investment Trust - Invesco Government & Agency Portfolio"
+
+  # Substring match (case-insensitive). Empty by default to mirror Power Query.
+  # Uncomment for the more aggressive VBA-style filter that also drops cash
+  # collateral and treasury bills appearing across many ETFs:
+  blocked_name_patterns: []
+  # blocked_name_patterns:
+  #   - "CASH &"
+  #   - "CASH COLLATERAL"
+  #   - "TREASURY"
+
+  # Ticker punctuation standardization (BRK-B → BRK.B, BF/B → BF.B).
+  ticker_replacements:
+    "-": "."
+    "/": "."
+
+  # Dual-class share consolidation (Power Query FixGoogle step).
+  # Merges these tickers so they group together in the leaderboard.
+  ticker_renames:
+    GOOG: GOOGL
+
+# =============================================================================
+# TIERS — Predator Protocol v1, matches the ETF_Config table in the Excel.
+# =============================================================================
+tiers:
+  - name: Scout            # Spinoffs and IPOs.
+    etfs: [CSD, FPX, FPXI]
+    points: 40
+
+  - name: Quant            # Factor-based momentum (mid/small cap, international).
+    etfs: [QMOM, IMOM, XMMO, XSMO, PIE]
+    points: 40
+
+  - name: Quality          # Free cash flow and profitability screens.
+    etfs: [COWZ, CALF, SPHQ]
+    points: 30
+
+  - name: Trend            # Broad momentum and high-beta confirmation.
+    etfs: [SPMO, SPHB, RPG]
+    points: 10
+
+  - name: Blob             # Mega-cap benchmarks. Confirmation only.
+    etfs: [QQQM, XLG]
+    points: 2
+
+# Rank multiplier inside each ETF (Power Query AddRankBonus step).
+rank_breakpoints:
+  - {rank_max: 10,  multiplier: 1.5}
+  - {rank_max: 30,  multiplier: 1.2}
+  - {rank_max: 999, multiplier: 1.0}
+
+# NEW entrant detection (Power Query CalcStatus step in fn_GetETF).
+# `Status = "NEW"` when [Rank Past] is null — i.e., ticker absent from the
+# snapshot `new_lookback_days` days ago. fn_GetETF uses -14; matches here.
+new_lookback_days: 14
+new_bonus_mult: 5.0
+new_bonus_tiers: [Scout, Quant]
+
+# Conviction flagging (Power Query AddFlag step).
+high_conviction_min_etfs: 4
+
+# =============================================================================
+# SCORE FORMULA REFERENCE (Power Query AddScore step in Master_Leaderboard):
+#
+#   Single Score = Weight% × Points × Rank_Multiplier × 100 + New_Bonus
+#                = (weight_as_decimal × 100) × Points × Rank_Multiplier + New_Bonus
+#
+# Final Alpha Score = Sum(Single Score) per ticker, cast to Int64.
+#
+# Example: AAPL at 9% weight in QQQM (Blob, 2 pts) at rank 1 (1.5×)
+#       = 0.09 × 100 × 2 × 1.5 = 27 single score
+# =============================================================================
+
+# =============================================================================
+# HISTORY — temporal analytics layer on top of the Power Query algorithm.
+# These are NEW capabilities the Excel didn't have: daily snapshots, streaks,
+# percentile-of-own-history, day-over-day changelog.
+# =============================================================================
+history:
+  rank_delta_lookback_days: 7
+  leaderboard_lookback_days: 60
+  changelog_top_n: 15

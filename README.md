@@ -118,6 +118,61 @@ The dashboard generates specific flags based on the composition of holdings:
 * **Privacy Errors:** If Excel prompts for Privacy Levels, select **"Ignore Privacy Levels"** to allow merging of GitHub data with the local Config table.
 * **Modifying Weights:** Edit the `ETF_Config` table (Columns AA:AC) in the Excel file and refresh to update scoring logic immediately.
 
+---
+
+## 🦅 Component 3: Live Dashboard (GitHub Pages)
+
+The site at **https://yieldchaser.github.io/etf-data/** runs the Predator Protocol
+scoring algorithm directly on `data/all_history.csv` and renders an interactive
+leaderboard. It replaces (or augments) the Excel Power Query workflow with a live,
+shareable, mobile-friendly view.
+
+### What you get
+
+- **Leaderboard tab** — all ~920 unique tickers ranked by Final Alpha Score, with
+  day-over-day score delta, HC streak, and percentile-of-own-history bars. Click
+  any row for the per-ETF breakdown (rank, 7-day rank delta, weight flow %).
+- **ETFs tab** — pick any of the 16 ETFs, see its current holdings sorted by rank
+  with 7-day rank deltas and weight flow per holding.
+- **Changes tab** — daily turnover: who entered HIGH CONVICTION today, who exited,
+  biggest score gainers/losers, and new tickers (not seen 7+ days ago).
+
+### Architecture
+
+`scraper.py` writes `data/all_history.csv` → `predator/build.py` reads it,
+runs sanitizer + scoring + temporal analytics → writes `docs/data/*.json` →
+GitHub Pages serves `docs/`. Auto-rebuilds within ~2 min of every scraper commit
+via `.github/workflows/build_site.yml`. The existing `daily_scrape.yml` is untouched.
+
+### Algorithm
+
+All knobs live in `config.yaml`. Push a change, site rebuilds, no code edits needed.
+
+The sanitizer mirrors the `ArchiveToDatabase_Production` VBA sub:
+- Blocked tickers (exact, case-insensitive): `USD`, `$USD`, `$CAD`, `AGPXX`
+- Blocked name substrings: `CASH &`, `CASH COLLATERAL`, `TREASURY`
+- Ticker standardization: `BRK-B → BRK.B`, `BF/B → BF.B`
+
+Scoring is the documented Predator Protocol v1 (Component 2 table above).
+
+### Local development
+
+```bash
+pip install -r requirements.txt
+python -m pytest tests/ -v           # 17 tests
+python -m predator.build             # builds docs/data/*
+python -m http.server -d docs 8000   # preview at http://localhost:8000
 ```
 
-```
+### Tuning
+
+Edit `config.yaml`:
+- `tiers[].points` — Scout/Quant=40, Quality=30, Trend=10, Blob=2
+- `rank_breakpoints` — top-10 = 1.5×, top-30 = 1.2× multipliers
+- `new_lookback_days` — how long a ticker must have been absent to count as NEW
+- `new_bonus_mult` — NEW-entrant bonus multiplier on tier_points
+- `high_conviction_min_etfs` — threshold for HIGH CONVICTION flag
+- `history.leaderboard_lookback_days` — drives streaks and percentile bars
+
+Commit, push — site rebuilds with new scores in ~2 min.
+

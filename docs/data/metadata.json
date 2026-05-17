@@ -1,0 +1,168 @@
+{
+  "generated_at_utc": "2026-05-17T02:45:50+00:00",
+  "source": "data/all_history.csv",
+  "source_rows_raw": 81452,
+  "source_rows_after_sanitize": 1331,
+  "leaderboard_rows": 924,
+  "latest_holdings_as_of": "2026-05-15",
+  "latest_scrape_date": "2026-05-16",
+  "etfs": [
+    "CALF",
+    "COWZ",
+    "CSD",
+    "FPX",
+    "FPXI",
+    "IMOM",
+    "PIE",
+    "QMOM",
+    "QQQM",
+    "RPG",
+    "SPHB",
+    "SPHQ",
+    "SPMO",
+    "XLG",
+    "XMMO",
+    "XSMO"
+  ],
+  "snapshot_dates_in_window": [
+    "2026-03-16",
+    "2026-03-17",
+    "2026-03-18",
+    "2026-03-19",
+    "2026-03-20",
+    "2026-03-22",
+    "2026-03-23",
+    "2026-03-24",
+    "2026-03-25",
+    "2026-03-26",
+    "2026-03-27",
+    "2026-03-29",
+    "2026-03-30",
+    "2026-03-31",
+    "2026-04-01",
+    "2026-04-02",
+    "2026-04-03",
+    "2026-04-05",
+    "2026-04-06",
+    "2026-04-07",
+    "2026-04-08",
+    "2026-04-09",
+    "2026-04-10",
+    "2026-04-12",
+    "2026-04-13",
+    "2026-04-14",
+    "2026-04-15",
+    "2026-04-16",
+    "2026-04-17",
+    "2026-04-18",
+    "2026-04-19",
+    "2026-04-20",
+    "2026-04-21",
+    "2026-04-22",
+    "2026-04-23",
+    "2026-04-24",
+    "2026-04-25",
+    "2026-04-27",
+    "2026-04-28",
+    "2026-04-29",
+    "2026-04-30",
+    "2026-05-01",
+    "2026-05-02",
+    "2026-05-03",
+    "2026-05-04",
+    "2026-05-05",
+    "2026-05-06",
+    "2026-05-07",
+    "2026-05-08",
+    "2026-05-09",
+    "2026-05-11",
+    "2026-05-12",
+    "2026-05-13",
+    "2026-05-14",
+    "2026-05-15"
+  ],
+  "flag_counts_today": {
+    "HIGH_CONVICTION": 39,
+    "SPECULATIVE_BETA": 112,
+    "NEW": 13,
+    "NONE": 773
+  },
+  "flag_counts_yesterday": {
+    "HIGH_CONVICTION": 39,
+    "SPECULATIVE_BETA": 112
+  },
+  "config_snapshot": {
+    "sanitizer": {
+      "blocked_tickers": [
+        "USD",
+        "$USD"
+      ],
+      "blocked_name_patterns": []
+    },
+    "tiers": [
+      {
+        "name": "Scout",
+        "etfs": [
+          "CSD",
+          "FPX",
+          "FPXI"
+        ],
+        "points": 40
+      },
+      {
+        "name": "Quant",
+        "etfs": [
+          "QMOM",
+          "IMOM",
+          "XMMO",
+          "XSMO",
+          "PIE"
+        ],
+        "points": 40
+      },
+      {
+        "name": "Quality",
+        "etfs": [
+          "COWZ",
+          "CALF",
+          "SPHQ"
+        ],
+        "points": 30
+      },
+      {
+        "name": "Trend",
+        "etfs": [
+          "SPMO",
+          "SPHB",
+          "RPG"
+        ],
+        "points": 10
+      },
+      {
+        "name": "Blob",
+        "etfs": [
+          "QQQM",
+          "XLG"
+        ],
+        "points": 2
+      }
+    ],
+    "rank_breakpoints": [
+      [
+        10,
+        1.5
+      ],
+      [
+        30,
+        1.2
+      ],
+      [
+        999,
+        1.0
+      ]
+    ],
+    "new_lookback_days": 14,
+    "new_bonus_mult": 5.0,
+    "high_conviction_min_etfs": 4
+  }
+}

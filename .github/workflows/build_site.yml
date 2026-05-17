@@ -1,0 +1,77 @@
+name: Build site
+
+# Runs after the daily scraper commits new data (push to data/**).
+# Also triggers on dashboard/scoring code changes and on manual dispatch.
+#
+# The existing daily_scrape.yml workflow is untouched.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'data/**'                       # Scraper writes here
+      - 'predator/**'
+      - 'docs/**'
+      - 'config.yaml'
+      - '.github/workflows/build_site.yml'
+      - 'requirements.txt'
+  workflow_dispatch:
+
+# Allow one site build at a time; don't cancel running deploys.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas pyyaml pyarrow pytest
+
+      - name: Run tests
+        run: python -m pytest tests/ -v
+
+      - name: Build site artifacts
+        run: python -m predator.build --source data/all_history.csv --output docs/data --config config.yaml
+
+      - name: Verify outputs
+        run: |
+          test -f docs/data/leaderboard.json
+          test -f docs/data/holdings_latest.json
+          test -f docs/data/changelog.json
+          test -f docs/data/metadata.json
+          test -f docs/data/leaderboard.parquet
+          ls -lh docs/data/
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
