@@ -181,8 +181,7 @@
               <th class="text-left px-3 py-2">Flag</th>
             </tr>
           </thead>
-          <tbody>
-            <template x-for="row in paged" :key="row.ticker">
+          <template x-for="row in paged" :key="row.ticker">
               <tbody>
                 <tr @click="toggle(row.ticker)"
                     :class="open === row.ticker ? 'row-open' : 'row-hover'"
@@ -285,10 +284,9 @@
                 </tr>
               </tbody>
             </template>
-          <tbody>
+          </table>
+        </div>
 
-        </table>
-      </div>
       <!-- Pagination -->
       <div class="px-3 py-2 flex items-center justify-between text-xs" style="border-top: 1px solid var(--border); color: var(--text-3)">
         <div>
