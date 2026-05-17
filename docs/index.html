@@ -345,7 +345,7 @@
                 <th class="text-left px-3 py-2 label">Flags</th>
               </tr>
             </thead>
-            <template x-for="h in etfHoldings" :key="`${h.ETF_Ticker}-${h.ticker}`">
+            <template x-for="h in etfHoldings" :key="`${h.ETF_Ticker}-${h.rank}`">
               <tbody>
                 <tr class="row-hover" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
                   <td class="px-3 py-1.5 num font-mono" style="color: var(--text-3)" x-text="`#${h.rank}`"></td>
