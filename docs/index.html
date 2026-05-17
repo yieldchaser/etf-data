@@ -183,7 +183,7 @@
           </thead>
           <tbody>
             <template x-for="row in paged" :key="row.ticker">
-              <template>
+              <tbody>
                 <tr @click="toggle(row.ticker)"
                     :class="open === row.ticker ? 'row-open' : 'row-hover'"
                     class="cursor-pointer transition"
@@ -283,9 +283,10 @@
                     </div>
                   </td>
                 </tr>
-              </template>
+              </tbody>
             </template>
-          </tbody>
+          <tbody>
+
         </table>
       </div>
       <!-- Pagination -->
