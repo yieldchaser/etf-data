@@ -144,6 +144,24 @@ The frontend has been completely modernized (Tailwind CSS + Alpine.js) with zero
   - **Per-ETF Rank History:** Multi-line charts with tier-based coloring (Scout, Quant, Quality, Trend), drop-shadows, and precise crosshair tooltips to track performance isolated to specific ETFs.
 - **Singleton Tooltip Infrastructure:** A highly optimized, centralized DOM tooltip engine (`#tt` + `x-tooltip`) powering rich hover interactions across the entire dashboard without polluting the DOM tree.
 
+### 🚀 Phase 2.6 Institutional Velocity Engine & Burst Detection
+
+The platform now computes, filters, and surfaces institutional accumulation acceleration (**Velocity** and **Bursts**), catching the earliest actionable signals of institutional accumulation:
+
+- **Composite Velocity Score (`velocity_score`):** A robust, multi-factor acceleration signal mapping institutional rate-of-change. Calculated as:
+  $$\text{Velocity} = 0.5 \times \text{GlobalRankDelta}_{30d} + 0.25 \times \text{GlobalRankPeak}_{30d} + 1.0 \times \text{AvgRankDelta}_{7d} + 20.0 \times \text{AvgWeightFlow}_{7d} + 5.0 \times \text{ETFsAdded}_{30d} + 1.0 \times \text{ScoreStreak}$$
+  This composite catches both steady, low-noise accumulators and sudden high-conviction institutional entries.
+- **Institutional Burst Detection (`burst_30d`):** A $4\sigma$ event detector that flags any ticker achieving an improvement of $\ge 40$ positions in its global leaderboard rank at any point during a rolling 30-day window.
+- **Leadboards & Visual Filtering:**
+  - **Velocity Columns:** Sortable, color-coded leaderboard columns surfacing composite velocity. 
+  - **VELO & BURST Badges:** Live badges on matching tickers with custom hover tooltips showing micro-breakdowns of all underlying signals.
+  - **Interactive Filter Chips:** Click-to-filter controls to quickly isolate current `VELO` accumulators or `BURST` movers.
+  - **Top Velocity Movers Panel:** An integrated 5th panel in the Changes tab showcasing the 15 fastest-accumulating tickers with real-time stats.
+- **Hero Analytics & Detail Panels:**
+  - Stock detail pages (`stock.html`) now feature dedicated hero KPI cards displaying real-time `VELOCITY` and `ETFs ADDED (30d)` metrics.
+  - A dynamic, unified calendar-date X-axis for the per-ETF Rank History chart, aligning mismatched ETF histories and resolving previous rendering overlapping bugs.
+- **Analytical Stability & Verification:** Complete test suite mapping rank deltas, rolling velocity calculations, and burst threshold detection with 100% automated test coverage.
+
 ### Architecture
 
 `scraper.py` writes `data/all_history.csv` → `predator/build.py` reads it,
