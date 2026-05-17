@@ -208,6 +208,73 @@
       </div>
     </div>
 
+    <!-- LEADERBOARD RANK HISTORY CHART — global internal rank over time -->
+    <div x-show="lbRankSeries.length > 0" class="rounded-lg border mb-5" style="background: var(--surface); border-color: var(--border)">
+      <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
+        <div class="flex items-center gap-2">
+          <div class="label-cyan label">LEADERBOARD RANK — <span class="font-mono" x-text="ticker"></span> global position</div>
+          <span x-show="lbCurrentRank" class="font-mono text-xs px-1.5 py-0.5 rounded" style="background: rgba(34,211,238,0.12); color: #22d3ee; border: 1px solid rgba(34,211,238,0.25)" x-text="'Currently #' + lbCurrentRank"></span>
+        </div>
+        <div class="text-xs" style="color: var(--text-3)">rank 1 = top of entire universe · line up = improving</div>
+      </div>
+      <div class="p-3 chart-wrap" x-data="{ lbcx: null, lbci: null }"
+           @mousemove="
+             const svg = $el.querySelector('svg');
+             if (!svg || !lbRankSeries.length) return;
+             const rect = svg.getBoundingClientRect();
+             const rx = $event.clientX - rect.left;
+             const idx = Math.round((rx / rect.width) * (lbRankSeries.length - 1));
+             lbci = Math.max(0, Math.min(lbRankSeries.length - 1, idx));
+             lbcx = (lbci / (lbRankSeries.length - 1)) * rect.width;
+           "
+           @mouseleave="lbci = null; lbcx = null">
+        <svg viewBox="0 0 1000 220" class="w-full" style="height: 200px; overflow: visible">
+          <!-- Grid lines -->
+          <template x-for="y in [0.25, 0.5, 0.75]" :key="y">
+            <line :x1="0" :x2="1000" :y1="y * 200 + 10" :y2="y * 200 + 10"
+                  stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+          </template>
+          <!-- Gradient fill beneath the rank line -->
+          <defs>
+            <linearGradient id="lbGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.18"/>
+              <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <!-- Area fill -->
+          <path :d="lbRankPath + ` L${lbRankSeries[lbRankSeries.length-1].x.toFixed(1)},210 L0,210 Z`"
+                fill="url(#lbGrad)" stroke="none"/>
+          <!-- Rank line -->
+          <path :d="lbRankPath" stroke="#22d3ee" stroke-width="2" fill="none"
+                stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- Crosshair dot -->
+          <template x-if="lbci !== null">
+            <circle :cx="lbRankSeries[lbci].x.toFixed(1)" :cy="lbRankSeries[lbci].y.toFixed(1)"
+                    r="4" fill="#22d3ee" stroke="#000" stroke-width="1.5"/>
+          </template>
+          <!-- Crosshair line -->
+          <template x-if="lbci !== null">
+            <line class="crosshair-line"
+                  :x1="lbRankSeries[lbci].x.toFixed(1)" y1="0"
+                  :x2="lbRankSeries[lbci].x.toFixed(1)" y2="220"/>
+          </template>
+        </svg>
+        <!-- Crosshair tooltip -->
+        <div x-show="lbci !== null" class="chart-tooltip"
+             :style="`top: 4px; left: ${Math.min((lbcx || 0) + 12, 280)}px`">
+          <div class="font-mono text-[10px] mb-1" style="color: var(--text-3)" x-text="lbRankSeries[lbci]?.d || ''"></div>
+          <div class="font-mono text-xs" style="color: #22d3ee" x-text="'Global Rank #' + lbRankSeries[lbci]?.rank"></div>
+          <div class="text-[10px] mt-0.5" style="color: var(--text-3)" x-text="'out of ' + lbRankSeries[lbci]?.total + ' tracked'"></div>
+        </div>
+        <!-- X-axis date labels -->
+        <div class="flex justify-between text-[10px] font-mono mt-1" style="color: var(--text-3)">
+          <span x-text="lbRankSeries[0]?.d?.slice(5) || ''"></span>
+          <span x-text="lbRankSeries[Math.floor(lbRankSeries.length/2)]?.d?.slice(5) || ''"></span>
+          <span x-text="lbRankSeries[lbRankSeries.length-1]?.d?.slice(5) || ''"></span>
+        </div>
+      </div>
+    </div>
+
     <!-- RANK HISTORY CHART (B2 — per-ETF rank lines) -->
     <div class="rounded-lg border mb-5" style="background: var(--surface); border-color: var(--border)">
       <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
@@ -371,6 +438,7 @@ function stockApp() {
     loading: true,
     found: false,
     scoreHistory: [],      // [{d, s}]
+    _allScores: null,      // full score_history map for global rank computation
     holdingsHistory: {},   // {ETF: [{d, r, w}]}
     leaderboardRow: null,  // single row from leaderboard for KPIs
     tierMap: {},           // ETF_Ticker -> tier name
@@ -391,6 +459,9 @@ function stockApp() {
         // Leaderboard row
         this.leaderboardRow = lbData.find(r => r.ticker === this.ticker) || null;
         if (this.leaderboardRow) this.company = this.leaderboardRow.company || '';
+
+        // Store full score map for global rank computation
+        this._allScores = scoreData;
 
         // Tier map from score_history (meta missing here, so build from leaderboard held_by + tiers)
         // We load metadata separately
@@ -511,6 +582,53 @@ function stockApp() {
 
     tierLineColor(tier) {
       return { Scout: '#c084fc', Quant: '#a5b4fc', Quality: '#5eead4', Trend: '#fcd34d', Blob: '#a1a1aa' }[tier] || '#a1a1aa';
+    },
+
+    // Global leaderboard rank over time
+    // For each date, sort all tickers by score desc → find this ticker's position
+    get lbRankSeries() {
+      if (!this.ticker || !this.scoreHistory.length) return [];
+      // We need the full score_history; it was stored as scoreData at load time.
+      // Re-use what we already fetched — expose it on the component.
+      const full = this._allScores;
+      if (!full) return [];
+      const totalTickers = Object.keys(full).length;
+      // Build a date → rank map for this ticker
+      const series = [];
+      for (const snap of this.scoreHistory) {
+        const d = snap.d;
+        // Collect all ticker scores on this date
+        const scoreOnDate = [];
+        for (const [tk, snaps] of Object.entries(full)) {
+          const match = snaps.find(s => s.d === d);
+          if (match != null) scoreOnDate.push({ tk, s: match.s });
+        }
+        scoreOnDate.sort((a, b) => b.s - a.s);
+        const idx = scoreOnDate.findIndex(x => x.tk === this.ticker);
+        if (idx === -1) continue;
+        series.push({ d, rank: idx + 1, total: scoreOnDate.length });
+      }
+      if (!series.length) return [];
+      const maxRank = Math.max(...series.map(s => s.rank));
+      const H = 200, PAD = 10;
+      const n = series.length;
+      return series.map((p, i) => ({
+        d: p.d,
+        rank: p.rank,
+        total: p.total,
+        // Inverted: rank 1 → y = PAD (top), maxRank → y = H + PAD (bottom)
+        y: ((p.rank - 1) / Math.max(1, maxRank - 1)) * H + PAD,
+        x: (i / Math.max(1, n - 1)) * 1000,
+      }));
+    },
+
+    get lbRankPath() {
+      if (!this.lbRankSeries.length) return '';
+      return this.lbRankSeries.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+    },
+
+    get lbCurrentRank() {
+      return this.lbRankSeries.length ? this.lbRankSeries[this.lbRankSeries.length - 1].rank : null;
     },
 
     // Formatting
