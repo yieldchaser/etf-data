@@ -4,6 +4,7 @@ markets/stats.py — Pure function library for time-series statistics.
 No I/O. All functions operate on DataFrames with at least a value column.
 """
 from __future__ import annotations
+import bisect
 import pandas as pd
 
 
@@ -139,6 +140,7 @@ def log_rows(df: pd.DataFrame, value_col: str = "Close", n: int = 200) -> list[d
     df["_ret"] = df[value_col].pct_change()
 
     all_vals = df[value_col].dropna().tolist()
+    all_vals_sorted = sorted(all_vals)  # for O(log n) bisect percentile
     n_total = len(all_vals)
 
     rows = []
@@ -161,8 +163,8 @@ def log_rows(df: pd.DataFrame, value_col: str = "Close", n: int = 200) -> list[d
             else:
                 streak = 0
 
-        # Percentile: fraction of all-time values <= today's close
-        below = sum(1 for v in all_vals if v <= close_val)
+        # Percentile: fraction of all-time values <= today's close (O(log n) via bisect)
+        below = bisect.bisect_right(all_vals_sorted, close_val)
         level = round(below / n_total, 4) if n_total > 0 else None
 
         rows.append({

@@ -275,19 +275,18 @@ function stockApp() {
 
     etfTier(etf) { return this.tierMap[etf] || ''; },
 
-    // Rank delta for row i in a (reversed) array: compare with i+1 (the previous snapshot)
+    // Rank delta for row i in a newest-first array (already reversed by template).
+    // rows[i] = current snapshot, rows[i+1] = previous snapshot.
+    // Positive = rank improved (moved up; lower rank number is better).
     rankDelta(rows, i) {
-      const rev = [...rows].reverse();
-      if (i >= rev.length - 1) return null;
-      const delta = rev[i + 1].r - rev[i].r; // positive = improved rank (moved up)
-      return delta;
+      if (i >= rows.length - 1) return null;
+      return rows[i + 1].r - rows[i].r;  // prev_rank - cur_rank; positive = moved up
     },
     weightDelta(rows, i) {
-      const rev = [...rows].reverse();
-      if (i >= rev.length - 1) return null;
-      const prev = rev[i + 1].w;
+      if (i >= rows.length - 1) return null;
+      const prev = rows[i + 1].w;
       if (!prev) return null;
-      return (rev[i].w - prev) / prev;
+      return (rows[i].w - prev) / prev;
     },
 
     // SVG sparkline helpers

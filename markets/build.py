@@ -17,9 +17,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 import pandas as pd
 
-from markets.fetch_yf import SYMBOLS as YF_SYMBOLS
-from markets.fetch_fred import SERIES as FRED_SERIES
-from markets.stats import series_stats, log_rows
+from .fetch_yf import SYMBOLS as YF_SYMBOLS  # noqa: F401 (used for reference)
+from .stats import series_stats, log_rows
 
 if sys.platform.startswith("win"):
     try:

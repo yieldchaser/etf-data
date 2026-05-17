@@ -133,6 +133,39 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                     "score_percentile", "days_observed"):
             leaderboard[col] = None
 
+    # ── Multi-period SCORE deltas for leaderboard.json (Phase 2 — period selector) ──
+    # For each non-primary period, compute the leaderboard at that snapshot and
+    # derive the ticker-level score_delta_pct vs the current leaderboard.
+    print("\nComputing per-period score deltas for leaderboard…")
+    current_scores = leaderboard.set_index("ticker")["final_score"].to_dict()
+    raw_dt = raw.copy()
+    raw_dt["Holdings_As_Of"] = pd.to_datetime(raw_dt["Holdings_As_Of"], errors="coerce")
+    latest_date = raw_dt["Holdings_As_Of"].max()
+
+    for n_days in cfg.history.delta_periods_days:
+        if n_days == cfg.history.rank_delta_lookback_days:
+            continue  # already have score_delta / score_delta_pct from streaks merge
+        cutoff = latest_date - pd.Timedelta(days=n_days)
+        raw_past = raw_dt[raw_dt["Holdings_As_Of"] <= cutoff]
+        if raw_past.empty:
+            print(f"  {n_days}d: no data before cutoff, skipping")
+            continue
+        try:
+            lb_past, _ = compute_leaderboard(raw_past, cfg)
+            past_scores = lb_past.set_index("ticker")["final_score"].to_dict()
+            col = f"score_delta_pct_{n_days}d"
+            def _delta_pct(row, ps=past_scores):
+                t = row["ticker"]; cur = row["final_score"]
+                prev = ps.get(t)
+                if prev is None or prev == 0:
+                    return None
+                return (cur - prev) / abs(prev)
+            leaderboard[col] = leaderboard.apply(_delta_pct, axis=1)
+            filled = leaderboard[col].notna().sum()
+            print(f"  {n_days}d score delta: {filled}/{len(leaderboard)} tickers")
+        except Exception as e:
+            print(f"  {n_days}d: ERROR — {e}")
+
     # ── leaderboard.json — main payload for the site ──────────────────────────
     lb_records = leaderboard.to_dict(orient="records")
     (output_dir / "leaderboard.json").write_text(_dumps(lb_records, separators=(",", ":")))
