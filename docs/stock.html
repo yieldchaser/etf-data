@@ -315,7 +315,9 @@
                   <th class="text-right px-3 py-1.5">Rank Δ</th>
                   <th class="text-right px-3 py-1.5">Weight</th>
                   <th class="text-right px-3 py-1.5">Weight Δ</th>
-                  <th class="px-3 py-1.5">Trend</th>
+                  <th class="px-3 py-1.5 cursor-default"
+                      x-tooltip="{html: '<b>STATUS</b> column:<br><b>NEW</b> = first appeared in this ETF within 14 days<br><b>HC</b> = held by 4+ ETFs overall<br><b>—</b> = no special flag'}">
+                    Status ⓘ</th>
                 </tr>
               </thead>
               <tbody>
@@ -327,7 +329,17 @@
                     <td class="px-3 py-1.5 text-right num font-mono" style="color: var(--text-2)" x-text="fmtWeight(row.w)"></td>
                     <td class="px-3 py-1.5 text-right num font-mono" :style="`color: ${flowColor(weightDelta(rows, i))}`" x-text="fmtFlow(weightDelta(rows, i))"></td>
                     <td class="px-3 py-1.5">
-                      <div class="inline-block w-2 h-2 rounded-sm" :style="`background: ${rankDelta(rows, i) > 0 ? 'var(--up)' : rankDelta(rows, i) < 0 ? 'var(--down)' : 'var(--text-3)'}`"></div>
+                      <!-- NEW chip if this row is the first snapshot for this ETF -->
+                      <span x-show="row.is_new" class="chip"
+                            style="background: rgba(96,165,250,0.12); color: #60a5fa; border: 1px solid rgba(96,165,250,0.3)"
+                            x-tooltip="'First appearance in this ETF within the last 14 days'">NEW</span>
+                      <!-- HC chip when stock is High Conviction overall -->
+                      <span x-show="!row.is_new && leaderboardRow?.flag === 'HIGH_CONVICTION'" class="chip"
+                            style="background: rgba(52,211,153,0.10); color: var(--up); border: 1px solid rgba(52,211,153,0.25)"
+                            :x-tooltip="`'Held by ' + leaderboardRow.etf_count + ' ETFs · HC streak ' + (leaderboardRow.hc_streak || 0) + ' days'`">HC</span>
+                      <!-- em-dash fallback — never empty -->
+                      <span x-show="!row.is_new && leaderboardRow?.flag !== 'HIGH_CONVICTION'"
+                            class="text-xs" style="color: var(--text-3)">—</span>
                     </td>
                   </tr>
                 </template>
@@ -520,6 +532,45 @@ function stockApp() {
       }
     },
   };
+}
+</script>
+
+<!-- Singleton tooltip element -->
+<div id="tt"></div>
+
+<script>
+// Alpine directive: x-tooltip="'plain string'" or x-tooltip="{ html: '...', side: 'top' }"
+document.addEventListener('alpine:init', () => {
+  Alpine.directive('tooltip', (el, { expression }, { evaluate, cleanup }) => {
+    const tt = document.getElementById('tt');
+    let timer;
+    const show = () => {
+      const v = evaluate(expression);
+      const cfg = typeof v === 'string' ? { html: v } : (v || {});
+      if (!cfg.html) return;
+      timer = setTimeout(() => {
+        tt.innerHTML = cfg.html;
+        tt.style.opacity = '1';
+        positionTip(tt, el);
+      }, 120);
+    };
+    const hide = () => { clearTimeout(timer); tt.style.opacity = '0'; };
+    el.addEventListener('mouseenter', show);
+    el.addEventListener('mouseleave', hide);
+    el.addEventListener('click', hide);
+    cleanup(() => { el.removeEventListener('mouseenter', show); el.removeEventListener('mouseleave', hide); });
+  });
+});
+
+function positionTip(tt, el) {
+  const r = el.getBoundingClientRect();
+  const tr = tt.getBoundingClientRect();
+  let x = r.left + r.width / 2 - tr.width / 2;
+  let y = r.top - tr.height - 8;
+  if (y < 8) y = r.bottom + 8;
+  x = Math.max(8, Math.min(window.innerWidth - tr.width - 8, x));
+  tt.style.left = x + 'px';
+  tt.style.top = y + 'px';
 }
 </script>
 </body>
