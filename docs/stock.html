@@ -438,7 +438,7 @@ function stockApp() {
     loading: true,
     found: false,
     scoreHistory: [],      // [{d, s}]
-    _allScores: null,      // full score_history map for global rank computation
+    lbRankSeries: [],      // [{d, rank, total, x, y}] — computed once in load()
     holdingsHistory: {},   // {ETF: [{d, r, w}]}
     leaderboardRow: null,  // single row from leaderboard for KPIs
     tierMap: {},           // ETF_Ticker -> tier name
@@ -478,6 +478,38 @@ function stockApp() {
 
         // Score history for this ticker
         this.scoreHistory = scoreData[this.ticker] || [];
+
+        // Compute global leaderboard rank per date (O(n) pre-pass, run once)
+        if (this.scoreHistory.length) {
+          // Build date -> { ticker -> score } lookup in ONE pass
+          const dateScoreMap = {};   // { date: [{tk, s}] }
+          for (const [tk, snaps] of Object.entries(scoreData)) {
+            for (const snap of snaps) {
+              if (!dateScoreMap[snap.d]) dateScoreMap[snap.d] = [];
+              dateScoreMap[snap.d].push({ tk, s: snap.s });
+            }
+          }
+          // Sort each date's list once
+          for (const arr of Object.values(dateScoreMap)) arr.sort((a, b) => b.s - a.s);
+          // Build this ticker's rank series
+          const rawSeries = [];
+          for (const snap of this.scoreHistory) {
+            const arr = dateScoreMap[snap.d];
+            if (!arr) continue;
+            const idx = arr.findIndex(x => x.tk === this.ticker);
+            if (idx === -1) continue;
+            rawSeries.push({ d: snap.d, rank: idx + 1, total: arr.length });
+          }
+          if (rawSeries.length) {
+            const maxRank = Math.max(...rawSeries.map(s => s.rank));
+            const n = rawSeries.length;
+            this.lbRankSeries = rawSeries.map((p, i) => ({
+              d: p.d, rank: p.rank, total: p.total,
+              y: ((p.rank - 1) / Math.max(1, maxRank - 1)) * 200 + 10,
+              x: (i / Math.max(1, n - 1)) * 1000,
+            }));
+          }
+        }
 
         // Holdings history for this ticker
         this.holdingsHistory = hhData[this.ticker] || {};
@@ -584,44 +616,7 @@ function stockApp() {
       return { Scout: '#c084fc', Quant: '#a5b4fc', Quality: '#5eead4', Trend: '#fcd34d', Blob: '#a1a1aa' }[tier] || '#a1a1aa';
     },
 
-    // Global leaderboard rank over time
-    // For each date, sort all tickers by score desc → find this ticker's position
-    get lbRankSeries() {
-      if (!this.ticker || !this.scoreHistory.length) return [];
-      // We need the full score_history; it was stored as scoreData at load time.
-      // Re-use what we already fetched — expose it on the component.
-      const full = this._allScores;
-      if (!full) return [];
-      const totalTickers = Object.keys(full).length;
-      // Build a date → rank map for this ticker
-      const series = [];
-      for (const snap of this.scoreHistory) {
-        const d = snap.d;
-        // Collect all ticker scores on this date
-        const scoreOnDate = [];
-        for (const [tk, snaps] of Object.entries(full)) {
-          const match = snaps.find(s => s.d === d);
-          if (match != null) scoreOnDate.push({ tk, s: match.s });
-        }
-        scoreOnDate.sort((a, b) => b.s - a.s);
-        const idx = scoreOnDate.findIndex(x => x.tk === this.ticker);
-        if (idx === -1) continue;
-        series.push({ d, rank: idx + 1, total: scoreOnDate.length });
-      }
-      if (!series.length) return [];
-      const maxRank = Math.max(...series.map(s => s.rank));
-      const H = 200, PAD = 10;
-      const n = series.length;
-      return series.map((p, i) => ({
-        d: p.d,
-        rank: p.rank,
-        total: p.total,
-        // Inverted: rank 1 → y = PAD (top), maxRank → y = H + PAD (bottom)
-        y: ((p.rank - 1) / Math.max(1, maxRank - 1)) * H + PAD,
-        x: (i / Math.max(1, n - 1)) * 1000,
-      }));
-    },
-
+    // lbRankSeries is pre-computed in load() — O(1) reads here
     get lbRankPath() {
       if (!this.lbRankSeries.length) return '';
       return this.lbRankSeries.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
