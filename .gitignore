@@ -1,0 +1,10 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Testing / cache folders
+.pytest_cache/
+
+# Local raw bundles
+predator-protocol-site-v3/
