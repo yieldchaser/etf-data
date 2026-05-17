@@ -123,25 +123,32 @@ The dashboard generates specific flags based on the composition of holdings:
 ## 🦅 Component 3: Live Dashboard (GitHub Pages)
 
 The site at **https://yieldchaser.github.io/etf-data/** runs the Predator Protocol
-scoring algorithm directly on `data/all_history.csv` and renders an interactive
-leaderboard. It replaces (or augments) the Excel Power Query workflow with a live,
-shareable, mobile-friendly view.
+scoring algorithm directly on `data/all_history.csv` and renders a premium, institutional-grade
+interactive dashboard. It augments the legacy Excel workflow with a high-performance,
+mobile-friendly Web UI.
 
-### What you get
+### 🌟 Phase 2.5 Institutional UX Features
 
-- **Leaderboard tab** — all ~920 unique tickers ranked by Final Alpha Score, with
-  day-over-day score delta, HC streak, and percentile-of-own-history bars. Click
-  any row for the per-ETF breakdown (rank, 7-day rank delta, weight flow %).
-- **ETFs tab** — pick any of the 16 ETFs, see its current holdings sorted by rank
-  with 7-day rank deltas and weight flow per holding.
-- **Changes tab** — daily turnover: who entered HIGH CONVICTION today, who exited,
-  biggest score gainers/losers, and new tickers (not seen 7+ days ago).
+The frontend has been completely modernized (Tailwind CSS + Alpine.js) with zero build dependencies, featuring:
+
+- **Global Leaderboard & Insights:**
+  - View all ~920 unique tickers ranked by Final Alpha Score, with day-over-day score deltas, HC streaks, and percentile-of-own-history progress bars.
+  - **STATUS ⓘ Column:** Dynamic badging for `HC` (High Conviction) and `NEW` entrants with singleton-driven rich tooltips replacing legacy indicators.
+  - **Daily Turnover:** Track who entered/exited HIGH CONVICTION, biggest score movers, and new discoveries (not seen in 7+ days).
+- **Per-ETF Telemetry:**
+  - Dynamic **50-slice SVG Donut Charts** supporting a 20-color institutional palette and "remaining weight" calculations for tail-end holdings.
+  - Real-time visualization of current holdings sorted by rank, weight, and 7-day rank delta.
+- **Deep-Dive Stock Analytics (`stock.html`):**
+  - **Score History:** Sparkline area charts showing score accumulation over time.
+  - **Global Leaderboard Rank History:** Clean, inverted Y-axis line chart tracking the stock's rank across the entire internal universe, utilizing O(1) pre-computed lookup maps for high-cardinality data.
+  - **Per-ETF Rank History:** Multi-line charts with tier-based coloring (Scout, Quant, Quality, Trend), drop-shadows, and precise crosshair tooltips to track performance isolated to specific ETFs.
+- **Singleton Tooltip Infrastructure:** A highly optimized, centralized DOM tooltip engine (`#tt` + `x-tooltip`) powering rich hover interactions across the entire dashboard without polluting the DOM tree.
 
 ### Architecture
 
 `scraper.py` writes `data/all_history.csv` → `predator/build.py` reads it,
 runs sanitizer + scoring + temporal analytics → writes `docs/data/*.json` →
-GitHub Pages serves `docs/`. Auto-rebuilds within ~2 min of every scraper commit
+GitHub Pages serves `docs/` using static HTML/JS. Auto-rebuilds within ~2 min of every scraper commit
 via `.github/workflows/build_site.yml`. The existing `daily_scrape.yml` is untouched.
 
 ### Algorithm
