@@ -93,7 +93,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
             leaderboard[col] = None
 
     # ── leaderboard.json — main payload for the site ──────────────────────────
-    lb_records = leaderboard.to_dict(orient="records")
+    lb_records = leaderboard.where(pd.notna(leaderboard), None).to_dict(orient="records")
     (output_dir / "leaderboard.json").write_text(json.dumps(lb_records, separators=(",", ":"), default=str))
 
     # ── holdings_latest.json — per-(ETF, ticker) detail with rank deltas ──────
@@ -107,6 +107,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
             deltas[["ETF_Ticker", "ticker", "rank_delta", "weight_flow"]],
             on=["ETF_Ticker", "ticker"], how="left"
         )
+        latest_out = latest_out.where(pd.notna(latest_out), None)
         (output_dir / "holdings_latest.json").write_text(
             json.dumps(latest_out.to_dict(orient="records"), separators=(",", ":"), default=str)
         )
