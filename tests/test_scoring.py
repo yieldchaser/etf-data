@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 from pathlib import Path
 
-from predator.scoring import Config, Sanitizer, compute_leaderboard, rank_multiplier
+from predator.scoring import Config, ETF, Sanitizer, compute_leaderboard, rank_multiplier
 from predator import history as hist
 
 
@@ -126,7 +126,21 @@ class TestScoring:
     def test_all_16_etfs_in_config(self, cfg):
         expected = {"CSD", "FPX", "FPXI", "QMOM", "IMOM", "XMMO", "XSMO", "PIE",
                     "COWZ", "CALF", "SPHQ", "SPMO", "SPHB", "RPG", "QQQM", "XLG"}
-        assert set(cfg.etf_tier_map().keys()) == expected
+        assert set(cfg.etf_lookup().keys()) == expected
+
+    def test_fpxi_and_imom_have_60_points(self, cfg):
+        """Per-ETF overrides verified against Excel ETF_Config table."""
+        lookup = cfg.etf_lookup()
+        assert lookup["FPXI"].points == 60
+        assert lookup["FPXI"].tier == "Scout"
+        assert lookup["IMOM"].points == 60
+        assert lookup["IMOM"].tier == "Quant"
+        # Others stay at their tier defaults
+        assert lookup["FPX"].points == 40
+        assert lookup["QMOM"].points == 40
+        assert lookup["COWZ"].points == 30
+        assert lookup["SPMO"].points == 10
+        assert lookup["QQQM"].points == 2
 
     def test_blob_top_rank(self, cfg):
         """Top-1 in QQQM (Blob, 2 pts) with 9% weight.

@@ -48,26 +48,45 @@ sanitizer:
 # =============================================================================
 # TIERS — Predator Protocol v1, matches the ETF_Config table in the Excel.
 # =============================================================================
-tiers:
-  - name: Scout            # Spinoffs and IPOs.
-    etfs: [CSD, FPX, FPXI]
-    points: 40
+# =============================================================================
+# ETF UNIVERSE — per-ETF tier and point assignment.
+# Matches Excel ETF_Config table exactly. FPXI and IMOM have per-ETF point
+# overrides (60) that differ from their tier's default — this is the whole
+# reason we moved away from grouping by tier.
+# =============================================================================
+etfs:
+  # Scout — spinoffs and IPOs
+  - {ticker: CSD,  tier: Scout,   points: 40}
+  - {ticker: FPX,  tier: Scout,   points: 40}
 
-  - name: Quant            # Factor-based momentum (mid/small cap, international).
-    etfs: [QMOM, IMOM, XMMO, XSMO, PIE]
-    points: 40
+  # Quant — factor-based momentum
+  - {ticker: QMOM, tier: Quant,   points: 40}
+  - {ticker: XMMO, tier: Quant,   points: 40}
+  - {ticker: XSMO, tier: Quant,   points: 40}
+  - {ticker: PIE,  tier: Quant,   points: 40}
 
-  - name: Quality          # Free cash flow and profitability screens.
-    etfs: [COWZ, CALF, SPHQ]
-    points: 30
+  # ─── International Exception ────────────────────────────────────────────
+  # FPXI and IMOM are international funds with naturally lower overlap with
+  # US-only ETFs. Bumping their points to 60 levels the playing field for
+  # global names that otherwise wouldn't accumulate score across multiple ETFs.
+  # They stay in their conceptual tier (Scout / Quant) so NEW-entry boost and
+  # SPEC-β logic continue to apply correctly.
+  - {ticker: FPXI, tier: Scout,   points: 60}
+  - {ticker: IMOM, tier: Quant,   points: 60}
 
-  - name: Trend            # Broad momentum and high-beta confirmation.
-    etfs: [SPMO, SPHB, RPG]
-    points: 10
+  # Quality — free cash flow and profitability
+  - {ticker: COWZ, tier: Quality, points: 30}
+  - {ticker: CALF, tier: Quality, points: 30}
+  - {ticker: SPHQ, tier: Quality, points: 30}
 
-  - name: Blob             # Mega-cap benchmarks. Confirmation only.
-    etfs: [QQQM, XLG]
-    points: 2
+  # Trend — momentum confirmation
+  - {ticker: SPMO, tier: Trend,   points: 10}
+  - {ticker: SPHB, tier: Trend,   points: 10}
+  - {ticker: RPG,  tier: Trend,   points: 10}
+
+  # Blob — mega-cap benchmarks
+  - {ticker: XLG,  tier: Blob,    points: 2}
+  - {ticker: QQQM, tier: Blob,    points: 2}
 
 # Rank multiplier inside each ETF (Power Query AddRankBonus step).
 rank_breakpoints:
@@ -103,7 +122,7 @@ high_conviction_min_etfs: 4
 # percentile-of-own-history, day-over-day changelog.
 # =============================================================================
 history:
-  delta_periods_days: [1, 7, 14, 30]     # Phase 2: multi-period deltas
-  rank_delta_lookback_days: 7            # backward-compat default
-  leaderboard_lookback_days: 60
+  delta_periods_days: [1, 7, 14, 30, 60, 90]    # Phase 2.5: add 60d, 90d
+  rank_delta_lookback_days: 7                    # backward-compat default
+  leaderboard_lookback_days: 120                 # bumped to cover 90d period
   changelog_top_n: 15

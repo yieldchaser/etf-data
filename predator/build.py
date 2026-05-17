@@ -133,41 +133,75 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                     "score_percentile", "days_observed"):
             leaderboard[col] = None
 
-    # ── Multi-period SCORE deltas for leaderboard.json (Phase 2 — period selector) ──
-    # For each non-primary period, compute the leaderboard at that snapshot and
-    # derive the ticker-level score_delta_pct vs the current leaderboard.
+    # ── Multi-period SCORE deltas (attach as score_deltas_by_period dict) ────
     print("\nComputing per-period score deltas for leaderboard…")
-    current_scores = leaderboard.set_index("ticker")["final_score"].to_dict()
     raw_dt = raw.copy()
     raw_dt["Holdings_As_Of"] = pd.to_datetime(raw_dt["Holdings_As_Of"], errors="coerce")
     latest_date = raw_dt["Holdings_As_Of"].max()
+    ytd_start = pd.Timestamp(year=latest_date.year, month=1, day=1)
 
-    for n_days in cfg.history.delta_periods_days:
-        if n_days == cfg.history.rank_delta_lookback_days:
-            continue  # already have score_delta / score_delta_pct from streaks merge
-        cutoff = latest_date - pd.Timedelta(days=n_days)
-        raw_past = raw_dt[raw_dt["Holdings_As_Of"] <= cutoff]
-        if raw_past.empty:
-            print(f"  {n_days}d: no data before cutoff, skipping")
-            continue
-        try:
-            lb_past, _ = compute_leaderboard(raw_past, cfg)
-            past_scores = lb_past.set_index("ticker")["final_score"].to_dict()
-            col = f"score_delta_pct_{n_days}d"
-            def _delta_pct(row, ps=past_scores):
-                t = row["ticker"]; cur = row["final_score"]
-                prev = ps.get(t)
-                if prev is None or prev == 0:
-                    return None
-                return (cur - prev) / abs(prev)
-            leaderboard[col] = leaderboard.apply(_delta_pct, axis=1)
-            filled = leaderboard[col].notna().sum()
-            print(f"  {n_days}d score delta: {filled}/{len(leaderboard)} tickers")
-        except Exception as e:
-            print(f"  {n_days}d: ERROR — {e}")
+    all_periods: list[int | str] = list(cfg.history.delta_periods_days) + ["YTD"]
+    score_deltas_by_period: dict[int | str, dict] = {}
+
+    for n in cfg.history.delta_periods_days:
+        col = f"score_delta_pct_{n}d" if n != cfg.history.rank_delta_lookback_days else None
+        if col and col in leaderboard.columns:
+            # Already computed in the period-loop above — extract to dict
+            score_deltas_by_period[n] = leaderboard.set_index("ticker")[col].fillna(0).to_dict()
+        elif n == cfg.history.rank_delta_lookback_days and "score_delta_pct" in leaderboard.columns:
+            score_deltas_by_period[n] = leaderboard.set_index("ticker")["score_delta_pct"].fillna(0).to_dict()
+        else:
+            # Re-compute from historical snapshot if column not present
+            cutoff = latest_date - pd.Timedelta(days=n)
+            raw_past = raw_dt[raw_dt["Holdings_As_Of"] <= cutoff]
+            if not raw_past.empty:
+                try:
+                    lb_past, _ = compute_leaderboard(raw_past, cfg)
+                    ps = lb_past.set_index("ticker")["final_score"].to_dict()
+                    today_s = leaderboard.set_index("ticker")["final_score"]
+                    delta = {}
+                    for t, cur in today_s.items():
+                        prev = ps.get(t)
+                        delta[t] = round((cur - prev) / abs(prev), 4) if prev and prev != 0 else 0
+                    score_deltas_by_period[n] = delta
+                except Exception as e:
+                    print(f"  {n}d score delta: ERROR — {e}")
+                    score_deltas_by_period[n] = {}
+            else:
+                score_deltas_by_period[n] = {}
+
+    # YTD delta
+    days_since_ytd = (latest_date - ytd_start).days
+    if days_since_ytd > 0:
+        raw_ytd = raw_dt[raw_dt["Holdings_As_Of"] <= ytd_start]
+        if not raw_ytd.empty:
+            try:
+                lb_ytd, _ = compute_leaderboard(raw_ytd, cfg)
+                ps_ytd = lb_ytd.set_index("ticker")["final_score"].to_dict()
+                today_s = leaderboard.set_index("ticker")["final_score"]
+                ytd_delta = {}
+                for t, cur in today_s.items():
+                    prev = ps_ytd.get(t)
+                    ytd_delta[t] = round((cur - prev) / abs(prev), 4) if prev and prev != 0 else 0
+                score_deltas_by_period["YTD"] = ytd_delta
+                print(f"  YTD score delta: {len(ytd_delta)} tickers (from {ytd_start.date()})")
+            except Exception as e:
+                print(f"  YTD score delta: ERROR — {e}")
+                score_deltas_by_period["YTD"] = {}
+        else:
+            score_deltas_by_period["YTD"] = {}
+    else:
+        score_deltas_by_period["YTD"] = {}
 
     # ── leaderboard.json — main payload for the site ──────────────────────────
     lb_records = leaderboard.to_dict(orient="records")
+    # Attach per-period score deltas to every record
+    for r in lb_records:
+        t = r.get("ticker", "")
+        r["score_deltas_by_period"] = {
+            str(p): round(float(score_deltas_by_period.get(p, {}).get(t, 0)), 4)
+            for p in all_periods
+        }
     (output_dir / "leaderboard.json").write_text(_dumps(lb_records, separators=(",", ":")))
 
     # ── holdings_latest.json — per-(ETF, ticker) detail with rank deltas ──────
@@ -285,7 +319,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                 "blocked_tickers": list(cfg.sanitizer.blocked_tickers),
                 "blocked_name_patterns": list(cfg.sanitizer.blocked_name_patterns),
             },
-            "tiers": [{"name": t.name, "etfs": list(t.etfs), "points": t.points} for t in cfg.tiers],
+            "etfs": [{"ticker": e.ticker, "tier": e.tier, "points": e.points} for e in cfg.etfs],
             "rank_breakpoints": [list(b) for b in cfg.rank_breakpoints],
             "new_lookback_days": cfg.new_lookback_days,
             "new_bonus_mult": cfg.new_bonus_mult,

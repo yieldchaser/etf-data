@@ -26,10 +26,15 @@ HOLDINGS_COLUMNS = ["ETF_Ticker", "ticker", "name", "weight", "Holdings_As_Of", 
 
 
 @dataclass(frozen=True)
-class Tier:
-    name: str
-    etfs: tuple[str, ...]
+class ETF:
+    """One row from the ETF universe — ticker, tier name, point weight."""
+    ticker: str
+    tier: str
     points: int
+
+
+# Backward-compat alias (some code may still reference Tier)
+Tier = ETF
 
 
 @dataclass(frozen=True)
@@ -126,7 +131,7 @@ class HistoryConfig:
 @dataclass(frozen=True)
 class Config:
     sanitizer: Sanitizer
-    tiers: tuple[Tier, ...]
+    etfs: tuple[ETF, ...]                               # was: tiers
     rank_breakpoints: tuple[tuple[int, float], ...]
     new_lookback_days: int
     new_bonus_mult: float
@@ -145,9 +150,9 @@ class Config:
             ticker_replacements=tuple((k, v) for k, v in san.get("ticker_replacements", {}).items()),
             ticker_renames=dict(san.get("ticker_renames", {})),
         )
-        tiers = tuple(
-            Tier(name=t["name"], etfs=tuple(t["etfs"]), points=int(t["points"]))
-            for t in cfg["tiers"]
+        etfs = tuple(
+            ETF(ticker=e["ticker"], tier=e["tier"], points=int(e["points"]))
+            for e in cfg["etfs"]
         )
         h_cfg = cfg.get("history", {})
         _periods_raw = h_cfg.get("delta_periods_days", None)
@@ -164,7 +169,7 @@ class Config:
         )
         return cls(
             sanitizer=sanitizer,
-            tiers=tiers,
+            etfs=etfs,
             rank_breakpoints=tuple((int(b["rank_max"]), float(b["multiplier"]))
                                    for b in cfg["rank_breakpoints"]),
             new_lookback_days=int(cfg["new_lookback_days"]),
@@ -174,8 +179,33 @@ class Config:
             history=history,
         )
 
-    def etf_tier_map(self) -> dict[str, Tier]:
-        return {etf: tier for tier in self.tiers for etf in tier.etfs}
+    def etf_lookup(self) -> dict[str, ETF]:
+        """O(1) lookup from ticker to ETF metadata."""
+        return {e.ticker: e for e in self.etfs}
+
+    def etfs_in_tier(self, tier: str) -> tuple[str, ...]:
+        """All ETF tickers belonging to the given tier."""
+        return tuple(e.ticker for e in self.etfs if e.tier == tier)
+
+    def all_tier_names(self) -> tuple[str, ...]:
+        """Unique tier names in insertion order."""
+        seen: set[str] = set()
+        out: list[str] = []
+        for e in self.etfs:
+            if e.tier not in seen:
+                seen.add(e.tier)
+                out.append(e.tier)
+        return tuple(out)
+
+    def etf_tier_map(self) -> dict[str, ETF]:
+        """Backward-compat alias for etf_lookup()."""
+        return self.etf_lookup()
+
+    # Backward-compat: some callers may access cfg.tiers to list ETF groups.
+    # Return a tuple-of-ETF (same as self.etfs) so existing code doesn't break.
+    @property
+    def tiers(self) -> tuple[ETF, ...]:
+        return self.etfs
 
 
 def rank_multiplier(rank: int, breakpoints: Iterable[tuple[int, float]]) -> float:
@@ -214,9 +244,9 @@ def compute_leaderboard(
     df["Holdings_As_Of"] = pd.to_datetime(df["Holdings_As_Of"], errors="coerce")
     df = df.dropna(subset=["Holdings_As_Of", "ticker", "weight"])
 
-    # Restrict ETFs to those in tier config
-    etf_to_tier = cfg.etf_tier_map()
-    df = df[df["ETF_Ticker"].isin(etf_to_tier)].copy()
+    # Restrict ETFs to those in config
+    etf_lookup = cfg.etf_lookup()
+    df = df[df["ETF_Ticker"].isin(etf_lookup)].copy()
 
     # Apply sanitizer (block list + ticker standardization)
     df = cfg.sanitizer.apply(df)
@@ -252,9 +282,9 @@ def compute_leaderboard(
     pair_index = pd.Series(list(zip(latest["ETF_Ticker"], latest["ticker"])), index=latest.index)
     latest["is_new"] = ~pair_index.isin(historical_pairs)
 
-    # Tier metadata
-    latest["tier"] = latest["ETF_Ticker"].map(lambda e: etf_to_tier[e].name)
-    latest["tier_points"] = latest["ETF_Ticker"].map(lambda e: etf_to_tier[e].points)
+    # Per-ETF tier and point lookup (supports per-ETF overrides like FPXI=60, IMOM=60)
+    latest["tier"] = latest["ETF_Ticker"].map(lambda e: etf_lookup[e].tier)
+    latest["tier_points"] = latest["ETF_Ticker"].map(lambda e: etf_lookup[e].points)
     latest["rank_mult"] = latest["rank"].apply(lambda r: rank_multiplier(r, cfg.rank_breakpoints))
 
     # ── SCORE FORMULA (matches Power Query AddScore step in Master_Leaderboard) ──
@@ -315,11 +345,11 @@ def compute_rank_deltas(
     if lookback_days is None:
         lookback_days = cfg.history.rank_delta_lookback_days  # default = delta_periods_days[1] or first
 
-    etf_to_tier = cfg.etf_tier_map()
+    etf_lookup = cfg.etf_lookup()
     df = history.copy()
     df["Holdings_As_Of"] = pd.to_datetime(df["Holdings_As_Of"], errors="coerce")
     df = df.dropna(subset=["Holdings_As_Of", "ticker", "weight"])
-    df = df[df["ETF_Ticker"].isin(etf_to_tier)]
+    df = df[df["ETF_Ticker"].isin(etf_lookup)]
     df = cfg.sanitizer.apply(df)
     if df.empty:
         return pd.DataFrame(columns=["ETF_Ticker", "ticker", "rank_now", "rank_then",
