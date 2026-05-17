@@ -41,6 +41,18 @@
     @keyframes pulse-fade { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
     .pulse-load { animation: pulse-fade 1.4s ease-in-out infinite; }
     .tab-active { background: rgba(34, 211, 238, 0.08); color: var(--cyan); border-color: rgba(34, 211, 238, 0.3); }
+    /* Singleton tooltip */
+    #tt { position: fixed; z-index: 9999; pointer-events: none; opacity: 0;
+          transition: opacity 0.15s; max-width: 260px; line-height: 1.5;
+          background: var(--surface-2); border: 1px solid var(--border-2);
+          color: var(--text); padding: 6px 10px; border-radius: 6px;
+          font-size: 11px; box-shadow: 0 4px 20px rgba(0,0,0,0.6); }
+    /* Crosshair chart */
+    .chart-wrap { position: relative; }
+    .chart-wrap svg { display: block; }
+    .crosshair-line { stroke: rgba(255,255,255,0.15); stroke-width: 1; stroke-dasharray: 3 3; pointer-events: none; }
+    .crosshair-dot  { fill: var(--cyan); pointer-events: none; }
+    .chart-tooltip  { position: absolute; pointer-events: none; background: var(--surface-2); border: 1px solid var(--border-2); border-radius: 6px; padding: 5px 9px; font-size: 11px; white-space: nowrap; }
   </style>
 </head>
 <body>
@@ -97,7 +109,7 @@
   <div x-show="!loading && found">
 
     <!-- KPI strip -->
-    <section class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-5">
+    <section class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-3">
       <template x-for="kpi in kpis" :key="kpi.label">
         <div class="rounded-lg px-3 py-2.5 border" style="background: var(--surface); border-color: var(--border)">
           <div class="label" x-text="kpi.label"></div>
@@ -109,24 +121,84 @@
       </template>
     </section>
 
-    <!-- SCORE SPARKLINE -->
+    <!-- B6: Status / HC banner -->
+    <div class="rounded-lg border mb-5 px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs"
+         style="background: var(--surface); border-color: var(--border)">
+      <!-- Flag badge -->
+      <div x-show="leaderboardRow?.flag === 'HIGH_CONVICTION'" class="flex items-center gap-2">
+        <span class="chip" style="background: rgba(52,211,153,0.12); color: var(--up); border: 1px solid rgba(52,211,153,0.3)">HC</span>
+        <span style="color: var(--up)" x-text="`High Conviction · ${leaderboardRow?.hc_streak || 0} day streak`"></span>
+      </div>
+      <div x-show="leaderboardRow?.flag === 'SPECULATIVE_BETA'" class="flex items-center gap-2">
+        <span class="chip" style="background: rgba(251,191,36,0.12); color: var(--amber); border: 1px solid rgba(251,191,36,0.3)">SPEC β</span>
+        <span style="color: var(--amber)">Speculative Beta — Trend tier without Quality/Scout backing</span>
+      </div>
+      <div x-show="!leaderboardRow?.flag" class="flex items-center gap-2">
+        <span class="chip" style="background: rgba(255,255,255,0.04); color: var(--text-3); border: 1px solid rgba(255,255,255,0.10)">NEUTRAL</span>
+        <span style="color: var(--text-3)">No flag · watching</span>
+      </div>
+      <!-- Tier badges -->
+      <div class="flex items-center gap-1 ml-auto flex-wrap">
+        <template x-for="t in (leaderboardRow?.tiers || '').split(' + ').filter(Boolean)" :key="t">
+          <span class="chip" :style="tierChipStyle(t)" x-text="t"></span>
+        </template>
+      </div>
+      <!-- Any-new badge -->
+      <span x-show="leaderboardRow?.any_new" class="chip"
+            style="background: rgba(96,165,250,0.12); color: #60a5fa; border: 1px solid rgba(96,165,250,0.3)">NEW</span>
+    </div>
+
+    <!-- SCORE CHART (B2 — crosshair) -->
     <div class="rounded-lg border mb-5" style="background: var(--surface); border-color: var(--border)">
       <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
         <div class="label-cyan label">Score history — <span class="font-mono" x-text="ticker"></span> · <span class="num" x-text="scoreHistory.length"></span> snapshots</div>
         <div class="text-xs num font-mono" style="color: var(--text-3)" x-text="scoreHistory.length ? `${scoreHistory[0].d} → ${scoreHistory[scoreHistory.length-1].d}` : ''"></div>
       </div>
-      <div class="p-3">
+      <div class="p-3 chart-wrap" x-data="{ cx: null, ci: null }"
+           @mousemove="
+             const svg = $el.querySelector('svg');
+             if (!svg || scoreHistory.length < 2) return;
+             const rect = svg.getBoundingClientRect();
+             const rx = $event.clientX - rect.left;
+             const idx = Math.round((rx / rect.width) * (scoreHistory.length - 1));
+             ci = Math.max(0, Math.min(scoreHistory.length - 1, idx));
+             cx = (ci / (scoreHistory.length - 1)) * rect.width;
+           "
+           @mouseleave="ci = null; cx = null">
         <div x-show="scoreHistory.length < 2" class="py-8 text-center text-xs" style="color: var(--text-3)">Insufficient history (need ≥2 snapshots)</div>
         <svg x-show="scoreHistory.length >= 2" width="100%" height="120" viewBox="0 0 900 120" preserveAspectRatio="none" style="display:block">
           <!-- Area fill -->
           <path :d="sparkAreaPath(scoreHistory)" fill="rgba(34,211,238,0.07)"/>
           <!-- Line -->
-          <path :d="sparkLinePath(scoreHistory)" fill="none" stroke="var(--cyan)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path :d="sparkLinePath(scoreHistory)" fill="none" stroke="var(--cyan)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- Crosshair vertical line -->
+          <template x-if="ci !== null">
+            <line class="crosshair-line"
+                  :x1="(ci / (scoreHistory.length - 1)) * 900"
+                  y1="0"
+                  :x2="(ci / (scoreHistory.length - 1)) * 900"
+                  y2="120"/>
+          </template>
+          <!-- Crosshair dot -->
+          <template x-if="ci !== null">
+            <circle class="crosshair-dot"
+                    :cx="(ci / (scoreHistory.length - 1)) * 900"
+                    :cy="sparkY(scoreHistory[ci].s, scoreHistory)"
+                    r="4"/>
+          </template>
           <!-- Last point dot -->
-          <template x-if="scoreHistory.length >= 2">
+          <template x-if="scoreHistory.length >= 2 && ci === null">
             <circle :cx="sparkX(scoreHistory.length - 1, scoreHistory.length)" :cy="sparkY(scoreHistory[scoreHistory.length-1].s, scoreHistory)" r="3" fill="var(--cyan)"/>
           </template>
         </svg>
+        <!-- Crosshair tooltip label -->
+        <div x-show="ci !== null"
+             class="chart-tooltip"
+             :style="`top: 4px; left: ${Math.min(cx + 8, 300)}px`">
+          <span class="font-mono num" style="color: var(--cyan)" x-text="scoreHistory[ci]?.s?.toFixed(1)"></span>
+          <span style="color: var(--text-3)"> · </span>
+          <span style="color: var(--text-2)" x-text="scoreHistory[ci]?.d"></span>
+        </div>
         <!-- X-axis date labels -->
         <div class="flex justify-between text-[10px] font-mono mt-1" style="color: var(--text-3)">
           <span x-text="scoreHistory[0]?.d?.slice(5) || ''"></span>
@@ -230,7 +302,13 @@ function stockApp() {
         // We load metadata separately
         try {
           const meta = await fetch('data/metadata.json').then(r => r.json());
-          (meta.config_snapshot?.tiers || []).forEach(t => t.etfs.forEach(e => this.tierMap[e] = t.name));
+          // Support new flat etfs[] format AND old tiers[] format
+          const etfsMeta = meta.config_snapshot?.etfs || [];
+          if (etfsMeta.length) {
+            etfsMeta.forEach(e => this.tierMap[e.ticker] = e.tier);
+          } else {
+            (meta.config_snapshot?.tiers || []).forEach(t => t.etfs.forEach(e => this.tierMap[e] = t.name));
+          }
         } catch {}
 
         // Score history for this ticker
