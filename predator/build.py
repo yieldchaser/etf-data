@@ -21,10 +21,41 @@ Usage:
 from __future__ import annotations
 import argparse
 import json
+import math
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 import pandas as pd
+
+
+class _SafeEncoder(json.JSONEncoder):
+    """Encode NaN / ±Inf floats as JSON null instead of invalid bare NaN.
+
+    Python's built-in json module emits NaN as the bare token ``NaN`` which is
+    not valid JSON (ECMA-404 / RFC 8259).  Pandas DataFrames merged with a
+    left-join produce float NaN for missing rows even when the source Python
+    values were None, because Pandas upcasts nullable object columns to
+    float64.  This encoder intercepts those values at serialisation time and
+    replaces them with JSON ``null``.
+    """
+    def iterencode(self, o, _one_shot=False):
+        # Walk the object tree once and sanitise in-place before encoding.
+        return super().iterencode(self._sanitise(o), _one_shot)
+
+    def _sanitise(self, obj):
+        if isinstance(obj, float):
+            return None if (math.isnan(obj) or math.isinf(obj)) else obj
+        if isinstance(obj, dict):
+            return {k: self._sanitise(v) for k, v in obj.items()}
+        if isinstance(obj, (list, tuple)):
+            return [self._sanitise(v) for v in obj]
+        return obj
+
+
+def _dumps(obj, **kwargs) -> str:
+    """json.dumps using _SafeEncoder (NaN → null)."""
+    kwargs.setdefault("cls", _SafeEncoder)
+    return json.dumps(obj, **kwargs)
 
 if sys.platform.startswith("win"):
     try:
@@ -93,8 +124,8 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
             leaderboard[col] = None
 
     # ── leaderboard.json — main payload for the site ──────────────────────────
-    lb_records = leaderboard.where(pd.notna(leaderboard), None).to_dict(orient="records")
-    (output_dir / "leaderboard.json").write_text(json.dumps(lb_records, separators=(",", ":"), default=str))
+    lb_records = leaderboard.to_dict(orient="records")
+    (output_dir / "leaderboard.json").write_text(_dumps(lb_records, separators=(",", ":")))
 
     # ── holdings_latest.json — per-(ETF, ticker) detail with rank deltas ──────
     if not latest.empty:
@@ -107,13 +138,12 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
             deltas[["ETF_Ticker", "ticker", "rank_delta", "weight_flow"]],
             on=["ETF_Ticker", "ticker"], how="left"
         )
-        latest_out = latest_out.where(pd.notna(latest_out), None)
         (output_dir / "holdings_latest.json").write_text(
-            json.dumps(latest_out.to_dict(orient="records"), separators=(",", ":"), default=str)
+            _dumps(latest_out.to_dict(orient="records"), separators=(",", ":"))
         )
 
     # ── changelog.json — entries / exits / movers ─────────────────────────────
-    (output_dir / "changelog.json").write_text(json.dumps(chg, indent=2, default=str))
+    (output_dir / "changelog.json").write_text(_dumps(chg, indent=2))
 
     # ── score_history.parquet + JSON — for sparklines ─────────────────────────
     if not score_pnl.empty:
@@ -127,7 +157,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                 series = score_pnl.loc[t].dropna()
                 spark[t] = [{"d": d.strftime("%Y-%m-%d"), "s": round(float(v), 2)}
                              for d, v in series.items()]
-        (output_dir / "score_history.json").write_text(json.dumps(spark, separators=(",", ":")))
+        (output_dir / "score_history.json").write_text(_dumps(spark, separators=(",", ":")))
 
     # ── leaderboard.parquet — for DuckDB-WASM time-travel queries ─────────────
     leaderboard.to_parquet(output_dir / "leaderboard.parquet", index=False)
@@ -176,7 +206,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
             "high_conviction_min_etfs": cfg.high_conviction_min_etfs,
         },
     }
-    (output_dir / "metadata.json").write_text(json.dumps(metadata, indent=2))
+    (output_dir / "metadata.json").write_text(_dumps(metadata, indent=2))
 
     # Quick summary
     print(f"\n✓ Wrote outputs to {output_dir}/")
