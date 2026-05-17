@@ -345,8 +345,8 @@
                 <th class="text-left px-3 py-2 label">Flags</th>
               </tr>
             </thead>
-            <tbody>
-              <template x-for="h in etfHoldings" :key="`${h.ETF_Ticker}-${h.ticker}`">
+            <template x-for="h in etfHoldings" :key="`${h.ETF_Ticker}-${h.ticker}`">
+              <tbody>
                 <tr class="row-hover" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
                   <td class="px-3 py-1.5 num font-mono" style="color: var(--text-3)" x-text="`#${h.rank}`"></td>
                   <td class="px-3 py-1.5 font-medium font-mono" x-text="h.ticker"></td>
@@ -359,8 +359,8 @@
                     <span x-show="h.is_new" class="chip" style="background: rgba(96, 165, 250, 0.10); color: var(--blue); border: 1px solid rgba(96, 165, 250, 0.25)">NEW</span>
                   </td>
                 </tr>
-              </template>
-            </tbody>
+              </tbody>
+            </template>
           </table>
         </div>
       </div>
