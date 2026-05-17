@@ -208,6 +208,88 @@
       </div>
     </div>
 
+    <!-- RANK HISTORY CHART (B2 — per-ETF rank lines) -->
+    <div class="rounded-lg border mb-5" style="background: var(--surface); border-color: var(--border)">
+      <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
+        <div class="label-cyan label">Rank history — across ETFs holding <span class="font-mono" x-text="ticker"></span></div>
+        <div class="text-xs" style="color: var(--text-3)">rank 1 = top of ETF · line up = improving</div>
+      </div>
+      <div x-show="Object.keys(holdingsHistory).length === 0" class="py-8 text-center text-xs" style="color: var(--text-3)">No holdings history available</div>
+      <div x-show="Object.keys(holdingsHistory).length > 0"
+           class="p-3 chart-wrap" x-data="{ rcx: null, rci: null, rhover: null }"
+           @mousemove="
+             const svg = $el.querySelector('svg');
+             if (!svg || !rankLines.length) return;
+             const rect = svg.getBoundingClientRect();
+             const rx = $event.clientX - rect.left;
+             const maxLen = Math.max(...rankLines.map(l => l.series.length));
+             if (maxLen < 2) return;
+             const idx = Math.round((rx / rect.width) * (maxLen - 1));
+             rci = Math.max(0, Math.min(maxLen - 1, idx));
+             rcx = rect.width > 0 ? (rci / (maxLen - 1)) * rect.width : null;
+           "
+           @mouseleave="rci = null; rcx = null">
+        <svg viewBox="0 0 1000 220" class="w-full" style="height: 220px; overflow: visible">
+          <!-- Y-axis grid: rank lines at 25% intervals -->
+          <template x-for="y in [0.25, 0.5, 0.75]" :key="y">
+            <line :x1="0" :x2="960" :y1="y * 200 + 10" :y2="y * 200 + 10"
+                  stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+          </template>
+          <!-- One line per ETF -->
+          <template x-for="line in rankLines" :key="line.etf">
+            <g>
+              <path :d="line.path" :stroke="line.color" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"
+                    :opacity="rhover && rhover !== line.etf ? 0.25 : 1"
+                    @mouseenter="rhover = line.etf" @mouseleave="rhover = null"
+                    style="transition: opacity 0.15s"/>
+              <!-- ETF label at the end -->
+              <text :x="Math.min(line.endX + 6, 990)" :y="line.endY + 4"
+                    :fill="line.color" style="font-family: ui-monospace; font-size: 9px"
+                    x-text="line.etf"></text>
+              <!-- Crosshair dot if hovered -->
+              <template x-if="rci !== null && rci < line.series.length">
+                <circle :cx="(rci / Math.max(1, line.series.length - 1)) * 1000"
+                        :cy="line.series[rci].y"
+                        r="3" :fill="line.color" stroke="#000" stroke-width="1.5"/>
+              </template>
+            </g>
+          </template>
+          <!-- Crosshair vertical -->
+          <template x-if="rci !== null">
+            <line class="crosshair-line"
+                  :x1="(rci / Math.max(1, Math.max(...rankLines.map(l => l.series.length)) - 1)) * 1000"
+                  y1="0"
+                  :x2="(rci / Math.max(1, Math.max(...rankLines.map(l => l.series.length)) - 1)) * 1000"
+                  y2="220"/>
+          </template>
+        </svg>
+        <!-- Hover tooltip: show all ETF ranks at hovered index -->
+        <div x-show="rci !== null" class="chart-tooltip" :style="`top: 4px; left: ${Math.min((rcx || 0) + 8, 300)}px`">
+          <div class="font-mono text-[10px] mb-1" style="color: var(--text-3)"
+               x-text="rankLines[0]?.series[rci]?.d || ''">
+          </div>
+          <template x-for="line in rankLines" :key="line.etf">
+            <div x-show="rci < line.series.length" class="flex items-center gap-2 text-[10px]">
+              <span class="font-mono" :style="`color: ${line.color}`" x-text="line.etf"></span>
+              <span class="num font-mono" style="color: var(--text-2)" x-text="'#' + line.series[rci]?.r"></span>
+            </div>
+          </template>
+        </div>
+        <!-- Legend row -->
+        <div class="flex flex-wrap gap-3 mt-2 text-[10px]" style="color: var(--text-2)">
+          <template x-for="line in rankLines" :key="line.etf">
+            <div class="flex items-center gap-1.5"
+                 @mouseenter="rhover = line.etf" @mouseleave="rhover = null"
+                 :style="rhover === line.etf ? 'color: var(--text)' : ''">
+              <span class="inline-block w-6 h-0.5 rounded" :style="`background: ${line.color}`"></span>
+              <span class="font-mono" x-text="line.etf"></span>
+              <span style="color: var(--text-3)" x-text="'(' + line.tier + ')'"></span>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+
     <!-- HOLDINGS HISTORY TABLE PER ETF -->
     <div class="rounded-lg border mb-5" style="background: var(--surface); border-color: var(--border)">
       <div class="px-3 py-2" style="border-bottom: 1px solid var(--border)">
@@ -385,6 +467,38 @@ function stockApp() {
       if (!series.length) return '';
       const line = series.map((p, i) => `${i === 0 ? 'M' : 'L'}${this.sparkX(i, series.length)},${this.sparkY(p.s, series)}`).join(' ');
       return `${line} L${this.sparkX(series.length - 1, series.length)},115 L0,115 Z`;
+    },
+
+    // Rank History chart
+    get rankLines() {
+      const hh = this.holdingsHistory;
+      const allRanks = Object.values(hh).flat().map(p => p.r).filter(Boolean);
+      const maxRank = Math.max(...allRanks, 10);
+      const lines = [];
+      for (const etf of Object.keys(hh).sort()) {
+        const rows = hh[etf];
+        if (!rows || !rows.length) continue;
+        const n = rows.length;
+        const tier = this.tierMap[etf] || 'Blob';
+        const color = this.tierLineColor(tier);
+        // Build series with computed Y coordinates (inverted: rank 1 at top)
+        const series = rows.map((p, i) => ({
+          r: p.r, d: p.d,
+          y: ((p.r - 1) / Math.max(1, maxRank - 1)) * 200 + 10,
+          x: (i / Math.max(1, n - 1)) * 1000,
+        }));
+        const path = series.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+        lines.push({
+          etf, path, color, tier, series,
+          endX: series[series.length - 1].x,
+          endY: series[series.length - 1].y,
+        });
+      }
+      return lines;
+    },
+
+    tierLineColor(tier) {
+      return { Scout: '#c084fc', Quant: '#a5b4fc', Quality: '#5eead4', Trend: '#fcd34d', Blob: '#a1a1aa' }[tier] || '#a1a1aa';
     },
 
     // Formatting
