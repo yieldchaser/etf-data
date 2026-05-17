@@ -13,11 +13,17 @@ sanitizer:
   blocked_tickers:
     - USD
     - $USD
+    - $CAD            # VBA blocks it; harmless since none should slip through
+    - Cash&Other      # placeholder ticker seen in live data
+    - "-"             # some scrapes emit literal "-" for unidentified rows
 
   # Power Query: [Company] <> "Short-Term Investment Trust - Invesco Government & Agency Portfolio"
   # Exact company-name match (case-insensitive). This is how the Excel filters AGPXX.
   blocked_name_exact:
     - "Short-Term Investment Trust - Invesco Government & Agency Portfolio"
+    - "Cash & Other"  # exact name match for placeholder
+    - "Cash"
+    - "Other"
 
   # Substring match (case-insensitive). Empty by default to mirror Power Query.
   # Uncomment for the more aggressive VBA-style filter that also drops cash
@@ -32,6 +38,7 @@ sanitizer:
   ticker_replacements:
     "-": "."
     "/": "."
+    " ": "."          # collapse whitespace inside tickers (e.g., "8058 JP" → "8058.JP")
 
   # Dual-class share consolidation (Power Query FixGoogle step).
   # Merges these tickers so they group together in the leaderboard.
@@ -96,6 +103,7 @@ high_conviction_min_etfs: 4
 # percentile-of-own-history, day-over-day changelog.
 # =============================================================================
 history:
-  rank_delta_lookback_days: 7
+  delta_periods_days: [1, 7, 14, 30]     # Phase 2: multi-period deltas
+  rank_delta_lookback_days: 7            # backward-compat default
   leaderboard_lookback_days: 60
   changelog_top_n: 15

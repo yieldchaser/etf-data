@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Predator Protocol · Markets</title>
+  <meta name="description" content="Global market dashboard: indices, commodities, FX, crypto, volatility, rates and economic data.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📈%3C/text%3E%3C/svg%3E">
+  <meta name="color-scheme" content="dark">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+  <style>
+    :root {
+      --bg: #000; --surface: #0a0a0a; --surface-2: #111;
+      --border: rgba(255,255,255,0.06); --border-2: rgba(255,255,255,0.10);
+      --text: #e4e4e7; --text-2: #a1a1aa; --text-3: #52525b;
+      --cyan: #22d3ee; --up: #34d399; --down: #fb7185; --amber: #fbbf24;
+    }
+    html, body { background: var(--bg); color: var(--text); }
+    body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Inter", sans-serif; }
+    .num, table td, .mono { font-variant-numeric: tabular-nums; }
+    .font-mono { font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; }
+    .label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); }
+    .label-cyan { color: var(--cyan); }
+    .chip { display: inline-flex; align-items: center; padding: 1px 6px; border-radius: 4px; font-size: 10.5px; font-weight: 500; line-height: 1.5; white-space: nowrap; letter-spacing: 0.02em; }
+    .tab-active { background: rgba(34,211,238,0.08); color: var(--cyan); border-color: rgba(34,211,238,0.3); }
+    .row-hover:hover { background: rgba(34,211,238,0.025); }
+    .scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
+    .scrollbar::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+    .scrollbar::-webkit-scrollbar-track { background: transparent; }
+    [x-cloak] { display: none !important; }
+    @keyframes pulse-fade { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+    .pulse-load { animation: pulse-fade 1.4s ease-in-out infinite; }
+    .sort-asc::after  { content: "▲"; margin-left: 4px; opacity: 0.6; font-size: 9px; }
+    .sort-desc::after { content: "▼"; margin-left: 4px; opacity: 0.6; font-size: 9px; }
+    /* Mini sparkline bars */
+    .bar-pos { background: var(--up); opacity: 0.7; }
+    .bar-neg { background: var(--down); opacity: 0.7; }
+    .bar-flat { background: var(--text-3); opacity: 0.4; }
+  </style>
+</head>
+<body>
+<div x-data="marketsApp()" x-init="load()" x-cloak class="max-w-[1500px] mx-auto px-3 sm:px-5 py-4 sm:py-6">
+
+  <!-- HEADER -->
+  <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5 pb-4 border-b" style="border-color: var(--border)">
+    <div>
+      <div class="flex items-center gap-3 mb-1">
+        <a href="index.html" class="label hover:text-zinc-400 transition" style="text-decoration: none;">← PREDATOR PROTOCOL</a>
+        <span class="label">›</span>
+        <span class="label-cyan label">MARKETS</span>
+      </div>
+      <div class="flex items-baseline gap-3 mt-1">
+        <h1 class="text-base font-medium" style="color: var(--cyan)">GLOBAL MARKETS</h1>
+        <span class="label" x-text="meta.generated_at_utc ? `Updated ${meta.generated_at_utc.slice(0,10)}` : 'Loading…'"></span>
+      </div>
+    </div>
+    <div class="text-xs" style="color: var(--text-3)" x-text="`${series.length} series loaded`"></div>
+  </header>
+
+  <!-- NAV -->
+  <nav class="flex flex-wrap gap-1 mb-5 text-xs items-center">
+    <a href="index.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color: var(--text-2); border-color: var(--border); text-decoration: none;">Dashboard</a>
+    <template x-for="k in kinds" :key="k.id">
+      <button @click="activeKind = k.id"
+              :class="activeKind === k.id ? 'tab-active' : ''"
+              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition"
+              :style="activeKind === k.id ? '' : 'color: var(--text-2); border-color: var(--border)'">
+        <span x-text="k.label"></span>
+        <span class="num font-mono ml-1 opacity-60" x-text="`(${k.count})`"></span>
+      </button>
+    </template>
+    <a href="sim.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color: var(--text-2); border-color: var(--border); text-decoration: none;">Simulator</a>
+  </nav>
+
+  <!-- LOADING -->
+  <div x-show="loading" class="pulse-load text-center py-20" style="color: var(--text-3)">
+    <div class="text-lg mb-2">Loading markets data…</div>
+    <div class="text-xs">If this is your first build, run: <code>python -m markets.fetch_yf</code> then <code>python -m markets.build</code></div>
+  </div>
+
+  <!-- ERROR / EMPTY -->
+  <div x-show="!loading && series.length === 0" class="text-center py-20">
+    <div class="text-base mb-2" style="color: var(--down)">No markets data found</div>
+    <div class="text-xs mb-4" style="color: var(--text-3)">Run: <code>python -m markets.fetch_yf && python -m markets.build</code></div>
+    <a href="index.html" class="text-xs px-3 py-1.5 rounded-md border transition" style="color: var(--cyan); border-color: rgba(34,211,238,0.3); text-decoration: none;">← Dashboard</a>
+  </div>
+
+  <!-- MARKET OVERVIEW GRID -->
+  <div x-show="!loading && series.length > 0">
+
+    <!-- Filter row -->
+    <div class="flex flex-col sm:flex-row gap-2 items-stretch mb-4">
+      <input x-model="q" type="search" placeholder="search symbol or label…"
+             class="flex-1 bg-transparent border rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500/40"
+             style="border-color: var(--border-2); color: var(--text)">
+      <div class="text-xs num font-mono self-center whitespace-nowrap" style="color: var(--text-3)">
+        <span x-text="filteredSeries.length"></span> / <span x-text="series.length"></span>
+      </div>
+    </div>
+
+    <!-- Heatmap-style cards grid -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-6">
+      <template x-for="s in filteredSeries" :key="s.symbol">
+        <div @click="selected = selected?.symbol === s.symbol ? null : s"
+             class="rounded-lg border cursor-pointer transition-all hover:border-zinc-600"
+             :class="selected?.symbol === s.symbol ? 'border-cyan-500/30' : ''"
+             style="background: var(--surface); border-color: var(--border)">
+
+          <div class="px-3 py-2.5">
+            <!-- Label and kind chip -->
+            <div class="flex items-center justify-between mb-0.5">
+              <div class="font-mono font-medium text-xs" x-text="s.symbol"></div>
+              <div class="label text-[9px]" x-text="s.kind"></div>
+            </div>
+            <div class="label mb-2" x-text="s.label" style="font-size: 9px; text-transform: none; color: var(--text-3)"></div>
+
+            <!-- Close price + day change -->
+            <div class="flex items-baseline gap-2">
+              <div class="text-lg font-medium num font-mono" x-text="fmtClose(s.stats?.close_today)"></div>
+              <div class="text-xs num font-mono font-medium" :style="`color: ${pctColor(s.stats?.day_pct)}`" x-text="fmtPct(s.stats?.day_pct)"></div>
+            </div>
+
+            <!-- Mini bar chart (last 20 sessions) -->
+            <div class="flex items-end gap-px mt-2" style="height: 22px">
+              <template x-for="(row, i) in (s.log || []).slice(-20)" :key="i">
+                <div class="flex-1 rounded-sm transition"
+                     :class="row.pct > 0 ? 'bar-pos' : row.pct < 0 ? 'bar-neg' : 'bar-flat'"
+                     :style="`height: ${barHeight(row.pct, s.log)}px`"></div>
+              </template>
+            </div>
+
+            <!-- Sub-stats row -->
+            <div class="flex gap-4 mt-2 text-[10px] num font-mono" style="color: var(--text-3)">
+              <span>7d: <span :style="`color: ${pctColor(s.stats?.week_pct)}`" x-text="fmtPct(s.stats?.week_pct)"></span></span>
+              <span>1m: <span :style="`color: ${pctColor(s.stats?.month_pct)}`" x-text="fmtPct(s.stats?.month_pct)"></span></span>
+              <span>YTD: <span :style="`color: ${pctColor(s.stats?.ytd_pct)}`" x-text="fmtPct(s.stats?.ytd_pct)"></span></span>
+            </div>
+          </div>
+        </div>
+      </template>
+    </section>
+
+    <!-- PRICE LOG (when a card is selected) -->
+    <div x-show="selected" x-transition class="rounded-lg border mb-6" style="background: var(--surface); border-color: var(--border)">
+      <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
+        <div class="label-cyan label" x-text="`PRICE LOG · ${selected?.symbol} · ${selected?.label}`"></div>
+        <button @click="selected = null" class="label hover:text-zinc-300 transition text-[10px]">✕ close</button>
+      </div>
+
+      <!-- Stats strip -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-px" style="border-bottom: 1px solid var(--border); background: var(--border)">
+        <template x-for="k in selectedKpis" :key="k.label">
+          <div class="px-3 py-2" style="background: var(--surface)">
+            <div class="label" x-text="k.label"></div>
+            <div class="text-sm num font-mono" :style="`color: ${k.color}`" x-text="k.value"></div>
+          </div>
+        </template>
+      </div>
+
+      <!-- Log table -->
+      <div class="overflow-x-auto scrollbar" style="max-height: 360px; overflow-y: auto;">
+        <table class="w-full text-xs">
+          <thead class="sticky top-0" style="background: #050505; color: var(--text-3)">
+            <tr style="border-bottom: 1px solid var(--border)">
+              <th class="text-left px-3 py-1.5">Date</th>
+              <th class="text-right px-3 py-1.5">Close</th>
+              <th class="text-right px-3 py-1.5">Day %</th>
+              <th class="text-right px-3 py-1.5">Streak</th>
+              <th class="px-3 py-1.5">Percentile</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="row in (selected?.log || []).slice().reverse()" :key="row.d">
+              <tr class="row-hover" style="border-bottom: 1px solid rgba(255,255,255,0.02)">
+                <td class="px-3 py-1 font-mono" style="color: var(--text-2)" x-text="row.d"></td>
+                <td class="px-3 py-1 text-right num font-mono" x-text="fmtClose(row.close)"></td>
+                <td class="px-3 py-1 text-right num font-mono" :style="`color: ${pctColor(row.pct)}`" x-text="fmtPct(row.pct)"></td>
+                <td class="px-3 py-1 text-right num font-mono text-[10px]" :style="`color: ${streakColor(row.streak)}`" x-text="fmtStreak(row.streak)"></td>
+                <td class="px-3 py-1">
+                  <div class="flex items-center gap-1">
+                    <div class="w-16 h-1.5 rounded-full overflow-hidden" style="background: rgba(255,255,255,0.06)">
+                      <div class="h-full rounded-full" :style="`width: ${(row.level || 0) * 100}%; background: ${row.level > 0.8 ? 'var(--up)' : row.level < 0.2 ? 'var(--down)' : 'var(--amber)'}`"></div>
+                    </div>
+                    <span class="text-[10px] num font-mono" style="color: var(--text-3)" x-text="`${Math.round((row.level || 0) * 100)}%`"></span>
+                  </div>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /main content -->
+
+  <!-- FOOTER -->
+  <footer class="mt-6 pt-4 text-xs flex gap-4 flex-wrap" style="border-top: 1px solid var(--border); color: var(--text-3)">
+    <span>Predator Protocol · yieldchaser/etf-data</span>
+    <a href="index.html" style="color: var(--cyan); text-decoration: none;">← Dashboard</a>
+    <a href="sim.html" style="color: var(--text-3); text-decoration: none;">Simulator</a>
+  </footer>
+
+</div>
+
+<script>
+function marketsApp() {
+  return {
+    loading: true,
+    meta: {},
+    series: [],
+    selected: null,
+    activeKind: 'all',
+    q: '',
+
+    async load() {
+      try {
+        const data = await fetch('data/markets.json').then(r => r.json());
+        this.meta = { generated_at_utc: data.generated_at_utc };
+        this.series = data.series || [];
+      } catch (e) {
+        console.error('Markets load error:', e);
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    get kinds() {
+      const unique = [...new Set(this.series.map(s => s.kind))].sort();
+      return [
+        { id: 'all', label: 'All', count: this.series.length },
+        ...unique.map(k => ({ id: k, label: k.charAt(0).toUpperCase() + k.slice(1), count: this.series.filter(s => s.kind === k).length })),
+      ];
+    },
+
+    get filteredSeries() {
+      const ql = this.q.trim().toLowerCase();
+      let r = this.series;
+      if (this.activeKind !== 'all') r = r.filter(s => s.kind === this.activeKind);
+      if (ql) r = r.filter(s => s.symbol.toLowerCase().includes(ql) || (s.label || '').toLowerCase().includes(ql));
+      return r;
+    },
+
+    get selectedKpis() {
+      if (!this.selected) return [];
+      const st = this.selected.stats || {};
+      const fp = (n, dp=2) => (n == null || !isFinite(n)) ? '—' : (n >= 0 ? '+' : '') + (n * 100).toFixed(dp) + '%';
+      return [
+        { label: 'Close',     value: this.fmtClose(st.close_today),           color: 'var(--text)' },
+        { label: 'Day %',     value: fp(st.day_pct),                          color: this.pctColor(st.day_pct) },
+        { label: '7d %',      value: fp(st.week_pct),                         color: this.pctColor(st.week_pct) },
+        { label: '1M %',      value: fp(st.month_pct),                        color: this.pctColor(st.month_pct) },
+        { label: 'YTD %',     value: fp(st.ytd_pct),                          color: this.pctColor(st.ytd_pct) },
+        { label: 'ATH',       value: st.all_time_high != null ? Number(st.all_time_high).toLocaleString(undefined, {maximumFractionDigits: 2}) : '—', color: 'var(--up)' },
+        { label: 'ATL',       value: st.all_time_low  != null ? Number(st.all_time_low).toLocaleString(undefined, {maximumFractionDigits: 2}) : '—', color: 'var(--down)' },
+        { label: '%-ile ATH', value: st.percentile_all_time != null ? Math.round(st.percentile_all_time * 100) + '%' : '—', color: 'var(--amber)' },
+        { label: 'Streak',    value: this.fmtStreak(st.current_streak),        color: this.streakColor(st.current_streak) },
+        { label: '20d Up',    value: st.last_20_up != null ? `${st.last_20_up}/${(st.last_20_up || 0) + (st.last_20_down || 0)}` : '—', color: 'var(--text-2)' },
+      ];
+    },
+
+    barHeight(pct, log) {
+      if (!log || !log.length) return 2;
+      const abs = log.map(r => Math.abs(r.pct || 0));
+      const mx = Math.max(...abs) || 1;
+      return Math.max(2, Math.round((Math.abs(pct || 0) / mx) * 22));
+    },
+
+    fmtClose(n) {
+      if (n == null || !isFinite(n)) return '—';
+      const v = Number(n);
+      if (v >= 10000) return v.toLocaleString(undefined, { maximumFractionDigits: 0 });
+      if (v >= 1)     return v.toLocaleString(undefined, { maximumFractionDigits: 2 });
+      return v.toFixed(4);
+    },
+    fmtPct(n) {
+      if (n == null || !isFinite(n)) return '—';
+      const v = Number(n) * 100;
+      return (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
+    },
+    fmtStreak(n) { if (!n) return '—'; return n > 0 ? `▲${n}d` : `▼${Math.abs(n)}d`; },
+    pctColor(n) {
+      if (n == null || !isFinite(n)) return 'var(--text-3)';
+      if (n > 0.005) return 'var(--up)';
+      if (n < -0.005) return 'var(--down)';
+      return 'var(--text-2)';
+    },
+    streakColor(n) { if (!n) return 'var(--text-3)'; return n > 0 ? 'var(--up)' : 'var(--down)'; },
+  };
+}
+</script>
+</body>
+</html>

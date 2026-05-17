@@ -78,22 +78,47 @@ class Sanitizer:
         if out.empty:
             return out
 
-        # 3. Ticker punctuation standardization (BRK-B → BRK.B)
+        # 3. Ticker punctuation standardization (BRK-B → BRK.B, "8058 JP" → "8058.JP")
         cleaned = out["ticker"].astype(str).str.strip()
         for old, new in self.ticker_replacements:
             cleaned = cleaned.str.replace(old, new, regex=False)
+        # Collapse consecutive dots produced by chained replacements (BF / B → BF..B → BF.B)
+        cleaned = cleaned.str.replace(r"\.{2,}", ".", regex=True).str.strip(".")
         out["ticker"] = cleaned
 
         # 4. Ticker renames (GOOG → GOOGL) — merge dual-class shares
         if self.ticker_renames:
             out["ticker"] = out["ticker"].replace(self.ticker_renames)
 
+        # 5. Deduplicate rows created by renames (e.g., GOOG+GOOGL same ETF/date → one row)
+        out = self._dedupe_after_renames(out)
+
         return out
+
+    def _dedupe_after_renames(self, df: pd.DataFrame) -> pd.DataFrame:
+        """After GOOG→GOOGL rename, sum weights for duplicate (ETF_Ticker, ticker, Holdings_As_Of) keys.
+
+        Without this, dual-class shares that get renamed to the same ticker create
+        Cartesian-product explosions in downstream merges (build.py merge on [ETF_Ticker, ticker]).
+        """
+        if df.empty or not self.ticker_renames:
+            return df
+        key = ["ETF_Ticker", "ticker", "Holdings_As_Of"]
+        if not all(c in df.columns for c in key):
+            return df
+        agg = df.groupby(key, as_index=False).agg(
+            weight=("weight", "sum"),
+            name=("name", "first"),
+            Date_Scraped=("Date_Scraped", "max"),
+        )
+        # Restore column order (HOLDINGS_COLUMNS contract)
+        return agg[["ETF_Ticker", "ticker", "name", "weight", "Holdings_As_Of", "Date_Scraped"]]
 
 
 @dataclass(frozen=True)
 class HistoryConfig:
-    rank_delta_lookback_days: int
+    rank_delta_lookback_days: int          # kept for backward compat (= delta_periods_days[1])
+    delta_periods_days: tuple[int, ...]    # Phase 2: multi-period deltas
     leaderboard_lookback_days: int
     changelog_top_n: int
 
@@ -124,10 +149,18 @@ class Config:
             Tier(name=t["name"], etfs=tuple(t["etfs"]), points=int(t["points"]))
             for t in cfg["tiers"]
         )
+        h_cfg = cfg.get("history", {})
+        _periods_raw = h_cfg.get("delta_periods_days", None)
+        _default_lookback = int(h_cfg.get("rank_delta_lookback_days", 7))
+        if _periods_raw:
+            _periods = tuple(int(p) for p in _periods_raw)
+        else:
+            _periods = (_default_lookback,)
         history = HistoryConfig(
-            rank_delta_lookback_days=int(cfg.get("history", {}).get("rank_delta_lookback_days", 7)),
-            leaderboard_lookback_days=int(cfg.get("history", {}).get("leaderboard_lookback_days", 60)),
-            changelog_top_n=int(cfg.get("history", {}).get("changelog_top_n", 15)),
+            rank_delta_lookback_days=_default_lookback,
+            delta_periods_days=_periods,
+            leaderboard_lookback_days=int(h_cfg.get("leaderboard_lookback_days", 60)),
+            changelog_top_n=int(h_cfg.get("changelog_top_n", 15)),
         )
         return cls(
             sanitizer=sanitizer,
@@ -280,7 +313,7 @@ def compute_rank_deltas(
     Positive rank_delta = rank improved (moved up). Positive weight_flow = weight grew.
     """
     if lookback_days is None:
-        lookback_days = cfg.history.rank_delta_lookback_days
+        lookback_days = cfg.history.rank_delta_lookback_days  # default = delta_periods_days[1] or first
 
     etf_to_tier = cfg.etf_tier_map()
     df = history.copy()

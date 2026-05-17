@@ -61,15 +61,16 @@ class TestSanitizer:
         assert set(result["ticker"]) == {"BRK.B", "BF.B"}
 
     def test_goog_to_googl_normalization(self, cfg):
-        """Power Query FixGoogle step: GOOG renamed to GOOGL."""
+        """Power Query FixGoogle step: GOOG renamed to GOOGL, then deduped (weights summed)."""
         df = _h([
             ("SPMO", "GOOG",  "Alphabet Inc", 0.04, "2026-05-01", "2026-05-01"),
             ("SPMO", "GOOGL", "Alphabet Inc", 0.05, "2026-05-01", "2026-05-01"),
         ])
         result = cfg.sanitizer.apply(df)
-        # Both rows now have ticker GOOGL
+        # Both rows renamed to GOOGL then deduped into 1 row with weight summed
         assert (result["ticker"] == "GOOGL").all()
-        assert len(result) == 2
+        assert len(result) == 1
+        assert result["weight"].iloc[0] == pytest.approx(0.09)
 
     def test_case_insensitive_ticker_block(self, cfg):
         df = _h([
@@ -77,6 +78,38 @@ class TestSanitizer:
             ("FPX", "AAPL", "Apple",            0.05, "2026-05-01", "2026-05-01"),
         ])
         assert set(cfg.sanitizer.apply(df)["ticker"]) == {"AAPL"}
+
+    def test_googl_dedupe_after_rename(self, cfg):
+        """Sanitizer must collapse GOOG+GOOGL rows from the same ETF/date into one row."""
+        df = _h([
+            ("SPMO", "GOOG",  "Alphabet Inc", 0.04, "2026-05-01", "2026-05-01"),
+            ("SPMO", "GOOGL", "Alphabet Inc", 0.05, "2026-05-01", "2026-05-01"),
+            ("SPMO", "AAPL",  "Apple Inc",    0.07, "2026-05-01", "2026-05-01"),
+        ])
+        out = cfg.sanitizer.apply(df)
+        googl = out[out["ticker"] == "GOOGL"]
+        assert len(googl) == 1
+        assert googl["weight"].iloc[0] == pytest.approx(0.09)
+
+    def test_whitespace_ticker_normalization(self, cfg):
+        """Space inside ticker collapses to dot: '8058 JP' -> '8058.JP'."""
+        df = _h([
+            ("IMOM", "8058 JP",  "Mitsubishi Corp",  0.022, "2026-05-01", "2026-05-01"),
+            ("FPXI", "8058.JP",  "Mitsubishi Corp",  0.015, "2026-05-01", "2026-05-01"),
+            ("IMOM", "TPRO IM",  "Technoprobe SpA",  0.020, "2026-05-01", "2026-05-01"),
+            ("FPXI", "TPRO.IM",  "Technoprobe SpA",  0.016, "2026-05-01", "2026-05-01"),
+        ])
+        out = cfg.sanitizer.apply(df)
+        assert set(out["ticker"]) == {"8058.JP", "TPRO.IM"}
+
+    def test_cash_other_blocked(self, cfg):
+        """Cash&Other ticker and company names must be blocked."""
+        df = _h([
+            ("QQQM", "Cash&Other", "Cash & Other", 0.01, "2026-05-01", "2026-05-01"),
+            ("QQQM", "NVDA",       "NVIDIA Corp",  0.09, "2026-05-01", "2026-05-01"),
+        ])
+        out = cfg.sanitizer.apply(df)
+        assert set(out["ticker"]) == {"NVDA"}
 
 
 # ─── Scoring ──────────────────────────────────────────────────────────────────

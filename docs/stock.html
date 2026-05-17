@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Predator Protocol · Stock Detail</title>
+  <meta name="description" content="Per-stock conviction detail: score history, ETF holdings timeline, and rank deltas.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📈%3C/text%3E%3C/svg%3E">
+  <meta name="color-scheme" content="dark">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+  <style>
+    :root {
+      --bg: #000;
+      --surface: #0a0a0a;
+      --surface-2: #111;
+      --border: rgba(255,255,255,0.06);
+      --border-2: rgba(255,255,255,0.10);
+      --text: #e4e4e7;
+      --text-2: #a1a1aa;
+      --text-3: #52525b;
+      --cyan: #22d3ee;
+      --up: #34d399;
+      --down: #fb7185;
+      --amber: #fbbf24;
+    }
+    html, body { background: var(--bg); color: var(--text); }
+    body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Inter", sans-serif; }
+    .num, table td, .mono { font-variant-numeric: tabular-nums; }
+    .font-mono { font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; }
+    .label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); }
+    .label-cyan { color: var(--cyan); }
+    .chip { display: inline-flex; align-items: center; padding: 1px 6px; border-radius: 4px; font-size: 10.5px; font-weight: 500; line-height: 1.5; white-space: nowrap; letter-spacing: 0.02em; }
+    .row-hover:hover { background: rgba(34, 211, 238, 0.025); }
+    .scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
+    .scrollbar::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+    .scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .sort-asc::after  { content: "▲"; margin-left: 4px; opacity: 0.6; font-size: 9px; }
+    .sort-desc::after { content: "▼"; margin-left: 4px; opacity: 0.6; font-size: 9px; }
+    [x-cloak] { display: none !important; }
+    @keyframes pulse-fade { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+    .pulse-load { animation: pulse-fade 1.4s ease-in-out infinite; }
+    .tab-active { background: rgba(34, 211, 238, 0.08); color: var(--cyan); border-color: rgba(34, 211, 238, 0.3); }
+  </style>
+</head>
+<body>
+
+<div x-data="stockApp()" x-init="load()" x-cloak class="max-w-[1200px] mx-auto px-3 sm:px-5 py-4 sm:py-6">
+
+  <!-- HEADER -->
+  <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5 pb-4 border-b" style="border-color: var(--border)">
+    <div>
+      <div class="flex items-center gap-3 mb-1">
+        <a href="index.html" class="label hover:text-zinc-400 transition" style="text-decoration: none;">← PREDATOR PROTOCOL</a>
+        <span class="label">›</span>
+        <span class="label-cyan label" x-text="ticker || 'STOCK DETAIL'"></span>
+      </div>
+      <div class="flex items-baseline gap-3 mt-1">
+        <h1 class="text-2xl font-medium font-mono" style="color: var(--cyan)" x-text="ticker"></h1>
+        <span class="text-base" style="color: var(--text-2)" x-text="company"></span>
+      </div>
+    </div>
+    <!-- Quick switcher -->
+    <div class="flex items-center gap-2">
+      <span class="label">Jump to</span>
+      <input type="search" x-model="switchQ" placeholder="ticker…"
+             @keydown.enter="goTo(switchQ)"
+             class="bg-transparent border rounded px-2 py-1 text-xs font-mono focus:outline-none focus:border-cyan-500/40 w-28"
+             style="border-color: var(--border-2); color: var(--text)">
+      <button @click="goTo(switchQ)"
+              class="px-2 py-1 text-xs border rounded transition hover:border-cyan-500/30"
+              style="border-color: var(--border-2); color: var(--text-2)">Go</button>
+    </div>
+  </header>
+
+  <!-- NAV links -->
+  <nav class="flex flex-wrap gap-1 mb-5 text-xs items-center">
+    <a href="index.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color: var(--text-2); border-color: var(--border); text-decoration: none;">Dashboard</a>
+    <a href="markets.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color: var(--text-2); border-color: var(--border); text-decoration: none;">Markets</a>
+    <a href="sim.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color: var(--text-2); border-color: var(--border); text-decoration: none;">Simulator</a>
+  </nav>
+
+  <!-- LOADING STATE -->
+  <div x-show="loading" class="pulse-load text-center py-20" style="color: var(--text-3)">
+    <div class="text-lg mb-2">Loading…</div>
+    <div class="text-xs" x-text="ticker ? `Fetching data for ${ticker}` : 'No ticker specified'"></div>
+  </div>
+
+  <!-- NOT FOUND STATE -->
+  <div x-show="!loading && !found" class="text-center py-20">
+    <div class="text-base mb-2" style="color: var(--down)" x-text="`'${ticker}' not found`"></div>
+    <div class="text-xs mb-4" style="color: var(--text-3)">This ticker may not be in the top 300. Check the leaderboard.</div>
+    <a href="index.html" class="text-xs px-3 py-1.5 rounded-md border transition" style="color: var(--cyan); border-color: rgba(34,211,238,0.3); text-decoration: none;">← Back to Dashboard</a>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div x-show="!loading && found">
+
+    <!-- KPI strip -->
+    <section class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-5">
+      <template x-for="kpi in kpis" :key="kpi.label">
+        <div class="rounded-lg px-3 py-2.5 border" style="background: var(--surface); border-color: var(--border)">
+          <div class="label" x-text="kpi.label"></div>
+          <div class="flex items-baseline gap-2 mt-0.5">
+            <div class="text-xl sm:text-2xl font-medium num font-mono" :style="`color: ${kpi.color || 'var(--text)'}`" x-text="kpi.value"></div>
+            <div class="text-xs num font-mono" :style="`color: ${kpi.deltaColor}`" x-show="kpi.delta !== undefined && kpi.delta !== null" x-text="kpi.delta"></div>
+          </div>
+        </div>
+      </template>
+    </section>
+
+    <!-- SCORE SPARKLINE -->
+    <div class="rounded-lg border mb-5" style="background: var(--surface); border-color: var(--border)">
+      <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
+        <div class="label-cyan label">Score history — <span class="font-mono" x-text="ticker"></span> · <span class="num" x-text="scoreHistory.length"></span> snapshots</div>
+        <div class="text-xs num font-mono" style="color: var(--text-3)" x-text="scoreHistory.length ? `${scoreHistory[0].d} → ${scoreHistory[scoreHistory.length-1].d}` : ''"></div>
+      </div>
+      <div class="p-3">
+        <div x-show="scoreHistory.length < 2" class="py-8 text-center text-xs" style="color: var(--text-3)">Insufficient history (need ≥2 snapshots)</div>
+        <svg x-show="scoreHistory.length >= 2" width="100%" height="120" viewBox="0 0 900 120" preserveAspectRatio="none" style="display:block">
+          <!-- Area fill -->
+          <path :d="sparkAreaPath(scoreHistory)" fill="rgba(34,211,238,0.07)"/>
+          <!-- Line -->
+          <path :d="sparkLinePath(scoreHistory)" fill="none" stroke="var(--cyan)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- Last point dot -->
+          <template x-if="scoreHistory.length >= 2">
+            <circle :cx="sparkX(scoreHistory.length - 1, scoreHistory.length)" :cy="sparkY(scoreHistory[scoreHistory.length-1].s, scoreHistory)" r="3" fill="var(--cyan)"/>
+          </template>
+        </svg>
+        <!-- X-axis date labels -->
+        <div class="flex justify-between text-[10px] font-mono mt-1" style="color: var(--text-3)">
+          <span x-text="scoreHistory[0]?.d?.slice(5) || ''"></span>
+          <span x-text="scoreHistory[Math.floor(scoreHistory.length/2)]?.d?.slice(5) || ''"></span>
+          <span x-text="scoreHistory[scoreHistory.length-1]?.d?.slice(5) || ''"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- HOLDINGS HISTORY TABLE PER ETF -->
+    <div class="rounded-lg border mb-5" style="background: var(--surface); border-color: var(--border)">
+      <div class="px-3 py-2" style="border-bottom: 1px solid var(--border)">
+        <div class="label-cyan label">ETF holdings timeline</div>
+        <div class="text-xs mt-0.5" style="color: var(--text-3)">Rank and weight per snapshot within the 60-day window</div>
+      </div>
+
+      <div x-show="!holdingsHistory || Object.keys(holdingsHistory).length === 0" class="px-3 py-6 text-center text-xs" style="color: var(--text-3)">No holdings history available for this ticker</div>
+
+      <template x-for="[etf, rows] in etfEntries" :key="etf">
+        <div class="border-b" style="border-color: var(--border)">
+          <div class="px-3 py-1.5 flex items-center gap-2" style="background: rgba(255,255,255,0.02)">
+            <span class="font-mono font-medium text-sm" x-text="etf"></span>
+            <span class="chip text-[10px]" :style="tierChipStyle(etfTier(etf))" x-text="etfTier(etf)"></span>
+            <span class="text-xs num font-mono ml-auto" style="color: var(--text-3)" x-text="`${rows.length} snapshots`"></span>
+          </div>
+          <div class="overflow-x-auto scrollbar">
+            <table class="w-full text-xs">
+              <thead style="color: var(--text-3); border-bottom: 1px solid var(--border)">
+                <tr>
+                  <th class="text-left px-3 py-1.5">Date</th>
+                  <th class="text-right px-3 py-1.5">Rank</th>
+                  <th class="text-right px-3 py-1.5">Rank Δ</th>
+                  <th class="text-right px-3 py-1.5">Weight</th>
+                  <th class="text-right px-3 py-1.5">Weight Δ</th>
+                  <th class="px-3 py-1.5">Trend</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="(row, i) in rows.slice().reverse()" :key="row.d">
+                  <tr class="row-hover" style="border-bottom: 1px solid rgba(255,255,255,0.02)">
+                    <td class="px-3 py-1.5 font-mono" style="color: var(--text-2)" x-text="row.d"></td>
+                    <td class="px-3 py-1.5 text-right num font-mono" x-text="row.r"></td>
+                    <td class="px-3 py-1.5 text-right num font-mono" :style="`color: ${rankDeltaColor(rankDelta(rows, i))}`" x-text="fmtRankDelta(rankDelta(rows, i))"></td>
+                    <td class="px-3 py-1.5 text-right num font-mono" style="color: var(--text-2)" x-text="fmtWeight(row.w)"></td>
+                    <td class="px-3 py-1.5 text-right num font-mono" :style="`color: ${flowColor(weightDelta(rows, i))}`" x-text="fmtFlow(weightDelta(rows, i))"></td>
+                    <td class="px-3 py-1.5">
+                      <div class="inline-block w-2 h-2 rounded-sm" :style="`background: ${rankDelta(rows, i) > 0 ? 'var(--up)' : rankDelta(rows, i) < 0 ? 'var(--down)' : 'var(--text-3)'}`"></div>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </template>
+    </div>
+
+  </div><!-- /main content -->
+
+  <!-- FOOTER -->
+  <footer class="mt-6 pt-4 text-xs flex gap-4 flex-wrap" style="border-top: 1px solid var(--border); color: var(--text-3)">
+    <span>Predator Protocol · yieldchaser/etf-data</span>
+    <a href="index.html" style="color: var(--cyan); text-decoration: none;">← Dashboard</a>
+    <a href="markets.html" style="color: var(--text-3); text-decoration: none;">Markets</a>
+    <a href="sim.html" style="color: var(--text-3); text-decoration: none;">Simulator</a>
+  </footer>
+
+</div><!-- /app -->
+
+<script>
+function stockApp() {
+  return {
+    ticker: '',
+    company: '',
+    switchQ: '',
+    loading: true,
+    found: false,
+    scoreHistory: [],      // [{d, s}]
+    holdingsHistory: {},   // {ETF: [{d, r, w}]}
+    leaderboardRow: null,  // single row from leaderboard for KPIs
+    tierMap: {},           // ETF_Ticker -> tier name
+
+    async load() {
+      const params = new URLSearchParams(location.search);
+      this.ticker = (params.get('t') || '').toUpperCase().trim();
+      if (!this.ticker) { this.loading = false; return; }
+      document.title = `Predator Protocol · ${this.ticker}`;
+
+      try {
+        const [lbData, scoreData, hhData] = await Promise.all([
+          fetch('data/leaderboard.json').then(r => r.json()),
+          fetch('data/score_history.json').then(r => r.json()),
+          fetch('data/holdings_history.json').then(r => r.json()),
+        ]);
+
+        // Leaderboard row
+        this.leaderboardRow = lbData.find(r => r.ticker === this.ticker) || null;
+        if (this.leaderboardRow) this.company = this.leaderboardRow.company || '';
+
+        // Tier map from score_history (meta missing here, so build from leaderboard held_by + tiers)
+        // We load metadata separately
+        try {
+          const meta = await fetch('data/metadata.json').then(r => r.json());
+          (meta.config_snapshot?.tiers || []).forEach(t => t.etfs.forEach(e => this.tierMap[e] = t.name));
+        } catch {}
+
+        // Score history for this ticker
+        this.scoreHistory = scoreData[this.ticker] || [];
+
+        // Holdings history for this ticker
+        this.holdingsHistory = hhData[this.ticker] || {};
+
+        this.found = this.leaderboardRow !== null || this.scoreHistory.length > 0 || Object.keys(this.holdingsHistory).length > 0;
+      } catch (e) {
+        console.error('Stock detail load error:', e);
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    goTo(t) {
+      const q = (t || '').toUpperCase().trim();
+      if (q) location.href = `stock.html?t=${encodeURIComponent(q)}`;
+    },
+
+    get kpis() {
+      const row = this.leaderboardRow;
+      if (!row) return [];
+      const fmtPct = n => (n == null || !isFinite(n)) ? '—' : (n >= 0 ? '+' : '') + (n * 100).toFixed(1) + '%';
+      const fmtStreak = n => (n == null || n === 0) ? '—' : (n > 0 ? `▲${n}` : `▼${Math.abs(n)}`);
+      return [
+        { label: 'Score',      value: row.final_score?.toFixed(0) || '—', color: 'var(--text)' },
+        { label: 'Rank',       value: `#${row.leaderboard_rank}`,         color: 'var(--cyan)' },
+        { label: 'ETFs',       value: row.etf_count || '—',               color: 'var(--text)' },
+        { label: 'Score Δ%',   value: fmtPct(row.score_delta_pct),        color: (row.score_delta_pct > 0) ? 'var(--up)' : (row.score_delta_pct < 0) ? 'var(--down)' : 'var(--text-2)' },
+        { label: 'HC Streak',  value: fmtStreak(row.hc_streak),           color: (row.hc_streak > 0) ? 'var(--up)' : 'var(--text-3)' },
+        { label: 'Sc. Streak', value: fmtStreak(row.score_streak),        color: (row.score_streak > 0) ? 'var(--up)' : (row.score_streak < 0) ? 'var(--down)' : 'var(--text-3)' },
+        { label: 'Weight',     value: this.leaderboardRow ? ((row.total_weight * 100).toFixed(2) + '%') : '—', color: 'var(--text-2)' },
+        { label: 'Percentile', value: (row.score_percentile != null) ? Math.round(row.score_percentile * 100) + '%' : '—', color: 'var(--amber)' },
+      ];
+    },
+
+    get etfEntries() {
+      return Object.entries(this.holdingsHistory).sort((a, b) => a[0].localeCompare(b[0]));
+    },
+
+    etfTier(etf) { return this.tierMap[etf] || ''; },
+
+    // Rank delta for row i in a (reversed) array: compare with i+1 (the previous snapshot)
+    rankDelta(rows, i) {
+      const rev = [...rows].reverse();
+      if (i >= rev.length - 1) return null;
+      const delta = rev[i + 1].r - rev[i].r; // positive = improved rank (moved up)
+      return delta;
+    },
+    weightDelta(rows, i) {
+      const rev = [...rows].reverse();
+      if (i >= rev.length - 1) return null;
+      const prev = rev[i + 1].w;
+      if (!prev) return null;
+      return (rev[i].w - prev) / prev;
+    },
+
+    // SVG sparkline helpers
+    sparkX(i, n) { return (i / Math.max(1, n - 1)) * 900; },
+    sparkY(s, series) {
+      const vals = series.map(x => x.s);
+      const mn = Math.min(...vals), mx = Math.max(...vals);
+      const range = mx - mn || 1;
+      return 110 - ((s - mn) / range) * 100;
+    },
+    sparkLinePath(series) {
+      if (!series.length) return '';
+      return series.map((p, i) =>
+        `${i === 0 ? 'M' : 'L'}${this.sparkX(i, series.length)},${this.sparkY(p.s, series)}`
+      ).join(' ');
+    },
+    sparkAreaPath(series) {
+      if (!series.length) return '';
+      const line = series.map((p, i) => `${i === 0 ? 'M' : 'L'}${this.sparkX(i, series.length)},${this.sparkY(p.s, series)}`).join(' ');
+      return `${line} L${this.sparkX(series.length - 1, series.length)},115 L0,115 Z`;
+    },
+
+    // Formatting
+    fmtWeight(n) { if (n == null || !isFinite(n)) return '—'; return (Number(n) * 100).toFixed(2) + '%'; },
+    fmtFlow(n) { if (n == null || !isFinite(n)) return '—'; const v = Number(n) * 100; if (Math.abs(v) > 9999) return '—'; return (v >= 0 ? '+' : '') + v.toFixed(1) + '%'; },
+    fmtRankDelta(n) { if (n == null || !isFinite(n)) return '—'; const v = Number(n); if (v === 0) return '—'; return v > 0 ? `▲${v}` : `▼${Math.abs(v)}`; },
+    flowColor(n) { if (n == null || !isFinite(n)) return 'var(--text-3)'; if (n > 0.02) return 'var(--up)'; if (n < -0.02) return 'var(--down)'; return 'var(--text-2)'; },
+    rankDeltaColor(n) { if (n == null || !isFinite(n)) return 'var(--text-3)'; if (n > 0) return 'var(--up)'; if (n < 0) return 'var(--down)'; return 'var(--text-3)'; },
+
+    tierChipStyle(t) {
+      const base = 'padding: 1px 5px; font-size: 10px; border-radius: 3px; ';
+      switch (t) {
+        case 'Scout':   return base + 'background: rgba(168, 85, 247, 0.12); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.25)';
+        case 'Quant':   return base + 'background: rgba(99, 102, 241, 0.12); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.25)';
+        case 'Quality': return base + 'background: rgba(20, 184, 166, 0.12); color: #5eead4; border: 1px solid rgba(20, 184, 166, 0.25)';
+        case 'Trend':   return base + 'background: rgba(251, 191, 36, 0.10); color: #fcd34d; border: 1px solid rgba(251, 191, 36, 0.25)';
+        case 'Blob':    return base + 'background: rgba(255, 255, 255, 0.04); color: #a1a1aa; border: 1px solid rgba(255, 255, 255, 0.10)';
+        default:        return base + 'background: rgba(255, 255, 255, 0.04); color: #a1a1aa; border: 1px solid rgba(255, 255, 255, 0.10)';
+      }
+    },
+  };
+}
+</script>
+</body>
+</html>

@@ -11,6 +11,7 @@ on:
     paths:
       - 'data/**'                       # Scraper writes here
       - 'predator/**'
+      - 'markets/**'
       - 'docs/**'
       - 'config.yaml'
       - '.github/workflows/build_site.yml'
@@ -43,13 +44,29 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pandas pyyaml pyarrow pytest
+          pip install pandas pyyaml pyarrow pytest yfinance
 
       - name: Run tests
         run: python -m pytest tests/ -v
 
-      - name: Build site artifacts
+      - name: Build site artifacts (predator)
         run: python -m predator.build --source data/all_history.csv --output docs/data --config config.yaml
+
+      - name: Fetch market data (yfinance)
+        run: |
+          mkdir -p data/markets
+          python -m markets.fetch_yf --out data/markets
+        continue-on-error: true   # network failures should not block page deploy
+
+      - name: Fetch FRED data
+        run: python -m markets.fetch_fred --out data/markets
+        continue-on-error: true   # silently skips if FRED_API_KEY not set
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+
+      - name: Build markets.json + sim_underlyings.json
+        run: python -m markets.build --source data/markets --output docs/data
+        continue-on-error: true   # skip if no parquets yet
 
       - name: Verify outputs
         run: |
@@ -75,3 +92,4 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+

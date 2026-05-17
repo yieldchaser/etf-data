@@ -5,23 +5,13 @@
   "exited_hc": [],
   "biggest_gainers": [
     {
-      "ticker": "TPRO IM",
-      "company": "Technoprobe SpA",
-      "final_score": 153.0,
-      "etf_count": 1,
-      "tiers": "Quant",
-      "score_delta": 77.0,
-      "score_delta_pct": 1.0132,
-      "score_streak": 2
-    },
-    {
       "ticker": "TPRO.IM",
       "company": "Technoprobe SpA",
-      "final_score": 70.0,
-      "etf_count": 1,
-      "tiers": "Scout",
-      "score_delta": 27.0,
-      "score_delta_pct": 0.6279,
+      "final_score": 224.0,
+      "etf_count": 2,
+      "tiers": "Quant + Scout",
+      "score_delta": 105.0,
+      "score_delta_pct": 0.8824,
       "score_streak": 2
     },
     {
@@ -55,7 +45,7 @@
       "score_streak": 4
     },
     {
-      "ticker": "TRPZ IT",
+      "ticker": "TRPZ.IT",
       "company": "Turpaz Industries Ltd",
       "final_score": 93.0,
       "etf_count": 1,
@@ -63,16 +53,6 @@
       "score_delta": 18.0,
       "score_delta_pct": 0.24,
       "score_streak": 2
-    },
-    {
-      "ticker": "Cash&Other",
-      "company": "Cash & Other",
-      "final_score": 27.0,
-      "etf_count": 4,
-      "tiers": "Quality + Quant",
-      "score_delta": 5.0,
-      "score_delta_pct": 0.2273,
-      "score_streak": 3
     },
     {
       "ticker": "PWR",
@@ -85,7 +65,7 @@
       "score_streak": 2
     },
     {
-      "ticker": "SLR SM",
+      "ticker": "SLR.SM",
       "company": "Solaria Energia y Medio Ambiente SA",
       "final_score": 93.0,
       "etf_count": 1,
@@ -105,7 +85,7 @@
       "score_streak": 1
     },
     {
-      "ticker": "5020 JP",
+      "ticker": "5020.JP",
       "company": "ENEOS Holdings Inc",
       "final_score": 327.0,
       "etf_count": 1,
@@ -145,13 +125,33 @@
       "score_streak": 2
     },
     {
-      "ticker": "6269 JP",
+      "ticker": "6269.JP",
       "company": "Modec Inc",
       "final_score": 293.0,
       "etf_count": 1,
       "tiers": "Quant",
       "score_delta": 20.0,
       "score_delta_pct": 0.0733,
+      "score_streak": 1
+    },
+    {
+      "ticker": "WCP.CN",
+      "company": "Whitecap Resources Inc.",
+      "final_score": 59.0,
+      "etf_count": 1,
+      "tiers": "Scout",
+      "score_delta": 4.0,
+      "score_delta_pct": 0.0727,
+      "score_streak": 1
+    },
+    {
+      "ticker": "F",
+      "company": "Ford Motor Co",
+      "final_score": 111.0,
+      "etf_count": 2,
+      "tiers": "Quality + Trend",
+      "score_delta": 7.0,
+      "score_delta_pct": 0.0673,
       "score_streak": 1
     }
   ],
@@ -257,7 +257,7 @@
       "score_streak": -4
     },
     {
-      "ticker": "TPE: 3665",
+      "ticker": "TPE:.3665",
       "company": "BizLink Holding Inc.",
       "final_score": 89.0,
       "etf_count": 1,
@@ -277,7 +277,7 @@
       "score_streak": -2
     },
     {
-      "ticker": "BPE IM",
+      "ticker": "BPE.IM",
       "company": "BPER Banca SPA",
       "final_score": 73.0,
       "etf_count": 1,
@@ -287,7 +287,7 @@
       "score_streak": -1
     },
     {
-      "ticker": "HAUTO NO",
+      "ticker": "HAUTO.NO",
       "company": "Hoegh Autoliners ASA",
       "final_score": 100.0,
       "etf_count": 1,
@@ -297,7 +297,7 @@
       "score_streak": -2
     },
     {
-      "ticker": "ENLT IT",
+      "ticker": "ENLT.IT",
       "company": "Enlight Renewable Energy Ltd",
       "final_score": 75.0,
       "etf_count": 1,
@@ -309,7 +309,7 @@
   ],
   "new_entrants": [
     {
-      "ticker": "8058 JP",
+      "ticker": "8058.JP",
       "company": "Mitsubishi Corp",
       "final_score": 331.0,
       "etf_count": 1,
@@ -317,7 +317,7 @@
       "score_delta": 1.0
     },
     {
-      "ticker": "8031 JP",
+      "ticker": "8031.JP",
       "company": "Mitsui & Co Ltd",
       "final_score": 329.0,
       "etf_count": 1,
@@ -325,7 +325,7 @@
       "score_delta": 1.0
     },
     {
-      "ticker": "5020 JP",
+      "ticker": "5020.JP",
       "company": "ENEOS Holdings Inc",
       "final_score": 327.0,
       "etf_count": 1,
@@ -333,7 +333,7 @@
       "score_delta": 32.0
     },
     {
-      "ticker": "6963 JP",
+      "ticker": "6963.JP",
       "company": "Rohm Co Ltd",
       "final_score": 301.0,
       "etf_count": 1,
@@ -341,7 +341,7 @@
       "score_delta": -29.0
     },
     {
-      "ticker": "WDS AU",
+      "ticker": "WDS.AU",
       "company": "Woodside Energy Group Ltd",
       "final_score": 298.0,
       "etf_count": 1,
@@ -349,7 +349,7 @@
       "score_delta": 3.0
     },
     {
-      "ticker": "1605 JP",
+      "ticker": "1605.JP",
       "company": "Inpex Corp",
       "final_score": 297.0,
       "etf_count": 1,
@@ -357,7 +357,7 @@
       "score_delta": 1.0
     },
     {
-      "ticker": "REP SM",
+      "ticker": "REP.SM",
       "company": "Repsol SA",
       "final_score": 297.0,
       "etf_count": 1,
@@ -365,7 +365,7 @@
       "score_delta": 2.0
     },
     {
-      "ticker": "7735 JP",
+      "ticker": "7735.JP",
       "company": "SCREEN Holdings Co Ltd",
       "final_score": 294.0,
       "etf_count": 1,
@@ -373,7 +373,7 @@
       "score_delta": -5.0
     },
     {
-      "ticker": "6269 JP",
+      "ticker": "6269.JP",
       "company": "Modec Inc",
       "final_score": 293.0,
       "etf_count": 1,
@@ -381,7 +381,7 @@
       "score_delta": 20.0
     },
     {
-      "ticker": "PLS AU",
+      "ticker": "PLS.AU",
       "company": "PLS Group Ltd",
       "final_score": 275.0,
       "etf_count": 1,
@@ -389,7 +389,7 @@
       "score_delta": -20.0
     },
     {
-      "ticker": "SAND SS",
+      "ticker": "SAND.SS",
       "company": "Sandvik AB",
       "final_score": 274.0,
       "etf_count": 1,
@@ -397,7 +397,7 @@
       "score_delta": -1.0
     },
     {
-      "ticker": "6920 JP",
+      "ticker": "6920.JP",
       "company": "Lasertec Corp",
       "final_score": 269.0,
       "etf_count": 1,
@@ -405,7 +405,7 @@
       "score_delta": -3.0
     },
     {
-      "ticker": "6146 JP",
+      "ticker": "6146.JP",
       "company": "Disco Corp",
       "final_score": 268.0,
       "etf_count": 1,

@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Predator Protocol · Leveraged ETN Simulator</title>
+  <meta name="description" content="Model daily NAV evolution for leveraged and inverse ETNs using actual underlying price history.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📈%3C/text%3E%3C/svg%3E">
+  <meta name="color-scheme" content="dark">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+  <style>
+    :root {
+      --bg: #000; --surface: #0a0a0a; --surface-2: #111;
+      --border: rgba(255,255,255,0.06); --border-2: rgba(255,255,255,0.10);
+      --text: #e4e4e7; --text-2: #a1a1aa; --text-3: #52525b;
+      --cyan: #22d3ee; --up: #34d399; --down: #fb7185; --amber: #fbbf24;
+    }
+    html, body { background: var(--bg); color: var(--text); }
+    body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Inter", sans-serif; }
+    .num, .mono { font-variant-numeric: tabular-nums; }
+    .font-mono { font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; }
+    .label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); }
+    .label-cyan { color: var(--cyan); }
+    [x-cloak] { display: none !important; }
+    @keyframes pulse-fade { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+    .pulse-load { animation: pulse-fade 1.4s ease-in-out infinite; }
+    input[type=range] { accent-color: var(--cyan); }
+    input[type=number] { background: var(--surface-2); border: 1px solid var(--border-2); color: var(--text); border-radius: 4px; padding: 2px 6px; font-size: 12px; font-family: ui-monospace, monospace; width: 80px; }
+    select { background: var(--surface-2); border: 1px solid var(--border-2); color: var(--text); border-radius: 4px; padding: 2px 6px; font-size: 12px; }
+  </style>
+</head>
+<body>
+<div x-data="simApp()" x-init="load()" x-cloak class="max-w-[1200px] mx-auto px-3 sm:px-5 py-4 sm:py-6">
+
+  <!-- HEADER -->
+  <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5 pb-4 border-b" style="border-color: var(--border)">
+    <div>
+      <div class="flex items-center gap-3 mb-1">
+        <a href="index.html" class="label hover:text-zinc-400 transition" style="text-decoration: none;">← PREDATOR PROTOCOL</a>
+        <span class="label">›</span>
+        <span class="label-cyan label">ETN SIMULATOR</span>
+      </div>
+      <h1 class="text-base font-medium" style="color: var(--cyan)">LEVERAGED ETN NAV SIMULATOR</h1>
+      <div class="text-xs mt-0.5" style="color: var(--text-3)">Model daily compounding decay for leveraged / inverse products using real price data</div>
+    </div>
+  </header>
+
+  <!-- NAV -->
+  <nav class="flex flex-wrap gap-1 mb-5 text-xs items-center">
+    <a href="index.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color: var(--text-2); border-color: var(--border); text-decoration: none;">Dashboard</a>
+    <a href="markets.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color: var(--text-2); border-color: var(--border); text-decoration: none;">Markets</a>
+  </nav>
+
+  <!-- CONTROLS -->
+  <div class="rounded-lg border p-4 mb-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" style="background: var(--surface); border-color: var(--border)">
+
+    <!-- Underlying -->
+    <div>
+      <div class="label mb-1">Underlying</div>
+      <select x-model="params.underlying" @change="run()" class="w-full">
+        <template x-for="sym in availableSymbols" :key="sym">
+          <option :value="sym" x-text="sym"></option>
+        </template>
+        <option value="__manual__">Manual (use vol slider)</option>
+      </select>
+    </div>
+
+    <!-- Leverage -->
+    <div>
+      <div class="label mb-1">Leverage factor</div>
+      <div class="flex items-center gap-2">
+        <input type="range" min="-5" max="5" step="0.5" x-model.number="params.leverage" @input="run()" class="flex-1">
+        <span class="num font-mono text-sm w-8 text-right" :style="params.leverage > 0 ? 'color: var(--up)' : params.leverage < 0 ? 'color: var(--down)' : 'color: var(--text-3)'" x-text="params.leverage + 'x'"></span>
+      </div>
+      <div class="flex justify-between text-[9px] font-mono mt-0.5" style="color: var(--text-3)">
+        <span>-5x</span><span>0</span><span>+5x</span>
+      </div>
+    </div>
+
+    <!-- TER (expense ratio) -->
+    <div>
+      <div class="label mb-1">TER / year (%)</div>
+      <div class="flex items-center gap-2">
+        <input type="range" min="0" max="3" step="0.05" x-model.number="params.ter" @input="run()" class="flex-1">
+        <span class="num font-mono text-sm" style="color: var(--text-2)" x-text="params.ter.toFixed(2) + '%'"></span>
+      </div>
+    </div>
+
+    <!-- Lookback window -->
+    <div>
+      <div class="label mb-1">Lookback (trading days)</div>
+      <div class="flex items-center gap-2">
+        <input type="range" min="21" max="1260" step="21" x-model.number="params.days" @input="run()" class="flex-1">
+        <span class="num font-mono text-sm" style="color: var(--text-2)" x-text="params.days + 'd (~' + Math.round(params.days/21) + 'mo)'"></span>
+      </div>
+    </div>
+
+    <!-- Manual vol override (shown when underlying = __manual__) -->
+    <div x-show="params.underlying === '__manual__'" class="sm:col-span-2">
+      <div class="label mb-1">Daily vol (σ, manual override %)</div>
+      <div class="flex items-center gap-2">
+        <input type="range" min="0.2" max="6" step="0.1" x-model.number="params.manualVol" @input="run()" class="flex-1">
+        <span class="num font-mono text-sm" style="color: var(--amber)" x-text="params.manualVol.toFixed(1) + '% σ/day'"></span>
+      </div>
+    </div>
+
+    <!-- Annual drift -->
+    <div>
+      <div class="label mb-1">Drift (underlying CAGR %/yr)</div>
+      <div class="flex items-center gap-2">
+        <input type="range" min="-30" max="50" step="1" x-model.number="params.drift" @input="run()" class="flex-1">
+        <span class="num font-mono text-sm" :style="params.drift >= 0 ? 'color: var(--up)' : 'color: var(--down)'" x-text="(params.drift >= 0 ? '+' : '') + params.drift + '%'"></span>
+      </div>
+    </div>
+
+    <!-- Initial NAV -->
+    <div>
+      <div class="label mb-1">Initial NAV</div>
+      <input type="number" x-model.number="params.nav0" @change="run()" min="1" max="10000" step="1">
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div x-show="computing" class="pulse-load text-center py-8" style="color: var(--text-3)">Computing…</div>
+
+  <!-- RESULTS -->
+  <div x-show="!computing && result">
+
+    <!-- KPI strip -->
+    <section class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
+      <template x-for="k in resultKpis" :key="k.label">
+        <div class="rounded-lg px-3 py-2.5 border" style="background: var(--surface); border-color: var(--border)">
+          <div class="label" x-text="k.label"></div>
+          <div class="text-xl font-medium num font-mono mt-0.5" :style="`color: ${k.color}`" x-text="k.value"></div>
+          <div class="text-[10px] num font-mono mt-0.5" style="color: var(--text-3)" x-text="k.sub || ''"></div>
+        </div>
+      </template>
+    </section>
+
+    <!-- NAV Chart (SVG) -->
+    <div class="rounded-lg border mb-5" style="background: var(--surface); border-color: var(--border)">
+      <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
+        <div class="label-cyan label">NAV Evolution (Daily Compounding)</div>
+        <div class="flex gap-4 text-[10px] num font-mono" style="color: var(--text-3)">
+          <span>■ <span style="color: var(--cyan)">ETN</span></span>
+          <span>■ <span style="color: var(--amber)">Underlying</span></span>
+        </div>
+      </div>
+      <div class="p-3">
+        <svg width="100%" height="200" :viewBox="`0 0 900 200`" preserveAspectRatio="none" style="display:block">
+          <!-- Zero line -->
+          <line x1="0" :y1="navZeroY" x2="900" :y2="navZeroY" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+          <!-- Underlying area -->
+          <path :d="underlyingAreaPath" fill="rgba(251,191,36,0.05)"/>
+          <path :d="underlyingLinePath" fill="none" stroke="var(--amber)" stroke-width="1.2" opacity="0.7"/>
+          <!-- ETN area -->
+          <path :d="navAreaPath" fill="rgba(34,211,238,0.06)"/>
+          <path :d="navLinePath" fill="none" stroke="var(--cyan)" stroke-width="1.8"/>
+        </svg>
+        <!-- Date labels -->
+        <div class="flex justify-between text-[10px] font-mono mt-1" style="color: var(--text-3)">
+          <span x-text="result?.dates?.[0] || ''"></span>
+          <span x-text="result?.dates?.[Math.floor((result?.dates?.length || 1)/2)] || ''"></span>
+          <span x-text="result?.dates?.[result?.dates?.length - 1] || ''"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Decay analysis table -->
+    <div class="rounded-lg border mb-5" style="background: var(--surface); border-color: var(--border)">
+      <div class="px-3 py-2" style="border-bottom: 1px solid var(--border)">
+        <div class="label-cyan label">Volatility Decay Analysis</div>
+        <div class="text-[10px] mt-0.5" style="color: var(--text-3)">
+          Daily decay = ½ × (leverage² − |leverage|) × σ² per day. Compounding is geometric (path-dependent).
+        </div>
+      </div>
+      <div class="p-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <div class="label mb-2">Decay metrics</div>
+          <table class="w-full text-xs">
+            <tbody>
+              <template x-for="row in decayTable" :key="row.k">
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.03)">
+                  <td class="py-1.5 font-mono" style="color: var(--text-3)" x-text="row.k"></td>
+                  <td class="py-1.5 text-right num font-mono" :style="`color: ${row.color}`" x-text="row.v"></td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <div class="label mb-2">Theoretical vs actual</div>
+          <div class="text-xs" style="color: var(--text-2)">
+            <p class="mb-2">Theoretical ETN return over the window (geometric compounding):</p>
+            <div class="num font-mono text-xl" :style="`color: ${pctColor(result?.etn_total_pct)}`" x-text="fmtPct(result?.etn_total_pct)"></div>
+            <p class="mt-2 mb-1" style="color: var(--text-3)">vs underlying (simple leverage):</p>
+            <div class="num font-mono text-base" :style="`color: ${pctColor(result?.underlying_total_pct)}`" x-text="fmtPct(result?.underlying_total_pct)"></div>
+            <p class="mt-2" style="color: var(--text-3)">
+              Decay drag = <span class="num font-mono" style="color: var(--down)" x-text="result?.drag_pct != null ? fmtPct(result.drag_pct) : '—'"></span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Disclaimer -->
+    <div class="rounded-lg border px-3 py-2 text-[10px]" style="border-color: var(--border); color: var(--text-3)">
+      ⚠ Simulation uses historical daily returns, not forward-looking projections. TER is applied daily. 
+      Volatility drag (beta-slippage) is a mathematical property of daily-rebalanced leveraged products and 
+      grows with |leverage| and underlying volatility. This is not financial advice.
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="mt-6 pt-4 text-xs flex gap-4 flex-wrap" style="border-top: 1px solid var(--border); color: var(--text-3)">
+    <span>Predator Protocol · yieldchaser/etf-data</span>
+    <a href="index.html" style="color: var(--cyan); text-decoration: none;">← Dashboard</a>
+    <a href="markets.html" style="color: var(--text-3); text-decoration: none;">Markets</a>
+  </footer>
+
+</div><!-- /app -->
+
+<script>
+function simApp() {
+  return {
+    computing: false,
+    underlyings: {},   // loaded from sim_underlyings.json
+    result: null,
+    params: {
+      underlying: 'SPX',
+      leverage: 2,
+      ter: 0.95,
+      days: 252,
+      manualVol: 1.5,
+      drift: 10,
+      nav0: 100,
+    },
+
+    async load() {
+      try {
+        this.underlyings = await fetch('data/sim_underlyings.json').then(r => r.json());
+      } catch (e) {
+        console.warn('sim_underlyings.json not found — using manual vol mode');
+        this.params.underlying = '__manual__';
+      }
+      this.run();
+    },
+
+    get availableSymbols() { return Object.keys(this.underlyings).sort(); },
+
+    run() {
+      this.computing = true;
+      // Defer to next tick so the loading state renders
+      setTimeout(() => {
+        try { this.result = this._simulate(); }
+        catch (e) { console.error(e); this.result = null; }
+        finally { this.computing = false; }
+      }, 10);
+    },
+
+    _simulate() {
+      const { leverage, ter, days, nav0, drift, manualVol, underlying } = this.params;
+      const terDaily = ter / 100 / 252;
+
+      let dailyRets;
+      if (underlying === '__manual__' || !this.underlyings[underlying]) {
+        // Synthetic: use drift + manualVol to generate GBM-like daily returns (historical average, not random)
+        const mu = drift / 100 / 252;
+        const sigma = manualVol / 100;
+        const n = Math.max(21, days);
+        dailyRets = Array.from({ length: n }, (_, i) => mu + sigma * Math.sin(i * 0.31)); // deterministic "typical" path
+      } else {
+        const raw = this.underlyings[underlying];
+        const slice = raw.slice(-days);
+        dailyRets = [];
+        for (let i = 1; i < slice.length; i++) {
+          const r = (slice[i].c - slice[i-1].c) / slice[i-1].c;
+          if (isFinite(r)) dailyRets.push(r);
+        }
+      }
+
+      if (!dailyRets.length) return null;
+
+      // Build NAV series
+      const navs = [nav0];
+      const underlying_vals = [nav0];
+      const dates = [];
+      let underlying_nav = nav0;
+
+      const raw = (underlying !== '__manual__' && this.underlyings[underlying])
+        ? this.underlyings[underlying].slice(-days)
+        : null;
+
+      for (let i = 0; i < dailyRets.length; i++) {
+        const r = dailyRets[i];
+        const prev_nav = navs[navs.length - 1];
+        const etn_r = leverage * r - terDaily;
+        navs.push(prev_nav * (1 + etn_r));
+        underlying_nav = underlying_nav * (1 + r);
+        underlying_vals.push(underlying_nav);
+        dates.push(raw ? raw[i + 1]?.d : `D${i+1}`);
+      }
+
+      const finalNav = navs[navs.length - 1];
+      const finalUnderlying = underlying_vals[underlying_vals.length - 1];
+      const etn_total_pct = (finalNav - nav0) / nav0;
+      const underlying_total_pct = (finalUnderlying - nav0) / nav0;
+      const expected_lev = leverage * underlying_total_pct;
+      const drag_pct = etn_total_pct - expected_lev;
+
+      // Realized daily vol of underlying
+      const mean_r = dailyRets.reduce((s, r) => s + r, 0) / dailyRets.length;
+      const variance = dailyRets.reduce((s, r) => s + (r - mean_r) ** 2, 0) / dailyRets.length;
+      const sigma_d = Math.sqrt(variance);
+
+      // Theoretical annual decay = ½ × (L²-|L|) × σ²/day × 252
+      const annual_decay = 0.5 * (leverage ** 2 - Math.abs(leverage)) * variance * 252;
+
+      return {
+        navs, underlying_vals, dates,
+        etn_total_pct, underlying_total_pct, expected_lev, drag_pct,
+        sigma_d, annual_decay,
+        final_nav: finalNav,
+        sessions: dailyRets.length,
+      };
+    },
+
+    // Chart helpers
+    _chartY(v, allVals, h = 190) {
+      const mn = Math.min(...allVals), mx = Math.max(...allVals);
+      const range = mx - mn || 1;
+      return 10 + (1 - (v - mn) / range) * (h - 10);
+    },
+    get navZeroY() {
+      if (!this.result) return 100;
+      return this._chartY(this.params.nav0, [...this.result.navs, ...this.result.underlying_vals]);
+    },
+    _buildPath(vals, allVals) {
+      return vals.map((v, i) => `${i === 0 ? 'M' : 'L'}${(i / Math.max(1, vals.length - 1)) * 900},${this._chartY(v, allVals)}`).join(' ');
+    },
+    get navLinePath() {
+      if (!this.result) return '';
+      return this._buildPath(this.result.navs, [...this.result.navs, ...this.result.underlying_vals]);
+    },
+    get navAreaPath() {
+      if (!this.result) return '';
+      const allV = [...this.result.navs, ...this.result.underlying_vals];
+      const line = this._buildPath(this.result.navs, allV);
+      const n = this.result.navs.length;
+      const zeroY = this._chartY(this.params.nav0, allV);
+      return `${line} L900,${zeroY} L0,${zeroY} Z`;
+    },
+    get underlyingLinePath() {
+      if (!this.result) return '';
+      const allV = [...this.result.navs, ...this.result.underlying_vals];
+      return this._buildPath(this.result.underlying_vals, allV);
+    },
+    get underlyingAreaPath() {
+      if (!this.result) return '';
+      const allV = [...this.result.navs, ...this.result.underlying_vals];
+      const line = this._buildPath(this.result.underlying_vals, allV);
+      const zeroY = this._chartY(this.params.nav0, allV);
+      return `${line} L900,${zeroY} L0,${zeroY} Z`;
+    },
+
+    get resultKpis() {
+      if (!this.result) return [];
+      const r = this.result;
+      return [
+        { label: 'ETN Final NAV',     value: r.final_nav?.toFixed(2) || '—',         color: this.pctColor(r.etn_total_pct),        sub: `from ${this.params.nav0}` },
+        { label: 'ETN Total Return',  value: this.fmtPct(r.etn_total_pct),            color: this.pctColor(r.etn_total_pct),        sub: `${this.params.days}d` },
+        { label: 'Underlying Return', value: this.fmtPct(r.underlying_total_pct),     color: this.pctColor(r.underlying_total_pct), sub: 'unleveraged' },
+        { label: 'Vol Decay / yr',    value: this.fmtPct(r.annual_decay),             color: 'var(--down)',                          sub: `σ=${(r.sigma_d*100).toFixed(2)}%/d` },
+        { label: 'Total Drag',        value: this.fmtPct(r.drag_pct),                 color: r.drag_pct < 0 ? 'var(--down)' : 'var(--up)', sub: 'vs naive levered' },
+        { label: 'Sessions',          value: r.sessions || '—',                       color: 'var(--text-2)',                       sub: `${this.params.leverage}x | TER ${this.params.ter}%` },
+      ];
+    },
+
+    get decayTable() {
+      if (!this.result) return [];
+      const r = this.result;
+      const fp = (n, dp = 4) => (n == null || !isFinite(n)) ? '—' : (n >= 0 ? '+' : '') + (n * 100).toFixed(dp) + '%';
+      return [
+        { k: 'Realized σ/day',         v: (r.sigma_d * 100).toFixed(4) + '%',         color: 'var(--amber)' },
+        { k: 'Realized σ/yr (ann.)',    v: (r.sigma_d * Math.sqrt(252) * 100).toFixed(2) + '%', color: 'var(--amber)' },
+        { k: 'Annual vol decay (est.)', v: fp(r.annual_decay),                          color: 'var(--down)' },
+        { k: 'TER / yr',               v: this.params.ter.toFixed(2) + '%',            color: 'var(--down)' },
+        { k: 'Leverage',               v: this.params.leverage + 'x',                  color: Math.abs(this.params.leverage) > 2 ? 'var(--down)' : 'var(--amber)' },
+        { k: 'Naive L × underlying',   v: fp(r.expected_lev),                          color: 'var(--text-2)' },
+        { k: 'Actual ETN return',       v: fp(r.etn_total_pct),                        color: this.pctColor(r.etn_total_pct) },
+        { k: 'Compounding drag',        v: fp(r.drag_pct),                             color: r.drag_pct < 0 ? 'var(--down)' : 'var(--up)' },
+      ];
+    },
+
+    fmtPct(n) { if (n == null || !isFinite(n)) return '—'; const v = n * 100; return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; },
+    pctColor(n) { if (n == null || !isFinite(n)) return 'var(--text-3)'; if (n > 0.005) return 'var(--up)'; if (n < -0.005) return 'var(--down)'; return 'var(--text-2)'; },
+  };
+}
+</script>
+</body>
+</html>

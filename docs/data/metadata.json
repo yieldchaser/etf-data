@@ -1,9 +1,9 @@
 {
-  "generated_at_utc": "2026-05-17T03:06:24+00:00",
+  "generated_at_utc": "2026-05-17T04:48:55+00:00",
   "source": "data/all_history.csv",
   "source_rows_raw": 81452,
-  "source_rows_after_sanitize": 1331,
-  "leaderboard_rows": 924,
+  "source_rows_after_sanitize": 1322,
+  "leaderboard_rows": 920,
   "latest_holdings_as_of": "2026-05-15",
   "latest_scrape_date": "2026-05-16",
   "etfs": [
@@ -82,20 +82,23 @@
     "2026-05-15"
   ],
   "flag_counts_today": {
-    "HIGH_CONVICTION": 39,
+    "HIGH_CONVICTION": 38,
     "SPECULATIVE_BETA": 112,
     "NEW": 13,
-    "NONE": 773
+    "NONE": 770
   },
   "flag_counts_yesterday": {
-    "HIGH_CONVICTION": 39,
+    "HIGH_CONVICTION": 38,
     "SPECULATIVE_BETA": 112
   },
   "config_snapshot": {
     "sanitizer": {
       "blocked_tickers": [
         "USD",
-        "$USD"
+        "$USD",
+        "$CAD",
+        "Cash&Other",
+        "-"
       ],
       "blocked_name_patterns": []
     },

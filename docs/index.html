@@ -113,7 +113,7 @@
   </section>
 
   <!-- ── TABS ───────────────────────────────────────────────────────────── -->
-  <nav class="flex gap-1 mb-3 text-xs">
+  <nav class="flex flex-wrap gap-1 mb-3 text-xs items-center">
     <template x-for="t in tabs" :key="t.id">
       <button @click="activeTab = t.id"
               :class="activeTab === t.id ? 'tab-active' : ''"
@@ -123,7 +123,11 @@
         <span class="num font-mono ml-1 opacity-60" x-show="t.count !== undefined" x-text="`(${t.count})`"></span>
       </button>
     </template>
+    <!-- External page links (same aesthetic as tabs) -->
+    <a href="markets.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color: var(--text-2); border-color: var(--border); text-decoration: none;">Markets</a>
+    <a href="sim.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color: var(--text-2); border-color: var(--border); text-decoration: none;">Simulator</a>
   </nav>
+
 
   <!-- ═════════════ TAB 1: LEADERBOARD ═════════════════════════════════════ -->
   <section x-show="activeTab === 'leaderboard'">
@@ -172,7 +176,19 @@
               <th class="text-left px-3 py-2">Ticker</th>
               <th class="text-left px-3 py-2 hidden sm:table-cell">Company</th>
               <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('final_score')" :class="sortClass('final_score')">Score</th>
-              <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell" @click="sort('score_delta_pct')" :class="sortClass('score_delta_pct')">Day Δ%</th>
+              <th class="text-right px-3 py-2 hidden lg:table-cell">
+                <div class="flex items-center justify-end gap-1">
+                  <span class="cursor-pointer hover:text-zinc-300" @click="sort('score_delta_pct')" :class="sortClass('score_delta_pct')">Sc.&Delta;%</span>
+                  <div class="flex border rounded overflow-hidden" style="border-color: var(--border-2)">
+                    <template x-for="p in deltaPeriodsAvail" :key="p">
+                      <button @click.stop="activeDeltaPeriod = p"
+                              :style="activeDeltaPeriod === p ? 'background: rgba(34,211,238,0.12); color: var(--cyan);' : 'color: var(--text-3);'"
+                              class="px-1 py-0.5 text-[9px] font-mono leading-none hover:text-zinc-300 transition"
+                              x-text="p + 'd'"></button>
+                    </template>
+                  </div>
+                </div>
+              </th>
               <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300 hidden md:table-cell" @click="sort('etf_count')" :class="sortClass('etf_count')">ETFs</th>
               <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell" @click="sort('total_weight')" :class="sortClass('total_weight')">Weight</th>
               <th class="text-left px-3 py-2 hidden xl:table-cell">Strategies</th>
@@ -188,10 +204,14 @@
                     class="cursor-pointer transition"
                     style="border-bottom: 1px solid rgba(255,255,255,0.03)">
                   <td class="px-3 py-2 num font-mono" style="color: var(--text-3)" x-text="row.leaderboard_rank"></td>
-                  <td class="px-3 py-2 font-medium font-mono" x-text="row.ticker"></td>
+                  <td class="px-3 py-2 font-medium font-mono">
+                    <a :href="`stock.html?t=${row.ticker}`" @click.stop
+                       class="hover:text-cyan-300 transition" style="color: inherit; text-decoration: none;"
+                       x-text="row.ticker"></a>
+                  </td>
                   <td class="px-3 py-2 hidden sm:table-cell truncate max-w-[260px]" :title="row.company" style="color: var(--text-2)" x-text="row.company"></td>
                   <td class="px-3 py-2 text-right num font-mono font-medium" x-text="fmt1(row.final_score)"></td>
-                  <td class="px-3 py-2 text-right num font-mono hidden lg:table-cell" :style="`color: ${flowColor(row.score_delta_pct)}`" x-text="fmtPct(row.score_delta_pct)"></td>
+                  <td class="px-3 py-2 text-right num font-mono hidden lg:table-cell" :style="`color: ${flowColor(activeDeltaValue(row))}`" x-text="fmtPct(activeDeltaValue(row))"></td>
                   <td class="px-3 py-2 text-right num font-mono hidden md:table-cell" x-text="row.etf_count"></td>
                   <td class="px-3 py-2 text-right num font-mono hidden lg:table-cell" style="color: var(--text-2)" x-text="fmtWeight(row.total_weight)"></td>
                   <td class="px-3 py-2 hidden xl:table-cell">
@@ -554,6 +574,15 @@ function app() {
       ];
     },
 
+    deltaPeriodsAvail: [1, 7, 14, 30],
+    activeDeltaPeriod: 7,
+    activeDeltaValue(row) {
+      // Route to the correct multi-period delta column in the leaderboard
+      if (this.activeDeltaPeriod === 7) return row.score_delta_pct;
+      const key = `score_delta_pct_${this.activeDeltaPeriod}d`;
+      return row[key] !== undefined ? row[key] : row.score_delta_pct;
+    },
+
     toggleFlag(f) { this.flag = (this.flag === f) ? '' : f; this.page = 1; },
     reset() { this.flag = ''; this.newOnly = false; this.selectedTier = ''; this.q = ''; this.page = 1; },
 
@@ -598,9 +627,19 @@ function app() {
       return (this.meta.etfs || []).map(e => ({ etf: e, tier: tierMap[e] || '', count: counts[e] || 0 }));
     },
     get currentETFTier() { return this.etfSummary.find(e => e.etf === this.activeETF)?.tier || ''; },
-    get etfHoldings() {
-      return this.holdings.filter(h => h.ETF_Ticker === this.activeETF).sort((a, b) => a.rank - b.rank);
+    get etfHoldingsIndex() {
+      // Memoize: build a {ETF_Ticker: rows[]} index once over the full holdings array.
+      // O(n) build, O(1) lookup — avoids full filter scan on every reactive read.
+      const idx = {};
+      for (const h of this.holdings) {
+        if (!idx[h.ETF_Ticker]) idx[h.ETF_Ticker] = [];
+        idx[h.ETF_Ticker].push(h);
+      }
+      // Sort each bucket by rank ascending
+      for (const k of Object.keys(idx)) idx[k].sort((a, b) => a.rank - b.rank);
+      return idx;
     },
+    get etfHoldings() { return this.etfHoldingsIndex[this.activeETF] || []; },
 
     // Formatting
     fmt1(n) { return (n == null || !isFinite(n)) ? '—' : Number(n).toFixed(1); },
