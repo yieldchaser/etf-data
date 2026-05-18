@@ -405,11 +405,15 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     lb_records = leaderboard.to_dict(orient="records")
 
     # Build per-ticker flag history from historical leaderboards
-    # Schema: { ticker: [{d, flag, velocity_score, burst_30d, rank}] }
+    # Schema: { ticker: [{d, flag, rank, vs, burst}] }
+    # vs = velocity_score (only available if column exists in snapshot)
+    # burst = burst_30d (only available if column exists in snapshot)
     flag_history: dict[str, list] = {}
     if historical:
         for d in sorted(historical.keys()):
             lb_snap = historical[d]
+            has_vs = "velocity_score" in lb_snap.columns
+            has_burst = "burst_30d" in lb_snap.columns
             for _, row in lb_snap.iterrows():
                 t = row["ticker"]
                 entry = {
@@ -417,6 +421,11 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                     "flag": row.get("flag", ""),
                     "rank": int(row.get("leaderboard_rank", 0)),
                 }
+                if has_vs:
+                    vs = row.get("velocity_score")
+                    entry["vs"] = round(float(vs), 1) if vs is not None and vs == vs else 0
+                if has_burst:
+                    entry["burst"] = bool(row.get("burst_30d", False))
                 if t not in flag_history:
                     flag_history[t] = []
                 flag_history[t].append(entry)

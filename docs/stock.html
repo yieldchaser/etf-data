@@ -187,28 +187,41 @@
             x-text="(leaderboardRow?.score_streak || 0) > 2 ? '↗ strengthening' : (leaderboardRow?.score_streak || 0) < -2 ? '↘ weakening' : '→ stable'"></span>
     </div>
 
-    <!-- SIGNAL TIMELINE — state history visualization -->
+    <!-- SIGNAL TIMELINE — state history with rank overlay -->
     <div x-show="flagHistory?.length > 5" class="rounded-lg border mb-5" style="background: var(--surface); border-color: var(--border)">
       <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
-        <div class="label-cyan label">Signal Timeline — <span class="font-mono" x-text="ticker"></span></div>
+        <div class="label-cyan label">Signal Timeline — <span class="font-mono" x-text="ticker"></span> · <span class="num font-mono" x-text="flagHistory?.length || 0"></span> days</div>
         <div class="flex items-center gap-3 text-[10px]">
-          <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(52,211,153,0.5)"></span> HC</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(52,211,153,0.6)"></span> HC</span>
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(251,191,36,0.5)"></span> SPEC</span>
-          <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(255,255,255,0.08)"></span> Neutral</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(34,211,238,0.4)"></span> VELO</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(168,85,247,0.5)"></span> BURST</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-1 h-3 rounded-sm" style="background: rgba(255,255,255,0.4)"></span> Rank</span>
         </div>
       </div>
       <div class="px-3 py-3">
-        <svg :viewBox="`0 0 ${(flagHistory || []).length * 8 + 20} 40`" class="w-full" style="height: 36px">
+        <!-- State bars + rank line overlay -->
+        <svg :viewBox="`0 0 ${Math.max(100, (flagHistory || []).length * 8 + 40)} 80`" class="w-full" style="height: 72px">
+          <!-- State bars (bottom layer) -->
           <template x-for="(entry, i) in (flagHistory || [])" :key="i">
-            <rect :x="i * 8" y="4" width="7" height="28" rx="1.5"
-                  :fill="entry.flag === 'HIGH_CONVICTION' ? 'rgba(52,211,153,0.5)' : entry.flag === 'SPECULATIVE_BETA' ? 'rgba(251,191,36,0.4)' : 'rgba(255,255,255,0.06)'"
-                  :x-tooltip="`'${entry.d}<br>Flag: ${entry.flag || 'None'}<br>Rank: #${entry.rank}'`"/>
+            <rect :x="i * 8 + 20" y="30" width="7" height="40" rx="1.5"
+                  :fill="timelineBarColor(entry, i)"
+                  :x-tooltip="timelineTooltip(entry, i)"/>
+          </template>
+          <!-- Rank line overlay (top layer) — inverted Y so rank 1 = top -->
+          <template x-if="flagHistory?.length > 1">
+            <path :d="timelineRankPath" stroke="rgba(255,255,255,0.6)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
           </template>
         </svg>
-        <!-- Date labels -->
-        <div class="flex justify-between text-[9px] font-mono mt-1" style="color: var(--text-3)">
-          <span x-text="(flagHistory || [])[0]?.d || ''"></span>
-          <span x-text="(flagHistory || []).slice(-1)[0]?.d || ''"></span>
+        <!-- Date labels + state duration summary -->
+        <div class="flex justify-between items-center text-[9px] font-mono mt-1">
+          <span style="color: var(--text-3)" x-text="(flagHistory || [])[0]?.d || ''"></span>
+          <div class="flex gap-3" style="color: var(--text-3)">
+            <span x-show="timelineStats.hcDays > 0" style="color: var(--up)" x-text="`HC: ${timelineStats.hcDays}d`"></span>
+            <span x-show="timelineStats.veloDays > 0" style="color: var(--cyan)" x-text="`VELO: ${timelineStats.veloDays}d`"></span>
+            <span x-show="timelineStats.burstDays > 0" style="color: #c084fc" x-text="`BURST: ${timelineStats.burstDays}d`"></span>
+          </div>
+          <span style="color: var(--text-3)" x-text="(flagHistory || []).slice(-1)[0]?.d || ''"></span>
         </div>
       </div>
     </div>
@@ -766,6 +779,76 @@ function stockApp() {
 
     get rankSharedDates() {
       return this.rankLines[0]?.sharedDates || [];
+    },
+
+    // ── Signal Timeline helpers ──────────────────────────────────────────
+    timelineBarColor(entry, i) {
+      const fh = this.flagHistory || [];
+      // Derive VELO/BURST from rank trajectory (since historical snapshots don't have velocity_score)
+      const isVelo = this._isVeloAt(i);
+      const isBurst = this._isBurstAt(i);
+      if (isBurst) return 'rgba(168,85,247,0.55)';  // purple
+      if (entry.flag === 'HIGH_CONVICTION') return 'rgba(52,211,153,0.6)';  // green
+      if (isVelo) return 'rgba(34,211,238,0.4)';  // cyan
+      if (entry.flag === 'SPECULATIVE_BETA') return 'rgba(251,191,36,0.45)';  // amber
+      return 'rgba(255,255,255,0.06)';  // neutral
+    },
+
+    _isVeloAt(i) {
+      // VELO-like: rank improved by 5+ positions over previous 7 entries
+      const fh = this.flagHistory || [];
+      if (i < 7) return false;
+      const cur = fh[i]?.rank;
+      const prev = fh[i - 7]?.rank;
+      if (!cur || !prev) return false;
+      return (prev - cur) >= 5;  // rank decreased = improved
+    },
+
+    _isBurstAt(i) {
+      // BURST-like: rank improved by 40+ positions at any point in a 30-entry window ending at i
+      const fh = this.flagHistory || [];
+      if (i < 5) return false;
+      const windowStart = Math.max(0, i - 30);
+      let worstRank = 0;
+      for (let j = windowStart; j <= i; j++) {
+        if (fh[j]?.rank > worstRank) worstRank = fh[j].rank;
+      }
+      const curRank = fh[i]?.rank || 0;
+      return (worstRank - curRank) >= 40;
+    },
+
+    timelineTooltip(entry, i) {
+      const isVelo = this._isVeloAt(i);
+      const isBurst = this._isBurstAt(i);
+      let state = entry.flag || 'Neutral';
+      if (isBurst) state = 'BURST';
+      else if (isVelo && state === '') state = 'VELO';
+      return `'${entry.d}<br>State: ${state}<br>Rank: #${entry.rank}'`;
+    },
+
+    get timelineRankPath() {
+      const fh = this.flagHistory || [];
+      if (fh.length < 2) return '';
+      const ranks = fh.map(e => e.rank).filter(Boolean);
+      if (!ranks.length) return '';
+      const minR = Math.min(...ranks), maxR = Math.max(...ranks);
+      const range = Math.max(maxR - minR, 2);
+      return fh.map((e, i) => {
+        const x = i * 8 + 23.5;  // center of bar
+        const y = 5 + ((e.rank - minR) / range) * 22;  // inverted: rank 1 = top (y=5), worst = bottom (y=27)
+        return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(' ');
+    },
+
+    get timelineStats() {
+      const fh = this.flagHistory || [];
+      let hcDays = 0, veloDays = 0, burstDays = 0;
+      for (let i = 0; i < fh.length; i++) {
+        if (fh[i].flag === 'HIGH_CONVICTION') hcDays++;
+        if (this._isVeloAt(i)) veloDays++;
+        if (this._isBurstAt(i)) burstDays++;
+      }
+      return { hcDays, veloDays, burstDays };
     },
 
     // Y-axis labels for the rank chart
