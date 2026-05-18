@@ -200,22 +200,8 @@
         </div>
       </div>
       <div class="px-3 py-3">
-        <!-- State bars + rank line overlay -->
-        <svg viewBox="0 0 700 60" class="w-full" style="height: 56px" preserveAspectRatio="none">
-          <!-- State bars (bottom layer) -->
-          <template x-for="(entry, i) in (flagHistory || [])" :key="i">
-            <g>
-              <rect :x="(i / Math.max(1, (flagHistory||[]).length - 1)) * 680 + 10" y="8" :width="Math.max(2, 670 / (flagHistory||[]).length - 1)" height="44" rx="1"
-                    :fill="timelineBarColor(entry, i)"/>
-            </g>
-          </template>
-          <!-- Rank line overlay (top layer) -->
-          <template x-if="flagHistory?.length > 1">
-            <g>
-              <path :d="timelineRankPath" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-            </g>
-          </template>
-        </svg>
+        <!-- State bars + rank line — use x-html to bypass Alpine SVG template issues -->
+        <div x-html="signalTimelineSvg" class="w-full" style="height: 56px"></div>
         <!-- Date labels + state duration summary -->
         <div class="flex justify-between items-center text-[9px] font-mono mt-1">
           <span style="color: var(--text-3)" x-text="(flagHistory || [])[0]?.d || ''"></span>
@@ -388,79 +374,11 @@
              rcx = (rci / (n - 1)) * rect.width;
            "
            @mouseleave="rci = null; rcx = null">
-        <svg viewBox="0 0 1060 250" class="w-full" style="height: 250px">
-          <!-- Y-axis labels (rank numbers) -->
-          <template x-for="label in rankYLabels" :key="label.rank">
-            <g>
-              <line x1="50" x2="1010" :y1="label.y" :y2="label.y"
-                    stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
-              <text x="44" :y="label.y + 3" text-anchor="end"
-                    style="font-family: ui-monospace; font-size: 9px; fill: var(--text-3)"
-                    x-text="'#' + label.rank"></text>
-            </g>
-          </template>
-          <!-- One line per ETF — NO drop-shadow (causes rendering bugs) -->
-          <template x-for="line in rankLines" :key="line.etf">
-            <g>
-              <!-- Thicker background stroke for glow effect -->
-              <path :d="line.path" :stroke="line.color" stroke-width="6" fill="none"
-                    stroke-linecap="round" stroke-linejoin="round" opacity="0.25"/>
-              <!-- Main line -->
-              <path :d="line.path" :stroke="line.color" stroke-width="3" fill="none"
-                    stroke-linecap="round" stroke-linejoin="round"
-                    :opacity="rhover && rhover !== line.etf ? 0.15 : 1"
-                    @mouseenter="rhover = line.etf" @mouseleave="rhover = null"
-                    style="transition: opacity 0.2s"/>
-              <!-- Current rank pill at end of line -->
-              <rect :x="line.endX + 4" :y="line.endY - 7" width="32" height="14" rx="3"
-                    :fill="line.color" fill-opacity="0.15" :stroke="line.color" stroke-opacity="0.4" stroke-width="0.5"/>
-              <text :x="line.endX + 20" :y="line.endY + 3" text-anchor="middle"
-                    :fill="line.color" style="font-family: ui-monospace; font-size: 9px; font-weight: 600"
-                    x-text="'#' + line.series[line.series.length-1]?.r"></text>
-            </g>
-          </template>
-          <!-- Crosshair dots -->
-          <template x-if="rci !== null">
-            <g>
-              <template x-for="line in rankLines" :key="line.etf">
-                <template x-for="pt in [line.series.find(p => p.d === rankSharedDates[rci])]" :key="pt?.d">
-                  <circle x-show="pt"
-                          :cx="pt?.x" :cy="pt?.y" r="4"
-                          :fill="line.color" stroke="#000" stroke-width="2"/>
-                </template>
-              </template>
-            </g>
-          </template>
-          <!-- Crosshair vertical -->
-          <template x-if="rci !== null">
-            <line stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3 3"
-                  :x1="(rci / Math.max(1, rankSharedDates.length - 1)) * 960 + 50"
-                  y1="10"
-                  :x2="(rci / Math.max(1, rankSharedDates.length - 1)) * 960 + 50"
-                  y2="220"/>
-          </template>
-          <!-- X-axis date labels -->
-          <template x-if="rankSharedDates.length >= 2">
-            <g style="font-family: ui-monospace; font-size: 9px" fill="var(--text-3)">
-              <text x="50"   y="242" text-anchor="start"  x-text="rankSharedDates[0]"></text>
-              <text x="530"  y="242" text-anchor="middle" x-text="rankSharedDates[Math.floor(rankSharedDates.length / 2)]"></text>
-              <text x="1010" y="242" text-anchor="end"    x-text="rankSharedDates[rankSharedDates.length - 1]"></text>
-            </g>
-          </template>
-        </svg>
-        <!-- Hover tooltip -->
-        <div x-show="rci !== null" class="chart-tooltip" :style="`top: 4px; left: ${Math.min((rcx || 0) + 12, 320)}px`">
-          <div class="font-mono text-[10px] mb-1" style="color: var(--text-3)"
-               x-text="rankSharedDates[rci] || ''"></div>
-          <template x-for="line in rankLines" :key="line.etf">
-            <div class="flex items-center gap-2 text-[10px]">
-              <span class="w-2 h-2 rounded-sm" :style="`background: ${line.color}`"></span>
-              <span class="font-mono w-10" :style="`color: ${line.color}`" x-text="line.etf"></span>
-              <span class="num font-mono" style="color: var(--text)"
-                    x-text="(() => { const p = line.series.find(p => p.d === rankSharedDates[rci]); return p ? '#' + p.r : '\u2014'; })()"></span>
-            </div>
-          </template>
-        </div>
+        <!-- Static SVG via x-html — bypasses Alpine 3 SVG-template rendering issue -->
+        <div x-html="rankHistorySvg" class="w-full" style="height: 250px"></div>
+        <!-- Hover tooltip — built as HTML string to avoid Alpine template-in-template quirks -->
+        <div x-show="rci !== null" x-html="rankHoverTooltipHtml"
+             class="chart-tooltip" :style="`top: 4px; left: ${Math.min((rcx || 0) + 12, 320)}px`"></div>
         <!-- Legend row -->
         <div class="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-[10px]" style="color: var(--text-2)">
           <template x-for="line in rankLines" :key="line.etf">
@@ -880,6 +798,120 @@ function stockApp() {
 
     tierLineColor(tier) {
       return { Scout: '#e879f9', Quant: '#818cf8', Quality: '#2dd4bf', Trend: '#fbbf24', Blob: '#a1a1aa' }[tier] || '#a1a1aa';
+    },
+
+    // ── Signal Timeline SVG (built as string — bypasses Alpine 3 SVG <template> rendering issue) ──
+    get signalTimelineSvg() {
+      const fh = this.flagHistory || [];
+      if (fh.length < 2) return '';
+      const n = fh.length;
+      const w = 700, h = 60;
+      const innerW = w - 20;            // 10px padding each side
+      const barW = Math.max(1.5, innerW / n - 0.4);
+      let bars = '';
+      for (let i = 0; i < n; i++) {
+        const x = 10 + (i / Math.max(1, n - 1)) * innerW - barW / 2;
+        const fill = this.timelineBarColor(fh[i], i);
+        bars += `<rect x="${x.toFixed(2)}" y="8" width="${barW.toFixed(2)}" height="44" rx="1" fill="${fill}"/>`;
+      }
+      // Rank line — recomputed against this SVG's coord system (x scaled to innerW + 10 offset)
+      let line = '';
+      const ranks = fh.map(e => e.rank).filter(Boolean);
+      if (ranks.length >= 2) {
+        const minR = Math.min(...ranks), maxR = Math.max(...ranks);
+        const range = Math.max(maxR - minR, 2);
+        let d = '';
+        for (let i = 0; i < n; i++) {
+          if (!fh[i]?.rank) continue;
+          const x = 10 + (i / Math.max(1, n - 1)) * innerW;
+          const y = 4 + ((fh[i].rank - minR) / range) * 52;
+          d += `${d ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`;
+        }
+        if (d) line = `<path d="${d}" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+      }
+      return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" width="100%" height="${h}" style="display:block">${bars}${line}</svg>`;
+    },
+
+    // ── Per-ETF Rank History SVG (built as string — same fix) ────────────────
+    get rankHistorySvg() {
+      const lines = this.rankLines;
+      if (!lines.length) return '';
+      const dates = this.rankSharedDates;
+      const yLabels = this.rankYLabels;
+      const W = 1060, H = 250;
+      const xLeft = 50, xRight = 1010;
+
+      // 1. Y grid lines + rank labels
+      let grid = '';
+      for (const lab of yLabels) {
+        grid += `<line x1="${xLeft}" x2="${xRight}" y1="${lab.y}" y2="${lab.y}" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>`;
+        grid += `<text x="${xLeft - 6}" y="${lab.y + 3}" text-anchor="end" style="font-family:ui-monospace;font-size:9px;fill:var(--text-3)">#${lab.rank}</text>`;
+      }
+
+      // 2. One group per ETF — glow stroke, main line, end-of-line pill
+      let pathStr = '';
+      const hover = this.rhover;
+      for (const line of lines) {
+        const dimmed = hover && hover !== line.etf;
+        const op = dimmed ? '0.15' : '1';
+        const lastPt = line.series[line.series.length - 1];
+        if (!lastPt) continue;
+        // Glow
+        pathStr += `<path d="${line.path}" stroke="${line.color}" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.25"/>`;
+        // Main
+        pathStr += `<path d="${line.path}" stroke="${line.color}" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="${op}" style="transition:opacity 0.2s"/>`;
+        // End-of-line rank pill
+        const px = line.endX + 4, py = line.endY - 7;
+        pathStr += `<rect x="${px.toFixed(1)}" y="${py.toFixed(1)}" width="32" height="14" rx="3" fill="${line.color}" fill-opacity="0.15" stroke="${line.color}" stroke-opacity="0.4" stroke-width="0.5"/>`;
+        pathStr += `<text x="${(line.endX + 20).toFixed(1)}" y="${(line.endY + 3).toFixed(1)}" text-anchor="middle" fill="${line.color}" style="font-family:ui-monospace;font-size:9px;font-weight:600">#${lastPt.r}</text>`;
+      }
+
+      // 3. Crosshair (vertical line + dots on each ETF where data exists)
+      let crosshair = '';
+      if (this.rci !== null && dates.length >= 2) {
+        const cx = (this.rci / Math.max(1, dates.length - 1)) * (xRight - xLeft) + xLeft;
+        crosshair += `<line x1="${cx.toFixed(1)}" y1="10" x2="${cx.toFixed(1)}" y2="220" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3 3"/>`;
+        const targetDate = dates[this.rci];
+        for (const line of lines) {
+          const pt = line.series.find(p => p.d === targetDate);
+          if (pt) {
+            crosshair += `<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="4" fill="${line.color}" stroke="#000" stroke-width="2"/>`;
+          }
+        }
+      }
+
+      // 4. X-axis date labels
+      let xAxis = '';
+      if (dates.length >= 2) {
+        const mid = dates[Math.floor(dates.length / 2)] || '';
+        xAxis = `<g style="font-family:ui-monospace;font-size:9px" fill="var(--text-3)">
+          <text x="${xLeft}" y="242" text-anchor="start">${dates[0]}</text>
+          <text x="${(xLeft + xRight) / 2}" y="242" text-anchor="middle">${mid}</text>
+          <text x="${xRight}" y="242" text-anchor="end">${dates[dates.length - 1]}</text>
+        </g>`;
+      }
+
+      return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" style="display:block">${grid}${pathStr}${crosshair}${xAxis}</svg>`;
+    },
+
+    // ── Per-ETF rank-chart hover tooltip (built as HTML string) ──────────────
+    get rankHoverTooltipHtml() {
+      if (this.rci === null) return '';
+      const dates = this.rankSharedDates;
+      if (!dates.length) return '';
+      const targetDate = dates[this.rci] || '';
+      const lines = this.rankLines;
+      let rows = '';
+      for (const line of lines) {
+        const pt = line.series.find(p => p.d === targetDate);
+        const rank = pt ? `#${pt.r}` : '—';
+        rows += `<div class="flex items-center gap-2 text-[10px]">
+          <span class="w-2 h-2 rounded-sm" style="background:${line.color}"></span>
+          <span class="font-mono w-10" style="color:${line.color}">${line.etf}</span>
+          <span class="num font-mono" style="color:var(--text)">${rank}</span>
+        </div>`;
+      }
+      return `<div class="font-mono text-[10px] mb-1" style="color:var(--text-3)">${targetDate}</div>${rows}`;
     },
 
     // lbRankSeries is pre-computed in load() — O(1) reads here
