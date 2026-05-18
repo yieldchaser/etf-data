@@ -199,6 +199,39 @@
             x-text="(leaderboardRow?.score_streak || 0) > 2 ? '↗ strengthening' : (leaderboardRow?.score_streak || 0) < -2 ? '↘ weakening' : '→ stable'"></span>
     </div>
 
+    <!-- SCORE DECOMPOSITION — how each ETF contributes to the final score -->
+    <div x-show="scoreComponents.length > 0" class="rounded-lg border mb-5" style="background: var(--surface); border-color: var(--border)">
+      <div class="px-3 py-2 flex items-center justify-between flex-wrap gap-y-1" style="border-bottom: 1px solid var(--border)">
+        <div class="flex items-center gap-2 flex-wrap">
+          <div class="label-cyan label">Score decomposition</div>
+          <span class="text-[10px]" style="color: var(--text-3)">how each ETF contributes to the final score</span>
+        </div>
+        <span x-show="(leaderboardRow?.concentration_score || 0) >= 70" class="chip"
+              x-tooltip="`'Top ETF accounts for '+ leaderboardRow.concentration_score +'% of score — fragile conviction'`"
+              style="background: rgba(251,113,133,0.10); color: #fda4af; border: 1px solid rgba(251,113,133,0.25)"
+              x-text="`Concentrated · ${leaderboardRow?.concentration_score}%`"></span>
+        <span x-show="(leaderboardRow?.concentration_score || 0) < 70 && (leaderboardRow?.etf_count || 0) >= 2" class="chip"
+              style="background: rgba(20,184,166,0.10); color: #5eead4; border: 1px solid rgba(20,184,166,0.25)"
+              x-text="`Diversified · ${leaderboardRow?.concentration_score}% top`"></span>
+      </div>
+      <div class="px-3 py-3">
+        <div x-html="scoreDecompSvg" class="w-full" style="height: 28px"></div>
+        <!-- Legend with per-ETF breakdown -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-1 mt-2 text-[10px]">
+          <template x-for="c in scoreDecompRows" :key="c.etf">
+            <div class="flex items-center gap-1.5 cursor-pointer hover:bg-white/5 px-1 rounded"
+                 @click="window.location.href = `index.html#etf=${c.etf}`"
+                 x-tooltip="`'Rank #'+c.rank+' in '+c.etf+' · weight '+(c.weight*100).toFixed(2)+'% · score '+c.score.toFixed(0)`">
+              <span class="inline-block w-2 h-2 rounded-sm" :style="`background: ${c.color}`"></span>
+              <span class="font-mono font-medium" :style="`color: ${c.color}`" x-text="c.etf"></span>
+              <span class="font-mono" style="color: var(--text-2)" x-text="`${c.pct}%`"></span>
+              <span class="font-mono" style="color: var(--text-3)" x-text="`#${c.rank}`"></span>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+
     <!-- SIGNAL TIMELINE — state history with rank overlay -->
     <div x-show="flagHistory?.length > 5" class="rounded-lg border mb-5" style="background: var(--surface); border-color: var(--border)">
       <div class="px-3 py-2 flex items-center justify-between flex-wrap gap-y-1" style="border-bottom: 1px solid var(--border)">
@@ -526,6 +559,7 @@ function stockApp() {
     leaderboardRow: null,  // single row from leaderboard for KPIs
     tierMap: {},           // ETF_Ticker -> tier name
     flagHistory: [],       // [{d, flag, rank}] — loaded from flag_history.json
+    scoreComponents: [],   // per-ETF score components for this ticker
     rhover: null,          // hovered ETF line in rank chart
     rci: null,             // crosshair index in rank chart
     rcx: null,             // crosshair x position in rank chart
@@ -539,15 +573,19 @@ function stockApp() {
       document.title = `Predator Protocol · ${this.ticker}`;
 
       try {
-        const [lbData, scoreData, hhData] = await Promise.all([
+        const [lbData, scoreData, hhData, hlData] = await Promise.all([
           fetch('data/leaderboard.json').then(r => r.json()),
           fetch('data/score_history.json').then(r => r.json()),
           fetch('data/holdings_history.json').then(r => r.json()),
+          fetch('data/holdings_latest.json').then(r => r.json()).catch(() => []),
         ]);
 
         // Leaderboard row
         this.leaderboardRow = lbData.find(r => r.ticker === this.ticker) || null;
         if (this.leaderboardRow) this.company = this.leaderboardRow.company || '';
+
+        // Per-ETF score components for this ticker (decomposition chart)
+        this.scoreComponents = (hlData || []).filter(r => r.ticker === this.ticker);
 
         // Store full score map for global rank computation
         this._allScores = scoreData;
@@ -942,6 +980,51 @@ function stockApp() {
 
     tierLineColor(tier) {
       return { Scout: '#e879f9', Quant: '#818cf8', Quality: '#2dd4bf', Trend: '#fbbf24', Blob: '#a1a1aa' }[tier] || '#a1a1aa';
+    },
+
+    // ── Score Decomposition (per-ETF stacked bar) ────────────────────────
+    get scoreDecompRows() {
+      const comps = (this.scoreComponents || [])
+        .map(r => ({
+          etf: r.ETF_Ticker,
+          tier: r.tier || this.tierMap[r.ETF_Ticker] || 'Blob',
+          score: r.score || 0,
+          base: r.base_score || 0,
+          bonus: r.new_bonus || 0,
+          rank: r.rank,
+          weight: r.weight,
+        }))
+        .filter(c => c.score > 0)
+        .sort((a, b) => b.score - a.score);
+      const total = comps.reduce((s, c) => s + c.score, 0) || 1;
+      for (const c of comps) {
+        c.color = this.tierLineColor(c.tier);
+        c.pct = ((c.score / total) * 100).toFixed(0);
+      }
+      return comps;
+    },
+
+    get scoreDecompSvg() {
+      const rows = this.scoreDecompRows;
+      if (!rows.length) return '';
+      const W = 1000, H = 28;
+      const total = rows.reduce((s, c) => s + c.score, 0) || 1;
+      let x = 0;
+      let parts = '';
+      for (let i = 0; i < rows.length; i++) {
+        const c = rows[i];
+        const w = (c.score / total) * W;
+        // Inner bar
+        parts += `<rect x="${x.toFixed(2)}" y="0" width="${w.toFixed(2)}" height="${H}" fill="${c.color}" fill-opacity="0.7" stroke="rgba(0,0,0,0.5)" stroke-width="0.5"/>`;
+        // ETF label inside if wide enough
+        if (w >= 50) {
+          parts += `<text x="${(x + w / 2).toFixed(2)}" y="${(H / 2 + 1).toFixed(2)}" text-anchor="middle" dominant-baseline="middle" style="font-family:ui-monospace;font-size:10px;font-weight:600;fill:#fff;pointer-events:none">${c.etf}</text>`;
+        } else if (w >= 24) {
+          parts += `<text x="${(x + w / 2).toFixed(2)}" y="${(H / 2 + 1).toFixed(2)}" text-anchor="middle" dominant-baseline="middle" style="font-family:ui-monospace;font-size:9px;fill:#fff;pointer-events:none">${c.pct}%</text>`;
+        }
+        x += w;
+      }
+      return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" width="100%" height="${H}" style="display:block;border-radius:3px;overflow:hidden">${parts}</svg>`;
     },
 
     // ── Signal Timeline SVG (built as string — bypasses Alpine 3 SVG <template> rendering issue) ──

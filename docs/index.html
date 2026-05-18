@@ -1099,6 +1099,13 @@ function app() {
         try { this.flow = await fetch('data/flow.json').then(r => r.json()); } catch (e) { this.flow = {}; }
         // Load ETF overlap matrix (optional)
         try { this.overlap = await fetch('data/etf_overlap.json').then(r => r.json()); } catch (e) { this.overlap = {}; }
+        // Hash routing — open #etf=XYZ jumps to the ETFs tab for that ETF
+        const hash = location.hash || '';
+        const etfMatch = hash.match(/#etf=([A-Z0-9.\-]+)/i);
+        if (etfMatch && (this.meta.etfs || []).includes(etfMatch[1].toUpperCase())) {
+          this.activeETF = etfMatch[1].toUpperCase();
+          this.activeTab = 'etfs';
+        }
         // Auto-snapshot pins on first visit if no snapshot exists
         if (!localStorage.getItem('predator_pin_snapshot') && this.pins.length) {
           this.snapshotPins();
