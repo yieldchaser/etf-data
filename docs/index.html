@@ -455,6 +455,55 @@
       <div class="text-xs" style="color: var(--text-3)">Click the ☆ icon on any ticker in the leaderboard to pin it here</div>
     </div>
 
+    <!-- COMPARE MODE — side-by-side cards for top pinned names -->
+    <div x-show="pins.length >= 2" class="rounded-lg border mb-3" style="background: var(--surface); border-color: var(--border)">
+      <div class="px-3 py-2 flex items-center justify-between flex-wrap gap-y-1" style="border-bottom: 1px solid var(--border)">
+        <div class="flex items-center gap-2">
+          <div class="label-cyan label">Compare</div>
+          <span class="text-[10px]" style="color: var(--text-3)">top pinned by score · click any card for full detail</span>
+        </div>
+        <div class="text-[10px] font-mono" style="color: var(--text-3)" x-text="`${compareCards.length} of ${pins.length} pinned`"></div>
+      </div>
+      <div class="p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <template x-for="card in compareCards" :key="card.ticker">
+          <a :href="`stock.html?t=${card.ticker}`"
+             class="rounded-lg border block p-3 hover:border-cyan-500/40 transition"
+             style="background: rgba(255,255,255,0.02); border-color: var(--border); text-decoration: none">
+            <!-- Header row -->
+            <div class="flex items-baseline justify-between mb-1">
+              <div class="flex items-baseline gap-1.5">
+                <span class="font-mono font-medium text-sm" style="color: var(--cyan)" x-text="card.ticker"></span>
+                <span class="text-[10px] font-mono" style="color: var(--text-3)" x-text="`#${card.rank}`"></span>
+              </div>
+              <span class="chip text-[9px]" :style="card.stateChip" x-text="card.state"></span>
+            </div>
+            <div class="text-[10px] truncate mb-2" style="color: var(--text-3)" x-text="card.company"></div>
+            <!-- Score + sparkline -->
+            <div class="flex items-baseline gap-2 mb-1">
+              <span class="font-mono text-lg num font-medium" x-text="card.score"></span>
+              <span class="text-[10px] num font-mono" :style="`color: ${card.deltaColor}`" x-text="card.deltaText"></span>
+            </div>
+            <div x-html="card.sparkSvg" class="w-full" style="height: 26px"></div>
+            <!-- Mini stats grid -->
+            <div class="grid grid-cols-3 gap-1 mt-2 text-[9px]">
+              <div>
+                <div style="color: var(--text-3)">ETFs</div>
+                <div class="font-mono num" style="color: var(--text-2)" x-text="card.etfs"></div>
+              </div>
+              <div>
+                <div style="color: var(--text-3)">Velocity</div>
+                <div class="font-mono num" :style="`color: ${card.velocityColor}`" x-text="card.velocity"></div>
+              </div>
+              <div>
+                <div style="color: var(--text-3)">Conc</div>
+                <div class="font-mono num" style="color: var(--text-2)" x-text="`${card.concentration}%`"></div>
+              </div>
+            </div>
+          </a>
+        </template>
+      </div>
+    </div>
+
     <!-- Reuse leaderboard table (filtered by pins) -->
     <div x-show="pins.length > 0">
       <!-- Filter bar (same as leaderboard) -->
@@ -1055,6 +1104,7 @@
 function app() {
   return {
     leaderboard: [], holdings: [], changelog: {}, meta: {}, flow: {}, overlap: {},
+    scoreHistory: {},
     loading: true, error: '',
     activeTab: 'leaderboard',
     overlapHover: '',
@@ -1099,6 +1149,7 @@ function app() {
         try { this.flow = await fetch('data/flow.json').then(r => r.json()); } catch (e) { this.flow = {}; }
         // Load ETF overlap matrix (optional)
         try { this.overlap = await fetch('data/etf_overlap.json').then(r => r.json()); } catch (e) { this.overlap = {}; }
+        try { this.scoreHistory = await fetch('data/score_history.json').then(r => r.json()); } catch (e) { this.scoreHistory = {}; }
         // Hash routing — open #etf=XYZ jumps to the ETFs tab for that ETF
         const hash = location.hash || '';
         const etfMatch = hash.match(/#etf=([A-Z0-9.\-]+)/i);
@@ -1363,6 +1414,84 @@ function app() {
       }
       pairs.sort((a, b) => b.v - a.v);
       return pairs.slice(0, 3).map(p => `${p.a}↔${p.b} ${(p.v * 100).toFixed(0)}%`).join(' · ');
+    },
+
+    // ── Compare Mode (top 4 pinned by score) ─────────────────────────────
+    get compareCards() {
+      if (!this.pins || this.pins.length < 2) return [];
+      const rows = this.pins
+        .map(t => this.leaderboard.find(r => r.ticker === t))
+        .filter(r => r);
+      // Sort by score descending, take top 4
+      rows.sort((a, b) => (b.final_score || 0) - (a.final_score || 0));
+      const top = rows.slice(0, 4);
+      return top.map(r => this._compareCard(r));
+    },
+
+    _compareCard(r) {
+      const stateMap = {
+        'HIGH_CONVICTION': { label: 'HC',     style: 'background: rgba(52,211,153,0.12); color: var(--up); border: 1px solid rgba(52,211,153,0.30)' },
+        'SPECULATIVE_BETA':{ label: 'SPEC β', style: 'background: rgba(251,191,36,0.10); color: var(--amber); border: 1px solid rgba(251,191,36,0.25)' },
+      };
+      let stateLabel = stateMap[r.flag]?.label || 'Neutral';
+      let stateStyle = stateMap[r.flag]?.style || 'background: rgba(255,255,255,0.04); color: var(--text-3); border: 1px solid rgba(255,255,255,0.10)';
+      if (r.burst_30d) {
+        stateLabel = '⚡ BURST';
+        stateStyle = 'background: rgba(168,85,247,0.15); color: #c084fc; border: 1px solid rgba(168,85,247,0.35)';
+      } else if ((r.velocity_score || 0) >= 25 && (r.etf_count || 0) >= 2) {
+        stateLabel = 'VELO';
+        stateStyle = 'background: rgba(34,211,238,0.12); color: var(--cyan); border: 1px solid rgba(34,211,238,0.30)';
+      }
+
+      const dPct = r.score_delta_pct;
+      let deltaText = '—';
+      let deltaColor = 'var(--text-3)';
+      if (dPct != null && isFinite(dPct)) {
+        const v = dPct * 100;
+        deltaText = (v >= 0 ? '+' : '') + v.toFixed(1) + '%';
+        deltaColor = v > 0 ? 'var(--up)' : v < 0 ? 'var(--down)' : 'var(--text-3)';
+      }
+
+      const v = r.velocity_score;
+      let velocity = '—', velocityColor = 'var(--text-3)';
+      if (v != null && isFinite(v)) {
+        velocity = (v > 0 ? '+' : '') + v.toFixed(1);
+        velocityColor = v >= 15 ? 'var(--up)' : v >= 5 ? '#86efac' : v <= -15 ? 'var(--down)' : v <= -5 ? '#fda4af' : 'var(--text-2)';
+      }
+
+      return {
+        ticker: r.ticker,
+        company: r.company || '',
+        rank: r.leaderboard_rank,
+        score: (r.final_score || 0).toLocaleString(),
+        deltaText, deltaColor,
+        state: stateLabel,
+        stateChip: stateStyle,
+        etfs: r.etf_count || 0,
+        velocity, velocityColor,
+        concentration: r.concentration_score || 0,
+        sparkSvg: this._buildCompareSpark(r.ticker),
+      };
+    },
+
+    _buildCompareSpark(ticker) {
+      const series = (this.scoreHistory || {})[ticker] || [];
+      if (series.length < 2) return '';
+      const W = 200, H = 26;
+      const vals = series.map(p => p.s);
+      const mn = Math.min(...vals), mx = Math.max(...vals);
+      const range = (mx - mn) || 1;
+      const pts = series.map((p, i) => [
+        (i / (series.length - 1)) * W,
+        H - 2 - ((p.s - mn) / range) * (H - 4),
+      ]);
+      // Simple polyline (no smoothing needed at this size)
+      const d = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+      const fillD = `${d} L${W},${H} L0,${H} Z`;
+      return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" width="100%" height="${H}" style="display:block">
+        <path d="${fillD}" fill="rgba(34,211,238,0.10)" stroke="none"/>
+        <path d="${d}" stroke="var(--cyan)" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`;
     },
 
 
