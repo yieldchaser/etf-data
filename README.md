@@ -162,42 +162,55 @@ The platform now computes, filters, and surfaces institutional accumulation acce
   - A dynamic, unified calendar-date X-axis for the per-ETF Rank History chart, aligning mismatched ETF histories and resolving previous rendering overlapping bugs.
 - **Analytical Stability & Verification:** Complete test suite mapping rank deltas, rolling velocity calculations, and burst threshold detection with 100% automated test coverage.
 
+### 🔬 Phase 2.7 Institutional Decision Engine
+
+The platform now provides **prescriptive** intelligence beyond descriptive analytics:
+
+- **BURST False-Positive Fix:** Burst detection now requires ≥80% continuous presence on the leaderboard AND sustained improvement for ≥8 of the last 10 snapshots. Eliminates re-entry and single-touch false positives.
+- **Honest Δ% Display:** Score deltas show em-dash (—) when no comparable past data exists, instead of misleading `+0.0%`.
+- **Sector & Country Flow Overlay (`flow.json`):** Aggregates velocity-weighted exposure by sector and country. Two new panels in the Changes tab with horizontal bar visualizations. Click a sector to filter the leaderboard.
+- **Watchlist (localStorage):** Pin tickers with ★, view them in a dedicated WATCHLIST tab. "Since last visit" changelog shows HC entries/exits and new bursts among pinned names.
+- **Concentration Risk Score:** Per-ticker metric showing what fraction of the score comes from a single ETF. Tooltip warns when conviction is fragile (>70% from one ETF). Sortable column + ≤80% filter chip.
+- **Strategy Backtest (`/backtest.html`):** Quantified performance of 5 strategies (HC Entry, BURST Trigger, Top-10 Score, Top-10 Velocity, SPX Baseline) with cumulative returns chart, stats table, and velocity-vs-return scatter plot with R².
+
 ### Architecture
 
 `scraper.py` writes `data/all_history.csv` → `predator/build.py` reads it,
-runs sanitizer + scoring + temporal analytics → writes `docs/data/*.json` →
-GitHub Pages serves `docs/` using static HTML/JS. Auto-rebuilds within ~2 min of every scraper commit
-via `.github/workflows/build_site.yml`. The existing `daily_scrape.yml` is untouched.
-
-### Algorithm
-
-All knobs live in `config.yaml`. Push a change, site rebuilds, no code edits needed.
-
-The sanitizer mirrors the `ArchiveToDatabase_Production` VBA sub:
-- Blocked tickers (exact, case-insensitive): `USD`, `$USD`, `$CAD`, `AGPXX`
-- Blocked name substrings: `CASH &`, `CASH COLLATERAL`, `TREASURY`
-- Ticker standardization: `BRK-B → BRK.B`, `BF/B → BF.B`
-
-Scoring is the documented Predator Protocol v1 (Component 2 table above).
+runs sanitizer + scoring + temporal analytics + velocity + concentration + flow →
+writes `docs/data/*.json` → GitHub Pages serves `docs/` using static HTML/JS.
+Auto-rebuilds within ~2 min of every scraper commit via `.github/workflows/build_site.yml`.
 
 ### Local development
 
 ```bash
 pip install -r requirements.txt
-python -m pytest tests/ -v           # 17 tests
+python -m pytest tests/ -v           # 27 tests
 python -m predator.build             # builds docs/data/*
+python -m predator.backtest          # builds docs/data/backtest.json
 python -m http.server -d docs 8000   # preview at http://localhost:8000
 ```
+
+### Pages
+
+| Page | URL | Description |
+|------|-----|-------------|
+| Dashboard | `/` | Leaderboard, ETFs, Changes, Watchlist tabs |
+| Stock Detail | `/stock.html?t=GEV` | Per-ticker deep dive with charts |
+| Markets | `/markets.html` | Price log for indices, commodities, FX, vol |
+| Simulator | `/sim.html` | Leveraged ETN NAV simulator |
+| Backtest | `/backtest.html` | Strategy performance comparison |
 
 ### Tuning
 
 Edit `config.yaml`:
-- `tiers[].points` — Scout/Quant=40, Quality=30, Trend=10, Blob=2
+- `etfs[].points` — Scout/Quant=40 (FPXI/IMOM=60), Quality=30, Trend=10, Blob=2
 - `rank_breakpoints` — top-10 = 1.5×, top-30 = 1.2× multipliers
 - `new_lookback_days` — how long a ticker must have been absent to count as NEW
 - `new_bonus_mult` — NEW-entrant bonus multiplier on tier_points
 - `high_conviction_min_etfs` — threshold for HIGH CONVICTION flag
 - `history.leaderboard_lookback_days` — drives streaks and percentile bars
+
+Commit, push — site rebuilds with new scores in ~2 min.
 
 Commit, push — site rebuilds with new scores in ~2 min.
 
