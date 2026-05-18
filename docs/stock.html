@@ -389,6 +389,8 @@
               <span class="inline-block w-6 h-0.5 rounded" :style="`background: ${line.color}`"></span>
               <span class="font-mono" x-text="line.etf"></span>
               <span style="color: var(--text-3)" x-text="'(' + line.tier + ')'"></span>
+              <span x-show="line.flat !== null" class="text-[10px]" style="color: var(--text-3)"
+                    x-text="`(flat at #${line.flat})`"></span>
             </div>
           </template>
         </div>
@@ -647,8 +649,9 @@ function stockApp() {
       if (!allRanks.length) return [];
       const minRank = Math.min(...allRanks);
       const maxRank = Math.max(...allRanks);
-      const rangeFloor = Math.max(maxRank, minRank + 4); // min 4-rank spread
-      const yRange = Math.max(1, rangeFloor - minRank);
+      const observedRange = maxRank - minRank;
+      const visualRange = Math.max(observedRange + 2, 4);  // +2 padding, min 4
+      const yRange = visualRange;
       const yTop = 10, yBot = 210;
       const rankToY = r => yTop + ((r - minRank) / yRange) * (yBot - yTop);
 
@@ -666,10 +669,17 @@ function stockApp() {
         const path = series
           .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`)
           .join(' ');
+        
+        // Check if line is flat
+        const lineMinRank = Math.min(...series.map(p => p.r));
+        const lineMaxRank = Math.max(...series.map(p => p.r));
+        const flat = (lineMaxRank - lineMinRank) === 0 ? series[0].r : null;
+        
         lines.push({
           etf, path, color, tier, series,
           endX: series[series.length - 1].x,
           endY: series[series.length - 1].y,
+          flat,
         });
       }
       // Attach shared axis to first line for template access

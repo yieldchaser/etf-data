@@ -620,6 +620,56 @@
         </div>
       </div>
 
+      <!-- SECTOR FLOW -->
+      <div class="lg:col-span-2 rounded-lg border" style="background: var(--surface); border-color: var(--border)">
+        <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
+          <div class="label-cyan label">SECTOR FLOW — net velocity by sector</div>
+          <div class="text-xs num font-mono" style="color: var(--text-3)">sum of velocity scores · 2+ ETFs only</div>
+        </div>
+        <div x-show="!flow?.by_sector?.length" class="px-3 py-6 text-center text-xs" style="color: var(--text-3)">No flow data available</div>
+        <template x-for="r in (flow?.by_sector || []).slice(0, 12)" :key="r.label">
+          <div class="px-3 py-2 flex items-center gap-3 text-xs hover:bg-white/5 transition cursor-pointer"
+               style="border-bottom: 1px solid rgba(255,255,255,0.03)"
+               @click="selectedSector = r.label; activeTab = 'leaderboard'">
+            <span class="font-mono flex-1 truncate" x-text="r.label"></span>
+            <div class="flex-1 h-1.5 rounded" style="background: rgba(255,255,255,0.05)">
+              <div class="h-full rounded"
+                   :style="`width: ${Math.min(100, Math.abs(r.net_velocity) / sectorMax * 100)}%; background: ${r.net_velocity >= 0 ? 'var(--up)' : 'var(--down)'}`"></div>
+            </div>
+            <span class="num font-mono w-20 text-right"
+                  :style="`color: ${r.net_velocity >= 0 ? 'var(--up)' : 'var(--down)'}`"
+                  x-text="`${r.net_velocity >= 0 ? '+' : ''}${r.net_velocity.toFixed(0)}`"></span>
+            <span class="num font-mono w-12 text-right" style="color: var(--text-3)"
+                  x-text="`${r.names}n`"></span>
+          </div>
+        </template>
+      </div>
+
+      <!-- COUNTRY FLOW -->
+      <div class="lg:col-span-2 rounded-lg border" style="background: var(--surface); border-color: var(--border)">
+        <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
+          <div class="label-cyan label">COUNTRY FLOW — net velocity by country</div>
+          <div class="text-xs num font-mono" style="color: var(--text-3)">sum of velocity scores · 2+ ETFs only</div>
+        </div>
+        <div x-show="!flow?.by_country?.length" class="px-3 py-6 text-center text-xs" style="color: var(--text-3)">No flow data available</div>
+        <template x-for="r in (flow?.by_country || []).slice(0, 12)" :key="r.label">
+          <div class="px-3 py-2 flex items-center gap-3 text-xs hover:bg-white/5 transition cursor-pointer"
+               style="border-bottom: 1px solid rgba(255,255,255,0.03)"
+               @click="selectedCountry = r.label; activeTab = 'leaderboard'">
+            <span class="font-mono flex-1 truncate" x-text="r.label"></span>
+            <div class="flex-1 h-1.5 rounded" style="background: rgba(255,255,255,0.05)">
+              <div class="h-full rounded"
+                   :style="`width: ${Math.min(100, Math.abs(r.net_velocity) / countryMax * 100)}%; background: ${r.net_velocity >= 0 ? 'var(--up)' : 'var(--down)'}`"></div>
+            </div>
+            <span class="num font-mono w-20 text-right"
+                  :style="`color: ${r.net_velocity >= 0 ? 'var(--up)' : 'var(--down)'}`"
+                  x-text="`${r.net_velocity >= 0 ? '+' : ''}${r.net_velocity.toFixed(0)}`"></span>
+            <span class="num font-mono w-12 text-right" style="color: var(--text-3)"
+                  x-text="`${r.names}n`"></span>
+          </div>
+        </template>
+      </div>
+
       <!-- New entrants this week -->
       <div class="lg:col-span-2 rounded-lg border" style="background: var(--surface); border-color: var(--border)">
         <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
@@ -664,10 +714,10 @@
 <script>
 function app() {
   return {
-    leaderboard: [], holdings: [], changelog: {}, meta: {},
+    leaderboard: [], holdings: [], changelog: {}, meta: {}, flow: {},
     loading: true, error: '',
     activeTab: 'leaderboard',
-    flag: '', selectedTier: '', newOnly: false, velocityOnly: false, burstOnly: false, q: '',
+    flag: '', selectedTier: '', selectedSector: '', selectedCountry: '', newOnly: false, velocityOnly: false, burstOnly: false, q: '',
     sortKey: 'leaderboard_rank', sortDir: 'asc',
     page: 1, pageSize: 50, open: null,
     activeETF: 'QQQM',
@@ -702,6 +752,8 @@ function app() {
           fetch('data/metadata.json').then(r => r.ok ? r.json() : Promise.reject(r.status)),
         ]);
         this.leaderboard = lb; this.holdings = hd; this.changelog = chg; this.meta = mt;
+        // Load flow data (optional)
+        try { this.flow = await fetch('data/flow.json').then(r => r.json()); } catch (e) { this.flow = {}; }
       } catch (e) {
         this.error = `${e}. Run \`python -m predator.build\` then refresh.`;
       } finally { this.loading = false; }
@@ -776,16 +828,25 @@ function app() {
     },
 
     toggleFlag(f) { this.flag = (this.flag === f) ? '' : f; this.page = 1; },
-    reset() { this.flag = ''; this.newOnly = false; this.velocityOnly = false; this.burstOnly = false; this.selectedTier = ''; this.q = ''; this.page = 1; },
+    reset() { this.flag = ''; this.newOnly = false; this.velocityOnly = false; this.burstOnly = false; this.selectedTier = ''; this.selectedSector = ''; this.selectedCountry = ''; this.q = ''; this.page = 1; },
+
+    get sectorMax() {
+      return Math.max(1, ...(this.flow?.by_sector || []).map(r => Math.abs(r.net_velocity)));
+    },
+    get countryMax() {
+      return Math.max(1, ...(this.flow?.by_country || []).map(r => Math.abs(r.net_velocity)));
+    },
 
     get filtered() {
-      const q = this.q.trim().toLowerCase(), tier = this.selectedTier;
+      const q = this.q.trim().toLowerCase(), tier = this.selectedTier, sector = this.selectedSector, country = this.selectedCountry;
       let r = this.leaderboard;
       if (this.flag)         r = r.filter(x => x.flag === this.flag);
       if (this.newOnly)      r = r.filter(x => x.any_new);
       if (this.velocityOnly) r = r.filter(x => (x.velocity_score || 0) >= 25 && (x.etf_count || 0) >= 2 && !x.burst_30d);
       if (this.burstOnly)    r = r.filter(x => x.burst_30d);
       if (tier)              r = r.filter(x => (x.tiers || '').split(' + ').includes(tier));
+      if (sector)            r = r.filter(x => x.sector === sector);
+      if (country)           r = r.filter(x => x.country === country);
       if (q)                 r = r.filter(x => (x.ticker || '').toLowerCase().includes(q) || (x.company || '').toLowerCase().includes(q));
       return [...r].sort((a, b) => {
         for (const lvl of this.sortLevels) {
@@ -886,7 +947,12 @@ function app() {
 
     // Formatting
     fmt1(n) { return (n == null || !isFinite(n)) ? '—' : Number(n).toFixed(1); },
-    fmtPct(n) { if (n == null || !isFinite(n)) return '—'; const v = Number(n) * 100; return (v >= 0 ? '+' : '') + v.toFixed(1) + '%'; },
+    fmtPct(n) {
+      if (n === null || n === undefined) return '—';
+      if (!isFinite(n)) return '—';
+      const v = Number(n) * 100;
+      return (v >= 0 ? '+' : '') + v.toFixed(1) + '%';
+    },
     fmtWeight(n) { if (n == null || !isFinite(n)) return '—'; return (Number(n) * 100).toFixed(2) + '%'; },
     fmtFlow(n) { if (n == null || !isFinite(n)) return '—'; const v = Number(n) * 100; if (Math.abs(v) > 9999) return '—'; return (v >= 0 ? '+' : '') + v.toFixed(1) + '%'; },
     fmtRankDelta(n) { if (n == null || !isFinite(n)) return '—'; const v = Number(n); if (v === 0) return '0'; return v > 0 ? `▲${v}` : `▼${Math.abs(v)}`; },

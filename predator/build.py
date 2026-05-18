@@ -146,10 +146,10 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     for n in cfg.history.delta_periods_days:
         col = f"score_delta_pct_{n}d" if n != cfg.history.rank_delta_lookback_days else None
         if col and col in leaderboard.columns:
-            # Already computed in the period-loop above — extract to dict
-            score_deltas_by_period[n] = leaderboard.set_index("ticker")[col].fillna(0).to_dict()
+            # Already computed in the period-loop above — extract to dict (preserve NaN → null)
+            score_deltas_by_period[n] = leaderboard.set_index("ticker")[col].to_dict()
         elif n == cfg.history.rank_delta_lookback_days and "score_delta_pct" in leaderboard.columns:
-            score_deltas_by_period[n] = leaderboard.set_index("ticker")["score_delta_pct"].fillna(0).to_dict()
+            score_deltas_by_period[n] = leaderboard.set_index("ticker")["score_delta_pct"].to_dict()
         else:
             # Re-compute from historical snapshot if column not present
             cutoff = latest_date - pd.Timedelta(days=n)
@@ -162,7 +162,8 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                     delta = {}
                     for t, cur in today_s.items():
                         prev = ps.get(t)
-                        delta[t] = round((cur - prev) / abs(prev), 4) if prev and prev != 0 else 0
+                        # Preserve None for missing past data (don't fillna(0))
+                        delta[t] = round((cur - prev) / abs(prev), 4) if prev and prev != 0 else None
                     score_deltas_by_period[n] = delta
                 except Exception as e:
                     print(f"  {n}d score delta: ERROR — {e}")
@@ -182,7 +183,8 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                 ytd_delta = {}
                 for t, cur in today_s.items():
                     prev = ps_ytd.get(t)
-                    ytd_delta[t] = round((cur - prev) / abs(prev), 4) if prev and prev != 0 else 0
+                    # Preserve None for missing past data
+                    ytd_delta[t] = round((cur - prev) / abs(prev), 4) if prev and prev != 0 else None
                 score_deltas_by_period["YTD"] = ytd_delta
                 print(f"  YTD score delta: {len(ytd_delta)} tickers (from {ytd_start.date()})")
             except Exception as e:
@@ -216,8 +218,9 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         global_rank_delta_30 = pd.Series(dtype=float)
         peak_improvement_30  = pd.Series(dtype=float)
         best_in_window       = pd.Series(dtype=float)
+        is_burst             = pd.Series(dtype=bool)
 
-        if len(window_cols) >= 2:
+        if len(window_cols) >= 5:
             # Check historical snapshots have leaderboard_rank
             sample = historical[window_cols[0]]
             if "leaderboard_rank" in sample.columns:
@@ -225,12 +228,28 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                 for d in window_cols:
                     rank_panel_rows[d] = historical[d].set_index("ticker")["leaderboard_rank"]
                 rank_panel = pd.DataFrame(rank_panel_rows)
+                
+                # Coverage check: require continuous presence (≥80% of window)
+                nan_count = rank_panel.isna().sum(axis=1)
+                coverage = (len(window_cols) - nan_count) / len(window_cols)
+                
                 first_col        = rank_panel.iloc[:, 0]
-                worst_in_window  = rank_panel.max(axis=1)
-                best_in_window   = rank_panel.min(axis=1)
-                current          = rank_panel.iloc[:, -1]
-                global_rank_delta_30 = (first_col - current).round(0)        # positive = improved
+                last_col         = rank_panel.iloc[:, -1]
+                worst_in_window  = rank_panel.max(axis=1)   # highest rank number = worst
+                best_in_window   = rank_panel.min(axis=1)   # lowest rank number = best
+                global_rank_delta_30 = (first_col - last_col).round(0)        # positive = improved
                 peak_improvement_30  = (worst_in_window - best_in_window).round(0)
+                
+                # Sustained: rank must be better than within-window median for ≥5 of last 10 snapshots
+                recent10 = rank_panel.iloc[:, -10:] if rank_panel.shape[1] >= 10 else rank_panel
+                median_per_ticker = rank_panel.median(axis=1)
+                is_better_than_median = recent10.lt(median_per_ticker, axis=0)
+                sustained_count = is_better_than_median.sum(axis=1)
+                
+                # Burst qualifier: peak ≥ 40 AND coverage ≥ 80% AND sustained ≥ 5 days
+                is_burst = (peak_improvement_30 >= 40) & (coverage >= 0.80) & (sustained_count >= 5)
+        else:
+            is_burst = pd.Series(dtype=bool)
 
         # 3. ETF count change vs ~30d ago
         past_counts = pd.Series(dtype=float)
@@ -249,8 +268,8 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         leaderboard["global_rank_best_30d"]  = leaderboard["ticker"].map(best_in_window).fillna(leaderboard["leaderboard_rank"]).astype(int)
         leaderboard["etf_count_30d_ago"]     = leaderboard["ticker"].map(past_counts).fillna(leaderboard["etf_count"]).astype(int)
         leaderboard["etf_count_delta_30d"]   = (leaderboard["etf_count"] - leaderboard["etf_count_30d_ago"]).astype(int)
-        # Burst: peak improvement of >=40 global ranks at any point in last 30d
-        leaderboard["burst_30d"]             = leaderboard["global_rank_peak_30d"] >= 40
+        # Burst: peak improvement of >=40 global ranks at any point in last 30d, with sustained presence
+        leaderboard["burst_30d"]             = leaderboard["ticker"].map(is_burst).fillna(False)
 
         # 5. Composite velocity score
         # Tuning: global rank Δ30d of +50 → +25; peak +50 → +12.5;
@@ -271,15 +290,58 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     burst_count = int(leaderboard['burst_30d'].sum())
     print(f"  burst_30d:      {burst_count} tickers with >=40 peak rank improvement")
 
+    # ── Attach metadata (sector, industry, country) for flow analysis ─────────
+    def _attach_metadata(leaderboard: pd.DataFrame) -> pd.DataFrame:
+        """Merge ticker metadata (sector, industry, country) from cached CSV."""
+        try:
+            meta = pd.read_csv("data/ticker_metadata.csv")
+            leaderboard = leaderboard.merge(meta, on="ticker", how="left")
+            for col in ["sector", "industry", "country"]:
+                leaderboard[col] = leaderboard[col].fillna("Unknown")
+        except FileNotFoundError:
+            print("  WARNING: data/ticker_metadata.csv not found — skipping metadata")
+            for col in ["sector", "industry", "country", "market_cap_usd"]:
+                leaderboard[col] = "Unknown" if col != "market_cap_usd" else None
+        return leaderboard
+
+    leaderboard = _attach_metadata(leaderboard)
+
+    # ── Compute flow aggregations by sector and country ──────────────────────
+    def _compute_flow(leaderboard: pd.DataFrame, dim: str) -> list[dict]:
+        """For each value of `dim` (sector or country), aggregate velocity-weighted exposure."""
+        lb = leaderboard[leaderboard["etf_count"] >= 2].copy()
+        if lb.empty or dim not in lb.columns:
+            return []
+        g = lb.groupby(dim).agg(
+            net_velocity=("velocity_score", "sum"),
+            avg_velocity=("velocity_score", "mean"),
+            names=("ticker", "count"),
+            total_weight=("total_weight", "sum"),
+            burst_count=("burst_30d", "sum"),
+            hc_count=("flag", lambda s: (s == "HIGH_CONVICTION").sum()),
+        ).reset_index().rename(columns={dim: "label"}).sort_values("net_velocity", ascending=False)
+        return g.round(2).to_dict(orient="records")
+
+    flow = {
+        "by_sector":  _compute_flow(leaderboard, "sector"),
+        "by_country": _compute_flow(leaderboard, "country"),
+    }
+    (output_dir / "flow.json").write_text(_dumps(flow, separators=(",", ":")))
+    print(f"  flow.json:      {len(flow['by_sector'])} sectors, {len(flow['by_country'])} countries")
+
     # ── leaderboard.json — main payload for the site ──────────────────────────
     lb_records = leaderboard.to_dict(orient="records")
     # Attach per-period score deltas to every record
     for r in lb_records:
         t = r.get("ticker", "")
-        r["score_deltas_by_period"] = {
-            str(p): round(float(score_deltas_by_period.get(p, {}).get(t, 0)), 4)
-            for p in all_periods
-        }
+        r["score_deltas_by_period"] = {}
+        for p in all_periods:
+            v = score_deltas_by_period.get(p, {}).get(t)
+            # Treat NaN, None, missing — all as null in JSON
+            if v is None or (isinstance(v, float) and v != v):
+                r["score_deltas_by_period"][str(p)] = None
+            else:
+                r["score_deltas_by_period"][str(p)] = round(float(v), 4)
     (output_dir / "leaderboard.json").write_text(_dumps(lb_records, separators=(",", ":")))
 
     # ── holdings_latest.json — per-(ETF, ticker) detail with rank deltas ──────
