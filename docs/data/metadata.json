@@ -1,11 +1,11 @@
 {
-  "generated_at_utc": "2026-05-18T06:40:27+00:00",
+  "generated_at_utc": "2026-05-18T16:56:13+00:00",
   "source": "data/all_history.csv",
-  "source_rows_raw": 82174,
+  "source_rows_raw": 82224,
   "source_rows_after_sanitize": 1322,
   "leaderboard_rows": 920,
-  "latest_holdings_as_of": "2026-05-15",
-  "latest_scrape_date": "2026-05-17",
+  "latest_holdings_as_of": "2026-05-18",
+  "latest_scrape_date": "2026-05-18",
   "etfs": [
     "CALF",
     "COWZ",
@@ -105,7 +105,8 @@
     "2026-05-12",
     "2026-05-13",
     "2026-05-14",
-    "2026-05-15"
+    "2026-05-15",
+    "2026-05-18"
   ],
   "flag_counts_today": {
     "HIGH_CONVICTION": 38,

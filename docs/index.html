@@ -169,6 +169,12 @@
                 x-tooltip="'Hide names where 80%+ of score comes from one ETF'">
           ≤80% conc
         </button>
+        <button @click="qualityAdoptedOnly = !qualityAdoptedOnly"
+                :class="qualityAdoptedOnly ? 'border-teal-400/50 text-teal-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-teal-400/40"
+                style="border-color: var(--border-2)"
+                x-tooltip="'Names a Quality ETF (COWZ/CALF/SPHQ) added in the last 30 days — momentum + fundamentals confirmation'"
+                x-text="`Quality+ ${counts.QADD || 0}`"></button>
         <select x-model="selectedTier" class="chip border px-2 py-1 bg-transparent" style="border-color: var(--border-2)">
           <option value="" style="background: #000">all tiers</option>
           <template x-for="t in ['Scout','Quant','Quality','Trend','Blob']" :key="t">
@@ -336,6 +342,9 @@
                       <span x-show="(row.velocity_score || 0) >= 25 && (row.etf_count || 0) >= 2 && !row.burst_30d" class="chip"
                             x-tooltip="`'Top-velocity composite ('+ row.velocity_score +'). Conviction is concentrating.’`"
                             style="background: rgba(34, 211, 238, 0.10); color: var(--cyan); border: 1px solid rgba(34, 211, 238, 0.25)">VELO</span>
+                      <span x-show="row.quality_adopted_30d" class="chip"
+                            x-tooltip="'Quality+ — A Quality ETF (COWZ/CALF/SPHQ) added this name in the last 30 days'"
+                            style="background: rgba(20,184,166,0.12); color: #5eead4; border: 1px solid rgba(20,184,166,0.30)">Q+</span>
                     </div>
                   </td>
                 </tr>
@@ -485,6 +494,12 @@
                   x-tooltip="'Hide names where 80%+ of score comes from one ETF'">
             ≤80% conc
           </button>
+          <button @click="qualityAdoptedOnly = !qualityAdoptedOnly"
+                  :class="qualityAdoptedOnly ? 'border-teal-400/50 text-teal-300' : ''"
+                  class="chip border px-2 py-1 transition hover:border-teal-400/40"
+                  style="border-color: var(--border-2)"
+                  x-tooltip="'Names a Quality ETF (COWZ/CALF/SPHQ) added in the last 30 days'"
+                  x-text="`Quality+ ${counts.QADD || 0}`"></button>
           <select x-model="selectedTier" class="chip border px-2 py-1 bg-transparent" style="border-color: var(--border-2)">
             <option value="" style="background: #000">all tiers</option>
             <template x-for="t in ['Scout','Quant','Quality','Trend','Blob']" :key="t">
@@ -608,6 +623,9 @@
                         <span x-show="(row.velocity_score || 0) >= 25 && (row.etf_count || 0) >= 2 && !row.burst_30d" class="chip"
                               x-tooltip="`'Top-velocity composite ('+ row.velocity_score +'). Conviction is concentrating.'`"
                               style="background: rgba(34, 211, 238, 0.10); color: var(--cyan); border: 1px solid rgba(34, 211, 238, 0.25)">VELO</span>
+                        <span x-show="row.quality_adopted_30d" class="chip"
+                              x-tooltip="'Quality+ — A Quality ETF (COWZ/CALF/SPHQ) added this name in the last 30 days'"
+                              style="background: rgba(20,184,166,0.12); color: #5eead4; border: 1px solid rgba(20,184,166,0.30)">Q+</span>
                       </div>
                     </td>
                   </tr>
@@ -796,6 +814,25 @@
             </template>
           </table>
         </div>
+      </div>
+    </div>
+
+    <!-- ETF Overlap Heatmap — surfaces which ETFs are echoes vs independent signals -->
+    <div x-show="overlap?.etfs?.length" class="rounded-lg border mt-3" style="background: var(--surface); border-color: var(--border)">
+      <div class="px-3 py-2 flex items-center justify-between flex-wrap gap-y-1" style="border-bottom: 1px solid var(--border)">
+        <div class="flex items-center gap-2">
+          <div class="label-cyan label">ETF Overlap Matrix</div>
+          <span class="text-[10px]" style="color: var(--text-3)">Jaccard similarity · darker = more shared holdings</span>
+        </div>
+        <div class="text-[10px]" style="color: var(--text-3)" x-show="overlapHover" x-text="overlapHover || ''"></div>
+      </div>
+      <div class="p-3 overflow-x-auto scrollbar">
+        <div x-html="overlapHeatmapSvg" class="inline-block"
+             @mousemove="overlapMouseMove($event)"
+             @mouseleave="overlapHover = ''"></div>
+      </div>
+      <div class="px-3 pb-3 text-[10px]" style="color: var(--text-3)">
+        <div>Top overlap pairs <span class="font-mono" style="color: var(--text-2)" x-text="topOverlapPairs"></span></div>
       </div>
     </div>
   </section>
@@ -1017,10 +1054,11 @@
 <script>
 function app() {
   return {
-    leaderboard: [], holdings: [], changelog: {}, meta: {}, flow: {},
+    leaderboard: [], holdings: [], changelog: {}, meta: {}, flow: {}, overlap: {},
     loading: true, error: '',
     activeTab: 'leaderboard',
-    flag: '', selectedTier: '', selectedSector: '', selectedCountry: '', newOnly: false, velocityOnly: false, burstOnly: false, q: '', excludeConcentrated: false,
+    overlapHover: '',
+    flag: '', selectedTier: '', selectedSector: '', selectedCountry: '', newOnly: false, velocityOnly: false, burstOnly: false, q: '', excludeConcentrated: false, qualityAdoptedOnly: false,
     sortKey: 'leaderboard_rank', sortDir: 'asc',
     page: 1, pageSize: 50, open: null,
     activeETF: 'QQQM',
@@ -1059,6 +1097,8 @@ function app() {
         this.leaderboard = lb; this.holdings = hd; this.changelog = chg; this.meta = mt;
         // Load flow data (optional)
         try { this.flow = await fetch('data/flow.json').then(r => r.json()); } catch (e) { this.flow = {}; }
+        // Load ETF overlap matrix (optional)
+        try { this.overlap = await fetch('data/etf_overlap.json').then(r => r.json()); } catch (e) { this.overlap = {}; }
         // Auto-snapshot pins on first visit if no snapshot exists
         if (!localStorage.getItem('predator_pin_snapshot') && this.pins.length) {
           this.snapshotPins();
@@ -1075,6 +1115,7 @@ function app() {
         NEW: this.leaderboard.filter(r => r.any_new).length,
         VELO: this.leaderboard.filter(r => (r.velocity_score || 0) >= 25 && (r.etf_count || 0) >= 2 && !r.burst_30d).length,
         BURST: this.leaderboard.filter(r => r.burst_30d).length,
+        QADD: this.leaderboard.filter(r => r.quality_adopted_30d).length,
       };
     },
 
@@ -1140,7 +1181,7 @@ function app() {
     },
 
     toggleFlag(f) { this.flag = (this.flag === f) ? '' : f; this.page = 1; },
-    reset() { this.flag = ''; this.newOnly = false; this.velocityOnly = false; this.burstOnly = false; this.excludeConcentrated = false; this.selectedTier = ''; this.selectedSector = ''; this.selectedCountry = ''; this.q = ''; this.page = 1; },
+    reset() { this.flag = ''; this.newOnly = false; this.velocityOnly = false; this.burstOnly = false; this.excludeConcentrated = false; this.qualityAdoptedOnly = false; this.selectedTier = ''; this.selectedSector = ''; this.selectedCountry = ''; this.q = ''; this.page = 1; },
 
     togglePin(t) {
       const i = this.pins.indexOf(t);
@@ -1189,6 +1230,7 @@ function app() {
       if (this.newOnly)      r = r.filter(x => x.any_new);
       if (this.velocityOnly) r = r.filter(x => (x.velocity_score || 0) >= 25 && (x.etf_count || 0) >= 2 && !x.burst_30d);
       if (this.burstOnly)    r = r.filter(x => x.burst_30d);
+      if (this.qualityAdoptedOnly) r = r.filter(x => x.quality_adopted_30d);
       if (tier)              r = r.filter(x => (x.tiers || '').split(' + ').includes(tier));
       if (sector)            r = r.filter(x => x.sector === sector);
       if (country)           r = r.filter(x => x.country === country);
@@ -1239,6 +1281,84 @@ function app() {
       return (this.meta.etfs || []).map(e => ({ etf: e, tier: tierMap[e] || '', count: counts[e] || 0 }));
     },
     get currentETFTier() { return this.etfSummary.find(e => e.etf === this.activeETF)?.tier || ''; },
+
+    // ── ETF Overlap Heatmap ──────────────────────────────────────────────
+    get overlapHeatmapSvg() {
+      const o = this.overlap || {};
+      const etfs = o.etfs || [];
+      const J = o.jaccard || [];
+      if (!etfs.length || !J.length) return '';
+      const cell = 22;             // px per cell
+      const labelW = 42;
+      const labelH = 30;
+      const W = labelW + cell * etfs.length + 8;
+      const H = labelH + cell * etfs.length + 8;
+
+      // Color: cyan-tinted, intensity = jaccard (cap at 0.4 so saturation triggers earlier)
+      const colorAt = (v) => {
+        if (v == null) return 'rgba(255,255,255,0.02)';
+        const t = Math.min(1, v / 0.4);
+        const a = 0.06 + t * 0.55;
+        return `rgba(34, 211, 238, ${a.toFixed(3)})`;
+      };
+
+      let svg = '';
+      // Top column labels (rotated 45°)
+      for (let j = 0; j < etfs.length; j++) {
+        const x = labelW + j * cell + cell / 2;
+        svg += `<text x="${x}" y="${labelH - 6}" text-anchor="end" transform="rotate(-45 ${x} ${labelH - 6})" style="font-family:ui-monospace;font-size:9px;fill:var(--text-2)">${etfs[j]}</text>`;
+      }
+      // Row labels + cells
+      for (let i = 0; i < etfs.length; i++) {
+        const y = labelH + i * cell;
+        svg += `<text x="${labelW - 4}" y="${y + cell / 2 + 3}" text-anchor="end" style="font-family:ui-monospace;font-size:9px;fill:var(--text-2)">${etfs[i]}</text>`;
+        for (let j = 0; j < etfs.length; j++) {
+          const x = labelW + j * cell;
+          const v = (J[i] && J[i][j] != null) ? J[i][j] : 0;
+          const fill = (i === j) ? 'rgba(255,255,255,0.04)' : colorAt(v);
+          const stroke = 'rgba(0,0,0,0.4)';
+          // Tooltip via title element + JS-driven hover (cheap)
+          const txt = (v >= 0.05 && i !== j) ? `${Math.round(v * 100)}` : '';
+          svg += `<rect x="${x}" y="${y}" width="${cell - 1}" height="${cell - 1}" rx="2" fill="${fill}" stroke="${stroke}" stroke-width="0.5" data-i="${i}" data-j="${j}" class="ovl-cell"/>`;
+          if (txt) svg += `<text x="${x + cell / 2}" y="${y + cell / 2 + 3}" text-anchor="middle" style="font-family:ui-monospace;font-size:8px;fill:rgba(255,255,255,0.7);pointer-events:none">${txt}</text>`;
+        }
+      }
+      return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block">${svg}</svg>`;
+    },
+
+    overlapMouseMove(ev) {
+      const t = ev.target;
+      if (!t || t.tagName !== 'rect') { return; }
+      const i = parseInt(t.getAttribute('data-i'), 10);
+      const j = parseInt(t.getAttribute('data-j'), 10);
+      const o = this.overlap || {};
+      if (isNaN(i) || isNaN(j) || !o.etfs) return;
+      const a = o.etfs[i], b = o.etfs[j];
+      if (i === j) {
+        this.overlapHover = `${a} · ${o.sizes?.[a] || 0} holdings`;
+      } else {
+        const j_val = (o.jaccard?.[i]?.[j] || 0) * 100;
+        const sh = o.shared?.[i]?.[j] || 0;
+        this.overlapHover = `${a} ↔ ${b} · ${j_val.toFixed(0)}% Jaccard · ${sh} shared holdings`;
+      }
+    },
+
+    get topOverlapPairs() {
+      const o = this.overlap || {};
+      const etfs = o.etfs || [];
+      const J = o.jaccard || [];
+      if (!etfs.length) return '';
+      const pairs = [];
+      for (let i = 0; i < etfs.length; i++) {
+        for (let j = i + 1; j < etfs.length; j++) {
+          pairs.push({ a: etfs[i], b: etfs[j], v: J[i]?.[j] || 0 });
+        }
+      }
+      pairs.sort((a, b) => b.v - a.v);
+      return pairs.slice(0, 3).map(p => `${p.a}↔${p.b} ${(p.v * 100).toFixed(0)}%`).join(' · ');
+    },
+
+
     get etfHoldingsIndex() {
       // Memoize: build a {ETF_Ticker: rows[]} index once over the full holdings array.
       // O(n) build, O(1) lookup — avoids full filter scan on every reactive read.

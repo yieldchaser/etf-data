@@ -362,6 +362,60 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     leaderboard["momentum_regime"] = leaderboard.apply(_classify_regime, axis=1)
     print(f"  new signals:    conviction_divergence, stealth_accumulation ({int(leaderboard['stealth_accumulation'].sum())}), momentum_regime")
 
+    # ── Tier Breadth — how many distinct strategy types co-hold this name ────
+    # 5 = held by all five (Scout/Quant/Quality/Trend/Blob); 1 = mono-tier.
+    # Higher breadth = more independent strategy types confirming the name.
+    leaderboard["tier_breadth"] = leaderboard["tiers"].fillna("").apply(
+        lambda s: len([t for t in s.split(" + ") if t.strip()])
+    ).astype(int)
+
+    # ── Quality Adoption / Defection (30d) ────────────────────────────────────
+    # Quality ETFs (COWZ/CALF/SPHQ) screen on free-cash-flow & profitability.
+    # When momentum/scout name picks up a Quality cosign, that's institutional
+    # validation. When Quality drops a name, that's a fundamentals warning.
+    QUALITY_ETFS = {"COWZ", "CALF", "SPHQ"}
+
+    def _quality_change(historical: dict, leaderboard: pd.DataFrame) -> tuple[pd.Series, pd.Series]:
+        """Returns (adopted_mask, defected_mask) per ticker for Quality vs ~30d ago."""
+        if not historical:
+            return pd.Series(dtype=bool), pd.Series(dtype=bool)
+        dates_sorted = sorted(historical.keys())
+        if len(dates_sorted) < 2:
+            return pd.Series(dtype=bool), pd.Series(dtype=bool)
+        target_past = dates_sorted[-1] - pd.Timedelta(days=30)
+        past_date = min(dates_sorted, key=lambda d: abs((d - target_past).total_seconds()))
+        # held_by 30d ago — split on ", " to get a set of ETF tickers
+        past_lb = historical[past_date]
+        if "held_by" not in past_lb.columns:
+            return pd.Series(dtype=bool), pd.Series(dtype=bool)
+        past_held = past_lb.set_index("ticker")["held_by"].apply(
+            lambda s: set(t.strip() for t in str(s).split(",") if t.strip())
+        )
+        today_held = leaderboard.set_index("ticker")["held_by"].apply(
+            lambda s: set(t.strip() for t in str(s).split(",") if t.strip())
+        )
+        adopted, defected = {}, {}
+        all_tickers = set(today_held.index) | set(past_held.index)
+        for t in all_tickers:
+            now = today_held.get(t, set())
+            then = past_held.get(t, set())
+            now_q = now & QUALITY_ETFS
+            then_q = then & QUALITY_ETFS
+            adopted[t] = bool(now_q - then_q)        # gained at least one Quality ETF
+            defected[t] = bool(then_q - now_q)       # lost at least one Quality ETF
+        return pd.Series(adopted), pd.Series(defected)
+
+    if historical:
+        q_adopt, q_defect = _quality_change(historical, leaderboard)
+        leaderboard["quality_adopted_30d"] = leaderboard["ticker"].map(q_adopt).fillna(False).astype(bool)
+        leaderboard["quality_defected_30d"] = leaderboard["ticker"].map(q_defect).fillna(False).astype(bool)
+    else:
+        leaderboard["quality_adopted_30d"] = False
+        leaderboard["quality_defected_30d"] = False
+    print(f"  tier_breadth:   max={int(leaderboard['tier_breadth'].max())} · "
+          f"quality_adopted_30d={int(leaderboard['quality_adopted_30d'].sum())} · "
+          f"quality_defected_30d={int(leaderboard['quality_defected_30d'].sum())}")
+
     # ── Attach metadata (sector, industry, country) for flow analysis ─────────
     def _attach_metadata(leaderboard: pd.DataFrame) -> pd.DataFrame:
         """Merge ticker metadata (sector, industry, country) from cached CSV."""
@@ -400,6 +454,41 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     }
     (output_dir / "flow.json").write_text(_dumps(flow, separators=(",", ":")))
     print(f"  flow.json:      {len(flow['by_sector'])} sectors, {len(flow['by_country'])} countries")
+
+    # ── ETF Overlap matrix ────────────────────────────────────────────────────
+    # For each pair (A, B), what fraction of A's holdings are also in B?
+    # Uses today's snapshot only (latest DataFrame from compute_leaderboard).
+    # Output: { etfs: [...], jaccard: [[...]], shared: [[...]] }
+    #   jaccard[i][j] = |A ∩ B| / |A ∪ B|  (symmetric, 0..1)
+    #   shared[i][j]  = |A ∩ B|  (raw count)
+    try:
+        if not latest.empty:
+            etf_holdings = {
+                etf: set(g["ticker"].tolist())
+                for etf, g in latest.groupby("ETF_Ticker")
+            }
+            etf_list = sorted(etf_holdings.keys())
+            n = len(etf_list)
+            jaccard = [[0.0] * n for _ in range(n)]
+            shared = [[0] * n for _ in range(n)]
+            for i, a in enumerate(etf_list):
+                A = etf_holdings[a]
+                for j, b in enumerate(etf_list):
+                    B = etf_holdings[b]
+                    inter = len(A & B)
+                    union = len(A | B) or 1
+                    jaccard[i][j] = round(inter / union, 4)
+                    shared[i][j] = inter
+            overlap = {
+                "etfs": etf_list,
+                "jaccard": jaccard,
+                "shared": shared,
+                "sizes": {e: len(etf_holdings[e]) for e in etf_list},
+            }
+            (output_dir / "etf_overlap.json").write_text(_dumps(overlap, separators=(",", ":")))
+            print(f"  etf_overlap.json: {n}×{n} matrix (Jaccard + raw counts)")
+    except Exception as e:
+        print(f"  etf_overlap.json: ERROR — {e}")
 
     # ── leaderboard.json — main payload for the site ──────────────────────────
     lb_records = leaderboard.to_dict(orient="records")

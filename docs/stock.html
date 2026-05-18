@@ -168,6 +168,18 @@
           <span class="chip" :style="tierChipStyle(t)" x-text="t"></span>
         </template>
       </div>
+      <!-- Tier-breadth chip -->
+      <span x-show="(leaderboardRow?.tier_breadth || 0) >= 2" class="chip"
+            x-tooltip="`'Tier breadth: held by '+leaderboardRow.tier_breadth+' distinct strategy types. Higher = more independent confirmation.'`"
+            style="background: rgba(255,255,255,0.04); color: var(--text-2); border: 1px solid rgba(255,255,255,0.10)"
+            x-text="`${leaderboardRow.tier_breadth}-tier`"></span>
+      <!-- Quality adoption / defection -->
+      <span x-show="leaderboardRow?.quality_adopted_30d" class="chip"
+            x-tooltip="'Quality+ — A free-cash-flow / quality screen ETF (COWZ/CALF/SPHQ) added this name in the last 30 days. Strong fundamentals confirmation.'"
+            style="background: rgba(20,184,166,0.12); color: #5eead4; border: 1px solid rgba(20,184,166,0.30)">Quality+</span>
+      <span x-show="leaderboardRow?.quality_defected_30d" class="chip"
+            x-tooltip="'Quality− — A quality screen ETF (COWZ/CALF/SPHQ) dropped this name in the last 30 days. Possible fundamentals warning.'"
+            style="background: rgba(251,113,133,0.10); color: #fda4af; border: 1px solid rgba(251,113,133,0.25)">Quality−</span>
       <!-- Any-new badge -->
       <span x-show="leaderboardRow?.any_new" class="chip"
             style="background: rgba(96,165,250,0.12); color: #60a5fa; border: 1px solid rgba(96,165,250,0.3)">NEW</span>
