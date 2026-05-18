@@ -162,6 +162,13 @@
                 style="border-color: var(--border-2)"
                 x-tooltip="'Show only burst movers — stocks that improved global rank by 40+ in the last 30 days'"
                 x-text="`BURST ${counts.BURST || 0}`"></button>
+        <button @click="excludeConcentrated = !excludeConcentrated"
+                :class="excludeConcentrated ? 'border-emerald-500/40 text-emerald-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-emerald-500/30"
+                style="border-color: var(--border-2)"
+                x-tooltip="'Hide names where 80%+ of score comes from one ETF'">
+          ≤80% conc
+        </button>
         <select x-model="selectedTier" class="chip border px-2 py-1 bg-transparent" style="border-color: var(--border-2)">
           <option value="" style="background: #000">all tiers</option>
           <template x-for="t in ['Scout','Quant','Quality','Trend','Blob']" :key="t">
@@ -274,7 +281,9 @@
                        x-text="row.ticker"></a>
                   </td>
                   <td class="px-3 py-2 hidden sm:table-cell truncate max-w-[260px]" :title="row.company" style="color: var(--text-2)" x-text="row.company"></td>
-                  <td class="px-3 py-2 text-right num font-mono font-medium" x-text="fmt1(row.final_score)"></td>
+                  <td class="px-3 py-2 text-right num font-mono font-medium" 
+                      :x-tooltip="`'Score: ${fmt1(row.final_score)}<br>Concentration: ${row.concentration_score || 0}% from top ETF<br>' + (row.concentration_score < 40 ? '✓ Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : '⚠ Highly concentrated — fragile if top ETF rebalances')`"
+                      x-text="fmt1(row.final_score)"></td>
                   <td class="px-3 py-2 text-right num font-mono hidden lg:table-cell" :style="`color: ${flowColor(activeDeltaValue(row))}`" x-text="fmtPct(activeDeltaValue(row))"></td>
                   <td class="px-3 py-2 text-right num font-mono hidden lg:table-cell"
                       :style="`color: ${velocityColor(row.velocity_score)}`"
@@ -460,6 +469,13 @@
                   style="border-color: var(--border-2)"
                   x-tooltip="'Show only burst movers — stocks that improved global rank by 40+ in the last 30 days'"
                   x-text="`BURST ${counts.BURST || 0}`"></button>
+          <button @click="excludeConcentrated = !excludeConcentrated"
+                  :class="excludeConcentrated ? 'border-emerald-500/40 text-emerald-300' : ''"
+                  class="chip border px-2 py-1 transition hover:border-emerald-500/30"
+                  style="border-color: var(--border-2)"
+                  x-tooltip="'Hide names where 80%+ of score comes from one ETF'">
+            ≤80% conc
+          </button>
           <select x-model="selectedTier" class="chip border px-2 py-1 bg-transparent" style="border-color: var(--border-2)">
             <option value="" style="background: #000">all tiers</option>
             <template x-for="t in ['Scout','Quant','Quality','Trend','Blob']" :key="t">
@@ -537,7 +553,9 @@
                          x-text="row.ticker"></a>
                     </td>
                     <td class="px-3 py-2 hidden sm:table-cell truncate max-w-[260px]" :title="row.company" style="color: var(--text-2)" x-text="row.company"></td>
-                    <td class="px-3 py-2 text-right num font-mono font-medium" x-text="fmt1(row.final_score)"></td>
+                    <td class="px-3 py-2 text-right num font-mono font-medium"
+                        :x-tooltip="`'Score: ${fmt1(row.final_score)}<br>Concentration: ${row.concentration_score || 0}% from top ETF<br>' + (row.concentration_score < 40 ? '✓ Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : '⚠ Highly concentrated — fragile if top ETF rebalances')`"
+                        x-text="fmt1(row.final_score)"></td>
                     <td class="px-3 py-2 text-right num font-mono hidden lg:table-cell" :style="`color: ${flowColor(activeDeltaValue(row))}`" x-text="fmtPct(activeDeltaValue(row))"></td>
                     <td class="px-3 py-2 text-right num font-mono hidden lg:table-cell"
                         :style="`color: ${velocityColor(row.velocity_score)}`"
@@ -989,7 +1007,7 @@ function app() {
     leaderboard: [], holdings: [], changelog: {}, meta: {}, flow: {},
     loading: true, error: '',
     activeTab: 'leaderboard',
-    flag: '', selectedTier: '', selectedSector: '', selectedCountry: '', newOnly: false, velocityOnly: false, burstOnly: false, q: '',
+    flag: '', selectedTier: '', selectedSector: '', selectedCountry: '', newOnly: false, velocityOnly: false, burstOnly: false, q: '', excludeConcentrated: false,
     sortKey: 'leaderboard_rank', sortDir: 'asc',
     page: 1, pageSize: 50, open: null,
     activeETF: 'QQQM',
@@ -1014,6 +1032,7 @@ function app() {
       { key: 'global_rank_peak_30d',   label: 'Peak rank improvement (30d)' },
       { key: 'avg_rank_delta_7d',      label: 'Avg per-ETF rank Δ (7d)' },
       { key: 'etf_count_delta_30d',    label: 'ETFs added (30d)' },
+      { key: 'concentration_score',    label: 'Concentration risk' },
     ],
 
     async load() {
@@ -1102,7 +1121,7 @@ function app() {
     },
 
     toggleFlag(f) { this.flag = (this.flag === f) ? '' : f; this.page = 1; },
-    reset() { this.flag = ''; this.newOnly = false; this.velocityOnly = false; this.burstOnly = false; this.selectedTier = ''; this.selectedSector = ''; this.selectedCountry = ''; this.q = ''; this.page = 1; },
+    reset() { this.flag = ''; this.newOnly = false; this.velocityOnly = false; this.burstOnly = false; this.excludeConcentrated = false; this.selectedTier = ''; this.selectedSector = ''; this.selectedCountry = ''; this.q = ''; this.page = 1; },
 
     togglePin(t) {
       const i = this.pins.indexOf(t);
@@ -1154,6 +1173,7 @@ function app() {
       if (tier)              r = r.filter(x => (x.tiers || '').split(' + ').includes(tier));
       if (sector)            r = r.filter(x => x.sector === sector);
       if (country)           r = r.filter(x => x.country === country);
+      if (this.excludeConcentrated) r = r.filter(x => (x.concentration_score || 0) <= 80);
       if (q)                 r = r.filter(x => (x.ticker || '').toLowerCase().includes(q) || (x.company || '').toLowerCase().includes(q));
       return [...r].sort((a, b) => {
         for (const lvl of this.sortLevels) {

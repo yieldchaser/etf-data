@@ -133,6 +133,23 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                     "score_percentile", "days_observed"):
             leaderboard[col] = None
 
+    # ── Concentration risk score ──────────────────────────────────────────
+    def _compute_concentration(latest_df: pd.DataFrame) -> pd.DataFrame:
+        """Per ticker: what fraction of the score comes from its single top ETF?
+        100 = entirely one ETF; 25 = perfectly diversified across 4 ETFs."""
+        grouped = latest_df.groupby("ticker")["score"]
+        totals = grouped.sum()
+        maxes  = grouped.max()
+        top_share = (maxes / totals).fillna(1.0)
+        return pd.DataFrame({
+            "ticker": totals.index,
+            "top_etf_share": top_share.values.round(3),
+            "concentration_score": (top_share * 100).round(0).astype(int).values,
+        })
+
+    conc = _compute_concentration(latest)
+    leaderboard = leaderboard.merge(conc, on="ticker", how="left")
+
     # ── Multi-period SCORE deltas (attach as score_deltas_by_period dict) ────
     print("\nComputing per-period score deltas for leaderboard…")
     raw_dt = raw.copy()
@@ -246,8 +263,8 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                 is_better_than_median = recent10.lt(median_per_ticker, axis=0)
                 sustained_count = is_better_than_median.sum(axis=1)
                 
-                # Burst qualifier: peak ≥ 40 AND coverage ≥ 80% AND sustained ≥ 5 days
-                is_burst = (peak_improvement_30 >= 40) & (coverage >= 0.80) & (sustained_count >= 5)
+                # Burst qualifier: peak ≥ 40 AND coverage ≥ 80% AND sustained ≥ 8 days
+                is_burst = (peak_improvement_30 >= 40) & (coverage >= 0.80) & (sustained_count >= 8)
         else:
             is_burst = pd.Series(dtype=bool)
 
