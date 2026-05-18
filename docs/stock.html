@@ -173,7 +173,7 @@
             style="background: rgba(96,165,250,0.12); color: #60a5fa; border: 1px solid rgba(96,165,250,0.3)">NEW</span>
       <!-- BURST badge -->
       <span x-show="leaderboardRow?.burst_30d" class="chip"
-            :x-tooltip="`'BURST move — global rank improved by '+ leaderboardRow.global_rank_peak_30d +'+ positions in last 30d. Best rank: #'+ leaderboardRow.global_rank_best_30d +'’`"
+            x-tooltip="`'BURST move — global rank improved by '+ leaderboardRow.global_rank_peak_30d +'+ positions in last 30d. Best rank: #'+ leaderboardRow.global_rank_best_30d +'’`"
             style="background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.30)">⚡ BURST</span>
       <!-- VELO badge -->
       <span x-show="(leaderboardRow?.velocity_score || 0) >= 25 && !leaderboardRow?.burst_30d" class="chip"
@@ -206,7 +206,7 @@
           <template x-for="(entry, i) in (flagHistory || [])" :key="i">
             <rect :x="i * 8 + 20" y="30" width="7" height="40" rx="1.5"
                   :fill="timelineBarColor(entry, i)"
-                  :x-tooltip="timelineTooltip(entry, i)"/>
+                  x-tooltip="timelineTooltip(entry, i)"/>
           </template>
           <!-- Rank line overlay (top layer) — inverted Y so rank 1 = top -->
           <template x-if="flagHistory?.length > 1">
@@ -521,7 +521,7 @@
                       <!-- HC chip when stock is High Conviction overall -->
                       <span x-show="!row.is_new && leaderboardRow?.flag === 'HIGH_CONVICTION'" class="chip"
                             style="background: rgba(52,211,153,0.10); color: var(--up); border: 1px solid rgba(52,211,153,0.25)"
-                            :x-tooltip="`'Held by ' + leaderboardRow.etf_count + ' ETFs · HC streak ' + (leaderboardRow.hc_streak || 0) + ' days'`">HC</span>
+                            x-tooltip="`'Held by ' + leaderboardRow.etf_count + ' ETFs · HC streak ' + (leaderboardRow.hc_streak || 0) + ' days'`">HC</span>
                       <!-- em-dash fallback — never empty -->
                       <span x-show="!row.is_new && leaderboardRow?.flag !== 'HIGH_CONVICTION'"
                             class="text-xs" style="color: var(--text-3)">—</span>

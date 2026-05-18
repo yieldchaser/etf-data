@@ -279,7 +279,7 @@
                   <td class="px-2 py-2 text-center">
                     <button @click.stop="togglePin(row.ticker)" class="text-base leading-none transition"
                             :style="`color: ${isPinned(row.ticker) ? 'var(--cyan)' : 'var(--text-3)'}`"
-                            :x-tooltip="isPinned(row.ticker) ? 'Pinned — click to unpin' : 'Pin to watchlist'">
+                            x-tooltip="isPinned(row.ticker) ? 'Pinned — click to unpin' : 'Pin to watchlist'">
                       <span x-text="isPinned(row.ticker) ? '★' : '☆'"></span>
                     </button>
                   </td>
@@ -291,7 +291,7 @@
                   </td>
                   <td class="px-3 py-2 hidden sm:table-cell truncate max-w-[260px]" :title="row.company" style="color: var(--text-2)" x-text="row.company"></td>
                   <td class="px-3 py-2 text-right num font-mono font-medium" 
-                      :x-tooltip="`'Score: ${fmt1(row.final_score)}<br>Concentration: ${row.concentration_score != null ? row.concentration_score : '—'}% from top ETF<br>' + (row.concentration_score == null ? 'No data' : row.concentration_score < 40 ? '✓ Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : '⚠ Highly concentrated — fragile if top ETF rebalances')`"
+                      x-tooltip="`'Score: ${fmt1(row.final_score)}<br>Concentration: ${row.concentration_score != null ? row.concentration_score : '—'}% from top ETF<br>' + (row.concentration_score == null ? 'No data' : row.concentration_score < 40 ? '✓ Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : '⚠ Highly concentrated — fragile if top ETF rebalances')`"
                       x-text="fmt1(row.final_score)"></td>
                   <td class="px-3 py-2 text-right num font-mono hidden lg:table-cell" :style="`color: ${flowColor(activeDeltaValue(row))}`" x-text="fmtPct(activeDeltaValue(row))"></td>
                   <td class="px-3 py-2 text-right num font-mono hidden lg:table-cell"
@@ -304,7 +304,7 @@
                     <div class="flex flex-wrap gap-1">
                       <template x-for="t in (row.tiers || '').split(' + ').filter(Boolean)" :key="t">
                         <span class="chip" :style="tierChipStyle(t)" x-text="t"
-                              :x-tooltip="`'${t} — ' + tierExplain(t)`"></span>
+                              x-tooltip="`'${t} — ' + tierExplain(t)`"></span>
                       </template>
                     </div>
                   </td>
@@ -322,7 +322,7 @@
                   <td class="px-3 py-2">
                     <div class="flex gap-1 flex-wrap">
                       <span x-show="row.flag === 'HIGH_CONVICTION'" class="chip"
-                            :x-tooltip="`'HIGH CONVICTION — held by ' + row.etf_count + ' ETFs<br>HC streak: ' + (row.hc_streak||0) + ' days'`"
+                            x-tooltip="`'HIGH CONVICTION — held by ' + row.etf_count + ' ETFs<br>HC streak: ' + (row.hc_streak||0) + ' days'`"
                             style="background: rgba(52, 211, 153, 0.10); color: var(--up); border: 1px solid rgba(52, 211, 153, 0.25)">HC</span>
                       <span x-show="row.flag === 'SPECULATIVE_BETA'" class="chip"
                             x-tooltip="'SPECULATIVE BETA — Trend tier without Quality or Scout backing'"
@@ -331,10 +331,10 @@
                             x-tooltip="'NEW — first appearance in any ETF within the last 14 days'"
                             style="background: rgba(96, 165, 250, 0.10); color: var(--blue); border: 1px solid rgba(96, 165, 250, 0.25)">NEW</span>
                       <span x-show="row.burst_30d" class="chip"
-                            :x-tooltip="`'BURST move — global rank improved by '+ row.global_rank_peak_30d +'+ positions in last 30d. Currently #'+ row.leaderboard_rank +' (best in window: #'+ row.global_rank_best_30d +')’`"
+                            x-tooltip="`'BURST move — global rank improved by '+ row.global_rank_peak_30d +'+ positions in last 30d. Currently #'+ row.leaderboard_rank +' (best in window: #'+ row.global_rank_best_30d +')’`"
                             style="background: rgba(168, 85, 247, 0.12); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.30)">BURST</span>
                       <span x-show="(row.velocity_score || 0) >= 25 && (row.etf_count || 0) >= 2 && !row.burst_30d" class="chip"
-                            :x-tooltip="`'Top-velocity composite ('+ row.velocity_score +'). Conviction is concentrating.’`"
+                            x-tooltip="`'Top-velocity composite ('+ row.velocity_score +'). Conviction is concentrating.’`"
                             style="background: rgba(34, 211, 238, 0.10); color: var(--cyan); border: 1px solid rgba(34, 211, 238, 0.25)">VELO</span>
                     </div>
                   </td>
@@ -551,7 +551,7 @@
                     <td class="px-2 py-2 text-center">
                       <button @click.stop="togglePin(row.ticker)" class="text-base leading-none transition"
                               :style="`color: ${isPinned(row.ticker) ? 'var(--cyan)' : 'var(--text-3)'}`"
-                              :x-tooltip="isPinned(row.ticker) ? 'Pinned — click to unpin' : 'Pin to watchlist'">
+                              x-tooltip="isPinned(row.ticker) ? 'Pinned — click to unpin' : 'Pin to watchlist'">
                         <span x-text="isPinned(row.ticker) ? '★' : '☆'"></span>
                       </button>
                     </td>
@@ -563,7 +563,7 @@
                     </td>
                     <td class="px-3 py-2 hidden sm:table-cell truncate max-w-[260px]" :title="row.company" style="color: var(--text-2)" x-text="row.company"></td>
                     <td class="px-3 py-2 text-right num font-mono font-medium"
-                        :x-tooltip="`'Score: ${fmt1(row.final_score)}<br>Concentration: ${row.concentration_score != null ? row.concentration_score : '—'}% from top ETF<br>' + (row.concentration_score == null ? 'No data' : row.concentration_score < 40 ? '✓ Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : '⚠ Highly concentrated — fragile if top ETF rebalances')`"
+                        x-tooltip="`'Score: ${fmt1(row.final_score)}<br>Concentration: ${row.concentration_score != null ? row.concentration_score : '—'}% from top ETF<br>' + (row.concentration_score == null ? 'No data' : row.concentration_score < 40 ? '✓ Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : '⚠ Highly concentrated — fragile if top ETF rebalances')`"
                         x-text="fmt1(row.final_score)"></td>
                     <td class="px-3 py-2 text-right num font-mono hidden lg:table-cell" :style="`color: ${flowColor(activeDeltaValue(row))}`" x-text="fmtPct(activeDeltaValue(row))"></td>
                     <td class="px-3 py-2 text-right num font-mono hidden lg:table-cell"
@@ -576,7 +576,7 @@
                       <div class="flex flex-wrap gap-1">
                         <template x-for="t in (row.tiers || '').split(' + ').filter(Boolean)" :key="t">
                           <span class="chip" :style="tierChipStyle(t)" x-text="t"
-                                :x-tooltip="`'${t} — ' + tierExplain(t)`"></span>
+                                x-tooltip="`'${t} — ' + tierExplain(t)`"></span>
                         </template>
                       </div>
                     </td>
@@ -594,7 +594,7 @@
                     <td class="px-3 py-2">
                       <div class="flex gap-1 flex-wrap">
                         <span x-show="row.flag === 'HIGH_CONVICTION'" class="chip"
-                              :x-tooltip="`'HIGH CONVICTION — held by ' + row.etf_count + ' ETFs<br>HC streak: ' + (row.hc_streak||0) + ' days'`"
+                              x-tooltip="`'HIGH CONVICTION — held by ' + row.etf_count + ' ETFs<br>HC streak: ' + (row.hc_streak||0) + ' days'`"
                               style="background: rgba(52, 211, 153, 0.10); color: var(--up); border: 1px solid rgba(52, 211, 153, 0.25)">HC</span>
                         <span x-show="row.flag === 'SPECULATIVE_BETA'" class="chip"
                               x-tooltip="'SPECULATIVE BETA — Trend tier without Quality or Scout backing'"
@@ -603,10 +603,10 @@
                               x-tooltip="'NEW — first appearance in any ETF within the last 14 days'"
                               style="background: rgba(96, 165, 250, 0.10); color: var(--blue); border: 1px solid rgba(96, 165, 250, 0.25)">NEW</span>
                         <span x-show="row.burst_30d" class="chip"
-                              :x-tooltip="`'BURST move — global rank improved by '+ row.global_rank_peak_30d +'+ positions in last 30d. Currently #'+ row.leaderboard_rank +' (best in window: #'+ row.global_rank_best_30d +')'`"
+                              x-tooltip="`'BURST move — global rank improved by '+ row.global_rank_peak_30d +'+ positions in last 30d. Currently #'+ row.leaderboard_rank +' (best in window: #'+ row.global_rank_best_30d +')'`"
                               style="background: rgba(168, 85, 247, 0.12); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.30)">BURST</span>
                         <span x-show="(row.velocity_score || 0) >= 25 && (row.etf_count || 0) >= 2 && !row.burst_30d" class="chip"
-                              :x-tooltip="`'Top-velocity composite ('+ row.velocity_score +'). Conviction is concentrating.'`"
+                              x-tooltip="`'Top-velocity composite ('+ row.velocity_score +'). Conviction is concentrating.'`"
                               style="background: rgba(34, 211, 238, 0.10); color: var(--cyan); border: 1px solid rgba(34, 211, 238, 0.25)">VELO</span>
                       </div>
                     </td>
@@ -729,7 +729,7 @@
                 <template x-for="(slice, i) in donutSlices" :key="slice.ticker">
                   <path :d="slice.path" :fill="slice.color"
                         @mouseenter="hoveredSlice = i" @mouseleave="hoveredSlice = null"
-                        :x-tooltip="`'<b>' + slice.ticker + '</b> · ' + (slice.name || '') + '<br>Weight: ' + (slice.weight*100).toFixed(2) + '%<br>Rank #' + slice.rank`"
+                        x-tooltip="`'<b>' + slice.ticker + '</b> · ' + (slice.name || '') + '<br>Weight: ' + (slice.weight*100).toFixed(2) + '%<br>Rank #' + slice.rank`"
                         style="cursor: pointer; stroke: #000; stroke-width: 0.5; transition: opacity 0.15s"
                         :style="hoveredSlice !== null && hoveredSlice !== i ? 'opacity: 0.3' : ''"/>
                 </template>
