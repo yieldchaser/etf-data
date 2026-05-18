@@ -367,7 +367,25 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
 
     # ── leaderboard.json — main payload for the site ──────────────────────────
     lb_records = leaderboard.to_dict(orient="records")
-    # Attach per-period score deltas to every record
+
+    # Build per-ticker flag history from historical leaderboards
+    # Schema: { ticker: [{d, flag, velocity_score, burst_30d, rank}] }
+    flag_history: dict[str, list] = {}
+    if historical:
+        for d in sorted(historical.keys()):
+            lb_snap = historical[d]
+            for _, row in lb_snap.iterrows():
+                t = row["ticker"]
+                entry = {
+                    "d": d.strftime("%Y-%m-%d"),
+                    "flag": row.get("flag", ""),
+                    "rank": int(row.get("leaderboard_rank", 0)),
+                }
+                if t not in flag_history:
+                    flag_history[t] = []
+                flag_history[t].append(entry)
+
+    # Attach per-period score deltas + flag_history to every record
     for r in lb_records:
         t = r.get("ticker", "")
         r["score_deltas_by_period"] = {}
@@ -378,8 +396,10 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                 r["score_deltas_by_period"][str(p)] = None
             else:
                 r["score_deltas_by_period"][str(p)] = round(float(v), 4)
+        # Attach flag history (last 90 days of state transitions)
+        r["flag_history"] = flag_history.get(t, [])
     (output_dir / "leaderboard.json").write_text(_dumps(lb_records, separators=(",", ":")))
-
+    print(f"  flag_history:   {sum(1 for r in lb_records if r.get('flag_history'))} tickers with history")
     # ── holdings_latest.json — per-(ETF, ticker) detail with rank deltas ──────
     if not latest.empty:
         latest_out = latest[[
