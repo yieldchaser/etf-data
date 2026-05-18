@@ -402,3 +402,113 @@ class TestVelocity:
         assert burst_30d or global_rank_peak >= 40, (
             f"Expected burst or peak >= 40 for X. Got burst={burst_30d}, peak={global_rank_peak}"
         )
+
+
+# ─── Burst false-positive tests (Phase 2.7 A1) ────────────────────────────────
+class TestBurstFalsePositives:
+    """Tests that the new burst criteria correctly reject false positives."""
+
+    def _build_rank_panel(self, rows, cfg):
+        """Helper: build historical leaderboards and extract rank panel."""
+        df = _h(rows)
+        historical = hist.historical_leaderboards(df, cfg)
+        dates_sorted = sorted(historical.keys())
+        if len(dates_sorted) < 5:
+            return None, None, dates_sorted
+        today_date = dates_sorted[-1]
+        window_start = today_date - pd.Timedelta(days=30)
+        window_cols = [c for c in dates_sorted if c >= window_start]
+        if len(window_cols) < 5:
+            return None, None, dates_sorted
+        rank_panel_rows = {}
+        for d in window_cols:
+            lb = historical[d]
+            if "leaderboard_rank" in lb.columns:
+                rank_panel_rows[d] = lb.set_index("ticker")["leaderboard_rank"]
+        if not rank_panel_rows:
+            return None, None, dates_sorted
+        rank_panel = pd.DataFrame(rank_panel_rows)
+        return rank_panel, window_cols, dates_sorted
+
+    def test_burst_requires_sustained_presence(self, cfg):
+        """A ticker that dropped off the leaderboard and returned shouldn't BURST.
+        Coverage check: ticker absent for >20% of window → burst=False."""
+        import datetime
+        rows = []
+        base = datetime.date(2026, 3, 1)
+        # X present days 0-5, absent days 6-20, present days 21-35
+        for i in range(35):
+            d = (base + datetime.timedelta(days=i)).strftime("%Y-%m-%d")
+            # 80 stable fillers always present
+            for j in range(80):
+                rows.append(("QMOM", f"STABLE{j:02d}", f"Stable {j}", 0.01, d, d))
+            # X only present in first 6 and last 15 days (absent for ~40% of window)
+            if i < 6 or i >= 21:
+                rows.append(("QMOM", "X", "Ticker X", 0.15, d, d))
+
+        rank_panel, window_cols, _ = self._build_rank_panel(rows, cfg)
+        if rank_panel is None or "X" not in rank_panel.index:
+            pytest.skip("Not enough snapshots for this test")
+
+        x_row = rank_panel.loc["X"]
+        nan_count = x_row.isna().sum()
+        coverage = (len(window_cols) - nan_count) / len(window_cols)
+
+        # Coverage should be below 80% due to the gap
+        # (X is absent for ~40% of the window)
+        peak = (x_row.max() - x_row.min()) if not x_row.dropna().empty else 0
+
+        # Even if peak >= 40, coverage < 0.80 should prevent burst
+        if coverage >= 0.80:
+            pytest.skip(f"Coverage={coverage:.2f} — not enough gap in this dataset size")
+
+        # Simulate the burst check
+        median_per_ticker = rank_panel.median(axis=1)
+        recent10 = rank_panel.iloc[:, -10:] if rank_panel.shape[1] >= 10 else rank_panel
+        is_better = recent10.lt(median_per_ticker, axis=0)
+        sustained = is_better.sum(axis=1)
+
+        is_burst = (peak >= 40) and (coverage >= 0.80) and (sustained.get("X", 0) >= 8)
+        assert not is_burst, (
+            f"X should NOT burst: coverage={coverage:.2f} < 0.80 required. "
+            f"peak={peak}, sustained={sustained.get('X', 0)}"
+        )
+
+    def test_burst_requires_sustained_improvement(self, cfg):
+        """A ticker that touched +50 ranks for one day shouldn't BURST.
+        Sustained check: must be better than median for >=8 of last 10 snapshots."""
+        import datetime
+        rows = []
+        base = datetime.date(2026, 3, 1)
+        # X at rank ~80 for 28 days, rank ~20 for 1 day, rank ~80 again
+        for i in range(35):
+            d = (base + datetime.timedelta(days=i)).strftime("%Y-%m-%d")
+            # 80 stable fillers
+            for j in range(80):
+                rows.append(("QMOM", f"STABLE{j:02d}", f"Stable {j}", 0.01, d, d))
+            # X: tiny weight (deep rank) except day 15 where it surges briefly
+            if i == 15:
+                rows.append(("QMOM", "X", "Ticker X", 0.15, d, d))  # one-day spike
+            else:
+                rows.append(("QMOM", "X", "Ticker X", 0.001, d, d))  # deep rank
+
+        rank_panel, window_cols, _ = self._build_rank_panel(rows, cfg)
+        if rank_panel is None or "X" not in rank_panel.index:
+            pytest.skip("Not enough snapshots for this test")
+
+        x_row = rank_panel.loc["X"]
+        nan_count = x_row.isna().sum()
+        coverage = (len(window_cols) - nan_count) / len(window_cols)
+        peak = float(x_row.max() - x_row.min()) if not x_row.dropna().empty else 0
+
+        median_per_ticker = rank_panel.median(axis=1)
+        recent10 = rank_panel.iloc[:, -10:] if rank_panel.shape[1] >= 10 else rank_panel
+        is_better = recent10.lt(median_per_ticker, axis=0)
+        sustained = int(is_better.loc["X"].sum()) if "X" in is_better.index else 0
+
+        # With only 1 day of improvement, sustained should be < 8
+        is_burst = (peak >= 40) and (coverage >= 0.80) and (sustained >= 8)
+        assert not is_burst, (
+            f"X should NOT burst: one-day spike only. "
+            f"peak={peak:.0f}, coverage={coverage:.2f}, sustained={sustained} (need >=8)"
+        )

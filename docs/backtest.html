@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Predator Protocol · Backtest</title>
+  <meta name="description" content="Backtest results for Predator Protocol strategies: HC Entry, BURST Trigger, Top-10 Score, Top-10 Velocity vs SPX baseline.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📈%3C/text%3E%3C/svg%3E">
+  <meta name="color-scheme" content="dark">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+  <style>
+    :root {
+      --bg: #000; --surface: #0a0a0a; --surface-2: #111;
+      --border: rgba(255,255,255,0.06); --border-2: rgba(255,255,255,0.10);
+      --text: #e4e4e7; --text-2: #a1a1aa; --text-3: #52525b;
+      --cyan: #22d3ee; --up: #34d399; --down: #fb7185; --amber: #fbbf24;
+    }
+    html, body { background: var(--bg); color: var(--text); }
+    body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    .num { font-variant-numeric: tabular-nums; }
+    .font-mono { font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; }
+    .label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); }
+    .label-cyan { color: var(--cyan); }
+    .chip { display: inline-flex; align-items: center; padding: 1px 6px; border-radius: 4px; font-size: 10.5px; font-weight: 500; line-height: 1.5; white-space: nowrap; }
+    [x-cloak] { display: none !important; }
+    #tt { position: fixed; z-index: 9999; pointer-events: none; opacity: 0;
+          transition: opacity 0.15s; max-width: 260px; line-height: 1.5;
+          background: var(--surface-2); border: 1px solid var(--border-2);
+          color: var(--text); padding: 6px 10px; border-radius: 6px;
+          font-size: 11px; box-shadow: 0 4px 20px rgba(0,0,0,0.6); }
+    .crosshair-line { stroke: rgba(255,255,255,0.15); stroke-width: 1; stroke-dasharray: 3 3; pointer-events: none; }
+    @keyframes pulse-fade { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+    .pulse-load { animation: pulse-fade 1.4s ease-in-out infinite; }
+  </style>
+</head>
+<body>
+<div x-data="btApp()" x-init="load()" x-cloak class="max-w-[1400px] mx-auto px-3 sm:px-5 py-4 sm:py-6">
+
+  <!-- HEADER -->
+  <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5 pb-4 border-b" style="border-color: var(--border)">
+    <div>
+      <div class="flex items-center gap-3 mb-1">
+        <a href="index.html" class="label hover:text-zinc-400 transition" style="text-decoration:none">← PREDATOR PROTOCOL</a>
+        <span class="label">›</span>
+        <span class="label-cyan label">BACKTEST</span>
+      </div>
+      <h1 class="text-xl font-medium" style="color: var(--cyan)">Strategy Backtest</h1>
+      <div class="text-xs mt-1" style="color: var(--text-2)">
+        Equal-weighted 30-day hold · US-listed names only (yfinance coverage)
+      </div>
+    </div>
+    <nav class="flex flex-wrap gap-1 text-xs">
+      <a href="index.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color:var(--text-2);border-color:var(--border);text-decoration:none">Dashboard</a>
+      <a href="markets.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color:var(--text-2);border-color:var(--border);text-decoration:none">Markets</a>
+      <a href="sim.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color:var(--text-2);border-color:var(--border);text-decoration:none">Simulator</a>
+    </nav>
+  </header>
+
+  <!-- LOADING -->
+  <div x-show="loading" class="pulse-load text-center py-20" style="color:var(--text-3)">
+    <div class="text-lg mb-2">Loading backtest data…</div>
+    <div class="text-xs">Run <code>python -m predator.backtest</code> to generate</div>
+  </div>
+
+  <!-- ERROR -->
+  <div x-show="!loading && error" class="rounded-lg border px-6 py-10 text-center" style="background:var(--surface);border-color:var(--border)">
+    <div class="text-base mb-2" style="color:var(--down)">Backtest data not found</div>
+    <div class="text-xs mb-4" style="color:var(--text-3)">Run: <code class="px-1 rounded" style="background:var(--surface-2)">python -m predator.backtest</code></div>
+    <a href="index.html" class="text-xs px-3 py-1.5 rounded-md border transition" style="color:var(--cyan);border-color:rgba(34,211,238,0.3);text-decoration:none">← Back to Dashboard</a>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div x-show="!loading && !error">
+
+    <!-- Build info -->
+    <div class="text-xs mb-5" style="color:var(--text-3)">
+      Generated <span class="num font-mono" x-text="formatBuilt(data.generated_at_utc)"></span>
+      · Hold period: <span class="num font-mono" x-text="data.hold_days"></span> days
+    </div>
+
+    <!-- STATS TABLE -->
+    <div class="rounded-lg border mb-6 overflow-hidden" style="background:var(--surface);border-color:var(--border)">
+      <div class="px-3 py-2" style="border-bottom:1px solid var(--border)">
+        <div class="label-cyan label">Strategy Performance Summary</div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="text-[10px] uppercase tracking-wider" style="background:#050505;color:var(--text-3)">
+            <tr style="border-bottom:1px solid var(--border)">
+              <th class="text-left px-3 py-2">Strategy</th>
+              <th class="text-left px-3 py-2 hidden sm:table-cell">Description</th>
+              <th class="text-right px-3 py-2">Trades</th>
+              <th class="text-right px-3 py-2">Win Rate</th>
+              <th class="text-right px-3 py-2">Avg Return</th>
+              <th class="text-right px-3 py-2 hidden md:table-cell">Max Drawdown</th>
+              <th class="text-right px-3 py-2 hidden md:table-cell">Sharpe</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="[key, strat] in Object.entries(data.strategies || {})" :key="key">
+              <tr class="hover:bg-white/5 transition" style="border-bottom:1px solid rgba(255,255,255,0.03)">
+                <td class="px-3 py-2 font-medium">
+                  <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full" :style="`background:${stratColor(key)}`"></span>
+                    <span x-text="strat.label"></span>
+                  </div>
+                </td>
+                <td class="px-3 py-2 hidden sm:table-cell text-xs" style="color:var(--text-2)" x-text="strat.description"></td>
+                <td class="px-3 py-2 text-right num font-mono" x-text="strat.stats?.n_trades ?? '—'"></td>
+                <td class="px-3 py-2 text-right num font-mono"
+                    :style="`color:${(strat.stats?.win_rate||0)>=0.5?'var(--up)':'var(--down)'}`"
+                    x-text="strat.stats?.win_rate != null ? (strat.stats.win_rate*100).toFixed(0)+'%' : '—'"></td>
+                <td class="px-3 py-2 text-right num font-mono"
+                    :style="`color:${(strat.stats?.avg_return||0)>=0?'var(--up)':'var(--down)'}`"
+                    x-text="strat.stats?.avg_return != null ? ((strat.stats.avg_return>=0?'+':'')+((strat.stats.avg_return||0)*100).toFixed(1)+'%') : '—'"></td>
+                <td class="px-3 py-2 text-right num font-mono hidden md:table-cell" style="color:var(--down)"
+                    x-text="strat.stats?.max_drawdown != null ? ((strat.stats.max_drawdown*100).toFixed(1)+'%') : '—'"></td>
+                <td class="px-3 py-2 text-right num font-mono hidden md:table-cell"
+                    :style="`color:${(strat.stats?.sharpe||0)>=1?'var(--up)':(strat.stats?.sharpe||0)>=0?'var(--text-2)':'var(--down)'}`"
+                    x-text="strat.stats?.sharpe != null ? strat.stats.sharpe.toFixed(2) : '—'"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CUMULATIVE RETURNS CHART -->
+    <div class="rounded-lg border mb-6" style="background:var(--surface);border-color:var(--border)">
+      <div class="px-3 py-2 flex items-center justify-between" style="border-bottom:1px solid var(--border)">
+        <div class="label-cyan label">Cumulative Returns by Strategy</div>
+        <div class="text-xs" style="color:var(--text-3)">equal-weighted · 30-day hold</div>
+      </div>
+      <div class="p-3 relative" x-data="{hx:null,hi:null}"
+           @mousemove="
+             const svg=$el.querySelector('svg');
+             if(!svg||!chartDates.length)return;
+             const rect=svg.getBoundingClientRect();
+             const rx=$event.clientX-rect.left;
+             const n=chartDates.length;
+             if(n<2)return;
+             hi=Math.max(0,Math.min(n-1,Math.round((rx/rect.width)*(n-1))));
+             hx=(hi/(n-1))*rect.width;
+           "
+           @mouseleave="hi=null;hx=null">
+        <svg viewBox="0 0 1000 300" class="w-full" style="height:300px;overflow:visible">
+          <!-- Grid lines -->
+          <template x-for="y in [0.25,0.5,0.75]" :key="y">
+            <line :x1="0" :x2="1000" :y1="y*280+10" :y2="y*280+10" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+          </template>
+          <!-- Zero line -->
+          <line :x1="0" :x2="1000" :y1="zeroY" :y2="zeroY" stroke="rgba(255,255,255,0.12)" stroke-width="1" stroke-dasharray="4 4"/>
+          <!-- Strategy lines -->
+          <template x-for="[key,strat] in Object.entries(data.strategies||{})" :key="key">
+            <path :d="chartPath(strat.cumulative_returns)" :stroke="stratColor(key)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </template>
+          <!-- Crosshair -->
+          <template x-if="hi !== null">
+            <line class="crosshair-line" :x1="(hi/(chartDates.length-1))*1000" y1="0" :x2="(hi/(chartDates.length-1))*1000" y2="300"/>
+          </template>
+          <!-- X-axis labels -->
+          <g style="font-family:ui-monospace;font-size:9px" fill="var(--text-3)">
+            <text x="0" y="298" text-anchor="start" x-text="chartDates[0]?.slice(0,7)||''"></text>
+            <text x="500" y="298" text-anchor="middle" x-text="chartDates[Math.floor(chartDates.length/2)]?.slice(0,7)||''"></text>
+            <text x="1000" y="298" text-anchor="end" x-text="chartDates[chartDates.length-1]?.slice(0,7)||''"></text>
+          </g>
+        </svg>
+        <!-- Crosshair tooltip -->
+        <div x-show="hi !== null" class="absolute pointer-events-none rounded-md px-3 py-2 text-xs"
+             :style="`top:8px;left:${Math.min((hx||0)+12,300)}px;background:var(--surface-2);border:1px solid var(--border-2)`">
+          <div class="font-mono mb-1" style="color:var(--text-3)" x-text="chartDates[hi]||''"></div>
+          <template x-for="[key,strat] in Object.entries(data.strategies||{})" :key="key">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full" :style="`background:${stratColor(key)}`"></span>
+              <span class="font-mono" x-text="strat.label"></span>
+              <span class="num font-mono ml-auto" :style="`color:${stratColor(key)}`"
+                    x-text="chartReturnAt(strat.cumulative_returns, hi)"></span>
+            </div>
+          </template>
+        </div>
+        <!-- Legend -->
+        <div class="flex flex-wrap gap-4 mt-2 text-xs">
+          <template x-for="[key,strat] in Object.entries(data.strategies||{})" :key="key">
+            <div class="flex items-center gap-1.5">
+              <span class="inline-block w-5 h-0.5 rounded" :style="`background:${stratColor(key)}`"></span>
+              <span x-text="strat.label"></span>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCATTER PLOT: velocity_score vs realized return -->
+    <div class="rounded-lg border mb-6" style="background:var(--surface);border-color:var(--border)">
+      <div class="px-3 py-2 flex items-center justify-between" style="border-bottom:1px solid var(--border)">
+        <div class="label-cyan label">Velocity Score vs Realized 30-Day Return</div>
+        <div class="text-xs num font-mono" style="color:var(--text-3)" x-text="`R² = ${r2.toFixed(3)} · ${(data.scatter||[]).length} points`"></div>
+      </div>
+      <div class="p-3">
+        <svg viewBox="0 0 1000 400" class="w-full" style="height:400px">
+          <!-- Grid -->
+          <template x-for="y in [0.25,0.5,0.75]" :key="y">
+            <line :x1="60" :x2="980" :y1="y*360+20" :y2="y*360+20" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+          </template>
+          <!-- Zero return line -->
+          <line :x1="60" :x2="980" :y1="scatterZeroY" :y2="scatterZeroY" stroke="rgba(255,255,255,0.15)" stroke-width="1" stroke-dasharray="4 4"/>
+          <!-- Zero velocity line -->
+          <line :x1="scatterZeroX" :x2="scatterZeroX" y1="20" y2="380" stroke="rgba(255,255,255,0.08)" stroke-width="1" stroke-dasharray="4 4"/>
+          <!-- Scatter dots -->
+          <template x-for="(pt, i) in scatterPoints" :key="i">
+            <circle :cx="pt.x" :cy="pt.y" r="2.5" fill="rgba(34,211,238,0.35)" stroke="none"/>
+          </template>
+          <!-- Regression line -->
+          <line :x1="regLine.x1" :y1="regLine.y1" :x2="regLine.x2" :y2="regLine.y2"
+                stroke="var(--amber)" stroke-width="1.5" stroke-dasharray="6 3"/>
+          <!-- Axis labels -->
+          <text x="520" y="398" text-anchor="middle" style="font-family:ui-monospace;font-size:10px;fill:var(--text-3)">Velocity Score</text>
+          <text x="12" y="200" text-anchor="middle" transform="rotate(-90,12,200)" style="font-family:ui-monospace;font-size:10px;fill:var(--text-3)">30d Return</text>
+          <!-- R² label -->
+          <text :x="960" y="40" text-anchor="end" style="font-family:ui-monospace;font-size:11px;fill:var(--amber)" :x-text="`R²=${r2.toFixed(3)}`"></text>
+        </svg>
+      </div>
+    </div>
+
+  </div><!-- /main content -->
+
+  <footer class="mt-6 pt-4 text-xs flex gap-4 flex-wrap" style="border-top:1px solid var(--border);color:var(--text-3)">
+    <span>Predator Protocol · yieldchaser/etf-data</span>
+    <a href="index.html" style="color:var(--cyan);text-decoration:none">← Dashboard</a>
+  </footer>
+</div>
+
+<div id="tt"></div>
+<script>
+function btApp() {
+  return {
+    data: {}, loading: true, error: false,
+
+    async load() {
+      try {
+        this.data = await fetch('data/backtest.json').then(r => {
+          if (!r.ok) throw new Error(r.status);
+          return r.json();
+        });
+      } catch (e) {
+        this.error = true;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    stratColor(key) {
+      return {
+        hc_entry:       '#34d399',
+        burst_trigger:  '#c084fc',
+        top10_score:    '#22d3ee',
+        top10_velocity: '#fbbf24',
+        baseline:       '#71717a',
+      }[key] || '#a1a1aa';
+    },
+
+    // ── Cumulative returns chart ──────────────────────────────────────────
+    get chartDates() {
+      const strats = Object.values(this.data.strategies || {});
+      const allDates = new Set();
+      for (const s of strats) {
+        for (const p of (s.cumulative_returns || [])) allDates.add(p.date);
+      }
+      return Array.from(allDates).sort();
+    },
+
+    get chartMinMax() {
+      const strats = Object.values(this.data.strategies || {});
+      let mn = 0, mx = 0;
+      for (const s of strats) {
+        for (const p of (s.cumulative_returns || [])) {
+          mn = Math.min(mn, p.total_return);
+          mx = Math.max(mx, p.total_return);
+        }
+      }
+      const pad = (mx - mn) * 0.1 || 0.05;
+      return { min: mn - pad, max: mx + pad };
+    },
+
+    get zeroY() {
+      const { min, max } = this.chartMinMax;
+      return 10 + (1 - (0 - min) / (max - min)) * 280;
+    },
+
+    chartPath(cumReturns) {
+      if (!cumReturns || !cumReturns.length) return '';
+      const dates = this.chartDates;
+      if (dates.length < 2) return '';
+      const { min, max } = this.chartMinMax;
+      const range = max - min || 1;
+      const dateToX = {};
+      dates.forEach((d, i) => { dateToX[d] = (i / (dates.length - 1)) * 1000; });
+      return cumReturns
+        .filter(p => dateToX[p.date] !== undefined)
+        .map((p, i) => {
+          const x = dateToX[p.date];
+          const y = 10 + (1 - (p.total_return - min) / range) * 280;
+          return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(' ');
+    },
+
+    chartReturnAt(cumReturns, idx) {
+      if (!cumReturns || !this.chartDates[idx]) return '—';
+      const date = this.chartDates[idx];
+      const pt = cumReturns.slice().reverse().find(p => p.date <= date);
+      if (!pt) return '—';
+      const v = pt.total_return * 100;
+      return (v >= 0 ? '+' : '') + v.toFixed(1) + '%';
+    },
+
+    // ── Scatter plot ──────────────────────────────────────────────────────
+    get scatterData() {
+      return (this.data.scatter || []).filter(p =>
+        p.velocity_score != null && p.realized_return_30d != null
+      );
+    },
+
+    get scatterBounds() {
+      const pts = this.scatterData;
+      if (!pts.length) return { vMin: -50, vMax: 100, rMin: -0.3, rMax: 0.3 };
+      const vs = pts.map(p => p.velocity_score);
+      const rs = pts.map(p => p.realized_return_30d);
+      const vPad = (Math.max(...vs) - Math.min(...vs)) * 0.05 || 5;
+      const rPad = (Math.max(...rs) - Math.min(...rs)) * 0.05 || 0.02;
+      return {
+        vMin: Math.min(...vs) - vPad, vMax: Math.max(...vs) + vPad,
+        rMin: Math.min(...rs) - rPad, rMax: Math.max(...rs) + rPad,
+      };
+    },
+
+    get scatterPoints() {
+      const { vMin, vMax, rMin, rMax } = this.scatterBounds;
+      const vRange = vMax - vMin || 1, rRange = rMax - rMin || 1;
+      return this.scatterData.map(p => ({
+        x: 60 + ((p.velocity_score - vMin) / vRange) * 920,
+        y: 20 + (1 - (p.realized_return_30d - rMin) / rRange) * 360,
+      }));
+    },
+
+    get scatterZeroY() {
+      const { rMin, rMax } = this.scatterBounds;
+      return 20 + (1 - (0 - rMin) / (rMax - rMin)) * 360;
+    },
+
+    get scatterZeroX() {
+      const { vMin, vMax } = this.scatterBounds;
+      return 60 + ((0 - vMin) / (vMax - vMin)) * 920;
+    },
+
+    get r2() {
+      const pts = this.scatterData;
+      if (pts.length < 3) return 0;
+      const xs = pts.map(p => p.velocity_score);
+      const ys = pts.map(p => p.realized_return_30d);
+      const n = xs.length;
+      const mx = xs.reduce((a, b) => a + b, 0) / n;
+      const my = ys.reduce((a, b) => a + b, 0) / n;
+      const ssxy = xs.reduce((s, x, i) => s + (x - mx) * (ys[i] - my), 0);
+      const ssx  = xs.reduce((s, x) => s + (x - mx) ** 2, 0);
+      const ssy  = ys.reduce((s, y) => s + (y - my) ** 2, 0);
+      if (ssx === 0 || ssy === 0) return 0;
+      return (ssxy / Math.sqrt(ssx * ssy)) ** 2;
+    },
+
+    get regLine() {
+      const pts = this.scatterData;
+      if (pts.length < 3) return { x1: 60, y1: 200, x2: 980, y2: 200 };
+      const xs = pts.map(p => p.velocity_score);
+      const ys = pts.map(p => p.realized_return_30d);
+      const n = xs.length;
+      const mx = xs.reduce((a, b) => a + b, 0) / n;
+      const my = ys.reduce((a, b) => a + b, 0) / n;
+      const ssxy = xs.reduce((s, x, i) => s + (x - mx) * (ys[i] - my), 0);
+      const ssx  = xs.reduce((s, x) => s + (x - mx) ** 2, 0);
+      const slope = ssx ? ssxy / ssx : 0;
+      const intercept = my - slope * mx;
+      const { vMin, vMax, rMin, rMax } = this.scatterBounds;
+      const vRange = vMax - vMin || 1, rRange = rMax - rMin || 1;
+      const toX = v => 60 + ((v - vMin) / vRange) * 920;
+      const toY = r => 20 + (1 - (r - rMin) / rRange) * 360;
+      return {
+        x1: toX(vMin), y1: toY(slope * vMin + intercept),
+        x2: toX(vMax), y2: toY(slope * vMax + intercept),
+      };
+    },
+
+    formatBuilt(iso) {
+      if (!iso) return '—';
+      const d = new Date(iso); if (isNaN(d)) return '—';
+      const pad = n => String(n).padStart(2, '0');
+      return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())} UTC`;
+    },
+  };
+}
+</script>
+</body>
+</html>
