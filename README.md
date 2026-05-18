@@ -181,10 +181,45 @@ The platform now provides **prescriptive** intelligence beyond descriptive analy
 - **Chart Upgrades:** Y-axis rank labels, current-rank pill badges, removed drop-shadow rendering bug, better tier color contrast, thicker lines with glow effect.
 - **Performance Fixes:** Debounced search (300ms), binary search in backtest hover, eliminated O(n²) array copies in holdings table.
 
+### 🧬 Phase 2.8 Structural Intelligence & Comparison Tools
+
+The platform now surfaces **structural** relationships between ETFs and tickers, enabling deeper conviction analysis:
+
+- **Smooth Chart Curves:** All line charts (Score History, Leaderboard Rank, Per-ETF Rank, Signal Timeline rank overlay) now use Catmull-Rom → cubic Bézier smoothing instead of jagged polylines.
+- **Signal Timeline Overhaul (`stock.html`):**
+  - Interactive hover crosshair with tooltip showing date, state (HC/VELO/BURST/SPEC/Neutral), rank, and velocity at each snapshot.
+  - X-axis date tick labels (5 evenly spaced).
+  - Current-state pill badge in the panel header.
+  - Duration counters for all states including SPEC and Neutral.
+  - Highlighted bar outline + rank dot on hover.
+- **Tier Breadth (`tier_breadth`):** Counts how many distinct strategy types (Scout/Quant/Quality/Trend/Blob) co-hold a name (1–5). Higher breadth = more independent confirmation. Displayed as a chip on stock detail.
+- **Quality Adoption / Defection (30d):**
+  - `quality_adopted_30d` — a Quality ETF (COWZ/CALF/SPHQ) added this name in the last 30 days. Momentum + fundamentals confirmation.
+  - `quality_defected_30d` — a Quality ETF dropped this name. Possible fundamentals warning.
+  - Surfaced as `Quality+` / `Quality−` chips on stock detail and leaderboard rows. New `Quality+` filter chip on the leaderboard.
+- **ETF Overlap Heatmap (`etf_overlap.json`):**
+  - 16×16 Jaccard similarity matrix showing pairwise holdings overlap between all ETFs.
+  - Interactive heatmap panel on the ETFs tab with hover details (shared count + Jaccard %).
+  - "Top overlap pairs" summary line (e.g., RPG↔SPMO 24%, RPG↔SPHB 20%).
+  - Helps distinguish which ETFs provide independent signal vs which echo each other.
+- **Score Decomposition Bar (`stock.html`):**
+  - Horizontal stacked bar showing each ETF's contribution to the final score, colored by tier.
+  - Per-ETF legend with rank, weight, and percentage contribution.
+  - "Concentrated" / "Diversified" pill badge based on top-ETF share.
+- **Compare Mode (Watchlist tab):**
+  - Side-by-side cards for the top 4 pinned tickers (by score).
+  - Each card shows: ticker, rank, state badge, score + delta, sparkline, ETFs, velocity, concentration.
+  - Click any card to jump to full stock detail.
+- **Auto-Generated Explainer Line:**
+  - One-sentence narrative auto-generated for each leaderboard row on expansion.
+  - Compresses: tier breadth, score delta, BURST/VELO state, HC streak, Quality+/−, concentration, stealth, divergence into a single scannable line.
+  - Example: "Held by 5 ETFs across 3 tiers · Score +12% 30d · BURST +47 ranks (best #14) · Quality+ in 30d."
+- **Hash Routing:** `index.html#etf=COWZ` auto-opens the ETFs tab for that ETF (linked from stock detail decomposition).
+
 ### Architecture
 
 `scraper.py` writes `data/all_history.csv` → `predator/build.py` reads it,
-runs sanitizer + scoring + temporal analytics + velocity + concentration + flow →
+runs sanitizer + scoring + temporal analytics + velocity + concentration + flow + overlap →
 writes `docs/data/*.json` → GitHub Pages serves `docs/` using static HTML/JS.
 Auto-rebuilds within ~2 min of every scraper commit via `.github/workflows/build_site.yml`.
 
@@ -217,8 +252,6 @@ Edit `config.yaml`:
 - `new_bonus_mult` — NEW-entrant bonus multiplier on tier_points
 - `high_conviction_min_etfs` — threshold for HIGH CONVICTION flag
 - `history.leaderboard_lookback_days` — drives streaks and percentile bars
-
-Commit, push — site rebuilds with new scores in ~2 min.
 
 Commit, push — site rebuilds with new scores in ~2 min.
 
