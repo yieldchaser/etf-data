@@ -201,10 +201,10 @@
       </div>
       <div class="px-3 py-3">
         <!-- State bars + rank line overlay -->
-        <svg :viewBox="`0 0 ${Math.max(100, (flagHistory || []).length * 8 + 40)} 80`" class="w-full" style="height: 72px">
+        <svg :viewBox="`0 0 ${Math.max(100, (flagHistory || []).length * 8 + 40)} 60`" class="w-full" style="height: 56px">
           <!-- State bars (bottom layer) -->
           <template x-for="(entry, i) in (flagHistory || [])" :key="i">
-            <rect :x="i * 8 + 20" y="30" width="7" height="40" rx="1.5"
+            <rect :x="i * 8 + 20" y="8" width="7" height="44" rx="1.5"
                   :fill="timelineBarColor(entry, i)"
                   x-tooltip="timelineTooltip(entry, i)"/>
           </template>
@@ -400,10 +400,10 @@
           <template x-for="line in rankLines" :key="line.etf">
             <g>
               <!-- Thicker background stroke for glow effect -->
-              <path :d="line.path" :stroke="line.color" stroke-width="4" fill="none"
-                    stroke-linecap="round" stroke-linejoin="round" opacity="0.15"/>
+              <path :d="line.path" :stroke="line.color" stroke-width="6" fill="none"
+                    stroke-linecap="round" stroke-linejoin="round" opacity="0.25"/>
               <!-- Main line -->
-              <path :d="line.path" :stroke="line.color" stroke-width="2.5" fill="none"
+              <path :d="line.path" :stroke="line.color" stroke-width="3" fill="none"
                     stroke-linecap="round" stroke-linejoin="round"
                     :opacity="rhover && rhover !== line.etf ? 0.15 : 1"
                     @mouseenter="rhover = line.etf" @mouseleave="rhover = null"
@@ -783,15 +783,14 @@ function stockApp() {
 
     // ── Signal Timeline helpers ──────────────────────────────────────────
     timelineBarColor(entry, i) {
-      const fh = this.flagHistory || [];
-      // Derive VELO/BURST from rank trajectory (since historical snapshots don't have velocity_score)
+      // Derive VELO/BURST from rank trajectory
       const isVelo = this._isVeloAt(i);
       const isBurst = this._isBurstAt(i);
-      if (isBurst) return 'rgba(168,85,247,0.55)';  // purple
-      if (entry.flag === 'HIGH_CONVICTION') return 'rgba(52,211,153,0.6)';  // green
-      if (isVelo) return 'rgba(34,211,238,0.4)';  // cyan
-      if (entry.flag === 'SPECULATIVE_BETA') return 'rgba(251,191,36,0.45)';  // amber
-      return 'rgba(255,255,255,0.06)';  // neutral
+      if (isBurst) return 'rgba(168,85,247,0.8)';   // purple — strong
+      if (entry.flag === 'HIGH_CONVICTION') return 'rgba(52,211,153,0.8)';  // green — strong
+      if (isVelo) return 'rgba(34,211,238,0.6)';    // cyan — medium
+      if (entry.flag === 'SPECULATIVE_BETA') return 'rgba(251,191,36,0.7)';  // amber
+      return 'rgba(255,255,255,0.12)';  // neutral — slightly more visible
     },
 
     _isVeloAt(i) {
@@ -835,7 +834,7 @@ function stockApp() {
       const range = Math.max(maxR - minR, 2);
       return fh.map((e, i) => {
         const x = i * 8 + 23.5;  // center of bar
-        const y = 5 + ((e.rank - minR) / range) * 22;  // inverted: rank 1 = top (y=5), worst = bottom (y=27)
+        const y = 4 + ((e.rank - minR) / range) * 50;  // top to bottom within bar area
         return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
       }).join(' ');
     },
