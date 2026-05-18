@@ -20,7 +20,7 @@ def main():
         return 1
     
     df = pd.read_csv(history_path)
-    tickers = sorted(df["Holdings_Ticker_Symbol"].dropna().unique())
+    tickers = sorted(df["ticker"].dropna().unique())
     print(f"Found {len(tickers)} unique tickers")
     
     # Build metadata

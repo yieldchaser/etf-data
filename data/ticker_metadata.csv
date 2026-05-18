@@ -1,0 +1,1224 @@
+ticker,sector,industry,country,market_cap_usd
+$AED,Unknown,Unknown,Unknown,
+$BRL,Unknown,Unknown,Unknown,
+$CAD,Unknown,Unknown,Unknown,
+$CHF,Unknown,Unknown,Unknown,
+$CNY,Unknown,Unknown,Unknown,
+$EUR,Unknown,Unknown,Unknown,
+$GBP,Unknown,Unknown,Unknown,
+$HKD,Unknown,Unknown,Unknown,
+$JPY,Unknown,Unknown,Unknown,
+$KRW,Unknown,Unknown,Unknown,
+$MXN,Unknown,Unknown,Unknown,
+$NOK,Unknown,Unknown,Unknown,
+$SAR,Unknown,Unknown,Unknown,
+$SEK,Unknown,Unknown,Unknown,
+$TWD,Unknown,Unknown,Unknown,
+$USD,Unknown,Unknown,Unknown,
+$ZAR,Unknown,Unknown,Unknown,
+1519.HK,Industrials,Integrated Freight & Logistics,China,79296471040.0
+16 HK,Unknown,Unknown,Unknown,
+1605 JP,Unknown,Unknown,Unknown,
+1787.HK,Basic Materials,Gold,China,119673774080.0
+1801 JP,Unknown,Unknown,Unknown,
+1803 JP,Unknown,Unknown,Unknown,
+1812 JP,Unknown,Unknown,Unknown,
+1878.JP,Unknown,Unknown,Unknown,
+1893 JP,Unknown,Unknown,Unknown,
+1942 JP,Unknown,Unknown,Unknown,
+2268.HK,Healthcare,Diagnostics & Research,China,66294054912.0
+2327.TT,Unknown,Unknown,Unknown,
+2513.HK,Technology,Software - Infrastructure,China,499344277504.0
+2611.HK,Financial Services,Capital Markets,China,231644086272.0
+278470.KS,Consumer Defensive,Household & Personal Products,South Korea,15068858155008.0
+285A.JP,Unknown,Unknown,Unknown,
+3036.TT,Unknown,Unknown,Unknown,
+316140.KS,Financial Services,Banks - Regional,South Korea,22342010929152.0
+329180.KS,Industrials,Aerospace & Defense,South Korea,64236269076480.0
+3563 JP,Unknown,Unknown,Unknown,
+3659 JP,Unknown,Unknown,Unknown,
+3750.HK,Industrials,Electrical Equipment & Parts,China,3106701049856.0
+3986.HK,Technology,Semiconductors,China,416104316928.0
+4004 JP,Unknown,Unknown,Unknown,
+4186 JP,Unknown,Unknown,Unknown,
+4506 JP,Unknown,Unknown,Unknown,
+4507.JP,Unknown,Unknown,Unknown,
+4904.TT,Unknown,Unknown,Unknown,
+5020 JP,Unknown,Unknown,Unknown,
+5101 JP,Unknown,Unknown,Unknown,
+5214 JP,Unknown,Unknown,Unknown,
+522 HK,Unknown,Unknown,Unknown,
+5706 JP,Unknown,Unknown,Unknown,
+5711 JP,Unknown,Unknown,Unknown,
+5713 JP,Unknown,Unknown,Unknown,
+5714 JP,Unknown,Unknown,Unknown,
+5831 JP,Unknown,Unknown,Unknown,
+5838.JP,Unknown,Unknown,Unknown,
+6146 JP,Unknown,Unknown,Unknown,
+6269 JP,Unknown,Unknown,Unknown,
+6361 JP,Unknown,Unknown,Unknown,
+6504.JP,Unknown,Unknown,Unknown,
+6525.JP,Unknown,Unknown,Unknown,
+6857.JP,Unknown,Unknown,Unknown,
+6920 JP,Unknown,Unknown,Unknown,
+6944.TWO,Unknown,Unknown,Unknown,
+6963 JP,Unknown,Unknown,Unknown,
+6990.HK,Healthcare,Biotechnology,China,98078015488.0
+7013 JP,Unknown,Unknown,Unknown,
+7735 JP,Unknown,Unknown,Unknown,
+8002 JP,Unknown,Unknown,Unknown,
+8015 JP,Unknown,Unknown,Unknown,
+8031 JP,Unknown,Unknown,Unknown,
+8058 JP,Unknown,Unknown,Unknown,
+8267 JP,Unknown,Unknown,Unknown,
+8729.JP,Unknown,Unknown,Unknown,
+9532 JP,Unknown,Unknown,Unknown,
+9660.HK,Technology,Software - Application,China,85963268096.0
+9903.HK,Technology,Semiconductors,China,121360424960.0
+9999.HK,Communication Services,Electronic Gaming & Multimedia,China,561233657856.0
+AA,Basic Materials,Aluminum,United States,16501032960.0
+AAMI,Financial Services,Asset Management,United States,2451986944.0
+AAPL,Technology,Consumer Electronics,United States,4409585041408.0
+ABBV,Healthcare,Drug Manufacturers - General,United States,371715538944.0
+ABCB,Financial Services,Banks - Regional,United States,5555668992.0
+ABM,Industrials,Specialty Business Services,United States,2305022464.0
+ABN NA,Unknown,Unknown,Unknown,
+ABNB,Consumer Cyclical,Travel Services,United States,78847131648.0
+ABT,Healthcare,Medical Devices,United States,147130957824.0
+ACGL,Financial Services,Insurance - Diversified,Bermuda,32835635200.0
+ACLN SW,Unknown,Unknown,Unknown,
+ACLN.SW,Industrials,Specialty Industrial Machinery,Switzerland,7958130176.0
+ACM,Industrials,Engineering & Construction,United States,9164968960.0
+ACMR,Technology,Semiconductor Equipment & Materials,United States,4216537600.0
+ACN,Technology,Information Technology Services,Ireland,103897767936.0
+ACT,Financial Services,Insurance - Specialty,United States,6005624320.0
+AD,Communication Services,Telecom Services,United States,4323876352.0
+ADAM,Real Estate,REIT - Mortgage,United States,783588864.0
+ADBE,Technology,Software - Application,United States,100079919104.0
+ADEA,Technology,Software - Application,United States,3295577344.0
+ADI,Technology,Semiconductors,United States,203820351488.0
+ADM,Consumer Defensive,Farm Products,United States,38749302784.0
+ADMA,Healthcare,Biotechnology,United States,1916760448.0
+ADP,Technology,Software - Application,United States,85735006208.0
+ADSK,Technology,Software - Application,United States,49961189376.0
+ADT,Industrials,Security & Protection Services,United States,5194565632.0
+AEE,Utilities,Utilities - Regulated Electric,United States,29435301888.0
+AEIS,Industrials,Electrical Equipment & Parts,United States,12301395968.0
+AEM,Basic Materials,Gold,Canada,90171531264.0
+AEP,Utilities,Utilities - Regulated Electric,United States,68094746624.0
+AG1.GY,Unknown,Unknown,Unknown,
+AGCO,Industrials,Farm & Heavy Construction Machinery,United States,8202438144.0
+AGPXX,Unknown,Unknown,Unknown,
+AGX,Industrials,Engineering & Construction,United States,10083783680.0
+AHR,Real Estate,REIT - Healthcare Facilities,United States,9510845440.0
+AIR,Industrials,Aerospace & Defense,United States,4157354240.0
+AIT,Industrials,Industrial Distribution,United States,11352862720.0
+ALAB,Technology,Semiconductors,United States,39883198464.0
+ALB,Basic Materials,Specialty Chemicals,United States,21273053184.0
+ALG,Industrials,Farm & Heavy Construction Machinery,United States,1792031872.0
+ALGN,Healthcare,Medical Instruments & Supplies,United States,11261950976.0
+ALHC,Healthcare,Healthcare Plans,United States,3251922944.0
+ALIT,Technology,Software - Application,United States,430321408.0
+ALK,Industrials,Airlines,United States,4116186112.0
+ALKS,Healthcare,Drug Manufacturers - Specialty & Generic,Ireland,6247009280.0
+ALL,Financial Services,Insurance - Property & Casualty,United States,55955587072.0
+ALMS,Healthcare,Biotechnology,United States,2915741696.0
+ALNY,Healthcare,Biotechnology,United States,38315442176.0
+ALQ AU,Unknown,Unknown,Unknown,
+ALV,Consumer Cyclical,Auto Parts,Sweden,8598053888.0
+AM,Energy,Oil & Gas Midstream,United States,10440059904.0
+AMAT,Technology,Semiconductor Equipment & Materials,United States,346505936896.0
+AMD,Technology,Semiconductors,United States,691537707008.0
+AME,Industrials,Specialty Industrial Machinery,United States,52235362304.0
+AMG,Financial Services,Asset Management,United States,7762775552.0
+AMGN,Healthcare,Drug Manufacturers - General,United States,176207396864.0
+AMKR,Technology,Semiconductor Equipment & Materials,United States,17437831168.0
+AMN,Healthcare,Medical Care Facilities,United States,1109668992.0
+AMP,Financial Services,Asset Management,United States,42285793280.0
+AMPH,Healthcare,Drug Manufacturers - Specialty & Generic,United States,743847616.0
+AMPX,Industrials,Electrical Equipment & Parts,United States,2386417920.0
+AMRX,Healthcare,Drug Manufacturers - Specialty & Generic,United States,3805942016.0
+AMRZ,Basic Materials,Building Materials,Switzerland,27128829952.0
+AMTM,Industrials,Specialty Business Services,United States,5614388736.0
+AMZN,Consumer Cyclical,Internet Retail,United States,2841383010304.0
+ANA SM,Unknown,Unknown,Unknown,
+ANDE,Consumer Defensive,Food Distribution,United States,2433502720.0
+ANET,Technology,Computer Hardware,United States,178764283904.0
+ANF,Consumer Cyclical,Apparel Retail,United States,3170319872.0
+ANGI,Communication Services,Internet Content & Information,United States,201431120.0
+ANIP,Healthcare,Drug Manufacturers - Specialty & Generic,United States,1773527552.0
+AORT,Healthcare,Medical Devices,United States,1105332096.0
+APA,Energy,Oil & Gas E&P,United States,13778270208.0
+APEI,Consumer Defensive,Education & Training Services,United States,978074752.0
+APG,Industrials,Engineering & Construction,United States,18737111040.0
+APGE,Healthcare,Biotechnology,United States,6117093888.0
+APH,Technology,Electronic Components,United States,153779306496.0
+APLE,Real Estate,REIT - Hotel & Motel,United States,3248289536.0
+APO,Financial Services,Asset Management,United States,78048944128.0
+APP,Communication Services,Advertising Agencies,United States,168305704960.0
+APTV,Consumer Cyclical,Auto Parts,Switzerland,11499459584.0
+ARES,Financial Services,Asset Management,United States,40706371584.0
+ARI,Real Estate,REIT - Mortgage,United States,1440090752.0
+ARM,Technology,Semiconductors,United Kingdom,222545952768.0
+ARMK,Industrials,Specialty Business Services,United States,13957575680.0
+AROC,Energy,Oil & Gas Equipment & Services,United States,6560041984.0
+ARWR,Healthcare,Biotechnology,United States,10799507456.0
+AS,Consumer Cyclical,Leisure,Finland,19107035136.0
+ASELS.E.IS,Unknown,Unknown,Unknown,
+ASGN,Technology,Information Technology Services,United States,833931008.0
+ASML,Technology,Semiconductor Equipment & Materials,Netherlands,578824110080.0
+ASTE,Industrials,Farm & Heavy Construction Machinery,United States,1081573376.0
+ASTS,Technology,Communication Equipment,United States,32474382336.0
+ATAT,Consumer Cyclical,Lodging,China,5285612544.0
+ATEN,Technology,Software - Infrastructure,United States,2012349056.0
+ATGE,Unknown,Unknown,Unknown,
+ATI,Industrials,Metal Fabrication,United States,21046470656.0
+ATKR,Industrials,Electrical Equipment & Parts,United States,2507894528.0
+ATMU,Consumer Cyclical,Auto Parts,United States,4217564416.0
+ATO,Utilities,Utilities - Regulated Gas,United States,29458010112.0
+AU,Basic Materials,Gold,United States,46637445120.0
+AUD,Unknown,Unknown,Unknown,
+AVA,Utilities,Utilities - Diversified,United States,3339419136.0
+AVAV,Industrials,Aerospace & Defense,United States,7995601408.0
+AVGO,Technology,Semiconductors,United States,2013133668352.0
+AWI,Industrials,Building Products & Equipment,United States,6622474752.0
+AX,Financial Services,Banks - Regional,United States,4731663872.0
+AXON,Industrials,Aerospace & Defense,United States,31586342912.0
+AXP,Financial Services,Credit Services,United States,213895708672.0
+AYI,Industrials,Electrical Equipment & Parts,United States,8537660928.0
+AZZ,Industrials,Specialty Business Services,United States,4217904384.0
+BAB LN,Unknown,Unknown,Unknown,
+BAC,Financial Services,Banks - Diversified,United States,353197326336.0
+BAMNB NA,Unknown,Unknown,Unknown,
+BANF,Financial Services,Banks - Regional,United States,3587026432.0
+BAYN GR,Unknown,Unknown,Unknown,
+BBIO,Healthcare,Biotechnology,United States,12952303616.0
+BBWI,Consumer Cyclical,Specialty Retail,United States,3441627136.0
+BBY,Consumer Cyclical,Specialty Retail,United States,11857925120.0
+BC,Consumer Cyclical,Recreational Vehicles,United States,5038768128.0
+BCO,Industrials,Security & Protection Services,United States,4273311232.0
+BCP PL,Unknown,Unknown,Unknown,
+BCRX,Healthcare,Drug Manufacturers - Specialty & Generic,United States,2292547328.0
+BDC,Technology,Communication Equipment,United States,4130404864.0
+BG,Consumer Defensive,Farm Products,United States,23757516800.0
+BH,Consumer Cyclical,Restaurants,United States,839499520.0
+BIIB,Healthcare,Drug Manufacturers - General,United States,28486582272.0
+BILL,Technology,Software - Application,United States,3990840832.0
+BJ,Consumer Defensive,Discount Stores,United States,12304442368.0
+BK,Financial Services,Banks - Diversified,United States,92674899968.0
+BKE,Consumer Cyclical,Apparel Retail,United States,2484717312.0
+BKH,Utilities,Utilities - Regulated Gas,United States,5545206272.0
+BKNG,Consumer Cyclical,Travel Services,United States,119432019968.0
+BKR,Energy,Oil & Gas Equipment & Services,United States,63611445248.0
+BKT SM,Unknown,Unknown,Unknown,
+BLBD,Industrials,Farm & Heavy Construction Machinery,United States,2274440448.0
+BLK,Financial Services,Asset Management,United States,167947649024.0
+BLKB,Technology,Software - Application,United States,1417005440.0
+BMBL,Communication Services,Internet Content & Information,United States,476274016.0
+BMRN,Healthcare,Biotechnology,United States,10014066688.0
+BMV: GENTERA,Unknown,Unknown,Unknown,
+BMV: Q,Unknown,Unknown,Unknown,
+BMY,Healthcare,Drug Manufacturers - General,United States,116398063616.0
+BOL SS,Unknown,Unknown,Unknown,
+BOOT,Consumer Cyclical,Apparel Retail,United States,4365484032.0
+BOX,Technology,Software - Infrastructure,United States,3417600256.0
+BPE IM,Unknown,Unknown,Unknown,
+BR,Technology,Information Technology Services,United States,16842160128.0
+BRBR,Consumer Defensive,Packaged Foods,United States,1126732288.0
+BRK/B,Unknown,Unknown,Unknown,
+BSX,Healthcare,Medical Devices,United States,78301192192.0
+BTSG,Healthcare,Health Information Services,United States,11227875328.0
+BTU,Energy,Thermal Coal,United States,2895994880.0
+BVMF: CURY3,Unknown,Unknown,Unknown,
+BVMF: DIRR3,Unknown,Unknown,Unknown,
+BWA,Consumer Cyclical,Auto Parts,United States,12965315584.0
+BWXT,Industrials,Aerospace & Defense,United States,18755350528.0
+BX,Financial Services,Asset Management,United States,144092463104.0
+BXMT,Real Estate,REIT - Mortgage,United States,3046424320.0
+BYD,Consumer Cyclical,Resorts & Casinos,United States,5878772224.0
+C,Financial Services,Banks - Diversified,United States,210502303744.0
+CABK SM,Unknown,Unknown,Unknown,
+CABO,Communication Services,Telecom Services,United States,276665056.0
+CACI,Technology,Information Technology Services,United States,10757580800.0
+CAG,Consumer Defensive,Packaged Foods,United States,6425411072.0
+CAH,Healthcare,Medical Distribution,United States,45716983808.0
+CAKE,Consumer Cyclical,Restaurants,United States,2955782400.0
+CALM,Consumer Defensive,Farm Products,United States,3642311936.0
+CALX,Technology,Software - Infrastructure,United States,2539173376.0
+CALY,Consumer Cyclical,Leisure,United States,2737707776.0
+CAR,Industrials,Rental & Leasing Services,United States,5302986240.0
+CARG,Consumer Cyclical,Auto & Truck Dealerships,United States,2585664000.0
+CARS,Communication Services,Internet Content & Information,United States,550644864.0
+CART,Consumer Cyclical,Internet Retail,United States,9333032960.0
+CASH,Financial Services,Banks - Regional,United States,1686691712.0
+CASY,Consumer Cyclical,Specialty Retail,United States,31608825856.0
+CAT,Industrials,Farm & Heavy Construction Machinery,United States,409148456960.0
+CBK GR,Unknown,Unknown,Unknown,
+CBOE,Financial Services,Financial Data & Stock Exchanges,United States,37991415808.0
+CBRE,Real Estate,Real Estate Services,United States,38051512320.0
+CBRL,Consumer Cyclical,Restaurants,United States,686399936.0
+CBT,Basic Materials,Specialty Chemicals,United States,4181334784.0
+CCEP,Consumer Defensive,Beverages - Non-Alcoholic,United Kingdom,39566557184.0
+CCK,Consumer Cyclical,Packaging & Containers,United States,10736615424.0
+CCL,Consumer Cyclical,Travel Services,United States,34129838080.0
+CCOZF,Energy,Thermal Coal,China,17236260864.0
+CDA AU,Unknown,Unknown,Unknown,
+CDE,Basic Materials,Gold,United States,18217736192.0
+CDNS,Technology,Software - Application,United States,95774343168.0
+CDW,Technology,Information Technology Services,United States,13039794176.0
+CEG,Utilities,Utilities - Independent Power Producers,United States,96509984768.0
+CELH,Consumer Defensive,Beverages - Non-Alcoholic,United States,7710112768.0
+CENX,Basic Materials,Aluminum,United States,5623705600.0
+CF,Basic Materials,Agricultural Inputs,United States,19240529920.0
+CFFN,Financial Services,Banks - Regional,United States,935433280.0
+CFG,Financial Services,Banks - Regional,United States,25736595456.0
+CGON,Healthcare,Biotechnology,United States,5903391232.0
+CHD,Consumer Defensive,Household & Personal Products,United States,22284546048.0
+CHEF,Consumer Defensive,Food Distribution,United States,3276074496.0
+CHF,Unknown,Unknown,Unknown,
+CHRD,Energy,Oil & Gas E&P,United States,8354235904.0
+CHRW,Industrials,Integrated Freight & Logistics,United States,19282849792.0
+CHTR,Communication Services,Telecom Services,United States,19811561472.0
+CHWY,Consumer Cyclical,Internet Retail,United States,8866885632.0
+CIEN,Technology,Communication Equipment,United States,78399774720.0
+CL,Consumer Defensive,Household & Personal Products,United States,70520684544.0
+CLS,Technology,Electronic Components,Canada,41223606272.0
+CMC,Industrials,Metal Fabrication,United States,7900726272.0
+CMCSA,Communication Services,Telecom Services,United States,88448385024.0
+CME,Financial Services,Financial Data & Stock Exchanges,United States,108294709248.0
+CMI,Industrials,Specialty Industrial Machinery,United States,96113532928.0
+CMM AU,Unknown,Unknown,Unknown,
+CMP,Basic Materials,Other Industrial Metals & Mining,United States,1231477504.0
+CNK,Communication Services,Entertainment,United States,3031810048.0
+CNMD,Healthcare,Medical Devices,United States,1068575360.0
+CNP,Utilities,Utilities - Regulated Electric,United States,27167657984.0
+CNX,Energy,Oil & Gas E&P,United States,5105926656.0
+CNXC,Technology,Information Technology Services,United States,1465945984.0
+COCO,Consumer Defensive,Beverages - Non-Alcoholic,United States,4479916032.0
+COF,Financial Services,Credit Services,United States,116474544128.0
+COHR,Technology,Scientific & Technical Instruments,United States,74822262784.0
+COIN,Financial Services,Financial Data & Stock Exchanges,United States,51488137216.0
+COLL,Healthcare,Drug Manufacturers - Specialty & Generic,United States,1095613056.0
+COLM,Consumer Cyclical,Apparel Manufacturing,United States,2953380864.0
+COMP,Real Estate,Real Estate Services,United States,5887565824.0
+COP,Energy,Oil & Gas E&P,United States,149131378688.0
+COR,Healthcare,Medical Distribution,United States,50140327936.0
+CORT,Healthcare,Biotechnology,United States,6051408896.0
+COST,Consumer Defensive,Discount Stores,United States,465369300992.0
+COTY,Consumer Defensive,Household & Personal Products,United States,1813760768.0
+COUR,Consumer Defensive,Education & Training Services,United States,1511973632.0
+CPAY,Technology,Software - Infrastructure,United States,21453744128.0
+CPRT,Industrials,Specialty Business Services,United States,31114860544.0
+CPRX,Healthcare,Biotechnology,United States,3815839488.0
+CR,Industrials,Specialty Industrial Machinery,United States,9925328896.0
+CRBG,Financial Services,Asset Management,United States,12587564032.0
+CRC,Energy,Oil & Gas E&P,United States,5428920320.0
+CRCL,Financial Services,Capital Markets,United States,30471139328.0
+CRDO,Technology,Semiconductors,Cayman Islands,31756744704.0
+CRGY,Energy,Oil & Gas E&P,United States,4306481152.0
+CRK,Energy,Oil & Gas E&P,United States,4349635584.0
+CRL,Healthcare,Diagnostics & Research,United States,7266102272.0
+CRM,Technology,Software - Application,United States,141940506624.0
+CRMD,Healthcare,Biotechnology,United States,592311744.0
+CRNC,Technology,Software - Application,United States,442214304.0
+CROX,Consumer Cyclical,Footwear & Accessories,United States,4717535232.0
+CRS,Industrials,Metal Fabrication,United States,20317937664.0
+CRUS,Technology,Semiconductors,United States,8146390528.0
+CRWD,Technology,Software - Infrastructure,United States,151215063040.0
+CRWV,Technology,Software - Infrastructure,United States,58539700224.0
+CSCO,Technology,Communication Equipment,United States,466916868096.0
+CSG.NA,Unknown,Unknown,Unknown,
+CSGP,Real Estate,Real Estate Services,United States,13345064960.0
+CSGS,Technology,Software - Application,United States,2300464128.0
+CSX,Industrials,Railroads,United States,84842618880.0
+CTAS,Industrials,Specialty Business Services,United States,67347038208.0
+CTRA,Energy,Oil & Gas E&P,United States,24724652032.0
+CTRE,Real Estate,REIT - Healthcare Facilities,United States,9718923264.0
+CTRI,Utilities,Utilities - Regulated Gas,United States,3158245632.0
+CTSH,Technology,Information Technology Services,United States,22292490240.0
+CTVA,Basic Materials,Agricultural Inputs,United States,54983688192.0
+CUAEF,Energy,Thermal Coal,China,137077227520.0
+CUBI,Financial Services,Banks - Regional,United States,2449274624.0
+CURB,Real Estate,REIT - Retail,United States,2912886016.0
+CVI,Energy,Oil & Gas Refining & Marketing,United States,3406981888.0
+CVNA,Consumer Cyclical,Auto & Truck Dealerships,United States,53332832256.0
+CVS,Healthcare,Healthcare Plans,United States,122348666880.0
+CVSA,Consumer Defensive,Education & Training Services,United States,4183417088.0
+CVX,Energy,Oil & Gas Integrated,United States,380594323456.0
+CW,Industrials,Aerospace & Defense,United States,26328705024.0
+CWEN,Utilities,Utilities - Renewable,United States,8727517184.0
+CWEN/A,Unknown,Unknown,Unknown,
+CXM,Technology,Software - Application,United States,1271696896.0
+CXSE3.BZ,Unknown,Unknown,Unknown,
+CXW,Industrials,Security & Protection Services,United States,2050946688.0
+Cash&Other,Unknown,Unknown,Unknown,
+DAKT,Technology,Electronic Components,United States,928158464.0
+DAL,Industrials,Airlines,United States,46140715008.0
+DAN,Consumer Cyclical,Auto Parts,United States,3626320128.0
+DASH,Consumer Cyclical,Internet Retail,United States,69366415360.0
+DAVE,Technology,Software - Application,United States,2997892096.0
+DBD,Technology,Software - Application,United States,2413598720.0
+DBK GR,Unknown,Unknown,Unknown,
+DBX,Technology,Software - Infrastructure,United States,6257123328.0
+DCH,Consumer Cyclical,Auto Parts,United States,1509652480.0
+DCI,Industrials,Specialty Industrial Machinery,United States,9489818624.0
+DD,Basic Materials,Specialty Chemicals,United States,20213221376.0
+DDOG,Technology,Software - Application,United States,74032603136.0
+DDS,Consumer Cyclical,Department Stores,United States,8412760064.0
+DE,Industrials,Farm & Heavy Construction Machinery,United States,151754391552.0
+DEA,Real Estate,REIT - Office,United States,1108034816.0
+DECK,Consumer Cyclical,Footwear & Accessories,United States,13280838656.0
+DELL,Technology,Computer Hardware,United States,157339172864.0
+DFY.CT,Unknown,Unknown,Unknown,
+DG,Consumer Defensive,Discount Stores,United States,22546769920.0
+DGII,Technology,Communication Equipment,United States,2337536512.0
+DGX,Healthcare,Diagnostics & Research,United States,20657061888.0
+DHI,Consumer Cyclical,Residential Construction,United States,38393843712.0
+DINO,Energy,Oil & Gas Refining & Marketing,United States,12621083648.0
+DIOD,Technology,Semiconductors,United States,4596311552.0
+DIS,Communication Services,Entertainment,United States,178374459392.0
+DLB,Industrials,Specialty Business Services,United States,5128163328.0
+DLTR,Consumer Defensive,Discount Stores,United States,17443502080.0
+DNOW,Industrials,Industrial Distribution,United States,2398654208.0
+DOCN,Technology,Software - Infrastructure,United States,16162880512.0
+DOCS,Healthcare,Health Information Services,United States,3571505664.0
+DOCU,Technology,Software - Application,United States,9269642240.0
+DORL IT,Unknown,Unknown,Unknown,
+DORM,Consumer Cyclical,Auto Parts,United States,3471184640.0
+DOV,Industrials,Specialty Industrial Machinery,United States,28382584832.0
+DOW,Basic Materials,Chemicals,United States,27928731648.0
+DOX,Technology,Software - Infrastructure,United States,6516651520.0
+DPM.CT,Unknown,Unknown,Unknown,
+DRI,Consumer Cyclical,Restaurants,United States,22436261888.0
+DTM,Energy,Oil & Gas Midstream,United States,15106250752.0
+DUOL,Technology,Software - Application,United States,5221224448.0
+DV,Communication Services,Advertising Agencies,United States,1390385664.0
+DVN,Energy,Oil & Gas E&P,United States,57061474304.0
+DXC,Technology,Information Technology Services,United States,1461509888.0
+DXCM,Healthcare,Medical Devices,United States,23781353472.0
+DXPE,Industrials,Industrial Distribution,United States,2276800000.0
+DY,Industrials,Engineering & Construction,United States,13129234432.0
+EA,Communication Services,Electronic Gaming & Multimedia,United States,50310778880.0
+EAT,Consumer Cyclical,Restaurants,United States,5885062656.0
+EBAY,Consumer Cyclical,Internet Retail,United States,51561717760.0
+EBS,Healthcare,Drug Manufacturers - Specialty & Generic,United States,409674592.0
+EBS AV,Unknown,Unknown,Unknown,
+ECG,Industrials,Engineering & Construction,United States,7999240704.0
+EDV CN,Unknown,Unknown,Unknown,
+EDV.CN,Unknown,Unknown,Unknown,
+EE,Energy,Oil & Gas Midstream,United States,4065912576.0
+EFC,Real Estate,REIT - Mortgage,United States,1671496960.0
+EFOR,Technology,Information Technology Services,United States,736359936.0
+EHAB,Healthcare,Medical Care Facilities,United States,706913408.0
+EHC,Healthcare,Medical Care Facilities,United States,10578589696.0
+EL,Consumer Defensive,Household & Personal Products,United States,29044895744.0
+ELAN,Healthcare,Drug Manufacturers - Specialty & Generic,United States,9919069184.0
+EMBC,Healthcare,Medical Instruments & Supplies,United States,186288912.0
+EME,Industrials,Engineering & Construction,United States,40663134208.0
+EMR,Industrials,Specialty Industrial Machinery,United States,74521305088.0
+EMR AU,Unknown,Unknown,Unknown,
+ENLT,Utilities,Utilities - Renewable,Israel,11963479040.0
+ENLT IT,Unknown,Unknown,Unknown,
+ENR GR,Unknown,Unknown,Unknown,
+ENR.GR,Unknown,Unknown,Unknown,
+ENS,Industrials,Electrical Equipment & Parts,United States,8733038592.0
+ENVA,Financial Services,Credit Services,United States,4081620736.0
+EOG,Energy,Oil & Gas E&P,United States,74706477056.0
+EPAM,Technology,Information Technology Services,United States,4859778560.0
+EPR,Real Estate,REIT - Specialty,United States,4387714560.0
+EQT,Energy,Oil & Gas E&P,United States,35164372992.0
+ERIE,Financial Services,Insurance Brokers,United States,11140356096.0
+ESAB,Industrials,Metal Fabrication,United States,5394119680.0
+ESE,Technology,Scientific & Technical Instruments,United States,7509711872.0
+ESLT IT,Unknown,Unknown,Unknown,
+ETD,Consumer Cyclical,"Furnishings, Fixtures & Appliances",United States,479409056.0
+ETN,Industrials,Specialty Industrial Machinery,Ireland,155102560256.0
+ETR,Utilities,Utilities - Regulated Electric,United States,49923403776.0
+ETSY,Consumer Cyclical,Internet Retail,United States,5510624256.0
+EUR,Unknown,Unknown,Unknown,
+EVER,Communication Services,Internet Content & Information,United States,618324928.0
+EVN AU,Unknown,Unknown,Unknown,
+EVRG,Utilities,Utilities - Regulated Electric,United States,18556299264.0
+EXC,Utilities,Utilities - Regulated Electric,United States,44386770944.0
+EXE,Energy,Oil & Gas E&P,United States,23131037696.0
+EXEL,Healthcare,Biotechnology,United States,12600430592.0
+EXENS FP,Unknown,Unknown,Unknown,
+EXLS,Technology,Information Technology Services,United States,4198474752.0
+EXPD,Industrials,Integrated Freight & Logistics,United States,20331481088.0
+EXPE,Consumer Cyclical,Travel Services,United States,26132406272.0
+EXPI,Real Estate,Real Estate Services,United States,1073469056.0
+EXTR,Technology,Communication Equipment,United States,3224987648.0
+EYE,Consumer Cyclical,Specialty Retail,United States,1398035840.0
+EZPW,Financial Services,Credit Services,United States,2030687232.0
+F,Consumer Cyclical,Auto Manufacturers,United States,53394882560.0
+FANG,Energy,Oil & Gas E&P,United States,57264136192.0
+FAST,Industrials,Industrial Distribution,United States,49663995904.0
+FBNC,Financial Services,Banks - Regional,United States,2373707264.0
+FCFS,Financial Services,Credit Services,United States,9930763264.0
+FCX,Basic Materials,Copper,United States,90580639744.0
+FDP,Consumer Defensive,Farm Products,Cayman Islands,1545764096.0
+FDS,Financial Services,Financial Data & Stock Exchanges,United States,7744529408.0
+FDX,Industrials,Integrated Freight & Logistics,United States,89663643648.0
+FE,Utilities,Utilities - Regulated Electric,United States,25346852864.0
+FER,Industrials,Engineering & Construction,Netherlands,47954886656.0
+FERTIGLB.UH,Unknown,Unknown,Unknown,
+FET,Energy,Oil & Gas Equipment & Services,United States,637222592.0
+FFIV,Technology,Software - Infrastructure,United States,20456491008.0
+FGXXX,Unknown,Unknown,Unknown,
+FHI,Financial Services,Asset Management,United States,4103838208.0
+FHN,Financial Services,Banks - Regional,United States,11186742272.0
+FIGR,Financial Services,Capital Markets,United States,9532158976.0
+FITB,Financial Services,Banks - Regional,United States,42913849344.0
+FIVE,Consumer Cyclical,Specialty Retail,United States,11813208064.0
+FIVN,Technology,Software - Infrastructure,United States,1656844544.0
+FIX,Industrials,Engineering & Construction,United States,70149275648.0
+FLEX,Technology,Electronic Components,United States,50687524864.0
+FLO,Consumer Defensive,Packaged Foods,United States,1521129344.0
+FLOC,Energy,Oil & Gas Equipment & Services,United States,2912535040.0
+FN,Technology,Electronic Components,Cayman Islands,25870503936.0
+FORM,Technology,Semiconductor Equipment & Materials,United States,9843348480.0
+FOUR,Technology,Software - Infrastructure,United States,4165440512.0
+FOX,Communication Services,Entertainment,United States,24316180480.0
+FOXA,Communication Services,Entertainment,United States,27249080320.0
+FRO,Energy,Oil & Gas Midstream,Cyprus,8161355264.0
+FRSH,Technology,Software - Application,United States,2476850176.0
+FSLR,Technology,Solar,United States,25076389888.0
+FSS,Industrials,Pollution & Treatment Controls,United States,6791381504.0
+FTDR,Consumer Cyclical,Personal Services,United States,4319447552.0
+FTI,Energy,Oil & Gas Equipment & Services,United Kingdom,28419469312.0
+FTNT,Technology,Software - Infrastructure,United States,89954566144.0
+FTRE,Healthcare,Biotechnology,United States,1292027392.0
+FTV,Technology,Scientific & Technical Instruments,United States,17901438976.0
+FUBO,Communication Services,Broadcasting,United States,283170432.0
+FUTU,Financial Services,Capital Markets,Hong Kong,18875787264.0
+G,Technology,Information Technology Services,Bermuda,4924164096.0
+GALD.SE,Unknown,Unknown,Unknown,
+GBP,Unknown,Unknown,Unknown,
+GCT,Technology,Software - Infrastructure,United States,1313012992.0
+GD,Industrials,Aerospace & Defense,United States,90458890240.0
+GDDY,Technology,Software - Infrastructure,United States,11543490560.0
+GDRX,Healthcare,Health Information Services,United States,822981120.0
+GDYN,Technology,Information Technology Services,United States,561130816.0
+GE,Industrials,Aerospace & Defense,United States,294150897664.0
+GEHC,Healthcare,Medical Devices,United States,27639224320.0
+GEN,Technology,Software - Infrastructure,United States,14202815488.0
+GEO,Industrials,Security & Protection Services,United States,3062531072.0
+GEV,Industrials,Specialty Industrial Machinery,United States,281949077504.0
+GFS,Technology,Semiconductors,United States,38954020864.0
+GH,Healthcare,Diagnostics & Research,United States,12586385408.0
+GHC,Consumer Defensive,Education & Training Services,United States,4707642880.0
+GIII,Consumer Cyclical,Apparel Manufacturing,United States,1212098176.0
+GIL.CN,Unknown,Unknown,Unknown,
+GILD,Healthcare,Drug Manufacturers - General,United States,160882638848.0
+GIS,Consumer Defensive,Packaged Foods,United States,17606144000.0
+GJF.NO,Unknown,Unknown,Unknown,
+GL,Financial Services,Insurance - Life,United States,12038042624.0
+GLE FP,Unknown,Unknown,Unknown,
+GLEN LN,Unknown,Unknown,Unknown,
+GLW,Technology,Electronic Components,United States,165078941696.0
+GM,Consumer Cyclical,Auto Manufacturers,United States,67498659840.0
+GMD AU,Unknown,Unknown,Unknown,
+GME,Consumer Cyclical,Specialty Retail,United States,9680419840.0
+GMED,Healthcare,Medical Devices,United States,10403468288.0
+GMEXICOB.MX,Basic Materials,Other Industrial Metals & Mining,Mexico,1573348573184.0
+GNL,Real Estate,REIT - Diversified,United States,1956127232.0
+GNRC,Industrials,Specialty Industrial Machinery,United States,15522493440.0
+GNTX,Consumer Cyclical,Auto Parts,United States,4870208512.0
+GOGO,Communication Services,Telecom Services,United States,524725504.0
+GOLD,Financial Services,Capital Markets,United States,1123339264.0
+GOLF,Consumer Cyclical,Leisure,United States,5000516096.0
+GOOG,Communication Services,Internet Content & Information,United States,4765246291968.0
+GOOGL,Communication Services,Internet Content & Information,United States,4807165739008.0
+GPGI,Industrials,Metal Fabrication,United States,3507323648.0
+GPI,Consumer Cyclical,Auto & Truck Dealerships,United States,3731511296.0
+GPN,Industrials,Specialty Business Services,United States,18486071296.0
+GRDN,Healthcare,Medical Care Facilities,United States,2318168320.0
+GRGD.CT,Unknown,Unknown,Unknown,
+GRPN,Communication Services,Internet Content & Information,United States,663200256.0
+GS,Financial Services,Capital Markets,United States,279805689856.0
+GTES,Industrials,Specialty Industrial Machinery,United States,6194566656.0
+GTLB,Technology,Software - Infrastructure,United States,3995034624.0
+GTM,Technology,Software - Application,United States,1137611648.0
+GTX,Consumer Cyclical,Auto Parts,Switzerland,5799099392.0
+GVA,Industrials,Engineering & Construction,United States,6061105664.0
+GWRE,Technology,Software - Application,United States,11064395776.0
+GWW,Industrials,Industrial Distribution,United States,60077277184.0
+HAE,Healthcare,Medical Devices,United States,2615872512.0
+HAFC,Financial Services,Banks - Regional,United States,865905600.0
+HAL,Energy,Oil & Gas Equipment & Services,United States,34886209536.0
+HALO,Healthcare,Biotechnology,United States,7961305088.0
+HAS,Consumer Cyclical,Leisure,United States,13476987904.0
+HASI,Financial Services,Asset Management,United States,5264125440.0
+HAUTO NO,Unknown,Unknown,Unknown,
+HBAN,Financial Services,Banks - Regional,United States,31238082560.0
+HCA,Healthcare,Medical Care Facilities,United States,93838237696.0
+HCC,Basic Materials,Coking Coal,United States,4495559168.0
+HCI,Financial Services,Insurance - Property & Casualty,United States,1996415872.0
+HCSG,Healthcare,Medical Care Facilities,United States,1458710784.0
+HD,Consumer Cyclical,Home Improvement Retail,United States,296328200192.0
+HE,Utilities,Utilities - Regulated Electric,United States,2283969024.0
+HG,Financial Services,Insurance - Reinsurance,Bermuda,3160311040.0
+HII,Industrials,Aerospace & Defense,United States,12852412416.0
+HIMS,Healthcare,Drug Manufacturers - Specialty & Generic,United States,5798014976.0
+HKG: 0857,Unknown,Unknown,Unknown,
+HKG: 1088,Unknown,Unknown,Unknown,
+HKG: 1258,Unknown,Unknown,Unknown,
+HKG: 1378,Unknown,Unknown,Unknown,
+HKG: 1681,Unknown,Unknown,Unknown,
+HKG: 1898,Unknown,Unknown,Unknown,
+HKG: 2276,Unknown,Unknown,Unknown,
+HKG: 2616,Unknown,Unknown,Unknown,
+HL,Basic Materials,Other Precious Metals & Mining,United States,11831365632.0
+HLF,Consumer Defensive,Packaged Foods,United States,1330078592.0
+HLI,Financial Services,Capital Markets,United States,10447311872.0
+HLIT,Technology,Communication Equipment,United States,1360545280.0
+HLT,Consumer Cyclical,Lodging,United States,71975583744.0
+HLX,Energy,Oil & Gas Equipment & Services,United States,1480325760.0
+HMN,Financial Services,Insurance - Property & Casualty,United States,1816749056.0
+HOG,Consumer Cyclical,Recreational Vehicles,United States,2651708672.0
+HOLN SW,Unknown,Unknown,Unknown,
+HOLN.SW,Basic Materials,Building Materials,Switzerland,40046260224.0
+HON,Industrials,Conglomerates,United States,135120191488.0
+HOOD,Financial Services,Capital Markets,United States,69464965120.0
+HOT GR,Unknown,Unknown,Unknown,
+HOT.GY,Unknown,Unknown,Unknown,
+HOV,Consumer Cyclical,Residential Construction,United States,571016768.0
+HPE,Technology,Communication Equipment,United States,43918868480.0
+HPQ,Technology,Computer Hardware,United States,19103256576.0
+HRB,Consumer Cyclical,Personal Services,United States,4721817600.0
+HRMY,Healthcare,Biotechnology,United States,1741990656.0
+HSY,Consumer Defensive,Confectioners,United States,37927653376.0
+HTH,Financial Services,Financial Conglomerates,United States,2124060928.0
+HUBB,Industrials,Electrical Equipment & Parts,United States,25362466816.0
+HWKN,Basic Materials,Specialty Chemicals,United States,3317622528.0
+HWM,Industrials,Aerospace & Defense,United States,104167989248.0
+HZO,Consumer Cyclical,Specialty Retail,United States,727369664.0
+IBKR,Financial Services,Capital Markets,United States,147905069056.0
+IBM,Technology,Information Technology Services,United States,206116847616.0
+IBP,Consumer Cyclical,Residential Construction,United States,5635727360.0
+ICE,Financial Services,Financial Data & Stock Exchanges,United States,87292510208.0
+ICT.PM,Unknown,Unknown,Unknown,
+IDA,Utilities,Utilities - Regulated Electric,United States,7754936832.0
+IDCC,Technology,Software - Application,United States,6729269760.0
+IDR SM,Unknown,Unknown,Unknown,
+IDT,Communication Services,Telecom Services,United States,1303963904.0
+IDX: ENRG,Unknown,Unknown,Unknown,
+IDXX,Healthcare,Diagnostics & Research,United States,41712541696.0
+IG IM,Unknown,Unknown,Unknown,
+IIPR,Real Estate,REIT - Industrial,United States,1553245824.0
+ILMN,Healthcare,Diagnostics & Research,United States,21566300160.0
+ILS,Unknown,Unknown,Unknown,
+INCY,Healthcare,Biotechnology,United States,19041236992.0
+INDV,Healthcare,Drug Manufacturers - Specialty & Generic,United States,4345200128.0
+INGA NA,Unknown,Unknown,Unknown,
+INGM,Technology,Information Technology Services,United States,5823335424.0
+INGR,Consumer Defensive,Packaged Foods,United States,6471120896.0
+INSM,Healthcare,Biotechnology,United States,23656361984.0
+INSW,Energy,Oil & Gas Midstream,United States,4187107328.0
+INTC,Technology,Semiconductors,United States,546677981184.0
+INTU,Technology,Software - Application,United States,109361717248.0
+INVA,Healthcare,Biotechnology,United States,1621578240.0
+INVX,Energy,Oil & Gas Equipment & Services,United States,1925271040.0
+IONS,Healthcare,Biotechnology,United States,12267440128.0
+IOT,Technology,Software - Infrastructure,United States,17224908800.0
+IPN.FP,Unknown,Unknown,Unknown,
+IQV,Healthcare,Diagnostics & Research,United States,28226127872.0
+IRDM,Communication Services,Telecom Services,United States,4400388608.0
+IRWD,Healthcare,Drug Manufacturers - Specialty & Generic,United States,589315968.0
+ISRG,Healthcare,Medical Instruments & Supplies,United States,149145059328.0
+IT,Technology,Information Technology Services,United States,9790373888.0
+ITRI,Technology,Scientific & Technical Instruments,United States,3513449728.0
+ITW,Industrials,Specialty Industrial Machinery,United States,71257530368.0
+IVZ,Financial Services,Asset Management,United States,12022205440.0
+J,Industrials,Engineering & Construction,United States,13049118720.0
+JAZZ,Healthcare,Biotechnology,Ireland,14353675264.0
+JBGS,Real Estate,REIT - Diversified,United States,862470336.0
+JBHT,Industrials,Integrated Freight & Logistics,United States,24726192128.0
+JBI,Industrials,Building Products & Equipment,United States,656047744.0
+JBL,Technology,Electronic Components,United States,35851902976.0
+JBTM,Industrials,Specialty Industrial Machinery,United States,6529824256.0
+JCI,Industrials,Building Products & Equipment,Ireland,87295336448.0
+JHG,Financial Services,Asset Management,United Kingdom,7968791040.0
+JKHY,Technology,Information Technology Services,United States,9724720128.0
+JNJ,Healthcare,Drug Manufacturers - General,United States,545740161024.0
+JOE,Real Estate,Real Estate - Diversified,United States,3649537536.0
+JPM,Financial Services,Banks - Diversified,United States,797985275904.0
+JPY,Unknown,Unknown,Unknown,
+JSE: VKE,Unknown,Unknown,Unknown,
+JUN3 GR,Unknown,Unknown,Unknown,
+JXN,Financial Services,Insurance - Life,United States,7659885056.0
+KALU,Basic Materials,Aluminum,United States,2766301184.0
+KD,Technology,Information Technology Services,United States,2552062208.0
+KDP,Consumer Defensive,Beverages - Non-Alcoholic,United States,39360987136.0
+KEP SP,Unknown,Unknown,Unknown,
+KEY,Financial Services,Banks - Regional,United States,22812108800.0
+KEYS,Technology,Scientific & Technical Instruments,United States,59856089088.0
+KFRC,Industrials,Staffing & Employment Services,United States,704185728.0
+KFY,Industrials,Staffing & Employment Services,United States,3310396160.0
+KGS,Energy,Oil & Gas Equipment & Services,United States,6523782144.0
+KHC,Consumer Defensive,Packaged Foods,United States,27178024960.0
+KKR,Financial Services,Asset Management,United States,90418855936.0
+KLAC,Technology,Semiconductor Equipment & Materials,United States,235693834240.0
+KMB,Consumer Defensive,Household & Personal Products,United States,31836399616.0
+KMI,Energy,Oil & Gas Midstream,United States,74820894720.0
+KMT,Industrials,Tools & Accessories,United States,2640680192.0
+KMX,Consumer Cyclical,Auto & Truck Dealerships,United States,5237439488.0
+KNF,Basic Materials,Building Materials,United States,4307617792.0
+KO,Consumer Defensive,Beverages - Non-Alcoholic,United States,347726643200.0
+KR,Consumer Defensive,Grocery Stores,United States,40705335296.0
+KREIT SP,Unknown,Unknown,Unknown,
+KRMN,Industrials,Aerospace & Defense,United States,8318675456.0
+KRYS,Healthcare,Biotechnology,United States,9029354496.0
+KSS,Consumer Cyclical,Department Stores,United States,1321219712.0
+KTB,Consumer Cyclical,Apparel Manufacturing,United States,3413620736.0
+KTOS,Industrials,Aerospace & Defense,United States,9767915520.0
+KVUE,Consumer Defensive,Household & Personal Products,United States,32851349504.0
+L,Financial Services,Insurance - Property & Casualty,United States,21770348544.0
+LCII,Consumer Cyclical,Recreational Vehicles,United States,2696386048.0
+LDO IM,Unknown,Unknown,Unknown,
+LDOS,Technology,Information Technology Services,United States,15558404096.0
+LEA,Consumer Cyclical,Auto Parts,United States,6648621568.0
+LECO,Industrials,Tools & Accessories,United States,14295054336.0
+LEG,Consumer Cyclical,"Furnishings, Fixtures & Appliances",United States,1251085568.0
+LGN,Industrials,Engineering & Construction,United States,13846055936.0
+LGND,Healthcare,Biotechnology,United States,4272954624.0
+LH,Healthcare,Diagnostics & Research,United States,20532799488.0
+LHX,Industrials,Aerospace & Defense,United States,56520024064.0
+LII,Industrials,Building Products & Equipment,United States,17399635968.0
+LIN,Basic Materials,Specialty Chemicals,United Kingdom,233998581760.0
+LITE,Technology,Communication Equipment,United States,75520458752.0
+LLY,Healthcare,Drug Manufacturers - General,United States,896128712704.0
+LLYVK,Communication Services,Entertainment,United States,9155360768.0
+LMND,Financial Services,Insurance - Property & Casualty,United States,3944747520.0
+LMT,Industrials,Aerospace & Defense,United States,118973136896.0
+LNN,Industrials,Farm & Heavy Construction Machinery,United States,1101190400.0
+LNTH,Healthcare,Drug Manufacturers - Specialty & Generic,United States,6114112000.0
+LPG,Energy,Oil & Gas Midstream,United States,1746951424.0
+LRCX,Technology,Semiconductor Equipment & Materials,United States,356062593024.0
+LRN,Consumer Defensive,Education & Training Services,United States,3754518272.0
+LTM,Industrials,Airlines,Chile,13732618240.0
+LTMC.IM,Unknown,Unknown,Unknown,
+LULU,Consumer Cyclical,Apparel Retail,Canada,13976446976.0
+LUMI IT,Unknown,Unknown,Unknown,
+LUMN,Communication Services,Telecom Services,United States,10354626560.0
+LUV,Industrials,Airlines,United States,18817787904.0
+LVS,Consumer Cyclical,Resorts & Casinos,United States,33900525568.0
+LXP,Real Estate,REIT - Industrial,United States,2996556288.0
+LYB,Basic Materials,Specialty Chemicals,United Kingdom,24228222976.0
+LYC AU,Unknown,Unknown,Unknown,
+LYFT,Technology,Software - Application,United States,4924482560.0
+LYV,Communication Services,Entertainment,United States,39298207744.0
+LZ,Industrials,Specialty Business Services,United States,1029886592.0
+LZB,Consumer Cyclical,"Furnishings, Fixtures & Appliances",United States,1414839680.0
+M,Consumer Cyclical,Department Stores,United States,4855849472.0
+MA,Financial Services,Credit Services,United States,436667154432.0
+MANE,Healthcare,Biotechnology,United States,4136792576.0
+MAR,Consumer Cyclical,Lodging,United States,93126918144.0
+MASI,Healthcare,Medical Devices,United States,9346311168.0
+MAX,Communication Services,Internet Content & Information,United States,435740992.0
+MAZE,Healthcare,Biotechnology,United States,1414624768.0
+MBC,Consumer Cyclical,"Furnishings, Fixtures & Appliances",United States,895892160.0
+MBLY,Consumer Cyclical,Auto Parts,Israel,8438705152.0
+MCD,Consumer Cyclical,Restaurants,United States,196376723456.0
+MCHP,Technology,Semiconductors,United States,50785566720.0
+MCK,Healthcare,Medical Distribution,United States,91423596544.0
+MCO,Financial Services,Financial Data & Stock Exchanges,United States,74918723584.0
+MCRI,Consumer Cyclical,Resorts & Casinos,United States,2093732864.0
+MCY,Financial Services,Insurance - Property & Casualty,United States,5433624576.0
+MD,Healthcare,Medical Care Facilities,United States,1846921728.0
+MDLN,Healthcare,Medical Instruments & Supplies,United States,30602487808.0
+MDLZ,Consumer Defensive,Confectioners,United States,77583794176.0
+MDU,Utilities,Utilities - Regulated Gas,United States,4627393024.0
+MEDP,Healthcare,Diagnostics & Research,United States,11859981312.0
+MELI,Consumer Cyclical,Internet Retail,Uruguay,78418911232.0
+META,Communication Services,Internet Content & Information,United States,1559175626752.0
+MGM,Consumer Cyclical,Resorts & Casinos,United States,9458820096.0
+MGNI,Communication Services,Advertising Agencies,United States,1836016384.0
+MGOR IT,Unknown,Unknown,Unknown,
+MGPI,Consumer Defensive,Beverages - Wineries & Distilleries,United States,389597632.0
+MGY,Energy,Oil & Gas E&P,United States,5630334464.0
+MH,Consumer Defensive,Education & Training Services,United States,2181237248.0
+MHK,Consumer Cyclical,"Furnishings, Fixtures & Appliances",United States,5885635584.0
+MIAX,Financial Services,Capital Markets,United States,5329981952.0
+MICC.NA,Unknown,Unknown,Unknown,
+MIR,Industrials,Specialty Industrial Machinery,United States,4445394432.0
+MITK,Technology,Software - Application,United States,643965248.0
+MKSI,Technology,Scientific & Technical Instruments,United States,20477353984.0
+MLI,Industrials,Metal Fabrication,United States,15086255104.0
+MMED,Healthcare,Health Information Services,United States,3032856064.0
+MMI,Real Estate,Real Estate Services,United States,1065818560.0
+MMM,Industrials,Conglomerates,United States,76263563264.0
+MNST,Consumer Defensive,Beverages - Non-Alcoholic,United States,85174722560.0
+MNTN,Technology,Software - Application,United States,575129408.0
+MO,Consumer Defensive,Tobacco,United States,122052337664.0
+MOG/A,Unknown,Unknown,Unknown,
+MP,Basic Materials,Other Industrial Metals & Mining,United States,10907419648.0
+MPC,Energy,Oil & Gas Refining & Marketing,United States,74452598784.0
+MPWR,Technology,Semiconductors,United States,76152479744.0
+MRCY,Industrials,Aerospace & Defense,United States,5525783552.0
+MRK,Healthcare,Drug Manufacturers - General,United States,275089031168.0
+MRNA,Healthcare,Biotechnology,United States,19458398208.0
+MRP,Real Estate,REIT - Residential,United States,4435139584.0
+MRVL,Technology,Semiconductors,United States,154876592128.0
+MS,Financial Services,Capital Markets,United States,303643099136.0
+MSFT,Technology,Software - Infrastructure,United States,3134205460480.0
+MSGS,Communication Services,Entertainment,United States,8463715328.0
+MSI,Technology,Communication Equipment,United States,65282744320.0
+MSTR,Technology,Software - Application,United States,62217502720.0
+MTCH,Communication Services,Internet Content & Information,United States,8257635328.0
+MTRN,Basic Materials,Other Industrial Metals & Mining,United States,4264720384.0
+MTSI,Technology,Semiconductors,United States,28656693248.0
+MTZ,Industrials,Engineering & Construction,United States,32784799744.0
+MU,Technology,Semiconductors,United States,817223696384.0
+MWA,Industrials,Specialty Industrial Machinery,United States,3991577088.0
+MYRG,Industrials,Engineering & Construction,United States,7278836224.0
+NATL,Technology,Software - Application,United States,3286890752.0
+NCLH,Consumer Cyclical,Travel Services,United States,7125389824.0
+NDA GR,Unknown,Unknown,Unknown,
+NDAQ,Financial Services,Financial Data & Stock Exchanges,United States,51498143744.0
+NE,Energy,Oil & Gas Drilling,United States,8439981056.0
+NEM,Basic Materials,Gold,United States,116427300864.0
+NET,Technology,Software - Infrastructure,United States,69830787072.0
+NEU,Basic Materials,Specialty Chemicals,United States,6280775680.0
+NFG,Energy,Oil & Gas Integrated,United States,7719722496.0
+NFLX,Communication Services,Entertainment,United States,366423670784.0
+NGVT,Basic Materials,Specialty Chemicals,United States,2349870848.0
+NHC,Healthcare,Medical Care Facilities,United States,3024743424.0
+NHY.NO,Unknown,Unknown,Unknown,
+NI,Utilities,Utilities - Regulated Gas,United States,22198036480.0
+NIC,Financial Services,Banks - Regional,United States,2915335936.0
+NLY,Real Estate,REIT - Mortgage,United States,15886589952.0
+NN,Technology,Software - Infrastructure,United States,2932029952.0
+NN NA,Unknown,Unknown,Unknown,
+NOC,Industrials,Aerospace & Defense,United States,76796076032.0
+NOK,Technology,Communication Equipment,Finland,77876346880.0
+NOV,Energy,Oil & Gas Equipment & Services,United States,7310558720.0
+NOW,Technology,Software - Application,United States,98046451712.0
+NPK,Industrials,Aerospace & Defense,United States,988537280.0
+NPO,Industrials,Specialty Industrial Machinery,United States,6586025984.0
+NQH6,Unknown,Unknown,Unknown,
+NQM6,Unknown,Unknown,Unknown,
+NRG,Utilities,Utilities - Independent Power Producers,United States,26966179840.0
+NSIT,Technology,Electronics & Computer Distribution,United States,2685128192.0
+NST AU,Unknown,Unknown,Unknown,
+NTAP,Technology,Software - Infrastructure,United States,23753377792.0
+NTCT,Technology,Software - Infrastructure,United States,2749705984.0
+NTNX,Technology,Software - Infrastructure,United States,12481628160.0
+NTR,Basic Materials,Agricultural Inputs,Canada,34350483456.0
+NTRS,Financial Services,Asset Management,United States,30321844224.0
+NU,Financial Services,Banks - Regional,Brazil,59264622592.0
+NUE,Basic Materials,Steel,United States,51701751808.0
+NUTX,Healthcare,Medical Care Facilities,United States,869113152.0
+NUVL,Healthcare,Biotechnology,United States,8081486848.0
+NVDA,Technology,Semiconductors,United States,5457368842240.0
+NVR,Consumer Cyclical,Residential Construction,United States,15017835520.0
+NVT,Industrials,Electrical Equipment & Parts,United Kingdom,27332372480.0
+NWN,Utilities,Utilities - Regulated Gas,United States,2037530624.0
+NXPI,Technology,Semiconductors,Netherlands,73595314176.0
+NXST,Communication Services,Broadcasting,United States,5967008256.0
+NXT,Technology,Solar,United States,21699002368.0
+NYT,Communication Services,Publishing,United States,12055534592.0
+OC,Industrials,Building Products & Equipment,United States,9186670592.0
+ODFL,Industrials,Trucking,United States,42242519040.0
+OGE,Utilities,Utilities - Regulated Electric,United States,9548940288.0
+OHI,Real Estate,REIT - Healthcare Facilities,United States,14757323776.0
+OIS,Energy,Oil & Gas Equipment & Services,United States,542342720.0
+OKLO,Utilities,Utilities - Independent Power Producers,United States,10830939136.0
+OLLI,Consumer Defensive,Discount Stores,United States,4761305088.0
+OMC,Communication Services,Advertising Agencies,United States,20186990592.0
+ON,Technology,Semiconductors,United States,43977531392.0
+OPCE IT,Unknown,Unknown,Unknown,
+OPLN,Consumer Cyclical,Auto & Truck Dealerships,United States,3697519104.0
+ORA,Utilities,Utilities - Renewable,United States,8082372096.0
+ORCL,Technology,Software - Infrastructure,United States,554933092352.0
+ORI,Financial Services,Insurance - Property & Casualty,United States,9576545280.0
+ORK.NO,Unknown,Unknown,Unknown,
+ORLY,Consumer Cyclical,Auto Parts,United States,73332998144.0
+OSIS,Technology,Electronic Components,United States,3385585408.0
+OSK,Industrials,Farm & Heavy Construction Machinery,United States,7506473984.0
+OUT,Real Estate,REIT - Specialty,United States,5547761152.0
+OVV,Energy,Oil & Gas E&P,United States,16861115392.0
+OXY,Energy,Oil & Gas E&P,United States,59300118528.0
+PAF LN,Unknown,Unknown,Unknown,
+PAHC,Healthcare,Drug Manufacturers - Specialty & Generic,United States,1394209280.0
+PANW,Technology,Software - Infrastructure,United States,196935139328.0
+PARR,Energy,Oil & Gas Refining & Marketing,United States,2923411200.0
+PATK,Consumer Cyclical,Recreational Vehicles,United States,2999533056.0
+PAYC,Technology,Software - Application,United States,6352475648.0
+PAYO,Technology,Software - Infrastructure,United States,1539981824.0
+PAYP,Technology,Software - Infrastructure,Japan,13056890880.0
+PAYX,Technology,Software - Application,United States,32797947904.0
+PBF,Energy,Oil & Gas Refining & Marketing,United States,5004447744.0
+PBI,Industrials,Integrated Freight & Logistics,United States,2133202432.0
+PCAR,Industrials,Farm & Heavy Construction Machinery,United States,58059898880.0
+PCCYF,Energy,Oil & Gas Integrated,China,349840244736.0
+PCRX,Healthcare,Drug Manufacturers - Specialty & Generic,United States,890836992.0
+PD,Technology,Software - Application,United States,518916480.0
+PDD,Consumer Cyclical,Internet Retail,Ireland,136404090880.0
+PEGA,Technology,Software - Application,United States,5633481728.0
+PEN,Healthcare,Medical Devices,United States,12677305344.0
+PENG,Technology,Information Technology Services,United States,2460866560.0
+PEP,Consumer Defensive,Beverages - Non-Alcoholic,United States,203838226432.0
+PFE,Healthcare,Drug Manufacturers - General,United States,144366927872.0
+PFGC,Consumer Defensive,Food Distribution,United States,15075913728.0
+PG,Consumer Defensive,Household & Personal Products,United States,329659777024.0
+PGNY,Healthcare,Healthcare Plans,United States,1821227520.0
+PGR,Financial Services,Insurance - Property & Casualty,United States,116709515264.0
+PH,Industrials,Specialty Industrial Machinery,United States,108777250816.0
+PHIN,Consumer Cyclical,Auto Parts,United States,2815413760.0
+PHM,Consumer Cyclical,Residential Construction,United States,20974452736.0
+PII,Consumer Cyclical,Recreational Vehicles,United States,3677690880.0
+PINS,Communication Services,Internet Content & Information,United States,10906262528.0
+PIPR,Financial Services,Capital Markets,United States,5324425728.0
+PJT,Financial Services,Capital Markets,United States,6386127360.0
+PL,Industrials,Aerospace & Defense,United States,14833084416.0
+PLMR,Financial Services,Insurance - Property & Casualty,United States,2936098816.0
+PLNT,Consumer Cyclical,Leisure,United States,4181867776.0
+PLS AU,Unknown,Unknown,Unknown,
+PLTK,Communication Services,Electronic Gaming & Multimedia,Israel,1357954944.0
+PLTR,Technology,Software - Infrastructure,United States,321215856640.0
+PLXS,Technology,Electronic Components,United States,6914661376.0
+PM,Consumer Defensive,Tobacco,United States,295518339072.0
+PNRG,Energy,Oil & Gas E&P,United States,433882880.0
+PODD,Healthcare,Medical Devices,United States,10213769216.0
+POLI IT,Unknown,Unknown,Unknown,
+POOL,Industrials,Industrial Distribution,United States,6390281216.0
+POR,Utilities,Utilities - Regulated Electric,United States,5471714816.0
+POWL,Industrials,Electrical Equipment & Parts,United States,10661721088.0
+PPC,Consumer Defensive,Packaged Foods,United States,6557128192.0
+PPG,Basic Materials,Specialty Chemicals,United States,22878455808.0
+PPL,Utilities,Utilities - Regulated Electric,United States,26241980416.0
+PR,Energy,Oil & Gas E&P,United States,17954412544.0
+PRAX,Healthcare,Biotechnology,United States,9550709760.0
+PRDO,Consumer Defensive,Education & Training Services,United States,2132533376.0
+PRGS,Technology,Software - Infrastructure,United States,1170206080.0
+PRIM,Industrials,Engineering & Construction,United States,6148711936.0
+PRU AU,Unknown,Unknown,Unknown,
+PRVA,Healthcare,Health Information Services,United States,2891984128.0
+PSMT,Consumer Defensive,Discount Stores,United States,4920477696.0
+PST IM,Unknown,Unknown,Unknown,
+PTC,Technology,Software - Application,United States,16391427072.0
+PTCT,Healthcare,Biotechnology,United States,5928389120.0
+PTGX,Healthcare,Biotechnology,United States,6571336192.0
+PTON,Consumer Cyclical,Leisure,United States,2290527232.0
+PWR,Industrials,Engineering & Construction,United States,115544809472.0
+PYPL,Financial Services,Credit Services,United States,39174303744.0
+Q,Technology,Semiconductor Equipment & Materials,United States,32914401280.0
+QCOM,Technology,Semiconductors,United States,212370472960.0
+QLYS,Technology,Software - Infrastructure,United States,3170234880.0
+QNST,Communication Services,Advertising Agencies,United States,647983744.0
+QRVO,Technology,Semiconductors,United States,8119261184.0
+R,Industrials,Rental & Leasing Services,United States,8934142976.0
+RAL,Technology,Electronic Components,United States,6643232256.0
+RAMP,Technology,Software - Infrastructure,United States,1887824640.0
+RBA,Industrials,Specialty Business Services,United States,19019366400.0
+RBC,Industrials,Tools & Accessories,United States,17993084928.0
+RBRK,Technology,Software - Infrastructure,United States,13124493312.0
+RCL,Consumer Cyclical,Travel Services,United States,69808472064.0
+RCUS,Healthcare,Biotechnology,United States,2990885888.0
+RDDT,Communication Services,Internet Content & Information,United States,30449154048.0
+RDOR3.BZ,Unknown,Unknown,Unknown,
+REGN,Healthcare,Biotechnology,United States,73203851264.0
+RENT3.BZ,Unknown,Unknown,Unknown,
+RENT4.BZ,Unknown,Unknown,Unknown,
+REP SM,Unknown,Unknown,Unknown,
+REPX,Energy,Oil & Gas E&P,United States,800363520.0
+REX,Basic Materials,Chemicals,United States,1648862208.0
+REZI,Industrials,Industrial Distribution,United States,4292934400.0
+RGLD,Basic Materials,Gold,United States,19376742400.0
+RGR,Industrials,Aerospace & Defense,United States,629319680.0
+RHI,Industrials,Staffing & Employment Services,United States,2569615104.0
+RHLD,Industrials,Specialty Business Services,United States,848865088.0
+RHM GR,Unknown,Unknown,Unknown,
+RIGL,Healthcare,Biotechnology,United States,536745344.0
+RITM,Real Estate,REIT - Mortgage,United States,5097339392.0
+RIVN,Consumer Cyclical,Auto Manufacturers,United States,18518128640.0
+RJF,Financial Services,Asset Management,United States,30033426432.0
+RL,Consumer Cyclical,Apparel Manufacturing,United States,19817973760.0
+RMBS,Technology,Semiconductors,United States,13738802176.0
+RMD,Healthcare,Medical Instruments & Supplies,United States,29283983360.0
+RMS AU,Unknown,Unknown,Unknown,
+RNG,Technology,Software - Application,United States,3442395904.0
+ROCK,Industrials,Building Products & Equipment,United States,1049438784.0
+ROIV,Healthcare,Biotechnology,United Kingdom,20962885632.0
+ROK,Industrials,Specialty Industrial Machinery,United States,49933070336.0
+ROL,Consumer Cyclical,Personal Services,United States,25719787520.0
+ROP,Technology,Software - Application,United States,32384380928.0
+ROST,Consumer Cyclical,Apparel Retail,United States,68812906496.0
+ROVI SM,Unknown,Unknown,Unknown,
+RPD,Technology,Software - Infrastructure,United States,434399008.0
+RPRX,Healthcare,Biotechnology,United States,30432731136.0
+RRL AU,Unknown,Unknown,Unknown,
+RRR,Consumer Cyclical,Resorts & Casinos,United States,5212053504.0
+RSG,Industrials,Waste Management,United States,64092585984.0
+RSI,Consumer Cyclical,Gambling,United States,6199242752.0
+RTX,Industrials,Aerospace & Defense,United States,230525255680.0
+RUN,Technology,Solar,United States,3337304320.0
+RUSHA,Consumer Cyclical,Auto & Truck Dealerships,United States,5340388352.0
+RVMD,Healthcare,Biotechnology,United States,30966802432.0
+RVTY,Healthcare,Diagnostics & Research,United States,10483272704.0
+RWE GR,Unknown,Unknown,Unknown,
+RXO,Industrials,Trucking,United States,3082360832.0
+SAABB SS,Unknown,Unknown,Unknown,
+SAB SM,Unknown,Unknown,Unknown,
+SAH,Consumer Cyclical,Auto & Truck Dealerships,United States,2337439488.0
+SAIL,Technology,Software - Infrastructure,United States,7657504768.0
+SAM,Consumer Defensive,Beverages - Brewers,United States,1819540736.0
+SAND SS,Unknown,Unknown,Unknown,
+SANM,Technology,Electronic Components,United States,12613691392.0
+SARO,Industrials,Aerospace & Defense,United States,8394917376.0
+SATS,Communication Services,Telecom Services,United States,39771107328.0
+SAVE.SS,Unknown,Unknown,Unknown,
+SBH,Consumer Cyclical,Specialty Retail,United States,1135361024.0
+SBRA,Real Estate,REIT - Healthcare Facilities,United States,5212769280.0
+SBUX,Consumer Cyclical,Restaurants,United States,121737052160.0
+SCCO,Basic Materials,Copper,United States,147492093952.0
+SCHL,Communication Services,Publishing,United States,732631424.0
+SCHW,Financial Services,Capital Markets,United States,158052630528.0
+SCSC,Technology,Electronics & Computer Distribution,United States,855865856.0
+SDZ.SW,Healthcare,Drug Manufacturers - Specialty & Generic,Switzerland,28332713984.0
+SEDG,Technology,Solar,Israel,3756131840.0
+SEIC,Financial Services,Asset Management,United States,10894326784.0
+SEK,Unknown,Unknown,Unknown,
+SENEA,Consumer Defensive,Packaged Foods,United States,955227264.0
+SF,Financial Services,Capital Markets,United States,11431537664.0
+SFD,Consumer Defensive,Packaged Foods,United States,9840866304.0
+SFM,Consumer Defensive,Grocery Stores,United States,8041728512.0
+SGD,Unknown,Unknown,Unknown,
+SGI,Consumer Cyclical,"Furnishings, Fixtures & Appliances",United States,13184150528.0
+SHAK,Consumer Cyclical,Restaurants,United States,2584431616.0
+SHOP,Technology,Software - Application,Canada,130128805888.0
+SIG,Consumer Cyclical,Luxury Goods,Bermuda,6026365440.0
+SIRI,Communication Services,Entertainment,United States,8694892544.0
+SITM,Technology,Semiconductors,United States,20432728064.0
+SJM,Consumer Defensive,Packaged Foods,United States,10722421760.0
+SKYW,Industrials,Airlines,United States,3222397696.0
+SLB,Energy,Oil & Gas Equipment & Services,United States,82796298240.0
+SLM,Financial Services,Credit Services,United States,3992513536.0
+SLR SM,Unknown,Unknown,Unknown,
+SMCI,Technology,Computer Hardware,United States,18668029952.0
+SMP,Consumer Cyclical,Auto Parts,United States,823741376.0
+SMPL,Consumer Defensive,Packaged Foods,United States,1069244224.0
+SMTC,Technology,Semiconductors,United States,12816280576.0
+SNA,Industrials,Tools & Accessories,United States,18630559744.0
+SNCY,Industrials,Airlines,United States,876356672.0
+SNDK,Technology,Computer Hardware,United States,208452632576.0
+SNEX,Financial Services,Capital Markets,United States,8734307328.0
+SNPS,Technology,Software - Infrastructure,United States,96244596736.0
+SNX,Technology,Electronics & Computer Distribution,United States,18567450624.0
+SOBO,Energy,Oil & Gas Midstream,Canada,7776034304.0
+SOFI,Financial Services,Credit Services,United States,20023590912.0
+SOLS,Basic Materials,Specialty Chemicals,United States,13515831296.0
+SOLV,Healthcare,Medical Instruments & Supplies,United States,12859955200.0
+SONO,Technology,Consumer Electronics,United States,1766678144.0
+SPB,Consumer Defensive,Household & Personal Products,United States,1787816576.0
+SPHR,Communication Services,Entertainment,United States,4807966720.0
+SPNT,Financial Services,Insurance - Reinsurance,Bermuda,2698767104.0
+SPT,Technology,Software - Application,United States,375659584.0
+SPXC,Industrials,Building Products & Equipment,United States,10062532608.0
+SR,Utilities,Utilities - Regulated Gas,United States,5050347520.0
+SSE LN,Unknown,Unknown,Unknown,
+SSNC,Technology,Software - Application,United States,15553061888.0
+STE,Healthcare,Medical Devices,United States,20817960960.0
+STEP,Financial Services,Asset Management,United States,6692321792.0
+STLD,Basic Materials,Steel,United States,33073760256.0
+STNG,Energy,Oil & Gas Midstream,Monaco,4086993664.0
+STRA,Consumer Defensive,Education & Training Services,United States,1790927616.0
+STRL,Industrials,Engineering & Construction,United States,26047465472.0
+STT,Financial Services,Asset Management,United States,42303844352.0
+STX,Technology,Computer Hardware,Singapore,178367430656.0
+STZ,Consumer Defensive,Beverages - Brewers,United States,24516184064.0
+SUPN,Healthcare,Drug Manufacturers - Specialty & Generic,United States,2868903424.0
+SW,Consumer Cyclical,Packaging & Containers,Ireland,19656912896.0
+SWBI,Industrials,Aerospace & Defense,United States,682534016.0
+SWK,Industrials,Tools & Accessories,United States,11680930816.0
+SWKS,Technology,Semiconductors,United States,10307320832.0
+SXI,Industrials,Specialty Industrial Machinery,United States,3012859904.0
+SXT,Basic Materials,Specialty Chemicals,United States,4849881600.0
+SYF,Financial Services,Credit Services,United States,24010106880.0
+SYM,Industrials,Specialty Industrial Machinery,United States,28563951616.0
+T,Communication Services,Telecom Services,United States,166968590336.0
+TAP,Consumer Defensive,Beverages - Brewers,United States,7659597824.0
+TASE IT,Unknown,Unknown,Unknown,
+TBPH,Healthcare,Biotechnology,United States,836189696.0
+TCMD,Healthcare,Medical Devices,United States,512929344.0
+TDC,Technology,Software - Infrastructure,United States,3181521152.0
+TDG,Industrials,Aerospace & Defense,United States,64266006528.0
+TDS,Communication Services,Telecom Services,United States,4610925056.0
+TDW,Energy,Oil & Gas Equipment & Services,United States,4095319040.0
+TDY,Technology,Scientific & Technical Instruments,United States,28565618688.0
+TEAM,Technology,Software - Application,Australia,22194536448.0
+TECH,Healthcare,Biotechnology,United States,6779426816.0
+TEL,Technology,Electronic Components,Ireland,59870748672.0
+TEL2B.SS,Unknown,Unknown,Unknown,
+TEM,Healthcare,Health Information Services,United States,7888280064.0
+TENB,Technology,Software - Infrastructure,United States,2369744640.0
+TER,Technology,Semiconductor Equipment & Materials,United States,52892467200.0
+TERA.E.IS,Unknown,Unknown,Unknown,
+TFPM,Basic Materials,Other Precious Metals & Mining,Canada,6607192576.0
+TGNA,Communication Services,Broadcasting,United States,3243011584.0
+TGT,Consumer Defensive,Discount Stores,United States,55200583680.0
+TGTX,Healthcare,Biotechnology,United States,6046801408.0
+THC,Healthcare,Medical Care Facilities,United States,16939702272.0
+THG,Financial Services,Insurance - Property & Casualty,United States,6809828352.0
+TIGO,Communication Services,Telecom Services,Luxembourg,13281009664.0
+TILE,Consumer Cyclical,"Furnishings, Fixtures & Appliances",United States,1628476160.0
+TISCO-R.BK,Financial Services,Banks - Regional,Thailand,89673416704.0
+TJX,Consumer Cyclical,Apparel Retail,United States,163030188032.0
+TKA GR,Unknown,Unknown,Unknown,
+TKO,Communication Services,Entertainment,United States,14249106432.0
+TLN,Utilities,Utilities - Independent Power Producers,United States,15273099264.0
+TMDX,Healthcare,Medical Devices,United States,2184249600.0
+TMHC,Consumer Cyclical,Residential Construction,United States,5118901248.0
+TMUS,Communication Services,Telecom Services,United States,200445952000.0
+TNET,Industrials,Staffing & Employment Services,United States,1861677056.0
+TNK,Energy,Oil & Gas Midstream,Bermuda,2674159360.0
+TNL,Consumer Cyclical,Travel Services,United States,3903405568.0
+TOL,Consumer Cyclical,Residential Construction,United States,11953917952.0
+TPC,Industrials,Engineering & Construction,United States,4196392448.0
+TPE: 2330,Unknown,Unknown,Unknown,
+TPE: 2337,Unknown,Unknown,Unknown,
+TPE: 2344,Unknown,Unknown,Unknown,
+TPE: 2345,Unknown,Unknown,Unknown,
+TPE: 2360,Unknown,Unknown,Unknown,
+TPE: 2368,Unknown,Unknown,Unknown,
+TPE: 2383,Unknown,Unknown,Unknown,
+TPE: 2404,Unknown,Unknown,Unknown,
+TPE: 2408,Unknown,Unknown,Unknown,
+TPE: 3037,Unknown,Unknown,Unknown,
+TPE: 3044,Unknown,Unknown,Unknown,
+TPE: 3665,Unknown,Unknown,Unknown,
+TPE: 3711,Unknown,Unknown,Unknown,
+TPE: 5434,Unknown,Unknown,Unknown,
+TPE: 6191,Unknown,Unknown,Unknown,
+TPE: 6196,Unknown,Unknown,Unknown,
+TPE: 6257,Unknown,Unknown,Unknown,
+TPE: 6515,Unknown,Unknown,Unknown,
+TPE: 6691,Unknown,Unknown,Unknown,
+TPE: 6919,Unknown,Unknown,Unknown,
+TPE: 8046,Unknown,Unknown,Unknown,
+TPE: 8112,Unknown,Unknown,Unknown,
+TPG,Financial Services,Asset Management,United States,16060413952.0
+TPH,Consumer Cyclical,Residential Construction,United States,3998444288.0
+TPL,Energy,Oil & Gas E&P,United States,26566883328.0
+TPR,Consumer Cyclical,Luxury Goods,United States,26128424960.0
+TPRO IM,Unknown,Unknown,Unknown,
+TPRO.IM,Unknown,Unknown,Unknown,
+TR,Consumer Defensive,Confectioners,United States,3045936384.0
+TRE SM,Unknown,Unknown,Unknown,
+TRI,Industrials,Specialty Business Services,Canada,36114862080.0
+TRIP,Consumer Cyclical,Travel Services,United States,1100776704.0
+TRMB,Technology,Scientific & Technical Instruments,United States,12851438592.0
+TROW,Financial Services,Asset Management,United States,21857337344.0
+TRPZ IT,Unknown,Unknown,Unknown,
+TRST,Financial Services,Banks - Regional,United States,845431424.0
+TSEM IT,Unknown,Unknown,Unknown,
+TSLA,Consumer Cyclical,Auto Manufacturers,United States,1585816797184.0
+TT,Industrials,Building Products & Equipment,Ireland,103144480768.0
+TTAN,Technology,Software - Application,United States,5582102016.0
+TTD,Communication Services,Advertising Agencies,United States,9942791168.0
+TTMI,Technology,Electronic Components,United States,17379307520.0
+TTWO,Communication Services,Electronic Gaming & Multimedia,United States,44893937664.0
+TWLO,Technology,Software - Infrastructure,United States,30095237120.0
+TXN,Technology,Semiconductors,United States,275512393728.0
+TXNM,Utilities,Utilities - Regulated Electric,United States,6559405056.0
+TXT,Industrials,Aerospace & Defense,United States,15436124160.0
+TYL,Technology,Software - Application,United States,12831328256.0
+U,Technology,Software - Application,United States,11856290816.0
+UAL,Industrials,Airlines,United States,30136299520.0
+UBER,Technology,Software - Application,United States,152853118976.0
+UCB.BB,Unknown,Unknown,Unknown,
+UDMY,Consumer Defensive,Education & Training Services,United States,677283328.0
+UFCS,Financial Services,Insurance - Property & Casualty,United States,1233035392.0
+UGI,Utilities,Utilities - Regulated Gas,United States,7287242752.0
+UHAL.B,Unknown,Unknown,Unknown,
+ULS,Industrials,Specialty Business Services,United States,19954749440.0
+ULTA,Consumer Cyclical,Specialty Retail,United States,21618143232.0
+UNFI,Consumer Defensive,Food Distribution,United States,3081321984.0
+UNH,Healthcare,Healthcare Plans,United States,357672681472.0
+UNIT,Real Estate,REIT - Specialty,United States,2683112960.0
+UNM,Financial Services,Insurance - Life,United States,13044131840.0
+UPBD,Technology,Software - Application,United States,998571520.0
+UPS,Industrials,Integrated Freight & Logistics,United States,84091117568.0
+UPWK,Communication Services,Internet Content & Information,United States,1009143168.0
+URBN,Consumer Cyclical,Apparel Retail,United States,6183362560.0
+URI,Industrials,Rental & Leasing Services,United States,60212740096.0
+USBFS03,Unknown,Unknown,Unknown,
+USD,Unknown,Unknown,Unknown,
+USFD,Consumer Defensive,Food Distribution,United States,18141859840.0
+UTHR,Healthcare,Drug Manufacturers - Specialty & Generic,United States,24134363136.0
+UUUU,Energy,Uranium,United States,4600051712.0
+V,Financial Services,Credit Services,United States,619492999168.0
+VALT.LN,Unknown,Unknown,Unknown,
+VAU AU,Unknown,Unknown,Unknown,
+VBK GR,Unknown,Unknown,Unknown,
+VC,Consumer Cyclical,Auto Parts,United States,2949422336.0
+VCTR,Financial Services,Asset Management,United States,5345159168.0
+VEEV,Healthcare,Health Information Services,United States,25925746688.0
+VGNT,Consumer Cyclical,Auto Parts,Switzerland,3034248704.0
+VIAV,Technology,Communication Equipment,United States,12029882368.0
+VICR,Technology,Electronic Components,United States,12474264576.0
+VIK,Consumer Cyclical,Travel Services,Bermuda,37343350784.0
+VIRT,Financial Services,Capital Markets,United States,11725054976.0
+VLO,Energy,Oil & Gas Refining & Marketing,United States,74452926464.0
+VLTO,Industrials,Pollution & Treatment Controls,United States,20834185216.0
+VMI,Industrials,Conglomerates,United States,9837868032.0
+VNO,Real Estate,REIT - Office,United States,6262539776.0
+VRSK,Industrials,Consulting Services,United States,21297600512.0
+VRSN,Technology,Software - Infrastructure,United States,27078871040.0
+VRT,Industrials,Electrical Equipment & Parts,United States,142481326080.0
+VRTX,Healthcare,Biotechnology,United States,110900281344.0
+VSAT,Technology,Communication Equipment,United States,9440282624.0
+VSCO,Consumer Cyclical,Apparel Retail,United States,3650403328.0
+VSNT,Communication Services,Entertainment,United States,6081584640.0
+VST,Utilities,Utilities - Independent Power Producers,United States,47097643008.0
+VSTS,Industrials,Rental & Leasing Services,United States,1618287232.0
+VTR,Real Estate,REIT - Healthcare Facilities,United States,42515542016.0
+VTRS,Healthcare,Drug Manufacturers - Specialty & Generic,United States,19191828480.0
+VVX,Industrials,Aerospace & Defense,United States,2172008448.0
+VZ,Communication Services,Telecom Services,United States,193620656128.0
+WAT,Healthcare,Diagnostics & Research,United States,32324747264.0
+WAWI NO,Unknown,Unknown,Unknown,
+WBD,Communication Services,Entertainment,United States,67642548224.0
+WBI,Energy,Oil & Gas Equipment & Services,United States,1444333312.0
+WCC,Industrials,Industrial Distribution,United States,17471418368.0
+WCP.CN,Unknown,Unknown,Unknown,
+WDAY,Technology,Software - Application,United States,31213191168.0
+WDC,Technology,Computer Hardware,United States,166153682944.0
+WDS AU,Unknown,Unknown,Unknown,
+WEC,Utilities,Utilities - Regulated Electric,United States,35556212736.0
+WELL,Real Estate,REIT - Healthcare Facilities,United States,150882156544.0
+WFC,Financial Services,Banks - Diversified,United States,224679100416.0
+WFRD,Energy,Oil & Gas Equipment & Services,United States,7827633664.0
+WGO,Consumer Cyclical,Recreational Vehicles,United States,814620032.0
+WKC,Energy,Oil & Gas Refining & Marketing,United States,1461062656.0
+WMB,Energy,Oil & Gas Midstream,United States,95051423744.0
+WMT,Consumer Defensive,Discount Stores,United States,1047786684416.0
+WOR,Industrials,Metal Fabrication,United States,2644796672.0
+WPC,Real Estate,REIT - Diversified,United States,16235453440.0
+WRB,Financial Services,Insurance - Property & Casualty,United States,24737787904.0
+WRLD,Financial Services,Credit Services,United States,689264960.0
+WRT1V FH,Unknown,Unknown,Unknown,
+WS,Basic Materials,Steel,United States,1977890688.0
+WSM,Consumer Cyclical,Specialty Retail,United States,19856123904.0
+WT,Financial Services,Asset Management,United States,2968589824.0
+WTS,Industrials,Specialty Industrial Machinery,United States,9910750208.0
+WWD,Industrials,Aerospace & Defense,United States,20806930432.0
+WWW,Consumer Cyclical,Footwear & Accessories,United States,1258539520.0
+WYNN,Consumer Cyclical,Resorts & Casinos,United States,9903329280.0
+XEL,Utilities,Utilities - Regulated Electric,United States,48643084288.0
+XOM,Energy,Oil & Gas Integrated,United States,654570029056.0
+XPO,Industrials,Trucking,United States,23978641408.0
+XPRO,Energy,Oil & Gas Equipment & Services,United States,1797315200.0
+XYZ,Technology,Software - Infrastructure,United States,41876934656.0
+YELP,Communication Services,Internet Content & Information,United States,1190548736.0
+YEXT,Technology,Software - Infrastructure,United States,346388352.0
+YOU,Technology,Software - Application,United States,7871313408.0
+ZBH,Healthcare,Medical Devices,United States,16192808960.0
+ZBRA,Technology,Communication Equipment,United States,12353720320.0
+ZD,Communication Services,Advertising Agencies,United States,1492201984.0
+ZEG LN,Unknown,Unknown,Unknown,
+ZM,Technology,Software - Application,United States,29521313792.0
+ZS,Technology,Software - Infrastructure,United States,25895344128.0
+ZTS,Healthcare,Drug Manufacturers - Specialty & Generic,United States,31115112448.0
+ZWS,Industrials,Pollution & Treatment Controls,United States,8052083200.0

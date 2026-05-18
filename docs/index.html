@@ -225,6 +225,7 @@
         <table class="w-full text-sm">
           <thead class="text-[10px] uppercase tracking-wider" style="background: #050505; color: var(--text-3)">
             <tr style="border-bottom: 1px solid var(--border)">
+              <th class="text-center px-2 py-2" x-tooltip="'Pin to watchlist'">★</th>
               <th class="text-left px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('leaderboard_rank')" :class="sortClass('leaderboard_rank')" x-tooltip="'Rank by Final Alpha Score (1 = highest conviction)'">#</th>
               <th class="text-left px-3 py-2" x-tooltip="'Stock ticker. Click to open per-stock detail page.'">Ticker</th>
               <th class="text-left px-3 py-2 hidden sm:table-cell" x-tooltip="'Issuer\'s legal name as reported by the ETF.'">Company</th>
@@ -259,6 +260,13 @@
                     :class="open === row.ticker ? 'row-open' : 'row-hover'"
                     class="cursor-pointer transition"
                     style="border-bottom: 1px solid rgba(255,255,255,0.03)">
+                  <td class="px-2 py-2 text-center">
+                    <button @click.stop="togglePin(row.ticker)" class="text-base leading-none transition"
+                            :style="`color: ${isPinned(row.ticker) ? 'var(--cyan)' : 'var(--text-3)'}`"
+                            :x-tooltip="isPinned(row.ticker) ? 'Pinned — click to unpin' : 'Pin to watchlist'">
+                      <span x-text="isPinned(row.ticker) ? '★' : '☆'"></span>
+                    </button>
+                  </td>
                   <td class="px-3 py-2 num font-mono" style="color: var(--text-3)" x-text="row.leaderboard_rank"></td>
                   <td class="px-3 py-2 font-medium font-mono">
                     <a :href="`stock.html?t=${row.ticker}`" @click.stop
@@ -315,7 +323,7 @@
                 </tr>
                 <!-- Expanded row -->
                 <tr x-show="open === row.ticker" x-transition.opacity style="background: #050505; border-bottom: 1px solid var(--border)">
-                  <td colspan="11" class="px-4 py-4">
+                  <td colspan="12" class="px-4 py-4">
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3 text-xs">
                       <div>
                         <div class="label">Company</div>
@@ -391,7 +399,271 @@
     </div>
   </section>
 
-  <!-- ═════════════ TAB 2: ETFs ════════════════════════════════════════════ -->
+  <!-- ═════════════ TAB 2: WATCHLIST ═══════════════════════════════════════ -->
+  <section x-show="activeTab === 'watchlist'">
+    
+    <!-- Watchlist changelog strip -->
+    <div x-show="(watchlistDelta.entered_hc.length || watchlistDelta.exited_hc.length || watchlistDelta.new_burst.length)"
+         class="mb-3 px-3 py-2 rounded-lg border text-xs"
+         style="background: rgba(34, 211, 238, 0.04); border-color: rgba(34, 211, 238, 0.20)">
+      <span class="label-cyan label">SINCE LAST VISIT</span>
+      <div class="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+        <span x-show="watchlistDelta.entered_hc.length" style="color: var(--up)">
+          ▲ <span x-text="watchlistDelta.entered_hc.length"></span> entered HC: <span class="font-mono" x-text="watchlistDelta.entered_hc.join(', ')"></span>
+        </span>
+        <span x-show="watchlistDelta.exited_hc.length" style="color: var(--down)">
+          ▼ <span x-text="watchlistDelta.exited_hc.length"></span> exited HC: <span class="font-mono" x-text="watchlistDelta.exited_hc.join(', ')"></span>
+        </span>
+        <span x-show="watchlistDelta.new_burst.length" style="color: #c084fc">
+          ⚡ <span x-text="watchlistDelta.new_burst.length"></span> new BURST: <span class="font-mono" x-text="watchlistDelta.new_burst.join(', ')"></span>
+        </span>
+      </div>
+      <button @click="snapshotPins()" class="chip border mt-2 px-2 py-0.5" style="border-color: var(--border-2)">mark all as read</button>
+    </div>
+
+    <!-- Empty state -->
+    <div x-show="pins.length === 0" class="rounded-lg border px-6 py-12 text-center" style="background: var(--surface); border-color: var(--border)">
+      <div class="text-4xl mb-3">☆</div>
+      <div class="text-sm mb-1" style="color: var(--text-2)">Your watchlist is empty</div>
+      <div class="text-xs" style="color: var(--text-3)">Click the ☆ icon on any ticker in the leaderboard to pin it here</div>
+    </div>
+
+    <!-- Reuse leaderboard table (filtered by pins) -->
+    <div x-show="pins.length > 0">
+      <!-- Filter bar (same as leaderboard) -->
+      <div class="rounded-lg p-2.5 mb-3 border flex flex-col sm:flex-row gap-2 items-stretch" style="background: var(--surface); border-color: var(--border)">
+        <div class="flex gap-1 flex-wrap">
+          <button @click="toggleFlag('HIGH_CONVICTION')"
+                  :class="flag === 'HIGH_CONVICTION' ? 'border-emerald-500/40 text-emerald-300' : ''"
+                  class="chip border px-2 py-1 transition hover:border-emerald-500/30"
+                  style="border-color: var(--border-2)"
+                  x-text="`HC ${counts.HIGH_CONVICTION || 0}`"></button>
+          <button @click="toggleFlag('SPECULATIVE_BETA')"
+                  :class="flag === 'SPECULATIVE_BETA' ? 'border-amber-500/40 text-amber-300' : ''"
+                  class="chip border px-2 py-1 transition hover:border-amber-500/30"
+                  style="border-color: var(--border-2)"
+                  x-text="`SPEC β ${counts.SPECULATIVE_BETA || 0}`"></button>
+          <button @click="newOnly = !newOnly"
+                  :class="newOnly ? 'border-blue-500/40 text-blue-300' : ''"
+                  class="chip border px-2 py-1 transition hover:border-blue-500/30"
+                  style="border-color: var(--border-2)"
+                  x-text="`NEW ${counts.NEW || 0}`"></button>
+          <button @click="velocityOnly = !velocityOnly"
+                  :class="velocityOnly ? 'border-cyan-500/40 text-cyan-300' : ''"
+                  class="chip border px-2 py-1 transition hover:border-cyan-500/30"
+                  style="border-color: var(--border-2)"
+                  x-tooltip="'Show only top-velocity names (velocity ≥ 25, held by 2+ ETFs, no burst)'"
+                  x-text="`VELO ${counts.VELO || 0}`"></button>
+          <button @click="burstOnly = !burstOnly"
+                  :class="burstOnly ? 'border-purple-500/40 text-purple-300' : ''"
+                  class="chip border px-2 py-1 transition hover:border-purple-500/30"
+                  style="border-color: var(--border-2)"
+                  x-tooltip="'Show only burst movers — stocks that improved global rank by 40+ in the last 30 days'"
+                  x-text="`BURST ${counts.BURST || 0}`"></button>
+          <select x-model="selectedTier" class="chip border px-2 py-1 bg-transparent" style="border-color: var(--border-2)">
+            <option value="" style="background: #000">all tiers</option>
+            <template x-for="t in ['Scout','Quant','Quality','Trend','Blob']" :key="t">
+              <option :value="t" x-text="t" style="background: #000"></option>
+            </template>
+          </select>
+          <button @click="reset()" class="chip border px-2 py-1 hover:border-zinc-500" style="border-color: var(--border-2); color: var(--text-2)">clear</button>
+        </div>
+        <input x-model="q" type="search" placeholder="search ticker or company…"
+               class="flex-1 bg-transparent border rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500/40"
+               style="border-color: var(--border-2); color: var(--text)">
+        <div class="text-xs num font-mono self-center whitespace-nowrap pr-1" style="color: var(--text-3)">
+          <span x-text="filtered.length"></span> / <span x-text="pins.length"></span>
+        </div>
+        <button @click="sortDialog = true" class="chip border px-2 py-1 hover:border-cyan-500/30 whitespace-nowrap"
+                style="border-color: var(--border-2); color: var(--text-2)"
+                x-tooltip="'Open multi-level sort dialog'"
+                :class="sortLevels.length > 1 ? 'border-cyan-500/40 text-cyan-300' : ''">
+          ⇅ Sort <span x-show="sortLevels.length > 1" class="num font-mono" x-text="`(${sortLevels.length})`"></span>
+        </button>
+      </div>
+
+      <!-- Main table (same structure as leaderboard) -->
+      <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+        <div class="overflow-x-auto scrollbar">
+          <table class="w-full text-sm">
+            <thead class="text-[10px] uppercase tracking-wider" style="background: #050505; color: var(--text-3)">
+              <tr style="border-bottom: 1px solid var(--border)">
+                <th class="text-center px-2 py-2" x-tooltip="'Pin to watchlist'">★</th>
+                <th class="text-left px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('leaderboard_rank')" :class="sortClass('leaderboard_rank')" x-tooltip="'Rank by Final Alpha Score (1 = highest conviction)'">#</th>
+                <th class="text-left px-3 py-2" x-tooltip="'Stock ticker. Click to open per-stock detail page.'">Ticker</th>
+                <th class="text-left px-3 py-2 hidden sm:table-cell" x-tooltip="'Issuer\'s legal name as reported by the ETF.'">Company</th>
+                <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('final_score')" :class="sortClass('final_score')" x-tooltip="'Final Alpha Score = sum of (weight% × ETF points × rank multiplier × 100) across all ETFs holding this name.'">Score</th>
+                <th class="text-right px-3 py-2 hidden lg:table-cell">
+                  <div class="flex items-center justify-end gap-1">
+                    <span class="cursor-pointer hover:text-zinc-300" @click="sort('score_delta_pct')" :class="sortClass('score_delta_pct')" x-tooltip="'Score change vs the prior reference date. Use the period chips to pick 1d, 7d, 14d, 30d, 60d, 90d, or YTD.'" x-text="`SC.Δ% (${period === 'YTD' ? 'YTD' : period + 'd'})`"></span>
+                    <div class="flex border rounded overflow-hidden" style="border-color: var(--border-2)">
+                      <template x-for="p in [1,7,14,30,60,90,'YTD']" :key="p">
+                        <button @click.stop="period = p"
+                                :style="period === p ? 'background: rgba(34,211,238,0.12); color: var(--cyan);' : 'color: var(--text-3);'"
+                                class="px-1 py-0.5 text-[9px] font-mono leading-none hover:text-zinc-300 transition"
+                                x-text="p === 'YTD' ? 'YTD' : p + 'd'"></button>
+                      </template>
+                    </div>
+                  </div>
+                </th>
+                <th @click="sort('velocity_score')" :class="sortClass('velocity_score')"
+                    class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
+                    x-tooltip="'Velocity — composite rate-of-change signal across all ETFs. Sums: global rank Δ (30d) + avg per-ETF rank Δ (7d) + weight flow (7d) + ETF count change (30d) + score streak. High positive = institutional accumulation accelerating.'">Velocity</th>
+                <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300 hidden md:table-cell" @click="sort('etf_count')" :class="sortClass('etf_count')" x-tooltip="'Count of distinct ETFs currently holding this ticker.'">ETFs</th>
+                <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell" @click="sort('total_weight')" :class="sortClass('total_weight')" x-tooltip="'Sum of position weights across all ETFs holding this name.'">Weight</th>
+                <th class="text-left px-3 py-2 hidden xl:table-cell" x-tooltip="{html:'Tiers represented. <b>Scout</b>=spinoffs/IPOs · <b>Quant</b>=factor momentum · <b>Quality</b>=FCF/profit · <b>Trend</b>=momentum · <b>Blob</b>=mega-cap'}">Strategies</th>
+                <th class="text-center px-3 py-2 hidden md:table-cell" x-tooltip="'Consecutive days the score moved in the same direction (▲ up · ▼ down).'">Streak</th>
+                <th class="text-left px-3 py-2 hidden xl:table-cell" x-tooltip="'Today\'s score as a percentile of this ticker\'s own score history in the past 60 days.'">Level</th>
+                <th class="text-left px-3 py-2" x-tooltip="{html:'<b>HC</b> = held by 4+ ETFs<br><b>SPEC</b> = Trend tier without Quality/Scout<br><b>NEW</b> = first appearance in any ETF within 14 days'}">Flag</th>
+              </tr>
+            </thead>
+            <template x-for="row in paged" :key="row.ticker">
+                <tbody>
+                  <tr @click="toggle(row.ticker)"
+                      :class="open === row.ticker ? 'row-open' : 'row-hover'"
+                      class="cursor-pointer transition"
+                      style="border-bottom: 1px solid rgba(255,255,255,0.03)">
+                    <td class="px-2 py-2 text-center">
+                      <button @click.stop="togglePin(row.ticker)" class="text-base leading-none transition"
+                              :style="`color: ${isPinned(row.ticker) ? 'var(--cyan)' : 'var(--text-3)'}`"
+                              :x-tooltip="isPinned(row.ticker) ? 'Pinned — click to unpin' : 'Pin to watchlist'">
+                        <span x-text="isPinned(row.ticker) ? '★' : '☆'"></span>
+                      </button>
+                    </td>
+                    <td class="px-3 py-2 num font-mono" style="color: var(--text-3)" x-text="row.leaderboard_rank"></td>
+                    <td class="px-3 py-2 font-medium font-mono">
+                      <a :href="`stock.html?t=${row.ticker}`" @click.stop
+                         class="hover:text-cyan-300 transition" style="color: inherit; text-decoration: none;"
+                         x-text="row.ticker"></a>
+                    </td>
+                    <td class="px-3 py-2 hidden sm:table-cell truncate max-w-[260px]" :title="row.company" style="color: var(--text-2)" x-text="row.company"></td>
+                    <td class="px-3 py-2 text-right num font-mono font-medium" x-text="fmt1(row.final_score)"></td>
+                    <td class="px-3 py-2 text-right num font-mono hidden lg:table-cell" :style="`color: ${flowColor(activeDeltaValue(row))}`" x-text="fmtPct(activeDeltaValue(row))"></td>
+                    <td class="px-3 py-2 text-right num font-mono hidden lg:table-cell"
+                        :style="`color: ${velocityColor(row.velocity_score)}`"
+                        x-tooltip="velocityTip(row)"
+                        x-text="fmtVelocity(row.velocity_score)"></td>
+                    <td class="px-3 py-2 text-right num font-mono hidden md:table-cell" x-text="row.etf_count"></td>
+                    <td class="px-3 py-2 text-right num font-mono hidden lg:table-cell" style="color: var(--text-2)" x-text="fmtWeight(row.total_weight)"></td>
+                    <td class="px-3 py-2 hidden xl:table-cell">
+                      <div class="flex flex-wrap gap-1">
+                        <template x-for="t in (row.tiers || '').split(' + ').filter(Boolean)" :key="t">
+                          <span class="chip" :style="tierChipStyle(t)" x-text="t"
+                                :x-tooltip="`'${t} — ' + tierExplain(t)`"></span>
+                        </template>
+                      </div>
+                    </td>
+                    <td class="px-3 py-2 text-center hidden md:table-cell">
+                      <span class="num font-mono text-xs" :style="`color: ${streakColor(row.score_streak)}`" x-text="fmtStreak(row.score_streak)"></span>
+                    </td>
+                    <td class="px-3 py-2 hidden xl:table-cell">
+                      <div class="flex items-center gap-2">
+                        <div class="pct-bar" :class="row.score_percentile >= 0.66 ? 'hi' : (row.score_percentile >= 0.33 ? 'mid' : '')">
+                          <i :style="`width: ${(row.score_percentile || 0) * 100}%`"></i>
+                        </div>
+                        <span class="text-[10px] num font-mono" style="color: var(--text-3)" x-show="row.score_percentile !== null" x-text="`${Math.round((row.score_percentile || 0) * 100)}%`"></span>
+                      </div>
+                    </td>
+                    <td class="px-3 py-2">
+                      <div class="flex gap-1 flex-wrap">
+                        <span x-show="row.flag === 'HIGH_CONVICTION'" class="chip"
+                              :x-tooltip="`'HIGH CONVICTION — held by ' + row.etf_count + ' ETFs<br>HC streak: ' + (row.hc_streak||0) + ' days'`"
+                              style="background: rgba(52, 211, 153, 0.10); color: var(--up); border: 1px solid rgba(52, 211, 153, 0.25)">HC</span>
+                        <span x-show="row.flag === 'SPECULATIVE_BETA'" class="chip"
+                              x-tooltip="'SPECULATIVE BETA — Trend tier without Quality or Scout backing'"
+                              style="background: rgba(251, 191, 36, 0.10); color: var(--amber); border: 1px solid rgba(251, 191, 36, 0.25)">SPEC</span>
+                        <span x-show="row.any_new" class="chip"
+                              x-tooltip="'NEW — first appearance in any ETF within the last 14 days'"
+                              style="background: rgba(96, 165, 250, 0.10); color: var(--blue); border: 1px solid rgba(96, 165, 250, 0.25)">NEW</span>
+                        <span x-show="row.burst_30d" class="chip"
+                              :x-tooltip="`'BURST move — global rank improved by '+ row.global_rank_peak_30d +'+ positions in last 30d. Currently #'+ row.leaderboard_rank +' (best in window: #'+ row.global_rank_best_30d +')'`"
+                              style="background: rgba(168, 85, 247, 0.12); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.30)">BURST</span>
+                        <span x-show="(row.velocity_score || 0) >= 25 && (row.etf_count || 0) >= 2 && !row.burst_30d" class="chip"
+                              :x-tooltip="`'Top-velocity composite ('+ row.velocity_score +'). Conviction is concentrating.'`"
+                              style="background: rgba(34, 211, 238, 0.10); color: var(--cyan); border: 1px solid rgba(34, 211, 238, 0.25)">VELO</span>
+                      </div>
+                    </td>
+                  </tr>
+                  <!-- Expanded row -->
+                  <tr x-show="open === row.ticker" x-transition.opacity style="background: #050505; border-bottom: 1px solid var(--border)">
+                    <td colspan="12" class="px-4 py-4">
+                      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3 text-xs">
+                        <div>
+                          <div class="label">Company</div>
+                          <div class="text-sm mt-0.5" x-text="row.company"></div>
+                        </div>
+                        <div>
+                          <div class="label">Score breakdown</div>
+                          <div class="text-sm num font-mono mt-0.5">
+                            <span x-text="fmt1(row.final_score)"></span>
+                            <span x-show="row.score_delta" :style="`color: ${flowColor(row.score_delta_pct)}`" class="ml-1.5 text-xs" x-text="`(${row.score_delta > 0 ? '+' : ''}${fmt1(row.score_delta)} vs ${meta.snapshot_dates_in_window?.slice(-2)[0] || '—'})`"></span>
+                          </div>
+                        </div>
+                        <div>
+                          <div class="label">HC streak</div>
+                          <div class="text-sm num font-mono mt-0.5" :style="row.hc_streak > 0 ? 'color: var(--up)' : ''" x-text="`${row.hc_streak || 0} days`"></div>
+                        </div>
+                        <div>
+                          <div class="label">Best rank across ETFs</div>
+                          <div class="text-sm num font-mono mt-0.5" x-text="`#${row.best_rank}`"></div>
+                        </div>
+                      </div>
+                      <div class="overflow-x-auto scrollbar">
+                        <table class="w-full text-xs">
+                          <thead style="color: var(--text-3)">
+                            <tr style="border-bottom: 1px solid var(--border)">
+                              <th class="text-left py-1.5 pr-3 label">ETF</th>
+                              <th class="text-left py-1.5 pr-3 label">Tier</th>
+                              <th class="text-right py-1.5 pr-3 label">Rank</th>
+                              <th class="text-right py-1.5 pr-3 label">7d Δ</th>
+                              <th class="text-right py-1.5 pr-3 label">Weight</th>
+                              <th class="text-right py-1.5 pr-3 label">Flow</th>
+                              <th class="text-right py-1.5 pr-3 label">Score</th>
+                              <th class="text-left py-1.5 label">Flags</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <template x-for="h in detailsFor(row.ticker)" :key="h.ETF_Ticker">
+                              <tr style="border-bottom: 1px solid rgba(255,255,255,0.03)">
+                                <td class="py-1.5 pr-3 font-medium font-mono" x-text="h.ETF_Ticker"></td>
+                                <td class="py-1.5 pr-3"><span class="chip" :style="tierChipStyle(h.tier)" x-text="h.tier"></span></td>
+                                <td class="py-1.5 pr-3 text-right num font-mono" x-text="`#${h.rank}`"></td>
+                                <td class="py-1.5 pr-3 text-right num font-mono" :style="`color: ${rankDeltaColor(h.rank_delta)}`" x-text="fmtRankDelta(h.rank_delta)"></td>
+                                <td class="py-1.5 pr-3 text-right num font-mono" style="color: var(--text-2)" x-text="fmtWeight(h.weight)"></td>
+                                <td class="py-1.5 pr-3 text-right num font-mono" :style="`color: ${flowColor(h.weight_flow)}`" x-text="fmtFlow(h.weight_flow)"></td>
+                                <td class="py-1.5 pr-3 text-right num font-mono" x-text="fmt1(h.score)"></td>
+                                <td class="py-1.5">
+                                  <span x-show="h.is_new" class="chip" style="background: rgba(96, 165, 250, 0.10); color: var(--blue); border: 1px solid rgba(96, 165, 250, 0.25)">NEW</span>
+                                </td>
+                              </tr>
+                            </template>
+                          </tbody>
+                        </table>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </template>
+            </table>
+          </div>
+
+        <!-- Pagination -->
+        <div class="px-3 py-2 flex items-center justify-between text-xs" style="border-top: 1px solid var(--border); color: var(--text-3)">
+          <div>
+            <span class="num font-mono" x-text="(page-1)*pageSize + 1"></span>–<span class="num font-mono" x-text="Math.min(page*pageSize, filtered.length)"></span>
+            of <span class="num font-mono" x-text="filtered.length"></span>
+          </div>
+          <div class="flex gap-1">
+            <button @click="page = Math.max(1, page-1)" :disabled="page === 1" class="px-2 py-1 border rounded disabled:opacity-30 hover:border-zinc-500" style="border-color: var(--border-2)">‹ prev</button>
+            <span class="px-2 py-1 num font-mono">page <span x-text="page"></span> / <span x-text="totalPages"></span></span>
+            <button @click="page = Math.min(totalPages, page+1)" :disabled="page === totalPages" class="px-2 py-1 border rounded disabled:opacity-30 hover:border-zinc-500" style="border-color: var(--border-2)">next ›</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════════ TAB 3: ETFs ════════════════════════════════════════════ -->
   <section x-show="activeTab === 'etfs'">
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-3">
       <!-- ETF picker -->
@@ -725,6 +997,7 @@ function app() {
     sortDialog: false,
     hoveredSlice: null,
     sortLevels: [{ key: 'leaderboard_rank', dir: 'asc' }],
+    pins: JSON.parse(localStorage.getItem('predator_pins') || '[]'),
     sortableCols: [
       { key: 'leaderboard_rank', label: '# (default rank)' },
       { key: 'ticker',           label: 'Ticker' },
@@ -796,6 +1069,7 @@ function app() {
     get tabs() {
       return [
         { id: 'leaderboard', label: 'leaderboard', count: this.leaderboard.length },
+        { id: 'watchlist',   label: 'watchlist',   count: this.pins.length },
         { id: 'etfs',        label: 'etfs',        count: this.meta.etfs?.length },
         { id: 'changes',     label: 'changes',     count: (this.changelog.entered_hc?.length || 0) + (this.changelog.exited_hc?.length || 0) + (this.changelog.new_entrants?.length || 0) },
       ];
@@ -830,6 +1104,38 @@ function app() {
     toggleFlag(f) { this.flag = (this.flag === f) ? '' : f; this.page = 1; },
     reset() { this.flag = ''; this.newOnly = false; this.velocityOnly = false; this.burstOnly = false; this.selectedTier = ''; this.selectedSector = ''; this.selectedCountry = ''; this.q = ''; this.page = 1; },
 
+    togglePin(t) {
+      const i = this.pins.indexOf(t);
+      if (i >= 0) this.pins.splice(i, 1);
+      else this.pins.push(t);
+      localStorage.setItem('predator_pins', JSON.stringify(this.pins));
+    },
+    isPinned(t) { return this.pins.includes(t); },
+
+    get watchlistDelta() {
+      const last = JSON.parse(localStorage.getItem('predator_pin_snapshot') || '{}');
+      const out = { entered_hc: [], exited_hc: [], new_burst: [], no_longer_burst: [] };
+      for (const t of this.pins) {
+        const row = this.leaderboard.find(r => r.ticker === t);
+        if (!row) continue;
+        const before = last[t] || {};
+        if (row.flag === 'HIGH_CONVICTION' && before.flag !== 'HIGH_CONVICTION') out.entered_hc.push(t);
+        if (before.flag === 'HIGH_CONVICTION' && row.flag !== 'HIGH_CONVICTION') out.exited_hc.push(t);
+        if (row.burst_30d && !before.burst_30d) out.new_burst.push(t);
+        if (before.burst_30d && !row.burst_30d) out.no_longer_burst.push(t);
+      }
+      return out;
+    },
+
+    snapshotPins() {
+      const snap = {};
+      for (const t of this.pins) {
+        const row = this.leaderboard.find(r => r.ticker === t);
+        if (row) snap[t] = { flag: row.flag, burst_30d: row.burst_30d };
+      }
+      localStorage.setItem('predator_pin_snapshot', JSON.stringify(snap));
+    },
+
     get sectorMax() {
       return Math.max(1, ...(this.flow?.by_sector || []).map(r => Math.abs(r.net_velocity)));
     },
@@ -840,6 +1146,7 @@ function app() {
     get filtered() {
       const q = this.q.trim().toLowerCase(), tier = this.selectedTier, sector = this.selectedSector, country = this.selectedCountry;
       let r = this.leaderboard;
+      if (this.activeTab === 'watchlist') r = r.filter(x => this.pins.includes(x.ticker));
       if (this.flag)         r = r.filter(x => x.flag === this.flag);
       if (this.newOnly)      r = r.filter(x => x.any_new);
       if (this.velocityOnly) r = r.filter(x => (x.velocity_score || 0) >= 25 && (x.etf_count || 0) >= 2 && !x.burst_30d);
