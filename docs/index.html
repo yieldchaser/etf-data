@@ -351,6 +351,8 @@
                 <!-- Expanded row -->
                 <tr x-show="open === row.ticker" x-transition.opacity style="background: #050505; border-bottom: 1px solid var(--border)">
                   <td colspan="12" class="px-4 py-4">
+                    <!-- Explainer line — auto-generated narrative from existing fields -->
+                    <div class="text-xs mb-3 px-3 py-2 rounded" style="background: rgba(34, 211, 238, 0.04); border: 1px solid rgba(34, 211, 238, 0.10); color: var(--text-2)" x-text="explainerFor(row)"></div>
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3 text-xs">
                       <div>
                         <div class="label">Company</div>
@@ -681,6 +683,8 @@
                   <!-- Expanded row -->
                   <tr x-show="open === row.ticker" x-transition.opacity style="background: #050505; border-bottom: 1px solid var(--border)">
                     <td colspan="12" class="px-4 py-4">
+                      <!-- Explainer line — auto-generated narrative from existing fields -->
+                      <div class="text-xs mb-3 px-3 py-2 rounded" style="background: rgba(34, 211, 238, 0.04); border: 1px solid rgba(34, 211, 238, 0.10); color: var(--text-2)" x-text="explainerFor(row)"></div>
                       <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3 text-xs">
                         <div>
                           <div class="label">Company</div>
@@ -1552,6 +1556,63 @@ function app() {
       return ['#22d3ee','#a5b4fc','#c084fc','#fcd34d','#5eead4','#fb923c','#f472b6',
               '#60a5fa','#34d399','#a78bfa','#f59e0b','#06b6d4','#84cc16','#ec4899',
               '#0ea5e9','#10b981','#facc15','#8b5cf6','#14b8a6','#f97316'];
+    },
+
+    // ── Auto-generated explainer line (one-sentence narrative for a row) ─
+    explainerFor(row) {
+      if (!row) return '';
+      const parts = [];
+
+      // Holdings + tier breadth
+      const tb = row.tier_breadth || 0;
+      const ec = row.etf_count || 0;
+      if (ec) {
+        if (tb >= 2) parts.push(`Held by ${ec} ETFs across ${tb} tier${tb !== 1 ? 's' : ''}`);
+        else parts.push(`Held by ${ec} ETF${ec !== 1 ? 's' : ''}`);
+      }
+
+      // Score delta — pick the longest period available, prefer 30d
+      const sd = row.score_deltas_by_period || {};
+      let chosen = null;
+      for (const p of ['30', '14', '7', 'YTD']) {
+        if (sd[p] != null && isFinite(sd[p])) { chosen = { p, v: sd[p] }; break; }
+      }
+      if (chosen) {
+        const pct = (chosen.v * 100);
+        const dir = pct > 0 ? '+' : '';
+        const label = chosen.p === 'YTD' ? 'YTD' : `${chosen.p}d`;
+        parts.push(`Score ${dir}${pct.toFixed(0)}% ${label}`);
+      }
+
+      // BURST or VELO state
+      if (row.burst_30d) {
+        const peak = row.global_rank_peak_30d || 0;
+        const best = row.global_rank_best_30d;
+        parts.push(`BURST +${peak} ranks (best #${best})`);
+      } else if ((row.velocity_score || 0) >= 25 && ec >= 2) {
+        parts.push(`Velocity ${(row.velocity_score >= 0 ? '+' : '') + row.velocity_score.toFixed(0)}`);
+      }
+
+      // HC streak
+      if (row.flag === 'HIGH_CONVICTION' && (row.hc_streak || 0) >= 3) {
+        parts.push(`HC streak ${row.hc_streak}d`);
+      }
+
+      // Quality adoption / defection (recent fundamentals signal)
+      if (row.quality_adopted_30d) parts.push('Quality+ in 30d');
+      else if (row.quality_defected_30d) parts.push('Quality− in 30d');
+
+      // Concentration warning
+      if ((row.concentration_score || 0) >= 80) {
+        parts.push(`${row.concentration_score}% from one ETF`);
+      }
+
+      // Stealth or divergence
+      if (row.stealth_accumulation) parts.push('Stealth accumulation');
+      if (row.conviction_divergence === -1) parts.push('Crowded out');
+      else if (row.conviction_divergence === 1) parts.push('Relative strength');
+
+      return parts.length ? parts.join(' · ') + '.' : '—';
     },
 
     // Formatting
