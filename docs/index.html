@@ -186,7 +186,7 @@
           <button @click="selectedCountry = ''; page = 1" class="ml-1 opacity-60 hover:opacity-100">✕</button>
         </span>
       </div>
-      <input x-model="q" type="search" placeholder="search ticker or company…"
+      <input x-model.debounce.300ms="q" type="search" placeholder="search ticker or company…"
              class="flex-1 bg-transparent border rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500/40"
              style="border-color: var(--border-2); color: var(--text)">
       <div class="text-xs num font-mono self-center whitespace-nowrap pr-1" style="color: var(--text-3)">
@@ -493,7 +493,7 @@
           </select>
           <button @click="reset()" class="chip border px-2 py-1 hover:border-zinc-500" style="border-color: var(--border-2); color: var(--text-2)">clear</button>
         </div>
-        <input x-model="q" type="search" placeholder="search ticker or company…"
+        <input x-model.debounce.300ms="q" type="search" placeholder="search ticker or company…"
                class="flex-1 bg-transparent border rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500/40"
                style="border-color: var(--border-2); color: var(--text)">
         <div class="text-xs num font-mono self-center whitespace-nowrap pr-1" style="color: var(--text-3)">

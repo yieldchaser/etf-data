@@ -306,11 +306,17 @@ function btApp() {
     },
 
     chartReturnAt(cumReturns, idx) {
-      if (!cumReturns || !this.chartDates[idx]) return '—';
+      if (!cumReturns || !cumReturns.length || !this.chartDates[idx]) return '—';
       const date = this.chartDates[idx];
-      const pt = cumReturns.slice().reverse().find(p => p.date <= date);
-      if (!pt) return '—';
-      const v = pt.total_return * 100;
+      // Binary search: find last entry with date <= target
+      let lo = 0, hi = cumReturns.length - 1, best = -1;
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        if (cumReturns[mid].date <= date) { best = mid; lo = mid + 1; }
+        else { hi = mid - 1; }
+      }
+      if (best < 0) return '—';
+      const v = cumReturns[best].total_return * 100;
       return (v >= 0 ? '+' : '') + v.toFixed(1) + '%';
     },
 

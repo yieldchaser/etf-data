@@ -270,7 +270,9 @@ function simApp() {
         const mu = drift / 100 / 252;
         const sigma = manualVol / 100;
         const n = Math.max(21, days);
-        dailyRets = Array.from({ length: n }, (_, i) => mu + sigma * Math.sin(i * 0.31)); // deterministic "typical" path
+        // NOTE: This generates a deterministic periodic path for demonstration purposes only.
+        // It is NOT a realistic stochastic simulation (no randomness / mean-reversion).
+        dailyRets = Array.from({ length: n }, (_, i) => mu + sigma * Math.sin(i * 0.31));
       } else {
         const raw = this.underlyings[underlying];
         const slice = raw.slice(-days);
