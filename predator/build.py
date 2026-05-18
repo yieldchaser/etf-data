@@ -140,7 +140,8 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         grouped = latest_df.groupby("ticker")["score"]
         totals = grouped.sum()
         maxes  = grouped.max()
-        top_share = (maxes / totals).fillna(1.0)
+        # Guard against division by zero (tickers with 0 total score)
+        top_share = (maxes / totals.replace(0, float('nan'))).fillna(1.0).clip(0, 1.0)
         return pd.DataFrame({
             "ticker": totals.index,
             "top_etf_share": top_share.values.round(3),
@@ -302,9 +303,17 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         ).round(2)
         return leaderboard
 
-    leaderboard = _attach_velocity(leaderboard, deltas_by_period, historical)
-    print(f"  velocity_score: range [{leaderboard['velocity_score'].min():.1f}, {leaderboard['velocity_score'].max():.1f}]")
-    burst_count = int(leaderboard['burst_30d'].sum())
+    if historical:
+        leaderboard = _attach_velocity(leaderboard, deltas_by_period, historical)
+        print(f"  velocity_score: range [{leaderboard['velocity_score'].min():.1f}, {leaderboard['velocity_score'].max():.1f}]")
+        burst_count = int(leaderboard['burst_30d'].sum())
+    else:
+        print("  WARNING: No historical data — skipping velocity/burst computation")
+        for col in ["avg_rank_delta_7d", "avg_weight_flow_7d", "avg_rank_delta_30d",
+                    "global_rank_delta_30d", "global_rank_peak_30d", "global_rank_best_30d",
+                    "etf_count_30d_ago", "etf_count_delta_30d", "burst_30d", "velocity_score"]:
+            leaderboard[col] = 0 if col != "burst_30d" else False
+        burst_count = 0
     print(f"  burst_30d:      {burst_count} tickers with >=40 peak rank improvement")
 
     # ── Attach metadata (sector, industry, country) for flow analysis ─────────

@@ -282,7 +282,7 @@
                   </td>
                   <td class="px-3 py-2 hidden sm:table-cell truncate max-w-[260px]" :title="row.company" style="color: var(--text-2)" x-text="row.company"></td>
                   <td class="px-3 py-2 text-right num font-mono font-medium" 
-                      :x-tooltip="`'Score: ${fmt1(row.final_score)}<br>Concentration: ${row.concentration_score || 0}% from top ETF<br>' + (row.concentration_score < 40 ? '✓ Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : '⚠ Highly concentrated — fragile if top ETF rebalances')`"
+                      :x-tooltip="`'Score: ${fmt1(row.final_score)}<br>Concentration: ${row.concentration_score != null ? row.concentration_score : '—'}% from top ETF<br>' + (row.concentration_score == null ? 'No data' : row.concentration_score < 40 ? '✓ Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : '⚠ Highly concentrated — fragile if top ETF rebalances')`"
                       x-text="fmt1(row.final_score)"></td>
                   <td class="px-3 py-2 text-right num font-mono hidden lg:table-cell" :style="`color: ${flowColor(activeDeltaValue(row))}`" x-text="fmtPct(activeDeltaValue(row))"></td>
                   <td class="px-3 py-2 text-right num font-mono hidden lg:table-cell"
@@ -554,7 +554,7 @@
                     </td>
                     <td class="px-3 py-2 hidden sm:table-cell truncate max-w-[260px]" :title="row.company" style="color: var(--text-2)" x-text="row.company"></td>
                     <td class="px-3 py-2 text-right num font-mono font-medium"
-                        :x-tooltip="`'Score: ${fmt1(row.final_score)}<br>Concentration: ${row.concentration_score || 0}% from top ETF<br>' + (row.concentration_score < 40 ? '✓ Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : '⚠ Highly concentrated — fragile if top ETF rebalances')`"
+                        :x-tooltip="`'Score: ${fmt1(row.final_score)}<br>Concentration: ${row.concentration_score != null ? row.concentration_score : '—'}% from top ETF<br>' + (row.concentration_score == null ? 'No data' : row.concentration_score < 40 ? '✓ Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : '⚠ Highly concentrated — fragile if top ETF rebalances')`"
                         x-text="fmt1(row.final_score)"></td>
                     <td class="px-3 py-2 text-right num font-mono hidden lg:table-cell" :style="`color: ${flowColor(activeDeltaValue(row))}`" x-text="fmtPct(activeDeltaValue(row))"></td>
                     <td class="px-3 py-2 text-right num font-mono hidden lg:table-cell"
@@ -924,11 +924,11 @@
             <span class="font-mono flex-1 truncate" x-text="r.label"></span>
             <div class="flex-1 h-1.5 rounded" style="background: rgba(255,255,255,0.05)">
               <div class="h-full rounded"
-                   :style="`width: ${Math.min(100, Math.abs(r.net_velocity) / sectorMax * 100)}%; background: ${r.net_velocity >= 0 ? 'var(--up)' : 'var(--down)'}`"></div>
+                   :style="`width: ${Math.min(100, Math.abs(r.net_velocity||0) / sectorMax * 100)}%; background: ${(r.net_velocity||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"></div>
             </div>
             <span class="num font-mono w-20 text-right"
-                  :style="`color: ${r.net_velocity >= 0 ? 'var(--up)' : 'var(--down)'}`"
-                  x-text="`${r.net_velocity >= 0 ? '+' : ''}${r.net_velocity.toFixed(0)}`"></span>
+                  :style="`color: ${(r.net_velocity||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
+                  x-text="`${(r.net_velocity||0) >= 0 ? '+' : ''}${(r.net_velocity||0).toFixed(0)}`"></span>
             <span class="num font-mono w-12 text-right" style="color: var(--text-3)"
                   x-text="`${r.names}n`"></span>
           </div>
@@ -949,11 +949,11 @@
             <span class="font-mono flex-1 truncate" x-text="r.label"></span>
             <div class="flex-1 h-1.5 rounded" style="background: rgba(255,255,255,0.05)">
               <div class="h-full rounded"
-                   :style="`width: ${Math.min(100, Math.abs(r.net_velocity) / countryMax * 100)}%; background: ${r.net_velocity >= 0 ? 'var(--up)' : 'var(--down)'}`"></div>
+                   :style="`width: ${Math.min(100, Math.abs(r.net_velocity||0) / countryMax * 100)}%; background: ${(r.net_velocity||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"></div>
             </div>
             <span class="num font-mono w-20 text-right"
-                  :style="`color: ${r.net_velocity >= 0 ? 'var(--up)' : 'var(--down)'}`"
-                  x-text="`${r.net_velocity >= 0 ? '+' : ''}${r.net_velocity.toFixed(0)}`"></span>
+                  :style="`color: ${(r.net_velocity||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
+                  x-text="`${(r.net_velocity||0) >= 0 ? '+' : ''}${(r.net_velocity||0).toFixed(0)}`"></span>
             <span class="num font-mono w-12 text-right" style="color: var(--text-3)"
                   x-text="`${r.names}n`"></span>
           </div>
@@ -1015,7 +1015,7 @@ function app() {
     sortDialog: false,
     hoveredSlice: null,
     sortLevels: [{ key: 'leaderboard_rank', dir: 'asc' }],
-    pins: JSON.parse(localStorage.getItem('predator_pins') || '[]'),
+    pins: (() => { try { return JSON.parse(localStorage.getItem('predator_pins') || '[]'); } catch { return []; } })(),
     sortableCols: [
       { key: 'leaderboard_rank', label: '# (default rank)' },
       { key: 'ticker',           label: 'Ticker' },
@@ -1156,10 +1156,10 @@ function app() {
     },
 
     get sectorMax() {
-      return Math.max(1, ...(this.flow?.by_sector || []).map(r => Math.abs(r.net_velocity)));
+      return Math.max(1, ...(this.flow?.by_sector || []).map(r => Math.abs(r.net_velocity || 0)));
     },
     get countryMax() {
-      return Math.max(1, ...(this.flow?.by_country || []).map(r => Math.abs(r.net_velocity)));
+      return Math.max(1, ...(this.flow?.by_country || []).map(r => Math.abs(r.net_velocity || 0)));
     },
 
     get filtered() {
