@@ -172,6 +172,14 @@ The platform now provides **prescriptive** intelligence beyond descriptive analy
 - **Watchlist (localStorage):** Pin tickers with ★, view them in a dedicated WATCHLIST tab. "Since last visit" changelog shows HC entries/exits and new bursts among pinned names.
 - **Concentration Risk Score:** Per-ticker metric showing what fraction of the score comes from a single ETF. Tooltip warns when conviction is fragile (>70% from one ETF). Sortable column + ≤80% filter chip.
 - **Strategy Backtest (`/backtest.html`):** Quantified performance of 5 strategies (HC Entry, BURST Trigger, Top-10 Score, Top-10 Velocity, SPX Baseline) with cumulative returns chart, stats table, and velocity-vs-return scatter plot with R².
+- **Signal Timeline (`stock.html`):** Per-ticker Gantt-style chart showing HC/SPEC/VELO/BURST state history over 90 days with rank line overlay. Shows when a stock entered/exited each state and how long it stayed. Duration stats (e.g., "HC: 34d · VELO: 12d").
+- **Momentum Gauge:** Real-time indicator (↗ strengthening / → stable / ↘ weakening) based on score streak direction.
+- **New Derived Signals:**
+  - `momentum_regime` — accelerating / rising / stable / weakening / declining
+  - `conviction_divergence` — detects when score rises but rank falls (being crowded out)
+  - `stealth_accumulation` — weight growing in 3+ ETFs without rank improvement
+- **Chart Upgrades:** Y-axis rank labels, current-rank pill badges, removed drop-shadow rendering bug, better tier color contrast, thicker lines with glow effect.
+- **Performance Fixes:** Debounced search (300ms), binary search in backtest hover, eliminated O(n²) array copies in holdings table.
 
 ### Architecture
 
