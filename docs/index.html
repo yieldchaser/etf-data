@@ -176,6 +176,15 @@
           </template>
         </select>
         <button @click="reset()" class="chip border px-2 py-1 hover:border-zinc-500" style="border-color: var(--border-2); color: var(--text-2)">clear</button>
+        <!-- Active filter chips (sector/country) -->
+        <span x-show="selectedSector" class="chip border px-2 py-1" style="border-color: rgba(34,211,238,0.3); color: var(--cyan); background: rgba(34,211,238,0.06)">
+          <span x-text="selectedSector"></span>
+          <button @click="selectedSector = ''; page = 1" class="ml-1 opacity-60 hover:opacity-100">✕</button>
+        </span>
+        <span x-show="selectedCountry" class="chip border px-2 py-1" style="border-color: rgba(34,211,238,0.3); color: var(--cyan); background: rgba(34,211,238,0.06)">
+          <span x-text="selectedCountry"></span>
+          <button @click="selectedCountry = ''; page = 1" class="ml-1 opacity-60 hover:opacity-100">✕</button>
+        </span>
       </div>
       <input x-model="q" type="search" placeholder="search ticker or company…"
              class="flex-1 bg-transparent border rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500/40"
@@ -802,8 +811,10 @@
         </div>
         <div x-show="!changelog.entered_hc?.length" class="px-3 py-6 text-center text-xs" style="color: var(--text-3)">No entries today</div>
         <template x-for="r in changelog.entered_hc" :key="r.ticker">
-          <div class="px-3 py-2 flex items-center justify-between text-xs hover:bg-white/5 transition" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
+          <div class="px-3 py-2 flex items-center justify-between text-xs hover:bg-white/5 transition"
+               :style="`border-bottom: 1px solid rgba(255,255,255,0.03); ${isPinned(r.ticker) ? 'background: rgba(34,211,238,0.04); border-left: 2px solid var(--cyan);' : ''}`">
             <div class="flex items-center gap-3">
+              <span x-show="isPinned(r.ticker)" style="color: var(--cyan)" class="text-xs">★</span>
               <span class="font-mono font-medium" x-text="r.ticker"></span>
               <span style="color: var(--text-2)" class="truncate max-w-[260px]" x-text="r.company"></span>
             </div>
@@ -823,8 +834,10 @@
         </div>
         <div x-show="!changelog.exited_hc?.length" class="px-3 py-6 text-center text-xs" style="color: var(--text-3)">No exits today</div>
         <template x-for="r in changelog.exited_hc" :key="r.ticker">
-          <div class="px-3 py-2 flex items-center justify-between text-xs hover:bg-white/5 transition" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
+          <div class="px-3 py-2 flex items-center justify-between text-xs hover:bg-white/5 transition"
+               :style="`border-bottom: 1px solid rgba(255,255,255,0.03); ${isPinned(r.ticker) ? 'background: rgba(34,211,238,0.04); border-left: 2px solid var(--cyan);' : ''}`">
             <div class="flex items-center gap-3">
+              <span x-show="isPinned(r.ticker)" style="color: var(--cyan)" class="text-xs">★</span>
               <span class="font-mono font-medium" x-text="r.ticker"></span>
               <span style="color: var(--text-2)" class="truncate max-w-[260px]" x-text="r.company"></span>
             </div>

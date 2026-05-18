@@ -142,6 +142,13 @@
     <!-- B6: Status / HC banner -->
     <div class="rounded-lg border mb-5 px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs"
          style="background: var(--surface); border-color: var(--border)">
+      <!-- Sector / Industry / Country -->
+      <div x-show="leaderboardRow?.sector && leaderboardRow.sector !== 'Unknown'" class="flex items-center gap-2">
+        <span style="color: var(--text-3)">Sector:</span>
+        <span class="font-medium" style="color: var(--text-2)" x-text="leaderboardRow?.sector"></span>
+        <span x-show="leaderboardRow?.industry && leaderboardRow.industry !== 'Unknown'" style="color: var(--text-3)" x-text="'· ' + leaderboardRow?.industry"></span>
+        <span x-show="leaderboardRow?.country && leaderboardRow.country !== 'Unknown'" class="chip" style="background: rgba(255,255,255,0.04); color: var(--text-3); border: 1px solid rgba(255,255,255,0.08)" x-text="leaderboardRow?.country"></span>
+      </div>
       <!-- Flag badge -->
       <div x-show="leaderboardRow?.flag === 'HIGH_CONVICTION'" class="flex items-center gap-2">
         <span class="chip" style="background: rgba(52,211,153,0.12); color: var(--up); border: 1px solid rgba(52,211,153,0.3)">HC</span>
@@ -253,11 +260,16 @@
              lbcx = (lbci / (lbRankSeries.length - 1)) * rect.width;
            "
            @mouseleave="lbci = null; lbcx = null">
-        <svg viewBox="0 0 1000 220" class="w-full" style="height: 200px; overflow: visible">
-          <!-- Grid lines -->
-          <template x-for="y in [0.25, 0.5, 0.75]" :key="y">
-            <line :x1="0" :x2="1000" :y1="y * 200 + 10" :y2="y * 200 + 10"
-                  stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+        <svg viewBox="0 0 1060 230" class="w-full" style="height: 210px">
+          <!-- Y-axis rank labels -->
+          <template x-for="label in lbYLabels" :key="label.rank">
+            <g>
+              <line x1="50" x2="1010" :y1="label.y" :y2="label.y"
+                    stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+              <text x="44" :y="label.y + 3" text-anchor="end"
+                    style="font-family: ui-monospace; font-size: 9px; fill: var(--text-3)"
+                    x-text="'#' + label.rank"></text>
+            </g>
           </template>
           <!-- Gradient fill beneath the rank line -->
           <defs>
@@ -267,11 +279,20 @@
             </linearGradient>
           </defs>
           <!-- Area fill -->
-          <path :d="lbRankSeries.length ? (lbRankPath + ` L${lbRankSeries[lbRankSeries.length-1].x.toFixed(1)},210 L0,210 Z`) : ''"
+          <path :d="lbRankSeries.length ? (lbRankPath + ` L${lbRankSeries[lbRankSeries.length-1].x.toFixed(1)},210 L${lbRankSeries[0].x.toFixed(1)},210 Z`) : ''"
                 fill="url(#lbGrad)" stroke="none"/>
           <!-- Rank line -->
-          <path :d="lbRankPath" stroke="#22d3ee" stroke-width="2" fill="none"
+          <path :d="lbRankPath" stroke="#22d3ee" stroke-width="2.5" fill="none"
                 stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- Best rank marker -->
+          <template x-if="lbBestWorst.best">
+            <g>
+              <circle :cx="lbBestWorst.best.x" :cy="lbBestWorst.best.y" r="4" fill="var(--up)" stroke="#000" stroke-width="1"/>
+              <text :x="lbBestWorst.best.x" :y="lbBestWorst.best.y - 8" text-anchor="middle"
+                    style="font-family: ui-monospace; font-size: 8px; fill: var(--up)"
+                    x-text="'Best #' + lbBestWorst.best.rank"></text>
+            </g>
+          </template>
           <!-- Crosshair dot -->
           <template x-if="lbci !== null">
             <circle :cx="lbRankSeries[lbci].x.toFixed(1)" :cy="lbRankSeries[lbci].y.toFixed(1)"
@@ -279,10 +300,16 @@
           </template>
           <!-- Crosshair line -->
           <template x-if="lbci !== null">
-            <line class="crosshair-line"
+            <line stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3 3"
                   :x1="lbRankSeries[lbci].x.toFixed(1)" y1="0"
                   :x2="lbRankSeries[lbci].x.toFixed(1)" y2="220"/>
           </template>
+          <!-- X-axis labels -->
+          <g style="font-family: ui-monospace; font-size: 9px" fill="var(--text-3)">
+            <text x="50" y="225" text-anchor="start" x-text="lbRankSeries[0]?.d || ''"></text>
+            <text x="530" y="225" text-anchor="middle" x-text="lbRankSeries[Math.floor(lbRankSeries.length/2)]?.d || ''"></text>
+            <text x="1010" y="225" text-anchor="end" x-text="lbRankSeries[lbRankSeries.length-1]?.d || ''"></text>
+          </g>
         </svg>
         <!-- Crosshair tooltip -->
         <div x-show="lbci !== null" class="chart-tooltip"
@@ -290,12 +317,6 @@
           <div class="font-mono text-[10px] mb-1" style="color: var(--text-3)" x-text="lbRankSeries[lbci]?.d || ''"></div>
           <div class="font-mono text-xs" style="color: #22d3ee" x-text="'Global Rank #' + lbRankSeries[lbci]?.rank"></div>
           <div class="text-[10px] mt-0.5" style="color: var(--text-3)" x-text="'out of ' + lbRankSeries[lbci]?.total + ' tracked'"></div>
-        </div>
-        <!-- X-axis date labels -->
-        <div class="flex justify-between text-[10px] font-mono mt-1" style="color: var(--text-3)">
-          <span x-text="lbRankSeries[0]?.d?.slice(5) || ''"></span>
-          <span x-text="lbRankSeries[Math.floor(lbRankSeries.length/2)]?.d?.slice(5) || ''"></span>
-          <span x-text="lbRankSeries[lbRankSeries.length-1]?.d?.slice(5) || ''"></span>
         </div>
       </div>
     </div>
@@ -564,7 +585,7 @@ function stockApp() {
             this.lbRankSeries = filtered.map((p, i) => ({
               d: p.d, rank: p.rank, total: p.total,
               y: ((p.rank - 1) / Math.max(1, maxRank - 1)) * 200 + 10,
-              x: (i / Math.max(1, n - 1)) * 1000,
+              x: 50 + (i / Math.max(1, n - 1)) * 960,
             }));
           }
         }
@@ -742,6 +763,31 @@ function stockApp() {
 
     get lbCurrentRank() {
       return this.lbRankSeries.length ? this.lbRankSeries[this.lbRankSeries.length - 1].rank : null;
+    },
+
+    // Y-axis labels for the global rank chart
+    get lbYLabels() {
+      if (!this.lbRankSeries.length) return [];
+      const ranks = this.lbRankSeries.map(p => p.rank);
+      const minR = Math.min(...ranks), maxR = Math.max(...ranks);
+      const range = maxR - minR || 1;
+      const step = Math.max(1, Math.round(range / 4));
+      const labels = [];
+      for (let r = minR; r <= maxR; r += step) {
+        const y = ((r - 1) / Math.max(1, maxR - 1)) * 200 + 10;
+        labels.push({ rank: r, y });
+      }
+      return labels;
+    },
+
+    // Best/worst rank markers for the global rank chart
+    get lbBestWorst() {
+      if (!this.lbRankSeries.length) return { best: null };
+      let best = this.lbRankSeries[0];
+      for (const p of this.lbRankSeries) {
+        if (p.rank < best.rank) best = p;
+      }
+      return { best };
     },
 
     // Velocity helpers (mirrored from index.html)
