@@ -300,11 +300,11 @@
       </div>
     </div>
 
-    <!-- RANK HISTORY CHART (B2 — per-ETF rank lines) -->
+    <!-- RANK HISTORY CHART (per-ETF rank lines — upgraded) -->
     <div class="rounded-lg border mb-5" style="background: var(--surface); border-color: var(--border)">
       <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
         <div class="label-cyan label">Rank history — across ETFs holding <span class="font-mono" x-text="ticker"></span></div>
-        <div class="text-xs" style="color: var(--text-3)">rank 1 = top of ETF · line up = improving</div>
+        <div class="text-xs" style="color: var(--text-3)">rank 1 = top · line up = improving</div>
       </div>
       <div x-show="Object.keys(holdingsHistory).length === 0" class="py-8 text-center text-xs" style="color: var(--text-3)">No holdings history available</div>
       <div x-show="Object.keys(holdingsHistory).length > 0"
@@ -320,77 +320,90 @@
              rcx = (rci / (n - 1)) * rect.width;
            "
            @mouseleave="rci = null; rcx = null">
-        <svg viewBox="0 0 1000 220" class="w-full" style="height: 220px; overflow: visible">
-          <!-- Y-axis grid: rank lines at 25% intervals -->
-          <template x-for="y in [0.25, 0.5, 0.75]" :key="y">
-            <line :x1="0" :x2="960" :y1="y * 200 + 10" :y2="y * 200 + 10"
-                  stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
-          </template>
-          <!-- One line per ETF -->
-          <template x-for="line in rankLines" :key="line.etf">
+        <svg viewBox="0 0 1060 250" class="w-full" style="height: 250px">
+          <!-- Y-axis labels (rank numbers) -->
+          <template x-for="label in rankYLabels" :key="label.rank">
             <g>
-              <path :d="line.path" :stroke="line.color" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
-                    :opacity="rhover && rhover !== line.etf ? 0.2 : 1"
-                    @mouseenter="rhover = line.etf" @mouseleave="rhover = null"
-                    style="transition: opacity 0.15s; filter: drop-shadow(0 0 3px currentColor)"/>
-              <!-- ETF label at the end -->
-              <text :x="Math.min(line.endX + 6, 990)" :y="line.endY + 4"
-                    :fill="line.color" style="font-family: ui-monospace; font-size: 9px"
-                    x-text="line.etf"></text>
+              <line x1="50" x2="1010" :y1="label.y" :y2="label.y"
+                    stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+              <text x="44" :y="label.y + 3" text-anchor="end"
+                    style="font-family: ui-monospace; font-size: 9px; fill: var(--text-3)"
+                    x-text="'#' + label.rank"></text>
             </g>
           </template>
-          <!-- Crosshair dots — one per ETF, shown only if ETF has data on the hovered date -->
+          <!-- One line per ETF — NO drop-shadow (causes rendering bugs) -->
+          <template x-for="line in rankLines" :key="line.etf">
+            <g>
+              <!-- Thicker background stroke for glow effect -->
+              <path :d="line.path" :stroke="line.color" stroke-width="4" fill="none"
+                    stroke-linecap="round" stroke-linejoin="round" opacity="0.15"/>
+              <!-- Main line -->
+              <path :d="line.path" :stroke="line.color" stroke-width="2.5" fill="none"
+                    stroke-linecap="round" stroke-linejoin="round"
+                    :opacity="rhover && rhover !== line.etf ? 0.15 : 1"
+                    @mouseenter="rhover = line.etf" @mouseleave="rhover = null"
+                    style="transition: opacity 0.2s"/>
+              <!-- Current rank pill at end of line -->
+              <rect :x="line.endX + 4" :y="line.endY - 7" width="32" height="14" rx="3"
+                    :fill="line.color" fill-opacity="0.15" :stroke="line.color" stroke-opacity="0.4" stroke-width="0.5"/>
+              <text :x="line.endX + 20" :y="line.endY + 3" text-anchor="middle"
+                    :fill="line.color" style="font-family: ui-monospace; font-size: 9px; font-weight: 600"
+                    x-text="'#' + line.series[line.series.length-1]?.r"></text>
+            </g>
+          </template>
+          <!-- Crosshair dots -->
           <template x-if="rci !== null">
             <g>
               <template x-for="line in rankLines" :key="line.etf">
                 <template x-for="pt in [line.series.find(p => p.d === rankSharedDates[rci])]" :key="pt?.d">
                   <circle x-show="pt"
-                          :cx="(rci / Math.max(1, rankSharedDates.length - 1)) * 1000"
-                          :cy="pt?.y" r="3" :fill="line.color" stroke="#000" stroke-width="1.5"/>
+                          :cx="pt?.x" :cy="pt?.y" r="4"
+                          :fill="line.color" stroke="#000" stroke-width="2"/>
                 </template>
               </template>
             </g>
           </template>
           <!-- Crosshair vertical -->
           <template x-if="rci !== null">
-            <line class="crosshair-line"
-                  :x1="(rci / Math.max(1, rankSharedDates.length - 1)) * 1000"
-                  y1="0"
-                  :x2="(rci / Math.max(1, rankSharedDates.length - 1)) * 1000"
+            <line stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3 3"
+                  :x1="(rci / Math.max(1, rankSharedDates.length - 1)) * 960 + 50"
+                  y1="10"
+                  :x2="(rci / Math.max(1, rankSharedDates.length - 1)) * 960 + 50"
                   y2="220"/>
           </template>
           <!-- X-axis date labels -->
           <template x-if="rankSharedDates.length >= 2">
             <g style="font-family: ui-monospace; font-size: 9px" fill="var(--text-3)">
-              <text x="0"    y="232" text-anchor="start"  x-text="rankSharedDates[0]"></text>
-              <text x="500"  y="232" text-anchor="middle" x-text="rankSharedDates[Math.floor(rankSharedDates.length / 2)]"></text>
-              <text x="1000" y="232" text-anchor="end"   x-text="rankSharedDates[rankSharedDates.length - 1]"></text>
+              <text x="50"   y="242" text-anchor="start"  x-text="rankSharedDates[0]"></text>
+              <text x="530"  y="242" text-anchor="middle" x-text="rankSharedDates[Math.floor(rankSharedDates.length / 2)]"></text>
+              <text x="1010" y="242" text-anchor="end"    x-text="rankSharedDates[rankSharedDates.length - 1]"></text>
             </g>
           </template>
         </svg>
-                <!-- Hover tooltip: shared date + per-ETF rank or dash -->
-        <div x-show="rci !== null" class="chart-tooltip" :style="`top: 4px; left: ${Math.min((rcx || 0) + 8, 300)}px`">
+        <!-- Hover tooltip -->
+        <div x-show="rci !== null" class="chart-tooltip" :style="`top: 4px; left: ${Math.min((rcx || 0) + 12, 320)}px`">
           <div class="font-mono text-[10px] mb-1" style="color: var(--text-3)"
                x-text="rankSharedDates[rci] || ''"></div>
           <template x-for="line in rankLines" :key="line.etf">
             <div class="flex items-center gap-2 text-[10px]">
-              <span class="font-mono" :style="`color: ${line.color}`" x-text="line.etf"></span>
-              <span class="num font-mono" style="color: var(--text-2)"
+              <span class="w-2 h-2 rounded-sm" :style="`background: ${line.color}`"></span>
+              <span class="font-mono w-10" :style="`color: ${line.color}`" x-text="line.etf"></span>
+              <span class="num font-mono" style="color: var(--text)"
                     x-text="(() => { const p = line.series.find(p => p.d === rankSharedDates[rci]); return p ? '#' + p.r : '\u2014'; })()"></span>
             </div>
           </template>
         </div>
-<!-- Legend row -->
-        <div class="flex flex-wrap gap-3 mt-2 text-[10px]" style="color: var(--text-2)">
+        <!-- Legend row -->
+        <div class="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-[10px]" style="color: var(--text-2)">
           <template x-for="line in rankLines" :key="line.etf">
-            <div class="flex items-center gap-1.5"
+            <div class="flex items-center gap-1.5 cursor-pointer"
                  @mouseenter="rhover = line.etf" @mouseleave="rhover = null"
                  :style="rhover === line.etf ? 'color: var(--text)' : ''">
-              <span class="inline-block w-6 h-0.5 rounded" :style="`background: ${line.color}`"></span>
-              <span class="font-mono" x-text="line.etf"></span>
-              <span style="color: var(--text-3)" x-text="'(' + line.tier + ')'"></span>
-              <span x-show="line.flat !== null" class="text-[10px]" style="color: var(--text-3)"
-                    x-text="`(flat at #${line.flat})`"></span>
+              <span class="inline-block w-5 h-1 rounded" :style="`background: ${line.color}`"></span>
+              <span class="font-mono font-medium" x-text="line.etf"></span>
+              <span style="color: var(--text-3)" x-text="line.tier"></span>
+              <span x-show="line.flat !== null" style="color: var(--text-3)"
+                    x-text="`(flat #${line.flat})`"></span>
             </div>
           </template>
         </div>
@@ -642,7 +655,7 @@ function stockApp() {
       const allDates = Array.from(dateSet).sort();
       if (allDates.length < 2) return [];
       const dateToX = {};
-      allDates.forEach((d, i) => { dateToX[d] = (i / (allDates.length - 1)) * 1000; });
+      allDates.forEach((d, i) => { dateToX[d] = 50 + (i / (allDates.length - 1)) * 960; });
 
       // 2. Y scale from global rank range across all ETFs
       const allRanks = Object.values(hh).flat().map(p => p.r).filter(Boolean);
@@ -652,7 +665,7 @@ function stockApp() {
       const observedRange = maxRank - minRank;
       const visualRange = Math.max(observedRange + 2, 4);  // +2 padding, min 4
       const yRange = visualRange;
-      const yTop = 10, yBot = 210;
+      const yTop = 15, yBot = 215;
       const rankToY = r => yTop + ((r - minRank) / yRange) * (yBot - yTop);
 
       // 3. Build one polyline per ETF, vertices on the shared axis
@@ -682,8 +695,13 @@ function stockApp() {
           flat,
         });
       }
-      // Attach shared axis to first line for template access
-      if (lines.length) lines[0].sharedDates = allDates;
+      // Attach shared axis and scale info to first line for template access
+      if (lines.length) {
+        lines[0].sharedDates = allDates;
+        lines[0]._minRank = minRank;
+        lines[0]._maxRank = maxRank;
+        lines[0]._yRange = yRange;
+      }
       return lines;
     },
 
@@ -691,8 +709,29 @@ function stockApp() {
       return this.rankLines[0]?.sharedDates || [];
     },
 
+    // Y-axis labels for the rank chart
+    get rankYLabels() {
+      if (!this.rankLines.length) return [];
+      const minRank = this.rankLines[0]._minRank;
+      const maxRank = this.rankLines[0]._maxRank;
+      const yRange = this.rankLines[0]._yRange;
+      const yTop = 15, yBot = 215;
+      const rankToY = r => yTop + ((r - minRank) / yRange) * (yBot - yTop);
+      // Generate ~4-5 evenly spaced labels
+      const step = Math.max(1, Math.round(yRange / 4));
+      const labels = [];
+      for (let r = minRank; r <= minRank + yRange; r += step) {
+        labels.push({ rank: r, y: rankToY(r) });
+      }
+      // Always include the max
+      if (labels.length && labels[labels.length - 1].rank < minRank + yRange) {
+        labels.push({ rank: Math.round(minRank + yRange), y: yBot });
+      }
+      return labels;
+    },
+
     tierLineColor(tier) {
-      return { Scout: '#c084fc', Quant: '#a5b4fc', Quality: '#5eead4', Trend: '#fcd34d', Blob: '#a1a1aa' }[tier] || '#a1a1aa';
+      return { Scout: '#e879f9', Quant: '#818cf8', Quality: '#2dd4bf', Trend: '#fbbf24', Blob: '#a1a1aa' }[tier] || '#a1a1aa';
     },
 
     // lbRankSeries is pre-computed in load() — O(1) reads here
