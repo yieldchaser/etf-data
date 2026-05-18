@@ -1398,7 +1398,7 @@ document.addEventListener('alpine:init', () => {
     el.addEventListener('mouseenter', show);
     el.addEventListener('mouseleave', hide);
     el.addEventListener('click', hide);
-    cleanup(() => { el.removeEventListener('mouseenter', show); el.removeEventListener('mouseleave', hide); });
+    cleanup(() => { el.removeEventListener('mouseenter', show); el.removeEventListener('mouseleave', hide); el.removeEventListener('click', hide); });
   });
 });
 

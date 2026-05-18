@@ -188,7 +188,7 @@
     </div>
 
     <!-- SIGNAL TIMELINE — state history visualization -->
-    <div x-show="leaderboardRow?.flag_history?.length > 5" class="rounded-lg border mb-5" style="background: var(--surface); border-color: var(--border)">
+    <div x-show="flagHistory?.length > 5" class="rounded-lg border mb-5" style="background: var(--surface); border-color: var(--border)">
       <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
         <div class="label-cyan label">Signal Timeline — <span class="font-mono" x-text="ticker"></span></div>
         <div class="flex items-center gap-3 text-[10px]">
@@ -198,8 +198,8 @@
         </div>
       </div>
       <div class="px-3 py-3">
-        <svg :viewBox="`0 0 ${(leaderboardRow?.flag_history || []).length * 8 + 20} 40`" class="w-full" style="height: 36px">
-          <template x-for="(entry, i) in (leaderboardRow?.flag_history || [])" :key="i">
+        <svg :viewBox="`0 0 ${(flagHistory || []).length * 8 + 20} 40`" class="w-full" style="height: 36px">
+          <template x-for="(entry, i) in (flagHistory || [])" :key="i">
             <rect :x="i * 8" y="4" width="7" height="28" rx="1.5"
                   :fill="entry.flag === 'HIGH_CONVICTION' ? 'rgba(52,211,153,0.5)' : entry.flag === 'SPECULATIVE_BETA' ? 'rgba(251,191,36,0.4)' : 'rgba(255,255,255,0.06)'"
                   :x-tooltip="`'${entry.d}<br>Flag: ${entry.flag || 'None'}<br>Rank: #${entry.rank}'`"/>
@@ -207,8 +207,8 @@
         </svg>
         <!-- Date labels -->
         <div class="flex justify-between text-[9px] font-mono mt-1" style="color: var(--text-3)">
-          <span x-text="(leaderboardRow?.flag_history || [])[0]?.d || ''"></span>
-          <span x-text="(leaderboardRow?.flag_history || []).slice(-1)[0]?.d || ''"></span>
+          <span x-text="(flagHistory || [])[0]?.d || ''"></span>
+          <span x-text="(flagHistory || []).slice(-1)[0]?.d || ''"></span>
         </div>
       </div>
     </div>
@@ -497,9 +497,9 @@
                   <tr class="row-hover" style="border-bottom: 1px solid rgba(255,255,255,0.02)">
                     <td class="px-3 py-1.5 font-mono" style="color: var(--text-2)" x-text="row.d"></td>
                     <td class="px-3 py-1.5 text-right num font-mono" x-text="row.r"></td>
-                    <td class="px-3 py-1.5 text-right num font-mono" :style="`color: ${rankDeltaColor(rankDelta(rows.slice().reverse(), i))}`" x-text="fmtRankDelta(rankDelta(rows.slice().reverse(), i))"></td>
+                    <td class="px-3 py-1.5 text-right num font-mono" :style="`color: ${rankDeltaColor(i < rows.length - 1 ? rows[rows.length - 2 - i]?.r - row.r : null)}`" x-text="fmtRankDelta(i < rows.length - 1 ? rows[rows.length - 2 - i]?.r - row.r : null)"></td>
                     <td class="px-3 py-1.5 text-right num font-mono" style="color: var(--text-2)" x-text="fmtWeight(row.w)"></td>
-                    <td class="px-3 py-1.5 text-right num font-mono" :style="`color: ${flowColor(weightDelta(rows.slice().reverse(), i))}`" x-text="fmtFlow(weightDelta(rows.slice().reverse(), i))"></td>
+                    <td class="px-3 py-1.5 text-right num font-mono" :style="`color: ${flowColor(i < rows.length - 1 && rows[rows.length - 2 - i]?.w ? (row.w - rows[rows.length - 2 - i].w) / rows[rows.length - 2 - i].w : null)}`" x-text="fmtFlow(i < rows.length - 1 && rows[rows.length - 2 - i]?.w ? (row.w - rows[rows.length - 2 - i].w) / rows[rows.length - 2 - i].w : null)"></td>
                     <td class="px-3 py-1.5">
                       <!-- NEW chip if this row is the first snapshot for this ETF -->
                       <span x-show="row.is_new" class="chip"
@@ -547,6 +547,7 @@ function stockApp() {
     holdingsHistory: {},   // {ETF: [{d, r, w}]}
     leaderboardRow: null,  // single row from leaderboard for KPIs
     tierMap: {},           // ETF_Ticker -> tier name
+    flagHistory: [],       // [{d, flag, rank}] — loaded from flag_history.json
 
     async load() {
       const params = new URLSearchParams(location.search);
@@ -623,6 +624,12 @@ function stockApp() {
 
         // Holdings history for this ticker
         this.holdingsHistory = hhData[this.ticker] || {};
+
+        // Load flag history from separate file (on-demand)
+        try {
+          const fhData = await fetch('data/flag_history.json').then(r => r.json());
+          this.flagHistory = fhData[this.ticker] || [];
+        } catch { this.flagHistory = []; }
 
         this.found = this.leaderboardRow !== null || this.scoreHistory.length > 0 || Object.keys(this.holdingsHistory).length > 0;
       } catch (e) {
@@ -883,7 +890,7 @@ document.addEventListener('alpine:init', () => {
     el.addEventListener('mouseenter', show);
     el.addEventListener('mouseleave', hide);
     el.addEventListener('click', hide);
-    cleanup(() => { el.removeEventListener('mouseenter', show); el.removeEventListener('mouseleave', hide); });
+    cleanup(() => { el.removeEventListener('mouseenter', show); el.removeEventListener('mouseleave', hide); el.removeEventListener('click', hide); });
   });
 });
 

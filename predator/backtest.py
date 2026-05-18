@@ -93,7 +93,7 @@ def _compute_stats(trades: list[dict]) -> dict:
     wins = sum(1 for r in returns if r > 0)
     avg_r = float(np.mean(returns))
     std_r = float(np.std(returns)) if len(returns) > 1 else 0.0
-    sharpe = float(avg_r / std_r * math.sqrt(252 / 30)) if std_r > 0 else None
+    sharpe = float(avg_r / std_r * math.sqrt(12)) if std_r > 0 else None
     # Max drawdown on cumulative equity curve
     cum = np.cumprod([1 + r for r in returns])
     peak = np.maximum.accumulate(cum)

@@ -326,6 +326,42 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         burst_count = 0
     print(f"  burst_30d:      {burst_count} tickers with >=40 peak rank improvement")
 
+    # ── Conviction Divergence ─────────────────────────────────────────────
+    # Score rising but rank falling = being crowded out; inverse = relative strength
+    leaderboard["conviction_divergence"] = 0
+    mask_up_score = leaderboard["score_delta_pct"].fillna(0) > 0
+    mask_down_rank = leaderboard["global_rank_delta_30d"].fillna(0) < 0
+    leaderboard.loc[mask_up_score & mask_down_rank, "conviction_divergence"] = -1  # crowded out
+    mask_down_score = leaderboard["score_delta_pct"].fillna(0) < 0
+    mask_up_rank = leaderboard["global_rank_delta_30d"].fillna(0) > 0
+    leaderboard.loc[mask_down_score & mask_up_rank, "conviction_divergence"] = 1  # relative strength
+
+    # ── Stealth Accumulation ──────────────────────────────────────────────
+    # Weight growing in 3+ ETFs but rank NOT improving
+    leaderboard["stealth_accumulation"] = (
+        (leaderboard["avg_weight_flow_7d"].fillna(0) > 0.03) &
+        (leaderboard["avg_rank_delta_7d"].fillna(0) < 1) &
+        (leaderboard["etf_count"] >= 3)
+    )
+
+    # ── Momentum Regime ───────────────────────────────────────────────────
+    def _classify_regime(row):
+        streak = row.get("score_streak", 0) or 0
+        vel = row.get("velocity_score", 0) or 0
+        if vel > 15 and streak > 3:
+            return "accelerating"
+        elif vel > 5 and streak > 0:
+            return "rising"
+        elif vel < -15 and streak < -3:
+            return "declining"
+        elif vel < -5 and streak < 0:
+            return "weakening"
+        else:
+            return "stable"
+
+    leaderboard["momentum_regime"] = leaderboard.apply(_classify_regime, axis=1)
+    print(f"  new signals:    conviction_divergence, stealth_accumulation ({int(leaderboard['stealth_accumulation'].sum())}), momentum_regime")
+
     # ── Attach metadata (sector, industry, country) for flow analysis ─────────
     def _attach_metadata(leaderboard: pd.DataFrame) -> pd.DataFrame:
         """Merge ticker metadata (sector, industry, country) from cached CSV."""
@@ -385,7 +421,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                     flag_history[t] = []
                 flag_history[t].append(entry)
 
-    # Attach per-period score deltas + flag_history to every record
+    # Attach per-period score deltas to every record (flag_history written separately)
     for r in lb_records:
         t = r.get("ticker", "")
         r["score_deltas_by_period"] = {}
@@ -396,10 +432,10 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                 r["score_deltas_by_period"][str(p)] = None
             else:
                 r["score_deltas_by_period"][str(p)] = round(float(v), 4)
-        # Attach flag history (last 90 days of state transitions)
-        r["flag_history"] = flag_history.get(t, [])
     (output_dir / "leaderboard.json").write_text(_dumps(lb_records, separators=(",", ":")))
-    print(f"  flag_history:   {sum(1 for r in lb_records if r.get('flag_history'))} tickers with history")
+    # Write flag_history to separate file (keyed by ticker) to reduce leaderboard.json payload
+    (output_dir / "flag_history.json").write_text(_dumps(flag_history, separators=(",", ":")))
+    print(f"  flag_history:   {sum(1 for t in flag_history if flag_history[t])} tickers with history (separate file)")
     # ── holdings_latest.json — per-(ETF, ticker) detail with rank deltas ──────
     if not latest.empty:
         latest_out = latest[[

@@ -381,5 +381,5 @@ def compute_rank_deltas(
 
     merged = now_df.merge(then_df, on=["ETF_Ticker", "ticker"], how="left", suffixes=("_now", "_then"))
     merged["rank_delta"] = merged["rank_then"] - merged["rank_now"]   # positive = moved up
-    merged["weight_flow"] = (merged["weight_now"] - merged["weight_then"]) / merged["weight_then"]
+    merged["weight_flow"] = (merged["weight_now"] - merged["weight_then"]) / merged["weight_then"].replace(0, float('nan'))
     return merged
