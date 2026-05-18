@@ -1099,7 +1099,7 @@ function app() {
       // Read from per-period dict attached to each record by build.py
       const p = this.period;
       const map = row.score_deltas_by_period;
-      if (map) return map[String(p)] ?? 0;
+      if (map) return map[String(p)] ?? null;
       // Fallback to flat columns for old data
       if (p === 7) return row.score_delta_pct;
       return row[`score_delta_pct_${p}d`] ?? row.score_delta_pct;
