@@ -1046,6 +1046,10 @@ function app() {
         this.leaderboard = lb; this.holdings = hd; this.changelog = chg; this.meta = mt;
         // Load flow data (optional)
         try { this.flow = await fetch('data/flow.json').then(r => r.json()); } catch (e) { this.flow = {}; }
+        // Auto-snapshot pins on first visit if no snapshot exists
+        if (!localStorage.getItem('predator_pin_snapshot') && this.pins.length) {
+          this.snapshotPins();
+        }
       } catch (e) {
         this.error = `${e}. Run \`python -m predator.build\` then refresh.`;
       } finally { this.loading = false; }
@@ -1086,9 +1090,11 @@ function app() {
     },
 
     get tabs() {
+      // Filter pin count to only tickers that still exist in leaderboard
+      const activePins = this.pins.filter(t => this.leaderboard.some(r => r.ticker === t));
       return [
         { id: 'leaderboard', label: 'leaderboard', count: this.leaderboard.length },
-        { id: 'watchlist',   label: 'watchlist',   count: this.pins.length },
+        { id: 'watchlist',   label: 'watchlist',   count: activePins.length },
         { id: 'etfs',        label: 'etfs',        count: this.meta.etfs?.length },
         { id: 'changes',     label: 'changes',     count: (this.changelog.entered_hc?.length || 0) + (this.changelog.exited_hc?.length || 0) + (this.changelog.new_entrants?.length || 0) },
       ];
@@ -1192,7 +1198,7 @@ function app() {
     },
 
     get totalPages() { return Math.max(1, Math.ceil(this.filtered.length / this.pageSize)); },
-    get paged() { if (this.page > this.totalPages) this.page = 1; const s = (this.page - 1) * this.pageSize; return this.filtered.slice(s, s + this.pageSize); },
+    get paged() { const p = Math.min(this.page, this.totalPages); const s = (p - 1) * this.pageSize; return this.filtered.slice(s, s + this.pageSize); },
 
     sort(k) {
       const top = this.sortLevels[0];
@@ -1249,13 +1255,20 @@ function app() {
         const large = angle > Math.PI ? 1 : 0;
         const x1 = 100 + 90 * Math.cos(start), y1 = 100 + 90 * Math.sin(start);
         const x2 = 100 + 90 * Math.cos(end),   y2 = 100 + 90 * Math.sin(end);
+        // Special case: near-full circle (single holding) — draw a full circle path
+        let path;
+        if (frac >= 0.9999) {
+          path = `M100,10 A90,90 0 1 1 99.99,10 A90,90 0 1 1 100,10 Z`;
+        } else {
+          path = `M100,100 L${x1.toFixed(2)},${y1.toFixed(2)} A90,90 0 ${large} 1 ${x2.toFixed(2)},${y2.toFixed(2)} Z`;
+        }
         slices.push({
           ticker: h.ticker,
           name:   h.name   || h.Company || '',
           weight: h.weight,
           rank:   h.rank   || i + 1,
           color:  palette[i % palette.length],
-          path:   `M100,100 L${x1.toFixed(2)},${y1.toFixed(2)} A90,90 0 ${large} 1 ${x2.toFixed(2)},${y2.toFixed(2)} Z`,
+          path,
         });
         cumAngle = end;
       }

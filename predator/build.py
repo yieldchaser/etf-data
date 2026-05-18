@@ -181,7 +181,12 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                     for t, cur in today_s.items():
                         prev = ps.get(t)
                         # Preserve None for missing past data (don't fillna(0))
-                        delta[t] = round((cur - prev) / abs(prev), 4) if prev and prev != 0 else None
+                        # Cap extreme values at ±10 (1000%) to avoid misleading display
+                        if prev and prev != 0:
+                            raw_delta = (cur - prev) / abs(prev)
+                            delta[t] = round(max(-10.0, min(10.0, raw_delta)), 4)
+                        else:
+                            delta[t] = None
                     score_deltas_by_period[n] = delta
                 except Exception as e:
                     print(f"  {n}d score delta: ERROR — {e}")
@@ -202,7 +207,12 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                 for t, cur in today_s.items():
                     prev = ps_ytd.get(t)
                     # Preserve None for missing past data
-                    ytd_delta[t] = round((cur - prev) / abs(prev), 4) if prev and prev != 0 else None
+                    # Cap extreme values at ±10 (1000%)
+                    if prev and prev != 0:
+                        raw_delta = (cur - prev) / abs(prev)
+                        ytd_delta[t] = round(max(-10.0, min(10.0, raw_delta)), 4)
+                    else:
+                        ytd_delta[t] = None
                 score_deltas_by_period["YTD"] = ytd_delta
                 print(f"  YTD score delta: {len(ytd_delta)} tickers (from {ytd_start.date()})")
             except Exception as e:
