@@ -15,9 +15,19 @@ sanitizer:
     - $USD
     - $CAD            # VBA blocks it; harmless since none should slip through
     - $BRL            # Brazilian Real — currency ticker from PIE (EM fund)
+    - $NOK            # Norwegian Krone
+    - $JPY            # Japanese Yen
+    - $EUR            # Euro
+    - $GBP            # Pound Sterling
+    - $KRW            # South Korean Won
+    - $MXN            # Mexican Peso
+    - $SAR            # Saudi Riyal
+    - $TWD            # New Taiwan Dollar
+    - $CNY            # Yuan Renminbi
     - Cash&Other      # placeholder ticker seen in live data
     - AGPXX           # Invesco Government & Agency Portfolio (money market fund)
     - FGXXX           # First American Government Obligations Fund (money market)
+    - USBFS03         # U.S. Bank Money Market Deposit Account
     - "-"             # some scrapes emit literal "-" for unidentified rows
 
   # Power Query: [Company] <> "Short-Term Investment Trust - Invesco Government & Agency Portfolio"
@@ -29,10 +39,11 @@ sanitizer:
     - "Cash"
     - "Other"
 
-  # Substring match (case-insensitive). Empty by default to mirror Power Query.
-  # Uncomment for the more aggressive VBA-style filter that also drops cash
-  # collateral and treasury bills appearing across many ETFs:
-  blocked_name_patterns: []
+  # Substring match (case-insensitive). Catches money market funds and cash instruments
+  # that slip through from various ETF issuers.
+  blocked_name_patterns:
+    - "Money Market"
+    - "Securities Lending"
   # blocked_name_patterns:
   #   - "CASH &"
   #   - "CASH COLLATERAL"
