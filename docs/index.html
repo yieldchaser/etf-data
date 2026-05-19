@@ -175,6 +175,30 @@
                 style="border-color: var(--border-2)"
                 x-tooltip="'Names a Quality ETF (COWZ/CALF/SPHQ) added in the last 30 days — momentum + fundamentals confirmation'"
                 x-text="`Quality+ ${counts.QADD || 0}`"></button>
+        <button @click="preHcOnly = !preHcOnly"
+                :class="preHcOnly ? 'border-emerald-400/50 text-emerald-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-emerald-400/40"
+                style="border-color: var(--border-2)"
+                x-tooltip="'Pre-HC — held by exactly 3 ETFs with rising velocity. One pickup away from HIGH_CONVICTION. Catches names the day before broad consensus.'"
+                x-text="`Pre-HC ${counts.PRE_HC || 0}`"></button>
+        <button @click="stealthBuyOnly = !stealthBuyOnly"
+                :class="stealthBuyOnly ? 'border-fuchsia-400/50 text-fuchsia-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-fuchsia-400/40"
+                style="border-color: var(--border-2)"
+                x-tooltip="'Stealth Buy — single fund loading position rapidly (>10% weight growth in 7d) before consensus forms. Lonely-buy-before-the-crowd signal.'"
+                x-text="`Stealth ${counts.STEALTH_BUY || 0}`"></button>
+        <button @click="velOverScoreOnly = !velOverScoreOnly"
+                :class="velOverScoreOnly ? 'border-sky-400/50 text-sky-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-sky-400/40"
+                style="border-color: var(--border-2)"
+                x-tooltip="'Vel>Score — top 10% by velocity but score still ranked >100. Loading still in progress; the climb is happening.'"
+                x-text="`Vel>Score ${counts.VEL_OVER_SCORE || 0}`"></button>
+        <button @click="quantQualityOnly = !quantQualityOnly"
+                :class="quantQualityOnly ? 'border-yellow-400/50 text-yellow-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-yellow-400/40"
+                style="border-color: var(--border-2)"
+                x-tooltip="'Q+Q — held by both Quant (forward-looking) AND Quality (backward-looking) tiers, with recent ETF pickup. Two independent epistemologies agreeing.'"
+                x-text="`Q+Q ${counts.QUANT_QUALITY || 0}`"></button>
         <select x-model="selectedTier" class="chip border px-2 py-1 bg-transparent" style="border-color: var(--border-2)">
           <option value="" style="background: #000">all tiers</option>
           <template x-for="t in ['Scout','Quant','Quality','Trend','Blob']" :key="t">
@@ -561,6 +585,30 @@
                   style="border-color: var(--border-2)"
                   x-tooltip="'Names a Quality ETF (COWZ/CALF/SPHQ) added in the last 30 days'"
                   x-text="`Quality+ ${counts.QADD || 0}`"></button>
+          <button @click="preHcOnly = !preHcOnly"
+                  :class="preHcOnly ? 'border-emerald-400/50 text-emerald-300' : ''"
+                  class="chip border px-2 py-1 transition hover:border-emerald-400/40"
+                  style="border-color: var(--border-2)"
+                  x-tooltip="'Pre-HC — 3 ETFs with rising velocity, one pickup away from HC'"
+                  x-text="`Pre-HC ${counts.PRE_HC || 0}`"></button>
+          <button @click="stealthBuyOnly = !stealthBuyOnly"
+                  :class="stealthBuyOnly ? 'border-fuchsia-400/50 text-fuchsia-300' : ''"
+                  class="chip border px-2 py-1 transition hover:border-fuchsia-400/40"
+                  style="border-color: var(--border-2)"
+                  x-tooltip="'Stealth Buy — single fund loading >10% in 7d before consensus'"
+                  x-text="`Stealth ${counts.STEALTH_BUY || 0}`"></button>
+          <button @click="velOverScoreOnly = !velOverScoreOnly"
+                  :class="velOverScoreOnly ? 'border-sky-400/50 text-sky-300' : ''"
+                  class="chip border px-2 py-1 transition hover:border-sky-400/40"
+                  style="border-color: var(--border-2)"
+                  x-tooltip="'Vel>Score — top 10% velocity but score rank >100 (loading in progress)'"
+                  x-text="`Vel>Score ${counts.VEL_OVER_SCORE || 0}`"></button>
+          <button @click="quantQualityOnly = !quantQualityOnly"
+                  :class="quantQualityOnly ? 'border-yellow-400/50 text-yellow-300' : ''"
+                  class="chip border px-2 py-1 transition hover:border-yellow-400/40"
+                  style="border-color: var(--border-2)"
+                  x-tooltip="'Q+Q — both Quant and Quality tiers + recent pickup'"
+                  x-text="`Q+Q ${counts.QUANT_QUALITY || 0}`"></button>
           <select x-model="selectedTier" class="chip border px-2 py-1 bg-transparent" style="border-color: var(--border-2)">
             <option value="" style="background: #000">all tiers</option>
             <template x-for="t in ['Scout','Quant','Quality','Trend','Blob']" :key="t">
@@ -1132,7 +1180,7 @@ function app() {
     loading: true, error: '',
     activeTab: 'leaderboard',
     overlapHover: '',
-    flag: '', selectedTier: '', selectedSector: '', selectedCountry: '', newOnly: false, velocityOnly: false, burstOnly: false, q: '', excludeConcentrated: false, qualityAdoptedOnly: false,
+    flag: '', selectedTier: '', selectedSector: '', selectedCountry: '', newOnly: false, velocityOnly: false, burstOnly: false, q: '', excludeConcentrated: false, qualityAdoptedOnly: false, preHcOnly: false, stealthBuyOnly: false, velOverScoreOnly: false, quantQualityOnly: false,
     sortKey: 'leaderboard_rank', sortDir: 'asc',
     page: 1, pageSize: 50, open: null,
     activeETF: 'QQQM',
@@ -1198,7 +1246,47 @@ function app() {
         VELO: this.leaderboard.filter(r => (r.velocity_score || 0) >= 25 && (r.etf_count || 0) >= 2 && !r.burst_30d).length,
         BURST: this.leaderboard.filter(r => r.burst_30d).length,
         QADD: this.leaderboard.filter(r => r.quality_adopted_30d).length,
+        PRE_HC: this.leaderboard.filter(r => this._isPreHc(r)).length,
+        STEALTH_BUY: this.leaderboard.filter(r => this._isStealthBuy(r)).length,
+        VEL_OVER_SCORE: this.leaderboard.filter(r => this._isVelOverScore(r)).length,
+        QUANT_QUALITY: this.leaderboard.filter(r => this._isQuantQuality(r)).length,
       };
+    },
+
+    // ── Predictive filter helpers ─────────────────────────────────────────
+    // Pre-HC: 3 ETFs + rising velocity, one pickup away from HC threshold
+    _isPreHc(r) {
+      return (r.etf_count || 0) === 3
+        && (r.velocity_score || 0) > 10
+        && (r.score_streak || 0) >= 2
+        && r.flag !== 'HIGH_CONVICTION';
+    },
+    // Stealth Buy: single fund loading up rapidly before consensus forms
+    _isStealthBuy(r) {
+      return (r.etf_count || 0) <= 2
+        && (r.avg_weight_flow_7d || 0) > 0.10
+        && (r.velocity_score || 0) > 0;
+    },
+    // Velocity ahead of Score: high velocity but score still mid-tier (loading in progress)
+    _isVelOverScore(r) {
+      const lb = this.leaderboard;
+      if (!lb || !lb.length) return false;
+      // Memoize the top-10% velocity threshold; invalidate if leaderboard identity changes
+      if (this._velCacheKey !== lb.length + ':' + (lb[0]?.ticker || '')) {
+        const sorted = [...lb].sort((a, b) => (b.velocity_score || 0) - (a.velocity_score || 0));
+        const cutoff = Math.max(1, Math.floor(sorted.length * 0.10));
+        this._velThreshold = sorted[cutoff - 1]?.velocity_score ?? 999;
+        this._velCacheKey = lb.length + ':' + (lb[0]?.ticker || '');
+      }
+      return (r.velocity_score || 0) >= this._velThreshold
+        && (r.leaderboard_rank || 0) > 100;
+    },
+    // Quant + Quality recent convergence: both forward-looking and backward-looking screens agree
+    _isQuantQuality(r) {
+      const tiers = (r.tiers || '').split(' + ');
+      return tiers.includes('Quant')
+        && tiers.includes('Quality')
+        && (r.etf_count_delta_30d || 0) > 0;  // recent ETF pickup confirms freshness
     },
 
     get kpis() {
@@ -1263,7 +1351,7 @@ function app() {
     },
 
     toggleFlag(f) { this.flag = (this.flag === f) ? '' : f; this.page = 1; },
-    reset() { this.flag = ''; this.newOnly = false; this.velocityOnly = false; this.burstOnly = false; this.excludeConcentrated = false; this.qualityAdoptedOnly = false; this.selectedTier = ''; this.selectedSector = ''; this.selectedCountry = ''; this.q = ''; this.page = 1; },
+    reset() { this.flag = ''; this.newOnly = false; this.velocityOnly = false; this.burstOnly = false; this.excludeConcentrated = false; this.qualityAdoptedOnly = false; this.preHcOnly = false; this.stealthBuyOnly = false; this.velOverScoreOnly = false; this.quantQualityOnly = false; this.selectedTier = ''; this.selectedSector = ''; this.selectedCountry = ''; this.q = ''; this.page = 1; },
 
     togglePin(t) {
       const i = this.pins.indexOf(t);
@@ -1313,6 +1401,10 @@ function app() {
       if (this.velocityOnly) r = r.filter(x => (x.velocity_score || 0) >= 25 && (x.etf_count || 0) >= 2 && !x.burst_30d);
       if (this.burstOnly)    r = r.filter(x => x.burst_30d);
       if (this.qualityAdoptedOnly) r = r.filter(x => x.quality_adopted_30d);
+      if (this.preHcOnly)        r = r.filter(x => this._isPreHc(x));
+      if (this.stealthBuyOnly)   r = r.filter(x => this._isStealthBuy(x));
+      if (this.velOverScoreOnly) r = r.filter(x => this._isVelOverScore(x));
+      if (this.quantQualityOnly) r = r.filter(x => this._isQuantQuality(x));
       if (tier)              r = r.filter(x => (x.tiers || '').split(' + ').includes(tier));
       if (sector)            r = r.filter(x => x.sector === sector);
       if (country)           r = r.filter(x => x.country === country);
