@@ -1,26 +1,26 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-PIE,TPE: 2345,Accton Technology Corporation,0.0441,2026-05-18,2026-05-18
-PIE,TPE: 6196,Marketech International Corp.,0.0329,2026-05-18,2026-05-18
-PIE,TPE: 6257,Sigurd Microelectronics Corporation,0.0304,2026-05-18,2026-05-18
-PIE,TPE: 2330,Taiwan Semiconductor Manufacturing Company Limited,0.029500000000000002,2026-05-18,2026-05-18
-PIE,TPE: 5434,"Topco Scientific Co.,Ltd.",0.0286,2026-05-18,2026-05-18
-PIE,TPE: 2404,"United Integrated Services Co., Ltd.",0.0286,2026-05-18,2026-05-18
-PIE,TPE: 6515,"WinWay Technology Co., Ltd.",0.0215,2026-05-18,2026-05-18
-PIE,TISCO-R.BK,TISCO Financial Group PCL Units Non-Voting Depository Receipt,0.0215,2026-05-18,2026-05-18
-PIE,TPE: 6691,"Yankey Engineering Co., Ltd.",0.0209,2026-05-18,2026-05-18
-PIE,TPE: 2408,Nanya Technology Corporation,0.0199,2026-05-18,2026-05-18
-PIE,TPE: 3044,Tripod Technology Corporation,0.0195,2026-05-18,2026-05-18
-PIE,ASELS.E.IS,Aselsan Elektronik Sanayi Ve Ticaret AS,0.0191,2026-05-18,2026-05-18
-PIE,TPE: 2383,"Elite Material Co., Ltd.",0.0179,2026-05-18,2026-05-18
-PIE,TPE: 3037,Unimicron Technology Corp.,0.0173,2026-05-18,2026-05-18
-PIE,BMV: GENTERA,"Gentera, S.A.B. de C.V.",0.0172,2026-05-18,2026-05-18
-PIE,TPE: 8112,"Supreme Electronics Co., Ltd.",0.016,2026-05-18,2026-05-18
-PIE,TPE: 3665,BizLink Holding Inc.,0.015700000000000002,2026-05-18,2026-05-18
-PIE,TPE: 2337,"Macronix International Co., Ltd.",0.014499999999999999,2026-05-18,2026-05-18
-PIE,TPE: 2344,Winbond Electronics Corporation,0.014499999999999999,2026-05-18,2026-05-18
-PIE,HKG: 2276,"Shanghai Conant Optical Co., Ltd.",0.0144,2026-05-18,2026-05-18
-PIE,TPE: 2360,Chroma ATE Inc.,0.0134,2026-05-18,2026-05-18
-PIE,TPE: 3711,"ASE Technology Holding Co., Ltd.",0.013300000000000001,2026-05-18,2026-05-18
-PIE,TPE: 8046,Nan Ya Printed Circuit Board Corporation,0.0131,2026-05-18,2026-05-18
-PIE,6944.TWO,Mega Union Technology Inc,0.0131,2026-05-18,2026-05-18
-PIE,HKG: 1681,Consun Pharmaceutical Group Limited,0.0128,2026-05-18,2026-05-18
+PIE,TPE: 2345,Accton Technology Corporation,0.0441,2026-05-18,2026-05-19
+PIE,TPE: 6196,Marketech International Corp.,0.0329,2026-05-18,2026-05-19
+PIE,TPE: 6257,Sigurd Microelectronics Corporation,0.0304,2026-05-18,2026-05-19
+PIE,TPE: 2330,Taiwan Semiconductor Manufacturing Company Limited,0.029500000000000002,2026-05-18,2026-05-19
+PIE,TPE: 5434,"Topco Scientific Co.,Ltd.",0.0286,2026-05-18,2026-05-19
+PIE,TPE: 2404,"United Integrated Services Co., Ltd.",0.0286,2026-05-18,2026-05-19
+PIE,TPE: 6515,"WinWay Technology Co., Ltd.",0.0215,2026-05-18,2026-05-19
+PIE,TISCO-R.BK,TISCO Financial Group PCL Units Non-Voting Depository Receipt,0.0215,2026-05-18,2026-05-19
+PIE,TPE: 6691,"Yankey Engineering Co., Ltd.",0.0209,2026-05-18,2026-05-19
+PIE,TPE: 2408,Nanya Technology Corporation,0.0199,2026-05-18,2026-05-19
+PIE,TPE: 3044,Tripod Technology Corporation,0.0195,2026-05-18,2026-05-19
+PIE,ASELS.E.IS,Aselsan Elektronik Sanayi Ve Ticaret AS,0.0191,2026-05-18,2026-05-19
+PIE,TPE: 2383,"Elite Material Co., Ltd.",0.0179,2026-05-18,2026-05-19
+PIE,TPE: 3037,Unimicron Technology Corp.,0.0173,2026-05-18,2026-05-19
+PIE,BMV: GENTERA,"Gentera, S.A.B. de C.V.",0.0172,2026-05-18,2026-05-19
+PIE,TPE: 8112,"Supreme Electronics Co., Ltd.",0.016,2026-05-18,2026-05-19
+PIE,TPE: 3665,BizLink Holding Inc.,0.015700000000000002,2026-05-18,2026-05-19
+PIE,TPE: 2337,"Macronix International Co., Ltd.",0.014499999999999999,2026-05-18,2026-05-19
+PIE,TPE: 2344,Winbond Electronics Corporation,0.014499999999999999,2026-05-18,2026-05-19
+PIE,HKG: 2276,"Shanghai Conant Optical Co., Ltd.",0.0144,2026-05-18,2026-05-19
+PIE,TPE: 2360,Chroma ATE Inc.,0.0134,2026-05-18,2026-05-19
+PIE,TPE: 3711,"ASE Technology Holding Co., Ltd.",0.013300000000000001,2026-05-18,2026-05-19
+PIE,TPE: 8046,Nan Ya Printed Circuit Board Corporation,0.0131,2026-05-18,2026-05-19
+PIE,6944.TWO,Mega Union Technology Inc,0.0131,2026-05-18,2026-05-19
+PIE,HKG: 1681,Consun Pharmaceutical Group Limited,0.0128,2026-05-18,2026-05-19
