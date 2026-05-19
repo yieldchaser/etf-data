@@ -45,6 +45,7 @@ INVESCO_API_HEADERS = {
 INVESCO_SKIP_TYPES = {
     "cash & equivalents", "cash", "cash equivalent", "fx forward",
     "futures", "option", "swap", "repurchase agreement", "treasury bill",
+    "money market fund, taxable", "money market fund",
 }
 
 
@@ -104,7 +105,7 @@ def fetch_invesco_api(etf_ticker: str, etf_cusip: str) -> tuple:
             continue  # drop cash/derivatives rows
 
         raw_ticker = str(h.get("ticker", "")).strip()
-        if not raw_ticker or raw_ticker.lower() in ("none", "n/a", "", "usd"):
+        if not raw_ticker or raw_ticker.lower() in ("none", "n/a", "", "usd", "agpxx"):
             continue  # no usable ticker
 
         raw_name = html_lib.unescape(str(h.get("issuerName", "")).strip())
