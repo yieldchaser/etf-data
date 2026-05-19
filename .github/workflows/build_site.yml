@@ -1,21 +1,16 @@
 name: Build site
 
-# Runs after the daily scraper commits new data (push to data/**).
-# Also chains directly off the daily scraper workflow completing (workflow_run),
-# which fires even when the push was made by github-actions[bot] — the
-# standard push trigger does NOT fire for bot-authored commits on the default token.
-# Also triggers on dashboard/scoring code changes and on manual dispatch.
-#
-# The existing daily_scrape.yml workflow is untouched.
+# Runs after the daily scraper commits new data.
+# Uses workflow_run to chain directly off "Daily ETF Scrape" — this bypasses
+# the GitHub limitation where bot-authored pushes don't trigger other workflows.
+# Also triggers on human code pushes and manual dispatch.
 
 on:
-  # Direct chain: fires when the scraper workflow finishes (bypasses bot-push limitation)
   workflow_run:
     workflows: ["Daily ETF Scrape"]
     types: [completed]
     branches: [main]
 
-  # Also trigger on code pushes (human commits to code/config files)
   push:
     branches: [main]
     paths:
@@ -28,10 +23,10 @@ on:
 
   workflow_dispatch:
 
-# Allow one site build at a time; don't cancel running deploys.
+# Cancel any in-progress build when a newer one arrives — always deploy freshest data.
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -41,14 +36,17 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # When triggered by workflow_run, only proceed if the scraper succeeded.
-    # For push and workflow_dispatch triggers, always run.
+    # Only proceed if scraper succeeded (or triggered by push/dispatch).
     if: >
       github.event_name != 'workflow_run' ||
       github.event.workflow_run.conclusion == 'success'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # When triggered by workflow_run, check out the exact commit the scraper
+          # pushed — not just HEAD — so we always build with the freshest data.
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -71,17 +69,17 @@ jobs:
         run: |
           mkdir -p data/markets
           python -m markets.fetch_yf --out data/markets
-        continue-on-error: true   # network failures should not block page deploy
+        continue-on-error: true
 
       - name: Fetch FRED data
         run: python -m markets.fetch_fred --out data/markets
-        continue-on-error: true   # silently skips if FRED_API_KEY not set
+        continue-on-error: true
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
 
       - name: Build markets.json + sim_underlyings.json
         run: python -m markets.build --source data/markets --output docs/data
-        continue-on-error: true   # skip if no parquets yet
+        continue-on-error: true
 
       - name: Verify outputs
         run: |
