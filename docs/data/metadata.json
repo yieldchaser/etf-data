@@ -1,11 +1,11 @@
 {
-  "generated_at_utc": "2026-05-18T16:56:13+00:00",
+  "generated_at_utc": "2026-05-19T03:25:49+00:00",
   "source": "data/all_history.csv",
-  "source_rows_raw": 82224,
+  "source_rows_raw": 82631,
   "source_rows_after_sanitize": 1322,
   "leaderboard_rows": 920,
   "latest_holdings_as_of": "2026-05-18",
-  "latest_scrape_date": "2026-05-18",
+  "latest_scrape_date": "2026-05-19",
   "etfs": [
     "CALF",
     "COWZ",
