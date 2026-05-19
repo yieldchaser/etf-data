@@ -101,6 +101,7 @@ etfs:
   - {ticker: COWZ, tier: Quality, points: 30}
   - {ticker: CALF, tier: Quality, points: 30}
   - {ticker: SPHQ, tier: Quality, points: 30}
+  - {ticker: IVAL, tier: Quality, points: 30}  # Alpha Architect Intl Quantitative Value
 
   # Trend — momentum confirmation
   - {ticker: SPMO, tier: Trend,   points: 10}

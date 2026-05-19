@@ -24,6 +24,12 @@
         "enabled": true
     },
     {
+        "ticker": "IVAL",
+        "url": "https://funds.alphaarchitect.com/ival/#fund-holdings",
+        "scraper_type": "selenium_alpha",
+        "enabled": true
+    },
+    {
         "ticker": "COWZ",
         "url": "https://www.paceretfs.com/usbank/live/fsb0.pacer.x330.COWZ_Holdings.csv",
         "scraper_type": "pacer_csv",
