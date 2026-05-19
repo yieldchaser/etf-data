@@ -59,7 +59,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pandas pyyaml pyarrow pytest yfinance
+          pip install pandas pyyaml pyarrow pytest yfinance curl_cffi
 
       - name: Run tests
         run: python -m pytest tests/ -v
