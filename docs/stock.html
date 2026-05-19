@@ -574,10 +574,10 @@ function stockApp() {
 
       try {
         const [lbData, scoreData, hhData, hlData] = await Promise.all([
-          fetch('data/leaderboard.json').then(r => r.json()),
-          fetch('data/score_history.json').then(r => r.json()),
-          fetch('data/holdings_history.json').then(r => r.json()),
-          fetch('data/holdings_latest.json').then(r => r.json()).catch(() => []),
+          fetch('data/leaderboard.json', { cache: 'no-store' }).then(r => r.json()),
+          fetch('data/score_history.json', { cache: 'no-store' }).then(r => r.json()),
+          fetch('data/holdings_history.json', { cache: 'no-store' }).then(r => r.json()),
+          fetch('data/holdings_latest.json', { cache: 'no-store' }).then(r => r.json()).catch(() => []),
         ]);
 
         // Leaderboard row
@@ -593,7 +593,7 @@ function stockApp() {
         // Tier map from score_history (meta missing here, so build from leaderboard held_by + tiers)
         // We load metadata separately
         try {
-          const meta = await fetch('data/metadata.json').then(r => r.json());
+          const meta = await fetch('data/metadata.json', { cache: 'no-store' }).then(r => r.json());
           // Support new flat etfs[] format AND old tiers[] format
           const etfsMeta = meta.config_snapshot?.etfs || [];
           if (etfsMeta.length) {
@@ -648,7 +648,7 @@ function stockApp() {
 
         // Load flag history from separate file (on-demand)
         try {
-          const fhData = await fetch('data/flag_history.json').then(r => r.json());
+          const fhData = await fetch('data/flag_history.json', { cache: 'no-store' }).then(r => r.json());
           this.flagHistory = fhData[this.ticker] || [];
         } catch { this.flagHistory = []; }
 

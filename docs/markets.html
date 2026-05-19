@@ -215,7 +215,7 @@ function marketsApp() {
 
     async load() {
       try {
-        const data = await fetch('data/markets.json').then(r => r.json());
+        const data = await fetch('data/markets.json', { cache: 'no-store' }).then(r => r.json());
         this.meta = { generated_at_utc: data.generated_at_utc };
         this.series = data.series || [];
       } catch (e) {

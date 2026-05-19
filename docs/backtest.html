@@ -239,7 +239,7 @@ function btApp() {
 
     async load() {
       try {
-        this.data = await fetch('data/backtest.json').then(r => {
+        this.data = await fetch('data/backtest.json', { cache: 'no-store' }).then(r => {
           if (!r.ok) throw new Error(r.status);
           return r.json();
         });

@@ -240,7 +240,7 @@ function simApp() {
 
     async load() {
       try {
-        this.underlyings = await fetch('data/sim_underlyings.json').then(r => r.json());
+        this.underlyings = await fetch('data/sim_underlyings.json', { cache: 'no-store' }).then(r => r.json());
       } catch (e) {
         console.warn('sim_underlyings.json not found — using manual vol mode');
         this.params.underlying = '__manual__';

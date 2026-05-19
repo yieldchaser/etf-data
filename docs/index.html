@@ -1143,17 +1143,17 @@ function app() {
     async load() {
       try {
         const [lb, hd, chg, mt] = await Promise.all([
-          fetch('data/leaderboard.json').then(r => r.ok ? r.json() : Promise.reject(r.status)),
-          fetch('data/holdings_latest.json').then(r => r.ok ? r.json() : Promise.reject(r.status)),
-          fetch('data/changelog.json').then(r => r.ok ? r.json() : Promise.reject(r.status)),
-          fetch('data/metadata.json').then(r => r.ok ? r.json() : Promise.reject(r.status)),
+          fetch('data/leaderboard.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)),
+          fetch('data/holdings_latest.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)),
+          fetch('data/changelog.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)),
+          fetch('data/metadata.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)),
         ]);
         this.leaderboard = lb; this.holdings = hd; this.changelog = chg; this.meta = mt;
         // Load flow data (optional)
-        try { this.flow = await fetch('data/flow.json').then(r => r.json()); } catch (e) { this.flow = {}; }
+        try { this.flow = await fetch('data/flow.json', { cache: 'no-store' }).then(r => r.json()); } catch (e) { this.flow = {}; }
         // Load ETF overlap matrix (optional)
-        try { this.overlap = await fetch('data/etf_overlap.json').then(r => r.json()); } catch (e) { this.overlap = {}; }
-        try { this.scoreHistory = await fetch('data/score_history.json').then(r => r.json()); } catch (e) { this.scoreHistory = {}; }
+        try { this.overlap = await fetch('data/etf_overlap.json', { cache: 'no-store' }).then(r => r.json()); } catch (e) { this.overlap = {}; }
+        try { this.scoreHistory = await fetch('data/score_history.json', { cache: 'no-store' }).then(r => r.json()); } catch (e) { this.scoreHistory = {}; }
         // Hash routing — open #etf=XYZ jumps to the ETFs tab for that ETF
         const hash = location.hash || '';
         const etfMatch = hash.match(/#etf=([A-Z0-9.\-]+)/i);
