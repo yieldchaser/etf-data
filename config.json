@@ -104,5 +104,29 @@
         "url": "https://companiesmarketcap.com/invesco-sp-500-high-beta-etf/holdings/",
         "scraper_type": "invesco_api",
         "enabled": true
+    },
+    {
+        "ticker": "EEMO",
+        "cusip": "46138E289",
+        "scraper_type": "invesco_api",
+        "enabled": true
+    },
+    {
+        "ticker": "PDP",
+        "cusip": "46137V837",
+        "scraper_type": "invesco_api",
+        "enabled": true
+    },
+    {
+        "ticker": "DWAS",
+        "cusip": "46138E842",
+        "scraper_type": "invesco_api",
+        "enabled": true
+    },
+    {
+        "ticker": "PIZ",
+        "cusip": "46138E875",
+        "scraper_type": "invesco_api",
+        "enabled": true
     }
 ]

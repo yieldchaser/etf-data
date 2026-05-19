@@ -89,6 +89,14 @@ etfs:
   - {ticker: FPXI, tier: Scout,   points: 60}
   - {ticker: IMOM, tier: Quant,   points: 60}
 
+  # New Quant additions — Dorsey Wright momentum family + EM momentum
+  # PDP / DWAS: US-focused DW momentum → 40 pts (same as QMOM/XMMO)
+  # EEMO / PIZ:  international-focused → 60 pts (same as IMOM, levels the field)
+  - {ticker: PDP,  tier: Quant,   points: 40}
+  - {ticker: DWAS, tier: Quant,   points: 40}
+  - {ticker: EEMO, tier: Quant,   points: 60}
+  - {ticker: PIZ,  tier: Quant,   points: 60}
+
   # Quality — free cash flow and profitability
   - {ticker: COWZ, tier: Quality, points: 30}
   - {ticker: CALF, tier: Quality, points: 30}
