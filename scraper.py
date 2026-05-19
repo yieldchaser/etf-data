@@ -27,7 +27,7 @@ HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 }
 
-# ── Invesco API constants (mirrors fetch_invesco_holdings.py) ─────────────────
+# ── Invesco API constants (mirrors scripts/fetch_invesco_holdings.py) ────────────────
 INVESCO_API_BASE   = "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses"
 INVESCO_API_SUFFIX = "holdings/fund?idType=cusip&productType=ETF"
 INVESCO_API_HEADERS = {
