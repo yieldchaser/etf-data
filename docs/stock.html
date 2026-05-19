@@ -246,8 +246,8 @@
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(52,211,153,0.85)"></span> HC</span>
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(34,211,238,0.65)"></span> VELO</span>
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(251,191,36,0.7)"></span> SPEC</span>
-          <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(255,255,255,0.12)"></span> Neutral</span>
-          <span class="flex items-center gap-1"><span class="inline-block w-3 h-px" style="background: rgba(255,255,255,0.7)"></span> Rank</span>
+          <span class="flex items-center gap-1" style="color: var(--text-3)"><span class="inline-block w-6 h-px" style="background: rgba(255,255,255,0.5)"></span> Rank</span>
+          <span class="text-[9px]" style="color: var(--text-3)">bright = 10+ days sustained · tick = entry point</span>
         </div>
       </div>
       <div class="px-3 pt-3 pb-2 chart-wrap"
@@ -263,7 +263,7 @@
            "
            @mouseleave="tlci = null; tlcx = null">
         <!-- State bars + rank line — built as SVG string (Alpine 3 SVG-template fix) -->
-        <div data-tlsvg x-html="signalTimelineSvg" class="w-full" style="height: 64px"></div>
+        <div data-tlsvg x-html="signalTimelineSvg" class="w-full" style="height: 110px"></div>
         <!-- X-axis date ticks (5 labels) -->
         <div class="flex justify-between text-[9px] font-mono mt-1" style="color: var(--text-3)">
           <template x-for="d in timelineDateTicks" :key="d">
@@ -282,9 +282,14 @@
         <div x-show="tlci !== null" class="chart-tooltip"
              :style="`top: 4px; left: ${Math.min((tlcx || 0) + 12, 360)}px`">
           <div class="font-mono text-[10px] mb-1" style="color: var(--text-3)" x-text="(flagHistory || [])[tlci]?.d || ''"></div>
-          <div class="flex items-center gap-2 text-[11px]">
-            <span class="inline-block w-2.5 h-2.5 rounded-sm" :style="`background: ${timelineHoverColor}`"></span>
-            <span class="font-medium" :style="`color: ${timelineHoverColor}`" x-text="timelineHoverState"></span>
+          <!-- All active signals for this day -->
+          <div class="flex flex-col gap-0.5">
+            <template x-for="s in timelineHoverSignals" :key="s.label">
+              <div class="flex items-center gap-2 text-[11px]">
+                <span class="inline-block w-2.5 h-2.5 rounded-sm" :style="`background: ${s.color}`"></span>
+                <span class="font-medium" :style="`color: ${s.color}`" x-text="s.label"></span>
+              </div>
+            </template>
           </div>
           <div class="text-[10px] mt-0.5 font-mono" style="color: var(--text-2)" x-text="timelineHoverRank"></div>
           <div x-show="timelineHoverVelocity !== null" class="text-[10px] font-mono" style="color: var(--cyan)" x-text="timelineHoverVelocity"></div>
@@ -942,6 +947,20 @@ function stockApp() {
       if (this.tlci === null) return 'var(--text-3)';
       return this._stateAt(this.tlci).color;
     },
+    // All active signals at hovered index (multi-signal tooltip)
+    get timelineHoverSignals() {
+      if (this.tlci === null) return [];
+      const fh = this.flagHistory || [];
+      const e = fh[this.tlci];
+      if (!e) return [];
+      const sigs = [];
+      if (this._isBurstAt(this.tlci)) sigs.push({ label: 'BURST', color: '#c084fc' });
+      if (e.flag === 'HIGH_CONVICTION') sigs.push({ label: 'HC', color: 'var(--up)' });
+      if (this._isVeloAt(this.tlci)) sigs.push({ label: 'VELO', color: 'var(--cyan)' });
+      if (e.flag === 'SPECULATIVE_BETA') sigs.push({ label: 'SPEC β', color: 'var(--amber)' });
+      if (!sigs.length) sigs.push({ label: 'Neutral', color: 'var(--text-3)' });
+      return sigs;
+    },
     get timelineHoverRank() {
       const fh = this.flagHistory || [];
       const e = fh[this.tlci];
@@ -1027,77 +1046,148 @@ function stockApp() {
       return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" width="100%" height="${H}" style="display:block;border-radius:3px;overflow:hidden">${parts}</svg>`;
     },
 
-    // ── Signal Timeline SVG (built as string — bypasses Alpine 3 SVG <template> rendering issue) ──
+    // ── Signal Timeline SVG (multi-lane Gantt — each signal gets its own row) ──
     get signalTimelineSvg() {
       const fh = this.flagHistory || [];
       if (fh.length < 2) return '';
       const n = fh.length;
-      const W = 700, H = 64;
-      const padL = 4, padR = 4;
+
+      // ── Layout constants ────────────────────────────────────────────────
+      const W = 700, LANE_H = 14, LANE_GAP = 3, RANK_H = 32;
+      const LANES = [
+        { key: 'burst', label: 'BURST', color: 'rgba(168,85,247,', bright: '1)',   dim: '0.55)' },
+        { key: 'hc',    label: 'HC',    color: 'rgba(52,211,153,',  bright: '1)',   dim: '0.55)' },
+        { key: 'velo',  label: 'VELO',  color: 'rgba(34,211,238,',  bright: '0.9)', dim: '0.45)' },
+        { key: 'spec',  label: 'SPEC',  color: 'rgba(251,191,36,',  bright: '0.9)', dim: '0.45)' },
+      ];
+      const nLanes = LANES.length;
+      const LANES_TOTAL = nLanes * LANE_H + (nLanes - 1) * LANE_GAP;
+      const RANK_Y = LANES_TOTAL + 8;
+      const H = RANK_Y + RANK_H + 6;
+
+      const padL = 36, padR = 4; // left space for lane labels
       const innerW = W - padL - padR;
-      // Bars span the full inner width with a tiny inter-bar gap
-      const barW = Math.max(1.2, (innerW / n) * 0.95);
+      const barW = Math.max(1.2, (innerW / n) * 0.96);
       const xAt = i => padL + ((i + 0.5) / n) * innerW;
 
-      // Bars
-      let bars = '';
+      // ── Pre-compute active states per snapshot ──────────────────────────
+      const states = fh.map((e, i) => ({
+        burst: this._isBurstAt(i),
+        hc:    e.flag === 'HIGH_CONVICTION',
+        velo:  this._isVeloAt(i),
+        spec:  e.flag === 'SPECULATIVE_BETA',
+        rank:  e.rank || 0,
+        vs:    e.vs ?? null,
+      }));
+
+      // Compute consecutive run length at each index per signal (for intensity)
+      const runLen = states.map((s, i) => {
+        const out = {};
+        for (const lane of LANES) {
+          if (!s[lane.key]) { out[lane.key] = 0; continue; }
+          let run = 1;
+          for (let j = i - 1; j >= 0 && states[j][lane.key]; j--) run++;
+          out[lane.key] = run;
+        }
+        return out;
+      });
+
+      // ── Lane labels ──────────────────────────────────────────────────────
+      let labels = '';
+      for (let li = 0; li < nLanes; li++) {
+        const lane = LANES[li];
+        const y = li * (LANE_H + LANE_GAP) + LANE_H / 2 + 1;
+        labels += `<text x="${padL - 4}" y="${y + 3}" text-anchor="end" style="font-family:ui-monospace;font-size:8px;font-weight:600;fill:${lane.color}0.6)">${lane.label}</text>`;
+      }
+      // Rank label
+      labels += `<text x="${padL - 4}" y="${RANK_Y + RANK_H / 2 + 3}" text-anchor="end" style="font-family:ui-monospace;font-size:8px;fill:rgba(255,255,255,0.35)">RANK</text>`;
+
+      // ── Lane backgrounds ─────────────────────────────────────────────────
+      let bg = '';
+      for (let li = 0; li < nLanes; li++) {
+        const y = li * (LANE_H + LANE_GAP);
+        bg += `<rect x="${padL}" y="${y}" width="${innerW}" height="${LANE_H}" fill="rgba(255,255,255,0.025)" rx="2"/>`;
+      }
+      // Rank area background
+      bg += `<rect x="${padL}" y="${RANK_Y}" width="${innerW}" height="${RANK_H}" fill="rgba(255,255,255,0.02)" rx="2"/>`;
+
+      // ── Signal bars + transition markers ─────────────────────────────────
+      let bars = '', markers = '';
       for (let i = 0; i < n; i++) {
         const cx = xAt(i);
-        const x = cx - barW / 2;
-        const fill = this.timelineBarColor(fh[i], i);
-        bars += `<rect x="${x.toFixed(2)}" y="6" width="${barW.toFixed(2)}" height="44" rx="1" fill="${fill}"/>`;
+        const bx = cx - barW / 2;
+        const s = states[i];
+        const runs = runLen[i];
+
+        for (let li = 0; li < nLanes; li++) {
+          const lane = LANES[li];
+          const y = li * (LANE_H + LANE_GAP);
+          if (!s[lane.key]) continue;
+
+          // Intensity: brighter after 10+ consecutive days
+          const intense = runs[lane.key] >= 10;
+          const fill = lane.color + (intense ? lane.bright : lane.dim);
+          bars += `<rect x="${bx.toFixed(2)}" y="${y}" width="${barW.toFixed(2)}" height="${LANE_H}" fill="${fill}" rx="1"/>`;
+
+          // Transition marker: tick at the left edge when this is the first day active
+          if (runs[lane.key] === 1) {
+            const mx = bx.toFixed(2);
+            markers += `<line x1="${mx}" y1="${y - 1}" x2="${mx}" y2="${y + LANE_H + 1}" stroke="${lane.color}1)" stroke-width="1.5"/>`;
+          }
+        }
       }
 
-      // Subtle baseline + top guide
-      const grid = `<line x1="${padL}" x2="${W - padR}" y1="50" y2="50" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>`;
-
-      // Smoothed rank overlay across the bar area (y range = 8..48 inside bar band)
-      let line = '';
-      const ranks = fh.map(e => e.rank).filter(Boolean);
+      // ── Rank sparkline (below the lanes) ─────────────────────────────────
+      let rankLine = '';
+      const ranks = states.map(s => s.rank).filter(Boolean);
       if (ranks.length >= 2) {
         const minR = Math.min(...ranks), maxR = Math.max(...ranks);
         const range = Math.max(maxR - minR, 2);
+        const toY = r => RANK_Y + 2 + ((r - minR) / range) * (RANK_H - 4);
         const pts = [];
         for (let i = 0; i < n; i++) {
-          if (!fh[i]?.rank) continue;
-          const x = xAt(i);
-          const y = 8 + ((fh[i].rank - minR) / range) * 40;
-          pts.push([x, y]);
+          if (!states[i].rank) continue;
+          pts.push([xAt(i), toY(states[i].rank)]);
         }
         if (pts.length >= 2) {
           const d = this.smoothPath(pts);
-          // Glow under-stroke for visibility against bars
-          line  = `<path d="${d}" stroke="rgba(0,0,0,0.55)" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
-          line += `<path d="${d}" stroke="rgba(255,255,255,0.85)" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+          // Fill area
+          const areaD = `${d} L${pts[pts.length-1][0].toFixed(1)},${(RANK_Y+RANK_H).toFixed(1)} L${pts[0][0].toFixed(1)},${(RANK_Y+RANK_H).toFixed(1)} Z`;
+          rankLine  = `<path d="${areaD}" fill="rgba(255,255,255,0.06)" stroke="none"/>`;
+          rankLine += `<path d="${d}" stroke="rgba(255,255,255,0.65)" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+          // Best rank dot
+          const bestR = Math.min(...ranks);
+          const bestIdx = states.findIndex(s => s.rank === bestR);
+          if (bestIdx >= 0) {
+            const bx2 = xAt(bestIdx).toFixed(1), by2 = toY(bestR).toFixed(1);
+            rankLine += `<circle cx="${bx2}" cy="${by2}" r="2.5" fill="var(--up)" stroke="rgba(0,0,0,0.8)" stroke-width="1"/>`;
+          }
         }
       }
 
-      // Crosshair (dashed vertical at hovered index) + highlight outline of that bar
+      // ── Crosshair ──────────────────────────────────────────────────────────
       let crosshair = '';
       if (this.tlci !== null && this.tlci >= 0 && this.tlci < n) {
-        const cx = xAt(this.tlci);
-        const x = cx - barW / 2;
-        crosshair  = `<rect x="${x.toFixed(2)}" y="5" width="${barW.toFixed(2)}" height="46" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="1" rx="1"/>`;
-        crosshair += `<line x1="${cx.toFixed(2)}" y1="0" x2="${cx.toFixed(2)}" y2="56" stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="3 3"/>`;
-        // Dot on the rank line at hovered index
-        const e = fh[this.tlci];
-        if (e?.rank && ranks.length >= 2) {
+        const cx = xAt(this.tlci).toFixed(1);
+        crosshair  = `<line x1="${cx}" y1="0" x2="${cx}" y2="${H}" stroke="rgba(255,255,255,0.20)" stroke-width="1" stroke-dasharray="2 2"/>`;
+        // Highlight bar on each active lane
+        const s = states[this.tlci];
+        for (let li = 0; li < nLanes; li++) {
+          if (!s[LANES[li].key]) continue;
+          const y = li * (LANE_H + LANE_GAP);
+          const bx = (xAt(this.tlci) - barW / 2).toFixed(1);
+          crosshair += `<rect x="${bx}" y="${y - 0.5}" width="${barW.toFixed(1)}" height="${LANE_H + 1}" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="1" rx="1"/>`;
+        }
+        // Dot on rank line
+        if (s.rank && ranks.length >= 2) {
           const minR = Math.min(...ranks), maxR = Math.max(...ranks);
-          const range = Math.max(maxR - minR, 2);
-          const cy = 8 + ((e.rank - minR) / range) * 40;
-          crosshair += `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="3" fill="#fff" stroke="#000" stroke-width="1.5"/>`;
+          const toY = r => RANK_Y + 2 + ((r - minR) / Math.max(maxR - minR, 2)) * (RANK_H - 4);
+          const cy = toY(s.rank).toFixed(1);
+          crosshair += `<circle cx="${cx}" cy="${cy}" r="3" fill="#fff" stroke="rgba(0,0,0,0.8)" stroke-width="1.5"/>`;
         }
       }
 
-      // Top-edge tick ribbon (5 evenly spaced ticks for orientation)
-      let ticks = '';
-      for (let i = 0; i < 5; i++) {
-        const idx = Math.round((i / 4) * (n - 1));
-        const cx = xAt(idx);
-        ticks += `<line x1="${cx.toFixed(2)}" y1="56" x2="${cx.toFixed(2)}" y2="60" stroke="rgba(255,255,255,0.20)" stroke-width="1"/>`;
-      }
-
-      return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" width="100%" height="${H}" style="display:block">${grid}${bars}${line}${crosshair}${ticks}</svg>`;
+      return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" width="100%" height="${H}" style="display:block">${bg}${labels}${bars}${markers}${rankLine}${crosshair}</svg>`;
     },
 
     // ── Per-ETF Rank History SVG (built as string — same fix) ────────────────
