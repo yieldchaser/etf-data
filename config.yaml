@@ -14,13 +14,17 @@ sanitizer:
     - USD
     - $USD
     - $CAD            # VBA blocks it; harmless since none should slip through
+    - $BRL            # Brazilian Real — currency ticker from PIE (EM fund)
     - Cash&Other      # placeholder ticker seen in live data
+    - AGPXX           # Invesco Government & Agency Portfolio (money market fund)
+    - FGXXX           # First American Government Obligations Fund (money market)
     - "-"             # some scrapes emit literal "-" for unidentified rows
 
   # Power Query: [Company] <> "Short-Term Investment Trust - Invesco Government & Agency Portfolio"
   # Exact company-name match (case-insensitive). This is how the Excel filters AGPXX.
   blocked_name_exact:
     - "Short-Term Investment Trust - Invesco Government & Agency Portfolio"
+    - "Invesco Government & Agency Portfolio"
     - "Cash & Other"  # exact name match for placeholder
     - "Cash"
     - "Other"
