@@ -272,6 +272,7 @@
                   class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
                   x-tooltip="'Burst — peak rank improvement in the last 30 days. Shows how many positions the stock climbed at its best point. ≥40 triggers BURST flag.'">Burst</th>
               <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300 hidden md:table-cell" @click="sort('etf_count')" :class="sortClass('etf_count')" x-tooltip="'Count of distinct ETFs currently holding this ticker.'">ETFs</th>
+              <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell" @click="sort('etf_count_delta_30d')" :class="sortClass('etf_count_delta_30d')" x-tooltip="'Net ETFs added or lost in the last 30 days. Positive = more funds picking up this name.'">±30d</th>
               <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell" @click="sort('total_weight')" :class="sortClass('total_weight')" x-tooltip="'Sum of position weights across all ETFs holding this name.'">Weight</th>
               <th class="text-left px-3 py-2 hidden xl:table-cell" x-tooltip="{html:'Tiers represented. <b>Scout</b>=spinoffs/IPOs · <b>Quant</b>=factor momentum · <b>Quality</b>=FCF/profit · <b>Trend</b>=momentum · <b>Blob</b>=mega-cap'}">Strategies</th>
               <th class="text-center px-3 py-2 hidden md:table-cell" x-tooltip="'Consecutive days the score moved in the same direction (▲ up · ▼ down).'">Streak</th>
@@ -311,6 +312,9 @@
                       :style="row.burst_30d ? 'color: #c084fc' : 'color: var(--text-3)'"
                       x-text="row.burst_30d ? '+' + row.global_rank_peak_30d : (row.global_rank_peak_30d > 20 ? row.global_rank_peak_30d : '—')"></td>
                   <td class="px-3 py-2 text-right num font-mono hidden md:table-cell" x-text="row.etf_count"></td>
+                  <td class="px-3 py-2 text-right num font-mono hidden lg:table-cell"
+                      :style="(row.etf_count_delta_30d || 0) > 0 ? 'color: var(--up)' : (row.etf_count_delta_30d || 0) < 0 ? 'color: var(--down)' : 'color: var(--text-3)'"
+                      x-text="(row.etf_count_delta_30d || 0) > 0 ? '+' + row.etf_count_delta_30d : (row.etf_count_delta_30d || 0) < 0 ? row.etf_count_delta_30d : '—'"></td>
                   <td class="px-3 py-2 text-right num font-mono hidden lg:table-cell" style="color: var(--text-2)" x-text="fmtWeight(row.total_weight)"></td>
                   <td class="px-3 py-2 hidden xl:table-cell">
                     <div class="flex flex-wrap gap-1">
@@ -356,7 +360,7 @@
                 </tr>
                 <!-- Expanded row -->
                 <tr x-show="open === row.ticker" x-transition.opacity style="background: #050505; border-bottom: 1px solid var(--border)">
-                  <td colspan="13" class="px-4 py-4">
+                  <td colspan="14" class="px-4 py-4">
                     <!-- Explainer line — auto-generated narrative from existing fields -->
                     <div class="text-xs mb-3 px-3 py-2 rounded" style="background: rgba(34, 211, 238, 0.04); border: 1px solid rgba(34, 211, 238, 0.10); color: var(--text-2)" x-text="explainerFor(row)"></div>
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3 text-xs">
@@ -610,6 +614,7 @@
                     class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
                     x-tooltip="'Burst — peak rank improvement in the last 30 days. ≥40 triggers BURST flag.'">Burst</th>
                 <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300 hidden md:table-cell" @click="sort('etf_count')" :class="sortClass('etf_count')" x-tooltip="'Count of distinct ETFs currently holding this ticker.'">ETFs</th>
+                <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell" @click="sort('etf_count_delta_30d')" :class="sortClass('etf_count_delta_30d')" x-tooltip="'Net ETFs added or lost in the last 30 days.'">±30d</th>
                 <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell" @click="sort('total_weight')" :class="sortClass('total_weight')" x-tooltip="'Sum of position weights across all ETFs holding this name.'">Weight</th>
                 <th class="text-left px-3 py-2 hidden xl:table-cell" x-tooltip="{html:'Tiers represented. <b>Scout</b>=spinoffs/IPOs · <b>Quant</b>=factor momentum · <b>Quality</b>=FCF/profit · <b>Trend</b>=momentum · <b>Blob</b>=mega-cap'}">Strategies</th>
                 <th class="text-center px-3 py-2 hidden md:table-cell" x-tooltip="'Consecutive days the score moved in the same direction (▲ up · ▼ down).'">Streak</th>
@@ -649,6 +654,9 @@
                         :style="row.burst_30d ? 'color: #c084fc' : 'color: var(--text-3)'"
                         x-text="row.burst_30d ? '+' + row.global_rank_peak_30d : (row.global_rank_peak_30d > 20 ? row.global_rank_peak_30d : '—')"></td>
                     <td class="px-3 py-2 text-right num font-mono hidden md:table-cell" x-text="row.etf_count"></td>
+                    <td class="px-3 py-2 text-right num font-mono hidden lg:table-cell"
+                        :style="(row.etf_count_delta_30d || 0) > 0 ? 'color: var(--up)' : (row.etf_count_delta_30d || 0) < 0 ? 'color: var(--down)' : 'color: var(--text-3)'"
+                        x-text="(row.etf_count_delta_30d || 0) > 0 ? '+' + row.etf_count_delta_30d : (row.etf_count_delta_30d || 0) < 0 ? row.etf_count_delta_30d : '—'"></td>
                     <td class="px-3 py-2 text-right num font-mono hidden lg:table-cell" style="color: var(--text-2)" x-text="fmtWeight(row.total_weight)"></td>
                     <td class="px-3 py-2 hidden xl:table-cell">
                       <div class="flex flex-wrap gap-1">
@@ -694,7 +702,7 @@
                   </tr>
                   <!-- Expanded row -->
                   <tr x-show="open === row.ticker" x-transition.opacity style="background: #050505; border-bottom: 1px solid var(--border)">
-                    <td colspan="13" class="px-4 py-4">
+                    <td colspan="14" class="px-4 py-4">
                       <!-- Explainer line — auto-generated narrative from existing fields -->
                       <div class="text-xs mb-3 px-3 py-2 rounded" style="background: rgba(34, 211, 238, 0.04); border: 1px solid rgba(34, 211, 238, 0.10); color: var(--text-2)" x-text="explainerFor(row)"></div>
                       <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3 text-xs">
