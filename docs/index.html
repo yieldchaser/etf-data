@@ -310,7 +310,7 @@
                     <div class="flex flex-wrap gap-1">
                       <template x-for="t in (row.tiers || '').split(' + ').filter(Boolean)" :key="t">
                         <span class="chip" :style="tierChipStyle(t)" x-text="t"
-                              x-tooltip="`'${t} — ' + tierExplain(t)`"></span>
+                              x-tooltip="t + ' — ' + tierExplain(t)"></span>
                       </template>
                     </div>
                   </td>
@@ -642,7 +642,7 @@
                       <div class="flex flex-wrap gap-1">
                         <template x-for="t in (row.tiers || '').split(' + ').filter(Boolean)" :key="t">
                           <span class="chip" :style="tierChipStyle(t)" x-text="t"
-                                x-tooltip="`'${t} — ' + tierExplain(t)`"></span>
+                                x-tooltip="t + ' — ' + tierExplain(t)"></span>
                         </template>
                       </div>
                     </td>
