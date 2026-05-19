@@ -345,25 +345,90 @@ def main():
                 df = pd.read_csv(StringIO('\n'.join(content[start:])))
 
             elif etf['scraper_type'] == 'selenium_alpha':
-                driver.get(etf['url']); time.sleep(3)
-                text = driver.find_element(By.TAG_NAME, "body").text
-                h_date = clean_date_string(text) or TODAY
-                try:
-                    selects = driver.find_elements(By.TAG_NAME, "select")
-                    for s in selects:
-                        try: Select(s).select_by_visible_text("All"); time.sleep(1)
+                # Alpha Architect pages are JS-heavy and slow on cold CI runners.
+                # Use explicit wait + retry rather than fixed sleep.
+                from selenium.common.exceptions import TimeoutException, WebDriverException
+                df = None
+                h_date = TODAY
+                last_err = None
+                for attempt in range(2):
+                    try:
+                        driver.set_page_load_timeout(60)
+                        driver.get(etf['url'])
+                        # Wait up to 30s for at least one <table> with >25 rows to appear
+                        WebDriverWait(driver, 30).until(
+                            lambda d: any(
+                                len(t.find_elements(By.TAG_NAME, "tr")) > 25
+                                for t in d.find_elements(By.TAG_NAME, "table")
+                            )
+                        )
+                        text = driver.find_element(By.TAG_NAME, "body").text
+                        h_date = clean_date_string(text) or TODAY
+                        # Try to expand "Show All" if a Select dropdown exists
+                        try:
+                            for s in driver.find_elements(By.TAG_NAME, "select"):
+                                try: Select(s).select_by_visible_text("All"); time.sleep(1.5)
+                                except: pass
                         except: pass
-                except: pass
-                dfs = pd.read_html(StringIO(driver.page_source))
-                for d in dfs: 
-                    if len(d) > 25: df = d; break
+                        dfs = pd.read_html(StringIO(driver.page_source))
+                        for d in dfs:
+                            if len(d) > 25: df = d; break
+                        if df is not None: break  # success
+                    except TimeoutException as te:
+                        last_err = f"timeout (attempt {attempt+1}): {te.msg or 'page load timed out'}"
+                        print(f"      -> ⚠️  {last_err}")
+                        if attempt == 0:
+                            # Recreate the driver — it may be in a bad state after timeout
+                            try: driver.quit()
+                            except: pass
+                            driver = setup_driver()
+                    except WebDriverException as we:
+                        last_err = f"webdriver error (attempt {attempt+1}): {we.msg or str(we)[:80]}"
+                        print(f"      -> ⚠️  {last_err}")
+                        if attempt == 0:
+                            try: driver.quit()
+                            except: pass
+                            driver = setup_driver()
+                if df is None and last_err:
+                    raise RuntimeError(last_err)
 
             elif etf['scraper_type'] == 'first_trust':
-                driver.get(etf['url']); time.sleep(5) 
-                text = driver.find_element(By.TAG_NAME, "body").text
-                h_date = clean_date_string(text) or TODAY
-                dfs = pd.read_html(StringIO(driver.page_source))
-                df = find_first_trust_table(dfs)
+                from selenium.common.exceptions import TimeoutException, WebDriverException
+                df = None
+                h_date = TODAY
+                last_err = None
+                for attempt in range(2):
+                    try:
+                        driver.set_page_load_timeout(60)
+                        driver.get(etf['url'])
+                        # Wait for at least one substantial table to render
+                        WebDriverWait(driver, 30).until(
+                            lambda d: any(
+                                len(t.find_elements(By.TAG_NAME, "tr")) > 25
+                                for t in d.find_elements(By.TAG_NAME, "table")
+                            )
+                        )
+                        text = driver.find_element(By.TAG_NAME, "body").text
+                        h_date = clean_date_string(text) or TODAY
+                        dfs = pd.read_html(StringIO(driver.page_source))
+                        df = find_first_trust_table(dfs)
+                        if df is not None: break
+                    except TimeoutException as te:
+                        last_err = f"timeout (attempt {attempt+1}): {te.msg or 'page load timed out'}"
+                        print(f"      -> ⚠️  {last_err}")
+                        if attempt == 0:
+                            try: driver.quit()
+                            except: pass
+                            driver = setup_driver()
+                    except WebDriverException as we:
+                        last_err = f"webdriver error (attempt {attempt+1}): {we.msg or str(we)[:80]}"
+                        print(f"      -> ⚠️  {last_err}")
+                        if attempt == 0:
+                            try: driver.quit()
+                            except: pass
+                            driver = setup_driver()
+                if df is None and last_err:
+                    raise RuntimeError(last_err)
             
             else: 
                 r = requests.get(etf['url'], headers=HEADERS, timeout=15)
