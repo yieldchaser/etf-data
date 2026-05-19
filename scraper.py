@@ -14,12 +14,19 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
 
+# Import curl_cffi at module level (before Selenium starts) to avoid
+# mid-session TLS library conflicts with ChromeDriver.
+try:
+    from curl_cffi import requests as cffi_requests
+except ImportError:
+    cffi_requests = None
+
 # --- CONFIG ---
 CONFIG_FILE = 'config.json'
 DATA_DIR_LATEST = 'data/latest'
 DATA_DIR_HISTORY = 'data/history'
 DATA_DIR_BACKUP = 'data/invesco_backup'
-DATA_DIR_LEGACY_BACKUP = 'data/legacy_backup'   # immutable archive of old third-party data
+DATA_DIR_LEGACY_BACKUP = 'data/legacy_backup'
 GIANT_HISTORY_FILE = 'data/all_history.csv' 
 TODAY = datetime.now().strftime('%Y-%m-%d')
 
@@ -27,118 +34,57 @@ HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 }
 
-# ── Invesco API constants (mirrors scripts/fetch_invesco_holdings.py) ────────────────
+# ── Invesco API ───────────────────────────────────────────────────────────────
 INVESCO_API_BASE   = "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses"
 INVESCO_API_SUFFIX = "holdings/fund?idType=cusip&productType=ETF"
 INVESCO_API_HEADERS = {
-    "Accept":          "*/*",
-    "Accept-Encoding": "gzip, deflate, br, zstd",
-    "Accept-Language": "en-US,en;q=0.9",
-    "Origin":          "https://www.invesco.com",
-    "Referer":         "https://www.invesco.com/",
-    "Sec-Fetch-Dest":  "empty",
-    "Sec-Fetch-Mode":  "cors",
-    "Sec-Fetch-Site":  "same-site",
+    "Accept": "*/*", "Accept-Encoding": "gzip, deflate, br, zstd",
+    "Accept-Language": "en-US,en;q=0.9", "Origin": "https://www.invesco.com",
+    "Referer": "https://www.invesco.com/", "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors", "Sec-Fetch-Site": "same-site",
 }
-
-# Non-equity security types to filter out (cash, derivatives, FX, etc.)
 INVESCO_SKIP_TYPES = {
     "cash & equivalents", "cash", "cash equivalent", "fx forward",
     "futures", "option", "swap", "repurchase agreement", "treasury bill",
     "money market fund, taxable", "money market fund",
 }
 
-
-def fetch_invesco_api(etf_ticker: str, etf_cusip: str) -> tuple:
-    """
-    Fetch holdings for one Invesco ETF directly from the official API.
-    Returns (clean_df, holdings_as_of_date) in the standard pipeline schema,
-    or (None, TODAY) on failure.
-
-    Uses effective_biz_date as Holdings_As_Of (true as-of date, T+1 convention).
-    """
-    try:
-        from curl_cffi import requests as cffi_requests
-    except ImportError:
-        print(f"      -> ❌ curl_cffi not installed — cannot use Invesco API for {etf_ticker}")
+def fetch_invesco_api(etf_ticker, etf_cusip):
+    """Fetch holdings from official Invesco API. Returns (df, date) or (None, TODAY)."""
+    if cffi_requests is None:
+        print(f"      -> curl_cffi not installed — skipping {etf_ticker}")
         return None, TODAY
-
     url = f"{INVESCO_API_BASE}/{etf_cusip}/{INVESCO_API_SUFFIX}"
-    print(f"      -> 🔌 Invesco API: {url}")
-
+    print(f"      -> Invesco API: {url}")
     try:
-        resp = cffi_requests.get(
-            url,
-            headers=INVESCO_API_HEADERS,
-            impersonate="chrome",
-            timeout=30,
-        )
+        resp = cffi_requests.get(url, headers=INVESCO_API_HEADERS, impersonate="chrome", timeout=30)
         resp.raise_for_status()
         data = resp.json()
     except Exception as e:
-        print(f"      -> ❌ API request failed: {e}")
+        print(f"      -> API failed: {e}")
         return None, TODAY
-
-    # Validate CUSIP echo
-    returned_cusip = data.get("cusip", "")
-    if returned_cusip and returned_cusip != etf_cusip:
-        print(f"      -> ❌ CUSIP mismatch! sent={etf_cusip} got={returned_cusip}")
-        return None, TODAY
-
-    # Use effective_biz_date (true as-of, T+1): this is the prior-business-day close
-    effective_biz_date = data.get("effectiveBusinessDate", "")
-    effective_date     = data.get("effectiveDate", "")
-    holdings_as_of     = effective_biz_date or effective_date or TODAY
-    # Normalise date to YYYY-MM-DD if it came in another format
-    try:
-        holdings_as_of = datetime.strptime(holdings_as_of[:10], "%Y-%m-%d").strftime("%Y-%m-%d")
-    except Exception:
-        holdings_as_of = TODAY
-
-    raw_holdings = data.get("holdings", [])
-    total_reported = data.get("totalNumberOfHoldings", len(raw_holdings))
-
+    holdings_as_of = data.get("effectiveBusinessDate") or data.get("effectiveDate") or TODAY
+    try: holdings_as_of = datetime.strptime(holdings_as_of[:10], "%Y-%m-%d").strftime("%Y-%m-%d")
+    except: holdings_as_of = TODAY
     rows = []
-    for h in raw_holdings:
+    for h in data.get("holdings", []):
         sec_type = str(h.get("securityTypeName", "")).strip().lower()
-        if sec_type in INVESCO_SKIP_TYPES:
-            continue  # drop cash/derivatives rows
-
+        if sec_type in INVESCO_SKIP_TYPES: continue
         raw_ticker = str(h.get("ticker", "")).strip()
-        if not raw_ticker or raw_ticker.lower() in ("none", "n/a", "", "usd", "agpxx"):
-            continue  # no usable ticker
-
-        raw_name = html_lib.unescape(str(h.get("issuerName", "")).strip())
-
-        pct_tna = h.get("percentageOfTotalNetAssets")
-        try:
-            weight = float(pct_tna) / 100.0  # convert % → decimal
-        except (TypeError, ValueError):
-            weight = 0.0
-
-        if weight <= 0:
-            continue  # skip zero-weight rows (cash collateral, lending, etc.)
-
-        rows.append({
-            "ETF_Ticker":     etf_ticker,
-            "ticker":         raw_ticker,
-            "name":           raw_name,
-            "weight":         round(weight, 6),
-            "Holdings_As_Of": holdings_as_of,
-            "Date_Scraped":   TODAY,
-        })
-
+        if not raw_ticker or raw_ticker.lower() in ("none", "n/a", "", "usd", "agpxx"): continue
+        pct = h.get("percentageOfTotalNetAssets")
+        try: weight = float(pct) / 100.0
+        except: weight = 0.0
+        if weight <= 0: continue
+        rows.append({"ETF_Ticker": etf_ticker, "ticker": raw_ticker,
+                     "name": html_lib.unescape(str(h.get("issuerName", "")).strip()),
+                     "weight": round(weight, 6), "Holdings_As_Of": holdings_as_of, "Date_Scraped": TODAY})
     if not rows:
-        print(f"      -> ⚠️ API returned 0 usable equity rows (total reported: {total_reported})")
+        print(f"      -> 0 equity rows returned")
         return None, TODAY
-
     df = pd.DataFrame(rows, columns=["ETF_Ticker", "ticker", "name", "weight", "Holdings_As_Of", "Date_Scraped"])
-    print(f"      -> ✅ Invesco API: {len(df)} equity rows | as_of={holdings_as_of} (biz) | published={effective_date}")
+    print(f"      -> {len(df)} equity rows | as_of={holdings_as_of}")
     return df, holdings_as_of
-
-HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-}
 
 def clean_date_string(date_text):
     if not date_text: return None
@@ -287,53 +233,27 @@ def main():
         try:
             df, h_date = None, TODAY
             
-            # ── INVESCO API (new primary for all Invesco ETFs) ────────────────
+            # --- SCRAPER SELECTION ---
             if etf['scraper_type'] == 'invesco_api':
                 cusip = etf.get('cusip', '')
                 if not cusip:
-                    print(f"    ❌ invesco_api requires 'cusip' in config — skipping {ticker}")
+                    print(f"    invesco_api requires cusip — skipping {ticker}")
                     continue
-
-                # 1. Fetch from official Invesco API
                 clean_df, h_date = fetch_invesco_api(ticker, cusip)
-
-                # 2. Still run the old third-party URL as a legacy archive (never used as primary)
-                if 'url' in etf:
-                    try:
-                        print(f"      -> 📦 Legacy archive run for {ticker}...")
-                        legacy_df_raw, legacy_date = None, TODAY
-                        r = requests.get(etf['url'], headers=HEADERS, timeout=15)
-                        legacy_dfs = pd.read_html(StringIO(r.text))
-                        for d in legacy_dfs:
-                            if len(d) > 20: legacy_df_raw = d; break
-                        if legacy_df_raw is not None:
-                            legacy_clean = clean_dataframe(legacy_df_raw, ticker, legacy_date)
-                            if legacy_clean is not None and not legacy_clean.empty:
-                                # Write to immutable legacy archive (never touches main pipeline)
-                                legacy_dir = os.path.join(DATA_DIR_LEGACY_BACKUP, *TODAY.split('-'))
-                                os.makedirs(legacy_dir, exist_ok=True)
-                                legacy_path = os.path.join(legacy_dir, f"{ticker}_legacy.csv")
-                                legacy_clean.to_csv(legacy_path, index=False)
-                                print(f"      -> 📦 Legacy archived: {len(legacy_clean)} rows → {legacy_path}")
-                    except Exception as leg_e:
-                        print(f"      -> ⚠️ Legacy archive failed (non-critical): {leg_e}")
-
-                # clean_df comes from API; proceed to save as normal
                 if clean_df is not None:
                     master_list.append(clean_df)
                     if check_if_new_data(ticker, h_date):
                         clean_df.to_csv(os.path.join(DATA_DIR_LATEST, f"{ticker}.csv"), index=False)
-                        print(f"    ✅ New Data Saved: {len(clean_df)} rows | Date: {h_date}")
+                        print(f"    New Data Saved: {len(clean_df)} rows | Date: {h_date}")
                         new_data_list.append(clean_df)
                     else:
                         clean_df.to_csv(os.path.join(DATA_DIR_LATEST, f"{ticker}.csv"), index=False)
-                        print(f"    ✅ (Forced Update) Saved: {len(clean_df)} rows | Date: {h_date}")
+                        print(f"    (Forced Update) Saved: {len(clean_df)} rows | Date: {h_date}")
                 else:
-                    print(f"    ⚠️ Invesco API returned no data for {ticker}.")
-                continue   # ← skip the old block below for Invesco ETFs
-            
-            # --- SCRAPER SELECTION ---
-            if etf['scraper_type'] == 'pacer_csv':
+                    print(f"    No data for {ticker}.")
+                continue
+
+            elif etf['scraper_type'] == 'pacer_csv':
                 driver.get(etf['url']); time.sleep(3)
                 text = driver.find_element(By.TAG_NAME, "body").text
                 h_date = clean_date_string(text) or TODAY
@@ -345,90 +265,25 @@ def main():
                 df = pd.read_csv(StringIO('\n'.join(content[start:])))
 
             elif etf['scraper_type'] == 'selenium_alpha':
-                # Alpha Architect pages are JS-heavy and slow on cold CI runners.
-                # Use explicit wait + retry rather than fixed sleep.
-                from selenium.common.exceptions import TimeoutException, WebDriverException
-                df = None
-                h_date = TODAY
-                last_err = None
-                for attempt in range(2):
-                    try:
-                        driver.set_page_load_timeout(60)
-                        driver.get(etf['url'])
-                        # Wait up to 30s for at least one <table> with >25 rows to appear
-                        WebDriverWait(driver, 30).until(
-                            lambda d: any(
-                                len(t.find_elements(By.TAG_NAME, "tr")) > 25
-                                for t in d.find_elements(By.TAG_NAME, "table")
-                            )
-                        )
-                        text = driver.find_element(By.TAG_NAME, "body").text
-                        h_date = clean_date_string(text) or TODAY
-                        # Try to expand "Show All" if a Select dropdown exists
-                        try:
-                            for s in driver.find_elements(By.TAG_NAME, "select"):
-                                try: Select(s).select_by_visible_text("All"); time.sleep(1.5)
-                                except: pass
+                driver.get(etf['url']); time.sleep(3)
+                text = driver.find_element(By.TAG_NAME, "body").text
+                h_date = clean_date_string(text) or TODAY
+                try:
+                    selects = driver.find_elements(By.TAG_NAME, "select")
+                    for s in selects:
+                        try: Select(s).select_by_visible_text("All"); time.sleep(1)
                         except: pass
-                        dfs = pd.read_html(StringIO(driver.page_source))
-                        for d in dfs:
-                            if len(d) > 25: df = d; break
-                        if df is not None: break  # success
-                    except TimeoutException as te:
-                        last_err = f"timeout (attempt {attempt+1}): {te.msg or 'page load timed out'}"
-                        print(f"      -> ⚠️  {last_err}")
-                        if attempt == 0:
-                            # Recreate the driver — it may be in a bad state after timeout
-                            try: driver.quit()
-                            except: pass
-                            driver = setup_driver()
-                    except WebDriverException as we:
-                        last_err = f"webdriver error (attempt {attempt+1}): {we.msg or str(we)[:80]}"
-                        print(f"      -> ⚠️  {last_err}")
-                        if attempt == 0:
-                            try: driver.quit()
-                            except: pass
-                            driver = setup_driver()
-                if df is None and last_err:
-                    raise RuntimeError(last_err)
+                except: pass
+                dfs = pd.read_html(StringIO(driver.page_source))
+                for d in dfs: 
+                    if len(d) > 25: df = d; break
 
             elif etf['scraper_type'] == 'first_trust':
-                from selenium.common.exceptions import TimeoutException, WebDriverException
-                df = None
-                h_date = TODAY
-                last_err = None
-                for attempt in range(2):
-                    try:
-                        driver.set_page_load_timeout(60)
-                        driver.get(etf['url'])
-                        # Wait for at least one substantial table to render
-                        WebDriverWait(driver, 30).until(
-                            lambda d: any(
-                                len(t.find_elements(By.TAG_NAME, "tr")) > 25
-                                for t in d.find_elements(By.TAG_NAME, "table")
-                            )
-                        )
-                        text = driver.find_element(By.TAG_NAME, "body").text
-                        h_date = clean_date_string(text) or TODAY
-                        dfs = pd.read_html(StringIO(driver.page_source))
-                        df = find_first_trust_table(dfs)
-                        if df is not None: break
-                    except TimeoutException as te:
-                        last_err = f"timeout (attempt {attempt+1}): {te.msg or 'page load timed out'}"
-                        print(f"      -> ⚠️  {last_err}")
-                        if attempt == 0:
-                            try: driver.quit()
-                            except: pass
-                            driver = setup_driver()
-                    except WebDriverException as we:
-                        last_err = f"webdriver error (attempt {attempt+1}): {we.msg or str(we)[:80]}"
-                        print(f"      -> ⚠️  {last_err}")
-                        if attempt == 0:
-                            try: driver.quit()
-                            except: pass
-                            driver = setup_driver()
-                if df is None and last_err:
-                    raise RuntimeError(last_err)
+                driver.get(etf['url']); time.sleep(5) 
+                text = driver.find_element(By.TAG_NAME, "body").text
+                h_date = clean_date_string(text) or TODAY
+                dfs = pd.read_html(StringIO(driver.page_source))
+                df = find_first_trust_table(dfs)
             
             else: 
                 r = requests.get(etf['url'], headers=HEADERS, timeout=15)
