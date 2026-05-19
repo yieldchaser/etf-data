@@ -2,10 +2,13 @@ name: Daily ETF Scrape
 
 on:
   schedule:
-    # 30 1 = 01:30 UTC (Approx 8:30 PM ET - Post-Market Safety)
-    # 30 12 = 12:30 UTC (Approx 7:30 AM ET - Pre-Market Safety)
-    # * * * = Runs EVERY DAY (Mon, Tue, Wed, Thu, Fri, Sat, Sun)
-    - cron: '30 1,12 * * *'
+    # 14:00 UTC = 10:00 AM ET  — primary run, after all issuers publish T+1 data
+    #   Invesco API publishes overnight; Pacer CSV, First Trust, Alpha Architect
+    #   are all updated before US market open (9:30 AM ET). 10 AM ET is the
+    #   earliest safe window where every source is guaranteed to be fresh.
+    # 22:00 UTC = 06:00 PM ET  — catch-all run for any late publishers or retries
+    # Weekdays only (Mon–Fri). No point running on weekends (no new trading data).
+    - cron: '0 14,22 * * 1-5'
   workflow_dispatch:      # Manual Run Button
 
 jobs:
