@@ -209,6 +209,88 @@ def setup_driver():
     options.add_argument("--window-size=1920,1080")
     return webdriver.Chrome(options=options)
 
+def run_extended_scrapers():
+    """
+    Calls the extended ETF scraper (scripts/etf_holdings_scraper_v42.py) as a
+    subprocess (isolated — crash cannot kill main scraper), normalises its
+    canonical output CSV to the pipeline schema, and merges into all_history.csv.
+    """
+    import subprocess
+    import sys
+
+    scraper_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scripts', 'etf_holdings_scraper_v42.py')
+    if not os.path.exists(scraper_path):
+        print("\n⚠️  Extended scraper not found — skipping.")
+        return
+
+    from datetime import date
+    today_8 = date.today().strftime('%Y%m%d')
+    csv_out = os.path.join(os.path.dirname(os.path.abspath(__file__)), f'etf_holdings_{today_8}.csv')
+
+    if not os.path.exists(csv_out):
+        print(f"\n🔌 Running extended ETF scrapers (isolated subprocess)…")
+        try:
+            result = subprocess.run(
+                [sys.executable, scraper_path],
+                timeout=600,
+                capture_output=True, text=True,
+                cwd=os.path.dirname(os.path.abspath(__file__))
+            )
+            if result.stdout: print(result.stdout[-3000:])
+            if result.returncode != 0:
+                print(f"  ⚠️  Extended scraper exited {result.returncode} — continuing anyway.")
+                if result.stderr: print(f"  STDERR: {result.stderr[-1000:]}")
+            else:
+                print(f"  Extended scrapers done.")
+        except subprocess.TimeoutExpired:
+            print("  ⚠️  Extended scraper timed out — continuing anyway.")
+        except Exception as e:
+            print(f"  ⚠️  Could not run extended scraper: {e} — continuing anyway.")
+    else:
+        print(f"\n🔌 Extended scraper output exists for today — reusing.")
+
+    if not os.path.exists(csv_out):
+        print("  ⚠️  No extended scraper output — skipping bridge.")
+        return
+
+    try:
+        raw = pd.read_csv(csv_out)
+        print(f"  Extended CSV: {len(raw)} rows, ETFs: {sorted(raw['etf'].unique())}")
+    except Exception as e:
+        print(f"  ❌ Could not read extended CSV: {e}")
+        return
+
+    required = {'etf', 'ticker', 'name', 'weight_pct', 'as_of_date'}
+    if not required.issubset(set(raw.columns)):
+        print(f"  ❌ Extended CSV missing columns: {required - set(raw.columns)} — skipping.")
+        return
+
+    bridge = raw.copy()
+    if 'security_type' in bridge.columns:
+        non_equity = {'cash','cash equivalent','money market','derivative','futures','option','swap','fx','currency'}
+        mask = bridge['security_type'].fillna('').str.lower()
+        bridge = bridge[~mask.str.contains('|'.join(non_equity), na=False)]
+    bridge = bridge[bridge['ticker'].notna() & bridge['ticker'].astype(str).str.strip().ne('')]
+    bridge = bridge[~bridge['ticker'].astype(str).str.startswith('$')]
+    bridge['weight'] = pd.to_numeric(bridge['weight_pct'], errors='coerce').fillna(0) / 100.0
+    bridge = bridge[bridge['weight'] > 0]
+    bridge['Holdings_As_Of'] = pd.to_datetime(bridge['as_of_date'], errors='coerce').dt.strftime('%Y-%m-%d')
+    bridge['Date_Scraped']   = pd.to_datetime(bridge['scrape_date'].astype(str), format='%Y%m%d', errors='coerce').dt.strftime('%Y-%m-%d')
+    bridge['Date_Scraped']   = bridge['Date_Scraped'].fillna(TODAY)
+    bridge = bridge.rename(columns={'etf': 'ETF_Ticker'})
+    pipeline_df = bridge[['ETF_Ticker', 'ticker', 'name', 'weight', 'Holdings_As_Of', 'Date_Scraped']].copy()
+    pipeline_df = pipeline_df.dropna(subset=['Holdings_As_Of'])
+
+    if pipeline_df.empty:
+        print("  ⚠️  Extended bridge: 0 valid rows.")
+        return
+
+    print(f"  Bridge: {len(pipeline_df)} rows across {pipeline_df['ETF_Ticker'].nunique()} ETFs")
+    for etf, grp in pipeline_df.groupby('ETF_Ticker'):
+        print(f"    {etf:6} {len(grp):4} rows | as_of={grp['Holdings_As_Of'].iloc[0]}")
+    update_giant_history([pipeline_df])
+
+
 def main():
     try:
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
@@ -371,110 +453,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-# ── Extended scraper bridge ────────────────────────────────────────────────────
-def run_extended_scrapers():
-    """
-    Calls the extended ETF scraper (scripts/etf_holdings_scraper_v42.py),
-    normalises its canonical output CSV to the pipeline schema, and merges
-    into data/all_history.csv via the standard update_giant_history() path.
-
-    Schema mapping:
-        etf          → ETF_Ticker
-        ticker       → ticker
-        name         → name
-        weight_pct   → weight  (divide by 100 to get decimal)
-        as_of_date   → Holdings_As_Of
-        scrape_date  → Date_Scraped  (already YYYYMMDD → reformatted)
-    """
-    import sys
-    import importlib.util
-
-    scraper_path = os.path.join(os.path.dirname(__file__), 'scripts', 'etf_holdings_scraper_v42.py')
-    if not os.path.exists(scraper_path):
-        print("\n⚠️  Extended scraper not found — skipping.")
-        return
-
-    # ── Output file the extended scraper writes ──────────────────────────────
-    from datetime import date
-    today_8 = date.today().strftime('%Y%m%d')
-    csv_out = f'etf_holdings_{today_8}.csv'
-
-    # Run the extended scraper if the output doesn't already exist for today
-    if not os.path.exists(csv_out):
-        print(f"\n🔌 Running extended ETF scrapers (scripts/etf_holdings_scraper_v42.py)…")
-        try:
-            spec   = importlib.util.spec_from_file_location("etf_scraper_ext", scraper_path)
-            module = importlib.util.module_from_spec(spec)
-            # Temporarily suppress the module-level print() that runs on import
-            import io as _io, contextlib
-            with contextlib.redirect_stdout(_io.StringIO()):
-                spec.loader.exec_module(module)
-            module.run_all()
-            print(f"  Extended scrapers done → {csv_out}")
-        except Exception as e:
-            print(f"  ❌ Extended scraper failed: {e}")
-            return
-    else:
-        print(f"\n🔌 Extended scraper output already exists for today ({csv_out}) — using it.")
-
-    # ── Read canonical CSV and normalise ─────────────────────────────────────
-    if not os.path.exists(csv_out):
-        print("  ⚠️  No extended scraper output file found — skipping bridge.")
-        return
-
-    try:
-        raw = pd.read_csv(csv_out)
-        print(f"  Extended CSV: {len(raw)} rows, ETFs: {sorted(raw['etf'].unique())}")
-    except Exception as e:
-        print(f"  ❌ Could not read extended CSV: {e}")
-        return
-
-    # ── Bridge: normalise to pipeline schema ─────────────────────────────────
-    required = {'etf', 'ticker', 'name', 'weight_pct', 'as_of_date'}
-    if not required.issubset(set(raw.columns)):
-        missing = required - set(raw.columns)
-        print(f"  ❌ Extended CSV missing columns: {missing} — skipping bridge.")
-        return
-
-    bridge = raw.copy()
-
-    # Drop non-equity rows (cash, derivatives, etc.)
-    if 'security_type' in bridge.columns:
-        non_equity_types = {
-            'cash', 'cash equivalent', 'money market', 'derivative',
-            'futures', 'option', 'swap', 'fx', 'currency',
-        }
-        mask = bridge['security_type'].fillna('').str.lower()
-        bridge = bridge[~mask.str.contains('|'.join(non_equity_types), na=False)]
-
-    # Drop rows with no usable ticker
-    bridge = bridge[bridge['ticker'].notna() & bridge['ticker'].astype(str).str.strip().ne('')]
-    bridge = bridge[~bridge['ticker'].astype(str).str.startswith('$')]
-
-    # Weight: weight_pct is stored as percentage (e.g. 5.25 = 5.25%) → divide by 100
-    bridge['weight'] = pd.to_numeric(bridge['weight_pct'], errors='coerce').fillna(0) / 100.0
-    bridge = bridge[bridge['weight'] > 0]
-
-    # Date normalisation
-    bridge['Holdings_As_Of'] = pd.to_datetime(bridge['as_of_date'], errors='coerce').dt.strftime('%Y-%m-%d')
-    bridge['Date_Scraped']   = pd.to_datetime(bridge['scrape_date'].astype(str), format='%Y%m%d', errors='coerce').dt.strftime('%Y-%m-%d')
-    bridge['Date_Scraped']   = bridge['Date_Scraped'].fillna(TODAY)
-
-    # Final schema
-    bridge = bridge.rename(columns={'etf': 'ETF_Ticker', 'name': 'name'})
-    pipeline_df = bridge[['ETF_Ticker', 'ticker', 'name', 'weight', 'Holdings_As_Of', 'Date_Scraped']].copy()
-    pipeline_df = pipeline_df.dropna(subset=['Holdings_As_Of'])
-
-    if pipeline_df.empty:
-        print("  ⚠️  Extended bridge produced 0 valid rows — skipping.")
-        return
-
-    print(f"  Bridge: {len(pipeline_df)} rows across {pipeline_df['ETF_Ticker'].nunique()} ETFs")
-    for etf, grp in pipeline_df.groupby('ETF_Ticker'):
-        aod = grp['Holdings_As_Of'].iloc[0]
-        print(f"    {etf:6} {len(grp):4} rows | as_of={aod}")
-
-    # Merge into giant history
-    update_giant_history([pipeline_df])
