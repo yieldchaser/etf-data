@@ -87,6 +87,12 @@ jobs:
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
 
+      - name: Fetch vol history (CBOE indices from FRED)
+        run: python -m predator.vol_history --full-refresh
+        continue-on-error: true
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+
       - name: Verify outputs
         run: |
           test -f docs/data/leaderboard.json

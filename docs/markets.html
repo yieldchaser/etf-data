@@ -148,6 +148,13 @@
               x-tooltip="'Correlation matrix + cumulative growth chart'">
         Correlation
       </button>
+      <button @click="activeTab = 'volatility'"
+              :class="activeTab === 'volatility' ? 'tab-active' : ''"
+              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+              :style="activeTab === 'volatility' ? '' : 'color: var(--text-2); border-color: var(--border)'"
+              x-tooltip="'Volatility Intelligence — CBOE implied vol indices'">
+        Volatility
+      </button>
     </div>
     <!-- Divider -->
     <div class="w-px h-5 mx-1" style="background: var(--border-2)"></div>
@@ -964,6 +971,236 @@
   </div><!-- /correlation tab -->
 
 
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- TAB 9: VOLATILITY INTELLIGENCE (View I)                            -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div x-show="activeTab === 'volatility'">
+
+    <!-- Loading state -->
+    <div x-show="loadingVol" class="pulse-load text-center py-20" style="color: var(--text-3)">
+      <div class="text-lg mb-2">Loading volatility data…</div>
+      <div class="text-xs">Run: <code>python -m predator.vol_history</code> to generate data/vol_history.json</div>
+    </div>
+
+    <!-- No data state -->
+    <div x-show="!loadingVol && !volData" class="text-center py-20">
+      <div class="text-base mb-2" style="color: var(--amber)">No volatility data yet</div>
+      <div class="text-xs mb-4" style="color: var(--text-3)">Run the pipeline to generate <code>data/vol_history.json</code></div>
+      <code class="text-xs px-3 py-2 rounded border inline-block" style="border-color: var(--border-2); background: var(--surface); color: var(--text-2)">python -m predator.vol_history</code>
+    </div>
+
+    <!-- Vol content -->
+    <div x-show="!loadingVol && volData">
+
+      <!-- View I controls -->
+      <div class="flex flex-wrap gap-2 mb-5 items-center">
+        <!-- Sub-panel selector -->
+        <div class="flex gap-1">
+          <template x-for="panel in ['I-1','I-2','I-3','I-4']" :key="panel">
+            <button @click="volSubPanel = panel"
+                    :class="volSubPanel === panel ? 'tab-active' : ''"
+                    class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+                    :style="volSubPanel === panel ? '' : 'color: var(--text-2); border-color: var(--border)'"
+                    x-text="panel">
+            </button>
+          </template>
+        </div>
+        <div class="w-px h-5 mx-1" style="background: var(--border-2)"></div>
+        <!-- Lookback window -->
+        <div class="flex items-center gap-1">
+          <span class="label" style="font-size:9px;">Z-SCORE LOOKBACK</span>
+          <template x-for="lb in ['1Y','3Y','5Y','All']" :key="lb">
+            <button @click="volLookback = lb"
+                    :class="volLookback === lb ? 'tab-active' : ''"
+                    class="px-2.5 py-1 rounded-md border font-medium text-xs transition"
+                    :style="volLookback === lb ? '' : 'color: var(--text-2); border-color: var(--border)'"
+                    x-text="lb">
+            </button>
+          </template>
+        </div>
+        <div class="w-px h-5 mx-1" style="background: var(--border-2)"></div>
+        <!-- Granularity -->
+        <div class="flex items-center gap-1">
+          <span class="label" style="font-size:9px;">GRANULARITY</span>
+          <template x-for="g in ['Daily','Monthly avg']" :key="g">
+            <button @click="volGranularity = g"
+                    :class="volGranularity === g ? 'tab-active' : ''"
+                    class="px-2.5 py-1 rounded-md border font-medium text-xs transition"
+                    :style="volGranularity === g ? '' : 'color: var(--text-2); border-color: var(--border)'"
+                    x-text="g">
+            </button>
+          </template>
+        </div>
+        <!-- Data timestamp -->
+        <div class="ml-auto text-xs font-mono" style="color: var(--text-3)"
+             x-text="volData ? `Vol data: ${(volData.generated_utc||'').slice(0,10)}` : ''"></div>
+      </div>
+
+      <!-- Sub-panel label -->
+      <div class="mb-4">
+        <template x-if="volSubPanel === 'I-1'">
+          <div>
+            <h2 class="text-sm font-medium" style="color: var(--cyan)">I-1 · CURRENT LEVEL DASHBOARD</h2>
+            <div class="text-xs mt-0.5" style="color: var(--text-3)">Current level, z-score vs history, 12-month sparkline. Color = z-score magnitude.</div>
+          </div>
+        </template>
+        <template x-if="volSubPanel === 'I-2'">
+          <div>
+            <h2 class="text-sm font-medium" style="color: var(--cyan)">I-2 · MONTHLY Z-SCORE HEATMAP</h2>
+            <div class="text-xs mt-0.5" style="color: var(--text-3)">Rows = vol indices, columns = months. Each cell = z-score of monthly avg vs full history. Click for raw level.</div>
+          </div>
+        </template>
+        <template x-if="volSubPanel === 'I-3'">
+          <div>
+            <h2 class="text-sm font-medium" style="color: var(--cyan)">I-3 · HISTORICAL LEVEL CHART</h2>
+            <div class="text-xs mt-0.5" style="color: var(--text-3)">Daily close levels over time. Toggle series. Hover for exact level + date.</div>
+          </div>
+        </template>
+        <template x-if="volSubPanel === 'I-4'">
+          <div>
+            <h2 class="text-sm font-medium" style="color: var(--cyan)">I-4 · CROSS-ASSET VOL COMPARISON</h2>
+            <div class="text-xs mt-0.5" style="color: var(--text-3)">Current z-scores of all 7 vol indices. Shows which markets have elevated or depressed implied vol.</div>
+          </div>
+        </template>
+      </div>
+
+      <!-- ─── I-1: Current Level Dashboard ─────────────────────────────── -->
+      <div x-show="volSubPanel === 'I-1'">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+          <template x-for="tile in volTiles" :key="tile.key">
+            <div class="rounded-lg border p-3 transition"
+                 :style="`background: ${tile.bgColor}; border-color: ${tile.borderColor};`">
+              <!-- Header -->
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-bold font-mono" style="color: var(--text)" x-text="tile.name"></span>
+                <span class="text-[9px] font-mono px-1.5 py-0.5 rounded"
+                      :style="`background: ${tile.zBadgeBg}; color: ${tile.zBadgeColor};`"
+                      x-text="tile.zLabel"></span>
+              </div>
+              <!-- Current level -->
+              <div class="text-2xl font-medium num font-mono mb-1" style="color: var(--text)"
+                   x-text="tile.current !== null ? tile.current.toFixed(1) : '—'"></div>
+              <!-- Description -->
+              <div class="text-[9px] mb-2" style="color: var(--text-3)" x-text="tile.description"></div>
+              <!-- Sparkline (12-month) -->
+              <div x-html="tile.sparklineSvg" style="width:100%;"></div>
+              <!-- Footer: first date -->
+              <div class="text-[9px] mt-1 font-mono" style="color: var(--text-3)"
+                   x-text="`Since ${tile.first}`"></div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- ─── I-2: Monthly Z-Score Heatmap ─────────────────────────────── -->
+      <div x-show="volSubPanel === 'I-2'">
+        <div class="rounded-lg border overflow-auto scrollbar" style="max-height: 75vh; background: var(--bg); border-color: var(--border)">
+          <div x-html="volMonthlyZHeatmapHtml"></div>
+        </div>
+        <!-- Color legend -->
+        <div class="flex items-center gap-2 mt-3 text-[10px] font-mono flex-wrap" style="color: var(--text-3)">
+          <span>Z-score scale:</span>
+          <span style="background:#1d4ed8;width:14px;height:14px;display:inline-block;border-radius:2px;"></span><span>≤ −2</span>
+          <span style="background:#3b82f6;width:14px;height:14px;display:inline-block;border-radius:2px;margin-left:4px;"></span><span>−2→−1</span>
+          <span style="background:#93c5fd;width:14px;height:14px;display:inline-block;border-radius:2px;margin-left:4px;"></span><span>−1→0</span>
+          <span style="background:#27272a;width:14px;height:14px;display:inline-block;border-radius:2px;margin-left:4px;"></span><span>≈0</span>
+          <span style="background:#fdba74;width:14px;height:14px;display:inline-block;border-radius:2px;margin-left:4px;"></span><span>0→+1</span>
+          <span style="background:#f97316;width:14px;height:14px;display:inline-block;border-radius:2px;margin-left:4px;"></span><span>+1→+2</span>
+          <span style="background:#c2410c;width:14px;height:14px;display:inline-block;border-radius:2px;margin-left:4px;"></span><span>≥ +2</span>
+        </div>
+      </div>
+
+      <!-- ─── I-3: Historical Level Chart ──────────────────────────────── -->
+      <div x-show="volSubPanel === 'I-3'">
+        <!-- Series toggles -->
+        <div class="flex flex-wrap gap-2 mb-4">
+          <template x-for="s in volSeriesDefs" :key="s.key">
+            <button @click="toggleVolSeries(s.key)"
+                    class="chip border transition"
+                    :style="activeVolSeries.has(s.key)
+                      ? `background: ${s.color}22; color: ${s.color}; border-color: ${s.color}55;`
+                      : 'color: var(--text-3); border-color: var(--border); opacity: 0.5;'"
+                    x-text="s.name">
+            </button>
+          </template>
+        </div>
+
+        <!-- SVG Chart -->
+        <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+          <div x-html="volLevelChartSvg"
+               @mousemove="volChartHover($event)"
+               @mouseleave="volHoverInfo = null"
+               style="width: 100%; overflow-x: auto;"></div>
+          <!-- Hover info bar -->
+          <div x-show="volHoverInfo" class="px-4 py-2 flex flex-wrap gap-x-6 gap-y-1 text-xs num font-mono"
+               style="border-top: 1px solid var(--border); background: var(--surface-2)">
+            <span style="color: var(--text-3)" x-text="volHoverInfo?.date || ''"></span>
+            <template x-for="item in (volHoverInfo?.values || [])" :key="item.key">
+              <span :style="`color: ${item.color}`"
+                    x-text="`${item.name}: ${item.val !== null ? item.val.toFixed(1) : '—'}`"></span>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── I-4: Cross-Asset Vol Comparison ──────────────────────────── -->
+      <div x-show="volSubPanel === 'I-4'">
+        <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+          <div x-html="volZBarHtml" style="width:100%;overflow-x:auto;"></div>
+        </div>
+        <!-- Z-score table -->
+        <div class="mt-4 rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+          <div class="px-3 py-2 label" style="border-bottom: 1px solid var(--border); color: var(--cyan)">
+            CURRENT Z-SCORES
+            <span class="ml-2 font-mono text-[10px]" style="color: var(--text-3)"
+                  x-text="`Lookback: ${volLookback} · ${volGranularity}`"></span>
+          </div>
+          <div class="overflow-x-auto scrollbar">
+            <table class="w-full text-xs">
+              <thead style="background: #050505; color: var(--text-3)">
+                <tr style="border-bottom: 1px solid var(--border)">
+                  <th class="text-left px-3 py-2 label">Index</th>
+                  <th class="text-right px-3 py-2 label">Current Level</th>
+                  <th class="text-right px-3 py-2 label">Z-Score</th>
+                  <th class="text-right px-3 py-2 label">Mean (lookback)</th>
+                  <th class="text-right px-3 py-2 label">Stdev (lookback)</th>
+                  <th class="text-right px-3 py-2 label">Interpretation</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="tile in volTiles" :key="tile.key">
+                  <tr class="row-hover" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
+                    <td class="px-3 py-2">
+                      <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-sm flex-shrink-0"
+                              :style="`background: ${volSeriesDefs.find(s=>s.key===tile.key)?.color || '#888'}`"></span>
+                        <span class="font-medium" style="color: var(--text)" x-text="tile.name"></span>
+                      </div>
+                    </td>
+                    <td class="px-3 py-2 text-right num font-mono" style="color: var(--text)"
+                        x-text="tile.current !== null ? tile.current.toFixed(1) : '—'"></td>
+                    <td class="px-3 py-2 text-right num font-mono font-medium"
+                        :style="`color: ${tile.zColor}`"
+                        x-text="tile.z !== null ? (tile.z >= 0 ? '+' : '') + tile.z.toFixed(2) : '—'"></td>
+                    <td class="px-3 py-2 text-right num font-mono" style="color: var(--text-2)"
+                        x-text="tile.mean !== null ? tile.mean.toFixed(1) : '—'"></td>
+                    <td class="px-3 py-2 text-right num font-mono" style="color: var(--text-2)"
+                        x-text="tile.stdev !== null ? tile.stdev.toFixed(1) : '—'"></td>
+                    <td class="px-3 py-2 text-right text-[10px]"
+                        :style="`color: ${tile.zColor}`"
+                        x-text="tile.interpretation"></td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /vol content -->
+  </div><!-- /volatility tab -->
+
+
   <!-- FOOTER -->
   <footer class="mt-8 pt-4 text-xs flex gap-4 flex-wrap" style="border-top: 1px solid var(--border); color: var(--text-3)">
     <span>Predator Protocol · yieldchaser/etf-data</span>
@@ -1001,9 +1238,11 @@ function marketsApp() {
     // State
     loading: true,
     loadingReturns: true,
+    loadingVol: true,
     meta: {},
     series: [],
     returnsData: null,
+    volData: null,
     activeTab: 'matrix',
     expandedCell: null,   // {assetKey, year}
     selected: null,
@@ -1012,10 +1251,17 @@ function marketsApp() {
     activeCcy: 'Local',   // 'Local' | 'USD' | 'INR'
     activeReal: false,    // true = CPI-adjusted
 
+    // Vol Intelligence state
+    volLookback: 'All',   // '1Y' | '3Y' | '5Y' | 'All'
+    volGranularity: 'Monthly avg',  // 'Daily' | 'Monthly avg'
+    volSubPanel: 'I-1',   // 'I-1' | 'I-2' | 'I-3' | 'I-4'
+    activeVolSeries: new Set(['vix', 'gvz', 'ovx']),
+    volHoverInfo: null,
+
     // ── Data loading ──────────────────────────────────────────────────────
     async load() {
-      // Load both in parallel; each handles its own error
-      await Promise.all([this._loadPriceLog(), this._loadReturns()]);
+      // Load all three in parallel; each handles its own error
+      await Promise.all([this._loadPriceLog(), this._loadReturns(), this._loadVol()]);
     },
 
     async _loadPriceLog() {
@@ -1040,6 +1286,19 @@ function marketsApp() {
         this.returnsData = null;
       } finally {
         this.loadingReturns = false;
+      }
+    },
+
+    async _loadVol() {
+      try {
+        const r = await fetch('data/vol_history.json', { cache: 'no-store' });
+        if (!r.ok) { this.volData = null; return; }
+        this.volData = await r.json();
+      } catch (e) {
+        console.warn('Vol history data not available:', e);
+        this.volData = null;
+      } finally {
+        this.loadingVol = false;
       }
     },
 
@@ -2292,6 +2551,467 @@ function marketsApp() {
       }
       return html + `</table>`;
     },
+
+    // ── View I: Volatility Intelligence ──────────────────────────────────
+
+    // Series definitions for vol chart (7 CBOE indices with distinct colors)
+    get volSeriesDefs() {
+      return [
+        { key: 'vix',   name: 'VIX',   color: '#22d3ee', description: 'S&P 500' },
+        { key: 'gvz',   name: 'GVZ',   color: '#fbbf24', description: 'Gold ETF' },
+        { key: 'ovx',   name: 'OVX',   color: '#fb923c', description: 'Crude Oil ETF' },
+        { key: 'vxn',   name: 'VXN',   color: '#a5b4fc', description: 'Nasdaq 100' },
+        { key: 'rvx',   name: 'RVX',   color: '#34d399', description: 'Russell 2000' },
+        { key: 'vxd',   name: 'VXD',   color: '#f472b6', description: 'DJIA' },
+        { key: 'vxeem', name: 'VXEEM', color: '#c084fc', description: 'EM ETF' },
+      ];
+    },
+
+    toggleVolSeries(key) {
+      const s = new Set(this.activeVolSeries);
+      if (s.has(key)) { if (s.size > 1) s.delete(key); } else { s.add(key); }
+      this.activeVolSeries = s;
+    },
+
+    // Get the values array for a series based on current granularity
+    _volValues(key) {
+      if (!this.volData) return {};
+      const s = this.volData.series?.[key];
+      if (!s) return {};
+      return this.volGranularity === 'Daily' ? (s.daily || {}) : (s.monthly_avg || {});
+    },
+
+    // Compute z-score of current level vs lookback window
+    computeZScore(key, lookback) {
+      const vals = this._volValues(key);
+      const dates = Object.keys(vals).sort();
+      if (!dates.length) return { z: null, mean: null, stdev: null, current: null };
+
+      const current = vals[dates[dates.length - 1]];
+      if (current == null) return { z: null, mean: null, stdev: null, current: null };
+
+      // Determine lookback window
+      let windowDates = dates;
+      if (lookback !== 'All') {
+        const years = parseInt(lookback);
+        const cutoff = new Date(dates[dates.length - 1]);
+        cutoff.setFullYear(cutoff.getFullYear() - years);
+        const cutoffStr = cutoff.toISOString().slice(0, 10);
+        windowDates = dates.filter(d => d >= cutoffStr);
+      }
+
+      if (windowDates.length < 2) return { z: null, mean: null, stdev: null, current };
+
+      const values = windowDates.map(d => vals[d]).filter(v => v != null);
+      if (values.length < 2) return { z: null, mean: null, stdev: null, current };
+
+      const mean = values.reduce((a, b) => a + b, 0) / values.length;
+      const variance = values.reduce((a, b) => a + (b - mean) ** 2, 0) / (values.length - 1);
+      const stdev = Math.sqrt(variance);
+
+      const z = stdev > 0 ? (current - mean) / stdev : null;
+      return { z, mean, stdev, current };
+    },
+
+    // Z-score → tile background color (green=low, neutral, orange=elevated, red=high)
+    _zTileBg(z) {
+      if (z === null) return 'var(--surface)';
+      if (z < -1)  return 'rgba(52,211,153,0.08)';   // green — historically low
+      if (z < 1)   return 'var(--surface)';            // neutral
+      if (z < 2)   return 'rgba(251,146,60,0.10)';    // orange — elevated
+      return 'rgba(251,113,133,0.12)';                  // red — very elevated
+    },
+
+    _zTileBorder(z) {
+      if (z === null) return 'var(--border)';
+      if (z < -1)  return 'rgba(52,211,153,0.25)';
+      if (z < 1)   return 'var(--border)';
+      if (z < 2)   return 'rgba(251,146,60,0.30)';
+      return 'rgba(251,113,133,0.35)';
+    },
+
+    _zColor(z) {
+      if (z === null) return 'var(--text-3)';
+      if (z < -1)  return 'var(--up)';
+      if (z < 1)   return 'var(--text-2)';
+      if (z < 2)   return 'var(--amber)';
+      return 'var(--down)';
+    },
+
+    _zInterpretation(z) {
+      if (z === null) return '—';
+      if (z < -2)  return 'Historically low';
+      if (z < -1)  return 'Below average';
+      if (z < 1)   return 'Near average';
+      if (z < 2)   return 'Elevated';
+      return 'Very elevated';
+    },
+
+    // Z-score → heatmap cell color (blue↔orange diverging, same as returns matrix)
+    _zCellColor(z) {
+      if (z === null || z === undefined) return 'transparent';
+      if (z <= -2)  return '#1d4ed8';
+      if (z <= -1)  return '#3b82f6';
+      if (z < 0)    return '#93c5fd';
+      if (z < 1)    return '#fdba74';
+      if (z < 2)    return '#f97316';
+      return '#c2410c';
+    },
+
+    _zCellTextColor(z) {
+      if (z === null) return 'transparent';
+      const abs = Math.abs(z);
+      if (abs > 1) return 'rgba(255,255,255,0.9)';
+      return 'rgba(0,0,0,0.75)';
+    },
+
+    // Build sparkline SVG for trailing 12 months of a series
+    _volSparkline(key) {
+      const daily = this.volData?.series?.[key]?.daily || {};
+      const dates = Object.keys(daily).sort();
+      if (!dates.length) return '';
+
+      // Get trailing 12 months of daily data
+      const cutoff = new Date(dates[dates.length - 1]);
+      cutoff.setFullYear(cutoff.getFullYear() - 1);
+      const cutoffStr = cutoff.toISOString().slice(0, 10);
+      const recent = dates.filter(d => d >= cutoffStr);
+      if (recent.length < 2) return '';
+
+      const vals = recent.map(d => daily[d]).filter(v => v != null);
+      if (vals.length < 2) return '';
+
+      const minV = Math.min(...vals), maxV = Math.max(...vals);
+      const range = maxV - minV || 1;
+      const W = 120, H = 28;
+      const xS = (i) => (i / (vals.length - 1)) * W;
+      const yS = (v) => H - ((v - minV) / range) * H;
+
+      let d = '';
+      for (let i = 0; i < vals.length; i++) {
+        d += i === 0 ? `M${xS(i).toFixed(1)},${yS(vals[i]).toFixed(1)} ` : `L${xS(i).toFixed(1)},${yS(vals[i]).toFixed(1)} `;
+      }
+
+      const lastVal = vals[vals.length - 1];
+      const color = lastVal > (minV + maxV) / 2 ? '#f97316' : '#34d399';
+
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block"><path d="${d.trim()}" fill="none" stroke="${color}" stroke-width="1.5" opacity="0.8"/></svg>`;
+    },
+
+    // I-1: Tile data for all 7 vol indices
+    get volTiles() {
+      if (!this.volData) return [];
+      return this.volSeriesDefs.map(s => {
+        const { z, mean, stdev, current } = this.computeZScore(s.key, this.volLookback);
+        const meta = this.volData.series?.[s.key]?.meta || {};
+        const zLabel = z !== null ? (z >= 0 ? '+' : '') + z.toFixed(2) + 'σ' : '—';
+        const zBadgeBg = z === null ? 'rgba(161,161,170,0.1)' :
+          z < -1 ? 'rgba(52,211,153,0.15)' :
+          z < 1  ? 'rgba(161,161,170,0.1)' :
+          z < 2  ? 'rgba(251,146,60,0.15)' :
+                   'rgba(251,113,133,0.15)';
+        const zBadgeColor = this._zColor(z);
+        return {
+          key: s.key,
+          name: s.name,
+          description: s.description,
+          current,
+          z,
+          mean,
+          stdev,
+          zLabel,
+          zColor: this._zColor(z),
+          zBadgeBg,
+          zBadgeColor,
+          bgColor: this._zTileBg(z),
+          borderColor: this._zTileBorder(z),
+          interpretation: this._zInterpretation(z),
+          first: meta.first || '—',
+          sparklineSvg: this._volSparkline(s.key),
+        };
+      });
+    },
+
+    // I-2: Monthly Z-Score Heatmap HTML (table with sticky row labels)
+    get volMonthlyZHeatmapHtml() {
+      if (!this.volData) return '';
+      const series = this.volData.series || {};
+
+      // Collect all YYYY-MM keys across all series
+      const monthSet = new Set();
+      for (const key of Object.keys(series)) {
+        const ma = series[key].monthly_avg || {};
+        Object.keys(ma).forEach(m => monthSet.add(m));
+      }
+      const months = Array.from(monthSet).sort();
+      if (!months.length) return '<div style="padding:40px;text-align:center;color:var(--text-3)">No monthly data</div>';
+
+      const CELL_W = 44, CELL_H = 28, NAME_W = 80;
+
+      // Pre-compute z-scores for each series using full history
+      const zScores = {};
+      for (const s of this.volSeriesDefs) {
+        const ma = series[s.key]?.monthly_avg || {};
+        const allVals = Object.values(ma).filter(v => v != null);
+        if (allVals.length < 2) { zScores[s.key] = {}; continue; }
+        const mean = allVals.reduce((a, b) => a + b, 0) / allVals.length;
+        const stdev = Math.sqrt(allVals.reduce((a, b) => a + (b - mean) ** 2, 0) / (allVals.length - 1));
+        zScores[s.key] = {};
+        for (const [m, v] of Object.entries(ma)) {
+          zScores[s.key][m] = stdev > 0 ? (v - mean) / stdev : 0;
+        }
+      }
+
+      const totalW = NAME_W + months.length * CELL_W;
+      const totalH = (this.volSeriesDefs.length + 1) * CELL_H + 4;
+
+      let html = `<div style="overflow-x:auto;overflow-y:auto;max-height:320px;">`;
+      html += `<table style="border-collapse:separate;border-spacing:0;min-width:${totalW}px;">`;
+
+      // Header row
+      html += `<thead><tr>`;
+      html += `<th style="position:sticky;left:0;z-index:4;background:var(--bg);min-width:${NAME_W}px;max-width:${NAME_W}px;padding:4px 8px;border-bottom:1px solid var(--border-2);border-right:1px solid var(--border-2);"><span style="font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-3);">Index</span></th>`;
+
+      // Show every 6th month label to avoid crowding
+      for (let mi = 0; mi < months.length; mi++) {
+        const m = months[mi];
+        const label = mi % 6 === 0 ? m : '';
+        html += `<th style="min-width:${CELL_W}px;width:${CELL_W}px;height:${CELL_H}px;text-align:center;font-size:8px;font-family:ui-monospace;color:#52525b;border-bottom:1px solid var(--border-2);padding:0;white-space:nowrap;">${label}</th>`;
+      }
+      html += `</tr></thead>`;
+
+      // Data rows
+      html += `<tbody>`;
+      for (const s of this.volSeriesDefs) {
+        html += `<tr>`;
+        html += `<td style="position:sticky;left:0;z-index:2;background:var(--bg);min-width:${NAME_W}px;max-width:${NAME_W}px;padding:4px 8px;border-right:1px solid var(--border-2);border-bottom:1px solid rgba(255,255,255,0.03);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">`;
+        html += `<div style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:${s.color};flex-shrink:0;"></span><span style="font-size:10px;font-weight:600;color:var(--text);">${s.name}</span></div>`;
+        html += `</td>`;
+
+        for (const m of months) {
+          const z = zScores[s.key]?.[m] ?? null;
+          const rawVal = series[s.key]?.monthly_avg?.[m] ?? null;
+          const bg = this._zCellColor(z);
+          const tc = this._zCellTextColor(z);
+          const zText = z !== null ? (z >= 0 ? '+' : '') + z.toFixed(1) : '';
+          const tip = rawVal !== null ? `${s.name}\\n${m}\\nAvg: ${rawVal.toFixed(1)}\\nZ: ${z !== null ? z.toFixed(2) : '—'}` : `${s.name}\\n${m}\\nNo data`;
+          html += `<td style="width:${CELL_W}px;min-width:${CELL_W}px;height:${CELL_H}px;text-align:center;font-size:9px;font-family:ui-monospace;background:${bg};color:${tc};border:1px solid rgba(0,0,0,0.3);cursor:pointer;" title="${tip.replace(/"/g, '&quot;')}" onmouseenter="document.getElementById('tt').innerHTML='${tip.replace(/'/g, '&#39;')}';document.getElementById('tt').style.opacity='1';_posTt(this)" onmouseleave="document.getElementById('tt').style.opacity='0'">${zText}</td>`;
+        }
+        html += `</tr>`;
+      }
+      html += `</tbody></table></div>`;
+      return html;
+    },
+
+    // I-3: Historical Level Chart SVG
+    get volLevelChartSvg() {
+      if (!this.volData) return '';
+      const active = this.activeVolSeries;
+      const seriesDefs = this.volSeriesDefs.filter(s => active.has(s.key));
+      if (!seriesDefs.length) return '<div style="padding:40px;text-align:center;color:var(--text-3)">Select at least one series</div>';
+
+      const useDaily = this.volGranularity === 'Daily';
+
+      // Collect all date keys
+      const allDates = new Set();
+      for (const s of seriesDefs) {
+        const vals = this._volValues(s.key);
+        Object.keys(vals).forEach(d => allDates.add(d));
+      }
+      const dates = Array.from(allDates).sort();
+      if (!dates.length) return '<div style="padding:40px;text-align:center;color:var(--text-3)">No data</div>';
+
+      const W = 1200, H = 340, PL = 52, PR = 20, PT = 20, PB = 40;
+      const chartW = W - PL - PR, chartH = H - PT - PB;
+
+      // Value range
+      let minV = Infinity, maxV = -Infinity;
+      for (const s of seriesDefs) {
+        const vals = this._volValues(s.key);
+        for (const v of Object.values(vals)) {
+          if (v != null && isFinite(v)) { minV = Math.min(minV, v); maxV = Math.max(maxV, v); }
+        }
+      }
+      if (!isFinite(minV)) return '';
+      const pad = (maxV - minV) * 0.05 || 1;
+      minV = Math.max(0, minV - pad); maxV += pad;
+
+      const xScale = (d) => PL + (dates.indexOf(d) / Math.max(dates.length - 1, 1)) * chartW;
+      const yScale = (v) => PT + chartH - ((v - minV) / (maxV - minV)) * chartH;
+
+      // Y-axis ticks
+      let yTicks = '';
+      const nTicks = 6;
+      for (let i = 0; i <= nTicks; i++) {
+        const v = minV + (maxV - minV) * i / nTicks;
+        const y = yScale(v);
+        yTicks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>`;
+        yTicks += `<text x="${PL - 4}" y="${(y + 4).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${v.toFixed(0)}</text>`;
+      }
+
+      // X-axis year labels
+      let xLabels = '';
+      const years = [...new Set(dates.map(d => d.slice(0, 4)))];
+      for (const yr of years) {
+        if (parseInt(yr) % 5 !== 0) continue;
+        const d = useDaily ? `${yr}-01-01` : `${yr}-01`;
+        const closest = dates.find(x => x >= d) || dates[0];
+        const x = xScale(closest);
+        xLabels += `<text x="${x.toFixed(1)}" y="${H - 8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${yr}</text>`;
+        xLabels += `<line x1="${x.toFixed(1)}" y1="${PT}" x2="${x.toFixed(1)}" y2="${H - PB}" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>`;
+      }
+
+      // Event annotations
+      const events = [
+        { d: useDaily ? '2008-09-15' : '2008-09', label: 'GFC' },
+        { d: useDaily ? '2020-03-16' : '2020-03', label: 'COVID' },
+        { d: useDaily ? '2022-01-24' : '2022-01', label: 'Rate shock' },
+      ];
+      let annotations = '';
+      for (const ev of events) {
+        const closest = dates.find(x => x >= ev.d);
+        if (!closest) continue;
+        const x = xScale(closest);
+        annotations += `<line x1="${x.toFixed(1)}" y1="${PT}" x2="${x.toFixed(1)}" y2="${H - PB}" stroke="rgba(251,191,36,0.25)" stroke-width="1" stroke-dasharray="3,3"/>`;
+        annotations += `<text x="${x.toFixed(1)}" y="${PT - 4}" text-anchor="middle" style="font-size:8px;fill:#fbbf24;font-family:ui-monospace">${ev.label}</text>`;
+      }
+
+      // Lines per series
+      let lines = '';
+      for (const s of seriesDefs) {
+        const vals = this._volValues(s.key);
+        let d = '';
+        let inSeg = false;
+        for (const date of dates) {
+          const v = vals[date];
+          if (v == null || !isFinite(v)) { inSeg = false; continue; }
+          const x = xScale(date).toFixed(1), y = yScale(v).toFixed(1);
+          if (!inSeg) { d += `M${x},${y} `; inSeg = true; }
+          else { d += `L${x},${y} `; }
+        }
+        if (d) {
+          lines += `<path d="${d.trim()}" fill="none" stroke="${s.color}" stroke-width="1.5" opacity="0.85" data-series="${s.key}"/>`;
+        }
+      }
+
+      // Legend
+      let legend = '';
+      for (let i = 0; i < seriesDefs.length; i++) {
+        const s = seriesDefs[i];
+        const lx = PL + i * 90;
+        legend += `<rect x="${lx}" y="${H - PB + 18}" width="12" height="3" fill="${s.color}" rx="1"/>`;
+        legend += `<text x="${lx + 16}" y="${H - PB + 22}" style="font-size:9px;fill:${s.color};font-family:ui-monospace">${s.name}</text>`;
+      }
+
+      const crosshair = `<line id="vol-crosshair" x1="0" y1="${PT}" x2="0" y2="${H - PB}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
+
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block">${yTicks}${xLabels}${annotations}${lines}${legend}${crosshair}</svg>`;
+    },
+
+    volChartHover(e) {
+      const svg = e.currentTarget.querySelector('svg');
+      if (!svg) return;
+      const rect = svg.getBoundingClientRect();
+      const active = this.activeVolSeries;
+      const seriesDefs = this.volSeriesDefs.filter(s => active.has(s.key));
+
+      const allDates = new Set();
+      for (const s of seriesDefs) {
+        Object.keys(this._volValues(s.key)).forEach(d => allDates.add(d));
+      }
+      const dates = Array.from(allDates).sort();
+      if (!dates.length) return;
+
+      const W = 1200, PL = 52, PR = 20;
+      const chartW = W - PL - PR;
+      const scaleX = rect.width / W;
+      const relX = (e.clientX - rect.left) / scaleX;
+      const frac = Math.max(0, Math.min(1, (relX - PL) / chartW));
+      const idx = Math.round(frac * (dates.length - 1));
+      const date = dates[idx];
+
+      const values = seriesDefs.map(s => {
+        const vals = this._volValues(s.key);
+        return { key: s.key, name: s.name, color: s.color, val: vals[date] ?? null };
+      });
+
+      this.volHoverInfo = { date, values };
+
+      const crosshair = svg.getElementById('vol-crosshair');
+      if (crosshair) {
+        const xPos = PL + frac * chartW;
+        crosshair.setAttribute('x1', xPos);
+        crosshair.setAttribute('x2', xPos);
+        crosshair.setAttribute('opacity', '1');
+      }
+    },
+
+    // I-4: Cross-Asset Vol Comparison bar chart
+    get volZBarHtml() {
+      if (!this.volData) return '';
+      const tiles = this.volTiles;
+      if (!tiles.length) return '';
+
+      const W = 700, H = 280, PL = 70, PR = 30, PT = 30, PB = 40;
+      const chartW = W - PL - PR, chartH = H - PT - PB;
+      const n = tiles.length;
+      const barW = Math.floor(chartW / n) - 4;
+
+      // Z range
+      const zVals = tiles.map(t => t.z).filter(z => z !== null);
+      if (!zVals.length) return '';
+      const minZ = Math.min(-2.5, ...zVals) * 1.1;
+      const maxZ = Math.max(2.5, ...zVals) * 1.1;
+
+      const yScale = (v) => PT + chartH - ((v - minZ) / (maxZ - minZ)) * chartH;
+      const y0 = yScale(0);
+
+      // Y-axis ticks
+      let yTicks = '';
+      for (let v = Math.ceil(minZ); v <= Math.floor(maxZ); v++) {
+        const y = yScale(v);
+        yTicks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" stroke="${v === 0 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.04)'}" stroke-width="${v === 0 ? 1 : 1}"/>`;
+        yTicks += `<text x="${PL - 4}" y="${(y + 4).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${v >= 0 ? '+' : ''}${v}σ</text>`;
+      }
+
+      // Reference lines at ±1, ±2
+      let refLines = '';
+      for (const v of [-2, -1, 1, 2]) {
+        const y = yScale(v);
+        refLines += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.08)" stroke-width="1" stroke-dasharray="4,3"/>`;
+      }
+
+      // Bars
+      let bars = '';
+      for (let i = 0; i < tiles.length; i++) {
+        const t = tiles[i];
+        const x = PL + i * (chartW / n) + (chartW / n - barW) / 2;
+        const z = t.z;
+        if (z === null) continue;
+
+        const barTop = Math.min(y0, yScale(z));
+        const barH = Math.abs(y0 - yScale(z));
+        const color = z < -1 ? '#34d399' : z < 1 ? '#94a3b8' : z < 2 ? '#f97316' : '#fb7185';
+
+        bars += `<rect x="${x.toFixed(1)}" y="${barTop.toFixed(1)}" width="${barW}" height="${Math.max(barH, 2).toFixed(1)}" fill="${color}" opacity="0.8" rx="2"
+                       onmouseenter="document.getElementById('tt').innerHTML='${t.name}\\nZ-score: ${z >= 0 ? '+' : ''}${z.toFixed(2)}σ\\nLevel: ${t.current !== null ? t.current.toFixed(1) : '—'}\\n${t.interpretation}';document.getElementById('tt').style.opacity='1';_posTt(this)"
+                       onmouseleave="document.getElementById('tt').style.opacity='0'"
+                       style="cursor:pointer"/>`;
+
+        // Label below bar
+        bars += `<text x="${(x + barW / 2).toFixed(1)}" y="${H - PB + 14}" text-anchor="middle" style="font-size:10px;font-weight:600;fill:${color};font-family:ui-monospace">${t.name}</text>`;
+
+        // Z value above/below bar
+        const labelY = z >= 0 ? barTop - 4 : barTop + barH + 12;
+        bars += `<text x="${(x + barW / 2).toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="middle" style="font-size:9px;fill:${color};font-family:ui-monospace">${z >= 0 ? '+' : ''}${z.toFixed(1)}σ</text>`;
+      }
+
+      // Title
+      const title = `<text x="${W / 2}" y="16" text-anchor="middle" style="font-size:11px;fill:#a1a1aa;font-family:ui-sans-serif">Current Z-Scores vs ${this.volLookback} History (${this.volGranularity})</text>`;
+
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;height:${H}px;display:block">${title}${yTicks}${refLines}${bars}</svg>`;
+    },
+
   };
 }
 </script>
