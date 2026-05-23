@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Predator Protocol · Cross-ETF Conviction Scanner</title>
-  <meta name="description" content="Cross-ETF conviction scanner. Tracks 16 smart-beta ETFs to detect early institutional accumulation. Live from yieldchaser/etf-data.">
+  <meta name="description" content="Cross-ETF conviction scanner. Tracks 29 smart-beta ETFs to detect early institutional accumulation. Live from yieldchaser/etf-data.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📈%3C/text%3E%3C/svg%3E">
   <meta name="color-scheme" content="dark">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -85,7 +85,7 @@
         <span class="label">cross-etf conviction scanner</span>
       </div>
       <div class="text-xs flex flex-wrap items-center gap-x-4 gap-y-1" style="color: var(--text-2)">
-        <span><span class="num font-mono" x-text="meta.etfs?.length || 16"></span> smart-beta ETFs</span>
+        <span><span class="num font-mono" x-text="meta.etfs?.length || 29"></span> smart-beta ETFs</span>
         <span>·</span>
         <span><span class="num font-mono" x-text="(meta.source_rows_raw || 0).toLocaleString()"></span> holdings rows</span>
         <span>·</span>
@@ -834,7 +834,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-3">
       <!-- ETF picker -->
       <aside class="lg:col-span-1 rounded-lg border p-2" style="background: var(--surface); border-color: var(--border)">
-        <div class="label mb-2 px-1">16 ETFs · tap to inspect</div>
+        <div class="label mb-2 px-1" x-text="(etfSummary.length || 29) + ' ETFs · tap to inspect'"></div>
         <template x-for="etfRow in etfSummary" :key="etfRow.etf">
           <button @click="activeETF = etfRow.etf"
                   :class="activeETF === etfRow.etf ? 'tab-active' : ''"
@@ -1294,7 +1294,7 @@ function app() {
       const yc = this.meta.flag_counts_yesterday || {};
       return [
         { label: 'names tracked', value: this.leaderboard.length.toString(),
-          tooltip: 'Total unique tickers across all 16 ETFs after sanitization.' },
+          tooltip: 'Total unique tickers across all ' + (this.meta.etfs?.length || 29) + ' ETFs after sanitization.' },
         { label: 'high conviction', value: c.HIGH_CONVICTION,
           color: 'var(--up)',
           delta: yc.HIGH_CONVICTION !== undefined ? c.HIGH_CONVICTION - (yc.HIGH_CONVICTION || 0) : null,
@@ -1452,7 +1452,14 @@ function app() {
       etfMeta.forEach(e => tierMap[e.ticker] = e.tier);
       const counts = {};
       this.holdings.forEach(h => { counts[h.ETF_Ticker] = (counts[h.ETF_Ticker] || 0) + 1; });
-      return (this.meta.etfs || []).map(e => ({ etf: e, tier: tierMap[e] || '', count: counts[e] || 0 }));
+      const tierOrder = { Scout: 0, Quant: 1, Quality: 2, Trend: 3, Blob: 4 };
+      return (this.meta.etfs || [])
+        .map(e => ({ etf: e, tier: tierMap[e] || '', count: counts[e] || 0 }))
+        .sort((a, b) => {
+          const ta = tierOrder[a.tier] ?? 99, tb = tierOrder[b.tier] ?? 99;
+          if (ta !== tb) return ta - tb;
+          return a.etf.localeCompare(b.etf);
+        });
     },
     get currentETFTier() { return this.etfSummary.find(e => e.etf === this.activeETF)?.tier || ''; },
 
