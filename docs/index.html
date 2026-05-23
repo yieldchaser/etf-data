@@ -911,46 +911,46 @@
           <div class="text-xs label">holdings as of <span class="num font-mono" style="color: var(--text-2)" x-text="etfHoldings[0]?.Holdings_As_Of || '—'"></span></div>
         </div>
 
-        <!-- B5: Donut chart — top-50 by weight -->
-        <div class="px-3 py-3" style="border-bottom: 1px solid var(--border)">
-          <div class="flex flex-col md:flex-row gap-4">
-            <!-- Donut SVG -->
-            <div class="flex-shrink-0 flex items-center justify-center">
-              <svg viewBox="0 0 200 200" style="width: 200px; height: 200px">
-                <template x-for="(slice, i) in donutSlices" :key="slice.ticker">
-                  <path :d="slice.path" :fill="slice.color"
-                        @mouseenter="hoveredSlice = i" @mouseleave="hoveredSlice = null"
-                        x-tooltip="`'<b>' + slice.ticker + '</b> · ' + (slice.name || '') + '<br>Weight: ' + (slice.weight*100).toFixed(2) + '%<br>Rank #' + slice.rank`"
-                        style="cursor: pointer; stroke: #000; stroke-width: 0.5; transition: opacity 0.15s"
-                        :style="hoveredSlice !== null && hoveredSlice !== i ? 'opacity: 0.3' : ''"/>
-                </template>
-                <!-- Donut hole -->
-                <circle cx="100" cy="100" r="55" fill="var(--surface)"/>
-                <!-- Center label -->
-                <text x="100" y="96" text-anchor="middle"
-                      style="font-family: ui-monospace; font-size: 18px; fill: var(--cyan)"
-                      x-text="activeETF"></text>
-                <text x="100" y="112" text-anchor="middle"
-                      style="font-family: ui-monospace; font-size: 10px; fill: var(--text-3)"
-                      x-text="`${etfHoldings.length} names`"></text>
-              </svg>
+        <!-- Holdings Pie Chart — interactive, premium visualization -->
+        <div class="px-3 py-4" style="border-bottom: 1px solid var(--border)">
+          <div class="flex flex-col lg:flex-row gap-5">
+            <!-- Pie SVG — rendered via x-html to avoid Alpine SVG template limitation -->
+            <div class="flex-shrink-0 flex flex-col items-center">
+              <div x-html="donutSvgHtml"
+                   @mouseleave="hoveredSlice = null"
+                   @mousemove="$event.target.closest('path') ? hoveredSlice = +$event.target.closest('path').dataset.idx : null"
+                   @click="$event.target.closest('path') && window.open(`stock.html?t=${$event.target.closest('path').dataset.ticker}`, '_self')"
+                   style="width: 260px; height: 260px; cursor: pointer"></div>
             </div>
-            <!-- Top-10 legend -->
+            <!-- Right panel: Top holdings list with weight bars -->
             <div class="flex-1 min-w-0">
-              <div class="label mb-2">TOP 10 BY WEIGHT</div>
-              <template x-for="(slice, i) in donutSlices.slice(0, 10)" :key="slice.ticker">
-                <div class="flex items-center gap-2 text-xs py-1 rounded transition hover:bg-white/5 cursor-default"
-                     @mouseenter="hoveredSlice = i" @mouseleave="hoveredSlice = null"
-                     :style="hoveredSlice === i ? 'color: var(--text)' : ''">
-                  <span class="w-2 h-2 rounded-sm flex-shrink-0" :style="`background: ${slice.color}`"></span>
-                  <span class="font-mono font-medium w-14 shrink-0" x-text="slice.ticker"></span>
-                  <span class="flex-1 truncate" style="color: var(--text-2)" x-text="slice.name || ''"></span>
-                  <span class="num font-mono shrink-0" style="color: var(--text-3)" x-text="`${(slice.weight*100).toFixed(2)}%`"></span>
-                </div>
-              </template>
-              <div class="text-xs mt-2" style="color: var(--text-3)"
-                   x-show="donutSlices.length > 10"
-                   x-text="`+ ${donutSlices.length - 10} more names (${(remainingWeight*100).toFixed(1)}%)`"></div>
+              <div class="flex items-center justify-between mb-3">
+                <div class="label label-cyan">TOP HOLDINGS BY WEIGHT</div>
+                <div class="text-[10px] num font-mono" style="color: var(--text-3)"
+                     x-text="`Top 15 = ${(donutSlices.slice(0,15).reduce((s,x) => s + x.weight, 0) * 100).toFixed(1)}% of fund`"></div>
+              </div>
+              <div class="space-y-1">
+                <template x-for="(slice, i) in donutSlices.slice(0, 15)" :key="slice.ticker">
+                  <div class="flex items-center gap-2 text-xs py-1.5 px-2 rounded-md transition cursor-pointer"
+                       @mouseenter="hoveredSlice = i" @mouseleave="hoveredSlice = null"
+                       @click="window.open(`stock.html?t=${slice.ticker}`, '_self')"
+                       :style="hoveredSlice === i ? 'background: rgba(34,211,238,0.06); color: var(--text)' : ''">
+                    <span class="w-2.5 h-2.5 rounded-sm flex-shrink-0" :style="`background: ${slice.color}`"></span>
+                    <span class="font-mono font-medium w-14 shrink-0" style="color: var(--text)" x-text="slice.ticker"></span>
+                    <span class="flex-1 truncate text-[11px]" style="color: var(--text-2)" x-text="slice.name || ''"></span>
+                    <!-- Weight bar -->
+                    <div class="w-20 h-2 rounded-full overflow-hidden flex-shrink-0" style="background: rgba(255,255,255,0.04)">
+                      <div class="h-full rounded-full transition-all duration-300" :style="`width: ${Math.min(slice.weight / (donutSlices[0]?.weight || 0.01) * 100, 100)}%; background: ${slice.color}; opacity: ${hoveredSlice === i ? 1 : 0.7}`"></div>
+                    </div>
+                    <span class="num font-mono font-medium shrink-0 w-14 text-right" :style="`color: ${hoveredSlice === i ? 'var(--cyan)' : 'var(--text-2)'}`" x-text="`${(slice.weight*100).toFixed(2)}%`"></span>
+                  </div>
+                </template>
+              </div>
+              <div class="flex items-center justify-between mt-3 pt-2 text-[10px]" style="border-top: 1px solid var(--border); color: var(--text-3)"
+                   x-show="donutSlices.length > 15">
+                <span x-text="`+ ${donutSlices.length - 15} more holdings`"></span>
+                <span class="num font-mono" x-text="`Remaining: ${(remainingWeight*100).toFixed(1)}%`"></span>
+              </div>
             </div>
           </div>
         </div>
@@ -1750,6 +1750,7 @@ function app() {
       const palette = this.donutPalette();
       const slices = [];
       let cumAngle = -Math.PI / 2;   // start at top
+      const cx = 130, cy = 130, r = 120;
       for (let i = 0; i < holdings.length; i++) {
         const h = holdings[i];
         const frac = h.weight / total;
@@ -1757,14 +1758,14 @@ function app() {
         const start = cumAngle;
         const end = cumAngle + angle;
         const large = angle > Math.PI ? 1 : 0;
-        const x1 = 100 + 90 * Math.cos(start), y1 = 100 + 90 * Math.sin(start);
-        const x2 = 100 + 90 * Math.cos(end),   y2 = 100 + 90 * Math.sin(end);
+        const x1 = cx + r * Math.cos(start), y1 = cy + r * Math.sin(start);
+        const x2 = cx + r * Math.cos(end),   y2 = cy + r * Math.sin(end);
         // Special case: near-full circle (single holding) — draw a full circle path
         let path;
         if (frac >= 0.9999) {
-          path = `M100,10 A90,90 0 1 1 99.99,10 A90,90 0 1 1 100,10 Z`;
+          path = `M${cx},${cy-r} A${r},${r} 0 1 1 ${cx-0.01},${cy-r} A${r},${r} 0 1 1 ${cx},${cy-r} Z`;
         } else {
-          path = `M100,100 L${x1.toFixed(2)},${y1.toFixed(2)} A90,90 0 ${large} 1 ${x2.toFixed(2)},${y2.toFixed(2)} Z`;
+          path = `M${cx},${cy} L${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r} 0 ${large} 1 ${x2.toFixed(2)},${y2.toFixed(2)} Z`;
         }
         slices.push({
           ticker: h.ticker,
@@ -1781,6 +1782,39 @@ function app() {
 
     get remainingWeight() {
       return this.etfHoldings.slice(10).reduce((s, h) => s + (h.weight || 0), 0);
+    },
+
+    // Generate the holdings donut SVG as an HTML string (x-html pattern —
+    // avoids Alpine's <template x-for> limitation inside SVG elements).
+    get donutSvgHtml() {
+      const slices = this.donutSlices;
+      if (!slices.length) return '';
+      const hi = this.hoveredSlice;
+      let paths = '';
+      for (let i = 0; i < slices.length; i++) {
+        const s = slices[i];
+        const dimmed = hi !== null && hi !== i;
+        const hovered = hi === i;
+        const opacity = dimmed ? 0.25 : 1;
+        const transform = hovered ? 'transform: scale(1.03); transform-origin: 130px 130px;' : '';
+        const brightness = hovered ? 'filter: brightness(1.2);' : '';
+        paths += `<path d="${s.path}" fill="${s.color}" data-idx="${i}" data-ticker="${s.ticker}" style="stroke:#0a0a0a; stroke-width:0.8; opacity:${opacity}; ${transform} ${brightness} transition: all 0.2s ease;"/>`;
+      }
+      // Donut hole
+      const hole = `<circle cx="130" cy="130" r="70" fill="var(--surface)"/><circle cx="130" cy="130" r="70" fill="none" stroke="rgba(34,211,238,0.08)" stroke-width="1"/>`;
+      // Center text
+      let center = '';
+      if (hi !== null && slices[hi]) {
+        const s = slices[hi];
+        center = `<text x="130" y="118" text-anchor="middle" style="font-family:ui-monospace;font-size:16px;font-weight:600;fill:#22d3ee">${s.ticker}</text>` +
+                 `<text x="130" y="138" text-anchor="middle" style="font-family:ui-monospace;font-size:22px;font-weight:700;fill:#e4e4e7">${(s.weight*100).toFixed(2)}%</text>` +
+                 `<text x="130" y="155" text-anchor="middle" style="font-family:ui-sans-serif;font-size:9px;fill:#52525b">Rank #${s.rank}</text>`;
+      } else {
+        center = `<text x="130" y="122" text-anchor="middle" style="font-family:ui-monospace;font-size:20px;font-weight:600;fill:#22d3ee">${this.activeETF}</text>` +
+                 `<text x="130" y="143" text-anchor="middle" style="font-family:ui-monospace;font-size:11px;fill:#52525b">${this.etfHoldings.length} holdings</text>` +
+                 `<text x="130" y="158" text-anchor="middle" style="font-family:ui-monospace;font-size:9px;fill:#52525b">tier ${this.currentETFTier}</text>`;
+      }
+      return `<svg viewBox="0 0 260 260" style="width:260px;height:260px">${paths}${hole}${center}</svg>`;
     },
 
     donutPalette() {
