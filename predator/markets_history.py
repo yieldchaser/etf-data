@@ -139,6 +139,211 @@ ASSET_REGISTRY: list[dict[str, str]] = [
         "native_ccy": "USD", "source_type": "fred", "series_id": "MHHNGSP",
         "return_type": "price", "notes": "",
     },
+    {
+        "key": "coal", "name": "Coal (Aus Thermal, USD/t)", "category": "energy",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "PCOALAUUSDM",
+        "return_type": "price", "notes": "IMF monthly",
+    },
+    # Base Metals
+    {
+        "key": "copper", "name": "Copper (USD/mt)", "category": "base_metals",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "PCOPPUSDM",
+        "return_type": "price", "notes": "IMF/World Bank monthly",
+    },
+    {
+        "key": "aluminum", "name": "Aluminum (USD/mt)", "category": "base_metals",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "PALUMUSDM",
+        "return_type": "price", "notes": "IMF/World Bank monthly",
+    },
+    {
+        "key": "nickel", "name": "Nickel (USD/mt)", "category": "base_metals",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "PNICKUSDM",
+        "return_type": "price", "notes": "IMF/World Bank monthly",
+    },
+    {
+        "key": "zinc", "name": "Zinc (USD/mt)", "category": "base_metals",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "PZINCUSDM",
+        "return_type": "price", "notes": "IMF/World Bank monthly",
+    },
+    {
+        "key": "iron_ore", "name": "Iron Ore (USD/dmt)", "category": "base_metals",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "PIORECRUSDM",
+        "return_type": "price", "notes": "IMF/World Bank monthly",
+    },
+    {
+        "key": "tin", "name": "Tin (USD/mt)", "category": "base_metals",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "PTINUSDM",
+        "return_type": "price", "notes": "IMF/World Bank monthly",
+    },
+    {
+        "key": "lead", "name": "Lead (USD/mt)", "category": "base_metals",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "PLEADUSDM",
+        "return_type": "price", "notes": "IMF/World Bank monthly",
+    },
+    # Agriculture
+    {
+        "key": "wheat", "name": "Wheat (USD/mt)", "category": "agriculture",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "PWHEAMTUSDM",
+        "return_type": "price", "notes": "IMF/World Bank monthly",
+    },
+    {
+        "key": "corn", "name": "Corn / Maize (USD/mt)", "category": "agriculture",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "PMAIZMTUSDM",
+        "return_type": "price", "notes": "IMF/World Bank monthly",
+    },
+    {
+        "key": "soybeans", "name": "Soybeans (USD/mt)", "category": "agriculture",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "PSOYBUSDM",
+        "return_type": "price", "notes": "IMF/World Bank monthly",
+    },
+    {
+        "key": "cotton", "name": "Cotton (USD/kg)", "category": "agriculture",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "PCOTTINDUSDM",
+        "return_type": "price", "notes": "IMF/World Bank monthly",
+    },
+    {
+        "key": "sugar", "name": "Sugar (USD/kg)", "category": "agriculture",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "PSUGAISAUSDM",
+        "return_type": "price", "notes": "ISA price, IMF monthly",
+    },
+    {
+        "key": "coffee", "name": "Coffee Arabica (USD/kg)", "category": "agriculture",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "PCOFFOTMUSDM",
+        "return_type": "price", "notes": "IMF/World Bank monthly",
+    },
+    {
+        "key": "cocoa", "name": "Cocoa (USD/kg)", "category": "agriculture",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "PCOCOUSDM",
+        "return_type": "price", "notes": "IMF/World Bank monthly",
+    },
+    {
+        "key": "rice", "name": "Rice (USD/mt)", "category": "agriculture",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "PRICENPQUSDM",
+        "return_type": "price", "notes": "IMF/World Bank monthly",
+    },
+    {
+        "key": "palm_oil", "name": "Palm Oil (USD/mt)", "category": "agriculture",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "PPOILUSDM",
+        "return_type": "price", "notes": "IMF/World Bank monthly",
+    },
+    # FX Rates (stored as USD per 1 unit of foreign currency — inverted where needed)
+    {
+        "key": "fx_usdinr", "name": "USD/INR", "category": "fx",
+        "native_ccy": "INR", "source_type": "fred", "series_id": "DEXINUS",
+        "return_type": "fx", "notes": "FRED: INR per USD → inverted to USD per INR",
+        "invert": True,
+    },
+    {
+        "key": "fx_usdjpy", "name": "USD/JPY", "category": "fx",
+        "native_ccy": "JPY", "source_type": "fred", "series_id": "DEXJPUS",
+        "return_type": "fx", "notes": "FRED: JPY per USD → inverted",
+        "invert": True,
+    },
+    {
+        "key": "fx_eurusd", "name": "EUR/USD", "category": "fx",
+        "native_ccy": "EUR", "source_type": "fred", "series_id": "DEXUSEU",
+        "return_type": "fx", "notes": "FRED: USD per EUR — no inversion",
+        "invert": False,
+    },
+    {
+        "key": "fx_gbpusd", "name": "GBP/USD", "category": "fx",
+        "native_ccy": "GBP", "source_type": "fred", "series_id": "DEXUSUK",
+        "return_type": "fx", "notes": "FRED: USD per GBP — no inversion",
+        "invert": False,
+    },
+    {
+        "key": "fx_usdcny", "name": "USD/CNY", "category": "fx",
+        "native_ccy": "CNY", "source_type": "fred", "series_id": "DEXCHUS",
+        "return_type": "fx", "notes": "FRED: CNY per USD → inverted",
+        "invert": True,
+    },
+    {
+        "key": "fx_usdcad", "name": "USD/CAD", "category": "fx",
+        "native_ccy": "CAD", "source_type": "fred", "series_id": "DEXCAUS",
+        "return_type": "fx", "notes": "FRED: CAD per USD → inverted",
+        "invert": True,
+    },
+    {
+        "key": "fx_usdaud", "name": "USD/AUD", "category": "fx",
+        "native_ccy": "AUD", "source_type": "fred", "series_id": "DEXUSAL",
+        "return_type": "fx", "notes": "FRED: AUD per USD → inverted",
+        "invert": True,
+    },
+    {
+        "key": "fx_usdsgd", "name": "USD/SGD", "category": "fx",
+        "native_ccy": "SGD", "source_type": "fred", "series_id": "DEXSIUS",
+        "return_type": "fx", "notes": "FRED: SGD per USD → inverted",
+        "invert": True,
+    },
+    {
+        "key": "fx_usdbrl", "name": "USD/BRL", "category": "fx",
+        "native_ccy": "BRL", "source_type": "fred", "series_id": "DEXBZUS",
+        "return_type": "fx", "notes": "FRED: BRL per USD → inverted",
+        "invert": True,
+    },
+    {
+        "key": "fx_usdmxn", "name": "USD/MXN", "category": "fx",
+        "native_ccy": "MXN", "source_type": "fred", "series_id": "DEXMXUS",
+        "return_type": "fx", "notes": "FRED: MXN per USD → inverted",
+        "invert": True,
+    },
+    {
+        "key": "fx_usdkrw", "name": "USD/KRW", "category": "fx",
+        "native_ccy": "KRW", "source_type": "fred", "series_id": "DEXKOUS",
+        "return_type": "fx", "notes": "FRED: KRW per USD → inverted",
+        "invert": True,
+    },
+    {
+        "key": "fx_usdchf", "name": "USD/CHF", "category": "fx",
+        "native_ccy": "CHF", "source_type": "fred", "series_id": "DEXSZUS",
+        "return_type": "fx", "notes": "FRED: CHF per USD → inverted",
+        "invert": True,
+    },
+    # Real Estate
+    {
+        "key": "us_home_prices", "name": "US Home Prices (Case-Shiller)", "category": "real_estate",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "CSUSHPISA",
+        "return_type": "price", "notes": "National, monthly, 1987+",
+    },
+]
+
+# Interest rate series — stored as yield levels (not returns), used in View H
+RATES_REGISTRY: list[dict[str, str]] = [
+    {
+        "key": "us_3m_tbill", "name": "US 3M T-Bill", "category": "rates",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "TB3MS",
+        "return_type": "yield", "notes": "1934+",
+    },
+    {
+        "key": "us_2y", "name": "US 2Y Treasury", "category": "rates",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "GS2",
+        "return_type": "yield", "notes": "1976+",
+    },
+    {
+        "key": "us_10y", "name": "US 10Y Treasury", "category": "rates",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "GS10",
+        "return_type": "yield", "notes": "1953+",
+    },
+    {
+        "key": "us_30y", "name": "US 30Y Treasury", "category": "rates",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "GS30",
+        "return_type": "yield", "notes": "1977+",
+    },
+    {
+        "key": "fed_funds", "name": "Fed Funds Rate", "category": "rates",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "FEDFUNDS",
+        "return_type": "yield", "notes": "1954+",
+    },
+    {
+        "key": "moodys_baa", "name": "Moody's BAA Corp", "category": "rates",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "DBAA",
+        "return_type": "yield", "notes": "1919+",
+    },
+    {
+        "key": "moodys_aaa", "name": "Moody's AAA Corp", "category": "rates",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "DAAA",
+        "return_type": "yield", "notes": "1919+",
+    },
 ]
 
 # Auxiliary series (needed for derived calculations and toggles)
@@ -161,7 +366,7 @@ AUX_REGISTRY: list[dict[str, str]] = [
 ]
 
 # Combined for iteration
-ALL_SERIES = ASSET_REGISTRY + AUX_REGISTRY
+ALL_SERIES = ASSET_REGISTRY + AUX_REGISTRY + RATES_REGISTRY
 
 # Cache directory for parquet files
 CACHE_DIR = Path("data/markets_history")
@@ -476,6 +681,7 @@ def build_output(results: dict[str, pd.Series]) -> dict[str, Any]:
         "default_return_type": "price",
         "aux": {},
         "assets": {},
+        "rates": {},
     }
 
     # Build aux section
@@ -489,7 +695,7 @@ def build_output(results: dict[str, pd.Series]) -> dict[str, Any]:
                 "values": _series_to_monthly_dict(data),
             }
 
-    # Build assets section
+    # Build assets section (includes FX inversion)
     for spec in ASSET_REGISTRY:
         key = spec["key"]
         data = results.get(key)
@@ -497,6 +703,10 @@ def build_output(results: dict[str, pd.Series]) -> dict[str, Any]:
             data = _read_cache(key)
         if data is None or data.empty:
             continue
+
+        # Apply FX inversion if needed (e.g. DEXINUS is INR/USD → invert to USD/INR)
+        if spec.get("invert"):
+            data = 1.0 / data.replace(0, float("nan"))
 
         monthly = _series_to_monthly_dict(data)
         if not monthly:
@@ -512,9 +722,62 @@ def build_output(results: dict[str, pd.Series]) -> dict[str, Any]:
                 "return_type": spec["return_type"],
                 "first": sorted_months[0],
                 "last": sorted_months[-1],
+                "notes": spec.get("notes", ""),
             },
             "close": monthly,
         }
+
+    # Build rates section (yield levels — not returns)
+    for spec in RATES_REGISTRY:
+        key = spec["key"]
+        data = results.get(key)
+        if data is None or data.empty:
+            data = _read_cache(key)
+        if data is None or data.empty:
+            continue
+
+        monthly = _series_to_monthly_dict(data)
+        if not monthly:
+            continue
+
+        sorted_months = sorted(monthly.keys())
+        output["rates"][key] = {
+            "meta": {
+                "name": spec["name"],
+                "category": "rates",
+                "native_ccy": spec["native_ccy"],
+                "source": f"{spec['source_type']}:{spec['series_id']}",
+                "return_type": "yield",
+                "first": sorted_months[0],
+                "last": sorted_months[-1],
+                "notes": spec.get("notes", ""),
+            },
+            "values": monthly,
+        }
+
+    # Compute derived 10Y-2Y spread if both series available
+    if "us_10y" in output["rates"] and "us_2y" in output["rates"]:
+        v10 = output["rates"]["us_10y"]["values"]
+        v2  = output["rates"]["us_2y"]["values"]
+        spread = {}
+        for m in v10:
+            if m in v2 and v10[m] is not None and v2[m] is not None:
+                spread[m] = round(v10[m] - v2[m], 4)
+        if spread:
+            sorted_spread = sorted(spread.keys())
+            output["rates"]["spread_10y_2y"] = {
+                "meta": {
+                    "name": "10Y–2Y Spread",
+                    "category": "rates",
+                    "native_ccy": "USD",
+                    "source": "derived:GS10-GS2",
+                    "return_type": "yield",
+                    "first": sorted_spread[0],
+                    "last": sorted_spread[-1],
+                    "notes": "10Y Treasury minus 2Y Treasury yield",
+                },
+                "values": spread,
+            }
 
     return output
 

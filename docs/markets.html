@@ -107,6 +107,12 @@
               :style="activeTab === 'pricelog' ? '' : 'color: var(--text-2); border-color: var(--border)'">
         Price Log
       </button>
+      <button @click="activeTab = 'yields'"
+              :class="activeTab === 'yields' ? 'tab-active' : ''"
+              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+              :style="activeTab === 'yields' ? '' : 'color: var(--text-2); border-color: var(--border)'">
+        Yield History
+      </button>
     </div>
     <!-- Divider -->
     <div class="w-px h-5 mx-1" style="background: var(--border-2)"></div>
@@ -458,6 +464,110 @@
     </div><!-- /price log content -->
   </div><!-- /pricelog tab -->
 
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- TAB 3: YIELD HISTORY (View H)                                      -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div x-show="activeTab === 'yields'">
+
+    <div x-show="loadingReturns" class="pulse-load text-center py-20" style="color: var(--text-3)">
+      <div class="text-lg mb-2">Loading yield data…</div>
+    </div>
+
+    <div x-show="!loadingReturns && !returnsData" class="text-center py-20">
+      <div class="text-base mb-2" style="color: var(--amber)">No yield data yet</div>
+      <div class="text-xs" style="color: var(--text-3)">Run: <code>python -m predator.markets_history</code></div>
+    </div>
+
+    <div x-show="!loadingReturns && returnsData">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-sm font-medium" style="color: var(--cyan)">US INTEREST RATE HISTORY</h2>
+          <div class="text-xs mt-0.5" style="color: var(--text-3)">Yield levels (%). Hover for exact value. Click legend to toggle series.</div>
+        </div>
+        <div class="text-xs" style="color: var(--text-3)" x-text="yieldChartMeta"></div>
+      </div>
+
+      <!-- Series toggles -->
+      <div class="flex flex-wrap gap-2 mb-4">
+        <template x-for="s in yieldSeries" :key="s.key">
+          <button @click="toggleYieldSeries(s.key)"
+                  class="chip border transition"
+                  :style="activeYieldSeries.has(s.key)
+                    ? `background: ${s.color}22; color: ${s.color}; border-color: ${s.color}55;`
+                    : 'color: var(--text-3); border-color: var(--border); opacity: 0.5;'"
+                  x-text="s.name">
+          </button>
+        </template>
+      </div>
+
+      <!-- SVG Chart -->
+      <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+        <div x-html="yieldChartSvg"
+             @mousemove="yieldChartHover($event)"
+             @mouseleave="yieldHoverInfo = null"
+             style="width: 100%; overflow-x: auto;"></div>
+
+        <!-- Hover info bar -->
+        <div x-show="yieldHoverInfo" class="px-4 py-2 flex flex-wrap gap-x-6 gap-y-1 text-xs num font-mono"
+             style="border-top: 1px solid var(--border); background: var(--surface-2)">
+          <span style="color: var(--text-3)" x-text="yieldHoverInfo?.date || ''"></span>
+          <template x-for="item in (yieldHoverInfo?.values || [])" :key="item.key">
+            <span :style="`color: ${item.color}`" x-text="`${item.name}: ${item.val !== null ? item.val.toFixed(2) + '%' : '—'}`"></span>
+          </template>
+        </div>
+      </div>
+
+      <!-- Yield table — annual averages -->
+      <div class="mt-6">
+        <div class="flex items-center gap-3 mb-3">
+          <h3 class="text-xs font-medium" style="color: var(--cyan)">ANNUAL AVERAGES</h3>
+          <span class="label">Year-end yield levels</span>
+        </div>
+        <div class="rounded-lg border overflow-auto scrollbar" style="max-height: 50vh; background: var(--bg); border-color: var(--border)">
+          <table class="matrix-table w-full text-xs">
+            <thead>
+              <tr>
+                <th class="matrix-sticky-corner" style="min-width: 160px; padding: 6px 10px; border-bottom: 1px solid var(--border-2); border-right: 1px solid var(--border-2);">
+                  <span class="label" style="font-size:9px;">Series</span>
+                </th>
+                <template x-for="yr in yieldYears" :key="yr">
+                  <th class="matrix-sticky-header matrix-year-cell" x-text="yr"></th>
+                </template>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="s in yieldSeries" :key="s.key">
+                <tr>
+                  <td class="matrix-sticky-col" style="min-width: 160px; padding: 4px 10px; border-right: 1px solid var(--border-2); border-bottom: 1px solid rgba(255,255,255,0.03);">
+                    <div class="flex items-center gap-2">
+                      <span class="w-2 h-2 rounded-sm flex-shrink-0" :style="`background: ${s.color}`"></span>
+                      <span class="text-xs" style="color: var(--text)" x-text="s.name"></span>
+                    </div>
+                  </td>
+                  <template x-for="yr in yieldYears" :key="yr">
+                    <td>
+                      <div class="matrix-cell"
+                           :style="`background: ${yieldCellColor(getYieldValue(s.key, yr))}; color: rgba(255,255,255,0.85);`"
+                           @mouseenter="showTt($event, `${s.name}\n${yr}: ${getYieldValue(s.key, yr) !== null ? getYieldValue(s.key, yr).toFixed(2) + '%' : 'no data'}`)"
+                           @mouseleave="hideTt()"
+                           x-text="getYieldValue(s.key, yr) !== null ? getYieldValue(s.key, yr).toFixed(1) : ''">
+                      </div>
+                    </td>
+                  </template>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /yields tab -->
+
+
   <!-- FOOTER -->
   <footer class="mt-8 pt-4 text-xs flex gap-4 flex-wrap" style="border-top: 1px solid var(--border); color: var(--text-3)">
     <span>Predator Protocol · yieldchaser/etf-data</span>
@@ -538,7 +648,7 @@ function marketsApp() {
     // ── Returns matrix computed properties ───────────────────────────────
 
     // Category display order
-    _categoryOrder: ['equity', 'precious metals', 'energy'],
+    _categoryOrder: ['equity', 'precious_metals', 'precious metals', 'energy', 'base_metals', 'agriculture', 'fx', 'real_estate'],
 
     get matrixGroups() {
       if (!this.returnsData) return [];
@@ -771,9 +881,13 @@ function marketsApp() {
     // ── Category chip styles ──────────────────────────────────────────────
     categoryChipStyle(cat) {
       const c = (cat || '').toLowerCase();
-      if (c === 'equity')          return 'background: rgba(34,211,238,0.10); color: var(--cyan); border: 1px solid rgba(34,211,238,0.25);';
-      if (c === 'precious metals') return 'background: rgba(251,191,36,0.10); color: var(--amber); border: 1px solid rgba(251,191,36,0.25);';
-      if (c === 'energy')          return 'background: rgba(251,113,133,0.10); color: var(--down); border: 1px solid rgba(251,113,133,0.25);';
+      if (c === 'equity')                       return 'background: rgba(34,211,238,0.10); color: var(--cyan); border: 1px solid rgba(34,211,238,0.25);';
+      if (c === 'precious_metals' || c === 'precious metals') return 'background: rgba(251,191,36,0.10); color: var(--amber); border: 1px solid rgba(251,191,36,0.25);';
+      if (c === 'energy')                       return 'background: rgba(251,113,133,0.10); color: var(--down); border: 1px solid rgba(251,113,133,0.25);';
+      if (c === 'base_metals')                  return 'background: rgba(148,163,184,0.10); color: #94a3b8; border: 1px solid rgba(148,163,184,0.25);';
+      if (c === 'agriculture')                  return 'background: rgba(52,211,153,0.10); color: var(--up); border: 1px solid rgba(52,211,153,0.25);';
+      if (c === 'fx')                           return 'background: rgba(168,85,247,0.10); color: #c084fc; border: 1px solid rgba(168,85,247,0.25);';
+      if (c === 'real_estate')                  return 'background: rgba(251,146,60,0.10); color: #fb923c; border: 1px solid rgba(251,146,60,0.25);';
       return 'background: rgba(161,161,170,0.10); color: var(--text-2); border: 1px solid rgba(161,161,170,0.20);';
     },
 
@@ -865,6 +979,217 @@ function marketsApp() {
       return 'var(--text-2)';
     },
     streakColor(n) { if (!n) return 'var(--text-3)'; return n > 0 ? 'var(--up)' : 'var(--down)'; },
+
+    // ── View H: Yield History ─────────────────────────────────────────────
+
+    // Series definitions for the yield chart
+    get yieldSeries() {
+      return [
+        { key: 'us_3m_tbill', name: '3M T-Bill',    color: '#22d3ee' },
+        { key: 'us_2y',       name: '2Y Treasury',  color: '#a5b4fc' },
+        { key: 'us_10y',      name: '10Y Treasury', color: '#34d399' },
+        { key: 'us_30y',      name: '30Y Treasury', color: '#fbbf24' },
+        { key: 'fed_funds',   name: 'Fed Funds',    color: '#fb923c' },
+        { key: 'moodys_baa',  name: "Moody's BAA",  color: '#f472b6' },
+        { key: 'spread_10y_2y', name: '10Y–2Y Spread', color: '#94a3b8' },
+      ];
+    },
+
+    activeYieldSeries: new Set(['us_3m_tbill', 'us_10y', 'fed_funds', 'spread_10y_2y']),
+
+    toggleYieldSeries(key) {
+      const s = new Set(this.activeYieldSeries);
+      if (s.has(key)) { s.delete(key); } else { s.add(key); }
+      this.activeYieldSeries = s;
+    },
+
+    yieldHoverInfo: null,
+    _yieldChartWidth: 1200,
+
+    get yieldYears() {
+      const rates = this.returnsData?.rates || {};
+      const yearSet = new Set();
+      for (const s of Object.values(rates)) {
+        for (const k of Object.keys(s.values || {})) {
+          yearSet.add(parseInt(k.slice(0, 4)));
+        }
+      }
+      return Array.from(yearSet).sort((a, b) => a - b);
+    },
+
+    get yieldChartMeta() {
+      const rates = this.returnsData?.rates || {};
+      const keys = Object.keys(rates);
+      if (!keys.length) return '';
+      const allMonths = [];
+      for (const s of Object.values(rates)) {
+        allMonths.push(...Object.keys(s.values || {}));
+      }
+      if (!allMonths.length) return '';
+      allMonths.sort();
+      return `${allMonths[0]} → ${allMonths[allMonths.length - 1]}`;
+    },
+
+    getYieldValue(seriesKey, year) {
+      // Return December value (year-end) or last available month in that year
+      const rates = this.returnsData?.rates || {};
+      const s = rates[seriesKey];
+      if (!s) return null;
+      const vals = s.values || {};
+      const decKey = `${year}-12`;
+      if (vals[decKey] != null) return vals[decKey];
+      // Fall back to last available month in that year
+      const yearKeys = Object.keys(vals).filter(k => k.startsWith(`${year}-`)).sort();
+      if (yearKeys.length) return vals[yearKeys[yearKeys.length - 1]];
+      return null;
+    },
+
+    yieldCellColor(val) {
+      if (val === null || val === undefined) return 'transparent';
+      // Color by yield level: low = blue, high = orange/red
+      if (val < 0)    return '#1d4ed8';
+      if (val < 1)    return '#3b82f6';
+      if (val < 3)    return '#93c5fd';
+      if (val < 5)    return '#fdba74';
+      if (val < 8)    return '#f97316';
+      return '#c2410c';
+    },
+
+    get yieldChartSvg() {
+      const rates = this.returnsData?.rates || {};
+      const active = this.activeYieldSeries;
+      const seriesDefs = this.yieldSeries.filter(s => active.has(s.key));
+      if (!seriesDefs.length) return '<div style="padding:40px;text-align:center;color:var(--text-3)">Select at least one series</div>';
+
+      // Collect all monthly data points
+      const allMonths = new Set();
+      for (const s of seriesDefs) {
+        const r = rates[s.key];
+        if (r) Object.keys(r.values || {}).forEach(m => allMonths.add(m));
+      }
+      const months = Array.from(allMonths).sort();
+      if (!months.length) return '<div style="padding:40px;text-align:center;color:var(--text-3)">No data</div>';
+
+      const W = 1200, H = 320, PL = 48, PR = 20, PT = 20, PB = 40;
+      const chartW = W - PL - PR, chartH = H - PT - PB;
+
+      // Value range across all active series
+      let minV = Infinity, maxV = -Infinity;
+      for (const s of seriesDefs) {
+        const r = rates[s.key];
+        if (!r) continue;
+        for (const v of Object.values(r.values || {})) {
+          if (v != null && isFinite(v)) { minV = Math.min(minV, v); maxV = Math.max(maxV, v); }
+        }
+      }
+      if (!isFinite(minV)) return '';
+      const pad = (maxV - minV) * 0.05 || 0.5;
+      minV -= pad; maxV += pad;
+
+      const xScale = (m) => PL + (months.indexOf(m) / Math.max(months.length - 1, 1)) * chartW;
+      const yScale = (v) => PT + chartH - ((v - minV) / (maxV - minV)) * chartH;
+
+      // Y-axis ticks
+      const nTicks = 6;
+      const tickStep = (maxV - minV) / nTicks;
+      let yTicks = '';
+      for (let i = 0; i <= nTicks; i++) {
+        const v = minV + i * tickStep;
+        const y = yScale(v);
+        yTicks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>`;
+        yTicks += `<text x="${PL - 4}" y="${(y + 4).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${v.toFixed(1)}%</text>`;
+      }
+
+      // X-axis year labels (every 5 years)
+      let xLabels = '';
+      const years = [...new Set(months.map(m => m.slice(0, 4)))];
+      for (const yr of years) {
+        if (parseInt(yr) % 5 !== 0) continue;
+        const m = `${yr}-01`;
+        if (!months.includes(m)) continue;
+        const x = xScale(m);
+        xLabels += `<text x="${x.toFixed(1)}" y="${H - 8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${yr}</text>`;
+        xLabels += `<line x1="${x.toFixed(1)}" y1="${PT}" x2="${x.toFixed(1)}" y2="${H - PB}" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>`;
+      }
+
+      // Zero line if spread series visible
+      let zeroLine = '';
+      if (minV < 0 && maxV > 0) {
+        const y0 = yScale(0);
+        zeroLine = `<line x1="${PL}" y1="${y0.toFixed(1)}" x2="${W - PR}" y2="${y0.toFixed(1)}" stroke="rgba(255,255,255,0.15)" stroke-width="1" stroke-dasharray="4,3"/>`;
+      }
+
+      // Lines per series
+      let lines = '';
+      for (const s of seriesDefs) {
+        const r = rates[s.key];
+        if (!r) continue;
+        const vals = r.values || {};
+        const pts = months.map(m => {
+          const v = vals[m];
+          if (v == null || !isFinite(v)) return null;
+          return `${xScale(m).toFixed(1)},${yScale(v).toFixed(1)}`;
+        });
+        // Build polyline segments (skip nulls)
+        let d = '';
+        let inSeg = false;
+        for (const pt of pts) {
+          if (pt === null) { inSeg = false; continue; }
+          if (!inSeg) { d += `M${pt} `; inSeg = true; }
+          else { d += `L${pt} `; }
+        }
+        if (d) {
+          lines += `<path d="${d.trim()}" fill="none" stroke="${s.color}" stroke-width="1.5" opacity="0.85" data-series="${s.key}"/>`;
+        }
+      }
+
+      // Hover crosshair placeholder (updated via JS)
+      const crosshair = `<line id="yield-crosshair" x1="0" y1="${PT}" x2="0" y2="${H - PB}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
+
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block">${yTicks}${xLabels}${zeroLine}${lines}${crosshair}</svg>`;
+    },
+
+    yieldChartHover(e) {
+      const svg = e.currentTarget.querySelector('svg');
+      if (!svg) return;
+      const rect = svg.getBoundingClientRect();
+      const rates = this.returnsData?.rates || {};
+      const active = this.activeYieldSeries;
+      const seriesDefs = this.yieldSeries.filter(s => active.has(s.key));
+
+      const allMonths = new Set();
+      for (const s of seriesDefs) {
+        const r = rates[s.key];
+        if (r) Object.keys(r.values || {}).forEach(m => allMonths.add(m));
+      }
+      const months = Array.from(allMonths).sort();
+      if (!months.length) return;
+
+      const W = 1200, PL = 48, PR = 20;
+      const chartW = W - PL - PR;
+      const scaleX = rect.width / W;
+      const relX = (e.clientX - rect.left) / scaleX;
+      const frac = Math.max(0, Math.min(1, (relX - PL) / chartW));
+      const idx = Math.round(frac * (months.length - 1));
+      const month = months[idx];
+
+      const values = seriesDefs.map(s => {
+        const r = rates[s.key];
+        const val = r?.values?.[month] ?? null;
+        return { key: s.key, name: s.name, color: s.color, val };
+      });
+
+      this.yieldHoverInfo = { date: month, values };
+
+      // Move crosshair
+      const crosshair = svg.getElementById('yield-crosshair');
+      if (crosshair) {
+        const xPos = PL + frac * chartW;
+        crosshair.setAttribute('x1', xPos);
+        crosshair.setAttribute('x2', xPos);
+        crosshair.setAttribute('opacity', '1');
+      }
+    },
   };
 }
 </script>
