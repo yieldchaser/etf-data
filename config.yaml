@@ -96,12 +96,21 @@ etfs:
   - {ticker: DWAS, tier: Quant,   points: 40}
   - {ticker: EEMO, tier: Quant,   points: 60}
   - {ticker: PIZ,  tier: Quant,   points: 60}
+  # JH Multifactor family + PIMCO RAFI
+  - {ticker: JHMM, tier: Quant,   points: 40}  # JH Multifactor Mid Cap
+  - {ticker: JHEM, tier: Quant,   points: 60}  # JH Multifactor Emerging Markets (intl)
+  - {ticker: JHSC, tier: Quant,   points: 40}  # JH Multifactor Small Cap
+  - {ticker: MFEM, tier: Quant,   points: 60}  # PIMCO RAFI Dynamic Multi-Factor EM (intl)
+  - {ticker: JOET, tier: Quant,   points: 40}  # Virtus Terranova US Quality Momentum
 
   # Quality — free cash flow and profitability
   - {ticker: COWZ, tier: Quality, points: 30}
   - {ticker: CALF, tier: Quality, points: 30}
   - {ticker: SPHQ, tier: Quality, points: 30}
   - {ticker: IVAL, tier: Quality, points: 30}  # Alpha Architect Intl Quantitative Value
+  - {ticker: VLUE, tier: Quality, points: 30}  # iShares MSCI USA Value Factor
+  - {ticker: AVSC, tier: Quality, points: 30}  # Avantis US Small Cap Value
+  - {ticker: GRIN, tier: Quality, points: 30}  # VictoryShares Intl Free Cash Flow Growth
 
   # Trend — momentum confirmation
   - {ticker: SPMO, tier: Trend,   points: 10}

@@ -126,7 +126,8 @@ class TestScoring:
     def test_all_16_etfs_in_config(self, cfg):
         expected = {"CSD", "FPX", "FPXI", "QMOM", "IMOM", "XMMO", "XSMO", "PIE",
                     "COWZ", "CALF", "SPHQ", "SPMO", "SPHB", "RPG", "QQQM", "XLG",
-                    "EEMO", "PDP", "DWAS", "PIZ", "IVAL"}
+                    "EEMO", "PDP", "DWAS", "PIZ", "IVAL",
+                    "VLUE", "AVSC", "GRIN", "JHMM", "JHEM", "JHSC", "MFEM", "JOET"}
         assert set(cfg.etf_lookup().keys()) == expected
 
     def test_fpxi_and_imom_have_60_points(self, cfg):
@@ -142,6 +143,11 @@ class TestScoring:
         assert lookup["COWZ"].points == 30
         assert lookup["IVAL"].points == 30
         assert lookup["IVAL"].tier == "Quality"
+        assert lookup["VLUE"].points == 30
+        assert lookup["VLUE"].tier == "Quality"
+        assert lookup["JHMM"].tier == "Quant"
+        assert lookup["JHEM"].points == 60   # international
+        assert lookup["MFEM"].points == 60   # international
         assert lookup["SPMO"].points == 10
         assert lookup["QQQM"].points == 2
 
