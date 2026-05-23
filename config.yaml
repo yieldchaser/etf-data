@@ -108,6 +108,7 @@ etfs:
   - {ticker: CALF, tier: Quality, points: 30}
   - {ticker: SPHQ, tier: Quality, points: 30}
   - {ticker: IVAL, tier: Quality, points: 30}  # Alpha Architect Intl Quantitative Value
+  - {ticker: QVAL, tier: Quality, points: 30}  # Alpha Architect US Quantitative Value
   - {ticker: VLUE, tier: Quality, points: 30}  # iShares MSCI USA Value Factor
   - {ticker: AVSC, tier: Quality, points: 30}  # Avantis US Small Cap Value
   - {ticker: GRIN, tier: Quality, points: 30}  # VictoryShares Intl Free Cash Flow Growth

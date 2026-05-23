@@ -2,7 +2,7 @@
 # 📈 Predator Protocol: Automated ETF Holdings Pipeline
 
 **Automated Financial Data Pipeline & Institutional Conviction Scanner**
-*Tracks daily holdings for 29 Smart-Beta ETFs across Pacer, First Trust, Alpha Architect, Invesco, BlackRock, John Hancock, PIMCO, Avantis, VictoryShares, and Virtus to detect early institutional accumulation. The ETF count is derived from `config.yaml::etfs[]` — when that list changes, this README must be updated in the same commit.*
+*Tracks daily holdings for 30 Smart-Beta ETFs across Pacer, First Trust, Alpha Architect, Invesco, BlackRock, John Hancock, PIMCO, Avantis, VictoryShares, and Virtus to detect early institutional accumulation. The ETF count is derived from `config.yaml::etfs[]` — when that list changes, this README must be updated in the same commit.*
 
 ---
 
@@ -94,6 +94,7 @@ ETFs are grouped into five tiers based on the strategy signal they emit. Each ti
 | `CALF` | Pacer US Small Cap Cash Cows 100 ETF                      | **30** |
 | `SPHQ` | Invesco S&P 500 Quality ETF                               | **30** |
 | `IVAL` | Alpha Architect International Quantitative Value ETF      | **30** |
+| `QVAL` | Alpha Architect US Quantitative Value ETF                 | **30** |
 | `VLUE` | iShares MSCI USA Value Factor ETF                         | **30** |
 | `AVSC` | Avantis US Small Cap Value ETF                            | **30** |
 | `GRIN` | VictoryShares International Free Cash Flow Growth ETF     | **30** |

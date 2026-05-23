@@ -123,10 +123,10 @@ class TestScoring:
         assert rank_multiplier(31, bps) == 1.0
         assert rank_multiplier(500, bps) == 1.0
 
-    def test_all_16_etfs_in_config(self, cfg):
+    def test_all_etfs_in_config(self, cfg):
         expected = {"CSD", "FPX", "FPXI", "QMOM", "IMOM", "XMMO", "XSMO", "PIE",
                     "COWZ", "CALF", "SPHQ", "SPMO", "SPHB", "RPG", "QQQM", "XLG",
-                    "EEMO", "PDP", "DWAS", "PIZ", "IVAL",
+                    "EEMO", "PDP", "DWAS", "PIZ", "IVAL", "QVAL",
                     "VLUE", "AVSC", "GRIN", "JHMM", "JHEM", "JHSC", "MFEM", "JOET"}
         assert set(cfg.etf_lookup().keys()) == expected
 
