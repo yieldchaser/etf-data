@@ -64,8 +64,8 @@ ASSET_REGISTRY: list[dict[str, str]] = [
     # Equities
     {
         "key": "sp500", "name": "S&P 500", "category": "equity",
-        "native_ccy": "USD", "source_type": "fred", "series_id": "SP500",
-        "return_type": "price", "notes": "weekly → EOP monthly",
+        "native_ccy": "USD", "source_type": "yfinance", "series_id": "^GSPC",
+        "return_type": "price", "notes": "yfinance — longer history than FRED SP500",
     },
     {
         "key": "nasdaq", "name": "NASDAQ Composite", "category": "equity",
@@ -79,8 +79,8 @@ ASSET_REGISTRY: list[dict[str, str]] = [
     },
     {
         "key": "djia", "name": "Dow Jones Industrial Average", "category": "equity",
-        "native_ccy": "USD", "source_type": "fred", "series_id": "DJIA",
-        "return_type": "price", "notes": "",
+        "native_ccy": "USD", "source_type": "yfinance", "series_id": "^DJI",
+        "return_type": "price", "notes": "yfinance — longer history than FRED DJIA",
     },
     {
         "key": "wilshire5000", "name": "Wilshire 5000 Total Market", "category": "equity",
@@ -102,26 +102,26 @@ ASSET_REGISTRY: list[dict[str, str]] = [
         "native_ccy": "INR", "source_type": "yfinance", "series_id": "^BSESN",
         "return_type": "price", "notes": "no FRED",
     },
-    # Precious Metals
+    # Precious Metals — use yfinance futures for longer history (FRED series are limited/discontinued)
     {
         "key": "gold", "name": "Gold (USD/oz)", "category": "precious_metals",
-        "native_ccy": "USD", "source_type": "fred", "series_id": "GOLDAMGBD228NLBM",
-        "return_type": "price", "notes": "daily → EOP monthly",
+        "native_ccy": "USD", "source_type": "yfinance", "series_id": "GC=F",
+        "return_type": "price", "notes": "Gold futures, 1979+",
     },
     {
         "key": "silver", "name": "Silver (USD/oz)", "category": "precious_metals",
-        "native_ccy": "USD", "source_type": "fred", "series_id": "SLVPRUSD",
-        "return_type": "price", "notes": "",
+        "native_ccy": "USD", "source_type": "yfinance", "series_id": "SI=F",
+        "return_type": "price", "notes": "Silver futures, 1979+",
     },
     {
         "key": "platinum", "name": "Platinum (USD/oz)", "category": "precious_metals",
-        "native_ccy": "USD", "source_type": "fred", "series_id": "PPLTMUSDM",
-        "return_type": "price", "notes": "",
+        "native_ccy": "USD", "source_type": "yfinance", "series_id": "PL=F",
+        "return_type": "price", "notes": "Platinum futures, 1986+",
     },
     {
         "key": "palladium", "name": "Palladium (USD/oz)", "category": "precious_metals",
-        "native_ccy": "USD", "source_type": "fred", "series_id": "PPALMUSDM",
-        "return_type": "price", "notes": "",
+        "native_ccy": "USD", "source_type": "yfinance", "series_id": "PA=F",
+        "return_type": "price", "notes": "Palladium futures, 2000+",
     },
     # Energy
     {
