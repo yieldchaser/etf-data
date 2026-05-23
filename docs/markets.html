@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Predator Protocol · Markets</title>
-  <meta name="description" content="Global market dashboard: indices, commodities, FX, crypto, volatility, rates and economic data.">
+  <meta name="description" content="Long-horizon returns intelligence: annual return matrix, stat cards, and daily price log.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📈%3C/text%3E%3C/svg%3E">
   <meta name="color-scheme" content="dark">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -31,16 +31,46 @@
     [x-cloak] { display: none !important; }
     @keyframes pulse-fade { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
     .pulse-load { animation: pulse-fade 1.4s ease-in-out infinite; }
-    .sort-asc::after  { content: "▲"; margin-left: 4px; opacity: 0.6; font-size: 9px; }
-    .sort-desc::after { content: "▼"; margin-left: 4px; opacity: 0.6; font-size: 9px; }
-    /* Mini sparkline bars */
     .bar-pos { background: var(--up); opacity: 0.7; }
     .bar-neg { background: var(--down); opacity: 0.7; }
     .bar-flat { background: var(--text-3); opacity: 0.4; }
+    /* Singleton tooltip */
+    #tt { position: fixed; z-index: 9999; pointer-events: none; opacity: 0;
+          transition: opacity 0.15s; max-width: 300px; line-height: 1.6;
+          background: var(--surface-2); border: 1px solid var(--border-2);
+          color: var(--text); padding: 7px 11px; border-radius: 6px;
+          font-size: 11px; box-shadow: 0 4px 20px rgba(0,0,0,0.7); white-space: pre-line; }
+    /* Matrix table */
+    .matrix-table { border-collapse: separate; border-spacing: 0; }
+    .matrix-table th, .matrix-table td { padding: 0; }
+    .matrix-sticky-col { position: sticky; left: 0; z-index: 2; background: var(--bg); }
+    .matrix-sticky-header { position: sticky; top: 0; z-index: 3; background: var(--bg); }
+    .matrix-sticky-corner { position: sticky; left: 0; top: 0; z-index: 4; background: var(--bg); }
+    .matrix-cell { width: 52px; min-width: 52px; height: 28px; text-align: center;
+                   font-size: 10px; font-family: ui-monospace, monospace;
+                   font-variant-numeric: tabular-nums; cursor: pointer;
+                   border: 1px solid rgba(0,0,0,0.3); transition: filter 0.1s; }
+    .matrix-cell:hover { filter: brightness(1.3); z-index: 1; position: relative; }
+    .matrix-cell-empty { background: transparent; cursor: default; }
+    .matrix-cell-empty:hover { filter: none; }
+    .matrix-name-cell { min-width: 180px; max-width: 180px; padding: 0 8px;
+                        height: 28px; white-space: nowrap; overflow: hidden;
+                        text-overflow: ellipsis; border-right: 1px solid var(--border-2); }
+    .matrix-year-cell { width: 52px; min-width: 52px; height: 24px; text-align: center;
+                        font-size: 10px; font-family: ui-monospace, monospace;
+                        color: var(--text-3); border-bottom: 1px solid var(--border-2); }
+    .matrix-drilldown td { background: rgba(34,211,238,0.04); border-top: 1px solid rgba(34,211,238,0.15); }
+    .cat-divider td { border-top: 2px solid rgba(255,255,255,0.08) !important; }
+    /* Stat cards */
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
   </style>
 </head>
 <body>
-<div x-data="marketsApp()" x-init="load()" x-cloak class="max-w-[1500px] mx-auto px-3 sm:px-5 py-4 sm:py-6">
+
+<!-- Singleton tooltip -->
+<div id="tt"></div>
+
+<div x-data="marketsApp()" x-init="load()" x-cloak class="max-w-[1600px] mx-auto px-3 sm:px-5 py-4 sm:py-6">
 
   <!-- HEADER -->
   <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5 pb-4 border-b" style="border-color: var(--border)">
@@ -51,180 +81,729 @@
         <span class="label-cyan label">MARKETS</span>
       </div>
       <div class="flex items-baseline gap-3 mt-1">
-        <h1 class="text-base font-medium" style="color: var(--cyan)">GLOBAL MARKETS</h1>
-        <span class="label" x-text="meta.generated_at_utc ? `Updated ${meta.generated_at_utc.slice(0,10)}` : 'Loading…'"></span>
+        <h1 class="text-base font-medium" style="color: var(--cyan)">LONG-HORIZON RETURNS</h1>
+        <span class="label" x-text="returnsData ? `Returns data: ${(returnsData.generated_utc||'').slice(0,10)}` : (meta.generated_at_utc ? `Price log: ${meta.generated_at_utc.slice(0,10)}` : 'Loading…')"></span>
       </div>
     </div>
-    <div class="text-xs" style="color: var(--text-3)" x-text="`${series.length} series loaded`"></div>
+    <div class="text-xs flex gap-4 items-center" style="color: var(--text-3)">
+      <span x-show="returnsData" x-text="`${Object.keys(returnsData?.assets||{}).length} assets`"></span>
+      <span x-show="series.length" x-text="`${series.length} price series`"></span>
+    </div>
   </header>
 
-  <!-- NAV -->
-  <nav class="flex flex-wrap gap-1 mb-5 text-xs items-center">
-    <a href="index.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color: var(--text-2); border-color: var(--border); text-decoration: none;">Dashboard</a>
-    <template x-for="k in kinds" :key="k.id">
-      <button @click="activeKind = k.id"
-              :class="activeKind === k.id ? 'tab-active' : ''"
-              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition"
-              :style="activeKind === k.id ? '' : 'color: var(--text-2); border-color: var(--border)'">
-        <span x-text="k.label"></span>
-        <span class="num font-mono ml-1 opacity-60" x-text="`(${k.count})`"></span>
+  <!-- GLOBAL TOGGLE BAR -->
+  <div class="flex flex-wrap gap-2 mb-5 items-center">
+    <!-- Main tabs -->
+    <div class="flex gap-1">
+      <button @click="activeTab = 'matrix'"
+              :class="activeTab === 'matrix' ? 'tab-active' : ''"
+              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+              :style="activeTab === 'matrix' ? '' : 'color: var(--text-2); border-color: var(--border)'">
+        Return Matrix
       </button>
-    </template>
-    <a href="sim.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color: var(--text-2); border-color: var(--border); text-decoration: none;">Simulator</a>
-  </nav>
-
-  <!-- LOADING -->
-  <div x-show="loading" class="pulse-load text-center py-20" style="color: var(--text-3)">
-    <div class="text-lg mb-2">Loading markets data…</div>
-    <div class="text-xs">If this is your first build, run: <code>python -m markets.fetch_yf</code> then <code>python -m markets.build</code></div>
+      <button @click="activeTab = 'pricelog'"
+              :class="activeTab === 'pricelog' ? 'tab-active' : ''"
+              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+              :style="activeTab === 'pricelog' ? '' : 'color: var(--text-2); border-color: var(--border)'">
+        Price Log
+      </button>
+    </div>
+    <!-- Divider -->
+    <div class="w-px h-5 mx-1" style="background: var(--border-2)"></div>
+    <!-- Nominal / Real toggle (matrix only) -->
+    <div x-show="activeTab === 'matrix'" class="flex gap-1">
+      <button class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs tab-active">Nominal</button>
+      <button class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs relative"
+              style="color: var(--text-3); border-color: var(--border)"
+              id="tt-real-btn"
+              @mouseenter="showTt($event, 'Real returns (CPI-adjusted) — Coming soon')"
+              @mouseleave="hideTt()">
+        Real
+        <span class="absolute -top-1 -right-1 text-[8px] px-1 rounded" style="background: rgba(251,191,36,0.15); color: var(--amber)">soon</span>
+      </button>
+    </div>
   </div>
 
-  <!-- ERROR / EMPTY -->
-  <div x-show="!loading && series.length === 0" class="text-center py-20">
-    <div class="text-base mb-2" style="color: var(--down)">No markets data found</div>
-    <div class="text-xs mb-4" style="color: var(--text-3)">Run: <code>python -m markets.fetch_yf && python -m markets.build</code></div>
-    <a href="index.html" class="text-xs px-3 py-1.5 rounded-md border transition" style="color: var(--cyan); border-color: rgba(34,211,238,0.3); text-decoration: none;">← Dashboard</a>
-  </div>
 
-  <!-- MARKET OVERVIEW GRID -->
-  <div x-show="!loading && series.length > 0">
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- TAB 1: RETURN MATRIX                                               -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div x-show="activeTab === 'matrix'">
 
-    <!-- Filter row -->
-    <div class="flex flex-col sm:flex-row gap-2 items-stretch mb-4">
-      <input x-model="q" type="search" placeholder="search symbol or label…"
-             class="flex-1 bg-transparent border rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500/40"
-             style="border-color: var(--border-2); color: var(--text)">
-      <div class="text-xs num font-mono self-center whitespace-nowrap" style="color: var(--text-3)">
-        <span x-text="filteredSeries.length"></span> / <span x-text="series.length"></span>
-      </div>
+    <!-- Loading state for returns -->
+    <div x-show="loadingReturns" class="pulse-load text-center py-20" style="color: var(--text-3)">
+      <div class="text-lg mb-2">Loading returns data…</div>
+      <div class="text-xs">Run: <code>python predator/markets_history.py</code> to generate data/market_returns.json</div>
     </div>
 
-    <!-- Heatmap-style cards grid -->
-    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-6">
-      <template x-for="s in filteredSeries" :key="s.symbol">
-        <div @click="selected = selected?.symbol === s.symbol ? null : s"
-             class="rounded-lg border cursor-pointer transition-all hover:border-zinc-600"
-             :class="selected?.symbol === s.symbol ? 'border-cyan-500/30' : ''"
-             style="background: var(--surface); border-color: var(--border)">
+    <!-- No data state -->
+    <div x-show="!loadingReturns && !returnsData" class="text-center py-20">
+      <div class="text-base mb-2" style="color: var(--amber)">No returns data yet</div>
+      <div class="text-xs mb-4" style="color: var(--text-3)">Run the pipeline to generate <code>data/market_returns.json</code></div>
+      <code class="text-xs px-3 py-2 rounded border inline-block" style="border-color: var(--border-2); background: var(--surface); color: var(--text-2)">python predator/markets_history.py</code>
+    </div>
 
-          <div class="px-3 py-2.5">
-            <!-- Label and kind chip -->
-            <div class="flex items-center justify-between mb-0.5">
-              <div class="font-mono font-medium text-xs" x-text="s.symbol"></div>
-              <div class="label text-[9px]" x-text="s.kind"></div>
-            </div>
-            <div class="label mb-2" x-text="s.label" style="font-size: 9px; text-transform: none; color: var(--text-3)"></div>
+    <!-- Matrix content -->
+    <div x-show="!loadingReturns && returnsData">
 
-            <!-- Close price + day change -->
-            <div class="flex items-baseline gap-2">
-              <div class="text-lg font-medium num font-mono" x-text="fmtClose(s.stats?.close_today)"></div>
-              <div class="text-xs num font-mono font-medium" :style="`color: ${pctColor(s.stats?.day_pct)}`" x-text="fmtPct(s.stats?.day_pct)"></div>
-            </div>
-
-            <!-- Mini bar chart (last 20 sessions) -->
-            <div class="flex items-end gap-px mt-2" style="height: 22px">
-              <template x-for="(row, i) in (s.log || []).slice(-20)" :key="i">
-                <div class="flex-1 rounded-sm transition"
-                     :class="row.pct > 0 ? 'bar-pos' : row.pct < 0 ? 'bar-neg' : 'bar-flat'"
-                     :style="`height: ${barHeight(row.pct, s.log)}px`"></div>
-              </template>
-            </div>
-
-            <!-- Sub-stats row -->
-            <div class="flex gap-4 mt-2 text-[10px] num font-mono" style="color: var(--text-3)">
-              <span>7d: <span :style="`color: ${pctColor(s.stats?.week_pct)}`" x-text="fmtPct(s.stats?.week_pct)"></span></span>
-              <span>1m: <span :style="`color: ${pctColor(s.stats?.month_pct)}`" x-text="fmtPct(s.stats?.month_pct)"></span></span>
-              <span>YTD: <span :style="`color: ${pctColor(s.stats?.ytd_pct)}`" x-text="fmtPct(s.stats?.ytd_pct)"></span></span>
-            </div>
-          </div>
+      <!-- Matrix header note -->
+      <div class="flex items-center justify-between mb-2">
+        <div class="text-xs" style="color: var(--text-3)">
+          Annual price returns. Click any cell for monthly breakdown.
         </div>
-      </template>
-    </section>
-
-    <!-- PRICE LOG (when a card is selected) -->
-    <div x-show="selected" x-transition class="rounded-lg border mb-6" style="background: var(--surface); border-color: var(--border)">
-      <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
-        <div class="label-cyan label" x-text="`PRICE LOG · ${selected?.symbol} · ${selected?.label}`"></div>
-        <button @click="selected = null" class="label hover:text-zinc-300 transition text-[10px]">✕ close</button>
+        <!-- Color legend -->
+        <div class="flex items-center gap-1 text-[10px] font-mono" style="color: var(--text-3)">
+          <span style="background:#c2410c; width:14px; height:14px; display:inline-block; border-radius:2px;"></span>
+          <span>&lt;−30%</span>
+          <span style="background:#f97316; width:14px; height:14px; display:inline-block; border-radius:2px; margin-left:4px;"></span>
+          <span>−30→−10%</span>
+          <span style="background:#fdba74; width:14px; height:14px; display:inline-block; border-radius:2px; margin-left:4px;"></span>
+          <span>−10→0%</span>
+          <span style="background:#27272a; width:14px; height:14px; display:inline-block; border-radius:2px; margin-left:4px;"></span>
+          <span>≈0%</span>
+          <span style="background:#93c5fd; width:14px; height:14px; display:inline-block; border-radius:2px; margin-left:4px;"></span>
+          <span>0→+10%</span>
+          <span style="background:#3b82f6; width:14px; height:14px; display:inline-block; border-radius:2px; margin-left:4px;"></span>
+          <span>+10→+30%</span>
+          <span style="background:#1d4ed8; width:14px; height:14px; display:inline-block; border-radius:2px; margin-left:4px;"></span>
+          <span>&gt;+30%</span>
+        </div>
       </div>
 
-      <!-- Stats strip -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-px" style="border-bottom: 1px solid var(--border); background: var(--border)">
-        <template x-for="k in selectedKpis" :key="k.label">
-          <div class="px-3 py-2" style="background: var(--surface)">
-            <div class="label" x-text="k.label"></div>
-            <div class="text-sm num font-mono" :style="`color: ${k.color}`" x-text="k.value"></div>
-          </div>
-        </template>
-      </div>
-
-      <!-- Log table -->
-      <div class="overflow-x-auto scrollbar" style="max-height: 360px; overflow-y: auto;">
-        <table class="w-full text-xs">
-          <thead class="sticky top-0" style="background: #050505; color: var(--text-3)">
-            <tr style="border-bottom: 1px solid var(--border)">
-              <th class="text-left px-3 py-1.5">Date</th>
-              <th class="text-right px-3 py-1.5">Close</th>
-              <th class="text-right px-3 py-1.5">Day %</th>
-              <th class="text-right px-3 py-1.5">Streak</th>
-              <th class="px-3 py-1.5">Percentile</th>
+      <!-- Matrix table container -->
+      <div class="rounded-lg border overflow-auto scrollbar" style="max-height: 75vh; background: var(--bg); border-color: var(--border)">
+        <table class="matrix-table">
+          <thead>
+            <tr>
+              <!-- Corner sticky cell -->
+              <th class="matrix-sticky-corner matrix-name-cell" style="border-bottom: 1px solid var(--border-2); border-right: 1px solid var(--border-2);">
+                <span class="label" style="font-size:9px;">Asset</span>
+              </th>
+              <!-- Year headers -->
+              <template x-for="yr in matrixYears" :key="yr">
+                <th class="matrix-sticky-header matrix-year-cell" x-text="yr"></th>
+              </template>
             </tr>
           </thead>
           <tbody>
-            <template x-for="row in (selected?.log || []).slice().reverse()" :key="row.d">
-              <tr class="row-hover" style="border-bottom: 1px solid rgba(255,255,255,0.02)">
-                <td class="px-3 py-1 font-mono" style="color: var(--text-2)" x-text="row.d"></td>
-                <td class="px-3 py-1 text-right num font-mono" x-text="fmtClose(row.close)"></td>
-                <td class="px-3 py-1 text-right num font-mono" :style="`color: ${pctColor(row.pct)}`" x-text="fmtPct(row.pct)"></td>
-                <td class="px-3 py-1 text-right num font-mono text-[10px]" :style="`color: ${streakColor(row.streak)}`" x-text="fmtStreak(row.streak)"></td>
-                <td class="px-3 py-1">
-                  <div class="flex items-center gap-1">
-                    <div class="w-16 h-1.5 rounded-full overflow-hidden" style="background: rgba(255,255,255,0.06)">
-                      <div class="h-full rounded-full" :style="`width: ${(row.level || 0) * 100}%; background: ${row.level > 0.8 ? 'var(--up)' : row.level < 0.2 ? 'var(--down)' : 'var(--amber)'}`"></div>
-                    </div>
-                    <span class="text-[10px] num font-mono" style="color: var(--text-3)" x-text="`${Math.round((row.level || 0) * 100)}%`"></span>
-                  </div>
+            <template x-for="(group, gi) in matrixGroups" :key="group.category">
+              <!-- Category divider row -->
+              <tr>
+                <td class="matrix-sticky-col" colspan="1"
+                    style="padding: 4px 8px; background: var(--surface-2); border-top: 2px solid rgba(255,255,255,0.08); border-right: 1px solid var(--border-2);">
+                  <span class="label" style="font-size:9px; color: var(--cyan)" x-text="group.category.toUpperCase()"></span>
                 </td>
+                <template x-for="yr in matrixYears" :key="yr">
+                  <td style="background: var(--surface-2); border-top: 2px solid rgba(255,255,255,0.08);"></td>
+                </template>
               </tr>
+              <!-- Asset rows -->
+              <template x-for="asset in group.assets" :key="asset.key">
+                <!-- Main data row -->
+                <tr>
+                  <!-- Sticky name cell -->
+                  <td class="matrix-sticky-col matrix-name-cell" style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-xs font-medium truncate" style="color: var(--text)" x-text="asset.meta.name"></span>
+                      <span class="chip text-[9px]" :style="categoryChipStyle(asset.meta.category)" x-text="asset.meta.native_ccy"></span>
+                    </div>
+                  </td>
+                  <!-- Year cells -->
+                  <template x-for="yr in matrixYears" :key="yr">
+                    <td>
+                      <template x-if="getCellData(asset.key, yr) !== null">
+                        <div class="matrix-cell"
+                             :style="`background: ${cellColor(getCellData(asset.key, yr).ret)}; color: ${cellTextColor(getCellData(asset.key, yr).ret)};`"
+                             @click="toggleDrilldown(asset.key, yr)"
+                             @mouseenter="showCellTt($event, asset, yr, getCellData(asset.key, yr))"
+                             @mouseleave="hideTt()"
+                             x-text="cellText(getCellData(asset.key, yr).ret)">
+                        </div>
+                      </template>
+                      <template x-if="getCellData(asset.key, yr) === null">
+                        <div class="matrix-cell matrix-cell-empty"></div>
+                      </template>
+                    </td>
+                  </template>
+                </tr>
+                <!-- Monthly drilldown row — spans full width -->
+                <tr x-show="expandedCell && expandedCell.assetKey === asset.key" x-transition.opacity>
+                  <td class="matrix-sticky-col" style="padding: 4px 8px; background: rgba(34,211,238,0.04); border-right: 1px solid var(--border-2); border-bottom: 1px solid rgba(34,211,238,0.15); vertical-align: middle;">
+                    <div class="label" style="font-size:9px; color: var(--cyan)" x-text="expandedCell ? expandedCell.year + ' monthly' : ''"></div>
+                    <button @click="expandedCell = null" class="label hover:text-zinc-300 transition" style="font-size:9px; margin-top:2px;">✕</button>
+                  </td>
+                  <td :colspan="matrixYears.length" style="background: rgba(34,211,238,0.04); border-bottom: 1px solid rgba(34,211,238,0.15); padding: 4px 8px;">
+                    <div class="flex gap-1 flex-wrap">
+                      <template x-for="(mr, mi) in (expandedCell && expandedCell.assetKey === asset.key ? getMonthlyReturns(asset.key, expandedCell.year) : [])" :key="mi">
+                        <div class="flex flex-col items-center gap-0.5">
+                          <div class="text-[8px] font-mono" style="color: var(--text-3)" x-text="mr.month"></div>
+                          <div class="text-[9px] font-mono text-center"
+                               style="width: 38px; padding: 2px 0; border-radius: 3px;"
+                               :style="`background: ${cellColor(mr.ret)}; color: ${cellTextColor(mr.ret)};`"
+                               @mouseenter="showMonthTt($event, asset, expandedCell.year, mr, mi)"
+                               @mouseleave="hideTt()"
+                               x-text="mr.ret !== null ? (mr.ret >= 0 ? '+' : '') + (mr.ret * 100).toFixed(1) + '%' : '—'">
+                          </div>
+                        </div>
+                      </template>
+                    </div>
+                  </td>
+                </tr>
+              </template>
             </template>
           </tbody>
         </table>
       </div>
+
+
+      <!-- ─── VIEW G: STAT CARDS ─────────────────────────────────────────── -->
+      <div class="mt-8">
+        <div class="flex items-center gap-3 mb-4">
+          <h2 class="text-sm font-medium" style="color: var(--cyan)">ASSET STATISTICS</h2>
+          <span class="label">CAGR · Volatility · Best/Worst Year · % Positive</span>
+        </div>
+
+        <template x-for="group in matrixGroups" :key="group.category">
+          <div class="mb-6">
+            <div class="label mb-3" style="color: var(--text-3); font-size: 9px; border-bottom: 1px solid var(--border); padding-bottom: 4px;">
+              <span x-text="group.category.toUpperCase()"></span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              <template x-for="asset in group.assets" :key="asset.key">
+                <div class="stat-card">
+                  <!-- Card header -->
+                  <div class="flex items-start justify-between mb-2">
+                    <div>
+                      <div class="text-sm font-medium" style="color: var(--text)" x-text="asset.meta.name"></div>
+                      <div class="text-[10px] font-mono mt-0.5" style="color: var(--text-3)" x-text="asset.meta.source"></div>
+                    </div>
+                    <span class="chip text-[9px]" :style="categoryChipStyle(asset.meta.category)" x-text="asset.meta.category"></span>
+                  </div>
+                  <!-- Stats grid -->
+                  <div>
+                      <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                        <div>
+                          <div class="label" style="font-size:9px;">CAGR</div>
+                          <div class="num font-mono font-medium"
+                               :style="`color: ${(computeStats(asset.key).cagr||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
+                               x-text="computeStats(asset.key).cagr !== null ? ((computeStats(asset.key).cagr >= 0 ? '+' : '') + (computeStats(asset.key).cagr * 100).toFixed(1) + '%') : '—'">
+                          </div>
+                        </div>
+                        <div>
+                          <div class="label" style="font-size:9px;">Ann. Vol</div>
+                          <div class="num font-mono font-medium" style="color: var(--amber)"
+                               x-text="computeStats(asset.key).vol !== null ? (computeStats(asset.key).vol * 100).toFixed(1) + '%' : '—'">
+                          </div>
+                        </div>
+                        <div>
+                          <div class="label" style="font-size:9px;">Best Year</div>
+                          <div class="num font-mono font-medium" style="color: var(--up)"
+                               x-text="computeStats(asset.key).bestYear ? computeStats(asset.key).bestYear.year + ': +' + (computeStats(asset.key).bestYear.ret * 100).toFixed(0) + '%' : '—'">
+                          </div>
+                        </div>
+                        <div>
+                          <div class="label" style="font-size:9px;">Worst Year</div>
+                          <div class="num font-mono font-medium" style="color: var(--down)"
+                               x-text="computeStats(asset.key).worstYear ? computeStats(asset.key).worstYear.year + ': ' + (computeStats(asset.key).worstYear.ret * 100).toFixed(0) + '%' : '—'">
+                          </div>
+                        </div>
+                        <div>
+                          <div class="label" style="font-size:9px;">% Positive Yrs</div>
+                          <div class="num font-mono font-medium" style="color: var(--text)"
+                               x-text="computeStats(asset.key).pctPositive !== null ? (computeStats(asset.key).pctPositive * 100).toFixed(0) + '%' : '—'">
+                          </div>
+                        </div>
+                        <div>
+                          <div class="label" style="font-size:9px;">Data Since</div>
+                          <div class="num font-mono" style="color: var(--text-2)" x-text="asset.meta.first || '—'"></div>
+                        </div>
+                      </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+      </div>
+
+    </div><!-- /matrix content -->
+  </div><!-- /matrix tab -->
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- TAB 2: PRICE LOG (existing functionality)                          -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div x-show="activeTab === 'pricelog'">
+
+    <!-- Loading -->
+    <div x-show="loading" class="pulse-load text-center py-20" style="color: var(--text-3)">
+      <div class="text-lg mb-2">Loading markets data…</div>
+      <div class="text-xs">If this is your first build, run: <code>python -m markets.fetch_yf</code> then <code>python -m markets.build</code></div>
     </div>
 
-  </div><!-- /main content -->
+    <!-- Error / empty -->
+    <div x-show="!loading && series.length === 0" class="text-center py-20">
+      <div class="text-base mb-2" style="color: var(--down)">No markets data found</div>
+      <div class="text-xs mb-4" style="color: var(--text-3)">Run: <code>python -m markets.fetch_yf && python -m markets.build</code></div>
+      <a href="index.html" class="text-xs px-3 py-1.5 rounded-md border transition" style="color: var(--cyan); border-color: rgba(34,211,238,0.3); text-decoration: none;">← Dashboard</a>
+    </div>
+
+    <!-- Price log content -->
+    <div x-show="!loading && series.length > 0">
+
+      <!-- Kind filter nav -->
+      <nav class="flex flex-wrap gap-1 mb-5 text-xs items-center">
+        <template x-for="k in kinds" :key="k.id">
+          <button @click="activeKind = k.id"
+                  :class="activeKind === k.id ? 'tab-active' : ''"
+                  class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition"
+                  :style="activeKind === k.id ? '' : 'color: var(--text-2); border-color: var(--border)'">
+            <span x-text="k.label"></span>
+            <span class="num font-mono ml-1 opacity-60" x-text="`(${k.count})`"></span>
+          </button>
+        </template>
+      </nav>
+
+      <!-- Filter row -->
+      <div class="flex flex-col sm:flex-row gap-2 items-stretch mb-4">
+        <input x-model="q" type="search" placeholder="search symbol or label…"
+               class="flex-1 bg-transparent border rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500/40"
+               style="border-color: var(--border-2); color: var(--text)">
+        <div class="text-xs num font-mono self-center whitespace-nowrap" style="color: var(--text-3)">
+          <span x-text="filteredSeries.length"></span> / <span x-text="series.length"></span>
+        </div>
+      </div>
+
+      <!-- Heatmap-style cards grid -->
+      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-6">
+        <template x-for="s in filteredSeries" :key="s.symbol">
+          <div @click="selected = selected?.symbol === s.symbol ? null : s"
+               class="rounded-lg border cursor-pointer transition-all hover:border-zinc-600"
+               :class="selected?.symbol === s.symbol ? 'border-cyan-500/30' : ''"
+               style="background: var(--surface); border-color: var(--border)">
+            <div class="px-3 py-2.5">
+              <div class="flex items-center justify-between mb-0.5">
+                <div class="font-mono font-medium text-xs" x-text="s.symbol"></div>
+                <div class="label text-[9px]" x-text="s.kind"></div>
+              </div>
+              <div class="label mb-2" x-text="s.label" style="font-size: 9px; text-transform: none; color: var(--text-3)"></div>
+              <div class="flex items-baseline gap-2">
+                <div class="text-lg font-medium num font-mono" x-text="fmtClose(s.stats?.close_today)"></div>
+                <div class="text-xs num font-mono font-medium" :style="`color: ${pctColor(s.stats?.day_pct)}`" x-text="fmtPct(s.stats?.day_pct)"></div>
+              </div>
+              <div class="flex items-end gap-px mt-2" style="height: 22px">
+                <template x-for="(row, i) in (s.log || []).slice(-20)" :key="i">
+                  <div class="flex-1 rounded-sm transition"
+                       :class="row.pct > 0 ? 'bar-pos' : row.pct < 0 ? 'bar-neg' : 'bar-flat'"
+                       :style="`height: ${barHeight(row.pct, s.log)}px`"></div>
+                </template>
+              </div>
+              <div class="flex gap-4 mt-2 text-[10px] num font-mono" style="color: var(--text-3)">
+                <span>7d: <span :style="`color: ${pctColor(s.stats?.week_pct)}`" x-text="fmtPct(s.stats?.week_pct)"></span></span>
+                <span>1m: <span :style="`color: ${pctColor(s.stats?.month_pct)}`" x-text="fmtPct(s.stats?.month_pct)"></span></span>
+                <span>YTD: <span :style="`color: ${pctColor(s.stats?.ytd_pct)}`" x-text="fmtPct(s.stats?.ytd_pct)"></span></span>
+              </div>
+            </div>
+          </div>
+        </template>
+      </section>
+
+      <!-- PRICE LOG detail panel -->
+      <div x-show="selected" x-transition class="rounded-lg border mb-6" style="background: var(--surface); border-color: var(--border)">
+        <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
+          <div class="label-cyan label" x-text="`PRICE LOG · ${selected?.symbol} · ${selected?.label}`"></div>
+          <button @click="selected = null" class="label hover:text-zinc-300 transition text-[10px]">✕ close</button>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-px" style="border-bottom: 1px solid var(--border); background: var(--border)">
+          <template x-for="k in selectedKpis" :key="k.label">
+            <div class="px-3 py-2" style="background: var(--surface)">
+              <div class="label" x-text="k.label"></div>
+              <div class="text-sm num font-mono" :style="`color: ${k.color}`" x-text="k.value"></div>
+            </div>
+          </template>
+        </div>
+        <div class="overflow-x-auto scrollbar" style="max-height: 360px; overflow-y: auto;">
+          <table class="w-full text-xs">
+            <thead class="sticky top-0" style="background: #050505; color: var(--text-3)">
+              <tr style="border-bottom: 1px solid var(--border)">
+                <th class="text-left px-3 py-1.5">Date</th>
+                <th class="text-right px-3 py-1.5">Close</th>
+                <th class="text-right px-3 py-1.5">Day %</th>
+                <th class="text-right px-3 py-1.5">Streak</th>
+                <th class="px-3 py-1.5">Percentile</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="row in (selected?.log || []).slice().reverse()" :key="row.d">
+                <tr class="row-hover" style="border-bottom: 1px solid rgba(255,255,255,0.02)">
+                  <td class="px-3 py-1 font-mono" style="color: var(--text-2)" x-text="row.d"></td>
+                  <td class="px-3 py-1 text-right num font-mono" x-text="fmtClose(row.close)"></td>
+                  <td class="px-3 py-1 text-right num font-mono" :style="`color: ${pctColor(row.pct)}`" x-text="fmtPct(row.pct)"></td>
+                  <td class="px-3 py-1 text-right num font-mono text-[10px]" :style="`color: ${streakColor(row.streak)}`" x-text="fmtStreak(row.streak)"></td>
+                  <td class="px-3 py-1">
+                    <div class="flex items-center gap-1">
+                      <div class="w-16 h-1.5 rounded-full overflow-hidden" style="background: rgba(255,255,255,0.06)">
+                        <div class="h-full rounded-full" :style="`width: ${(row.level || 0) * 100}%; background: ${row.level > 0.8 ? 'var(--up)' : row.level < 0.2 ? 'var(--down)' : 'var(--amber)'}`"></div>
+                      </div>
+                      <span class="text-[10px] num font-mono" style="color: var(--text-3)" x-text="`${Math.round((row.level || 0) * 100)}%`"></span>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /price log content -->
+  </div><!-- /pricelog tab -->
 
   <!-- FOOTER -->
-  <footer class="mt-6 pt-4 text-xs flex gap-4 flex-wrap" style="border-top: 1px solid var(--border); color: var(--text-3)">
+  <footer class="mt-8 pt-4 text-xs flex gap-4 flex-wrap" style="border-top: 1px solid var(--border); color: var(--text-3)">
     <span>Predator Protocol · yieldchaser/etf-data</span>
     <a href="index.html" style="color: var(--cyan); text-decoration: none;">← Dashboard</a>
     <a href="sim.html" style="color: var(--text-3); text-decoration: none;">Simulator</a>
   </footer>
 
-</div>
+</div><!-- /app -->
+
 
 <script>
+// ─── Singleton tooltip engine ────────────────────────────────────────────────
+const tt = document.getElementById('tt');
+function _showTt(el, html) {
+  tt.innerHTML = html;
+  tt.style.opacity = '1';
+  _posTt(el);
+}
+function _posTt(el) {
+  const r = el.getBoundingClientRect();
+  const tw = tt.offsetWidth || 200, th = tt.offsetHeight || 40;
+  let x = r.left + r.width / 2 - tw / 2;
+  let y = r.top - th - 8;
+  if (y < 4) y = r.bottom + 8;
+  if (x < 4) x = 4;
+  if (x + tw > window.innerWidth - 4) x = window.innerWidth - tw - 4;
+  tt.style.left = x + 'px';
+  tt.style.top  = y + 'px';
+}
+function _hideTt() { tt.style.opacity = '0'; }
+
+// ─── Alpine app ──────────────────────────────────────────────────────────────
 function marketsApp() {
   return {
+    // State
     loading: true,
+    loadingReturns: true,
     meta: {},
     series: [],
+    returnsData: null,
+    activeTab: 'matrix',
+    expandedCell: null,   // {assetKey, year}
     selected: null,
     activeKind: 'all',
     q: '',
 
+    // ── Data loading ──────────────────────────────────────────────────────
     async load() {
+      // Load both in parallel; each handles its own error
+      await Promise.all([this._loadPriceLog(), this._loadReturns()]);
+    },
+
+    async _loadPriceLog() {
       try {
         const data = await fetch('data/markets.json', { cache: 'no-store' }).then(r => r.json());
         this.meta = { generated_at_utc: data.generated_at_utc };
         this.series = data.series || [];
       } catch (e) {
-        console.error('Markets load error:', e);
+        console.warn('Price log load error:', e);
       } finally {
         this.loading = false;
       }
     },
 
+    async _loadReturns() {
+      try {
+        const r = await fetch('data/market_returns.json', { cache: 'no-store' });
+        if (!r.ok) { this.returnsData = null; return; }
+        this.returnsData = await r.json();
+      } catch (e) {
+        console.warn('Returns data not available:', e);
+        this.returnsData = null;
+      } finally {
+        this.loadingReturns = false;
+      }
+    },
+
+    // ── Returns matrix computed properties ───────────────────────────────
+
+    // Category display order
+    _categoryOrder: ['equity', 'precious metals', 'energy'],
+
+    get matrixGroups() {
+      if (!this.returnsData) return [];
+      const assets = this.returnsData.assets || {};
+      // Group by category
+      const groups = {};
+      for (const [key, val] of Object.entries(assets)) {
+        const cat = (val.meta?.category || 'other').toLowerCase();
+        if (!groups[cat]) groups[cat] = [];
+        groups[cat].push({ key, meta: val.meta, close: val.close });
+      }
+      // Sort assets within each group by first date ascending
+      for (const cat of Object.keys(groups)) {
+        groups[cat].sort((a, b) => (a.meta?.first || '').localeCompare(b.meta?.first || ''));
+      }
+      // Return in category order
+      const order = this._categoryOrder;
+      const result = [];
+      for (const cat of order) {
+        if (groups[cat]) result.push({ category: cat, assets: groups[cat] });
+      }
+      // Any remaining categories not in order
+      for (const cat of Object.keys(groups)) {
+        if (!order.includes(cat)) result.push({ category: cat, assets: groups[cat] });
+      }
+      return result;
+    },
+
+    get matrixYears() {
+      if (!this.returnsData) return [];
+      const assets = this.returnsData.assets || {};
+      const yearSet = new Set();
+      for (const val of Object.values(assets)) {
+        for (const key of Object.keys(val.close || {})) {
+          yearSet.add(parseInt(key.slice(0, 4)));
+        }
+      }
+      return Array.from(yearSet).sort((a, b) => a - b);
+    },
+
+    // Cache for computed annual returns: { assetKey: { year: {ret, partial} } }
+    _annualCache: {},
+
+    _buildAnnualCache(assetKey) {
+      if (this._annualCache[assetKey]) return;
+      const assets = this.returnsData?.assets || {};
+      const asset = assets[assetKey];
+      if (!asset) { this._annualCache[assetKey] = {}; return; }
+
+      const close = asset.close || {};
+      // Sort all month keys
+      const months = Object.keys(close).sort();
+      if (months.length === 0) { this._annualCache[assetKey] = {}; return; }
+
+      // Build monthly returns map: "YYYY-MM" -> return
+      const monthlyRet = {};
+      for (let i = 1; i < months.length; i++) {
+        const prev = close[months[i - 1]];
+        const curr = close[months[i]];
+        if (prev && curr && prev > 0) {
+          monthlyRet[months[i]] = curr / prev - 1;
+        }
+      }
+
+      // Group months by year
+      const byYear = {};
+      for (const m of months) {
+        const yr = parseInt(m.slice(0, 4));
+        if (!byYear[yr]) byYear[yr] = [];
+        byYear[yr].push(m);
+      }
+
+      // Determine first and last year for partial detection
+      const firstMonth = months[0];
+      const lastMonth = months[months.length - 1];
+      const firstYear = parseInt(firstMonth.slice(0, 4));
+      const lastYear = parseInt(lastMonth.slice(0, 4));
+
+      const result = {};
+      for (const [yr, mList] of Object.entries(byYear)) {
+        const year = parseInt(yr);
+        // Compound available monthly returns for this year
+        // We need returns for months[1..12] of this year
+        // A month's return is close[YYYY-MM] / close[prev month] - 1
+        // For the first month of the entire series, there's no prior month → skip
+        let compound = 1;
+        let count = 0;
+        for (const m of mList) {
+          if (monthlyRet[m] !== undefined) {
+            compound *= (1 + monthlyRet[m]);
+            count++;
+          }
+        }
+        if (count === 0) continue;
+        const partial = (year === firstYear || year === lastYear);
+        result[year] = { ret: compound - 1, partial, count };
+      }
+      this._annualCache[assetKey] = result;
+    },
+
+    getCellData(assetKey, year) {
+      this._buildAnnualCache(assetKey);
+      const cache = this._annualCache[assetKey];
+      if (!cache || cache[year] === undefined) return null;
+      return cache[year];
+    },
+
+    getMonthlyReturns(assetKey, year) {
+      if (!this.returnsData) return [];
+      const asset = this.returnsData.assets?.[assetKey];
+      if (!asset) return [];
+      const close = asset.close || {};
+      const months = Object.keys(close).sort();
+      const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const result = [];
+      for (let m = 1; m <= 12; m++) {
+        const key = `${year}-${String(m).padStart(2, '0')}`;
+        const prevKey = m === 1
+          ? `${year - 1}-12`
+          : `${year}-${String(m - 1).padStart(2, '0')}`;
+        const curr = close[key];
+        const prev = close[prevKey];
+        let ret = null;
+        if (curr != null && prev != null && prev > 0) {
+          ret = curr / prev - 1;
+        }
+        result.push({ month: MONTHS[m - 1], key, ret });
+      }
+      return result;
+    },
+
+    // ── Color scale (diverging blue ↔ orange, winsorized at ±50%) ────────
+    cellColor(ret) {
+      if (ret === null || ret === undefined) return 'transparent';
+      const r = Math.max(-0.5, Math.min(0.5, ret));
+      if (r > 0.30)  return '#1d4ed8';
+      if (r > 0.10)  return '#3b82f6';
+      if (r > 0.00)  return '#93c5fd';
+      if (r > -0.10) return '#fdba74';
+      if (r > -0.30) return '#f97316';
+      return '#c2410c';
+    },
+
+    cellTextColor(ret) {
+      if (ret === null || ret === undefined) return 'transparent';
+      const r = Math.max(-0.5, Math.min(0.5, ret));
+      // Light text on dark backgrounds, dark text on light backgrounds
+      if (r > 0.10)  return 'rgba(255,255,255,0.9)';
+      if (r > 0.00)  return 'rgba(0,0,0,0.75)';
+      if (r > -0.10) return 'rgba(0,0,0,0.75)';
+      return 'rgba(255,255,255,0.9)';
+    },
+
+    cellText(ret) {
+      if (ret === null || ret === undefined) return '';
+      const pct = ret * 100;
+      return (pct >= 0 ? '+' : '') + pct.toFixed(0) + '%';
+    },
+
+    // ── Drilldown toggle ──────────────────────────────────────────────────
+    toggleDrilldown(assetKey, year) {
+      if (this.expandedCell && this.expandedCell.assetKey === assetKey && this.expandedCell.year === year) {
+        this.expandedCell = null;
+      } else {
+        this.expandedCell = { assetKey, year };
+      }
+    },
+
+    // ── Stat cards ────────────────────────────────────────────────────────
+    _statsCache: {},
+
+    computeStats(assetKey) {
+      if (this._statsCache[assetKey]) return this._statsCache[assetKey];
+      this._buildAnnualCache(assetKey);
+      const cache = this._annualCache[assetKey] || {};
+      const years = Object.keys(cache).map(Number).sort((a, b) => a - b);
+
+      if (years.length === 0) {
+        return this._statsCache[assetKey] = { cagr: null, vol: null, bestYear: null, worstYear: null, pctPositive: null };
+      }
+
+      // CAGR: use close prices directly for accuracy
+      const asset = this.returnsData?.assets?.[assetKey];
+      const close = asset?.close || {};
+      const closeKeys = Object.keys(close).sort();
+      let cagr = null;
+      if (closeKeys.length >= 2) {
+        const firstVal = close[closeKeys[0]];
+        const lastVal = close[closeKeys[closeKeys.length - 1]];
+        const firstDate = new Date(closeKeys[0] + '-01');
+        const lastDate = new Date(closeKeys[closeKeys.length - 1] + '-01');
+        const years_elapsed = (lastDate - firstDate) / (1000 * 60 * 60 * 24 * 365.25);
+        if (firstVal > 0 && years_elapsed > 0) {
+          cagr = Math.pow(lastVal / firstVal, 1 / years_elapsed) - 1;
+        }
+      }
+
+      // Annualised volatility from monthly returns
+      const monthlyRets = [];
+      for (let i = 1; i < closeKeys.length; i++) {
+        const prev = close[closeKeys[i - 1]];
+        const curr = close[closeKeys[i]];
+        if (prev > 0 && curr != null) monthlyRets.push(curr / prev - 1);
+      }
+      let vol = null;
+      if (monthlyRets.length >= 2) {
+        const mean = monthlyRets.reduce((a, b) => a + b, 0) / monthlyRets.length;
+        const variance = monthlyRets.reduce((a, b) => a + (b - mean) ** 2, 0) / (monthlyRets.length - 1);
+        vol = Math.sqrt(variance) * Math.sqrt(12);
+      }
+
+      // Best / worst year (full years only, skip partial)
+      const fullYears = years.filter(y => !cache[y].partial);
+      let bestYear = null, worstYear = null;
+      for (const y of fullYears) {
+        const r = cache[y].ret;
+        if (bestYear === null || r > bestYear.ret) bestYear = { year: y, ret: r };
+        if (worstYear === null || r < worstYear.ret) worstYear = { year: y, ret: r };
+      }
+
+      // % positive years
+      const positiveCount = fullYears.filter(y => cache[y].ret > 0).length;
+      const pctPositive = fullYears.length > 0 ? positiveCount / fullYears.length : null;
+
+      const stats = { cagr, vol, bestYear, worstYear, pctPositive };
+      this._statsCache[assetKey] = stats;
+      return stats;
+    },
+
+    // ── Category chip styles ──────────────────────────────────────────────
+    categoryChipStyle(cat) {
+      const c = (cat || '').toLowerCase();
+      if (c === 'equity')          return 'background: rgba(34,211,238,0.10); color: var(--cyan); border: 1px solid rgba(34,211,238,0.25);';
+      if (c === 'precious metals') return 'background: rgba(251,191,36,0.10); color: var(--amber); border: 1px solid rgba(251,191,36,0.25);';
+      if (c === 'energy')          return 'background: rgba(251,113,133,0.10); color: var(--down); border: 1px solid rgba(251,113,133,0.25);';
+      return 'background: rgba(161,161,170,0.10); color: var(--text-2); border: 1px solid rgba(161,161,170,0.20);';
+    },
+
+    // ── Tooltip helpers ───────────────────────────────────────────────────
+    showTt(el, text) { _showTt(el, text); },
+    hideTt() { _hideTt(); },
+
+    showCellTt(el, asset, year, cellData) {
+      if (!cellData) return;
+      const pct = (cellData.ret * 100).toFixed(1);
+      const sign = cellData.ret >= 0 ? '+' : '';
+      const partial = cellData.partial ? '\n⚠ Partial year (not all months available)' : '';
+      const src = asset.meta?.source || '';
+      _showTt(el, `${asset.meta?.name}\n${year}  ${sign}${pct}%${partial}\nSource: ${src}`);
+    },
+
+    showMonthTt(el, asset, year, mr, mi) {
+      if (!mr) return;
+      const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const label = MONTHS[mi] || '';
+      if (mr.ret === null) {
+        _showTt(el, `${asset.meta?.name}\n${label} ${year}  — no data`);
+      } else {
+        const pct = (mr.ret * 100).toFixed(2);
+        const sign = mr.ret >= 0 ? '+' : '';
+        _showTt(el, `${asset.meta?.name}\n${label} ${year}  ${sign}${pct}%`);
+      }
+    },
+
+    // ── Price log (existing) ──────────────────────────────────────────────
     get kinds() {
       const unique = [...new Set(this.series.map(s => s.kind))].sort();
       return [
@@ -244,15 +823,15 @@ function marketsApp() {
     get selectedKpis() {
       if (!this.selected) return [];
       const st = this.selected.stats || {};
-      const fp = (n, dp=2) => (n == null || !isFinite(n)) ? '—' : (n >= 0 ? '+' : '') + (n * 100).toFixed(dp) + '%';
+      const fp = (n, dp = 2) => (n == null || !isFinite(n)) ? '—' : (n >= 0 ? '+' : '') + (n * 100).toFixed(dp) + '%';
       return [
         { label: 'Close',     value: this.fmtClose(st.close_today),           color: 'var(--text)' },
         { label: 'Day %',     value: fp(st.day_pct),                          color: this.pctColor(st.day_pct) },
         { label: '7d %',      value: fp(st.week_pct),                         color: this.pctColor(st.week_pct) },
         { label: '1M %',      value: fp(st.month_pct),                        color: this.pctColor(st.month_pct) },
         { label: 'YTD %',     value: fp(st.ytd_pct),                          color: this.pctColor(st.ytd_pct) },
-        { label: 'ATH',       value: st.all_time_high != null ? Number(st.all_time_high).toLocaleString(undefined, {maximumFractionDigits: 2}) : '—', color: 'var(--up)' },
-        { label: 'ATL',       value: st.all_time_low  != null ? Number(st.all_time_low).toLocaleString(undefined, {maximumFractionDigits: 2}) : '—', color: 'var(--down)' },
+        { label: 'ATH',       value: st.all_time_high != null ? Number(st.all_time_high).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—', color: 'var(--up)' },
+        { label: 'ATL',       value: st.all_time_low  != null ? Number(st.all_time_low).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—', color: 'var(--down)' },
         { label: '%-ile ATH', value: st.percentile_all_time != null ? Math.round(st.percentile_all_time * 100) + '%' : '—', color: 'var(--amber)' },
         { label: 'Streak',    value: this.fmtStreak(st.current_streak),        color: this.streakColor(st.current_streak) },
         { label: '20d Up',    value: st.last_20_up != null ? `${st.last_20_up}/${(st.last_20_up || 0) + (st.last_20_down || 0)}` : '—', color: 'var(--text-2)' },
