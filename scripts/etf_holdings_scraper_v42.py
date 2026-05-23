@@ -15,6 +15,7 @@ Sources & methods (all confirmed via browser network recon):
 
 import requests, pandas as pd, io, re, warnings, traceback, os
 from datetime import date, timedelta
+from typing import Optional
 from bs4 import BeautifulSoup
 import pdfplumber
 
@@ -403,7 +404,7 @@ def _grin_playwright(page_url):
 # ═══════════════════════════════════════════════════════════════════════════════
 FUND_MAP = {'2Y7Q': 'JHMM', '2Y7Z': 'JHEM', '2Y7Y': 'JHSC'}
 
-def parse_jh_row(row_str: str) -> dict | None:
+def parse_jh_row(row_str: str) -> Optional[dict]:
     s = re.sub(r"\s*\n.*", "", row_str).strip()
     if len(s) < 20:
         return None
@@ -627,7 +628,7 @@ def fetch_mfem() -> pd.DataFrame:
 
     captured:       dict = {}
     all_cookie_str: str  = ''
-    jsession:       str | None = None
+    jsession:       Optional[str] = None
 
     # ── helpers ────────────────────────────────────────────────────────────────
 
