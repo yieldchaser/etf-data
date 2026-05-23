@@ -835,18 +835,65 @@
       <!-- ETF picker -->
       <aside class="lg:col-span-1 rounded-lg border p-2" style="background: var(--surface); border-color: var(--border)">
         <div class="label mb-2 px-1" x-text="(etfSummary.length || 30) + ' ETFs · tap to inspect'"></div>
-        <template x-for="etfRow in etfSummary" :key="etfRow.etf">
-          <button @click="activeETF = etfRow.etf"
-                  :class="activeETF === etfRow.etf ? 'tab-active' : ''"
-                  class="w-full flex items-center justify-between px-2 py-1.5 rounded-md text-left text-xs hover:bg-white/5 transition"
-                  style="color: var(--text)">
-            <span class="flex items-center gap-2">
-              <span class="font-mono font-medium" x-text="etfRow.etf"></span>
-              <span class="chip" :style="tierChipStyle(etfRow.tier)" x-text="etfRow.tier"></span>
-            </span>
-            <span class="num font-mono text-[10px]" style="color: var(--text-3)" x-text="`${etfRow.count}`"></span>
-          </button>
-        </template>
+
+        <!-- Tier distribution pie chart -->
+        <div class="flex items-center justify-center mb-3 pb-3" style="border-bottom: 1px solid var(--border)">
+          <svg viewBox="0 0 120 120" style="width: 100px; height: 100px">
+            <template x-for="(seg, i) in tierPieSlices" :key="seg.tier">
+              <path :d="seg.path" :fill="seg.color" style="stroke: #000; stroke-width: 0.8; cursor: pointer; transition: opacity 0.15s"
+                    :style="selectedTier === seg.tier ? 'opacity: 1; stroke-width: 2; stroke: var(--cyan)' : ''"
+                    @click="selectedTier = selectedTier === seg.tier ? '' : seg.tier"
+                    x-tooltip="`'<b>${seg.tier}</b><br>${seg.count} ETFs (${seg.pct}%)'`"/>
+            </template>
+            <circle cx="60" cy="60" r="28" fill="var(--surface)"/>
+            <text x="60" y="58" text-anchor="middle" style="font-size: 11px; fill: var(--text); font-family: ui-monospace" x-text="etfSummary.length"></text>
+            <text x="60" y="70" text-anchor="middle" style="font-size: 7px; fill: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em">ETFs</text>
+          </svg>
+          <div class="ml-3 text-[10px] space-y-0.5">
+            <template x-for="seg in tierPieSlices" :key="seg.tier">
+              <div class="flex items-center gap-1.5 cursor-pointer hover:opacity-80"
+                   @click="selectedTier = selectedTier === seg.tier ? '' : seg.tier"
+                   :style="selectedTier === seg.tier ? 'color: var(--cyan)' : 'color: var(--text-2)'">
+                <span class="w-2 h-2 rounded-sm flex-shrink-0" :style="`background: ${seg.color}`"></span>
+                <span x-text="`${seg.tier} (${seg.count})`"></span>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- ETF list with expandable details -->
+        <div class="space-y-0.5 max-h-[55vh] overflow-y-auto scrollbar">
+          <template x-for="etfRow in etfSummary" :key="etfRow.etf">
+            <div>
+              <button @click="activeETF = etfRow.etf; expandedSidebarETF = expandedSidebarETF === etfRow.etf ? null : etfRow.etf"
+                      :class="activeETF === etfRow.etf ? 'tab-active' : ''"
+                      class="w-full flex items-center justify-between px-2 py-1.5 rounded-md text-left text-xs hover:bg-white/5 transition"
+                      style="color: var(--text)">
+                <span class="flex items-center gap-2">
+                  <span class="font-mono font-medium" x-text="etfRow.etf"></span>
+                  <span class="chip" :style="tierChipStyle(etfRow.tier)" x-text="etfRow.tier"></span>
+                </span>
+                <span class="num font-mono text-[10px]" style="color: var(--text-3)" x-text="`${etfRow.count}`"></span>
+              </button>
+              <!-- Expanded details panel -->
+              <div x-show="expandedSidebarETF === etfRow.etf" x-transition.opacity
+                   class="mx-2 mb-1 px-2 py-2 rounded text-[10px] space-y-1"
+                   style="background: rgba(34,211,238,0.03); border: 1px solid rgba(34,211,238,0.08)">
+                <div style="color: var(--text-2)" x-text="etfMetaLookup[etfRow.etf]?.name || ''"></div>
+                <div class="flex flex-wrap gap-x-3 gap-y-0.5" style="color: var(--text-3)">
+                  <span x-show="etfMetaLookup[etfRow.etf]?.rebalance">
+                    <span style="color: var(--text-2)">⟳</span> <span x-text="etfMetaLookup[etfRow.etf]?.rebalance"></span>
+                  </span>
+                  <span x-show="etfMetaLookup[etfRow.etf]?.reconstitution">
+                    <span style="color: var(--text-2)">↻</span> <span x-text="etfMetaLookup[etfRow.etf]?.reconstitution"></span>
+                  </span>
+                </div>
+                <div x-show="etfMetaLookup[etfRow.etf]?.notes" class="italic" style="color: var(--text-3)"
+                     x-text="etfMetaLookup[etfRow.etf]?.notes"></div>
+              </div>
+            </div>
+          </template>
+        </div>
       </aside>
 
       <!-- ETF detail -->
@@ -854,7 +901,12 @@
         <div class="px-3 py-2.5 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
           <div>
             <div class="text-base font-medium font-mono" :style="`color: var(--cyan)`" x-text="activeETF"></div>
-            <div class="text-xs" style="color: var(--text-2)" x-text="`${etfHoldings.length} holdings · tier ${currentETFTier}`"></div>
+            <div class="text-xs" style="color: var(--text-2)" x-text="etfMetaLookup[activeETF]?.name || `${etfHoldings.length} holdings · tier ${currentETFTier}`"></div>
+            <div class="flex flex-wrap gap-x-3 mt-0.5 text-[10px]" style="color: var(--text-3)">
+              <span x-text="`${etfHoldings.length} holdings · tier ${currentETFTier}`"></span>
+              <span x-show="etfMetaLookup[activeETF]?.rebalance" x-text="`⟳ Rebalance: ${etfMetaLookup[activeETF]?.rebalance}`"></span>
+              <span x-show="etfMetaLookup[activeETF]?.reconstitution" x-text="`↻ Reconstitution: ${etfMetaLookup[activeETF]?.reconstitution}`"></span>
+            </div>
           </div>
           <div class="text-xs label">holdings as of <span class="num font-mono" style="color: var(--text-2)" x-text="etfHoldings[0]?.Holdings_As_Of || '—'"></span></div>
         </div>
@@ -1184,6 +1236,7 @@ function app() {
     sortKey: 'leaderboard_rank', sortDir: 'asc',
     page: 1, pageSize: 50, open: null,
     activeETF: 'QQQM',
+    expandedSidebarETF: null,
     period: 7,
     sortDialog: false,
     hoveredSlice: null,
@@ -1462,6 +1515,65 @@ function app() {
         });
     },
     get currentETFTier() { return this.etfSummary.find(e => e.etf === this.activeETF)?.tier || ''; },
+
+    // ── ETF metadata from ETF DATA.csv (rebalance schedules, notes) ──────
+    get etfMetaLookup() {
+      return {
+        CSD:  { name: 'Invesco S&P Spin-Off ETF', rebalance: 'Monthly', reconstitution: 'Monthly (Rolling)', notes: 'Adds spin-offs as they occur; formal monthly reset.' },
+        FPX:  { name: 'First Trust US Equity Opportunities ETF', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: 'IPOX 100 US Index.' },
+        FPXI: { name: 'First Trust IPOX International Equity ETF', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: 'IPOX 100 Intl Index.' },
+        QMOM: { name: 'Alpha Architect US Quant Momentum ETF', rebalance: 'Monthly', reconstitution: 'Monthly', notes: '🚨 Shifted Oct 2023. High monthly turnover.' },
+        IMOM: { name: 'Alpha Architect Intl Quant Momentum ETF', rebalance: 'Monthly', reconstitution: 'Monthly', notes: '🚨 Shifted Oct 2023. High monthly turnover.' },
+        QVAL: { name: 'Alpha Architect US Quant Value ETF', rebalance: 'Monthly', reconstitution: 'Monthly', notes: '🚨 Shifted Oct 2023. High monthly turnover.' },
+        IVAL: { name: 'Alpha Architect Intl Quant Value ETF', rebalance: 'Monthly', reconstitution: 'Monthly', notes: '🚨 Shifted Oct 2023. High monthly turnover.' },
+        XMMO: { name: 'Invesco S&P MidCap Momentum ETF', rebalance: 'Semi-Annual', reconstitution: 'Semi-Annual', notes: 'March & September.' },
+        XSMO: { name: 'Invesco S&P SmallCap Momentum ETF', rebalance: 'Semi-Annual', reconstitution: 'Semi-Annual', notes: 'March & September.' },
+        PIE:  { name: 'Invesco DWA Emerging Markets Momentum', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: 'DWA Technical Leaders.' },
+        PDP:  { name: 'Invesco DWA Momentum ETF', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: 'DWA Technical Leaders.' },
+        DWAS: { name: 'Invesco DWA SmallCap Momentum ETF', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: 'DWA Technical Leaders.' },
+        EEMO: { name: 'Invesco S&P EM Momentum ETF', rebalance: 'Semi-Annual', reconstitution: 'Semi-Annual', notes: 'March & September.' },
+        PIZ:  { name: 'Invesco DWA Developed Markets ex-US', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: 'DWA Technical Leaders.' },
+        JHMM: { name: 'John Hancock Multifactor Mid Cap', rebalance: 'Semi-Annual', reconstitution: 'Semi-Annual', notes: 'Dimensional index.' },
+        JHEM: { name: 'John Hancock Multifactor EM', rebalance: 'Semi-Annual', reconstitution: 'Semi-Annual', notes: 'Dimensional index.' },
+        JHSC: { name: 'John Hancock Multifactor Small Cap', rebalance: 'Semi-Annual', reconstitution: 'Semi-Annual', notes: 'Dimensional index.' },
+        MFEM: { name: 'PIMCO RAFI Dynamic Multi-Factor EM', rebalance: 'Quarterly', reconstitution: 'Annually', notes: 'RAFI index. Weights shift quarterly; universe resets yearly.' },
+        JOET: { name: 'Virtus Terranova US Quality Momentum', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: '' },
+        COWZ: { name: 'Pacer US Cash Cows 100 ETF', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: '' },
+        CALF: { name: 'Pacer US Small Cap Cash Cows 100', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: '' },
+        SPHQ: { name: 'Invesco S&P 500 Quality ETF', rebalance: 'Semi-Annual', reconstitution: 'Semi-Annual', notes: 'June & December.' },
+        VLUE: { name: 'iShares MSCI USA Value Factor ETF', rebalance: 'Semi-Annual', reconstitution: 'Semi-Annual', notes: 'May & November.' },
+        AVSC: { name: 'Avantis US Small Cap Equity ETF', rebalance: 'Continuous', reconstitution: 'Continuous', notes: 'Actively managed. No fixed schedule.' },
+        GRIN: { name: 'VictoryShares Intl Free Cash Flow Growth', rebalance: 'Semi-Annual', reconstitution: 'Semi-Annual', notes: '' },
+        SPMO: { name: 'Invesco S&P 500 Momentum ETF', rebalance: 'Semi-Annual', reconstitution: 'Semi-Annual', notes: 'March & September.' },
+        SPHB: { name: 'Invesco S&P 500 High Beta ETF', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: 'Feb, May, Aug, Nov.' },
+        RPG:  { name: 'Invesco S&P 500 Pure Growth ETF', rebalance: 'Annually', reconstitution: 'Annually', notes: 'Pure style index.' },
+        XLG:  { name: 'Invesco S&P 500 Top 50 ETF', rebalance: 'Quarterly', reconstitution: 'Annually', notes: 'Weights drift quarterly; top 50 resets yearly.' },
+        QQQM: { name: 'Invesco NASDAQ 100 ETF', rebalance: 'Quarterly', reconstitution: 'Annually', notes: 'Weights drift quarterly; Nasdaq 100 resets yearly (Dec).' },
+      };
+    },
+
+    // ── Tier distribution pie chart slices ────────────────────────────────
+    get tierPieSlices() {
+      const tierColors = { Scout: '#c084fc', Quant: '#a5b4fc', Quality: '#5eead4', Trend: '#fcd34d', Blob: '#a1a1aa' };
+      const tierOrder = ['Scout', 'Quant', 'Quality', 'Trend', 'Blob'];
+      const counts = {};
+      this.etfSummary.forEach(e => { counts[e.tier] = (counts[e.tier] || 0) + 1; });
+      const total = this.etfSummary.length || 1;
+      let startAngle = -Math.PI / 2;
+      return tierOrder.filter(t => counts[t]).map(tier => {
+        const count = counts[tier];
+        const pct = Math.round(count / total * 100);
+        const angle = (count / total) * 2 * Math.PI;
+        const endAngle = startAngle + angle;
+        const largeArc = angle > Math.PI ? 1 : 0;
+        const r = 55, cx = 60, cy = 60;
+        const x1 = cx + r * Math.cos(startAngle), y1 = cy + r * Math.sin(startAngle);
+        const x2 = cx + r * Math.cos(endAngle), y2 = cy + r * Math.sin(endAngle);
+        const path = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+        startAngle = endAngle;
+        return { tier, count, pct, color: tierColors[tier] || '#666', path };
+      });
+    },
 
     // ── ETF Overlap Heatmap ──────────────────────────────────────────────
     get overlapHeatmapSvg() {
