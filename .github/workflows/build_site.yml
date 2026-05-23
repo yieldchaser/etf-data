@@ -57,7 +57,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pandas pyyaml pyarrow pytest yfinance curl_cffi openpyxl pdfplumber
+          pip install pandas pyyaml pyarrow pytest hypothesis yfinance curl_cffi openpyxl pdfplumber
 
       - name: Run tests
         run: python -m pytest tests/ -v

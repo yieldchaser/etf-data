@@ -2,7 +2,7 @@
 # 📈 Predator Protocol: Automated ETF Holdings Pipeline
 
 **Automated Financial Data Pipeline & Institutional Conviction Scanner**
-*Tracks daily holdings for 16 Smart-Beta ETFs from Pacer, First Trust, Alpha Architect, and Invesco to detect early institutional accumulation.*
+*Tracks daily holdings for 29 Smart-Beta ETFs across Pacer, First Trust, Alpha Architect, Invesco, BlackRock, John Hancock, PIMCO, Avantis, VictoryShares, and Virtus to detect early institutional accumulation. The ETF count is derived from `config.yaml::etfs[]` — when that list changes, this README must be updated in the same commit.*
 
 ---
 
@@ -57,15 +57,61 @@ The Excel dashboard connects directly to `raw.githubusercontent.com` to fetch th
 
 ### 1. ETF Tier Weights (`ETF_Config` Table)
 
-ETFs are categorized by strategy type. Each category is assigned a weight (`Points`) based on the rarity and value of the signal.
+ETFs are grouped into five tiers based on the strategy signal they emit. Each ticker carries a `Points` weight reflecting the rarity and conviction of that signal. Tickers, tiers, and points below mirror `config.yaml::etfs[]` exactly — that file is the source of truth.
 
-| Category | Ticker | Points | Strategy Description |
-| --- | --- | --- | --- |
-| **Scout** | `CSD`, `FPX`, `FPXI` | **40** | Spinoffs & IPOs. Captures structural market inefficiencies. |
-| **Quant** | `QMOM`, `IMOM`, `XMMO`, `XSMO`, `PIE` | **40** | Factor-based momentum (Mid/Small Cap). |
-| **Quality** | `COWZ`, `CALF`, `SPHQ` | **30** | High Free Cash Flow & Profitability screening. |
-| **Trend** | `SPMO`, `SPHB`, `RPG` | **10** | Broad momentum and high-beta validation. |
-| **Blob** | `QQQM`, `XLG` | **2** | Market-cap weighted benchmarks (Confirmation only). |
+#### 🏷️ Scout tier — Spinoffs & IPOs. Captures structural market inefficiencies.
+
+| Ticker | Name | Points |
+| --- | --- | --- |
+| `CSD`  | Invesco S&P Spin-Off ETF                          | **40** |
+| `FPX`  | First Trust US Equity Opportunities ETF           | **40** |
+| `FPXI` | First Trust IPOX International Equity ETF         | **60** |
+
+#### 🏷️ Quant tier — Factor-based momentum (US + International, Large/Mid/Small Cap).
+
+| Ticker | Name | Points |
+| --- | --- | --- |
+| `QMOM` | Alpha Architect US Quantitative Momentum ETF              | **40** |
+| `IMOM` | Alpha Architect International Quantitative Momentum ETF   | **60** |
+| `XMMO` | Invesco S&P MidCap Momentum ETF                           | **40** |
+| `XSMO` | Invesco S&P SmallCap Momentum ETF                         | **40** |
+| `PIE`  | Invesco DWA Emerging Markets Momentum ETF                 | **40** |
+| `PDP`  | Invesco DWA Momentum ETF                                  | **40** |
+| `DWAS` | Invesco DWA SmallCap Momentum ETF                         | **40** |
+| `EEMO` | Invesco S&P Emerging Markets Momentum ETF                 | **60** |
+| `PIZ`  | Invesco DWA Developed Markets ex-US Momentum ETF          | **60** |
+| `JHMM` | John Hancock Multifactor Mid Cap ETF                      | **40** |
+| `JHEM` | John Hancock Multifactor Emerging Markets ETF             | **60** |
+| `JHSC` | John Hancock Multifactor Small Cap ETF                    | **40** |
+| `MFEM` | PIMCO RAFI Dynamic Multi-Factor Emerging Markets Equity ETF | **60** |
+| `JOET` | Virtus Terranova US Quality Momentum ETF                  | **40** |
+
+#### 🏷️ Quality tier — High Free Cash Flow, value, and profitability screening.
+
+| Ticker | Name | Points |
+| --- | --- | --- |
+| `COWZ` | Pacer US Cash Cows 100 ETF                                | **30** |
+| `CALF` | Pacer US Small Cap Cash Cows 100 ETF                      | **30** |
+| `SPHQ` | Invesco S&P 500 Quality ETF                               | **30** |
+| `IVAL` | Alpha Architect International Quantitative Value ETF      | **30** |
+| `VLUE` | iShares MSCI USA Value Factor ETF                         | **30** |
+| `AVSC` | Avantis US Small Cap Value ETF                            | **30** |
+| `GRIN` | VictoryShares International Free Cash Flow Growth ETF     | **30** |
+
+#### 🏷️ Trend tier — Broad momentum and high-beta validation.
+
+| Ticker | Name | Points |
+| --- | --- | --- |
+| `SPMO` | Invesco S&P 500 Momentum ETF                              | **10** |
+| `SPHB` | Invesco S&P 500 High Beta ETF                             | **10** |
+| `RPG`  | Invesco S&P 500 Pure Growth ETF                           | **10** |
+
+#### 🏷️ Blob tier — Market-cap weighted benchmarks (confirmation only).
+
+| Ticker | Name | Points |
+| --- | --- | --- |
+| `XLG`  | Invesco S&P 500 Top 50 ETF                                | **2** |
+| `QQQM` | Invesco NASDAQ 100 ETF                                    | **2** |
 
 ### 2. The Algorithm
 
@@ -255,3 +301,44 @@ Edit `config.yaml`:
 
 Commit, push — site rebuilds with new scores in ~2 min.
 
+
+---
+
+## 🔌 Component 4: Extended Scraper
+
+The primary `scraper.py` handles 21 ETFs from issuers exposing stable HTML, CSV, or JSON endpoints (Pacer, First Trust, Alpha Architect, Invesco). The remaining 8 ETFs require Playwright browser automation, PDF parsing, or cookie-bound APIs — these live in `scripts/etf_holdings_scraper_v42.py` and run as an isolated subprocess. The Bridge fans the v42 output into the same canonical sinks the primary loop writes to.
+
+### V42_ETFS Ownership Manifest
+
+`V42_ETFS = frozenset({VLUE, AVSC, GRIN, JHMM, JHEM, JHSC, MFEM, JOET})` is the set of 8 tickers owned by the extended scraper. At startup, `scraper.py` calls `check_v42_ownership_collisions()` and logs a warning if any ticker appears in both `config.json` (primary) and `V42_ETFS` (extended). In healthy state the intersection is empty.
+
+### Bridge Pipeline
+
+```
+v42 subprocess  ──►  etf_holdings_YYYYMMDD.csv   (Canonical_CSV at repo root)
+                              │
+                              ▼
+                   clean_canonical_csv()  ──► (cleaned_df, errors)
+                              │
+                              ▼
+                   bridge_write_all_sinks(cleaned_df)
+                       ├──►  data/all_history.csv                       (Giant_History — append + dedupe)
+                       ├──►  data/latest/{TICKER}.csv                   (one per V42 ETF)
+                       └──►  data/history/YYYY/MM/DD/master_archive.csv (dated daily snapshot — append + dedupe)
+```
+
+The Bridge runs **after** the primary loop has already written its master_archive, so v42 rows are merged into the existing dated file rather than overwriting it. Idempotency is enforced on the composite key `(ETF_Ticker, ticker, Holdings_As_Of)` keep-last on every write — the 14:00 and 22:00 UTC reruns plus any manual `workflow_dispatch` triggers are safe to repeat.
+
+### Failure Isolation
+
+The extended scraper is invoked via `subprocess.run(..., timeout=600, capture_output=True, text=True)`. The Bridge is designed so no failure mode can corrupt the primary output that has already been written:
+
+- **Subprocess crash, non-zero exit, or `TimeoutExpired`** — the last 3000 chars of stdout (and last 1000 of stderr on failure) are logged and the Bridge returns. `data/all_history.csv` and the dated `master_archive.csv` from the primary loop remain intact.
+- **Canonical_CSV validation failure** — missing required columns, unparseable rows, or zero valid rows after filtering cause `clean_canonical_csv()` to return an empty DataFrame plus an error list. `bridge_write_all_sinks()` is skipped entirely; no sink is touched.
+- **Per-sink write failure** — each per-ETF `data/latest/` write and the master_archive append are wrapped individually so one ETF's I/O failure does not abort the others.
+
+This three-layer **failure isolation** contract is what allows the extended scraper to be flaky without ever degrading the 21-ETF primary pipeline.
+
+### Reuse-Existing-CSV Recovery
+
+If `etf_holdings_YYYYMMDD.csv` already exists when the Bridge starts (e.g. partial-run recovery or a rerun within the same UTC day), the subprocess is skipped and the existing canonical CSV is reused. This avoids re-incurring Playwright cost while still fanning the data into all three sinks.
