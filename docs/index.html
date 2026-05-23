@@ -836,19 +836,13 @@
       <aside class="lg:col-span-1 rounded-lg border p-2" style="background: var(--surface); border-color: var(--border)">
         <div class="label mb-2 px-1" x-text="(etfSummary.length || 30) + ' ETFs · tap to inspect'"></div>
 
-        <!-- Tier distribution pie chart -->
+        <!-- Tier distribution pie chart — rendered via x-html to avoid Alpine SVG template limitation -->
         <div class="flex items-center justify-center mb-3 pb-3" style="border-bottom: 1px solid var(--border)">
-          <svg viewBox="0 0 120 120" style="width: 100px; height: 100px">
-            <template x-for="(seg, i) in tierPieSlices" :key="seg.tier">
-              <path :d="seg.path" :fill="seg.color" style="stroke: #000; stroke-width: 0.8; cursor: pointer; transition: opacity 0.15s"
-                    :style="selectedTier === seg.tier ? 'opacity: 1; stroke-width: 2; stroke: var(--cyan)' : ''"
-                    @click="selectedTier = selectedTier === seg.tier ? '' : seg.tier"
-                    x-tooltip="`'<b>${seg.tier}</b><br>${seg.count} ETFs (${seg.pct}%)'`"/>
-            </template>
-            <circle cx="60" cy="60" r="28" fill="var(--surface)"/>
-            <text x="60" y="58" text-anchor="middle" style="font-size: 11px; fill: var(--text); font-family: ui-monospace" x-text="etfSummary.length"></text>
-            <text x="60" y="70" text-anchor="middle" style="font-size: 7px; fill: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em">ETFs</text>
-          </svg>
+          <div x-html="tierPieSvgHtml"
+               @click="$event.target.closest('[data-tier]') && (selectedTier = selectedTier === $event.target.closest('[data-tier]').dataset.tier ? '' : $event.target.closest('[data-tier]').dataset.tier)"
+               @mouseenter="$event.target.closest('[data-tier]') && showTt($event, $event.target.closest('[data-tier]').dataset.tooltip)"
+               @mouseleave="hideTt()"
+               style="width: 100px; height: 100px; cursor: pointer; flex-shrink: 0;"></div>
           <div class="ml-3 text-[10px] space-y-0.5">
             <template x-for="seg in tierPieSlices" :key="seg.tier">
               <div class="flex items-center gap-1.5 cursor-pointer hover:opacity-80"
@@ -914,13 +908,17 @@
         <!-- Holdings Pie Chart — interactive, premium visualization -->
         <div class="px-3 py-4" style="border-bottom: 1px solid var(--border)">
           <div class="flex flex-col lg:flex-row gap-5">
-            <!-- Pie SVG — rendered via x-html to avoid Alpine SVG template limitation -->
+            <!-- Pie SVG — split into static slices + dynamic center overlay to avoid full re-render on hover -->
             <div class="flex-shrink-0 flex flex-col items-center">
-              <div x-html="donutSvgHtml"
+              <div style="position: relative; width: 260px; height: 260px; cursor: pointer"
                    @mouseleave="hoveredSlice = null"
                    @mousemove="$event.target.closest('path') ? hoveredSlice = +$event.target.closest('path').dataset.idx : null"
-                   @click="$event.target.closest('path') && window.open(`stock.html?t=${$event.target.closest('path').dataset.ticker}`, '_self')"
-                   style="width: 260px; height: 260px; cursor: pointer"></div>
+                   @click="$event.target.closest('path') && window.open(`stock.html?t=${$event.target.closest('path').dataset.ticker}`, '_self')">
+                <!-- Static layer: slices + hole — only re-renders when activeETF changes -->
+                <div x-html="donutSlicesSvg" style="position: absolute; top: 0; left: 0; width: 260px; height: 260px;"></div>
+                <!-- Dynamic layer: center text — re-renders on hover but is tiny -->
+                <div x-html="donutCenterSvg" style="position: absolute; top: 0; left: 0; width: 260px; height: 260px; pointer-events: none;"></div>
+              </div>
             </div>
             <!-- Right panel: Top holdings list with weight bars -->
             <div class="flex-1 min-w-0">
@@ -1575,6 +1573,24 @@ function app() {
       });
     },
 
+    // Tier pie rendered as x-html string (avoids Alpine SVG template limitation)
+    get tierPieSvgHtml() {
+      const slices = this.tierPieSlices;
+      if (!slices.length) return '';
+      const sel = this.selectedTier;
+      let paths = '';
+      for (const seg of slices) {
+        const isSelected = sel === seg.tier;
+        const stroke = isSelected ? 'var(--cyan)' : '#000';
+        const strokeW = isSelected ? '2' : '0.8';
+        paths += `<path d="${seg.path}" fill="${seg.color}" data-tier="${seg.tier}" data-tooltip="${seg.tier}: ${seg.count} ETFs (${seg.pct}%)" style="stroke:${stroke};stroke-width:${strokeW};cursor:pointer;transition:opacity 0.15s;" ${sel && !isSelected ? 'opacity="0.4"' : ''}/>`;
+      }
+      const n = this.etfSummary.length;
+      const hole = `<circle cx="60" cy="60" r="28" fill="var(--surface)"/>`;
+      const label = `<text x="60" y="58" text-anchor="middle" style="font-size:11px;fill:var(--text);font-family:ui-monospace;pointer-events:none">${n}</text><text x="60" y="70" text-anchor="middle" style="font-size:7px;fill:var(--text-3);text-transform:uppercase;letter-spacing:0.05em;pointer-events:none">ETFs</text>`;
+      return `<svg viewBox="0 0 120 120" style="width:100px;height:100px">${paths}${hole}${label}</svg>`;
+    },
+
     // ── ETF Overlap Heatmap ──────────────────────────────────────────────
     get overlapHeatmapSvg() {
       const o = this.overlap || {};
@@ -1784,25 +1800,25 @@ function app() {
       return this.etfHoldings.slice(10).reduce((s, h) => s + (h.weight || 0), 0);
     },
 
-    // Generate the holdings donut SVG as an HTML string (x-html pattern —
-    // avoids Alpine's <template x-for> limitation inside SVG elements).
-    get donutSvgHtml() {
+    // Generate the holdings donut SVG as two separate layers:
+    // donutSlicesSvg — static (slices + hole), only changes when activeETF changes
+    // donutCenterSvg — dynamic (center text), changes on hover
+    // Splitting avoids regenerating 50 path strings on every mousemove.
+    get donutSlicesSvg() {
       const slices = this.donutSlices;
       if (!slices.length) return '';
-      const hi = this.hoveredSlice;
       let paths = '';
       for (let i = 0; i < slices.length; i++) {
         const s = slices[i];
-        const dimmed = hi !== null && hi !== i;
-        const hovered = hi === i;
-        const opacity = dimmed ? 0.25 : 1;
-        const transform = hovered ? 'transform: scale(1.03); transform-origin: 130px 130px;' : '';
-        const brightness = hovered ? 'filter: brightness(1.2);' : '';
-        paths += `<path d="${s.path}" fill="${s.color}" data-idx="${i}" data-ticker="${s.ticker}" style="stroke:#0a0a0a; stroke-width:0.8; opacity:${opacity}; ${transform} ${brightness} transition: all 0.2s ease;"/>`;
+        paths += `<path d="${s.path}" fill="${s.color}" data-idx="${i}" data-ticker="${s.ticker}" style="stroke:#0a0a0a; stroke-width:0.8; transition: opacity 0.15s, filter 0.15s;" class="donut-slice"/>`;
       }
-      // Donut hole
       const hole = `<circle cx="130" cy="130" r="70" fill="var(--surface)"/><circle cx="130" cy="130" r="70" fill="none" stroke="rgba(34,211,238,0.08)" stroke-width="1"/>`;
-      // Center text
+      return `<svg viewBox="0 0 260 260" style="width:260px;height:260px" id="donut-svg">${paths}${hole}</svg>`;
+    },
+
+    get donutCenterSvg() {
+      const hi = this.hoveredSlice;
+      const slices = this.donutSlices;
       let center = '';
       if (hi !== null && slices[hi]) {
         const s = slices[hi];
@@ -1814,8 +1830,15 @@ function app() {
                  `<text x="130" y="143" text-anchor="middle" style="font-family:ui-monospace;font-size:11px;fill:#52525b">${this.etfHoldings.length} holdings</text>` +
                  `<text x="130" y="158" text-anchor="middle" style="font-family:ui-monospace;font-size:9px;fill:#52525b">tier ${this.currentETFTier}</text>`;
       }
-      return `<svg viewBox="0 0 260 260" style="width:260px;height:260px">${paths}${hole}${center}</svg>`;
+      // Also update slice opacity via a style tag (avoids re-rendering paths)
+      const styleRules = hi !== null
+        ? `.donut-slice { opacity: 0.25; } .donut-slice:nth-child(${hi + 1}) { opacity: 1; filter: brightness(1.2); }`
+        : `.donut-slice { opacity: 1; }`;
+      return `<svg viewBox="0 0 260 260" style="width:260px;height:260px"><style>${styleRules}</style>${center}</svg>`;
     },
+
+    // Keep donutSvgHtml as a no-op alias for backward compat (not used in template anymore)
+    get donutSvgHtml() { return ''; },
 
     donutPalette() {
       return ['#22d3ee','#a5b4fc','#c084fc','#fcd34d','#5eead4','#fb923c','#f472b6',
