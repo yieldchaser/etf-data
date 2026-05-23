@@ -11,3 +11,8 @@ pyyaml>=6.0
 pyarrow>=15.0
 pytest>=7.0
 hypothesis>=6.0
+
+# Markets History (predator.markets_history)
+fredapi>=0.5.0
+python-dotenv>=1.0.0
+yfinance>=0.2.0
