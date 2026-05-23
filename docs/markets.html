@@ -195,6 +195,38 @@
       <span x-text="(activeReal ? 'Real ' : '') + (activeCcy !== 'Local' ? activeCcy : 'Local')"></span>
       <span style="color: var(--text-3)"> returns</span>
     </div>
+    <!-- Divider -->
+    <div x-show="activeTab === 'matrix'" class="w-px h-5 mx-1" style="background: var(--border-2)"></div>
+    <!-- Color mode toggle (matrix only) -->
+    <div x-show="activeTab === 'matrix'" class="flex gap-1">
+      <button @click="colorMode = 'return'"
+              :class="colorMode === 'return' ? 'tab-active' : ''"
+              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+              :style="colorMode === 'return' ? '' : 'color: var(--text-2); border-color: var(--border)'"
+              @mouseenter="showTt($event, 'Color by raw return magnitude (blue = positive, orange = negative)')"
+              @mouseleave="hideTt()">
+        Return
+      </button>
+      <button @click="colorMode = 'zscore'"
+              :class="colorMode === 'zscore' ? 'tab-active' : ''"
+              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+              :style="colorMode === 'zscore' ? '' : 'color: var(--text-2); border-color: var(--border)'"
+              @mouseenter="showTt($event, 'Color by z-score — how unusual was this year vs that asset\'s own history')"
+              @mouseleave="hideTt()">
+        Z-score
+      </button>
+    </div>
+    <!-- Divider -->
+    <div x-show="activeTab === 'matrix'" class="w-px h-5 mx-1" style="background: var(--border-2)"></div>
+    <!-- Export CSV button (matrix only) -->
+    <button x-show="activeTab === 'matrix' && returnsData"
+            @click="exportMatrixCsv()"
+            class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+            style="color: var(--text-2); border-color: var(--border)"
+            @mouseenter="showTt($event, 'Download current matrix view as CSV')"
+            @mouseleave="hideTt()">
+      ↓ CSV
+    </button>
   </div>
 
 
@@ -223,23 +255,29 @@
       <div class="flex items-center justify-between mb-2">
         <div class="text-xs" style="color: var(--text-3)">
           Annual price returns. Click any cell for monthly breakdown.
+          <span x-show="colorMode === 'zscore'" style="color: var(--amber)"> · Z-score mode: color = how unusual vs own history</span>
         </div>
-        <!-- Color legend -->
+        <!-- Color legend — changes by mode -->
         <div class="flex items-center gap-1 text-[10px] font-mono" style="color: var(--text-3)">
-          <span style="background:#c2410c; width:14px; height:14px; display:inline-block; border-radius:2px;"></span>
-          <span>&lt;−30%</span>
-          <span style="background:#f97316; width:14px; height:14px; display:inline-block; border-radius:2px; margin-left:4px;"></span>
-          <span>−30→−10%</span>
-          <span style="background:#fdba74; width:14px; height:14px; display:inline-block; border-radius:2px; margin-left:4px;"></span>
-          <span>−10→0%</span>
-          <span style="background:#27272a; width:14px; height:14px; display:inline-block; border-radius:2px; margin-left:4px;"></span>
-          <span>≈0%</span>
-          <span style="background:#93c5fd; width:14px; height:14px; display:inline-block; border-radius:2px; margin-left:4px;"></span>
-          <span>0→+10%</span>
-          <span style="background:#3b82f6; width:14px; height:14px; display:inline-block; border-radius:2px; margin-left:4px;"></span>
-          <span>+10→+30%</span>
-          <span style="background:#1d4ed8; width:14px; height:14px; display:inline-block; border-radius:2px; margin-left:4px;"></span>
-          <span>&gt;+30%</span>
+          <template x-if="colorMode === 'return'">
+            <div class="flex items-center gap-1">
+              <span style="background:#c2410c;width:12px;height:12px;display:inline-block;border-radius:2px;"></span><span>&lt;−30%</span>
+              <span style="background:#f97316;width:12px;height:12px;display:inline-block;border-radius:2px;margin-left:3px;"></span><span>−10%</span>
+              <span style="background:#fdba74;width:12px;height:12px;display:inline-block;border-radius:2px;margin-left:3px;"></span><span>0%</span>
+              <span style="background:#93c5fd;width:12px;height:12px;display:inline-block;border-radius:2px;margin-left:3px;"></span><span>+10%</span>
+              <span style="background:#3b82f6;width:12px;height:12px;display:inline-block;border-radius:2px;margin-left:3px;"></span><span>+30%</span>
+              <span style="background:#1d4ed8;width:12px;height:12px;display:inline-block;border-radius:2px;margin-left:3px;"></span><span>&gt;+30%</span>
+            </div>
+          </template>
+          <template x-if="colorMode === 'zscore'">
+            <div class="flex items-center gap-1">
+              <span style="background:#c2410c;width:12px;height:12px;display:inline-block;border-radius:2px;"></span><span>z&lt;−2</span>
+              <span style="background:#f97316;width:12px;height:12px;display:inline-block;border-radius:2px;margin-left:3px;"></span><span>−2→−1</span>
+              <span style="background:#27272a;width:12px;height:12px;display:inline-block;border-radius:2px;margin-left:3px;"></span><span>±1</span>
+              <span style="background:#93c5fd;width:12px;height:12px;display:inline-block;border-radius:2px;margin-left:3px;"></span><span>+1→+2</span>
+              <span style="background:#1d4ed8;width:12px;height:12px;display:inline-block;border-radius:2px;margin-left:3px;"></span><span>z&gt;+2</span>
+            </div>
+          </template>
         </div>
       </div>
 
@@ -255,6 +293,21 @@
               <!-- Year headers -->
               <template x-for="yr in matrixYears" :key="yr">
                 <th class="matrix-sticky-header matrix-year-cell" x-text="yr"></th>
+              </template>
+            </tr>
+            <!-- Event annotation row -->
+            <tr>
+              <th class="matrix-sticky-corner" style="border-right: 1px solid var(--border-2); border-bottom: 1px solid var(--border-2); height: 18px;"></th>
+              <template x-for="yr in matrixYears" :key="yr">
+                <th style="height: 18px; padding: 0; border-bottom: 1px solid var(--border-2);">
+                  <template x-if="matrixEvents[yr]">
+                    <div class="text-center" style="font-size: 7px; color: var(--amber); white-space: nowrap; overflow: hidden; cursor: default;"
+                         @mouseenter="showTt($event, matrixEvents[yr])"
+                         @mouseleave="hideTt()"
+                         x-text="'⚡'">
+                    </div>
+                  </template>
+                </th>
               </template>
             </tr>
           </thead>
@@ -286,7 +339,7 @@
                     <td>
                       <template x-if="getCellData(asset.key, yr) !== null">
                         <div class="matrix-cell"
-                             :style="`background: ${cellColor(getCellData(asset.key, yr).ret)}; color: ${cellTextColor(getCellData(asset.key, yr).ret)};`"
+                             :style="`background: ${activeCellColor(asset.key, yr)}; color: ${cellTextColor(getCellData(asset.key, yr).ret)};`"
                              @click="toggleDrilldown(asset.key, yr)"
                              @mouseenter="showCellTt($event, asset, yr, getCellData(asset.key, yr))"
                              @mouseleave="hideTt()"
@@ -1250,6 +1303,7 @@ function marketsApp() {
     q: '',
     activeCcy: 'Local',   // 'Local' | 'USD' | 'INR'
     activeReal: false,    // true = CPI-adjusted
+    colorMode: 'return',  // 'return' | 'zscore'
 
     // Vol Intelligence state
     volLookback: 'All',   // '1Y' | '3Y' | '5Y' | 'All'
@@ -1545,6 +1599,109 @@ function marketsApp() {
       return '#c2410c';
     },
 
+    // Z-score color scale (same blue-orange, but keyed on z-score ±2σ)
+    cellColorZscore(z) {
+      if (z === null || z === undefined) return 'transparent';
+      if (z > 2.0)  return '#1d4ed8';
+      if (z > 1.0)  return '#93c5fd';
+      if (z > -1.0) return '#27272a';
+      if (z > -2.0) return '#f97316';
+      return '#c2410c';
+    },
+
+    // Per-asset z-score cache: { cacheKey: { year: z } }
+    _zscoreCache: {},
+
+    _buildZscoreCache(assetKey) {
+      const ck = this._cacheKey(assetKey);
+      if (this._zscoreCache[ck]) return;
+      this._buildAnnualCache(assetKey);
+      const cache = this._annualCache[ck] || {};
+      const fullYears = Object.keys(cache).map(Number).filter(y => !cache[y].partial);
+      if (fullYears.length < 3) { this._zscoreCache[ck] = {}; return; }
+      const rets = fullYears.map(y => cache[y].ret);
+      const mean = rets.reduce((a, b) => a + b, 0) / rets.length;
+      const std = Math.sqrt(rets.reduce((a, b) => a + (b - mean) ** 2, 0) / rets.length);
+      const result = {};
+      for (const y of fullYears) {
+        result[y] = std > 0 ? (cache[y].ret - mean) / std : 0;
+      }
+      this._zscoreCache[ck] = result;
+    },
+
+    getZscore(assetKey, year) {
+      this._buildZscoreCache(assetKey);
+      const cache = this._zscoreCache[this._cacheKey(assetKey)];
+      return cache?.[year] ?? null;
+    },
+
+    // Active cell color — respects colorMode toggle
+    activeCellColor(assetKey, year) {
+      if (this.colorMode === 'zscore') {
+        const z = this.getZscore(assetKey, year);
+        return this.cellColorZscore(z);
+      }
+      const cd = this.getCellData(assetKey, year);
+      return cd ? this.cellColor(cd.ret) : 'transparent';
+    },
+
+    // ── Event annotations ─────────────────────────────────────────────────
+    get matrixEvents() {
+      return {
+        1973: 'Oil embargo (Oct 1973)',
+        1979: 'Volcker shock / Iran crisis',
+        1987: 'Black Monday (Oct 1987)',
+        1997: 'Asian financial crisis',
+        1998: 'LTCM / Russia default',
+        2000: 'Dot-com peak',
+        2001: '9/11 attacks',
+        2008: 'GFC / Lehman collapse',
+        2011: 'Euro debt crisis',
+        2015: 'China devaluation / oil crash',
+        2020: 'COVID-19 crash',
+        2022: 'Rate shock / inflation surge',
+      };
+    },
+
+    // ── CSV Export ────────────────────────────────────────────────────────
+    exportMatrixCsv() {
+      if (!this.returnsData) return;
+      const years = this.matrixYears;
+      const groups = this.matrixGroups;
+      const rows = [];
+      // Header
+      rows.push(['Asset', 'Category', 'Currency', 'Source', ...years.map(String)]);
+      for (const group of groups) {
+        for (const asset of group.assets) {
+          const row = [
+            asset.meta?.name || asset.key,
+            asset.meta?.category || '',
+            asset.meta?.native_ccy || '',
+            asset.meta?.source || '',
+          ];
+          for (const yr of years) {
+            const cd = this.getCellData(asset.key, yr);
+            if (cd) {
+              const pct = (cd.ret * 100).toFixed(2);
+              row.push((cd.ret >= 0 ? '+' : '') + pct + '%');
+            } else {
+              row.push('');
+            }
+          }
+          rows.push(row);
+        }
+      }
+      // Build CSV string
+      const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const lens = (this.activeReal ? 'Real_' : '') + (this.activeCcy !== 'Local' ? this.activeCcy + '_' : '');
+      const filename = `predator_returns_${lens}${new Date().toISOString().slice(0, 10)}.csv`;
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; a.click();
+      URL.revokeObjectURL(url);
+    },
+
     cellTextColor(ret) {
       if (ret === null || ret === undefined) return 'transparent';
       const r = Math.max(-0.5, Math.min(0.5, ret));
@@ -1653,7 +1810,12 @@ function marketsApp() {
       const sign = cellData.ret >= 0 ? '+' : '';
       const partial = cellData.partial ? '\n⚠ Partial year (not all months available)' : '';
       const src = asset.meta?.source || '';
-      _showTt(el, `${asset.meta?.name}\n${year}  ${sign}${pct}%${partial}\nSource: ${src}`);
+      let zLine = '';
+      if (this.colorMode === 'zscore') {
+        const z = this.getZscore(asset.key, year);
+        zLine = z !== null ? `\nZ-score: ${z >= 0 ? '+' : ''}${z.toFixed(2)}σ` : '';
+      }
+      _showTt(el, `${asset.meta?.name}\n${year}  ${sign}${pct}%${zLine}${partial}\nSource: ${src}`);
     },
 
     showMonthTt(el, asset, year, mr, mi) {
