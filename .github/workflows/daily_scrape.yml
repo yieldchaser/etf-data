@@ -29,11 +29,12 @@ jobs:
 
       - name: Install libraries
         run: |
+          sudo apt-get install -y xvfb
           pip install pandas requests lxml openpyxl beautifulsoup4 html5lib selenium curl_cffi playwright pdfplumber
           python -m playwright install chromium --with-deps
 
       - name: Run Scraper
-        run: python scraper.py
+        run: xvfb-run -a python scraper.py
 
       - name: Save Data
         id: save_data
