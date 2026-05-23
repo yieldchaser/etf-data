@@ -127,6 +127,27 @@
               x-tooltip="'Drawdown Studio — underwater curves and recovery stats'">
         Drawdowns
       </button>
+      <button @click="activeTab = 'holdingperiod'"
+              :class="activeTab === 'holdingperiod' ? 'tab-active' : ''"
+              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+              :style="activeTab === 'holdingperiod' ? '' : 'color: var(--text-2); border-color: var(--border)'"
+              x-tooltip="'Holding-Period Lab — best/worst/median rolling returns'">
+        Hold Lab
+      </button>
+      <button @click="activeTab = 'seasonality'"
+              :class="activeTab === 'seasonality' ? 'tab-active' : ''"
+              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+              :style="activeTab === 'seasonality' ? '' : 'color: var(--text-2); border-color: var(--border)'"
+              x-tooltip="'Seasonality — average return by month of year'">
+        Seasonality
+      </button>
+      <button @click="activeTab = 'correlation'"
+              :class="activeTab === 'correlation' ? 'tab-active' : ''"
+              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+              :style="activeTab === 'correlation' ? '' : 'color: var(--text-2); border-color: var(--border)'"
+              x-tooltip="'Correlation matrix + cumulative growth chart'">
+        Correlation
+      </button>
     </div>
     <!-- Divider -->
     <div class="w-px h-5 mx-1" style="background: var(--border-2)"></div>
@@ -752,6 +773,195 @@
       </div>
     </div>
   </div><!-- /drawdown tab -->
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- TAB 6: HOLDING-PERIOD LAB (View C)                                 -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div x-show="activeTab === 'holdingperiod'">
+    <div x-show="loadingReturns" class="pulse-load text-center py-20" style="color: var(--text-3)"><div class="text-lg">Loading…</div></div>
+    <div x-show="!loadingReturns && !returnsData" class="text-center py-20"><div class="text-base" style="color: var(--amber)">No data yet</div></div>
+
+    <div x-show="!loadingReturns && returnsData">
+      <div class="flex flex-wrap items-center gap-4 mb-5">
+        <div>
+          <h2 class="text-sm font-medium" style="color: var(--cyan)">HOLDING-PERIOD LAB</h2>
+          <div class="text-xs mt-0.5" style="color: var(--text-3)">Rolling N-year annualised returns — best, worst, median, % positive windows.</div>
+        </div>
+        <!-- Asset selector -->
+        <select x-model="hpAsset" class="bg-transparent border rounded px-2 py-1 text-xs" style="border-color: var(--border-2); color: var(--text)">
+          <template x-for="a in hpAssetList" :key="a.key">
+            <option :value="a.key" x-text="a.name" style="background:#111"></option>
+          </template>
+        </select>
+        <!-- Horizon selector -->
+        <div class="flex gap-1">
+          <template x-for="h in [1,3,5,10,15,20]" :key="h">
+            <button @click="hpHorizon = h"
+                    :class="hpHorizon === h ? 'tab-active' : ''"
+                    class="px-2.5 py-1 rounded-md border font-medium text-xs transition"
+                    :style="hpHorizon === h ? '' : 'color: var(--text-2); border-color: var(--border)'"
+                    x-text="h + 'Y'">
+            </button>
+          </template>
+        </div>
+      </div>
+
+      <!-- Stats strip -->
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
+        <template x-for="kpi in hpKpis" :key="kpi.label">
+          <div class="rounded-lg border px-3 py-2.5" style="background: var(--surface); border-color: var(--border)">
+            <div class="label" x-text="kpi.label"></div>
+            <div class="text-xl font-medium num font-mono mt-0.5" :style="`color: ${kpi.color}`" x-text="kpi.value"></div>
+          </div>
+        </template>
+      </div>
+
+      <!-- Rolling return time series chart -->
+      <div class="rounded-lg border overflow-hidden mb-5" style="background: var(--surface); border-color: var(--border)">
+        <div class="px-3 py-2 label" style="border-bottom: 1px solid var(--border); color: var(--cyan)"
+             x-text="`ROLLING ${hpHorizon}Y ANNUALISED RETURN — ${hpAssetName}`"></div>
+        <div x-html="hpChartSvg" style="width:100%;overflow-x:auto;"></div>
+      </div>
+
+      <!-- Distribution bar chart -->
+      <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+        <div class="px-3 py-2 label" style="border-bottom: 1px solid var(--border); color: var(--cyan)">RETURN DISTRIBUTION</div>
+        <div x-html="hpDistSvg" style="width:100%;overflow-x:auto;"></div>
+      </div>
+    </div>
+  </div><!-- /holdingperiod tab -->
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- TAB 7: SEASONALITY (View E)                                        -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div x-show="activeTab === 'seasonality'">
+    <div x-show="loadingReturns" class="pulse-load text-center py-20" style="color: var(--text-3)"><div class="text-lg">Loading…</div></div>
+    <div x-show="!loadingReturns && !returnsData" class="text-center py-20"><div class="text-base" style="color: var(--amber)">No data yet</div></div>
+
+    <div x-show="!loadingReturns && returnsData">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div>
+          <h2 class="text-sm font-medium" style="color: var(--cyan)">SEASONALITY</h2>
+          <div class="text-xs mt-0.5" style="color: var(--text-3)">Average return by month of year across all available history. Hover for hit-rate.</div>
+        </div>
+        <!-- Category filter -->
+        <div class="flex flex-wrap gap-1">
+          <button @click="seasonCatFilter = ''"
+                  :class="seasonCatFilter === '' ? 'tab-active' : ''"
+                  class="chip border px-2 py-1 text-[10px] transition"
+                  :style="seasonCatFilter === '' ? '' : 'color: var(--text-3); border-color: var(--border)'">All</button>
+          <template x-for="cat in periodicCategories" :key="cat.key">
+            <button @click="seasonCatFilter = seasonCatFilter === cat.key ? '' : cat.key"
+                    :class="seasonCatFilter === cat.key ? 'tab-active' : ''"
+                    class="chip border px-2 py-1 text-[10px] transition"
+                    :style="seasonCatFilter === cat.key ? '' : 'color: var(--text-3); border-color: var(--border)'"
+                    x-text="cat.label">
+            </button>
+          </template>
+        </div>
+      </div>
+
+      <!-- Seasonality heatmap -->
+      <div class="rounded-lg border overflow-auto scrollbar" style="background: var(--bg); border-color: var(--border); max-height: 75vh">
+        <table class="matrix-table w-full text-xs">
+          <thead>
+            <tr>
+              <th class="matrix-sticky-corner" style="min-width:160px;padding:6px 10px;border-bottom:1px solid var(--border-2);border-right:1px solid var(--border-2);">
+                <span class="label" style="font-size:9px;">Asset</span>
+              </th>
+              <template x-for="m in ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']" :key="m">
+                <th class="matrix-sticky-header matrix-year-cell" x-text="m"></th>
+              </template>
+              <th class="matrix-sticky-header matrix-year-cell" style="color:var(--cyan)">Best</th>
+              <th class="matrix-sticky-header matrix-year-cell" style="color:var(--down)">Worst</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="row in seasonalityRows" :key="row.key">
+              <tr>
+                <td class="matrix-sticky-col" style="min-width:160px;padding:4px 10px;border-right:1px solid var(--border-2);border-bottom:1px solid rgba(255,255,255,0.03);">
+                  <span class="text-xs" style="color:var(--text)" x-text="row.name"></span>
+                </td>
+                <template x-for="(cell, mi) in row.months" :key="mi">
+                  <td>
+                    <div class="matrix-cell"
+                         :style="`background:${cellColor(cell.avg)};color:${cellTextColor(cell.avg)};`"
+                         @mouseenter="showTt($event, `${row.name}\n${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][mi]}: avg ${cell.avg !== null ? ((cell.avg>=0?'+':'')+(cell.avg*100).toFixed(1)+'%') : '—'}\nHit rate: ${cell.hitRate !== null ? (cell.hitRate*100).toFixed(0)+'%' : '—'} (${cell.n} years)`)"
+                         @mouseleave="hideTt()"
+                         x-text="cell.avg !== null ? (cell.avg>=0?'+':'')+(cell.avg*100).toFixed(1)+'%' : ''">
+                    </div>
+                  </td>
+                </template>
+                <td class="px-1 text-center">
+                  <span class="text-[9px] font-mono" style="color:var(--up)" x-text="row.bestMonth"></span>
+                </td>
+                <td class="px-1 text-center">
+                  <span class="text-[9px] font-mono" style="color:var(--down)" x-text="row.worstMonth"></span>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div><!-- /seasonality tab -->
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- TAB 8: CORRELATION & GROWTH (View F)                               -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div x-show="activeTab === 'correlation'">
+    <div x-show="loadingReturns" class="pulse-load text-center py-20" style="color: var(--text-3)"><div class="text-lg">Loading…</div></div>
+    <div x-show="!loadingReturns && !returnsData" class="text-center py-20"><div class="text-base" style="color: var(--amber)">No data yet</div></div>
+
+    <div x-show="!loadingReturns && returnsData">
+
+      <!-- Asset selector for growth chart -->
+      <div class="flex flex-wrap items-center gap-3 mb-5">
+        <div>
+          <h2 class="text-sm font-medium" style="color: var(--cyan)">CORRELATION & GROWTH</h2>
+          <div class="text-xs mt-0.5" style="color: var(--text-3)">Monthly return correlations + log-scale cumulative growth of $100.</div>
+        </div>
+        <div class="flex flex-wrap gap-1">
+          <template x-for="a in corrAssetList" :key="a.key">
+            <button @click="toggleCorrAsset(a.key)"
+                    class="chip border px-2 py-1 text-[10px] transition"
+                    :style="activeCorrAssets.has(a.key)
+                      ? `background:${a.color}22;color:${a.color};border-color:${a.color}55;`
+                      : 'color:var(--text-3);border-color:var(--border);opacity:0.5;'"
+                    x-text="a.shortName">
+            </button>
+          </template>
+        </div>
+      </div>
+
+      <!-- Growth of $100 chart (log scale) -->
+      <div class="rounded-lg border overflow-hidden mb-5" style="background: var(--surface); border-color: var(--border)">
+        <div class="px-3 py-2 label" style="border-bottom:1px solid var(--border);color:var(--cyan)">GROWTH OF $100 (LOG SCALE)</div>
+        <div x-html="growthChartSvg"
+             @mousemove="growthHover($event)"
+             @mouseleave="growthHoverInfo = null"
+             style="width:100%;overflow-x:auto;"></div>
+        <div x-show="growthHoverInfo" class="px-4 py-2 flex flex-wrap gap-x-6 gap-y-1 text-xs num font-mono"
+             style="border-top:1px solid var(--border);background:var(--surface-2)">
+          <span style="color:var(--text-3)" x-text="growthHoverInfo?.date || ''"></span>
+          <template x-for="item in (growthHoverInfo?.values || [])" :key="item.key">
+            <span :style="`color:${item.color}`" x-text="`${item.name}: $${item.val !== null ? item.val.toFixed(0) : '—'}`"></span>
+          </template>
+        </div>
+      </div>
+
+      <!-- Correlation matrix -->
+      <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+        <div class="px-3 py-2 label" style="border-bottom:1px solid var(--border);color:var(--cyan)">CORRELATION MATRIX (MONTHLY RETURNS)</div>
+        <div class="overflow-auto scrollbar p-3">
+          <div x-html="corrMatrixHtml"></div>
+        </div>
+      </div>
+    </div>
+  </div><!-- /correlation tab -->
 
 
   <!-- FOOTER -->
@@ -1800,6 +2010,287 @@ function marketsApp() {
           peakDate, troughDate, recoveryDate, monthsToRecover,
         };
       }).sort((a, b) => (a.maxDd ?? 0) - (b.maxDd ?? 0));
+    },
+
+    // ── View C: Holding-Period Lab ────────────────────────────────────────
+
+    hpAsset: 'sp500',
+    hpHorizon: 10,
+
+    get hpAssetList() {
+      if (!this.returnsData) return [];
+      return Object.entries(this.returnsData.assets || {}).map(([k, v]) => ({
+        key: k, name: v.meta?.name || k,
+      }));
+    },
+
+    get hpAssetName() {
+      return this.returnsData?.assets?.[this.hpAsset]?.meta?.name || this.hpAsset;
+    },
+
+    _rollingReturns(assetKey, horizonYears) {
+      const adjusted = this._getAdjustedClose(assetKey);
+      if (adjusted.length < 2) return [];
+      const n = horizonYears * 12;
+      const results = [];
+      for (let i = n; i < adjusted.length; i++) {
+        const start = adjusted[i - n], end = adjusted[i];
+        if (start.close > 0 && end.close != null) {
+          const ann = Math.pow(end.close / start.close, 1 / horizonYears) - 1;
+          results.push({ ym: end.ym, ret: ann });
+        }
+      }
+      return results;
+    },
+
+    get hpKpis() {
+      const rolls = this._rollingReturns(this.hpAsset, this.hpHorizon);
+      if (!rolls.length) return [];
+      const rets = rolls.map(r => r.ret).sort((a, b) => a - b);
+      const n = rets.length;
+      const median = n % 2 === 0 ? (rets[n/2-1] + rets[n/2]) / 2 : rets[Math.floor(n/2)];
+      const pctPos = rets.filter(r => r > 0).length / n;
+      const fmt = v => (v >= 0 ? '+' : '') + (v * 100).toFixed(1) + '%';
+      return [
+        { label: 'Best Window',  value: fmt(rets[n-1]), color: 'var(--up)' },
+        { label: 'Worst Window', value: fmt(rets[0]),   color: 'var(--down)' },
+        { label: 'Median',       value: fmt(median),    color: 'var(--text)' },
+        { label: '% Positive',   value: (pctPos*100).toFixed(0)+'%', color: pctPos >= 0.7 ? 'var(--up)' : pctPos >= 0.5 ? 'var(--amber)' : 'var(--down)' },
+        { label: 'Windows',      value: n.toString(),   color: 'var(--text-3)' },
+      ];
+    },
+
+    get hpChartSvg() {
+      const rolls = this._rollingReturns(this.hpAsset, this.hpHorizon);
+      if (!rolls.length) return '<div style="padding:40px;text-align:center;color:var(--text-3)">Not enough data for this horizon</div>';
+      const W = 1200, H = 220, PL = 52, PR = 20, PT = 15, PB = 35;
+      const chartW = W - PL - PR, chartH = H - PT - PB;
+      const rets = rolls.map(r => r.ret);
+      const minR = Math.min(...rets) * 1.05, maxR = Math.max(...rets) * 1.05;
+      const xS = (i) => PL + (i / Math.max(rolls.length - 1, 1)) * chartW;
+      const yS = (v) => PT + chartH - ((v - minR) / (maxR - minR)) * chartH;
+      let ticks = '';
+      for (let i = 0; i <= 4; i++) {
+        const v = minR + (maxR - minR) * i / 4;
+        const y = yS(v);
+        ticks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W-PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>`;
+        ticks += `<text x="${PL-4}" y="${(y+4).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${(v*100).toFixed(0)}%</text>`;
+      }
+      const y0 = yS(0);
+      const zl = `<line x1="${PL}" y1="${y0.toFixed(1)}" x2="${W-PR}" y2="${y0.toFixed(1)}" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>`;
+      let area = `M${PL},${y0.toFixed(1)} `, line = '';
+      for (let i = 0; i < rolls.length; i++) {
+        const x = xS(i).toFixed(1), y = yS(rolls[i].ret).toFixed(1);
+        area += `L${x},${y} `;
+        line += i === 0 ? `M${x},${y} ` : `L${x},${y} `;
+      }
+      area += `L${xS(rolls.length-1).toFixed(1)},${y0.toFixed(1)} Z`;
+      const fc = rolls[rolls.length-1].ret >= 0 ? '#34d399' : '#fb7185';
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block">${ticks}${zl}<path d="${area}" fill="${fc}" opacity="0.15"/><path d="${line.trim()}" fill="none" stroke="${fc}" stroke-width="1.5"/></svg>`;
+    },
+
+    get hpDistSvg() {
+      const rolls = this._rollingReturns(this.hpAsset, this.hpHorizon);
+      if (!rolls.length) return '';
+      const rets = rolls.map(r => r.ret);
+      const min = Math.min(...rets), max = Math.max(...rets);
+      const nB = 20, step = (max - min) / nB || 0.01;
+      const buckets = Array(nB).fill(0);
+      for (const r of rets) buckets[Math.min(Math.floor((r - min) / step), nB - 1)]++;
+      const maxC = Math.max(...buckets);
+      const W = 600, H = 120, PL = 30, PB = 25, PT = 10;
+      const bw = (W - PL) / nB;
+      let bars = '';
+      for (let i = 0; i < nB; i++) {
+        const bh = (buckets[i] / maxC) * (H - PT - PB);
+        const x = PL + i * bw, y = H - PB - bh;
+        const mid = min + (i + 0.5) * step;
+        bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(bw-1).toFixed(1)}" height="${bh.toFixed(1)}" fill="${mid >= 0 ? '#34d399' : '#fb7185'}" opacity="0.7" rx="1"/>`;
+        if (i % 4 === 0) bars += `<text x="${(x+bw/2).toFixed(1)}" y="${H-8}" text-anchor="middle" style="font-size:8px;fill:#52525b;font-family:ui-monospace">${(mid*100).toFixed(0)}%</text>`;
+      }
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:600px;height:${H}px;display:block">${bars}</svg>`;
+    },
+
+    // ── View E: Seasonality ───────────────────────────────────────────────
+
+    seasonCatFilter: '',
+
+    get seasonalityRows() {
+      if (!this.returnsData) return [];
+      const assets = this.returnsData.assets || {};
+      const cat = this.seasonCatFilter;
+      const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return Object.entries(assets)
+        .filter(([, v]) => !cat || (v.meta?.category || '').toLowerCase() === cat)
+        .map(([key, asset]) => {
+          const adjusted = this._getAdjustedClose(key);
+          const monthlyRet = {};
+          for (let i = 1; i < adjusted.length; i++) {
+            const prev = adjusted[i-1].close, curr = adjusted[i].close;
+            if (prev > 0 && curr != null) monthlyRet[adjusted[i].ym] = curr / prev - 1;
+          }
+          const byMonth = Array.from({length: 12}, () => []);
+          for (const [ym, r] of Object.entries(monthlyRet)) {
+            byMonth[parseInt(ym.slice(5, 7)) - 1].push(r);
+          }
+          const months = byMonth.map(rs => {
+            if (!rs.length) return { avg: null, hitRate: null, n: 0 };
+            const avg = rs.reduce((a, b) => a + b, 0) / rs.length;
+            return { avg, hitRate: rs.filter(r => r > 0).length / rs.length, n: rs.length };
+          });
+          const valid = months.map((m, i) => ({ ...m, i })).filter(m => m.avg !== null);
+          const best = valid.reduce((a, b) => a.avg > b.avg ? a : b, valid[0]);
+          const worst = valid.reduce((a, b) => a.avg < b.avg ? a : b, valid[0]);
+          return { key, name: asset.meta?.name || key, months, bestMonth: best ? MONTHS[best.i] : '—', worstMonth: worst ? MONTHS[worst.i] : '—' };
+        });
+    },
+
+    // ── View F: Correlation & Growth ──────────────────────────────────────
+
+    activeCorrAssets: new Set(['sp500', 'gold', 'wti_crude', 'sensex', 'us_home_prices']),
+    growthHoverInfo: null,
+
+    get corrAssetList() {
+      if (!this.returnsData) return [];
+      const assets = this.returnsData.assets || {};
+      const preferred = ['sp500', 'nasdaq', 'gold', 'silver', 'wti_crude', 'copper', 'sensex', 'nikkei', 'dax', 'us_home_prices', 'wheat', 'fx_eurusd'];
+      return preferred.filter(k => assets[k]).map((k, i) => ({
+        key: k,
+        shortName: assets[k].meta?.name?.split(' ').slice(0, 2).join(' ') || k,
+        name: assets[k].meta?.name || k,
+        color: this._assetPalette[i % this._assetPalette.length],
+      }));
+    },
+
+    toggleCorrAsset(key) {
+      const s = new Set(this.activeCorrAssets);
+      if (s.has(key)) { if (s.size > 1) s.delete(key); } else { s.add(key); }
+      this.activeCorrAssets = s;
+    },
+
+    _monthlyRetSeries(assetKey) {
+      const adjusted = this._getAdjustedClose(assetKey);
+      const ret = {};
+      for (let i = 1; i < adjusted.length; i++) {
+        const prev = adjusted[i-1].close, curr = adjusted[i].close;
+        if (prev > 0 && curr != null) ret[adjusted[i].ym] = curr / prev - 1;
+      }
+      return ret;
+    },
+
+    get growthChartSvg() {
+      const active = this.activeCorrAssets;
+      const assetDefs = this.corrAssetList.filter(a => active.has(a.key));
+      if (!assetDefs.length) return '';
+      const retSeries = {}, allMonths = new Set();
+      for (const a of assetDefs) { retSeries[a.key] = this._monthlyRetSeries(a.key); Object.keys(retSeries[a.key]).forEach(m => allMonths.add(m)); }
+      const months = Array.from(allMonths).sort();
+      if (!months.length) return '';
+      const growth = {};
+      for (const a of assetDefs) {
+        const rets = retSeries[a.key]; let val = 100, started = false;
+        growth[a.key] = {};
+        for (const m of months) {
+          if (!started && rets[m] !== undefined) started = true;
+          if (!started) continue;
+          if (rets[m] !== undefined) val *= (1 + rets[m]);
+          growth[a.key][m] = val;
+        }
+      }
+      const W = 1200, H = 280, PL = 60, PR = 20, PT = 15, PB = 35;
+      const chartW = W - PL - PR, chartH = H - PT - PB;
+      let minV = Infinity, maxV = -Infinity;
+      for (const vals of Object.values(growth)) for (const v of Object.values(vals)) if (v > 0) { minV = Math.min(minV, v); maxV = Math.max(maxV, v); }
+      if (!isFinite(minV)) return '';
+      const logMin = Math.log10(minV * 0.9), logMax = Math.log10(maxV * 1.1);
+      const xS = (m) => PL + (months.indexOf(m) / Math.max(months.length - 1, 1)) * chartW;
+      const yS = (v) => v > 0 ? PT + chartH - ((Math.log10(v) - logMin) / (logMax - logMin)) * chartH : H - PB;
+      let ticks = '';
+      for (const v of [1,2,5,10,20,50,100,200,500,1000,2000,5000,10000].filter(v => v >= minV*0.5 && v <= maxV*2)) {
+        const y = yS(v); if (y < PT || y > H-PB) continue;
+        ticks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W-PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>`;
+        ticks += `<text x="${PL-4}" y="${(y+4).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace">$${v}</text>`;
+      }
+      let xLabels = '';
+      for (const yr of [...new Set(months.map(m => m.slice(0,4)))]) {
+        if (parseInt(yr) % 10 !== 0) continue;
+        const m = `${yr}-01`; if (!months.includes(m)) continue;
+        const x = xS(m);
+        xLabels += `<text x="${x.toFixed(1)}" y="${H-8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${yr}</text>`;
+        xLabels += `<line x1="${x.toFixed(1)}" y1="${PT}" x2="${x.toFixed(1)}" y2="${H-PB}" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>`;
+      }
+      let lines = '';
+      for (const a of assetDefs) {
+        const vals = growth[a.key]; let d = '', inSeg = false;
+        for (const m of months) {
+          const v = vals[m]; if (v == null) { inSeg = false; continue; }
+          const x = xS(m).toFixed(1), y = yS(v).toFixed(1);
+          if (!inSeg) { d += `M${x},${y} `; inSeg = true; } else { d += `L${x},${y} `; }
+        }
+        if (d) lines += `<path d="${d.trim()}" fill="none" stroke="${a.color}" stroke-width="1.5" opacity="0.85"/>`;
+      }
+      const ch = `<line id="growth-crosshair" x1="0" y1="${PT}" x2="0" y2="${H-PB}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block">${ticks}${xLabels}${lines}${ch}</svg>`;
+    },
+
+    growthHover(e) {
+      const svg = e.currentTarget.querySelector('svg'); if (!svg) return;
+      const rect = svg.getBoundingClientRect();
+      const active = this.activeCorrAssets;
+      const assetDefs = this.corrAssetList.filter(a => active.has(a.key));
+      const allMonths = new Set();
+      for (const a of assetDefs) Object.keys(this._monthlyRetSeries(a.key)).forEach(m => allMonths.add(m));
+      const months = Array.from(allMonths).sort(); if (!months.length) return;
+      const W = 1200, PL = 60, PR = 20;
+      const frac = Math.max(0, Math.min(1, ((e.clientX - rect.left) / (rect.width / W) - PL) / (W - PL - PR)));
+      const month = months[Math.round(frac * (months.length - 1))];
+      const values = assetDefs.map(a => {
+        const rets = this._monthlyRetSeries(a.key); let val = 100;
+        for (const m of months) { if (m > month) break; if (rets[m] !== undefined) val *= (1 + rets[m]); }
+        return { key: a.key, name: a.shortName, color: a.color, val: rets[month] !== undefined ? val : null };
+      });
+      this.growthHoverInfo = { date: month, values };
+      const ch = svg.getElementById('growth-crosshair');
+      if (ch) { const x = PL + frac * (W - PL - PR); ch.setAttribute('x1', x); ch.setAttribute('x2', x); ch.setAttribute('opacity', '1'); }
+    },
+
+    get corrMatrixHtml() {
+      const active = this.activeCorrAssets;
+      const assetDefs = this.corrAssetList.filter(a => active.has(a.key));
+      if (assetDefs.length < 2) return '<div style="padding:20px;color:var(--text-3);font-size:12px">Select at least 2 assets</div>';
+      const retSeries = {}, allMonths = new Set();
+      for (const a of assetDefs) { retSeries[a.key] = this._monthlyRetSeries(a.key); Object.keys(retSeries[a.key]).forEach(m => allMonths.add(m)); }
+      const months = Array.from(allMonths).sort();
+      const n = assetDefs.length;
+      const corr = Array.from({length: n}, () => Array(n).fill(null));
+      for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+        if (i === j) { corr[i][j] = 1; continue; }
+        const ri = retSeries[assetDefs[i].key], rj = retSeries[assetDefs[j].key];
+        const common = months.filter(m => ri[m] !== undefined && rj[m] !== undefined);
+        if (common.length < 6) continue;
+        const xi = common.map(m => ri[m]), xj = common.map(m => rj[m]);
+        const mi = xi.reduce((a,b)=>a+b,0)/xi.length, mj = xj.reduce((a,b)=>a+b,0)/xj.length;
+        const cov = xi.reduce((s,v,k)=>s+(v-mi)*(xj[k]-mj),0)/xi.length;
+        const si = Math.sqrt(xi.reduce((s,v)=>s+(v-mi)**2,0)/xi.length);
+        const sj = Math.sqrt(xj.reduce((s,v)=>s+(v-mj)**2,0)/xj.length);
+        corr[i][j] = si > 0 && sj > 0 ? cov / (si * sj) : null;
+      }
+      const CELL = 52;
+      let html = `<table style="border-collapse:separate;border-spacing:2px;"><tr><td style="width:120px;"></td>`;
+      for (const a of assetDefs) html += `<td style="width:${CELL}px;text-align:center;font-size:9px;font-family:ui-monospace;color:#52525b;padding:2px;">${a.shortName.slice(0,6)}</td>`;
+      html += `</tr>`;
+      for (let i = 0; i < n; i++) {
+        html += `<tr><td style="font-size:10px;color:var(--text-2);padding:2px 6px;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis;">${assetDefs[i].shortName}</td>`;
+        for (let j = 0; j < n; j++) {
+          const c = corr[i][j];
+          let bg = '#27272a';
+          if (c !== null) { if (c > 0.7) bg = '#1d4ed8'; else if (c > 0.4) bg = '#3b82f6'; else if (c > 0.1) bg = '#93c5fd'; else if (c > -0.1) bg = '#27272a'; else if (c > -0.4) bg = '#fdba74'; else if (c > -0.7) bg = '#f97316'; else bg = '#c2410c'; }
+          const tc = c !== null && Math.abs(c) > 0.3 ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.6)';
+          html += `<td style="width:${CELL}px;height:28px;text-align:center;font-size:10px;font-family:ui-monospace;background:${bg};color:${tc};border-radius:2px;" title="${assetDefs[i].shortName} vs ${assetDefs[j].shortName}: ${c !== null ? c.toFixed(2) : '—'}">${c !== null ? c.toFixed(2) : '—'}</td>`;
+        }
+        html += `</tr>`;
+      }
+      return html + `</table>`;
     },
   };
 }
