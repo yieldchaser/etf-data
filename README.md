@@ -8,9 +8,12 @@
 
 ## 🏗️ System Architecture
 
-This system operates as a two-stage pipeline:
-1.  **Data Ingestion (Python/GitHub):** Automated scraping, cleaning, and archival of daily ETF holdings.
-2.  **Data Processing (Excel Power Query):** A multi-factor scoring engine that ranks stocks based on cross-ETF conviction, factor weighting, and accumulation signals.
+This system operates as a **five-component pipeline**:
+1.  **Data Ingestion (Python/GitHub Actions):** Automated scraping, cleaning, and archival of daily ETF holdings across 30 Smart-Beta ETFs.
+2.  **Scoring Engine (Excel/Power Query):** A multi-factor scoring engine that ranks stocks based on cross-ETF conviction, factor weighting, and accumulation signals.
+3.  **Live Dashboard (GitHub Pages):** Institutional-grade interactive frontend with leaderboard, velocity engine, burst detection, and structural intelligence.
+4.  **Extended Scraper (Playwright/Bridge):** Browser-automated ingestion for 8 ETFs requiring JS rendering, with a fault-isolated bridge pipeline.
+5.  **Markets Intelligence Platform (FRED/yfinance):** Monthly EOP close data for ~50 global assets and 7 CBOE vol indices, powering a multi-view analytical dashboard.
 
 ---
 
@@ -32,7 +35,7 @@ This project runs automatically via **GitHub Actions** to:
 * **"Nuclear" Date Hunter:** Custom Regex logic to find hidden "As Of" dates in raw HTML source code.
 
 ### Automated Schedule
-* **Frequency:** Runs automatically at **01:30 UTC** and **12:30 UTC** via `.github/workflows/daily_scrape.yml`.
+* **Frequency:** Runs automatically at **14:00 UTC** and **22:00 UTC on weekdays** (cron: `0 14,22 * * 1-5`) via `.github/workflows/daily_scrape.yml`.
 * **Data Structure:**
   ```text
   data/
@@ -274,10 +277,14 @@ Auto-rebuilds within ~2 min of every scraper commit via `.github/workflows/build
 
 ```bash
 pip install -r requirements.txt
-python -m pytest tests/ -v           # 27 tests
-python -m predator.build             # builds docs/data/*
-python -m predator.backtest          # builds docs/data/backtest.json
-python -m http.server -d docs 8000   # preview at http://localhost:8000
+python -m pytest tests/ -v                         # 33 tests
+python -m predator.build                           # builds docs/data/*
+python -m predator.backtest                        # builds docs/data/backtest.json
+python -m predator.markets_history --dry-run       # preview FRED fetch plan
+python -m predator.markets_history                 # fetch + write market_returns.json
+python -m predator.vol_history --dry-run           # preview vol fetch plan
+python -m predator.vol_history                     # fetch + write vol_history.json
+python -m http.server -d docs 8000                 # preview at http://localhost:8000
 ```
 
 ### Pages
@@ -286,7 +293,7 @@ python -m http.server -d docs 8000   # preview at http://localhost:8000
 |------|-----|-------------|
 | Dashboard | `/` | Leaderboard, ETFs, Changes, Watchlist tabs |
 | Stock Detail | `/stock.html?t=GEV` | Per-ticker deep dive with charts |
-| Markets | `/markets.html` | Price log for indices, commodities, FX, vol |
+| Markets | `/markets.html` | Multi-asset returns intelligence — annual heatmap, drawdowns, correlation, seasonality, rolling returns, periodic table, yield history, and volatility regime dashboard across ~50 global assets |
 | Simulator | `/sim.html` | Leveraged ETN NAV simulator |
 | Backtest | `/backtest.html` | Strategy performance comparison |
 
@@ -343,3 +350,54 @@ This three-layer **failure isolation** contract is what allows the extended scra
 ### Reuse-Existing-CSV Recovery
 
 If `etf_holdings_YYYYMMDD.csv` already exists when the Bridge starts (e.g. partial-run recovery or a rerun within the same UTC day), the subprocess is skipped and the existing canonical CSV is reused. This avoids re-incurring Playwright cost while still fanning the data into all three sinks.
+
+---
+
+## 🌍 Component 5: Markets Intelligence Platform
+
+A standalone data pipeline and multi-view dashboard providing cross-asset return analytics for ~50 global instruments spanning equities, precious metals, energy, base metals, agriculture, FX, real estate, and rates.
+
+### Data Pipelines
+
+| Module | Output | Description |
+|--------|--------|-------------|
+| `predator/markets_history.py` | `docs/data/market_returns.json` | Fetches monthly end-of-period (EOP) close data for ~50 assets from FRED (primary) and yfinance (fallback for international indices). Covers equities, precious metals, energy, base metals, agriculture, FX, real estate, and rates. |
+| `predator/vol_history.py` | `docs/data/vol_history.json` | Fetches daily close for 7 CBOE volatility indices (VIX, GVZ, OVX, VXN, RVX, VXD, VXEEM) from FRED. |
+
+Both pipelines support `--dry-run` to preview the fetch plan without writing data.
+
+### Markets Page (`/markets.html`)
+
+A 9-tab analytical dashboard:
+
+| Tab | View | Description |
+|-----|------|-------------|
+| Return Matrix | View A | Annual returns heatmap with monthly drilldown, currency lens (Local/USD/INR), real returns toggle, z-score color mode, event annotations, CSV export |
+| Price Log | — | Existing daily price log |
+| Yield History | View H | US rate history line chart + annual yield heatmap |
+| Periodic Table | View B | Callan-style rank rotation table |
+| Drawdowns | View D | Underwater curves + max drawdown table |
+| Hold Lab | View C | Rolling N-year returns |
+| Seasonality | View E | Month-of-year average return heatmap |
+| Correlation | View F | Correlation matrix + Growth of $100 log-scale chart |
+| Volatility | View I | 4 sub-panels: current level tiles, monthly z-score heatmap, historical chart, cross-asset bar |
+
+### Design Principles
+
+- **Data sources:** FRED API (primary), yfinance (fallback for international indices)
+- **Client-side computation:** All returns computed client-side from monthly close data
+- **Z-scores:** Computed client-side from raw levels
+- **No build step:** Static HTML/JS served via GitHub Pages, same as the main dashboard
+
+---
+
+## 🧪 Testing
+
+The project maintains **33 tests** (27 scoring + 6 bridge) with full coverage of the scoring algorithm, temporal analytics, and bridge pipeline contract.
+
+- **Property-based testing** via [Hypothesis](https://hypothesis.readthedocs.io/) validates the bridge contract against randomized inputs (column ordering, edge-case dates, malformed rows).
+- **Deterministic unit tests** cover scoring math, rank multipliers, NEW-entrant bonuses, velocity calculations, and burst detection thresholds.
+
+```bash
+python -m pytest tests/ -v    # runs all 33 tests
+```
