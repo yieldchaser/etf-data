@@ -117,42 +117,42 @@
               :class="activeTab === 'periodic' ? 'tab-active' : ''"
               class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
               :style="activeTab === 'periodic' ? '' : 'color: var(--text-2); border-color: var(--border)'"
-              x-tooltip="'Callan Periodic Table — best to worst asset each year'">
+              @mouseenter="showTt($event, 'Callan Periodic Table — best to worst asset each year')" @mouseleave="hideTt()">
         Periodic Table
       </button>
       <button @click="activeTab = 'drawdown'"
               :class="activeTab === 'drawdown' ? 'tab-active' : ''"
               class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
               :style="activeTab === 'drawdown' ? '' : 'color: var(--text-2); border-color: var(--border)'"
-              x-tooltip="'Drawdown Studio — underwater curves and recovery stats'">
+              @mouseenter="showTt($event, 'Drawdown Studio — underwater curves and recovery stats')" @mouseleave="hideTt()">
         Drawdowns
       </button>
       <button @click="activeTab = 'holdingperiod'"
               :class="activeTab === 'holdingperiod' ? 'tab-active' : ''"
               class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
               :style="activeTab === 'holdingperiod' ? '' : 'color: var(--text-2); border-color: var(--border)'"
-              x-tooltip="'Holding-Period Lab — best/worst/median rolling returns'">
+              @mouseenter="showTt($event, 'Holding-Period Lab — best/worst/median rolling returns')" @mouseleave="hideTt()">
         Hold Lab
       </button>
       <button @click="activeTab = 'seasonality'"
               :class="activeTab === 'seasonality' ? 'tab-active' : ''"
               class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
               :style="activeTab === 'seasonality' ? '' : 'color: var(--text-2); border-color: var(--border)'"
-              x-tooltip="'Seasonality — average return by month of year'">
+              @mouseenter="showTt($event, 'Seasonality — average return by month of year')" @mouseleave="hideTt()">
         Seasonality
       </button>
       <button @click="activeTab = 'correlation'"
               :class="activeTab === 'correlation' ? 'tab-active' : ''"
               class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
               :style="activeTab === 'correlation' ? '' : 'color: var(--text-2); border-color: var(--border)'"
-              x-tooltip="'Correlation matrix + cumulative growth chart'">
+              @mouseenter="showTt($event, 'Correlation matrix + cumulative growth chart')" @mouseleave="hideTt()">
         Correlation
       </button>
       <button @click="activeTab = 'volatility'"
               :class="activeTab === 'volatility' ? 'tab-active' : ''"
               class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
               :style="activeTab === 'volatility' ? '' : 'color: var(--text-2); border-color: var(--border)'"
-              x-tooltip="'Volatility Intelligence — CBOE implied vol indices'">
+              @mouseenter="showTt($event, 'Volatility Intelligence — CBOE implied vol indices')" @mouseleave="hideTt()">
         Volatility
       </button>
     </div>
@@ -1332,7 +1332,8 @@ function marketsApp() {
 
     async _loadReturns() {
       try {
-        const r = await fetch('data/market_returns.json', { cache: 'no-store' });
+        // Use default cache — the JSON is large (~2MB). Cache-bust via query param only on first load.
+        const r = await fetch('data/market_returns.json');
         if (!r.ok) { this.returnsData = null; return; }
         this.returnsData = await r.json();
       } catch (e) {
@@ -1345,7 +1346,7 @@ function marketsApp() {
 
     async _loadVol() {
       try {
-        const r = await fetch('data/vol_history.json', { cache: 'no-store' });
+        const r = await fetch('data/vol_history.json');
         if (!r.ok) { this.volData = null; return; }
         this.volData = await r.json();
       } catch (e) {
@@ -1358,8 +1359,8 @@ function marketsApp() {
 
     // ── Returns matrix computed properties ───────────────────────────────
 
-    // Category display order
-    _categoryOrder: ['equity', 'precious_metals', 'precious metals', 'energy', 'base_metals', 'agriculture', 'fx', 'real_estate'],
+    // Category display order — underscore form matches pipeline output (Minor 4 fix)
+    _categoryOrder: ['equity', 'precious_metals', 'energy', 'base_metals', 'agriculture', 'fx', 'real_estate'],
 
     get matrixGroups() {
       if (!this.returnsData) return [];
@@ -1390,6 +1391,8 @@ function marketsApp() {
 
     get matrixYears() {
       if (!this.returnsData) return [];
+      // Memoize — only recompute when returnsData changes (Bug 10 fix)
+      if (this._matrixYearsCache && this._matrixYearsCacheData === this.returnsData) return this._matrixYearsCache;
       const assets = this.returnsData.assets || {};
       const yearSet = new Set();
       for (const val of Object.values(assets)) {
@@ -1397,8 +1400,12 @@ function marketsApp() {
           yearSet.add(parseInt(key.slice(0, 4)));
         }
       }
-      return Array.from(yearSet).sort((a, b) => a - b);
+      this._matrixYearsCache = Array.from(yearSet).sort((a, b) => a - b);
+      this._matrixYearsCacheData = this.returnsData;
+      return this._matrixYearsCache;
     },
+    _matrixYearsCache: null,
+    _matrixYearsCacheData: null,
 
     // Cache for computed annual returns: { cacheKey: { year: {ret, partial} } }
     // cacheKey = `${assetKey}|${activeCcy}|${activeReal}`
@@ -1410,7 +1417,13 @@ function marketsApp() {
 
     // Build monthly close series for an asset in the requested currency lens.
     // Returns a sorted array of {ym, close} objects.
+    // Memoized by cacheKey (assetKey|activeCcy|activeReal) — Bug 3 fix.
+    _adjustedCloseCache: {},
+
     _getAdjustedClose(assetKey) {
+      const ck = this._cacheKey(assetKey);
+      if (this._adjustedCloseCache[ck]) return this._adjustedCloseCache[ck];
+
       const assets = this.returnsData?.assets || {};
       const asset = assets[assetKey];
       if (!asset) return [];
@@ -1472,6 +1485,7 @@ function marketsApp() {
         if (mult === null) continue;
         result.push({ ym, close: raw * mult });
       }
+      this._adjustedCloseCache[ck] = result;
       return result;
     },
 
@@ -1645,22 +1659,20 @@ function marketsApp() {
       return cd ? this.cellColor(cd.ret) : 'transparent';
     },
 
-    // ── Event annotations ─────────────────────────────────────────────────
-    get matrixEvents() {
-      return {
-        1973: 'Oil embargo (Oct 1973)',
-        1979: 'Volcker shock / Iran crisis',
-        1987: 'Black Monday (Oct 1987)',
-        1997: 'Asian financial crisis',
-        1998: 'LTCM / Russia default',
-        2000: 'Dot-com peak',
-        2001: '9/11 attacks',
-        2008: 'GFC / Lehman collapse',
-        2011: 'Euro debt crisis',
-        2015: 'China devaluation / oil crash',
-        2020: 'COVID-19 crash',
-        2022: 'Rate shock / inflation surge',
-      };
+    // ── Event annotations — data property (not getter) to avoid re-allocation ──
+    matrixEvents: {
+      1973: 'Oil embargo (Oct 1973)',
+      1979: 'Volcker shock / Iran crisis',
+      1987: 'Black Monday (Oct 1987)',
+      1997: 'Asian financial crisis',
+      1998: 'LTCM / Russia default',
+      2000: 'Dot-com peak',
+      2001: '9/11 attacks',
+      2008: 'GFC / Lehman collapse',
+      2011: 'Euro debt crisis',
+      2015: 'China devaluation / oil crash',
+      2020: 'COVID-19 crash',
+      2022: 'Rate shock / inflation surge',
     },
 
     // ── CSV Export ────────────────────────────────────────────────────────
@@ -2151,11 +2163,19 @@ function marketsApp() {
       const assets = this.periodicAssets;
       if (!assets.length) return '<div style="padding:40px;text-align:center;color:var(--text-3)">No assets match filter</div>';
 
-      // Build annual returns for each asset
       const years = this.matrixYears;
       if (!years.length) return '';
 
-      // For each year, rank assets by return (best → worst)
+      // Pre-build annual returns lookup: { assetKey: { year: ret } }
+      // This warms _buildAnnualCache for all assets in one pass (Bug 5 fix).
+      const retLookup = {};
+      for (const a of assets) {
+        this._buildAnnualCache(a.key);
+        const ck = this._cacheKey(a.key);
+        const cache = this._annualCache[ck] || {};
+        retLookup[a.key] = cache;
+      }
+
       const CELL_W = 80, CELL_H = 26, HEADER_H = 24;
       const nYears = years.length;
       const nAssets = assets.length;
@@ -2171,11 +2191,11 @@ function marketsApp() {
         html += `<text x="${x + CELL_W / 2}" y="${HEADER_H - 6}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${yr}</text>`;
       }
 
-      // For each year, sort assets by return
+      // For each year, sort assets by return using pre-built lookup
       for (let yi = 0; yi < nYears; yi++) {
         const yr = years[yi];
         const ranked = assets.map(a => {
-          const cd = this.getCellData(a.key, yr);
+          const cd = retLookup[a.key]?.[yr];
           return { ...a, ret: cd ? cd.ret : null };
         }).filter(a => a.ret !== null)
           .sort((a, b) => b.ret - a.ret);
@@ -2187,7 +2207,6 @@ function marketsApp() {
           const pct = (a.ret * 100).toFixed(0);
           const sign = a.ret >= 0 ? '+' : '';
           const textColor = Math.abs(a.ret) > 0.15 ? 'rgba(255,255,255,0.95)' : 'rgba(0,0,0,0.8)';
-          // Tooltip data
           const tip = `${a.shortName}\\n${yr}: ${sign}${(a.ret * 100).toFixed(1)}%`;
           html += `<rect x="${x}" y="${y}" width="${CELL_W - 1}" height="${CELL_H - 1}" fill="${a.color}" rx="1"
                          style="cursor:pointer" onmouseenter="document.getElementById('tt').innerHTML='${tip.replace(/'/g, '&#39;')}';document.getElementById('tt').style.opacity='1';_posTt(this)" onmouseleave="document.getElementById('tt').style.opacity='0'"/>`;
@@ -2227,15 +2246,22 @@ function marketsApp() {
     },
 
     // Compute underwater curve for an asset: [{ym, dd}] where dd = (close/peak - 1) ≤ 0
+    // Memoized by cacheKey (Bug 17 fix — called from drawdownHover on every mousemove)
+    _underwaterCurveCache: {},
+
     _computeUnderwaterCurve(assetKey) {
+      const ck = this._cacheKey(assetKey);
+      if (this._underwaterCurveCache[ck]) return this._underwaterCurveCache[ck];
       const adjusted = this._getAdjustedClose(assetKey);
       if (!adjusted.length) return [];
       let peak = adjusted[0].close;
-      return adjusted.map(({ ym, close }) => {
+      const result = adjusted.map(({ ym, close }) => {
         if (close > peak) peak = close;
         const dd = peak > 0 ? close / peak - 1 : 0;
         return { ym, dd };
       });
+      this._underwaterCurveCache[ck] = result;
+      return result;
     },
 
     get drawdownChartSvg() {
@@ -2600,24 +2626,8 @@ function marketsApp() {
     },
 
     get growthChartSvg() {
-      const active = this.activeCorrAssets;
-      const assetDefs = this.corrAssetList.filter(a => active.has(a.key));
-      if (!assetDefs.length) return '';
-      const retSeries = {}, allMonths = new Set();
-      for (const a of assetDefs) { retSeries[a.key] = this._monthlyRetSeries(a.key); Object.keys(retSeries[a.key]).forEach(m => allMonths.add(m)); }
-      const months = Array.from(allMonths).sort();
-      if (!months.length) return '';
-      const growth = {};
-      for (const a of assetDefs) {
-        const rets = retSeries[a.key]; let val = 100, started = false;
-        growth[a.key] = {};
-        for (const m of months) {
-          if (!started && rets[m] !== undefined) started = true;
-          if (!started) continue;
-          if (rets[m] !== undefined) val *= (1 + rets[m]);
-          growth[a.key][m] = val;
-        }
-      }
+      const { months, growth, assetDefs } = this._getGrowthSeries();
+      if (!assetDefs.length || !months.length) return '';
       const W = 1200, H = 280, PL = 60, PR = 20, PT = 15, PB = 35;
       const chartW = W - PL - PR, chartH = H - PT - PB;
       let minV = Infinity, maxV = -Infinity;
@@ -2654,31 +2664,70 @@ function marketsApp() {
       return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block">${ticks}${xLabels}${lines}${ch}</svg>`;
     },
 
+    // Cache for pre-computed growth series (Bug 7 fix)
+    _growthSeriesCache: null,
+    _growthSeriesCacheKey: '',
+
+    _getGrowthSeries() {
+      const active = this.activeCorrAssets;
+      const assetDefs = this.corrAssetList.filter(a => active.has(a.key));
+      const ck = [...active].sort().join(',') + '|' + this._cacheKey('__growth');
+      if (this._growthSeriesCacheKey === ck && this._growthSeriesCache) return this._growthSeriesCache;
+
+      const allMonths = new Set();
+      const retSeries = {};
+      for (const a of assetDefs) {
+        retSeries[a.key] = this._monthlyRetSeries(a.key);
+        Object.keys(retSeries[a.key]).forEach(m => allMonths.add(m));
+      }
+      const months = Array.from(allMonths).sort();
+      const growth = {};
+      for (const a of assetDefs) {
+        const rets = retSeries[a.key]; let val = 100, started = false;
+        growth[a.key] = {};
+        for (const m of months) {
+          if (!started && rets[m] !== undefined) started = true;
+          if (!started) continue;
+          if (rets[m] !== undefined) val *= (1 + rets[m]);
+          growth[a.key][m] = val;
+        }
+      }
+      this._growthSeriesCache = { months, growth, assetDefs };
+      this._growthSeriesCacheKey = ck;
+      return this._growthSeriesCache;
+    },
+
     growthHover(e) {
       const svg = e.currentTarget.querySelector('svg'); if (!svg) return;
       const rect = svg.getBoundingClientRect();
-      const active = this.activeCorrAssets;
-      const assetDefs = this.corrAssetList.filter(a => active.has(a.key));
-      const allMonths = new Set();
-      for (const a of assetDefs) Object.keys(this._monthlyRetSeries(a.key)).forEach(m => allMonths.add(m));
-      const months = Array.from(allMonths).sort(); if (!months.length) return;
+      const { months, growth, assetDefs } = this._getGrowthSeries();
+      if (!months.length) return;
       const W = 1200, PL = 60, PR = 20;
       const frac = Math.max(0, Math.min(1, ((e.clientX - rect.left) / (rect.width / W) - PL) / (W - PL - PR)));
       const month = months[Math.round(frac * (months.length - 1))];
-      const values = assetDefs.map(a => {
-        const rets = this._monthlyRetSeries(a.key); let val = 100;
-        for (const m of months) { if (m > month) break; if (rets[m] !== undefined) val *= (1 + rets[m]); }
-        return { key: a.key, name: a.shortName, color: a.color, val: rets[month] !== undefined ? val : null };
-      });
+      // O(1) lookup — no loop over months
+      const values = assetDefs.map(a => ({
+        key: a.key, name: a.shortName, color: a.color,
+        val: growth[a.key]?.[month] ?? null,
+      }));
       this.growthHoverInfo = { date: month, values };
       const ch = svg.getElementById('growth-crosshair');
       if (ch) { const x = PL + frac * (W - PL - PR); ch.setAttribute('x1', x); ch.setAttribute('x2', x); ch.setAttribute('opacity', '1'); }
     },
 
+    // Correlation matrix cache (Bug 9 fix)
+    _corrMatrixCache: null,
+    _corrMatrixCacheKey: '',
+
     get corrMatrixHtml() {
       const active = this.activeCorrAssets;
       const assetDefs = this.corrAssetList.filter(a => active.has(a.key));
       if (assetDefs.length < 2) return '<div style="padding:20px;color:var(--text-3);font-size:12px">Select at least 2 assets</div>';
+
+      // Cache key: sorted active assets + ccy/real lens
+      const ck = [...active].sort().join(',') + '|' + this._cacheKey('__corr');
+      if (this._corrMatrixCacheKey === ck && this._corrMatrixCache) return this._corrMatrixCache;
+
       const retSeries = {}, allMonths = new Set();
       for (const a of assetDefs) { retSeries[a.key] = this._monthlyRetSeries(a.key); Object.keys(retSeries[a.key]).forEach(m => allMonths.add(m)); }
       const months = Array.from(allMonths).sort();
@@ -2711,7 +2760,10 @@ function marketsApp() {
         }
         html += `</tr>`;
       }
-      return html + `</table>`;
+      const result = html + `</table>`;
+      this._corrMatrixCache = result;
+      this._corrMatrixCacheKey = ck;
+      return result;
     },
 
     // ── View I: Volatility Intelligence ──────────────────────────────────

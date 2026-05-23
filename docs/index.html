@@ -1514,9 +1514,8 @@ function app() {
     },
     get currentETFTier() { return this.etfSummary.find(e => e.etf === this.activeETF)?.tier || ''; },
 
-    // ── ETF metadata from ETF DATA.csv (rebalance schedules, notes) ──────
-    get etfMetaLookup() {
-      return {
+    // ── ETF metadata from ETF DATA.csv — data property (not getter) to avoid re-allocation ──
+    etfMetaLookup: {
         CSD:  { name: 'Invesco S&P Spin-Off ETF', rebalance: 'Monthly', reconstitution: 'Monthly (Rolling)', notes: 'Adds spin-offs as they occur; formal monthly reset.' },
         FPX:  { name: 'First Trust US Equity Opportunities ETF', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: 'IPOX 100 US Index.' },
         FPXI: { name: 'First Trust IPOX International Equity ETF', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: 'IPOX 100 Intl Index.' },
@@ -1547,7 +1546,6 @@ function app() {
         RPG:  { name: 'Invesco S&P 500 Pure Growth ETF', rebalance: 'Annually', reconstitution: 'Annually', notes: 'Pure style index.' },
         XLG:  { name: 'Invesco S&P 500 Top 50 ETF', rebalance: 'Quarterly', reconstitution: 'Annually', notes: 'Weights drift quarterly; top 50 resets yearly.' },
         QQQM: { name: 'Invesco NASDAQ 100 ETF', rebalance: 'Quarterly', reconstitution: 'Annually', notes: 'Weights drift quarterly; Nasdaq 100 resets yearly (Dec).' },
-      };
     },
 
     // ── Tier distribution pie chart slices ────────────────────────────────
@@ -1747,17 +1745,22 @@ function app() {
 
 
     get etfHoldingsIndex() {
-      // Memoize: build a {ETF_Ticker: rows[]} index once over the full holdings array.
-      // O(n) build, O(1) lookup — avoids full filter scan on every reactive read.
+      // Memoize: rebuild only when holdings array reference changes (Bug 12 fix).
+      if (this._etfHoldingsIndexCache && this._etfHoldingsIndexData === this.holdings) {
+        return this._etfHoldingsIndexCache;
+      }
       const idx = {};
       for (const h of this.holdings) {
         if (!idx[h.ETF_Ticker]) idx[h.ETF_Ticker] = [];
         idx[h.ETF_Ticker].push(h);
       }
-      // Sort each bucket by rank ascending
       for (const k of Object.keys(idx)) idx[k].sort((a, b) => a.rank - b.rank);
+      this._etfHoldingsIndexCache = idx;
+      this._etfHoldingsIndexData = this.holdings;
       return idx;
     },
+    _etfHoldingsIndexCache: null,
+    _etfHoldingsIndexData: null,
     get etfHoldings() { return this.etfHoldingsIndex[this.activeETF] || []; },
 
     get donutSlices() {
@@ -1797,7 +1800,7 @@ function app() {
     },
 
     get remainingWeight() {
-      return this.etfHoldings.slice(10).reduce((s, h) => s + (h.weight || 0), 0);
+      return this.etfHoldings.slice(15).reduce((s, h) => s + (h.weight || 0), 0);
     },
 
     // Generate the holdings donut SVG as two separate layers:
@@ -1840,11 +1843,12 @@ function app() {
     // Keep donutSvgHtml as a no-op alias for backward compat (not used in template anymore)
     get donutSvgHtml() { return ''; },
 
-    donutPalette() {
-      return ['#22d3ee','#a5b4fc','#c084fc','#fcd34d','#5eead4','#fb923c','#f472b6',
-              '#60a5fa','#34d399','#a78bfa','#f59e0b','#06b6d4','#84cc16','#ec4899',
-              '#0ea5e9','#10b981','#facc15','#8b5cf6','#14b8a6','#f97316'];
-    },
+    // Static palette — defined as data property to avoid re-allocation on every donutSlices call (Bug 13 fix)
+    _donutPalette: ['#22d3ee','#a5b4fc','#c084fc','#fcd34d','#5eead4','#fb923c','#f472b6',
+                    '#60a5fa','#34d399','#a78bfa','#f59e0b','#06b6d4','#84cc16','#ec4899',
+                    '#0ea5e9','#10b981','#facc15','#8b5cf6','#14b8a6','#f97316'],
+
+    donutPalette() { return this._donutPalette; },
 
     // ── Auto-generated explainer line (one-sentence narrative for a row) ─
     explainerFor(row) {
