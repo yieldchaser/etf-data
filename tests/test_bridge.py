@@ -499,3 +499,48 @@ def test_metadata_json_contains_all_configured_etfs(tmp_path):
         f"  expected: {configured_etfs}\n"
         f"  actual:   {metadata['etfs']}"
     )
+
+
+
+# ─── Regression: weight_pct string coercion (MFEM/AVSC bug) ───────────────────
+
+def test_bridge_handles_weight_pct_with_percent_sign(tmp_path, monkeypatch):
+    # Feature: v42-scraper-integration, Property 2 (regression)
+    # Surfaced 2026-05-23 by the first end-to-end CI run: MFEM (PIMCO) and
+    # AVSC (Avantis) emit weight_pct as a string with a trailing '%' (e.g.
+    # "2.62%", "0.55%"). Without normalisation, pd.to_numeric coerced those
+    # values to NaN and every row was filtered out, so MFEM and AVSC bridged
+    # 0 rows despite the underlying scraper succeeding.
+    _patch_scraper_paths(monkeypatch, tmp_path)
+    csv_path = tmp_path / "percent_strings.csv"
+    pd.DataFrame([
+        {"etf": "MFEM", "ticker": "DELTA",  "name": "Delta Electronics",
+         "weight_pct": "2.62%",  "as_of_date": "2026-05-21",
+         "security_type": "Common Stock"},
+        {"etf": "AVSC", "ticker": "MYRG",   "name": "MYR Group Inc",
+         "weight_pct": "0.55%",  "as_of_date": "2026-05-22",
+         "security_type": "Common Stock"},
+        {"etf": "AVSC", "ticker": "DAN",    "name": "Dana Inc",
+         "weight_pct": "0.45%",  "as_of_date": "2026-05-22",
+         "security_type": "Common Stock"},
+        # Locale-formatted string with comma, also accepted.
+        {"etf": "MFEM", "ticker": "TEST",   "name": "Locale Test",
+         "weight_pct": "12,3456", "as_of_date": "2026-05-21",
+         "security_type": "Common Stock"},
+    ]).to_csv(csv_path, index=False)
+
+    cleaned, errors = clean_canonical_csv(str(csv_path))
+
+    assert errors == []
+    # 2.62%, 0.55%, 0.45% all in (0, 100] → survive. "12,3456" → strip comma →
+    # 123456 → /100 = 1234.56 → weight > 1 → CORRECTLY filtered (regression
+    # would have been silent NaN-coerce; this proves the strip happened and
+    # the bounds check still works).
+    assert len(cleaned) == 3, (
+        f"expected 3 valid percent-string rows after stripping, got {len(cleaned)}: "
+        f"{cleaned.to_dict(orient='records')}"
+    )
+    assert {"MFEM", "AVSC"} == set(cleaned["ETF_Ticker"])
+    # Spot-check: "2.62%" → 0.0262
+    mfem_delta = cleaned[(cleaned["ETF_Ticker"] == "MFEM") & (cleaned["ticker"] == "DELTA")].iloc[0]
+    assert abs(mfem_delta["weight"] - 0.0262) < 1e-6

@@ -30,7 +30,7 @@ jobs:
       - name: Install libraries
         run: |
           sudo apt-get install -y xvfb
-          pip install pandas requests lxml openpyxl beautifulsoup4 html5lib selenium curl_cffi playwright pdfplumber
+          pip install pandas requests lxml openpyxl beautifulsoup4 html5lib selenium curl_cffi playwright pdfplumber xlrd
           python -m playwright install chromium --with-deps
 
       - name: Run Scraper

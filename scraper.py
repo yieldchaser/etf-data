@@ -168,7 +168,12 @@ def clean_canonical_csv(csv_path):
     df = df[df["ticker"].ne("") & ~df["ticker"].str.startswith("$")]
 
     # Step 5: weight_pct → weight (÷100); drop rows outside (0, 1].
-    weight_pct_numeric = pd.to_numeric(df["weight_pct"], errors="coerce")
+    # Some sources (MFEM/PIMCO XLS, AVSC/Avantis) emit weight_pct as a string with
+    # a trailing '%' (e.g. "2.62%"). Strip non-numeric characters before coercion
+    # so those rows are not silently dropped by pd.to_numeric. Also strips
+    # commas which appear in some locale-formatted CSVs (e.g. "1,234.56").
+    weight_pct_str = df["weight_pct"].astype(str).str.strip().str.replace("%", "", regex=False).str.replace(",", "", regex=False)
+    weight_pct_numeric = pd.to_numeric(weight_pct_str, errors="coerce")
     df = df.assign(weight=weight_pct_numeric / 100.0)
 
     # Log offending rows where weight_pct > 100 before dropping (Req 14.2).
