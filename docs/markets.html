@@ -116,17 +116,42 @@
     </div>
     <!-- Divider -->
     <div class="w-px h-5 mx-1" style="background: var(--border-2)"></div>
+    <!-- Currency lens (matrix only) -->
+    <div x-show="activeTab === 'matrix'" class="flex gap-1">
+      <template x-for="ccy in ['Local', 'USD', 'INR']" :key="ccy">
+        <button @click="activeCcy = ccy"
+                :class="activeCcy === ccy ? 'tab-active' : ''"
+                class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+                :style="activeCcy === ccy ? '' : 'color: var(--text-2); border-color: var(--border)'"
+                x-text="ccy"
+                @mouseenter="ccy !== 'Local' && showTt($event, ccy === 'USD' ? 'Convert all returns to USD using monthly FX rates' : 'Convert all returns to INR using monthly FX rates')"
+                @mouseleave="hideTt()">
+        </button>
+      </template>
+    </div>
+    <!-- Divider -->
+    <div x-show="activeTab === 'matrix'" class="w-px h-5 mx-1" style="background: var(--border-2)"></div>
     <!-- Nominal / Real toggle (matrix only) -->
     <div x-show="activeTab === 'matrix'" class="flex gap-1">
-      <button class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs tab-active">Nominal</button>
-      <button class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs relative"
-              style="color: var(--text-3); border-color: var(--border)"
-              id="tt-real-btn"
-              @mouseenter="showTt($event, 'Real returns (CPI-adjusted) — Coming soon')"
+      <button @click="activeReal = false"
+              :class="!activeReal ? 'tab-active' : ''"
+              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+              :style="!activeReal ? '' : 'color: var(--text-2); border-color: var(--border)'">
+        Nominal
+      </button>
+      <button @click="activeCcy !== 'INR' ? activeReal = true : null"
+              :class="activeReal ? 'tab-active' : ''"
+              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+              :style="activeReal ? '' : (activeCcy === 'INR' ? 'color: var(--text-3); border-color: var(--border); opacity: 0.5; cursor: not-allowed;' : 'color: var(--text-2); border-color: var(--border)')"
+              @mouseenter="showTt($event, activeCcy === 'INR' ? 'Real returns in INR — India CPI data limited. Use USD Real instead.' : 'CPI-adjusted returns using US CPI (CPIAUCSL)')"
               @mouseleave="hideTt()">
         Real
-        <span class="absolute -top-1 -right-1 text-[8px] px-1 rounded" style="background: rgba(251,191,36,0.15); color: var(--amber)">soon</span>
       </button>
+    </div>
+    <!-- Active lens indicator -->
+    <div x-show="activeTab === 'matrix' && (activeCcy !== 'Local' || activeReal)" class="text-[10px] font-mono px-2 py-1 rounded" style="background: rgba(34,211,238,0.08); color: var(--cyan)">
+      <span x-text="(activeReal ? 'Real ' : '') + (activeCcy !== 'Local' ? activeCcy : 'Local')"></span>
+      <span style="color: var(--text-3)"> returns</span>
     </div>
   </div>
 
@@ -613,6 +638,8 @@ function marketsApp() {
     selected: null,
     activeKind: 'all',
     q: '',
+    activeCcy: 'Local',   // 'Local' | 'USD' | 'INR'
+    activeReal: false,    // true = CPI-adjusted
 
     // ── Data loading ──────────────────────────────────────────────────────
     async load() {
@@ -689,93 +716,189 @@ function marketsApp() {
       return Array.from(yearSet).sort((a, b) => a - b);
     },
 
-    // Cache for computed annual returns: { assetKey: { year: {ret, partial} } }
+    // Cache for computed annual returns: { cacheKey: { year: {ret, partial} } }
+    // cacheKey = `${assetKey}|${activeCcy}|${activeReal}`
     _annualCache: {},
 
-    _buildAnnualCache(assetKey) {
-      if (this._annualCache[assetKey]) return;
+    _cacheKey(assetKey) {
+      return `${assetKey}|${this.activeCcy}|${this.activeReal}`;
+    },
+
+    // Build monthly close series for an asset in the requested currency lens.
+    // Returns a sorted array of {ym, close} objects.
+    _getAdjustedClose(assetKey) {
       const assets = this.returnsData?.assets || {};
       const asset = assets[assetKey];
-      if (!asset) { this._annualCache[assetKey] = {}; return; }
+      if (!asset) return [];
 
-      const close = asset.close || {};
-      // Sort all month keys
-      const months = Object.keys(close).sort();
-      if (months.length === 0) { this._annualCache[assetKey] = {}; return; }
+      const rawClose = asset.close || {};
+      const nativeCcy = asset.meta?.native_ccy || 'USD';
+      const targetCcy = this.activeCcy;
 
-      // Build monthly returns map: "YYYY-MM" -> return
+      // Helper: get FX series from aux (values dict)
+      const aux = this.returnsData?.aux || {};
+      const usdinr = aux.usdinr?.values || {};   // USD per 1 INR (after pipeline inversion)
+      // Also check assets for FX series (fx_usdinr, fx_usdjpy, etc.)
+      const fxAssets = this.returnsData?.assets || {};
+
+      // Build a monthly FX multiplier: native → target
+      // multiplier[ym] = how many target units per 1 native unit
+      const getMultiplier = (ym) => {
+        if (targetCcy === 'Local') return 1;
+
+        // native → USD
+        let nativeToUsd = 1;
+        if (nativeCcy === 'USD') {
+          nativeToUsd = 1;
+        } else if (nativeCcy === 'INR') {
+          // USD/INR rate = USD per 1 INR
+          const rate = usdinr[ym] ?? null;
+          if (rate === null) return null;
+          nativeToUsd = rate;
+        } else if (nativeCcy === 'JPY') {
+          const fxJpy = fxAssets['fx_usdjpy']?.close?.[ym] ?? null;
+          if (fxJpy === null) return null;
+          nativeToUsd = fxJpy;
+        } else if (nativeCcy === 'EUR') {
+          const fxEur = fxAssets['fx_eurusd']?.close?.[ym] ?? null;
+          if (fxEur === null) return null;
+          nativeToUsd = fxEur;
+        }
+        // For other currencies, assume USD-native (commodities, etc.)
+
+        if (targetCcy === 'USD') return nativeToUsd;
+
+        // USD → INR: need INR per USD = 1 / (USD per INR)
+        if (targetCcy === 'INR') {
+          const usdPerInr = usdinr[ym] ?? null;
+          if (usdPerInr === null || usdPerInr === 0) return null;
+          const inrPerUsd = 1 / usdPerInr;
+          return nativeToUsd * inrPerUsd;
+        }
+        return 1;
+      };
+
+      // Build adjusted close series
+      const months = Object.keys(rawClose).sort();
+      const result = [];
+      for (const ym of months) {
+        const raw = rawClose[ym];
+        if (raw == null) continue;
+        const mult = getMultiplier(ym);
+        if (mult === null) continue;
+        result.push({ ym, close: raw * mult });
+      }
+      return result;
+    },
+
+    _buildAnnualCache(assetKey) {
+      const ck = this._cacheKey(assetKey);
+      if (this._annualCache[ck]) return;
+
+      const adjusted = this._getAdjustedClose(assetKey);
+      if (!adjusted.length) { this._annualCache[ck] = {}; return; }
+
+      // Build monthly returns from adjusted close
       const monthlyRet = {};
-      for (let i = 1; i < months.length; i++) {
-        const prev = close[months[i - 1]];
-        const curr = close[months[i]];
-        if (prev && curr && prev > 0) {
-          monthlyRet[months[i]] = curr / prev - 1;
+      for (let i = 1; i < adjusted.length; i++) {
+        const prev = adjusted[i - 1].close;
+        const curr = adjusted[i].close;
+        if (prev > 0 && curr != null) {
+          monthlyRet[adjusted[i].ym] = curr / prev - 1;
+        }
+      }
+
+      // Apply real-return adjustment (CPI deflation) if requested
+      let cpiRet = {};
+      if (this.activeReal) {
+        const aux = this.returnsData?.aux || {};
+        const cpiVals = aux.us_cpi?.values || {};
+        const cpiMonths = Object.keys(cpiVals).sort();
+        for (let i = 1; i < cpiMonths.length; i++) {
+          const prev = cpiVals[cpiMonths[i - 1]];
+          const curr = cpiVals[cpiMonths[i]];
+          if (prev > 0 && curr != null) {
+            cpiRet[cpiMonths[i]] = curr / prev - 1;
+          }
         }
       }
 
       // Group months by year
       const byYear = {};
-      for (const m of months) {
-        const yr = parseInt(m.slice(0, 4));
+      for (const { ym } of adjusted) {
+        const yr = parseInt(ym.slice(0, 4));
         if (!byYear[yr]) byYear[yr] = [];
-        byYear[yr].push(m);
+        byYear[yr].push(ym);
       }
 
-      // Determine first and last year for partial detection
-      const firstMonth = months[0];
-      const lastMonth = months[months.length - 1];
-      const firstYear = parseInt(firstMonth.slice(0, 4));
-      const lastYear = parseInt(lastMonth.slice(0, 4));
+      const firstYm = adjusted[0].ym;
+      const lastYm = adjusted[adjusted.length - 1].ym;
+      const firstYear = parseInt(firstYm.slice(0, 4));
+      const lastYear = parseInt(lastYm.slice(0, 4));
 
       const result = {};
       for (const [yr, mList] of Object.entries(byYear)) {
         const year = parseInt(yr);
-        // Compound available monthly returns for this year
-        // We need returns for months[1..12] of this year
-        // A month's return is close[YYYY-MM] / close[prev month] - 1
-        // For the first month of the entire series, there's no prior month → skip
         let compound = 1;
         let count = 0;
-        for (const m of mList) {
-          if (monthlyRet[m] !== undefined) {
-            compound *= (1 + monthlyRet[m]);
-            count++;
+        for (const ym of mList) {
+          const nomRet = monthlyRet[ym];
+          if (nomRet === undefined) continue;
+          let r = nomRet;
+          if (this.activeReal && cpiRet[ym] !== undefined) {
+            // Real return: (1 + nominal) / (1 + inflation) - 1
+            r = (1 + nomRet) / (1 + cpiRet[ym]) - 1;
           }
+          compound *= (1 + r);
+          count++;
         }
         if (count === 0) continue;
         const partial = (year === firstYear || year === lastYear);
         result[year] = { ret: compound - 1, partial, count };
       }
-      this._annualCache[assetKey] = result;
+      this._annualCache[ck] = result;
     },
 
     getCellData(assetKey, year) {
       this._buildAnnualCache(assetKey);
-      const cache = this._annualCache[assetKey];
+      const cache = this._annualCache[this._cacheKey(assetKey)];
       if (!cache || cache[year] === undefined) return null;
       return cache[year];
     },
 
     getMonthlyReturns(assetKey, year) {
       if (!this.returnsData) return [];
-      const asset = this.returnsData.assets?.[assetKey];
-      if (!asset) return [];
-      const close = asset.close || {};
-      const months = Object.keys(close).sort();
+      const adjusted = this._getAdjustedClose(assetKey);
+      if (!adjusted.length) return [];
+
       const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const aux = this.returnsData?.aux || {};
+      const cpiVals = aux.us_cpi?.values || {};
+
+      // Build monthly returns from adjusted close
+      const monthlyRet = {};
+      for (let i = 1; i < adjusted.length; i++) {
+        const prev = adjusted[i - 1].close;
+        const curr = adjusted[i].close;
+        if (prev > 0 && curr != null) {
+          monthlyRet[adjusted[i].ym] = curr / prev - 1;
+        }
+      }
+
       const result = [];
       for (let m = 1; m <= 12; m++) {
-        const key = `${year}-${String(m).padStart(2, '0')}`;
-        const prevKey = m === 1
-          ? `${year - 1}-12`
-          : `${year}-${String(m - 1).padStart(2, '0')}`;
-        const curr = close[key];
-        const prev = close[prevKey];
-        let ret = null;
-        if (curr != null && prev != null && prev > 0) {
-          ret = curr / prev - 1;
+        const ym = `${year}-${String(m).padStart(2, '0')}`;
+        let ret = monthlyRet[ym] ?? null;
+        if (ret !== null && this.activeReal) {
+          const cpiM = cpiVals[ym];
+          const prevYm = m === 1 ? `${year - 1}-12` : `${year}-${String(m - 1).padStart(2, '0')}`;
+          const cpiPrev = cpiVals[prevYm];
+          if (cpiM != null && cpiPrev != null && cpiPrev > 0) {
+            const inf = cpiM / cpiPrev - 1;
+            ret = (1 + ret) / (1 + inf) - 1;
+          }
         }
-        result.push({ month: MONTHS[m - 1], key, ret });
+        result.push({ month: MONTHS[m - 1], ym, ret });
       }
       return result;
     },
@@ -821,36 +944,36 @@ function marketsApp() {
     _statsCache: {},
 
     computeStats(assetKey) {
-      if (this._statsCache[assetKey]) return this._statsCache[assetKey];
+      const ck = this._cacheKey(assetKey);
+      if (this._statsCache[ck]) return this._statsCache[ck];
+
       this._buildAnnualCache(assetKey);
-      const cache = this._annualCache[assetKey] || {};
+      const cache = this._annualCache[ck] || {};
       const years = Object.keys(cache).map(Number).sort((a, b) => a - b);
 
       if (years.length === 0) {
-        return this._statsCache[assetKey] = { cagr: null, vol: null, bestYear: null, worstYear: null, pctPositive: null };
+        return this._statsCache[ck] = { cagr: null, vol: null, bestYear: null, worstYear: null, pctPositive: null };
       }
 
-      // CAGR: use close prices directly for accuracy
-      const asset = this.returnsData?.assets?.[assetKey];
-      const close = asset?.close || {};
-      const closeKeys = Object.keys(close).sort();
+      // CAGR from adjusted close series
+      const adjusted = this._getAdjustedClose(assetKey);
       let cagr = null;
-      if (closeKeys.length >= 2) {
-        const firstVal = close[closeKeys[0]];
-        const lastVal = close[closeKeys[closeKeys.length - 1]];
-        const firstDate = new Date(closeKeys[0] + '-01');
-        const lastDate = new Date(closeKeys[closeKeys.length - 1] + '-01');
+      if (adjusted.length >= 2) {
+        const firstVal = adjusted[0].close;
+        const lastVal = adjusted[adjusted.length - 1].close;
+        const firstDate = new Date(adjusted[0].ym + '-01');
+        const lastDate = new Date(adjusted[adjusted.length - 1].ym + '-01');
         const years_elapsed = (lastDate - firstDate) / (1000 * 60 * 60 * 24 * 365.25);
         if (firstVal > 0 && years_elapsed > 0) {
           cagr = Math.pow(lastVal / firstVal, 1 / years_elapsed) - 1;
         }
       }
 
-      // Annualised volatility from monthly returns
+      // Annualised volatility from adjusted monthly returns
       const monthlyRets = [];
-      for (let i = 1; i < closeKeys.length; i++) {
-        const prev = close[closeKeys[i - 1]];
-        const curr = close[closeKeys[i]];
+      for (let i = 1; i < adjusted.length; i++) {
+        const prev = adjusted[i - 1].close;
+        const curr = adjusted[i].close;
         if (prev > 0 && curr != null) monthlyRets.push(curr / prev - 1);
       }
       let vol = null;
@@ -860,7 +983,7 @@ function marketsApp() {
         vol = Math.sqrt(variance) * Math.sqrt(12);
       }
 
-      // Best / worst year (full years only, skip partial)
+      // Best / worst year (full years only)
       const fullYears = years.filter(y => !cache[y].partial);
       let bestYear = null, worstYear = null;
       for (const y of fullYears) {
@@ -869,12 +992,11 @@ function marketsApp() {
         if (worstYear === null || r < worstYear.ret) worstYear = { year: y, ret: r };
       }
 
-      // % positive years
       const positiveCount = fullYears.filter(y => cache[y].ret > 0).length;
       const pctPositive = fullYears.length > 0 ? positiveCount / fullYears.length : null;
 
       const stats = { cagr, vol, bestYear, worstYear, pctPositive };
-      this._statsCache[assetKey] = stats;
+      this._statsCache[ck] = stats;
       return stats;
     },
 
