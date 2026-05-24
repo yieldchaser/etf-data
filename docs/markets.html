@@ -2564,14 +2564,15 @@ function marketsApp() {
       const xScale = (m) => PL + (months.indexOf(m) / Math.max(months.length - 1, 1)) * chartW;
       const yScale = (v) => PT + (1 - v / minDd) * chartH;
 
-      // Y-axis ticks (percentage labels)
+      // Y-axis ticks — negative labels going down (0% at top, −10%, −20%... at bottom)
       let yTicks = '';
       const nTicks = 6;
       for (let i = 0; i <= nTicks; i++) {
         const v = (minDd * i) / nTicks;
         const y = yScale(v);
-        const label = v === 0 ? '0%' : (v * 100).toFixed(0) + '%';
-        yTicks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,${v === 0 ? '0.15' : '0.04'})" stroke-width="${v === 0 ? 1 : 1}"/>`;
+        // Format: 0.0% at top, −10.0%, −20.0%... going down
+        const label = v === 0 ? '0.0%' : (v * 100).toFixed(1) + '%';
+        yTicks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,${v === 0 ? '0.20' : '0.05'})" stroke-width="1"/>`;
         yTicks += `<text x="${PL - 5}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:${v === 0 ? '#a1a1aa' : '#52525b'};font-family:ui-monospace">${label}</text>`;
       }
 
@@ -2588,7 +2589,7 @@ function marketsApp() {
         xLabels += `<line x1="${x.toFixed(1)}" y1="${PT}" x2="${x.toFixed(1)}" y2="${H - PB}" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>`;
       }
 
-      // Filled area + line per asset
+      // Filled area + line per asset — reference style: dark fill, bright line on top
       let areas = '';
       const y0 = yScale(0);
       for (const a of assetDefs) {
@@ -2611,13 +2612,15 @@ function marketsApp() {
         const lastM = months[months.length - 1];
         areaPath += `L${xScale(lastM).toFixed(1)},${y0.toFixed(1)} Z`;
 
-        areas += `<path d="${areaPath}" fill="${a.color}" opacity="0.10"/>`;
-        areas += `<path d="${linePath.trim()}" fill="none" stroke="${a.color}" stroke-width="1.8" opacity="0.9" data-series="${a.key}"/>`;
+        // Dark fill (like the reference: solid dark fill from line down to 0%)
+        areas += `<path d="${areaPath}" fill="${a.color}" opacity="0.35"/>`;
+        // Bright line on top (thicker, fully opaque — matches reference style)
+        areas += `<path d="${linePath.trim()}" fill="none" stroke="${a.color}" stroke-width="2" opacity="1" data-series="${a.key}"/>`;
       }
 
       const crosshair = `<line id="dd-crosshair" x1="0" y1="${PT}" x2="0" y2="${H - PB}" stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
 
-      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block">${yTicks}${xLabels}${areas}${crosshair}</svg>`;
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block;background:#0a0a0a">${yTicks}${xLabels}${areas}${crosshair}</svg>`;
     },
 
     drawdownHover(e) {
