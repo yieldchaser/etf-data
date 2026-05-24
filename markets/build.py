@@ -152,6 +152,15 @@ def build(source: Path, output: Path) -> None:
     }
 
     out_path = output / "markets.json"
+    # Only overwrite if we got at least as many series as before (prevents CI partial-fetch from wiping good data)
+    if out_path.exists():
+        try:
+            existing_count = len(json.loads(out_path.read_text(encoding="utf-8")).get("series", []))
+            if len(series_list) < existing_count:
+                print(f"\n⚠ Skipping markets.json write — new series count ({len(series_list)}) < existing ({existing_count}). Keeping existing file.")
+                return
+        except Exception:
+            pass
     text = _dumps(markets_json, separators=(",", ":"))
     out_path.write_text(text, encoding="utf-8")
     size_mb = len(text.encode()) / 1_048_576
