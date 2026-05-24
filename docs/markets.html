@@ -160,14 +160,15 @@
     <div class="w-px h-5 mx-1" style="background: var(--border-2)"></div>
     <!-- Currency lens (matrix only) -->
     <div x-show="activeTab === 'matrix'" class="flex gap-1">
-      <template x-for="ccy in ['Local', 'USD', 'INR']" :key="ccy">
-        <button @click="activeCcy = ccy"
-                :class="activeCcy === ccy ? 'tab-active' : ''"
-                class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
-                :style="activeCcy === ccy ? '' : 'color: var(--text-2); border-color: var(--border)'"
-                x-text="ccy"
-                @mouseenter="ccy !== 'Local' && showTt($event, ccy === 'USD' ? 'Convert all returns to USD using monthly FX rates' : 'Convert all returns to INR using monthly FX rates')"
-                @mouseleave="hideTt()">
+      <template x-for="ccy in ['Local', 'USD', 'INR', 'Gold', 'Silver']" :key="ccy">
+        <button
+          @click="(ccy === 'Gold' && !returnsData?.assets?.gold?.close) || (ccy === 'Silver' && !returnsData?.assets?.silver?.close) ? null : (activeCcy = ccy)"
+          :class="activeCcy === ccy ? 'tab-active' : ''"
+          class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+          :style="activeCcy === ccy ? '' : ((ccy === 'Gold' && !returnsData?.assets?.gold?.close) || (ccy === 'Silver' && !returnsData?.assets?.silver?.close)) ? 'color: var(--text-3); border-color: var(--border); opacity: 0.4; cursor: not-allowed;' : 'color: var(--text-2); border-color: var(--border)'"
+          x-text="ccy"
+          @mouseenter="showTt($event, ccy === 'USD' ? 'Convert all returns to USD using monthly FX rates' : ccy === 'INR' ? 'Convert all returns to INR using monthly FX rates' : ccy === 'Gold' ? ((returnsData?.assets?.gold?.close) ? 'Price in oz of gold — shows real purchasing power over time' : 'Gold data not loaded') : ccy === 'Silver' ? ((returnsData?.assets?.silver?.close) ? 'Price in oz of silver — shows real purchasing power over time' : 'Silver data not loaded') : '')"
+          @mouseleave="hideTt()">
         </button>
       </template>
     </div>
@@ -193,7 +194,7 @@
     <!-- Active lens indicator -->
     <div x-show="activeTab === 'matrix' && (activeCcy !== 'Local' || activeReal)" class="text-[10px] font-mono px-2 py-1 rounded" style="background: rgba(34,211,238,0.08); color: var(--cyan)">
       <span x-text="(activeReal ? 'Real ' : '') + (activeCcy !== 'Local' ? activeCcy : 'Local')"></span>
-      <span style="color: var(--text-3)"> returns</span>
+      <span style="color: var(--text-3)" x-text="activeCcy === 'Gold' ? ' priced' : activeCcy === 'Silver' ? ' priced' : ' returns'"></span>
     </div>
     <!-- Divider -->
     <div x-show="activeTab === 'matrix'" class="w-px h-5 mx-1" style="background: var(--border-2)"></div>
@@ -330,7 +331,10 @@
                   <!-- Sticky name cell -->
                   <td class="matrix-sticky-col matrix-name-cell" style="border-bottom: 1px solid rgba(255,255,255,0.03);">
                     <div class="flex items-center gap-1.5">
-                      <span class="text-xs font-medium truncate" style="color: var(--text)" x-text="asset.meta.name"></span>
+                      <span class="text-xs font-medium truncate cursor-pointer hover:text-cyan-300 transition"
+                            :style="selectedAsset === asset.key ? 'color: var(--cyan)' : 'color: var(--text)'"
+                            @click.stop="selectedAsset = selectedAsset === asset.key ? null : asset.key"
+                            x-text="asset.meta.name"></span>
                       <span class="chip text-[9px]" :style="categoryChipStyle(asset.meta.category)" x-text="asset.meta.native_ccy"></span>
                     </div>
                   </td>
@@ -381,6 +385,79 @@
         </table>
       </div>
 
+
+      <!-- ─── ASSET DETAIL PANEL ─────────────────────────────────────── -->
+      <div x-show="selectedAsset" x-transition.opacity class="mt-6 rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+        <template x-if="selectedAsset && returnsData?.assets?.[selectedAsset]">
+          <div>
+            <!-- Panel header -->
+            <div class="flex items-center justify-between px-4 py-3" style="border-bottom: 1px solid var(--border); background: var(--surface-2)">
+              <div class="flex items-center gap-3">
+                <span class="text-sm font-medium" style="color: var(--cyan)" x-text="returnsData.assets[selectedAsset]?.meta?.name || selectedAsset"></span>
+                <span class="chip text-[9px]" :style="categoryChipStyle(returnsData.assets[selectedAsset]?.meta?.category)" x-text="returnsData.assets[selectedAsset]?.meta?.category"></span>
+                <span class="label" style="font-size:9px;" x-text="returnsData.assets[selectedAsset]?.meta?.native_ccy"></span>
+              </div>
+              <div class="flex items-center gap-2">
+                <!-- Log scale toggle -->
+                <button @click="detailLogScale = !detailLogScale"
+                        class="px-2 py-1 rounded border text-[10px] font-mono transition"
+                        :class="detailLogScale ? 'tab-active' : ''"
+                        :style="detailLogScale ? '' : 'color: var(--text-2); border-color: var(--border)'"
+                        @mouseenter="showTt($event, detailLogScale ? 'Switch to linear scale' : 'Switch to log scale')"
+                        @mouseleave="hideTt()">
+                  LOG
+                </button>
+                <!-- Close button -->
+                <button @click="selectedAsset = null" class="px-2 py-1 rounded border text-[10px] transition" style="color: var(--text-2); border-color: var(--border)">✕</button>
+              </div>
+            </div>
+
+            <!-- Key stats strip -->
+            <div class="flex flex-wrap gap-6 px-4 py-3" style="border-bottom: 1px solid var(--border)">
+              <div>
+                <div class="label" style="font-size:9px;">CAGR</div>
+                <div class="num font-mono font-medium text-xs"
+                     :style="`color: ${(computeStats(selectedAsset).cagr||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
+                     x-text="computeStats(selectedAsset).cagr !== null ? ((computeStats(selectedAsset).cagr >= 0 ? '+' : '') + (computeStats(selectedAsset).cagr * 100).toFixed(1) + '%') : '—'">
+                </div>
+              </div>
+              <div>
+                <div class="label" style="font-size:9px;">ANN. VOL</div>
+                <div class="num font-mono font-medium text-xs" style="color: var(--amber)"
+                     x-text="computeStats(selectedAsset).vol !== null ? (computeStats(selectedAsset).vol * 100).toFixed(1) + '%' : '—'">
+                </div>
+              </div>
+              <div>
+                <div class="label" style="font-size:9px;">BEST YEAR</div>
+                <div class="num font-mono font-medium text-xs" style="color: var(--up)"
+                     x-text="computeStats(selectedAsset).bestYear ? computeStats(selectedAsset).bestYear.year + ' (' + (computeStats(selectedAsset).bestYear.ret >= 0 ? '+' : '') + (computeStats(selectedAsset).bestYear.ret * 100).toFixed(1) + '%)' : '—'">
+                </div>
+              </div>
+              <div>
+                <div class="label" style="font-size:9px;">WORST YEAR</div>
+                <div class="num font-mono font-medium text-xs" style="color: var(--down)"
+                     x-text="computeStats(selectedAsset).worstYear ? computeStats(selectedAsset).worstYear.year + ' (' + (computeStats(selectedAsset).worstYear.ret >= 0 ? '+' : '') + (computeStats(selectedAsset).worstYear.ret * 100).toFixed(1) + '%)' : '—'">
+                </div>
+              </div>
+              <div>
+                <div class="label" style="font-size:9px;">% POSITIVE YRS</div>
+                <div class="num font-mono font-medium text-xs" style="color: var(--text)"
+                     x-text="computeStats(selectedAsset).pctPositive !== null ? (computeStats(selectedAsset).pctPositive * 100).toFixed(0) + '%' : '—'">
+                </div>
+              </div>
+              <div>
+                <div class="label" style="font-size:9px;">DATA SINCE</div>
+                <div class="num font-mono font-medium text-xs" style="color: var(--text-2)"
+                     x-text="returnsData.assets[selectedAsset]?.meta?.first || '—'">
+                </div>
+              </div>
+            </div>
+
+            <!-- Full price history chart -->
+            <div x-html="assetDetailChartSvg" style="width:100%;overflow-x:auto;"></div>
+          </div>
+        </template>
+      </div>
 
       <!-- ─── VIEW G: STAT CARDS ─────────────────────────────────────────── -->
       <div class="mt-8">
@@ -1301,8 +1378,10 @@ function marketsApp() {
     selected: null,
     activeKind: 'all',
     q: '',
-    activeCcy: 'Local',   // 'Local' | 'USD' | 'INR'
+    activeCcy: 'Local',   // 'Local' | 'USD' | 'INR' | 'Gold' | 'Silver'
     activeReal: false,    // true = CPI-adjusted
+    selectedAsset: null,  // asset key for detail panel, null = closed
+    detailLogScale: true, // log scale toggle for detail panel chart
     colorMode: 'return',  // 'return' | 'zscore'
 
     // Vol Intelligence state
@@ -1472,6 +1551,24 @@ function marketsApp() {
           const inrPerUsd = 1 / usdPerInr;
           return nativeToUsd * inrPerUsd;
         }
+
+        // Gold lens: price in oz of gold
+        if (targetCcy === 'Gold') {
+          const goldClose = this.returnsData?.assets?.gold?.close || {};
+          const goldVal = goldClose[ym] ?? null;
+          if (goldVal === null || goldVal === 0) return null;
+          // Convert native → USD first, then divide by gold price
+          return nativeToUsd / goldVal;
+        }
+
+        // Silver lens: price in oz of silver
+        if (targetCcy === 'Silver') {
+          const silverClose = this.returnsData?.assets?.silver?.close || {};
+          const silverVal = silverClose[ym] ?? null;
+          if (silverVal === null || silverVal === 0) return null;
+          return nativeToUsd / silverVal;
+        }
+
         return 1;
       };
 
@@ -1797,6 +1894,83 @@ function marketsApp() {
       const stats = { cagr, vol, bestYear, worstYear, pctPositive };
       this._statsCache[ck] = stats;
       return stats;
+    },
+
+    // ── Asset Detail Panel chart ──────────────────────────────────────────
+    get assetDetailChartSvg() {
+      if (!this.selectedAsset || !this.returnsData) return '';
+      const asset = this.returnsData.assets[this.selectedAsset];
+      if (!asset) return '';
+
+      const rawClose = asset.close || {};
+      const months = Object.keys(rawClose).sort();
+      if (months.length < 2) return '<div style="padding:40px;text-align:center;color:var(--text-3)">Not enough data</div>';
+
+      const W = 1200, H = 300, PL = 70, PR = 20, PT = 20, PB = 40;
+      const chartW = W - PL - PR, chartH = H - PT - PB;
+
+      const values = months.map(m => rawClose[m]).filter(v => v != null && v > 0);
+      if (!values.length) return '';
+
+      let minV = Math.min(...values);
+      let maxV = Math.max(...values);
+      const useLog = this.detailLogScale && minV > 0 && maxV / minV > 5;
+
+      const xS = (i) => PL + (i / Math.max(months.length - 1, 1)) * chartW;
+      let yS;
+      if (useLog) {
+        const logMin = Math.log10(minV * 0.95), logMax = Math.log10(maxV * 1.05);
+        yS = (v) => v > 0 ? PT + chartH - ((Math.log10(v) - logMin) / (logMax - logMin)) * chartH : H - PB;
+      } else {
+        const pad = (maxV - minV) * 0.05 || 1;
+        const lo = minV - pad, hi = maxV + pad;
+        yS = (v) => PT + chartH - ((v - lo) / (hi - lo)) * chartH;
+      }
+
+      // Y-axis ticks
+      let ticks = '';
+      const tickVals = useLog
+        ? [0.01,0.05,0.1,0.5,1,2,5,10,20,50,100,200,500,1000,2000,5000,10000,50000,100000,500000,1000000].filter(v => v >= minV * 0.5 && v <= maxV * 2)
+        : (() => {
+            const range = maxV - minV; const step = Math.pow(10, Math.floor(Math.log10(range / 5)));
+            const lo2 = Math.ceil(minV / step) * step; const hi2 = Math.floor(maxV / step) * step;
+            const arr = []; for (let v = lo2; v <= hi2 + step * 0.01; v += step) arr.push(parseFloat(v.toPrecision(6)));
+            return arr;
+          })();
+      for (const v of tickVals) {
+        const y = yS(v); if (y < PT - 5 || y > H - PB + 5) continue;
+        ticks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>`;
+        const label = v >= 1000 ? (v >= 1000000 ? (v/1000000).toFixed(1)+'M' : v >= 1000 ? (v/1000).toFixed(0)+'K' : v) : v < 1 ? v.toFixed(2) : v.toFixed(v < 10 ? 1 : 0);
+        ticks += `<text x="${PL - 5}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${label}</text>`;
+      }
+
+      // X-axis decade labels
+      let xLabels = '';
+      const allYears = [...new Set(months.map(m => m.slice(0, 4)))];
+      const step = allYears.length > 100 ? 20 : allYears.length > 50 ? 10 : allYears.length > 20 ? 5 : 2;
+      for (const yr of allYears) {
+        if (parseInt(yr) % step !== 0) continue;
+        const idx = months.findIndex(m => m.startsWith(yr));
+        if (idx < 0) continue;
+        const x = xS(idx);
+        xLabels += `<text x="${x.toFixed(1)}" y="${H - 10}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${yr}</text>`;
+        xLabels += `<line x1="${x.toFixed(1)}" y1="${PT}" x2="${x.toFixed(1)}" y2="${H - PB}" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>`;
+      }
+
+      // Price line
+      let d = '', inSeg = false;
+      for (let i = 0; i < months.length; i++) {
+        const v = rawClose[months[i]];
+        if (v == null || v <= 0) { inSeg = false; continue; }
+        const x = xS(i).toFixed(1), y = yS(v).toFixed(1);
+        if (!inSeg) { d += `M${x},${y} `; inSeg = true; } else { d += `L${x},${y} `; }
+      }
+
+      const scaleLabel = useLog ? ' (log)' : '';
+      const nameLabel = asset.meta?.name || this.selectedAsset;
+      const title = `<text x="${PL}" y="13" style="font-size:10px;fill:#71717a;font-family:ui-monospace">${nameLabel}${scaleLabel}</text>`;
+
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block">${title}${ticks}${xLabels}<path d="${d.trim()}" fill="none" stroke="var(--cyan)" stroke-width="1.5" opacity="0.9"/></svg>`;
     },
 
     // ── Category chip styles ──────────────────────────────────────────────

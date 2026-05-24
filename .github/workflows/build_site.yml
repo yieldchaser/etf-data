@@ -87,6 +87,10 @@ jobs:
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
 
+      - name: Ingest Mega Markets Historical (Excel)
+        run: python -m predator.ingest_mega_xl
+        continue-on-error: true
+
       - name: Fetch vol history (CBOE indices from FRED)
         run: python -m predator.vol_history --full-refresh
         continue-on-error: true
