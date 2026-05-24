@@ -438,6 +438,10 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         lb = leaderboard[leaderboard["etf_count"] >= 2].copy()
         if lb.empty or dim not in lb.columns:
             return []
+        # Exclude tickers with no metadata — they'd show as a misleading "Unknown" bucket
+        lb = lb[lb[dim] != "Unknown"]
+        if lb.empty:
+            return []
         g = lb.groupby(dim).agg(
             net_velocity=("velocity_score", "sum"),
             avg_velocity=("velocity_score", "mean"),
