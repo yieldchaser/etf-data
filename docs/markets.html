@@ -1512,8 +1512,9 @@ function marketsApp() {
 
     async _loadReturns() {
       try {
-        // no-cache = always revalidate with server (uses ETag), never serve stale data
-        const r = await fetch('data/market_returns.json', { cache: 'no-cache' });
+        // Hard cache-bust: append timestamp so CDN never serves stale JSON
+        const bust = Date.now();
+        const r = await fetch(`data/market_returns.json?v=${bust}`, { cache: 'no-store' });
         if (!r.ok) { this.returnsData = null; return; }
         this.returnsData = await r.json();
       } catch (e) {
@@ -1526,7 +1527,8 @@ function marketsApp() {
 
     async _loadVol() {
       try {
-        const r = await fetch('data/vol_history.json', { cache: 'no-cache' });
+        const bust = Date.now();
+        const r = await fetch(`data/vol_history.json?v=${bust}`, { cache: 'no-store' });
         if (!r.ok) { this.volData = null; return; }
         this.volData = await r.json();
       } catch (e) {
@@ -1540,7 +1542,7 @@ function marketsApp() {
     // ── Returns matrix computed properties ───────────────────────────────
 
     // Category display order — underscore form matches pipeline output (Minor 4 fix)
-    _categoryOrder: ['equity', 'precious_metals', 'energy', 'base_metals', 'agriculture', 'fx', 'real_estate'],
+    _categoryOrder: ['equity', 'precious_metals', 'energy', 'commodities', 'base_metals', 'agriculture', 'fx', 'real_estate'],
 
     get matrixGroups() {
       if (!this.returnsData) return [];
