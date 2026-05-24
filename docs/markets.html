@@ -1503,12 +1503,12 @@ function marketsApp() {
     get matrixGroups() {
       if (!this.returnsData) return [];
       const assets = this.returnsData.assets || {};
-      // Group by category
+      // Group by category — only pass key + meta (NOT close) to keep Alpine reactive objects small
       const groups = {};
       for (const [key, val] of Object.entries(assets)) {
         const cat = (val.meta?.category || 'other').toLowerCase();
         if (!groups[cat]) groups[cat] = [];
-        groups[cat].push({ key, meta: val.meta, close: val.close });
+        groups[cat].push({ key, meta: val.meta });
       }
       // Sort assets within each group by first date ascending
       for (const cat of Object.keys(groups)) {
