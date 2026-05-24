@@ -12,9 +12,12 @@ on:
       - 'predator/**'
       - 'markets/**'
       - 'docs/**'
+      - 'scraper.py'
       - 'config.yaml'
+      - 'config.json'
       - '.github/workflows/build_site.yml'
       - 'requirements.txt'
+      - 'tests/**'
 
   workflow_dispatch:
 
