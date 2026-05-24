@@ -1580,7 +1580,7 @@ function marketsApp() {
           yearSet.add(parseInt(key.slice(0, 4)));
         }
       }
-      this._matrixYearsCache = Array.from(yearSet).sort((a, b) => a - b);
+      this._matrixYearsCache = Array.from(yearSet).sort((a, b) => b - a); // newest left
       this._matrixYearsCacheData = this.returnsData;
       return this._matrixYearsCache;
     },
