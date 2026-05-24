@@ -121,6 +121,19 @@ class Sanitizer:
 
 
 @dataclass(frozen=True)
+class ConvictionConfig:
+    """Parameters for the §24 conviction-weighted scoring formula."""
+    ow_star:  float   # OW at which Wovr ≈ 1.0
+    c_max:    float   # ceiling on Wovr
+    rp_floor: float   # minimum Grank contribution
+    hc_theta: float   # conviction threshold for HC breadth count
+
+    def __post_init__(self):
+        if self.ow_star <= 0:
+            raise ValueError(f"ConvictionConfig.ow_star must be > 0, got {self.ow_star}")
+
+
+@dataclass(frozen=True)
 class HistoryConfig:
     rank_delta_lookback_days: int          # kept for backward compat (= delta_periods_days[1])
     delta_periods_days: tuple[int, ...]    # Phase 2: multi-period deltas
@@ -138,6 +151,9 @@ class Config:
     new_bonus_tiers: tuple[str, ...]
     high_conviction_min_etfs: int
     history: HistoryConfig
+    scoring_mode: str = "legacy"                        # 'legacy' | 'conviction'
+    conviction: ConvictionConfig | None = None          # §24 params (conviction mode)
+    etf_maturity_days: int = 30                         # §28 maturity gate
 
     @classmethod
     def from_yaml(cls, path: str | Path) -> "Config":
@@ -167,6 +183,17 @@ class Config:
             leaderboard_lookback_days=int(h_cfg.get("leaderboard_lookback_days", 60)),
             changelog_top_n=int(h_cfg.get("changelog_top_n", 15)),
         )
+
+        # §24 conviction config
+        scoring_mode = cfg.get("scoring_mode", "legacy")
+        cv_cfg = cfg.get("conviction", {})
+        conviction = ConvictionConfig(
+            ow_star=float(cv_cfg.get("ow_star", 4.0)),
+            c_max=float(cv_cfg.get("c_max", 1.5)),
+            rp_floor=float(cv_cfg.get("rp_floor", 0.35)),
+            hc_theta=float(cv_cfg.get("hc_theta", 0.8)),
+        ) if cv_cfg or scoring_mode == "conviction" else None
+
         return cls(
             sanitizer=sanitizer,
             etfs=etfs,
@@ -177,6 +204,9 @@ class Config:
             new_bonus_tiers=tuple(cfg["new_bonus_tiers"]),
             high_conviction_min_etfs=int(cfg["high_conviction_min_etfs"]),
             history=history,
+            scoring_mode=scoring_mode,
+            conviction=conviction,
+            etf_maturity_days=int(cfg.get("etf_maturity_days", 30)),
         )
 
     def etf_lookup(self) -> dict[str, ETF]:
@@ -213,6 +243,39 @@ def rank_multiplier(rank: int, breakpoints: Iterable[tuple[int, float]]) -> floa
         if rank <= rank_max:
             return mult
     return 1.0
+
+
+def conviction_multiplier(
+    weight: float,
+    rank: int,
+    n_holdings: int,
+    cv: "ConvictionConfig",
+) -> float:
+    """
+    §24 conviction multiplier C_i = Wovr(OW_i) × Grank(RP_i).
+
+    OW_i  = weight × n_holdings  (overweight vs equal-weight; 1.0 = equal-weight)
+    RP_i  = 1 − (rank − 1) / n_holdings  (rank percentile; 1.0 = top of book)
+
+    Wovr(OW) = clamp( ln(1+OW) / ln(1+OW★) , 0 , C_max )
+    Grank(RP) = RP_floor + (1 − RP_floor) × RP
+
+    Returns C_i ∈ [0, C_max × 1.0] (product of two factors, each ≤ their ceiling).
+    """
+    import math
+    n = max(n_holdings, 1)
+    ow = weight * n                                          # overweight ratio
+    rp = 1.0 - (rank - 1) / n                               # rank percentile [0,1]
+
+    # Wovr: log-compressed overweight, anchored at OW★ → 1.0
+    ln_anchor = math.log(1 + cv.ow_star)
+    wovr = math.log(1 + ow) / ln_anchor if ln_anchor > 0 else 0.0
+    wovr = max(0.0, min(cv.c_max, wovr))
+
+    # Grank: linear rank percentile with a floor so rank never fully zeroes out
+    grank = cv.rp_floor + (1.0 - cv.rp_floor) * rp
+
+    return wovr * grank
 
 
 def _validate_input(df: pd.DataFrame) -> None:
@@ -271,34 +334,68 @@ def compute_leaderboard(
     latest_dates = df.groupby("ETF_Ticker")["Holdings_As_Of"].transform("max")
     latest = df[df["Holdings_As_Of"] == latest_dates].copy()
 
+    # Filter zero-weight rows before ranking/counting (they inflate etf_count/held_by)
+    latest = latest[latest["weight"] > 0].copy()
+
     # Rank within each ETF by weight desc, deterministic tiebreak by ticker
     latest = latest.sort_values(["ETF_Ticker", "weight", "ticker"], ascending=[True, False, True])
     latest["rank"] = latest.groupby("ETF_Ticker").cumcount() + 1
 
+    # ETF size (n_holdings) — needed for conviction formula and maturity gate
+    etf_sizes = latest.groupby("ETF_Ticker")["ticker"].transform("count")
+    latest["n_holdings"] = etf_sizes
+
+    # §28 Maturity gate — track first_seen date per ETF in the full history
+    # An ETF is "mature" if we have data for it spanning ≥ etf_maturity_days.
+    etf_first_seen = df.groupby("ETF_Ticker")["Holdings_As_Of"].min()
+    etf_last_seen  = df.groupby("ETF_Ticker")["Holdings_As_Of"].max()
+    etf_span_days  = (etf_last_seen - etf_first_seen).dt.days
+    mature_etfs = set(etf_span_days[etf_span_days >= cfg.etf_maturity_days].index)
+
     # NEW detection: not seen in this ETF before the cutoff window
+    # §28: only flag NEW for mature ETFs (suppresses the 15→30 migration flood)
     cutoff = df["Holdings_As_Of"].max() - timedelta(days=cfg.new_lookback_days)
     historical_pairs = set(map(tuple, df.loc[df["Holdings_As_Of"] < cutoff,
                                               ["ETF_Ticker", "ticker"]].itertuples(index=False, name=None)))
     pair_index = pd.Series(list(zip(latest["ETF_Ticker"], latest["ticker"])), index=latest.index)
-    latest["is_new"] = ~pair_index.isin(historical_pairs)
+    is_new_raw = ~pair_index.isin(historical_pairs)
+    # Suppress NEW flag for immature ETFs
+    etf_is_mature = latest["ETF_Ticker"].map(lambda e: e in mature_etfs)
+    latest["is_new"] = is_new_raw & etf_is_mature
 
-    # Per-ETF tier and point lookup (supports per-ETF overrides like FPXI=60, IMOM=60)
+    # Per-ETF tier and point lookup
     latest["tier"] = latest["ETF_Ticker"].map(lambda e: etf_lookup[e].tier)
     latest["tier_points"] = latest["ETF_Ticker"].map(lambda e: etf_lookup[e].points)
-    latest["rank_mult"] = latest["rank"].apply(lambda r: rank_multiplier(r, cfg.rank_breakpoints))
 
-    # ── SCORE FORMULA (matches Power Query AddScore step in Master_Leaderboard) ──
-    #   Single Score = Weight% × Points × Rank_Multiplier × 100 + New_Bonus
-    #                = (weight_decimal × 100) × Points × Rank_Multiplier + New_Bonus
-    #                = weight_as_pct × Points × Rank_Multiplier + New_Bonus
-    # Equivalently: a 5% holding (weight=0.05) in Scout (40 pts) at rank-1 (1.5×)
-    #               scores 5 × 40 × 1.5 = 300, not 60.
-    # This is the core conviction signal — heavier weight = more conviction.
-    latest["weight_pct"] = latest["weight"] * 100.0
-    latest["base_score"] = latest["weight_pct"] * latest["tier_points"] * latest["rank_mult"]
-    eligible_new = latest["is_new"] & latest["tier"].isin(cfg.new_bonus_tiers)
-    latest["new_bonus"] = (latest["tier_points"] * cfg.new_bonus_mult).where(eligible_new, 0.0)
-    latest["score"] = latest["base_score"] + latest["new_bonus"]
+    # ── SCORE FORMULA — two modes ─────────────────────────────────────────────
+    if cfg.scoring_mode == "conviction" and cfg.conviction is not None:
+        # §24 Conviction-weighted formula:
+        #   C_i = Wovr(OW_i) × Grank(RP_i)
+        #   Single Score = TierPoints × C_i
+        # No weight%×100 term, no step rank_multiplier — conviction replaces both.
+        cv = cfg.conviction
+        latest["conviction"] = latest.apply(
+            lambda row: conviction_multiplier(
+                row["weight"], row["rank"], row["n_holdings"], cv
+            ),
+            axis=1,
+        )
+        latest["rank_mult"] = latest["conviction"]   # expose for downstream compat
+        latest["weight_pct"] = latest["weight"] * 100.0
+        latest["base_score"] = latest["tier_points"] * latest["conviction"]
+        eligible_new = latest["is_new"] & latest["tier"].isin(cfg.new_bonus_tiers)
+        latest["new_bonus"] = (latest["tier_points"] * cfg.new_bonus_mult).where(eligible_new, 0.0)
+        latest["score"] = latest["base_score"] + latest["new_bonus"]
+    else:
+        # Legacy Power Query formula:
+        #   Single Score = Weight% × Points × Rank_Multiplier × 100 + New_Bonus
+        latest["rank_mult"] = latest["rank"].apply(lambda r: rank_multiplier(r, cfg.rank_breakpoints))
+        latest["weight_pct"] = latest["weight"] * 100.0
+        latest["base_score"] = latest["weight_pct"] * latest["tier_points"] * latest["rank_mult"]
+        eligible_new = latest["is_new"] & latest["tier"].isin(cfg.new_bonus_tiers)
+        latest["new_bonus"] = (latest["tier_points"] * cfg.new_bonus_mult).where(eligible_new, 0.0)
+        latest["score"] = latest["base_score"] + latest["new_bonus"]
+        latest["conviction"] = latest["rank_mult"]   # expose for downstream compat
 
     # Aggregate per ticker
     agg = latest.groupby("ticker").agg(
@@ -310,11 +407,22 @@ def compute_leaderboard(
         tiers=("tier", lambda s: " + ".join(sorted(set(s)))),
         any_new=("is_new", "any"),
         best_rank=("rank", "min"),
+        avg_conviction=("conviction", "mean"),
     ).reset_index()
+
+    # §25 Conviction breadth: k_c = count of ETFs where C_i ≥ θ
+    if cfg.scoring_mode == "conviction" and cfg.conviction is not None:
+        theta = cfg.conviction.hc_theta
+        conviction_etfs = latest[latest["conviction"] >= theta].groupby("ticker")["ETF_Ticker"].nunique()
+        agg["conviction_etf_count"] = agg["ticker"].map(conviction_etfs).fillna(0).astype(int)
+    else:
+        agg["conviction_etf_count"] = agg["etf_count"]
 
     def _flag(row) -> str:
         tier_set = set(row["tiers"].split(" + ")) if row["tiers"] else set()
-        if row["etf_count"] >= cfg.high_conviction_min_etfs:
+        # §25: HC uses conviction breadth in conviction mode, raw count in legacy
+        hc_count = row["conviction_etf_count"] if cfg.scoring_mode == "conviction" else row["etf_count"]
+        if hc_count >= cfg.high_conviction_min_etfs:
             return "HIGH_CONVICTION"
         if "Trend" in tier_set and not (tier_set & {"Quality", "Scout"}):
             return "SPECULATIVE_BETA"
@@ -324,10 +432,20 @@ def compute_leaderboard(
     agg = agg.sort_values(["final_score", "etf_count", "total_weight"], ascending=False).reset_index(drop=True)
     agg["leaderboard_rank"] = agg.index + 1
 
+    # §27 Score normalization — percentile within today's universe (0–100)
+    # Keep raw final_score for sorting; add normalized_score for display.
+    n = len(agg)
+    if n > 1:
+        # Percentile rank: fraction of scores strictly below this score × 100
+        agg["normalized_score"] = agg["final_score"].rank(method="average", pct=True).mul(100).round(1)
+    else:
+        agg["normalized_score"] = 50.0
+
     # Display rounding (matches Excel Int64.Type cast on Final Alpha Score).
     # Sort uses the precise float; final display is truncated to int.
     agg["final_score"] = agg["final_score"].astype("int64")
     agg["total_weight"] = agg["total_weight"].round(6)
+    agg["avg_conviction"] = agg["avg_conviction"].round(3)
 
     return agg, latest
 
@@ -349,6 +467,7 @@ def compute_rank_deltas(
     df = history.copy()
     df["Holdings_As_Of"] = pd.to_datetime(df["Holdings_As_Of"], errors="coerce")
     df = df.dropna(subset=["Holdings_As_Of", "ticker", "weight"])
+    df = df[df["weight"] > 0]  # exclude zero-weight rows (they inflate rank counts)
     df = df[df["ETF_Ticker"].isin(etf_lookup)]
     df = cfg.sanitizer.apply(df)
     if df.empty:

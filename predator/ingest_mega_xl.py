@@ -236,12 +236,24 @@ def process(
     dry_run: bool = False,
 ) -> dict[str, Any]:
     """
-    Read Excel, merge into existing JSON, return the updated output dict.
+    DEPRECATED: Use predator.ingest_markets_xl.process() instead.
+
+    This function writes the old 'close' dict format which is no longer
+    consumed by the dashboard. The new §2.3 contract format uses 'monthly'
+    arrays. This function is kept for backward compatibility only and will
+    be removed in a future version.
 
     Args:
         series_filter: Set of asset keys to process. None = all.
         dry_run: If True, print what would be written but don't write.
     """
+    import warnings
+    warnings.warn(
+        "predator.ingest_mega_xl.process() is deprecated. "
+        "Use predator.ingest_markets_xl.process() for the §2.3 contract format.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     if not EXCEL_PATH.exists():
         print(f"ERROR: Excel file not found: {EXCEL_PATH}")
         sys.exit(1)
@@ -358,19 +370,34 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = parse_args(argv)
-
+    """
+    Backward-compat shim — delegates to ingest_markets_xl which emits
+    the §2.3 contract shape. The old ingest_mega_xl logic wrote the
+    legacy 'close' dict format which is no longer used by the dashboard.
+    """
     print("═" * 60)
-    print("  Predator Protocol — Mega Markets Historical Ingest")
+    print("  Predator Protocol — Mega Markets Historical Ingest (shim)")
+    print("  Delegating to ingest_markets_xl for §2.3 contract format")
     print("═" * 60)
 
-    series_filter: set[str] | None = None
-    if args.series:
-        series_filter = {s.strip() for s in args.series.split(",")}
-        print(f"\nFiltering to series: {', '.join(sorted(series_filter))}")
-
-    process(series_filter=series_filter, dry_run=args.dry_run)
-    return 0
+    from predator.ingest_markets_xl import main as _new_main
+    # Map --dry-run and --series flags if present
+    new_argv = []
+    if argv:
+        for arg in argv:
+            if arg == "--dry-run":
+                new_argv.append("--dry-run")
+            elif arg.startswith("--series="):
+                # Forward --series=sp500,gold as --assets sp500,gold
+                new_argv.extend(["--assets", arg.split("=", 1)[1]])
+            elif arg == "--series" and argv:
+                # Handle --series sp500 (space-separated) — peek at next arg
+                idx = argv.index(arg)
+                if idx + 1 < len(argv):
+                    new_argv.extend(["--assets", argv[idx + 1]])
+    new_argv.append("--merge-existing")
+    new_argv.append("--no-fail-on-stale")
+    return _new_main(new_argv)
 
 
 if __name__ == "__main__":

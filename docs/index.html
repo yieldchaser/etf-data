@@ -113,6 +113,16 @@
   </section>
 
   <!-- ── TABS ───────────────────────────────────────────────────────────── -->
+  <!-- §28 Maturity banner — shown while any ETF is still building its baseline -->
+  <div x-show="immatureEtfCount > 0"
+       class="mb-3 px-3 py-2 rounded-lg border text-xs flex items-center gap-2"
+       style="background: rgba(251,191,36,0.06); border-color: rgba(251,191,36,0.25); color: var(--amber)">
+    <span>⚠</span>
+    <span x-text="`${immatureEtfCount} ETF${immatureEtfCount > 1 ? 's' : ''} still building ${meta.etf_maturity_days || 30}-day baselines — velocity/NEW signals partial for these funds.`"></span>
+    <span class="ml-auto text-[9px] font-mono" style="color: var(--text-3)"
+          x-text="immatureEtfNames.slice(0,5).join(', ') + (immatureEtfNames.length > 5 ? ' +' + (immatureEtfNames.length - 5) + ' more' : '')"></span>
+  </div>
+
   <nav class="flex flex-wrap gap-1 mb-3 text-xs items-center">
     <template x-for="t in tabs" :key="t.id">
       <button @click="activeTab = t.id"
@@ -276,6 +286,8 @@
               <th class="text-left px-3 py-2" x-tooltip="'Stock ticker. Click to open per-stock detail page.'">Ticker</th>
               <th class="text-left px-3 py-2 hidden sm:table-cell" x-tooltip="'Issuer\'s legal name as reported by the ETF.'">Company</th>
               <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('final_score')" :class="sortClass('final_score')" x-tooltip="'Final Alpha Score = sum of (weight% × ETF points × rank multiplier × 100) across all ETFs holding this name.'">Score</th>
+              <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell" @click="sort('normalized_score')" :class="sortClass('normalized_score')" x-tooltip="'Normalized score — percentile (0–100) within today\'s universe. Stable across ETF additions. 100 = top of leaderboard.'">%ile</th>
+              <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300 hidden xl:table-cell" @click="sort('avg_conviction')" :class="sortClass('avg_conviction')" x-tooltip="'Average conviction multiplier across all ETFs. Higher = more overweight vs equal-weight. Distinguishes deep conviction from filler positions.'">Conv.</th>
               <th class="text-right px-3 py-2 hidden lg:table-cell">
                 <div class="flex items-center justify-end gap-1">
                   <span class="cursor-pointer hover:text-zinc-300" @click="sort('score_delta_pct')" :class="sortClass('score_delta_pct')" x-tooltip="'Score change vs the prior reference date. Use the period chips to pick 1d, 7d, 14d, 30d, 60d, 90d, or YTD.'" x-text="`SC.Δ% (${period === 'YTD' ? 'YTD' : period + 'd'})`"></span>
@@ -327,6 +339,16 @@
                   <td class="px-3 py-2 text-right num font-mono font-medium" 
                       x-tooltip="`'Score: ${fmt1(row.final_score)}<br>Concentration: ${row.concentration_score != null ? row.concentration_score : '—'}% from top ETF<br>' + (row.concentration_score == null ? 'No data' : row.concentration_score < 40 ? '✓ Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : '⚠ Highly concentrated — fragile if top ETF rebalances')`"
                       x-text="fmt1(row.final_score)"></td>
+                  <!-- §27 Normalized score percentile -->
+                  <td class="px-3 py-2 text-right num font-mono hidden lg:table-cell text-[10px]"
+                      style="color: var(--text-3)"
+                      x-tooltip="'Percentile rank within today\'s universe (0–100). Stable across ETF additions.'"
+                      x-text="row.normalized_score != null ? row.normalized_score.toFixed(0) : '—'"></td>
+                  <!-- §29 Conviction column -->
+                  <td class="px-3 py-2 text-right num font-mono hidden xl:table-cell text-[10px]"
+                      :style="`color: ${(row.avg_conviction||0) > 1.0 ? 'var(--up)' : (row.avg_conviction||0) > 0.5 ? 'var(--amber)' : 'var(--text-3)'}`"
+                      x-tooltip="'Avg conviction multiplier (OW × RP). >1.0 = overweight vs equal-weight. Distinguishes deep conviction from filler.'"
+                      x-text="row.avg_conviction != null ? row.avg_conviction.toFixed(2) : '—'"></td>
                   <td class="px-3 py-2 text-right num font-mono hidden lg:table-cell" :style="`color: ${flowColor(activeDeltaValue(row))}`" x-text="fmtPct(activeDeltaValue(row))"></td>
                   <td class="px-3 py-2 text-right num font-mono hidden lg:table-cell"
                       :style="`color: ${velocityColor(row.velocity_score)}`"
@@ -379,6 +401,13 @@
                       <span x-show="row.quality_adopted_30d" class="chip"
                             x-tooltip="'Quality+ — A Quality ETF (COWZ/CALF/SPHQ) added this name in the last 30 days'"
                             style="background: rgba(20,184,166,0.12); color: #5eead4; border: 1px solid rgba(20,184,166,0.30)">Q+</span>
+                      <!-- §29 Early-vs-Crowded quadrant chip -->
+                      <span x-show="earlyVsCrowded(row) === 'EARLY'" class="chip"
+                            x-tooltip="'EARLY — rising weight in 2–4 ETFs, not yet consensus. The alpha window before it becomes crowded.'"
+                            style="background: rgba(52,211,153,0.08); color: #6ee7b7; border: 1px solid rgba(52,211,153,0.2); font-size:9px">EARLY</span>
+                      <span x-show="earlyVsCrowded(row) === 'CROWDED'" class="chip"
+                            x-tooltip="'CROWDED — flat weight in 9+ ETFs. Consensus has formed; alpha may be behind you.'"
+                            style="background: rgba(161,161,170,0.08); color: var(--text-3); border: 1px solid rgba(161,161,170,0.2); font-size:9px">CROWD</span>
                     </div>
                   </td>
                 </tr>
@@ -1350,18 +1379,40 @@ function app() {
           color: 'var(--up)',
           delta: yc.HIGH_CONVICTION !== undefined ? c.HIGH_CONVICTION - (yc.HIGH_CONVICTION || 0) : null,
           deltaColor: this.deltaColor(c.HIGH_CONVICTION - (yc.HIGH_CONVICTION || 0)),
-          tooltip: 'Tickers held by 4 or more ETFs simultaneously.' },
+          tooltip: 'Tickers held by 4 or more ETFs with conviction (§25 conviction breadth).' },
         { label: 'speculative β', value: c.SPECULATIVE_BETA,
           color: 'var(--amber)',
           delta: yc.SPECULATIVE_BETA !== undefined ? c.SPECULATIVE_BETA - (yc.SPECULATIVE_BETA || 0) : null,
           deltaColor: this.deltaColor(c.SPECULATIVE_BETA - (yc.SPECULATIVE_BETA || 0)),
           tooltip: 'Held in Trend-tier ETFs without Quality or Scout backing.' },
         { label: 'new entrants', value: c.NEW, color: 'var(--blue)',
-          tooltip: 'First appearance in any ETF within the last 14 days.' },
+          tooltip: 'First appearance in any mature ETF within the last 14 days.' },
         { label: 'changes today', value: (this.changelog.entered_hc?.length || 0) + (this.changelog.exited_hc?.length || 0),
           color: 'var(--cyan)',
           tooltip: 'HC entries + exits vs yesterday.' },
       ];
+    },
+
+    // §28 Maturity gate — detect immature ETFs (< etf_maturity_days of history)
+    get immatureEtfCount() {
+      return this.immatureEtfNames.length;
+    },
+    get immatureEtfNames() {
+      if (!this.meta?.etfs || !this.leaderboard.length) return [];
+      const maturityDays = this.meta.etf_maturity_days || 30;
+      // Use the leaderboard's ETF list and check if any ETF has very few data points
+      // We detect immaturity by checking if the ETF appears in very few unique dates
+      // (proxy: if the ETF's first_tracked_date is recent)
+      const etfFirstSeen = {};
+      for (const row of this.leaderboard) {
+        const heldBy = (row.held_by || '').split(', ').filter(Boolean);
+        for (const etf of heldBy) {
+          if (!etfFirstSeen[etf]) etfFirstSeen[etf] = row;
+        }
+      }
+      // Check metadata for ETF maturity info if available
+      const immature = (this.meta.immature_etfs || []);
+      return immature;
     },
 
     get tabs() {
@@ -1905,6 +1956,18 @@ function app() {
       else if (row.conviction_divergence === 1) parts.push('Relative strength');
 
       return parts.length ? parts.join(' · ') + '.' : '—';
+    },
+
+    // §29 Early-vs-Crowded quadrant
+    // EARLY: rising weight in 2–3 ETFs (not yet consensus)
+    // CROWDED: flat weight in 9+ ETFs (consensus formed)
+    earlyVsCrowded(row) {
+      const etfs = row.etf_count || 0;
+      const flow = row.avg_weight_flow_7d || 0;
+      const delta30 = row.etf_count_delta_30d || 0;
+      if (etfs >= 2 && etfs <= 4 && (flow > 0.005 || delta30 > 0)) return 'EARLY';
+      if (etfs >= 9 && Math.abs(flow) < 0.02 && delta30 === 0) return 'CROWDED';
+      return null;
     },
 
     // Formatting

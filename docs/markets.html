@@ -82,7 +82,7 @@
       </div>
       <div class="flex items-baseline gap-3 mt-1">
         <h1 class="text-base font-medium" style="color: var(--cyan)">LONG-HORIZON RETURNS</h1>
-        <span class="label" x-text="returnsData ? `Returns data: ${(returnsData.generated_utc||'').slice(0,10)}` : (meta.generated_at_utc ? `Price log: ${meta.generated_at_utc.slice(0,10)}` : 'Loading…')"></span>
+        <span class="label" x-text="returnsData ? `Returns data: ${returnsData.asof || (returnsData.generated_utc||'').slice(0,10)}` : (meta.generated_at_utc ? `Price log: ${meta.generated_at_utc.slice(0,10)}` : 'Loading…')"></span>
       </div>
     </div>
     <div class="text-xs flex gap-4 items-center" style="color: var(--text-3)">
@@ -162,12 +162,12 @@
     <div x-show="activeTab === 'matrix'" class="flex gap-1">
       <template x-for="ccy in ['Local', 'USD', 'INR', 'Gold', 'Silver']" :key="ccy">
         <button
-          @click="(ccy === 'Gold' && !returnsData?.assets?.gold?.close) || (ccy === 'Silver' && !returnsData?.assets?.silver?.close) ? null : (activeCcy = ccy)"
+          @click="(ccy === 'Gold' && !returnsData?.assets?.gold?.monthly?.length) || (ccy === 'Silver' && !returnsData?.assets?.silver?.monthly?.length) ? null : (activeCcy = ccy)"
           :class="activeCcy === ccy ? 'tab-active' : ''"
           class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
-          :style="activeCcy === ccy ? '' : ((ccy === 'Gold' && !returnsData?.assets?.gold?.close) || (ccy === 'Silver' && !returnsData?.assets?.silver?.close)) ? 'color: var(--text-3); border-color: var(--border); opacity: 0.4; cursor: not-allowed;' : 'color: var(--text-2); border-color: var(--border)'"
+          :style="activeCcy === ccy ? '' : ((ccy === 'Gold' && !returnsData?.assets?.gold?.monthly?.length) || (ccy === 'Silver' && !returnsData?.assets?.silver?.monthly?.length)) ? 'color: var(--text-3); border-color: var(--border); opacity: 0.4; cursor: not-allowed;' : 'color: var(--text-2); border-color: var(--border)'"
           x-text="ccy"
-          @mouseenter="showTt($event, ccy === 'USD' ? 'Convert all returns to USD using monthly FX rates' : ccy === 'INR' ? 'Convert all returns to INR using monthly FX rates' : ccy === 'Gold' ? ((returnsData?.assets?.gold?.close) ? 'Price in oz of gold — shows real purchasing power over time' : 'Gold data not loaded') : ccy === 'Silver' ? ((returnsData?.assets?.silver?.close) ? 'Price in oz of silver — shows real purchasing power over time' : 'Silver data not loaded') : '')"
+          @mouseenter="showTt($event, ccy === 'USD' ? 'Convert all returns to USD using monthly FX rates' : ccy === 'INR' ? 'Convert all returns to INR using monthly FX rates' : ccy === 'Gold' ? ((returnsData?.assets?.gold?.monthly?.length) ? 'Price in oz of gold — shows real purchasing power over time' : 'Gold data not loaded') : ccy === 'Silver' ? ((returnsData?.assets?.silver?.monthly?.length) ? 'Price in oz of silver — shows real purchasing power over time' : 'Silver data not loaded') : '')"
           @mouseleave="hideTt()">
         </button>
       </template>
@@ -239,14 +239,14 @@
     <!-- Loading state for returns -->
     <div x-show="loadingReturns" class="pulse-load text-center py-20" style="color: var(--text-3)">
       <div class="text-lg mb-2">Loading returns data…</div>
-      <div class="text-xs">Run: <code>python predator/markets_history.py</code> to generate data/market_returns.json</div>
+      <div class="text-xs">Run: <code>python -m predator.markets_history</code> to generate data/market_returns.json</div>
     </div>
 
     <!-- No data state -->
     <div x-show="!loadingReturns && !returnsData" class="text-center py-20">
       <div class="text-base mb-2" style="color: var(--amber)">No returns data yet</div>
       <div class="text-xs mb-4" style="color: var(--text-3)">Run the pipeline to generate <code>data/market_returns.json</code></div>
-      <code class="text-xs px-3 py-2 rounded border inline-block" style="border-color: var(--border-2); background: var(--surface); color: var(--text-2)">python predator/markets_history.py</code>
+      <code class="text-xs px-3 py-2 rounded border inline-block" style="border-color: var(--border-2); background: var(--surface); color: var(--text-2)">python -m predator.markets_history</code>
     </div>
 
     <!-- Matrix content -->
@@ -333,7 +333,7 @@
                     <div class="flex items-center gap-1.5">
                       <span class="text-xs font-medium truncate cursor-pointer hover:text-cyan-300 transition"
                             :style="selectedAsset === asset.key ? 'color: var(--cyan)' : 'color: var(--text)'"
-                            @click.stop="selectedAsset = selectedAsset === asset.key ? null : asset.key"
+                            @click.stop="selectedAsset = selectedAsset === asset.key ? null : asset.key; if (selectedAsset) { $nextTick(() => _trcInit(selectedAsset)); }"
                             x-text="asset.meta.name"></span>
                       <span class="chip text-[9px]" :style="categoryChipStyle(asset.meta.category)" x-text="asset.meta.native_ccy"></span>
                     </div>
@@ -416,6 +416,20 @@
                           @mouseenter="showTt($event, 'Full price history')" @mouseleave="hideTt()">
                     Price
                   </button>
+                  <button @click="detailChartMode = 'heatmap'"
+                          class="px-2 py-1 rounded border text-[10px] font-mono transition"
+                          :class="detailChartMode === 'heatmap' ? 'tab-active' : ''"
+                          :style="detailChartMode === 'heatmap' ? '' : 'color: var(--text-2); border-color: var(--border)'"
+                          @mouseenter="showTt($event, 'Monthly return heatmap — year × month')" @mouseleave="hideTt()">
+                    Heatmap
+                  </button>
+                  <button @click="detailChartMode = 'multiccy'"
+                          class="px-2 py-1 rounded border text-[10px] font-mono transition"
+                          :class="detailChartMode === 'multiccy' ? 'tab-active' : ''"
+                          :style="detailChartMode === 'multiccy' ? '' : 'color: var(--text-2); border-color: var(--border)'"
+                          @mouseenter="showTt($event, 'Year × currency table — all lenses at once')" @mouseleave="hideTt()">
+                    Multi-CCY
+                  </button>
                 </div>
                 <!-- Log scale toggle (price mode only) -->
                 <button x-show="detailChartMode === 'price'"
@@ -432,8 +446,8 @@
               </div>
             </div>
 
-            <!-- Key stats strip -->
-            <div class="flex flex-wrap gap-6 px-4 py-3" style="border-bottom: 1px solid var(--border)">
+            <!-- Key stats strip — §4 enhanced with max DD, current DD, return/vol ratio -->
+            <div class="flex flex-wrap gap-5 px-4 py-3" style="border-bottom: 1px solid var(--border)">
               <div>
                 <div class="label" style="font-size:9px;">CAGR</div>
                 <div class="num font-mono font-medium text-xs"
@@ -445,6 +459,14 @@
                 <div class="label" style="font-size:9px;">ANN. VOL</div>
                 <div class="num font-mono font-medium text-xs" style="color: var(--amber)"
                      x-text="computeStats(selectedAsset).vol !== null ? (computeStats(selectedAsset).vol * 100).toFixed(1) + '%' : '—'">
+                </div>
+              </div>
+              <div>
+                <div class="label" style="font-size:9px;">RET/VOL</div>
+                <div class="num font-mono font-medium text-xs" style="color: var(--cyan)"
+                     x-text="computeStats(selectedAsset).retVolRatio !== null ? computeStats(selectedAsset).retVolRatio.toFixed(2) : '—'"
+                     @mouseenter="showTt($event, 'CAGR ÷ Annualised Vol — higher = better risk-adjusted return')"
+                     @mouseleave="hideTt()">
                 </div>
               </div>
               <div>
@@ -466,6 +488,23 @@
                 </div>
               </div>
               <div>
+                <div class="label" style="font-size:9px;">MAX DRAWDOWN</div>
+                <div class="num font-mono font-medium text-xs" style="color: var(--down)"
+                     x-text="computeStats(selectedAsset).maxDd !== null ? (computeStats(selectedAsset).maxDd * 100).toFixed(1) + '%' : '—'"
+                     @mouseenter="showTt($event, 'Worst peak-to-trough decline in the full history')"
+                     @mouseleave="hideTt()">
+                </div>
+              </div>
+              <div>
+                <div class="label" style="font-size:9px;">CURRENT DD</div>
+                <div class="num font-mono font-medium text-xs"
+                     :style="`color: ${(computeStats(selectedAsset).currentDd||0) < -0.1 ? 'var(--down)' : (computeStats(selectedAsset).currentDd||0) < -0.05 ? 'var(--amber)' : 'var(--up)'}`"
+                     x-text="computeStats(selectedAsset).currentDd !== null ? (computeStats(selectedAsset).currentDd * 100).toFixed(1) + '%' : '—'"
+                     @mouseenter="showTt($event, '% below all-time high in the current lens')"
+                     @mouseleave="hideTt()">
+                </div>
+              </div>
+              <div>
                 <div class="label" style="font-size:9px;">DATA SINCE</div>
                 <div class="num font-mono font-medium text-xs" style="color: var(--text-2)"
                      x-text="returnsData.assets[selectedAsset]?.meta?.first || '—'">
@@ -475,6 +514,20 @@
 
             <!-- Annual Returns Bar Chart -->
             <div x-show="detailChartMode === 'returns'">
+              <!-- Compare with selector -->
+              <div class="flex items-center gap-2 px-4 py-2" style="border-bottom: 1px solid var(--border); background: var(--surface-2)">                <span class="label" style="font-size:9px; color: var(--text-3)">COMPARE WITH</span>
+                <select x-model="detailCompareAsset"
+                        class="bg-transparent border rounded px-2 py-0.5 text-[10px] font-mono"
+                        style="border-color: var(--border-2); color: var(--text)">
+                  <option value="" style="background:#111">— none —</option>
+                  <template x-for="a in detailCompareList" :key="a.key">
+                    <option :value="a.key" x-text="a.name" style="background:#111"></option>
+                  </template>
+                </select>
+                <span x-show="detailCompareAsset" class="text-[9px] font-mono" style="color: var(--text-3)">
+                  Dashed line = compare asset
+                </span>
+              </div>
               <div x-html="assetReturnsBarSvg"
                    @mousemove="detailBarHover($event)"
                    @mouseleave="detailBarHoverInfo = null"
@@ -485,9 +538,52 @@
                 <span class="font-medium" style="color: var(--text)" x-text="detailBarHoverInfo?.year || ''"></span>
                 <span :style="`color: ${(detailBarHoverInfo?.ret||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
                       x-text="detailBarHoverInfo?.ret != null ? ((detailBarHoverInfo.ret >= 0 ? '+' : '') + (detailBarHoverInfo.ret * 100).toFixed(2) + '%') : ''"></span>
+                <template x-if="detailBarHoverInfo?.compareRet != null">
+                  <span class="text-[10px] font-mono" style="color: var(--amber)"
+                        x-text="'vs ' + (detailBarHoverInfo.compareRet >= 0 ? '+' : '') + (detailBarHoverInfo.compareRet * 100).toFixed(2) + '%'"></span>
+                </template>
                 <span x-show="detailBarHoverInfo?.partial" class="text-[9px]" style="color: var(--amber)">⚠ partial year</span>
                 <span class="ml-auto text-[9px]" style="color: var(--text-3)"
                       x-text="activeCcy !== 'Local' ? 'Priced in ' + activeCcy : (activeReal ? 'Real (CPI-adj)' : 'Local currency')"></span>
+              </div>
+            </div>
+
+            <!-- §2.5 Time-Range Control — preset bar + dual range slider -->
+            <div x-show="detailChartMode === 'price'" class="px-4 py-2" style="border-bottom: 1px solid var(--border); background: var(--surface-2)">
+              <!-- Preset bar -->
+              <div class="flex items-center gap-1 flex-wrap mb-2">
+                <span class="label" style="font-size:9px; color: var(--text-3)">RANGE</span>
+                <template x-for="p in ['1m','6m','1y','2y','5y','10y','max']" :key="p">
+                  <button @click="trcSetPreset(p)"
+                          :class="trcPreset === p ? 'tab-active' : ''"
+                          class="px-2 py-0.5 rounded border text-[10px] font-mono transition"
+                          :style="trcPreset === p ? '' : 'color: var(--text-3); border-color: var(--border)'"
+                          x-text="p.toUpperCase()">
+                  </button>
+                </template>
+                <span class="ml-2 text-[10px] font-mono" style="color: var(--text-3)"
+                      x-text="trcWindowLabel + ' (' + trcMonthCount + ' months)'"></span>
+              </div>
+              <!-- Dual range slider — start and end handles -->
+              <div class="flex items-center gap-2" x-show="_trcAllMonths.length > 1">
+                <span class="text-[9px] font-mono" style="color: var(--text-3); min-width:50px"
+                      x-text="_trcAllMonths[trcStartIdx] || ''"></span>
+                <div class="relative flex-1" style="height:20px">
+                  <!-- Start slider -->
+                  <input type="range" min="0" :max="_trcAllMonths.length - 1"
+                         :value="trcStartIdx"
+                         @input="trcOnStartSlider($event.target.value)"
+                         class="absolute inset-0 w-full"
+                         style="accent-color: var(--cyan); opacity: 0.7; height: 20px; cursor: pointer">
+                  <!-- End slider -->
+                  <input type="range" min="0" :max="_trcAllMonths.length - 1"
+                         :value="trcEndIdx"
+                         @input="trcOnEndSlider($event.target.value)"
+                         class="absolute inset-0 w-full"
+                         style="accent-color: var(--cyan); height: 20px; cursor: pointer">
+                </div>
+                <span class="text-[9px] font-mono" style="color: var(--text-3); min-width:50px; text-align:right"
+                      x-text="_trcAllMonths[trcEndIdx] || ''"></span>
               </div>
             </div>
 
@@ -495,6 +591,16 @@
             <div x-show="detailChartMode === 'price'"
                  x-html="assetDetailChartSvg"
                  style="width:100%;overflow-x:auto;"></div>
+
+            <!-- Monthly Heatmap — year × month, colored by monthly return -->
+            <div x-show="detailChartMode === 'heatmap'" class="overflow-auto scrollbar" style="max-height: 60vh;">
+              <div x-html="assetMonthlyHeatmapHtml" style="min-width: 500px;"></div>
+            </div>
+
+            <!-- Multi-Currency Table — all 5 lenses at once -->
+            <div x-show="detailChartMode === 'multiccy'" class="overflow-auto scrollbar" style="max-height: 60vh;">
+              <div x-html="assetMultiCcyTableHtml" style="min-width: 600px;"></div>
+            </div>
           </div>
         </template>
       </div>
@@ -570,6 +676,65 @@
       </div>
 
     </div><!-- /matrix content -->
+
+    <!-- §6 Event Study — pick an event → table of each asset's drawdown, recovery, 1Y-forward return -->
+    <div class="mt-8">
+      <div class="flex items-center gap-3 mb-4">
+        <h2 class="text-sm font-medium" style="color: var(--cyan)">EVENT STUDY</h2>
+        <span class="label">Pick a crisis event → see each asset's drawdown, recovery time, and 1Y-forward return</span>
+        <select x-model="eventStudyEvent"
+                class="ml-auto bg-transparent border rounded px-2 py-1 text-xs"
+                style="border-color: var(--border-2); color: var(--text)">
+          <template x-for="ev in eventStudyEvents" :key="ev.year">
+            <option :value="ev.year" x-text="ev.year + ' — ' + ev.label" style="background:#111"></option>
+          </template>
+        </select>
+      </div>
+      <div class="rounded-lg border overflow-auto scrollbar" style="background: var(--bg); border-color: var(--border); max-height: 50vh">
+        <table class="w-full text-xs">
+          <thead style="background: #050505; color: var(--text-3)">
+            <tr style="border-bottom: 1px solid var(--border)">
+              <th class="text-left px-3 py-2 label sticky left-0" style="background:#050505;min-width:160px">Asset</th>
+              <th class="text-right px-3 py-2 label"
+                  @mouseenter="showTt($event, 'Max drawdown from Jan of the event year to 12 months later')"
+                  @mouseleave="hideTt()">Event DD</th>
+              <th class="text-right px-3 py-2 label"
+                  @mouseenter="showTt($event, 'Months from peak to recovery after the event')"
+                  @mouseleave="hideTt()">Recovery</th>
+              <th class="text-right px-3 py-2 label"
+                  @mouseenter="showTt($event, '1-year forward return starting from Jan of the event year')"
+                  @mouseleave="hideTt()">1Y Forward</th>
+              <th class="text-right px-3 py-2 label"
+                  @mouseenter="showTt($event, '3-year forward return starting from Jan of the event year')"
+                  @mouseleave="hideTt()">3Y Forward</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="row in eventStudyRows" :key="row.key">
+              <tr class="row-hover" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
+                <td class="px-3 py-2 sticky left-0" style="background:var(--bg)">
+                  <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-sm flex-shrink-0" :style="`background: ${row.color}`"></span>
+                    <span class="font-medium" style="color: var(--text)" x-text="row.name"></span>
+                  </div>
+                </td>
+                <td class="px-3 py-2 text-right num font-mono font-medium" style="color: var(--down)"
+                    x-text="row.eventDd !== null ? (row.eventDd * 100).toFixed(1) + '%' : '—'"></td>
+                <td class="px-3 py-2 text-right num font-mono" style="color: var(--amber)"
+                    x-text="row.recoveryMonths !== null ? row.recoveryMonths + 'm' : '—'"></td>
+                <td class="px-3 py-2 text-right num font-mono font-medium"
+                    :style="`color: ${(row.fwd1y || 0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
+                    x-text="row.fwd1y !== null ? ((row.fwd1y >= 0 ? '+' : '') + (row.fwd1y * 100).toFixed(1) + '%') : '—'"></td>
+                <td class="px-3 py-2 text-right num font-mono"
+                    :style="`color: ${(row.fwd3y || 0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
+                    x-text="row.fwd3y !== null ? ((row.fwd3y >= 0 ? '+' : '') + (row.fwd3y * 100).toFixed(1) + '%') : '—'"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
   </div><!-- /matrix tab -->
 
 
@@ -630,18 +795,29 @@
                 <div class="label text-[9px]" x-text="s.kind"></div>
               </div>
               <div class="label mb-2" x-text="s.label" style="font-size: 9px; text-transform: none; color: var(--text-3)"></div>
-              <div class="flex items-baseline gap-2">
+              <!-- §5.2 De-noised card: price + day% + thin neutral 30-day line (no micro-bars) -->
+              <div class="flex items-baseline gap-2 mb-2">
                 <div class="text-lg font-medium num font-mono" x-text="fmtClose(s.stats?.close_today)"></div>
                 <div class="text-xs num font-mono font-medium" :style="`color: ${pctColor(s.stats?.day_pct)}`" x-text="fmtPct(s.stats?.day_pct)"></div>
               </div>
-              <div class="flex items-end gap-px mt-2" style="height: 22px">
-                <template x-for="(row, i) in (s.log || []).slice(-20)" :key="i">
-                  <div class="flex-1 rounded-sm transition"
-                       :class="row.pct > 0 ? 'bar-pos' : row.pct < 0 ? 'bar-neg' : 'bar-flat'"
-                       :style="`height: ${barHeight(row.pct, s.log)}px`"></div>
-                </template>
+              <!-- Thin neutral 30-day sparkline (no color, just shape) -->
+              <div style="height: 20px; position: relative; overflow: hidden;">
+                <svg :viewBox="`0 0 100 20`" style="width:100%;height:20px;display:block" preserveAspectRatio="none">
+                  <template x-if="(s.log || []).length >= 2">
+                    <polyline
+                      :points="(s.log || []).slice(-30).map((r, i, arr) => {
+                        const closes = arr.map(x => x.close).filter(v => v != null);
+                        const mn = Math.min(...closes), mx = Math.max(...closes);
+                        const range = mx - mn || 1;
+                        const x = (i / Math.max(arr.length - 1, 1)) * 100;
+                        const y = 18 - ((r.close - mn) / range) * 16;
+                        return x.toFixed(1) + ',' + y.toFixed(1);
+                      }).join(' ')"
+                      fill="none" stroke="rgba(161,161,170,0.5)" stroke-width="1.2"/>
+                  </template>
+                </svg>
               </div>
-              <div class="flex gap-4 mt-2 text-[10px] num font-mono" style="color: var(--text-3)">
+              <div class="flex gap-4 mt-1 text-[10px] num font-mono" style="color: var(--text-3)">
                 <span>7d: <span :style="`color: ${pctColor(s.stats?.week_pct)}`" x-text="fmtPct(s.stats?.week_pct)"></span></span>
                 <span>1m: <span :style="`color: ${pctColor(s.stats?.month_pct)}`" x-text="fmtPct(s.stats?.month_pct)"></span></span>
                 <span>YTD: <span :style="`color: ${pctColor(s.stats?.ytd_pct)}`" x-text="fmtPct(s.stats?.ytd_pct)"></span></span>
@@ -841,6 +1017,18 @@
             </button>
           </template>
         </div>
+        <!-- Year window control -->
+        <div class="flex items-center gap-1 ml-2">
+          <span class="label" style="font-size:9px; color: var(--text-3)">YEARS</span>
+          <template x-for="n in [10, 15, 20, 25, 30, 50]" :key="n">
+            <button @click="periodicYearWindow = n"
+                    :class="periodicYearWindow === n ? 'tab-active' : ''"
+                    class="px-2 py-0.5 rounded border text-[10px] transition"
+                    :style="periodicYearWindow === n ? '' : 'color: var(--text-3); border-color: var(--border)'"
+                    x-text="n + 'Y'">
+            </button>
+          </template>
+        </div>
       </div>
 
       <!-- Periodic table grid -->
@@ -881,12 +1069,12 @@
           <h2 class="text-sm font-medium" style="color: var(--cyan)">DRAWDOWN STUDIO</h2>
           <div class="text-xs mt-0.5" style="color: var(--text-3)">% below prior all-time high. Select any assets. Hover chart for exact values.</div>
         </div>
-        <!-- Time range filter -->
+        <!-- Time range filter — §2.5 preset bar -->
         <div class="flex items-center gap-2">
           <span class="label" style="font-size:9px;">SHOW</span>
           <div class="flex gap-1">
             <template x-for="r in ['All','50Y','30Y','20Y','10Y']" :key="r">
-              <button @click="ddTimeRange = r"
+              <button @click="ddTimeRange = r; if (r !== 'All') trcSetPreset(r.toLowerCase().replace('y','y')); else trcSetPreset('max')"
                       :class="ddTimeRange === r ? 'tab-active' : ''"
                       class="px-2.5 py-1 rounded-md border font-medium text-xs transition"
                       :style="ddTimeRange === r ? '' : 'color: var(--text-2); border-color: var(--border)'"
@@ -964,7 +1152,7 @@
           <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
             <div class="px-3 py-2 label" style="border-bottom: 1px solid var(--border); color: var(--cyan)">
               MAX DRAWDOWN EVENTS
-              <span class="ml-2 font-mono text-[10px]" style="color: var(--text-3)">sorted by severity</span>
+              <span class="ml-2 font-mono text-[10px]" style="color: var(--text-3)">sorted by severity · Ulcer Index = √mean(DD²) — captures depth × duration</span>
             </div>
             <div class="overflow-x-auto scrollbar">
               <table class="w-full text-xs">
@@ -975,8 +1163,14 @@
                     <th class="text-right px-3 py-2 label">Peak</th>
                     <th class="text-right px-3 py-2 label">Trough</th>
                     <th class="text-right px-3 py-2 label">Recovery</th>
-                    <th class="text-right px-3 py-2 label">Months to Recover</th>
+                    <th class="text-right px-3 py-2 label">Months</th>
+                    <th class="text-right px-3 py-2 label"
+                        @mouseenter="showTt($event, 'Ulcer Index = √mean(DD²) — captures both depth and duration of drawdowns')"
+                        @mouseleave="hideTt()">Ulcer Idx</th>
                     <th class="text-right px-3 py-2 label">Current DD</th>
+                    <th class="text-right px-3 py-2 label"
+                        @mouseenter="showTt($event, 'Current drawdown percentile vs full history — how bad is today vs all past drawdowns')"
+                        @mouseleave="hideTt()">DD %ile</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -996,9 +1190,18 @@
                           x-text="row.recoveryDate || 'Not yet'"></td>
                       <td class="px-3 py-2 text-right num font-mono" style="color: var(--text-2)"
                           x-text="row.monthsToRecover !== null ? row.monthsToRecover + 'm' : '—'"></td>
+                      <td class="px-3 py-2 text-right num font-mono" style="color: var(--amber)"
+                          x-text="row.ulcerIndex !== null ? row.ulcerIndex.toFixed(1) + '%' : '—'"
+                          @mouseenter="showTt($event, row.name + ' Ulcer Index: ' + (row.ulcerIndex !== null ? row.ulcerIndex.toFixed(1) + '% — higher = more painful drawdown history' : 'n/a'))"
+                          @mouseleave="hideTt()"></td>
                       <td class="px-3 py-2 text-right num font-mono font-medium"
                           :style="`color: ${(row.currentDd || 0) < -0.1 ? 'var(--down)' : (row.currentDd || 0) < -0.05 ? 'var(--amber)' : 'var(--up)'}`"
                           x-text="row.currentDd !== null ? (row.currentDd * 100).toFixed(1) + '%' : '—'"></td>
+                      <td class="px-3 py-2 text-right num font-mono text-[10px]"
+                          :style="`color: ${(row.currentDdPctile || 0) > 0.8 ? 'var(--down)' : (row.currentDdPctile || 0) > 0.5 ? 'var(--amber)' : 'var(--text-3)'}`"
+                          x-text="row.currentDdPctile !== null ? Math.round(row.currentDdPctile * 100) + 'th' : '—'"
+                          @mouseenter="showTt($event, row.name + ': current drawdown is deeper than ' + (row.currentDdPctile !== null ? Math.round(row.currentDdPctile * 100) + '% of historical drawdowns' : 'n/a'))"
+                          @mouseleave="hideTt()"></td>
                     </tr>
                   </template>
                 </tbody>
@@ -1108,7 +1311,9 @@
                 <span class="label" style="font-size:9px;">Asset</span>
               </th>
               <template x-for="m in ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']" :key="m">
-                <th class="matrix-sticky-header matrix-year-cell" x-text="m"></th>
+                <th class="matrix-sticky-header matrix-year-cell"
+                    :style="(new Date().getMonth() + 1) === (['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(m) + 1) ? 'color:var(--cyan);border-bottom:2px solid var(--cyan)' : ''"
+                    x-text="m"></th>
               </template>
               <th class="matrix-sticky-header matrix-year-cell" style="color:var(--cyan)">Best</th>
               <th class="matrix-sticky-header matrix-year-cell" style="color:var(--down)">Worst</th>
@@ -1123,8 +1328,8 @@
                 <template x-for="(cell, mi) in row.months" :key="mi">
                   <td>
                     <div class="matrix-cell"
-                         :style="`background:${cellColor(cell.avg)};color:${cellTextColor(cell.avg)};`"
-                         @mouseenter="showTt($event, `${row.name}\n${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][mi]}: avg ${cell.avg !== null ? ((cell.avg>=0?'+':'')+(cell.avg*100).toFixed(1)+'%') : '—'}\nHit rate: ${cell.hitRate !== null ? (cell.hitRate*100).toFixed(0)+'%' : '—'} (${cell.n} years)`)"
+                         :style="`background:${cellColor(cell.avg)};color:${cellTextColor(cell.avg)};opacity:${cell.avg !== null ? (0.4 + (cell.hitRate || 0.5) * 0.6) : 1};outline:${(new Date().getMonth()) === mi ? '2px solid var(--cyan)' : 'none'};outline-offset:-1px;`"
+                         @mouseenter="showTt($event, `${row.name}\n${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][mi]}: avg ${cell.avg !== null ? ((cell.avg>=0?'+':'')+(cell.avg*100).toFixed(1)+'%') : '—'}\nHit rate: ${cell.hitRate !== null ? (cell.hitRate*100).toFixed(0)+'%' : '—'} (${cell.n} years)${cell.n < 10 ? '\n⚠ Low sample size' : ''}`)"
                          @mouseleave="hideTt()"
                          x-text="cell.avg !== null ? (cell.avg>=0?'+':'')+(cell.avg*100).toFixed(1)+'%' : ''">
                     </div>
@@ -1158,7 +1363,7 @@
       <div class="flex flex-wrap items-center gap-3 mb-5">
         <div>
           <h2 class="text-sm font-medium" style="color: var(--cyan)">CORRELATION & GROWTH</h2>
-          <div class="text-xs mt-0.5" style="color: var(--text-3)">Monthly return correlations + log-scale cumulative growth of $100.</div>
+          <div class="text-xs mt-0.5" style="color: var(--text-3)">Monthly return correlations + log-scale cumulative growth of $100. Rolling correlation shows regime shifts over time.</div>
         </div>
         <div class="flex flex-wrap gap-1">
           <template x-for="a in corrAssetList" :key="a.key">
@@ -1171,10 +1376,31 @@
             </button>
           </template>
         </div>
+        <!-- Correlation sub-tabs -->
+        <div class="flex gap-1 ml-auto">
+          <button @click="corrSubTab = 'growth'"
+                  :class="corrSubTab === 'growth' ? 'tab-active' : ''"
+                  class="px-2.5 py-1 rounded-md border text-[10px] transition"
+                  :style="corrSubTab === 'growth' ? '' : 'color: var(--text-2); border-color: var(--border)'">Growth</button>
+          <button @click="corrSubTab = 'matrix'"
+                  :class="corrSubTab === 'matrix' ? 'tab-active' : ''"
+                  class="px-2.5 py-1 rounded-md border text-[10px] transition"
+                  :style="corrSubTab === 'matrix' ? '' : 'color: var(--text-2); border-color: var(--border)'">Matrix</button>
+          <button @click="corrSubTab = 'rolling'"
+                  :class="corrSubTab === 'rolling' ? 'tab-active' : ''"
+                  class="px-2.5 py-1 rounded-md border text-[10px] transition"
+                  :style="corrSubTab === 'rolling' ? '' : 'color: var(--text-2); border-color: var(--border)'">Rolling</button>
+          <button @click="corrSubTab = 'ratios'"
+                  :class="corrSubTab === 'ratios' ? 'tab-active' : ''"
+                  class="px-2.5 py-1 rounded-md border text-[10px] transition"
+                  :style="corrSubTab === 'ratios' ? '' : 'color: var(--text-2); border-color: var(--border)'"
+                  @mouseenter="showTt($event, 'Cross-asset ratio charts — Gold/Silver, Copper/Gold, Stocks/Bonds, Oil/Gold')"
+                  @mouseleave="hideTt()">Ratios</button>
+        </div>
       </div>
 
       <!-- Growth of $100 chart (log scale) -->
-      <div class="rounded-lg border overflow-hidden mb-5" style="background: var(--surface); border-color: var(--border)">
+      <div x-show="corrSubTab === 'growth'" class="rounded-lg border overflow-hidden mb-5" style="background: var(--surface); border-color: var(--border)">
         <div class="px-3 py-2 label" style="border-bottom:1px solid var(--border);color:var(--cyan)">GROWTH OF $100 (LOG SCALE)</div>
         <div x-html="growthChartSvg"
              @mousemove="growthHover($event)"
@@ -1190,10 +1416,44 @@
       </div>
 
       <!-- Correlation matrix -->
-      <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+      <div x-show="corrSubTab === 'matrix'" class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
         <div class="px-3 py-2 label" style="border-bottom:1px solid var(--border);color:var(--cyan)">CORRELATION MATRIX (MONTHLY RETURNS)</div>
         <div class="overflow-auto scrollbar p-3">
           <div x-html="corrMatrixHtml"></div>
+        </div>
+      </div>
+
+      <!-- §5.8 Rolling Correlation Chart -->
+      <div x-show="corrSubTab === 'rolling'" class="mt-5 rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+        <div class="px-3 py-2 flex items-center gap-3" style="border-bottom:1px solid var(--border)">
+          <span class="label" style="color:var(--cyan)">ROLLING 12-MONTH CORRELATION</span>
+          <span class="text-[10px]" style="color:var(--text-3)">Base asset:</span>
+          <select x-model="rollingCorrBase"
+                  class="bg-transparent border rounded px-2 py-0.5 text-[10px] font-mono"
+                  style="border-color: var(--border-2); color: var(--text)">
+            <template x-for="a in corrAssetList" :key="a.key">
+              <option :value="a.key" x-text="a.name" style="background:#111"></option>
+            </template>
+          </select>
+          <span class="text-[10px]" style="color:var(--text-3)">vs all selected assets. Regime shifts visible as correlation flips.</span>
+        </div>
+        <div x-html="rollingCorrChartSvg" style="width:100%;overflow-x:auto;"></div>
+      </div>
+      <!-- §6 Cross-Asset Ratio Charts -->
+      <div x-show="corrSubTab === 'ratios'">
+        <div class="text-xs mb-4" style="color: var(--text-3)">
+          Structural regime signals. Gold/Silver = risk appetite; Copper/Gold = growth vs fear; Oil/Gold = energy vs safety; Stocks/Gold = equity vs hard assets.
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <template x-for="ratio in ratioCharts" :key="ratio.id">
+            <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+              <div class="px-3 py-2 flex items-center justify-between" style="border-bottom:1px solid var(--border)">
+                <span class="label" style="color:var(--cyan)" x-text="ratio.title"></span>
+                <span class="text-[9px]" style="color:var(--text-3)" x-text="ratio.description"></span>
+              </div>
+              <div x-html="ratio.svg" style="width:100%;overflow-x:auto;"></div>
+            </div>
+          </template>
         </div>
       </div>
     </div>
@@ -1225,7 +1485,7 @@
       <div class="flex flex-wrap gap-2 mb-5 items-center">
         <!-- Sub-panel selector -->
         <div class="flex gap-1">
-          <template x-for="panel in ['I-1','I-2','I-3','I-4']" :key="panel">
+          <template x-for="panel in ['Overview','History','Heatmap','Cross-Asset']" :key="panel">
             <button @click="volSubPanel = panel"
                     :class="volSubPanel === panel ? 'tab-active' : ''"
                     class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
@@ -1265,50 +1525,65 @@
              x-text="volData ? `Vol data: ${(volData.generated_utc||'').slice(0,10)}` : ''"></div>
       </div>
 
-      <!-- Sub-panel label -->
+      <!-- Sub-panel label + regime banner -->
       <div class="mb-4">
-        <template x-if="volSubPanel === 'I-1'">
+        <template x-if="volSubPanel === 'Overview'">
           <div>
-            <h2 class="text-sm font-medium" style="color: var(--cyan)">I-1 · CURRENT LEVEL DASHBOARD</h2>
-            <div class="text-xs mt-0.5" style="color: var(--text-3)">Current level, z-score vs history, 12-month sparkline. Color = z-score magnitude.</div>
+            <h2 class="text-sm font-medium" style="color: var(--cyan)">VOLATILITY OVERVIEW</h2>
+            <div class="text-xs mt-0.5" style="color: var(--text-3)">Current level, percentile rank, regime, 12-month sparkline. Color = stress level.</div>
           </div>
         </template>
-        <template x-if="volSubPanel === 'I-2'">
+        <template x-if="volSubPanel === 'Heatmap'">
           <div>
-            <h2 class="text-sm font-medium" style="color: var(--cyan)">I-2 · MONTHLY Z-SCORE HEATMAP</h2>
-            <div class="text-xs mt-0.5" style="color: var(--text-3)">Rows = vol indices, columns = months. Each cell = z-score of monthly avg vs full history. Click for raw level.</div>
+            <h2 class="text-sm font-medium" style="color: var(--cyan)">MONTHLY Z-SCORE HEATMAP</h2>
+            <div class="text-xs mt-0.5" style="color: var(--text-3)">Rows = vol indices, columns = months. Each cell = z-score of monthly avg vs full history.</div>
           </div>
         </template>
-        <template x-if="volSubPanel === 'I-3'">
+        <template x-if="volSubPanel === 'History'">
           <div>
-            <h2 class="text-sm font-medium" style="color: var(--cyan)">I-3 · HISTORICAL LEVEL CHART</h2>
+            <h2 class="text-sm font-medium" style="color: var(--cyan)">HISTORICAL LEVEL CHART</h2>
             <div class="text-xs mt-0.5" style="color: var(--text-3)">Daily close levels over time. Toggle series. Hover for exact level + date.</div>
           </div>
         </template>
-        <template x-if="volSubPanel === 'I-4'">
+        <template x-if="volSubPanel === 'Cross-Asset'">
           <div>
-            <h2 class="text-sm font-medium" style="color: var(--cyan)">I-4 · CROSS-ASSET VOL COMPARISON</h2>
-            <div class="text-xs mt-0.5" style="color: var(--text-3)">Current z-scores of all 7 vol indices. Shows which markets have elevated or depressed implied vol.</div>
+            <h2 class="text-sm font-medium" style="color: var(--cyan)">CROSS-ASSET VOL COMPARISON</h2>
+            <div class="text-xs mt-0.5" style="color: var(--text-3)">Percentile rank of all 7 vol indices vs own history — comparable across indices regardless of raw level.</div>
           </div>
         </template>
       </div>
 
-      <!-- ─── I-1: Current Level Dashboard ─────────────────────────────── -->
-      <div x-show="volSubPanel === 'I-1'">
+      <!-- Regime banner — auto-generated from z-scores -->
+      <div x-show="volSubPanel === 'Overview' && volData" class="mb-4 px-4 py-3 rounded-lg border text-xs" style="background: var(--surface); border-color: var(--border)">
+        <div class="font-medium mb-1" style="color: var(--cyan)">REGIME SUMMARY</div>
+        <div x-html="volRegimeBanner" style="color: var(--text-2); line-height: 1.6;"></div>
+      </div>
+
+      <!-- ─── Overview: Current Level Dashboard ─────────────────────────── -->
+      <div x-show="volSubPanel === 'Overview'">
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
           <template x-for="tile in volTiles" :key="tile.key">
             <div class="rounded-lg border p-3 transition"
                  :style="`background: ${tile.bgColor}; border-color: ${tile.borderColor};`">
-              <!-- Header -->
-              <div class="flex items-center justify-between mb-2">
+              <!-- Header: name + regime word -->
+              <div class="flex items-center justify-between mb-1">
                 <span class="text-sm font-bold font-mono" style="color: var(--text)" x-text="tile.name"></span>
-                <span class="text-[9px] font-mono px-1.5 py-0.5 rounded"
+                <span class="text-[9px] font-mono px-1.5 py-0.5 rounded font-medium"
                       :style="`background: ${tile.zBadgeBg}; color: ${tile.zBadgeColor};`"
-                      x-text="tile.zLabel"></span>
+                      x-text="tile.regime"></span>
               </div>
               <!-- Current level -->
-              <div class="text-2xl font-medium num font-mono mb-1" style="color: var(--text)"
+              <div class="text-2xl font-medium num font-mono mb-0.5" style="color: var(--text)"
                    x-text="tile.current !== null ? tile.current.toFixed(1) : '—'"></div>
+              <!-- Percentile rank (§5.9 — more intuitive than z-score) -->
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-[9px] font-mono" :style="`color: ${tile.zBadgeColor}`"
+                      x-text="tile.pctLabel"
+                      @mouseenter="showTt($event, 'Percentile rank vs full history — 95th = higher than 95% of all readings')"
+                      @mouseleave="hideTt()"></span>
+                <span class="text-[9px] font-mono" style="color: var(--text-3)"
+                      x-text="tile.zLabel"></span>
+              </div>
               <!-- Description -->
               <div class="text-[9px] mb-2" style="color: var(--text-3)" x-text="tile.description"></div>
               <!-- Sparkline (12-month) -->
@@ -1321,8 +1596,8 @@
         </div>
       </div>
 
-      <!-- ─── I-2: Monthly Z-Score Heatmap ─────────────────────────────── -->
-      <div x-show="volSubPanel === 'I-2'">
+      <!-- ─── Heatmap: Monthly Z-Score Heatmap ─────────────────────────── -->
+      <div x-show="volSubPanel === 'Heatmap'">
         <div class="rounded-lg border overflow-auto scrollbar" style="max-height: 75vh; background: var(--bg); border-color: var(--border)">
           <div x-html="volMonthlyZHeatmapHtml"></div>
         </div>
@@ -1339,8 +1614,8 @@
         </div>
       </div>
 
-      <!-- ─── I-3: Historical Level Chart ──────────────────────────────── -->
-      <div x-show="volSubPanel === 'I-3'">
+      <!-- ─── History: Historical Level Chart ──────────────────────────── -->
+      <div x-show="volSubPanel === 'History'">
         <!-- Series toggles -->
         <div class="flex flex-wrap gap-2 mb-4">
           <template x-for="s in volSeriesDefs" :key="s.key">
@@ -1372,15 +1647,15 @@
         </div>
       </div>
 
-      <!-- ─── I-4: Cross-Asset Vol Comparison ──────────────────────────── -->
-      <div x-show="volSubPanel === 'I-4'">
+      <!-- ─── Cross-Asset: Vol Comparison ──────────────────────────────── -->
+      <div x-show="volSubPanel === 'Cross-Asset'">
         <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
           <div x-html="volZBarHtml" style="width:100%;overflow-x:auto;"></div>
         </div>
         <!-- Z-score table -->
         <div class="mt-4 rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
           <div class="px-3 py-2 label" style="border-bottom: 1px solid var(--border); color: var(--cyan)">
-            CURRENT Z-SCORES
+            CURRENT LEVELS — PERCENTILE RANK &amp; Z-SCORE
             <span class="ml-2 font-mono text-[10px]" style="color: var(--text-3)"
                   x-text="`Lookback: ${volLookback} · ${volGranularity}`"></span>
           </div>
@@ -1390,10 +1665,11 @@
                 <tr style="border-bottom: 1px solid var(--border)">
                   <th class="text-left px-3 py-2 label">Index</th>
                   <th class="text-right px-3 py-2 label">Current Level</th>
+                  <th class="text-right px-3 py-2 label">Percentile</th>
+                  <th class="text-right px-3 py-2 label">Regime</th>
                   <th class="text-right px-3 py-2 label">Z-Score</th>
-                  <th class="text-right px-3 py-2 label">Mean (lookback)</th>
-                  <th class="text-right px-3 py-2 label">Stdev (lookback)</th>
-                  <th class="text-right px-3 py-2 label">Interpretation</th>
+                  <th class="text-right px-3 py-2 label">Mean</th>
+                  <th class="text-right px-3 py-2 label">Stdev</th>
                 </tr>
               </thead>
               <tbody>
@@ -1404,20 +1680,24 @@
                         <span class="w-2 h-2 rounded-sm flex-shrink-0"
                               :style="`background: ${volSeriesDefs.find(s=>s.key===tile.key)?.color || '#888'}`"></span>
                         <span class="font-medium" style="color: var(--text)" x-text="tile.name"></span>
+                        <span class="text-[9px]" style="color: var(--text-3)" x-text="tile.description"></span>
                       </div>
                     </td>
                     <td class="px-3 py-2 text-right num font-mono" style="color: var(--text)"
                         x-text="tile.current !== null ? tile.current.toFixed(1) : '—'"></td>
                     <td class="px-3 py-2 text-right num font-mono font-medium"
+                        :style="`color: ${tile.zBadgeColor}`"
+                        x-text="tile.pctLabel"></td>
+                    <td class="px-3 py-2 text-right text-[10px] font-medium"
+                        :style="`color: ${tile.zBadgeColor}`"
+                        x-text="tile.regime"></td>
+                    <td class="px-3 py-2 text-right num font-mono"
                         :style="`color: ${tile.zColor}`"
-                        x-text="tile.z !== null ? (tile.z >= 0 ? '+' : '') + tile.z.toFixed(2) : '—'"></td>
+                        x-text="tile.z !== null ? (tile.z >= 0 ? '+' : '') + tile.z.toFixed(2) + 'σ' : '—'"></td>
                     <td class="px-3 py-2 text-right num font-mono" style="color: var(--text-2)"
                         x-text="tile.mean !== null ? tile.mean.toFixed(1) : '—'"></td>
                     <td class="px-3 py-2 text-right num font-mono" style="color: var(--text-2)"
                         x-text="tile.stdev !== null ? tile.stdev.toFixed(1) : '—'"></td>
-                    <td class="px-3 py-2 text-right text-[10px]"
-                        :style="`color: ${tile.zColor}`"
-                        x-text="tile.interpretation"></td>
                   </tr>
                 </template>
               </tbody>
@@ -1461,9 +1741,112 @@ function _posTt(el) {
 }
 function _hideTt() { tt.style.opacity = '0'; }
 
+// ─── §2.2 Asset-identity color system ────────────────────────────────────────
+// One canonical color per asset, used in every chart. Gold is always amber,
+// S&P always blue, etc. This is the "symmetry" that makes the platform feel
+// consistent across all tabs.
+const ASSET_COLORS = {
+  // Equities
+  sp500:       '#3b82f6',   // blue
+  djia:        '#60a5fa',   // lighter blue
+  nasdaq:      '#818cf8',   // indigo
+  nasdaq100:   '#a78bfa',   // violet
+  nikkei:      '#f472b6',   // pink
+  sensex:      '#fb923c',   // orange
+  dax:         '#facc15',   // yellow
+  ftse100:     '#4ade80',   // green
+  hang_seng:   '#34d399',   // emerald
+  asx200:      '#2dd4bf',   // teal
+  bovespa:     '#f87171',   // red
+  shanghai:    '#e879f9',   // fuchsia
+  wilshire5000:'#93c5fd',   // sky blue
+  // Precious Metals
+  gold:        '#fbbf24',   // amber
+  silver:      '#94a3b8',   // slate
+  platinum:    '#cbd5e1',   // light slate
+  palladium:   '#d4d4d8',   // zinc
+  // Energy
+  wti_crude:   '#f97316',   // orange
+  brent_crude: '#ea580c',   // dark orange
+  natural_gas: '#22d3ee',   // cyan
+  coal:        '#78716c',   // stone
+  // Base Metals
+  copper:      '#b45309',   // amber-dark
+  copper_lb:   '#b45309',
+  aluminum:    '#9ca3af',   // gray
+  nickel:      '#6b7280',   // gray-dark
+  zinc:        '#71717a',   // zinc
+  iron_ore:    '#92400e',   // brown
+  tin:         '#a16207',   // yellow-dark
+  lead:        '#57534e',   // stone-dark
+  // Agriculture
+  wheat:       '#d97706',   // amber
+  corn:        '#ca8a04',   // yellow
+  soybeans:    '#65a30d',   // lime
+  cotton:      '#e2e8f0',   // slate-light
+  sugar:       '#f9a8d4',   // pink-light
+  coffee:      '#92400e',   // brown
+  cocoa:       '#78350f',   // brown-dark
+  rice:        '#fef3c7',   // amber-light
+  palm_oil:    '#84cc16',   // lime
+  // FX
+  fx_usdinr:   '#f59e0b',
+  fx_usdjpy:   '#ec4899',
+  fx_eurusd:   '#3b82f6',
+  fx_gbpusd:   '#8b5cf6',
+  fx_usdcny:   '#ef4444',
+  fx_usdcad:   '#f97316',
+  fx_usdaud:   '#10b981',
+  fx_usdsgd:   '#06b6d4',
+  fx_usdbrl:   '#84cc16',
+  fx_usdmxn:   '#f43f5e',
+  fx_usdkrw:   '#a855f7',
+  fx_usdchf:   '#64748b',
+  // Real Estate
+  us_home_prices: '#14b8a6',
+  // Rates
+  us_10y:      '#22d3ee',
+  us_2y:       '#67e8f9',
+  us_30y:      '#0891b2',
+  us_3m_tbill: '#a5f3fc',
+  fed_funds:   '#f97316',
+  moodys_baa:  '#fb7185',
+  moodys_aaa:  '#4ade80',
+  spread_10y_2y: '#fbbf24',
+};
+
+// Get color for an asset, with a deterministic fallback
+function assetColor(key) {
+  if (ASSET_COLORS[key]) return ASSET_COLORS[key];
+  // Deterministic fallback from key hash
+  const palette = ['#3b82f6','#f97316','#22d3ee','#fbbf24','#4ade80','#f472b6','#a78bfa','#fb923c'];
+  let h = 0;
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) & 0xffffffff;
+  return palette[Math.abs(h) % palette.length];
+}
+
 // ─── Alpine app ──────────────────────────────────────────────────────────────
 function marketsApp() {
   return {
+    // ── §2.1 Unified app state ────────────────────────────────────────────
+    // Single reactive store consumed by every tab. Changing lens here
+    // changes everything — matrix, detail, drawdowns, correlation, etc.
+    marketState: {
+      lens:        'local',    // 'local' | 'usd' | 'inr' | 'gold' | 'silver'
+      basis:       'nominal',  // 'nominal' | 'real'
+      preset:      'max',      // '1m'|'6m'|'1y'|'2y'|'5y'|'10y'|'max'|'custom'
+      granularity: 'monthly',  // 'monthly' | 'daily'
+      asof:        null,       // populated from JSON on load
+      // §2.5 Time-Range Control — single source of truth for all charts
+      window:      { start: null, end: null },  // YYYY-MM strings
+    },
+
+    // §2.5 Time-Range Control state
+    trcPreset: 'max',   // active preset button
+    trcStartIdx: 0,     // slider index into allMonths
+    trcEndIdx: 0,       // slider index into allMonths
+    _trcAllMonths: [],  // sorted YYYY-MM array for the selected asset
+
     // State
     loading: true,
     loadingReturns: true,
@@ -1481,14 +1864,15 @@ function marketsApp() {
     activeReal: false,    // true = CPI-adjusted
     selectedAsset: null,  // asset key for detail panel, null = closed
     detailLogScale: true, // log scale toggle for detail panel chart
-    detailChartMode: 'returns', // 'returns' | 'price'
-    detailBarHoverInfo: null,   // { year, ret, partial }
+    detailChartMode: 'returns', // 'returns' | 'price' | 'heatmap' | 'multiccy'
+    detailBarHoverInfo: null,   // { year, ret, partial, compareRet }
+    detailCompareAsset: '',     // asset key to compare with in returns bar chart
     colorMode: 'return',  // 'return' | 'zscore'
 
     // Vol Intelligence state
     volLookback: 'All',   // '1Y' | '3Y' | '5Y' | 'All'
     volGranularity: 'Monthly avg',  // 'Daily' | 'Monthly avg'
-    volSubPanel: 'I-1',   // 'I-1' | 'I-2' | 'I-3' | 'I-4'
+    volSubPanel: 'Overview',   // 'Overview' | 'History' | 'Heatmap' | 'Cross-Asset'
     activeVolSeries: new Set(['vix', 'gvz', 'ovx']),
     volHoverInfo: null,
 
@@ -1496,6 +1880,117 @@ function marketsApp() {
     async load() {
       // Load all three in parallel; each handles its own error
       await Promise.all([this._loadPriceLog(), this._loadReturns(), this._loadVol()]);
+      // §4 Deep-link support: ?asset=GOLD&lens=inr restores the exact view
+      this._applyDeepLink();
+    },
+
+    _applyDeepLink() {
+      const params = new URLSearchParams(window.location.search);
+      const assetParam = params.get('asset');
+      const lensParam = params.get('lens');
+      const tabParam = params.get('tab');
+      if (assetParam && this.returnsData?.assets?.[assetParam.toLowerCase()]) {
+        this.selectedAsset = assetParam.toLowerCase();
+        this.activeTab = 'matrix';
+        // Wait for Alpine to flush reactive updates before initialising the
+        // time-range chart — returnsData must be fully rendered first (H1 fix).
+        this.$nextTick(() => this._trcInit(this.selectedAsset));
+      }
+      if (lensParam) {
+        const lensMap = { local: 'Local', usd: 'USD', inr: 'INR', gold: 'Gold', silver: 'Silver' };
+        const mapped = lensMap[lensParam.toLowerCase()];
+        if (mapped) this.activeCcy = mapped;
+      }
+      if (tabParam) {
+        const validTabs = ['matrix','pricelog','yields','periodic','drawdown','holdingperiod','seasonality','correlation','volatility'];
+        if (validTabs.includes(tabParam)) this.activeTab = tabParam;
+      }
+    },
+
+    // ── §2.5 Time-Range Control ───────────────────────────────────────────
+    // Preset bar + dual range slider synced to marketState.window.
+    // Single source of truth: presets and sliders both write window;
+    // charts only read it.
+
+    _trcInit(assetKey) {
+      // Build sorted month list for the selected asset
+      const asset = this.returnsData?.assets?.[assetKey];
+      if (!asset) return;
+      const monthly = asset.monthly || [];
+      this._trcAllMonths = monthly.map(m => m[0]).sort();
+      if (!this._trcAllMonths.length) return;
+      // Default: max range
+      this.trcStartIdx = 0;
+      this.trcEndIdx = this._trcAllMonths.length - 1;
+      this.trcPreset = 'max';
+      this._trcSyncWindow();
+    },
+
+    _trcSyncWindow() {
+      const months = this._trcAllMonths;
+      if (!months.length) return;
+      const start = months[Math.max(0, this.trcStartIdx)];
+      const end = months[Math.min(months.length - 1, this.trcEndIdx)];
+      this.marketState.window = { start, end };
+    },
+
+    trcSetPreset(preset) {
+      const months = this._trcAllMonths;
+      if (!months.length) return;
+      const last = months[months.length - 1];
+      const lastDate = new Date(last + '-01');
+      let startDate;
+      if (preset === 'max') {
+        this.trcStartIdx = 0;
+        this.trcEndIdx = months.length - 1;
+        this.trcPreset = 'max';
+        this._trcSyncWindow();
+        return;
+      }
+      const nMonths = { '1m': 1, '6m': 6, '1y': 12, '2y': 24, '5y': 60, '10y': 120 }[preset];
+      if (!nMonths) return;
+      startDate = new Date(lastDate);
+      startDate.setMonth(startDate.getMonth() - nMonths);
+      const startYm = startDate.getFullYear() + '-' + String(startDate.getMonth() + 1).padStart(2, '0');
+      // Find closest index
+      let startIdx = months.findIndex(m => m >= startYm);
+      if (startIdx < 0) startIdx = 0;
+      // Check if series is shorter than preset
+      if (startIdx === 0 && months[0] > startYm) {
+        // Series shorter than preset — show all available, disable preset highlight
+        this.trcPreset = 'custom';
+      } else {
+        this.trcPreset = preset;
+      }
+      this.trcStartIdx = startIdx;
+      this.trcEndIdx = months.length - 1;
+      this._trcSyncWindow();
+    },
+
+    trcOnStartSlider(val) {
+      const idx = parseInt(val);
+      if (idx >= this.trcEndIdx) return; // enforce min width
+      this.trcStartIdx = idx;
+      this.trcPreset = 'custom';
+      this._trcSyncWindow();
+    },
+
+    trcOnEndSlider(val) {
+      const idx = parseInt(val);
+      if (idx <= this.trcStartIdx) return;
+      this.trcEndIdx = idx;
+      this.trcPreset = 'custom';
+      this._trcSyncWindow();
+    },
+
+    get trcWindowLabel() {
+      const w = this.marketState.window;
+      if (!w.start || !w.end) return '';
+      return `${w.start} → ${w.end}`;
+    },
+
+    get trcMonthCount() {
+      return this.trcEndIdx - this.trcStartIdx + 1;
     },
 
     async _loadPriceLog() {
@@ -1517,6 +2012,10 @@ function marketsApp() {
         const r = await fetch(`data/market_returns.json?v=${bust}`, { cache: 'no-store' });
         if (!r.ok) { this.returnsData = null; return; }
         this.returnsData = await r.json();
+        // Populate unified state asof from JSON
+        if (this.returnsData?.asof) {
+          this.marketState.asof = this.returnsData.asof;
+        }
       } catch (e) {
         console.warn('Returns data not available:', e);
         this.returnsData = null;
@@ -1540,6 +2039,16 @@ function marketsApp() {
     },
 
     // ── Returns matrix computed properties ───────────────────────────────
+
+    // §4 Compare-with asset list (all assets except the selected one)
+    get detailCompareList() {
+      if (!this.returnsData) return [];
+      const assets = this.returnsData.assets || {};
+      return Object.entries(assets)
+        .filter(([k]) => k !== this.selectedAsset)
+        .map(([k, v]) => ({ key: k, name: v.meta?.name || k }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    },
 
     // Category display order — underscore form matches pipeline output (Minor 4 fix)
     _categoryOrder: ['equity', 'precious_metals', 'energy', 'commodities', 'base_metals', 'agriculture', 'fx', 'real_estate'],
@@ -1578,8 +2087,16 @@ function marketsApp() {
       const assets = this.returnsData.assets || {};
       const yearSet = new Set();
       for (const val of Object.values(assets)) {
-        for (const key of Object.keys(val.close || {})) {
-          yearSet.add(parseInt(key.slice(0, 4)));
+        // Support both new format (monthly array) and old format (close dict)
+        const monthly = val.monthly;
+        if (Array.isArray(monthly)) {
+          for (const [ym] of monthly) {
+            yearSet.add(parseInt(ym.slice(0, 4)));
+          }
+        } else {
+          for (const key of Object.keys(val.close || {})) {
+            yearSet.add(parseInt(key.slice(0, 4)));
+          }
         }
       }
       this._matrixYearsCache = Array.from(yearSet).sort((a, b) => b - a); // newest left
@@ -1610,15 +2127,59 @@ function marketsApp() {
       const asset = assets[assetKey];
       if (!asset) return [];
 
-      const rawClose = asset.close || {};
+      // Support both new format (monthly array) and old format (close dict)
+      // Build rawClose as a {YYYY-MM: value} dict regardless of source format
+      let rawClose = {};
+      if (Array.isArray(asset.monthly)) {
+        for (const [ym, val] of asset.monthly) rawClose[ym] = val;
+      } else {
+        rawClose = asset.close || {};
+      }
       const nativeCcy = asset.meta?.native_ccy || 'USD';
       const targetCcy = this.activeCcy;
 
-      // Helper: get FX series from aux (values dict)
+      // Helper: get FX series from aux (values dict) or new top-level fx section
       const aux = this.returnsData?.aux || {};
-      const usdinr = aux.usdinr?.values || {};   // USD per 1 INR (after pipeline inversion)
+      const fxSection = this.returnsData?.fx || {};
+      // USD per 1 INR — from aux.usdinr or fx.USDINR
+      const usdinrRaw = aux.usdinr?.values || {};
+      // Build usdinr lookup from new fx section if available
+      const usdinrFx = {};
+      if (Array.isArray(fxSection.USDINR)) {
+        for (const [ym, val] of fxSection.USDINR) usdinrFx[ym] = val;
+      }
+      const usdinr = Object.keys(usdinrFx).length > 0 ? usdinrFx : usdinrRaw;
+
       // Also check assets for FX series (fx_usdinr, fx_usdjpy, etc.)
       const fxAssets = this.returnsData?.assets || {};
+
+      // Build gold/silver lookup dicts for lens computation
+      const _buildLookup = (assetId) => {
+        const a = fxAssets[assetId];
+        if (!a) return {};
+        if (Array.isArray(a.monthly)) {
+          const d = {};
+          for (const [ym, val] of a.monthly) d[ym] = val;
+          return d;
+        }
+        return a.close || {};
+      };
+      const goldLookup   = _buildLookup('gold');
+      const silverLookup = _buildLookup('silver');
+
+      // Build FX asset lookups
+      const _buildFxLookup = (assetId) => {
+        const a = fxAssets[assetId];
+        if (!a) return {};
+        if (Array.isArray(a.monthly)) {
+          const d = {};
+          for (const [ym, val] of a.monthly) d[ym] = val;
+          return d;
+        }
+        return a.close || {};
+      };
+      const jpyLookup = _buildFxLookup('fx_usdjpy');
+      const eurLookup = _buildFxLookup('fx_eurusd');
 
       // Build a monthly FX multiplier: native → target
       // multiplier[ym] = how many target units per 1 native unit
@@ -1635,11 +2196,11 @@ function marketsApp() {
           if (rate === null) return null;
           nativeToUsd = rate;
         } else if (nativeCcy === 'JPY') {
-          const fxJpy = fxAssets['fx_usdjpy']?.close?.[ym] ?? null;
+          const fxJpy = jpyLookup[ym] ?? fxAssets['fx_usdjpy']?.close?.[ym] ?? null;
           if (fxJpy === null) return null;
           nativeToUsd = fxJpy;
         } else if (nativeCcy === 'EUR') {
-          const fxEur = fxAssets['fx_eurusd']?.close?.[ym] ?? null;
+          const fxEur = eurLookup[ym] ?? fxAssets['fx_eurusd']?.close?.[ym] ?? null;
           if (fxEur === null) return null;
           nativeToUsd = fxEur;
         }
@@ -1657,8 +2218,7 @@ function marketsApp() {
 
         // Gold lens: price in oz of gold
         if (targetCcy === 'Gold') {
-          const goldClose = this.returnsData?.assets?.gold?.close || {};
-          const goldVal = goldClose[ym] ?? null;
+          const goldVal = goldLookup[ym] ?? null;
           if (goldVal === null || goldVal === 0) return null;
           // Convert native → USD first, then divide by gold price
           return nativeToUsd / goldVal;
@@ -1666,8 +2226,7 @@ function marketsApp() {
 
         // Silver lens: price in oz of silver
         if (targetCcy === 'Silver') {
-          const silverClose = this.returnsData?.assets?.silver?.close || {};
-          const silverVal = silverClose[ym] ?? null;
+          const silverVal = silverLookup[ym] ?? null;
           if (silverVal === null || silverVal === 0) return null;
           return nativeToUsd / silverVal;
         }
@@ -1875,6 +2434,72 @@ function marketsApp() {
       2022: 'Rate shock / inflation surge',
     },
 
+    // §6 Event Study state
+    eventStudyEvent: 2008,
+
+    get eventStudyEvents() {
+      return Object.entries(this.matrixEvents).map(([yr, label]) => ({ year: parseInt(yr), label })).sort((a, b) => b.year - a.year);
+    },
+
+    get eventStudyRows() {
+      if (!this.returnsData) return [];
+      const yr = this.eventStudyEvent;
+      const assets = this.returnsData.assets || {};
+      const rows = [];
+
+      for (const [key, asset] of Object.entries(assets)) {
+        const adjusted = this._getAdjustedClose(key);
+        if (adjusted.length < 2) continue;
+
+        // Find the month closest to Jan of the event year
+        const startYm = `${yr}-01`;
+        const startIdx = adjusted.findIndex(p => p.ym >= startYm);
+        if (startIdx < 0) continue;
+
+        const startClose = adjusted[startIdx].close;
+        if (!startClose || startClose <= 0) continue;
+
+        // Event DD: max drawdown from startIdx to startIdx+12
+        const window12 = adjusted.slice(startIdx, startIdx + 13);
+        let peak = startClose, minClose = startClose;
+        for (const { close } of window12) {
+          if (close > peak) peak = close;
+          if (close < minClose) minClose = close;
+        }
+        const eventDd = startClose > 0 ? minClose / startClose - 1 : null;
+
+        // Recovery: months from startIdx until price recovers to startClose
+        let recoveryMonths = null;
+        for (let i = startIdx + 1; i < adjusted.length; i++) {
+          if (adjusted[i].close >= startClose) {
+            recoveryMonths = i - startIdx;
+            break;
+          }
+        }
+
+        // 1Y forward return
+        const idx1y = adjusted.findIndex((p, i) => i > startIdx && p.ym >= `${yr + 1}-01`);
+        const fwd1y = idx1y >= 0 && startClose > 0 ? adjusted[idx1y].close / startClose - 1 : null;
+
+        // 3Y forward return
+        const idx3y = adjusted.findIndex((p, i) => i > startIdx && p.ym >= `${yr + 3}-01`);
+        const fwd3y = idx3y >= 0 && startClose > 0 ? adjusted[idx3y].close / startClose - 1 : null;
+
+        rows.push({
+          key,
+          name: asset.meta?.name || key,
+          color: assetColor(key),
+          eventDd,
+          recoveryMonths,
+          fwd1y,
+          fwd3y,
+        });
+      }
+
+      // Sort by event DD (worst first)
+      return rows.sort((a, b) => (a.eventDd ?? 0) - (b.eventDd ?? 0));
+    },
+
     // ── CSV Export ────────────────────────────────────────────────────────
     exportMatrixCsv() {
       if (!this.returnsData) return;
@@ -1994,7 +2619,27 @@ function marketsApp() {
       const positiveCount = fullYears.filter(y => cache[y].ret > 0).length;
       const pctPositive = fullYears.length > 0 ? positiveCount / fullYears.length : null;
 
-      const stats = { cagr, vol, bestYear, worstYear, pctPositive };
+      // Max drawdown from adjusted close series
+      let maxDd = null, currentDd = null;
+      if (adjusted.length >= 2) {
+        let peak = adjusted[0].close;
+        let worstDd = 0;
+        for (const { close } of adjusted) {
+          if (close > peak) peak = close;
+          const dd = peak > 0 ? close / peak - 1 : 0;
+          if (dd < worstDd) worstDd = dd;
+        }
+        maxDd = worstDd;
+        // Current drawdown vs all-time high
+        const lastClose = adjusted[adjusted.length - 1].close;
+        const ath = Math.max(...adjusted.map(a => a.close));
+        currentDd = ath > 0 ? lastClose / ath - 1 : null;
+      }
+
+      // Return/vol ratio (annualised CAGR / annualised vol)
+      const retVolRatio = (cagr !== null && vol !== null && vol > 0) ? cagr / vol : null;
+
+      const stats = { cagr, vol, bestYear, worstYear, pctPositive, maxDd, currentDd, retVolRatio };
       this._statsCache[ck] = stats;
       return stats;
     },
@@ -2078,7 +2723,29 @@ function marketsApp() {
         cagrLine += `<text x="${W - PR + 3}" y="${(yc + 3.5).toFixed(1)}" style="font-size:8px;fill:#fbbf24;font-family:ui-monospace;opacity:0.7">CAGR ${cagrPct}%</text>`;
       }
 
-      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block;background:#111">${yTicks}${xLabels}${cagrLine}${bars}${crosshair}</svg>`;
+      // Compare asset overlay — dashed line connecting annual returns
+      let compareLine = '';
+      if (this.detailCompareAsset && this.returnsData?.assets?.[this.detailCompareAsset]) {
+        this._buildAnnualCache(this.detailCompareAsset);
+        const compareCache = this._annualCache[this._cacheKey(this.detailCompareAsset)] || {};
+        const compareColor = assetColor(this.detailCompareAsset);
+        const pts = [];
+        for (let i = 0; i < years.length; i++) {
+          const yr = years[i];
+          if (compareCache[yr] !== undefined) {
+            const cx = xScale(i);
+            const cy = yScale(Math.max(-maxAbs, Math.min(maxAbs, compareCache[yr].ret)));
+            pts.push(`${cx.toFixed(1)},${cy.toFixed(1)}`);
+          }
+        }
+        if (pts.length >= 2) {
+          const compareName = this.returnsData.assets[this.detailCompareAsset]?.meta?.name || this.detailCompareAsset;
+          compareLine = `<polyline points="${pts.join(' ')}" fill="none" stroke="${compareColor}" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.8"/>`;
+          compareLine += `<text x="${W - PR}" y="${PT - 6}" text-anchor="end" style="font-size:8px;fill:${compareColor};font-family:ui-monospace;opacity:0.8">— ${compareName}</text>`;
+        }
+      }
+
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block;background:#111">${yTicks}${xLabels}${cagrLine}${bars}${compareLine}${crosshair}</svg>`;
     },
 
     detailBarHover(e) {
@@ -2087,10 +2754,18 @@ function marketsApp() {
       // Find the bar under cursor
       const el = document.elementFromPoint(e.clientX, e.clientY);
       if (el && el.dataset.year) {
+        const yr = parseInt(el.dataset.year);
+        let compareRet = null;
+        if (this.detailCompareAsset) {
+          this._buildAnnualCache(this.detailCompareAsset);
+          const compareCache = this._annualCache[this._cacheKey(this.detailCompareAsset)] || {};
+          compareRet = compareCache[yr]?.ret ?? null;
+        }
         this.detailBarHoverInfo = {
-          year: parseInt(el.dataset.year),
+          year: yr,
           ret: parseFloat(el.dataset.ret),
           partial: el.dataset.partial === '1',
+          compareRet,
         };
         // Move crosshair
         const rect = svg.getBoundingClientRect();
@@ -2115,9 +2790,20 @@ function marketsApp() {
       const asset = this.returnsData.assets[this.selectedAsset];
       if (!asset) return '';
 
-      const rawClose = asset.close || {};
-      const months = Object.keys(rawClose).sort();
-      if (months.length < 2) return '<div style="padding:40px;text-align:center;color:var(--text-3)">Not enough data</div>';
+      // Support both new format (monthly array) and old format (close dict)
+      let rawClose = {};
+      if (Array.isArray(asset.monthly)) {
+        for (const [ym, val] of asset.monthly) rawClose[ym] = val;
+      } else {
+        rawClose = asset.close || {};
+      }
+
+      // §2.5 Apply time-range window filter
+      const win = this.marketState.window;
+      let months = Object.keys(rawClose).sort();
+      if (win.start) months = months.filter(m => m >= win.start);
+      if (win.end)   months = months.filter(m => m <= win.end);
+      if (months.length < 2) return '<div style="padding:40px;text-align:center;color:var(--text-3)">Not enough data in selected range</div>';
 
       const W = 1200, H = 300, PL = 70, PR = 20, PT = 20, PB = 40;
       const chartW = W - PL - PR, chartH = H - PT - PB;
@@ -2184,6 +2870,244 @@ function marketsApp() {
       const title = `<text x="${PL}" y="13" style="font-size:10px;fill:#71717a;font-family:ui-monospace">${nameLabel}${scaleLabel}</text>`;
 
       return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block">${title}${ticks}${xLabels}<path d="${d.trim()}" fill="none" stroke="var(--cyan)" stroke-width="1.5" opacity="0.9"/></svg>`;
+    },
+
+    // ── §4 Monthly Heatmap — year × month, colored by monthly return ──────
+    get assetMonthlyHeatmapHtml() {
+      if (!this.selectedAsset || !this.returnsData) return '';
+      const adjusted = this._getAdjustedClose(this.selectedAsset);
+      if (adjusted.length < 2) return '<div style="padding:40px;text-align:center;color:var(--text-3)">Not enough data</div>';
+
+      // Build monthly returns
+      const monthlyRet = {};
+      for (let i = 1; i < adjusted.length; i++) {
+        const prev = adjusted[i - 1].close, curr = adjusted[i].close;
+        if (prev > 0 && curr != null) monthlyRet[adjusted[i].ym] = curr / prev - 1;
+      }
+
+      // Get all years with data
+      const years = [...new Set(adjusted.map(a => parseInt(a.ym.slice(0, 4))))].sort((a, b) => b - a);
+      const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const CW = 44, RH = 22, LW = 46, HH = 22;
+      const W = LW + 12 * CW + 4, H = HH + years.length * RH + 4;
+
+      let html = `<table style="border-collapse:separate;border-spacing:0;font-size:10px;font-family:ui-monospace;width:${W}px">`;
+      // Header row
+      html += `<thead><tr><th style="position:sticky;left:0;z-index:2;background:var(--bg);min-width:${LW}px;padding:4px 6px;border-bottom:1px solid var(--border-2);color:var(--text-3);font-size:9px;text-align:left">Year</th>`;
+      for (const m of MONTHS) {
+        html += `<th style="width:${CW}px;min-width:${CW}px;height:${HH}px;text-align:center;border-bottom:1px solid var(--border-2);color:var(--text-3);font-size:9px">${m}</th>`;
+      }
+      html += '</tr></thead><tbody>';
+
+      for (const yr of years) {
+        html += `<tr><td style="position:sticky;left:0;z-index:1;background:var(--bg);padding:0 6px;border-bottom:1px solid rgba(255,255,255,0.02);color:var(--text-2);font-size:9px;white-space:nowrap">${yr}</td>`;
+        for (let m = 1; m <= 12; m++) {
+          const ym = `${yr}-${String(m).padStart(2, '0')}`;
+          const ret = monthlyRet[ym] ?? null;
+          if (ret === null) {
+            html += `<td style="width:${CW}px;height:${RH}px;border:1px solid rgba(0,0,0,0.3);"></td>`;
+          } else {
+            const bg = this.cellColor(ret);
+            const fg = this.cellTextColor(ret);
+            const pct = (ret * 100).toFixed(1);
+            const sign = ret >= 0 ? '+' : '';
+            html += `<td style="width:${CW}px;height:${RH}px;background:${bg};color:${fg};text-align:center;border:1px solid rgba(0,0,0,0.3);cursor:default" title="${yr}-${String(m).padStart(2,'0')}: ${sign}${pct}%">${sign}${pct}%</td>`;
+          }
+        }
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+      return html;
+    },
+
+    // ── §4 Multi-Currency Table — all 5 lenses at once ────────────────────
+    // Pure helper: compute annual returns for a given (ccy, real) lens
+    // WITHOUT mutating this.activeCcy / this.activeReal (fixes C3 re-render cascade).
+    _computeAnnualForLens(assetKey, ccy, real) {
+      const assets = this.returnsData?.assets || {};
+      const asset = assets[assetKey];
+      if (!asset) return {};
+
+      // Build rawClose
+      let rawClose = {};
+      if (Array.isArray(asset.monthly)) {
+        for (const [ym, val] of asset.monthly) rawClose[ym] = val;
+      } else {
+        rawClose = asset.close || {};
+      }
+      const nativeCcy = asset.meta?.native_ccy || 'USD';
+
+      // FX lookups (same logic as _getAdjustedClose but parameterised)
+      const aux = this.returnsData?.aux || {};
+      const fxSection = this.returnsData?.fx || {};
+      const fxAssets = this.returnsData?.assets || {};
+      const usdinrRaw = aux.usdinr?.values || {};
+      const usdinrFx = {};
+      if (Array.isArray(fxSection.USDINR)) {
+        for (const [ym, val] of fxSection.USDINR) usdinrFx[ym] = val;
+      }
+      const usdinr = Object.keys(usdinrFx).length > 0 ? usdinrFx : usdinrRaw;
+
+      const _buildLookup = (id) => {
+        const a = fxAssets[id];
+        if (!a) return {};
+        if (Array.isArray(a.monthly)) { const d = {}; for (const [ym, v] of a.monthly) d[ym] = v; return d; }
+        return a.close || {};
+      };
+      const goldLookup = _buildLookup('gold');
+      const jpyLookup  = _buildLookup('fx_usdjpy');
+      const eurLookup  = _buildLookup('fx_eurusd');
+
+      const getMultiplier = (ym) => {
+        if (ccy === 'Local') return 1;
+        let nativeToUsd = 1;
+        if (nativeCcy === 'INR') { const r = usdinr[ym] ?? null; if (r === null) return null; nativeToUsd = r; }
+        else if (nativeCcy === 'JPY') { const r = jpyLookup[ym] ?? null; if (r === null) return null; nativeToUsd = r; }
+        else if (nativeCcy === 'EUR') { const r = eurLookup[ym] ?? null; if (r === null) return null; nativeToUsd = r; }
+        if (ccy === 'USD') return nativeToUsd;
+        if (ccy === 'INR') { const u = usdinr[ym] ?? null; if (!u) return null; return nativeToUsd / u; }
+        if (ccy === 'GOLD') { const g = goldLookup[ym] ?? null; if (!g) return null; return nativeToUsd / g; }
+        return 1;
+      };
+
+      const months = Object.keys(rawClose).sort();
+      const adjusted = [];
+      for (const ym of months) {
+        const raw = rawClose[ym];
+        if (raw == null) continue;
+        const mult = getMultiplier(ym);
+        if (mult === null) continue;
+        adjusted.push({ ym, close: raw * mult });
+      }
+      if (!adjusted.length) return {};
+
+      const firstYr = parseInt(adjusted[0].ym.slice(0, 4));
+      const lastYr  = parseInt(adjusted[adjusted.length - 1].ym.slice(0, 4));
+      const byYear = {};
+      for (const { ym } of adjusted) {
+        const yr = parseInt(ym.slice(0, 4));
+        if (!byYear[yr]) byYear[yr] = [];
+        byYear[yr].push(ym);
+      }
+      const closeByYm = {};
+      for (const { ym, close } of adjusted) closeByYm[ym] = close;
+
+      const result = {};
+      for (const [yrStr, mList] of Object.entries(byYear)) {
+        const yr = parseInt(yrStr);
+        // Find Dec of previous year and Dec of this year
+        const prevDec = `${yr - 1}-12`;
+        const thisDec = `${yr}-12`;
+        const startClose = closeByYm[prevDec] ?? null;
+        const endClose   = closeByYm[thisDec] ?? null;
+        if (startClose && endClose && startClose > 0) {
+          result[yr] = { ret: endClose / startClose - 1, partial: (yr === firstYr || yr === lastYr) };
+        } else if (yr === firstYr || yr === lastYr) {
+          // Partial year: first to last available month
+          const first = adjusted.find(a => a.ym.startsWith(yrStr));
+          const last  = [...adjusted].reverse().find(a => a.ym.startsWith(yrStr));
+          if (first && last && first !== last && first.close > 0) {
+            result[yr] = { ret: last.close / first.close - 1, partial: true };
+          }
+        }
+      }
+      return result;
+    },
+
+    // ── §4 Multi-Currency Table — all 5 lenses at once ────────────────────
+    // Rows = years (newest first), columns = Local / USD / INR / Gold / Real
+    get assetMultiCcyTableHtml() {
+      if (!this.selectedAsset || !this.returnsData) return '';
+      const asset = this.returnsData.assets[this.selectedAsset];
+      if (!asset) return '';
+
+      const lenses = ['local', 'usd', 'inr', 'gold', 'real'];
+      const lensLabels = { local: 'Local', usd: 'USD', inr: 'INR', gold: 'Gold', real: 'Real (CPI)' };
+
+      // Build annual returns for each lens
+      const annualByLens = {};
+      for (const lens of lenses) {
+        let adjusted;
+        if (lens === 'real') {
+          // Real = local + CPI deflation
+          adjusted = this._getAdjustedClose(this.selectedAsset);
+          // Apply CPI deflation
+          const aux = this.returnsData?.aux || {};
+          const cpiVals = aux.us_cpi?.values || {};
+          const cpiMonths = Object.keys(cpiVals).sort();
+          const cpiRet = {};
+          for (let i = 1; i < cpiMonths.length; i++) {
+            const prev = cpiVals[cpiMonths[i - 1]], curr = cpiVals[cpiMonths[i]];
+            if (prev > 0 && curr != null) cpiRet[cpiMonths[i]] = curr / prev - 1;
+          }
+          // Build annual with real adjustment
+          const monthlyRet = {};
+          for (let i = 1; i < adjusted.length; i++) {
+            const prev = adjusted[i - 1].close, curr = adjusted[i].close;
+            if (prev > 0 && curr != null) monthlyRet[adjusted[i].ym] = curr / prev - 1;
+          }
+          const byYear = {};
+          for (const { ym } of adjusted) {
+            const yr = parseInt(ym.slice(0, 4));
+            byYear[yr] = byYear[yr] || [];
+            byYear[yr].push(ym);
+          }
+          const firstYr = parseInt(adjusted[0].ym.slice(0, 4));
+          const lastYr = parseInt(adjusted[adjusted.length - 1].ym.slice(0, 4));
+          const result = {};
+          for (const [yr, mList] of Object.entries(byYear)) {
+            let compound = 1, count = 0;
+            for (const ym of mList) {
+              const nom = monthlyRet[ym];
+              if (nom === undefined) continue;
+              const inf = cpiRet[ym] || 0;
+              compound *= (1 + nom) / (1 + inf);
+              count++;
+            }
+            if (count > 0) result[parseInt(yr)] = { ret: compound - 1, partial: (parseInt(yr) === firstYr || parseInt(yr) === lastYr) };
+          }
+          annualByLens[lens] = result;
+        } else {
+          // Use pure helper — does NOT mutate this.activeCcy / this.activeReal
+          const ccy = lens === 'local' ? 'Local' : lens.toUpperCase();
+          annualByLens[lens] = this._computeAnnualForLens(this.selectedAsset, ccy, false);
+        }
+      }
+
+      // Get all years
+      const allYears = new Set();
+      for (const annual of Object.values(annualByLens)) {
+        for (const yr of Object.keys(annual)) allYears.add(parseInt(yr));
+      }
+      const years = [...allYears].sort((a, b) => b - a);
+
+      const CW = 90, LW = 50, RH = 24, HH = 28;
+      let html = `<table style="border-collapse:separate;border-spacing:0;font-size:10px;font-family:ui-monospace">`;
+      html += `<thead><tr><th style="position:sticky;left:0;z-index:2;background:var(--bg);min-width:${LW}px;padding:4px 8px;border-bottom:1px solid var(--border-2);color:var(--text-3);font-size:9px;text-align:left">Year</th>`;
+      for (const lens of lenses) {
+        html += `<th style="min-width:${CW}px;padding:4px 8px;border-bottom:1px solid var(--border-2);color:var(--text-3);font-size:9px;text-align:right">${lensLabels[lens]}</th>`;
+      }
+      html += '</tr></thead><tbody>';
+
+      for (const yr of years) {
+        html += `<tr><td style="position:sticky;left:0;z-index:1;background:var(--bg);padding:2px 8px;border-bottom:1px solid rgba(255,255,255,0.02);color:var(--text-2);font-size:9px">${yr}</td>`;
+        for (const lens of lenses) {
+          const data = annualByLens[lens]?.[yr];
+          if (!data) {
+            html += `<td style="padding:2px 8px;text-align:right;border-bottom:1px solid rgba(255,255,255,0.02);color:var(--text-3)">—</td>`;
+          } else {
+            const ret = data.ret;
+            const pct = (ret * 100).toFixed(1);
+            const sign = ret >= 0 ? '+' : '';
+            const color = ret >= 0 ? 'var(--up)' : 'var(--down)';
+            const opacity = data.partial ? 'opacity:0.5;' : '';
+            html += `<td style="padding:2px 8px;text-align:right;border-bottom:1px solid rgba(255,255,255,0.02);color:${color};${opacity}font-variant-numeric:tabular-nums">${sign}${pct}%</td>`;
+          }
+        }
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+      return html;
     },
 
     // ── Category chip styles ──────────────────────────────────────────────
@@ -2527,7 +3451,7 @@ function marketsApp() {
       return keys.map((k, i) => ({
         key: k,
         shortName: assets[k].meta?.name?.split(' ').slice(0, 2).join(' ') || k,
-        color: this._assetPalette[i % this._assetPalette.length],
+        color: assetColor(k),
         category: assets[k].meta?.category || '',
       }));
     },
@@ -2546,63 +3470,74 @@ function marketsApp() {
       return Array.from(cats).map(c => ({ key: c, label: labels[c] || c }));
     },
 
+    // §5.4 Periodic Table — fixed overflow, responsive cells, sticky header
+    periodicYearWindow: 25,  // default: show last 25 years
+
     get periodicTableHtml() {
       const assets = this.periodicAssets;
       if (!assets.length) return '<div style="padding:40px;text-align:center;color:var(--text-3)">No assets match filter</div>';
 
-      const years = this.matrixYears;
+      // Cap to last N years (default 25) — prevents overflow
+      const allYears = this.matrixYears; // newest first
+      const years = allYears.slice(0, this.periodicYearWindow);
       if (!years.length) return '';
 
-      // Pre-build annual returns lookup: { assetKey: { year: ret } }
-      // This warms _buildAnnualCache for all assets in one pass (Bug 5 fix).
+      // Pre-build annual returns lookup
       const retLookup = {};
       for (const a of assets) {
         this._buildAnnualCache(a.key);
         const ck = this._cacheKey(a.key);
-        const cache = this._annualCache[ck] || {};
-        retLookup[a.key] = cache;
+        retLookup[a.key] = this._annualCache[ck] || {};
       }
 
-      const CELL_W = 80, CELL_H = 26, HEADER_H = 24;
-      const nYears = years.length;
-      const nAssets = assets.length;
-      const W = nYears * CELL_W + 2;
-      const H = nAssets * CELL_H + HEADER_H + 2;
-
-      let html = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:${Math.min(W, 1400)}px;height:${H}px;display:block;overflow:visible">`;
-
-      // Year headers
-      for (let yi = 0; yi < nYears; yi++) {
-        const yr = years[yi];
-        const x = yi * CELL_W + 1;
-        html += `<text x="${x + CELL_W / 2}" y="${HEADER_H - 6}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${yr}</text>`;
-      }
-
-      // For each year, sort assets by return using pre-built lookup
-      for (let yi = 0; yi < nYears; yi++) {
-        const yr = years[yi];
-        const ranked = assets.map(a => {
+      // For each year, sort assets by return
+      const rankedByYear = {};
+      for (const yr of years) {
+        rankedByYear[yr] = assets.map(a => {
           const cd = retLookup[a.key]?.[yr];
           return { ...a, ret: cd ? cd.ret : null };
-        }).filter(a => a.ret !== null)
-          .sort((a, b) => b.ret - a.ret);
-
-        for (let ri = 0; ri < ranked.length; ri++) {
-          const a = ranked[ri];
-          const x = yi * CELL_W + 1;
-          const y = HEADER_H + ri * CELL_H + 1;
-          const pct = (a.ret * 100).toFixed(0);
-          const sign = a.ret >= 0 ? '+' : '';
-          const textColor = Math.abs(a.ret) > 0.15 ? 'rgba(255,255,255,0.95)' : 'rgba(0,0,0,0.8)';
-          const tip = `${a.shortName}\\n${yr}: ${sign}${(a.ret * 100).toFixed(1)}%`;
-          html += `<rect x="${x}" y="${y}" width="${CELL_W - 1}" height="${CELL_H - 1}" fill="${a.color}" rx="1"
-                         style="cursor:pointer" onmouseenter="document.getElementById('tt').innerHTML='${tip.replace(/'/g, '&#39;')}';document.getElementById('tt').style.opacity='1';_posTt(this)" onmouseleave="document.getElementById('tt').style.opacity='0'"/>`;
-          html += `<text x="${x + 4}" y="${y + 10}" style="font-size:8px;fill:${textColor};font-family:ui-monospace;font-weight:600;pointer-events:none">${a.shortName.slice(0, 8)}</text>`;
-          html += `<text x="${x + 4}" y="${y + 20}" style="font-size:8px;fill:${textColor};font-family:ui-monospace;pointer-events:none">${sign}${pct}%</text>`;
-        }
+        }).filter(a => a.ret !== null).sort((a, b) => b.ret - a.ret);
       }
 
-      html += '</svg>';
+      const nAssets = assets.length;
+      const CW = Math.max(52, Math.min(80, Math.floor(1200 / years.length)));
+      const RH = 24;
+
+      // Build HTML table — responsive, sticky header, hover highlight
+      let html = `<table id="periodic-tbl" style="border-collapse:separate;border-spacing:1px;font-size:9px;font-family:ui-monospace;table-layout:fixed;width:${years.length * (CW + 1)}px">`;
+      // Sticky year header
+      html += `<thead><tr>`;
+      for (const yr of years) {
+        html += `<th style="position:sticky;top:0;z-index:2;background:var(--bg);width:${CW}px;min-width:${CW}px;height:22px;text-align:center;color:var(--text-3);font-size:9px;border-bottom:1px solid var(--border-2);padding:2px 0">${yr}</th>`;
+      }
+      html += `</tr></thead><tbody>`;
+
+      // Rows = rank positions (1 = best, nAssets = worst)
+      for (let ri = 0; ri < nAssets; ri++) {
+        html += `<tr>`;
+        for (const yr of years) {
+          const ranked = rankedByYear[yr];
+          const a = ranked[ri];
+          if (!a) {
+            html += `<td style="width:${CW}px;height:${RH}px;"></td>`;
+            continue;
+          }
+          const pct = (a.ret * 100).toFixed(0);
+          const sign = a.ret >= 0 ? '+' : '';
+          const textColor = Math.abs(a.ret) > 0.15 ? 'rgba(255,255,255,0.95)' : 'rgba(0,0,0,0.85)';
+          const tip = `${a.shortName}: ${yr} ${sign}${(a.ret * 100).toFixed(1)}%`;
+          html += `<td style="width:${CW}px;height:${RH}px;background:${a.color};border-radius:2px;cursor:pointer;vertical-align:middle;padding:1px 3px;overflow:hidden"
+                       title="${tip}"
+                       onmouseenter="(function(el){var k='${a.key}';document.querySelectorAll('[data-pkey]').forEach(function(c){c.style.opacity=c.dataset.pkey===k?'1':'0.15'});el.style.opacity='1'})(this)"
+                       onmouseleave="document.querySelectorAll('[data-pkey]').forEach(function(c){c.style.opacity='1'})"
+                       data-pkey="${a.key}">
+                    <div style="color:${textColor};font-weight:600;font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.shortName.slice(0, 7)}</div>
+                    <div style="color:${textColor};font-size:8px">${sign}${pct}%</div>
+                  </td>`;
+        }
+        html += `</tr>`;
+      }
+      html += `</tbody></table>`;
       return html;
     },
 
@@ -2622,7 +3557,7 @@ function marketsApp() {
         shortName: assets[k].meta?.name?.split(' ').slice(0, 3).join(' ') || k,
         name: assets[k].meta?.name || k,
         category: (assets[k].meta?.category || 'other').toLowerCase(),
-        color: this._assetPalette[i % this._assetPalette.length],
+        color: assetColor(k),
       }));
     },
 
@@ -2888,6 +3823,38 @@ function marketsApp() {
           monthsToRecover = Math.round((r - p) / (1000 * 60 * 60 * 24 * 30.5));
         }
 
+        // §5.5 Ulcer Index = √mean(DD²) — captures depth × duration
+        let ulcerIndex = null;
+        {
+          let peak = data[0].close;
+          const ddSeries = [];
+          for (const { close } of data) {
+            if (close > peak) peak = close;
+            const dd = peak > 0 ? close / peak - 1 : 0;
+            ddSeries.push(dd);
+          }
+          if (ddSeries.length > 0) {
+            const meanSq = ddSeries.reduce((s, d) => s + d * d, 0) / ddSeries.length;
+            ulcerIndex = Math.sqrt(meanSq) * 100; // as percentage
+          }
+        }
+
+        // §5.5 Current-DD percentile: how bad is today vs all historical drawdowns
+        let currentDdPctile = null;
+        {
+          let peak = data[0].close;
+          const allDds = [];
+          for (const { close } of data) {
+            if (close > peak) peak = close;
+            const dd = peak > 0 ? close / peak - 1 : 0;
+            allDds.push(dd);
+          }
+          if (allDds.length > 0 && currentDd !== null) {
+            const below = allDds.filter(d => d >= currentDd).length; // dd is negative, so >= means less severe
+            currentDdPctile = 1 - below / allDds.length; // percentile of severity
+          }
+        }
+
         return {
           key: a.key, name: a.name, color: a.color,
           maxDd: worstDd !== 0 ? worstDd : null,
@@ -2896,6 +3863,8 @@ function marketsApp() {
           recoveryDate: worstRecoveryDate,
           monthsToRecover,
           currentDd: currentDd !== null && currentDd < -0.001 ? currentDd : 0,
+          ulcerIndex,
+          currentDdPctile,
         };
       }).sort((a, b) => (a.maxDd ?? 0) - (b.maxDd ?? 0));  // worst first
     },
@@ -2936,16 +3905,24 @@ function marketsApp() {
       if (!rolls.length) return [];
       const rets = rolls.map(r => r.ret).sort((a, b) => a - b);
       const n = rets.length;
+      const pct = (p) => rets[Math.min(Math.floor(p * n), n - 1)];
       const median = n % 2 === 0 ? (rets[n/2-1] + rets[n/2]) / 2 : rets[Math.floor(n/2)];
       const pctPos = rets.filter(r => r > 0).length / n;
+      const neverLost = rets.every(r => r >= 0);
       const fmt = v => (v >= 0 ? '+' : '') + (v * 100).toFixed(1) + '%';
-      return [
+      const kpis = [
         { label: 'Best Window',  value: fmt(rets[n-1]), color: 'var(--up)' },
-        { label: 'Worst Window', value: fmt(rets[0]),   color: 'var(--down)' },
+        { label: '75th %ile',    value: fmt(pct(0.75)), color: 'var(--up)' },
         { label: 'Median',       value: fmt(median),    color: 'var(--text)' },
+        { label: '25th %ile',    value: fmt(pct(0.25)), color: 'var(--amber)' },
+        { label: 'Worst Window', value: fmt(rets[0]),   color: 'var(--down)' },
         { label: '% Positive',   value: (pctPos*100).toFixed(0)+'%', color: pctPos >= 0.7 ? 'var(--up)' : pctPos >= 0.5 ? 'var(--amber)' : 'var(--down)' },
         { label: 'Windows',      value: n.toString(),   color: 'var(--text-3)' },
       ];
+      if (neverLost) {
+        kpis.push({ label: '✓ Never Lost', value: this.hpHorizon + 'Y', color: 'var(--up)' });
+      }
+      return kpis;
     },
 
     get hpChartSvg() {
@@ -3037,16 +4014,18 @@ function marketsApp() {
 
     activeCorrAssets: new Set(['sp500', 'gold', 'wti_crude', 'sensex', 'us_home_prices']),
     growthHoverInfo: null,
+    rollingCorrBase: 'sp500',  // §5.8 base asset for rolling correlation
+    corrSubTab: 'growth',      // 'growth' | 'matrix' | 'rolling' | 'ratios'
 
     get corrAssetList() {
       if (!this.returnsData) return [];
       const assets = this.returnsData.assets || {};
-      const preferred = ['sp500', 'nasdaq', 'gold', 'silver', 'wti_crude', 'copper', 'sensex', 'nikkei', 'dax', 'us_home_prices', 'wheat', 'fx_eurusd'];
+      const preferred = ['sp500', 'nasdaq', 'gold', 'silver', 'wti_crude', 'copper_lb', 'sensex', 'nikkei', 'dax', 'us_home_prices', 'wheat', 'fx_eurusd'];
       return preferred.filter(k => assets[k]).map((k, i) => ({
         key: k,
         shortName: assets[k].meta?.name?.split(' ').slice(0, 2).join(' ') || k,
         name: assets[k].meta?.name || k,
-        color: this._assetPalette[i % this._assetPalette.length],
+        color: assetColor(k),
       }));
     },
 
@@ -3207,7 +4186,164 @@ function marketsApp() {
       return result;
     },
 
+    // §5.8 Rolling 12-month correlation chart
+    get rollingCorrChartSvg() {
+      if (!this.returnsData) return '';
+      const baseKey = this.rollingCorrBase;
+      const baseRets = this._monthlyRetSeries(baseKey);
+      if (!baseRets || Object.keys(baseRets).length < 13) {
+        return '<div style="padding:40px;text-align:center;color:var(--text-3)">Not enough data for rolling correlation</div>';
+      }
+
+      const active = this.activeCorrAssets;
+      const assetDefs = this.corrAssetList.filter(a => active.has(a.key) && a.key !== baseKey);
+      if (!assetDefs.length) return '<div style="padding:40px;text-align:center;color:var(--text-3)">Select assets to compare</div>';
+
+      const WINDOW = 12; // 12-month rolling window
+      const allMonths = Object.keys(baseRets).sort();
+
+      // Compute rolling correlation for each asset vs base
+      const series = {};
+      for (const a of assetDefs) {
+        const aRets = this._monthlyRetSeries(a.key);
+        if (!aRets) continue;
+        const pts = [];
+        for (let i = WINDOW; i < allMonths.length; i++) {
+          const window = allMonths.slice(i - WINDOW, i);
+          const bVals = window.map(m => baseRets[m]).filter(v => v != null);
+          const aVals = window.map(m => aRets[m]).filter(v => v != null);
+          const n = Math.min(bVals.length, aVals.length);
+          if (n < 6) continue;
+          const bSlice = bVals.slice(0, n), aSlice = aVals.slice(0, n);
+          const bMean = bSlice.reduce((s, v) => s + v, 0) / n;
+          const aMean = aSlice.reduce((s, v) => s + v, 0) / n;
+          let cov = 0, bVar = 0, aVar = 0;
+          for (let j = 0; j < n; j++) {
+            cov += (bSlice[j] - bMean) * (aSlice[j] - aMean);
+            bVar += (bSlice[j] - bMean) ** 2;
+            aVar += (aSlice[j] - aMean) ** 2;
+          }
+          const corr = (bVar > 0 && aVar > 0) ? cov / Math.sqrt(bVar * aVar) : 0;
+          pts.push({ ym: allMonths[i], corr: Math.max(-1, Math.min(1, corr)) });
+        }
+        if (pts.length >= 2) series[a.key] = { pts, color: a.color, name: a.name };
+      }
+
+      if (!Object.keys(series).length) return '<div style="padding:40px;text-align:center;color:var(--text-3)">Not enough overlapping data</div>';
+
+      const W = 1200, H = 200, PL = 40, PR = 20, PT = 15, PB = 30;
+      const chartW = W - PL - PR, chartH = H - PT - PB;
+      const allPts = Object.values(series).flatMap(s => s.pts);
+      const allYms = [...new Set(allPts.map(p => p.ym))].sort();
+      if (!allYms.length) return '';
+
+      const xS = (ym) => PL + ((allYms.indexOf(ym)) / Math.max(allYms.length - 1, 1)) * chartW;
+      const yS = (v) => PT + chartH / 2 - (v / 1) * (chartH / 2);
+      const y0 = yS(0);
+
+      // Grid lines
+      let grid = '';
+      for (const v of [-1, -0.5, 0, 0.5, 1]) {
+        const y = yS(v);
+        grid += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W-PR}" y2="${y.toFixed(1)}" stroke="${v === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.04)'}" stroke-width="${v === 0 ? 1.5 : 1}"/>`;
+        grid += `<text x="${PL-4}" y="${(y+3.5).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${v >= 0 ? '+' : ''}${v.toFixed(1)}</text>`;
+      }
+
+      // X-axis labels (every 5 years)
+      let xLabels = '';
+      for (const ym of allYms) {
+        if (ym.slice(5) === '01' && parseInt(ym.slice(0, 4)) % 5 === 0) {
+          const x = xS(ym);
+          xLabels += `<text x="${x.toFixed(1)}" y="${H-8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${ym.slice(0, 4)}</text>`;
+        }
+      }
+
+      // Lines per asset
+      let lines = '';
+      const baseName = this.returnsData?.assets?.[baseKey]?.meta?.name || baseKey;
+      for (const [key, s] of Object.entries(series)) {
+        const pts = s.pts.filter(p => allYms.includes(p.ym));
+        if (pts.length < 2) continue;
+        const d = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${xS(p.ym).toFixed(1)},${yS(p.corr).toFixed(1)}`).join(' ');
+        lines += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="1.5" opacity="0.85"/>`;
+        // Label at end
+        const last = pts[pts.length - 1];
+        lines += `<text x="${(xS(last.ym) + 4).toFixed(1)}" y="${(yS(last.corr) + 3).toFixed(1)}" style="font-size:8px;fill:${s.color};font-family:ui-monospace">${s.name.slice(0, 8)}</text>`;
+      }
+
+      const title = `<text x="${PL}" y="12" style="font-size:9px;fill:#71717a;font-family:ui-monospace">12M rolling corr vs ${baseName}</text>`;
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block;background:var(--surface)">${title}${grid}${xLabels}${lines}</svg>`;
+    },
+
     // ── View I: Volatility Intelligence ──────────────────────────────────
+
+    // §6 Cross-asset ratio charts
+    get ratioCharts() {
+      if (!this.returnsData) return [];
+      const assets = this.returnsData.assets || {};
+
+      const RATIOS = [
+        { id: 'gold_silver',  title: 'Gold / Silver Ratio',    num: 'gold',      den: 'silver',     description: 'Risk appetite — rising = risk-off' },
+        { id: 'copper_gold',  title: 'Copper / Gold Ratio',    num: 'copper_lb', den: 'gold',       description: 'Growth vs fear — rising = growth' },
+        { id: 'oil_gold',     title: 'Oil / Gold Ratio',       num: 'wti_crude', den: 'gold',       description: 'Energy vs safety' },
+        { id: 'sp500_gold',   title: 'S&P 500 / Gold Ratio',   num: 'sp500',     den: 'gold',       description: 'Equity vs hard assets' },
+      ];
+
+      return RATIOS.map(r => {
+        const numAsset = assets[r.num];
+        const denAsset = assets[r.den];
+        if (!numAsset || !denAsset) return { ...r, svg: '<div style="padding:20px;text-align:center;color:var(--text-3)">Data not available</div>' };
+
+        // Build ratio series from monthly arrays
+        const numClose = {};
+        if (Array.isArray(numAsset.monthly)) for (const [ym, v] of numAsset.monthly) numClose[ym] = v;
+        else for (const [ym, v] of Object.entries(numAsset.close || {})) numClose[ym] = v;
+
+        const denClose = {};
+        if (Array.isArray(denAsset.monthly)) for (const [ym, v] of denAsset.monthly) denClose[ym] = v;
+        else for (const [ym, v] of Object.entries(denAsset.close || {})) denClose[ym] = v;
+
+        const months = Object.keys(numClose).filter(m => denClose[m] != null && numClose[m] != null && denClose[m] > 0).sort();
+        if (months.length < 2) return { ...r, svg: '<div style="padding:20px;text-align:center;color:var(--text-3)">Not enough overlapping data</div>' };
+
+        const ratioSeries = months.map(m => ({ ym: m, val: numClose[m] / denClose[m] }));
+
+        // Build SVG line chart
+        const W = 600, H = 140, PL = 50, PR = 15, PT = 15, PB = 25;
+        const chartW = W - PL - PR, chartH = H - PT - PB;
+        const vals = ratioSeries.map(p => p.val);
+        const minV = Math.min(...vals), maxV = Math.max(...vals);
+        const range = maxV - minV || 1;
+        const xS = (i) => PL + (i / Math.max(ratioSeries.length - 1, 1)) * chartW;
+        const yS = (v) => PT + chartH - ((v - minV) / range) * chartH;
+
+        // Y ticks
+        let ticks = '';
+        for (let i = 0; i <= 3; i++) {
+          const v = minV + range * i / 3;
+          const y = yS(v);
+          ticks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W-PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>`;
+          ticks += `<text x="${PL-4}" y="${(y+3.5).toFixed(1)}" text-anchor="end" style="font-size:8px;fill:#52525b;font-family:ui-monospace">${v.toFixed(v < 10 ? 2 : 1)}</text>`;
+        }
+
+        // X labels (every 10 years)
+        let xLabels = '';
+        for (let i = 0; i < ratioSeries.length; i++) {
+          const ym = ratioSeries[i].ym;
+          if (ym.slice(5) === '01' && parseInt(ym.slice(0, 4)) % 10 === 0) {
+            xLabels += `<text x="${xS(i).toFixed(1)}" y="${H-6}" text-anchor="middle" style="font-size:8px;fill:#52525b;font-family:ui-monospace">${ym.slice(0, 4)}</text>`;
+          }
+        }
+
+        // Line
+        const d = ratioSeries.map((p, i) => `${i === 0 ? 'M' : 'L'}${xS(i).toFixed(1)},${yS(p.val).toFixed(1)}`).join(' ');
+        const lastVal = ratioSeries[ratioSeries.length - 1].val;
+        const color = assetColor(r.num);
+
+        const svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;background:var(--surface)">${ticks}${xLabels}<path d="${d}" fill="none" stroke="${color}" stroke-width="1.5" opacity="0.9"/><text x="${W-PR}" y="${PT+10}" text-anchor="end" style="font-size:9px;fill:${color};font-family:ui-monospace">${lastVal.toFixed(lastVal < 10 ? 2 : 1)}</text></svg>`;
+        return { ...r, svg };
+      });
+    },
 
     // Series definitions for vol chart (7 CBOE indices with distinct colors)
     get volSeriesDefs() {
@@ -3353,13 +4489,72 @@ function marketsApp() {
       return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block"><path d="${d.trim()}" fill="none" stroke="${color}" stroke-width="1.5" opacity="0.8"/></svg>`;
     },
 
+    // §5.9 Regime banner — auto-generated from z-scores
+    get volRegimeBanner() {
+      if (!this.volData) return '';
+      const tiles = this.volTiles;
+      if (!tiles.length) return 'No volatility data available.';
+
+      const stressed = tiles.filter(t => t.z !== null && t.z >= 1.5).sort((a, b) => b.z - a.z);
+      const calm = tiles.filter(t => t.z !== null && t.z <= -1.0).sort((a, b) => a.z - b.z);
+      const parts = [];
+
+      if (stressed.length > 0) {
+        for (const t of stressed.slice(0, 2)) {
+          const pct = t.percentile !== null ? Math.round(t.percentile * 100) : null;
+          const regime = t.regime || 'Elevated';
+          const pctStr = pct !== null ? ` (${pct}th percentile)` : '';
+          parts.push(`<span style="color:var(--down)">${t.description} (${t.name}) is in <strong>${regime}</strong> territory at ${t.z >= 0 ? '+' : ''}${t.z.toFixed(2)}σ${pctStr}.</span>`);
+        }
+      }
+      if (calm.length > 0) {
+        for (const t of calm.slice(0, 1)) {
+          const pct = t.percentile !== null ? Math.round(t.percentile * 100) : null;
+          const pctStr = pct !== null ? ` (${pct}th percentile)` : '';
+          parts.push(`<span style="color:var(--up)">${t.description} (${t.name}) is <strong>Calm</strong>${pctStr}.</span>`);
+        }
+      }
+      if (parts.length === 0) {
+        const vix = tiles.find(t => t.key === 'vix');
+        if (vix && vix.current !== null) {
+          const pct = vix.percentile !== null ? Math.round(vix.percentile * 100) : null;
+          const pctStr = pct !== null ? ` — ${pct}th percentile` : '';
+          parts.push(`<span style="color:var(--text-2)">Volatility is broadly <strong>Normal</strong>. VIX at ${vix.current.toFixed(1)}${pctStr}.</span>`);
+        } else {
+          parts.push('<span style="color:var(--text-3)">Volatility data loading…</span>');
+        }
+      }
+      return parts.join(' ');
+    },
+
     // I-1: Tile data for all 7 vol indices
     get volTiles() {
       if (!this.volData) return [];
       return this.volSeriesDefs.map(s => {
         const { z, mean, stdev, current } = this.computeZScore(s.key, this.volLookback);
         const meta = this.volData.series?.[s.key]?.meta || {};
+
+        // §5.9 Percentile rank (more intuitive than z-score)
+        let percentile = null;
+        if (current !== null) {
+          const series = this.volData.series || {};
+          const daily = series[s.key]?.daily || {};
+          const allVals = Object.values(daily).filter(v => v != null && typeof v === 'number');
+          if (allVals.length > 0) {
+            const below = allVals.filter(v => v <= current).length;
+            percentile = below / allVals.length;
+          }
+        }
+
+        // §5.9 Regime word from percentile
+        const regime = percentile === null ? 'Unknown' :
+          percentile >= 0.95 ? 'Crisis' :
+          percentile >= 0.80 ? 'Stress' :
+          percentile >= 0.60 ? 'Elevated' :
+          percentile >= 0.30 ? 'Normal' : 'Calm';
+
         const zLabel = z !== null ? (z >= 0 ? '+' : '') + z.toFixed(2) + 'σ' : '—';
+        const pctLabel = percentile !== null ? Math.round(percentile * 100) + 'th %ile' : '—';
         const zBadgeBg = z === null ? 'rgba(161,161,170,0.1)' :
           z < -1 ? 'rgba(52,211,153,0.15)' :
           z < 1  ? 'rgba(161,161,170,0.1)' :
@@ -3375,6 +4570,9 @@ function marketsApp() {
           mean,
           stdev,
           zLabel,
+          pctLabel,
+          regime,
+          percentile,
           zColor: this._zColor(z),
           zBadgeBg,
           zBadgeColor,

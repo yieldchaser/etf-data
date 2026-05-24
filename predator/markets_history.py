@@ -52,6 +52,14 @@ class _SafeEncoder(json.JSONEncoder):
         return obj
 
 
+def _write_json_atomic(path: Path, text: str) -> None:
+    """Write JSON atomically: write to .tmp then os.replace to avoid truncated files."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, path)
+
+
 def _dumps(obj: Any, **kwargs) -> str:
     """json.dumps using _SafeEncoder (NaN → null)."""
     kwargs.setdefault("cls", _SafeEncoder)
@@ -369,9 +377,9 @@ AUX_REGISTRY: list[dict[str, str]] = [
 ALL_SERIES = ASSET_REGISTRY + AUX_REGISTRY + RATES_REGISTRY
 
 # Cache directory for parquet files
-CACHE_DIR = Path("data/markets_history")
+CACHE_DIR = Path(__file__).resolve().parent.parent / "data" / "markets_history"
 # Output path
-OUTPUT_PATH = Path("docs/data/market_returns.json")
+OUTPUT_PATH = Path(__file__).resolve().parent.parent / "docs" / "data" / "market_returns.json"
 # Trailing months to refetch on incremental runs
 INCREMENTAL_TRAILING_MONTHS = 3
 
@@ -489,6 +497,9 @@ def _fetch_yfinance_series(
         close = data["Close"]
 
     close = close.dropna()
+    # Ensure tz-naive index to avoid concat issues with mixed tz-aware/naive series
+    if hasattr(close.index, 'tz') and close.index.tz is not None:
+        close = close.tz_localize(None)
 
     # Merge with existing if incremental
     if not full_refresh and existing is not None and not existing.empty:
@@ -674,119 +685,244 @@ def build_output(results: dict[str, pd.Series]) -> dict[str, Any]:
     """
     Build the market_returns.json structure from fetched data.
 
-    Returns the full JSON-serialisable dict.
-    """
-    output: dict[str, Any] = {
-        "generated_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "default_return_type": "price",
-        "aux": {},
-        "assets": {},
-        "rates": {},
+    Emits the §2.3 canonical contract shape so it is compatible with
+    ingest_markets_xl.py and the dashboard JavaScript:
+    {
+      "asof": "YYYY-MM",
+      "generated_utc": "...",
+      "assets": { key: { "meta": {...}, "monthly": [[YYYY-MM, val], ...] } },
+      "fx":    { "USDINR": [[YYYY-MM, val], ...], ... },
+      "cpi":   { "US": [[YYYY-MM, val], ...] },
+      "rates": { key: { "meta": {...}, "values": [[YYYY-MM, val], ...] } },
+      "events": [...]
     }
 
-    # Build aux section
-    for spec in AUX_REGISTRY:
-        key = spec["key"]
-        data = results.get(key)
-        if data is None or data.empty:
-            data = _read_cache(key)
-        if data is not None and not data.empty:
-            output["aux"][key] = {
-                "values": _series_to_monthly_dict(data),
-            }
+    Key changes vs old format:
+    - assets use "monthly" (sorted list of [YYYY-MM, val]) not "close" (dict)
+    - FX series go into top-level "fx" section (not inside "assets")
+    - CPI goes into top-level "cpi" section (not inside "aux")
+    - rates use "values" as sorted list of [YYYY-MM, val]
+    - "asof" field added
 
-    # Build assets section (includes FX inversion)
+    This function MERGES with the existing JSON so that Excel deep-history
+    (gold from 1833, S&P from 1871) is preserved when markets_history.py
+    only fetches recent data.
+    """
+    from datetime import date as _date
+    from predator.ingest_markets_xl import (
+        EVENTS as _EVENTS,
+        load_existing as _load_xl_existing,
+        merge_monthly as _merge_monthly_fn,
+    )
+
+    # Load existing JSON to preserve Excel deep-history
+    existing = _load_xl_existing(OUTPUT_PATH)
+    existing_assets = existing.get("assets", {})
+
+    def _to_monthly_list(data: pd.Series) -> list[list]:
+        """Convert pandas Series with datetime index to sorted [[YYYY-MM, val]] list."""
+        if data is None or data.empty:
+            return []
+        result = []
+        for dt, val in data.items():
+            if pd.isna(val):
+                continue
+            ym = pd.Timestamp(dt).strftime("%Y-%m")
+            result.append([ym, round(float(val), 4)])
+        return sorted(result, key=lambda x: x[0])
+
+    assets_out: dict[str, Any] = {}
+    fx_out: dict[str, list] = existing.get("fx", {})
+    cpi_out: dict[str, list] = existing.get("cpi", {})
+    rates_out: dict[str, Any] = {}
+
+    # ── Asset series (price data) ─────────────────────────────────────────
     for spec in ASSET_REGISTRY:
         key = spec["key"]
+        return_type = spec.get("return_type", "price")
+
+        # Skip FX series — they go into the fx section
+        if return_type == "fx":
+            continue
+
         data = results.get(key)
         if data is None or data.empty:
             data = _read_cache(key)
         if data is None or data.empty:
+            # Preserve existing asset if we have no new data
+            if key in existing_assets:
+                assets_out[key] = existing_assets[key]
             continue
 
-        # Apply FX inversion if needed (e.g. DEXINUS is INR/USD → invert to USD/INR)
+        # Apply FX inversion if needed
         if spec.get("invert"):
             data = 1.0 / data.replace(0, float("nan"))
 
-        monthly = _series_to_monthly_dict(data)
-        if not monthly:
+        new_monthly = _to_monthly_list(data)
+        if not new_monthly:
+            if key in existing_assets:
+                assets_out[key] = existing_assets[key]
             continue
 
-        sorted_months = sorted(monthly.keys())
-        output["assets"][key] = {
+        # Merge with existing deep-history from Excel
+        if key in existing_assets:
+            existing_monthly = existing_assets[key].get("monthly", [])
+            # Convert old "close" dict format if present
+            if not existing_monthly and "close" in existing_assets[key]:
+                existing_monthly = sorted(
+                    [[ym, v] for ym, v in existing_assets[key]["close"].items()],
+                    key=lambda x: x[0]
+                )
+            merged = _merge_monthly_fn(existing_monthly, new_monthly)
+        else:
+            merged = new_monthly
+
+        sorted_months = [m[0] for m in merged]
+        assets_out[key] = {
             "meta": {
-                "name": spec["name"],
-                "category": spec["category"],
-                "native_ccy": spec["native_ccy"],
-                "source": f"{spec['source_type']}:{spec['series_id']}",
-                "return_type": spec["return_type"],
-                "first": sorted_months[0],
-                "last": sorted_months[-1],
-                "notes": spec.get("notes", ""),
+                "name":        spec["name"],
+                "category":    spec["category"],
+                "native_ccy":  spec["native_ccy"],
+                "source":      f"{spec['source_type']}:{spec['series_id']}",
+                "return_type": return_type,
+                "first":       sorted_months[0],
+                "last":        sorted_months[-1],
+                "notes":       spec.get("notes", ""),
             },
-            "close": monthly,
+            "monthly": merged,
         }
 
-    # Build rates section (yield levels — not returns)
+    # Preserve any Excel-only assets not in FRED/yfinance registry
+    for key, val in existing_assets.items():
+        if key not in assets_out:
+            assets_out[key] = val
+
+    # ── FX series → top-level "fx" section ───────────────────────────────
+    for spec in ASSET_REGISTRY:
+        if spec.get("return_type") != "fx":
+            continue
+        key = spec["key"]
+        data = results.get(key)
+        if data is None or data.empty:
+            data = _read_cache(key)
+        if data is None or data.empty:
+            continue
+        if spec.get("invert"):
+            data = 1.0 / data.replace(0, float("nan"))
+        new_monthly = _to_monthly_list(data)
+        if not new_monthly:
+            continue
+        # Map asset key to FX pair name (e.g. fx_usdinr → USDINR)
+        pair = key.replace("fx_", "").upper()
+        existing_fx = fx_out.get(pair, [])
+        fx_out[pair] = _merge_monthly_fn(existing_fx, new_monthly)
+
+    # ── CPI → top-level "cpi" section ────────────────────────────────────
+    for spec in AUX_REGISTRY:
+        if spec["key"] != "us_cpi":
+            continue
+        data = results.get("us_cpi")
+        if data is None or data.empty:
+            data = _read_cache("us_cpi")
+        if data is not None and not data.empty:
+            new_monthly = _to_monthly_list(data)
+            existing_cpi = cpi_out.get("US", [])
+            cpi_out["US"] = _merge_monthly_fn(existing_cpi, new_monthly)
+
+    # ── Rates → top-level "rates" section ────────────────────────────────
     for spec in RATES_REGISTRY:
         key = spec["key"]
         data = results.get(key)
         if data is None or data.empty:
             data = _read_cache(key)
         if data is None or data.empty:
+            # Preserve existing
+            if key in existing.get("rates", {}):
+                rates_out[key] = existing["rates"][key]
             continue
 
-        monthly = _series_to_monthly_dict(data)
-        if not monthly:
+        new_monthly = _to_monthly_list(data)
+        if not new_monthly:
+            if key in existing.get("rates", {}):
+                rates_out[key] = existing["rates"][key]
             continue
 
-        sorted_months = sorted(monthly.keys())
-        output["rates"][key] = {
+        # Merge with existing
+        existing_rate = existing.get("rates", {}).get(key, {})
+        existing_vals = existing_rate.get("values", [])
+        # Convert old dict format if present
+        if not existing_vals and isinstance(existing_rate.get("values"), dict):
+            existing_vals = sorted(
+                [[ym, v] for ym, v in existing_rate["values"].items()],
+                key=lambda x: x[0]
+            )
+        merged_vals = _merge_monthly_fn(existing_vals, new_monthly)
+        sorted_months = [m[0] for m in merged_vals]
+        rates_out[key] = {
             "meta": {
-                "name": spec["name"],
-                "category": "rates",
-                "native_ccy": spec["native_ccy"],
-                "source": f"{spec['source_type']}:{spec['series_id']}",
+                "name":        spec["name"],
+                "category":    "rates",
+                "native_ccy":  spec["native_ccy"],
+                "source":      f"{spec['source_type']}:{spec['series_id']}",
                 "return_type": "yield",
-                "first": sorted_months[0],
-                "last": sorted_months[-1],
-                "notes": spec.get("notes", ""),
+                "first":       sorted_months[0],
+                "last":        sorted_months[-1],
+                "notes":       spec.get("notes", ""),
             },
-            "values": monthly,
+            "values": merged_vals,
         }
 
-    # Compute derived 10Y-2Y spread if both series available
-    if "us_10y" in output["rates"] and "us_2y" in output["rates"]:
-        v10 = output["rates"]["us_10y"]["values"]
-        v2  = output["rates"]["us_2y"]["values"]
-        spread = {}
-        for m in v10:
-            if m in v2 and v10[m] is not None and v2[m] is not None:
-                spread[m] = round(v10[m] - v2[m], 4)
-        if spread:
-            sorted_spread = sorted(spread.keys())
-            output["rates"]["spread_10y_2y"] = {
+    # Derived 10Y-2Y spread
+    if "us_10y" in rates_out and "us_2y" in rates_out:
+        v10 = {m: v for m, v in rates_out["us_10y"]["values"]}
+        v2  = {m: v for m, v in rates_out["us_2y"]["values"]}
+        spread_list = sorted(
+            [[m, round(v10[m] - v2[m], 4)] for m in v10 if m in v2 and v10[m] is not None and v2[m] is not None],
+            key=lambda x: x[0]
+        )
+        if spread_list:
+            rates_out["spread_10y_2y"] = {
                 "meta": {
-                    "name": "10Y–2Y Spread",
-                    "category": "rates",
-                    "native_ccy": "USD",
-                    "source": "derived:GS10-GS2",
+                    "name": "10Y–2Y Spread", "category": "rates",
+                    "native_ccy": "USD", "source": "derived:GS10-GS2",
                     "return_type": "yield",
-                    "first": sorted_spread[0],
-                    "last": sorted_spread[-1],
+                    "first": spread_list[0][0], "last": spread_list[-1][0],
                     "notes": "10Y Treasury minus 2Y Treasury yield",
                 },
-                "values": spread,
+                "values": spread_list,
             }
 
-    return output
+    # Compute asof = max last date across ALL sources (assets, fx, cpi, rates)
+    all_lasts = [v["meta"]["last"] for v in assets_out.values() if v.get("meta", {}).get("last")]
+    # Include fx section lasts
+    for pair_data in fx_out.values():
+        if pair_data:
+            all_lasts.append(pair_data[-1][0])
+    # Include cpi section lasts
+    for cpi_data in cpi_out.values():
+        if cpi_data:
+            all_lasts.append(cpi_data[-1][0])
+    # Include rates section lasts
+    for rate_data in rates_out.values():
+        if isinstance(rate_data, dict) and rate_data.get("meta", {}).get("last"):
+            all_lasts.append(rate_data["meta"]["last"])
+    asof = max(all_lasts) if all_lasts else _date.today().strftime("%Y-%m")
+
+    return {
+        "asof":          asof,
+        "generated_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "assets":        assets_out,
+        "fx":            fx_out,
+        "cpi":           cpi_out,
+        "rates":         rates_out,
+        "events":        _EVENTS,
+    }
 
 
 def write_output(output: dict[str, Any], path: Path | None = None) -> None:
-    """Write the market_returns.json file."""
+    """Write the market_returns.json file atomically."""
     path = path or OUTPUT_PATH
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(_dumps(output, indent=2), encoding="utf-8")
+    _write_json_atomic(path, _dumps(output, separators=(",", ":")))
     print(f"\nWrote: {path} ({path.stat().st_size / 1024:.1f} KB)")
 
 
@@ -867,8 +1003,9 @@ def main(argv: list[str] | None = None) -> int:
     # Build and write JSON
     output = build_output(results)
     asset_count = len(output["assets"])
-    aux_count = len(output["aux"])
-    print(f"\nBuilt output: {asset_count} assets, {aux_count} aux series")
+    rates_count = len(output.get("rates", {}))
+    fx_count = len(output.get("fx", {}))
+    print(f"\nBuilt output: {asset_count} assets, {rates_count} rate series, {fx_count} FX pairs")
 
     write_output(output, output_path)
     return 0

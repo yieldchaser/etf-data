@@ -580,8 +580,8 @@ function stockApp() {
       try {
         const [lbData, scoreData, hhData, hlData] = await Promise.all([
           fetch('data/leaderboard.json', { cache: 'no-store' }).then(r => r.json()),
-          fetch('data/score_history.json', { cache: 'no-store' }).then(r => r.json()),
-          fetch('data/holdings_history.json', { cache: 'no-store' }).then(r => r.json()),
+          fetch('data/score_history.json', { cache: 'no-store' }).then(r => r.json()).catch(() => ({})),
+          fetch('data/holdings_history.json', { cache: 'no-store' }).then(r => r.json()).catch(() => ({})),
           fetch('data/holdings_latest.json', { cache: 'no-store' }).then(r => r.json()).catch(() => []),
         ]);
 

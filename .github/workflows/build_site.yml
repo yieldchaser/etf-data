@@ -52,7 +52,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pandas pyyaml pyarrow pytest hypothesis yfinance openpyxl fredapi python-dotenv
+          pip install -r requirements.txt
 
       - name: Run tests
         run: python -m pytest tests/ -v
@@ -60,13 +60,41 @@ jobs:
       - name: Build site artifacts (predator)
         run: python -m predator.build --source data/all_history.csv --output docs/data --config config.yaml
 
-      - name: Fetch market data (yfinance)
+      # ── Portfolio Lab price data (§22.1) ──────────────────────────────
+      - name: Fetch Portfolio Lab prices (yfinance adjusted-close)
+        run: python -m predator.fetch_prices
+        continue-on-error: true
+
+      # ── Markets data pipeline — ORDER MATTERS ──────────────────────────
+      # Step 1: Excel deep-history first (gold 1833+, S&P 1871+)
+      #         This seeds the JSON with the full historical baseline.
+      - name: Ingest Markets Excel (deep history baseline)
+        run: python -m predator.ingest_markets_xl --no-fail-on-stale
+        continue-on-error: true
+
+      # Step 2: FRED live data — merges new months on top of Excel baseline
+      #         markets_history.py now reads the existing JSON and merges,
+      #         so Excel deep-history is preserved.
+      - name: Fetch market returns history (FRED + yfinance)
+        run: python -m predator.markets_history --full-refresh
+        continue-on-error: true
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+
+      # Step 3: Re-run Excel ingest with --merge-existing to pick up any
+      #         Excel updates that postdate the FRED fetch (e.g. manual additions)
+      - name: Merge Excel updates on top of live data
+        run: python -m predator.ingest_markets_xl --merge-existing --no-fail-on-stale
+        continue-on-error: true
+
+      # Step 4: Price log (markets.json) — separate from market_returns.json
+      - name: Fetch market data (yfinance price log)
         run: |
           mkdir -p data/markets
           python -m markets.fetch_yf --out data/markets
         continue-on-error: true
 
-      - name: Fetch FRED data
+      - name: Fetch FRED data (price log)
         run: python -m markets.fetch_fred --out data/markets
         continue-on-error: true
         env:
@@ -76,16 +104,7 @@ jobs:
         run: python -m markets.build --source data/markets --output docs/data
         continue-on-error: true
 
-      - name: Fetch market returns history (FRED + yfinance)
-        run: python -m predator.markets_history --full-refresh
-        continue-on-error: true
-        env:
-          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
-
-      - name: Ingest Mega Markets Historical (Excel)
-        run: python -m predator.ingest_mega_xl
-        continue-on-error: true
-
+      # Step 5: Vol history (separate file)
       - name: Fetch vol history (CBOE indices from FRED)
         run: python -m predator.vol_history --full-refresh
         continue-on-error: true
@@ -99,6 +118,32 @@ jobs:
           test -f docs/data/changelog.json
           test -f docs/data/metadata.json
           test -f docs/data/leaderboard.parquet
+          test -f docs/data/score_history.json
+          test -f docs/data/holdings_history.json
+          test -f docs/data/flag_history.json
+          test -f docs/data/market_returns.json          # Verify market_returns.json has the §2.3 contract shape (monthly arrays, not close dicts)
+          python -c "
+          import json, sys
+          d = json.load(open('docs/data/market_returns.json'))
+          assert 'asof' in d, 'missing asof'
+          assert 'assets' in d, 'missing assets'
+          assets = d['assets']
+          assert len(assets) > 0, 'no assets'
+          # Check first asset has monthly array (not close dict)
+          first = next(iter(assets.values()))
+          assert 'monthly' in first, f'asset missing monthly array: {list(first.keys())}'
+          assert isinstance(first['monthly'], list), 'monthly must be a list'
+          assert isinstance(first['monthly'][0], list), 'monthly entries must be [YYYY-MM, val] pairs'
+          print(f'market_returns.json OK: {len(assets)} assets, asof={d[\"asof\"]}')
+          "
+          # Leaderboard sanity check: valid JSON + non-zero entry count
+          python -c "
+          import json, sys
+          lb = json.load(open('docs/data/leaderboard.json'))
+          assert isinstance(lb, list), 'leaderboard.json must be a list'
+          assert len(lb) > 0, f'leaderboard.json is empty — build may have failed'
+          print(f'leaderboard.json OK: {len(lb)} entries')
+          "
           ls -lh docs/data/
 
       - name: Upload Pages artifact

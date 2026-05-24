@@ -139,16 +139,37 @@ new_bonus_tiers: [Scout, Quant]
 high_conviction_min_etfs: 4
 
 # =============================================================================
-# SCORE FORMULA REFERENCE (Power Query AddScore step in Master_Leaderboard):
+# SCORING MODE — controls which formula is used.
 #
-#   Single Score = Weight% × Points × Rank_Multiplier × 100 + New_Bonus
-#                = (weight_as_decimal × 100) × Points × Rank_Multiplier + New_Bonus
-#
-# Final Alpha Score = Sum(Single Score) per ticker, cast to Int64.
-#
-# Example: AAPL at 9% weight in QQQM (Blob, 2 pts) at rank 1 (1.5×)
-#       = 0.09 × 100 × 2 × 1.5 = 27 single score
+# 'legacy'     : Original Power Query formula (weight%×100 × rank_mult × points).
+#                Backward-compatible; all existing tests pass.
+# 'conviction' : §24 conviction-weighted formula (OW × RP × points).
+#                Fixes the ITUB4 > Samsung structural bias.
+#                Activate this once the 15→30 ETF migration has matured.
 # =============================================================================
+scoring_mode: conviction
+
+# =============================================================================
+# CONVICTION SCORING PARAMETERS (used when scoring_mode = conviction)
+# §24: C_i = Wovr(OW_i) × Grank(RP_i)
+#   OW_i  = w_i × n_i  (overweight vs equal-weight; 1 = equal-weight)
+#   RP_i  = 1 − (r_i − 1)/n_i  (rank percentile; 1 = top of book)
+#   Wovr(OW) = clamp( ln(1+OW) / ln(1+OW_star) , 0 , C_max )
+#   Grank(RP) = RP_floor + (1 − RP_floor) × RP
+# =============================================================================
+conviction:
+  ow_star:   4.0    # OW at which Wovr ≈ 1.0 (calibration anchor)
+  c_max:     1.5    # ceiling on Wovr (prevents extreme outliers dominating)
+  rp_floor:  0.35   # minimum Grank contribution (rank never fully zeroes out)
+  hc_theta:  0.8    # conviction threshold for HIGH_CONVICTION breadth count
+
+# =============================================================================
+# ETF MATURITY GATE (§28) — suppresses NEW flood from the 15→30 migration.
+# A ticker is only flagged NEW-in-ETF if the ETF itself has been tracked for
+# at least `etf_maturity_days` days. Immature ETFs contribute to scoring but
+# not to NEW flags or new-entrant bonuses.
+# =============================================================================
+etf_maturity_days: 30   # ETFs tracked < 30 days are considered immature
 
 # =============================================================================
 # HISTORY — temporal analytics layer on top of the Power Query algorithm.

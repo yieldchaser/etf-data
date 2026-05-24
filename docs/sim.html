@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Predator Protocol · Leveraged ETN Simulator</title>
-  <meta name="description" content="Model daily NAV evolution for leveraged and inverse ETNs using actual underlying price history.">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📈%3C/text%3E%3C/svg%3E">
+  <title>Predator Protocol · Portfolio Lab</title>
+  <meta name="description" content="Portfolio backtester, VAMI analytics, Monte Carlo simulation, Kelly position sizing, and leveraged ETN decay.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📊%3C/text%3E%3C/svg%3E">
   <meta name="color-scheme" content="dark">
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
@@ -15,391 +15,2284 @@
       --border: rgba(255,255,255,0.06); --border-2: rgba(255,255,255,0.10);
       --text: #e4e4e7; --text-2: #a1a1aa; --text-3: #52525b;
       --cyan: #22d3ee; --up: #34d399; --down: #fb7185; --amber: #fbbf24;
+      --violet: #a78bfa;
     }
     html, body { background: var(--bg); color: var(--text); }
-    body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Inter", sans-serif; }
-    .num, .mono { font-variant-numeric: tabular-nums; }
+    body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    .num { font-variant-numeric: tabular-nums; }
     .font-mono { font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; }
     .label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); }
     .label-cyan { color: var(--cyan); }
+    .tab-active { background: rgba(34,211,238,0.08); color: var(--cyan); border-color: rgba(34,211,238,0.3); }
+    .row-hover:hover { background: rgba(34,211,238,0.025); }
+    .scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
+    .scrollbar::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+    .scrollbar::-webkit-scrollbar-track { background: transparent; }
     [x-cloak] { display: none !important; }
     @keyframes pulse-fade { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
     .pulse-load { animation: pulse-fade 1.4s ease-in-out infinite; }
     input[type=range] { accent-color: var(--cyan); }
-    input[type=number] { background: var(--surface-2); border: 1px solid var(--border-2); color: var(--text); border-radius: 4px; padding: 2px 6px; font-size: 12px; font-family: ui-monospace, monospace; width: 80px; }
-    select { background: var(--surface-2); border: 1px solid var(--border-2); color: var(--text); border-radius: 4px; padding: 2px 6px; font-size: 12px; }
+    input[type=number], input[type=text] {
+      background: var(--surface-2); border: 1px solid var(--border-2);
+      color: var(--text); border-radius: 4px; padding: 3px 8px;
+      font-size: 12px; font-family: ui-monospace, monospace;
+    }
+    select {
+      background: var(--surface-2); border: 1px solid var(--border-2);
+      color: var(--text); border-radius: 4px; padding: 3px 8px; font-size: 12px;
+    }
+    /* Singleton tooltip */
+    #tt { position: fixed; z-index: 9999; pointer-events: none; opacity: 0;
+          transition: opacity 0.15s; max-width: 280px; line-height: 1.6;
+          background: var(--surface-2); border: 1px solid var(--border-2);
+          color: var(--text); padding: 6px 10px; border-radius: 6px;
+          font-size: 11px; box-shadow: 0 4px 20px rgba(0,0,0,0.7); white-space: pre-line; }
+    .metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+    .portfolio-row { display: grid; grid-template-columns: 80px 1fr 80px 80px 40px; gap: 6px; align-items: center; }
   </style>
 </head>
 <body>
-<div x-data="simApp()" x-init="load()" x-cloak class="max-w-[1200px] mx-auto px-3 sm:px-5 py-4 sm:py-6">
+<div id="tt"></div>
+
+<div x-data="labApp()" x-init="init()" x-cloak class="max-w-[1400px] mx-auto px-3 sm:px-5 py-4 sm:py-6">
 
   <!-- HEADER -->
   <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5 pb-4 border-b" style="border-color: var(--border)">
     <div>
       <div class="flex items-center gap-3 mb-1">
-        <a href="index.html" class="label hover:text-zinc-400 transition" style="text-decoration: none;">← PREDATOR PROTOCOL</a>
+        <a href="index.html" class="label hover:text-zinc-400 transition" style="text-decoration:none">← PREDATOR PROTOCOL</a>
         <span class="label">›</span>
-        <span class="label-cyan label">ETN SIMULATOR</span>
+        <span class="label-cyan label">PORTFOLIO LAB</span>
       </div>
-      <h1 class="text-base font-medium" style="color: var(--cyan)">LEVERAGED ETN NAV SIMULATOR</h1>
-      <div class="text-xs mt-0.5" style="color: var(--text-3)">Model daily compounding decay for leveraged / inverse products using real price data</div>
+      <div class="flex items-baseline gap-3 mt-1">
+        <h1 class="text-base font-medium" style="color: var(--cyan)">PORTFOLIO LAB</h1>
+        <span class="label" x-text="pricesData ? `Prices: ${pricesData.asof}` : 'Loading…'"></span>
+      </div>
+      <div class="text-xs mt-0.5" style="color: var(--text-3)">
+        Backtest any portfolio · VAMI analytics · Monte Carlo · Kelly sizing · Leverage decay
+      </div>
+    </div>
+    <div class="flex items-center gap-2 text-xs" style="color: var(--text-3)">
+      <span x-show="pricesData" x-text="`${Object.keys(pricesData?.tickers||{}).length} tickers`"></span>
     </div>
   </header>
 
-  <!-- NAV -->
-  <nav class="flex flex-wrap gap-1 mb-5 text-xs items-center">
-    <a href="index.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color: var(--text-2); border-color: var(--border); text-decoration: none;">Dashboard</a>
-    <a href="markets.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color: var(--text-2); border-color: var(--border); text-decoration: none;">Markets</a>
-  </nav>
-
-  <!-- CONTROLS -->
-  <div class="rounded-lg border p-4 mb-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" style="background: var(--surface); border-color: var(--border)">
-
-    <!-- Underlying -->
-    <div>
-      <div class="label mb-1">Underlying</div>
-      <select x-model="params.underlying" @change="run()" class="w-full">
-        <template x-for="sym in availableSymbols" :key="sym">
-          <option :value="sym" x-text="sym"></option>
-        </template>
-        <option value="__manual__">Manual (use vol slider)</option>
-      </select>
+  <!-- NO DATA BANNER — shown when prices.json is not available -->
+  <div x-show="!loading && !pricesData"
+       class="rounded-lg border px-6 py-8 text-center mb-6"
+       style="background: var(--surface); border-color: var(--border)">
+    <div class="text-2xl mb-3">📊</div>
+    <div class="text-sm font-medium mb-2" style="color: var(--text)">Price data not available</div>
+    <div class="text-xs mb-4" style="color: var(--text-3)">
+      <code>docs/data/prices.json</code> has not been generated yet.<br>
+      Run the price fetcher to enable the Portfolio Lab:
     </div>
-
-    <!-- Leverage -->
-    <div>
-      <div class="label mb-1">Leverage factor</div>
-      <div class="flex items-center gap-2">
-        <input type="range" min="-5" max="5" step="0.5" x-model.number="params.leverage" @input="run()" class="flex-1">
-        <span class="num font-mono text-sm w-8 text-right" :style="params.leverage > 0 ? 'color: var(--up)' : params.leverage < 0 ? 'color: var(--down)' : 'color: var(--text-3)'" x-text="params.leverage + 'x'"></span>
-      </div>
-      <div class="flex justify-between text-[9px] font-mono mt-0.5" style="color: var(--text-3)">
-        <span>-5x</span><span>0</span><span>+5x</span>
-      </div>
-    </div>
-
-    <!-- TER (expense ratio) -->
-    <div>
-      <div class="label mb-1">TER / year (%)</div>
-      <div class="flex items-center gap-2">
-        <input type="range" min="0" max="3" step="0.05" x-model.number="params.ter" @input="run()" class="flex-1">
-        <span class="num font-mono text-sm" style="color: var(--text-2)" x-text="params.ter.toFixed(2) + '%'"></span>
-      </div>
-    </div>
-
-    <!-- Lookback window -->
-    <div>
-      <div class="label mb-1">Lookback (trading days)</div>
-      <div class="flex items-center gap-2">
-        <input type="range" min="21" max="1260" step="21" x-model.number="params.days" @input="run()" class="flex-1">
-        <span class="num font-mono text-sm" style="color: var(--text-2)" x-text="params.days + 'd (~' + Math.round(params.days/21) + 'mo)'"></span>
-      </div>
-    </div>
-
-    <!-- Manual vol override (shown when underlying = __manual__) -->
-    <div x-show="params.underlying === '__manual__'" class="sm:col-span-2">
-      <div class="label mb-1">Daily vol (σ, manual override %)</div>
-      <div class="flex items-center gap-2">
-        <input type="range" min="0.2" max="6" step="0.1" x-model.number="params.manualVol" @input="run()" class="flex-1">
-        <span class="num font-mono text-sm" style="color: var(--amber)" x-text="params.manualVol.toFixed(1) + '% σ/day'"></span>
-      </div>
-    </div>
-
-    <!-- Annual drift -->
-    <div>
-      <div class="label mb-1">Drift (underlying CAGR %/yr)</div>
-      <div class="flex items-center gap-2">
-        <input type="range" min="-30" max="50" step="1" x-model.number="params.drift" @input="run()" class="flex-1">
-        <span class="num font-mono text-sm" :style="params.drift >= 0 ? 'color: var(--up)' : 'color: var(--down)'" x-text="(params.drift >= 0 ? '+' : '') + params.drift + '%'"></span>
-      </div>
-    </div>
-
-    <!-- Initial NAV -->
-    <div>
-      <div class="label mb-1">Initial NAV</div>
-      <input type="number" x-model.number="params.nav0" @change="run()" min="1" max="10000" step="1">
+    <code class="text-xs px-3 py-1.5 rounded" style="background: var(--bg); color: var(--cyan); border: 1px solid var(--border)">
+      python -m predator.fetch_prices
+    </code>
+    <div class="text-xs mt-3" style="color: var(--text-3)">
+      This requires an internet connection and fetches adjusted-close data from yfinance.
     </div>
   </div>
 
-  <!-- LOADING -->
-  <div x-show="computing" class="pulse-load text-center py-8" style="color: var(--text-3)">Computing…</div>
+  <!-- MAIN CONTENT — only shown when prices.json is loaded -->
+  <div x-show="pricesData">
 
-  <!-- RESULTS -->
-  <div x-show="!computing && result">
+  <!-- MAIN TABS -->
+  <div class="flex flex-wrap gap-1 mb-5">
+    <template x-for="tab in mainTabs" :key="tab.id">
+      <button @click="activeTab = tab.id"
+              :class="activeTab === tab.id ? 'tab-active' : ''"
+              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+              :style="activeTab === tab.id ? '' : 'color: var(--text-2); border-color: var(--border)'"
+              x-text="tab.label">
+      </button>
+    </template>
+  </div>
 
-    <!-- KPI strip -->
-    <section class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
-      <template x-for="k in resultKpis" :key="k.label">
-        <div class="rounded-lg px-3 py-2.5 border" style="background: var(--surface); border-color: var(--border)">
-          <div class="label" x-text="k.label"></div>
-          <div class="text-xl font-medium num font-mono mt-0.5" :style="`color: ${k.color}`" x-text="k.value"></div>
-          <div class="text-[10px] num font-mono mt-0.5" style="color: var(--text-3)" x-text="k.sub || ''"></div>
+  <!-- SHARED CONTROLS BAR -->
+  <div class="flex flex-wrap gap-3 items-center mb-5 px-3 py-2 rounded-lg border" style="background: var(--surface); border-color: var(--border)">
+    <!-- Benchmark -->
+    <div class="flex items-center gap-2">
+      <span class="label" style="font-size:9px">BENCHMARK</span>
+      <select x-model="benchmark" @change="runBacktest()" class="text-xs">
+        <option value="SPY">SPY (S&P 500)</option>
+        <option value="QQQ">QQQ (Nasdaq-100)</option>
+        <option value="IWM">IWM (Russell 2000)</option>
+        <option value="EWJ">EWJ (Japan)</option>
+        <option value="GLD">GLD (Gold)</option>
+        <option value="TLT">TLT (20Y Treasury)</option>
+      </select>
+    </div>
+    <!-- Rebalance -->
+    <div class="flex items-center gap-2">
+      <span class="label" style="font-size:9px">REBALANCE</span>
+      <select x-model="rebalanceFreq" @change="runBacktest()" class="text-xs">
+        <option value="none">None (buy & hold)</option>
+        <option value="monthly">Monthly</option>
+        <option value="quarterly">Quarterly</option>
+        <option value="annual">Annual</option>
+      </select>
+    </div>
+    <!-- Date range -->
+    <div class="flex items-center gap-2">
+      <span class="label" style="font-size:9px">FROM</span>
+      <input type="text" x-model="startDate" @change="runBacktest()" placeholder="YYYY-MM" class="w-24 text-xs">
+      <span class="label" style="font-size:9px">TO</span>
+      <input type="text" x-model="endDate" @change="runBacktest()" placeholder="YYYY-MM" class="w-24 text-xs">
+    </div>
+    <!-- Real toggle -->
+    <div class="flex items-center gap-1">
+      <button @click="realReturns = !realReturns; runBacktest()"
+              :class="realReturns ? 'tab-active' : ''"
+              class="px-2 py-1 rounded border text-[10px] transition"
+              :style="realReturns ? '' : 'color: var(--text-2); border-color: var(--border)'"
+              @mouseenter="showTt($event, 'CPI-adjusted returns (requires CPI data in market_returns.json)')"
+              @mouseleave="hideTt()">
+        Real
+      </button>
+    </div>
+    <!-- Run button -->
+    <button @click="runBacktest()"
+            class="ml-auto px-4 py-1.5 rounded-md border font-medium text-xs transition"
+            style="background: rgba(34,211,238,0.08); color: var(--cyan); border-color: rgba(34,211,238,0.3)">
+      ▶ Run
+    </button>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- TAB: BUILDER                                                        -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div x-show="activeTab === 'builder'">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+      <!-- Portfolio editor -->
+      <div class="lg:col-span-2">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-medium" style="color: var(--cyan)">PORTFOLIO BUILDER</h2>
+          <div class="flex gap-2">
+            <button @click="loadSamplePortfolio()"
+                    class="px-2.5 py-1 rounded border text-[10px] transition"
+                    style="color: var(--text-2); border-color: var(--border)"
+                    @mouseenter="showTt($event, 'Load a sample portfolio (SPY 60% / TLT 40%)')"
+                    @mouseleave="hideTt()">Sample</button>
+            <button @click="clearPortfolio()"
+                    class="px-2.5 py-1 rounded border text-[10px] transition"
+                    style="color: var(--text-2); border-color: var(--border)">Clear</button>
+            <button @click="exportPortfolio()"
+                    class="px-2.5 py-1 rounded border text-[10px] transition"
+                    style="color: var(--text-2); border-color: var(--border)"
+                    @mouseenter="showTt($event, 'Export portfolio as JSON')"
+                    @mouseleave="hideTt()">↓ Export</button>
+            <label class="px-2.5 py-1 rounded border text-[10px] transition cursor-pointer"
+                   style="color: var(--text-2); border-color: var(--border)"
+                   @mouseenter="showTt($event, 'Import portfolio from JSON or CSV')"
+                   @mouseleave="hideTt()">
+              ↑ Import
+              <input type="file" accept=".json,.csv" @change="importPortfolio($event)" class="hidden">
+            </label>
+          </div>
         </div>
-      </template>
-    </section>
 
-    <!-- NAV Chart (SVG) -->
-    <div class="rounded-lg border mb-5" style="background: var(--surface); border-color: var(--border)">
-      <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
-        <div class="label-cyan label">NAV Evolution (Daily Compounding)</div>
-        <div class="flex gap-4 text-[10px] num font-mono" style="color: var(--text-3)">
-          <span>■ <span style="color: var(--cyan)">ETN</span></span>
-          <span>■ <span style="color: var(--amber)">Underlying</span></span>
+        <!-- Column headers -->
+        <div class="portfolio-row mb-1 px-2">
+          <span class="label" style="font-size:9px">TICKER</span>
+          <span class="label" style="font-size:9px">NAME</span>
+          <span class="label text-right" style="font-size:9px">WEIGHT %</span>
+          <span class="label text-right" style="font-size:9px">FIRST DATA</span>
+          <span></span>
+        </div>
+
+        <!-- Portfolio rows -->
+        <div class="space-y-1">
+          <template x-for="(row, i) in portfolio" :key="i">
+            <div class="portfolio-row px-2 py-1.5 rounded" style="background: var(--surface); border: 1px solid var(--border)">
+              <input type="text" x-model="row.ticker" @change="onTickerChange(i)"
+                     class="w-full uppercase text-xs font-mono"
+                     placeholder="SPY" style="width:72px">
+              <span class="text-xs truncate" style="color: var(--text-2)"
+                    x-text="row.name || (row.ticker ? 'Loading…' : '—')"></span>
+              <input type="number" x-model.number="row.weight" @input="onWeightChange()"
+                     class="text-right text-xs font-mono" step="1" style="width:72px"
+                     :style="`color: ${row.weight < 0 ? 'var(--down)' : 'var(--text)'}`">
+              <span class="text-right text-[10px] font-mono" style="color: var(--text-3)"
+                    x-text="row.first || '—'"></span>
+              <button @click="removeRow(i)" class="text-[10px] hover:text-red-400 transition"
+                      style="color: var(--text-3)">✕</button>
+            </div>
+          </template>
+        </div>
+
+        <!-- Add row -->
+        <button @click="addRow()"
+                class="mt-2 w-full py-2 rounded border text-xs transition"
+                style="color: var(--text-3); border-color: var(--border); border-style: dashed">
+          + Add ticker
+        </button>
+
+        <!-- Exposure summary -->
+        <div class="mt-3 flex flex-wrap gap-4 text-xs font-mono">
+          <div>
+            <span class="label" style="font-size:9px">NET EXPOSURE</span>
+            <span class="ml-2 font-medium" :style="`color: ${netExposure >= 0 ? 'var(--up)' : 'var(--down)'}`"
+                  x-text="netExposure.toFixed(0) + '%'"></span>
+          </div>
+          <div>
+            <span class="label" style="font-size:9px">GROSS EXPOSURE</span>
+            <span class="ml-2 font-medium" style="color: var(--amber)"
+                  x-text="grossExposure.toFixed(0) + '%'"></span>
+          </div>
+          <div>
+            <span class="label" style="font-size:9px">LEVERAGE</span>
+            <span class="ml-2 font-medium" style="color: var(--text)"
+                  x-text="leverage.toFixed(2) + 'x'"></span>
+          </div>
+          <div x-show="Math.abs(netExposure - 100) > 1" class="text-[10px]" style="color: var(--amber)">
+            ⚠ Weights don't sum to 100%
+          </div>
         </div>
       </div>
-      <div class="p-3">
-        <svg width="100%" height="200" :viewBox="`0 0 900 200`" preserveAspectRatio="none" style="display:block">
-          <!-- Zero line -->
-          <line x1="0" :y1="navZeroY" x2="900" :y2="navZeroY" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
-          <!-- Underlying area -->
-          <path :d="underlyingAreaPath" fill="rgba(251,191,36,0.05)"/>
-          <path :d="underlyingLinePath" fill="none" stroke="var(--amber)" stroke-width="1.2" opacity="0.7"/>
-          <!-- ETN area -->
-          <path :d="navAreaPath" fill="rgba(34,211,238,0.06)"/>
-          <path :d="navLinePath" fill="none" stroke="var(--cyan)" stroke-width="1.8"/>
-        </svg>
-        <!-- Date labels -->
-        <div class="flex justify-between text-[10px] font-mono mt-1" style="color: var(--text-3)">
-          <span x-text="result?.dates?.[0] || ''"></span>
-          <span x-text="result?.dates?.[Math.floor((result?.dates?.length || 1)/2)] || ''"></span>
-          <span x-text="result?.dates?.[result?.dates?.length - 1] || ''"></span>
+
+      <!-- Quick stats panel -->
+      <div>
+        <h2 class="text-sm font-medium mb-3" style="color: var(--cyan)">QUICK STATS</h2>
+        <div x-show="!backtestResult" class="text-xs" style="color: var(--text-3)">
+          Build a portfolio and click Run to see stats.
+        </div>
+        <div x-show="backtestResult" class="space-y-2">
+          <template x-for="kpi in quickKpis" :key="kpi.label">
+            <div class="metric-card flex items-center justify-between">
+              <span class="label" style="font-size:9px" x-text="kpi.label"
+                    @mouseenter="showTt($event, kpi.formula)" @mouseleave="hideTt()"></span>
+              <div class="flex gap-3">
+                <span class="num font-mono text-xs font-medium" :style="`color: ${kpi.color}`"
+                      x-text="kpi.portfolio"></span>
+                <span class="num font-mono text-xs" style="color: var(--text-3)"
+                      x-text="kpi.benchmark"></span>
+              </div>
+            </div>
+          </template>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Decay analysis table -->
-    <div class="rounded-lg border mb-5" style="background: var(--surface); border-color: var(--border)">
-      <div class="px-3 py-2" style="border-bottom: 1px solid var(--border)">
-        <div class="label-cyan label">Volatility Decay Analysis</div>
-        <div class="text-[10px] mt-0.5" style="color: var(--text-3)">
-          Daily decay = ½ × (leverage² − |leverage|) × σ² per day. Compounding is geometric (path-dependent).
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- TAB: BACKTEST (Performance Summary — §13)                          -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div x-show="activeTab === 'backtest'">
+    <div x-show="!backtestResult" class="text-center py-20" style="color: var(--text-3)">
+      <div class="text-base mb-2">No backtest yet</div>
+      <div class="text-xs">Go to Builder, add tickers, and click Run.</div>
+    </div>
+
+    <div x-show="backtestResult">
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-sm font-medium" style="color: var(--cyan)">PERFORMANCE SUMMARY</h2>
+          <div class="text-xs mt-0.5" style="color: var(--text-3)"
+               x-text="backtestResult ? `${backtestResult.start} → ${backtestResult.end} · ${backtestResult.n_months} months · ${rebalanceFreq} rebalance` : ''"></div>
+        </div>
+        <div class="text-[10px] font-mono" style="color: var(--text-3)">
+          Return method: TWR (time-weighted)
         </div>
       </div>
-      <div class="p-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+      <!-- Metrics table — §13 full set -->
+      <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+        <table class="w-full text-xs">
+          <thead style="background: #050505; color: var(--text-3)">
+            <tr style="border-bottom: 1px solid var(--border)">
+              <th class="text-left px-4 py-2 label">Metric</th>
+              <th class="text-right px-4 py-2 label" style="color: var(--cyan)">Portfolio</th>
+              <th class="text-right px-4 py-2 label" style="color: var(--text-2)"
+                  x-text="benchmark + ' (Benchmark)'"></th>
+              <th class="text-right px-4 py-2 label">Formula</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="m in performanceMetrics" :key="m.label">
+              <tr class="row-hover" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
+                <td class="px-4 py-2 font-medium" style="color: var(--text)" x-text="m.label"
+                    @mouseenter="showTt($event, m.formula)" @mouseleave="hideTt()"></td>
+                <td class="px-4 py-2 text-right num font-mono font-medium"
+                    :style="`color: ${m.portfolioColor}`" x-text="m.portfolio"></td>
+                <td class="px-4 py-2 text-right num font-mono" style="color: var(--text-2)"
+                    x-text="m.benchmark"></td>
+                <td class="px-4 py-2 text-right text-[9px] font-mono" style="color: var(--text-3)"
+                    x-text="m.formulaShort"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- TAB: RISK vs BENCHMARK (VAMI — §14)                                -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div x-show="activeTab === 'risk'">
+    <div x-show="!backtestResult" class="text-center py-20" style="color: var(--text-3)">
+      <div class="text-base mb-2">No backtest yet</div>
+    </div>
+
+    <div x-show="backtestResult">
+      <div class="flex items-center justify-between mb-4">
         <div>
-          <div class="label mb-2">Decay metrics</div>
+          <h2 class="text-sm font-medium" style="color: var(--cyan)">RISK vs BENCHMARK</h2>
+          <div class="text-xs mt-0.5" style="color: var(--text-3)">
+            VAMI (Value Added Monthly Index, base 1000) · Return method: TWR
+          </div>
+        </div>
+      </div>
+
+      <!-- VAMI Chart -->
+      <div class="rounded-lg border overflow-hidden mb-5" style="background: var(--surface); border-color: var(--border)">
+        <div class="px-3 py-2 label" style="border-bottom: 1px solid var(--border); color: var(--cyan)">
+          VAMI — VAMI₀ = 1000 · VAMIₜ = VAMIₜ₋₁ × (1 + rₜ)
+        </div>
+        <div x-html="vamiChartSvg" style="width:100%;overflow-x:auto;"></div>
+        <!-- Hover bar -->
+        <div x-show="vamiHoverInfo" class="px-4 py-2 flex flex-wrap gap-x-6 gap-y-1 text-xs num font-mono"
+             style="border-top: 1px solid var(--border); background: var(--surface-2)">
+          <span style="color: var(--text-3)" x-text="vamiHoverInfo?.date || ''"></span>
+          <span style="color: var(--cyan)"
+                x-text="vamiHoverInfo?.portfolio != null ? 'Portfolio: ' + vamiHoverInfo.portfolio.toFixed(0) : ''"></span>
+          <span style="color: var(--text-2)"
+                x-text="vamiHoverInfo?.benchmark != null ? benchmark + ': ' + vamiHoverInfo.benchmark.toFixed(0) : ''"></span>
+        </div>
+      </div>
+
+      <!-- Return Distribution -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+        <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+          <div class="px-3 py-2 label" style="border-bottom: 1px solid var(--border); color: var(--cyan)">
+            DISTRIBUTION OF MONTHLY RETURNS
+          </div>
+          <div x-html="returnDistSvg" style="width:100%;overflow-x:auto;"></div>
+        </div>
+
+        <!-- Risk Measures table -->
+        <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+          <div class="px-3 py-2 label" style="border-bottom: 1px solid var(--border); color: var(--cyan)">
+            RISK MEASURES
+          </div>
           <table class="w-full text-xs">
+            <thead style="background: #050505; color: var(--text-3)">
+              <tr style="border-bottom: 1px solid var(--border)">
+                <th class="text-left px-3 py-1.5 label">Metric</th>
+                <th class="text-right px-3 py-1.5 label" style="color: var(--cyan)">Portfolio</th>
+                <th class="text-right px-3 py-1.5 label" x-text="benchmark"></th>
+              </tr>
+            </thead>
             <tbody>
-              <template x-for="row in decayTable" :key="row.k">
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.03)">
-                  <td class="py-1.5 font-mono" style="color: var(--text-3)" x-text="row.k"></td>
-                  <td class="py-1.5 text-right num font-mono" :style="`color: ${row.color}`" x-text="row.v"></td>
+              <template x-for="m in riskMeasures" :key="m.label">
+                <tr class="row-hover" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
+                  <td class="px-3 py-1.5" style="color: var(--text)" x-text="m.label"
+                      @mouseenter="showTt($event, m.formula)" @mouseleave="hideTt()"></td>
+                  <td class="px-3 py-1.5 text-right num font-mono font-medium"
+                      :style="`color: ${m.portfolioColor}`" x-text="m.portfolio"></td>
+                  <td class="px-3 py-1.5 text-right num font-mono" style="color: var(--text-2)"
+                      x-text="m.benchmark"></td>
                 </tr>
               </template>
             </tbody>
           </table>
         </div>
+      </div>
+
+      <!-- Relative to Benchmark -->
+      <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+        <div class="px-3 py-2 label" style="border-bottom: 1px solid var(--border); color: var(--cyan)">
+          RISK MEASURES RELATIVE TO BENCHMARK
+        </div>
+        <table class="w-full text-xs">
+          <thead style="background: #050505; color: var(--text-3)">
+            <tr style="border-bottom: 1px solid var(--border)">
+              <th class="text-left px-3 py-2 label">Metric</th>
+              <th class="text-right px-3 py-2 label">Value</th>
+              <th class="text-right px-3 py-2 label">Formula</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="m in relativeMetrics" :key="m.label">
+              <tr class="row-hover" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
+                <td class="px-3 py-2" style="color: var(--text)" x-text="m.label"
+                    @mouseenter="showTt($event, m.formula)" @mouseleave="hideTt()"></td>
+                <td class="px-3 py-2 text-right num font-mono font-medium"
+                    :style="`color: ${m.color}`" x-text="m.value"></td>
+                <td class="px-3 py-2 text-right text-[9px] font-mono" style="color: var(--text-3)"
+                    x-text="m.formulaShort"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- TAB: GROWTH (§15)                                                  -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div x-show="activeTab === 'growth'">
+    <div x-show="!backtestResult" class="text-center py-20" style="color: var(--text-3)">
+      <div class="text-base mb-2">No backtest yet</div>
+    </div>
+    <div x-show="backtestResult">
+      <div class="flex items-center justify-between mb-4">
         <div>
-          <div class="label mb-2">Theoretical vs actual</div>
-          <div class="text-xs" style="color: var(--text-2)">
-            <p class="mb-2">Theoretical ETN return over the window (geometric compounding):</p>
-            <div class="num font-mono text-xl" :style="`color: ${pctColor(result?.etn_total_pct)}`" x-text="fmtPct(result?.etn_total_pct)"></div>
-            <p class="mt-2 mb-1" style="color: var(--text-3)">vs underlying (simple leverage):</p>
-            <div class="num font-mono text-base" :style="`color: ${pctColor(result?.underlying_total_pct)}`" x-text="fmtPct(result?.underlying_total_pct)"></div>
-            <p class="mt-2" style="color: var(--text-3)">
-              Decay drag = <span class="num font-mono" style="color: var(--down)" x-text="result?.drag_pct != null ? fmtPct(result.drag_pct) : '—'"></span>
-            </p>
+          <h2 class="text-sm font-medium" style="color: var(--cyan)">GROWTH OF $10,000</h2>
+          <div class="text-xs mt-0.5" style="color: var(--text-3)">Log scale · Portfolio vs Benchmark</div>
+        </div>
+        <div class="flex gap-1">
+          <button @click="growthLogScale = !growthLogScale"
+                  :class="growthLogScale ? 'tab-active' : ''"
+                  class="px-2.5 py-1 rounded border text-[10px] transition"
+                  :style="growthLogScale ? '' : 'color: var(--text-2); border-color: var(--border)'">
+            LOG
+          </button>
+        </div>
+      </div>
+      <div class="rounded-lg border overflow-hidden mb-5" style="background: var(--surface); border-color: var(--border)">
+        <div x-html="growthChartSvg"
+             @mousemove="growthHover($event)"
+             @mouseleave="growthHoverInfo = null"
+             style="width:100%;overflow-x:auto;"></div>
+        <div x-show="growthHoverInfo" class="px-4 py-2 flex flex-wrap gap-x-6 gap-y-1 text-xs num font-mono"
+             style="border-top: 1px solid var(--border); background: var(--surface-2)">
+          <span style="color: var(--text-3)" x-text="growthHoverInfo?.date || ''"></span>
+          <span style="color: var(--cyan)"
+                x-text="growthHoverInfo?.portfolio != null ? 'Portfolio: $' + growthHoverInfo.portfolio.toFixed(0) : ''"></span>
+          <span style="color: var(--text-2)"
+                x-text="growthHoverInfo?.benchmark != null ? benchmark + ': $' + growthHoverInfo.benchmark.toFixed(0) : ''"></span>
+        </div>
+      </div>
+
+      <!-- Rolling metrics -->
+      <div class="flex items-center gap-3 mb-3">
+        <h3 class="text-xs font-medium" style="color: var(--cyan)">ROLLING METRICS</h3>
+        <div class="flex gap-1">
+          <template x-for="m in ['CAGR','Sharpe','Vol','Beta']" :key="m">
+            <button @click="rollingMetric = m"
+                    :class="rollingMetric === m ? 'tab-active' : ''"
+                    class="px-2.5 py-1 rounded border text-[10px] transition"
+                    :style="rollingMetric === m ? '' : 'color: var(--text-2); border-color: var(--border)'"
+                    x-text="m">
+            </button>
+          </template>
+        </div>
+        <div class="flex gap-1 ml-2">
+          <template x-for="w in [12, 24, 36, 60]" :key="w">
+            <button @click="rollingWindow = w"
+                    :class="rollingWindow === w ? 'tab-active' : ''"
+                    class="px-2 py-1 rounded border text-[10px] transition"
+                    :style="rollingWindow === w ? '' : 'color: var(--text-2); border-color: var(--border)'"
+                    x-text="w + 'M'">
+            </button>
+          </template>
+        </div>
+      </div>
+      <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+        <div x-html="rollingChartSvg" style="width:100%;overflow-x:auto;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- TAB: DRAWDOWNS (§15)                                               -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div x-show="activeTab === 'drawdowns'">
+    <div x-show="!backtestResult" class="text-center py-20" style="color: var(--text-3)">
+      <div class="text-base mb-2">No backtest yet</div>
+    </div>
+    <div x-show="backtestResult">
+      <div class="mb-4">
+        <h2 class="text-sm font-medium" style="color: var(--cyan)">DRAWDOWN STUDIO</h2>
+        <div class="text-xs mt-0.5" style="color: var(--text-3)">% below prior all-time high · Portfolio vs Benchmark</div>
+      </div>
+      <!-- Underwater chart -->
+      <div class="rounded-lg border overflow-hidden mb-5" style="background: var(--surface); border-color: var(--border)">
+        <div x-html="ddChartSvg"
+             @mousemove="ddHover($event)"
+             @mouseleave="ddHoverInfo = null"
+             style="width:100%;overflow-x:auto;"></div>
+        <div x-show="ddHoverInfo" class="px-4 py-2 flex flex-wrap gap-x-6 gap-y-1 text-xs num font-mono"
+             style="border-top: 1px solid var(--border); background: var(--surface-2)">
+          <span style="color: var(--text-3)" x-text="ddHoverInfo?.date || ''"></span>
+          <span style="color: var(--cyan)"
+                x-text="ddHoverInfo?.portfolio != null ? 'Portfolio: ' + (ddHoverInfo.portfolio*100).toFixed(1) + '%' : ''"></span>
+          <span style="color: var(--text-2)"
+                x-text="ddHoverInfo?.benchmark != null ? benchmark + ': ' + (ddHoverInfo.benchmark*100).toFixed(1) + '%' : ''"></span>
+        </div>
+      </div>
+      <!-- Max DD events table -->
+      <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+        <div class="px-3 py-2 label" style="border-bottom: 1px solid var(--border); color: var(--cyan)">
+          MAX DRAWDOWN EVENTS
+        </div>
+        <table class="w-full text-xs">
+          <thead style="background: #050505; color: var(--text-3)">
+            <tr style="border-bottom: 1px solid var(--border)">
+              <th class="text-left px-3 py-2 label">Series</th>
+              <th class="text-right px-3 py-2 label">Max DD</th>
+              <th class="text-right px-3 py-2 label">Peak</th>
+              <th class="text-right px-3 py-2 label">Trough</th>
+              <th class="text-right px-3 py-2 label">Recovery</th>
+              <th class="text-right px-3 py-2 label">Months</th>
+              <th class="text-right px-3 py-2 label"
+                  @mouseenter="showTt($event, 'Ulcer Index = √mean(DD²) — captures depth × duration')"
+                  @mouseleave="hideTt()">Ulcer Idx</th>
+              <th class="text-right px-3 py-2 label">Current DD</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="row in ddTable" :key="row.label">
+              <tr class="row-hover" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
+                <td class="px-3 py-2 font-medium" :style="`color: ${row.color}`" x-text="row.label"></td>
+                <td class="px-3 py-2 text-right num font-mono font-medium" style="color: var(--down)"
+                    x-text="row.maxDd != null ? (row.maxDd*100).toFixed(1)+'%' : '—'"></td>
+                <td class="px-3 py-2 text-right num font-mono" style="color: var(--text-2)" x-text="row.peakDate || '—'"></td>
+                <td class="px-3 py-2 text-right num font-mono" style="color: var(--text-2)" x-text="row.troughDate || '—'"></td>
+                <td class="px-3 py-2 text-right num font-mono"
+                    :style="`color: ${row.recoveryDate ? 'var(--up)' : 'var(--amber)'}`"
+                    x-text="row.recoveryDate || 'Ongoing'"></td>
+                <td class="px-3 py-2 text-right num font-mono" style="color: var(--text-2)"
+                    x-text="row.months != null ? row.months+'m' : '—'"></td>
+                <td class="px-3 py-2 text-right num font-mono" style="color: var(--amber)"
+                    x-text="row.ulcer != null ? row.ulcer.toFixed(1)+'%' : '—'"></td>
+                <td class="px-3 py-2 text-right num font-mono font-medium"
+                    :style="`color: ${(row.currentDd||0) < -0.1 ? 'var(--down)' : (row.currentDd||0) < -0.05 ? 'var(--amber)' : 'var(--up)'}`"
+                    x-text="row.currentDd != null ? (row.currentDd*100).toFixed(1)+'%' : '—'"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- TAB: MONTE CARLO (§16)                                             -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div x-show="activeTab === 'montecarlo'">
+    <div x-show="!backtestResult" class="text-center py-20" style="color: var(--text-3)">
+      <div class="text-base mb-2">No backtest yet</div>
+    </div>
+    <div x-show="backtestResult">
+      <div class="flex flex-wrap items-center gap-4 mb-5">
+        <div>
+          <h2 class="text-sm font-medium" style="color: var(--cyan)">MONTE CARLO SIMULATION</h2>
+          <div class="text-xs mt-0.5" style="color: var(--text-3)">Forward simulation of terminal wealth distribution</div>
+        </div>
+        <!-- MC controls -->
+        <div class="flex flex-wrap gap-3 items-center ml-auto">
+          <div class="flex items-center gap-2">
+            <span class="label" style="font-size:9px">METHOD</span>
+            <select x-model="mcMethod" class="text-xs">
+              <option value="historical">Historical Bootstrap</option>
+              <option value="block">Block Bootstrap</option>
+              <option value="parametric">Parametric (Normal)</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="label" style="font-size:9px">HORIZON</span>
+            <select x-model.number="mcHorizon" class="text-xs">
+              <option value="5">5 years</option>
+              <option value="10">10 years</option>
+              <option value="20">20 years</option>
+              <option value="30">30 years</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="label" style="font-size:9px">PATHS</span>
+            <select x-model.number="mcPaths" class="text-xs">
+              <option value="500">500</option>
+              <option value="1000">1,000</option>
+              <option value="5000">5,000</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="label" style="font-size:9px">WITHDRAWAL/MO</span>
+            <input type="number" x-model.number="mcWithdrawal" class="w-20 text-xs" step="100" placeholder="0">
+          </div>
+          <button @click="runMonteCarlo()"
+                  class="px-3 py-1.5 rounded-md border text-xs transition"
+                  style="background: rgba(167,139,250,0.08); color: var(--violet); border-color: rgba(167,139,250,0.3)">
+            ▶ Simulate
+          </button>
+        </div>
+      </div>
+
+      <!-- Fan chart -->
+      <div class="rounded-lg border overflow-hidden mb-5" style="background: var(--surface); border-color: var(--border)">
+        <div class="px-3 py-2 label" style="border-bottom: 1px solid var(--border); color: var(--violet)">
+          TERMINAL WEALTH FAN CHART — Percentile bands (5/25/50/75/95)
+        </div>
+        <div x-show="!mcResult" class="py-10 text-center text-xs" style="color: var(--text-3)">
+          Click Simulate to run Monte Carlo
+        </div>
+        <div x-show="mcResult" x-html="mcFanChartSvg" style="width:100%;overflow-x:auto;"></div>
+      </div>
+
+      <!-- MC stats -->
+      <div x-show="mcResult" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+        <template x-for="kpi in mcKpis" :key="kpi.label">
+          <div class="metric-card">
+            <div class="label mb-1" x-text="kpi.label"
+                 @mouseenter="showTt($event, kpi.tooltip)" @mouseleave="hideTt()"></div>
+            <div class="text-xl font-medium num font-mono" :style="`color: ${kpi.color}`"
+                 x-text="kpi.value"></div>
+          </div>
+        </template>
+      </div>
+
+      <!-- Terminal wealth histogram -->
+      <div x-show="mcResult" class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+        <div class="px-3 py-2 label" style="border-bottom: 1px solid var(--border); color: var(--violet)">
+          TERMINAL WEALTH DISTRIBUTION
+        </div>
+        <div x-html="mcHistSvg" style="width:100%;overflow-x:auto;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- TAB: KELLY POSITION SIZING (§17)                                   -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div x-show="activeTab === 'kelly'">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+      <!-- Kelly curve -->
+      <div>
+        <div class="mb-4">
+          <h2 class="text-sm font-medium" style="color: var(--cyan)">KELLY CRITERION</h2>
+          <div class="text-xs mt-0.5" style="color: var(--text-3)">
+            Optimal leverage f* = (μ − rf) / σ² · Growth rate g(f) = rf + f(μ−rf) − ½f²σ²
+          </div>
+        </div>
+
+        <!-- Inputs -->
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          <div class="metric-card">
+            <div class="label mb-1">Annual Return μ</div>
+            <div class="flex items-center gap-2">
+              <input type="number" x-model.number="kellyMu" @input="computeKelly()"
+                     class="w-20 text-xs" step="0.01" placeholder="0.10">
+              <span class="text-xs" style="color: var(--text-3)">
+                (from backtest: <span x-text="backtestResult ? (backtestResult.portfolio.cagr*100).toFixed(1)+'%' : '—'"></span>)
+              </span>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div class="label mb-1">Annual Vol σ</div>
+            <div class="flex items-center gap-2">
+              <input type="number" x-model.number="kellySigma" @input="computeKelly()"
+                     class="w-20 text-xs" step="0.01" placeholder="0.15">
+              <span class="text-xs" style="color: var(--text-3)">
+                (from backtest: <span x-text="backtestResult ? (backtestResult.portfolio.vol*100).toFixed(1)+'%' : '—'"></span>)
+              </span>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div class="label mb-1">Risk-Free Rate rf</div>
+            <input type="number" x-model.number="kellyRf" @input="computeKelly()"
+                   class="w-20 text-xs" step="0.001" placeholder="0.045">
+          </div>
+          <div class="metric-card">
+            <div class="label mb-1">Kelly Fraction</div>
+            <div class="text-xl font-medium num font-mono" style="color: var(--cyan)"
+                 x-text="kellyResult ? kellyResult.fStar.toFixed(2) + 'x' : '—'"></div>
+            <div class="text-[10px]" style="color: var(--text-3)">
+              Half-Kelly: <span x-text="kellyResult ? (kellyResult.fStar/2).toFixed(2) + 'x' : '—'"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kelly curve chart -->
+        <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+          <div class="px-3 py-2 label" style="border-bottom: 1px solid var(--border); color: var(--cyan)">
+            KELLY CURVE — Return (blue) vs Volatility (red) · Peak at f*
+          </div>
+          <div x-html="kellyCurveSvg" style="width:100%;overflow-x:auto;"></div>
+        </div>
+      </div>
+
+      <!-- Net-worth sizing matrix -->
+      <div>
+        <div class="mb-4">
+          <h2 class="text-sm font-medium" style="color: var(--cyan)">POSITION SIZING MATRIX</h2>
+          <div class="text-xs mt-0.5" style="color: var(--text-3)">
+            Max % of net worth per position by risk tolerance. Click to edit.
+          </div>
+        </div>
+
+        <div class="rounded-lg border overflow-hidden mb-4" style="background: var(--surface); border-color: var(--border)">
+          <table class="w-full text-xs">
+            <thead style="background: #050505; color: var(--text-3)">
+              <tr style="border-bottom: 1px solid var(--border)">
+                <th class="text-left px-3 py-2 label">Net Worth</th>
+                <th class="text-center px-3 py-2 label">Low Risk</th>
+                <th class="text-center px-3 py-2 label">Moderate</th>
+                <th class="text-center px-3 py-2 label">High Risk</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="(row, ri) in sizingMatrix" :key="ri">
+                <tr class="row-hover" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
+                  <td class="px-3 py-2 font-medium" style="color: var(--text)" x-text="row.tier"></td>
+                  <template x-for="(val, ci) in row.values" :key="ci">
+                    <td class="px-3 py-2 text-center">
+                      <input type="number" x-model.number="sizingMatrix[ri].values[ci]"
+                             class="w-16 text-center text-xs font-mono" step="1" min="0" max="100"
+                             :style="`color: ${val > 10 ? 'var(--amber)' : 'var(--up)'}`">
+                      <span class="text-[9px]" style="color: var(--text-3)">%</span>
+                    </td>
+                  </template>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Kelly interpretation -->
+        <div x-show="kellyResult" class="rounded-lg border p-4" style="background: var(--surface); border-color: var(--border)">
+          <div class="label mb-2" style="color: var(--cyan)">INTERPRETATION</div>
+          <div class="text-xs space-y-1" style="color: var(--text-2)">
+            <div>Full Kelly: <span class="font-mono font-medium" style="color: var(--cyan)"
+                 x-text="kellyResult ? (kellyResult.fStar*100).toFixed(0)+'% of capital per position' : '—'"></span></div>
+            <div>Half Kelly (recommended): <span class="font-mono font-medium" style="color: var(--up)"
+                 x-text="kellyResult ? (kellyResult.fStar/2*100).toFixed(0)+'% of capital per position' : '—'"></span></div>
+            <div>Growth at f*: <span class="font-mono" style="color: var(--text)"
+                 x-text="kellyResult ? (kellyResult.gStar*100).toFixed(2)+'%/yr' : '—'"></span></div>
+            <div>Growth at 2f* (overbetting): <span class="font-mono" style="color: var(--amber)"
+                 x-text="kellyResult ? (kellyResult.g2Star*100).toFixed(2)+'%/yr ≈ rf' : '—'"></span></div>
           </div>
         </div>
       </div>
     </div>
-
-    <!-- Disclaimer -->
-    <div class="rounded-lg border px-3 py-2 text-[10px]" style="border-color: var(--border); color: var(--text-3)">
-      ⚠ Simulation uses historical daily returns, not forward-looking projections. TER is applied daily. 
-      Volatility drag (beta-slippage) is a mathematical property of daily-rebalanced leveraged products and 
-      grows with |leverage| and underlying volatility. This is not financial advice.
-    </div>
-
   </div>
 
-  <!-- FOOTER -->
-  <footer class="mt-6 pt-4 text-xs flex gap-4 flex-wrap" style="border-top: 1px solid var(--border); color: var(--text-3)">
-    <span>Predator Protocol · yieldchaser/etf-data</span>
-    <a href="index.html" style="color: var(--cyan); text-decoration: none;">← Dashboard</a>
-    <a href="markets.html" style="color: var(--text-3); text-decoration: none;">Markets</a>
-  </footer>
 
-</div><!-- /app -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- TAB: STRESS TESTS (§19)                                            -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div x-show="activeTab === 'stress'">
+    <div x-show="!backtestResult" class="text-center py-20" style="color: var(--text-3)">
+      <div class="text-base mb-2">No backtest yet</div>
+    </div>
+    <div x-show="backtestResult">
+      <div class="mb-4">
+        <h2 class="text-sm font-medium" style="color: var(--cyan)">STRESS TESTS / SCENARIO ANALYSIS</h2>
+        <div class="text-xs mt-0.5" style="color: var(--text-3)">
+          "If today's portfolio had lived through these crises, it would have drawn down X%."
+        </div>
+      </div>
+      <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+        <table class="w-full text-xs">
+          <thead style="background: #050505; color: var(--text-3)">
+            <tr style="border-bottom: 1px solid var(--border)">
+              <th class="text-left px-4 py-2 label">Event</th>
+              <th class="text-right px-4 py-2 label">Period</th>
+              <th class="text-right px-4 py-2 label">Portfolio DD</th>
+              <th class="text-right px-4 py-2 label">Benchmark DD</th>
+              <th class="text-right px-4 py-2 label">Portfolio Return</th>
+              <th class="text-right px-4 py-2 label">Benchmark Return</th>
+              <th class="text-right px-4 py-2 label">Recovery (mo)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="row in stressResults" :key="row.event">
+              <tr class="row-hover" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
+                <td class="px-4 py-2 font-medium" style="color: var(--text)" x-text="row.event"></td>
+                <td class="px-4 py-2 text-right num font-mono text-[10px]" style="color: var(--text-3)"
+                    x-text="row.period"></td>
+                <td class="px-4 py-2 text-right num font-mono font-medium" style="color: var(--down)"
+                    x-text="row.portDd != null ? (row.portDd*100).toFixed(1)+'%' : '—'"></td>
+                <td class="px-4 py-2 text-right num font-mono" style="color: var(--text-2)"
+                    x-text="row.benchDd != null ? (row.benchDd*100).toFixed(1)+'%' : '—'"></td>
+                <td class="px-4 py-2 text-right num font-mono font-medium"
+                    :style="`color: ${(row.portRet||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
+                    x-text="row.portRet != null ? ((row.portRet>=0?'+':'')+(row.portRet*100).toFixed(1)+'%') : '—'"></td>
+                <td class="px-4 py-2 text-right num font-mono"
+                    :style="`color: ${(row.benchRet||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
+                    x-text="row.benchRet != null ? ((row.benchRet>=0?'+':'')+(row.benchRet*100).toFixed(1)+'%') : '—'"></td>
+                <td class="px-4 py-2 text-right num font-mono" style="color: var(--text-2)"
+                    x-text="row.recovery != null ? row.recovery+'m' : '—'"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- TAB: LEVERAGE DECAY (§18 — upgraded ETN simulator)                 -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <div x-show="activeTab === 'leverage'">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-5">
+      <!-- Controls -->
+      <div class="lg:col-span-1 space-y-4">
+        <div>
+          <h2 class="text-sm font-medium mb-3" style="color: var(--cyan)">LEVERAGE DECAY</h2>
+          <div class="text-xs mb-4" style="color: var(--text-3)">
+            Daily-compounding NAV simulation. Volatility drag = ½(L²−L)σ²/yr.
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="label mb-1">Underlying</div>
+          <select x-model="etn.underlying" @change="runEtn()" class="w-full text-xs">
+            <template x-for="sym in etnSymbols" :key="sym">
+              <option :value="sym" x-text="sym"></option>
+            </template>
+            <option value="__manual__">Manual (vol slider)</option>
+          </select>
+        </div>
+
+        <div class="metric-card">
+          <div class="label mb-1">Leverage Factor</div>
+          <div class="flex items-center gap-2">
+            <input type="range" min="-5" max="5" step="0.5" x-model.number="etn.leverage"
+                   @input="runEtn()" class="flex-1">
+            <span class="num font-mono text-sm w-8 text-right"
+                  :style="etn.leverage > 0 ? 'color: var(--up)' : etn.leverage < 0 ? 'color: var(--down)' : 'color: var(--text-3)'"
+                  x-text="etn.leverage + 'x'"></span>
+          </div>
+        </div>
+
+        <div class="metric-card" x-show="etn.underlying === '__manual__'">
+          <div class="label mb-1">Annual Vol (manual)</div>
+          <div class="flex items-center gap-2">
+            <input type="range" min="5" max="150" step="1" x-model.number="etn.manualVol"
+                   @input="runEtn()" class="flex-1">
+            <span class="num font-mono text-sm w-10 text-right" style="color: var(--amber)"
+                  x-text="etn.manualVol + '%'"></span>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="label mb-1">Borrow Cost (% / yr)</div>
+          <input type="number" x-model.number="etn.borrowCost" @input="runEtn()"
+                 class="w-full text-xs" step="0.1" min="0" max="20">
+        </div>
+
+        <div class="metric-card">
+          <div class="label mb-1">TER (% / yr)</div>
+          <input type="number" x-model.number="etn.ter" @input="runEtn()"
+                 class="w-full text-xs" step="0.01" min="0" max="5">
+        </div>
+
+        <!-- Decay stats -->
+        <div x-show="etnResult" class="space-y-2">
+          <div class="metric-card">
+            <div class="label mb-1">Vol Drag (theory)</div>
+            <div class="num font-mono text-sm font-medium" style="color: var(--down)"
+                 x-text="etnResult ? '−' + (etnResult.volDragTheory*100).toFixed(2) + '%/yr' : '—'"
+                 @mouseenter="showTt($event, 'Volatility drag = ½(L²−L)σ² annualised\nThis is the cost of daily compounding at leverage L')"
+                 @mouseleave="hideTt()"></div>
+          </div>
+          <div class="metric-card">
+            <div class="label mb-1">Simulated Drag</div>
+            <div class="num font-mono text-sm font-medium" style="color: var(--down)"
+                 x-text="etnResult ? '−' + (etnResult.volDragSimulated*100).toFixed(2) + '%/yr' : '—'"
+                 @mouseenter="showTt($event, 'Actual drag from simulation vs naive leverage\nShould tie out to theory within rounding')"
+                 @mouseleave="hideTt()"></div>
+          </div>
+          <div class="metric-card">
+            <div class="label mb-1">ETN Final NAV</div>
+            <div class="num font-mono text-sm font-medium" style="color: var(--cyan)"
+                 x-text="etnResult ? '$' + etnResult.etnFinal.toFixed(2) : '—'"></div>
+          </div>
+          <div class="metric-card">
+            <div class="label mb-1">Naive Leverage Final</div>
+            <div class="num font-mono text-sm font-medium" style="color: var(--text-2)"
+                 x-text="etnResult ? '$' + etnResult.naiveFinal.toFixed(2) : '—'"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chart -->
+      <div class="lg:col-span-3">
+        <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+          <div class="px-3 py-2 label" style="border-bottom: 1px solid var(--border); color: var(--cyan)">
+            ETN NAV vs NAIVE LEVERAGE vs UNDERLYING (log scale, base $100)
+          </div>
+          <div x-show="!etnResult" class="py-20 text-center text-xs" style="color: var(--text-3)">
+            Select an underlying to simulate
+          </div>
+          <div x-show="etnResult" x-html="etnChartSvg" style="width:100%;overflow-x:auto;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main container -->
+
 
 <script>
-function simApp() {
+// ─── Tooltip helpers ──────────────────────────────────────────────────────────
+const _tt = document.getElementById('tt');
+function _showTt(el, text) {
+  if (!text) return;
+  _tt.textContent = text;
+  _tt.style.opacity = '1';
+  const r = el.getBoundingClientRect();
+  let x = r.left, y = r.bottom + 6;
+  if (x + 280 > window.innerWidth) x = window.innerWidth - 290;
+  if (y + 80 > window.innerHeight) y = r.top - 80;
+  _tt.style.left = x + 'px';
+  _tt.style.top = y + 'px';
+}
+function _hideTt() { _tt.style.opacity = '0'; }
+
+// ─── Math helpers ─────────────────────────────────────────────────────────────
+const _sqrt12 = Math.sqrt(12);
+
+function _mean(arr) {
+  if (!arr.length) return 0;
+  return arr.reduce((a, b) => a + b, 0) / arr.length;
+}
+function _std(arr, ddof = 1) {
+  if (arr.length < 2) return 0;
+  const m = _mean(arr);
+  const v = arr.reduce((s, x) => s + (x - m) ** 2, 0) / (arr.length - ddof);
+  return Math.sqrt(v);
+}
+function _cagr(start, end, months) {
+  if (!start || !end || months <= 0) return null;
+  return Math.pow(end / start, 12 / months) - 1;
+}
+function _maxDd(equity) {
+  let peak = equity[0], worst = 0;
+  for (const v of equity) {
+    if (v > peak) peak = v;
+    const dd = peak > 0 ? v / peak - 1 : 0;
+    if (dd < worst) worst = dd;
+  }
+  return worst;
+}
+function _ulcer(equity) {
+  let peak = equity[0];
+  let sumSq = 0;
+  for (const v of equity) {
+    if (v > peak) peak = v;
+    const dd = peak > 0 ? v / peak - 1 : 0;
+    sumSq += dd * dd;
+  }
+  return Math.sqrt(sumSq / equity.length) * 100;
+}
+function _sharpe(rets, rf_monthly) {
+  if (rets.length < 2) return null;
+  const excess = rets.map(r => r - rf_monthly);
+  const m = _mean(excess), s = _std(excess);
+  return s > 0 ? (m / s) * _sqrt12 : null;
+}
+function _sortino(rets, rf_monthly, mar = 0) {
+  if (rets.length < 2) return null;
+  const excess = rets.map(r => r - rf_monthly);
+  const m = _mean(excess);
+  const downside = Math.sqrt(_mean(excess.map(r => Math.min(r - mar, 0) ** 2)));
+  return downside > 0 ? (m / downside) * _sqrt12 : null;
+}
+function _beta(portRets, benchRets) {
+  if (portRets.length < 2) return null;
+  const n = Math.min(portRets.length, benchRets.length);
+  const p = portRets.slice(0, n), b = benchRets.slice(0, n);
+  const pm = _mean(p), bm = _mean(b);
+  let cov = 0, bvar = 0;
+  for (let i = 0; i < n; i++) {
+    cov += (p[i] - pm) * (b[i] - bm);
+    bvar += (b[i] - bm) ** 2;
+  }
+  return bvar > 0 ? cov / bvar : null;
+}
+function _corr(a, b) {
+  const n = Math.min(a.length, b.length);
+  if (n < 2) return null;
+  const am = _mean(a.slice(0, n)), bm = _mean(b.slice(0, n));
+  let cov = 0, av = 0, bv = 0;
+  for (let i = 0; i < n; i++) {
+    cov += (a[i] - am) * (b[i] - bm);
+    av += (a[i] - am) ** 2;
+    bv += (b[i] - bm) ** 2;
+  }
+  return (av > 0 && bv > 0) ? cov / Math.sqrt(av * bv) : null;
+}
+function _skew(arr) {
+  if (arr.length < 3) return null;
+  const m = _mean(arr), s = _std(arr);
+  if (s === 0) return 0;
+  return _mean(arr.map(x => ((x - m) / s) ** 3));
+}
+function _kurt(arr) {
+  if (arr.length < 4) return null;
+  const m = _mean(arr), s = _std(arr);
+  if (s === 0) return 0;
+  return _mean(arr.map(x => ((x - m) / s) ** 4)) - 3; // excess kurtosis
+}
+function _omega(rets, mar = 0) {
+  const gains = rets.filter(r => r > mar).reduce((s, r) => s + (r - mar), 0);
+  const losses = rets.filter(r => r <= mar).reduce((s, r) => s + (mar - r), 0);
+  return losses > 0 ? gains / losses : null;
+}
+function _calmar(cagr, maxDd) {
+  return (cagr != null && maxDd < 0) ? cagr / Math.abs(maxDd) : null;
+}
+function _infoRatio(portRets, benchRets) {
+  const n = Math.min(portRets.length, benchRets.length);
+  const active = portRets.slice(0, n).map((r, i) => r - benchRets[i]);
+  const ar = _mean(active) * 12;
+  const te = _std(active) * _sqrt12;
+  return te > 0 ? ar / te : null;
+}
+function _upDownCapture(portRets, benchRets) {
+  const n = Math.min(portRets.length, benchRets.length);
+  const upP = [], upB = [], dnP = [], dnB = [];
+  for (let i = 0; i < n; i++) {
+    if (benchRets[i] > 0) { upP.push(portRets[i]); upB.push(benchRets[i]); }
+    else if (benchRets[i] < 0) { dnP.push(portRets[i]); dnB.push(benchRets[i]); }
+  }
+  const geoMean = arr => arr.length ? Math.pow(arr.reduce((p, r) => p * (1 + r), 1), 1 / arr.length) - 1 : null;
+  const upCapture = (geoMean(upP) != null && geoMean(upB) != null && geoMean(upB) !== 0)
+    ? geoMean(upP) / geoMean(upB) : null;
+  const dnCapture = (geoMean(dnP) != null && geoMean(dnB) != null && geoMean(dnB) !== 0)
+    ? geoMean(dnP) / geoMean(dnB) : null;
+  return { upCapture, dnCapture };
+}
+
+// ─── Format helpers ───────────────────────────────────────────────────────────
+const _fp = (v, dp = 1, sign = true) => {
+  if (v == null || !isFinite(v)) return '—';
+  const s = sign && v >= 0 ? '+' : '';
+  return s + (v * 100).toFixed(dp) + '%';
+};
+const _fn = (v, dp = 2) => v == null || !isFinite(v) ? '—' : v.toFixed(dp);
+const _fc = (v) => v == null || !isFinite(v) ? '—' : '$' + v.toLocaleString('en-US', {maximumFractionDigits: 0});
+const _retColor = (v) => v == null ? 'var(--text)' : v >= 0 ? 'var(--up)' : 'var(--down)';
+
+</script>
+
+<script>
+// ─── Backtest engine ──────────────────────────────────────────────────────────
+
+/**
+ * Build monthly return series from prices.json monthly data.
+ * Returns {YYYY-MM: return} dict.
+ */
+function buildMonthlyReturns(monthly) {
+  if (!monthly || monthly.length < 2) return {};
+  const ret = {};
+  for (let i = 1; i < monthly.length; i++) {
+    const prev = monthly[i - 1][1], curr = monthly[i][1];
+    if (prev > 0 && curr != null) {
+      ret[monthly[i][0]] = curr / prev - 1;
+    }
+  }
+  return ret;
+}
+
+/**
+ * Run portfolio backtest.
+ * @param {Array} holdings - [{ticker, weight}, ...]  weights sum to 1
+ * @param {Object} tickerReturns - {ticker: {YYYY-MM: return}}
+ * @param {string} startYm - YYYY-MM
+ * @param {string} endYm - YYYY-MM
+ * @param {string} rebalance - 'none'|'monthly'|'quarterly'|'annual'
+ * @returns {Object} - {months, equity, returns, ...}
+ */
+function runBacktestEngine(holdings, tickerReturns, startYm, endYm, rebalance = 'annual') {
+  // Get all months in range
+  const allMonths = new Set();
+  for (const { ticker } of holdings) {
+    const rets = tickerReturns[ticker];
+    if (rets) Object.keys(rets).forEach(m => allMonths.add(m));
+  }
+  const months = [...allMonths].filter(m => m >= startYm && m <= endYm).sort();
+  if (months.length < 2) return null;
+
+  // Initial weights (normalized to sum to 1)
+  const totalW = holdings.reduce((s, h) => s + h.weight, 0);
+  let weights = {};
+  for (const h of holdings) weights[h.ticker] = h.weight / (totalW || 1);
+
+  // Run month by month
+  const equity = [10000];
+  const portRets = [];
+  let currentWeights = { ...weights };
+
+  for (let i = 0; i < months.length; i++) {
+    const ym = months[i];
+    const yr = parseInt(ym.slice(0, 4));
+    const mo = parseInt(ym.slice(5, 7));
+
+    // Compute portfolio return
+    let portRet = 0;
+    for (const { ticker } of holdings) {
+      const r = tickerReturns[ticker]?.[ym];
+      if (r != null) portRet += (currentWeights[ticker] || 0) * r;
+    }
+    portRets.push(portRet);
+    equity.push(equity[equity.length - 1] * (1 + portRet));
+
+    // Rebalance
+    const shouldRebalance =
+      rebalance === 'monthly' ||
+      (rebalance === 'quarterly' && mo % 3 === 0) ||
+      (rebalance === 'annual' && mo === 12);
+
+    if (shouldRebalance) {
+      currentWeights = { ...weights };
+    } else {
+      // Drift weights
+      const newW = {};
+      let total = 0;
+      for (const { ticker } of holdings) {
+        const r = tickerReturns[ticker]?.[ym] ?? 0;
+        newW[ticker] = (currentWeights[ticker] || 0) * (1 + r);
+        total += newW[ticker];
+      }
+      if (total > 0) {
+        for (const t of Object.keys(newW)) newW[t] /= total;
+        currentWeights = newW;
+      }
+    }
+  }
+
+  return { months, equity, returns: portRets };
+}
+
+/**
+ * Compute all §13 performance metrics.
+ */
+function computeMetrics(equity, returns, benchEquity, benchReturns, rfMonthly = 0.004) {
+  if (!equity || equity.length < 2) return null;
+  const n = returns.length;
+  const startVal = equity[0], endVal = equity[equity.length - 1];
+  const cagr = _cagr(startVal, endVal, n);
+  const vol = _std(returns) * _sqrt12;
+  const maxDd = _maxDd(equity);
+  const sharpe = _sharpe(returns, rfMonthly);
+  const sortino = _sortino(returns, rfMonthly);
+  const calmar = _calmar(cagr, maxDd);
+  const beta = benchReturns ? _beta(returns, benchReturns) : null;
+  const corr = benchReturns ? _corr(returns, benchReturns) : null;
+  const alpha = (beta != null && cagr != null && benchReturns)
+    ? (cagr - rfMonthly * 12) - beta * (_cagr(benchEquity[0], benchEquity[benchEquity.length - 1], benchReturns.length) - rfMonthly * 12)
+    : null;
+  const r2 = corr != null ? corr ** 2 : null;
+  const treynor = (beta && beta !== 0 && cagr != null)
+    ? (cagr - rfMonthly * 12) / beta : null;
+  const activeRet = benchReturns ? (_mean(returns) - _mean(benchReturns)) * 12 : null;
+  const te = benchReturns ? _std(returns.map((r, i) => r - (benchReturns[i] ?? 0))) * _sqrt12 : null;
+  const ir = (activeRet != null && te && te > 0) ? activeRet / te : null;
+  const skew = _skew(returns);
+  const kurt = _kurt(returns);
+  const omega = _omega(returns);
+  const ulcer = _ulcer(equity);
+  const martin = (ulcer > 0 && cagr != null) ? cagr / (ulcer / 100) : null;
+  const pctPos = returns.filter(r => r > 0).length / n;
+  const { upCapture, dnCapture } = benchReturns ? _upDownCapture(returns, benchReturns) : {};
+
+  // Best/worst year
+  const byYear = {};
+  // (simplified — use annual returns from equity curve)
+  let bestYear = null, worstYear = null;
+
   return {
-    computing: false,
-    underlyings: {},   // loaded from sim_underlyings.json
-    result: null,
-    params: {
-      underlying: 'SPX',
-      leverage: 2,
-      ter: 0.95,
-      days: 252,
-      manualVol: 1.5,
-      drift: 10,
-      nav0: 100,
-    },
+    startVal, endVal, cagr, vol, maxDd, sharpe, sortino, calmar,
+    beta, corr, alpha, r2, treynor, activeRet, te, ir,
+    skew, kurt, omega, ulcer, martin, pctPos, upCapture, dnCapture,
+    n, bestYear, worstYear,
+  };
+}
 
-    async load() {
-      try {
-        this.underlyings = await fetch('data/sim_underlyings.json', { cache: 'no-store' }).then(r => r.json());
-      } catch (e) {
-        console.warn('sim_underlyings.json not found — using manual vol mode');
-        this.params.underlying = '__manual__';
-      }
-      this.run();
-    },
+</script>
 
-    get availableSymbols() { return Object.keys(this.underlyings).sort(); },
+<script>
+// ─── SVG chart helpers ────────────────────────────────────────────────────────
 
-    run() {
-      this.computing = true;
-      // Defer to next tick so the loading state renders
-      setTimeout(() => {
-        try { this.result = this._simulate(); }
-        catch (e) { console.error(e); this.result = null; }
-        finally { this.computing = false; }
-      }, 10);
-    },
+function _lineChart(series, opts = {}) {
+  const {
+    W = 1200, H = 280, PL = 60, PR = 20, PT = 20, PB = 35,
+    logScale = false, title = '', yFmt = v => v.toFixed(0),
+    xFmt = ym => ym.slice(0, 4),
+    xStep = 12,
+  } = opts;
+  const chartW = W - PL - PR, chartH = H - PT - PB;
 
-    _simulate() {
-      const { leverage, ter, days, nav0, drift, manualVol, underlying } = this.params;
-      const terDaily = ter / 100 / 252;
+  // Collect all x values
+  const allX = [...new Set(series.flatMap(s => s.data.map(p => p[0])))].sort();
+  if (!allX.length) return '';
 
-      let dailyRets;
-      if (underlying === '__manual__' || !this.underlyings[underlying]) {
-        // Synthetic: use drift + manualVol to generate GBM-like daily returns (historical average, not random)
-        const mu = drift / 100 / 252;
-        const sigma = manualVol / 100;
-        const n = Math.max(21, days);
-        // NOTE: This generates a deterministic periodic path for demonstration purposes only.
-        // It is NOT a realistic stochastic simulation (no randomness / mean-reversion).
-        dailyRets = Array.from({ length: n }, (_, i) => mu + sigma * Math.sin(i * 0.31));
+  // Y range
+  const allY = series.flatMap(s => s.data.map(p => p[1])).filter(v => v != null && v > 0);
+  if (!allY.length) return '';
+  const minY = logScale ? Math.min(...allY) : 0;
+  const maxY = Math.max(...allY);
+  const yRange = maxY - minY || 1;
+
+  const xS = (ym) => PL + (allX.indexOf(ym) / Math.max(allX.length - 1, 1)) * chartW;
+  const yS = (v) => {
+    if (logScale && v > 0) {
+      const logMin = Math.log(minY || 1), logMax = Math.log(maxY);
+      return PT + chartH - ((Math.log(v) - logMin) / (logMax - logMin)) * chartH;
+    }
+    return PT + chartH - ((v - minY) / yRange) * chartH;
+  };
+
+  // Y ticks
+  let ticks = '';
+  const nTicks = 5;
+  for (let i = 0; i <= nTicks; i++) {
+    const v = logScale
+      ? Math.exp(Math.log(minY || 1) + (Math.log(maxY) - Math.log(minY || 1)) * i / nTicks)
+      : minY + yRange * i / nTicks;
+    const y = yS(v);
+    ticks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W-PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>`;
+    ticks += `<text x="${PL-4}" y="${(y+3.5).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${yFmt(v)}</text>`;
+  }
+
+  // X labels
+  let xLabels = '';
+  for (let i = 0; i < allX.length; i += xStep) {
+    const x = xS(allX[i]);
+    xLabels += `<text x="${x.toFixed(1)}" y="${H-8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${xFmt(allX[i])}</text>`;
+  }
+
+  // Lines
+  let lines = '';
+  for (const s of series) {
+    const pts = s.data.filter(p => p[1] != null && allX.includes(p[0]));
+    if (pts.length < 2) continue;
+    const d = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${xS(p[0]).toFixed(1)},${yS(p[1]).toFixed(1)}`).join(' ');
+    lines += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="${s.width || 1.5}" opacity="${s.opacity || 0.9}" ${s.dash ? `stroke-dasharray="${s.dash}"` : ''}/>`;
+    // Label at end
+    const last = pts[pts.length - 1];
+    if (s.label) {
+      lines += `<text x="${(xS(last[0]) + 4).toFixed(1)}" y="${(yS(last[1]) + 3).toFixed(1)}" style="font-size:8px;fill:${s.color};font-family:ui-monospace">${s.label}</text>`;
+    }
+  }
+
+  const titleEl = title ? `<text x="${PL}" y="13" style="font-size:9px;fill:#71717a;font-family:ui-monospace">${title}</text>` : '';
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block;background:var(--surface)">${titleEl}${ticks}${xLabels}${lines}</svg>`;
+}
+
+function _barChart(data, opts = {}) {
+  const { W = 600, H = 160, PL = 40, PR = 20, PT = 15, PB = 30, color = '#22d3ee' } = opts;
+  if (!data.length) return '';
+  const chartW = W - PL - PR, chartH = H - PT - PB;
+  const maxV = Math.max(...data.map(d => d.count));
+  const bw = chartW / data.length;
+  let bars = '';
+  for (let i = 0; i < data.length; i++) {
+    const d = data[i];
+    const bh = maxV > 0 ? (d.count / maxV) * chartH : 0;
+    const x = PL + i * bw;
+    const y = PT + chartH - bh;
+    const c = d.label.startsWith('-') ? '#fb7185' : '#34d399';
+    bars += `<rect x="${(x+1).toFixed(1)}" y="${y.toFixed(1)}" width="${(bw-2).toFixed(1)}" height="${Math.max(1, bh).toFixed(1)}" fill="${c}" opacity="0.7" rx="1"/>`;
+    if (i % 2 === 0) {
+      bars += `<text x="${(x + bw/2).toFixed(1)}" y="${H-6}" text-anchor="middle" style="font-size:8px;fill:#52525b;font-family:ui-monospace">${d.label}</text>`;
+    }
+  }
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;background:var(--surface)">${bars}</svg>`;
+}
+
+</script>
+
+<script>
+// ─── Monte Carlo engine ───────────────────────────────────────────────────────
+
+function runMonteCarloEngine(returns, horizon, nPaths, method, withdrawal = 0) {
+  const n = returns.length;
+  if (n < 12) return null;
+
+  const paths = [];
+  const blockSize = 12; // for block bootstrap
+
+  for (let p = 0; p < nPaths; p++) {
+    let val = 10000;
+    const path = [val];
+    const nMonths = horizon * 12;
+
+    for (let t = 0; t < nMonths; t++) {
+      let r;
+      if (method === 'historical') {
+        r = returns[Math.floor(Math.random() * n)];
+      } else if (method === 'block') {
+        const start = Math.floor(Math.random() * (n - blockSize));
+        r = returns[start + (t % blockSize)];
       } else {
-        const raw = this.underlyings[underlying];
-        const slice = raw.slice(-days);
-        dailyRets = [];
-        for (let i = 1; i < slice.length; i++) {
-          const r = (slice[i].c - slice[i-1].c) / slice[i-1].c;
-          if (isFinite(r)) dailyRets.push(r);
-        }
+        // Parametric normal
+        const mu = _mean(returns), sigma = _std(returns);
+        // Box-Muller
+        const u1 = Math.random(), u2 = Math.random();
+        const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+        r = mu + sigma * z;
       }
+      val = val * (1 + r) - withdrawal;
+      if (val < 0) val = 0;
+      path.push(val);
+    }
+    paths.push(path);
+  }
 
-      if (!dailyRets.length) return null;
+  // Compute percentile bands at each time step
+  const nSteps = horizon * 12 + 1;
+  const pcts = [5, 25, 50, 75, 95];
+  const bands = pcts.map(() => []);
 
-      // Build NAV series
-      const navs = [nav0];
-      const underlying_vals = [nav0];
-      const dates = [];
-      let underlying_nav = nav0;
+  for (let t = 0; t < nSteps; t++) {
+    const vals = paths.map(p => p[t]).sort((a, b) => a - b);
+    for (let pi = 0; pi < pcts.length; pi++) {
+      const idx = Math.floor((pcts[pi] / 100) * (vals.length - 1));
+      bands[pi].push(vals[idx]);
+    }
+  }
 
-      const raw = (underlying !== '__manual__' && this.underlyings[underlying])
-        ? this.underlyings[underlying].slice(-days)
-        : null;
+  // Terminal wealth stats
+  const terminal = paths.map(p => p[p.length - 1]).sort((a, b) => a - b);
+  const probLoss = terminal.filter(v => v < 10000).length / nPaths;
+  const median = terminal[Math.floor(nPaths / 2)];
+  const p5 = terminal[Math.floor(0.05 * nPaths)];
+  const p95 = terminal[Math.floor(0.95 * nPaths)];
 
-      for (let i = 0; i < dailyRets.length; i++) {
-        const r = dailyRets[i];
-        const prev_nav = navs[navs.length - 1];
-        const etn_r = leverage * r - terDaily;
-        navs.push(prev_nav * (1 + etn_r));
-        underlying_nav = underlying_nav * (1 + r);
-        underlying_vals.push(underlying_nav);
-        dates.push(raw ? raw[i + 1]?.d : `D${i+1}`);
+  return { bands, pcts, terminal, probLoss, median, p5, p95, nPaths, horizon };
+}
+
+// ─── Kelly engine ─────────────────────────────────────────────────────────────
+
+function computeKellyEngine(mu, sigma, rf) {
+  // Continuous Kelly: f* = (μ - rf) / σ²
+  const excess = mu - rf;
+  const fStar = sigma > 0 ? excess / (sigma ** 2) : 0;
+
+  // Growth rate g(f) = rf + f(μ-rf) - ½f²σ²
+  const g = (f) => rf + f * excess - 0.5 * f * f * sigma * sigma;
+  const gStar = g(fStar);
+  const g2Star = g(2 * fStar);
+
+  // Build curve data: f from 0 to 2.5
+  const curveData = [];
+  for (let f = 0; f <= 2.5; f += 0.05) {
+    curveData.push({
+      f: parseFloat(f.toFixed(2)),
+      growth: g(f),
+      vol: f * sigma,
+    });
+  }
+
+  return { fStar, gStar, g2Star, curveData, mu, sigma, rf };
+}
+
+// ─── ETN decay engine ─────────────────────────────────────────────────────────
+
+function runEtnEngine(dailyPrices, leverage, borrowCost, ter) {
+  if (!dailyPrices || dailyPrices.length < 2) return null;
+
+  const L = leverage;
+  const dailyBorrow = borrowCost / 252;
+  const dailyTer = ter / 252;
+
+  let etn = 100, naive = 100, underlying = 100;
+  const etnSeries = [{ d: dailyPrices[0].d, v: 100 }];
+  const naiveSeries = [{ d: dailyPrices[0].d, v: 100 }];
+  const undSeries = [{ d: dailyPrices[0].d, v: 100 }];
+
+  for (let i = 1; i < dailyPrices.length; i++) {
+    const prev = dailyPrices[i - 1].c, curr = dailyPrices[i].c;
+    if (!prev || !curr) continue;
+    const r = curr / prev - 1;
+
+    // ETN: daily compounding with leverage, borrow cost, TER
+    const etnR = L * r - (L > 1 ? (L - 1) * dailyBorrow : 0) - dailyTer;
+    etn *= (1 + etnR);
+
+    // Naive leverage: just multiply return (no daily compounding drag)
+    naive *= (1 + L * r);
+
+    // Underlying
+    underlying *= (1 + r);
+
+    etnSeries.push({ d: dailyPrices[i].d, v: etn });
+    naiveSeries.push({ d: dailyPrices[i].d, v: naive });
+    undSeries.push({ d: dailyPrices[i].d, v: underlying });
+  }
+
+  // Compute annualized vol from daily returns
+  const dailyRets = [];
+  for (let i = 1; i < dailyPrices.length; i++) {
+    const prev = dailyPrices[i - 1].c, curr = dailyPrices[i].c;
+    if (prev && curr) dailyRets.push(curr / prev - 1);
+  }
+  const annualVol = _std(dailyRets) * Math.sqrt(252);
+
+  // Theoretical vol drag = ½(L²-L)σ²
+  const volDragTheory = 0.5 * (L * L - L) * annualVol * annualVol;
+
+  // Simulated drag = (naive CAGR - ETN CAGR)
+  const nYears = dailyPrices.length / 252;
+  const etnCagr = nYears > 0 ? Math.pow(etn / 100, 1 / nYears) - 1 : 0;
+  const naiveCagr = nYears > 0 ? Math.pow(naive / 100, 1 / nYears) - 1 : 0;
+  const volDragSimulated = naiveCagr - etnCagr;
+
+  return {
+    etnSeries, naiveSeries, undSeries,
+    etnFinal: etn, naiveFinal: naive, undFinal: underlying,
+    volDragTheory, volDragSimulated, annualVol,
+  };
+}
+
+</script>
+
+<script>
+// ─── Alpine app ───────────────────────────────────────────────────────────────
+function labApp() {
+  return {
+    // ── State ──────────────────────────────────────────────────────────────
+    pricesData: null,
+    marketData: null,   // market_returns.json (for CPI, rates)
+    simData: null,      // sim_underlyings.json (for ETN)
+    loading: true,
+
+    activeTab: 'builder',
+    mainTabs: [
+      { id: 'builder',    label: 'Builder' },
+      { id: 'backtest',   label: 'Backtest' },
+      { id: 'risk',       label: 'Risk vs Benchmark' },
+      { id: 'growth',     label: 'Growth' },
+      { id: 'drawdowns',  label: 'Drawdowns' },
+      { id: 'montecarlo', label: 'Monte Carlo' },
+      { id: 'kelly',      label: 'Kelly Sizing' },
+      { id: 'stress',     label: 'Stress Tests' },
+      { id: 'leverage',   label: 'Leverage Decay' },
+    ],
+
+    // Shared controls
+    benchmark: 'SPY',
+    rebalanceFreq: 'annual',
+    startDate: '2010-01',
+    endDate: '',
+    realReturns: false,
+
+    // Portfolio
+    portfolio: [
+      { ticker: 'SPY',  weight: 60, name: 'S&P 500 ETF (SPY)',    first: '' },
+      { ticker: 'TLT',  weight: 40, name: '20Y Treasury ETF (TLT)', first: '' },
+    ],
+
+    // Backtest results
+    backtestResult: null,
+    tickerReturnsCache: {},
+
+    // Charts
+    vamiChartSvg: '',
+    vamiHoverInfo: null,
+    returnDistSvg: '',
+    growthChartSvg: '',
+    growthHoverInfo: null,
+    growthLogScale: true,
+    rollingChartSvg: '',
+    rollingMetric: 'CAGR',
+    rollingWindow: 24,
+    ddChartSvg: '',
+    ddHoverInfo: null,
+
+    // Monte Carlo
+    mcMethod: 'historical',
+    mcHorizon: 10,
+    mcPaths: 1000,
+    mcWithdrawal: 0,
+    mcResult: null,
+    mcFanChartSvg: '',
+    mcHistSvg: '',
+
+    // Kelly
+    kellyMu: 0.10,
+    kellySigma: 0.15,
+    kellyRf: 0.045,
+    kellyResult: null,
+    kellyCurveSvg: '',
+    sizingMatrix: [
+      { tier: '< $1M',   values: [2, 5, 10] },
+      { tier: '$1–5M',   values: [1, 3, 7]  },
+      { tier: '$5M+',    values: [0.5, 2, 5] },
+    ],
+
+    // Stress tests
+    stressEvents: [
+      { event: 'GFC 2008',          start: '2007-10', end: '2009-03' },
+      { event: 'COVID Crash 2020',  start: '2020-02', end: '2020-04' },
+      { event: 'Rate Shock 2022',   start: '2022-01', end: '2022-12' },
+      { event: 'Dot-com 2000',      start: '2000-03', end: '2002-10' },
+      { event: 'Black Monday 1987', start: '1987-08', end: '1987-12' },
+    ],
+    stressResults: [],
+
+    // ETN
+    etn: { underlying: 'NVDA', leverage: 2, manualVol: 30, borrowCost: 1.5, ter: 0.95 },
+    etnResult: null,
+    etnChartSvg: '',
+
+    // ── Init ───────────────────────────────────────────────────────────────
+    async init() {
+      await Promise.all([
+        this._loadPrices(),
+        this._loadMarketData(),
+        this._loadSimData(),
+      ]);
+      this.loading = false;
+      // Set default end date to latest available
+      if (this.pricesData?.asof) {
+        this.endDate = this.pricesData.asof;
       }
+      // Pre-populate ticker names
+      for (const row of this.portfolio) {
+        this._updateTickerMeta(row);
+      }
+      // Compute Kelly from defaults
+      this.computeKelly();
+    },
 
-      const finalNav = navs[navs.length - 1];
-      const finalUnderlying = underlying_vals[underlying_vals.length - 1];
-      const etn_total_pct = (finalNav - nav0) / nav0;
-      const underlying_total_pct = (finalUnderlying - nav0) / nav0;
-      const expected_lev = leverage * underlying_total_pct;
-      const drag_pct = etn_total_pct - expected_lev;
+    async _loadPrices() {
+      try {
+        const r = await fetch(`data/prices.json?v=${Date.now()}`, { cache: 'no-store' });
+        if (r.ok) this.pricesData = await r.json();
+      } catch (e) {
+        console.warn('prices.json not available:', e);
+      }
+    },
 
-      // Realized daily vol of underlying
-      const mean_r = dailyRets.reduce((s, r) => s + r, 0) / dailyRets.length;
-      const variance = dailyRets.reduce((s, r) => s + (r - mean_r) ** 2, 0) / dailyRets.length;
-      const sigma_d = Math.sqrt(variance);
+    async _loadMarketData() {
+      try {
+        const r = await fetch(`data/market_returns.json?v=${Date.now()}`, { cache: 'no-store' });
+        if (r.ok) this.marketData = await r.json();
+      } catch (e) { /* optional */ }
+    },
 
-      // Theoretical annual decay = ½ × (L²-|L|) × σ²/day × 252
-      const annual_decay = 0.5 * (leverage ** 2 - Math.abs(leverage)) * variance * 252;
+    async _loadSimData() {
+      try {
+        const r = await fetch(`data/sim_underlyings.json?v=${Date.now()}`, { cache: 'no-store' });
+        if (r.ok) this.simData = await r.json();
+      } catch (e) { /* optional */ }
+    },
 
-      return {
-        navs, underlying_vals, dates,
-        etn_total_pct, underlying_total_pct, expected_lev, drag_pct,
-        sigma_d, annual_decay,
-        final_nav: finalNav,
-        sessions: dailyRets.length,
+    // ── Tooltip ────────────────────────────────────────────────────────────
+    showTt(el, text) { _showTt(el, text); },
+    hideTt() { _hideTt(); },
+
+    // ── Portfolio helpers ──────────────────────────────────────────────────
+    get netExposure() {
+      return this.portfolio.reduce((s, r) => s + (r.weight || 0), 0);
+    },
+    get grossExposure() {
+      return this.portfolio.reduce((s, r) => s + Math.abs(r.weight || 0), 0);
+    },
+    get leverage() {
+      return this.grossExposure / 100;
+    },
+
+    addRow() {
+      this.portfolio.push({ ticker: '', weight: 0, name: '', first: '' });
+    },
+    removeRow(i) {
+      this.portfolio.splice(i, 1);
+    },
+    clearPortfolio() {
+      this.portfolio = [];
+      this.backtestResult = null;
+    },
+    loadSamplePortfolio() {
+      this.portfolio = [
+        { ticker: 'SPY', weight: 60, name: 'S&P 500 ETF (SPY)', first: '' },
+        { ticker: 'TLT', weight: 40, name: '20Y Treasury ETF (TLT)', first: '' },
+      ];
+      for (const row of this.portfolio) this._updateTickerMeta(row);
+      this.runBacktest();
+    },
+
+    onTickerChange(i) {
+      const row = this.portfolio[i];
+      row.ticker = row.ticker.toUpperCase().trim();
+      this._updateTickerMeta(row);
+    },
+    onWeightChange() {
+      // Trigger reactivity
+    },
+
+    _updateTickerMeta(row) {
+      if (!row.ticker) { row.name = ''; row.first = ''; return; }
+      const t = this.pricesData?.tickers?.[row.ticker];
+      if (t) {
+        row.name = t.name;
+        row.first = t.first || '';
+      } else {
+        row.name = row.ticker;
+        row.first = '';
+      }
+    },
+
+    exportPortfolio() {
+      const data = {
+        portfolio: this.portfolio.map(r => ({ ticker: r.ticker, weight: r.weight })),
+        benchmark: this.benchmark,
+        rebalance: this.rebalanceFreq,
+        start: this.startDate,
+        end: this.endDate,
       };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'portfolio.json'; a.click();
+      URL.revokeObjectURL(url);
     },
 
-    // Chart helpers
-    _chartY(v, allVals, h = 190) {
-      const mn = Math.min(...allVals), mx = Math.max(...allVals);
-      const range = mx - mn || 1;
-      return 10 + (1 - (v - mn) / range) * (h - 10);
-    },
-    get navZeroY() {
-      if (!this.result) return 100;
-      return this._chartY(this.params.nav0, [...this.result.navs, ...this.result.underlying_vals]);
-    },
-    _buildPath(vals, allVals) {
-      return vals.map((v, i) => `${i === 0 ? 'M' : 'L'}${(i / Math.max(1, vals.length - 1)) * 900},${this._chartY(v, allVals)}`).join(' ');
-    },
-    get navLinePath() {
-      if (!this.result) return '';
-      return this._buildPath(this.result.navs, [...this.result.navs, ...this.result.underlying_vals]);
-    },
-    get navAreaPath() {
-      if (!this.result) return '';
-      const allV = [...this.result.navs, ...this.result.underlying_vals];
-      const line = this._buildPath(this.result.navs, allV);
-      const n = this.result.navs.length;
-      const zeroY = this._chartY(this.params.nav0, allV);
-      return `${line} L900,${zeroY} L0,${zeroY} Z`;
-    },
-    get underlyingLinePath() {
-      if (!this.result) return '';
-      const allV = [...this.result.navs, ...this.result.underlying_vals];
-      return this._buildPath(this.result.underlying_vals, allV);
-    },
-    get underlyingAreaPath() {
-      if (!this.result) return '';
-      const allV = [...this.result.navs, ...this.result.underlying_vals];
-      const line = this._buildPath(this.result.underlying_vals, allV);
-      const zeroY = this._chartY(this.params.nav0, allV);
-      return `${line} L900,${zeroY} L0,${zeroY} Z`;
+    importPortfolio(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (data.portfolio) {
+            this.portfolio = data.portfolio.map(r => ({
+              ticker: r.ticker, weight: r.weight, name: '', first: ''
+            }));
+            for (const row of this.portfolio) this._updateTickerMeta(row);
+          }
+          if (data.benchmark) this.benchmark = data.benchmark;
+          if (data.rebalance) this.rebalanceFreq = data.rebalance;
+          if (data.start) this.startDate = data.start;
+          if (data.end) this.endDate = data.end;
+          this.runBacktest();
+        } catch (err) {
+          alert('Could not parse portfolio file: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
     },
 
-    get resultKpis() {
-      if (!this.result) return [];
-      const r = this.result;
+</script>
+
+<script>
+    // ── Backtest runner ────────────────────────────────────────────────────
+    runBacktest() {
+      if (!this.pricesData) return;
+      const tickers = this.pricesData.tickers || {};
+
+      // Build return series for all needed tickers
+      const needed = [...new Set([
+        ...this.portfolio.map(r => r.ticker).filter(Boolean),
+        this.benchmark,
+      ])];
+
+      const tickerReturns = {};
+      for (const t of needed) {
+        if (this.tickerReturnsCache[t]) {
+          tickerReturns[t] = this.tickerReturnsCache[t];
+          continue;
+        }
+        const data = tickers[t];
+        if (!data?.monthly) {
+          // Try market_returns.json as fallback
+          const mAsset = this.marketData?.assets?.[t.toLowerCase()];
+          if (mAsset?.monthly) {
+            const rets = buildMonthlyReturns(mAsset.monthly);
+            tickerReturns[t] = rets;
+            this.tickerReturnsCache[t] = rets;
+          }
+          continue;
+        }
+        const rets = buildMonthlyReturns(data.monthly);
+        tickerReturns[t] = rets;
+        this.tickerReturnsCache[t] = rets;
+      }
+
+      // Determine date range
+      const validTickers = this.portfolio.filter(r => r.ticker && tickerReturns[r.ticker]);
+      if (!validTickers.length) return;
+
+      const allMonths = new Set();
+      for (const { ticker } of validTickers) {
+        Object.keys(tickerReturns[ticker] || {}).forEach(m => allMonths.add(m));
+      }
+      const sortedMonths = [...allMonths].sort();
+      const start = this.startDate || sortedMonths[0];
+      const end = this.endDate || sortedMonths[sortedMonths.length - 1];
+
+      // Run portfolio backtest
+      const holdings = validTickers.map(r => ({
+        ticker: r.ticker,
+        weight: r.weight / 100,
+      }));
+      const portResult = runBacktestEngine(holdings, tickerReturns, start, end, this.rebalanceFreq);
+      if (!portResult) return;
+
+      // Run benchmark backtest
+      const benchHoldings = [{ ticker: this.benchmark, weight: 1 }];
+      const benchResult = runBacktestEngine(benchHoldings, tickerReturns, start, end, 'none');
+
+      // Risk-free rate (approximate from market_returns.json rates if available)
+      const rfMonthly = 0.004; // ~4.8% annual default
+
+      // Compute metrics
+      const portMetrics = computeMetrics(
+        portResult.equity, portResult.returns,
+        benchResult?.equity, benchResult?.returns,
+        rfMonthly
+      );
+      const benchMetrics = benchResult ? computeMetrics(
+        benchResult.equity, benchResult.returns,
+        null, null, rfMonthly
+      ) : null;
+
+      this.backtestResult = {
+        start, end,
+        n_months: portResult.months.length,
+        months: portResult.months,
+        portfolio: { ...portMetrics, equity: portResult.equity, returns: portResult.returns },
+        benchmark: benchResult ? { ...benchMetrics, equity: benchResult.equity, returns: benchResult.returns } : null,
+      };
+
+      // Update all charts
+      this._buildVamiChart();
+      this._buildReturnDist();
+      this._buildGrowthChart();
+      this._buildRollingChart();
+      this._buildDdChart();
+      this._buildStressTests();
+
+      // Update Kelly from backtest
+      if (portMetrics?.cagr != null && portMetrics?.vol != null) {
+        this.kellyMu = parseFloat((portMetrics.cagr).toFixed(4));
+        this.kellySigma = parseFloat((portMetrics.vol).toFixed(4));
+        this.computeKelly();
+      }
+    },
+
+    // ── Chart builders ─────────────────────────────────────────────────────
+    _buildVamiChart() {
+      const r = this.backtestResult;
+      if (!r) return;
+      const months = r.months;
+      const portVami = r.portfolio.equity.map(v => v / 10); // base 1000
+      const benchVami = r.benchmark?.equity.map(v => v / 10);
+
+      const series = [
+        { data: months.map((m, i) => [m, portVami[i + 1]]), color: '#22d3ee', label: 'Portfolio', width: 2 },
+      ];
+      if (benchVami) {
+        series.push({ data: months.map((m, i) => [m, benchVami[i + 1]]), color: '#a1a1aa', label: this.benchmark, dash: '4,3' });
+      }
+      this.vamiChartSvg = _lineChart(series, {
+        logScale: true,
+        title: 'VAMI (base 1000)',
+        yFmt: v => v >= 1000 ? (v/1000).toFixed(1)+'K' : v.toFixed(0),
+      });
+    },
+
+    _buildReturnDist() {
+      const r = this.backtestResult;
+      if (!r) return;
+      const rets = r.portfolio.returns;
+      // Bucket into 2% bins from -20% to +20%
+      const bins = [];
+      for (let lo = -0.20; lo < 0.20; lo += 0.02) {
+        const hi = lo + 0.02;
+        const count = rets.filter(r => r >= lo && r < hi).length;
+        bins.push({ label: (lo * 100).toFixed(0) + '%', count });
+      }
+      this.returnDistSvg = _barChart(bins, { W: 600, H: 140 });
+    },
+
+    _buildGrowthChart() {
+      const r = this.backtestResult;
+      if (!r) return;
+      const months = r.months;
+      const series = [
+        { data: months.map((m, i) => [m, r.portfolio.equity[i + 1]]), color: '#22d3ee', label: 'Portfolio', width: 2 },
+      ];
+      if (r.benchmark) {
+        series.push({ data: months.map((m, i) => [m, r.benchmark.equity[i + 1]]), color: '#a1a1aa', label: this.benchmark, dash: '4,3' });
+      }
+      this.growthChartSvg = _lineChart(series, {
+        logScale: this.growthLogScale,
+        title: 'Growth of $10,000',
+        yFmt: v => v >= 10000 ? '$' + (v/1000).toFixed(0)+'K' : '$' + v.toFixed(0),
+      });
+    },
+
+    _buildRollingChart() {
+      const r = this.backtestResult;
+      if (!r) return;
+      const rets = r.portfolio.returns;
+      const benchRets = r.benchmark?.returns;
+      const months = r.months;
+      const W = this.rollingWindow;
+      const metric = this.rollingMetric;
+      const rfMonthly = 0.004;
+
+      const data = [];
+      for (let i = W; i < rets.length; i++) {
+        const window = rets.slice(i - W, i);
+        const bWindow = benchRets?.slice(i - W, i);
+        let val;
+        if (metric === 'CAGR') {
+          const eq = window.reduce((p, r) => p * (1 + r), 1);
+          val = Math.pow(eq, 12 / W) - 1;
+        } else if (metric === 'Sharpe') {
+          val = _sharpe(window, rfMonthly);
+        } else if (metric === 'Vol') {
+          val = _std(window) * _sqrt12;
+        } else if (metric === 'Beta') {
+          val = bWindow ? _beta(window, bWindow) : null;
+        }
+        if (val != null) data.push([months[i], val]);
+      }
+
+      const isRet = metric === 'CAGR';
+      this.rollingChartSvg = _lineChart(
+        [{ data, color: '#22d3ee', label: `${W}M Rolling ${metric}` }],
+        {
+          title: `Rolling ${W}-Month ${metric}`,
+          yFmt: isRet ? v => (v >= 0 ? '+' : '') + (v * 100).toFixed(1) + '%' : v => v.toFixed(2),
+        }
+      );
+    },
+
+    _buildDdChart() {
+      const r = this.backtestResult;
+      if (!r) return;
+      const months = r.months;
+
+      const ddSeries = (equity) => {
+        let peak = equity[0];
+        return equity.map(v => {
+          if (v > peak) peak = v;
+          return peak > 0 ? v / peak - 1 : 0;
+        });
+      };
+
+      const portDd = ddSeries(r.portfolio.equity);
+      const benchDd = r.benchmark ? ddSeries(r.benchmark.equity) : null;
+
+      const series = [
+        { data: months.map((m, i) => [m, portDd[i + 1]]), color: '#22d3ee', label: 'Portfolio', width: 1.5 },
+      ];
+      if (benchDd) {
+        series.push({ data: months.map((m, i) => [m, benchDd[i + 1]]), color: '#a1a1aa', label: this.benchmark, dash: '4,3' });
+      }
+
+      this.ddChartSvg = _lineChart(series, {
+        title: 'Drawdown (% below ATH)',
+        yFmt: v => (v * 100).toFixed(0) + '%',
+      });
+    },
+
+    _buildStressTests() {
+      const r = this.backtestResult;
+      if (!r) return;
+      const portRets = {};
+      r.months.forEach((m, i) => portRets[m] = r.portfolio.returns[i]);
+      const benchRets = {};
+      if (r.benchmark) r.months.forEach((m, i) => benchRets[m] = r.benchmark.returns[i]);
+
+      this.stressResults = this.stressEvents.map(ev => {
+        const months = r.months.filter(m => m >= ev.start && m <= ev.end);
+        if (!months.length) return { event: ev.event, period: `${ev.start}–${ev.end}`, portDd: null, benchDd: null, portRet: null, benchRet: null, recovery: null };
+
+        // Compound return over event window
+        const portRet = months.reduce((p, m) => p * (1 + (portRets[m] ?? 0)), 1) - 1;
+        const benchRet = months.reduce((p, m) => p * (1 + (benchRets[m] ?? 0)), 1) - 1;
+
+        // Max drawdown during event
+        let portPeak = 1, portWorst = 0;
+        let benchPeak = 1, benchWorst = 0;
+        let portEq = 1, benchEq = 1;
+        for (const m of months) {
+          portEq *= (1 + (portRets[m] ?? 0));
+          benchEq *= (1 + (benchRets[m] ?? 0));
+          if (portEq > portPeak) portPeak = portEq;
+          if (benchEq > benchPeak) benchPeak = benchEq;
+          const pdd = portEq / portPeak - 1;
+          const bdd = benchEq / benchPeak - 1;
+          if (pdd < portWorst) portWorst = pdd;
+          if (bdd < benchWorst) benchWorst = bdd;
+        }
+
+        // Recovery: months after event end until portfolio recovers
+        const postMonths = r.months.filter(m => m > ev.end);
+        let recovery = null;
+        let eq = 1 + portRet;
+        for (let i = 0; i < postMonths.length; i++) {
+          eq *= (1 + (portRets[postMonths[i]] ?? 0));
+          if (eq >= 1) { recovery = i + 1; break; }
+        }
+
+        return {
+          event: ev.event,
+          period: `${ev.start}–${ev.end}`,
+          portDd: portWorst,
+          benchDd: benchWorst,
+          portRet,
+          benchRet,
+          recovery,
+        };
+      });
+    },
+
+</script>
+
+<script>
+    // ── Computed properties ────────────────────────────────────────────────
+    get quickKpis() {
+      const r = this.backtestResult;
+      if (!r) return [];
+      const p = r.portfolio, b = r.benchmark;
       return [
-        { label: 'ETN Final NAV',     value: r.final_nav?.toFixed(2) || '—',         color: this.pctColor(r.etn_total_pct),        sub: `from ${this.params.nav0}` },
-        { label: 'ETN Total Return',  value: this.fmtPct(r.etn_total_pct),            color: this.pctColor(r.etn_total_pct),        sub: `${this.params.days}d` },
-        { label: 'Underlying Return', value: this.fmtPct(r.underlying_total_pct),     color: this.pctColor(r.underlying_total_pct), sub: 'unleveraged' },
-        { label: 'Vol Decay / yr',    value: this.fmtPct(r.annual_decay),             color: 'var(--down)',                          sub: `σ=${(r.sigma_d*100).toFixed(2)}%/d` },
-        { label: 'Total Drag',        value: this.fmtPct(r.drag_pct),                 color: r.drag_pct < 0 ? 'var(--down)' : 'var(--up)', sub: 'vs naive levered' },
-        { label: 'Sessions',          value: r.sessions || '—',                       color: 'var(--text-2)',                       sub: `${this.params.leverage}x | TER ${this.params.ter}%` },
+        { label: 'CAGR', formula: '(End/Start)^(12/N) − 1', portfolio: _fp(p.cagr), benchmark: b ? _fp(b.cagr) : '—', color: _retColor(p.cagr) },
+        { label: 'Std Dev', formula: 'stdev(rₜ) × √12', portfolio: _fp(p.vol, 1, false), benchmark: b ? _fp(b.vol, 1, false) : '—', color: 'var(--amber)' },
+        { label: 'Max DD', formula: 'min(equity/peak − 1)', portfolio: _fp(p.maxDd), benchmark: b ? _fp(b.maxDd) : '—', color: 'var(--down)' },
+        { label: 'Sharpe', formula: 'mean(r−rf)/stdev(r−rf) × √12', portfolio: _fn(p.sharpe), benchmark: b ? _fn(b.sharpe) : '—', color: p.sharpe > 1 ? 'var(--up)' : p.sharpe > 0 ? 'var(--amber)' : 'var(--down)' },
+        { label: 'Sortino', formula: 'mean(r−rf)/downsideDev × √12', portfolio: _fn(p.sortino), benchmark: b ? _fn(b.sortino) : '—', color: p.sortino > 1 ? 'var(--up)' : 'var(--text)' },
+        { label: 'Beta', formula: 'cov(p−rf, b−rf)/var(b−rf)', portfolio: _fn(p.beta), benchmark: '1.00', color: 'var(--text)' },
       ];
     },
 
-    get decayTable() {
-      if (!this.result) return [];
-      const r = this.result;
-      const fp = (n, dp = 4) => (n == null || !isFinite(n)) ? '—' : (n >= 0 ? '+' : '') + (n * 100).toFixed(dp) + '%';
+    get performanceMetrics() {
+      const r = this.backtestResult;
+      if (!r) return [];
+      const p = r.portfolio, b = r.benchmark;
+      const fmt = (v, isRet = true, dp = 1) => isRet ? _fp(v, dp) : _fn(v, dp);
+      const bfmt = (v, isRet = true, dp = 1) => b ? fmt(v, isRet, dp) : '—';
+
       return [
-        { k: 'Realized σ/day',         v: (r.sigma_d * 100).toFixed(4) + '%',         color: 'var(--amber)' },
-        { k: 'Realized σ/yr (ann.)',    v: (r.sigma_d * Math.sqrt(252) * 100).toFixed(2) + '%', color: 'var(--amber)' },
-        { k: 'Annual vol decay (est.)', v: fp(r.annual_decay),                          color: 'var(--down)' },
-        { k: 'TER / yr',               v: this.params.ter.toFixed(2) + '%',            color: 'var(--down)' },
-        { k: 'Leverage',               v: this.params.leverage + 'x',                  color: Math.abs(this.params.leverage) > 2 ? 'var(--down)' : 'var(--amber)' },
-        { k: 'Naive L × underlying',   v: fp(r.expected_lev),                          color: 'var(--text-2)' },
-        { k: 'Actual ETN return',       v: fp(r.etn_total_pct),                        color: this.pctColor(r.etn_total_pct) },
-        { k: 'Compounding drag',        v: fp(r.drag_pct),                             color: r.drag_pct < 0 ? 'var(--down)' : 'var(--up)' },
+        { label: 'Start Balance',    portfolio: _fc(p.startVal),       benchmark: b ? _fc(b.startVal) : '—',       portfolioColor: 'var(--text)',  formula: 'Initial portfolio value', formulaShort: 'equity[0]' },
+        { label: 'End Balance',      portfolio: _fc(p.endVal),         benchmark: b ? _fc(b.endVal) : '—',         portfolioColor: _retColor(p.endVal - p.startVal), formula: 'Final portfolio value', formulaShort: 'equity[N]' },
+        { label: 'CAGR',             portfolio: _fp(p.cagr),           benchmark: bfmt(b?.cagr),                   portfolioColor: _retColor(p.cagr), formula: '(End/Start)^(12/N) − 1', formulaShort: '(E/S)^(12/N)−1' },
+        { label: 'Std Dev (ann.)',   portfolio: _fp(p.vol, 1, false),  benchmark: bfmt(b?.vol, true, 1),           portfolioColor: 'var(--amber)', formula: 'stdev(rₜ) × √12', formulaShort: 'σ×√12' },
+        { label: 'Max Drawdown',     portfolio: _fp(p.maxDd),          benchmark: bfmt(b?.maxDd),                  portfolioColor: 'var(--down)', formula: 'min(equity/peak − 1)', formulaShort: 'min(e/peak−1)' },
+        { label: 'Sharpe',           portfolio: _fn(p.sharpe),         benchmark: b ? _fn(b.sharpe) : '—',         portfolioColor: p.sharpe > 1 ? 'var(--up)' : 'var(--text)', formula: 'mean(r−rf)/stdev(r−rf) × √12', formulaShort: 'μ_ex/σ_ex×√12' },
+        { label: 'Sortino',          portfolio: _fn(p.sortino),        benchmark: b ? _fn(b.sortino) : '—',        portfolioColor: p.sortino > 1 ? 'var(--up)' : 'var(--text)', formula: 'mean(r−rf)/downsideDev × √12', formulaShort: 'μ_ex/σ_dn×√12' },
+        { label: 'Calmar',           portfolio: _fn(p.calmar),         benchmark: b ? _fn(b.calmar) : '—',         portfolioColor: 'var(--text)', formula: 'CAGR / |MaxDD|', formulaShort: 'CAGR/|DD|' },
+        { label: 'Treynor',          portfolio: _fn(p.treynor),        benchmark: '—',                             portfolioColor: 'var(--text)', formula: '[mean(r−rf)×12] / Beta', formulaShort: 'μ_ex×12/β' },
+        { label: 'Active Return',    portfolio: _fp(p.activeRet),      benchmark: '—',                             portfolioColor: _retColor(p.activeRet), formula: 'mean(rₚ−rᵦ) × 12', formulaShort: 'μ(p−b)×12' },
+        { label: 'Tracking Error',   portfolio: _fp(p.te, 1, false),   benchmark: '—',                             portfolioColor: 'var(--amber)', formula: 'stdev(rₚ−rᵦ) × √12', formulaShort: 'σ(p−b)×√12' },
+        { label: 'Info Ratio',       portfolio: _fn(p.ir),             benchmark: '—',                             portfolioColor: p.ir > 0.5 ? 'var(--up)' : 'var(--text)', formula: 'Active Return / Tracking Error', formulaShort: 'AR/TE' },
+        { label: 'Beta',             portfolio: _fn(p.beta),           benchmark: '1.00',                          portfolioColor: 'var(--text)', formula: 'cov(p−rf, b−rf) / var(b−rf)', formulaShort: 'cov/var' },
+        { label: 'Alpha (ann.)',     portfolio: _fp(p.alpha),          benchmark: '—',                             portfolioColor: _retColor(p.alpha), formula: '[mean(rₚ−rf) − β×mean(rᵦ−rf)] × 12', formulaShort: 'μ_ex−β×μ_b_ex' },
+        { label: 'R²',               portfolio: _fn(p.r2),             benchmark: '—',                             portfolioColor: 'var(--text)', formula: 'corr(rₚ, rᵦ)²', formulaShort: 'ρ²' },
+        { label: 'Correlation',      portfolio: _fn(p.corr),           benchmark: '—',                             portfolioColor: 'var(--text)', formula: 'corr(rₚ, rᵦ)', formulaShort: 'ρ(p,b)' },
+        { label: 'Skewness',         portfolio: _fn(p.skew),           benchmark: b ? _fn(b.skew) : '—',           portfolioColor: 'var(--text)', formula: 'E[(r−μ)³]/σ³', formulaShort: 'E[(r−μ)³]/σ³' },
+        { label: 'Excess Kurtosis',  portfolio: _fn(p.kurt),           benchmark: b ? _fn(b.kurt) : '—',           portfolioColor: 'var(--text)', formula: 'E[(r−μ)⁴]/σ⁴ − 3', formulaShort: 'E[(r−μ)⁴]/σ⁴−3' },
+        { label: 'Upside Capture',   portfolio: _fp(p.upCapture, 1, false), benchmark: '100%',                    portfolioColor: p.upCapture > 1 ? 'var(--up)' : 'var(--text)', formula: 'geoMean(port|bench↑) / geoMean(bench|bench↑)', formulaShort: 'gm(p|b↑)/gm(b|b↑)' },
+        { label: 'Downside Capture', portfolio: _fp(p.dnCapture, 1, false), benchmark: '100%',                    portfolioColor: p.dnCapture < 1 ? 'var(--up)' : 'var(--down)', formula: 'geoMean(port|bench↓) / geoMean(bench|bench↓)', formulaShort: 'gm(p|b↓)/gm(b|b↓)' },
+        { label: 'Omega Ratio',      portfolio: _fn(p.omega),          benchmark: b ? _fn(b.omega) : '—',          portfolioColor: p.omega > 1 ? 'var(--up)' : 'var(--text)', formula: 'Σgains above MAR / Σ|losses below MAR|', formulaShort: 'Σ(r>0)/Σ|r<0|' },
+        { label: 'Ulcer Index',      portfolio: _fn(p.ulcer) + '%',    benchmark: b ? _fn(b.ulcer) + '%' : '—',    portfolioColor: 'var(--amber)', formula: '√mean(DD²) — captures depth × duration', formulaShort: '√mean(DD²)' },
+        { label: 'Martin Ratio',     portfolio: _fn(p.martin),         benchmark: b ? _fn(b.martin) : '—',         portfolioColor: p.martin > 1 ? 'var(--up)' : 'var(--text)', formula: 'CAGR / Ulcer Index', formulaShort: 'CAGR/UI' },
+        { label: '% Positive',       portfolio: _fp(p.pctPos, 0, false), benchmark: b ? _fp(b.pctPos, 0, false) : '—', portfolioColor: p.pctPos > 0.6 ? 'var(--up)' : 'var(--text)', formula: 'count(r>0) / N', formulaShort: 'n(r>0)/N' },
       ];
     },
 
-    fmtPct(n) { if (n == null || !isFinite(n)) return '—'; const v = n * 100; return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; },
-    pctColor(n) { if (n == null || !isFinite(n)) return 'var(--text-3)'; if (n > 0.005) return 'var(--up)'; if (n < -0.005) return 'var(--down)'; return 'var(--text-2)'; },
+    get riskMeasures() {
+      const r = this.backtestResult;
+      if (!r) return [];
+      const p = r.portfolio, b = r.benchmark;
+      return [
+        { label: 'Ending VAMI',    portfolio: _fn(p.endVal / 10, 0),  benchmark: b ? _fn(b.endVal / 10, 0) : '—', portfolioColor: _retColor(p.endVal - p.startVal), formula: 'VAMI₀=1000, VAMIₜ=VAMIₜ₋₁×(1+rₜ)' },
+        { label: 'Max Drawdown',   portfolio: _fp(p.maxDd),           benchmark: b ? _fp(b.maxDd) : '—',          portfolioColor: 'var(--down)', formula: 'min(equity/peak − 1)' },
+        { label: 'Sharpe',         portfolio: _fn(p.sharpe),          benchmark: b ? _fn(b.sharpe) : '—',         portfolioColor: p.sharpe > 1 ? 'var(--up)' : 'var(--text)', formula: 'mean(r−rf)/σ × √12' },
+        { label: 'Sortino',        portfolio: _fn(p.sortino),         benchmark: b ? _fn(b.sortino) : '—',        portfolioColor: p.sortino > 1 ? 'var(--up)' : 'var(--text)', formula: 'mean(r−rf)/σ_dn × √12' },
+        { label: 'Std Dev',        portfolio: _fp(p.vol, 1, false),   benchmark: b ? _fp(b.vol, 1, false) : '—',  portfolioColor: 'var(--amber)', formula: 'stdev(rₜ) × √12' },
+        { label: 'Mean Return',    portfolio: _fp(p.cagr, 1),         benchmark: b ? _fp(b.cagr, 1) : '—',        portfolioColor: _retColor(p.cagr), formula: 'CAGR' },
+        { label: '% Positive',     portfolio: _fp(p.pctPos, 0, false), benchmark: b ? _fp(b.pctPos, 0, false) : '—', portfolioColor: 'var(--text)', formula: 'count(r>0)/N' },
+      ];
+    },
+
+    get relativeMetrics() {
+      const r = this.backtestResult;
+      if (!r) return [];
+      const p = r.portfolio;
+      return [
+        { label: 'Beta',           value: _fn(p.beta),       color: 'var(--text)',  formula: 'cov(p−rf, b−rf)/var(b−rf)', formulaShort: 'cov/var' },
+        { label: 'Alpha (ann.)',   value: _fp(p.alpha),      color: _retColor(p.alpha), formula: '[μ_p−rf − β(μ_b−rf)] × 12', formulaShort: 'μ_ex−β×μ_b_ex' },
+        { label: 'Correlation',    value: _fn(p.corr),       color: 'var(--text)',  formula: 'corr(rₚ, rᵦ)', formulaShort: 'ρ(p,b)' },
+        { label: 'R²',             value: _fn(p.r2),         color: 'var(--text)',  formula: 'corr(rₚ, rᵦ)²', formulaShort: 'ρ²' },
+        { label: 'Active Return',  value: _fp(p.activeRet),  color: _retColor(p.activeRet), formula: 'mean(rₚ−rᵦ) × 12', formulaShort: 'μ(p−b)×12' },
+        { label: 'Tracking Error', value: _fp(p.te, 1, false), color: 'var(--amber)', formula: 'stdev(rₚ−rᵦ) × √12', formulaShort: 'σ(p−b)×√12' },
+        { label: 'Info Ratio',     value: _fn(p.ir),         color: p.ir > 0.5 ? 'var(--up)' : 'var(--text)', formula: 'Active Return / Tracking Error', formulaShort: 'AR/TE' },
+        { label: 'Upside Capture', value: _fp(p.upCapture, 1, false), color: p.upCapture > 1 ? 'var(--up)' : 'var(--text)', formula: 'geoMean(port|bench↑)/geoMean(bench|bench↑)', formulaShort: 'gm(p|b↑)/gm(b|b↑)' },
+        { label: 'Downside Capture', value: _fp(p.dnCapture, 1, false), color: p.dnCapture < 1 ? 'var(--up)' : 'var(--down)', formula: 'geoMean(port|bench↓)/geoMean(bench|bench↓)', formulaShort: 'gm(p|b↓)/gm(b|b↓)' },
+      ];
+    },
+
+    get ddTable() {
+      const r = this.backtestResult;
+      if (!r) return [];
+      const rows = [];
+      const addRow = (label, equity, color) => {
+        const dd = _maxDd(equity);
+        const ulcer = _ulcer(equity);
+        let peak = equity[0], peakDate = null, troughDate = null, recoveryDate = null;
+        let worstDd = 0, troughIdx = 0;
+        const months = r.months;
+        for (let i = 1; i < equity.length; i++) {
+          if (equity[i] > peak) { peak = equity[i]; peakDate = months[i - 1]; }
+          const d = equity[i] / peak - 1;
+          if (d < worstDd) { worstDd = d; troughDate = months[i - 1]; troughIdx = i; }
+        }
+        // Recovery
+        for (let i = troughIdx + 1; i < equity.length; i++) {
+          if (equity[i] >= peak) { recoveryDate = months[i - 1]; break; }
+        }
+        const months2recover = (peakDate && troughDate && recoveryDate)
+          ? r.months.indexOf(recoveryDate) - r.months.indexOf(peakDate) : null;
+        const currentDd = equity.length > 1 ? equity[equity.length - 1] / Math.max(...equity) - 1 : null;
+        rows.push({ label, color, maxDd: worstDd, peakDate, troughDate, recoveryDate, months: months2recover, ulcer, currentDd });
+      };
+      addRow('Portfolio', r.portfolio.equity, '#22d3ee');
+      if (r.benchmark) addRow(this.benchmark, r.benchmark.equity, '#a1a1aa');
+      return rows.sort((a, b) => (a.maxDd ?? 0) - (b.maxDd ?? 0));
+    },
+
+</script>
+
+<script>
+    // ── Hover handlers ─────────────────────────────────────────────────────
+    growthHover(e) {
+      const svg = e.currentTarget.querySelector('svg');
+      if (!svg) return;
+      const r = this.backtestResult;
+      if (!r) return;
+      const rect = svg.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width;
+      const idx = Math.floor(x * r.months.length);
+      if (idx >= 0 && idx < r.months.length) {
+        this.growthHoverInfo = {
+          date: r.months[idx],
+          portfolio: r.portfolio.equity[idx + 1],
+          benchmark: r.benchmark?.equity[idx + 1],
+        };
+      }
+    },
+
+    ddHover(e) {
+      const svg = e.currentTarget.querySelector('svg');
+      if (!svg) return;
+      const r = this.backtestResult;
+      if (!r) return;
+      const rect = svg.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width;
+      const idx = Math.floor(x * r.months.length);
+      if (idx >= 0 && idx < r.months.length) {
+        const portEq = r.portfolio.equity;
+        const portPeak = Math.max(...portEq.slice(0, idx + 2));
+        const portDd = portEq[idx + 1] / portPeak - 1;
+        let benchDd = null;
+        if (r.benchmark) {
+          const benchEq = r.benchmark.equity;
+          const benchPeak = Math.max(...benchEq.slice(0, idx + 2));
+          benchDd = benchEq[idx + 1] / benchPeak - 1;
+        }
+        this.ddHoverInfo = { date: r.months[idx], portfolio: portDd, benchmark: benchDd };
+      }
+    },
+
+    vamiHover(e) {
+      const r = this.backtestResult;
+      if (!r) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width;
+      const idx = Math.floor(x * r.months.length);
+      if (idx >= 0 && idx < r.months.length) {
+        this.vamiHoverInfo = {
+          date: r.months[idx],
+          portfolio: r.portfolio.equity[idx + 1] / 10,
+          benchmark: r.benchmark?.equity[idx + 1] / 10,
+        };
+      }
+    },
+
+    // ── Monte Carlo ────────────────────────────────────────────────────────
+    runMonteCarlo() {
+      const r = this.backtestResult;
+      if (!r) return;
+      const result = runMonteCarloEngine(
+        r.portfolio.returns, this.mcHorizon, this.mcPaths,
+        this.mcMethod, this.mcWithdrawal
+      );
+      if (!result) return;
+      this.mcResult = result;
+      this._buildMcCharts();
+    },
+
+    _buildMcCharts() {
+      const mc = this.mcResult;
+      if (!mc) return;
+      const { bands, pcts, horizon } = mc;
+      const nSteps = horizon * 12 + 1;
+      const months = Array.from({ length: nSteps }, (_, i) => {
+        const d = new Date();
+        d.setMonth(d.getMonth() + i);
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+      });
+
+      const colors = ['#374151', '#4b5563', '#22d3ee', '#4b5563', '#374151'];
+      const series = pcts.map((p, i) => ({
+        data: months.map((m, t) => [m, bands[i][t]]),
+        color: colors[i],
+        label: i === 2 ? 'Median' : '',
+        width: i === 2 ? 2 : 1,
+        opacity: i === 2 ? 1 : 0.5,
+      }));
+
+      this.mcFanChartSvg = _lineChart(series, {
+        logScale: true,
+        title: `Monte Carlo ${mc.nPaths} paths · ${mc.horizon}Y horizon`,
+        yFmt: v => '$' + (v >= 10000 ? (v/1000).toFixed(0)+'K' : v.toFixed(0)),
+      });
+
+      // Histogram of terminal wealth
+      const terminal = mc.terminal;
+      const min = terminal[0], max = terminal[terminal.length - 1];
+      const nBins = 30;
+      const step = (max - min) / nBins || 1;
+      const bins = Array.from({ length: nBins }, (_, i) => ({
+        label: '$' + ((min + i * step) / 1000).toFixed(0) + 'K',
+        count: terminal.filter(v => v >= min + i * step && v < min + (i + 1) * step).length,
+      }));
+      this.mcHistSvg = _barChart(bins, { W: 800, H: 140 });
+    },
+
+    get mcKpis() {
+      const mc = this.mcResult;
+      if (!mc) return [];
+      return [
+        { label: 'Median Terminal', value: _fc(mc.median), color: 'var(--cyan)', tooltip: 'Median terminal wealth across all paths' },
+        { label: '5th Percentile', value: _fc(mc.p5), color: 'var(--down)', tooltip: 'Worst-case 5th percentile terminal wealth' },
+        { label: '95th Percentile', value: _fc(mc.p95), color: 'var(--up)', tooltip: 'Best-case 95th percentile terminal wealth' },
+        { label: 'Prob. of Loss', value: (mc.probLoss * 100).toFixed(1) + '%', color: mc.probLoss > 0.2 ? 'var(--down)' : 'var(--up)', tooltip: 'Probability of ending below starting value ($10,000)' },
+      ];
+    },
+
+    // ── Kelly ──────────────────────────────────────────────────────────────
+    computeKelly() {
+      this.kellyResult = computeKellyEngine(this.kellyMu, this.kellySigma, this.kellyRf);
+      this._buildKellyChart();
+    },
+
+    _buildKellyChart() {
+      const k = this.kellyResult;
+      if (!k) return;
+      const W = 700, H = 220, PL = 55, PR = 20, PT = 20, PB = 35;
+      const chartW = W - PL - PR, chartH = H - PT - PB;
+
+      const data = k.curveData;
+      const maxF = 2.5;
+      const allG = data.map(d => d.growth);
+      const allV = data.map(d => d.vol);
+      const minG = Math.min(...allG), maxG = Math.max(...allG);
+      const maxV = Math.max(...allV);
+      const yRange = Math.max(maxG - minG, maxV) * 1.1;
+      const yMin = Math.min(minG, 0) - yRange * 0.05;
+
+      const xS = (f) => PL + (f / maxF) * chartW;
+      const yS = (v) => PT + chartH - ((v - yMin) / (yRange + Math.abs(yMin))) * chartH;
+      const y0 = yS(0);
+
+      // Grid
+      let grid = '';
+      for (let v = -0.10; v <= 0.20; v += 0.05) {
+        const y = yS(v);
+        grid += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W-PR}" y2="${y.toFixed(1)}" stroke="${v === 0 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.04)'}" stroke-width="${v === 0 ? 1.5 : 1}"/>`;
+        grid += `<text x="${PL-4}" y="${(y+3.5).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${(v*100).toFixed(0)}%</text>`;
+      }
+      // X labels
+      let xLabels = '';
+      for (let f = 0; f <= 2.5; f += 0.5) {
+        const x = xS(f);
+        xLabels += `<text x="${x.toFixed(1)}" y="${H-8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${f.toFixed(1)}x</text>`;
+      }
+
+      // Growth curve (blue)
+      const gPath = data.map((d, i) => `${i === 0 ? 'M' : 'L'}${xS(d.f).toFixed(1)},${yS(d.growth).toFixed(1)}`).join(' ');
+      // Vol curve (red)
+      const vPath = data.map((d, i) => `${i === 0 ? 'M' : 'L'}${xS(d.f).toFixed(1)},${yS(d.vol).toFixed(1)}`).join(' ');
+
+      // Markers
+      const fStar = Math.min(k.fStar, maxF);
+      const halfF = fStar / 2;
+      const xFull = xS(fStar), xHalf = xS(halfF);
+      const yFull = yS(k.gStar), yHalf = yS(k.curveData.find(d => Math.abs(d.f - halfF) < 0.03)?.growth ?? k.gStar * 0.9);
+
+      const markers = `
+        <line x1="${xFull.toFixed(1)}" y1="${PT}" x2="${xFull.toFixed(1)}" y2="${H-PB}" stroke="#22d3ee" stroke-width="1" stroke-dasharray="4,3" opacity="0.6"/>
+        <text x="${(xFull+3).toFixed(1)}" y="${(PT+12).toFixed(1)}" style="font-size:8px;fill:#22d3ee;font-family:ui-monospace">f*=${fStar.toFixed(2)}x</text>
+        <line x1="${xHalf.toFixed(1)}" y1="${PT}" x2="${xHalf.toFixed(1)}" y2="${H-PB}" stroke="#34d399" stroke-width="1" stroke-dasharray="4,3" opacity="0.6"/>
+        <text x="${(xHalf+3).toFixed(1)}" y="${(PT+24).toFixed(1)}" style="font-size:8px;fill:#34d399;font-family:ui-monospace">½f*</text>
+      `;
+
+      const legend = `
+        <text x="${W-PR-80}" y="${PT+12}" style="font-size:8px;fill:#3b82f6;font-family:ui-monospace">— Growth g(f)</text>
+        <text x="${W-PR-80}" y="${PT+24}" style="font-size:8px;fill:#fb7185;font-family:ui-monospace">— Volatility f×σ</text>
+      `;
+
+      this.kellyCurveSvg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;background:var(--surface)">${grid}${xLabels}<path d="${gPath}" fill="none" stroke="#3b82f6" stroke-width="2"/><path d="${vPath}" fill="none" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,3"/>${markers}${legend}</svg>`;
+    },
+
+    // ── ETN ────────────────────────────────────────────────────────────────
+    get etnSymbols() {
+      return this.simData ? Object.keys(this.simData) : ['NVDA', 'AAPL', 'TSLA', 'MSFT'];
+    },
+
+    runEtn() {
+      if (this.etn.underlying === '__manual__') {
+        // Synthetic daily prices from manual vol
+        const vol = this.etn.manualVol / 100;
+        const dailyVol = vol / Math.sqrt(252);
+        const prices = [{ d: '2020-01-01', c: 100 }];
+        for (let i = 1; i < 252 * 5; i++) {
+          const u1 = Math.random(), u2 = Math.random();
+          const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+          const r = dailyVol * z;
+          prices.push({ d: `day-${i}`, c: prices[i - 1].c * (1 + r) });
+        }
+        this.etnResult = runEtnEngine(prices, this.etn.leverage, this.etn.borrowCost / 100, this.etn.ter / 100);
+      } else {
+        const raw = this.simData?.[this.etn.underlying];
+        if (!raw) return;
+        const prices = raw.map(p => ({ d: p.d, c: p.c }));
+        this.etnResult = runEtnEngine(prices, this.etn.leverage, this.etn.borrowCost / 100, this.etn.ter / 100);
+      }
+      if (this.etnResult) this._buildEtnChart();
+    },
+
+    _buildEtnChart() {
+      const r = this.etnResult;
+      if (!r) return;
+      const series = [
+        { data: r.etnSeries.map(p => [p.d, p.v]), color: '#22d3ee', label: `${this.etn.leverage}x ETN`, width: 2 },
+        { data: r.naiveSeries.map(p => [p.d, p.v]), color: '#a1a1aa', label: 'Naive leverage', dash: '4,3' },
+        { data: r.undSeries.map(p => [p.d, p.v]), color: '#34d399', label: 'Underlying', dash: '2,2' },
+      ];
+      this.etnChartSvg = _lineChart(series, {
+        logScale: true,
+        title: `${this.etn.underlying} · ${this.etn.leverage}x leverage · base $100`,
+        yFmt: v => '$' + v.toFixed(0),
+        xStep: Math.max(1, Math.floor(r.etnSeries.length / 10)),
+        xFmt: d => d.slice(0, 7),
+      });
+    },
   };
 }
 </script>
+</div><!-- /x-show="pricesData" -->
 </body>
 </html>

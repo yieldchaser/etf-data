@@ -96,7 +96,7 @@ def main() -> None:
     api_key = os.environ.get("FRED_API_KEY", "")
     if not api_key:
         print("WARNING: FRED_API_KEY not set — skipping FRED fetch", file=sys.stderr)
-        return
+        sys.exit(1)
 
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)

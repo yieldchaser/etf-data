@@ -5,6 +5,33 @@ __pycache__/
 
 # Testing / cache folders
 .pytest_cache/
+.hypothesis/
+
+# Temp test output files (Start-Process redirects at repo root)
+/ft_out.txt
+/ft_err.txt
+/test_out.txt
+/test_err.txt
+/final_test_results.txt
+/run_tests.py
 
 # Local raw bundles
 predator-protocol-site-v3/
+
+# Editor / OS
+.vscode/settings.json
+*.DS_Store
+Thumbs.db
+
+# Parquet caches — never commit these (Tier 2)
+data/history_parquet/
+data/markets_history/
+data/vol_history/
+data/markets/
+
+# Stray test output files
+/test_audit_results.txt
+/test_full_results.txt
+
+# Git LFS note: Mega_Markets_Historical.xlsx should be tracked via Git LFS
+# Run: git lfs track "*.xlsx" && git add .gitattributes

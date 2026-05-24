@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -52,6 +53,13 @@ class _SafeEncoder(json.JSONEncoder):
         return obj
 
 
+def _write_json_atomic(path: Path, text: str) -> None:
+    """Write JSON atomically: write to .tmp then os.replace to avoid truncated files."""
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, path)
+
+
 def _dumps(obj, **kwargs) -> str:
     """json.dumps using _SafeEncoder (NaN → null)."""
     kwargs.setdefault("cls", _SafeEncoder)
@@ -73,11 +81,70 @@ from . import history as hist
 DEFAULT_SOURCE = "data/all_history.csv"
 # Fallback: pull live from GitHub if local file is missing (for first-time / local dev runs).
 FALLBACK_SOURCE = "https://raw.githubusercontent.com/yieldchaser/etf-data/main/data/all_history.csv"
+# Partitioned Parquet store (Tier 2)
+PARQUET_STORE = Path(__file__).resolve().parent.parent / "data" / "history_parquet"
+
+
+def _read_parquet_store(store: Path, lookback_days: int = 180) -> pd.DataFrame | None:
+    """
+    Read from year-partitioned Parquet store.
+
+    Only loads partitions needed for the lookback window (push date filter down).
+    Returns None if the store doesn't exist or has no data.
+    """
+    if not store.exists():
+        return None
+
+    import datetime
+    cutoff = pd.Timestamp.now() - pd.Timedelta(days=lookback_days)
+    cutoff_year = cutoff.year
+
+    # Collect relevant year partitions
+    frames = []
+    for year_dir in sorted(store.glob("year=*")):
+        try:
+            yr = int(year_dir.name.split("=")[1])
+        except (ValueError, IndexError):
+            continue
+        if yr < cutoff_year:
+            continue  # skip years entirely before the lookback window
+        parquet_file = year_dir / "holdings.parquet"
+        if parquet_file.exists():
+            try:
+                df = pd.read_parquet(parquet_file)
+                frames.append(df)
+            except Exception as e:
+                print(f"  WARNING: Could not read {parquet_file}: {e}")
+
+    if not frames:
+        return None
+
+    combined = pd.concat(frames, ignore_index=True)
+    # Apply date filter
+    combined["Holdings_As_Of"] = pd.to_datetime(combined["Holdings_As_Of"], errors="coerce")
+    combined = combined[combined["Holdings_As_Of"] >= cutoff]
+    print(f"  Parquet store: {len(combined):,} rows from {len(frames)} year partition(s) "
+          f"(lookback {lookback_days}d)")
+    return combined
 
 
 def fetch_history(source: str) -> pd.DataFrame:
+    # Try partitioned Parquet store first (Tier 2)
+    parquet_df = _read_parquet_store(PARQUET_STORE)
+    if parquet_df is not None and not parquet_df.empty:
+        print(f"Loading from partitioned Parquet store: {PARQUET_STORE}")
+        print(f"  {len(parquet_df):,} rows · {parquet_df['ETF_Ticker'].nunique()} ETFs · "
+              f"{parquet_df['Holdings_As_Of'].min().date()} → {parquet_df['Holdings_As_Of'].max().date()}")
+        return parquet_df
+
+    # Fall back to CSV
     p = Path(source)
     if not p.exists() and not source.startswith("http"):
+        if os.environ.get("CI"):
+            raise FileNotFoundError(
+                f"CI build: {source} not found locally and fallback is disabled in CI. "
+                f"Ensure the data file is committed or fetched before running the build."
+            )
         print(f"  {source} not found locally — falling back to {FALLBACK_SOURCE}")
         source = FALLBACK_SOURCE
     print(f"Loading: {source}")
@@ -197,7 +264,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     # YTD delta
     days_since_ytd = (latest_date - ytd_start).days
     if days_since_ytd > 0:
-        raw_ytd = raw_dt[raw_dt["Holdings_As_Of"] <= ytd_start]
+        raw_ytd = raw_dt[raw_dt["Holdings_As_Of"] < ytd_start]
         if not raw_ytd.empty:
             try:
                 lb_ytd, _ = compute_leaderboard(raw_ytd, cfg)
@@ -249,12 +316,13 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         is_burst             = pd.Series(dtype=bool)
 
         if len(window_cols) >= 5:
-            # Check historical snapshots have leaderboard_rank
-            sample = historical[window_cols[0]]
-            if "leaderboard_rank" in sample.columns:
-                rank_panel_rows = {}
-                for d in window_cols:
-                    rank_panel_rows[d] = historical[d].set_index("ticker")["leaderboard_rank"]
+            # Check historical snapshots have leaderboard_rank — guard per-snapshot
+            rank_panel_rows = {}
+            for d in window_cols:
+                snap = historical[d]
+                if "leaderboard_rank" in snap.columns:
+                    rank_panel_rows[d] = snap.set_index("ticker")["leaderboard_rank"]
+            if rank_panel_rows:
                 rank_panel = pd.DataFrame(rank_panel_rows)
                 
                 # Coverage check: require continuous presence (≥80% of window)
@@ -419,13 +487,14 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     # ── Attach metadata (sector, industry, country) for flow analysis ─────────
     def _attach_metadata(leaderboard: pd.DataFrame) -> pd.DataFrame:
         """Merge ticker metadata (sector, industry, country) from cached CSV."""
+        meta_path = Path(__file__).resolve().parent.parent / "data" / "ticker_metadata.csv"
         try:
-            meta = pd.read_csv("data/ticker_metadata.csv")
+            meta = pd.read_csv(meta_path)
             leaderboard = leaderboard.merge(meta, on="ticker", how="left")
             for col in ["sector", "industry", "country"]:
                 leaderboard[col] = leaderboard[col].fillna("Unknown")
         except FileNotFoundError:
-            print("  WARNING: data/ticker_metadata.csv not found — skipping metadata")
+            print(f"  WARNING: {meta_path} not found — metadata unavailable (sector/country flow will be empty)")
             for col in ["sector", "industry", "country", "market_cap_usd"]:
                 leaderboard[col] = "Unknown" if col != "market_cap_usd" else None
         return leaderboard
@@ -456,7 +525,8 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         "by_sector":  _compute_flow(leaderboard, "sector"),
         "by_country": _compute_flow(leaderboard, "country"),
     }
-    (output_dir / "flow.json").write_text(_dumps(flow, separators=(",", ":")))
+    (output_dir / "flow.json").parent.mkdir(parents=True, exist_ok=True)
+    _write_json_atomic(output_dir / "flow.json", _dumps(flow, separators=(",", ":")))
     print(f"  flow.json:      {len(flow['by_sector'])} sectors, {len(flow['by_country'])} countries")
 
     # ── ETF Overlap matrix ────────────────────────────────────────────────────
@@ -477,19 +547,23 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
             shared = [[0] * n for _ in range(n)]
             for i, a in enumerate(etf_list):
                 A = etf_holdings[a]
-                for j, b in enumerate(etf_list):
+                jaccard[i][i] = 1.0
+                shared[i][i] = len(A)
+                for j in range(i + 1, n):
+                    b = etf_list[j]
                     B = etf_holdings[b]
                     inter = len(A & B)
                     union = len(A | B) or 1
-                    jaccard[i][j] = round(inter / union, 4)
-                    shared[i][j] = inter
+                    jac = round(inter / union, 4)
+                    jaccard[i][j] = jaccard[j][i] = jac
+                    shared[i][j] = shared[j][i] = inter
             overlap = {
                 "etfs": etf_list,
                 "jaccard": jaccard,
                 "shared": shared,
                 "sizes": {e: len(etf_holdings[e]) for e in etf_list},
             }
-            (output_dir / "etf_overlap.json").write_text(_dumps(overlap, separators=(",", ":")))
+            _write_json_atomic(output_dir / "etf_overlap.json", _dumps(overlap, separators=(",", ":")))
             print(f"  etf_overlap.json: {n}×{n} matrix (Jaccard + raw counts)")
     except Exception as e:
         print(f"  etf_overlap.json: ERROR — {e}")
@@ -507,10 +581,11 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
             lb_snap = historical[d]
             has_vs = "velocity_score" in lb_snap.columns
             has_burst = "burst_30d" in lb_snap.columns
-            for _, row in lb_snap.iterrows():
+            d_str = d.strftime("%Y-%m-%d")
+            for row in lb_snap.to_dict(orient="records"):
                 t = row["ticker"]
                 entry = {
-                    "d": d.strftime("%Y-%m-%d"),
+                    "d": d_str,
                     "flag": row.get("flag", ""),
                     "rank": int(row.get("leaderboard_rank", 0)),
                 }
@@ -534,9 +609,9 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                 r["score_deltas_by_period"][str(p)] = None
             else:
                 r["score_deltas_by_period"][str(p)] = round(float(v), 4)
-    (output_dir / "leaderboard.json").write_text(_dumps(lb_records, separators=(",", ":")))
+    _write_json_atomic(output_dir / "leaderboard.json", _dumps(lb_records, separators=(",", ":")))
     # Write flag_history to separate file (keyed by ticker) to reduce leaderboard.json payload
-    (output_dir / "flag_history.json").write_text(_dumps(flag_history, separators=(",", ":")))
+    _write_json_atomic(output_dir / "flag_history.json", _dumps(flag_history, separators=(",", ":")))
     print(f"  flag_history:   {sum(1 for t in flag_history if flag_history[t])} tickers with history (separate file)")
     # ── holdings_latest.json — per-(ETF, ticker) detail with rank deltas ──────
     if not latest.empty:
@@ -562,7 +637,9 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                 d[["ETF_Ticker", "ticker", "rank_delta", "weight_flow"]].rename(columns=rename_cols),
                 on=["ETF_Ticker", "ticker"], how="left"
             )
-        (output_dir / "holdings_latest.json").write_text(
+        (output_dir / "holdings_latest.json").parent.mkdir(parents=True, exist_ok=True)
+        _write_json_atomic(
+            output_dir / "holdings_latest.json",
             _dumps(latest_out.to_dict(orient="records"), separators=(",", ":"))
         )
 
@@ -587,7 +664,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         ]
 
     # ── changelog.json — entries / exits / movers ─────────────────────────────
-    (output_dir / "changelog.json").write_text(_dumps(chg, indent=2))
+    _write_json_atomic(output_dir / "changelog.json", _dumps(chg, indent=2))
 
     # ── score_history.parquet + JSON — for sparklines ─────────────────────────
     if not score_pnl.empty:
@@ -601,7 +678,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                 series = score_pnl.loc[t].dropna()
                 spark[t] = [{"d": d.strftime("%Y-%m-%d"), "s": round(float(v), 2)}
                              for d, v in series.items()]
-        (output_dir / "score_history.json").write_text(_dumps(spark, separators=(",", ":")))
+        _write_json_atomic(output_dir / "score_history.json", _dumps(spark, separators=(",", ":")))
 
     # ── leaderboard.parquet — for DuckDB-WASM time-travel queries ─────────────
     leaderboard.to_parquet(output_dir / "leaderboard.parquet", index=False)
@@ -631,7 +708,8 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
             for d, r, w in zip(g["Holdings_As_Of"], g["rank"], g["weight"])
         ]
         holdings_history_json.setdefault(t, {})[etf] = row_list
-    (output_dir / "holdings_history.json").write_text(
+    _write_json_atomic(
+        output_dir / "holdings_history.json",
         _dumps(holdings_history_json, separators=(",", ":"))
     )
     print(f"  holdings_history.json: {len(holdings_history_json)} tickers")
@@ -647,6 +725,38 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         prev_lb = historical[dates_sorted[-2]]
         yday_hc = int((prev_lb["flag"] == "HIGH_CONVICTION").sum())
         yday_spec = int((prev_lb["flag"] == "SPECULATIVE_BETA").sum())
+
+    # §28 Detect immature ETFs (< etf_maturity_days of history)
+    etf_maturity_days = cfg.etf_maturity_days
+    etf_first_seen = raw.groupby("ETF_Ticker")["Holdings_As_Of"].min()
+    etf_last_seen  = raw.groupby("ETF_Ticker")["Holdings_As_Of"].max()
+    etf_span = (pd.to_datetime(etf_last_seen) - pd.to_datetime(etf_first_seen)).dt.days
+    immature_etfs = sorted(etf_span[etf_span < etf_maturity_days].index.tolist())
+
+    # Per-ETF staleness alarm (Tier 3 exception)
+    # Emit GitHub Actions ::warning:: for ETFs whose latest Holdings_As_Of is older than 5 trading days
+    STALE_TRADING_DAYS = 5
+    raw_dt2 = raw.copy()
+    raw_dt2["Holdings_As_Of"] = pd.to_datetime(raw_dt2["Holdings_As_Of"], errors="coerce")
+    etf_latest_as_of = raw_dt2.groupby("ETF_Ticker")["Holdings_As_Of"].max()
+    today_ts = pd.Timestamp.now().normalize()
+    # Approximate trading days as calendar days × 5/7
+    stale_etfs = []
+    for etf_ticker, last_as_of in etf_latest_as_of.items():
+        if pd.isna(last_as_of):
+            continue
+        cal_days = (today_ts - last_as_of).days
+        approx_trading_days = cal_days * 5 / 7
+        if approx_trading_days > STALE_TRADING_DAYS:
+            stale_etfs.append({
+                "etf": etf_ticker,
+                "last_as_of": last_as_of.strftime("%Y-%m-%d"),
+                "calendar_days_old": cal_days,
+            })
+            if os.environ.get("GITHUB_ACTIONS"):
+                print(f"::warning::ETF {etf_ticker} holdings are stale: last Holdings_As_Of={last_as_of.date()} ({cal_days} calendar days ago)")
+    if stale_etfs:
+        print(f"\n⚠ Stale ETFs ({len(stale_etfs)}): {[s['etf'] for s in stale_etfs]}")
 
     metadata = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -668,6 +778,11 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
             "HIGH_CONVICTION": yday_hc,
             "SPECULATIVE_BETA": yday_spec,
         },
+        # §28 Maturity gate metadata — drives the UI banner
+        "etf_maturity_days": etf_maturity_days,
+        "immature_etfs": immature_etfs,
+        "stale_etfs": stale_etfs,
+        "scoring_mode": cfg.scoring_mode,
         "config_snapshot": {
             "sanitizer": {
                 "blocked_tickers": list(cfg.sanitizer.blocked_tickers),
@@ -680,7 +795,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
             "high_conviction_min_etfs": cfg.high_conviction_min_etfs,
         },
     }
-    (output_dir / "metadata.json").write_text(_dumps(metadata, indent=2))
+    _write_json_atomic(output_dir / "metadata.json", _dumps(metadata, indent=2))
 
     # Quick summary
     print(f"\n✓ Wrote outputs to {output_dir}/")

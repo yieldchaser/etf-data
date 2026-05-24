@@ -216,18 +216,19 @@ def clean_canonical_csv(csv_path):
     else:
         df = df.assign(Date_Scraped=TODAY)
 
-    # Step 9: Warn when as_of_date is in the future relative to Date_Scraped
-    # (Req 14.3). Row is still included.
+    # Step 9: §28 date bug fix — clamp Holdings_As_Of to ≤ today (build date).
+    # The Invesco API returns T+1 effectiveBusinessDate which can be in the future
+    # relative to the build. Clamp to today so Holdings date ≤ Built date.
     if not df.empty:
-        scraped_dt_for_compare = pd.to_datetime(df["Date_Scraped"], errors="coerce")
-        future_mask = df["_as_of_dt"] > scraped_dt_for_compare
+        today_clamp = TODAY
+        future_mask = df["Holdings_As_Of"] > today_clamp
         if future_mask.any():
             for _, row in df[future_mask].iterrows():
                 print(
-                    f"  ⚠️  Future as_of_date for {row.get('etf', '')}: "
-                    f"as_of_date={row.get('Holdings_As_Of', '')} > "
-                    f"Date_Scraped={row.get('Date_Scraped', '')}"
+                    f"  ⚠️  Future Holdings_As_Of clamped for {row.get('etf', '')}: "
+                    f"{row.get('Holdings_As_Of', '')} → {today_clamp}"
                 )
+            df.loc[future_mask, "Holdings_As_Of"] = today_clamp
 
     # Step 8: Rename etf → ETF_Ticker, round weight, project to Pipeline_Schema.
     df = df.rename(columns={"etf": "ETF_Ticker"})
@@ -405,6 +406,11 @@ def fetch_invesco_api(etf_ticker, etf_cusip):
     holdings_as_of = data.get("effectiveBusinessDate") or data.get("effectiveDate") or TODAY
     try: holdings_as_of = datetime.strptime(holdings_as_of[:10], "%Y-%m-%d").strftime("%Y-%m-%d")
     except: holdings_as_of = TODAY
+    # §28 date bug fix: clamp Holdings_As_Of to ≤ TODAY so future-dated T+1
+    # API responses don't produce holdings dated after the build date.
+    if holdings_as_of > TODAY:
+        print(f"      -> ⚠️  Future date clamped: {holdings_as_of} → {TODAY}")
+        holdings_as_of = TODAY
     rows = []
     for h in data.get("holdings", []):
         sec_type = str(h.get("securityTypeName", "")).strip().lower()
@@ -431,7 +437,12 @@ def clean_date_string(date_text):
     match = re.search(r"(\d{1,2}/\d{1,2}/\d{4})|([A-Z][a-z]+\s+\d{1,2},?\s+\d{4})", clean)
     if match: clean = match.group(0).replace(',', '')
     for fmt in ("%m/%d/%Y", "%B %d %Y", "%b %d %Y", "%m %d %Y"):
-        try: return datetime.strptime(clean, fmt).strftime('%Y-%m-%d')
+        try:
+            parsed = datetime.strptime(clean, fmt).strftime('%Y-%m-%d')
+            # §28 date bug fix: clamp future dates to TODAY
+            if parsed > TODAY:
+                return TODAY
+            return parsed
         except: continue
     return None
 
@@ -441,7 +452,12 @@ def extract_invesco_nuclear_date(driver):
         time.sleep(3) 
         html = driver.page_source
         match = re.search(r"# of holdings\s*\(as of\s*(\d{1,2}/\d{1,2}/\d{4})\)", html, re.IGNORECASE)
-        if match: return clean_date_string(match.group(1))
+        if match:
+            parsed = clean_date_string(match.group(1))
+            # clamp future dates
+            if parsed and parsed > TODAY:
+                return TODAY
+            return parsed
     except: pass
     return TODAY
 

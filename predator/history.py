@@ -85,7 +85,7 @@ def streaks_and_deltas(
         if s.empty:
             continue
         score_today = s.iloc[-1] if s.index[-1] == today else float("nan")
-        score_yday = s.iloc[-2] if len(s) >= 2 else float("nan")
+        score_yday = (s.loc[yday] if yday in s.index else float("nan")) if yday is not None else float("nan")
 
         # Score streak — walk back from latest, count consecutive same-direction diffs
         score_streak = 0

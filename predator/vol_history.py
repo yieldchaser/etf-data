@@ -50,6 +50,14 @@ class _SafeEncoder(json.JSONEncoder):
         return obj
 
 
+def _write_json_atomic(path: Path, text: str) -> None:
+    """Write JSON atomically: write to .tmp then os.replace to avoid truncated files."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, path)
+
+
 def _dumps(obj: Any, **kwargs) -> str:
     """json.dumps using _SafeEncoder (NaN → null)."""
     kwargs.setdefault("cls", _SafeEncoder)
@@ -111,9 +119,9 @@ VOL_SERIES: list[dict[str, str]] = [
 ]
 
 # Cache directory for parquet files (one per series)
-CACHE_DIR = Path("data/vol_history")
+CACHE_DIR = Path(__file__).resolve().parent.parent / "data" / "vol_history"
 # Output path
-OUTPUT_PATH = Path("docs/data/vol_history.json")
+OUTPUT_PATH = Path(__file__).resolve().parent.parent / "docs" / "data" / "vol_history.json"
 # Trailing days to refetch on incremental runs
 INCREMENTAL_TRAILING_DAYS = 30
 
@@ -210,6 +218,11 @@ def _read_cache(key: str) -> pd.Series | None:
         df = pd.read_parquet(path)
         if "value" in df.columns:
             s = df["value"]
+            s.index = pd.to_datetime(df.index)
+            return s.dropna()
+        # Fallback: if index is already datetime and value is the only column
+        if df.shape[1] == 1:
+            s = df.iloc[:, 0]
             s.index = pd.to_datetime(df.index)
             return s.dropna()
         return None
@@ -471,8 +484,7 @@ def main() -> None:
 
     # Write output
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
-        f.write(_dumps(output, indent=2, sort_keys=False))
+    _write_json_atomic(OUTPUT_PATH, _dumps(output, indent=2, sort_keys=False))
 
     size_kb = OUTPUT_PATH.stat().st_size / 1024
     print(f"\n  Written: {OUTPUT_PATH} ({size_kb:.1f} KB)")
