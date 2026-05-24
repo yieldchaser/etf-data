@@ -36,12 +36,6 @@ jobs:
     if: >
       github.event_name != 'workflow_run' ||
       github.event.workflow_run.conclusion == 'success'
-
-    # SKIP_MARKET_FETCH=true on plain code pushes — the committed JSON is already
-    # up to date. Only re-fetch when the daily scraper ran or manual dispatch.
-    env:
-      SKIP_MARKET_FETCH: ${{ github.event_name == 'push' && 'true' || 'false' }}
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -54,7 +48,7 @@ jobs:
           python-version: '3.12'
           cache: pip
 
-      # Site-build deps only — no selenium/curl_cffi/pdfplumber (scraper-only)
+      # Build deps only — selenium/curl_cffi/pdfplumber are scraper-only, not needed here
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -66,40 +60,33 @@ jobs:
       - name: Build site artifacts (predator)
         run: python -m predator.build --source data/all_history.csv --output docs/data --config config.yaml
 
-      # ── Market data steps — skipped on plain code pushes ──────────────────
       - name: Fetch market data (yfinance)
-        if: env.SKIP_MARKET_FETCH == 'false'
         run: |
           mkdir -p data/markets
           python -m markets.fetch_yf --out data/markets
         continue-on-error: true
 
       - name: Fetch FRED data
-        if: env.SKIP_MARKET_FETCH == 'false'
         run: python -m markets.fetch_fred --out data/markets
         continue-on-error: true
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
 
       - name: Build markets.json + sim_underlyings.json
-        if: env.SKIP_MARKET_FETCH == 'false'
         run: python -m markets.build --source data/markets --output docs/data
         continue-on-error: true
 
       - name: Fetch market returns history (FRED + yfinance)
-        if: env.SKIP_MARKET_FETCH == 'false'
         run: python -m predator.markets_history --full-refresh
         continue-on-error: true
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
 
       - name: Ingest Mega Markets Historical (Excel)
-        if: env.SKIP_MARKET_FETCH == 'false'
         run: python -m predator.ingest_mega_xl
         continue-on-error: true
 
       - name: Fetch vol history (CBOE indices from FRED)
-        if: env.SKIP_MARKET_FETCH == 'false'
         run: python -m predator.vol_history --full-refresh
         continue-on-error: true
         env:
