@@ -835,77 +835,136 @@
     </div>
 
     <div x-show="!loadingReturns && returnsData">
-      <!-- Header + asset selector -->
+      <!-- Header -->
       <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div>
           <h2 class="text-sm font-medium" style="color: var(--cyan)">DRAWDOWN STUDIO</h2>
-          <div class="text-xs mt-0.5" style="color: var(--text-3)">Underwater curve (% below prior peak). Click a row in the table to highlight.</div>
+          <div class="text-xs mt-0.5" style="color: var(--text-3)">% below prior all-time high. Select any assets. Hover chart for exact values.</div>
         </div>
-        <div class="flex flex-wrap gap-1">
-          <template x-for="a in drawdownAssets" :key="a.key">
-            <button @click="toggleDrawdownAsset(a.key)"
-                    class="chip border px-2 py-1 text-[10px] transition"
-                    :style="activeDrawdownAssets.has(a.key)
-                      ? `background: ${a.color}22; color: ${a.color}; border-color: ${a.color}55;`
-                      : 'color: var(--text-3); border-color: var(--border); opacity: 0.5;'"
-                    x-text="a.shortName">
-            </button>
-          </template>
-        </div>
-      </div>
-
-      <!-- Underwater chart -->
-      <div class="rounded-lg border overflow-hidden mb-5" style="background: var(--surface); border-color: var(--border)">
-        <div x-html="drawdownChartSvg"
-             @mousemove="drawdownHover($event)"
-             @mouseleave="ddHoverInfo = null"
-             style="width: 100%; overflow-x: auto;"></div>
-        <!-- Hover bar -->
-        <div x-show="ddHoverInfo" class="px-4 py-2 flex flex-wrap gap-x-6 gap-y-1 text-xs num font-mono"
-             style="border-top: 1px solid var(--border); background: var(--surface-2)">
-          <span style="color: var(--text-3)" x-text="ddHoverInfo?.date || ''"></span>
-          <template x-for="item in (ddHoverInfo?.values || [])" :key="item.key">
-            <span :style="`color: ${item.color}`"
-                  x-text="`${item.name}: ${item.dd !== null ? (item.dd * 100).toFixed(1) + '%' : '—'}`"></span>
-          </template>
+        <!-- Time range filter -->
+        <div class="flex items-center gap-2">
+          <span class="label" style="font-size:9px;">SHOW</span>
+          <div class="flex gap-1">
+            <template x-for="r in ['All','50Y','30Y','20Y','10Y']" :key="r">
+              <button @click="ddTimeRange = r"
+                      :class="ddTimeRange === r ? 'tab-active' : ''"
+                      class="px-2.5 py-1 rounded-md border font-medium text-xs transition"
+                      :style="ddTimeRange === r ? '' : 'color: var(--text-2); border-color: var(--border)'"
+                      x-text="r">
+              </button>
+            </template>
+          </div>
         </div>
       </div>
 
-      <!-- Max drawdown table -->
-      <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
-        <div class="px-3 py-2 label" style="border-bottom: 1px solid var(--border); color: var(--cyan)">MAX DRAWDOWN EVENTS</div>
-        <div class="overflow-x-auto scrollbar">
-          <table class="w-full text-xs">
-            <thead style="background: #050505; color: var(--text-3)">
-              <tr style="border-bottom: 1px solid var(--border)">
-                <th class="text-left px-3 py-2 label">Asset</th>
-                <th class="text-right px-3 py-2 label">Max DD</th>
-                <th class="text-right px-3 py-2 label">Peak</th>
-                <th class="text-right px-3 py-2 label">Trough</th>
-                <th class="text-right px-3 py-2 label">Recovery</th>
-                <th class="text-right px-3 py-2 label">Months to Recover</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="row in drawdownTable" :key="row.key">
-                <tr class="row-hover" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
-                  <td class="px-3 py-2">
-                    <div class="flex items-center gap-2">
-                      <span class="w-2 h-2 rounded-sm flex-shrink-0" :style="`background: ${row.color}`"></span>
-                      <span class="font-medium" style="color: var(--text)" x-text="row.name"></span>
-                    </div>
-                  </td>
-                  <td class="px-3 py-2 text-right num font-mono font-medium" style="color: var(--down)"
-                      x-text="row.maxDd !== null ? (row.maxDd * 100).toFixed(1) + '%' : '—'"></td>
-                  <td class="px-3 py-2 text-right num font-mono" style="color: var(--text-2)" x-text="row.peakDate || '—'"></td>
-                  <td class="px-3 py-2 text-right num font-mono" style="color: var(--text-2)" x-text="row.troughDate || '—'"></td>
-                  <td class="px-3 py-2 text-right num font-mono" style="color: var(--up)" x-text="row.recoveryDate || 'Not yet'"></td>
-                  <td class="px-3 py-2 text-right num font-mono" style="color: var(--text-2)"
-                      x-text="row.monthsToRecover !== null ? row.monthsToRecover + 'm' : '—'"></td>
-                </tr>
+      <!-- Two-column layout: asset picker + chart -->
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+
+        <!-- Asset picker — left sidebar, all assets grouped by category -->
+        <div class="lg:col-span-1 rounded-lg border p-3" style="background: var(--surface); border-color: var(--border)">
+          <div class="flex items-center justify-between mb-2">
+            <div class="label" style="font-size:9px; color: var(--cyan)">SELECT ASSETS</div>
+            <div class="flex gap-1">
+              <button @click="activeDrawdownAssets = new Set(drawdownAllAssets.map(a=>a.key))"
+                      class="text-[9px] px-1.5 py-0.5 rounded border transition"
+                      style="color: var(--text-3); border-color: var(--border)"
+                      @mouseenter="showTt($event,'Select all')" @mouseleave="hideTt()">All</button>
+              <button @click="activeDrawdownAssets = new Set(['sp500','gold','wti_crude','sensex'])"
+                      class="text-[9px] px-1.5 py-0.5 rounded border transition"
+                      style="color: var(--text-3); border-color: var(--border)"
+                      @mouseenter="showTt($event,'Reset to defaults')" @mouseleave="hideTt()">Reset</button>
+            </div>
+          </div>
+          <!-- Search -->
+          <input x-model="ddSearch" type="search" placeholder="search assets…"
+                 class="w-full bg-transparent border rounded px-2 py-1 text-xs mb-2 focus:outline-none focus:border-cyan-500/40"
+                 style="border-color: var(--border-2); color: var(--text)">
+          <!-- Grouped list -->
+          <div class="space-y-2 max-h-[60vh] overflow-y-auto scrollbar">
+            <template x-for="group in drawdownAssetGroups" :key="group.category">
+              <div>
+                <div class="label mb-1" style="font-size:8px; color: var(--text-3); border-bottom: 1px solid var(--border); padding-bottom: 2px;"
+                     x-text="group.category.toUpperCase().replace('_',' ')"></div>
+                <template x-for="a in group.assets" :key="a.key">
+                  <button @click="toggleDrawdownAsset(a.key)"
+                          class="w-full flex items-center gap-2 px-1.5 py-1 rounded text-left text-[10px] transition hover:bg-white/5"
+                          :style="activeDrawdownAssets.has(a.key) ? `color: ${a.color}` : 'color: var(--text-3)'">
+                    <span class="w-2 h-2 rounded-sm flex-shrink-0" :style="`background: ${activeDrawdownAssets.has(a.key) ? a.color : '#3f3f46'}`"></span>
+                    <span class="truncate" x-text="a.shortName"></span>
+                    <span x-show="activeDrawdownAssets.has(a.key)" class="ml-auto text-[8px] opacity-60">✓</span>
+                  </button>
+                </template>
+              </div>
+            </template>
+          </div>
+          <div class="mt-2 text-[9px] font-mono" style="color: var(--text-3)"
+               x-text="`${activeDrawdownAssets.size} selected`"></div>
+        </div>
+
+        <!-- Chart + table — right panel -->
+        <div class="lg:col-span-3 space-y-4">
+          <!-- Underwater chart -->
+          <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+            <div x-html="drawdownChartSvg"
+                 @mousemove="drawdownHover($event)"
+                 @mouseleave="ddHoverInfo = null"
+                 style="width: 100%; overflow-x: auto;"></div>
+            <!-- Hover bar -->
+            <div x-show="ddHoverInfo" class="px-4 py-2 flex flex-wrap gap-x-6 gap-y-1 text-xs num font-mono"
+                 style="border-top: 1px solid var(--border); background: var(--surface-2)">
+              <span style="color: var(--text-3)" x-text="ddHoverInfo?.date || ''"></span>
+              <template x-for="item in (ddHoverInfo?.values || []).filter(v => v.dd !== null && v.dd < 0)" :key="item.key">
+                <span :style="`color: ${item.color}`"
+                      x-text="`${item.name}: ${(item.dd * 100).toFixed(1)}%`"></span>
               </template>
-            </tbody>
-          </table>
+            </div>
+          </div>
+
+          <!-- Max drawdown table -->
+          <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+            <div class="px-3 py-2 label" style="border-bottom: 1px solid var(--border); color: var(--cyan)">
+              MAX DRAWDOWN EVENTS
+              <span class="ml-2 font-mono text-[10px]" style="color: var(--text-3)">sorted by severity</span>
+            </div>
+            <div class="overflow-x-auto scrollbar">
+              <table class="w-full text-xs">
+                <thead style="background: #050505; color: var(--text-3)">
+                  <tr style="border-bottom: 1px solid var(--border)">
+                    <th class="text-left px-3 py-2 label">Asset</th>
+                    <th class="text-right px-3 py-2 label">Max DD</th>
+                    <th class="text-right px-3 py-2 label">Peak</th>
+                    <th class="text-right px-3 py-2 label">Trough</th>
+                    <th class="text-right px-3 py-2 label">Recovery</th>
+                    <th class="text-right px-3 py-2 label">Months to Recover</th>
+                    <th class="text-right px-3 py-2 label">Current DD</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template x-for="row in drawdownTable" :key="row.key">
+                    <tr class="row-hover" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
+                      <td class="px-3 py-2">
+                        <div class="flex items-center gap-2">
+                          <span class="w-2 h-2 rounded-sm flex-shrink-0" :style="`background: ${row.color}`"></span>
+                          <span class="font-medium" style="color: var(--text)" x-text="row.name"></span>
+                        </div>
+                      </td>
+                      <td class="px-3 py-2 text-right num font-mono font-medium" style="color: var(--down)"
+                          x-text="row.maxDd !== null ? (row.maxDd * 100).toFixed(1) + '%' : '—'"></td>
+                      <td class="px-3 py-2 text-right num font-mono" style="color: var(--text-2)" x-text="row.peakDate || '—'"></td>
+                      <td class="px-3 py-2 text-right num font-mono" style="color: var(--text-2)" x-text="row.troughDate || '—'"></td>
+                      <td class="px-3 py-2 text-right num font-mono" :style="`color: ${row.recoveryDate ? 'var(--up)' : 'var(--amber)'}`"
+                          x-text="row.recoveryDate || 'Not yet'"></td>
+                      <td class="px-3 py-2 text-right num font-mono" style="color: var(--text-2)"
+                          x-text="row.monthsToRecover !== null ? row.monthsToRecover + 'm' : '—'"></td>
+                      <td class="px-3 py-2 text-right num font-mono font-medium"
+                          :style="`color: ${(row.currentDd || 0) < -0.1 ? 'var(--down)' : (row.currentDd || 0) < -0.05 ? 'var(--amber)' : 'var(--up)'}`"
+                          x-text="row.currentDd !== null ? (row.currentDd * 100).toFixed(1) + '%' : '—'"></td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -2397,19 +2456,47 @@ function marketsApp() {
 
     activeDrawdownAssets: new Set(['sp500', 'gold', 'wti_crude', 'sensex']),
     ddHoverInfo: null,
+    ddTimeRange: 'All',   // 'All' | '50Y' | '30Y' | '20Y' | '10Y'
+    ddSearch: '',
 
-    get drawdownAssets() {
+    // ALL assets from returnsData, with consistent colors
+    get drawdownAllAssets() {
       if (!this.returnsData) return [];
       const assets = this.returnsData.assets || {};
-      // Show a curated set of assets for drawdown analysis
-      const preferred = ['sp500', 'nasdaq', 'djia', 'gold', 'silver', 'wti_crude', 'brent_crude', 'sensex', 'nikkei', 'dax'];
-      const keys = preferred.filter(k => assets[k]);
-      return keys.map((k, i) => ({
+      return Object.keys(assets).map((k, i) => ({
         key: k,
-        shortName: assets[k].meta?.name?.split(' ').slice(0, 2).join(' ') || k,
+        shortName: assets[k].meta?.name?.split(' ').slice(0, 3).join(' ') || k,
         name: assets[k].meta?.name || k,
+        category: (assets[k].meta?.category || 'other').toLowerCase(),
         color: this._assetPalette[i % this._assetPalette.length],
       }));
+    },
+
+    // Grouped by category, filtered by search
+    get drawdownAssetGroups() {
+      const q = this.ddSearch.trim().toLowerCase();
+      const all = this.drawdownAllAssets.filter(a =>
+        !q || a.shortName.toLowerCase().includes(q) || a.key.toLowerCase().includes(q)
+      );
+      const catOrder = ['equity', 'precious_metals', 'energy', 'commodities', 'base_metals', 'agriculture', 'fx', 'real_estate'];
+      const groups = {};
+      for (const a of all) {
+        if (!groups[a.category]) groups[a.category] = [];
+        groups[a.category].push(a);
+      }
+      const result = [];
+      for (const cat of catOrder) {
+        if (groups[cat]?.length) result.push({ category: cat, assets: groups[cat] });
+      }
+      for (const cat of Object.keys(groups)) {
+        if (!catOrder.includes(cat) && groups[cat]?.length) result.push({ category: cat, assets: groups[cat] });
+      }
+      return result;
+    },
+
+    // Backward compat — used by chart/table
+    get drawdownAssets() {
+      return this.drawdownAllAssets.filter(a => this.activeDrawdownAssets.has(a.key));
     },
 
     toggleDrawdownAsset(key) {
@@ -2438,21 +2525,31 @@ function marketsApp() {
       return result;
     },
 
+    // Apply time range filter to a list of {ym, ...} points
+    _applyTimeRange(points) {
+      if (!points.length || this.ddTimeRange === 'All') return points;
+      const years = parseInt(this.ddTimeRange);
+      const cutoff = new Date();
+      cutoff.setFullYear(cutoff.getFullYear() - years);
+      const cutoffYm = cutoff.toISOString().slice(0, 7);
+      return points.filter(p => p.ym >= cutoffYm);
+    },
+
     get drawdownChartSvg() {
-      const active = this.activeDrawdownAssets;
-      const assetDefs = this.drawdownAssets.filter(a => active.has(a.key));
+      const assetDefs = this.drawdownAssets;
       if (!assetDefs.length) return '';
 
-      const W = 1200, H = 300, PL = 52, PR = 20, PT = 15, PB = 35;
+      const W = 1200, H = 380, PL = 60, PR = 20, PT = 15, PB = 35;
       const chartW = W - PL - PR, chartH = H - PT - PB;
 
-      // Collect all months and compute curves
+      // Collect all months (time-range filtered) and compute curves
       const curves = {};
       const allMonths = new Set();
       for (const a of assetDefs) {
-        const curve = this._computeUnderwaterCurve(a.key);
-        curves[a.key] = curve;
-        curve.forEach(p => allMonths.add(p.ym));
+        const raw = this._computeUnderwaterCurve(a.key);
+        const filtered = this._applyTimeRange(raw);
+        curves[a.key] = filtered;
+        filtered.forEach(p => allMonths.add(p.ym));
       }
       const months = Array.from(allMonths).sort();
       if (!months.length) return '';
@@ -2462,30 +2559,28 @@ function marketsApp() {
       for (const curve of Object.values(curves)) {
         for (const p of curve) { if (p.dd < minDd) minDd = p.dd; }
       }
-      minDd = Math.min(minDd * 1.05, -0.01);
+      minDd = Math.min(minDd * 1.08, -0.02);
 
       const xScale = (m) => PL + (months.indexOf(m) / Math.max(months.length - 1, 1)) * chartW;
-      const yScale = (v) => PT + (1 - v / minDd) * chartH;  // 0 → top, minDd → bottom
+      const yScale = (v) => PT + (1 - v / minDd) * chartH;
 
-      // Y-axis ticks
+      // Y-axis ticks (percentage labels)
       let yTicks = '';
-      const nTicks = 5;
+      const nTicks = 6;
       for (let i = 0; i <= nTicks; i++) {
         const v = (minDd * i) / nTicks;
         const y = yScale(v);
-        yTicks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>`;
-        yTicks += `<text x="${PL - 4}" y="${(y + 4).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${(v * 100).toFixed(0)}%</text>`;
+        const label = v === 0 ? '0%' : (v * 100).toFixed(0) + '%';
+        yTicks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,${v === 0 ? '0.15' : '0.04'})" stroke-width="${v === 0 ? 1 : 1}"/>`;
+        yTicks += `<text x="${PL - 5}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:${v === 0 ? '#a1a1aa' : '#52525b'};font-family:ui-monospace">${label}</text>`;
       }
 
-      // Zero line
-      const y0 = yScale(0);
-      const zeroLine = `<line x1="${PL}" y1="${y0.toFixed(1)}" x2="${W - PR}" y2="${y0.toFixed(1)}" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>`;
-
-      // X-axis year labels
+      // X-axis year labels (adaptive density)
       let xLabels = '';
-      const years = [...new Set(months.map(m => m.slice(0, 4)))];
-      for (const yr of years) {
-        if (parseInt(yr) % 5 !== 0) continue;
+      const allYears = [...new Set(months.map(m => m.slice(0, 4)))];
+      const step = allYears.length > 80 ? 10 : allYears.length > 40 ? 5 : allYears.length > 20 ? 2 : 1;
+      for (const yr of allYears) {
+        if (parseInt(yr) % step !== 0) continue;
         const m = `${yr}-01`;
         if (!months.includes(m)) continue;
         const x = xScale(m);
@@ -2495,6 +2590,7 @@ function marketsApp() {
 
       // Filled area + line per asset
       let areas = '';
+      const y0 = yScale(0);
       for (const a of assetDefs) {
         const curve = curves[a.key];
         if (!curve.length) continue;
@@ -2512,34 +2608,33 @@ function marketsApp() {
           if (!inSeg) { linePath += `M${x},${y} `; inSeg = true; }
           else { linePath += `L${x},${y} `; }
         }
-        // Close area path back to zero line
         const lastM = months[months.length - 1];
         areaPath += `L${xScale(lastM).toFixed(1)},${y0.toFixed(1)} Z`;
 
-        areas += `<path d="${areaPath}" fill="${a.color}" opacity="0.12"/>`;
-        areas += `<path d="${linePath.trim()}" fill="none" stroke="${a.color}" stroke-width="1.5" opacity="0.85" data-series="${a.key}"/>`;
+        areas += `<path d="${areaPath}" fill="${a.color}" opacity="0.10"/>`;
+        areas += `<path d="${linePath.trim()}" fill="none" stroke="${a.color}" stroke-width="1.8" opacity="0.9" data-series="${a.key}"/>`;
       }
 
-      const crosshair = `<line id="dd-crosshair" x1="0" y1="${PT}" x2="0" y2="${H - PB}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
+      const crosshair = `<line id="dd-crosshair" x1="0" y1="${PT}" x2="0" y2="${H - PB}" stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
 
-      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block">${yTicks}${zeroLine}${xLabels}${areas}${crosshair}</svg>`;
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block">${yTicks}${xLabels}${areas}${crosshair}</svg>`;
     },
 
     drawdownHover(e) {
       const svg = e.currentTarget.querySelector('svg');
       if (!svg) return;
       const rect = svg.getBoundingClientRect();
-      const active = this.activeDrawdownAssets;
-      const assetDefs = this.drawdownAssets.filter(a => active.has(a.key));
+      const assetDefs = this.drawdownAssets;
 
       const allMonths = new Set();
       for (const a of assetDefs) {
-        this._computeUnderwaterCurve(a.key).forEach(p => allMonths.add(p.ym));
+        const raw = this._computeUnderwaterCurve(a.key);
+        this._applyTimeRange(raw).forEach(p => allMonths.add(p.ym));
       }
       const months = Array.from(allMonths).sort();
       if (!months.length) return;
 
-      const W = 1200, PL = 52, PR = 20;
+      const W = 1200, PL = 60, PR = 20;
       const chartW = W - PL - PR;
       const scaleX = rect.width / W;
       const relX = (e.clientX - rect.left) / scaleX;
@@ -2548,10 +2643,11 @@ function marketsApp() {
       const month = months[idx];
 
       const values = assetDefs.map(a => {
-        const curve = this._computeUnderwaterCurve(a.key);
-        const pt = curve.find(p => p.ym === month);
+        const raw = this._computeUnderwaterCurve(a.key);
+        const filtered = this._applyTimeRange(raw);
+        const pt = filtered.find(p => p.ym === month);
         return { key: a.key, name: a.shortName, color: a.color, dd: pt?.dd ?? null };
-      });
+      }).sort((a, b) => (a.dd ?? 0) - (b.dd ?? 0));  // worst first
 
       this.ddHoverInfo = { date: month, values };
 
@@ -2565,35 +2661,40 @@ function marketsApp() {
     },
 
     get drawdownTable() {
-      const active = this.activeDrawdownAssets;
-      const assetDefs = this.drawdownAssets.filter(a => active.has(a.key));
+      const assetDefs = this.drawdownAssets;
       return assetDefs.map(a => {
-        const curve = this._computeUnderwaterCurve(a.key);
-        if (!curve.length) return { ...a, maxDd: null, peakDate: null, troughDate: null, recoveryDate: null, monthsToRecover: null };
-
-        // Find global max drawdown event
-        let maxDd = 0, peakDate = null, troughDate = null, recoveryDate = null;
-        let peakVal = curve[0].close ?? 0;
-        let peakYm = curve[0].ym;
-        let inDrawdown = false;
-        let ddStart = null;
-
-        // Re-compute with close values for accurate peak/trough tracking
         const adjusted = this._getAdjustedClose(a.key);
-        let runningPeak = adjusted[0]?.close ?? 0;
-        let runningPeakYm = adjusted[0]?.ym ?? '';
+        if (!adjusted.length) return { ...a, maxDd: null, peakDate: null, troughDate: null, recoveryDate: null, monthsToRecover: null, currentDd: null };
+
+        // Apply time range filter
+        let data = adjusted;
+        if (this.ddTimeRange !== 'All') {
+          const years = parseInt(this.ddTimeRange);
+          const cutoff = new Date();
+          cutoff.setFullYear(cutoff.getFullYear() - years);
+          const cutoffYm = cutoff.toISOString().slice(0, 7);
+          data = adjusted.filter(p => p.ym >= cutoffYm);
+        }
+        if (!data.length) return { ...a, maxDd: null, peakDate: null, troughDate: null, recoveryDate: null, monthsToRecover: null, currentDd: null };
+
+        // Find the worst drawdown event using correct logic
+        let worstDd = 0;       // most negative value seen
+        let worstPeakDate = null, worstTroughDate = null, worstRecoveryDate = null;
+
+        let runningPeak = data[0].close;
+        let runningPeakYm = data[0].ym;
         let currentDdStart = null;
         let currentDdDepth = 0;
         let currentDdTroughYm = null;
 
-        for (const { ym, close } of adjusted) {
+        for (const { ym, close } of data) {
           if (close >= runningPeak) {
-            // New peak — check if we were in a drawdown that recovered
-            if (currentDdStart && currentDdDepth < maxDd) {
-              maxDd = currentDdDepth;
-              peakDate = currentDdStart;
-              troughDate = currentDdTroughYm;
-              recoveryDate = ym;
+            // New peak — if we were in a drawdown, it just recovered
+            if (currentDdStart !== null && currentDdDepth < worstDd) {
+              worstDd = currentDdDepth;
+              worstPeakDate = currentDdStart;
+              worstTroughDate = currentDdTroughYm;
+              worstRecoveryDate = ym;
             }
             runningPeak = close;
             runningPeakYm = ym;
@@ -2602,35 +2703,44 @@ function marketsApp() {
             currentDdTroughYm = null;
           } else {
             const dd = close / runningPeak - 1;
-            if (!currentDdStart) currentDdStart = runningPeakYm;
+            if (currentDdStart === null) currentDdStart = runningPeakYm;
             if (dd < currentDdDepth) {
               currentDdDepth = dd;
               currentDdTroughYm = ym;
             }
-            // Check if this is the worst drawdown so far (still open)
-            if (currentDdDepth < maxDd) {
-              maxDd = currentDdDepth;
-              peakDate = currentDdStart;
-              troughDate = currentDdTroughYm;
-              recoveryDate = null; // still open
+            // Check if this open drawdown is the worst so far
+            if (currentDdDepth < worstDd) {
+              worstDd = currentDdDepth;
+              worstPeakDate = currentDdStart;
+              worstTroughDate = currentDdTroughYm;
+              worstRecoveryDate = null;  // still open
             }
           }
         }
 
+        // Current drawdown (vs all-time high in the filtered window)
+        const lastClose = data[data.length - 1].close;
+        const allTimeHigh = Math.max(...data.map(p => p.close));
+        const currentDd = allTimeHigh > 0 ? lastClose / allTimeHigh - 1 : null;
+
         // Months to recover
         let monthsToRecover = null;
-        if (peakDate && troughDate && recoveryDate) {
-          const p = new Date(peakDate + '-01');
-          const r = new Date(recoveryDate + '-01');
+        if (worstPeakDate && worstTroughDate && worstRecoveryDate) {
+          const p = new Date(worstPeakDate + '-01');
+          const r = new Date(worstRecoveryDate + '-01');
           monthsToRecover = Math.round((r - p) / (1000 * 60 * 60 * 24 * 30.5));
         }
 
         return {
           key: a.key, name: a.name, color: a.color,
-          maxDd: maxDd !== 0 ? maxDd : null,
-          peakDate, troughDate, recoveryDate, monthsToRecover,
+          maxDd: worstDd !== 0 ? worstDd : null,
+          peakDate: worstPeakDate,
+          troughDate: worstTroughDate,
+          recoveryDate: worstRecoveryDate,
+          monthsToRecover,
+          currentDd: currentDd !== null && currentDd < -0.001 ? currentDd : 0,
         };
-      }).sort((a, b) => (a.maxDd ?? 0) - (b.maxDd ?? 0));
+      }).sort((a, b) => (a.maxDd ?? 0) - (b.maxDd ?? 0));  // worst first
     },
 
     // ── View C: Holding-Period Lab ────────────────────────────────────────
