@@ -396,10 +396,30 @@
                 <span class="text-sm font-medium" style="color: var(--cyan)" x-text="returnsData.assets[selectedAsset]?.meta?.name || selectedAsset"></span>
                 <span class="chip text-[9px]" :style="categoryChipStyle(returnsData.assets[selectedAsset]?.meta?.category)" x-text="returnsData.assets[selectedAsset]?.meta?.category"></span>
                 <span class="label" style="font-size:9px;" x-text="returnsData.assets[selectedAsset]?.meta?.native_ccy"></span>
+                <!-- Currency lens indicator -->
+                <span x-show="activeCcy !== 'Local'" class="text-[9px] px-1.5 py-0.5 rounded font-mono" style="background: rgba(34,211,238,0.08); color: var(--cyan)" x-text="'Priced in ' + activeCcy"></span>
               </div>
               <div class="flex items-center gap-2">
-                <!-- Log scale toggle -->
-                <button @click="detailLogScale = !detailLogScale"
+                <!-- Chart mode tabs -->
+                <div class="flex gap-1">
+                  <button @click="detailChartMode = 'returns'"
+                          class="px-2 py-1 rounded border text-[10px] font-mono transition"
+                          :class="detailChartMode === 'returns' ? 'tab-active' : ''"
+                          :style="detailChartMode === 'returns' ? '' : 'color: var(--text-2); border-color: var(--border)'"
+                          @mouseenter="showTt($event, 'Annual returns bar chart')" @mouseleave="hideTt()">
+                    Returns
+                  </button>
+                  <button @click="detailChartMode = 'price'"
+                          class="px-2 py-1 rounded border text-[10px] font-mono transition"
+                          :class="detailChartMode === 'price' ? 'tab-active' : ''"
+                          :style="detailChartMode === 'price' ? '' : 'color: var(--text-2); border-color: var(--border)'"
+                          @mouseenter="showTt($event, 'Full price history')" @mouseleave="hideTt()">
+                    Price
+                  </button>
+                </div>
+                <!-- Log scale toggle (price mode only) -->
+                <button x-show="detailChartMode === 'price'"
+                        @click="detailLogScale = !detailLogScale"
                         class="px-2 py-1 rounded border text-[10px] font-mono transition"
                         :class="detailLogScale ? 'tab-active' : ''"
                         :style="detailLogScale ? '' : 'color: var(--text-2); border-color: var(--border)'"
@@ -453,8 +473,28 @@
               </div>
             </div>
 
-            <!-- Full price history chart -->
-            <div x-html="assetDetailChartSvg" style="width:100%;overflow-x:auto;"></div>
+            <!-- Annual Returns Bar Chart -->
+            <div x-show="detailChartMode === 'returns'">
+              <div x-html="assetReturnsBarSvg"
+                   @mousemove="detailBarHover($event)"
+                   @mouseleave="detailBarHoverInfo = null"
+                   style="width:100%;overflow-x:auto;background:#111;"></div>
+              <!-- Hover info bar -->
+              <div x-show="detailBarHoverInfo" class="px-4 py-2 flex items-center gap-6 text-xs num font-mono"
+                   style="border-top: 1px solid var(--border); background: var(--surface-2); min-height: 32px;">
+                <span class="font-medium" style="color: var(--text)" x-text="detailBarHoverInfo?.year || ''"></span>
+                <span :style="`color: ${(detailBarHoverInfo?.ret||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
+                      x-text="detailBarHoverInfo?.ret != null ? ((detailBarHoverInfo.ret >= 0 ? '+' : '') + (detailBarHoverInfo.ret * 100).toFixed(2) + '%') : ''"></span>
+                <span x-show="detailBarHoverInfo?.partial" class="text-[9px]" style="color: var(--amber)">⚠ partial year</span>
+                <span class="ml-auto text-[9px]" style="color: var(--text-3)"
+                      x-text="activeCcy !== 'Local' ? 'Priced in ' + activeCcy : (activeReal ? 'Real (CPI-adj)' : 'Local currency')"></span>
+              </div>
+            </div>
+
+            <!-- Price History Chart -->
+            <div x-show="detailChartMode === 'price'"
+                 x-html="assetDetailChartSvg"
+                 style="width:100%;overflow-x:auto;"></div>
           </div>
         </template>
       </div>
@@ -1441,6 +1481,8 @@ function marketsApp() {
     activeReal: false,    // true = CPI-adjusted
     selectedAsset: null,  // asset key for detail panel, null = closed
     detailLogScale: true, // log scale toggle for detail panel chart
+    detailChartMode: 'returns', // 'returns' | 'price'
+    detailBarHoverInfo: null,   // { year, ret, partial }
     colorMode: 'return',  // 'return' | 'zscore'
 
     // Vol Intelligence state
@@ -1953,6 +1995,116 @@ function marketsApp() {
       const stats = { cagr, vol, bestYear, worstYear, pctPositive };
       this._statsCache[ck] = stats;
       return stats;
+    },
+
+    // ── Asset Detail Panel — Annual Returns Bar Chart ────────────────────
+    get assetReturnsBarSvg() {
+      if (!this.selectedAsset || !this.returnsData) return '';
+      this._buildAnnualCache(this.selectedAsset);
+      const cache = this._annualCache[this._cacheKey(this.selectedAsset)] || {};
+      const years = Object.keys(cache).map(Number).sort((a, b) => a - b);
+      if (!years.length) return '<div style="padding:40px;text-align:center;color:var(--text-3)">No annual data</div>';
+
+      const W = Math.max(1200, years.length * 14 + 80);
+      const H = 320, PL = 58, PR = 20, PT = 24, PB = 36;
+      const chartW = W - PL - PR, chartH = H - PT - PB;
+
+      // Y range — symmetric around 0, padded 10%
+      let maxAbs = 0;
+      for (const y of years) { maxAbs = Math.max(maxAbs, Math.abs(cache[y].ret)); }
+      maxAbs = Math.max(maxAbs * 1.12, 0.05);
+
+      const yScale = (v) => PT + chartH / 2 - (v / maxAbs) * (chartH / 2);
+      const y0 = yScale(0);
+      const barW = Math.max(3, Math.min(18, Math.floor(chartW / years.length) - 2));
+      const xScale = (i) => PL + (i / Math.max(years.length - 1, 1)) * chartW;
+
+      // Y-axis ticks
+      let yTicks = '';
+      const nTicks = 8;
+      for (let i = -nTicks / 2; i <= nTicks / 2; i++) {
+        const v = (i / (nTicks / 2)) * maxAbs;
+        const y = yScale(v);
+        const isZero = i === 0;
+        yTicks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" stroke="${isZero ? 'rgba(255,255,255,0.20)' : 'rgba(255,255,255,0.04)'}" stroke-width="${isZero ? 1.5 : 1}"/>`;
+        const label = (v >= 0 ? (v > 0 ? '+' : '') : '') + (v * 100).toFixed(0) + '%';
+        yTicks += `<text x="${PL - 5}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:${isZero ? '#a1a1aa' : '#52525b'};font-family:ui-monospace">${label}</text>`;
+      }
+
+      // X-axis year labels (adaptive — every N years)
+      let xLabels = '';
+      const step = years.length > 120 ? 20 : years.length > 60 ? 10 : years.length > 30 ? 5 : years.length > 15 ? 2 : 1;
+      for (let i = 0; i < years.length; i++) {
+        const yr = years[i];
+        if (yr % step !== 0) continue;
+        const x = xScale(i);
+        xLabels += `<text x="${x.toFixed(1)}" y="${H - 8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${yr}</text>`;
+        xLabels += `<line x1="${x.toFixed(1)}" y1="${PT}" x2="${x.toFixed(1)}" y2="${H - PB}" stroke="rgba(255,255,255,0.025)" stroke-width="1"/>`;
+      }
+
+      // Bars
+      let bars = '';
+      for (let i = 0; i < years.length; i++) {
+        const yr = years[i];
+        const { ret, partial } = cache[yr];
+        const x = (xScale(i) - barW / 2).toFixed(1);
+        const barTop = ret >= 0 ? yScale(ret) : y0;
+        const barH = Math.abs(yScale(ret) - y0);
+        const color = ret >= 0 ? '#34d399' : '#fb7185';
+        const opacity = partial ? 0.4 : 0.85;
+        const pct = (ret * 100).toFixed(1);
+        const sign = ret >= 0 ? '+' : '';
+        // data attributes for hover
+        bars += `<rect x="${x}" y="${barTop.toFixed(1)}" width="${barW}" height="${Math.max(1, barH).toFixed(1)}" fill="${color}" opacity="${opacity}" rx="1" data-year="${yr}" data-ret="${ret}" data-partial="${partial ? 1 : 0}" style="cursor:crosshair"/>`;
+        // Value label on tall bars (>20px)
+        if (barH > 22 && barW >= 8) {
+          const labelY = ret >= 0 ? barTop - 3 : barTop + barH + 10;
+          bars += `<text x="${(parseFloat(x) + barW / 2).toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="middle" style="font-size:8px;fill:${color};font-family:ui-monospace;pointer-events:none">${sign}${pct}%</text>`;
+        }
+      }
+
+      // Crosshair line (updated by JS on hover)
+      const crosshair = `<line id="detail-bar-crosshair" x1="0" y1="${PT}" x2="0" y2="${H - PB}" stroke="rgba(255,255,255,0.3)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
+
+      // CAGR reference line
+      const stats = this.computeStats(this.selectedAsset);
+      let cagrLine = '';
+      if (stats.cagr !== null) {
+        const yc = yScale(stats.cagr);
+        const cagrPct = (stats.cagr * 100).toFixed(1);
+        cagrLine = `<line x1="${PL}" y1="${yc.toFixed(1)}" x2="${W - PR}" y2="${yc.toFixed(1)}" stroke="#fbbf24" stroke-width="1" stroke-dasharray="5,4" opacity="0.5"/>`;
+        cagrLine += `<text x="${W - PR + 3}" y="${(yc + 3.5).toFixed(1)}" style="font-size:8px;fill:#fbbf24;font-family:ui-monospace;opacity:0.7">CAGR ${cagrPct}%</text>`;
+      }
+
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block;background:#111">${yTicks}${xLabels}${cagrLine}${bars}${crosshair}</svg>`;
+    },
+
+    detailBarHover(e) {
+      const svg = e.currentTarget.querySelector('svg');
+      if (!svg) return;
+      // Find the bar under cursor
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      if (el && el.dataset.year) {
+        this.detailBarHoverInfo = {
+          year: parseInt(el.dataset.year),
+          ret: parseFloat(el.dataset.ret),
+          partial: el.dataset.partial === '1',
+        };
+        // Move crosshair
+        const rect = svg.getBoundingClientRect();
+        const crosshair = svg.getElementById('detail-bar-crosshair');
+        if (crosshair) {
+          const x = e.clientX - rect.left;
+          const scaleX = parseFloat(svg.getAttribute('viewBox').split(' ')[2]) / rect.width;
+          crosshair.setAttribute('x1', (x * scaleX).toFixed(1));
+          crosshair.setAttribute('x2', (x * scaleX).toFixed(1));
+          crosshair.setAttribute('opacity', '1');
+        }
+      } else {
+        this.detailBarHoverInfo = null;
+        const crosshair = svg?.getElementById('detail-bar-crosshair');
+        if (crosshair) crosshair.setAttribute('opacity', '0');
+      }
     },
 
     // ── Asset Detail Panel chart ──────────────────────────────────────────
