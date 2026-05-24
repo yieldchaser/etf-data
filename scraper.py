@@ -7,12 +7,25 @@ import html as html_lib
 import requests
 from datetime import datetime
 from io import StringIO
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import Select
+
+# Selenium is only needed at runtime (scraper execution), not for tests/build.
+# Lazy-import so the module can be imported without selenium installed.
+try:
+    from selenium import webdriver
+    from selenium.webdriver.chrome.options import Options
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
+    from selenium.webdriver.support.ui import Select
+    _SELENIUM_AVAILABLE = True
+except ImportError:
+    webdriver = None  # type: ignore
+    Options = None    # type: ignore
+    By = None         # type: ignore
+    WebDriverWait = None  # type: ignore
+    EC = None         # type: ignore
+    Select = None     # type: ignore
+    _SELENIUM_AVAILABLE = False
 
 # Import curl_cffi at module level (before Selenium starts) to avoid
 # mid-session TLS library conflicts with ChromeDriver.
