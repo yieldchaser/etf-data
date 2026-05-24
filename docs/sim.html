@@ -66,7 +66,7 @@
       </div>
       <div class="flex items-baseline gap-3 mt-1">
         <h1 class="text-base font-medium" style="color: var(--cyan)">PORTFOLIO LAB</h1>
-        <span class="label" x-text="pricesData ? `Prices: ${pricesData.asof}` : 'Loading…'"></span>
+        <span class="label" x-text="loading ? 'Loading…' : (pricesData ? `Prices: ${pricesData.asof}` : 'Price data unavailable')"></span>
       </div>
       <div class="text-xs mt-0.5" style="color: var(--text-3)">
         Backtest any portfolio · VAMI analytics · Monte Carlo · Kelly sizing · Leverage decay

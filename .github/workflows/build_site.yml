@@ -62,8 +62,13 @@ jobs:
 
       # ── Portfolio Lab price data (§22.1) ──────────────────────────────
       - name: Fetch Portfolio Lab prices (yfinance adjusted-close)
+        id: fetch_prices
         run: python -m predator.fetch_prices
         continue-on-error: true
+
+      - name: Warn if prices.json missing
+        if: steps.fetch_prices.outcome == 'failure'
+        run: echo "::warning::fetch_prices failed — sim.html will show no-data state. Check yfinance connectivity."
 
       # ── Markets data pipeline — ORDER MATTERS ──────────────────────────
       # Step 1: Excel deep-history first (gold 1833+, S&P 1871+)
@@ -145,6 +150,12 @@ jobs:
           print(f'leaderboard.json OK: {len(lb)} entries')
           "
           ls -lh docs/data/
+          # Soft check: prices.json (Portfolio Lab) — warn if missing, don't fail build
+          if [ -f docs/data/prices.json ]; then
+            python -c "import json; p=json.load(open('docs/data/prices.json')); print(f'prices.json OK: {len(p.get(\"tickers\",{}))} tickers, asof={p.get(\"asof\")}')"
+          else
+            echo "::warning::prices.json not found — Portfolio Lab will show no-data state"
+          fi
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
