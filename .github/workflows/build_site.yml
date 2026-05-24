@@ -1,10 +1,5 @@
 name: Build site
 
-# Runs after the daily scraper commits new data.
-# Uses workflow_run to chain directly off "Daily ETF Scrape" — this bypasses
-# the GitHub limitation where bot-authored pushes don't trigger other workflows.
-# Also triggers on human code pushes and manual dispatch.
-
 on:
   workflow_run:
     workflows: ["Daily ETF Scrape"]
@@ -23,7 +18,6 @@ on:
 
   workflow_dispatch:
 
-# Cancel any in-progress build when a newer one arrives — always deploy freshest data.
 concurrency:
   group: pages
   cancel-in-progress: true
@@ -36,16 +30,19 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # Only proceed if scraper succeeded (or triggered by push/dispatch).
     if: >
       github.event_name != 'workflow_run' ||
       github.event.workflow_run.conclusion == 'success'
+
+    # SKIP_MARKET_FETCH=true on plain code pushes — the committed JSON is already
+    # up to date. Only re-fetch when the daily scraper ran or manual dispatch.
+    env:
+      SKIP_MARKET_FETCH: ${{ github.event_name == 'push' && 'true' || 'false' }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # When triggered by workflow_run, check out the exact commit the scraper
-          # pushed — not just HEAD — so we always build with the freshest data.
           ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup Python
@@ -54,10 +51,11 @@ jobs:
           python-version: '3.12'
           cache: pip
 
+      # Site-build deps only — no selenium/curl_cffi/pdfplumber (scraper-only)
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pandas pyyaml pyarrow pytest hypothesis yfinance curl_cffi openpyxl pdfplumber selenium fredapi python-dotenv
+          pip install pandas pyyaml pyarrow pytest hypothesis yfinance openpyxl fredapi python-dotenv
 
       - name: Run tests
         run: python -m pytest tests/ -v
@@ -65,33 +63,40 @@ jobs:
       - name: Build site artifacts (predator)
         run: python -m predator.build --source data/all_history.csv --output docs/data --config config.yaml
 
+      # ── Market data steps — skipped on plain code pushes ──────────────────
       - name: Fetch market data (yfinance)
+        if: env.SKIP_MARKET_FETCH == 'false'
         run: |
           mkdir -p data/markets
           python -m markets.fetch_yf --out data/markets
         continue-on-error: true
 
       - name: Fetch FRED data
+        if: env.SKIP_MARKET_FETCH == 'false'
         run: python -m markets.fetch_fred --out data/markets
         continue-on-error: true
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
 
       - name: Build markets.json + sim_underlyings.json
+        if: env.SKIP_MARKET_FETCH == 'false'
         run: python -m markets.build --source data/markets --output docs/data
         continue-on-error: true
 
       - name: Fetch market returns history (FRED + yfinance)
+        if: env.SKIP_MARKET_FETCH == 'false'
         run: python -m predator.markets_history --full-refresh
         continue-on-error: true
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
 
       - name: Ingest Mega Markets Historical (Excel)
+        if: env.SKIP_MARKET_FETCH == 'false'
         run: python -m predator.ingest_mega_xl
         continue-on-error: true
 
       - name: Fetch vol history (CBOE indices from FRED)
+        if: env.SKIP_MARKET_FETCH == 'false'
         run: python -m predator.vol_history --full-refresh
         continue-on-error: true
         env:
@@ -121,4 +126,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
