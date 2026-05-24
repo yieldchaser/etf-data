@@ -1,301 +1,629 @@
+# 📈 Predator Protocol
 
-# 📈 Predator Protocol: Automated ETF Holdings Pipeline
+> **Automated ETF Holdings Intelligence Platform** — tracks daily holdings across 30 Smart-Beta ETFs, detects early institutional accumulation signals, and delivers a full-stack analytical dashboard with 150+ years of cross-asset market history.
 
-**Automated Financial Data Pipeline & Institutional Conviction Scanner**
-*Tracks daily holdings for 30 Smart-Beta ETFs across Pacer, First Trust, Alpha Architect, Invesco, BlackRock, John Hancock, PIMCO, Avantis, VictoryShares, and Virtus to detect early institutional accumulation. The ETF count is derived from `config.yaml::etfs[]` — when that list changes, this README must be updated in the same commit.*
-
----
-
-## 🏗️ System Architecture
-
-This system operates as a **five-component pipeline**:
-1. **Data Ingestion (Python/GitHub Actions):** Automated scraping, cleaning, and archival of daily ETF holdings across 30 Smart-Beta ETFs.
-2. **Scoring Engine (Excel/Power Query):** A multi-factor scoring engine that ranks stocks based on cross-ETF conviction, factor weighting, and accumulation signals.
-3. **Live Dashboard (GitHub Pages):** Institutional-grade interactive frontend with leaderboard, velocity engine, burst detection, and structural intelligence.
-4. **Extended Scraper (Playwright/Bridge):** Browser-automated ingestion for 8 ETFs requiring JS rendering, with a fault-isolated bridge pipeline.
-5. **Markets Intelligence Platform (FRED/yfinance/Excel):** Monthly EOP close data for 25+ global assets (gold from 1833, S&P 500 from 1871) and 7 CBOE vol indices, powering a multi-view analytical dashboard.
+**Live Dashboard:** https://yieldchaser.github.io/etf-data/
 
 ---
 
-## 🚀 Component 1: Data Ingestion (GitHub Actions)
+## Table of Contents
 
-### Capabilities
-This project runs automatically via **GitHub Actions** to:
-1. **Scrape** official ETF issuer websites for daily holdings data.
-2. **Standardize** columns across different issuers (Ticker, Name, Weight, Date).
-3. **Intelligent Deduplication:** Prevents redundant commits if data hasn't changed.
-4. **Dual Archiving:**
-   * **Daily Snapshots:** `data/history/YYYY/MM/DD/master_archive.csv`
-   * **Giant History:** `data/all_history.csv` (Single append-only file for backtesting).
-
-### Tech Stack
-* **Python 3.x**
-* **Selenium & ChromeDriver:** For navigating complex JS-heavy sites (Pacer, First Trust). Lazy-imported so the module can be used without Selenium installed (tests and site build don't need it).
-* **Pandas:** For data cleaning and CSV management.
-* **"Nuclear" Date Hunter:** Custom Regex logic to find hidden "As Of" dates in raw HTML source code.
-
-### Automated Schedule
-* **Frequency:** Runs automatically at **14:00 UTC** and **22:00 UTC on weekdays** (cron: `0 14,22 * * 1-5`) via `.github/workflows/daily_scrape.yml`.
-* **Data Structure:**
-  ```text
-  data/
-  ├── latest/               # The most recent raw CSV for each ticker
-  │   ├── COWZ.csv
-  │   ├── SPMO.csv
-  │   └── ...
-  ├── history/              # Daily snapshots organized by date
-  │   └── 2026/
-  │       └── 02/
-  │           └── 15/
-  │               └── master_archive.csv
-  └── all_history.csv       # 🌟 THE MASTER FILE: All historical data concatenated
-  ```
+1. [System Overview](#system-overview)
+2. [Architecture](#architecture)
+3. [Component 1 — Data Ingestion](#component-1--data-ingestion)
+4. [Component 2 — Scoring Engine](#component-2--scoring-engine)
+5. [Component 3 — Live Dashboard](#component-3--live-dashboard)
+6. [Component 4 — Extended Scraper Bridge](#component-4--extended-scraper-bridge)
+7. [Component 5 — Markets Intelligence Platform](#component-5--markets-intelligence-platform)
+8. [CI/CD Pipeline](#cicd-pipeline)
+9. [Testing](#testing)
+10. [Local Development](#local-development)
+11. [Configuration Reference](#configuration-reference)
 
 ---
 
-## 📊 Component 2: Scoring Engine (Excel / Power Query)
+## System Overview
 
-The Excel dashboard connects directly to `raw.githubusercontent.com` to fetch the latest CSVs, merging them into a single "Master Leaderboard" that scores stocks based on institutional conviction.
+Predator Protocol is a fully automated financial intelligence system built around a single thesis: **institutional conviction is detectable before it becomes consensus**. Smart-Beta ETFs — momentum, quality, value, spinoff — are run by systematic strategies that rebalance on rules. When multiple independent strategies simultaneously accumulate the same name, that convergence is a signal.
 
-### 1. ETF Tier Weights (`ETF_Config` Table)
+The system operates as five tightly integrated components:
 
-ETFs are grouped into five tiers based on the strategy signal they emit. Each ticker carries a `Points` weight reflecting the rarity and conviction of that signal. Tickers, tiers, and points below mirror `config.yaml::etfs[]` exactly — that file is the source of truth.
-
-#### 🏷️ Scout tier — Spinoffs & IPOs. Captures structural market inefficiencies.
-
-| Ticker | Name | Points |
-| --- | --- | --- |
-| `CSD`  | Invesco S&P Spin-Off ETF                          | **40** |
-| `FPX`  | First Trust US Equity Opportunities ETF           | **40** |
-| `FPXI` | First Trust IPOX International Equity ETF         | **60** |
-
-#### 🏷️ Quant tier — Factor-based momentum (US + International, Large/Mid/Small Cap).
-
-| Ticker | Name | Points |
-| --- | --- | --- |
-| `QMOM` | Alpha Architect US Quantitative Momentum ETF              | **40** |
-| `IMOM` | Alpha Architect International Quantitative Momentum ETF   | **60** |
-| `XMMO` | Invesco S&P MidCap Momentum ETF                           | **40** |
-| `XSMO` | Invesco S&P SmallCap Momentum ETF                         | **40** |
-| `PIE`  | Invesco DWA Emerging Markets Momentum ETF                 | **40** |
-| `PDP`  | Invesco DWA Momentum ETF                                  | **40** |
-| `DWAS` | Invesco DWA SmallCap Momentum ETF                         | **40** |
-| `EEMO` | Invesco S&P Emerging Markets Momentum ETF                 | **60** |
-| `PIZ`  | Invesco DWA Developed Markets ex-US Momentum ETF          | **60** |
-| `JHMM` | John Hancock Multifactor Mid Cap ETF                      | **40** |
-| `JHEM` | John Hancock Multifactor Emerging Markets ETF             | **60** |
-| `JHSC` | John Hancock Multifactor Small Cap ETF                    | **40** |
-| `MFEM` | PIMCO RAFI Dynamic Multi-Factor Emerging Markets Equity ETF | **60** |
-| `JOET` | Virtus Terranova US Quality Momentum ETF                  | **40** |
-
-#### 🏷️ Quality tier — High Free Cash Flow, value, and profitability screening.
-
-| Ticker | Name | Points |
-| --- | --- | --- |
-| `COWZ` | Pacer US Cash Cows 100 ETF                                | **30** |
-| `CALF` | Pacer US Small Cap Cash Cows 100 ETF                      | **30** |
-| `SPHQ` | Invesco S&P 500 Quality ETF                               | **30** |
-| `IVAL` | Alpha Architect International Quantitative Value ETF      | **30** |
-| `QVAL` | Alpha Architect US Quantitative Value ETF                 | **30** |
-| `VLUE` | iShares MSCI USA Value Factor ETF                         | **30** |
-| `AVSC` | Avantis US Small Cap Value ETF                            | **30** |
-| `GRIN` | VictoryShares International Free Cash Flow Growth ETF     | **30** |
-
-#### 🏷️ Trend tier — Broad momentum and high-beta validation.
-
-| Ticker | Name | Points |
-| --- | --- | --- |
-| `SPMO` | Invesco S&P 500 Momentum ETF                              | **10** |
-| `SPHB` | Invesco S&P 500 High Beta ETF                             | **10** |
-| `RPG`  | Invesco S&P 500 Pure Growth ETF                           | **10** |
-
-#### 🏷️ Blob tier — Market-cap weighted benchmarks (confirmation only).
-
-| Ticker | Name | Points |
-| --- | --- | --- |
-| `XLG`  | Invesco S&P 500 Top 50 ETF                                | **2** |
-| `QQQM` | Invesco NASDAQ 100 ETF                                    | **2** |
-
-### 2. The Algorithm
-
-**`Final Score = Σ (Single ETF Scores)`**
-
-For each holding, the score is calculated as:
-
-* **Rank Multiplier:**
-  * Top 10 Rank: `1.5x`
-  * Top 30 Rank: `1.2x`
-  * Rank > 30: `1.0x`
-
-* **New Entrant Bonus:**
-  * If `Status = "NEW"` AND `Category` is **Scout** or **Quant**:
-  * **Bonus = Points × 5** (e.g., +200 pts).
+| Component | Role |
+|-----------|------|
+| **Data Ingestion** | Scrapes 30 ETF issuers daily, normalises holdings, archives to CSV |
+| **Scoring Engine** | Multi-factor algorithm: tier weights × rank multipliers × new-entrant bonuses |
+| **Live Dashboard** | GitHub Pages SPA — leaderboard, velocity engine, burst detection, structural analytics |
+| **Extended Scraper Bridge** | Fault-isolated subprocess for 8 ETFs requiring Playwright/PDF/XLS ingestion |
+| **Markets Intelligence Platform** | 150+ years of cross-asset return data, 9-tab analytical dashboard |
 
 ---
 
-## 🚩 Output Flags
-
-* **HIGH CONVICTION:** `Count of Unique ETFs` ≥ 4. Broad consensus across multiple strategies.
-* **SPECULATIVE BETA:** Present in Trend tier but absent in Quality or Scout tiers. High volatility momentum without fundamental support.
-
----
-
-## 🔧 Maintenance & Operations
-
-### Daily Usage
-1. **Check Status:** Verify the GitHub Action run is green (Success).
-2. **Update View:** Open Excel and click **Data > Refresh All**.
-
-### Troubleshooting
-* **Ghost Rows:** Filter the `Ticker` column to exclude `(null)` values.
-* **Privacy Errors:** Select **"Ignore Privacy Levels"** in Excel to allow merging of GitHub data with the local Config table.
-
----
-
-## 🦅 Component 3: Live Dashboard (GitHub Pages)
-
-The site at **https://yieldchaser.github.io/etf-data/** runs the Predator Protocol scoring algorithm directly on `data/all_history.csv` and renders a premium, institutional-grade interactive dashboard.
-
-### Features
-
-- **Global Leaderboard & Insights:** ~3,950 unique tickers ranked by Final Alpha Score with day-over-day deltas, HC streaks, percentile bars, velocity/burst badges, and auto-generated explainer lines.
-- **Per-ETF Telemetry:** 50-slice SVG donut charts, holdings sorted by rank/weight/delta, tier pie chart.
-- **ETF Sidebar Metadata:** Rebalance/reconstitution schedule, expandable rows, holdings pie chart.
-- **Deep-Dive Stock Analytics (`stock.html`):** Score history, rank history, per-ETF rank history, signal timeline (Gantt), score decomposition bar, tier breadth, quality adoption/defection chips.
-- **Velocity Engine:** Composite velocity score, 4σ burst detection, sector/country flow overlay (Unknown entries excluded), watchlist with compare mode.
-- **Strategy Backtest (`/backtest.html`):** 5 strategies with cumulative returns, stats table, velocity-vs-return scatter.
-- **Sector & Country Flow:** Aggregated velocity-weighted exposure by sector and country. Foreign tickers and currency codes with no metadata are excluded from flow charts.
-
-### Architecture
+## Architecture
 
 ```
-scraper.py → data/all_history.csv
-    → predator/build.py (sanitizer + scoring + velocity + flow + overlap)
-    → docs/data/*.json
-    → GitHub Pages (docs/)
+┌─────────────────────────────────────────────────────────────────────┐
+│  GitHub Actions — Daily ETF Scrape (14:00 + 22:00 UTC weekdays)     │
+│                                                                     │
+│  scraper.py (21 primary ETFs)                                       │
+│  └── scripts/etf_holdings_scraper_v42.py (8 extended ETFs)          │
+│       └── Bridge: clean → dedupe → write                            │
+│                                                                     │
+│  Output: data/all_history.csv  (append-only, ~100k rows)            │
+└──────────────────────────┬──────────────────────────────────────────┘
+                           │ triggers
+┌──────────────────────────▼──────────────────────────────────────────┐
+│  GitHub Actions — Build Site                                        │
+│                                                                     │
+│  predator/build.py                                                  │
+│  ├── Sanitizer (blocked tickers, name patterns, ticker renames)     │
+│  ├── Scoring (tier weights × rank mult × new bonus)                 │
+│  ├── Temporal analytics (streaks, percentiles, deltas 1/7/14/30/60/90d) │
+│  ├── Velocity engine (composite score + 4σ burst detection)         │
+│  ├── Structural signals (concentration, tier breadth, quality Δ)    │
+│  ├── Flow aggregation (sector + country, Unknown excluded)          │
+│  └── ETF overlap matrix (30×30 Jaccard)                             │
+│                                                                     │
+│  predator/markets_history.py + ingest_mega_xl.py + vol_history.py  │
+│  └── docs/data/market_returns.json (25 assets, gold from 1833)      │
+│                                                                     │
+│  Output: docs/data/*.json → GitHub Pages                            │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-Auto-rebuilds within ~10 min of every push via `.github/workflows/build_site.yml`.
+---
+
+## Component 1 — Data Ingestion
+
+### What it does
+
+`scraper.py` runs twice daily on GitHub Actions and scrapes official ETF issuer websites for current holdings. Each run produces a dated snapshot and appends to the master history file.
+
+### ETF Universe (30 ETFs)
+
+The ETF count is derived from `config.yaml::etfs[]` — that file is the source of truth.
+
+| Tier | ETFs | Signal |
+|------|------|--------|
+| **Scout** (40–60 pts) | CSD, FPX, FPXI | Spinoffs & IPOs — structural market inefficiencies |
+| **Quant** (40–60 pts) | QMOM, IMOM, XMMO, XSMO, PIE, PDP, DWAS, EEMO, PIZ, JHMM, JHEM, JHSC, MFEM, JOET | Factor-based momentum (US + International) |
+| **Quality** (30 pts) | COWZ, CALF, SPHQ, IVAL, QVAL, VLUE, AVSC, GRIN | Free cash flow, value, profitability |
+| **Trend** (10 pts) | SPMO, SPHB, RPG | Broad momentum confirmation |
+| **Blob** (2 pts) | XLG, QQQM | Mega-cap benchmarks |
+
+International ETFs (FPXI, IMOM, EEMO, PIZ, JHEM, MFEM) carry 60 points instead of their tier default to level the playing field — global names naturally appear in fewer US-focused ETFs.
+
+### Scraper Architecture
+
+- **Selenium + ChromeDriver** — JS-heavy sites (Pacer, First Trust). Lazy-imported so the module can be used without Selenium installed (tests and build CI don't need it).
+- **curl_cffi** — TLS fingerprint spoofing for API endpoints that block standard requests.
+- **Pandas** — data normalisation, deduplication, CSV management.
+- **"Nuclear" Date Hunter** — custom regex that extracts hidden `As Of` dates from raw HTML source, handling every issuer's idiosyncratic date format.
+
+### Data Flow
+
+```
+Issuer website
+    → scraper.py (fetch + parse + normalise)
+    → data/latest/{TICKER}.csv          (current snapshot per ETF)
+    → data/history/YYYY/MM/DD/master_archive.csv  (dated daily snapshot)
+    → data/all_history.csv              (append-only master file, ~100k rows)
+```
+
+Idempotency is enforced on the composite key `(ETF_Ticker, ticker, Holdings_As_Of)` — reruns within the same UTC day are safe.
+
+### Schedule
+
+```
+cron: '0 14,22 * * 1-5'   # 14:00 UTC (10:00 AM ET) + 22:00 UTC (6:00 PM ET), weekdays
+```
+
+The 14:00 run targets the primary window after all issuers publish T+1 data. The 22:00 run catches late publishers and serves as a retry.
+
+---
+
+## Component 2 — Scoring Engine
+
+### Score Formula
+
+```
+Single Score = (weight% × 100) × tier_points × rank_multiplier + new_entrant_bonus
+
+Final Alpha Score = Σ Single Scores across all ETFs holding this ticker
+```
+
+### Tier Points
+
+| Tier | Default Points | Override |
+|------|---------------|---------|
+| Scout | 40 | FPXI → 60 (international) |
+| Quant | 40 | IMOM, EEMO, PIZ, JHEM, MFEM → 60 (international) |
+| Quality | 30 | — |
+| Trend | 10 | — |
+| Blob | 2 | — |
+
+### Rank Multiplier
+
+Applied per-ETF based on the ticker's rank within that ETF's holdings:
+
+| Rank | Multiplier |
+|------|-----------|
+| Top 10 | 1.5× |
+| Top 30 | 1.2× |
+| > 30 | 1.0× |
+
+### New Entrant Bonus
+
+When a ticker is absent from the 14-day lookback window and re-enters a Scout or Quant ETF:
+
+```
+New Bonus = tier_points × 5.0
+```
+
+This amplifies early detection of names entering high-signal ETFs for the first time.
+
+### Output Flags
+
+| Flag | Condition | Interpretation |
+|------|-----------|---------------|
+| **HIGH_CONVICTION** | Held by ≥ 4 distinct ETFs | Broad consensus across independent strategies |
+| **SPECULATIVE_BETA** | In Trend tier, absent from Quality + Scout | High-volatility momentum without fundamental support |
+
+### Sanitizer
+
+Before scoring, the pipeline filters:
+- **Blocked tickers**: currency placeholders (`$USD`, `$EUR`, `$JPY`, etc.), money market funds (`AGPXX`, `FGXXX`), cash instruments
+- **Blocked name patterns**: "Money Market", "Securities Lending"
+- **Ticker normalisation**: `BRK-B → BRK.B`, `BF/B → BF.B`, `GOOG → GOOGL` (dual-class consolidation)
+
+---
+
+## Component 3 — Live Dashboard
+
+**URL:** https://yieldchaser.github.io/etf-data/
+
+Built with Tailwind CSS + Alpine.js. Zero build step — static HTML/JS served directly from `docs/`. All computation runs client-side from pre-built JSON payloads.
 
 ### Pages
 
-| Page | URL | Description |
-|------|-----|-------------|
-| Dashboard | `/` | Leaderboard, ETFs, Changes, Watchlist tabs |
-| Stock Detail | `/stock.html?t=GEV` | Per-ticker deep dive with charts |
-| Markets | `/markets.html` | Multi-asset returns intelligence |
-| Simulator | `/sim.html` | Leveraged ETN NAV simulator |
+| Page | Path | Description |
+|------|------|-------------|
+| Dashboard | `/` | Main leaderboard, ETFs tab, Changes tab, Watchlist |
+| Stock Detail | `/stock.html?t=TICKER` | Per-ticker deep dive |
+| Markets | `/markets.html` | Cross-asset returns intelligence |
 | Backtest | `/backtest.html` | Strategy performance comparison |
+| Simulator | `/sim.html` | Leveraged ETN NAV simulator |
 
-### Local development
+### Dashboard Tabs
 
-```bash
-pip install -r requirements.txt
-python -m pytest tests/ -v                         # 33 tests
-python -m predator.build                           # builds docs/data/*
-python -m predator.markets_history --full-refresh  # fetch + write market_returns.json
-python -m predator.ingest_mega_xl                  # merge Excel historical data
-python -m predator.vol_history --full-refresh      # fetch + write vol_history.json
-python -m http.server -d docs 8000                 # preview at http://localhost:8000
-```
+#### Leaderboard
+- ~3,950 unique tickers ranked by Final Alpha Score
+- Sortable columns: score, rank, velocity, burst, concentration, tier breadth
+- Day-over-day score deltas with honest `—` display when no comparable past data exists
+- HC streaks, percentile-of-own-history progress bars
+- **VELO** and **BURST** badges with micro-breakdown tooltips
+- Filter chips: HC only, BURST, VELO, Quality+, Concentration ≤80%
+- Auto-generated explainer line per row: compresses tier breadth, score delta, burst state, HC streak, quality signals, concentration, stealth, divergence into one scannable sentence
 
-### Tuning
+#### ETFs Tab
+- Per-ETF 50-slice SVG donut chart (20-color institutional palette)
+- Tier pie chart (fixed Alpine SVG template limitation via `x-html`)
+- Holdings sorted by rank, weight, 7-day rank delta
+- Sidebar metadata: rebalance/reconstitution schedule from `ETF DATA.csv`
+- ETF overlap heatmap: 30×30 Jaccard similarity matrix
 
-Edit `config.yaml`:
-- `etfs[].points` — Scout/Quant=40 (FPXI/IMOM=60), Quality=30, Trend=10, Blob=2
-- `rank_breakpoints` — top-10 = 1.5×, top-30 = 1.2× multipliers
-- `new_lookback_days` — how long a ticker must have been absent to count as NEW
-- `high_conviction_min_etfs` — threshold for HIGH CONVICTION flag
+#### Changes Tab
+- Daily turnover: HC entries/exits, biggest score movers, new discoveries
+- Top 15 velocity movers panel
+- Sector flow: velocity-weighted exposure by GICS sector (Unknown excluded)
+- Country flow: velocity-weighted exposure by domicile (Unknown excluded)
+- Click a sector/country to filter the leaderboard
+
+#### Watchlist Tab
+- Pin tickers with ★, persisted to localStorage
+- "Since last visit" changelog: HC entries/exits, new bursts among pinned names
+- Compare mode: side-by-side cards for top 4 pinned tickers
+
+### Stock Detail (`stock.html`)
+
+- **Score History**: sparkline area chart, score accumulation over time
+- **Global Rank History**: inverted Y-axis line chart, O(1) pre-computed lookup
+- **Per-ETF Rank History**: multi-line chart, tier-based coloring, crosshair tooltips
+- **Signal Timeline**: Gantt-style chart — HC/SPEC/VELO/BURST state history over 90 days with rank overlay, hover crosshair, duration counters
+- **Score Decomposition Bar**: stacked bar showing each ETF's contribution, colored by tier
+- **Tier Breadth chip**: how many distinct strategy types co-hold this name (1–5)
+- **Quality+/Quality− chips**: gained/lost a Quality ETF in last 30 days
+- **Momentum Gauge**: ↗ accelerating / → stable / ↘ weakening
+
+### Analytical Signals
+
+| Signal | Definition |
+|--------|-----------|
+| `velocity_score` | `0.5×GlobalRankΔ30d + 0.25×PeakImprovement30d + 1.0×AvgRankΔ7d + 20.0×AvgWeightFlow7d + 5.0×ETFsAdded30d + 1.0×ScoreStreak` |
+| `burst_30d` | Peak rank improvement ≥ 40 positions in 30d, with ≥80% continuous presence AND sustained improvement in ≥8 of last 10 snapshots |
+| `conviction_divergence` | Score rising but rank falling (crowded out) or score falling but rank rising (relative strength) |
+| `stealth_accumulation` | Weight growing in 3+ ETFs without rank improvement |
+| `momentum_regime` | accelerating / rising / stable / weakening / declining |
+| `tier_breadth` | Count of distinct strategy tiers (Scout/Quant/Quality/Trend/Blob) co-holding this name |
+| `concentration_score` | % of final score from single top ETF (100 = mono-ETF, 25 = perfectly diversified across 4) |
+| `quality_adopted_30d` | Gained a Quality ETF (COWZ/CALF/SPHQ) in last 30 days |
+| `quality_defected_30d` | Lost a Quality ETF in last 30 days |
 
 ---
 
-## 🔌 Component 4: Extended Scraper
+## Component 4 — Extended Scraper Bridge
 
-The primary `scraper.py` handles 21 ETFs from issuers exposing stable HTML, CSV, or JSON endpoints. The remaining 8 ETFs require Playwright browser automation, PDF parsing, or cookie-bound APIs — these live in `scripts/etf_holdings_scraper_v42.py` and run as an isolated subprocess.
+### Why it exists
 
-### V42_ETFS Ownership Manifest
+Eight ETFs require ingestion methods that can't run in the primary Selenium loop: Playwright browser automation (JS-rendered tables), PDF parsing, XLS downloads, and cookie-bound APIs. These run as a fault-isolated subprocess.
 
-`V42_ETFS = frozenset({VLUE, AVSC, GRIN, JHMM, JHEM, JHSC, MFEM, JOET})`
+### Ownership Manifest
+
+```python
+V42_ETFS = frozenset({"VLUE", "AVSC", "GRIN", "JHMM", "JHEM", "JHSC", "MFEM", "JOET"})
+```
+
+At startup, `scraper.py` calls `check_v42_ownership_collisions()` and logs a warning if any ticker appears in both `config.json` (primary) and `V42_ETFS` (extended). In healthy state the intersection is empty.
 
 ### Bridge Pipeline
 
 ```
-v42 subprocess → etf_holdings_YYYYMMDD.csv (Canonical_CSV)
-    → clean_canonical_csv() → (cleaned_df, errors)
-    → bridge_write_all_sinks(cleaned_df)
-        ├── data/all_history.csv                       (Giant_History — append + dedupe)
-        ├── data/latest/{TICKER}.csv                   (one per V42 ETF)
-        └── data/history/YYYY/MM/DD/master_archive.csv (dated daily snapshot)
+scripts/etf_holdings_scraper_v42.py (subprocess, timeout=600s)
+    → etf_holdings_YYYYMMDD.csv  (Canonical_CSV at repo root)
+         │
+         ▼
+    clean_canonical_csv()
+    ├── Required columns: etf, ticker, name, weight_pct, as_of_date, security_type, scrape_date
+    ├── Filters: non-equity security types, currency tickers ($USD, $BRL...), invalid weights
+    ├── Normalises: weight_pct strings with % suffix ("2.62%" → 0.0262)
+    └── Returns: (cleaned_df, errors)
+         │
+         ▼
+    bridge_write_all_sinks(cleaned_df)
+    ├── data/all_history.csv                        (Giant History — append + dedupe)
+    ├── data/latest/{TICKER}.csv                    (one snapshot per V42 ETF)
+    └── data/history/YYYY/MM/DD/master_archive.csv  (dated daily snapshot — append + dedupe)
 ```
 
-Idempotency enforced on composite key `(ETF_Ticker, ticker, Holdings_As_Of)`. The 14:00 and 22:00 UTC reruns are safe to repeat.
+### Failure Isolation Contract
+
+Three-layer isolation ensures no v42 failure can corrupt the primary pipeline output:
+
+1. **Subprocess crash / timeout** — logged, Bridge returns. Primary sinks already written remain intact.
+2. **Canonical CSV validation failure** — `clean_canonical_csv()` returns empty DataFrame + error list. `bridge_write_all_sinks()` is skipped entirely; no sink is touched.
+3. **Per-sink write failure** — each ETF's `data/latest/` write and the master_archive append are wrapped individually so one ETF's I/O failure does not abort the others.
+
+### Reuse-Existing-CSV Recovery
+
+If `etf_holdings_YYYYMMDD.csv` already exists when the Bridge starts (partial-run recovery or same-day rerun), the subprocess is skipped and the existing canonical CSV is reused. This avoids re-incurring Playwright cost while still fanning the data into all three sinks.
 
 ---
 
-## 🌍 Component 5: Markets Intelligence Platform
+## Component 5 — Markets Intelligence Platform
 
-A standalone data pipeline and multi-view dashboard providing cross-asset return analytics for 25 global instruments with deep historical data (gold from 1833, S&P 500 from 1871, Dow Jones from 1885).
+A standalone data pipeline and 9-tab analytical dashboard providing cross-asset return analytics with deep historical coverage.
 
 ### Data Pipelines
 
-| Module | Output | Description |
-|--------|--------|-------------|
-| `predator/markets_history.py` | `docs/data/market_returns.json` | Fetches monthly EOP close for ~25 assets from yfinance. |
-| `predator/ingest_mega_xl.py` | `docs/data/market_returns.json` | Merges `Mega_Markets_Historical.xlsx` (5 sheets, 25 series) — Excel data takes priority for overlapping months, extending history back to 1833. |
-| `predator/vol_history.py` | `docs/data/vol_history.json` | Fetches daily close for 7 CBOE volatility indices (VIX, GVZ, OVX, VXN, RVX, VXD, VXEEM) from FRED. |
+#### `predator/markets_history.py`
 
-### Asset Coverage
+Fetches monthly end-of-period (EOP) close data from FRED (primary) and yfinance (fallback for international indices). Supports incremental updates (trailing 3 months) and full refresh. Writes `docs/data/market_returns.json`.
 
-| Category | Assets |
-|----------|--------|
-| Equity | S&P 500 (1871), DJIA (1885), NASDAQ, NASDAQ-100, Nikkei 225, BSE Sensex, DAX, FTSE 100, Hang Seng, ASX 200, Bovespa, Shanghai Composite |
-| Precious Metals | Gold (1833), Silver, Platinum, Palladium |
-| Energy | WTI Crude, Brent Crude |
-| Commodities | Copper, Corn, Wheat, Soybeans, Sugar, Coffee, Cotton |
+Asset registry covers 50+ series across:
+- **Equities**: S&P 500, DJIA, NASDAQ, NASDAQ-100, Nikkei 225, BSE Sensex, DAX, FTSE 100, Hang Seng, ASX 200, Bovespa, Shanghai Composite, Wilshire 5000
+- **Precious Metals**: Gold, Silver, Platinum, Palladium
+- **Energy**: WTI Crude, Brent Crude, Natural Gas, Coal
+- **Base Metals**: Copper, Aluminum, Nickel, Zinc, Iron Ore, Tin, Lead
+- **Agriculture**: Wheat, Corn, Soybeans, Cotton, Sugar, Coffee, Cocoa, Rice, Palm Oil
+- **FX Rates**: USD/INR, USD/JPY, EUR/USD, GBP/USD, USD/CNY, USD/CAD, USD/AUD, USD/SGD, USD/BRL, USD/MXN, USD/KRW, USD/CHF
+- **Real Estate**: US Home Prices (Case-Shiller)
+- **Rates**: 3M T-Bill, 2Y/10Y/30Y Treasury, Fed Funds, Moody's BAA/AAA, 10Y–2Y Spread
+- **Auxiliary**: US CPI (for real-return adjustment), USD/INR (for currency lens)
 
-### Markets Page (`/markets.html`) — 9 Tabs
+#### `predator/ingest_mega_xl.py`
 
-| Tab | Description |
-|-----|-------------|
-| **Return Matrix** | Annual returns heatmap (newest year left), monthly drilldown, currency lens (Local/USD/INR/Gold/Silver), real returns, z-score color mode, event annotations, CSV export. Click any asset name → annual returns bar chart with CAGR reference line + price history. |
-| **Price Log** | Daily price log for 23 tracked instruments |
-| **Yield History** | US rate history line chart + annual yield heatmap |
-| **Periodic Table** | Callan-style rank rotation table |
-| **Drawdowns** | Underwater curves for all assets, grouped category sidebar with search, time range filter (All/50Y/30Y/20Y/10Y), max drawdown table with current DD column |
-| **Hold Lab** | Rolling N-year returns — best/worst/median |
-| **Seasonality** | Month-of-year average return heatmap |
-| **Correlation** | Correlation matrix + Growth of $100 log-scale chart |
-| **Volatility** | 4 sub-panels: current level tiles, monthly z-score heatmap, historical chart, cross-asset bar |
+Reads `Mega_Markets_Historical.xlsx` (5 sheets: Equities, International_Equities, Precious_Metals, Commodities, Energy) and merges 25 series into `market_returns.json`. Excel data takes priority for overlapping months, extending history back to:
 
-### Asset Detail Panel
+| Asset | History from |
+|-------|-------------|
+| Gold | **1833** |
+| S&P 500 | **1871** |
+| Dow Jones | **1885** |
+| BSE Sensex | 1979 |
+| NASDAQ | 1971 |
 
-Click any asset name in the Return Matrix to open a detail panel with:
-- **Annual Returns tab (default):** Year-by-year bar chart (green/red), CAGR dashed reference line, partial-year bars at 40% opacity, hover shows exact return %. Respects active currency lens.
-- **Price History tab:** Full price history line chart with log/linear toggle.
-- Stats strip: CAGR, annualised vol, best/worst year, % positive years, data since.
+#### `predator/vol_history.py`
+
+Fetches daily close for 7 CBOE volatility indices from FRED. Writes `docs/data/vol_history.json`.
+
+| Index | FRED Series | Coverage |
+|-------|-------------|---------|
+| VIX | VIXCLS | 1990+ |
+| GVZ (Gold VIX) | GVZCLS | 2008+ |
+| OVX (Oil VIX) | OVXCLS | 2007+ |
+| VXN (NASDAQ VIX) | VXNCLS | 2001+ |
+| RVX (Russell VIX) | RVXCLS | 2004+ |
+| VXD (DJIA VIX) | VXDCLS | 2005+ |
+| VXEEM (EM VIX) | VXEEMCLS | 2011+ |
+
+### Markets Dashboard (`/markets.html`) — 9 Tabs
+
+#### Return Matrix
+Annual returns heatmap for all assets. **Newest year on the left**, oldest on the right.
+
+- Click any cell → monthly drilldown row with 12 colored cells
+- Click any asset name → **Asset Detail Panel** (see below)
+- **Currency lens**: Local / USD / INR / Gold / Silver — all returns recomputed client-side using monthly FX rates from the aux registry
+- **Real returns toggle**: CPI-adjusted using CPIAUCSL (US CPI)
+- **Z-score color mode**: color = how unusual this year was vs the asset's own history
+- **Event annotations**: ⚡ markers on crisis years (1973, 1987, 2008, 2020, 2022...)
+- **CSV export**: downloads current matrix view with active lens applied
+
+#### Asset Detail Panel
+Opens below the matrix when you click an asset name. Two tabs:
+
+**Annual Returns (default)**
+- Year-by-year vertical bar chart — green positive, red negative
+- Partial years (first/last) shown at 40% opacity
+- Amber dashed CAGR reference line
+- Hover any bar → bottom strip shows exact year + return % to 2dp
+- Respects active currency lens — Gold priced in INR shows INR-denominated gold returns
+
+**Price History**
+- Full price history line chart (log/linear toggle)
+- Stats strip: CAGR, annualised vol, best/worst year, % positive years, data since
+
+#### Price Log
+Daily price log for 23 tracked instruments with ATH, ATL, streaks, and percentile stats.
+
+#### Yield History
+US interest rate history — line chart + annual yield heatmap. Series: 3M T-Bill, 2Y, 10Y, 30Y Treasury, Fed Funds, Moody's BAA, 10Y–2Y Spread.
+
+#### Periodic Table
+Callan-style rank rotation table — assets sorted best-to-worst return for each year, colored by asset.
+
+#### Drawdowns (Drawdown Studio)
+- Underwater curves for **all assets** (not a hardcoded subset)
+- Left sidebar: grouped by category, search filter, Select All / Reset
+- Time range filter: All / 50Y / 30Y / 20Y / 10Y
+- Chart: dark `#111` background, 35% opacity fill, bright 2px line, 0% at top, negative going down
+- Hover crosshair with per-asset drawdown values
+- Max Drawdown table: Peak date, Trough date, Recovery date, Months to recover, Current DD
+
+#### Hold Lab
+Rolling N-year returns — best/worst/median for each holding period.
+
+#### Seasonality
+Month-of-year average return heatmap — which months historically perform best/worst per asset.
+
+#### Correlation
+Correlation matrix + Growth of $100 log-scale chart for selected assets.
+
+#### Volatility Intelligence
+4 sub-panels:
+1. Current level tiles with z-score vs own history
+2. Monthly z-score heatmap (VIX regime calendar)
+3. Historical line chart with lookback filter
+4. Cross-asset bar chart (current vs 1Y avg)
 
 ---
 
-## 🧪 Testing
+## CI/CD Pipeline
 
-**33 tests** (27 scoring + 6 bridge) with full coverage of the scoring algorithm, temporal analytics, and bridge pipeline contract.
+### Workflows
 
-- **Property-based testing** via [Hypothesis](https://hypothesis.readthedocs.io/) validates the bridge contract against randomized inputs.
-- **Deterministic unit tests** cover scoring math, rank multipliers, NEW-entrant bonuses, velocity calculations, and burst detection thresholds.
+#### `daily_scrape.yml` — Data Collection
+```
+Trigger: cron 14:00 + 22:00 UTC weekdays, workflow_dispatch
+Runner:  ubuntu-latest
+Steps:
+  1. Install: pandas, selenium, playwright, curl_cffi, pdfplumber, xlrd
+  2. Install Chromium (playwright)
+  3. xvfb-run python scraper.py
+  4. git add data/* && git commit (only if data changed)
+  5. Dispatch build_site.yml
+```
+
+#### `build_site.yml` — Site Build & Deploy
+```
+Trigger: workflow_run (after scraper), push to main (predator/**, docs/**, scraper.py, tests/**...), workflow_dispatch
+Runner:  ubuntu-latest
+Steps:
+  1. Install: pandas, pyyaml, pyarrow, pytest, hypothesis, yfinance, openpyxl, fredapi, python-dotenv
+     (No selenium/curl_cffi/pdfplumber — scraper-only, not needed for build)
+  2. pytest tests/ -v  (33 tests)
+  3. predator.build  → docs/data/*.json
+  4. markets.fetch_yf + markets.fetch_fred + markets.build  → docs/data/markets.json
+  5. predator.markets_history --full-refresh  → docs/data/market_returns.json
+  6. predator.ingest_mega_xl  → merges Excel historical data
+  7. predator.vol_history --full-refresh  → docs/data/vol_history.json
+  8. Verify required outputs exist
+  9. Upload Pages artifact → Deploy to GitHub Pages
+```
+
+### Key Design Decisions
+
+- **Selenium lazy-import**: `scraper.py` wraps all selenium imports in `try/except ImportError`. The module can be imported without Selenium installed — tests and build CI don't need it, only the runtime scraper does.
+- **Concurrency**: `cancel-in-progress: true` — newer builds cancel older ones, always deploying freshest data.
+- **workflow_run chaining**: Build triggers off scraper completion, bypassing GitHub's limitation where bot-authored pushes don't trigger other workflows.
+- **continue-on-error**: All market data fetch steps use `continue-on-error: true` — a FRED rate limit or yfinance outage doesn't fail the entire build.
+
+---
+
+## Testing
+
+**33 tests** — 27 scoring + 6 bridge — with full property-based and deterministic coverage.
 
 ```bash
-python -m pytest tests/ -v    # runs all 33 tests
+python -m pytest tests/ -v
+```
+
+### Test Suite
+
+#### `tests/test_scoring.py` (27 tests)
+Covers the scoring algorithm, sanitizer, temporal analytics, velocity, and burst detection:
+- Score formula correctness (tier weights × rank multipliers × new bonuses)
+- Sanitizer: blocked tickers, name patterns, ticker normalisation
+- Rank delta computation across all periods (1/7/14/30/60/90d)
+- Velocity score components and composite formula
+- Burst detection: 4σ threshold, coverage requirement, sustained improvement requirement
+- Concentration score calculation
+- Flag assignment (HIGH_CONVICTION, SPECULATIVE_BETA)
+
+#### `tests/test_bridge.py` (6 tests)
+Property-based tests using [Hypothesis](https://hypothesis.readthedocs.io/) validating the bridge pipeline contract:
+
+| Test | Properties Covered |
+|------|-------------------|
+| `test_bridge_cleans_canonical_csv_to_pipeline_schema` | Column projection, weight normalisation, row count preservation, CSV round-trip |
+| `test_bridge_rejects_csv_missing_required_columns` | Required-column enforcement halts pipeline before any sink write |
+| `test_bridge_excludes_currency_and_money_market_rows` | Non-equity filtering (currency tickers, money market funds) |
+| `test_bridge_idempotent_on_repeat_invocation` | Giant History + Latest Snapshots + Master Archive are byte-identical on second call |
+| `test_metadata_json_contains_all_configured_etfs` | `metadata.json::etfs` equals sorted distinct ETF set from Giant History |
+| `test_bridge_handles_weight_pct_with_percent_sign` | `"2.62%"` → `0.0262` normalisation (MFEM/AVSC regression) |
+
+Hypothesis generates randomised inputs (column ordering, edge-case dates, malformed rows, locale-formatted numbers) to validate invariants that deterministic tests can't cover.
+
+---
+
+## Local Development
+
+### Prerequisites
+
+```bash
+pip install -r requirements.txt
+# For scraper runtime (not needed for build/tests):
+pip install selenium curl_cffi pdfplumber xlrd
+```
+
+### Commands
+
+```bash
+# Run all 33 tests
+python -m pytest tests/ -v
+
+# Build site artifacts (leaderboard, holdings, changelog, flow, overlap)
+python -m predator.build --source data/all_history.csv --output docs/data --config config.yaml
+
+# Fetch market returns (FRED + yfinance) — requires FRED_API_KEY in .env
+python -m predator.markets_history --full-refresh
+
+# Preview fetch plan without writing
+python -m predator.markets_history --dry-run
+
+# Merge Mega_Markets_Historical.xlsx into market_returns.json
+python -m predator.ingest_mega_xl
+
+# Fetch CBOE vol indices — requires FRED_API_KEY
+python -m predator.vol_history --full-refresh
+
+# Run the scraper locally (requires Chrome + ChromeDriver)
+python scraper.py
+
+# Preview the site
+python -m http.server -d docs 8000
+# → http://localhost:8000
+```
+
+### Environment Variables
+
+```bash
+# Required for FRED data (markets_history, vol_history)
+FRED_API_KEY=your_key_here
+
+# Or create a .env file in the repo root:
+echo "FRED_API_KEY=your_key_here" > .env
+```
+
+### File Structure
+
+```
+etf-data/
+├── scraper.py                    # Primary scraper (21 ETFs)
+├── config.yaml                   # Scoring config — source of truth for ETF universe
+├── config.json                   # Per-ETF scraper routing (URL, scraper_type, CUSIP)
+├── Mega_Markets_Historical.xlsx  # Historical market data (gold 1833+, S&P 1871+)
+├── requirements.txt
+│
+├── data/
+│   ├── all_history.csv           # Master holdings file (~100k rows)
+│   ├── latest/                   # Current snapshot per ETF
+│   ├── history/                  # Dated daily snapshots
+│   └── ticker_metadata.csv       # Sector/industry/country/market_cap per ticker
+│
+├── docs/                         # GitHub Pages root
+│   ├── index.html                # Main dashboard
+│   ├── markets.html              # Markets Intelligence Platform
+│   ├── stock.html                # Per-ticker deep dive
+│   ├── backtest.html             # Strategy backtest
+│   ├── sim.html                  # Leveraged ETN simulator
+│   └── data/                     # Pre-built JSON payloads
+│       ├── leaderboard.json      # Main leaderboard (~3.8MB)
+│       ├── holdings_latest.json  # Per-(ETF, ticker) detail
+│       ├── changelog.json        # Daily turnover
+│       ├── flag_history.json     # Per-ticker flag/rank history (90d)
+│       ├── score_history.json    # Score sparkline data
+│       ├── flow.json             # Sector + country flow
+│       ├── etf_overlap.json      # 30×30 Jaccard matrix
+│       ├── market_returns.json   # Cross-asset monthly close (~940KB)
+│       ├── vol_history.json      # CBOE vol indices
+│       ├── markets.json          # Daily price log
+│       └── metadata.json         # Build info + config snapshot
+│
+├── predator/
+│   ├── build.py                  # Main build pipeline
+│   ├── scoring.py                # Score formula + sanitizer
+│   ├── history.py                # Temporal analytics
+│   ├── markets_history.py        # FRED + yfinance market data
+│   ├── ingest_mega_xl.py         # Excel historical data ingestion
+│   ├── vol_history.py            # CBOE vol indices
+│   └── backtest.py               # Strategy backtest engine
+│
+├── scripts/
+│   └── etf_holdings_scraper_v42.py  # Extended scraper (8 ETFs)
+│
+├── tests/
+│   ├── test_scoring.py           # 27 scoring tests
+│   └── test_bridge.py            # 6 bridge PBT tests
+│
+└── .github/workflows/
+    ├── daily_scrape.yml          # Data collection (14:00 + 22:00 UTC)
+    └── build_site.yml            # Site build + deploy
 ```
 
 ---
 
-## ⚙️ CI/CD
+## Configuration Reference
 
-| Workflow | Trigger | What it does |
-|----------|---------|--------------|
-| `daily_scrape.yml` | 14:00 + 22:00 UTC weekdays | Scrapes all 30 ETFs, commits new data, triggers site rebuild |
-| `build_site.yml` | After scraper, on code push, manual | Runs tests, builds `docs/data/*.json`, fetches market data (FRED + yfinance + Excel), deploys to GitHub Pages |
+### `config.yaml`
 
-Build time: ~10–15 min (market data fetch) on scraper-triggered runs. Code-only pushes run the same pipeline but market data steps complete quickly since data is already cached in CI.
+```yaml
+etfs:
+  - {ticker: COWZ, tier: Quality, points: 30}
+  # ... 30 ETFs total
 
-Selenium, curl_cffi, and pdfplumber are **not** installed in the build CI — they're scraper-only dependencies. The `scraper.py` module lazy-imports Selenium so it can be imported without it installed.
+rank_breakpoints:
+  - {rank_max: 10,  multiplier: 1.5}
+  - {rank_max: 30,  multiplier: 1.2}
+  - {rank_max: 999, multiplier: 1.0}
+
+new_lookback_days: 14       # absent for 14d = NEW entrant
+new_bonus_mult: 5.0         # NEW bonus = tier_points × 5
+new_bonus_tiers: [Scout, Quant]
+
+high_conviction_min_etfs: 4  # ≥4 ETFs = HIGH_CONVICTION
+
+history:
+  delta_periods_days: [1, 7, 14, 30, 60, 90]
+  leaderboard_lookback_days: 120
+  changelog_top_n: 15
+```
+
+Commit a change to `config.yaml` → site auto-rebuilds with new scores in ~10 minutes.
+
+### `config.json`
+
+Per-ETF scraper routing: URL, `scraper_type` (invesco_api, pacer_csv, selenium_alpha, first_trust, etc.), CUSIP where needed. Consumed by `scraper.py` at runtime.
+
+---
+
+*Predator Protocol — built to find institutional conviction before it becomes consensus.*
