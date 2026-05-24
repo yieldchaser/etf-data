@@ -9,11 +9,11 @@
 ## 🏗️ System Architecture
 
 This system operates as a **five-component pipeline**:
-1.  **Data Ingestion (Python/GitHub Actions):** Automated scraping, cleaning, and archival of daily ETF holdings across 30 Smart-Beta ETFs.
-2.  **Scoring Engine (Excel/Power Query):** A multi-factor scoring engine that ranks stocks based on cross-ETF conviction, factor weighting, and accumulation signals.
-3.  **Live Dashboard (GitHub Pages):** Institutional-grade interactive frontend with leaderboard, velocity engine, burst detection, and structural intelligence.
-4.  **Extended Scraper (Playwright/Bridge):** Browser-automated ingestion for 8 ETFs requiring JS rendering, with a fault-isolated bridge pipeline.
-5.  **Markets Intelligence Platform (FRED/yfinance):** Monthly EOP close data for ~50 global assets and 7 CBOE vol indices, powering a multi-view analytical dashboard.
+1. **Data Ingestion (Python/GitHub Actions):** Automated scraping, cleaning, and archival of daily ETF holdings across 30 Smart-Beta ETFs.
+2. **Scoring Engine (Excel/Power Query):** A multi-factor scoring engine that ranks stocks based on cross-ETF conviction, factor weighting, and accumulation signals.
+3. **Live Dashboard (GitHub Pages):** Institutional-grade interactive frontend with leaderboard, velocity engine, burst detection, and structural intelligence.
+4. **Extended Scraper (Playwright/Bridge):** Browser-automated ingestion for 8 ETFs requiring JS rendering, with a fault-isolated bridge pipeline.
+5. **Markets Intelligence Platform (FRED/yfinance/Excel):** Monthly EOP close data for 25+ global assets (gold from 1833, S&P 500 from 1871) and 7 CBOE vol indices, powering a multi-view analytical dashboard.
 
 ---
 
@@ -21,16 +21,16 @@ This system operates as a **five-component pipeline**:
 
 ### Capabilities
 This project runs automatically via **GitHub Actions** to:
-1.  **Scrape** official ETF issuer websites for daily holdings data.
-2.  **Standardize** columns across different issuers (Ticker, Name, Weight, Date).
-3.  **Intelligent Deduplication:** Prevents redundant commits if data hasn't changed.
-4.  **Dual Archiving:**
-    * **Daily Snapshots:** `data/history/YYYY/MM/DD/master_archive.csv`
-    * **Giant History:** `data/all_history.csv` (Single append-only file for backtesting).
+1. **Scrape** official ETF issuer websites for daily holdings data.
+2. **Standardize** columns across different issuers (Ticker, Name, Weight, Date).
+3. **Intelligent Deduplication:** Prevents redundant commits if data hasn't changed.
+4. **Dual Archiving:**
+   * **Daily Snapshots:** `data/history/YYYY/MM/DD/master_archive.csv`
+   * **Giant History:** `data/all_history.csv` (Single append-only file for backtesting).
 
 ### Tech Stack
 * **Python 3.x**
-* **Selenium & ChromeDriver:** For navigating complex JS-heavy sites (Pacer, First Trust).
+* **Selenium & ChromeDriver:** For navigating complex JS-heavy sites (Pacer, First Trust). Lazy-imported so the module can be used without Selenium installed (tests and site build don't need it).
 * **Pandas:** For data cleaning and CSV management.
 * **"Nuclear" Date Hunter:** Custom Regex logic to find hidden "As Of" dates in raw HTML source code.
 
@@ -49,8 +49,7 @@ This project runs automatically via **GitHub Actions** to:
   │           └── 15/
   │               └── master_archive.csv
   └── all_history.csv       # 🌟 THE MASTER FILE: All historical data concatenated
-
-```
+  ```
 
 ---
 
@@ -123,169 +122,60 @@ ETFs are grouped into five tiers based on the strategy signal they emit. Each ti
 
 For each holding, the score is calculated as:
 
-
 * **Rank Multiplier:**
-* Top 10 Rank: `1.5x`
-* Top 30 Rank: `1.2x`
-* Rank > 30: `1.0x`
-
+  * Top 10 Rank: `1.5x`
+  * Top 30 Rank: `1.2x`
+  * Rank > 30: `1.0x`
 
 * **New Entrant Bonus:**
-* If `Status = "NEW"` AND `Category` is **Scout** or **Quant**:
-* **Bonus = Points × 5** (e.g., +200 pts).
-
-
+  * If `Status = "NEW"` AND `Category` is **Scout** or **Quant**:
+  * **Bonus = Points × 5** (e.g., +200 pts).
 
 ---
 
 ## 🚩 Output Flags
 
-The dashboard generates specific flags based on the composition of holdings:
-
-* **HIGH CONVICTION:**
-* **Condition:** `Count of Unique ETFs` ≥ 4.
-* **Implication:** Broad consensus across multiple strategies (e.g., Spin-off + Quality + Momentum).
-
-
-* **SPECULATIVE BETA:**
-* **Condition:** Present in **Trend** (Tier D) but **ABSENT** in **Quality** (Tier C) or **Scouts** (Tier A).
-* **Implication:** High volatility momentum without fundamental cash-flow support.
-
-
+* **HIGH CONVICTION:** `Count of Unique ETFs` ≥ 4. Broad consensus across multiple strategies.
+* **SPECULATIVE BETA:** Present in Trend tier but absent in Quality or Scout tiers. High volatility momentum without fundamental support.
 
 ---
 
 ## 🔧 Maintenance & Operations
 
 ### Daily Usage
-
 1. **Check Status:** Verify the GitHub Action run is green (Success).
 2. **Update View:** Open Excel and click **Data > Refresh All**.
 
 ### Troubleshooting
-
-* **Ghost Rows:** If blank rows appear (e.g., Row 888), use the filter on the `Ticker` column to exclude `(null)` values.
-* **Privacy Errors:** If Excel prompts for Privacy Levels, select **"Ignore Privacy Levels"** to allow merging of GitHub data with the local Config table.
-* **Modifying Weights:** Edit the `ETF_Config` table (Columns AA:AC) in the Excel file and refresh to update scoring logic immediately.
+* **Ghost Rows:** Filter the `Ticker` column to exclude `(null)` values.
+* **Privacy Errors:** Select **"Ignore Privacy Levels"** in Excel to allow merging of GitHub data with the local Config table.
 
 ---
 
 ## 🦅 Component 3: Live Dashboard (GitHub Pages)
 
-The site at **https://yieldchaser.github.io/etf-data/** runs the Predator Protocol
-scoring algorithm directly on `data/all_history.csv` and renders a premium, institutional-grade
-interactive dashboard. It augments the legacy Excel workflow with a high-performance,
-mobile-friendly Web UI.
+The site at **https://yieldchaser.github.io/etf-data/** runs the Predator Protocol scoring algorithm directly on `data/all_history.csv` and renders a premium, institutional-grade interactive dashboard.
 
-### 🌟 Phase 2.5 Institutional UX Features
+### Features
 
-The frontend has been completely modernized (Tailwind CSS + Alpine.js) with zero build dependencies, featuring:
-
-- **Global Leaderboard & Insights:**
-  - View all ~920 unique tickers ranked by Final Alpha Score, with day-over-day score deltas, HC streaks, and percentile-of-own-history progress bars.
-  - **STATUS ⓘ Column:** Dynamic badging for `HC` (High Conviction) and `NEW` entrants with singleton-driven rich tooltips replacing legacy indicators.
-  - **Daily Turnover:** Track who entered/exited HIGH CONVICTION, biggest score movers, and new discoveries (not seen in 7+ days).
-- **Per-ETF Telemetry:**
-  - Dynamic **50-slice SVG Donut Charts** supporting a 20-color institutional palette and "remaining weight" calculations for tail-end holdings.
-  - Real-time visualization of current holdings sorted by rank, weight, and 7-day rank delta.
-- **Deep-Dive Stock Analytics (`stock.html`):**
-  - **Score History:** Sparkline area charts showing score accumulation over time.
-  - **Global Leaderboard Rank History:** Clean, inverted Y-axis line chart tracking the stock's rank across the entire internal universe, utilizing O(1) pre-computed lookup maps for high-cardinality data.
-  - **Per-ETF Rank History:** Multi-line charts with tier-based coloring (Scout, Quant, Quality, Trend), drop-shadows, and precise crosshair tooltips to track performance isolated to specific ETFs.
-- **Singleton Tooltip Infrastructure:** A highly optimized, centralized DOM tooltip engine (`#tt` + `x-tooltip`) powering rich hover interactions across the entire dashboard without polluting the DOM tree.
-
-### 🚀 Phase 2.6 Institutional Velocity Engine & Burst Detection
-
-The platform now computes, filters, and surfaces institutional accumulation acceleration (**Velocity** and **Bursts**), catching the earliest actionable signals of institutional accumulation:
-
-- **Composite Velocity Score (`velocity_score`):** A robust, multi-factor acceleration signal mapping institutional rate-of-change. Calculated as:
-  $$\text{Velocity} = 0.5 \times \text{GlobalRankDelta}_{30d} + 0.25 \times \text{GlobalRankPeak}_{30d} + 1.0 \times \text{AvgRankDelta}_{7d} + 20.0 \times \text{AvgWeightFlow}_{7d} + 5.0 \times \text{ETFsAdded}_{30d} + 1.0 \times \text{ScoreStreak}$$
-  This composite catches both steady, low-noise accumulators and sudden high-conviction institutional entries.
-- **Institutional Burst Detection (`burst_30d`):** A $4\sigma$ event detector that flags any ticker achieving an improvement of $\ge 40$ positions in its global leaderboard rank at any point during a rolling 30-day window.
-- **Leadboards & Visual Filtering:**
-  - **Velocity Columns:** Sortable, color-coded leaderboard columns surfacing composite velocity. 
-  - **VELO & BURST Badges:** Live badges on matching tickers with custom hover tooltips showing micro-breakdowns of all underlying signals.
-  - **Interactive Filter Chips:** Click-to-filter controls to quickly isolate current `VELO` accumulators or `BURST` movers.
-  - **Top Velocity Movers Panel:** An integrated 5th panel in the Changes tab showcasing the 15 fastest-accumulating tickers with real-time stats.
-- **Hero Analytics & Detail Panels:**
-  - Stock detail pages (`stock.html`) now feature dedicated hero KPI cards displaying real-time `VELOCITY` and `ETFs ADDED (30d)` metrics.
-  - A dynamic, unified calendar-date X-axis for the per-ETF Rank History chart, aligning mismatched ETF histories and resolving previous rendering overlapping bugs.
-- **Analytical Stability & Verification:** Complete test suite mapping rank deltas, rolling velocity calculations, and burst threshold detection with 100% automated test coverage.
-
-### 🔬 Phase 2.7 Institutional Decision Engine
-
-The platform now provides **prescriptive** intelligence beyond descriptive analytics:
-
-- **BURST False-Positive Fix:** Burst detection now requires ≥80% continuous presence on the leaderboard AND sustained improvement for ≥8 of the last 10 snapshots. Eliminates re-entry and single-touch false positives.
-- **Honest Δ% Display:** Score deltas show em-dash (—) when no comparable past data exists, instead of misleading `+0.0%`.
-- **Sector & Country Flow Overlay (`flow.json`):** Aggregates velocity-weighted exposure by sector and country. Two new panels in the Changes tab with horizontal bar visualizations. Click a sector to filter the leaderboard.
-- **Watchlist (localStorage):** Pin tickers with ★, view them in a dedicated WATCHLIST tab. "Since last visit" changelog shows HC entries/exits and new bursts among pinned names.
-- **Concentration Risk Score:** Per-ticker metric showing what fraction of the score comes from a single ETF. Tooltip warns when conviction is fragile (>70% from one ETF). Sortable column + ≤80% filter chip.
-- **Strategy Backtest (`/backtest.html`):** Quantified performance of 5 strategies (HC Entry, BURST Trigger, Top-10 Score, Top-10 Velocity, SPX Baseline) with cumulative returns chart, stats table, and velocity-vs-return scatter plot with R².
-- **Signal Timeline (`stock.html`):** Per-ticker Gantt-style chart showing HC/SPEC/VELO/BURST state history over 90 days with rank line overlay. Shows when a stock entered/exited each state and how long it stayed. Duration stats (e.g., "HC: 34d · VELO: 12d").
-- **Momentum Gauge:** Real-time indicator (↗ strengthening / → stable / ↘ weakening) based on score streak direction.
-- **New Derived Signals:**
-  - `momentum_regime` — accelerating / rising / stable / weakening / declining
-  - `conviction_divergence` — detects when score rises but rank falls (being crowded out)
-  - `stealth_accumulation` — weight growing in 3+ ETFs without rank improvement
-- **Chart Upgrades:** Y-axis rank labels, current-rank pill badges, removed drop-shadow rendering bug, better tier color contrast, thicker lines with glow effect.
-- **Performance Fixes:** Debounced search (300ms), binary search in backtest hover, eliminated O(n²) array copies in holdings table.
-
-### 🧬 Phase 2.8 Structural Intelligence & Comparison Tools
-
-The platform now surfaces **structural** relationships between ETFs and tickers, enabling deeper conviction analysis:
-
-- **Smooth Chart Curves:** All line charts (Score History, Leaderboard Rank, Per-ETF Rank, Signal Timeline rank overlay) now use Catmull-Rom → cubic Bézier smoothing instead of jagged polylines.
-- **Signal Timeline Overhaul (`stock.html`):**
-  - Interactive hover crosshair with tooltip showing date, state (HC/VELO/BURST/SPEC/Neutral), rank, and velocity at each snapshot.
-  - X-axis date tick labels (5 evenly spaced).
-  - Current-state pill badge in the panel header.
-  - Duration counters for all states including SPEC and Neutral.
-  - Highlighted bar outline + rank dot on hover.
-- **Tier Breadth (`tier_breadth`):** Counts how many distinct strategy types (Scout/Quant/Quality/Trend/Blob) co-hold a name (1–5). Higher breadth = more independent confirmation. Displayed as a chip on stock detail.
-- **Quality Adoption / Defection (30d):**
-  - `quality_adopted_30d` — a Quality ETF (COWZ/CALF/SPHQ) added this name in the last 30 days. Momentum + fundamentals confirmation.
-  - `quality_defected_30d` — a Quality ETF dropped this name. Possible fundamentals warning.
-  - Surfaced as `Quality+` / `Quality−` chips on stock detail and leaderboard rows. New `Quality+` filter chip on the leaderboard.
-- **ETF Overlap Heatmap (`etf_overlap.json`):**
-  - 16×16 Jaccard similarity matrix showing pairwise holdings overlap between all ETFs.
-  - Interactive heatmap panel on the ETFs tab with hover details (shared count + Jaccard %).
-  - "Top overlap pairs" summary line (e.g., RPG↔SPMO 24%, RPG↔SPHB 20%).
-  - Helps distinguish which ETFs provide independent signal vs which echo each other.
-- **Score Decomposition Bar (`stock.html`):**
-  - Horizontal stacked bar showing each ETF's contribution to the final score, colored by tier.
-  - Per-ETF legend with rank, weight, and percentage contribution.
-  - "Concentrated" / "Diversified" pill badge based on top-ETF share.
-- **Compare Mode (Watchlist tab):**
-  - Side-by-side cards for the top 4 pinned tickers (by score).
-  - Each card shows: ticker, rank, state badge, score + delta, sparkline, ETFs, velocity, concentration.
-  - Click any card to jump to full stock detail.
-- **Auto-Generated Explainer Line:**
-  - One-sentence narrative auto-generated for each leaderboard row on expansion.
-  - Compresses: tier breadth, score delta, BURST/VELO state, HC streak, Quality+/−, concentration, stealth, divergence into a single scannable line.
-  - Example: "Held by 5 ETFs across 3 tiers · Score +12% 30d · BURST +47 ranks (best #14) · Quality+ in 30d."
-- **Hash Routing:** `index.html#etf=COWZ` auto-opens the ETFs tab for that ETF (linked from stock detail decomposition).
+- **Global Leaderboard & Insights:** ~3,950 unique tickers ranked by Final Alpha Score with day-over-day deltas, HC streaks, percentile bars, velocity/burst badges, and auto-generated explainer lines.
+- **Per-ETF Telemetry:** 50-slice SVG donut charts, holdings sorted by rank/weight/delta, tier pie chart.
+- **ETF Sidebar Metadata:** Rebalance/reconstitution schedule, expandable rows, holdings pie chart.
+- **Deep-Dive Stock Analytics (`stock.html`):** Score history, rank history, per-ETF rank history, signal timeline (Gantt), score decomposition bar, tier breadth, quality adoption/defection chips.
+- **Velocity Engine:** Composite velocity score, 4σ burst detection, sector/country flow overlay (Unknown entries excluded), watchlist with compare mode.
+- **Strategy Backtest (`/backtest.html`):** 5 strategies with cumulative returns, stats table, velocity-vs-return scatter.
+- **Sector & Country Flow:** Aggregated velocity-weighted exposure by sector and country. Foreign tickers and currency codes with no metadata are excluded from flow charts.
 
 ### Architecture
 
-`scraper.py` writes `data/all_history.csv` → `predator/build.py` reads it,
-runs sanitizer + scoring + temporal analytics + velocity + concentration + flow + overlap →
-writes `docs/data/*.json` → GitHub Pages serves `docs/` using static HTML/JS.
-Auto-rebuilds within ~2 min of every scraper commit via `.github/workflows/build_site.yml`.
-
-### Local development
-
-```bash
-pip install -r requirements.txt
-python -m pytest tests/ -v                         # 33 tests
-python -m predator.build                           # builds docs/data/*
-python -m predator.backtest                        # builds docs/data/backtest.json
-python -m predator.markets_history --dry-run       # preview FRED fetch plan
-python -m predator.markets_history                 # fetch + write market_returns.json
-python -m predator.vol_history --dry-run           # preview vol fetch plan
-python -m predator.vol_history                     # fetch + write vol_history.json
-python -m http.server -d docs 8000                 # preview at http://localhost:8000
 ```
+scraper.py → data/all_history.csv
+    → predator/build.py (sanitizer + scoring + velocity + flow + overlap)
+    → docs/data/*.json
+    → GitHub Pages (docs/)
+```
+
+Auto-rebuilds within ~10 min of every push via `.github/workflows/build_site.yml`.
 
 ### Pages
 
@@ -293,9 +183,21 @@ python -m http.server -d docs 8000                 # preview at http://localhost
 |------|-----|-------------|
 | Dashboard | `/` | Leaderboard, ETFs, Changes, Watchlist tabs |
 | Stock Detail | `/stock.html?t=GEV` | Per-ticker deep dive with charts |
-| Markets | `/markets.html` | Multi-asset returns intelligence — annual heatmap, drawdowns, correlation, seasonality, rolling returns, periodic table, yield history, and volatility regime dashboard across ~50 global assets |
+| Markets | `/markets.html` | Multi-asset returns intelligence |
 | Simulator | `/sim.html` | Leveraged ETN NAV simulator |
 | Backtest | `/backtest.html` | Strategy performance comparison |
+
+### Local development
+
+```bash
+pip install -r requirements.txt
+python -m pytest tests/ -v                         # 33 tests
+python -m predator.build                           # builds docs/data/*
+python -m predator.markets_history --full-refresh  # fetch + write market_returns.json
+python -m predator.ingest_mega_xl                  # merge Excel historical data
+python -m predator.vol_history --full-refresh      # fetch + write vol_history.json
+python -m http.server -d docs 8000                 # preview at http://localhost:8000
+```
 
 ### Tuning
 
@@ -303,101 +205,97 @@ Edit `config.yaml`:
 - `etfs[].points` — Scout/Quant=40 (FPXI/IMOM=60), Quality=30, Trend=10, Blob=2
 - `rank_breakpoints` — top-10 = 1.5×, top-30 = 1.2× multipliers
 - `new_lookback_days` — how long a ticker must have been absent to count as NEW
-- `new_bonus_mult` — NEW-entrant bonus multiplier on tier_points
 - `high_conviction_min_etfs` — threshold for HIGH CONVICTION flag
-- `history.leaderboard_lookback_days` — drives streaks and percentile bars
-
-Commit, push — site rebuilds with new scores in ~2 min.
-
 
 ---
 
 ## 🔌 Component 4: Extended Scraper
 
-The primary `scraper.py` handles 21 ETFs from issuers exposing stable HTML, CSV, or JSON endpoints (Pacer, First Trust, Alpha Architect, Invesco). The remaining 8 ETFs require Playwright browser automation, PDF parsing, or cookie-bound APIs — these live in `scripts/etf_holdings_scraper_v42.py` and run as an isolated subprocess. The Bridge fans the v42 output into the same canonical sinks the primary loop writes to.
+The primary `scraper.py` handles 21 ETFs from issuers exposing stable HTML, CSV, or JSON endpoints. The remaining 8 ETFs require Playwright browser automation, PDF parsing, or cookie-bound APIs — these live in `scripts/etf_holdings_scraper_v42.py` and run as an isolated subprocess.
 
 ### V42_ETFS Ownership Manifest
 
-`V42_ETFS = frozenset({VLUE, AVSC, GRIN, JHMM, JHEM, JHSC, MFEM, JOET})` is the set of 8 tickers owned by the extended scraper. At startup, `scraper.py` calls `check_v42_ownership_collisions()` and logs a warning if any ticker appears in both `config.json` (primary) and `V42_ETFS` (extended). In healthy state the intersection is empty.
+`V42_ETFS = frozenset({VLUE, AVSC, GRIN, JHMM, JHEM, JHSC, MFEM, JOET})`
 
 ### Bridge Pipeline
 
 ```
-v42 subprocess  ──►  etf_holdings_YYYYMMDD.csv   (Canonical_CSV at repo root)
-                              │
-                              ▼
-                   clean_canonical_csv()  ──► (cleaned_df, errors)
-                              │
-                              ▼
-                   bridge_write_all_sinks(cleaned_df)
-                       ├──►  data/all_history.csv                       (Giant_History — append + dedupe)
-                       ├──►  data/latest/{TICKER}.csv                   (one per V42 ETF)
-                       └──►  data/history/YYYY/MM/DD/master_archive.csv (dated daily snapshot — append + dedupe)
+v42 subprocess → etf_holdings_YYYYMMDD.csv (Canonical_CSV)
+    → clean_canonical_csv() → (cleaned_df, errors)
+    → bridge_write_all_sinks(cleaned_df)
+        ├── data/all_history.csv                       (Giant_History — append + dedupe)
+        ├── data/latest/{TICKER}.csv                   (one per V42 ETF)
+        └── data/history/YYYY/MM/DD/master_archive.csv (dated daily snapshot)
 ```
 
-The Bridge runs **after** the primary loop has already written its master_archive, so v42 rows are merged into the existing dated file rather than overwriting it. Idempotency is enforced on the composite key `(ETF_Ticker, ticker, Holdings_As_Of)` keep-last on every write — the 14:00 and 22:00 UTC reruns plus any manual `workflow_dispatch` triggers are safe to repeat.
-
-### Failure Isolation
-
-The extended scraper is invoked via `subprocess.run(..., timeout=600, capture_output=True, text=True)`. The Bridge is designed so no failure mode can corrupt the primary output that has already been written:
-
-- **Subprocess crash, non-zero exit, or `TimeoutExpired`** — the last 3000 chars of stdout (and last 1000 of stderr on failure) are logged and the Bridge returns. `data/all_history.csv` and the dated `master_archive.csv` from the primary loop remain intact.
-- **Canonical_CSV validation failure** — missing required columns, unparseable rows, or zero valid rows after filtering cause `clean_canonical_csv()` to return an empty DataFrame plus an error list. `bridge_write_all_sinks()` is skipped entirely; no sink is touched.
-- **Per-sink write failure** — each per-ETF `data/latest/` write and the master_archive append are wrapped individually so one ETF's I/O failure does not abort the others.
-
-This three-layer **failure isolation** contract is what allows the extended scraper to be flaky without ever degrading the 21-ETF primary pipeline.
-
-### Reuse-Existing-CSV Recovery
-
-If `etf_holdings_YYYYMMDD.csv` already exists when the Bridge starts (e.g. partial-run recovery or a rerun within the same UTC day), the subprocess is skipped and the existing canonical CSV is reused. This avoids re-incurring Playwright cost while still fanning the data into all three sinks.
+Idempotency enforced on composite key `(ETF_Ticker, ticker, Holdings_As_Of)`. The 14:00 and 22:00 UTC reruns are safe to repeat.
 
 ---
 
 ## 🌍 Component 5: Markets Intelligence Platform
 
-A standalone data pipeline and multi-view dashboard providing cross-asset return analytics for ~50 global instruments spanning equities, precious metals, energy, base metals, agriculture, FX, real estate, and rates.
+A standalone data pipeline and multi-view dashboard providing cross-asset return analytics for 25 global instruments with deep historical data (gold from 1833, S&P 500 from 1871, Dow Jones from 1885).
 
 ### Data Pipelines
 
 | Module | Output | Description |
 |--------|--------|-------------|
-| `predator/markets_history.py` | `docs/data/market_returns.json` | Fetches monthly end-of-period (EOP) close data for ~50 assets from FRED (primary) and yfinance (fallback for international indices). Covers equities, precious metals, energy, base metals, agriculture, FX, real estate, and rates. |
+| `predator/markets_history.py` | `docs/data/market_returns.json` | Fetches monthly EOP close for ~25 assets from yfinance. |
+| `predator/ingest_mega_xl.py` | `docs/data/market_returns.json` | Merges `Mega_Markets_Historical.xlsx` (5 sheets, 25 series) — Excel data takes priority for overlapping months, extending history back to 1833. |
 | `predator/vol_history.py` | `docs/data/vol_history.json` | Fetches daily close for 7 CBOE volatility indices (VIX, GVZ, OVX, VXN, RVX, VXD, VXEEM) from FRED. |
 
-Both pipelines support `--dry-run` to preview the fetch plan without writing data.
+### Asset Coverage
 
-### Markets Page (`/markets.html`)
+| Category | Assets |
+|----------|--------|
+| Equity | S&P 500 (1871), DJIA (1885), NASDAQ, NASDAQ-100, Nikkei 225, BSE Sensex, DAX, FTSE 100, Hang Seng, ASX 200, Bovespa, Shanghai Composite |
+| Precious Metals | Gold (1833), Silver, Platinum, Palladium |
+| Energy | WTI Crude, Brent Crude |
+| Commodities | Copper, Corn, Wheat, Soybeans, Sugar, Coffee, Cotton |
 
-A 9-tab analytical dashboard:
+### Markets Page (`/markets.html`) — 9 Tabs
 
-| Tab | View | Description |
-|-----|------|-------------|
-| Return Matrix | View A | Annual returns heatmap with monthly drilldown, currency lens (Local/USD/INR), real returns toggle, z-score color mode, event annotations, CSV export |
-| Price Log | — | Existing daily price log |
-| Yield History | View H | US rate history line chart + annual yield heatmap |
-| Periodic Table | View B | Callan-style rank rotation table |
-| Drawdowns | View D | Underwater curves + max drawdown table |
-| Hold Lab | View C | Rolling N-year returns |
-| Seasonality | View E | Month-of-year average return heatmap |
-| Correlation | View F | Correlation matrix + Growth of $100 log-scale chart |
-| Volatility | View I | 4 sub-panels: current level tiles, monthly z-score heatmap, historical chart, cross-asset bar |
+| Tab | Description |
+|-----|-------------|
+| **Return Matrix** | Annual returns heatmap (newest year left), monthly drilldown, currency lens (Local/USD/INR/Gold/Silver), real returns, z-score color mode, event annotations, CSV export. Click any asset name → annual returns bar chart with CAGR reference line + price history. |
+| **Price Log** | Daily price log for 23 tracked instruments |
+| **Yield History** | US rate history line chart + annual yield heatmap |
+| **Periodic Table** | Callan-style rank rotation table |
+| **Drawdowns** | Underwater curves for all assets, grouped category sidebar with search, time range filter (All/50Y/30Y/20Y/10Y), max drawdown table with current DD column |
+| **Hold Lab** | Rolling N-year returns — best/worst/median |
+| **Seasonality** | Month-of-year average return heatmap |
+| **Correlation** | Correlation matrix + Growth of $100 log-scale chart |
+| **Volatility** | 4 sub-panels: current level tiles, monthly z-score heatmap, historical chart, cross-asset bar |
 
-### Design Principles
+### Asset Detail Panel
 
-- **Data sources:** FRED API (primary), yfinance (fallback for international indices)
-- **Client-side computation:** All returns computed client-side from monthly close data
-- **Z-scores:** Computed client-side from raw levels
-- **No build step:** Static HTML/JS served via GitHub Pages, same as the main dashboard
+Click any asset name in the Return Matrix to open a detail panel with:
+- **Annual Returns tab (default):** Year-by-year bar chart (green/red), CAGR dashed reference line, partial-year bars at 40% opacity, hover shows exact return %. Respects active currency lens.
+- **Price History tab:** Full price history line chart with log/linear toggle.
+- Stats strip: CAGR, annualised vol, best/worst year, % positive years, data since.
 
 ---
 
 ## 🧪 Testing
 
-The project maintains **33 tests** (27 scoring + 6 bridge) with full coverage of the scoring algorithm, temporal analytics, and bridge pipeline contract.
+**33 tests** (27 scoring + 6 bridge) with full coverage of the scoring algorithm, temporal analytics, and bridge pipeline contract.
 
-- **Property-based testing** via [Hypothesis](https://hypothesis.readthedocs.io/) validates the bridge contract against randomized inputs (column ordering, edge-case dates, malformed rows).
+- **Property-based testing** via [Hypothesis](https://hypothesis.readthedocs.io/) validates the bridge contract against randomized inputs.
 - **Deterministic unit tests** cover scoring math, rank multipliers, NEW-entrant bonuses, velocity calculations, and burst detection thresholds.
 
 ```bash
 python -m pytest tests/ -v    # runs all 33 tests
 ```
+
+---
+
+## ⚙️ CI/CD
+
+| Workflow | Trigger | What it does |
+|----------|---------|--------------|
+| `daily_scrape.yml` | 14:00 + 22:00 UTC weekdays | Scrapes all 30 ETFs, commits new data, triggers site rebuild |
+| `build_site.yml` | After scraper, on code push, manual | Runs tests, builds `docs/data/*.json`, fetches market data (FRED + yfinance + Excel), deploys to GitHub Pages |
+
+Build time: ~10–15 min (market data fetch) on scraper-triggered runs. Code-only pushes run the same pipeline but market data steps complete quickly since data is already cached in CI.
+
+Selenium, curl_cffi, and pdfplumber are **not** installed in the build CI — they're scraper-only dependencies. The `scraper.py` module lazy-imports Selenium so it can be imported without it installed.
