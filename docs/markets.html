@@ -1470,8 +1470,8 @@ function marketsApp() {
 
     async _loadReturns() {
       try {
-        // Use default cache — the JSON is large (~2MB). Cache-bust via query param only on first load.
-        const r = await fetch('data/market_returns.json');
+        // no-cache = always revalidate with server (uses ETag), never serve stale data
+        const r = await fetch('data/market_returns.json', { cache: 'no-cache' });
         if (!r.ok) { this.returnsData = null; return; }
         this.returnsData = await r.json();
       } catch (e) {
@@ -1484,7 +1484,7 @@ function marketsApp() {
 
     async _loadVol() {
       try {
-        const r = await fetch('data/vol_history.json');
+        const r = await fetch('data/vol_history.json', { cache: 'no-cache' });
         if (!r.ok) { this.volData = null; return; }
         this.volData = await r.json();
       } catch (e) {
