@@ -239,14 +239,13 @@
     <!-- Loading state for returns -->
     <div x-show="loadingReturns" class="pulse-load text-center py-20" style="color: var(--text-3)">
       <div class="text-lg mb-2">Loading returns data…</div>
-      <div class="text-xs">Run: <code>python -m predator.markets_history</code> to generate data/market_returns.json</div>
+      <div class="text-xs">Returns data is building — refresh in a minute if this persists.</div>
     </div>
 
     <!-- No data state -->
     <div x-show="!loadingReturns && !returnsData" class="text-center py-20">
-      <div class="text-base mb-2" style="color: var(--amber)">No returns data yet</div>
-      <div class="text-xs mb-4" style="color: var(--text-3)">Run the pipeline to generate <code>data/market_returns.json</code></div>
-      <code class="text-xs px-3 py-2 rounded border inline-block" style="border-color: var(--border-2); background: var(--surface); color: var(--text-2)">python -m predator.markets_history</code>
+      <div class="text-base mb-2" style="color: var(--amber)">Returns data still building</div>
+      <div class="text-xs mb-4" style="color: var(--text-3)">The pipeline is generating <code>data/market_returns.json</code> — refresh in a minute.</div>
     </div>
 
     <!-- Matrix content -->
@@ -2006,22 +2005,29 @@ function marketsApp() {
     },
 
     async _loadReturns() {
-      try {
-        // Hard cache-bust: append timestamp so CDN never serves stale JSON
-        const bust = Date.now();
-        const r = await fetch(`data/market_returns.json?v=${bust}`, { cache: 'no-store' });
-        if (!r.ok) { this.returnsData = null; return; }
-        this.returnsData = await r.json();
-        // Populate unified state asof from JSON
-        if (this.returnsData?.asof) {
-          this.marketState.asof = this.returnsData.asof;
+      // Use a stable cache-bust tied to the page load session (not Date.now() per call)
+      // so repeated calls within the same session don't re-fetch unnecessarily.
+      const bust = this._sessionBust || (this._sessionBust = Date.now());
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const r = await fetch(`data/market_returns.json?v=${bust}`, { cache: 'no-store' });
+          if (!r.ok) { this.returnsData = null; break; }
+          this.returnsData = await r.json();
+          if (this.returnsData?.asof) {
+            this.marketState.asof = this.returnsData.asof;
+          }
+          break; // success
+        } catch (e) {
+          if (attempt === 0) {
+            // One retry after 1.5s before giving up
+            await new Promise(res => setTimeout(res, 1500));
+          } else {
+            console.warn('Returns data not available after retry:', e);
+            this.returnsData = null;
+          }
         }
-      } catch (e) {
-        console.warn('Returns data not available:', e);
-        this.returnsData = null;
-      } finally {
-        this.loadingReturns = false;
       }
+      this.loadingReturns = false;
     },
 
     async _loadVol() {
@@ -2183,6 +2189,8 @@ function marketsApp() {
 
       // Build a monthly FX multiplier: native → target
       // multiplier[ym] = how many target units per 1 native unit
+      // Returns 1 (not null) for Local/USD when FX data is unavailable —
+      // this ensures cells always render rather than going blank.
       const getMultiplier = (ym) => {
         if (targetCcy === 'Local') return 1;
 
@@ -2191,26 +2199,25 @@ function marketsApp() {
         if (nativeCcy === 'USD') {
           nativeToUsd = 1;
         } else if (nativeCcy === 'INR') {
-          // USD/INR rate = USD per 1 INR
           const rate = usdinr[ym] ?? null;
-          if (rate === null) return null;
-          nativeToUsd = rate;
+          // If no FX data, fall back to treating as USD-equivalent (show local)
+          nativeToUsd = rate !== null ? rate : 1;
         } else if (nativeCcy === 'JPY') {
           const fxJpy = jpyLookup[ym] ?? fxAssets['fx_usdjpy']?.close?.[ym] ?? null;
-          if (fxJpy === null) return null;
-          nativeToUsd = fxJpy;
+          nativeToUsd = fxJpy !== null ? fxJpy : 1;
         } else if (nativeCcy === 'EUR') {
           const fxEur = eurLookup[ym] ?? fxAssets['fx_eurusd']?.close?.[ym] ?? null;
-          if (fxEur === null) return null;
-          nativeToUsd = fxEur;
+          nativeToUsd = fxEur !== null ? fxEur : 1;
         }
-        // For other currencies, assume USD-native (commodities, etc.)
+        // For other currencies (AUD, BRL, GBP, HKD, CNY), assume USD-native
+        // when no FX data is available — returns local price, not blank
 
         if (targetCcy === 'USD') return nativeToUsd;
 
         // USD → INR: need INR per USD = 1 / (USD per INR)
         if (targetCcy === 'INR') {
           const usdPerInr = usdinr[ym] ?? null;
+          // No FX data → return null so INR lens shows · rather than wrong number
           if (usdPerInr === null || usdPerInr === 0) return null;
           const inrPerUsd = 1 / usdPerInr;
           return nativeToUsd * inrPerUsd;
@@ -2220,7 +2227,6 @@ function marketsApp() {
         if (targetCcy === 'Gold') {
           const goldVal = goldLookup[ym] ?? null;
           if (goldVal === null || goldVal === 0) return null;
-          // Convert native → USD first, then divide by gold price
           return nativeToUsd / goldVal;
         }
 
@@ -2317,10 +2323,14 @@ function marketsApp() {
     },
 
     getCellData(assetKey, year) {
-      this._buildAnnualCache(assetKey);
-      const cache = this._annualCache[this._cacheKey(assetKey)];
-      if (!cache || cache[year] === undefined) return null;
-      return cache[year];
+      try {
+        this._buildAnnualCache(assetKey);
+        const cache = this._annualCache[this._cacheKey(assetKey)];
+        if (!cache || cache[year] === undefined) return null;
+        return cache[year];
+      } catch (e) {
+        return null;
+      }
     },
 
     getMonthlyReturns(assetKey, year) {
@@ -2961,9 +2971,9 @@ function marketsApp() {
       const getMultiplier = (ym) => {
         if (ccy === 'Local') return 1;
         let nativeToUsd = 1;
-        if (nativeCcy === 'INR') { const r = usdinr[ym] ?? null; if (r === null) return null; nativeToUsd = r; }
-        else if (nativeCcy === 'JPY') { const r = jpyLookup[ym] ?? null; if (r === null) return null; nativeToUsd = r; }
-        else if (nativeCcy === 'EUR') { const r = eurLookup[ym] ?? null; if (r === null) return null; nativeToUsd = r; }
+        if (nativeCcy === 'INR') { const r = usdinr[ym] ?? null; nativeToUsd = r !== null ? r : 1; }
+        else if (nativeCcy === 'JPY') { const r = jpyLookup[ym] ?? null; nativeToUsd = r !== null ? r : 1; }
+        else if (nativeCcy === 'EUR') { const r = eurLookup[ym] ?? null; nativeToUsd = r !== null ? r : 1; }
         if (ccy === 'USD') return nativeToUsd;
         if (ccy === 'INR') { const u = usdinr[ym] ?? null; if (!u) return null; return nativeToUsd / u; }
         if (ccy === 'GOLD') { const g = goldLookup[ym] ?? null; if (!g) return null; return nativeToUsd / g; }
