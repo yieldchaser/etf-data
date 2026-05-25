@@ -1496,7 +1496,13 @@ function _lineChart(series, opts = {}) {
     ? `<line id="${crosshairId}" x1="0" y1="${PT}" x2="0" y2="${H-PB}" stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`
     : '';
 
-  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block;background:var(--surface)" preserveAspectRatio="none">${titleEl}${ticks}${xLabels}${hLinesHtml}${lines}${crosshair}</svg>`;
+  // §8 height:auto + aspect-ratio + uniform scaling. The previous
+  // `preserveAspectRatio="none"` combined with `height:${H}px` and a
+  // container wider than 1200px caused the SVG to stretch horizontally
+  // while the internal coordinate system distorted, clipping the bottom
+  // x-axis labels (y = H - 8). With aspect-ratio, the box scales
+  // uniformly and the viewBox content is preserved end-to-end.
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:auto;aspect-ratio:${W}/${H};display:block;background:var(--surface)">${titleEl}${ticks}${xLabels}${hLinesHtml}${lines}${crosshair}</svg>`;
 }
 
 function _barChart(data, opts = {}) {
@@ -1517,7 +1523,8 @@ function _barChart(data, opts = {}) {
       bars += `<text x="${(x + bw/2).toFixed(1)}" y="${H-6}" text-anchor="middle" style="font-size:8px;fill:#52525b;font-family:ui-monospace">${d.label}</text>`;
     }
   }
-  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;background:var(--surface)" preserveAspectRatio="none">${bars}</svg>`;
+  // §8 Same uniform-scaling fix as _lineChart.
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};display:block;background:var(--surface)">${bars}</svg>`;
 }
 
 </script>
@@ -2857,7 +2864,7 @@ function labApp() {
         <text x="${W-PR-80}" y="${PT+24}" style="font-size:8px;fill:#fb7185;font-family:ui-monospace">— Volatility f×σ</text>
       `;
 
-      this.kellyCurveSvg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;background:var(--surface)" preserveAspectRatio="none">${grid}${xLabels}<path d="${gPath}" fill="none" stroke="#3b82f6" stroke-width="2"/><path d="${vPath}" fill="none" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,3"/>${markers}${legend}<line id="kelly-crosshair" x1="0" y1="${PT}" x2="0" y2="${H-PB}" stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/></svg>`;
+      this.kellyCurveSvg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};display:block;background:var(--surface)">${grid}${xLabels}<path d="${gPath}" fill="none" stroke="#3b82f6" stroke-width="2"/><path d="${vPath}" fill="none" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,3"/>${markers}${legend}<line id="kelly-crosshair" x1="0" y1="${PT}" x2="0" y2="${H-PB}" stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/></svg>`;
     },
 
     kellyHover(e) {
