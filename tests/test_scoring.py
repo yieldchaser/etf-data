@@ -131,6 +131,64 @@ class TestSanitizer:
         out = cfg.sanitizer.apply(df)
         assert set(out["ticker"]) == {"NVDA"}
 
+    # ─── Cross-listing collapse (KRX A-prefix) ─────────────────────────────
+    def test_krx_a_prefix_collapses_to_bare_six_digit(self, cfg):
+        """KRX cross-listing rule: A005930 (Bloomberg form) and 005930 (bare KRX)
+        are the same security and must merge into one canonical row.
+
+        Without this, Samsung Electronics fragments across A005930 (held by
+        JHEM/MFEM) and 005930 (held by EEMO), splitting its conviction across
+        two leaderboard entries.
+        """
+        df = _h([
+            # Same Samsung Electronics in three different ETFs, two ticker forms
+            ("JHEM", "A005930", "SAMSUNG ELECTRONICS CO LTD", 0.0551, "2026-05-01", "2026-05-01"),
+            ("MFEM", "A005930", "SAMSUNG ELECTRONICS CO LTD", 0.0176, "2026-05-01", "2026-05-01"),
+            ("EEMO", "005930",  "Samsung Electronics Co Ltd", 0.1004, "2026-05-01", "2026-05-01"),
+            # Plus a non-Korean filler that must NOT match the pattern
+            ("QMOM", "AAPL",    "Apple Inc",                  0.05,   "2026-05-01", "2026-05-01"),
+        ])
+        out = cfg.sanitizer.apply(df)
+        # All three Korean rows must have the same canonical ticker
+        kr_rows = out[out["ticker"].str.match(r"^A?005930$")]
+        assert (kr_rows["ticker"] == "005930").all(), (
+            f"Expected all KRX rows to canonicalize to '005930', got {kr_rows['ticker'].tolist()}"
+        )
+        # AAPL must be untouched
+        assert "AAPL" in set(out["ticker"])
+
+    def test_krx_a_prefix_dedupes_within_same_etf(self, cfg):
+        """If A005930 and 005930 happen to appear in the same ETF on the same date,
+        the two rows must collapse into one with summed weight (mirrors GOOG/GOOGL behaviour)."""
+        df = _h([
+            ("JHEM", "A005930", "SAMSUNG ELECTRONICS",       0.04, "2026-05-01", "2026-05-01"),
+            ("JHEM", "005930",  "Samsung Electronics Co Ltd", 0.02, "2026-05-01", "2026-05-01"),
+        ])
+        out = cfg.sanitizer.apply(df)
+        assert len(out) == 1
+        assert out.iloc[0]["ticker"] == "005930"
+        assert out.iloc[0]["weight"] == pytest.approx(0.06)
+
+    def test_krx_pattern_does_not_overmatch(self, cfg):
+        """Pattern '^A(\\d{6})$' must NOT collapse tickers like 'A1B2C3' (7-char with letters)
+        or 'A12345' (only 5 digits) or 'AAPL' (alpha)."""
+        df = _h([
+            ("FPX", "A005930",  "Samsung",   0.05, "2026-05-01", "2026-05-01"),  # match
+            ("FPX", "AAPL",     "Apple",     0.05, "2026-05-01", "2026-05-01"),  # no match
+            ("FPX", "A12345",   "Five-digit",0.05, "2026-05-01", "2026-05-01"),  # no match (5 digits)
+            ("FPX", "A1234567", "Seven-digit",0.05,"2026-05-01", "2026-05-01"),  # no match (7 digits)
+            ("FPX", "ABCDEF",   "Alpha",     0.05, "2026-05-01", "2026-05-01"),  # no match
+        ])
+        out = cfg.sanitizer.apply(df)
+        kept = set(out["ticker"])
+        assert "005930" in kept              # A005930 collapsed
+        assert "A005930" not in kept
+        assert "AAPL" in kept                # untouched
+        assert "A12345" in kept              # 5 digits — preserved
+        assert "A1234567" in kept            # 7 digits — preserved
+        assert "ABCDEF" in kept              # alpha — preserved
+
+
 
 # ─── Scoring ──────────────────────────────────────────────────────────────────
 class TestScoring:
