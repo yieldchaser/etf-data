@@ -1480,13 +1480,20 @@
         <div class="px-3 py-2 label" style="border-bottom:1px solid var(--border);color:var(--cyan)">GROWTH OF $100 (LOG SCALE)</div>
         <div x-html="growthChartSvg"
              @mousemove="growthHover($event)"
-             @mouseleave="growthHoverInfo = null"
+             @mouseleave="growthHoverInfo = null; if ($event.currentTarget.querySelector('#growth-crosshair')) $event.currentTarget.querySelector('#growth-crosshair').setAttribute('opacity', '0')"
              style="width:100%;overflow-x:auto;"></div>
-        <div x-show="growthHoverInfo" class="px-4 py-2 flex flex-wrap gap-x-6 gap-y-1 text-xs num font-mono"
-             style="border-top:1px solid var(--border);background:var(--surface-2)">
-          <span style="color:var(--text-3)" x-text="growthHoverInfo?.date || ''"></span>
-          <template x-for="item in (growthHoverInfo?.values || [])" :key="item.key">
-            <span :style="`color:${item.color}`" x-text="`${item.name}: $${item.val !== null ? item.val.toFixed(0) : '—'}`"></span>
+        <div class="px-4 py-2 flex justify-center flex-wrap gap-x-6 gap-y-1 text-xs num font-mono"
+             style="border-top:1px solid var(--border);background:var(--surface-2);min-height:32px;">
+          <template x-if="growthHoverInfo">
+            <div class="flex justify-center flex-wrap gap-x-6 gap-y-1">
+              <span style="color:var(--text-3)" x-text="growthHoverInfo?.date || ''"></span>
+              <template x-for="item in (growthHoverInfo?.values || [])" :key="item.key">
+                <span :style="`color:${item.color}`" x-text="`${item.name}: $${item.val !== null ? item.val.toFixed(0) : '—'}`"></span>
+              </template>
+            </div>
+          </template>
+          <template x-if="!growthHoverInfo">
+            <span style="color:var(--text-3)">Hover over the chart to see growth history</span>
           </template>
         </div>
       </div>
@@ -1513,7 +1520,24 @@
           </select>
           <span class="text-[10px]" style="color:var(--text-3)">vs all selected assets. Regime shifts visible as correlation flips.</span>
         </div>
-        <div x-html="rollingCorrChartSvg" style="width:100%;overflow-x:auto;"></div>
+        <div x-html="rollingCorrChartSvg"
+             @mousemove="rollingCorrHover($event)"
+             @mouseleave="rollingCorrHoverInfo = null; if ($event.currentTarget.querySelector('#rolling-crosshair')) $event.currentTarget.querySelector('#rolling-crosshair').setAttribute('opacity', '0')"
+             style="width:100%;overflow-x:auto;"></div>
+        <div class="px-4 py-2 flex justify-center flex-wrap gap-x-6 gap-y-1 text-xs num font-mono"
+             style="border-top:1px solid var(--border);background:var(--surface-2);min-height:32px;">
+          <template x-if="rollingCorrHoverInfo">
+            <div class="flex justify-center flex-wrap gap-x-6 gap-y-1">
+              <span style="color:var(--text-3)" x-text="rollingCorrHoverInfo?.date || ''"></span>
+              <template x-for="item in (rollingCorrHoverInfo?.values || [])" :key="item.key">
+                <span :style="`color:${item.color}`" x-text="`${item.name.split(' ').slice(0,2).join(' ')}: ${item.val !== null ? (item.val >= 0 ? '+' : '') + item.val.toFixed(2) : '—'}`"></span>
+              </template>
+            </div>
+          </template>
+          <template x-if="!rollingCorrHoverInfo">
+            <span style="color:var(--text-3)">Hover over the chart to see rolling correlations</span>
+          </template>
+        </div>
       </div>
       <!-- §6 Cross-Asset Ratio Charts -->
       <div x-show="corrSubTab === 'ratios'">
@@ -1527,7 +1551,22 @@
                 <span class="label" style="color:var(--cyan)" x-text="ratio.title"></span>
                 <span class="text-[9px]" style="color:var(--text-3)" x-text="ratio.description"></span>
               </div>
-              <div x-html="ratio.svg" style="width:100%;overflow-x:auto;"></div>
+              <div x-html="ratio.svg"
+                   @mousemove="ratioHover($event, ratio.id)"
+                   @mouseleave="ratioHoverInfo[ratio.id] = null; if ($event.currentTarget.querySelector('#ratio-crosshair-' + ratio.id)) $event.currentTarget.querySelector('#ratio-crosshair-' + ratio.id).setAttribute('opacity', '0')"
+                   style="width:100%;overflow-x:auto;"></div>
+              <div class="px-4 py-2 flex justify-center items-center gap-6 text-xs num font-mono"
+                   style="border-top:1px solid var(--border);background:var(--surface-2);min-height:32px;">
+                <template x-if="ratioHoverInfo[ratio.id]">
+                  <div class="flex justify-center gap-6">
+                    <span style="color:var(--text-3)" x-text="ratioHoverInfo[ratio.id]?.date || ''"></span>
+                    <span style="color:var(--cyan)" x-text="`Ratio: ${ratioHoverInfo[ratio.id]?.val !== null ? ratioHoverInfo[ratio.id].val.toFixed(ratioHoverInfo[ratio.id].val < 10 ? 3 : 1) : '—'}`"></span>
+                  </div>
+                </template>
+                <template x-if="!ratioHoverInfo[ratio.id]">
+                  <span style="color:var(--text-3)">Hover over the chart to see ratio values</span>
+                </template>
+              </div>
             </div>
           </template>
         </div>
@@ -4471,6 +4510,8 @@ function marketsApp() {
 
     activeCorrAssets: new Set(['sp500', 'gold', 'wti_crude', 'sensex', 'us_home_prices']),
     growthHoverInfo: null,
+    rollingCorrHoverInfo: null,
+    ratioHoverInfo: { gold_silver: null, copper_gold: null, oil_gold: null, sp500_gold: null },
     rollingCorrBase: 'sp500',  // §5.8 base asset for rolling correlation
     corrSubTab: 'growth',      // 'growth' | 'matrix' | 'rolling' | 'ratios'
 
@@ -4519,14 +4560,20 @@ function marketsApp() {
         ticks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W-PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>`;
         ticks += `<text x="${PL-4}" y="${(y+4).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace">$${v}</text>`;
       }
+      
+      const years = [...new Set(months.map(m => m.slice(0,4)))].map(Number).sort((a,b) => a-b);
+      const span = years.length > 0 ? (years[years.length - 1] - years[0]) : 0;
+      const interval = span < 15 ? 2 : (span < 35 ? 5 : 10);
       let xLabels = '';
-      for (const yr of [...new Set(months.map(m => m.slice(0,4)))]) {
-        if (parseInt(yr) % 10 !== 0) continue;
-        const m = `${yr}-01`; if (!months.includes(m)) continue;
-        const x = xS(m);
+      for (const yr of years) {
+        if (yr % interval !== 0) continue;
+        const firstMonthOfYear = months.find(m => m.startsWith(`${yr}-`));
+        if (!firstMonthOfYear) continue;
+        const x = xS(firstMonthOfYear);
         xLabels += `<text x="${x.toFixed(1)}" y="${H-8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${yr}</text>`;
         xLabels += `<line x1="${x.toFixed(1)}" y1="${PT}" x2="${x.toFixed(1)}" y2="${H-PB}" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>`;
       }
+
       let lines = '';
       for (const a of assetDefs) {
         const vals = growth[a.key]; let d = '', inSeg = false;
@@ -4556,20 +4603,33 @@ function marketsApp() {
 
       const allMonths = new Set();
       const retSeries = {};
+      const startMonths = [];
       for (const a of assetDefs) {
         retSeries[a.key] = this._monthlyRetSeries(a.key);
         Object.keys(retSeries[a.key]).forEach(m => allMonths.add(m));
+        const keys = Object.keys(retSeries[a.key]).sort();
+        if (keys.length > 0) startMonths.push(keys[0]);
       }
-      const months = Array.from(allMonths).sort();
+      // Latest common start date for all selected assets
+      const latestStartMonth = startMonths.length > 0 
+        ? startMonths.reduce((max, m) => m > max ? m : max, startMonths[0]) 
+        : '';
+      const months = Array.from(allMonths).sort().filter(m => m >= latestStartMonth);
+
       const growth = {};
       for (const a of assetDefs) {
-        const rets = retSeries[a.key]; let val = 100, started = false;
+        const rets = retSeries[a.key];
+        let val = 100;
         growth[a.key] = {};
+        let isFirst = true;
         for (const m of months) {
-          if (!started && rets[m] !== undefined) started = true;
-          if (!started) continue;
-          if (rets[m] !== undefined) val *= (1 + rets[m]);
-          growth[a.key][m] = val;
+          if (isFirst) {
+            growth[a.key][m] = 100;
+            isFirst = false;
+          } else {
+            if (rets[m] !== undefined) val *= (1 + rets[m]);
+            growth[a.key][m] = val;
+          }
         }
       }
       this._growthSeriesCache = { months, growth, assetDefs };
@@ -4626,7 +4686,7 @@ function marketsApp() {
         corr[i][j] = si > 0 && sj > 0 ? cov / (si * sj) : null;
       }
       const CELL = 52;
-      let html = `<table style="border-collapse:separate;border-spacing:2px;"><tr><td style="width:120px;"></td>`;
+      let html = `<table style="border-collapse:separate;border-spacing:4px;margin:12px auto;"><tr><td style="width:120px;"></td>`;
       for (const a of assetDefs) html += `<td style="width:${CELL}px;text-align:center;font-size:9px;font-family:ui-monospace;color:#52525b;padding:2px;">${a.shortName.slice(0,6)}</td>`;
       html += `</tr>`;
       for (let i = 0; i < n; i++) {
@@ -4646,26 +4706,40 @@ function marketsApp() {
       return result;
     },
 
-    // §5.8 Rolling 12-month correlation chart
-    get rollingCorrChartSvg() {
-      if (!this.returnsData) return '';
+    _getRollingCorrSeries() {
+      if (!this.returnsData) return { allYms: [], series: {}, baseName: '' };
       const baseKey = this.rollingCorrBase;
       const baseRets = this._monthlyRetSeries(baseKey);
-      if (!baseRets || Object.keys(baseRets).length < 13) {
-        return '<div style="padding:40px;text-align:center;color:var(--text-3)">Not enough data for rolling correlation</div>';
-      }
+      if (!baseRets || Object.keys(baseRets).length < 13) return { allYms: [], series: {}, baseName: '' };
 
       const active = this.activeCorrAssets;
       const assetDefs = this.corrAssetList.filter(a => active.has(a.key) && a.key !== baseKey);
-      if (!assetDefs.length) return '<div style="padding:40px;text-align:center;color:var(--text-3)">Select assets to compare</div>';
+      const WINDOW = 12;
 
-      const WINDOW = 12; // 12-month rolling window
-      const allMonths = Object.keys(baseRets).sort();
+      // Find start dates of base and compared assets to establish latest common start month
+      const startMonths = [];
+      const baseKeys = Object.keys(baseRets).sort();
+      if (baseKeys.length > 0) startMonths.push(baseKeys[0]);
 
-      // Compute rolling correlation for each asset vs base
-      const series = {};
+      const assetRets = {};
       for (const a of assetDefs) {
         const aRets = this._monthlyRetSeries(a.key);
+        if (aRets) {
+          assetRets[a.key] = aRets;
+          const aKeys = Object.keys(aRets).sort();
+          if (aKeys.length > 0) startMonths.push(aKeys[0]);
+        }
+      }
+
+      const latestStartMonth = startMonths.length > 0
+        ? startMonths.reduce((max, m) => m > max ? m : max, startMonths[0])
+        : '';
+
+      const allMonths = Object.keys(baseRets).sort().filter(m => m >= latestStartMonth);
+
+      const series = {};
+      for (const a of assetDefs) {
+        const aRets = assetRets[a.key];
         if (!aRets) continue;
         const pts = [];
         for (let i = WINDOW; i < allMonths.length; i++) {
@@ -4689,17 +4763,22 @@ function marketsApp() {
         if (pts.length >= 2) series[a.key] = { pts, color: a.color, name: a.name };
       }
 
-      if (!Object.keys(series).length) return '<div style="padding:40px;text-align:center;color:var(--text-3)">Not enough overlapping data</div>';
+      const allPts = Object.values(series).flatMap(s => s.pts);
+      const allYms = [...new Set(allPts.map(p => p.ym))].sort();
+      const baseName = this.returnsData?.assets?.[baseKey]?.meta?.name || baseKey;
+
+      return { allYms, series, baseName };
+    },
+
+    get rollingCorrChartSvg() {
+      const { allYms, series, baseName } = this._getRollingCorrSeries();
+      if (!allYms.length) return '<div style="padding:40px;text-align:center;color:var(--text-3)">Select assets to compare</div>';
 
       const W = 1200, H = 200, PL = 40, PR = 20, PT = 15, PB = 30;
       const chartW = W - PL - PR, chartH = H - PT - PB;
-      const allPts = Object.values(series).flatMap(s => s.pts);
-      const allYms = [...new Set(allPts.map(p => p.ym))].sort();
-      if (!allYms.length) return '';
 
       const xS = (ym) => PL + ((allYms.indexOf(ym)) / Math.max(allYms.length - 1, 1)) * chartW;
       const yS = (v) => PT + chartH / 2 - (v / 1) * (chartH / 2);
-      const y0 = yS(0);
 
       // Grid lines
       let grid = '';
@@ -4709,18 +4788,22 @@ function marketsApp() {
         grid += `<text x="${PL-4}" y="${(y+3.5).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${v >= 0 ? '+' : ''}${v.toFixed(1)}</text>`;
       }
 
-      // X-axis labels (every 5 years)
+      // X-axis labels
+      const years = [...new Set(allYms.map(m => m.slice(0, 4)))].map(Number).sort((a,b) => a-b);
+      const span = years.length > 0 ? (years[years.length - 1] - years[0]) : 0;
+      const interval = span < 15 ? 2 : (span < 35 ? 5 : 10);
       let xLabels = '';
-      for (const ym of allYms) {
-        if (ym.slice(5) === '01' && parseInt(ym.slice(0, 4)) % 5 === 0) {
-          const x = xS(ym);
-          xLabels += `<text x="${x.toFixed(1)}" y="${H-8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${ym.slice(0, 4)}</text>`;
-        }
+      for (const yr of years) {
+        if (yr % interval !== 0) continue;
+        const firstMonthOfYear = allYms.find(m => m.startsWith(`${yr}-`));
+        if (!firstMonthOfYear) continue;
+        const x = xS(firstMonthOfYear);
+        xLabels += `<text x="${x.toFixed(1)}" y="${H-8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${yr}</text>`;
+        xLabels += `<line x1="${x.toFixed(1)}" y1="${PT}" x2="${x.toFixed(1)}" y2="${H-PB}" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>`;
       }
 
       // Lines per asset
       let lines = '';
-      const baseName = this.returnsData?.assets?.[baseKey]?.meta?.name || baseKey;
       for (const [key, s] of Object.entries(series)) {
         const pts = s.pts.filter(p => allYms.includes(p.ym));
         if (pts.length < 2) continue;
@@ -4728,14 +4811,47 @@ function marketsApp() {
         lines += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="1.5" opacity="0.85"/>`;
         // Label at end
         const last = pts[pts.length - 1];
-        lines += `<text x="${(xS(last.ym) + 4).toFixed(1)}" y="${(yS(last.corr) + 3).toFixed(1)}" style="font-size:8px;fill:${s.color};font-family:ui-monospace">${s.name.slice(0, 8)}</text>`;
+        lines += `<text x="${(xS(last.ym) + 4).toFixed(1)}" y="${(yS(last.corr) + 3).toFixed(1)}" style="font-size:8px;fill:${s.color};font-family:ui-monospace">${s.name.split(' ').slice(0,2).join(' ')}</text>`;
       }
 
+      const ch = `<line id="rolling-crosshair" x1="0" y1="${PT}" x2="0" y2="${H-PB}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
       const title = `<text x="${PL}" y="12" style="font-size:9px;fill:#71717a;font-family:ui-monospace">12M rolling corr vs ${baseName}</text>`;
-      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block;background:var(--surface)">${title}${grid}${xLabels}${lines}</svg>`;
+      
+      const yAxis = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
+      const xAxis = `<line x1="${PL}" y1="${H-PB}" x2="${W-PR}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
+
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block;background:var(--surface)">${title}${grid}${xLabels}${lines}${yAxis}${xAxis}${ch}</svg>`;
     },
 
-    // ── View I: Volatility Intelligence ──────────────────────────────────
+    rollingCorrHover(e) {
+      const svg = e.currentTarget.querySelector('svg'); if (!svg) return;
+      const rect = svg.getBoundingClientRect();
+      const { allYms, series } = this._getRollingCorrSeries();
+      if (!allYms.length) return;
+      const W = 1200, PL = 40, PR = 20;
+      const frac = Math.max(0, Math.min(1, ((e.clientX - rect.left) / (rect.width / W) - PL) / (W - PL - PR)));
+      const month = allYms[Math.round(frac * (allYms.length - 1))];
+      if (!month) return;
+
+      const values = Object.entries(series).map(([key, s]) => {
+        const pt = s.pts.find(p => p.ym === month);
+        return {
+          key,
+          name: s.name,
+          color: s.color,
+          val: pt ? pt.corr : null,
+        };
+      });
+
+      this.rollingCorrHoverInfo = { date: month, values };
+      const ch = svg.getElementById('rolling-crosshair');
+      if (ch) {
+        const x = PL + frac * (W - PL - PR);
+        ch.setAttribute('x1', x);
+        ch.setAttribute('x2', x);
+        ch.setAttribute('opacity', '1');
+      }
+    },
 
     // §6 Cross-asset ratio charts
     get ratioCharts() {
@@ -4749,10 +4865,26 @@ function marketsApp() {
         { id: 'sp500_gold',   title: 'S&P 500 / Gold Ratio',   num: 'sp500',     den: 'gold',       description: 'Equity vs hard assets' },
       ];
 
+      // Find the latest start date among all ratio pairs to align their x-axes
+      const ratioStartMonths = [];
+      for (const r of RATIOS) {
+        const numAsset = assets[r.num];
+        const denAsset = assets[r.den];
+        if (numAsset && denAsset) {
+          const numKeys = Array.isArray(numAsset.monthly) ? numAsset.monthly.map(m=>m[0]) : Object.keys(numAsset.close || {});
+          const denKeys = Array.isArray(denAsset.monthly) ? denAsset.monthly.map(m=>m[0]) : Object.keys(denAsset.close || {});
+          const common = numKeys.filter(m => denKeys.includes(m)).sort();
+          if (common.length > 0) ratioStartMonths.push(common[0]);
+        }
+      }
+      const commonStart = ratioStartMonths.length > 0 
+        ? ratioStartMonths.reduce((max, m) => m > max ? m : max, ratioStartMonths[0]) 
+        : '1986-01';
+
       return RATIOS.map(r => {
         const numAsset = assets[r.num];
         const denAsset = assets[r.den];
-        if (!numAsset || !denAsset) return { ...r, svg: '<div style="padding:20px;text-align:center;color:var(--text-3)">Data not available</div>' };
+        if (!numAsset || !denAsset) return { ...r, svg: '<div style="padding:20px;text-align:center;color:var(--text-3)">Data not available</div>', points: [] };
 
         // Build ratio series from monthly arrays
         const numClose = {};
@@ -4763,8 +4895,10 @@ function marketsApp() {
         if (Array.isArray(denAsset.monthly)) for (const [ym, v] of denAsset.monthly) denClose[ym] = v;
         else for (const [ym, v] of Object.entries(denAsset.close || {})) denClose[ym] = v;
 
-        const months = Object.keys(numClose).filter(m => denClose[m] != null && numClose[m] != null && denClose[m] > 0).sort();
-        if (months.length < 2) return { ...r, svg: '<div style="padding:20px;text-align:center;color:var(--text-3)">Not enough overlapping data</div>' };
+        const months = Object.keys(numClose)
+          .filter(m => denClose[m] != null && numClose[m] != null && denClose[m] > 0 && m >= commonStart)
+          .sort();
+        if (months.length < 2) return { ...r, svg: '<div style="padding:20px;text-align:center;color:var(--text-3)">Not enough overlapping data</div>', points: [] };
 
         const ratioSeries = months.map(m => ({ ym: m, val: numClose[m] / denClose[m] }));
 
@@ -4786,13 +4920,18 @@ function marketsApp() {
           ticks += `<text x="${PL-4}" y="${(y+3.5).toFixed(1)}" text-anchor="end" style="font-size:8px;fill:#52525b;font-family:ui-monospace">${v.toFixed(v < 10 ? 2 : 1)}</text>`;
         }
 
-        // X labels (every 10 years)
+        // X labels with dynamic year intervals
+        const years = [...new Set(ratioSeries.map(p => p.ym.slice(0, 4)))].map(Number).sort((a,b) => a-b);
+        const span = years.length > 0 ? (years[years.length - 1] - years[0]) : 0;
+        const interval = span < 15 ? 2 : (span < 35 ? 5 : 10);
         let xLabels = '';
-        for (let i = 0; i < ratioSeries.length; i++) {
-          const ym = ratioSeries[i].ym;
-          if (ym.slice(5) === '01' && parseInt(ym.slice(0, 4)) % 10 === 0) {
-            xLabels += `<text x="${xS(i).toFixed(1)}" y="${H-6}" text-anchor="middle" style="font-size:8px;fill:#52525b;font-family:ui-monospace">${ym.slice(0, 4)}</text>`;
-          }
+        for (const yr of years) {
+          if (yr % interval !== 0) continue;
+          const idx = ratioSeries.findIndex(p => p.ym.startsWith(`${yr}-`));
+          if (idx === -1) continue;
+          const x = xS(idx);
+          xLabels += `<text x="${x.toFixed(1)}" y="${H-6}" text-anchor="middle" style="font-size:8px;fill:#52525b;font-family:ui-monospace">${yr}</text>`;
+          xLabels += `<line x1="${x.toFixed(1)}" y1="${PT}" x2="${x.toFixed(1)}" y2="${H-PB}" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>`;
         }
 
         // Line
@@ -4800,9 +4939,35 @@ function marketsApp() {
         const lastVal = ratioSeries[ratioSeries.length - 1].val;
         const color = assetColor(r.num);
 
-        const svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;background:var(--surface)">${ticks}${xLabels}<path d="${d}" fill="none" stroke="${color}" stroke-width="1.5" opacity="0.9"/><text x="${W-PR}" y="${PT+10}" text-anchor="end" style="font-size:9px;fill:${color};font-family:ui-monospace">${lastVal.toFixed(lastVal < 10 ? 2 : 1)}</text></svg>`;
-        return { ...r, svg };
+        const ch = `<line id="ratio-crosshair-${r.id}" x1="0" y1="${PT}" x2="0" y2="${H-PB}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
+        
+        const yAxis = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
+        const xAxis = `<line x1="${PL}" y1="${H-PB}" x2="${W-PR}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
+
+        const svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;background:var(--surface)">${ticks}${xLabels}<path d="${d}" fill="none" stroke="${color}" stroke-width="1.5" opacity="0.9"/><text x="${W-PR}" y="${PT+10}" text-anchor="end" style="font-size:9px;fill:${color};font-family:ui-monospace">${lastVal.toFixed(lastVal < 10 ? 2 : 1)}</text>${yAxis}${xAxis}${ch}</svg>`;
+        return { ...r, svg, points: ratioSeries };
       });
+    },
+
+    ratioHover(e, ratioId) {
+      const svg = e.currentTarget.querySelector('svg'); if (!svg) return;
+      const rect = svg.getBoundingClientRect();
+      const ratio = this.ratioCharts.find(r => r.id === ratioId);
+      if (!ratio || !ratio.points || !ratio.points.length) return;
+      const W = 600, PL = 50, PR = 15;
+      const frac = Math.max(0, Math.min(1, ((e.clientX - rect.left) / (rect.width / W) - PL) / (W - PL - PR)));
+      const idx = Math.round(frac * (ratio.points.length - 1));
+      const pt = ratio.points[idx];
+      if (!pt) return;
+      
+      this.ratioHoverInfo[ratioId] = { date: pt.ym, val: pt.val };
+      const ch = svg.getElementById(`ratio-crosshair-${ratioId}`);
+      if (ch) {
+        const x = PL + (idx / Math.max(ratio.points.length - 1, 1)) * (W - PL - PR);
+        ch.setAttribute('x1', x);
+        ch.setAttribute('x2', x);
+        ch.setAttribute('opacity', '1');
+      }
     },
 
     // Series definitions for vol chart (7 CBOE indices with distinct colors)
