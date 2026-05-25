@@ -4660,7 +4660,11 @@ function marketsApp() {
 
     // ── View F: Correlation & Growth ──────────────────────────────────────
 
-    activeCorrAssets: new Set(['sp500', 'gold', 'wti_crude', 'sensex', 'us_home_prices']),
+    // §4 Default selection — every key MUST exist in market_returns.json. The previous
+    // default included 'us_home_prices' which is not in the asset dataset, leaving the
+    // user with only 4 valid assets and giving the panel a half-empty look on first load.
+    // copper_lb is industrial-cycle exposure and complements sp500/gold/sensex/wti_crude.
+    activeCorrAssets: new Set(['sp500', 'gold', 'wti_crude', 'sensex', 'copper_lb']),
     growthHoverInfo: null,
     rollingCorrHoverInfo: null,
     ratioHoverInfo: { gold_silver: null, copper_gold: null, oil_gold: null, sp500_gold: null },
@@ -4819,13 +4823,16 @@ function marketsApp() {
       const assetDefs = this.corrAssetList.filter(a => active.has(a.key));
       if (assetDefs.length < 2) return '<div style="padding:20px;color:var(--text-3);font-size:12px">Select at least 2 assets</div>';
 
-      // Cache key: sorted active assets + ccy/real lens
-      const ck = [...active].sort().join(',') + '|' + this._cacheKey('__corr');
+      // Cache key: sorted active assets + ccy/real lens + window start year
+      const ck = [...active].sort().join(',') + '|' + this._cacheKey('__corr') + '|y' + this.matrixStartYear;
       if (this._corrMatrixCacheKey === ck && this._corrMatrixCache) return this._corrMatrixCache;
 
       const retSeries = {}, allMonths = new Set();
       for (const a of assetDefs) { retSeries[a.key] = this._monthlyRetSeries(a.key); Object.keys(retSeries[a.key]).forEach(m => allMonths.add(m)); }
-      const months = Array.from(allMonths).sort();
+      // §2.5 Same window as everything else — correlation over a 30Y window is more
+      // useful than 'all of recorded history' for asset-allocation decisions today.
+      const minYm = `${this.matrixStartYear || 1833}-01`;
+      const months = Array.from(allMonths).sort().filter(m => m >= minYm);
       const n = assetDefs.length;
       const corr = Array.from({length: n}, () => Array(n).fill(null));
       for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
@@ -4890,7 +4897,11 @@ function marketsApp() {
         ? startMonths.reduce((max, m) => m > max ? m : max, startMonths[0])
         : '';
 
-      const allMonths = Object.keys(baseRets).sort().filter(m => m >= latestStartMonth);
+      // §2.5 Apply global matrix window — otherwise the rolling-correlation x-axis
+      // can span 1986→2026 even when the user has selected 30Y everywhere else.
+      const minYm = `${this.matrixStartYear || 1833}-01`;
+      const allMonths = Object.keys(baseRets).sort()
+        .filter(m => m >= latestStartMonth && m >= minYm);
 
       const series = {};
       for (const a of assetDefs) {
