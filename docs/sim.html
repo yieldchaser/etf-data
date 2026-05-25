@@ -1822,6 +1822,19 @@ function labApp() {
         }
       }
 
+      // §10 If the user previously cleared the portfolio (or first-run with no
+      // localStorage), the rest of the page is empty until they enter tickers.
+      // Fall back to the SPY/TLT 60/40 sample so the result tabs (Backtest,
+      // Risk, Stress, Monte Carlo, Kelly) all render with meaningful content
+      // on first paint.
+      const hasValidRow = this.portfolio.some(r => r && r.ticker && (r.weight || 0) !== 0);
+      if (!hasValidRow) {
+        this.portfolio = [
+          { ticker: 'SPY', weight: 60, name: 'S&P 500 ETF (SPY)',    first: '' },
+          { ticker: 'TLT', weight: 40, name: '20Y Treasury ETF (TLT)', first: '' },
+        ];
+      }
+
       // Pre-populate ticker names
       for (const row of this.portfolio) {
         this._updateTickerMeta(row);
