@@ -159,24 +159,26 @@
     </div>
     <!-- Divider -->
     <div class="w-px h-5 mx-1" style="background: var(--border-2)"></div>
-    <!-- Currency lens (matrix only) -->
+    <!-- Currency lens (matrix only) — only render lenses with usable data.
+         Local/USD always available; Gold/Silver available when monthly data is loaded;
+         INR only if fx.USDINR is populated (requires FRED DEXINUS or USD/INR Excel). -->
     <div x-show="activeTab === 'matrix'" class="flex gap-1">
-      <template x-for="ccy in ['Local', 'USD', 'INR', 'Gold', 'Silver']" :key="ccy">
+      <template x-for="ccy in lensesAvailable" :key="ccy">
         <button
-          @click="(ccy === 'Gold' && !returnsData?.assets?.gold?.monthly?.length) || (ccy === 'Silver' && !returnsData?.assets?.silver?.monthly?.length) ? null : (activeCcy = ccy)"
+          @click="activeCcy = ccy"
           :class="activeCcy === ccy ? 'tab-active' : ''"
           class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
-          :style="activeCcy === ccy ? '' : ((ccy === 'Gold' && !returnsData?.assets?.gold?.monthly?.length) || (ccy === 'Silver' && !returnsData?.assets?.silver?.monthly?.length)) ? 'color: var(--text-3); border-color: var(--border); opacity: 0.4; cursor: not-allowed;' : 'color: var(--text-2); border-color: var(--border)'"
+          :style="activeCcy === ccy ? '' : 'color: var(--text-2); border-color: var(--border)'"
           x-text="ccy"
-          @mouseenter="showTt($event, ccy === 'USD' ? 'Convert all returns to USD using monthly FX rates' : ccy === 'INR' ? 'Convert all returns to INR using monthly FX rates' : ccy === 'Gold' ? ((returnsData?.assets?.gold?.monthly?.length) ? 'Price in oz of gold — shows real purchasing power over time' : 'Gold data not loaded') : ccy === 'Silver' ? ((returnsData?.assets?.silver?.monthly?.length) ? 'Price in oz of silver — shows real purchasing power over time' : 'Silver data not loaded') : '')"
+          @mouseenter="showTt($event, ccy === 'USD' ? 'Convert all returns to USD using monthly FX rates' : ccy === 'INR' ? 'Convert all returns to INR using monthly USD/INR rates' : ccy === 'Gold' ? 'Price in oz of gold — shows real purchasing power over time' : ccy === 'Silver' ? 'Price in oz of silver — shows real purchasing power over time' : 'Native local currency — no FX adjustment')"
           @mouseleave="hideTt()">
         </button>
       </template>
     </div>
     <!-- Divider -->
     <div x-show="activeTab === 'matrix'" class="w-px h-5 mx-1" style="background: var(--border-2)"></div>
-    <!-- Nominal / Real toggle (matrix only) -->
-    <div x-show="activeTab === 'matrix'" class="flex gap-1">
+    <!-- Nominal / Real toggle (matrix only) — Real only available when CPI data is present -->
+    <div x-show="activeTab === 'matrix' && hasCpiData" class="flex gap-1">
       <button @click="activeReal = false"
               :class="!activeReal ? 'tab-active' : ''"
               class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
@@ -2211,6 +2213,13 @@ function marketsApp() {
         }
       }
       this.loadingReturns = false;
+      // §3 If user previously selected a lens that's no longer available
+      // (e.g. INR before fx was wired up), or Real with no CPI, fall back gracefully.
+      if (this.returnsData) {
+        const allowed = this.lensesAvailable;
+        if (!allowed.includes(this.activeCcy)) this.activeCcy = 'Local';
+        if (this.activeReal && !this.hasCpiData) this.activeReal = false;
+      }
     },
 
     async _loadVol() {
@@ -2306,6 +2315,32 @@ function marketsApp() {
 
     _cacheKey(assetKey) {
       return `${assetKey}|${this.activeCcy}|${this.activeReal}`;
+    },
+
+    // ── §3 FX/CPI honesty — reflect what the JSON actually has, never show dead controls.
+    // The pipeline currently leaves fx={} and cpi={} unless DEXINUS / CPIAUCSL are wired up
+    // (see predator/markets_history.py). Until then we simply hide INR/Real instead of
+    // pretending they work. Gold/Silver lenses don't need fx — they convert via the gold
+    // and silver close series which are populated from Mega_Markets_Historical.xlsx.
+    get lensesAvailable() {
+      const lenses = ['Local', 'USD'];
+      const fx = this.returnsData?.fx || {};
+      const auxFx = this.returnsData?.aux?.usdinr?.values || {};
+      const hasUsdInr = (Array.isArray(fx.USDINR) && fx.USDINR.length > 0) ||
+                       Object.keys(auxFx).length > 0 ||
+                       !!this.returnsData?.assets?.fx_usdinr;
+      if (hasUsdInr) lenses.push('INR');
+      if (this.returnsData?.assets?.gold?.monthly?.length) lenses.push('Gold');
+      if (this.returnsData?.assets?.silver?.monthly?.length) lenses.push('Silver');
+      return lenses;
+    },
+
+    get hasCpiData() {
+      const cpi = this.returnsData?.cpi || {};
+      // Accept either the new top-level cpi.US format or legacy aux.us_cpi
+      if (cpi.US && (Array.isArray(cpi.US) ? cpi.US.length : Object.keys(cpi.US).length)) return true;
+      const aux = this.returnsData?.aux?.us_cpi?.values || {};
+      return Object.keys(aux).length > 0;
     },
 
     // Build monthly close series for an asset in the requested currency lens.
@@ -3377,7 +3412,13 @@ function marketsApp() {
       const asset = this.returnsData.assets[this.selectedAsset];
       if (!asset) return '';
 
-      const lenses = ['local', 'usd', 'inr', 'gold', 'real'];
+      // §3 FX/CPI honesty — show only the lenses that actually have data.
+      // local + usd are always available (usd uses native_ccy + fx assets when present;
+      // for USD-native assets it's a no-op). inr, gold, real are gated.
+      const lenses = ['local', 'usd'];
+      if (this.lensesAvailable.includes('INR')) lenses.push('inr');
+      if (this.lensesAvailable.includes('Gold')) lenses.push('gold');
+      if (this.hasCpiData) lenses.push('real');
       const lensLabels = { local: 'Local', usd: 'USD', inr: 'INR', gold: 'Gold', real: 'Real (CPI)' };
 
       // Build annual returns for each lens
