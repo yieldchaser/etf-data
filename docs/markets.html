@@ -1254,7 +1254,7 @@
       </div>
 
       <!-- Stats strip -->
-      <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
+      <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-3 mb-5">
         <template x-for="kpi in hpKpis" :key="kpi.label">
           <div class="rounded-lg border px-3 py-2.5" style="background: var(--surface); border-color: var(--border)">
             <div class="label" x-text="kpi.label"></div>
@@ -1267,13 +1267,32 @@
       <div class="rounded-lg border overflow-hidden mb-5" style="background: var(--surface); border-color: var(--border)">
         <div class="px-3 py-2 label" style="border-bottom: 1px solid var(--border); color: var(--cyan)"
              x-text="`ROLLING ${hpHorizon}Y ANNUALISED RETURN — ${hpAssetName}`"></div>
-        <div x-html="hpChartSvg" style="width:100%;overflow-x:auto;"></div>
+        <div x-html="hpChartSvg"
+             @mousemove="hpChartHover($event)"
+             @mouseleave="hpHoverInfo = null"
+             style="width:100%;overflow-x:auto;"></div>
+        <div x-show="hpHoverInfo" class="px-4 py-2 flex flex-wrap gap-x-6 gap-y-1 text-xs num font-mono"
+             style="border-top: 1px solid var(--border); background: var(--surface-2)">
+          <span style="color: var(--text-3)" x-text="hpHoverInfo?.date || ''"></span>
+          <span :style="`color: ${(hpHoverInfo?.val ?? 0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
+                x-text="hpHoverInfo ? `Rolling ${hpHorizon}Y: ${(hpHoverInfo.val >= 0 ? '+' : '') + (hpHoverInfo.val * 100).toFixed(1)}%` : ''"></span>
+        </div>
       </div>
 
       <!-- Distribution bar chart -->
       <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
         <div class="px-3 py-2 label" style="border-bottom: 1px solid var(--border); color: var(--cyan)">RETURN DISTRIBUTION</div>
-        <div x-html="hpDistSvg" style="width:100%;overflow-x:auto;"></div>
+        <div x-html="hpDistSvg"
+             @mousemove="hpDistHover($event)"
+             @mouseleave="hpDistHoverInfo = null"
+             style="width:100%;overflow-x:auto;"></div>
+        <div x-show="hpDistHoverInfo" class="px-4 py-2 flex flex-wrap gap-x-6 gap-y-1 text-xs num font-mono"
+             style="border-top: 1px solid var(--border); background: var(--surface-2)">
+          <span style="color: var(--text-3)"
+                x-text="hpDistHoverInfo ? `${(hpDistHoverInfo.lo>=0?'+':'') + (hpDistHoverInfo.lo*100).toFixed(1)}% → ${(hpDistHoverInfo.hi>=0?'+':'') + (hpDistHoverInfo.hi*100).toFixed(1)}%` : ''"></span>
+          <span style="color: var(--text)"
+                x-text="hpDistHoverInfo ? `${hpDistHoverInfo.count} window${hpDistHoverInfo.count === 1 ? '' : 's'}` : ''"></span>
+        </div>
       </div>
     </div>
   </div><!-- /holdingperiod tab -->
@@ -3469,20 +3488,23 @@ function marketsApp() {
       const rates = this.returnsData?.rates || {};
       const yearSet = new Set();
       for (const s of Object.values(rates)) {
-        for (const k of Object.keys(s.values || {})) {
-          yearSet.add(parseInt(k.slice(0, 4)));
+        for (const [ym] of (s.values || [])) {
+          yearSet.add(parseInt(ym.slice(0, 4)));
         }
       }
       return Array.from(yearSet).sort((a, b) => a - b);
     },
 
     get yieldChartMeta() {
+      // `s.values` is a sorted array of [YYYY-MM, value] tuples (per markets_history.py).
       const rates = this.returnsData?.rates || {};
       const keys = Object.keys(rates);
       if (!keys.length) return '';
       const allMonths = [];
       for (const s of Object.values(rates)) {
-        allMonths.push(...Object.keys(s.values || {}));
+        for (const [ym] of (s.values || [])) {
+          allMonths.push(ym);
+        }
       }
       if (!allMonths.length) return '';
       allMonths.sort();
@@ -3490,17 +3512,23 @@ function marketsApp() {
     },
 
     getYieldValue(seriesKey, year) {
-      // Return December value (year-end) or last available month in that year
+      // Return December value (year-end) or last available month in that year.
+      // `s.values` is a sorted array of [YYYY-MM, value] tuples (per markets_history.py).
       const rates = this.returnsData?.rates || {};
       const s = rates[seriesKey];
       if (!s) return null;
-      const vals = s.values || {};
+      const vals = s.values || [];
+      const prefix = `${year}-`;
       const decKey = `${year}-12`;
-      if (vals[decKey] != null) return vals[decKey];
-      // Fall back to last available month in that year
-      const yearKeys = Object.keys(vals).filter(k => k.startsWith(`${year}-`)).sort();
-      if (yearKeys.length) return vals[yearKeys[yearKeys.length - 1]];
-      return null;
+      let dec = null;
+      let lastInYear = null;
+      for (const [ym, v] of vals) {
+        if (!ym.startsWith(prefix)) continue;
+        if (ym === decKey) dec = v;
+        if (lastInYear === null || ym > lastInYear[0]) lastInYear = [ym, v];
+      }
+      if (dec != null) return dec;
+      return lastInYear ? lastInYear[1] : null;
     },
 
     yieldCellColor(val) {
@@ -3520,11 +3548,18 @@ function marketsApp() {
       const seriesDefs = this.yieldSeries.filter(s => active.has(s.key));
       if (!seriesDefs.length) return '<div style="padding:40px;text-align:center;color:var(--text-3)">Select at least one series</div>';
 
+      // Build per-series Map<ym, value> once per render (values is a sorted [ym, v] tuple array)
+      const seriesMaps = {};
+      for (const s of seriesDefs) {
+        const r = rates[s.key];
+        seriesMaps[s.key] = new Map(r?.values || []);
+      }
+
       // Collect all monthly data points
       const allMonths = new Set();
       for (const s of seriesDefs) {
-        const r = rates[s.key];
-        if (r) Object.keys(r.values || {}).forEach(m => allMonths.add(m));
+        const valMap = seriesMaps[s.key];
+        for (const m of valMap.keys()) allMonths.add(m);
       }
       const months = Array.from(allMonths).sort();
       if (!months.length) return '<div style="padding:40px;text-align:center;color:var(--text-3)">No data</div>';
@@ -3535,9 +3570,8 @@ function marketsApp() {
       // Value range across all active series
       let minV = Infinity, maxV = -Infinity;
       for (const s of seriesDefs) {
-        const r = rates[s.key];
-        if (!r) continue;
-        for (const v of Object.values(r.values || {})) {
+        const valMap = seriesMaps[s.key];
+        for (const v of valMap.values()) {
           if (v != null && isFinite(v)) { minV = Math.min(minV, v); maxV = Math.max(maxV, v); }
         }
       }
@@ -3581,11 +3615,10 @@ function marketsApp() {
       // Lines per series
       let lines = '';
       for (const s of seriesDefs) {
-        const r = rates[s.key];
-        if (!r) continue;
-        const vals = r.values || {};
+        const valMap = seriesMaps[s.key];
+        if (!valMap.size) continue;
         const pts = months.map(m => {
-          const v = vals[m];
+          const v = valMap.get(m);
           if (v == null || !isFinite(v)) return null;
           return `${xScale(m).toFixed(1)},${yScale(v).toFixed(1)}`;
         });
@@ -3616,10 +3649,16 @@ function marketsApp() {
       const active = this.activeYieldSeries;
       const seriesDefs = this.yieldSeries.filter(s => active.has(s.key));
 
-      const allMonths = new Set();
+      // Build a Map per series once: O(n) preprocessing, O(1) lookup below.
+      const seriesMaps = {};
       for (const s of seriesDefs) {
         const r = rates[s.key];
-        if (r) Object.keys(r.values || {}).forEach(m => allMonths.add(m));
+        seriesMaps[s.key] = new Map(r?.values || []);
+      }
+
+      const allMonths = new Set();
+      for (const s of seriesDefs) {
+        for (const m of seriesMaps[s.key].keys()) allMonths.add(m);
       }
       const months = Array.from(allMonths).sort();
       if (!months.length) return;
@@ -3633,8 +3672,8 @@ function marketsApp() {
       const month = months[idx];
 
       const values = seriesDefs.map(s => {
-        const r = rates[s.key];
-        const val = r?.values?.[month] ?? null;
+        const v = seriesMaps[s.key].get(month);
+        const val = (v == null) ? null : v;
         return { key: s.key, name: s.name, color: s.color, val };
       });
 
@@ -3647,6 +3686,28 @@ function marketsApp() {
         crosshair.setAttribute('x1', xPos);
         crosshair.setAttribute('x2', xPos);
         crosshair.setAttribute('opacity', '1');
+      }
+    },
+
+    hpChartHover(e) {
+      const svg = e.currentTarget.querySelector('svg');
+      if (!svg) return;
+      const rolls = this._rollingReturns(this.hpAsset, this.hpHorizon);
+      if (!rolls.length) return;
+      const rect = svg.getBoundingClientRect();
+      const W = 1200, PL = 52, PR = 20, chartW = W - PL - PR;
+      const scaleX = rect.width / W;
+      const relX = (e.clientX - rect.left) / scaleX;
+      const frac = Math.max(0, Math.min(1, (relX - PL) / chartW));
+      const idx = Math.max(0, Math.min(rolls.length - 1, Math.round(frac * (rolls.length - 1))));
+      const pt = rolls[idx];
+      this.hpHoverInfo = { date: pt.ym, val: pt.ret };
+      const ch = svg.getElementById('hp-crosshair');
+      if (ch) {
+        const x = PL + (idx / Math.max(rolls.length - 1, 1)) * chartW;
+        ch.setAttribute('x1', x);
+        ch.setAttribute('x2', x);
+        ch.setAttribute('opacity', '1');
       }
     },
 
@@ -3931,7 +3992,11 @@ function marketsApp() {
 
       const crosshair = `<line id="dd-crosshair" x1="0" y1="${PT}" x2="0" y2="${H - PB}" stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
 
-      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block;background:#111">${yTicks}${xLabels}${areas}${crosshair}</svg>`;
+      // Explicit axis lines (consistency pass — Requirement 5.1)
+      const yAxis = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H - PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
+      const xAxis = `<line x1="${PL}" y1="${H - PB}" x2="${W - PR}" y2="${H - PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
+
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block;background:#111">${yTicks}${xLabels}${areas}${yAxis}${xAxis}${crosshair}</svg>`;
     },
 
     drawdownHover(e) {
@@ -4095,6 +4160,8 @@ function marketsApp() {
 
     hpAsset: 'sp500',
     hpHorizon: 10,
+    hpHoverInfo: null,
+    hpDistHoverInfo: null,
 
     get hpAssetList() {
       if (!this.returnsData) return [];
@@ -4150,21 +4217,51 @@ function marketsApp() {
     get hpChartSvg() {
       const rolls = this._rollingReturns(this.hpAsset, this.hpHorizon);
       if (!rolls.length) return '<div style="padding:40px;text-align:center;color:var(--text-3)">Not enough data for this horizon</div>';
-      const W = 1200, H = 220, PL = 52, PR = 20, PT = 15, PB = 35;
+      const W = 1200, H = 240, PL = 52, PR = 20, PT = 15, PB = 35;
       const chartW = W - PL - PR, chartH = H - PT - PB;
       const rets = rolls.map(r => r.ret);
-      const minR = Math.min(...rets) * 1.05, maxR = Math.max(...rets) * 1.05;
+      const rawMin = Math.min(...rets), rawMax = Math.max(...rets);
+      // Pad and force zero into the range when crossing
+      const pad = (rawMax - rawMin) * 0.05 || 0.01;
+      const minR = Math.min(rawMin - pad, 0);
+      const maxR = Math.max(rawMax + pad, 0);
       const xS = (i) => PL + (i / Math.max(rolls.length - 1, 1)) * chartW;
       const yS = (v) => PT + chartH - ((v - minR) / (maxR - minR)) * chartH;
-      let ticks = '';
+
+      // Y ticks: 5 evenly spaced across [minR, maxR], emphasised at v=0
+      let yTicks = '';
       for (let i = 0; i <= 4; i++) {
         const v = minR + (maxR - minR) * i / 4;
         const y = yS(v);
-        ticks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W-PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>`;
-        ticks += `<text x="${PL-4}" y="${(y+4).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${(v*100).toFixed(0)}%</text>`;
+        const isZero = Math.abs(v) < 1e-9;
+        const stroke = isZero ? 'rgba(255,255,255,0.20)' : 'rgba(255,255,255,0.04)';
+        const fill   = isZero ? '#a1a1aa' : '#52525b';
+        const sign   = v > 0 ? '+' : '';
+        yTicks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W-PR}" y2="${y.toFixed(1)}" stroke="${stroke}" stroke-width="1"/>`;
+        yTicks += `<text x="${PL-4}" y="${(y+4).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:${fill};font-family:ui-monospace">${sign}${(v*100).toFixed(0)}%</text>`;
       }
+
+      // Emphasised zero gridline (in case zero isn't exactly on a tick)
       const y0 = yS(0);
-      const zl = `<line x1="${PL}" y1="${y0.toFixed(1)}" x2="${W-PR}" y2="${y0.toFixed(1)}" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>`;
+      const zl = `<line x1="${PL}" y1="${y0.toFixed(1)}" x2="${W-PR}" y2="${y0.toFixed(1)}" stroke="rgba(255,255,255,0.20)" stroke-width="1"/>`;
+
+      // X ticks: every 5 calendar years, anchored on January
+      let xLabels = '';
+      const yrSeen = new Set();
+      for (let i = 0; i < rolls.length; i++) {
+        const yr = parseInt(rolls[i].ym.slice(0, 4));
+        if (yr % 5 !== 0 || yrSeen.has(yr)) continue;
+        if (rolls[i].ym.slice(5, 7) !== '01') continue;
+        yrSeen.add(yr);
+        const x = xS(i);
+        xLabels += `<text x="${x.toFixed(1)}" y="${H-8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${yr}</text>`;
+      }
+
+      // Axis lines
+      const yAxis = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
+      const xAxis = `<line x1="${PL}" y1="${H-PB}" x2="${W-PR}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
+
+      // Area + line paths (preserved)
       let area = `M${PL},${y0.toFixed(1)} `, line = '';
       for (let i = 0; i < rolls.length; i++) {
         const x = xS(i).toFixed(1), y = yS(rolls[i].ret).toFixed(1);
@@ -4173,7 +4270,11 @@ function marketsApp() {
       }
       area += `L${xS(rolls.length-1).toFixed(1)},${y0.toFixed(1)} Z`;
       const fc = rolls[rolls.length-1].ret >= 0 ? '#34d399' : '#fb7185';
-      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block">${ticks}${zl}<path d="${area}" fill="${fc}" opacity="0.15"/><path d="${line.trim()}" fill="none" stroke="${fc}" stroke-width="1.5"/></svg>`;
+
+      // Crosshair placeholder (controlled by hpChartHover)
+      const crosshair = `<line id="hp-crosshair" x1="0" y1="${PT}" x2="0" y2="${H-PB}" stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
+
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block">${yTicks}${zl}${xLabels}${yAxis}${xAxis}<path d="${area}" fill="${fc}" opacity="0.15"/><path d="${line.trim()}" fill="none" stroke="${fc}" stroke-width="1.5"/>${crosshair}</svg>`;
     },
 
     get hpDistSvg() {
@@ -4185,17 +4286,52 @@ function marketsApp() {
       const buckets = Array(nB).fill(0);
       for (const r of rets) buckets[Math.min(Math.floor((r - min) / step), nB - 1)]++;
       const maxC = Math.max(...buckets);
-      const W = 600, H = 120, PL = 30, PB = 25, PT = 10;
-      const bw = (W - PL) / nB;
-      let bars = '';
-      for (let i = 0; i < nB; i++) {
-        const bh = (buckets[i] / maxC) * (H - PT - PB);
-        const x = PL + i * bw, y = H - PB - bh;
-        const mid = min + (i + 0.5) * step;
-        bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(bw-1).toFixed(1)}" height="${bh.toFixed(1)}" fill="${mid >= 0 ? '#34d399' : '#fb7185'}" opacity="0.7" rx="1"/>`;
-        if (i % 4 === 0) bars += `<text x="${(x+bw/2).toFixed(1)}" y="${H-8}" text-anchor="middle" style="font-size:8px;fill:#52525b;font-family:ui-monospace">${(mid*100).toFixed(0)}%</text>`;
+
+      const W = 700, H = 160, PL = 36, PR = 12, PT = 12, PB = 28;
+      const chartW = W - PL - PR, chartH = H - PT - PB;
+      const bw = chartW / nB;
+
+      // Y ticks: 4 evenly spaced integer counts from 0 to maxC, with faint gridlines
+      let yTicks = '';
+      for (let i = 0; i <= 3; i++) {
+        const c = Math.round((maxC * i) / 3);
+        const y = PT + chartH - (c / Math.max(maxC, 1)) * chartH;
+        yTicks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W-PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>`;
+        yTicks += `<text x="${PL-4}" y="${(y+3.5).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${c}</text>`;
       }
-      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:600px;height:${H}px;display:block">${bars}</svg>`;
+
+      // Bars with data-bucket attribute + x-tick labels at every 4th bucket midpoint (signed pct)
+      let bars = '', xLabels = '';
+      for (let i = 0; i < nB; i++) {
+        const bh = (buckets[i] / Math.max(maxC, 1)) * chartH;
+        const x = PL + i * bw, y = PT + chartH - bh;
+        const lo = min + i * step, hi = lo + step, mid = (lo + hi) / 2;
+        bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(bw-1).toFixed(1)}" height="${bh.toFixed(1)}" fill="${mid >= 0 ? '#34d399' : '#fb7185'}" opacity="0.7" rx="1" data-bucket="${i}"/>`;
+        if (i % 4 === 0) {
+          const sign = mid > 0 ? '+' : '';
+          xLabels += `<text x="${(x+bw/2).toFixed(1)}" y="${H-8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${sign}${(mid*100).toFixed(0)}%</text>`;
+        }
+      }
+
+      const yAxis = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
+      const xAxis = `<line x1="${PL}" y1="${H-PB}" x2="${W-PR}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
+
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:700px;height:${H}px;display:block">${yTicks}${bars}${xLabels}${yAxis}${xAxis}</svg>`;
+    },
+
+    hpDistHover(e) {
+      const target = e.target.closest('rect[data-bucket]');
+      if (!target) { this.hpDistHoverInfo = null; return; }
+      const i = parseInt(target.getAttribute('data-bucket'));
+      const rolls = this._rollingReturns(this.hpAsset, this.hpHorizon);
+      if (!rolls.length) return;
+      const rets = rolls.map(r => r.ret);
+      const min = Math.min(...rets), max = Math.max(...rets);
+      const nB = 20, step = (max - min) / nB || 0.01;
+      const lo = min + i * step, hi = lo + step;
+      const buckets = Array(nB).fill(0);
+      for (const r of rets) buckets[Math.min(Math.floor((r - min) / step), nB - 1)]++;
+      this.hpDistHoverInfo = { lo, hi, count: buckets[i] };
     },
 
     // ── View E: Seasonality ───────────────────────────────────────────────
@@ -4303,7 +4439,10 @@ function marketsApp() {
         if (d) lines += `<path d="${d.trim()}" fill="none" stroke="${a.color}" stroke-width="1.5" opacity="0.85"/>`;
       }
       const ch = `<line id="growth-crosshair" x1="0" y1="${PT}" x2="0" y2="${H-PB}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
-      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block">${ticks}${xLabels}${lines}${ch}</svg>`;
+      // Explicit axis lines (consistency pass — Requirement 5.4)
+      const yAxis = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
+      const xAxis = `<line x1="${PL}" y1="${H-PB}" x2="${W-PR}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block">${ticks}${xLabels}${lines}${yAxis}${xAxis}${ch}</svg>`;
     },
 
     // Cache for pre-computed growth series (Bug 7 fix)
