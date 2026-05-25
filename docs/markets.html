@@ -4044,7 +4044,10 @@ function marketsApp() {
 
     // Apply time range filter to a list of {ym, ...} points
     _applyTimeRange(points) {
-      if (!points.length || this.ddTimeRange === 'All') return points;
+      if (!points.length) return points;
+      if (this.ddTimeRange === 'All') {
+        return points.filter(p => p.ym >= '1850-01');
+      }
       const years = parseInt(this.ddTimeRange);
       const cutoff = new Date();
       cutoff.setFullYear(cutoff.getFullYear() - years);
@@ -4191,14 +4194,7 @@ function marketsApp() {
         if (!adjusted.length) return { ...a, maxDd: null, peakDate: null, troughDate: null, recoveryDate: null, monthsToRecover: null, currentDd: null };
 
         // Apply time range filter
-        let data = adjusted;
-        if (this.ddTimeRange !== 'All') {
-          const years = parseInt(this.ddTimeRange);
-          const cutoff = new Date();
-          cutoff.setFullYear(cutoff.getFullYear() - years);
-          const cutoffYm = cutoff.toISOString().slice(0, 7);
-          data = adjusted.filter(p => p.ym >= cutoffYm);
-        }
+        const data = this._applyTimeRange(adjusted);
         if (!data.length) return { ...a, maxDd: null, peakDate: null, troughDate: null, recoveryDate: null, monthsToRecover: null, currentDd: null };
 
         // Find the worst drawdown event using correct logic
