@@ -220,19 +220,23 @@
     </div>
     <!-- Divider -->
     <div x-show="activeTab === 'matrix'" class="w-px h-5 mx-1" style="background: var(--border-2)"></div>
-    <!-- Year Selector (matrix only) -->
-    <div x-show="activeTab === 'matrix'" class="flex items-center gap-1.5">
-      <span class="text-[10px] uppercase font-medium tracking-wider" style="color: var(--text-3)">Start:</span>
-      <select x-model.number="matrixStartYear" class="px-2 py-1.5 rounded border text-xs focus:outline-none focus:border-cyan-500/40" style="background: var(--surface); color: var(--text); border-color: var(--border); font-family: ui-monospace;">
-        <option value="1833">1833 (Max)</option>
-        <option value="1900">1900</option>
-        <option value="1920">1920</option>
-        <option value="1950">1950</option>
-        <option value="1970">1970</option>
-        <option value="1990">1990</option>
-        <option value="2000">2000</option>
-        <option value="2010">2010</option>
-      </select>
+    <!-- Year window preset bar (matrix only) — default 30Y; gold from 1833 reachable via Max -->
+    <div x-show="activeTab === 'matrix'" class="flex items-center gap-1"
+         @mouseenter="showTt($event, 'Time window — applies to matrix, asset detail bars, periodic table, and correlation growth chart')"
+         @mouseleave="hideTt()">
+      <span class="label" style="font-size:9px;color: var(--text-3)">RANGE</span>
+      <template x-for="r in [10,20,30,50,100]" :key="r">
+        <button @click="setMatrixWindow(r)"
+                :class="matrixWindowYears === r ? 'tab-active' : ''"
+                class="px-2 py-1 rounded border text-[10px] font-mono transition"
+                :style="matrixWindowYears === r ? '' : 'color: var(--text-3); border-color: var(--border)'"
+                x-text="r + 'Y'">
+        </button>
+      </template>
+      <button @click="setMatrixWindow(0)"
+              :class="matrixWindowYears === 0 ? 'tab-active' : ''"
+              class="px-2 py-1 rounded border text-[10px] font-mono transition"
+              :style="matrixWindowYears === 0 ? '' : 'color: var(--text-3); border-color: var(--border)'">Max</button>
     </div>
     <!-- Divider -->
     <div x-show="activeTab === 'matrix'" class="w-px h-5 mx-1" style="background: var(--border-2)"></div>
@@ -2007,7 +2011,10 @@ function marketsApp() {
     detailBarHoverInfo: null,   // { year, ret, partial, compareRet }
     detailCompareAsset: '',     // asset key to compare with in returns bar chart
     colorMode: 'return',  // 'return' | 'zscore'
-    matrixStartYear: 1970,
+    // §2.5 Default 30-year window — gold from 1833 wrecks shared axes; Max button reaches all history.
+    // matrixStartYear is the actual filter boundary; matrixWindowYears is the active preset (0 = Max).
+    matrixStartYear: (new Date().getFullYear() - 30),
+    matrixWindowYears: 30,
 
     // Vol Intelligence state
     volLookback: 'All',   // '1Y' | '3Y' | '5Y' | 'All'
@@ -2059,11 +2066,9 @@ function marketsApp() {
       const monthly = asset.monthly || [];
       this._trcAllMonths = monthly.map(m => m[0]).sort();
       if (!this._trcAllMonths.length) return;
-      // Default: max range
-      this.trcStartIdx = 0;
-      this.trcEndIdx = this._trcAllMonths.length - 1;
-      this.trcPreset = 'max';
-      this._trcSyncWindow();
+      // §2.5 Default to the global matrix window (30Y) instead of full history.
+      // Otherwise the price chart spans 1833→2026 for gold and is unreadable.
+      this._trcApplyMatrixWindow(assetKey);
     },
 
     _trcSyncWindow() {
@@ -2694,6 +2699,40 @@ function marketsApp() {
     },
 
     // ── CSV Export ────────────────────────────────────────────────────────
+    // §2.5 Time-window preset — applies to matrix, asset detail bars, periodic table, correlation growth.
+    // years=0 means "Max" (1833 onward). All other presets compute startYear = currentYear - years.
+    setMatrixWindow(years) {
+      this.matrixWindowYears = years;
+      if (years === 0) {
+        this.matrixStartYear = 1833;
+      } else {
+        this.matrixStartYear = new Date().getFullYear() - years;
+      }
+      // Reset asset-detail TRC if it's open so the year bars also re-window
+      if (this.selectedAsset) {
+        this._trcApplyMatrixWindow(this.selectedAsset);
+      }
+    },
+
+    // Sync the asset-detail TRC slider to the matrix window (called when a window preset is picked
+    // and the detail panel is open). For Max, default to series start.
+    _trcApplyMatrixWindow(assetKey) {
+      const months = this._trcAllMonths;
+      if (!months.length) return;
+      if (this.matrixWindowYears === 0) {
+        this.trcStartIdx = 0;
+        this.trcPreset = 'max';
+      } else {
+        const startYm = `${this.matrixStartYear}-01`;
+        let i = months.findIndex(m => m >= startYm);
+        if (i < 0) i = 0;
+        this.trcStartIdx = i;
+        this.trcPreset = 'custom';
+      }
+      this.trcEndIdx = months.length - 1;
+      this._trcSyncWindow();
+    },
+
     exportMatrixCsv() {
       if (!this.returnsData) return;
       const years = this.matrixYears;
@@ -2842,7 +2881,10 @@ function marketsApp() {
       if (!this.selectedAsset || !this.returnsData) return '';
       this._buildAnnualCache(this.selectedAsset);
       const cache = this._annualCache[this._cacheKey(this.selectedAsset)] || {};
-      const years = Object.keys(cache).map(Number).sort((a, b) => a - b);
+      // §2.5 Apply global window — gold (1833+) and S&P (1871+) would otherwise squash bars to 1px.
+      // Max preset (matrixStartYear=1833) reverts to full history.
+      const minYear = this.matrixStartYear || 1833;
+      const years = Object.keys(cache).map(Number).filter(y => y >= minYear).sort((a, b) => a - b);
       if (!years.length) return '<div style="padding:40px;text-align:center;color:var(--text-3)">No annual data</div>';
 
       const W = Math.max(1200, years.length * 14 + 80);
@@ -3914,7 +3956,7 @@ function marketsApp() {
     },
 
     // §5.4 Periodic Table — fixed overflow, responsive cells, sticky header
-    periodicYearWindow: 25,  // default: show last 25 years
+    periodicYearWindow: 30,  // default: show last 30 years (matches global 30Y window)
 
     get periodicTableHtml() {
       const assets = this.periodicAssets;
@@ -4616,7 +4658,8 @@ function marketsApp() {
     _getGrowthSeries() {
       const active = this.activeCorrAssets;
       const assetDefs = this.corrAssetList.filter(a => active.has(a.key));
-      const ck = [...active].sort().join(',') + '|' + this._cacheKey('__growth');
+      // Cache key includes matrixStartYear so window change invalidates the cache.
+      const ck = [...active].sort().join(',') + '|' + this._cacheKey('__growth') + '|y' + this.matrixStartYear;
       if (this._growthSeriesCacheKey === ck && this._growthSeriesCache) return this._growthSeriesCache;
 
       const allMonths = new Set();
@@ -4632,7 +4675,9 @@ function marketsApp() {
       const latestStartMonth = startMonths.length > 0 
         ? startMonths.reduce((max, m) => m > max ? m : max, startMonths[0]) 
         : '';
-      const months = Array.from(allMonths).sort().filter(m => m >= latestStartMonth);
+      // §2.5 Apply global matrix window — gold from 1833 would otherwise squash the axis.
+      const minYm = `${this.matrixStartYear || 1833}-01`;
+      const months = Array.from(allMonths).sort().filter(m => m >= latestStartMonth && m >= minYm);
 
       const growth = {};
       for (const a of assetDefs) {
