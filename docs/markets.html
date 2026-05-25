@@ -1063,7 +1063,7 @@
         <!-- Year window control -->
         <div class="flex items-center gap-1 ml-2">
           <span class="label" style="font-size:9px; color: var(--text-3)">YEARS</span>
-          <template x-for="n in [10, 15, 20, 25, 30, 50]" :key="n">
+          <template x-for="n in [10, 15, 20, 25, 30, 50, 100]" :key="n">
             <button @click="periodicYearWindow = n"
                     :class="periodicYearWindow === n ? 'tab-active' : ''"
                     class="px-2 py-0.5 rounded border text-[10px] transition"
@@ -1181,12 +1181,19 @@
                  @mouseleave="ddHoverInfo = null"
                  style="width: 100%; overflow-x: auto;"></div>
             <!-- Hover bar -->
-            <div x-show="ddHoverInfo" class="px-4 py-2 flex flex-wrap gap-x-6 gap-y-1 text-xs num font-mono"
-                 style="border-top: 1px solid var(--border); background: var(--surface-2)">
-              <span style="color: var(--text-3)" x-text="ddHoverInfo?.date || ''"></span>
-              <template x-for="item in (ddHoverInfo?.values || []).filter(v => v.dd !== null && v.dd < 0)" :key="item.key">
-                <span :style="`color: ${item.color}`"
-                      x-text="`${item.name}: ${(item.dd * 100).toFixed(1)}%`"></span>
+            <div class="px-4 py-2 flex justify-center items-center gap-6 text-xs num font-mono"
+                 style="border-top: 1px solid var(--border); background: var(--surface-2); min-height: 32px;">
+              <template x-if="ddHoverInfo">
+                <div class="flex flex-wrap justify-center gap-x-6 gap-y-1">
+                  <span style="color: var(--text-3)" x-text="ddHoverInfo?.date || ''"></span>
+                  <template x-for="item in (ddHoverInfo?.values || []).filter(v => v.dd !== null && v.dd < 0)" :key="item.key">
+                    <span :style="`color: ${item.color}`"
+                          x-text="`${item.name}: ${(item.dd * 100).toFixed(1)}%`"></span>
+                  </template>
+                </div>
+              </template>
+              <template x-if="!ddHoverInfo">
+                <span style="color: var(--text-3)">Hover over the chart to see historical drawdowns</span>
               </template>
             </div>
           </div>
@@ -1202,16 +1209,16 @@
                 <thead style="background: #050505; color: var(--text-3)">
                   <tr style="border-bottom: 1px solid var(--border)">
                     <th class="text-left px-3 py-2 label">Asset</th>
-                    <th class="text-right px-3 py-2 label">Max DD</th>
-                    <th class="text-right px-3 py-2 label">Peak</th>
-                    <th class="text-right px-3 py-2 label">Trough</th>
-                    <th class="text-right px-3 py-2 label">Recovery</th>
-                    <th class="text-right px-3 py-2 label">Months</th>
-                    <th class="text-right px-3 py-2 label"
+                    <th class="text-center px-3 py-2 label">Max DD</th>
+                    <th class="text-center px-3 py-2 label">Peak</th>
+                    <th class="text-center px-3 py-2 label">Trough</th>
+                    <th class="text-center px-3 py-2 label">Recovery</th>
+                    <th class="text-center px-3 py-2 label">Months</th>
+                    <th class="text-center px-3 py-2 label"
                         @mouseenter="showTt($event, 'Ulcer Index = √mean(DD²) — captures both depth and duration of drawdowns')"
                         @mouseleave="hideTt()">Ulcer Idx</th>
-                    <th class="text-right px-3 py-2 label">Current DD</th>
-                    <th class="text-right px-3 py-2 label"
+                    <th class="text-center px-3 py-2 label">Current DD</th>
+                    <th class="text-center px-3 py-2 label"
                         @mouseenter="showTt($event, 'Current drawdown percentile vs full history — how bad is today vs all past drawdowns')"
                         @mouseleave="hideTt()">DD %ile</th>
                   </tr>
@@ -1225,22 +1232,22 @@
                           <span class="font-medium" style="color: var(--text)" x-text="row.name"></span>
                         </div>
                       </td>
-                      <td class="px-3 py-2 text-right num font-mono font-medium" style="color: var(--down)"
+                      <td class="px-3 py-2 text-center num font-mono font-medium" style="color: var(--down)"
                           x-text="row.maxDd !== null ? (row.maxDd * 100).toFixed(1) + '%' : '—'"></td>
-                      <td class="px-3 py-2 text-right num font-mono" style="color: var(--text-2)" x-text="row.peakDate || '—'"></td>
-                      <td class="px-3 py-2 text-right num font-mono" style="color: var(--text-2)" x-text="row.troughDate || '—'"></td>
-                      <td class="px-3 py-2 text-right num font-mono" :style="`color: ${row.recoveryDate ? 'var(--up)' : 'var(--amber)'}`"
+                      <td class="px-3 py-2 text-center num font-mono" style="color: var(--text-2)" x-text="row.peakDate || '—'"></td>
+                      <td class="px-3 py-2 text-center num font-mono" style="color: var(--text-2)" x-text="row.troughDate || '—'"></td>
+                      <td class="px-3 py-2 text-center num font-mono" :style="`color: ${row.recoveryDate ? 'var(--up)' : 'var(--amber)'}`"
                           x-text="row.recoveryDate || 'Not yet'"></td>
-                      <td class="px-3 py-2 text-right num font-mono" style="color: var(--text-2)"
+                      <td class="px-3 py-2 text-center num font-mono" style="color: var(--text-2)"
                           x-text="row.monthsToRecover !== null ? row.monthsToRecover + 'm' : '—'"></td>
-                      <td class="px-3 py-2 text-right num font-mono" style="color: var(--amber)"
+                      <td class="px-3 py-2 text-center num font-mono" style="color: var(--amber)"
                           x-text="row.ulcerIndex !== null ? row.ulcerIndex.toFixed(1) + '%' : '—'"
                           @mouseenter="showTt($event, row.name + ' Ulcer Index: ' + (row.ulcerIndex !== null ? row.ulcerIndex.toFixed(1) + '% — higher = more painful drawdown history' : 'n/a'))"
                           @mouseleave="hideTt()"></td>
-                      <td class="px-3 py-2 text-right num font-mono font-medium"
+                      <td class="px-3 py-2 text-center num font-mono font-medium"
                           :style="`color: ${(row.currentDd || 0) < -0.1 ? 'var(--down)' : (row.currentDd || 0) < -0.05 ? 'var(--amber)' : 'var(--up)'}`"
                           x-text="row.currentDd !== null ? (row.currentDd * 100).toFixed(1) + '%' : '—'"></td>
-                      <td class="px-3 py-2 text-right num font-mono text-[10px]"
+                      <td class="px-3 py-2 text-center num font-mono text-[10px]"
                           :style="`color: ${(row.currentDdPctile || 0) > 0.8 ? 'var(--down)' : (row.currentDdPctile || 0) > 0.5 ? 'var(--amber)' : 'var(--text-3)'}`"
                           x-text="row.currentDdPctile !== null ? Math.round(row.currentDdPctile * 100) + 'th' : '—'"
                           @mouseenter="showTt($event, row.name + ': current drawdown is deeper than ' + (row.currentDdPctile !== null ? Math.round(row.currentDdPctile * 100) + '% of historical drawdowns' : 'n/a'))"
@@ -1862,6 +1869,14 @@ function _posTt(el) {
   tt.style.top  = y + 'px';
 }
 function _hideTt() { tt.style.opacity = '0'; }
+
+function _showPeriodicTt(el, name, yr, ret) {
+  const sign = ret >= 0 ? '+' : '';
+  const valColor = ret >= 0 ? 'var(--up)' : 'var(--down)';
+  const pct = (ret * 100).toFixed(1);
+  const html = `<div style="font-weight:600;margin-bottom:2px">${name}</div><div>${yr}: <span style="font-weight:600;color:${valColor}">${sign}${pct}%</span></div>`;
+  _showTt(el, html);
+}
 
 // ─── §2.2 Asset-identity color system ────────────────────────────────────────
 // One canonical color per asset, used in every chart. Gold is always amber,
@@ -2923,7 +2938,7 @@ function marketsApp() {
         }
       }
 
-      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block;background:#111">${yTicks}${xLabels}${cagrLine}${bars}${compareLine}${crosshair}</svg>`;
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block;background:#111" preserveAspectRatio="none">${yTicks}${xLabels}${cagrLine}${bars}${compareLine}${crosshair}</svg>`;
     },
 
     detailBarHover(e) {
@@ -3772,7 +3787,7 @@ function marketsApp() {
       // Hover crosshair placeholder (updated via JS)
       const crosshair = `<line id="yield-crosshair" x1="0" y1="${PT}" x2="0" y2="${H - PB}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
 
-      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block">${yTicks}${xLabels}${zeroLine}${lines}${crosshair}</svg>`;
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block" preserveAspectRatio="none">${yTicks}${xLabels}${zeroLine}${lines}${crosshair}</svg>`;
     },
 
     yieldChartHover(e) {
@@ -3929,7 +3944,7 @@ function marketsApp() {
 
       const nAssets = assets.length;
       const CW = Math.max(52, Math.min(80, Math.floor(1200 / years.length)));
-      const RH = 24;
+      const RH = 28;
 
       // Build HTML table — responsive, sticky header, hover highlight
       let html = `<table id="periodic-tbl" style="border-collapse:separate;border-spacing:1px;font-size:9px;font-family:ui-monospace;table-layout:fixed;width:${years.length * (CW + 1)}px">`;
@@ -3952,15 +3967,15 @@ function marketsApp() {
           }
           const pct = (a.ret * 100).toFixed(0);
           const sign = a.ret >= 0 ? '+' : '';
-          const textColor = Math.abs(a.ret) > 0.15 ? 'rgba(255,255,255,0.95)' : 'rgba(0,0,0,0.85)';
-          const tip = `${a.shortName}: ${yr} ${sign}${(a.ret * 100).toFixed(1)}%`;
-          html += `<td style="width:${CW}px;height:${RH}px;background:${a.color};border-radius:2px;cursor:pointer;vertical-align:middle;padding:1px 3px;overflow:hidden;text-align:center;"
-                       title="${tip}"
-                       onmouseenter="(function(el){var k='${a.key}';document.querySelectorAll('[data-pkey]').forEach(function(c){c.style.opacity=c.dataset.pkey===k?'1':'0.15'});el.style.opacity='1'})(this)"
-                       onmouseleave="document.querySelectorAll('[data-pkey]').forEach(function(c){c.style.opacity='1'})"
+          const textColor = '#0f172a'; // highly readable slate-900
+          const fullName = this.returnsData?.assets?.[a.key]?.meta?.name || a.key;
+          html += `<td style="width:${CW}px;height:${RH}px;background:${a.color};border-radius:3px;cursor:pointer;vertical-align:middle;padding:1px 3px;overflow:hidden;text-align:center;transition:opacity 0.15s ease-in-out;box-shadow:inset 0 1px 0 rgba(255,255,255,0.2), 0 1px 2px rgba(0,0,0,0.15);"
+                       onmouseenter="(function(el){var k='${a.key}';document.querySelectorAll('[data-pkey]').forEach(function(c){c.style.opacity=c.dataset.pkey===k?'1':'0.15'});el.style.opacity='1';_showPeriodicTt(el,'${fullName.replace(/'/g, "\\\\'")}', '${yr}', ${a.ret})})(this)"
+                       onmouseleave="(function(){document.querySelectorAll('[data-pkey]').forEach(function(c){c.style.opacity='1'});_hideTt()})()"
+
                        data-pkey="${a.key}">
-                    <div style="color:${textColor};font-weight:600;font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.shortName.slice(0, 7)}</div>
-                    <div style="color:${textColor};font-size:8px">${sign}${pct}%</div>
+                    <div style="color:${textColor};font-weight:600;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.shortName.slice(0, 7)}</div>
+                    <div style="color:${textColor};font-size:9px">${sign}${pct}%</div>
                   </td>`;
         }
         html += `</tr>`;
@@ -4144,7 +4159,7 @@ function marketsApp() {
       const yAxis = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H - PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
       const xAxis = `<line x1="${PL}" y1="${H - PB}" x2="${W - PR}" y2="${H - PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
 
-      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block;background:#111">${yTicks}${xLabels}${areas}${yAxis}${xAxis}${crosshair}</svg>`;
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block;background:#111" preserveAspectRatio="none">${yTicks}${xLabels}${areas}${yAxis}${xAxis}${crosshair}</svg>`;
     },
 
     drawdownHover(e) {
@@ -4415,7 +4430,7 @@ function marketsApp() {
       // Crosshair placeholder (controlled by hpChartHover)
       const crosshair = `<line id="hp-crosshair" x1="0" y1="${PT}" x2="0" y2="${H-PB}" stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
 
-      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block">${yTicks}${zl}${xLabels}${yAxis}${xAxis}<path d="${area}" fill="${fc}" opacity="0.15"/><path d="${line.trim()}" fill="none" stroke="${fc}" stroke-width="1.5"/>${crosshair}</svg>`;
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block" preserveAspectRatio="none">${yTicks}${zl}${xLabels}${yAxis}${xAxis}<path d="${area}" fill="${fc}" opacity="0.15"/><path d="${line.trim()}" fill="none" stroke="${fc}" stroke-width="1.5"/>${crosshair}</svg>`;
     },
 
     get hpDistSvg() {
@@ -4591,7 +4606,7 @@ function marketsApp() {
       // Explicit axis lines (consistency pass — Requirement 5.4)
       const yAxis = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
       const xAxis = `<line x1="${PL}" y1="${H-PB}" x2="${W-PR}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
-      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block">${ticks}${xLabels}${lines}${yAxis}${xAxis}${ch}</svg>`;
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block" preserveAspectRatio="none">${ticks}${xLabels}${lines}${yAxis}${xAxis}${ch}</svg>`;
     },
 
     // Cache for pre-computed growth series (Bug 7 fix)
@@ -4823,7 +4838,7 @@ function marketsApp() {
       const yAxis = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
       const xAxis = `<line x1="${PL}" y1="${H-PB}" x2="${W-PR}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
 
-      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block;background:var(--surface)">${title}${grid}${xLabels}${lines}${yAxis}${xAxis}${ch}</svg>`;
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block;background:var(--surface)" preserveAspectRatio="none">${title}${grid}${xLabels}${lines}${yAxis}${xAxis}${ch}</svg>`;
     },
 
     rollingCorrHover(e) {
@@ -4947,7 +4962,7 @@ function marketsApp() {
         const yAxis = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
         const xAxis = `<line x1="${PL}" y1="${H-PB}" x2="${W-PR}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
 
-        const svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;background:var(--surface)">${ticks}${xLabels}<path d="${d}" fill="none" stroke="${color}" stroke-width="1.5" opacity="0.9"/><text x="${W-PR}" y="${PT+10}" text-anchor="end" style="font-size:9px;fill:${color};font-family:ui-monospace">${lastVal.toFixed(lastVal < 10 ? 2 : 1)}</text>${yAxis}${xAxis}${ch}</svg>`;
+        const svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;background:var(--surface)" preserveAspectRatio="none">${ticks}${xLabels}<path d="${d}" fill="none" stroke="${color}" stroke-width="1.5" opacity="0.9"/><text x="${W-PR}" y="${PT+10}" text-anchor="end" style="font-size:9px;fill:${color};font-family:ui-monospace">${lastVal.toFixed(lastVal < 10 ? 2 : 1)}</text>${yAxis}${xAxis}${ch}</svg>`;
         return { ...r, svg, points: ratioSeries };
       });
     },
@@ -5391,7 +5406,7 @@ function marketsApp() {
       const yAxis = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H - PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
       const xAxis = `<line x1="${PL}" y1="${H - PB}" x2="${W - PR}" y2="${H - PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
 
-      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block">${yTicks}${xLabels}${annotations}${lines}${legend}${yAxis}${xAxis}${crosshair}</svg>`;
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block" preserveAspectRatio="none">${yTicks}${xLabels}${annotations}${lines}${legend}${yAxis}${xAxis}${crosshair}</svg>`;
     },
 
     volChartHover(e) {
