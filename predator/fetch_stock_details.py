@@ -55,6 +55,7 @@ DESC_CACHE_PATH   = REPO_ROOT / "data" / "company_descriptions.json"
 DETAILS_DIR       = REPO_ROOT / "docs" / "data" / "details"
 
 PRICE_PERIOD      = "2y"      # 2 years of daily data (covers 1M/3M/6M/YTD/1Y/ALL)
+PERIOD_LABEL      = "2-year"   # human-readable label for log messages
 CHUNK_SIZE        = 500       # tickers per yf.download() batch
 DESC_WORKERS      = 5         # concurrent threads for description fetching
 DESC_DELAY        = 0.4       # seconds between individual description requests (rate limit)
@@ -224,10 +225,17 @@ def _fetch_prices_bulk(tickers: list[str]) -> dict[str, list[list]]:
                 continue
 
             # Navigate the MultiIndex — shape: (dates) x MultiIndex(Price, Ticker)
+            # yf.download always returns MultiIndex when group_by='column' (default).
+            # Even with a single ticker the top level is the price field.
             if isinstance(df.columns, pd.MultiIndex):
-                close_df = df["Close"] if "Close" in df.columns.get_level_values(0) else df.iloc[:, 0]
+                level0 = df.columns.get_level_values(0).unique()
+                if "Close" in level0:
+                    close_df = df["Close"]
+                else:
+                    close_df = df.iloc[:, :len(chunk)]  # fallback: first N columns
             else:
-                close_df = df
+                # Flat DataFrame — single ticker with old yfinance version
+                close_df = df[["Close"]] if "Close" in df.columns else df
 
             close_df = close_df.dropna(how="all")
 
@@ -235,6 +243,13 @@ def _fetch_prices_bulk(tickers: list[str]) -> dict[str, list[list]]:
                 # Handle both single-ticker (Series) and multi-ticker (DataFrame) cases
                 if isinstance(close_df, pd.Series):
                     series = close_df.dropna()
+                elif len(chunk) == 1:
+                    # Single-ticker download: close_df is a DataFrame with one column
+                    # whose name is the ticker (or price field in flat mode)
+                    col = close_df.columns[0] if len(close_df.columns) else None
+                    if col is None:
+                        continue
+                    series = close_df.iloc[:, 0].dropna()
                 elif ticker in close_df.columns:
                     series = close_df[ticker].dropna()
                 else:
@@ -259,7 +274,7 @@ def _fetch_prices_bulk(tickers: list[str]) -> dict[str, list[list]]:
     return results
 
 
-PERIOD_LABEL = "2-year"
+PERIOD_LABEL = "2-year"  # kept for any future import compatibility
 
 
 # ─── Main builder ─────────────────────────────────────────────────────────────

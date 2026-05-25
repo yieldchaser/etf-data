@@ -1931,6 +1931,7 @@ function labApp() {
       row.ticker = row.ticker.toUpperCase().trim();
       this._updateTickerMeta(row);
       this._updateInvalidWarning();
+      this.runBacktest();
     },
     _updateInvalidWarning() {
       if (!this.pricesData) {
