@@ -407,12 +407,28 @@ def build_output(
             print(f"  NEW    {asset_id:15s}: {len(monthly)} months "
                   f"({monthly[0][0]} → {monthly[-1][0]})")
 
+        # ── Source-label honesty (charter v2 Part 2) ─────────────────────
+        # Excel is BACKFILL ONLY. If a previous step (markets_history.py)
+        # already attached a live FRED/yfinance source, never overwrite it
+        # with the Excel label — that's how the live JSON ended up claiming
+        # "Mega_Markets_Historical.xlsx" for SP500 etc. when the data was
+        # actually being extended monthly by yfinance.
+        existing_source = (existing.get("assets", {}).get(asset_id, {})
+                                                  .get("meta", {}).get("source", ""))
+        excel_source = f"{MEGA_XL.name}:{sheet}"
+        if existing_source and not existing_source.startswith(MEGA_XL.name):
+            # Live source already set (e.g. "yfinance:^GSPC", "fred:DCOILWTICO").
+            # Keep it; the Excel run is just supplying deep-history backfill.
+            source_label = existing_source
+        else:
+            source_label = excel_source
+
         assets_out[asset_id] = {
             "meta": {
                 "name":       display,
                 "category":   cat,
                 "native_ccy": ccy,
-                "source":     f"{MEGA_XL.name}:{sheet}",
+                "source":     source_label,
                 "first":      monthly[0][0],
                 "last":       monthly[-1][0],
             },

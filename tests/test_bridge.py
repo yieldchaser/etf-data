@@ -478,6 +478,10 @@ def test_metadata_json_contains_all_configured_etfs(tmp_path):
     # the rest of the test session.
     env = os.environ.copy()
     env["PYTHONIOENCODING"] = "utf-8"
+    # Force CSV ingestion path: point parquet store at an empty tmp dir so
+    # the build doesn't accidentally pick up the real repo's parquet archive
+    # (which would shadow the synthetic --source CSV the test gave it).
+    env["PREDATOR_PARQUET_STORE"] = str(tmp_path / "no_parquet")
     result = subprocess.run(
         [
             sys.executable, "-m", "predator.build",

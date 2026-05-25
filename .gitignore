@@ -23,11 +23,15 @@ predator-protocol-site-v3/
 *.DS_Store
 Thumbs.db
 
-# Parquet caches — never commit these (Tier 2)
-data/history_parquet/
+# Parquet caches — never commit these (rebuilt every run)
 data/markets_history/
 data/vol_history/
 data/markets/
+
+# data/history_parquet/ is the PERMANENT year-partitioned archive (charter v2 Part 3).
+# Past-year partitions are immutable, current-year is mutable. The CHECKSUMS.json
+# manifest at the store root is committed alongside the partitions. See
+# scripts/migrate_to_parquet.py and tests/test_parquet_immutability.py.
 
 # Stray test output files
 /test_audit_results.txt

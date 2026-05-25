@@ -104,9 +104,32 @@
         <span><span class="num font-mono" x-text="meta.snapshot_dates_in_window?.length || 0"></span> daily snapshots</span>
       </div>
     </div>
-    <div class="text-xs sm:text-right flex flex-row sm:flex-col gap-x-4" style="color: var(--text-2)">
+    <div class="text-xs sm:text-right flex flex-row sm:flex-col gap-x-4 gap-y-1" style="color: var(--text-2)">
       <div>Holdings <span class="num font-mono" style="color: var(--text)" x-text="meta.latest_holdings_as_of || '—'"></span></div>
       <div>Built <span class="num font-mono" x-text="formatBuilt(meta.generated_at_utc)"></span></div>
+      <!-- Charter v2 Part 2 — live-merge verdict, surfaced for the operator -->
+      <div x-show="meta.markets_data_freshness && meta.markets_data_freshness.self_living_check"
+           class="flex items-center sm:justify-end gap-1.5">
+        <a href="markets.html" class="chip text-[10px] font-mono"
+           :style="(() => {
+             const v = meta.markets_data_freshness?.self_living_check?.verdict;
+             if (v === 'LIVE_MERGE_HEALTHY')  return 'background: rgba(52,211,153,0.10); color: var(--up);   border: 1px solid rgba(52,211,153,0.25); text-decoration: none;';
+             if (v === 'LIVE_MERGE_DEGRADED') return 'background: rgba(251,191,36,0.10); color: var(--amber); border: 1px solid rgba(251,191,36,0.25); text-decoration: none;';
+             return 'background: rgba(251,113,133,0.10); color: var(--down); border: 1px solid rgba(251,113,133,0.25); text-decoration: none;';
+           })()"
+           x-tooltip="(() => {
+             const f = meta.markets_data_freshness;
+             if (!f) return '';
+             const c = f.self_living_check;
+             return `Markets pipeline · ${c.live_source_count}/${f.asset_count} assets carry a live FRED/yfinance source · ${(f.fx_pairs||[]).length} FX · ${(f.cpi_series||[]).length} CPI · ${(f.rates_series||[]).length} rate series · click to inspect on Markets page`;
+           })()"
+           x-text="(() => {
+             const v = meta.markets_data_freshness?.self_living_check?.verdict;
+             if (v === 'LIVE_MERGE_HEALTHY')  return '● Markets live';
+             if (v === 'LIVE_MERGE_DEGRADED') return '◐ Markets degraded';
+             return '◌ Markets stale';
+           })()"></a>
+      </div>
     </div>
   </header>
 
@@ -148,6 +171,8 @@
     <!-- External page links (same aesthetic as tabs) -->
     <a href="markets.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color: var(--text-2); border-color: var(--border); text-decoration: none;">Markets</a>
     <a href="sim.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color: var(--text-2); border-color: var(--border); text-decoration: none;">Simulator</a>
+    <a href="methodology.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color: var(--text-2); border-color: var(--border); text-decoration: none;"
+       title="How Predator Protocol works — scoring, motion signals, sanitizer, self-living data, and honest limitations">How it works</a>
   </nav>
 
 
@@ -250,6 +275,11 @@
               :class="sortLevels.length > 1 ? 'border-cyan-500/40 text-cyan-300' : ''">
         ⇅ Sort <span x-show="sortLevels.length > 1" class="num font-mono" x-text="`(${sortLevels.length})`"></span>
       </button>
+      <button @click="exportLeaderboardCSV()" class="chip border px-2 py-1 hover:border-cyan-500/30 whitespace-nowrap"
+              style="border-color: var(--border-2); color: var(--text-2)"
+              x-tooltip="'Download the current filtered leaderboard view as CSV (preserves your filters and sort order)'">
+        ↓ CSV
+      </button>
     </div>
 
     <!-- Multi-sort dialog -->
@@ -283,6 +313,57 @@
                   class="chip border px-3 py-1 hover:border-red-500/30 ml-auto" style="border-color: var(--border-2); color: var(--text-3)">Reset</button>
           <button @click="sortDialog = false; page = 1"
                   class="chip border px-3 py-1 hover:border-cyan-500/30" style="border-color: rgba(34,211,238,0.3); color: var(--cyan)">Apply</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Extreme Conviction Moves ribbon ─────────────────────────────────
+         Surfaces names whose motion metrics are statistically unusual vs the
+         rest of the leaderboard right now. Pure presentation: every value is
+         already in leaderboard.json (velocity_score, score_delta_pct,
+         avg_weight_flow_7d, global_rank_delta_30d). |z| ≥ 2.0 against the
+         leaderboard's own mean/std on each metric; the dominant driver is
+         shown as the headline number.
+
+         Translation to Predator's thesis: "what's statistically unusual right
+         now" inside the conviction-detection lens — not factor decomposition.
+         Adapted from the peer-product hero strip; restrained palette to match
+         the Drawdowns/Periodic Table calm.
+    -->
+    <div x-show="!hideExtremes && extremeMoves.length >= 3"
+         class="rounded-lg border mb-3" style="background: var(--surface); border-color: var(--border)">
+      <div class="flex items-center justify-between px-3 py-2 border-b" style="border-color: var(--border)">
+        <div class="flex items-baseline gap-3">
+          <span class="text-[10px] uppercase tracking-[0.12em] font-medium" style="color: var(--cyan)">Extreme Conviction Moves</span>
+          <span class="text-[10px]" style="color: var(--text-3)">|z| ≥ 2 vs leaderboard · today's outliers</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] num font-mono" style="color: var(--text-3)" x-text="`${extremeMoves.length} of ${leaderboard.length}`"></span>
+          <button @click="hideExtremes = true; sessionStorage.setItem('predator.hideExtremes', '1')"
+                  class="text-[10px] hover:text-zinc-300 transition" style="color: var(--text-3)"
+                  x-tooltip="'Hide this ribbon for the session'">Hide</button>
+        </div>
+      </div>
+      <div class="overflow-x-auto scrollbar">
+        <div class="flex gap-2 p-2.5 min-w-max">
+          <template x-for="m in extremeMoves" :key="m.ticker">
+            <a :href="`stock.html?t=${encodeURIComponent(m.ticker)}`"
+               class="block flex-shrink-0 rounded-md border px-3 py-2 transition hover:border-cyan-500/40"
+               style="background: var(--surface-2); border-color: var(--border-2); width: 188px; text-decoration: none; color: inherit;">
+              <div class="flex items-baseline justify-between gap-2 mb-1">
+                <span class="font-mono font-medium text-[13px]" style="color: var(--text)" x-text="m.ticker"></span>
+                <span class="font-mono text-[10px] num"
+                      :style="`color: ${m.direction === 'up' ? 'var(--up)' : 'var(--down)'}`"
+                      x-text="(m.direction === 'up' ? '▲ ' : '▼ ') + m.driverDisplay"></span>
+              </div>
+              <div class="text-[10px] truncate mb-1.5" style="color: var(--text-3)" x-text="m.company || '—'"></div>
+              <div class="flex items-center justify-between gap-2 text-[9px]" style="color: var(--text-3)">
+                <span class="font-mono num" x-tooltip="`Z-score on ${m.driverLabel} vs leaderboard distribution. |z| ≥ 2 = unusual.`"
+                      x-text="`|z|=${m.absZ.toFixed(1)}`"></span>
+                <span class="truncate" :title="m.context" x-text="m.context"></span>
+              </div>
+            </a>
+          </template>
         </div>
       </div>
     </div>
@@ -1451,6 +1532,8 @@ function app() {
     sortDialog: false,
     hoveredSlice: null,
     sortLevels: [{ key: 'leaderboard_rank', dir: 'asc' }],
+    // Extreme Conviction Moves ribbon — dismiss persists in sessionStorage
+    hideExtremes: (() => { try { return sessionStorage.getItem('predator.hideExtremes') === '1'; } catch { return false; } })(),
     pins: (() => { try { return JSON.parse(localStorage.getItem('predator_pins') || '[]'); } catch { return []; } })(),
     sortableCols: [
       { key: 'leaderboard_rank', label: '# (default rank)' },
@@ -1677,6 +1760,115 @@ function app() {
       return Math.max(1, ...(this.flow?.by_country || []).map(r => Math.abs(r.net_velocity || 0)));
     },
 
+    // ── Extreme Conviction Moves (ribbon) ────────────────────────────────
+    // For each motion metric, compute z-score against the leaderboard's own
+    // distribution; pick the dominant driver per ticker; surface those with
+    // |z| ≥ EXTREME_Z_THRESHOLD. Pure presentation — no new fetches, no
+    // recomputation of scores, no scoring math touched. Only used to
+    // populate the ribbon at top of the leaderboard tab.
+    //
+    // Memoized — recomputed only when leaderboard reference changes, since
+    // Alpine reactivity would otherwise rerun this on every keystroke.
+    _extremeMovesCache: null,
+    _extremeMovesCacheKey: null,
+    get extremeMoves() {
+      if (!Array.isArray(this.leaderboard) || this.leaderboard.length < 30) return [];
+      // Cache invalidates when the leaderboard array reference changes
+      if (this._extremeMovesCache && this._extremeMovesCacheKey === this.leaderboard) {
+        return this._extremeMovesCache;
+      }
+      const EXTREME_Z = 2.0;
+      const TOP_N = 8;
+
+      // Drivers — each row gets a z-score on each, we pick the dominant one.
+      // Labels are intentionally Predator-language; we are NOT a factor model.
+      const drivers = [
+        { key: 'velocity_score',        label: 'velocity',         display: v => `velocity ${(v || 0).toFixed(1)}` },
+        { key: 'global_rank_delta_30d', label: '30d rank Δ',       display: v => `${v >= 0 ? '+' : ''}${(v|0)} ranks 30d` },
+        { key: 'global_rank_peak_30d',  label: '30d peak Δ',       display: v => `+${(v|0)} peak 30d` },
+        { key: 'score_delta_pct',       label: 'score Δ%',         display: v => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1)}% score` },
+        { key: 'avg_weight_flow_7d',    label: '7d weight flow',   display: v => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1)}% wflow 7d` },
+      ];
+
+      // Quality gates — keep noise out of the ribbon.
+      // The leaderboard contains some single-ETF entries whose extreme z-score
+      // is data-quality artifact (currency placeholders, scrape transitions,
+      // ticker-symbology collapses), not a conviction signal. Filter
+      // conservatively: require multi-ETF agreement (≥3) so a sanitizer
+      // hiccup on one ETF can't surface a fake outlier.
+      const qualifies = row => {
+        if ((row.etf_count || 0) < 3) return false;
+        // Currency / non-equity placeholders that occasionally leak past the
+        // sanitizer (CAD, EUR, USD, GBP …). Real tickers can be 1-2 chars (X, F)
+        // but those are equities; the suspect set is ISO-currency 3-letter codes.
+        const t = (row.ticker || '').toUpperCase();
+        const ISO_CCY = new Set(['CAD','EUR','USD','GBP','JPY','KRW','MXN','SAR','TWD','CNY','BRL','NOK','HKD','AUD','SGD','CHF','INR']);
+        if (ISO_CCY.has(t)) return false;
+        return true;
+      };
+
+      // Helper: mean & std of a numeric column over the leaderboard
+      const stats = key => {
+        const vals = this.leaderboard.map(r => r[key]).filter(v => typeof v === 'number' && isFinite(v));
+        if (vals.length < 30) return null;
+        const mean = vals.reduce((s, x) => s + x, 0) / vals.length;
+        const variance = vals.reduce((s, x) => s + (x - mean) ** 2, 0) / vals.length;
+        const std = Math.sqrt(variance);
+        return std > 0 ? { mean, std } : null;
+      };
+      const driverStats = drivers.map(d => ({ ...d, stats: stats(d.key) }));
+
+      // Score every qualifying row by max(|z|) over the drivers.
+      const scored = [];
+      for (const row of this.leaderboard) {
+        if (!qualifies(row)) continue;
+        let best = null;
+        for (const d of driverStats) {
+          if (!d.stats) continue;
+          const v = row[d.key];
+          if (typeof v !== 'number' || !isFinite(v)) continue;
+          // Per-metric noise gates — surface real conviction signal, not artifacts.
+          //   weight-flow under 5% is just rebalance jitter
+          //   score Δ between ±10% is normal; |Δ|≥100% is usually entry/exit, not a real move
+          if (d.key === 'avg_weight_flow_7d' && Math.abs(v) < 0.05) continue;
+          if (d.key === 'score_delta_pct') {
+            if (Math.abs(v) < 0.10) continue;
+            if (Math.abs(v) >= 0.99) continue;     // entry/exit artifact
+          }
+          const z = (v - d.stats.mean) / d.stats.std;
+          const absZ = Math.abs(z);
+          if (!best || absZ > best.absZ) {
+            best = { z, absZ, driver: d, val: v };
+          }
+        }
+        if (!best || best.absZ < EXTREME_Z) continue;
+
+        // Build a tight context line — facts only, no editorializing
+        const ctxParts = [];
+        if (row.flag === 'HIGH_CONVICTION') ctxParts.push('HC');
+        if (row.burst_30d)                  ctxParts.push('BURST');
+        if (row.quality_adopted_30d)        ctxParts.push('Quality+');
+        if (row.quality_defected_30d)       ctxParts.push('Quality−');
+        ctxParts.push(`${row.etf_count || 0} ETFs`);
+
+        scored.push({
+          ticker:        row.ticker,
+          company:       row.company,
+          driverLabel:   best.driver.label,
+          driverDisplay: best.driver.display(best.val),
+          direction:     best.z >= 0 ? 'up' : 'down',
+          absZ:          best.absZ,
+          context:       ctxParts.join(' · '),
+        });
+      }
+      // Sort by |z| desc, take top N
+      scored.sort((a, b) => b.absZ - a.absZ);
+      const out = scored.slice(0, TOP_N);
+      this._extremeMovesCache = out;
+      this._extremeMovesCacheKey = this.leaderboard;
+      return out;
+    },
+
     get filtered() {
       const q = this.q.trim().toLowerCase(), tier = this.selectedTier, sector = this.selectedSector, country = this.selectedCountry;
       let r = this.leaderboard;
@@ -1728,6 +1920,66 @@ function app() {
     },
 
     toggle(t) { this.open = (this.open === t) ? null : t; },
+
+    // ── CSV export (current filtered leaderboard view) ───────────────────
+    // Honest scope: exports `this.filtered` — the rows the user is currently
+    // looking at, with their filters & sort applied. Columns chosen for
+    // analytical usefulness (score, rank, motion, structural). Click → file.
+    exportLeaderboardCSV() {
+      const rows = this.filtered;
+      if (!rows || rows.length === 0) return;
+      const cols = [
+        ['leaderboard_rank',       '#'],
+        ['ticker',                 'Ticker'],
+        ['company',                'Company'],
+        ['final_score',            'Score'],
+        ['normalized_score',       'Score (pct)'],
+        ['etf_count',              'ETFs'],
+        ['conviction_etf_count',   'ETFs (conviction ≥ 0.8)'],
+        ['tiers',                  'Tiers'],
+        ['flag',                   'Flag'],
+        ['avg_conviction',         'Avg conviction'],
+        ['velocity_score',         'Velocity'],
+        ['burst_30d',              'Burst'],
+        ['global_rank_delta_30d',  'Global rank Δ 30d'],
+        ['global_rank_peak_30d',   'Peak rank Δ 30d'],
+        ['score_delta_pct',        'Score Δ% (period)'],
+        ['avg_weight_flow_7d',     'Avg weight flow 7d'],
+        ['etf_count_delta_30d',    'ETFs added 30d'],
+        ['concentration_score',    'Concentration'],
+        ['hc_streak',              'HC streak'],
+        ['score_streak',           'Score streak'],
+        ['sector',                 'Sector'],
+        ['industry',               'Industry'],
+        ['country',                'Country'],
+        ['held_by',                'Held by'],
+      ];
+      const escape = v => {
+        if (v == null) return '';
+        const s = (typeof v === 'boolean') ? (v ? 'true' : 'false') : String(v);
+        return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      };
+      const lines = [cols.map(c => c[1]).join(',')];
+      for (const r of rows) {
+        lines.push(cols.map(([k]) => escape(r[k])).join(','));
+      }
+      const csv = lines.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const filterTag = [
+        this.flag, this.selectedTier, this.selectedSector, this.selectedCountry,
+        this.newOnly && 'NEW', this.velocityOnly && 'VELO', this.burstOnly && 'BURST',
+      ].filter(Boolean).join('-').replace(/[^A-Za-z0-9_-]/g, '');
+      const stamp = new Date().toISOString().slice(0, 10);
+      const name = `predator_leaderboard${filterTag ? '_' + filterTag : ''}_${stamp}.csv`;
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    },
     detailsFor(t) { return this.holdings.filter(h => h.ticker === t).sort((a, b) => (b.score || 0) - (a.score || 0)); },
 
     // ETF tab

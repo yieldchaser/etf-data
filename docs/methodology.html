@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Predator Protocol · How it works</title>
+  <meta name="description" content="How Predator Protocol works: the conviction-detection thesis, scoring formula, motion signals, and honest limitations of the system.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📈%3C/text%3E%3C/svg%3E">
+  <meta name="color-scheme" content="dark">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --bg: #000; --surface: #0a0a0a; --surface-2: #111;
+      --border: rgba(255,255,255,0.06); --border-2: rgba(255,255,255,0.10);
+      --text: #e4e4e7; --text-2: #a1a1aa; --text-3: #52525b;
+      --cyan: #22d3ee; --up: #34d399; --down: #fb7185; --amber: #fbbf24;
+    }
+    html, body { background: var(--bg); color: var(--text); }
+    body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.6; }
+    .num { font-variant-numeric: tabular-nums; }
+    .font-mono { font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; }
+    .label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); }
+    .label-cyan { color: var(--cyan); }
+    code, pre { font-family: ui-monospace, monospace; font-size: 12.5px; background: var(--surface-2); border-radius: 4px; }
+    pre { padding: 10px 12px; overflow-x: auto; border: 1px solid var(--border); }
+    code:not(pre code) { padding: 1px 6px; border: 1px solid var(--border); }
+    h2 { font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cyan); font-weight: 500; margin-top: 2.5rem; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 13px; color: var(--text); font-weight: 500; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+    p, li { color: var(--text-2); font-size: 13.5px; }
+    p strong, li strong { color: var(--text); font-weight: 500; }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; margin-bottom: 1rem; }
+    .tier-table th, .tier-table td { border-bottom: 1px solid var(--border); padding: 8px 12px; text-align: left; vertical-align: top; }
+    .tier-table th { color: var(--text-3); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; }
+    .callout { border-left: 2px solid var(--amber); background: rgba(251,191,36,0.04); padding: 10px 14px; margin: 1rem 0; border-radius: 0 4px 4px 0; }
+    .callout-cyan { border-left-color: var(--cyan); background: rgba(34,211,238,0.04); }
+    .toc a { display: block; padding: 3px 0; color: var(--text-2); font-size: 12.5px; }
+    .toc a:hover { color: var(--cyan); }
+    nav.top a { padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-2); transition: color 0.15s, border-color 0.15s; }
+    nav.top a:hover { color: var(--cyan); border-color: rgba(34,211,238,0.3); text-decoration: none; }
+  </style>
+</head>
+<body>
+<div class="max-w-[920px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
+
+  <!-- Header -->
+  <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6 pb-4 border-b" style="border-color: var(--border)">
+    <div>
+      <div class="flex items-center gap-3 mb-1">
+        <a href="index.html" class="label hover:text-zinc-400 transition">← PREDATOR PROTOCOL</a>
+        <span class="label">›</span>
+        <span class="label-cyan label">METHODOLOGY</span>
+      </div>
+      <h1 class="text-xl font-medium" style="color: var(--text)">How Predator Protocol works</h1>
+      <div class="text-xs mt-1" style="color: var(--text-3)">A plain-language explanation of the scoring engine, motion signals, and what it does &amp; doesn't measure.</div>
+    </div>
+    <nav class="top flex flex-wrap gap-1 text-xs">
+      <a href="index.html">Dashboard</a>
+      <a href="markets.html">Markets</a>
+      <a href="sim.html">Simulator</a>
+      <a href="https://github.com/yieldchaser/etf-data" target="_blank" rel="noopener">Source ↗</a>
+    </nav>
+  </header>
+
+  <!-- Mini TOC -->
+  <div class="panel toc" style="margin-bottom: 1.5rem;">
+    <div class="label mb-2">Contents</div>
+    <a href="#thesis">1 · The thesis — what this system tries to detect</a>
+    <a href="#universe">2 · The ETF universe (5 tiers)</a>
+    <a href="#conviction">3 · The Conviction Score</a>
+    <a href="#motion">4 · Motion signals (velocity, burst, divergence)</a>
+    <a href="#flags">5 · Flags &amp; chips</a>
+    <a href="#sanitizer">6 · Sanitizer (what's filtered before scoring)</a>
+    <a href="#maturity">7 · Maturity gate (§28)</a>
+    <a href="#self-living">8 · Self-living data — how the markets dataset stays fresh</a>
+    <a href="#archive">9 · The permanent history archive</a>
+    <a href="#limits">10 · Honest limitations</a>
+  </div>
+
+  <!-- §1 Thesis -->
+  <h2 id="thesis">1 · The thesis</h2>
+  <p>Predator Protocol is built around one idea: <strong>institutional conviction is detectable before it becomes consensus.</strong></p>
+  <p>Smart-Beta ETFs — momentum, quality, value, spinoff — are run by systematic strategies that rebalance on rules. Each one is a different epistemology of "what looks attractive right now." When several of these independent strategies <em>simultaneously</em> accumulate the same name, that convergence is meaningful: it means the name appears in multiple distinct lenses at once.</p>
+  <p>Predator scrapes 30 such ETFs daily, normalises their holdings, scores each ticker by how broadly &amp; conviction-weightedly it's held, and surfaces the names where conviction is rising fastest.</p>
+  <div class="callout callout-cyan">
+    <strong>What this is NOT:</strong> a factor-decomposition engine. There is no regression against macro/style factors, no factor-of-the-day, no purified residuals. Predator measures <em>institutional accumulation breadth and conviction</em> — that is the entire product.
+  </div>
+
+  <!-- §2 Universe -->
+  <h2 id="universe">2 · The ETF universe</h2>
+  <p>30 ETFs grouped into 5 tiers. Each tier carries a base point weight. The weights reflect editorial judgement about how informative each strategy type is for early conviction detection.</p>
+  <table class="tier-table w-full text-sm">
+    <thead><tr><th>Tier</th><th>Points</th><th>What it detects</th><th>ETFs</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Scout</strong></td><td>40 / 60*</td><td>Spinoffs &amp; IPOs — structural inefficiencies</td><td class="font-mono text-xs" style="color: var(--text-3)">CSD, FPX, FPXI*</td></tr>
+      <tr><td><strong>Quant</strong></td><td>40 / 60*</td><td>Factor-based momentum (US &amp; international)</td><td class="font-mono text-xs" style="color: var(--text-3)">QMOM, IMOM*, XMMO, XSMO, PIE, PDP, DWAS, EEMO*, PIZ*, JHMM, JHEM*, JHSC, MFEM*, JOET</td></tr>
+      <tr><td><strong>Quality</strong></td><td>30</td><td>Free cash flow, value, profitability</td><td class="font-mono text-xs" style="color: var(--text-3)">COWZ, CALF, SPHQ, IVAL, QVAL, VLUE, AVSC, GRIN</td></tr>
+      <tr><td><strong>Trend</strong></td><td>10</td><td>Broad momentum confirmation</td><td class="font-mono text-xs" style="color: var(--text-3)">SPMO, SPHB, RPG</td></tr>
+      <tr><td><strong>Blob</strong></td><td>2</td><td>Mega-cap benchmarks (low signal value)</td><td class="font-mono text-xs" style="color: var(--text-3)">XLG, QQQM</td></tr>
+    </tbody>
+  </table>
+  <p class="text-xs mt-2" style="color: var(--text-3)">* International ETFs carry 60 points instead of 40 — global names naturally appear in fewer US-focused ETFs, so the bump levels the playing field.</p>
+
+  <!-- §3 Conviction Score -->
+  <h2 id="conviction">3 · The Conviction Score</h2>
+  <p>For every (ETF, ticker) pair, we compute a <strong>single-holding score</strong>; the leaderboard's <em>Final Alpha Score</em> is the sum of those across all ETFs holding the ticker. The current formula is the <strong>conviction-weighted</strong> mode (the legacy weight×rank model is preserved for backward compat).</p>
+
+  <h3>3.1 — The two ingredients</h3>
+  <p>Each holding contributes proportionally to two factors:</p>
+  <ul class="list-disc pl-5 space-y-1">
+    <li><strong>Overweight (W<sub>ovr</sub>)</strong> — how much more weight this ETF assigns the name vs equal-weight. <code>OW = weight × n_holdings</code>; OW = 1 means equal-weight, OW = 5 means 5× equal-weight. We compress with <code>ln(1 + OW) / ln(1 + OW★)</code> so that OW★ = 4 anchors W<sub>ovr</sub> ≈ 1.0, then clamp to [0, 1.5].</li>
+    <li><strong>Rank percentile (G<sub>rank</sub>)</strong> — where the ticker ranks within the ETF. Top of book = 1.0, bottom = 0.0. We add a 0.35 floor so a position never fully zeroes out: <code>G<sub>rank</sub> = 0.35 + 0.65 × RP</code>.</li>
+  </ul>
+  <pre>Single Score  = TierPoints × W<sub>ovr</sub>(OW) × G<sub>rank</sub>(RP)
+Final Score   = Σ (Single Score) across all ETFs holding this ticker</pre>
+
+  <h3>3.2 — Why this shape</h3>
+  <p>The shape is deliberately additive across ETFs (so <strong>breadth</strong> matters) but multiplicative within each ETF (so an oversized #2 weight in a small fund counts more than a tiny #50 weight in a large fund). The OW★ anchor and 1.5 clamp keep extreme outliers from dominating; the rank floor keeps a #100 holding from becoming worthless when it might still be a real signal.</p>
+
+  <!-- §4 Motion -->
+  <h2 id="motion">4 · Motion signals</h2>
+  <p>Score levels measure where conviction <em>is</em>. Motion signals measure where conviction <em>is going</em>. Three are surfaced on the leaderboard:</p>
+  <h3>4.1 — Velocity score</h3>
+  <pre>velocity = 0.5 × global_rank_Δ_30d
+         + 0.25 × peak_improvement_30d
+         + 1.0  × avg_per_etf_rank_Δ_7d
+         + 20.0 × avg_weight_flow_7d
+         + 5.0  × etfs_added_30d
+         + 1.0  × score_streak</pre>
+  <p>A composite picking up both <strong>steady accumulation</strong> (rising rank, growing weight, more ETFs picking it up) and <strong>burst</strong> moves (peak rank improvement). The coefficients are tuning, not theory; the goal is a sortable scalar that ranks "moving up fast" reliably.</p>
+
+  <h3>4.2 — BURST flag</h3>
+  <p>A name is flagged BURST when <strong>all three</strong> of these hold for the trailing 30 days:</p>
+  <ul class="list-disc pl-5 space-y-1">
+    <li>Peak global-rank improvement ≥ 40 positions</li>
+    <li>Continuous presence in ≥ 80% of the daily snapshots in the window (so we're not flagging a one-day blip)</li>
+    <li>Rank better than the within-window median for ≥ 8 of the last 10 snapshots (so the move is sustained, not a fluke)</li>
+  </ul>
+
+  <h3>4.3 — Conviction divergence</h3>
+  <p>Surfaces names where score is rising but rank is falling (being crowded out by faster movers — a "leaking" position) or the inverse (rank rising while score falls — relative-strength-on-cheap).</p>
+
+  <h3>4.4 — Extreme conviction moves (homepage ribbon)</h3>
+  <p>On the leaderboard, the top strip surfaces names whose motion metrics are statistically unusual (|z| ≥ 2) vs the leaderboard's own distribution today. Pure presentation — every value is already in the leaderboard JSON. Quality gate: requires ≥ 3 ETFs holding (so a single-ETF data hiccup can't surface a fake outlier).</p>
+
+  <!-- §5 Flags -->
+  <h2 id="flags">5 · Flags &amp; chips</h2>
+  <table class="tier-table w-full text-sm">
+    <thead><tr><th>Flag</th><th>Condition</th><th>Reading</th></tr></thead>
+    <tbody>
+      <tr><td><strong>HIGH_CONVICTION</strong></td><td>≥ 4 ETFs with conviction ≥ 0.8 hold the name</td><td>Broad consensus across independent strategies</td></tr>
+      <tr><td><strong>SPECULATIVE_BETA</strong></td><td>Held only by Trend tier; no Quality / Scout</td><td>Momentum without fundamental support</td></tr>
+      <tr><td><strong>BURST</strong></td><td>See §4.2</td><td>A 30-day rank breakout that's actually sustained</td></tr>
+      <tr><td><strong>VELO</strong></td><td>velocity ≥ 25, ≥ 2 ETFs, no BURST</td><td>Steady accumulation without a burst spike</td></tr>
+      <tr><td><strong>Quality+</strong></td><td>Gained a Quality ETF (COWZ / CALF / SPHQ) in last 30d</td><td>Momentum confirmed by a fundamentals lens</td></tr>
+      <tr><td><strong>Quality−</strong></td><td>Lost a Quality ETF in last 30d</td><td>Fundamentals lens dropped the name</td></tr>
+      <tr><td><strong>Pre-HC</strong></td><td>Held by exactly 3 ETFs with rising velocity</td><td>One pickup away from broad consensus</td></tr>
+      <tr><td><strong>Stealth Buy</strong></td><td>Single fund growing position &gt; 10% in 7d before consensus</td><td>Lonely-buy-before-the-crowd</td></tr>
+    </tbody>
+  </table>
+
+  <!-- §6 Sanitizer -->
+  <h2 id="sanitizer">6 · Sanitizer</h2>
+  <p>Before scoring runs, holdings rows are filtered &amp; normalised:</p>
+  <ul class="list-disc pl-5 space-y-1">
+    <li><strong>Currency placeholders</strong> blocked — <code>$USD</code>, <code>$BRL</code>, <code>$JPY</code>, etc.</li>
+    <li><strong>Money-market funds</strong> blocked by exact name match (<em>Short-Term Investment Trust …</em>) and substring (<em>Money Market</em>, <em>Securities Lending</em>).</li>
+    <li><strong>Ticker punctuation standardised</strong> — <code>BRK-B → BRK.B</code>, <code>BF/B → BF.B</code>, whitespace collapsed.</li>
+    <li><strong>Dual-class consolidation</strong> — <code>GOOG → GOOGL</code> (otherwise dual-class shares fragment the leaderboard).</li>
+    <li><strong>Cross-listing collapse</strong> — Korean A-prefix tickers (<code>A005930 → 005930</code>) merged so Samsung Electronics doesn't appear twice with split conviction.</li>
+  </ul>
+
+  <!-- §7 Maturity -->
+  <h2 id="maturity">7 · Maturity gate (§28)</h2>
+  <p>An ETF that has been tracked for fewer than 30 days is "immature." Immature ETFs <em>contribute</em> to scoring but don't trigger NEW-entrant flags. Without this, a freshly-onboarded ETF would flag <em>every</em> position it holds as NEW — drowning the changelog with noise from a data-engineering event rather than market action.</p>
+
+  <!-- §8 Self-living -->
+  <h2 id="self-living">8 · Self-living markets data</h2>
+  <p>The Markets page (long-horizon return matrix, periodic table, drawdowns, etc.) is built from a layered data source:</p>
+  <ol class="list-decimal pl-5 space-y-1">
+    <li><strong>Excel deep-history baseline</strong> — <code>Mega_Markets_Historical.xlsx</code> seeds the JSON with multi-century data (gold from 1833, S&amp;P 500 from 1871, Dow Jones from 1885, etc.). It runs once per build as a backfill seed.</li>
+    <li><strong>Live FRED + yfinance merge</strong> — <code>predator.markets_history</code> extends every series with fresh monthly closes and populates fx (USD/INR via DEXINUS, etc.), CPI (CPIAUCSL), and rates (10Y, 2Y, Fed Funds…). New months overwrite the Excel baseline; live source labels are preserved.</li>
+  </ol>
+  <p>The build emits <code>metadata.json</code> with a <code>markets_data_freshness</code> block that an outside reader can verify directly:</p>
+  <pre>"markets_data_freshness": {
+  "asof":          "2026-05",
+  "by_source":     {"yfinance": 18, "fred": 9, "excel": 5},
+  "self_living_check": {
+    "live_source_count": 27,
+    "excel_only_count":  5,
+    "verdict": "LIVE_MERGE_HEALTHY"
+  }
+}</pre>
+  <p>If the verdict is <code>LIVE_MERGE_HEALTHY</code>, the live merge is doing its job: most assets carry a live FRED / yfinance source label, fx / cpi / rates are populated, and the Markets page's currency lens &amp; real-returns toggles work. If it ever reads <code>LIVE_MERGE_FAILED</code>, the FRED step is failing in CI and the live merge needs attention. Per-step <code>continue-on-error</code> guarantees one upstream hiccup never collapses the whole build.</p>
+
+  <!-- §9 Archive -->
+  <h2 id="archive">9 · The permanent history archive</h2>
+  <p>Holdings history is partitioned by year at <code>data/history_parquet/year=YYYY/holdings.parquet</code>. The companion file <code>CHECKSUMS.json</code> records a SHA-256 of each partition.</p>
+  <ul class="list-disc pl-5 space-y-1">
+    <li><strong>Past-year partitions are immutable.</strong> The migrate script refuses to rewrite them; a CI test recomputes the SHA-256s on every build and fails if any prior-year partition has drifted.</li>
+    <li><strong>Current-year partition is mutable</strong> (it grows daily as new scrapes land).</li>
+    <li>To intentionally fix a historical mistake, the operator must run with <code>--allow-historical-rewrite</code>; that flag logs a loud warning and updates the manifest.</li>
+  </ul>
+
+  <!-- §10 Limitations -->
+  <h2 id="limits">10 · Honest limitations</h2>
+  <ul class="list-disc pl-5 space-y-1">
+    <li><strong>Predator measures detection breadth, not future returns.</strong> A high score means many independent strategies converge on a name; it does not mean the name will outperform. Backtests of HC-entry, BURST-trigger, and Top-N-Velocity strategies are on the <a href="backtest.html">Backtest page</a> — judge for yourself.</li>
+    <li><strong>The system is one source.</strong> No earnings, no fundamentals, no macro overlay. Use it alongside other tools, not instead of them.</li>
+    <li><strong>Daily granularity, not intraday.</strong> Scrapes run 14:00 + 22:00 UTC weekdays. Same-day moves are not captured.</li>
+    <li><strong>Some positions are hidden.</strong> Equity-only filtering removes cash, derivatives, money-market, and currency placeholders. You see the equity book, not the full ETF.</li>
+    <li><strong>Tier weights are editorial.</strong> The 40 / 60 / 30 / 10 / 2 numbers are calibrated by hand. The current values are pinned by regression tests (Samsung &gt; Itaú in conviction mode); changes require a measured before/after.</li>
+    <li><strong>Cold-start gaps.</strong> Each ETF has a 30-day maturity ramp during which NEW flags are suppressed. The system started in February 2026; the leaderboard reaches its full signal density once every ETF is past the maturity gate.</li>
+  </ul>
+
+  <div style="height: 5rem;"></div>
+  <footer class="text-center text-xs pt-6 border-t" style="border-color: var(--border); color: var(--text-3)">
+    Predator Protocol · open source on <a href="https://github.com/yieldchaser/etf-data" target="_blank" rel="noopener">GitHub</a>
+  </footer>
+</div>
+</body>
+</html>

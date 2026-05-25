@@ -282,29 +282,38 @@ class TestBuildOrder:
     """Verify the build_site.yml step order is correct."""
 
     def test_build_site_yml_has_correct_step_order(self):
-        """Excel ingest must run before markets_history in build_site.yml."""
+        """
+        Charter v2 Part 2 — self-living merge contract:
+
+          Step 1: Excel BACKFILL ONLY (deep-history seed, runs ONCE).
+          Step 2: Live FRED + yfinance merge (current months, fx, cpi, rates).
+          Step 3: REMOVED. The previous third pass (`ingest_markets_xl
+                  --merge-existing` after FRED) clobbered the live source
+                  labels back to the Excel filename — Excel must NOT run
+                  again after the live merge.
+
+        This test pins the contract: Excel runs exactly once, before FRED;
+        no Excel re-run after FRED.
+        """
         yml_path = REPO_ROOT / ".github" / "workflows" / "build_site.yml"
         assert yml_path.exists(), "build_site.yml not found"
 
         content = yml_path.read_text(encoding="utf-8")
 
-        # Find character positions of key step run commands
-        # Step 1: first ingest_markets_xl (no --merge-existing = baseline)
         excel_first_pos = content.find("ingest_markets_xl --no-fail-on-stale")
-        # Step 2: markets_history --full-refresh
-        fred_pos = content.find("markets_history --full-refresh")
-        # Step 3: ingest_markets_xl --merge-existing
+        fred_pos        = content.find("markets_history --full-refresh")
         excel_merge_pos = content.find("ingest_markets_xl --merge-existing")
 
         assert excel_first_pos >= 0, "Excel baseline step not found in build_site.yml"
-        assert fred_pos >= 0, "markets_history --full-refresh step not found"
-        assert excel_merge_pos >= 0, "Excel --merge-existing step not found"
-
+        assert fred_pos >= 0,        "markets_history --full-refresh step not found"
         assert excel_first_pos < fred_pos, (
             "Excel baseline ingest must run BEFORE markets_history --full-refresh"
         )
-        assert fred_pos < excel_merge_pos, (
-            "markets_history must run BEFORE Excel --merge-existing"
+        # Charter v2 Part 2: the second Excel run is REMOVED. It must not exist.
+        assert excel_merge_pos == -1, (
+            "build_site.yml must NOT re-run ingest_markets_xl --merge-existing after the "
+            "live FRED merge — that step clobbered the live source labels back to Excel. "
+            "Excel is backfill-only and runs exactly once before the live merge."
         )
 
     def test_verify_step_checks_monthly_format(self):

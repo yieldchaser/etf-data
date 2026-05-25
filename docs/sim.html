@@ -86,6 +86,8 @@
     </div>
     <div class="flex items-center gap-2 text-xs" style="color: var(--text-3)">
       <span x-show="pricesData" x-text="`${Object.keys(pricesData?.tickers||{}).length} tickers`"></span>
+      <a href="methodology.html" class="label hover:text-zinc-400 transition" style="text-decoration: none;"
+         title="How Predator Protocol works — scoring, motion signals, sanitizer, self-living data, and honest limitations">How it works ↗</a>
     </div>
   </header>
 
@@ -863,7 +865,7 @@
             <template x-if="kellyHoverInfo">
               <div class="flex flex-wrap justify-center gap-x-6 gap-y-1">
                 <span style="color: var(--text-3)" x-text="'Leverage: ' + kellyHoverInfo.f.toFixed(2) + 'x'"></span>
-                <span style="color: #3b82f6" x-text="'Growth Rate g(f): ' + kellyHoverInfo.growth"></span>
+                <span style="color: var(--cyan)" x-text="'Growth Rate g(f): ' + kellyHoverInfo.growth"></span>
                 <span style="color: #fb7185" x-text="'Volatility f×σ: ' + kellyHoverInfo.vol"></span>
               </div>
             </template>
@@ -2879,11 +2881,11 @@ function labApp() {
       `;
 
       const legend = `
-        <text x="${W-PR-80}" y="${PT+12}" style="font-size:8px;fill:#3b82f6;font-family:ui-monospace">— Growth g(f)</text>
+        <text x="${W-PR-80}" y="${PT+12}" style="font-size:8px;fill:#22d3ee;font-family:ui-monospace">— Growth g(f)</text>
         <text x="${W-PR-80}" y="${PT+24}" style="font-size:8px;fill:#fb7185;font-family:ui-monospace">— Volatility f×σ</text>
       `;
 
-      this.kellyCurveSvg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};display:block;background:var(--surface)">${grid}${xLabels}<path d="${gPath}" fill="none" stroke="#3b82f6" stroke-width="2"/><path d="${vPath}" fill="none" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,3"/>${markers}${legend}<line id="kelly-crosshair" x1="0" y1="${PT}" x2="0" y2="${H-PB}" stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/></svg>`;
+      this.kellyCurveSvg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};display:block;background:var(--surface)">${grid}${xLabels}<path d="${gPath}" fill="none" stroke="#22d3ee" stroke-width="2"/><path d="${vPath}" fill="none" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,3"/>${markers}${legend}<line id="kelly-crosshair" x1="0" y1="${PT}" x2="0" y2="${H-PB}" stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/></svg>`;
     },
 
     kellyHover(e) {

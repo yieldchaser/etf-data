@@ -277,10 +277,19 @@ class TestFix1F:
     """fetch_history must raise in CI when local file is missing."""
 
     def test_ci_raises_on_missing_file(self, tmp_path, monkeypatch):
-        """When CI=true and source file is missing, fetch_history must raise."""
+        """When CI=true and BOTH parquet store AND source CSV are missing, fetch_history must raise.
+
+        This pins the contract: a CI build that finds neither archive must
+        fail loudly rather than silently fall back to the network. We point
+        PARQUET_STORE at an empty tmp dir so the CSV path is genuinely
+        exercised — without this monkeypatch, a locally-bootstrapped parquet
+        archive would mask the missing-CSV case.
+        """
+        from predator import build as _build
         from predator.build import fetch_history
 
         monkeypatch.setenv("CI", "true")
+        monkeypatch.setattr(_build, "PARQUET_STORE", tmp_path / "no_parquet")
         missing = str(tmp_path / "nonexistent.csv")
 
         with pytest.raises(FileNotFoundError, match="CI build"):
@@ -288,9 +297,11 @@ class TestFix1F:
 
     def test_non_ci_falls_back_gracefully(self, tmp_path, monkeypatch):
         """When CI is not set and source is missing, it falls back (no raise)."""
+        from predator import build as _build
         from predator.build import fetch_history, FALLBACK_SOURCE
 
         monkeypatch.delenv("CI", raising=False)
+        monkeypatch.setattr(_build, "PARQUET_STORE", tmp_path / "no_parquet")
         # We can't actually fetch from GitHub in tests, so just verify the
         # code path doesn't raise FileNotFoundError for the local check
         missing = str(tmp_path / "nonexistent.csv")

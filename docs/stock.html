@@ -90,7 +90,22 @@
     <a href="index.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color: var(--text-2); border-color: var(--border); text-decoration: none;">Dashboard</a>
     <a href="markets.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color: var(--text-2); border-color: var(--border); text-decoration: none;">Markets</a>
     <a href="sim.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color: var(--text-2); border-color: var(--border); text-decoration: none;">Simulator</a>
+    <a href="methodology.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color: var(--text-2); border-color: var(--border); text-decoration: none;"
+       title="How Predator Protocol works">How it works</a>
   </nav>
+
+  <!-- Recently viewed chip strip (sessionStorage; scoped to this tab) -->
+  <div x-show="recentlyViewed.length > 0"
+       class="flex items-center gap-1.5 mb-4 text-xs flex-wrap"
+       style="color: var(--text-3)">
+    <span class="label">Recently viewed</span>
+    <template x-for="t in recentlyViewed" :key="t">
+      <a :href="`stock.html?t=${encodeURIComponent(t)}`"
+         class="font-mono px-2 py-0.5 rounded border transition hover:border-cyan-500/30 hover:text-cyan-300"
+         style="color: var(--text-2); border-color: var(--border-2); text-decoration: none;"
+         x-text="t"></a>
+    </template>
+  </div>
 
   <!-- LOADING STATE -->
   <div x-show="loading" class="pulse-load text-center py-20" style="color: var(--text-3)">
@@ -570,12 +585,28 @@ function stockApp() {
     rcx: null,             // crosshair x position in rank chart
     tlci: null,            // crosshair index in signal timeline
     tlcx: null,            // crosshair x position in signal timeline
+    recentlyViewed: [],    // sessionStorage-backed list of last-7 tickers viewed (excluding current)
 
     async load() {
       const params = new URLSearchParams(location.search);
       this.ticker = (params.get('t') || '').toUpperCase().trim();
       if (!this.ticker) { this.loading = false; return; }
       document.title = `Predator Protocol · ${this.ticker}`;
+
+      // ── Recently-viewed roster (sessionStorage, scoped to the tab) ────────
+      // Push the current ticker to the head, dedupe, cap at 8. Loaded into
+      // this.recentlyViewed for the chip strip at the top of the page.
+      try {
+        const KEY = 'predator.recentlyViewed';
+        const prior = JSON.parse(sessionStorage.getItem(KEY) || '[]')
+          .filter(t => typeof t === 'string' && t && t !== this.ticker);
+        const next = [this.ticker, ...prior].slice(0, 8);
+        sessionStorage.setItem(KEY, JSON.stringify(next));
+        // Strip the current ticker from the chip-strip view (it's the page itself)
+        this.recentlyViewed = prior.slice(0, 7);
+      } catch {
+        this.recentlyViewed = [];
+      }
 
       try {
         const [lbData, scoreData, hhData, hlData] = await Promise.all([
