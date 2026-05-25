@@ -36,10 +36,15 @@
       background: var(--surface-2); border: 1px solid var(--border-2);
       color: var(--text); border-radius: 4px; padding: 3px 8px;
       font-size: 12px; font-family: ui-monospace, monospace;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    input[type=number]:focus, input[type=text]:focus, select:focus {
+      outline: none; border-color: var(--cyan); box-shadow: 0 0 0 1px rgba(34,211,238,0.2);
     }
     select {
       background: var(--surface-2); border: 1px solid var(--border-2);
       color: var(--text); border-radius: 4px; padding: 3px 8px; font-size: 12px;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
     /* Singleton tooltip */
     #tt { position: fixed; z-index: 9999; pointer-events: none; opacity: 0;
@@ -53,6 +58,13 @@
 </head>
 <body>
 <div id="tt"></div>
+
+<!-- Datalist for ticker suggestions -->
+<datalist id="available-tickers">
+  <template x-for="t in Object.keys(pricesData?.tickers || {})" :key="t">
+    <option :value="t"></option>
+  </template>
+</datalist>
 
 <div x-data="labApp()" x-init="init()" x-cloak class="max-w-[1400px] mx-auto px-3 sm:px-5 py-4 sm:py-6">
 
@@ -160,6 +172,15 @@
     </button>
   </div>
 
+  <!-- DATE ADJUSTED WARNING BANNER -->
+  <div x-show="adjustedStartWarning"
+       class="mb-5 p-3 rounded-lg border text-xs flex items-start gap-2"
+       style="background: rgba(251,191,36,0.08); border-color: rgba(251,191,36,0.3); color: var(--amber)"
+       x-cloak>
+    <span class="mt-0.5">⚠️</span>
+    <span x-text="adjustedStartWarning"></span>
+  </div>
+
 
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <!-- TAB: BUILDER                                                        -->
@@ -171,7 +192,29 @@
       <div class="lg:col-span-2">
         <div class="flex items-center justify-between mb-3">
           <h2 class="text-sm font-medium" style="color: var(--cyan)">PORTFOLIO BUILDER</h2>
-          <div class="flex gap-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- Saved presets dropdown -->
+            <div class="flex items-center gap-1">
+              <select x-model="selectedPreset" @change="loadPreset()" 
+                      class="bg-zinc-900 border border-zinc-850 text-zinc-300 text-[10px] rounded px-2 py-1 focus:outline-none focus:border-cyan-500/50">
+                <option value="">-- Load Saved --</option>
+                <template x-for="name in Object.keys(savedPortfolios)" :key="name">
+                  <option :value="name" x-text="name"></option>
+                </template>
+              </select>
+              <button @click="saveCurrentPortfolio()"
+                      class="px-2 py-1 rounded border text-[10px] transition bg-cyan-500/10 text-cyan-400 border-cyan-500/20 hover:bg-cyan-500/20"
+                      @mouseenter="showTt($event, 'Save active portfolio configuration to browser memory')"
+                      @mouseleave="hideTt()">Save</button>
+              <button @click="deleteCurrentPreset()"
+                      x-show="selectedPreset"
+                      class="px-2 py-1 rounded border text-[10px] transition bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20"
+                      @mouseenter="showTt($event, 'Delete the selected preset')"
+                      @mouseleave="hideTt()">Delete</button>
+            </div>
+
+            <div class="w-px h-4 bg-zinc-800 mx-1"></div>
+
             <button @click="loadSamplePortfolio()"
                     class="px-2.5 py-1 rounded border text-[10px] transition"
                     style="color: var(--text-2); border-color: var(--border)"
@@ -207,12 +250,21 @@
         <!-- Portfolio rows -->
         <div class="space-y-1">
           <template x-for="(row, i) in portfolio" :key="i">
-            <div class="portfolio-row px-2 py-1.5 rounded" style="background: var(--surface); border: 1px solid var(--border)">
-              <input type="text" x-model="row.ticker" @change="onTickerChange(i)"
+            <div class="portfolio-row px-2 py-1.5 rounded" :style="row.ticker && pricesData && pricesData.tickers && !pricesData.tickers[row.ticker.toUpperCase().trim()] ? 'background: var(--surface); border: 1px solid rgba(244,63,94,0.25)' : 'background: var(--surface); border: 1px solid var(--border)'">
+              <input type="text" x-model="row.ticker"
+                     list="available-tickers"
+                     @input="row.ticker = $event.target.value.toUpperCase(); onTickerChange(i)"
                      class="w-full uppercase text-xs font-mono"
                      placeholder="SPY" style="width:72px">
-              <span class="text-xs truncate" style="color: var(--text-2)"
-                    x-text="row.name || (row.ticker ? 'Loading…' : '—')"></span>
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span class="text-xs truncate" style="color: var(--text-2)"
+                      x-text="row.name || (row.ticker ? 'Loading…' : '—')"></span>
+                <template x-if="row.ticker && pricesData && pricesData.tickers && !pricesData.tickers[row.ticker.toUpperCase().trim()]">
+                  <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/25 flex-shrink-0"
+                        @mouseenter="showTt($event, 'Ticker not found in database. It will be ignored during backtest.')"
+                        @mouseleave="hideTt()">NOT FOUND</span>
+                </template>
+              </div>
               <input type="number" x-model.number="row.weight" @input="onWeightChange()"
                      class="text-right text-xs font-mono" step="1" style="width:72px"
                      :style="`color: ${row.weight < 0 ? 'var(--down)' : 'var(--text)'}`">
@@ -251,6 +303,16 @@
           <div x-show="Math.abs(netExposure - 100) > 1" class="text-[10px]" style="color: var(--amber)">
             ⚠ Weights don't sum to 100%
           </div>
+        </div>
+
+        <!-- Warning Banner for Invalid Tickers -->
+        <div x-show="invalidTickersWarning" class="mt-3 p-3 rounded border text-xs text-rose-400 bg-rose-500/10 border-rose-500/25 flex items-start gap-2">
+          <span class="mt-0.5">⚠️</span>
+          <span>
+            <strong>Warning:</strong> The following tickers are not in the price database and will be ignored in the backtest: 
+            <strong class="font-mono text-white" x-text="invalidTickersWarning"></strong>. 
+            Run the price fetcher to add them: <code class="bg-black/45 px-1 py-0.5 rounded text-cyan border border-white/5 font-mono">python -m predator.fetch_prices --tickers <span x-text="invalidTickersWarning"></span></code>
+          </span>
         </div>
       </div>
 
@@ -307,10 +369,13 @@
           <thead style="background: #050505; color: var(--text-3)">
             <tr style="border-bottom: 1px solid var(--border)">
               <th class="text-left px-4 py-2 label">Metric</th>
-              <th class="text-right px-4 py-2 label" style="color: var(--cyan)">Portfolio</th>
-              <th class="text-right px-4 py-2 label" style="color: var(--text-2)"
-                  x-text="benchmark + ' (Benchmark)'"></th>
-              <th class="text-right px-4 py-2 label">Formula</th>
+              <th class="text-center px-4 py-2 label" style="color: var(--cyan)"
+                  @mouseenter="showTt($event, 'Your backtested portfolio performance')" @mouseleave="hideTt()">Portfolio</th>
+              <th class="text-center px-4 py-2 label" style="color: var(--text-2)"
+                  x-text="benchmark + ' (Benchmark)'"
+                  @mouseenter="showTt($event, 'Benchmark performance metrics for comparison')" @mouseleave="hideTt()"></th>
+              <th class="text-center px-4 py-2 label"
+                  @mouseenter="showTt($event, 'Simplified mathematical formula/definition')" @mouseleave="hideTt()">Formula</th>
             </tr>
           </thead>
           <tbody>
@@ -318,11 +383,11 @@
               <tr class="row-hover" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
                 <td class="px-4 py-2 font-medium" style="color: var(--text)" x-text="m.label"
                     @mouseenter="showTt($event, m.formula)" @mouseleave="hideTt()"></td>
-                <td class="px-4 py-2 text-right num font-mono font-medium"
+                <td class="px-4 py-2 text-center num font-mono font-medium"
                     :style="`color: ${m.portfolioColor}`" x-text="m.portfolio"></td>
-                <td class="px-4 py-2 text-right num font-mono" style="color: var(--text-2)"
+                <td class="px-4 py-2 text-center num font-mono" style="color: var(--text-2)"
                     x-text="m.benchmark"></td>
-                <td class="px-4 py-2 text-right text-[9px] font-mono" style="color: var(--text-3)"
+                <td class="px-4 py-2 text-center text-[9px] font-mono" style="color: var(--text-3)"
                     x-text="m.formulaShort"></td>
               </tr>
             </template>
@@ -355,15 +420,25 @@
         <div class="px-3 py-2 label" style="border-bottom: 1px solid var(--border); color: var(--cyan)">
           VAMI — VAMI₀ = 1000 · VAMIₜ = VAMIₜ₋₁ × (1 + rₜ)
         </div>
-        <div x-html="vamiChartSvg" style="width:100%;overflow-x:auto;"></div>
+        <div x-html="vamiChartSvg"
+             @mousemove="vamiHover($event)"
+             @mouseleave="vamiLeave($event)"
+             style="width:100%;overflow-x:auto;"></div>
         <!-- Hover bar -->
-        <div x-show="vamiHoverInfo" class="px-4 py-2 flex flex-wrap gap-x-6 gap-y-1 text-xs num font-mono"
-             style="border-top: 1px solid var(--border); background: var(--surface-2)">
-          <span style="color: var(--text-3)" x-text="vamiHoverInfo?.date || ''"></span>
-          <span style="color: var(--cyan)"
-                x-text="vamiHoverInfo?.portfolio != null ? 'Portfolio: ' + vamiHoverInfo.portfolio.toFixed(0) : ''"></span>
-          <span style="color: var(--text-2)"
-                x-text="vamiHoverInfo?.benchmark != null ? benchmark + ': ' + vamiHoverInfo.benchmark.toFixed(0) : ''"></span>
+        <div class="px-4 py-2 flex justify-center items-center gap-6 text-xs num font-mono"
+             style="border-top: 1px solid var(--border); background: var(--surface-2); min-height: 32px;">
+          <template x-if="vamiHoverInfo">
+            <div class="flex flex-wrap justify-center gap-x-6 gap-y-1">
+              <span style="color: var(--text-3)" x-text="vamiHoverInfo?.date || ''"></span>
+              <span style="color: var(--cyan)"
+                    x-text="vamiHoverInfo?.portfolio != null ? 'Portfolio: ' + vamiHoverInfo.portfolio.toFixed(0) : ''"></span>
+              <span style="color: var(--text-2)"
+                    x-text="vamiHoverInfo?.benchmark != null ? benchmark + ': ' + vamiHoverInfo.benchmark.toFixed(0) : ''"></span>
+            </div>
+          </template>
+          <template x-if="!vamiHoverInfo">
+            <span style="color: var(--text-3)">Hover over the chart to see historical VAMI levels</span>
+          </template>
         </div>
       </div>
 
@@ -385,18 +460,18 @@
             <thead style="background: #050505; color: var(--text-3)">
               <tr style="border-bottom: 1px solid var(--border)">
                 <th class="text-left px-3 py-1.5 label">Metric</th>
-                <th class="text-right px-3 py-1.5 label" style="color: var(--cyan)">Portfolio</th>
-                <th class="text-right px-3 py-1.5 label" x-text="benchmark"></th>
+                <th class="text-center px-3 py-1.5 label" style="color: var(--cyan)">Portfolio</th>
+                <th class="text-center px-3 py-1.5 label" x-text="benchmark"></th>
               </tr>
             </thead>
             <tbody>
               <template x-for="m in riskMeasures" :key="m.label">
                 <tr class="row-hover" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
-                  <td class="px-3 py-1.5" style="color: var(--text)" x-text="m.label"
+                  <td class="px-3 py-1.5 text-left" style="color: var(--text)" x-text="m.label"
                       @mouseenter="showTt($event, m.formula)" @mouseleave="hideTt()"></td>
-                  <td class="px-3 py-1.5 text-right num font-mono font-medium"
+                  <td class="px-3 py-1.5 text-center num font-mono font-medium"
                       :style="`color: ${m.portfolioColor}`" x-text="m.portfolio"></td>
-                  <td class="px-3 py-1.5 text-right num font-mono" style="color: var(--text-2)"
+                  <td class="px-3 py-1.5 text-center num font-mono" style="color: var(--text-2)"
                       x-text="m.benchmark"></td>
                 </tr>
               </template>
@@ -414,18 +489,18 @@
           <thead style="background: #050505; color: var(--text-3)">
             <tr style="border-bottom: 1px solid var(--border)">
               <th class="text-left px-3 py-2 label">Metric</th>
-              <th class="text-right px-3 py-2 label">Value</th>
-              <th class="text-right px-3 py-2 label">Formula</th>
+              <th class="text-center px-3 py-2 label">Value</th>
+              <th class="text-center px-3 py-2 label">Formula</th>
             </tr>
           </thead>
           <tbody>
             <template x-for="m in relativeMetrics" :key="m.label">
               <tr class="row-hover" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
-                <td class="px-3 py-2" style="color: var(--text)" x-text="m.label"
+                <td class="px-3 py-2 text-left" style="color: var(--text)" x-text="m.label"
                     @mouseenter="showTt($event, m.formula)" @mouseleave="hideTt()"></td>
-                <td class="px-3 py-2 text-right num font-mono font-medium"
+                <td class="px-3 py-2 text-center num font-mono font-medium"
                     :style="`color: ${m.color}`" x-text="m.value"></td>
-                <td class="px-3 py-2 text-right text-[9px] font-mono" style="color: var(--text-3)"
+                <td class="px-3 py-2 text-center text-[9px] font-mono" style="color: var(--text-3)"
                     x-text="m.formulaShort"></td>
               </tr>
             </template>
@@ -461,15 +536,23 @@
       <div class="rounded-lg border overflow-hidden mb-5" style="background: var(--surface); border-color: var(--border)">
         <div x-html="growthChartSvg"
              @mousemove="growthHover($event)"
-             @mouseleave="growthHoverInfo = null"
+             @mouseleave="growthLeave($event)"
              style="width:100%;overflow-x:auto;"></div>
-        <div x-show="growthHoverInfo" class="px-4 py-2 flex flex-wrap gap-x-6 gap-y-1 text-xs num font-mono"
-             style="border-top: 1px solid var(--border); background: var(--surface-2)">
-          <span style="color: var(--text-3)" x-text="growthHoverInfo?.date || ''"></span>
-          <span style="color: var(--cyan)"
-                x-text="growthHoverInfo?.portfolio != null ? 'Portfolio: $' + growthHoverInfo.portfolio.toFixed(0) : ''"></span>
-          <span style="color: var(--text-2)"
-                x-text="growthHoverInfo?.benchmark != null ? benchmark + ': $' + growthHoverInfo.benchmark.toFixed(0) : ''"></span>
+        <!-- Hover bar -->
+        <div class="px-4 py-2 flex justify-center items-center gap-6 text-xs num font-mono"
+             style="border-top: 1px solid var(--border); background: var(--surface-2); min-height: 32px;">
+          <template x-if="growthHoverInfo">
+            <div class="flex flex-wrap justify-center gap-x-6 gap-y-1">
+              <span style="color: var(--text-3)" x-text="growthHoverInfo?.date || ''"></span>
+              <span style="color: var(--cyan)"
+                    x-text="growthHoverInfo?.portfolio != null ? 'Portfolio: $' + growthHoverInfo.portfolio.toLocaleString('en-US', {maximumFractionDigits:0}) : ''"></span>
+              <span style="color: var(--text-2)"
+                    x-text="growthHoverInfo?.benchmark != null ? benchmark + ': $' + growthHoverInfo.benchmark.toLocaleString('en-US', {maximumFractionDigits:0}) : ''"></span>
+            </div>
+          </template>
+          <template x-if="!growthHoverInfo">
+            <span style="color: var(--text-3)">Hover over the chart to see historical growth levels</span>
+          </template>
         </div>
       </div>
 
@@ -497,8 +580,27 @@
           </template>
         </div>
       </div>
-      <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
-        <div x-html="rollingChartSvg" style="width:100%;overflow-x:auto;"></div>
+      <div class="rounded-lg border overflow-hidden mb-5" style="background: var(--surface); border-color: var(--border)">
+        <div x-html="rollingChartSvg"
+             @mousemove="rollingHover($event)"
+             @mouseleave="rollingLeave($event)"
+             style="width:100%;overflow-x:auto;"></div>
+        <!-- Hover bar -->
+        <div class="px-4 py-2 flex justify-center items-center gap-6 text-xs num font-mono"
+             style="border-top: 1px solid var(--border); background: var(--surface-2); min-height: 32px;">
+          <template x-if="rollingHoverInfo">
+            <div class="flex flex-wrap justify-center gap-x-6 gap-y-1">
+              <span style="color: var(--text-3)" x-text="rollingHoverInfo?.date || ''"></span>
+              <span style="color: var(--cyan)"
+                    x-text="rollingHoverInfo?.portfolio != null ? 'Portfolio: ' + rollingHoverInfo.portfolio : ''"></span>
+              <span style="color: var(--text-2)"
+                    x-text="rollingHoverInfo?.benchmark != null ? benchmark + ': ' + rollingHoverInfo.benchmark : ''"></span>
+            </div>
+          </template>
+          <template x-if="!rollingHoverInfo">
+            <span style="color: var(--text-3)">Hover over the chart to see historical rolling metrics</span>
+          </template>
+        </div>
       </div>
     </div>
   </div>
@@ -519,15 +621,23 @@
       <div class="rounded-lg border overflow-hidden mb-5" style="background: var(--surface); border-color: var(--border)">
         <div x-html="ddChartSvg"
              @mousemove="ddHover($event)"
-             @mouseleave="ddHoverInfo = null"
+             @mouseleave="ddLeave($event)"
              style="width:100%;overflow-x:auto;"></div>
-        <div x-show="ddHoverInfo" class="px-4 py-2 flex flex-wrap gap-x-6 gap-y-1 text-xs num font-mono"
-             style="border-top: 1px solid var(--border); background: var(--surface-2)">
-          <span style="color: var(--text-3)" x-text="ddHoverInfo?.date || ''"></span>
-          <span style="color: var(--cyan)"
-                x-text="ddHoverInfo?.portfolio != null ? 'Portfolio: ' + (ddHoverInfo.portfolio*100).toFixed(1) + '%' : ''"></span>
-          <span style="color: var(--text-2)"
-                x-text="ddHoverInfo?.benchmark != null ? benchmark + ': ' + (ddHoverInfo.benchmark*100).toFixed(1) + '%' : ''"></span>
+        <!-- Hover bar -->
+        <div class="px-4 py-2 flex justify-center items-center gap-6 text-xs num font-mono"
+             style="border-top: 1px solid var(--border); background: var(--surface-2); min-height: 32px;">
+          <template x-if="ddHoverInfo">
+            <div class="flex flex-wrap justify-center gap-x-6 gap-y-1">
+              <span style="color: var(--text-3)" x-text="ddHoverInfo?.date || ''"></span>
+              <span style="color: var(--cyan)"
+                    x-text="ddHoverInfo?.portfolio != null ? 'Portfolio: ' + (ddHoverInfo.portfolio*100).toFixed(1) + '%' : ''"></span>
+              <span style="color: var(--text-2)"
+                    x-text="ddHoverInfo?.benchmark != null ? benchmark + ': ' + (ddHoverInfo.benchmark*100).toFixed(1) + '%' : ''"></span>
+            </div>
+          </template>
+          <template x-if="!ddHoverInfo">
+            <span style="color: var(--text-3)">Hover over the chart to see historical drawdown levels</span>
+          </template>
         </div>
       </div>
       <!-- Max DD events table -->
@@ -539,33 +649,33 @@
           <thead style="background: #050505; color: var(--text-3)">
             <tr style="border-bottom: 1px solid var(--border)">
               <th class="text-left px-3 py-2 label">Series</th>
-              <th class="text-right px-3 py-2 label">Max DD</th>
-              <th class="text-right px-3 py-2 label">Peak</th>
-              <th class="text-right px-3 py-2 label">Trough</th>
-              <th class="text-right px-3 py-2 label">Recovery</th>
-              <th class="text-right px-3 py-2 label">Months</th>
-              <th class="text-right px-3 py-2 label"
+              <th class="text-center px-3 py-2 label">Max DD</th>
+              <th class="text-center px-3 py-2 label">Peak</th>
+              <th class="text-center px-3 py-2 label">Trough</th>
+              <th class="text-center px-3 py-2 label">Recovery</th>
+              <th class="text-center px-3 py-2 label">Months</th>
+              <th class="text-center px-3 py-2 label"
                   @mouseenter="showTt($event, 'Ulcer Index = √mean(DD²) — captures depth × duration')"
                   @mouseleave="hideTt()">Ulcer Idx</th>
-              <th class="text-right px-3 py-2 label">Current DD</th>
+              <th class="text-center px-3 py-2 label">Current DD</th>
             </tr>
           </thead>
           <tbody>
             <template x-for="row in ddTable" :key="row.label">
               <tr class="row-hover" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
-                <td class="px-3 py-2 font-medium" :style="`color: ${row.color}`" x-text="row.label"></td>
-                <td class="px-3 py-2 text-right num font-mono font-medium" style="color: var(--down)"
+                <td class="px-3 py-2 font-medium text-left" :style="`color: ${row.color}`" x-text="row.label"></td>
+                <td class="px-3 py-2 text-center num font-mono font-medium" style="color: var(--down)"
                     x-text="row.maxDd != null ? (row.maxDd*100).toFixed(1)+'%' : '—'"></td>
-                <td class="px-3 py-2 text-right num font-mono" style="color: var(--text-2)" x-text="row.peakDate || '—'"></td>
-                <td class="px-3 py-2 text-right num font-mono" style="color: var(--text-2)" x-text="row.troughDate || '—'"></td>
-                <td class="px-3 py-2 text-right num font-mono"
+                <td class="px-3 py-2 text-center num font-mono" style="color: var(--text-2)" x-text="row.peakDate || '—'"></td>
+                <td class="px-3 py-2 text-center num font-mono" style="color: var(--text-2)" x-text="row.troughDate || '—'"></td>
+                <td class="px-3 py-2 text-center num font-mono"
                     :style="`color: ${row.recoveryDate ? 'var(--up)' : 'var(--amber)'}`"
                     x-text="row.recoveryDate || 'Ongoing'"></td>
-                <td class="px-3 py-2 text-right num font-mono" style="color: var(--text-2)"
+                <td class="px-3 py-2 text-center num font-mono" style="color: var(--text-2)"
                     x-text="row.months != null ? row.months+'m' : '—'"></td>
-                <td class="px-3 py-2 text-right num font-mono" style="color: var(--amber)"
+                <td class="px-3 py-2 text-center num font-mono" style="color: var(--amber)"
                     x-text="row.ulcer != null ? row.ulcer.toFixed(1)+'%' : '—'"></td>
-                <td class="px-3 py-2 text-right num font-mono font-medium"
+                <td class="px-3 py-2 text-center num font-mono font-medium"
                     :style="`color: ${(row.currentDd||0) < -0.1 ? 'var(--down)' : (row.currentDd||0) < -0.05 ? 'var(--amber)' : 'var(--up)'}`"
                     x-text="row.currentDd != null ? (row.currentDd*100).toFixed(1)+'%' : '—'"></td>
               </tr>
@@ -637,7 +747,27 @@
         <div x-show="!mcResult" class="py-10 text-center text-xs" style="color: var(--text-3)">
           Click Simulate to run Monte Carlo
         </div>
-        <div x-show="mcResult" x-html="mcFanChartSvg" style="width:100%;overflow-x:auto;"></div>
+        <div x-show="mcResult" x-html="mcFanChartSvg"
+             @mousemove="mcHover($event)"
+             @mouseleave="mcLeave($event)"
+             style="width:100%;overflow-x:auto;"></div>
+        <!-- Hover bar -->
+        <div class="px-4 py-2 flex justify-center items-center gap-6 text-xs num font-mono"
+             style="border-top: 1px solid var(--border); background: var(--surface-2); min-height: 32px;">
+          <template x-if="mcHoverInfo">
+            <div class="flex flex-wrap justify-center gap-x-5 gap-y-1">
+              <span style="color: var(--text-3)" x-text="mcHoverInfo?.date || ''"></span>
+              <span style="color: var(--down)" x-text="'5%: ' + mcHoverInfo.p5"></span>
+              <span style="color: var(--text-2)" x-text="'25%: ' + mcHoverInfo.p25"></span>
+              <span style="color: var(--cyan)" x-text="'50% (Median): ' + mcHoverInfo.p50"></span>
+              <span style="color: var(--text-2)" x-text="'75%: ' + mcHoverInfo.p75"></span>
+              <span style="color: var(--up)" x-text="'95%: ' + mcHoverInfo.p95"></span>
+            </div>
+          </template>
+          <template x-if="!mcHoverInfo && mcResult">
+            <span style="color: var(--text-3)">Hover over the chart to see percentile wealth levels</span>
+          </template>
+        </div>
       </div>
 
       <!-- MC stats -->
@@ -657,7 +787,9 @@
         <div class="px-3 py-2 label" style="border-bottom: 1px solid var(--border); color: var(--violet)">
           TERMINAL WEALTH DISTRIBUTION
         </div>
-        <div x-html="mcHistSvg" style="width:100%;overflow-x:auto;"></div>
+        <div class="flex justify-center items-center p-4">
+          <div x-html="mcHistSvg" style="width:100%;max-width:800px;overflow-x:auto;"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -719,7 +851,24 @@
           <div class="px-3 py-2 label" style="border-bottom: 1px solid var(--border); color: var(--cyan)">
             KELLY CURVE — Return (blue) vs Volatility (red) · Peak at f*
           </div>
-          <div x-html="kellyCurveSvg" style="width:100%;overflow-x:auto;"></div>
+          <div x-html="kellyCurveSvg"
+               @mousemove="kellyHover($event)"
+               @mouseleave="kellyLeave($event)"
+               style="width:100%;overflow-x:auto;"></div>
+          <!-- Hover bar -->
+          <div class="px-4 py-2 flex justify-center items-center gap-6 text-xs num font-mono"
+               style="border-top: 1px solid var(--border); background: var(--surface-2); min-height: 32px;">
+            <template x-if="kellyHoverInfo">
+              <div class="flex flex-wrap justify-center gap-x-6 gap-y-1">
+                <span style="color: var(--text-3)" x-text="'Leverage: ' + kellyHoverInfo.f.toFixed(2) + 'x'"></span>
+                <span style="color: #3b82f6" x-text="'Growth Rate g(f): ' + kellyHoverInfo.growth"></span>
+                <span style="color: #fb7185" x-text="'Volatility f×σ: ' + kellyHoverInfo.vol"></span>
+              </div>
+            </template>
+            <template x-if="!kellyHoverInfo">
+              <span style="color: var(--text-3)">Hover over the chart to see leverage sizing metrics</span>
+            </template>
+          </div>
         </div>
       </div>
 
@@ -761,7 +910,8 @@
         </div>
 
         <!-- Kelly interpretation -->
-        <div x-show="kellyResult" class="rounded-lg border p-4" style="background: var(--surface); border-color: var(--border)">
+        <div x-show="kellyResult" class="rounded-lg border p-4 transition-all duration-300 hover:border-cyan-500/30"
+             style="background: var(--surface); border-color: var(--border); box-shadow: 0 4px 20px rgba(0,0,0,0.15)">
           <div class="label mb-2" style="color: var(--cyan)">INTERPRETATION</div>
           <div class="text-xs space-y-1" style="color: var(--text-2)">
             <div>Full Kelly: <span class="font-mono font-medium" style="color: var(--cyan)"
@@ -798,31 +948,31 @@
           <thead style="background: #050505; color: var(--text-3)">
             <tr style="border-bottom: 1px solid var(--border)">
               <th class="text-left px-4 py-2 label">Event</th>
-              <th class="text-right px-4 py-2 label">Period</th>
-              <th class="text-right px-4 py-2 label">Portfolio DD</th>
-              <th class="text-right px-4 py-2 label">Benchmark DD</th>
-              <th class="text-right px-4 py-2 label">Portfolio Return</th>
-              <th class="text-right px-4 py-2 label">Benchmark Return</th>
-              <th class="text-right px-4 py-2 label">Recovery (mo)</th>
+              <th class="text-center px-4 py-2 label">Period</th>
+              <th class="text-center px-4 py-2 label">Portfolio DD</th>
+              <th class="text-center px-4 py-2 label">Benchmark DD</th>
+              <th class="text-center px-4 py-2 label">Portfolio Return</th>
+              <th class="text-center px-4 py-2 label">Benchmark Return</th>
+              <th class="text-center px-4 py-2 label">Recovery (mo)</th>
             </tr>
           </thead>
           <tbody>
             <template x-for="row in stressResults" :key="row.event">
               <tr class="row-hover" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
-                <td class="px-4 py-2 font-medium" style="color: var(--text)" x-text="row.event"></td>
-                <td class="px-4 py-2 text-right num font-mono text-[10px]" style="color: var(--text-3)"
+                <td class="px-4 py-2 font-medium text-left" style="color: var(--text)" x-text="row.event"></td>
+                <td class="px-4 py-2 text-center num font-mono text-[10px]" style="color: var(--text-3)"
                     x-text="row.period"></td>
-                <td class="px-4 py-2 text-right num font-mono font-medium" style="color: var(--down)"
+                <td class="px-4 py-2 text-center num font-mono font-medium" style="color: var(--down)"
                     x-text="row.portDd != null ? (row.portDd*100).toFixed(1)+'%' : '—'"></td>
-                <td class="px-4 py-2 text-right num font-mono" style="color: var(--text-2)"
+                <td class="px-4 py-2 text-center num font-mono" style="color: var(--text-2)"
                     x-text="row.benchDd != null ? (row.benchDd*100).toFixed(1)+'%' : '—'"></td>
-                <td class="px-4 py-2 text-right num font-mono font-medium"
+                <td class="px-4 py-2 text-center num font-mono font-medium"
                     :style="`color: ${(row.portRet||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
                     x-text="row.portRet != null ? ((row.portRet>=0?'+':'')+(row.portRet*100).toFixed(1)+'%') : '—'"></td>
-                <td class="px-4 py-2 text-right num font-mono"
+                <td class="px-4 py-2 text-center num font-mono"
                     :style="`color: ${(row.benchRet||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
                     x-text="row.benchRet != null ? ((row.benchRet>=0?'+':'')+(row.benchRet*100).toFixed(1)+'%') : '—'"></td>
-                <td class="px-4 py-2 text-right num font-mono" style="color: var(--text-2)"
+                <td class="px-4 py-2 text-center num font-mono" style="color: var(--text-2)"
                     x-text="row.recovery != null ? row.recovery+'m' : '—'"></td>
               </tr>
             </template>
@@ -927,7 +1077,28 @@
           <div x-show="!etnResult" class="py-20 text-center text-xs" style="color: var(--text-3)">
             Select an underlying to simulate
           </div>
-          <div x-show="etnResult" x-html="etnChartSvg" style="width:100%;overflow-x:auto;"></div>
+          <div x-show="etnResult" x-html="etnChartSvg"
+               @mousemove="etnHover($event)"
+               @mouseleave="etnLeave($event)"
+               style="width:100%;overflow-x:auto;"></div>
+          <!-- Hover bar -->
+          <div class="px-4 py-2 flex justify-center items-center gap-6 text-xs num font-mono"
+               style="border-top: 1px solid var(--border); background: var(--surface-2); min-height: 32px;">
+            <template x-if="etnHoverInfo">
+              <div class="flex flex-wrap justify-center gap-x-6 gap-y-1">
+                <span style="color: var(--text-3)" x-text="etnHoverInfo?.date || ''"></span>
+                <span style="color: var(--cyan)"
+                      x-text="etnHoverInfo?.etn != null ? etn.leverage + 'x ETN: $' + etnHoverInfo.etn.toFixed(2) : ''"></span>
+                <span style="color: var(--text-2)"
+                      x-text="etnHoverInfo?.naive != null ? 'Naive ' + etn.leverage + 'x: $' + etnHoverInfo.naive.toFixed(2) : ''"></span>
+                <span style="color: var(--up)"
+                      x-text="etnHoverInfo?.underlying != null ? 'Underlying: $' + etnHoverInfo.underlying.toFixed(2) : ''"></span>
+              </div>
+            </template>
+            <template x-if="!etnHoverInfo && etnResult">
+              <span style="color: var(--text-3)">Hover over the chart to see daily simulation values</span>
+            </template>
+          </div>
         </div>
       </div>
     </div>
@@ -939,16 +1110,21 @@
 <script>
 // ─── Tooltip helpers ──────────────────────────────────────────────────────────
 const _tt = document.getElementById('tt');
-function _showTt(el, text) {
-  if (!text) return;
-  _tt.textContent = text;
+function _showTt(el, html) {
+  _tt.innerHTML = html;
   _tt.style.opacity = '1';
+  _posTt(el);
+}
+function _posTt(el) {
   const r = el.getBoundingClientRect();
-  let x = r.left, y = r.bottom + 6;
-  if (x + 280 > window.innerWidth) x = window.innerWidth - 290;
-  if (y + 80 > window.innerHeight) y = r.top - 80;
+  const tw = _tt.offsetWidth || 200, th = _tt.offsetHeight || 40;
+  let x = r.left + r.width / 2 - tw / 2;
+  let y = r.top - th - 8;
+  if (y < 4) y = r.bottom + 8;
+  if (x < 4) x = 4;
+  if (x + tw > window.innerWidth - 4) x = window.innerWidth - tw - 4;
   _tt.style.left = x + 'px';
-  _tt.style.top = y + 'px';
+  _tt.style.top  = y + 'px';
 }
 function _hideTt() { _tt.style.opacity = '0'; }
 
@@ -1107,7 +1283,7 @@ function buildMonthlyReturns(monthly) {
  * @param {string} rebalance - 'none'|'monthly'|'quarterly'|'annual'
  * @returns {Object} - {months, equity, returns, ...}
  */
-function runBacktestEngine(holdings, tickerReturns, startYm, endYm, rebalance = 'annual') {
+function runBacktestEngine(holdings, tickerReturns, startYm, endYm, rebalance = 'annual', rfMonthly = 0.004) {
   // Get all months in range
   const allMonths = new Set();
   for (const { ticker } of holdings) {
@@ -1117,29 +1293,49 @@ function runBacktestEngine(holdings, tickerReturns, startYm, endYm, rebalance = 
   const months = [...allMonths].filter(m => m >= startYm && m <= endYm).sort();
   if (months.length < 2) return null;
 
-  // Initial weights (normalized to sum to 1)
+  // Add synthetic cash asset if weights do not sum to 100% (allows leverage/shorting)
+  const adjustedHoldings = [...holdings];
   const totalW = holdings.reduce((s, h) => s + h.weight, 0);
-  let weights = {};
-  for (const h of holdings) weights[h.ticker] = h.weight / (totalW || 1);
+  if (Math.abs(totalW - 1.0) > 1e-6) {
+    adjustedHoldings.push({
+      ticker: '__CASH__',
+      weight: 1.0 - totalW
+    });
+  }
+
+  // Target weights
+  const targetWeights = {};
+  for (const h of adjustedHoldings) {
+    targetWeights[h.ticker] = h.weight;
+  }
 
   // Run month by month
   const equity = [10000];
   const portRets = [];
-  let currentWeights = { ...weights };
+  let currentWeights = { ...targetWeights };
 
   for (let i = 0; i < months.length; i++) {
     const ym = months[i];
     const yr = parseInt(ym.slice(0, 4));
     const mo = parseInt(ym.slice(5, 7));
 
+    // Handle bankruptcy
+    if (equity[equity.length - 1] <= 0) {
+      portRets.push(0);
+      equity.push(0);
+      continue;
+    }
+
     // Compute portfolio return
     let portRet = 0;
-    for (const { ticker } of holdings) {
-      const r = tickerReturns[ticker]?.[ym];
-      if (r != null) portRet += (currentWeights[ticker] || 0) * r;
+    for (const { ticker } of adjustedHoldings) {
+      const r = (ticker === '__CASH__') ? rfMonthly : (tickerReturns[ticker]?.[ym] ?? 0);
+      portRet += (currentWeights[ticker] || 0) * r;
     }
     portRets.push(portRet);
-    equity.push(equity[equity.length - 1] * (1 + portRet));
+    let nextEquity = equity[equity.length - 1] * (1 + portRet);
+    if (nextEquity < 0) nextEquity = 0;
+    equity.push(nextEquity);
 
     // Rebalance
     const shouldRebalance =
@@ -1148,13 +1344,13 @@ function runBacktestEngine(holdings, tickerReturns, startYm, endYm, rebalance = 
       (rebalance === 'annual' && mo === 12);
 
     if (shouldRebalance) {
-      currentWeights = { ...weights };
+      currentWeights = { ...targetWeights };
     } else {
       // Drift weights
       const newW = {};
       let total = 0;
-      for (const { ticker } of holdings) {
-        const r = tickerReturns[ticker]?.[ym] ?? 0;
+      for (const { ticker } of adjustedHoldings) {
+        const r = (ticker === '__CASH__') ? rfMonthly : (tickerReturns[ticker]?.[ym] ?? 0);
         newW[ticker] = (currentWeights[ticker] || 0) * (1 + r);
         total += newW[ticker];
       }
@@ -1266,6 +1462,20 @@ function _lineChart(series, opts = {}) {
     xLabels += `<text x="${x.toFixed(1)}" y="${H-8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${xFmt(allX[i])}</text>`;
   }
 
+  // Horizontal reference lines
+  let hLinesHtml = '';
+  if (opts.horizontalLines) {
+    for (const hl of opts.horizontalLines) {
+      const yVal = yS(hl.value);
+      if (yVal >= PT && yVal <= PT + chartH) {
+        const color = hl.color || 'rgba(255,255,255,0.2)';
+        const dash = hl.strokeDasharray || '3,3';
+        const width = hl.strokeWidth || 1;
+        hLinesHtml += `<line x1="${PL}" y1="${yVal.toFixed(1)}" x2="${W-PR}" y2="${yVal.toFixed(1)}" stroke="${color}" stroke-width="${width}" stroke-dasharray="${dash}"/>`;
+      }
+    }
+  }
+
   // Lines
   let lines = '';
   for (const s of series) {
@@ -1281,7 +1491,12 @@ function _lineChart(series, opts = {}) {
   }
 
   const titleEl = title ? `<text x="${PL}" y="13" style="font-size:9px;fill:#71717a;font-family:ui-monospace">${title}</text>` : '';
-  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block;background:var(--surface)">${titleEl}${ticks}${xLabels}${lines}</svg>`;
+  const crosshairId = opts.crosshairId || '';
+  const crosshair = crosshairId
+    ? `<line id="${crosshairId}" x1="0" y1="${PT}" x2="0" y2="${H-PB}" stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`
+    : '';
+
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block;background:var(--surface)" preserveAspectRatio="none">${titleEl}${ticks}${xLabels}${hLinesHtml}${lines}${crosshair}</svg>`;
 }
 
 function _barChart(data, opts = {}) {
@@ -1302,7 +1517,7 @@ function _barChart(data, opts = {}) {
       bars += `<text x="${(x + bw/2).toFixed(1)}" y="${H-6}" text-anchor="middle" style="font-size:8px;fill:#52525b;font-family:ui-monospace">${d.label}</text>`;
     }
   }
-  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;background:var(--surface)">${bars}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;background:var(--surface)" preserveAspectRatio="none">${bars}</svg>`;
 }
 
 </script>
@@ -1487,6 +1702,10 @@ function labApp() {
       { ticker: 'SPY',  weight: 60, name: 'S&P 500 ETF (SPY)',    first: '' },
       { ticker: 'TLT',  weight: 40, name: '20Y Treasury ETF (TLT)', first: '' },
     ],
+    invalidTickersWarning: '',
+    adjustedStartWarning: '',
+    savedPortfolios: {},
+    selectedPreset: '',
 
     // Backtest results
     backtestResult: null,
@@ -1502,6 +1721,7 @@ function labApp() {
     rollingChartSvg: '',
     rollingMetric: 'CAGR',
     rollingWindow: 24,
+    rollingHoverInfo: null,
     ddChartSvg: '',
     ddHoverInfo: null,
 
@@ -1513,6 +1733,7 @@ function labApp() {
     mcResult: null,
     mcFanChartSvg: '',
     mcHistSvg: '',
+    mcHoverInfo: null,
 
     // Kelly
     kellyMu: 0.10,
@@ -1520,6 +1741,7 @@ function labApp() {
     kellyRf: 0.045,
     kellyResult: null,
     kellyCurveSvg: '',
+    kellyHoverInfo: null,
     sizingMatrix: [
       { tier: '< $1M',   values: [2, 5, 10] },
       { tier: '$1–5M',   values: [1, 3, 7]  },
@@ -1540,6 +1762,7 @@ function labApp() {
     etn: { underlying: 'NVDA', leverage: 2, manualVol: 30, borrowCost: 1.5, ter: 0.95 },
     etnResult: null,
     etnChartSvg: '',
+    etnHoverInfo: null,
 
     // ── Init ───────────────────────────────────────────────────────────────
     async init() {
@@ -1550,16 +1773,51 @@ function labApp() {
       ]);
       if (!this.pricesData) {
         this.pricesData = this._buildFallbackPricesData();
+      } else {
+        const fallback = this._buildFallbackPricesData();
+        if (fallback && fallback.tickers) {
+          this.pricesData.tickers = { ...fallback.tickers, ...this.pricesData.tickers };
+        }
       }
       this.loading = false;
       // Set default end date to latest available
       if (this.pricesData?.asof) {
         this.endDate = this.pricesData.asof;
       }
+
+      // Load saved presets from localStorage
+      try {
+        this.savedPortfolios = JSON.parse(localStorage.getItem('pl_saved_portfolios') || '{}');
+      } catch (e) {
+        this.savedPortfolios = {};
+      }
+
+      // Load active state from localStorage
+      const active = localStorage.getItem('pl_active_state');
+      if (active) {
+        try {
+          const state = JSON.parse(active);
+          if (state.portfolio) {
+            this.portfolio = state.portfolio.map(r => ({
+              ticker: r.ticker, weight: r.weight, name: '', first: ''
+            }));
+          }
+          if (state.benchmark) this.benchmark = state.benchmark;
+          if (state.rebalanceFreq) this.rebalanceFreq = state.rebalanceFreq;
+          if (state.startDate) this.startDate = state.startDate;
+          if (state.endDate) this.endDate = state.endDate;
+          if (state.selectedPreset) this.selectedPreset = state.selectedPreset;
+        } catch (e) {
+          console.warn('Failed to restore active state:', e);
+        }
+      }
+
       // Pre-populate ticker names
       for (const row of this.portfolio) {
         this._updateTickerMeta(row);
       }
+      this._updateInvalidWarning();
+
       // Compute Kelly from defaults
       this.computeKelly();
       this.runBacktest();
@@ -1651,10 +1909,12 @@ function labApp() {
     },
     removeRow(i) {
       this.portfolio.splice(i, 1);
+      this._updateInvalidWarning();
     },
     clearPortfolio() {
       this.portfolio = [];
       this.backtestResult = null;
+      this._updateInvalidWarning();
     },
     loadSamplePortfolio() {
       this.portfolio = [
@@ -1662,6 +1922,7 @@ function labApp() {
         { ticker: 'TLT', weight: 40, name: '20Y Treasury ETF (TLT)', first: '' },
       ];
       for (const row of this.portfolio) this._updateTickerMeta(row);
+      this._updateInvalidWarning();
       this.runBacktest();
     },
 
@@ -1669,6 +1930,16 @@ function labApp() {
       const row = this.portfolio[i];
       row.ticker = row.ticker.toUpperCase().trim();
       this._updateTickerMeta(row);
+      this._updateInvalidWarning();
+    },
+    _updateInvalidWarning() {
+      if (!this.pricesData) {
+        this.invalidTickersWarning = '';
+        return;
+      }
+      const tickers = this.pricesData.tickers || {};
+      const invalid = this.portfolio.filter(r => r.ticker && !tickers[r.ticker.toUpperCase().trim()]);
+      this.invalidTickersWarning = invalid.length > 0 ? invalid.map(r => r.ticker.toUpperCase().trim()).join(', ') : '';
     },
     onWeightChange() {
       // Trigger reactivity
@@ -1718,6 +1989,7 @@ function labApp() {
           if (data.rebalance) this.rebalanceFreq = data.rebalance;
           if (data.start) this.startDate = data.start;
           if (data.end) this.endDate = data.end;
+          this._updateInvalidWarning();
           this.runBacktest();
         } catch (err) {
           alert('Could not parse portfolio file: ' + err.message);
@@ -1726,10 +1998,72 @@ function labApp() {
       reader.readAsText(file);
     },
 
+    saveCurrentPortfolio() {
+      const name = prompt("Enter a name for this portfolio preset:", this.selectedPreset || "My Portfolio");
+      if (!name) return;
+      const trimmed = name.trim();
+      if (!trimmed) return;
+      this.savedPortfolios[trimmed] = {
+        portfolio: this.portfolio.map(r => ({ ticker: r.ticker, weight: r.weight })),
+        benchmark: this.benchmark,
+        rebalanceFreq: this.rebalanceFreq,
+        startDate: this.startDate,
+        endDate: this.endDate,
+      };
+      localStorage.setItem('pl_saved_portfolios', JSON.stringify(this.savedPortfolios));
+      this.selectedPreset = trimmed;
+      this._autoSaveState();
+    },
+
+    loadPreset() {
+      if (!this.selectedPreset) return;
+      const preset = this.savedPortfolios[this.selectedPreset];
+      if (!preset) return;
+      this.portfolio = preset.portfolio.map(r => ({
+        ticker: r.ticker, weight: r.weight, name: '', first: ''
+      }));
+      for (const row of this.portfolio) this._updateTickerMeta(row);
+      if (preset.benchmark) this.benchmark = preset.benchmark;
+      if (preset.rebalanceFreq) this.rebalanceFreq = preset.rebalanceFreq;
+      if (preset.startDate) this.startDate = preset.startDate;
+      if (preset.endDate) this.endDate = preset.endDate;
+      this._updateInvalidWarning();
+      this.runBacktest();
+    },
+
+    deleteCurrentPreset() {
+      if (!this.selectedPreset) return;
+      if (!confirm(`Are you sure you want to delete the preset "${this.selectedPreset}"?`)) return;
+      delete this.savedPortfolios[this.selectedPreset];
+      localStorage.setItem('pl_saved_portfolios', JSON.stringify(this.savedPortfolios));
+      this.selectedPreset = '';
+      this._autoSaveState();
+    },
+
+    _autoSaveState() {
+      const state = {
+        portfolio: this.portfolio.map(r => ({ ticker: r.ticker, weight: r.weight })),
+        benchmark: this.benchmark,
+        rebalanceFreq: this.rebalanceFreq,
+        startDate: this.startDate,
+        endDate: this.endDate,
+        selectedPreset: this.selectedPreset,
+      };
+      localStorage.setItem('pl_active_state', JSON.stringify(state));
+    },
+
     // ── Backtest runner ────────────────────────────────────────────────────
     runBacktest() {
       if (!this.pricesData) return;
       const tickers = this.pricesData.tickers || {};
+
+      // Check for invalid tickers
+      const invalid = this.portfolio.filter(r => r.ticker && !(tickers[r.ticker.toUpperCase().trim()]));
+      if (invalid.length > 0) {
+        this.invalidTickersWarning = invalid.map(r => r.ticker.toUpperCase().trim()).join(', ');
+      } else {
+        this.invalidTickersWarning = '';
+      }
 
       // Build return series for all needed tickers
       const needed = [...new Set([
@@ -1759,16 +2093,47 @@ function labApp() {
         this.tickerReturnsCache[t] = rets;
       }
 
-      // Determine date range
       const validTickers = this.portfolio.filter(r => r.ticker && tickerReturns[r.ticker]);
       if (!validTickers.length) return;
+
+      // Determine latest common start date to prevent cash drag bug
+      let latestCommonStart = '';
+      for (const { ticker } of validTickers) {
+        const keys = Object.keys(tickerReturns[ticker] || {}).sort();
+        if (keys.length > 0) {
+          const firstKey = keys[0];
+          if (!latestCommonStart || firstKey > latestCommonStart) {
+            latestCommonStart = firstKey;
+          }
+        }
+      }
+
+      // Check if adjustment is needed
+      let actualStart = latestCommonStart;
+      if (this.startDate) {
+        if (this.startDate < latestCommonStart) {
+          const shortHistoryTickers = [];
+          for (const { ticker } of validTickers) {
+            const keys = Object.keys(tickerReturns[ticker] || {}).sort();
+            if (keys.length > 0 && keys[0] > this.startDate) {
+              shortHistoryTickers.push(`${ticker} (${keys[0]})`);
+            }
+          }
+          this.adjustedStartWarning = `Start date adjusted to ${latestCommonStart} due to shorter data history for: ${shortHistoryTickers.join(', ')}`;
+          actualStart = latestCommonStart;
+        } else {
+          this.adjustedStartWarning = '';
+          actualStart = this.startDate;
+        }
+      } else {
+        this.adjustedStartWarning = '';
+      }
 
       const allMonths = new Set();
       for (const { ticker } of validTickers) {
         Object.keys(tickerReturns[ticker] || {}).forEach(m => allMonths.add(m));
       }
       const sortedMonths = [...allMonths].sort();
-      const start = this.startDate || sortedMonths[0];
       const end = this.endDate || sortedMonths[sortedMonths.length - 1];
 
       // Run portfolio backtest
@@ -1776,12 +2141,12 @@ function labApp() {
         ticker: r.ticker,
         weight: r.weight / 100,
       }));
-      const portResult = runBacktestEngine(holdings, tickerReturns, start, end, this.rebalanceFreq);
+      const portResult = runBacktestEngine(holdings, tickerReturns, actualStart, end, this.rebalanceFreq);
       if (!portResult) return;
 
       // Run benchmark backtest
       const benchHoldings = [{ ticker: this.benchmark, weight: 1 }];
-      const benchResult = runBacktestEngine(benchHoldings, tickerReturns, start, end, 'none');
+      const benchResult = runBacktestEngine(benchHoldings, tickerReturns, actualStart, end, 'none');
 
       // Risk-free rate (approximate from market_returns.json rates if available)
       const rfMonthly = 0.004; // ~4.8% annual default
@@ -1798,7 +2163,7 @@ function labApp() {
       ) : null;
 
       this.backtestResult = {
-        start, end,
+        start: actualStart, end,
         n_months: portResult.months.length,
         months: portResult.months,
         portfolio: { ...portMetrics, equity: portResult.equity, returns: portResult.returns },
@@ -1819,6 +2184,8 @@ function labApp() {
         this.kellySigma = parseFloat((portMetrics.vol).toFixed(4));
         this.computeKelly();
       }
+
+      this._autoSaveState();
     },
 
     // ── Chart builders ─────────────────────────────────────────────────────
@@ -1839,6 +2206,10 @@ function labApp() {
         logScale: true,
         title: 'VAMI (base 1000)',
         yFmt: v => v >= 1000 ? (v/1000).toFixed(1)+'K' : v.toFixed(0),
+        crosshairId: 'vami-crosshair',
+        horizontalLines: [
+          { value: 1000, color: 'rgba(255,255,255,0.25)', strokeDasharray: '3,3', strokeWidth: 1.2 }
+        ]
       });
     },
 
@@ -1870,6 +2241,10 @@ function labApp() {
         logScale: this.growthLogScale,
         title: 'Growth of $10,000',
         yFmt: v => v >= 10000 ? '$' + (v/1000).toFixed(0)+'K' : '$' + v.toFixed(0),
+        crosshairId: 'growth-crosshair',
+        horizontalLines: [
+          { value: 10000, color: 'rgba(255,255,255,0.25)', strokeDasharray: '3,3', strokeWidth: 1.2 }
+        ]
       });
     },
 
@@ -1884,29 +2259,46 @@ function labApp() {
       const rfMonthly = 0.004;
 
       const data = [];
+      const bData = [];
       for (let i = W; i < rets.length; i++) {
         const window = rets.slice(i - W, i);
         const bWindow = benchRets?.slice(i - W, i);
-        let val;
+        let val, bVal;
         if (metric === 'CAGR') {
           const eq = window.reduce((p, r) => p * (1 + r), 1);
           val = Math.pow(eq, 12 / W) - 1;
+          if (bWindow) {
+            const bEq = bWindow.reduce((p, r) => p * (1 + r), 1);
+            bVal = Math.pow(bEq, 12 / W) - 1;
+          }
         } else if (metric === 'Sharpe') {
           val = _sharpe(window, rfMonthly);
+          if (bWindow) bVal = _sharpe(bWindow, rfMonthly);
         } else if (metric === 'Vol') {
           val = _std(window) * _sqrt12;
+          if (bWindow) bVal = _std(bWindow) * _sqrt12;
         } else if (metric === 'Beta') {
           val = bWindow ? _beta(window, bWindow) : null;
+          if (bWindow) bVal = 1.0;
         }
         if (val != null) data.push([months[i], val]);
+        if (bVal != null) bData.push([months[i], bVal]);
       }
 
       const isRet = metric === 'CAGR';
+      const series = [
+        { data, color: '#22d3ee', label: `Portfolio`, width: 2 }
+      ];
+      if (bData.length) {
+        series.push({ data: bData, color: '#a1a1aa', label: this.benchmark, dash: '4,3' });
+      }
+
       this.rollingChartSvg = _lineChart(
-        [{ data, color: '#22d3ee', label: `${W}M Rolling ${metric}` }],
+        series,
         {
           title: `Rolling ${W}-Month ${metric}`,
           yFmt: isRet ? v => (v >= 0 ? '+' : '') + (v * 100).toFixed(1) + '%' : v => v.toFixed(2),
+          crosshairId: 'rolling-crosshair',
         }
       );
     },
@@ -1937,6 +2329,7 @@ function labApp() {
       this.ddChartSvg = _lineChart(series, {
         title: 'Drawdown (% below ATH)',
         yFmt: v => (v * 100).toFixed(0) + '%',
+        crosshairId: 'dd-crosshair',
       });
     },
 
@@ -2110,14 +2503,104 @@ function labApp() {
       const r = this.backtestResult;
       if (!r) return;
       const rect = svg.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / rect.width;
-      const idx = Math.floor(x * r.months.length);
+      const mouseX = ((e.clientX - rect.left) / rect.width) * 1200;
+      const clampedX = Math.max(60, Math.min(1200 - 20, mouseX));
+      const pct = (clampedX - 60) / (1200 - 60 - 20);
+      const idx = Math.round(pct * (r.months.length - 1));
       if (idx >= 0 && idx < r.months.length) {
         this.growthHoverInfo = {
           date: r.months[idx],
           portfolio: r.portfolio.equity[idx + 1],
           benchmark: r.benchmark?.equity[idx + 1],
         };
+        const W = 1200, PL = 60, PR = 20;
+        const chartW = W - PL - PR;
+        const xCoord = PL + (idx / Math.max(r.months.length - 1, 1)) * chartW;
+        const line = svg.getElementById('growth-crosshair');
+        if (line) {
+          line.setAttribute('x1', xCoord.toFixed(1));
+          line.setAttribute('x2', xCoord.toFixed(1));
+          line.setAttribute('opacity', '1');
+        }
+      }
+    },
+    growthLeave(e) {
+      this.growthHoverInfo = null;
+      const svg = e.currentTarget.querySelector('svg');
+      if (svg) {
+        const line = svg.getElementById('growth-crosshair');
+        if (line) line.setAttribute('opacity', '0');
+      }
+    },
+
+    rollingHover(e) {
+      const svg = e.currentTarget.querySelector('svg');
+      if (!svg) return;
+      const r = this.backtestResult;
+      if (!r) return;
+      const rect = svg.getBoundingClientRect();
+      
+      const W = this.rollingWindow;
+      const totalPoints = r.months.length - W;
+      if (totalPoints <= 0) return;
+
+      const mouseX = ((e.clientX - rect.left) / rect.width) * 1200;
+      const clampedX = Math.max(60, Math.min(1200 - 20, mouseX));
+      const pct = (clampedX - 60) / (1200 - 60 - 20);
+      const idx = Math.round(pct * (totalPoints - 1));
+      if (idx >= 0 && idx < totalPoints) {
+        const monthIdx = idx + W;
+        const rets = r.portfolio.returns;
+        const benchRets = r.benchmark?.returns;
+        const window = rets.slice(monthIdx - W, monthIdx);
+        const bWindow = benchRets?.slice(monthIdx - W, monthIdx);
+        const rfMonthly = 0.004;
+        const metric = this.rollingMetric;
+        let val, bVal;
+        if (metric === 'CAGR') {
+          const eq = window.reduce((p, r) => p * (1 + r), 1);
+          val = Math.pow(eq, 12 / W) - 1;
+          if (bWindow) {
+            const bEq = bWindow.reduce((p, r) => p * (1 + r), 1);
+            bVal = Math.pow(bEq, 12 / W) - 1;
+          }
+        } else if (metric === 'Sharpe') {
+          val = _sharpe(window, rfMonthly);
+          if (bWindow) bVal = _sharpe(bWindow, rfMonthly);
+        } else if (metric === 'Vol') {
+          val = _std(window) * _sqrt12;
+          if (bWindow) bVal = _std(bWindow) * _sqrt12;
+        } else if (metric === 'Beta') {
+          val = bWindow ? _beta(window, bWindow) : null;
+          if (bWindow) bVal = 1.0;
+        }
+
+        const isRet = metric === 'CAGR';
+        const fmtVal = (v) => v == null ? '—' : isRet ? (v >= 0 ? '+' : '') + (v * 100).toFixed(1) + '%' : v.toFixed(2);
+
+        this.rollingHoverInfo = {
+          date: r.months[monthIdx],
+          portfolio: fmtVal(val),
+          benchmark: bWindow ? fmtVal(bVal) : null,
+        };
+
+        const svgW = 1200, PL = 60, PR = 20;
+        const chartW = svgW - PL - PR;
+        const xCoord = PL + (idx / Math.max(totalPoints - 1, 1)) * chartW;
+        const line = svg.getElementById('rolling-crosshair');
+        if (line) {
+          line.setAttribute('x1', xCoord.toFixed(1));
+          line.setAttribute('x2', xCoord.toFixed(1));
+          line.setAttribute('opacity', '1');
+        }
+      }
+    },
+    rollingLeave(e) {
+      this.rollingHoverInfo = null;
+      const svg = e.currentTarget.querySelector('svg');
+      if (svg) {
+        const line = svg.getElementById('rolling-crosshair');
+        if (line) line.setAttribute('opacity', '0');
       }
     },
 
@@ -2127,8 +2610,10 @@ function labApp() {
       const r = this.backtestResult;
       if (!r) return;
       const rect = svg.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / rect.width;
-      const idx = Math.floor(x * r.months.length);
+      const mouseX = ((e.clientX - rect.left) / rect.width) * 1200;
+      const clampedX = Math.max(60, Math.min(1200 - 20, mouseX));
+      const pct = (clampedX - 60) / (1200 - 60 - 20);
+      const idx = Math.round(pct * (r.months.length - 1));
       if (idx >= 0 && idx < r.months.length) {
         const portEq = r.portfolio.equity;
         const portPeak = Math.max(...portEq.slice(0, idx + 2));
@@ -2140,21 +2625,60 @@ function labApp() {
           benchDd = benchEq[idx + 1] / benchPeak - 1;
         }
         this.ddHoverInfo = { date: r.months[idx], portfolio: portDd, benchmark: benchDd };
+
+        const W = 1200, PL = 60, PR = 20;
+        const chartW = W - PL - PR;
+        const xCoord = PL + (idx / Math.max(r.months.length - 1, 1)) * chartW;
+        const line = svg.getElementById('dd-crosshair');
+        if (line) {
+          line.setAttribute('x1', xCoord.toFixed(1));
+          line.setAttribute('x2', xCoord.toFixed(1));
+          line.setAttribute('opacity', '1');
+        }
+      }
+    },
+    ddLeave(e) {
+      this.ddHoverInfo = null;
+      const svg = e.currentTarget.querySelector('svg');
+      if (svg) {
+        const line = svg.getElementById('dd-crosshair');
+        if (line) line.setAttribute('opacity', '0');
       }
     },
 
     vamiHover(e) {
+      const svg = e.currentTarget.querySelector('svg');
+      if (!svg) return;
       const r = this.backtestResult;
       if (!r) return;
-      const rect = e.currentTarget.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / rect.width;
-      const idx = Math.floor(x * r.months.length);
+      const rect = svg.getBoundingClientRect();
+      const mouseX = ((e.clientX - rect.left) / rect.width) * 1200;
+      const clampedX = Math.max(60, Math.min(1200 - 20, mouseX));
+      const pct = (clampedX - 60) / (1200 - 60 - 20);
+      const idx = Math.round(pct * (r.months.length - 1));
       if (idx >= 0 && idx < r.months.length) {
         this.vamiHoverInfo = {
           date: r.months[idx],
           portfolio: r.portfolio.equity[idx + 1] / 10,
           benchmark: r.benchmark?.equity[idx + 1] / 10,
         };
+        const W = 1200, PL = 60, PR = 20;
+        const chartW = W - PL - PR;
+        const xCoord = PL + (idx / Math.max(r.months.length - 1, 1)) * chartW;
+        const line = svg.getElementById('vami-crosshair');
+        if (line) {
+          line.setAttribute('x1', xCoord.toFixed(1));
+          line.setAttribute('x2', xCoord.toFixed(1));
+          line.setAttribute('opacity', '1');
+        }
+      }
+    },
+    vamiLeave(e) {
+      this.vamiHoverInfo = null;
+      const svg = e.currentTarget.querySelector('svg');
+      if (svg) {
+        const line = svg.getElementById('vami-crosshair');
+        if (line) line.setAttribute('opacity', '0');
       }
     },
 
@@ -2195,6 +2719,10 @@ function labApp() {
         logScale: true,
         title: `Monte Carlo ${mc.nPaths} paths · ${mc.horizon}Y horizon`,
         yFmt: v => '$' + (v >= 10000 ? (v/1000).toFixed(0)+'K' : v.toFixed(0)),
+        crosshairId: 'mc-crosshair',
+        horizontalLines: [
+          { value: 10000, color: 'rgba(255,255,255,0.25)', strokeDasharray: '3,3', strokeWidth: 1.2 }
+        ]
       });
 
       // Histogram of terminal wealth
@@ -2218,6 +2746,52 @@ function labApp() {
         { label: '95th Percentile', value: _fc(mc.p95), color: 'var(--up)', tooltip: 'Best-case 95th percentile terminal wealth' },
         { label: 'Prob. of Loss', value: (mc.probLoss * 100).toFixed(1) + '%', color: mc.probLoss > 0.2 ? 'var(--down)' : 'var(--up)', tooltip: 'Probability of ending below starting value ($10,000)' },
       ];
+    },
+
+    mcHover(e) {
+      const svg = e.currentTarget.querySelector('svg');
+      if (!svg) return;
+      const mc = this.mcResult;
+      if (!mc) return;
+      const rect = svg.getBoundingClientRect();
+      const mouseX = ((e.clientX - rect.left) / rect.width) * 1200;
+      const clampedX = Math.max(60, Math.min(1200 - 20, mouseX));
+      const pct = (clampedX - 60) / (1200 - 60 - 20);
+      
+      const nSteps = mc.horizon * 12 + 1;
+      const idx = Math.round(pct * (nSteps - 1));
+      if (idx >= 0 && idx < nSteps) {
+        const d = new Date();
+        d.setMonth(d.getMonth() + idx);
+        const dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+
+        this.mcHoverInfo = {
+          date: dateStr,
+          p5: _fc(mc.bands[0][idx]),
+          p25: _fc(mc.bands[1][idx]),
+          p50: _fc(mc.bands[2][idx]),
+          p75: _fc(mc.bands[3][idx]),
+          p95: _fc(mc.bands[4][idx]),
+        };
+
+        const W = 1200, PL = 60, PR = 20;
+        const chartW = W - PL - PR;
+        const xCoord = PL + (idx / Math.max(nSteps - 1, 1)) * chartW;
+        const line = svg.getElementById('mc-crosshair');
+        if (line) {
+          line.setAttribute('x1', xCoord.toFixed(1));
+          line.setAttribute('x2', xCoord.toFixed(1));
+          line.setAttribute('opacity', '1');
+        }
+      }
+    },
+    mcLeave(e) {
+      this.mcHoverInfo = null;
+      const svg = e.currentTarget.querySelector('svg');
+      if (svg) {
+        const line = svg.getElementById('mc-crosshair');
+        if (line) line.setAttribute('opacity', '0');
+      }
     },
 
     // ── Kelly ──────────────────────────────────────────────────────────────
@@ -2282,7 +2856,57 @@ function labApp() {
         <text x="${W-PR-80}" y="${PT+24}" style="font-size:8px;fill:#fb7185;font-family:ui-monospace">— Volatility f×σ</text>
       `;
 
-      this.kellyCurveSvg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;background:var(--surface)">${grid}${xLabels}<path d="${gPath}" fill="none" stroke="#3b82f6" stroke-width="2"/><path d="${vPath}" fill="none" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,3"/>${markers}${legend}</svg>`;
+      this.kellyCurveSvg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;background:var(--surface)" preserveAspectRatio="none">${grid}${xLabels}<path d="${gPath}" fill="none" stroke="#3b82f6" stroke-width="2"/><path d="${vPath}" fill="none" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,3"/>${markers}${legend}<line id="kelly-crosshair" x1="0" y1="${PT}" x2="0" y2="${H-PB}" stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/></svg>`;
+    },
+
+    kellyHover(e) {
+      const svg = e.currentTarget.querySelector('svg');
+      if (!svg) return;
+      const k = this.kellyResult;
+      if (!k) return;
+      const rect = svg.getBoundingClientRect();
+      const mouseX = ((e.clientX - rect.left) / rect.width) * 700;
+      const clampedX = Math.max(55, Math.min(700 - 20, mouseX));
+      const pct = (clampedX - 55) / (700 - 55 - 20);
+      
+      const maxF = 2.5;
+      const fVal = pct * maxF;
+      if (fVal >= 0 && fVal <= maxF) {
+        const curve = k.curveData;
+        let nearest = curve[0];
+        let minDist = Math.abs(curve[0].f - fVal);
+        for (const pt of curve) {
+          const dist = Math.abs(pt.f - fVal);
+          if (dist < minDist) {
+            minDist = dist;
+            nearest = pt;
+          }
+        }
+
+        this.kellyHoverInfo = {
+          f: nearest.f,
+          growth: (nearest.growth * 100).toFixed(2) + '%',
+          vol: (nearest.vol * 100).toFixed(1) + '%',
+        };
+
+        const W = 700, PL = 55, PR = 20;
+        const chartW = W - PL - PR;
+        const xCoord = PL + (nearest.f / maxF) * chartW;
+        const line = svg.getElementById('kelly-crosshair');
+        if (line) {
+          line.setAttribute('x1', xCoord.toFixed(1));
+          line.setAttribute('x2', xCoord.toFixed(1));
+          line.setAttribute('opacity', '1');
+        }
+      }
+    },
+    kellyLeave(e) {
+      this.kellyHoverInfo = null;
+      const svg = e.currentTarget.querySelector('svg');
+      if (svg) {
+        const line = svg.getElementById('kelly-crosshair');
+        if (line) line.setAttribute('opacity', '0');
+      }
     },
 
     // ── ETN ────────────────────────────────────────────────────────────────
@@ -2292,7 +2916,6 @@ function labApp() {
 
     runEtn() {
       if (this.etn.underlying === '__manual__') {
-        // Synthetic daily prices from manual vol
         const vol = this.etn.manualVol / 100;
         const dailyVol = vol / Math.sqrt(252);
         const prices = [{ d: '2020-01-01', c: 100 }];
@@ -2326,7 +2949,48 @@ function labApp() {
         yFmt: v => '$' + v.toFixed(0),
         xStep: Math.max(1, Math.floor(r.etnSeries.length / 10)),
         xFmt: d => d.slice(0, 7),
+        crosshairId: 'etn-crosshair',
       });
+    },
+
+    etnHover(e) {
+      const svg = e.currentTarget.querySelector('svg');
+      if (!svg) return;
+      const r = this.etnResult;
+      if (!r) return;
+      const rect = svg.getBoundingClientRect();
+      const mouseX = ((e.clientX - rect.left) / rect.width) * 1200;
+      const clampedX = Math.max(60, Math.min(1200 - 20, mouseX));
+      const pct = (clampedX - 60) / (1200 - 60 - 20);
+      
+      const nPoints = r.etnSeries.length;
+      const idx = Math.round(pct * (nPoints - 1));
+      if (idx >= 0 && idx < nPoints) {
+        this.etnHoverInfo = {
+          date: r.etnSeries[idx].d,
+          etn: r.etnSeries[idx].v,
+          naive: r.naiveSeries[idx].v,
+          underlying: r.undSeries[idx].v,
+        };
+
+        const W = 1200, PL = 60, PR = 20;
+        const chartW = W - PL - PR;
+        const xCoord = PL + (idx / Math.max(nPoints - 1, 1)) * chartW;
+        const line = svg.getElementById('etn-crosshair');
+        if (line) {
+          line.setAttribute('x1', xCoord.toFixed(1));
+          line.setAttribute('x2', xCoord.toFixed(1));
+          line.setAttribute('opacity', '1');
+        }
+      }
+    },
+    etnLeave(e) {
+      this.etnHoverInfo = null;
+      const svg = e.currentTarget.querySelector('svg');
+      if (svg) {
+        const line = svg.getElementById('etn-crosshair');
+        if (line) line.setAttribute('opacity', '0');
+      }
     },
   };
 }

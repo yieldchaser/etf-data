@@ -65,6 +65,15 @@ jobs:
         id: fetch_prices
         run: python -m predator.fetch_prices
 
+      # ── Stock detail files — per-ticker description + 2-year daily prices ──
+      # Writes docs/data/details/{TICKER}.json for lazy-loading in the UI.
+      # Uses committed data/company_descriptions.json as a description cache
+      # so only new tickers need to be queried on each build (rate-limit safe).
+      - name: Fetch stock details (descriptions + 2-year price history)
+        id: fetch_stock_details
+        run: python -m predator.fetch_stock_details
+        continue-on-error: true   # never break the build if yfinance is flaky
+
       # ── Markets data pipeline — ORDER MATTERS ──────────────────────────
       # Step 1: Excel deep-history first (gold 1833+, S&P 1871+)
       #         This seeds the JSON with the full historical baseline.

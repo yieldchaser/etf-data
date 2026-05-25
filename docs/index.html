@@ -71,6 +71,18 @@
     /* Loading state */
     @keyframes pulse-fade { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
     .pulse-load { animation: pulse-fade 1.4s ease-in-out infinite; }
+
+    /* Premium stock detail chart */
+    .detail-chart-wrap { position: relative; user-select: none; }
+    .detail-chart-wrap svg { display: block; overflow: visible; }
+    .detail-crosshair-line { stroke: rgba(255,255,255,0.18); stroke-width: 1px; stroke-dasharray: 3 3; pointer-events: none; }
+    .detail-crosshair-dot { fill: var(--cyan); stroke: #000; stroke-width: 1.5px; pointer-events: none; }
+    .detail-tooltip { position: absolute; pointer-events: none; background: rgba(17,17,17,0.92); border: 1px solid rgba(34,211,238,0.25); border-radius: 7px; padding: 6px 10px; font-size: 11px; white-space: nowrap; backdrop-filter: blur(8px); box-shadow: 0 4px 20px rgba(0,0,0,0.5); z-index: 10; }
+    .range-btn { font-size: 10px; font-weight: 500; letter-spacing: 0.04em; padding: 2px 7px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.10); color: var(--text-3); cursor: pointer; background: transparent; transition: all 0.15s; }
+    .range-btn:hover { border-color: rgba(34,211,238,0.35); color: var(--cyan); }
+    .range-btn.active { background: rgba(34,211,238,0.10); border-color: rgba(34,211,238,0.40); color: var(--cyan); }
+    .desc-skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 4px; }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
   </style>
 </head>
 <body>
@@ -414,61 +426,154 @@
                 <!-- Expanded row -->
                 <tr x-show="open === row.ticker" x-transition.opacity style="background: #050505; border-bottom: 1px solid var(--border)">
                   <td colspan="14" class="px-4 py-4">
-                    <!-- Explainer line — auto-generated narrative from existing fields -->
+                    <!-- Explainer line -->
                     <div class="text-xs mb-3 px-3 py-2 rounded" style="background: rgba(34, 211, 238, 0.04); border: 1px solid rgba(34, 211, 238, 0.10); color: var(--text-2)" x-text="explainerFor(row)"></div>
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3 text-xs">
-                      <div>
-                        <div class="label">Company</div>
-                        <div class="text-sm mt-0.5" x-text="row.company"></div>
-                      </div>
-                      <div>
-                        <div class="label">Score breakdown</div>
-                        <div class="text-sm num font-mono mt-0.5">
-                          <span x-text="fmt1(row.final_score)"></span>
-                          <span x-show="row.score_delta" :style="`color: ${flowColor(row.score_delta_pct)}`" class="ml-1.5 text-xs" x-text="`(${row.score_delta > 0 ? '+' : ''}${fmt1(row.score_delta)} vs ${meta.snapshot_dates_in_window?.slice(-2)[0] || '—'})`"></span>
+
+                    <!-- Two-panel layout: left = meta + ETF table, right = price chart -->
+                    <div class="flex flex-col xl:flex-row gap-4">
+
+                      <!-- LEFT PANEL -->
+                      <div class="flex-1 min-w-0">
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-3 text-xs">
+                          <div>
+                            <div class="label">Company</div>
+                            <div class="text-sm mt-0.5" x-text="row.company"></div>
+                          </div>
+                          <div>
+                            <div class="label">Score breakdown</div>
+                            <div class="text-sm num font-mono mt-0.5">
+                              <span x-text="fmt1(row.final_score)"></span>
+                              <span x-show="row.score_delta" :style="`color: ${flowColor(row.score_delta_pct)}`" class="ml-1.5 text-xs" x-text="`(${row.score_delta > 0 ? '+' : ''}${fmt1(row.score_delta)} vs ${meta.snapshot_dates_in_window?.slice(-2)[0] || '—'})`"></span>
+                            </div>
+                          </div>
+                          <div>
+                            <div class="label">HC streak</div>
+                            <div class="text-sm num font-mono mt-0.5" :style="row.hc_streak > 0 ? 'color: var(--up)' : ''" x-text="`${row.hc_streak || 0} days`"></div>
+                          </div>
+                          <div>
+                            <div class="label">Best rank across ETFs</div>
+                            <div class="text-sm num font-mono mt-0.5" x-text="`#${row.best_rank}`"></div>
+                          </div>
+                        </div>
+                        <div class="overflow-x-auto scrollbar">
+                          <table class="w-full text-xs">
+                            <thead style="color: var(--text-3)">
+                              <tr style="border-bottom: 1px solid var(--border)">
+                                <th class="text-left py-1.5 pr-3 label">ETF</th>
+                                <th class="text-left py-1.5 pr-3 label">Tier</th>
+                                <th class="text-right py-1.5 pr-3 label">Rank</th>
+                                <th class="text-right py-1.5 pr-3 label">7d Δ</th>
+                                <th class="text-right py-1.5 pr-3 label">Weight</th>
+                                <th class="text-right py-1.5 pr-3 label">Flow</th>
+                                <th class="text-right py-1.5 pr-3 label">Score</th>
+                                <th class="text-left py-1.5 label">Flags</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <template x-for="h in detailsFor(row.ticker)" :key="h.ETF_Ticker">
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.03)">
+                                  <td class="py-1.5 pr-3 font-medium font-mono" x-text="h.ETF_Ticker"></td>
+                                  <td class="py-1.5 pr-3"><span class="chip" :style="tierChipStyle(h.tier)" x-text="h.tier"></span></td>
+                                  <td class="py-1.5 pr-3 text-right num font-mono" x-text="`#${h.rank}`"></td>
+                                  <td class="py-1.5 pr-3 text-right num font-mono" :style="`color: ${rankDeltaColor(h.rank_delta)}`" x-text="fmtRankDelta(h.rank_delta)"></td>
+                                  <td class="py-1.5 pr-3 text-right num font-mono" style="color: var(--text-2)" x-text="fmtWeight(h.weight)"></td>
+                                  <td class="py-1.5 pr-3 text-right num font-mono" :style="`color: ${flowColor(h.weight_flow)}`" x-text="fmtFlow(h.weight_flow)"></td>
+                                  <td class="py-1.5 pr-3 text-right num font-mono" x-text="fmt1(h.score)"></td>
+                                  <td class="py-1.5">
+                                    <span x-show="h.is_new" class="chip" style="background: rgba(96, 165, 250, 0.10); color: var(--blue); border: 1px solid rgba(96, 165, 250, 0.25)">NEW</span>
+                                  </td>
+                                </tr>
+                              </template>
+                            </tbody>
+                          </table>
                         </div>
                       </div>
-                      <div>
-                        <div class="label">HC streak</div>
-                        <div class="text-sm num font-mono mt-0.5" :style="row.hc_streak > 0 ? 'color: var(--up)' : ''" x-text="`${row.hc_streak || 0} days`"></div>
+
+                      <!-- RIGHT PANEL: Premium Price Chart -->
+                      <div class="xl:w-[480px] shrink-0" x-data="detailChartPanel(row.ticker, $store)" x-init="init()">
+                        <div class="rounded-lg border" style="background: rgba(255,255,255,0.02); border-color: rgba(34,211,238,0.15)">
+                          <!-- Chart header: company info + range buttons -->
+                          <div class="px-3 pt-3 pb-2 flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                              <div class="flex items-center gap-1.5 mb-0.5">
+                                <a :href="`stock.html?t=${ticker}`" class="text-xs font-mono font-medium" style="color: var(--cyan); text-decoration: none;" x-text="ticker"></a>
+                                <span class="text-[10px]" style="color: var(--text-3)" x-show="priceChange !== null" :style="`color: ${priceChange >= 0 ? 'var(--up)' : 'var(--down)'}`" x-text="priceChange !== null ? (priceChange >= 0 ? '+' : '') + priceChange.toFixed(2) + '%' : ''"></span>
+                              </div>
+                              <!-- Description -->
+                              <div x-show="loading" class="desc-skeleton h-3 w-40 mt-1"></div>
+                              <div x-show="!loading" class="text-[10px] leading-snug" style="color: var(--text-3); max-width: 360px" x-text="description || ''"></div>
+                            </div>
+                            <!-- Range buttons -->
+                            <div class="flex items-center gap-1 shrink-0">
+                              <template x-for="r in ranges" :key="r">
+                                <button @click="setRange(r)" :class="activeRange === r ? 'range-btn active' : 'range-btn'" x-text="r"></button>
+                              </template>
+                            </div>
+                          </div>
+                          <!-- Price + High/Low KPIs -->
+                          <div class="px-3 pb-2 flex items-baseline gap-4 text-xs" x-show="!loading && filteredPrices.length">
+                            <div>
+                              <span class="label">Latest</span>
+                              <span class="ml-1.5 num font-mono font-medium" style="color: var(--text)" x-text="filteredPrices.length ? '$' + filteredPrices[filteredPrices.length-1][1].toFixed(2) : '—'"></span>
+                            </div>
+                            <div>
+                              <span class="label">High</span>
+                              <span class="ml-1.5 num font-mono" style="color: var(--up)" x-text="rangeHigh !== null ? '$' + rangeHigh.toFixed(2) : '—'"></span>
+                            </div>
+                            <div>
+                              <span class="label">Low</span>
+                              <span class="ml-1.5 num font-mono" style="color: var(--down)" x-text="rangeLow !== null ? '$' + rangeLow.toFixed(2) : '—'"></span>
+                            </div>
+                            <div>
+                              <span class="label">Vol Ø</span>
+                              <span class="ml-1.5 num font-mono" style="color: var(--text-2)" x-text="rangeVolatility !== null ? rangeVolatility.toFixed(1) + '% ann.' : '—'"></span>
+                            </div>
+                          </div>
+                          <!-- Chart area -->
+                          <div class="detail-chart-wrap px-2 pb-3"
+                               @mousemove="onMouseMove($event)"
+                               @mouseleave="onMouseLeave()">
+                            <!-- Loading skeleton -->
+                            <div x-show="loading" class="desc-skeleton rounded" style="height: 130px"></div>
+                            <!-- No data state -->
+                            <div x-show="!loading && !filteredPrices.length" class="flex items-center justify-center" style="height: 130px; color: var(--text-3); font-size: 11px">No price data available</div>
+                            <!-- SVG chart -->
+                            <div x-show="!loading && filteredPrices.length > 1" style="position: relative">
+                              <svg x-ref="svg" viewBox="0 0 480 130" preserveAspectRatio="none" width="100%" height="130" style="display:block; overflow:visible">
+                                <defs>
+                                  <linearGradient id="detailGrad" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" :stop-color="priceChange >= 0 ? '#22d3ee' : '#fb7185'" stop-opacity="0.22"/>
+                                    <stop offset="100%" :stop-color="priceChange >= 0 ? '#22d3ee' : '#fb7185'" stop-opacity="0"/>
+                                  </linearGradient>
+                                </defs>
+                                <!-- Zero-line at entry price -->
+                                <line x1="0" :y1="entryY" x2="480" :y2="entryY" stroke="rgba(255,255,255,0.07)" stroke-width="1" stroke-dasharray="3 3"/>
+                                <!-- Area fill -->
+                                <path :d="areaPath" fill="url(#detailGrad)"/>
+                                <!-- Price line -->
+                                <path :d="linePath" fill="none" :stroke="priceChange >= 0 ? 'var(--cyan)' : '#fb7185'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                <!-- Crosshair line -->
+                                <line x-show="hoverIdx !== null" class="detail-crosshair-line" :x1="hoverX" y1="0" :x2="hoverX" y2="130"/>
+                                <!-- Crosshair dot -->
+                                <circle x-show="hoverIdx !== null" class="detail-crosshair-dot" :cx="hoverX" :cy="hoverY" r="4"/>
+                              </svg>
+                              <!-- Hover tooltip -->
+                              <div x-show="hoverIdx !== null" class="detail-tooltip" :style="`top: 4px; left: ${Math.min(hoverX + 8, 370)}px`">
+                                <div class="font-mono text-[10px] mb-0.5" style="color: var(--text-3)" x-text="hoverDate"></div>
+                                <div class="font-mono text-xs font-medium" :style="`color: ${priceChange >= 0 ? 'var(--cyan)' : '#fb7185'}`" x-text="hoverPrice ? '$' + hoverPrice.toFixed(2) : ''"></div>
+                              </div>
+                              <!-- X-axis labels -->
+                              <div class="flex justify-between px-1 mt-1" style="font-size:9px; color: var(--text-3); font-family: ui-monospace, monospace">
+                                <span x-text="filteredPrices[0]?.[0]?.slice(5) || ''"></span>
+                                <span x-text="filteredPrices[Math.floor(filteredPrices.length/2)]?.[0]?.slice(5) || ''"></span>
+                                <span x-text="filteredPrices[filteredPrices.length-1]?.[0]?.slice(5) || ''"></span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <div class="label">Best rank across ETFs</div>
-                        <div class="text-sm num font-mono mt-0.5" x-text="`#${row.best_rank}`"></div>
-                      </div>
-                    </div>
-                    <div class="overflow-x-auto scrollbar">
-                      <table class="w-full text-xs">
-                        <thead style="color: var(--text-3)">
-                          <tr style="border-bottom: 1px solid var(--border)">
-                            <th class="text-left py-1.5 pr-3 label">ETF</th>
-                            <th class="text-left py-1.5 pr-3 label">Tier</th>
-                            <th class="text-right py-1.5 pr-3 label">Rank</th>
-                            <th class="text-right py-1.5 pr-3 label">7d Δ</th>
-                            <th class="text-right py-1.5 pr-3 label">Weight</th>
-                            <th class="text-right py-1.5 pr-3 label">Flow</th>
-                            <th class="text-right py-1.5 pr-3 label">Score</th>
-                            <th class="text-left py-1.5 label">Flags</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <template x-for="h in detailsFor(row.ticker)" :key="h.ETF_Ticker">
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03)">
-                              <td class="py-1.5 pr-3 font-medium font-mono" x-text="h.ETF_Ticker"></td>
-                              <td class="py-1.5 pr-3"><span class="chip" :style="tierChipStyle(h.tier)" x-text="h.tier"></span></td>
-                              <td class="py-1.5 pr-3 text-right num font-mono" x-text="`#${h.rank}`"></td>
-                              <td class="py-1.5 pr-3 text-right num font-mono" :style="`color: ${rankDeltaColor(h.rank_delta)}`" x-text="fmtRankDelta(h.rank_delta)"></td>
-                              <td class="py-1.5 pr-3 text-right num font-mono" style="color: var(--text-2)" x-text="fmtWeight(h.weight)"></td>
-                              <td class="py-1.5 pr-3 text-right num font-mono" :style="`color: ${flowColor(h.weight_flow)}`" x-text="fmtFlow(h.weight_flow)"></td>
-                              <td class="py-1.5 pr-3 text-right num font-mono" x-text="fmt1(h.score)"></td>
-                              <td class="py-1.5">
-                                <span x-show="h.is_new" class="chip" style="background: rgba(96, 165, 250, 0.10); color: var(--blue); border: 1px solid rgba(96, 165, 250, 0.25)">NEW</span>
-                              </td>
-                            </tr>
-                          </template>
-                        </tbody>
-                      </table>
-                    </div>
+
+                    </div><!-- /two-panel -->
                   </td>
                 </tr>
               </tbody>
@@ -780,61 +885,139 @@
                   <!-- Expanded row -->
                   <tr x-show="open === row.ticker" x-transition.opacity style="background: #050505; border-bottom: 1px solid var(--border)">
                     <td colspan="14" class="px-4 py-4">
-                      <!-- Explainer line — auto-generated narrative from existing fields -->
+                      <!-- Explainer line -->
                       <div class="text-xs mb-3 px-3 py-2 rounded" style="background: rgba(34, 211, 238, 0.04); border: 1px solid rgba(34, 211, 238, 0.10); color: var(--text-2)" x-text="explainerFor(row)"></div>
-                      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3 text-xs">
-                        <div>
-                          <div class="label">Company</div>
-                          <div class="text-sm mt-0.5" x-text="row.company"></div>
-                        </div>
-                        <div>
-                          <div class="label">Score breakdown</div>
-                          <div class="text-sm num font-mono mt-0.5">
-                            <span x-text="fmt1(row.final_score)"></span>
-                            <span x-show="row.score_delta" :style="`color: ${flowColor(row.score_delta_pct)}`" class="ml-1.5 text-xs" x-text="`(${row.score_delta > 0 ? '+' : ''}${fmt1(row.score_delta)} vs ${meta.snapshot_dates_in_window?.slice(-2)[0] || '—'})`"></span>
+
+                      <!-- Two-panel layout -->
+                      <div class="flex flex-col xl:flex-row gap-4">
+
+                        <!-- LEFT PANEL -->
+                        <div class="flex-1 min-w-0">
+                          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-3 text-xs">
+                            <div>
+                              <div class="label">Company</div>
+                              <div class="text-sm mt-0.5" x-text="row.company"></div>
+                            </div>
+                            <div>
+                              <div class="label">Score breakdown</div>
+                              <div class="text-sm num font-mono mt-0.5">
+                                <span x-text="fmt1(row.final_score)"></span>
+                                <span x-show="row.score_delta" :style="`color: ${flowColor(row.score_delta_pct)}`" class="ml-1.5 text-xs" x-text="`(${row.score_delta > 0 ? '+' : ''}${fmt1(row.score_delta)} vs ${meta.snapshot_dates_in_window?.slice(-2)[0] || '—'})`"></span>
+                              </div>
+                            </div>
+                            <div>
+                              <div class="label">HC streak</div>
+                              <div class="text-sm num font-mono mt-0.5" :style="row.hc_streak > 0 ? 'color: var(--up)' : ''" x-text="`${row.hc_streak || 0} days`"></div>
+                            </div>
+                            <div>
+                              <div class="label">Best rank across ETFs</div>
+                              <div class="text-sm num font-mono mt-0.5" x-text="`#${row.best_rank}`"></div>
+                            </div>
+                          </div>
+                          <div class="overflow-x-auto scrollbar">
+                            <table class="w-full text-xs">
+                              <thead style="color: var(--text-3)">
+                                <tr style="border-bottom: 1px solid var(--border)">
+                                  <th class="text-left py-1.5 pr-3 label">ETF</th>
+                                  <th class="text-left py-1.5 pr-3 label">Tier</th>
+                                  <th class="text-right py-1.5 pr-3 label">Rank</th>
+                                  <th class="text-right py-1.5 pr-3 label">7d Δ</th>
+                                  <th class="text-right py-1.5 pr-3 label">Weight</th>
+                                  <th class="text-right py-1.5 pr-3 label">Flow</th>
+                                  <th class="text-right py-1.5 pr-3 label">Score</th>
+                                  <th class="text-left py-1.5 label">Flags</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <template x-for="h in detailsFor(row.ticker)" :key="h.ETF_Ticker">
+                                  <tr style="border-bottom: 1px solid rgba(255,255,255,0.03)">
+                                    <td class="py-1.5 pr-3 font-medium font-mono" x-text="h.ETF_Ticker"></td>
+                                    <td class="py-1.5 pr-3"><span class="chip" :style="tierChipStyle(h.tier)" x-text="h.tier"></span></td>
+                                    <td class="py-1.5 pr-3 text-right num font-mono" x-text="`#${h.rank}`"></td>
+                                    <td class="py-1.5 pr-3 text-right num font-mono" :style="`color: ${rankDeltaColor(h.rank_delta)}`" x-text="fmtRankDelta(h.rank_delta)"></td>
+                                    <td class="py-1.5 pr-3 text-right num font-mono" style="color: var(--text-2)" x-text="fmtWeight(h.weight)"></td>
+                                    <td class="py-1.5 pr-3 text-right num font-mono" :style="`color: ${flowColor(h.weight_flow)}`" x-text="fmtFlow(h.weight_flow)"></td>
+                                    <td class="py-1.5 pr-3 text-right num font-mono" x-text="fmt1(h.score)"></td>
+                                    <td class="py-1.5">
+                                      <span x-show="h.is_new" class="chip" style="background: rgba(96, 165, 250, 0.10); color: var(--blue); border: 1px solid rgba(96, 165, 250, 0.25)">NEW</span>
+                                    </td>
+                                  </tr>
+                                </template>
+                              </tbody>
+                            </table>
                           </div>
                         </div>
-                        <div>
-                          <div class="label">HC streak</div>
-                          <div class="text-sm num font-mono mt-0.5" :style="row.hc_streak > 0 ? 'color: var(--up)' : ''" x-text="`${row.hc_streak || 0} days`"></div>
+
+                        <!-- RIGHT PANEL: Premium Price Chart -->
+                        <div class="xl:w-[480px] shrink-0" x-data="detailChartPanel(row.ticker, $store)" x-init="init()">
+                          <div class="rounded-lg border" style="background: rgba(255,255,255,0.02); border-color: rgba(34,211,238,0.15)">
+                            <div class="px-3 pt-3 pb-2 flex items-start justify-between gap-2">
+                              <div class="min-w-0">
+                                <div class="flex items-center gap-1.5 mb-0.5">
+                                  <a :href="`stock.html?t=${ticker}`" class="text-xs font-mono font-medium" style="color: var(--cyan); text-decoration: none;" x-text="ticker"></a>
+                                  <span class="text-[10px]" x-show="priceChange !== null" :style="`color: ${priceChange >= 0 ? 'var(--up)' : 'var(--down)'}`" x-text="priceChange !== null ? (priceChange >= 0 ? '+' : '') + priceChange.toFixed(2) + '%' : ''"></span>
+                                </div>
+                                <div x-show="loading" class="desc-skeleton h-3 w-40 mt-1"></div>
+                                <div x-show="!loading" class="text-[10px] leading-snug" style="color: var(--text-3); max-width: 360px" x-text="description || ''"></div>
+                              </div>
+                              <div class="flex items-center gap-1 shrink-0">
+                                <template x-for="r in ranges" :key="r">
+                                  <button @click="setRange(r)" :class="activeRange === r ? 'range-btn active' : 'range-btn'" x-text="r"></button>
+                                </template>
+                              </div>
+                            </div>
+                            <div class="px-3 pb-2 flex items-baseline gap-4 text-xs" x-show="!loading && filteredPrices.length">
+                              <div>
+                                <span class="label">Latest</span>
+                                <span class="ml-1.5 num font-mono font-medium" style="color: var(--text)" x-text="filteredPrices.length ? '$' + filteredPrices[filteredPrices.length-1][1].toFixed(2) : '—'"></span>
+                              </div>
+                              <div>
+                                <span class="label">High</span>
+                                <span class="ml-1.5 num font-mono" style="color: var(--up)" x-text="rangeHigh !== null ? '$' + rangeHigh.toFixed(2) : '—'"></span>
+                              </div>
+                              <div>
+                                <span class="label">Low</span>
+                                <span class="ml-1.5 num font-mono" style="color: var(--down)" x-text="rangeLow !== null ? '$' + rangeLow.toFixed(2) : '—'"></span>
+                              </div>
+                              <div>
+                                <span class="label">Vol Ø</span>
+                                <span class="ml-1.5 num font-mono" style="color: var(--text-2)" x-text="rangeVolatility !== null ? rangeVolatility.toFixed(1) + '% ann.' : '—'"></span>
+                              </div>
+                            </div>
+                            <div class="detail-chart-wrap px-2 pb-3"
+                                 @mousemove="onMouseMove($event)"
+                                 @mouseleave="onMouseLeave()">
+                              <div x-show="loading" class="desc-skeleton rounded" style="height: 130px"></div>
+                              <div x-show="!loading && !filteredPrices.length" class="flex items-center justify-center" style="height: 130px; color: var(--text-3); font-size: 11px">No price data available</div>
+                              <div x-show="!loading && filteredPrices.length > 1" style="position: relative">
+                                <svg x-ref="svg" viewBox="0 0 480 130" preserveAspectRatio="none" width="100%" height="130" style="display:block; overflow:visible">
+                                  <defs>
+                                    <linearGradient id="detailGrad" x1="0" y1="0" x2="0" y2="1">
+                                      <stop offset="0%" :stop-color="priceChange >= 0 ? '#22d3ee' : '#fb7185'" stop-opacity="0.22"/>
+                                      <stop offset="100%" :stop-color="priceChange >= 0 ? '#22d3ee' : '#fb7185'" stop-opacity="0"/>
+                                    </linearGradient>
+                                  </defs>
+                                  <line x1="0" :y1="entryY" x2="480" :y2="entryY" stroke="rgba(255,255,255,0.07)" stroke-width="1" stroke-dasharray="3 3"/>
+                                  <path :d="areaPath" fill="url(#detailGrad)"/>
+                                  <path :d="linePath" fill="none" :stroke="priceChange >= 0 ? 'var(--cyan)' : '#fb7185'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                  <line x-show="hoverIdx !== null" class="detail-crosshair-line" :x1="hoverX" y1="0" :x2="hoverX" y2="130"/>
+                                  <circle x-show="hoverIdx !== null" class="detail-crosshair-dot" :cx="hoverX" :cy="hoverY" r="4"/>
+                                </svg>
+                                <div x-show="hoverIdx !== null" class="detail-tooltip" :style="`top: 4px; left: ${Math.min(hoverX + 8, 370)}px`">
+                                  <div class="font-mono text-[10px] mb-0.5" style="color: var(--text-3)" x-text="hoverDate"></div>
+                                  <div class="font-mono text-xs font-medium" :style="`color: ${priceChange >= 0 ? 'var(--cyan)' : '#fb7185'}`" x-text="hoverPrice ? '$' + hoverPrice.toFixed(2) : ''"></div>
+                                </div>
+                                <div class="flex justify-between px-1 mt-1" style="font-size:9px; color: var(--text-3); font-family: ui-monospace, monospace">
+                                  <span x-text="filteredPrices[0]?.[0]?.slice(5) || ''"></span>
+                                  <span x-text="filteredPrices[Math.floor(filteredPrices.length/2)]?.[0]?.slice(5) || ''"></span>
+                                  <span x-text="filteredPrices[filteredPrices.length-1]?.[0]?.slice(5) || ''"></span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <div class="label">Best rank across ETFs</div>
-                          <div class="text-sm num font-mono mt-0.5" x-text="`#${row.best_rank}`"></div>
-                        </div>
-                      </div>
-                      <div class="overflow-x-auto scrollbar">
-                        <table class="w-full text-xs">
-                          <thead style="color: var(--text-3)">
-                            <tr style="border-bottom: 1px solid var(--border)">
-                              <th class="text-left py-1.5 pr-3 label">ETF</th>
-                              <th class="text-left py-1.5 pr-3 label">Tier</th>
-                              <th class="text-right py-1.5 pr-3 label">Rank</th>
-                              <th class="text-right py-1.5 pr-3 label">7d Δ</th>
-                              <th class="text-right py-1.5 pr-3 label">Weight</th>
-                              <th class="text-right py-1.5 pr-3 label">Flow</th>
-                              <th class="text-right py-1.5 pr-3 label">Score</th>
-                              <th class="text-left py-1.5 label">Flags</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <template x-for="h in detailsFor(row.ticker)" :key="h.ETF_Ticker">
-                              <tr style="border-bottom: 1px solid rgba(255,255,255,0.03)">
-                                <td class="py-1.5 pr-3 font-medium font-mono" x-text="h.ETF_Ticker"></td>
-                                <td class="py-1.5 pr-3"><span class="chip" :style="tierChipStyle(h.tier)" x-text="h.tier"></span></td>
-                                <td class="py-1.5 pr-3 text-right num font-mono" x-text="`#${h.rank}`"></td>
-                                <td class="py-1.5 pr-3 text-right num font-mono" :style="`color: ${rankDeltaColor(h.rank_delta)}`" x-text="fmtRankDelta(h.rank_delta)"></td>
-                                <td class="py-1.5 pr-3 text-right num font-mono" style="color: var(--text-2)" x-text="fmtWeight(h.weight)"></td>
-                                <td class="py-1.5 pr-3 text-right num font-mono" :style="`color: ${flowColor(h.weight_flow)}`" x-text="fmtFlow(h.weight_flow)"></td>
-                                <td class="py-1.5 pr-3 text-right num font-mono" x-text="fmt1(h.score)"></td>
-                                <td class="py-1.5">
-                                  <span x-show="h.is_new" class="chip" style="background: rgba(96, 165, 250, 0.10); color: var(--blue); border: 1px solid rgba(96, 165, 250, 0.25)">NEW</span>
-                                </td>
-                              </tr>
-                            </template>
-                          </tbody>
-                        </table>
-                      </div>
+
+                      </div><!-- /two-panel -->
                     </td>
                   </tr>
                 </tbody>
@@ -2042,6 +2225,161 @@ function app() {
       const d = new Date(iso); if (isNaN(d)) return '—';
       const pad = n => String(n).padStart(2, '0');
       return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())} UTC`;
+    },
+  };
+}
+
+// ── Premium detail chart panel — standalone Alpine component ──────────────────
+// Each expanded row mounts its own independent instance of this component,
+// which lazy-fetches the static JSON file the first time it is opened.
+function detailChartPanel(ticker, _store) {
+  return {
+    ticker,
+    loading: true,
+    description: '',
+    allPrices: [],        // full 2-year daily close: [[date, price], ...]
+    filteredPrices: [],   // prices visible in the current range
+    ranges: ['1M','3M','6M','YTD','1Y','ALL'],
+    activeRange: '1Y',
+    hoverIdx: null,
+    hoverX: 0,
+    hoverY: 0,
+    hoverDate: '',
+    hoverPrice: null,
+
+    async init() {
+      // Avoid duplicate fetches if already cached on window
+      if (!window._tickerDetailsCache) window._tickerDetailsCache = {};
+      const cache = window._tickerDetailsCache;
+      if (cache[this.ticker]) {
+        this._applyData(cache[this.ticker]);
+        return;
+      }
+      try {
+        const data = await fetch(`data/details/${encodeURIComponent(this.ticker)}.json`, { cache: 'no-store' })
+          .then(r => r.ok ? r.json() : Promise.reject(r.status));
+        cache[this.ticker] = data;
+        this._applyData(data);
+      } catch (e) {
+        // No file yet — show graceful empty state
+        this.loading = false;
+      }
+    },
+
+    _applyData(data) {
+      this.description = data.description || '';
+      this.allPrices = data.prices || [];
+      this._filter();
+      this.loading = false;
+    },
+
+    _filter() {
+      const all = this.allPrices;
+      if (!all.length) { this.filteredPrices = []; return; }
+      const lastDate = new Date(all[all.length - 1][0]);
+      let cutoff = null;
+      if (this.activeRange === '1M') {
+        cutoff = new Date(lastDate); cutoff.setMonth(cutoff.getMonth() - 1);
+      } else if (this.activeRange === '3M') {
+        cutoff = new Date(lastDate); cutoff.setMonth(cutoff.getMonth() - 3);
+      } else if (this.activeRange === '6M') {
+        cutoff = new Date(lastDate); cutoff.setMonth(cutoff.getMonth() - 6);
+      } else if (this.activeRange === 'YTD') {
+        cutoff = new Date(lastDate.getFullYear(), 0, 1);
+      } else if (this.activeRange === '1Y') {
+        cutoff = new Date(lastDate); cutoff.setFullYear(cutoff.getFullYear() - 1);
+      } else {
+        cutoff = null; // ALL
+      }
+      this.filteredPrices = cutoff
+        ? all.filter(p => new Date(p[0]) >= cutoff)
+        : all;
+    },
+
+    setRange(r) {
+      this.activeRange = r;
+      this._filter();
+    },
+
+    // ── Computed properties ───────────────────────────────────────────────
+    get priceChange() {
+      const fp = this.filteredPrices;
+      if (fp.length < 2) return null;
+      const first = fp[0][1], last = fp[fp.length - 1][1];
+      if (!first) return null;
+      return ((last - first) / first) * 100;
+    },
+
+    get rangeHigh() {
+      if (!this.filteredPrices.length) return null;
+      return Math.max(...this.filteredPrices.map(p => p[1]));
+    },
+    get rangeLow() {
+      if (!this.filteredPrices.length) return null;
+      return Math.min(...this.filteredPrices.map(p => p[1]));
+    },
+    get rangeVolatility() {
+      const fp = this.filteredPrices;
+      if (fp.length < 10) return null;
+      // Annualised daily return std-dev
+      const returns = [];
+      for (let i = 1; i < fp.length; i++) {
+        if (fp[i-1][1] > 0) returns.push(Math.log(fp[i][1] / fp[i-1][1]));
+      }
+      if (!returns.length) return null;
+      const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
+      const variance = returns.reduce((a, b) => a + (b - mean) ** 2, 0) / returns.length;
+      return Math.sqrt(variance * 252) * 100;
+    },
+
+    // ── SVG path builders ─────────────────────────────────────────────────
+    _yScale(val) {
+      const fp = this.filteredPrices;
+      if (!fp.length) return 65;
+      const vals = fp.map(p => p[1]);
+      const mn = Math.min(...vals), mx = Math.max(...vals);
+      const range = mx - mn || 1;
+      const PAD_TOP = 10, PAD_BOT = 10, H = 130;
+      return H - PAD_BOT - ((val - mn) / range) * (H - PAD_TOP - PAD_BOT);
+    },
+    _xScale(i) {
+      const n = this.filteredPrices.length;
+      return n <= 1 ? 240 : (i / (n - 1)) * 480;
+    },
+    get entryY() {
+      return this.filteredPrices.length ? this._yScale(this.filteredPrices[0][1]) : 65;
+    },
+    get linePath() {
+      const fp = this.filteredPrices;
+      if (fp.length < 2) return '';
+      return fp.map((p, i) => `${i === 0 ? 'M' : 'L'}${this._xScale(i).toFixed(1)},${this._yScale(p[1]).toFixed(1)}`).join(' ');
+    },
+    get areaPath() {
+      const fp = this.filteredPrices;
+      if (fp.length < 2) return '';
+      const line = this.linePath;
+      const lastX = this._xScale(fp.length - 1).toFixed(1);
+      return `${line} L${lastX},130 L0,130 Z`;
+    },
+
+    // ── Mouse interaction ─────────────────────────────────────────────────
+    onMouseMove(e) {
+      const fp = this.filteredPrices;
+      if (!fp.length) return;
+      const svg = this.$refs.svg;
+      if (!svg) return;
+      const rect = svg.getBoundingClientRect();
+      const rx = e.clientX - rect.left;
+      const ratio = Math.max(0, Math.min(1, rx / rect.width));
+      const idx = Math.round(ratio * (fp.length - 1));
+      this.hoverIdx = idx;
+      this.hoverX = this._xScale(idx);
+      this.hoverY = this._yScale(fp[idx][1]);
+      this.hoverDate = fp[idx][0];
+      this.hoverPrice = fp[idx][1];
+    },
+    onMouseLeave() {
+      this.hoverIdx = null;
     },
   };
 }
