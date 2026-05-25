@@ -1615,18 +1615,24 @@
     <!-- Vol content -->
     <div x-show="!loadingVol && volData">
 
-      <!-- View I controls -->
+      <!-- View I controls — collapsed from 4 sub-panels to 2 logical groups
+           ("Levels & Regime" combines Overview + Cross-Asset; "History & Heatmap"
+           combines History + Heatmap). Keeps the same data, halves the click cost. -->
       <div class="flex flex-wrap gap-2 mb-5 items-center">
         <!-- Sub-panel selector -->
         <div class="flex gap-1">
-          <template x-for="panel in ['Overview','History','Heatmap','Cross-Asset']" :key="panel">
-            <button @click="volSubPanel = panel"
-                    :class="volSubPanel === panel ? 'tab-active' : ''"
-                    class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
-                    :style="volSubPanel === panel ? '' : 'color: var(--text-2); border-color: var(--border)'"
-                    x-text="panel">
-            </button>
-          </template>
+          <button @click="volSubPanel = 'Levels'"
+                  :class="volSubPanel === 'Levels' ? 'tab-active' : ''"
+                  class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+                  :style="volSubPanel === 'Levels' ? '' : 'color: var(--text-2); border-color: var(--border)'">
+            Levels &amp; Regime
+          </button>
+          <button @click="volSubPanel = 'History'"
+                  :class="volSubPanel === 'History' ? 'tab-active' : ''"
+                  class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+                  :style="volSubPanel === 'History' ? '' : 'color: var(--text-2); border-color: var(--border)'">
+            History &amp; Heatmap
+          </button>
         </div>
         <div class="w-px h-5 mx-1" style="background: var(--border-2)"></div>
         <!-- Lookback window -->
@@ -1659,42 +1665,30 @@
              x-text="volData ? `Vol data: ${(volData.generated_utc||'').slice(0,10)}` : ''"></div>
       </div>
 
-      <!-- Sub-panel label + regime banner -->
+      <!-- Sub-panel label — combined headers for the two consolidated tabs -->
       <div class="mb-4">
-        <template x-if="volSubPanel === 'Overview'">
+        <template x-if="volSubPanel === 'Levels'">
           <div>
-            <h2 class="text-sm font-medium" style="color: var(--cyan)">VOLATILITY OVERVIEW</h2>
-            <div class="text-xs mt-0.5" style="color: var(--text-3)">Current level, percentile rank, regime, 12-month sparkline. Color = stress level.</div>
-          </div>
-        </template>
-        <template x-if="volSubPanel === 'Heatmap'">
-          <div>
-            <h2 class="text-sm font-medium" style="color: var(--cyan)">MONTHLY Z-SCORE HEATMAP</h2>
-            <div class="text-xs mt-0.5" style="color: var(--text-3)">Rows = vol indices, columns = months. Each cell = z-score of monthly avg vs full history.</div>
+            <h2 class="text-sm font-medium" style="color: var(--cyan)">LEVELS &amp; REGIME</h2>
+            <div class="text-xs mt-0.5" style="color: var(--text-3)">Current level, percentile rank, regime per index — followed by a cross-asset percentile comparison so the 7 indices are readable at the same scale.</div>
           </div>
         </template>
         <template x-if="volSubPanel === 'History'">
           <div>
-            <h2 class="text-sm font-medium" style="color: var(--cyan)">HISTORICAL LEVEL CHART</h2>
-            <div class="text-xs mt-0.5" style="color: var(--text-3)">Daily close levels over time. Toggle series. Hover for exact level + date.</div>
-          </div>
-        </template>
-        <template x-if="volSubPanel === 'Cross-Asset'">
-          <div>
-            <h2 class="text-sm font-medium" style="color: var(--cyan)">CROSS-ASSET VOL COMPARISON</h2>
-            <div class="text-xs mt-0.5" style="color: var(--text-3)">Percentile rank of all 7 vol indices vs own history — comparable across indices regardless of raw level.</div>
+            <h2 class="text-sm font-medium" style="color: var(--cyan)">HISTORY &amp; HEATMAP</h2>
+            <div class="text-xs mt-0.5" style="color: var(--text-3)">Daily levels over time + monthly z-score heatmap. Default window starts where every active series has data; toggle to extend.</div>
           </div>
         </template>
       </div>
 
       <!-- Regime banner — auto-generated from z-scores -->
-      <div x-show="volSubPanel === 'Overview' && volData" class="mb-4 px-4 py-3 rounded-lg border text-xs" style="background: var(--surface); border-color: var(--border)">
+      <div x-show="volSubPanel === 'Levels' && volData" class="mb-4 px-4 py-3 rounded-lg border text-xs" style="background: var(--surface); border-color: var(--border)">
         <div class="font-medium mb-1" style="color: var(--cyan)">REGIME SUMMARY</div>
         <div x-html="volRegimeBanner" style="color: var(--text-2); line-height: 1.6;"></div>
       </div>
 
-      <!-- ─── Overview: Current Level Dashboard ─────────────────────────── -->
-      <div x-show="volSubPanel === 'Overview'">
+      <!-- ─── Levels & Regime: Current tiles + cross-asset comparison ───── -->
+      <div x-show="volSubPanel === 'Levels'">
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
           <template x-for="tile in volTiles" :key="tile.key">
             <div class="rounded-lg border p-3.5 transition duration-300 hover:-translate-y-0.5 hover:shadow-md cursor-pointer flex flex-col justify-between"
@@ -1730,9 +1724,10 @@
         </div>
       </div>
 
-      <!-- ─── Heatmap: Monthly Z-Score Heatmap ─────────────────────────── -->
-      <div x-show="volSubPanel === 'Heatmap'">
-        <div class="rounded-lg border overflow-auto scrollbar" style="max-height: 75vh; background: var(--bg); border-color: var(--border)">
+      <!-- ─── Heatmap (now part of "History & Heatmap" tab) ─────────────── -->
+      <div x-show="volSubPanel === 'History'" class="mt-5">
+        <div class="text-xs mb-2" style="color: var(--text-3)">MONTHLY Z-SCORE HEATMAP — rows = vol indices · columns = months · cell = z-score of monthly average vs full history</div>
+        <div class="rounded-lg border overflow-auto scrollbar" style="max-height: 60vh; background: var(--bg); border-color: var(--border)">
           <div x-html="volMonthlyZHeatmapHtml"></div>
         </div>
         <!-- Color legend -->
@@ -1750,8 +1745,8 @@
 
       <!-- ─── History: Historical Level Chart ──────────────────────────── -->
       <div x-show="volSubPanel === 'History'">
-        <!-- Series toggles -->
-        <div class="flex flex-wrap gap-2 mb-4">
+        <!-- Series toggles + ragged-start guard -->
+        <div class="flex flex-wrap gap-2 mb-4 items-center">
           <template x-for="s in volSeriesDefs" :key="s.key">
             <button @click="toggleVolSeries(s.key)"
                     class="chip border transition"
@@ -1761,6 +1756,16 @@
                     x-text="s.name">
             </button>
           </template>
+          <div class="w-px h-5 mx-1" style="background: var(--border-2)"></div>
+          <!-- §6 Ragged-start fix: VIX starts 1990, GVZ/OVX/RVX start 2007-08+. Default to the
+               common window where every active series has data; toggle to extend back. -->
+          <label class="flex items-center gap-1.5 text-[10px] font-mono cursor-pointer"
+                 style="color: var(--text-3)"
+                 @mouseenter="showTt($event, 'When ON, the chart starts at the earliest month where every active series has data. Off = extend back to the longest series start (e.g. 1990 for VIX-only).')"
+                 @mouseleave="hideTt()">
+            <input type="checkbox" x-model="volCommonWindow" class="cursor-pointer">
+            <span>Align series start</span>
+          </label>
         </div>
 
         <!-- SVG Chart -->
@@ -1788,10 +1793,11 @@
         </div>
       </div>
 
-      <!-- ─── Cross-Asset: Vol Comparison ──────────────────────────────── -->
-      <div x-show="volSubPanel === 'Cross-Asset'">
-        <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
-          <div x-html="volZBarHtml" style="width:100%;overflow-x:auto;"></div>
+      <!-- ─── Cross-Asset (now part of "Levels & Regime" tab) ─────────── -->
+      <div x-show="volSubPanel === 'Levels'" class="mt-6">
+        <div class="text-xs mb-2" style="color: var(--text-3)">CROSS-ASSET COMPARISON — percentile rank of all 7 vol indices vs own history. Comparable across indices regardless of raw level.</div>
+        <div class="rounded-lg border overflow-hidden flex justify-center" style="background: var(--surface); border-color: var(--border); padding: 12px 0;">
+          <div x-html="volZBarHtml" style="width:100%;max-width:780px;"></div>
         </div>
         <!-- Z-score table -->
         <div class="mt-4 rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
@@ -2075,7 +2081,13 @@ function marketsApp() {
     // Vol Intelligence state
     volLookback: 'All',   // '1Y' | '3Y' | '5Y' | 'All'
     volGranularity: 'Monthly avg',  // 'Daily' | 'Monthly avg'
-    volSubPanel: 'Overview',   // 'Overview' | 'History' | 'Heatmap' | 'Cross-Asset'
+    // §6 Consolidated to 2 sub-panels: 'Levels' (Overview + Cross-Asset)
+    // and 'History' (History + Heatmap).
+    volSubPanel: 'Levels',
+    // §6 Ragged-start guard for the History chart. When ON, only show months
+    // where every active series has data (e.g. ≥2008 for VIX+GVZ+OVX). When OFF,
+    // dates extend back to the longest series start (1990 for VIX-only).
+    volCommonWindow: true,
     activeVolSeries: new Set(['vix', 'gvz', 'ovx']),
     volHoverInfo: null,
 
@@ -5474,13 +5486,24 @@ function marketsApp() {
 
       const useDaily = this.volGranularity === 'Daily';
 
-      // Collect all date keys
+      // Collect all date keys + per-series start dates
       const allDates = new Set();
+      const seriesStarts = [];
       for (const s of seriesDefs) {
         const vals = this._volValues(s.key);
-        Object.keys(vals).forEach(d => allDates.add(d));
+        const keys = Object.keys(vals);
+        keys.forEach(d => allDates.add(d));
+        if (keys.length) seriesStarts.push(keys.sort()[0]);
       }
-      const dates = Array.from(allDates).sort();
+      let dates = Array.from(allDates).sort();
+      // §6 Ragged-start fix — when the user has multiple series active and the
+      // 'Align series start' toggle is on, clip the x-axis to the latest start
+      // date among active series. Otherwise VIX (1990+) creates ~17 years of
+      // single-line wasteland before GVZ/OVX/RVX/VXD/VXEEM appear.
+      if (this.volCommonWindow && seriesStarts.length > 1) {
+        const commonStart = seriesStarts.reduce((mx, d) => d > mx ? d : mx, seriesStarts[0]);
+        dates = dates.filter(d => d >= commonStart);
+      }
       if (!dates.length) return '<div style="padding:40px;text-align:center;color:var(--text-3)">No data</div>';
 
       const W = 1200, H = 340, PL = 52, PR = 20, PT = 20, PB = 40;
@@ -5583,10 +5606,18 @@ function marketsApp() {
       const seriesDefs = this.volSeriesDefs.filter(s => active.has(s.key));
 
       const allDates = new Set();
+      const seriesStarts = [];
       for (const s of seriesDefs) {
-        Object.keys(this._volValues(s.key)).forEach(d => allDates.add(d));
+        const keys = Object.keys(this._volValues(s.key));
+        keys.forEach(d => allDates.add(d));
+        if (keys.length) seriesStarts.push(keys.sort()[0]);
       }
-      const dates = Array.from(allDates).sort();
+      let dates = Array.from(allDates).sort();
+      // §6 Mirror the chart's common-window clip so the crosshair indexes the same dates
+      if (this.volCommonWindow && seriesStarts.length > 1) {
+        const commonStart = seriesStarts.reduce((mx, d) => d > mx ? d : mx, seriesStarts[0]);
+        dates = dates.filter(d => d >= commonStart);
+      }
       if (!dates.length) return;
 
       const W = 1200, PL = 52, PR = 20;
@@ -5620,67 +5651,70 @@ function marketsApp() {
       const tiles = this.volTiles;
       if (!tiles.length) return '';
 
-      const W = 700, H = 280, PL = 70, PR = 30, PT = 30, PB = 40;
+      // §6 Cross-asset chart rebuild — match the drawdown tab's polish:
+      //   * dark #111 background like the underwater chart
+      //   * y-axis ticks include 0σ as the emphasised baseline
+      //   * σ labels always render ABOVE the bar regardless of sign so they
+      //     align on a single y-band (no zig-zag), AA-contrast slate text
+      //   * bar names render BELOW the chart in a consistent label band
+      //   * SVG is centered by the parent flex container; aspect-ratio sized
+      //     so it scales without preserveAspectRatio="none" distortion.
+      const W = 760, H = 280, PL = 56, PR = 24, PT = 30, PB = 50;
       const chartW = W - PL - PR, chartH = H - PT - PB;
       const n = tiles.length;
-      const barW = Math.floor(chartW / n) - 4;
+      const slot = chartW / n;
+      const barW = Math.min(56, Math.max(28, slot - 14));
 
-      // Z range
       const zVals = tiles.map(t => t.z).filter(z => z !== null);
       if (!zVals.length) return '';
-      const minZ = Math.min(-2.5, ...zVals) * 1.1;
-      const maxZ = Math.max(2.5, ...zVals) * 1.1;
+      const absMax = Math.max(2.5, ...zVals.map(Math.abs)) * 1.15;
+      const minZ = -absMax, maxZ = absMax;
 
       const yScale = (v) => PT + chartH - ((v - minZ) / (maxZ - minZ)) * chartH;
       const y0 = yScale(0);
 
-      // Y-axis ticks
+      // Y-axis ticks at integer σ values; 0σ is emphasised
       let yTicks = '';
       for (let v = Math.ceil(minZ); v <= Math.floor(maxZ); v++) {
         const y = yScale(v);
-        yTicks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" stroke="${v === 0 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.04)'}" stroke-width="${v === 0 ? 1 : 1}"/>`;
-        yTicks += `<text x="${PL - 4}" y="${(y + 4).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${v >= 0 ? '+' : ''}${v}σ</text>`;
+        const isZero = v === 0;
+        yTicks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,${isZero ? 0.20 : 0.05})" stroke-width="1" ${isZero ? '' : 'stroke-dasharray="3,3"'}/>`;
+        yTicks += `<text x="${PL - 6}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:${isZero ? '#a1a1aa' : '#52525b'};font-family:ui-monospace">${v > 0 ? '+' : ''}${v}σ</text>`;
       }
 
-      // Reference lines at ±1, ±2
-      let refLines = '';
-      for (const v of [-2, -1, 1, 2]) {
-        const y = yScale(v);
-        refLines += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.08)" stroke-width="1" stroke-dasharray="4,3"/>`;
-      }
-
-      // Bars
+      // Bars + labels (σ labels always above the bar so they line up on one band)
       let bars = '';
+      const labelBandY = PT + 14;  // top label band y-coordinate (σ values)
       for (let i = 0; i < tiles.length; i++) {
         const t = tiles[i];
-        const x = PL + i * (chartW / n) + (chartW / n - barW) / 2;
+        if (t.z === null) continue;
+        const slotX = PL + i * slot + (slot - barW) / 2;
         const z = t.z;
-        if (z === null) continue;
-
         const barTop = Math.min(y0, yScale(z));
-        const barH = Math.abs(y0 - yScale(z));
-        const color = z < -1 ? '#34d399' : z < 1 ? '#94a3b8' : z < 2 ? '#f97316' : '#fb7185';
+        const barH = Math.max(2, Math.abs(y0 - yScale(z)));
+        // Calmer 4-stop palette — same semantics as the tiles (calm/stress/crisis)
+        const color = z < -1 ? '#34d399' : z < 1 ? '#94a3b8' : z < 2 ? '#f59e0b' : '#fb7185';
 
-        bars += `<rect x="${x.toFixed(1)}" y="${barTop.toFixed(1)}" width="${barW}" height="${Math.max(barH, 2).toFixed(1)}" fill="${color}" opacity="0.8" rx="2"
+        bars += `<rect x="${slotX.toFixed(1)}" y="${barTop.toFixed(1)}" width="${barW}" height="${barH.toFixed(1)}" fill="${color}" opacity="0.85" rx="2"
                        onmouseenter="document.getElementById('tt').innerHTML='${t.name}\\nZ-score: ${z >= 0 ? '+' : ''}${z.toFixed(2)}σ\\nLevel: ${t.current !== null ? t.current.toFixed(1) : '—'}\\n${t.interpretation}';document.getElementById('tt').style.opacity='1';_posTt(this)"
                        onmouseleave="document.getElementById('tt').style.opacity='0'"
                        style="cursor:pointer"/>`;
 
-        // Label below bar
-        bars += `<text x="${(x + barW / 2).toFixed(1)}" y="${H - PB + 14}" text-anchor="middle" style="font-size:10px;font-weight:600;fill:${color};font-family:ui-monospace">${t.name}</text>`;
+        // σ value: always at the top label band — single line of values across the chart
+        const sigmaLabel = (z >= 0 ? '+' : '') + z.toFixed(1) + 'σ';
+        bars += `<text x="${(slotX + barW / 2).toFixed(1)}" y="${labelBandY.toFixed(1)}" text-anchor="middle" style="font-size:9px;font-weight:500;fill:${color};font-family:ui-monospace">${sigmaLabel}</text>`;
 
-        // Z value above/below bar
-        const labelY = z >= 0 ? barTop - 4 : barTop + barH + 12;
-        bars += `<text x="${(x + barW / 2).toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="middle" style="font-size:9px;fill:${color};font-family:ui-monospace">${z >= 0 ? '+' : ''}${z.toFixed(1)}σ</text>`;
+        // Index name: under the chart in a consistent label band
+        bars += `<text x="${(slotX + barW / 2).toFixed(1)}" y="${(H - PB + 16).toFixed(1)}" text-anchor="middle" style="font-size:10px;font-weight:600;fill:#e4e4e7;font-family:ui-monospace">${t.name}</text>`;
+        bars += `<text x="${(slotX + barW / 2).toFixed(1)}" y="${(H - PB + 30).toFixed(1)}" text-anchor="middle" style="font-size:8px;fill:#71717a;font-family:ui-monospace">${t.regime}</text>`;
       }
 
-      // Title
-      const title = `<text x="${W / 2}" y="16" text-anchor="middle" style="font-size:11px;fill:#a1a1aa;font-family:ui-sans-serif">Current Z-Scores vs ${this.volLookback} History (${this.volGranularity})</text>`;
-
+      const title = `<text x="${W / 2}" y="16" text-anchor="middle" style="font-size:10px;fill:#a1a1aa;font-family:ui-sans-serif">Current Z-Scores vs ${this.volLookback} History · ${this.volGranularity}</text>`;
       const yAxis = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H - PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
       const xAxis = `<line x1="${PL}" y1="${H - PB}" x2="${W - PR}" y2="${H - PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
 
-      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;height:${H}px;display:block">${title}${yTicks}${refLines}${bars}${yAxis}${xAxis}</svg>`;
+      // Centered, aspect-ratio sized SVG. Parent <div> uses flex justify-center.
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;height:auto;aspect-ratio:${W}/${H};display:block;margin:0 auto;background:#111;border-radius:6px;">${title}${yTicks}${bars}${yAxis}${xAxis}</svg>`;
     },
 
   };
