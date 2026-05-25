@@ -60,6 +60,29 @@ sanitizer:
   ticker_renames:
     GOOG: GOOGL
 
+  # Cross-listing collapse (regex). Same security trading under two ticker forms
+  # gets merged into one canonical leaderboard entry. Each rule is a regex
+  # `pattern` and a `replacement` (back-references supported via \1, \2…).
+  #
+  # KRX A-prefix rule
+  # -----------------
+  # Korean stocks appear in two equivalent forms in the data:
+  #   • Bloomberg form  "A005930"  (e.g. JHEM/MFEM holdings)
+  #   • KRX exchange    "005930"   (e.g. EEMO/PIZ holdings)
+  # Both refer to the same security on the Korean Stock Exchange. Without this
+  # rule, Samsung Electronics fragments into two leaderboard entries with
+  # split conviction. The "A" prefix is stripped and the bare 6-digit code is
+  # used as the canonical form.
+  #
+  # Confidence: high. Pattern is tight (^A then exactly 6 digits then end of
+  # string). Verified against live data: every A-prefix Korean ticker has a
+  # bare-6-digit counterpart with a matching company name (Samsung, SK Hynix,
+  # Hyundai, Shinhan, etc.). False-positive risk: an actual non-Korean ticker
+  # of the form A###### would be incorrectly stripped — none exist in the
+  # 30-ETF universe (verified).
+  cross_listing_patterns:
+    - {pattern: '^A(\d{6})$', replacement: '\1'}   # KRX: A005930 → 005930
+
 # =============================================================================
 # TIERS — Predator Protocol v1, matches the ETF_Config table in the Excel.
 # =============================================================================

@@ -57,6 +57,7 @@ class Sanitizer:
     blocked_name_exact: tuple[str, ...]             # exact equality match (case-insensitive)
     ticker_replacements: tuple[tuple[str, str], ...] # BRK-B → BRK.B, BF/B → BF.B
     ticker_renames: dict                             # GOOG → GOOGL (after replacements)
+    cross_listing_patterns: tuple[tuple[str, str], ...] = ()  # regex (pattern, replacement) — collapses cross-listings (e.g. KRX 'A005930' → '005930')
 
     def apply(self, df: pd.DataFrame) -> pd.DataFrame:
         """Drop blocked rows, standardize ticker punctuation, then apply renames."""
@@ -95,18 +96,57 @@ class Sanitizer:
         if self.ticker_renames:
             out["ticker"] = out["ticker"].replace(self.ticker_renames)
 
-        # 5. Deduplicate rows created by renames (e.g., GOOG+GOOGL same ETF/date → one row)
-        out = self._dedupe_after_renames(out)
+        # 5. Cross-listing collapse (regex). E.g. KRX 'A005930' (Bloomberg form) and
+        # bare '005930' (KRX exchange form) are the SAME security — collapse to one
+        # canonical ticker so they don't fragment the leaderboard. Uses regex with
+        # back-references (e.g. ^A(\d{6})$ → \1). High-confidence merges only —
+        # patterns must be tight enough that false positives are negligible.
+        merged_pairs: list[tuple[str, str]] = []
+        if self.cross_listing_patterns:
+            before = out["ticker"].copy()
+            for pattern, replacement in self.cross_listing_patterns:
+                out["ticker"] = out["ticker"].str.replace(pattern, replacement, regex=True)
+            changed = before != out["ticker"]
+            if changed.any():
+                # Record (raw → canonical) pairs for audit; capped to avoid log spam.
+                pairs = (
+                    pd.DataFrame({"_raw": before[changed], "_canonical": out.loc[changed, "ticker"]})
+                    .drop_duplicates()
+                    .itertuples(index=False, name=None)
+                )
+                merged_pairs = list(pairs)
+
+        # 6. Deduplicate rows created by renames OR cross-listing collapse
+        # (e.g., GOOG+GOOGL same ETF/date → one row; A005930 + 005930 → one row)
+        if self.ticker_renames or self.cross_listing_patterns:
+            out = self._dedupe_after_renames(out)
+
+        # 7. Audit log for cross-listing merges (printed once per call). Capped to
+        # 20 examples; a summary line always emits when any merge occurs so CI
+        # logs surface the magnitude.
+        if merged_pairs:
+            print(
+                f"[sanitizer] cross-listing collapse: {len(merged_pairs)} unique raw→canonical mappings",
+                flush=True,
+            )
+            for raw, canonical in merged_pairs[:20]:
+                print(f"  {raw}  →  {canonical}", flush=True)
+            if len(merged_pairs) > 20:
+                print(f"  … and {len(merged_pairs) - 20} more", flush=True)
 
         return out
 
     def _dedupe_after_renames(self, df: pd.DataFrame) -> pd.DataFrame:
-        """After GOOG→GOOGL rename, sum weights for duplicate (ETF_Ticker, ticker, Holdings_As_Of) keys.
+        """After GOOG→GOOGL or KRX A-prefix collapse, sum weights for duplicate
+        (ETF_Ticker, ticker, Holdings_As_Of) keys.
 
-        Without this, dual-class shares that get renamed to the same ticker create
-        Cartesian-product explosions in downstream merges (build.py merge on [ETF_Ticker, ticker]).
+        Without this, dual-class shares or cross-listings that get renamed to the
+        same ticker create Cartesian-product explosions in downstream merges
+        (build.py merge on [ETF_Ticker, ticker]).
         """
-        if df.empty or not self.ticker_renames:
+        if df.empty:
+            return df
+        if not self.ticker_renames and not self.cross_listing_patterns:
             return df
         key = ["ETF_Ticker", "ticker", "Holdings_As_Of"]
         if not all(c in df.columns for c in key):
@@ -159,12 +199,20 @@ class Config:
     def from_yaml(cls, path: str | Path) -> "Config":
         cfg = yaml.safe_load(Path(path).read_text())
         san = cfg.get("sanitizer", {})
+        # cross_listing_patterns: list of {pattern: regex, replacement: str} dicts
+        # in YAML; loaded as ((pattern, replacement), ...) tuple here.
+        cross_listing = tuple(
+            (str(rule["pattern"]), str(rule.get("replacement", "")))
+            for rule in san.get("cross_listing_patterns", [])
+            if isinstance(rule, dict) and "pattern" in rule
+        )
         sanitizer = Sanitizer(
             blocked_tickers=tuple(san.get("blocked_tickers", [])),
             blocked_name_patterns=tuple(san.get("blocked_name_patterns", [])),
             blocked_name_exact=tuple(san.get("blocked_name_exact", [])),
             ticker_replacements=tuple((k, v) for k, v in san.get("ticker_replacements", {}).items()),
             ticker_renames=dict(san.get("ticker_renames", {})),
+            cross_listing_patterns=cross_listing,
         )
         etfs = tuple(
             ETF(ticker=e["ticker"], tier=e["tier"], points=int(e["points"]))
@@ -370,9 +418,18 @@ def compute_leaderboard(
     # ── SCORE FORMULA — two modes ─────────────────────────────────────────────
     if cfg.scoring_mode == "conviction" and cfg.conviction is not None:
         # §24 Conviction-weighted formula:
-        #   C_i = Wovr(OW_i) × Grank(RP_i)
-        #   Single Score = TierPoints × C_i
-        # No weight%×100 term, no step rank_multiplier — conviction replaces both.
+        #   C_i        = Wovr(OW_i) × Grank(RP_i)        # overweight × rank percentile
+        #   Single_i   = TierPoints_i × C_i              # each holding's contribution
+        #   Final      = Σ_i Single_i                    # breadth of conviction (additive)
+        #
+        # The legacy additive `new_bonus = tier_points × 5` is suppressed in this
+        # mode by design: it was a flat-per-row term that, applied UN-weighted by
+        # conviction, allowed a single filler-rank NEW hit (e.g. PIE #82, conv≈0.12)
+        # to inject ~200 raw points and override the conviction signal — see the
+        # Samsung-vs-ITUB4 regression. Conviction mode keeps breadth additive
+        # (Σ across ETFs) but only breadth *of conviction*. The is_new flag is
+        # still computed and surfaced for display/changelog; it just doesn't
+        # short-circuit the multiplier.
         cv = cfg.conviction
         latest["conviction"] = latest.apply(
             lambda row: conviction_multiplier(
@@ -383,9 +440,10 @@ def compute_leaderboard(
         latest["rank_mult"] = latest["conviction"]   # expose for downstream compat
         latest["weight_pct"] = latest["weight"] * 100.0
         latest["base_score"] = latest["tier_points"] * latest["conviction"]
-        eligible_new = latest["is_new"] & latest["tier"].isin(cfg.new_bonus_tiers)
-        latest["new_bonus"] = (latest["tier_points"] * cfg.new_bonus_mult).where(eligible_new, 0.0)
-        latest["score"] = latest["base_score"] + latest["new_bonus"]
+        # Column kept (build.py emits it to holdings_latest.json) but always 0
+        # in conviction mode — the bonus is folded out, not folded in.
+        latest["new_bonus"] = 0.0
+        latest["score"] = latest["base_score"]
     else:
         # Legacy Power Query formula:
         #   Single Score = Weight% × Points × Rank_Multiplier × 100 + New_Bonus
