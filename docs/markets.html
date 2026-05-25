@@ -927,17 +927,29 @@
         <div class="text-xs" style="color: var(--text-3)" x-text="yieldChartMeta"></div>
       </div>
 
-      <!-- Series toggles -->
-      <div class="flex flex-wrap gap-2 mb-4">
-        <template x-for="s in yieldSeries" :key="s.key">
-          <button @click="toggleYieldSeries(s.key)"
-                  class="chip border transition"
-                  :style="activeYieldSeries.has(s.key)
-                    ? `background: ${s.color}22; color: ${s.color}; border-color: ${s.color}55;`
-                    : 'color: var(--text-3); border-color: var(--border); opacity: 0.5;'"
-                  x-text="s.name">
-          </button>
-        </template>
+      <!-- Series toggles & Time Range -->
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div class="flex flex-wrap gap-2">
+          <template x-for="s in yieldSeries" :key="s.key">
+            <button @click="toggleYieldSeries(s.key)"
+                    class="chip border transition"
+                    :style="activeYieldSeries.has(s.key)
+                      ? `background: ${s.color}22; color: ${s.color}; border-color: ${s.color}55;`
+                      : 'color: var(--text-3); border-color: var(--border); opacity: 0.5;'"
+                    x-text="s.name">
+            </button>
+          </template>
+        </div>
+        <div class="flex gap-1">
+          <template x-for="r in ['5Y', '10Y', '20Y', '30Y', 'Max']" :key="r">
+            <button @click="yieldTimeRange = r"
+                    :class="yieldTimeRange === r ? 'tab-active' : ''"
+                    class="px-2.5 py-1 rounded-md border font-medium text-xs transition"
+                    :style="yieldTimeRange === r ? '' : 'color: var(--text-2); border-color: var(--border)'"
+                    x-text="r">
+            </button>
+          </template>
+        </div>
       </div>
 
       <!-- SVG Chart -->
@@ -3529,8 +3541,9 @@ function marketsApp() {
       this.activeYieldSeries = s;
     },
 
-    yieldHoverInfo: null,
-    _yieldChartWidth: 1200,
+     yieldHoverInfo: null,
+     yieldTimeRange: 'Max',
+     _yieldChartWidth: 1200,
 
     get yieldYears() {
       const rates = this.returnsData?.rates || {};
@@ -3540,7 +3553,13 @@ function marketsApp() {
           yearSet.add(parseInt(ym.slice(0, 4)));
         }
       }
-      return Array.from(yearSet).sort((a, b) => b - a);
+      const allYears = Array.from(yearSet).sort((a, b) => b - a);
+      if (this.yieldTimeRange === 'Max' || !allYears.length) return allYears;
+      
+      const maxYear = allYears[0];
+      const diff = this.yieldTimeRange === '5Y' ? 5 : this.yieldTimeRange === '10Y' ? 10 : this.yieldTimeRange === '20Y' ? 20 : 30;
+      const cutoffYear = maxYear - diff;
+      return allYears.filter(yr => yr >= cutoffYear);
     },
 
     get yieldChartMeta() {
@@ -3620,14 +3639,26 @@ function marketsApp() {
       const months = Array.from(allMonths).sort();
       if (!months.length) return '<div style="padding:40px;text-align:center;color:var(--text-3)">No data</div>';
 
+      // Apply lookback time-range filter
+      let filteredMonths = months;
+      if (this.yieldTimeRange !== 'Max') {
+        const maxDateStr = months[months.length - 1];
+        const maxYear = parseInt(maxDateStr.slice(0, 4));
+        const diff = this.yieldTimeRange === '5Y' ? 5 : this.yieldTimeRange === '10Y' ? 10 : this.yieldTimeRange === '20Y' ? 20 : 30;
+        const cutoffYm = `${maxYear - diff}-${maxDateStr.slice(5, 7)}`;
+        filteredMonths = months.filter(m => m >= cutoffYm);
+      }
+      if (!filteredMonths.length) return '<div style="padding:40px;text-align:center;color:var(--text-3)">No data in selected range</div>';
+
       const W = 1200, H = 320, PL = 48, PR = 20, PT = 20, PB = 40;
       const chartW = W - PL - PR, chartH = H - PT - PB;
 
-      // Value range across all active series
+      // Value range across all active series in the visible window
       let minV = Infinity, maxV = -Infinity;
       for (const s of seriesDefs) {
         const valMap = seriesMaps[s.key];
-        for (const v of valMap.values()) {
+        for (const m of filteredMonths) {
+          const v = valMap.get(m);
           if (v != null && isFinite(v)) { minV = Math.min(minV, v); maxV = Math.max(maxV, v); }
         }
       }
@@ -3635,7 +3666,7 @@ function marketsApp() {
       const pad = (maxV - minV) * 0.05 || 0.5;
       minV -= pad; maxV += pad;
 
-      const xScale = (m) => PL + (months.indexOf(m) / Math.max(months.length - 1, 1)) * chartW;
+      const xScale = (m) => PL + (filteredMonths.indexOf(m) / Math.max(filteredMonths.length - 1, 1)) * chartW;
       const yScale = (v) => PT + chartH - ((v - minV) / (maxV - minV)) * chartH;
 
       // Y-axis ticks
@@ -3649,13 +3680,14 @@ function marketsApp() {
         yTicks += `<text x="${PL - 4}" y="${(y + 4).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${v.toFixed(1)}%</text>`;
       }
 
-      // X-axis year labels (every 5 years)
+      // X-axis year labels
       let xLabels = '';
-      const years = [...new Set(months.map(m => m.slice(0, 4)))];
-      for (const yr of years) {
-        if (parseInt(yr) % 5 !== 0) continue;
+      const filteredYears = [...new Set(filteredMonths.map(m => m.slice(0, 4)))];
+      const mod = filteredYears.length <= 12 ? 1 : filteredYears.length <= 25 ? 2 : 5;
+      for (const yr of filteredYears) {
+        if (parseInt(yr) % mod !== 0) continue;
         const m = `${yr}-01`;
-        if (!months.includes(m)) continue;
+        if (!filteredMonths.includes(m)) continue;
         const x = xScale(m);
         xLabels += `<text x="${x.toFixed(1)}" y="${H - 8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${yr}</text>`;
         xLabels += `<line x1="${x.toFixed(1)}" y1="${PT}" x2="${x.toFixed(1)}" y2="${H - PB}" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>`;
@@ -3673,7 +3705,7 @@ function marketsApp() {
       for (const s of seriesDefs) {
         const valMap = seriesMaps[s.key];
         if (!valMap.size) continue;
-        const pts = months.map(m => {
+        const pts = filteredMonths.map(m => {
           const v = valMap.get(m);
           if (v == null || !isFinite(v)) return null;
           return `${xScale(m).toFixed(1)},${yScale(v).toFixed(1)}`;
@@ -3719,13 +3751,24 @@ function marketsApp() {
       const months = Array.from(allMonths).sort();
       if (!months.length) return;
 
+      // Apply lookback time-range filter
+      let filteredMonths = months;
+      if (this.yieldTimeRange !== 'Max') {
+        const maxDateStr = months[months.length - 1];
+        const maxYear = parseInt(maxDateStr.slice(0, 4));
+        const diff = this.yieldTimeRange === '5Y' ? 5 : this.yieldTimeRange === '10Y' ? 10 : this.yieldTimeRange === '20Y' ? 20 : 30;
+        const cutoffYm = `${maxYear - diff}-${maxDateStr.slice(5, 7)}`;
+        filteredMonths = months.filter(m => m >= cutoffYm);
+      }
+      if (!filteredMonths.length) return;
+
       const W = 1200, PL = 48, PR = 20;
       const chartW = W - PL - PR;
       const scaleX = rect.width / W;
       const relX = (e.clientX - rect.left) / scaleX;
       const frac = Math.max(0, Math.min(1, (relX - PL) / chartW));
-      const idx = Math.round(frac * (months.length - 1));
-      const month = months[idx];
+      const idx = Math.round(frac * (filteredMonths.length - 1));
+      const month = filteredMonths[idx];
 
       const values = seriesDefs.map(s => {
         const v = seriesMaps[s.key].get(month);
@@ -3738,7 +3781,7 @@ function marketsApp() {
       // Move crosshair
       const crosshair = svg.getElementById('yield-crosshair');
       if (crosshair) {
-        const xPos = PL + frac * chartW;
+        const xPos = PL + (filteredMonths.indexOf(month) / Math.max(filteredMonths.length - 1, 1)) * chartW;
         crosshair.setAttribute('x1', xPos);
         crosshair.setAttribute('x2', xPos);
         crosshair.setAttribute('opacity', '1');
