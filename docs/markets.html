@@ -90,14 +90,34 @@
         <span class="label">›</span>
         <span class="label-cyan label">MARKETS</span>
       </div>
-      <div class="flex items-baseline gap-3 mt-1">
+      <div class="flex items-baseline gap-3 mt-1 flex-wrap">
         <h1 class="text-base font-medium" style="color: var(--cyan)">LONG-HORIZON RETURNS</h1>
         <span class="label" x-text="returnsData ? `Returns data: ${returnsData.asof || (returnsData.generated_utc||'').slice(0,10)}` : (meta.generated_at_utc ? `Price log: ${meta.generated_at_utc.slice(0,10)}` : 'Loading…')"></span>
+        <!-- Live-merge verdict chip — charter v2 Part 2 -->
+        <template x-if="freshness && freshness.self_living_check">
+          <span class="chip text-[10px] font-mono"
+                :style="(() => {
+                  const v = freshness.self_living_check.verdict;
+                  if (v === 'LIVE_MERGE_HEALTHY')  return 'background: rgba(52,211,153,0.10); color: var(--up);   border: 1px solid rgba(52,211,153,0.25);';
+                  if (v === 'LIVE_MERGE_DEGRADED') return 'background: rgba(251,191,36,0.10); color: var(--amber); border: 1px solid rgba(251,191,36,0.25);';
+                  return 'background: rgba(251,113,133,0.10); color: var(--down); border: 1px solid rgba(251,113,133,0.25);';
+                })()"
+                @mouseenter="showTt($event, `Live merge — ${freshness.self_living_check.live_source_count} of ${freshness.asset_count} assets carry live FRED/yfinance source · ${freshness.fx_pairs.length} FX pair${freshness.fx_pairs.length===1?'':'s'} · ${freshness.cpi_series.length} CPI series · ${freshness.rates_series.length} rate series.`)"
+                @mouseleave="hideTt()"
+                x-text="(() => {
+                  const v = freshness.self_living_check.verdict;
+                  if (v === 'LIVE_MERGE_HEALTHY')  return '● LIVE MERGE OK';
+                  if (v === 'LIVE_MERGE_DEGRADED') return '◐ LIVE MERGE DEGRADED';
+                  return '◌ LIVE MERGE FAILED';
+                })()"></span>
+        </template>
       </div>
     </div>
     <div class="text-xs flex gap-4 items-center" style="color: var(--text-3)">
       <span x-show="returnsData" x-text="`${Object.keys(returnsData?.assets||{}).length} assets`"></span>
       <span x-show="series.length" x-text="`${series.length} price series`"></span>
+      <a href="methodology.html" class="label hover:text-zinc-400 transition" style="text-decoration: none;"
+         title="How Predator Protocol works — scoring, motion signals, sanitizer, self-living data, and honest limitations">How it works ↗</a>
     </div>
   </header>
 
@@ -293,21 +313,21 @@
         <div class="flex items-center gap-1 text-[10px] font-mono" style="color: var(--text-3)">
           <template x-if="colorMode === 'return'">
             <div class="flex items-center gap-1">
-              <span style="background:#c2410c;width:12px;height:12px;display:inline-block;border-radius:2px;"></span><span>&lt;−30%</span>
-              <span style="background:#f97316;width:12px;height:12px;display:inline-block;border-radius:2px;margin-left:3px;"></span><span>−10%</span>
-              <span style="background:#fdba74;width:12px;height:12px;display:inline-block;border-radius:2px;margin-left:3px;"></span><span>0%</span>
-              <span style="background:#93c5fd;width:12px;height:12px;display:inline-block;border-radius:2px;margin-left:3px;"></span><span>+10%</span>
-              <span style="background:#3b82f6;width:12px;height:12px;display:inline-block;border-radius:2px;margin-left:3px;"></span><span>+30%</span>
-              <span style="background:#1d4ed8;width:12px;height:12px;display:inline-block;border-radius:2px;margin-left:3px;"></span><span>&gt;+30%</span>
+              <span :style="`background:${cellColor(-0.40)};width:12px;height:12px;display:inline-block;border-radius:2px;`"></span><span>&lt;−30%</span>
+              <span :style="`background:${cellColor(-0.20)};width:12px;height:12px;display:inline-block;border-radius:2px;margin-left:3px;`"></span><span>−10%</span>
+              <span :style="`background:${cellColor(-0.05)};width:12px;height:12px;display:inline-block;border-radius:2px;margin-left:3px;`"></span><span>0%</span>
+              <span :style="`background:${cellColor(0.05)};width:12px;height:12px;display:inline-block;border-radius:2px;margin-left:3px;`"></span><span>+10%</span>
+              <span :style="`background:${cellColor(0.20)};width:12px;height:12px;display:inline-block;border-radius:2px;margin-left:3px;`"></span><span>+30%</span>
+              <span :style="`background:${cellColor(0.40)};width:12px;height:12px;display:inline-block;border-radius:2px;margin-left:3px;`"></span><span>&gt;+30%</span>
             </div>
           </template>
           <template x-if="colorMode === 'zscore'">
             <div class="flex items-center gap-1">
-              <span style="background:#c2410c;width:12px;height:12px;display:inline-block;border-radius:2px;"></span><span>z&lt;−2</span>
-              <span style="background:#f97316;width:12px;height:12px;display:inline-block;border-radius:2px;margin-left:3px;"></span><span>−2→−1</span>
-              <span style="background:#27272a;width:12px;height:12px;display:inline-block;border-radius:2px;margin-left:3px;"></span><span>±1</span>
-              <span style="background:#93c5fd;width:12px;height:12px;display:inline-block;border-radius:2px;margin-left:3px;"></span><span>+1→+2</span>
-              <span style="background:#1d4ed8;width:12px;height:12px;display:inline-block;border-radius:2px;margin-left:3px;"></span><span>z&gt;+2</span>
+              <span :style="`background:${cellColorZscore(-2.5)};width:12px;height:12px;display:inline-block;border-radius:2px;`"></span><span>z&lt;−2</span>
+              <span :style="`background:${cellColorZscore(-1.5)};width:12px;height:12px;display:inline-block;border-radius:2px;margin-left:3px;`"></span><span>−2→−1</span>
+              <span :style="`background:${cellColorZscore(0)};width:12px;height:12px;display:inline-block;border-radius:2px;margin-left:3px;`"></span><span>±1</span>
+              <span :style="`background:${cellColorZscore(1.5)};width:12px;height:12px;display:inline-block;border-radius:2px;margin-left:3px;`"></span><span>+1→+2</span>
+              <span :style="`background:${cellColorZscore(2.5)};width:12px;height:12px;display:inline-block;border-radius:2px;margin-left:3px;`"></span><span>z&gt;+2</span>
             </div>
           </template>
         </div>
@@ -1767,16 +1787,15 @@
         <div class="rounded-lg border overflow-auto scrollbar" style="max-height: 60vh; background: var(--bg); border-color: var(--border)">
           <div x-html="volMonthlyZHeatmapHtml"></div>
         </div>
-        <!-- Color legend -->
+        <!-- Color legend — bound to _zCellColor() so what you see in the heatmap is what's documented here. -->
         <div class="flex items-center gap-2 mt-3 text-[10px] font-mono flex-wrap" style="color: var(--text-3)">
           <span>Z-score scale:</span>
-          <span style="background:#1d4ed8;width:14px;height:14px;display:inline-block;border-radius:2px;"></span><span>≤ −2</span>
-          <span style="background:#3b82f6;width:14px;height:14px;display:inline-block;border-radius:2px;margin-left:4px;"></span><span>−2→−1</span>
-          <span style="background:#93c5fd;width:14px;height:14px;display:inline-block;border-radius:2px;margin-left:4px;"></span><span>−1→0</span>
-          <span style="background:#27272a;width:14px;height:14px;display:inline-block;border-radius:2px;margin-left:4px;"></span><span>≈0</span>
-          <span style="background:#fdba74;width:14px;height:14px;display:inline-block;border-radius:2px;margin-left:4px;"></span><span>0→+1</span>
-          <span style="background:#f97316;width:14px;height:14px;display:inline-block;border-radius:2px;margin-left:4px;"></span><span>+1→+2</span>
-          <span style="background:#c2410c;width:14px;height:14px;display:inline-block;border-radius:2px;margin-left:4px;"></span><span>≥ +2</span>
+          <span :style="`background:${_zCellColor(-2.5)};width:14px;height:14px;display:inline-block;border-radius:2px;`"></span><span>≤ −2</span>
+          <span :style="`background:${_zCellColor(-1.5)};width:14px;height:14px;display:inline-block;border-radius:2px;margin-left:4px;`"></span><span>−2→−1</span>
+          <span :style="`background:${_zCellColor(-0.5)};width:14px;height:14px;display:inline-block;border-radius:2px;margin-left:4px;`"></span><span>−1→0</span>
+          <span :style="`background:${_zCellColor(0.5)};width:14px;height:14px;display:inline-block;border-radius:2px;margin-left:4px;`"></span><span>0→+1</span>
+          <span :style="`background:${_zCellColor(1.5)};width:14px;height:14px;display:inline-block;border-radius:2px;margin-left:4px;`"></span><span>+1→+2</span>
+          <span :style="`background:${_zCellColor(2.5)};width:14px;height:14px;display:inline-block;border-radius:2px;margin-left:4px;`"></span><span>≥ +2</span>
         </div>
       </div>
 
@@ -2127,13 +2146,31 @@ function marketsApp() {
     volCommonWindow: true,
     activeVolSeries: new Set(['vix', 'gvz', 'ovx']),
     volHoverInfo: null,
+    // Charter v2 Part 2 — live-merge freshness (loaded from metadata.json).
+    // Drives the small "live merge healthy / degraded / failed" chip in the
+    // markets header so the operator can verify on the live site without DevTools.
+    freshness: null,
 
     // ── Data loading ──────────────────────────────────────────────────────
     async load() {
-      // Load all three in parallel; each handles its own error
-      await Promise.all([this._loadPriceLog(), this._loadReturns(), this._loadVol()]);
+      // Load all four in parallel; each handles its own error
+      await Promise.all([this._loadPriceLog(), this._loadReturns(), this._loadVol(), this._loadFreshness()]);
       // §4 Deep-link support: ?asset=GOLD&lens=inr restores the exact view
       this._applyDeepLink();
+    },
+
+    async _loadFreshness() {
+      // metadata.json carries `markets_data_freshness` — surfaced as a small
+      // header chip so the user can see whether the live merge is healthy
+      // without opening DevTools. Loaded best-effort; missing → no chip.
+      try {
+        const r = await fetch('data/metadata.json', { cache: 'no-store' });
+        if (!r.ok) return;
+        const m = await r.json();
+        this.freshness = m.markets_data_freshness || null;
+      } catch (e) {
+        this.freshness = null;
+      }
     },
 
     _applyDeepLink() {
@@ -5033,8 +5070,20 @@ function marketsApp() {
         html += `<tr><td style="font-size:10px;color:var(--text-2);padding:2px 6px;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis;">${assetDefs[i].shortName}</td>`;
         for (let j = 0; j < n; j++) {
           const c = corr[i][j];
-          let bg = '#27272a';
-          if (c !== null) { if (c > 0.7) bg = '#1d4ed8'; else if (c > 0.4) bg = '#3b82f6'; else if (c > 0.1) bg = '#93c5fd'; else if (c > -0.1) bg = '#27272a'; else if (c > -0.4) bg = '#fdba74'; else if (c > -0.7) bg = '#f97316'; else bg = '#c2410c'; }
+          // Calm institutional palette matching the returns matrix /
+          // periodic table / vol heatmap. High +corr = blue, high -corr =
+          // red-orange, |corr| < 0.1 reads neutral so the eye sees
+          // "uncorrelated" without effort.
+          let bg = _hsl2hex(215/360, 0.04, 0.22);   // neutral dark
+          if (c !== null) {
+            if      (c >  0.7)  bg = _hsl2hex(215/360, 0.42, 0.40);   // deep muted blue
+            else if (c >  0.4)  bg = _hsl2hex(215/360, 0.36, 0.52);   // muted blue
+            else if (c >  0.1)  bg = _hsl2hex(215/360, 0.28, 0.65);   // pale blue
+            else if (c > -0.1)  bg = _hsl2hex(215/360, 0.04, 0.22);   // neutral dark
+            else if (c > -0.4)  bg = _hsl2hex( 25/360, 0.32, 0.65);   // pale orange
+            else if (c > -0.7)  bg = _hsl2hex( 22/360, 0.40, 0.52);   // muted orange
+            else                bg = _hsl2hex( 18/360, 0.45, 0.40);   // deep muted red-orange
+          }
           const tc = c !== null && Math.abs(c) > 0.3 ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.6)';
           html += `<td style="width:${CELL}px;height:28px;text-align:center;font-size:10px;font-family:ui-monospace;background:${bg};color:${tc};border-radius:2px;" title="${assetDefs[i].shortName} vs ${assetDefs[j].shortName}: ${c !== null ? c.toFixed(2) : '—'}">${c !== null ? c.toFixed(2) : '—'}</td>`;
         }
@@ -5407,15 +5456,20 @@ function marketsApp() {
       return 'Very elevated';
     },
 
-    // Z-score → heatmap cell color (blue↔orange diverging, same as returns matrix)
+    // Z-score → heatmap cell color. Calm institutional palette (HSL) — same
+    // muted blue ↔ red-orange diverging tones used by the returns Matrix's
+    // cellColor() and cellColorZscore(), so the volatility regime calendar
+    // and the returns matrix read as ONE table when scrolled past each other.
+    // Convention: high vol z (stress) = warm; low vol z (calm) = cool.
+    // 6 buckets so the heatmap reads with the same granularity as before.
     _zCellColor(z) {
       if (z === null || z === undefined) return 'transparent';
-      if (z <= -2)  return '#1d4ed8';
-      if (z <= -1)  return '#3b82f6';
-      if (z < 0)    return '#93c5fd';
-      if (z < 1)    return '#fdba74';
-      if (z < 2)    return '#f97316';
-      return '#c2410c';
+      if (z <= -2)  return _hsl2hex(215/360, 0.42, 0.40);  // unusually calm   — deep muted blue
+      if (z <= -1)  return _hsl2hex(215/360, 0.36, 0.52);  // calmer than usual — muted blue
+      if (z <  0)   return _hsl2hex(215/360, 0.28, 0.65);  // mild calm        — pale blue
+      if (z <  1)   return _hsl2hex( 25/360, 0.32, 0.65);  // mild stress      — pale orange
+      if (z <  2)   return _hsl2hex( 22/360, 0.40, 0.52);  // stressed         — muted orange
+      return                _hsl2hex( 18/360, 0.45, 0.40);  // unusually stressed — deep muted red-orange
     },
 
     _zCellTextColor(z) {

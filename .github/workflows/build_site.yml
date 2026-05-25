@@ -74,27 +74,26 @@ jobs:
         run: python -m predator.fetch_stock_details
         continue-on-error: true   # never break the build if yfinance is flaky
 
-      # ── Markets data pipeline — ORDER MATTERS ──────────────────────────
-      # Step 1: Excel deep-history first (gold 1833+, S&P 1871+)
-      #         This seeds the JSON with the full historical baseline.
-      - name: Ingest Markets Excel (deep history baseline)
+      # ── Markets data pipeline ─────────────────────────────────────────
+      # ORDER (charter v2 Part 2 — self-living merge):
+      #   1. Excel BACKFILL ONLY: seed deep history (gold 1833+, S&P 1871+).
+      #   2. Live FRED+yfinance: extend each series with current months and
+      #      populate fx/cpi/rates. Source labels from this step are PRESERVED
+      #      by the Excel ingester — Excel is no longer re-run after this.
+      #
+      # The previous pipeline ran a third step (`ingest_markets_xl
+      # --merge-existing` after FRED) which unconditionally clobbered the
+      # live source labels back to the Excel filename. That step is removed —
+      # the Excel run only happens once, as the deep-history seed.
+      - name: 1/2 — Markets Excel deep-history seed (backfill only)
         run: python -m predator.ingest_markets_xl --no-fail-on-stale
         continue-on-error: true
 
-      # Step 2: FRED live data — merges new months on top of Excel baseline
-      #         markets_history.py now reads the existing JSON and merges,
-      #         so Excel deep-history is preserved.
-      - name: Fetch market returns history (FRED + yfinance)
+      - name: 2/2 — Live FRED + yfinance merge (current months, fx, cpi, rates)
         run: python -m predator.markets_history --full-refresh
         continue-on-error: true
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
-
-      # Step 3: Re-run Excel ingest with --merge-existing to pick up any
-      #         Excel updates that postdate the FRED fetch (e.g. manual additions)
-      - name: Merge Excel updates on top of live data
-        run: python -m predator.ingest_markets_xl --merge-existing --no-fail-on-stale
-        continue-on-error: true
 
       # Step 4: Price log (markets.json) — separate from market_returns.json
       - name: Fetch market data (yfinance price log)

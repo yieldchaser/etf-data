@@ -81,8 +81,12 @@ from . import history as hist
 DEFAULT_SOURCE = "data/all_history.csv"
 # Fallback: pull live from GitHub if local file is missing (for first-time / local dev runs).
 FALLBACK_SOURCE = "https://raw.githubusercontent.com/yieldchaser/etf-data/main/data/all_history.csv"
-# Partitioned Parquet store (Tier 2)
-PARQUET_STORE = Path(__file__).resolve().parent.parent / "data" / "history_parquet"
+# Partitioned Parquet store (Tier 2). Tests / advanced callers can override
+# the location via the PREDATOR_PARQUET_STORE env var (e.g. point at an empty
+# directory to force the CSV path) without monkeypatching this module.
+_DEFAULT_PARQUET_STORE = Path(__file__).resolve().parent.parent / "data" / "history_parquet"
+PARQUET_STORE = Path(os.environ["PREDATOR_PARQUET_STORE"]) \
+    if os.environ.get("PREDATOR_PARQUET_STORE") else _DEFAULT_PARQUET_STORE
 
 
 def _read_parquet_store(store: Path, lookback_days: int = 180) -> pd.DataFrame | None:
@@ -758,6 +762,69 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     if stale_etfs:
         print(f"\n⚠ Stale ETFs ({len(stale_etfs)}): {[s['etf'] for s in stale_etfs]}")
 
+    # ── Markets data freshness summary (charter v2 Part 2) ──────────────
+    # After the workflow's ingest steps run, surface per-asset source +
+    # last-month-date directly in metadata.json. A skeptic on the live site
+    # can read this and confirm: (a) recent assets carry a live source
+    # (fred:.. or yfinance:..), not Mega_Markets_Historical.xlsx; (b) asof
+    # advances each build; (c) fx/cpi/rates sections are non-empty.
+    markets_freshness: dict[str, Any] = {"available": False}
+    market_returns_path = output_dir / "market_returns.json"
+    if market_returns_path.exists():
+        try:
+            mr = json.loads(market_returns_path.read_text(encoding="utf-8"))
+            assets   = mr.get("assets", {})
+            fx       = mr.get("fx", {})
+            cpi      = mr.get("cpi", {})
+            rates    = mr.get("rates", {})
+            by_source: dict[str, int] = {}
+            stale_assets: list[dict] = []
+            today_ym = datetime.now(timezone.utc).strftime("%Y-%m")
+            for aid, av in assets.items():
+                src = av.get("meta", {}).get("source", "unknown")
+                # Bucket by source family (fred / yfinance / Excel / unknown)
+                family = ("fred" if src.startswith("fred:")
+                          else "yfinance" if src.startswith("yfinance:")
+                          else "excel" if "Mega_Markets_Historical" in src
+                          else "other")
+                by_source[family] = by_source.get(family, 0) + 1
+                last = av.get("meta", {}).get("last", "")
+                if last and last < today_ym[:7]:
+                    # asset's last month-of-data is older than this calendar month
+                    try:
+                        last_ts = pd.Timestamp(last + "-01") + pd.offsets.MonthEnd(0)
+                        age_days = (pd.Timestamp.utcnow().tz_localize(None) - last_ts).days
+                        if age_days > 60:
+                            stale_assets.append({"asset": aid, "last": last, "age_days": int(age_days)})
+                    except Exception:
+                        pass
+            markets_freshness = {
+                "available":     True,
+                "asof":          mr.get("asof"),
+                "asset_count":   len(assets),
+                "by_source":     by_source,
+                "fx_pairs":      sorted(fx.keys()),
+                "cpi_series":    sorted(cpi.keys()),
+                "rates_series":  sorted(rates.keys()),
+                "stale_assets":  stale_assets,
+                "self_living_check": {
+                    "live_source_count": by_source.get("fred", 0) + by_source.get("yfinance", 0),
+                    "excel_only_count":  by_source.get("excel", 0),
+                    # Honest verdict — if everything is excel, live merge isn't working.
+                    "verdict": (
+                        "LIVE_MERGE_HEALTHY" if by_source.get("fred", 0) + by_source.get("yfinance", 0) > by_source.get("excel", 0)
+                        else "LIVE_MERGE_DEGRADED" if by_source.get("fred", 0) + by_source.get("yfinance", 0) > 0
+                        else "LIVE_MERGE_FAILED"
+                    ),
+                },
+            }
+            print(f"\n  Markets freshness: asof={mr.get('asof')}  "
+                  f"sources={by_source}  "
+                  f"fx={len(fx)}  cpi={len(cpi)}  rates={len(rates)}  "
+                  f"verdict={markets_freshness['self_living_check']['verdict']}")
+        except Exception as e:
+            print(f"  WARN: could not read market_returns.json for freshness summary: {e}")
+
     metadata = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "source": source,
@@ -782,6 +849,8 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         "etf_maturity_days": etf_maturity_days,
         "immature_etfs": immature_etfs,
         "stale_etfs": stale_etfs,
+        # Charter v2 Part 2 — live-merge verification, surfaced on the site
+        "markets_data_freshness": markets_freshness,
         "scoring_mode": cfg.scoring_mode,
         "config_snapshot": {
             "sanitizer": {

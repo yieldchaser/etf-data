@@ -598,53 +598,90 @@ def fetch_all(
         print("\n  --dry-run: exiting without fetching.")
         return {}
 
-    # Initialise FRED client (only if we have FRED series to fetch)
+    # Initialise FRED client (only if we have FRED series to fetch).
+    # If the API key is missing or the client fails to initialise, we DO NOT
+    # abort — we simply skip the FRED-only series and proceed with yfinance
+    # plus any cached parquet from previous runs. This is the "self-living"
+    # contract: a single external dependency hiccup must never collapse the
+    # whole live merge. The build step in CI also has continue-on-error, but
+    # we'd rather complete every series we CAN reach than emit nothing.
     fred = None
+    fred_skipped = False
     if fred_series:
         fred = _get_fred_client()
         if fred is None:
-            print("\n  Cannot proceed without FRED API key for FRED series.")
-            sys.exit(1)
+            fred_skipped = True
+            print(f"\n  ⚠ FRED unavailable — {len(fred_series)} FRED series will fall back to "
+                  f"on-disk parquet cache (charter v2 Part 2: soft-skip, never sys.exit).")
 
     results: dict[str, pd.Series] = {}
+    fetched_live  = 0   # series we actually pulled fresh from upstream
+    served_cache  = 0   # series we served from local parquet cache after upstream failure
+    no_data       = 0   # series with neither live nor cached data
 
     for i, spec in enumerate(series_to_fetch):
         key = spec["key"]
         source_type = spec["source_type"]
         series_id = spec["series_id"]
 
-        # Load existing cache for incremental
+        # Load existing cache for incremental (and as a fallback on failure)
         existing = None if full_refresh else _read_cache(key)
         cached_points = len(existing) if existing is not None else 0
 
         print(f"\n  [{i + 1}/{len(series_to_fetch)}] {key} ({source_type}:{series_id})"
               f" — cached: {cached_points} pts")
 
-        if source_type == "fred":
-            data = _fetch_fred_series(fred, series_id, full_refresh, existing)
-        elif source_type == "yfinance":
-            data = _fetch_yfinance_series(series_id, full_refresh, existing)
-        else:
-            print(f"    SKIP: unknown source_type '{source_type}'")
-            continue
+        # ── Per-series resilience: any single fetch exception is logged and
+        # ── degrades to cache, never propagates and never kills the loop.
+        data = pd.Series(dtype=float)
+        try:
+            if source_type == "fred":
+                if fred is None:
+                    print(f"    SKIP fetch (no FRED client) — will use cache if available")
+                else:
+                    data = _fetch_fred_series(fred, series_id, full_refresh, existing)
+            elif source_type == "yfinance":
+                data = _fetch_yfinance_series(series_id, full_refresh, existing)
+            else:
+                print(f"    SKIP: unknown source_type '{source_type}'")
+                continue
+        except Exception as e:
+            # Per-series isolation. Charter v2 Part 3: external-data failures
+            # (network blips, JSON shape changes, library bugs) must never
+            # block the rest of the build.
+            print(f"    ERROR: {type(e).__name__}: {e}  — degrading to cache")
+            data = pd.Series(dtype=float)
 
         if data is not None and not data.empty:
-            _write_cache(key, data)
+            try:
+                _write_cache(key, data)
+            except Exception as e:
+                print(f"    WARN: could not refresh cache: {e}")
             results[key] = data
-            print(f"    OK: {len(data)} data points"
+            fetched_live += 1
+            print(f"    OK (live): {len(data)} pts"
                   f" ({pd.Timestamp(data.index.min()).strftime('%Y-%m')}"
                   f" → {pd.Timestamp(data.index.max()).strftime('%Y-%m')})")
         else:
-            print(f"    WARNING: no data returned")
-            # Use cached data if available
+            # Live fetch failed or returned empty — fall back to cache
             if existing is not None and not existing.empty:
                 results[key] = existing
-                print(f"    Using cached data: {len(existing)} pts")
+                served_cache += 1
+                print(f"    OK (cache): {len(existing)} pts (live unavailable)")
+            else:
+                no_data += 1
+                print(f"    WARNING: no live data and no cache — series will be missing")
 
         # Rate-limit pause between sequential fetches
         if i < len(series_to_fetch) - 1:
             time.sleep(0.1)
 
+    print(f"\n  ── Live merge summary ──")
+    print(f"    {fetched_live:3d} series fetched live")
+    print(f"    {served_cache:3d} series served from cache fallback")
+    print(f"    {no_data:3d} series with no data (cold-start gaps)")
+    if fred_skipped:
+        print(f"    ⚠ FRED was skipped this run — set FRED_API_KEY in CI secrets to enable live FRED fetches.")
     return results
 
 

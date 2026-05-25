@@ -37,6 +37,18 @@ jobs:
       - name: Run Scraper
         run: xvfb-run -a python scraper.py
 
+      # ── Permanent year-partitioned archive (charter v2 Part 3) ─────────
+      # Append today's scrape into data/history_parquet/year=YYYY/holdings.parquet
+      # and refresh data/history_parquet/CHECKSUMS.json. Past-year partitions
+      # are contractually immutable — the migrate script REFUSES to overwrite
+      # them. On any drift, --verify-only fails CI loudly. continue-on-error
+      # is set so a parquet hiccup never blocks the CSV-side scrape commit.
+      - name: Update parquet archive (immutable past years)
+        run: |
+          python scripts/migrate_to_parquet.py
+          python scripts/migrate_to_parquet.py --verify-only
+        continue-on-error: true
+
       - name: Save Data
         id: save_data
         run: |
