@@ -3492,7 +3492,7 @@ function marketsApp() {
           yearSet.add(parseInt(ym.slice(0, 4)));
         }
       }
-      return Array.from(yearSet).sort((a, b) => a - b);
+      return Array.from(yearSet).sort((a, b) => b - a);
     },
 
     get yieldChartMeta() {
