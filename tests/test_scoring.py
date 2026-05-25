@@ -714,6 +714,113 @@ class TestConvictionFormula:
         assert "avg_conviction" in lb.columns
         assert lb.iloc[0]["avg_conviction"] > 0
 
+    def test_conviction_drives_rank_when_low_conv_breadth_is_NEW(self, conviction_cfg):
+        """REGRESSION (the live-data defect this PR fixes).
+
+        A high-conviction / low-breadth name (Samsung-shape: 2 ETFs, top-of-book,
+        not NEW) MUST outrank a low-conviction / high-breadth name (Itaú-shape:
+        4 ETFs, mostly filler, NEW in one of them).
+
+        Before the fix, conviction mode added a flat `tier_points × 5` bonus per
+        NEW Quant row — a single NEW filler hit (e.g. PIE #82, conv≈0.12) injected
+        ~200 raw points and overrode the conviction signal. This test pins the
+        invariant: conviction must drive rank, not the additive bonus.
+        """
+        N_JHEM, N_MFEM, N_EEMO, N_PIE = 200, 200, 200, 200  # smaller universe for test speed
+
+        rows = []
+        # SAMSUNG-shape: top-of-book in 2 EM Quant ETFs, NOT NEW (history seeded)
+        rows.append(("JHEM", "SAM", "Samsung-like", 0.0551, "2026-05-01", "2026-05-01"))
+        rows.append(("MFEM", "SAM", "Samsung-like", 0.0176, "2026-05-01", "2026-05-01"))
+        # Seed Samsung history (not NEW)
+        for d in ("2026-04-01", "2026-03-01", "2026-02-01", "2026-01-01"):
+            rows.append(("JHEM", "SAM", "Samsung-like", 0.05,   d, d))
+            rows.append(("MFEM", "SAM", "Samsung-like", 0.015,  d, d))
+
+        # ITAU-shape: 4 EM Quant ETFs, mostly filler — and NEW in PIE (the real defect trigger)
+        rows.append(("EEMO", "ITU", "Itau-like", 0.0128, "2026-05-01", "2026-05-01"))   # rank ~9
+        rows.append(("MFEM", "ITU", "Itau-like", 0.0064, "2026-05-01", "2026-05-01"))   # rank ~30
+        rows.append(("JHEM", "ITU", "Itau-like", 0.0028, "2026-05-01", "2026-05-01"))   # rank ~67
+        rows.append(("PIE",  "ITU", "Itau-like", 0.0048, "2026-05-01", "2026-05-01"))   # filler, NEW
+        # Seed history for EEMO/MFEM/JHEM (not NEW). DELIBERATELY no PIE history → PIE is NEW.
+        for d in ("2026-04-01", "2026-03-01", "2026-02-01", "2026-01-01"):
+            rows.append(("EEMO", "ITU", "Itau-like", 0.012,  d, d))
+            rows.append(("MFEM", "ITU", "Itau-like", 0.006,  d, d))
+            rows.append(("JHEM", "ITU", "Itau-like", 0.0025, d, d))
+
+        # Realistic ETF sizes via filler universe (drives n_holdings → conviction math)
+        for etf, n_fillers in [("JHEM", N_JHEM), ("MFEM", N_MFEM),
+                                ("EEMO", N_EEMO), ("PIE", N_PIE)]:
+            for j in range(min(n_fillers, 100)):  # cap for test speed
+                w = 0.001
+                # Latest snapshot
+                rows.append((etf, f"FILL_{etf}_{j:03d}", f"Filler{j}", w, "2026-05-01", "2026-05-01"))
+                # Same fillers in history → fillers are not NEW
+                for d in ("2026-04-01", "2026-03-01", "2026-02-01", "2026-01-01"):
+                    rows.append((etf, f"FILL_{etf}_{j:03d}", f"Filler{j}", w, d, d))
+
+        df_full = _h(rows)
+        lb, latest = compute_leaderboard(df_full, conviction_cfg)
+
+        sam_row = lb[lb["ticker"] == "SAM"]
+        itu_row = lb[lb["ticker"] == "ITU"]
+        assert not sam_row.empty, "SAM not in leaderboard"
+        assert not itu_row.empty, "ITU not in leaderboard"
+
+        sam_score, sam_rank = sam_row.iloc[0]["final_score"], sam_row.iloc[0]["leaderboard_rank"]
+        itu_score, itu_rank = itu_row.iloc[0]["final_score"], itu_row.iloc[0]["leaderboard_rank"]
+
+        # Confirm the test setup actually exercises the defect: ITU must be NEW in PIE.
+        itu_pie_row = latest[(latest["ETF_Ticker"] == "PIE") & (latest["ticker"] == "ITU")]
+        assert not itu_pie_row.empty, "ITU should appear in PIE in latest snapshot"
+        assert itu_pie_row.iloc[0]["is_new"], (
+            "Test setup invalid: ITU must be NEW in PIE for this to exercise the defect"
+        )
+
+        # In conviction mode, the additive new_bonus must be 0 (not tier_points × 5)
+        assert itu_pie_row.iloc[0]["new_bonus"] == 0.0, (
+            f"Conviction mode must suppress additive new_bonus, got {itu_pie_row.iloc[0]['new_bonus']}"
+        )
+
+        assert sam_rank < itu_rank, (
+            f"Conviction must drive rank: high-CONV/low-breadth SAM (rank #{sam_rank}, "
+            f"score {sam_score}) must outrank low-CONV/high-breadth ITU (rank #{itu_rank}, "
+            f"score {itu_score}). The additive new_bonus is overriding conviction."
+        )
+
+    def test_conviction_mode_filler_contributes_small_fraction(self, conviction_cfg):
+        """A genuinely underweight position (Itaú PIE #82-shape) must contribute
+        less than 5% of what a comparable top-of-book overweight contributes
+        in the same tier-points class. Verifies the §30 acceptance criterion.
+        """
+        N = 200
+        rows = []
+        # Top-of-book overweight in MFEM (Quant intl, 60 pts)
+        rows.append(("MFEM", "TOP", "Top-of-book", 0.05, "2026-05-01", "2026-05-01"))
+        # Filler underweight in MFEM (same ETF → same tier_points)
+        rows.append(("MFEM", "FILLER", "Filler", 0.0005, "2026-05-01", "2026-05-01"))
+        # Seed history so neither is NEW (isolates the conviction-vs-filler comparison)
+        for d in ("2026-04-01", "2026-03-01", "2026-02-01"):
+            rows.append(("MFEM", "TOP",    "Top-of-book", 0.05,   d, d))
+            rows.append(("MFEM", "FILLER", "Filler",      0.0005, d, d))
+        # Pad fillers
+        for j in range(N - 2):
+            for date in ("2026-05-01", "2026-04-01", "2026-03-01", "2026-02-01"):
+                rows.append(("MFEM", f"PAD_{j:03d}", f"Pad{j}", 0.001, date, date))
+
+        df_full = _h(rows)
+        _, latest = compute_leaderboard(df_full, conviction_cfg)
+        top    = latest[(latest["ETF_Ticker"] == "MFEM") & (latest["ticker"] == "TOP")].iloc[0]
+        filler = latest[(latest["ETF_Ticker"] == "MFEM") & (latest["ticker"] == "FILLER")].iloc[0]
+
+        ratio = filler["score"] / top["score"]
+        assert ratio < 0.05, (
+            f"Filler should contribute < 5% of top-of-book score in same ETF. "
+            f"top={top['score']:.2f} (rank={top['rank']}, conv={top['conviction']:.3f}), "
+            f"filler={filler['score']:.2f} (rank={filler['rank']}, conv={filler['conviction']:.3f}), "
+            f"ratio={ratio:.1%}"
+        )
+
 
 # ─── §28 Maturity gate ────────────────────────────────────────────────────────
 class TestMaturityGate:

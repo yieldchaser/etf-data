@@ -370,9 +370,18 @@ def compute_leaderboard(
     # ── SCORE FORMULA — two modes ─────────────────────────────────────────────
     if cfg.scoring_mode == "conviction" and cfg.conviction is not None:
         # §24 Conviction-weighted formula:
-        #   C_i = Wovr(OW_i) × Grank(RP_i)
-        #   Single Score = TierPoints × C_i
-        # No weight%×100 term, no step rank_multiplier — conviction replaces both.
+        #   C_i        = Wovr(OW_i) × Grank(RP_i)        # overweight × rank percentile
+        #   Single_i   = TierPoints_i × C_i              # each holding's contribution
+        #   Final      = Σ_i Single_i                    # breadth of conviction (additive)
+        #
+        # The legacy additive `new_bonus = tier_points × 5` is suppressed in this
+        # mode by design: it was a flat-per-row term that, applied UN-weighted by
+        # conviction, allowed a single filler-rank NEW hit (e.g. PIE #82, conv≈0.12)
+        # to inject ~200 raw points and override the conviction signal — see the
+        # Samsung-vs-ITUB4 regression. Conviction mode keeps breadth additive
+        # (Σ across ETFs) but only breadth *of conviction*. The is_new flag is
+        # still computed and surfaced for display/changelog; it just doesn't
+        # short-circuit the multiplier.
         cv = cfg.conviction
         latest["conviction"] = latest.apply(
             lambda row: conviction_multiplier(
@@ -383,9 +392,10 @@ def compute_leaderboard(
         latest["rank_mult"] = latest["conviction"]   # expose for downstream compat
         latest["weight_pct"] = latest["weight"] * 100.0
         latest["base_score"] = latest["tier_points"] * latest["conviction"]
-        eligible_new = latest["is_new"] & latest["tier"].isin(cfg.new_bonus_tiers)
-        latest["new_bonus"] = (latest["tier_points"] * cfg.new_bonus_mult).where(eligible_new, 0.0)
-        latest["score"] = latest["base_score"] + latest["new_bonus"]
+        # Column kept (build.py emits it to holdings_latest.json) but always 0
+        # in conviction mode — the bonus is folded out, not folded in.
+        latest["new_bonus"] = 0.0
+        latest["score"] = latest["base_score"]
     else:
         # Legacy Power Query formula:
         #   Single Score = Weight% × Points × Rank_Multiplier × 100 + New_Bonus
