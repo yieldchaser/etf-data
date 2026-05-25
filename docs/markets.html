@@ -2671,6 +2671,52 @@ function marketsApp() {
       return '#c2410c';
     },
 
+    // ── §7 Z-score audit / "current" derivation contract ────────────────
+    // ───────────────────────────────────────────────────────────────────
+    // The matrix and the volatility tiles compute z-scores and percentiles
+    // on different domains. This block documents exactly what "current" and
+    // the baseline mean for each, so the math is auditable end-to-end.
+    //
+    // MATRIX (annual asset returns, z-score color mode)
+    //   baseline   : full set of FULL years from _annualCache (partial
+    //                first/last calendar years are filtered out below).
+    //   current    : the FULL-year return for that (asset, year) cell.
+    //   partial yr : NOT z-scored (the year hasn't ended; comparing a
+    //                partial-year return to a full-year distribution is
+    //                apples-to-oranges). The cell still shows the return
+    //                value as text but the background is dimmed so the
+    //                user sees that no z is defined.
+    //
+    // VOLATILITY TILES (Levels & Regime, current level / σ / percentile)
+    //   current    : the latest available point in _volValues(key) — i.e.
+    //                the most recent daily close (Daily) or the most
+    //                recent monthly average (Monthly avg). Never a future
+    //                value, never a stale snapshot — the JSON is rebuilt
+    //                on every CI run from FRED.
+    //   z baseline : the chosen lookback window {1Y, 3Y, 5Y, All} of the
+    //                same series — see computeZScore() above.
+    //   percentile : ALWAYS full daily history (lookback-independent).
+    //                The regime word ("Calm/Normal/Elevated/Stress/Crisis")
+    //                is derived from this full-history percentile, so the
+    //                regime classification is stable across lookback
+    //                changes; only the σ number reflects the lookback.
+    //                When volLookback === 'All' the σ baseline and
+    //                percentile baseline are identical; when volLookback
+    //                is shorter, σ becomes a recent-stress measure while
+    //                regime stays anchored to the long-run distribution.
+    //
+    // VOLATILITY MONTHLY HEATMAP (volMonthlyZHeatmapHtml)
+    //   per cell   : z = (monthly_avg - mean(all monthly_avg)) / stdev.
+    //   baseline   : entire monthly_avg series for that index — every
+    //                cell in a row is z'd against the same full history,
+    //                making the heatmap a regime calendar.
+    //
+    // PARTIAL CURRENT YEAR (2026 in this build)
+    //   The matrix already excludes partial years from the z baseline
+    //   (see _buildZscoreCache below). Partial years cannot be flagged
+    //   as 'unusual vs full-year history' so we leave the z null and let
+    //   activeCellColor fall through to a low-opacity return color.
+
     // Z-score color scale (same blue-orange, but keyed on z-score ±2σ)
     cellColorZscore(z) {
       if (z === null || z === undefined) return 'transparent';
@@ -2689,10 +2735,17 @@ function marketsApp() {
       if (this._zscoreCache[ck]) return;
       this._buildAnnualCache(assetKey);
       const cache = this._annualCache[ck] || {};
+      // §7 Z baseline: FULL calendar years only. Partial years (the current
+      // year-to-date and the very first observed year) are excluded so we
+      // don't compare a 5-month YTD return to a distribution of full-year
+      // returns. Partial-year cells get null z and fall back to dimmed
+      // return color in activeCellColor().
       const fullYears = Object.keys(cache).map(Number).filter(y => !cache[y].partial);
       if (fullYears.length < 3) { this._zscoreCache[ck] = {}; return; }
       const rets = fullYears.map(y => cache[y].ret);
       const mean = rets.reduce((a, b) => a + b, 0) / rets.length;
+      // Population stdev — matches what the matrix interprets as "history of
+      // this asset"; for sample stdev divide by (n-1) instead.
       const std = Math.sqrt(rets.reduce((a, b) => a + (b - mean) ** 2, 0) / rets.length);
       const result = {};
       for (const y of fullYears) {
@@ -2707,11 +2760,19 @@ function marketsApp() {
       return cache?.[year] ?? null;
     },
 
-    // Active cell color — respects colorMode toggle
+    // Active cell color — respects colorMode toggle.
+    // §7 In z-score mode, partial years (no full-year baseline → null z) fall
+    // back to a dimmed return color rather than going invisible-transparent.
+    // This is the "omit z, but keep the cell visible" choice from the prompt.
     activeCellColor(assetKey, year) {
       if (this.colorMode === 'zscore') {
         const z = this.getZscore(assetKey, year);
-        return this.cellColorZscore(z);
+        if (z !== null) return this.cellColorZscore(z);
+        // No z (partial year) — dim the return color so the cell is clearly
+        // "shown but not z-scored". Hex with alpha keeps it muted.
+        const cd = this.getCellData(assetKey, year);
+        if (!cd) return 'transparent';
+        return this.cellColor(cd.ret) + '55'; // 8-bit alpha ≈ 33% opacity
       }
       const cd = this.getCellData(assetKey, year);
       return cd ? this.cellColor(cd.ret) : 'transparent';
