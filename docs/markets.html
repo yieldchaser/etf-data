@@ -49,7 +49,8 @@
     .matrix-cell { width: 52px; min-width: 52px; height: 28px; text-align: center;
                    font-size: 10px; font-family: ui-monospace, monospace;
                    font-variant-numeric: tabular-nums; cursor: pointer;
-                   border: 1px solid rgba(0,0,0,0.3); transition: filter 0.1s; }
+                   border: 1px solid rgba(0,0,0,0.3); transition: filter 0.1s;
+                   display: inline-flex; align-items: center; justify-content: center; }
     .matrix-cell:hover { filter: brightness(1.3); z-index: 1; position: relative; }
     .matrix-cell-empty { background: transparent; cursor: default; }
     .matrix-cell-empty:hover { filter: none; }
@@ -216,6 +217,22 @@
               @mouseleave="hideTt()">
         Z-score
       </button>
+    </div>
+    <!-- Divider -->
+    <div x-show="activeTab === 'matrix'" class="w-px h-5 mx-1" style="background: var(--border-2)"></div>
+    <!-- Year Selector (matrix only) -->
+    <div x-show="activeTab === 'matrix'" class="flex items-center gap-1.5">
+      <span class="text-[10px] uppercase font-medium tracking-wider" style="color: var(--text-3)">Start:</span>
+      <select x-model.number="matrixStartYear" class="px-2 py-1.5 rounded border text-xs focus:outline-none focus:border-cyan-500/40" style="background: var(--surface); color: var(--text); border-color: var(--border); font-family: ui-monospace;">
+        <option value="1833">1833 (Max)</option>
+        <option value="1900">1900</option>
+        <option value="1920">1920</option>
+        <option value="1950">1950</option>
+        <option value="1970">1970</option>
+        <option value="1990">1990</option>
+        <option value="2000">2000</option>
+        <option value="2010">2010</option>
+      </select>
     </div>
     <!-- Divider -->
     <div x-show="activeTab === 'matrix'" class="w-px h-5 mx-1" style="background: var(--border-2)"></div>
@@ -842,7 +859,7 @@
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-px" style="border-bottom: 1px solid var(--border); background: var(--border)">
           <template x-for="k in selectedKpis" :key="k.label">
-            <div class="px-3 py-2" style="background: var(--surface)">
+            <div class="px-3 py-2 text-center" style="background: var(--surface)">
               <div class="label" x-text="k.label"></div>
               <div class="text-sm num font-mono" :style="`color: ${k.color}`" x-text="k.value"></div>
             </div>
@@ -852,26 +869,26 @@
           <table class="w-full text-xs">
             <thead class="sticky top-0" style="background: #050505; color: var(--text-3)">
               <tr style="border-bottom: 1px solid var(--border)">
-                <th class="text-left px-3 py-1.5">Date</th>
-                <th class="text-right px-3 py-1.5">Close</th>
-                <th class="text-right px-3 py-1.5">Day %</th>
-                <th class="text-right px-3 py-1.5">Streak</th>
-                <th class="px-3 py-1.5">Percentile</th>
+                <th class="text-center px-3 py-1.5">Date</th>
+                <th class="text-center px-3 py-1.5">Close</th>
+                <th class="text-center px-3 py-1.5">Day %</th>
+                <th class="text-center px-3 py-1.5">Streak</th>
+                <th class="text-center px-3 py-1.5">Percentile</th>
               </tr>
             </thead>
             <tbody>
               <template x-for="row in (selected?.log || []).slice().reverse()" :key="row.d">
                 <tr class="row-hover" style="border-bottom: 1px solid rgba(255,255,255,0.02)">
-                  <td class="px-3 py-1 font-mono" style="color: var(--text-2)" x-text="row.d"></td>
-                  <td class="px-3 py-1 text-right num font-mono" x-text="fmtClose(row.close)"></td>
-                  <td class="px-3 py-1 text-right num font-mono" :style="`color: ${pctColor(row.pct)}`" x-text="fmtPct(row.pct)"></td>
-                  <td class="px-3 py-1 text-right num font-mono text-[10px]" :style="`color: ${streakColor(row.streak)}`" x-text="fmtStreak(row.streak)"></td>
-                  <td class="px-3 py-1">
-                    <div class="flex items-center gap-1">
+                  <td class="px-3 py-1 text-center font-mono" style="color: var(--text-2)" x-text="row.d"></td>
+                  <td class="px-3 py-1 text-center num font-mono" x-text="fmtClose(row.close)"></td>
+                  <td class="px-3 py-1 text-center num font-mono" :style="`color: ${pctColor(row.pct)}`" x-text="fmtPct(row.pct)"></td>
+                  <td class="px-3 py-1 text-center num font-mono text-[10px]" :style="`color: ${streakColor(row.streak)}`" x-text="fmtStreak(row.streak)"></td>
+                  <td class="px-3 py-1 text-center">
+                    <div class="flex items-center justify-center gap-1.5">
                       <div class="w-16 h-1.5 rounded-full overflow-hidden" style="background: rgba(255,255,255,0.06)">
                         <div class="h-full rounded-full" :style="`width: ${(row.level || 0) * 100}%; background: ${row.level > 0.8 ? 'var(--up)' : row.level < 0.2 ? 'var(--down)' : 'var(--amber)'}`"></div>
                       </div>
-                      <span class="text-[10px] num font-mono" style="color: var(--text-3)" x-text="`${Math.round((row.level || 0) * 100)}%`"></span>
+                      <span class="text-[10px] num font-mono font-medium" :style="`color: ${row.level > 0.8 ? 'var(--up)' : row.level < 0.2 ? 'var(--down)' : 'var(--amber)'}`" x-text="`${Math.round((row.level || 0) * 100)}%`"></span>
                     </div>
                   </td>
                 </tr>
@@ -931,11 +948,18 @@
              style="width: 100%; overflow-x: auto;"></div>
 
         <!-- Hover info bar -->
-        <div x-show="yieldHoverInfo" class="px-4 py-2 flex flex-wrap gap-x-6 gap-y-1 text-xs num font-mono"
-             style="border-top: 1px solid var(--border); background: var(--surface-2)">
-          <span style="color: var(--text-3)" x-text="yieldHoverInfo?.date || ''"></span>
-          <template x-for="item in (yieldHoverInfo?.values || [])" :key="item.key">
-            <span :style="`color: ${item.color}`" x-text="`${item.name}: ${item.val !== null ? item.val.toFixed(2) + '%' : '—'}`"></span>
+        <div class="px-4 py-2 flex justify-center items-center gap-6 text-xs num font-mono"
+             style="border-top: 1px solid var(--border); background: var(--surface-2); min-height: 32px;">
+          <template x-if="yieldHoverInfo">
+            <div class="flex flex-wrap justify-center gap-x-6 gap-y-1">
+              <span style="color: var(--text-3)" x-text="yieldHoverInfo?.date || ''"></span>
+              <template x-for="item in (yieldHoverInfo?.values || [])" :key="item.key">
+                <span :style="`color: ${item.color}`" x-text="`${item.name}: ${item.val !== null ? item.val.toFixed(2) + '%' : '—'}`"></span>
+              </template>
+            </div>
+          </template>
+          <template x-if="!yieldHoverInfo">
+            <span style="color: var(--text-3)">Hover over the chart to see historical yield levels</span>
           </template>
         </div>
       </div>
@@ -947,7 +971,7 @@
           <span class="label">Year-end yield levels</span>
         </div>
         <div class="rounded-lg border overflow-auto scrollbar" style="max-height: 50vh; background: var(--bg); border-color: var(--border)">
-          <table class="matrix-table w-full text-xs">
+          <table class="matrix-table text-xs">
             <thead>
               <tr>
                 <th class="matrix-sticky-corner" style="min-width: 160px; padding: 6px 10px; border-bottom: 1px solid var(--border-2); border-right: 1px solid var(--border-2);">
@@ -968,9 +992,9 @@
                     </div>
                   </td>
                   <template x-for="yr in yieldYears" :key="yr">
-                    <td>
+                    <td class="text-center">
                       <div class="matrix-cell"
-                           :style="`background: ${yieldCellColor(getYieldValue(s.key, yr))}; color: rgba(255,255,255,0.85);`"
+                           :style="`background: ${yieldCellColor(getYieldValue(s.key, yr))}; color: ${yieldCellTextColor(getYieldValue(s.key, yr))};`"
                            @mouseenter="showTt($event, `${s.name}\n${yr}: ${getYieldValue(s.key, yr) !== null ? getYieldValue(s.key, yr).toFixed(2) + '%' : 'no data'}`)"
                            @mouseleave="hideTt()"
                            x-text="getYieldValue(s.key, yr) !== null ? getYieldValue(s.key, yr).toFixed(1) : ''">
@@ -1256,9 +1280,9 @@
       <!-- Stats strip -->
       <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-3 mb-5">
         <template x-for="kpi in hpKpis" :key="kpi.label">
-          <div class="rounded-lg border px-3 py-2.5" style="background: var(--surface); border-color: var(--border)">
-            <div class="label" x-text="kpi.label"></div>
-            <div class="text-xl font-medium num font-mono mt-0.5" :style="`color: ${kpi.color}`" x-text="kpi.value"></div>
+          <div class="rounded-lg border px-3 py-2.5 text-center" style="background: var(--surface); border-color: var(--border)">
+            <div class="label text-center" x-text="kpi.label"></div>
+            <div class="text-xl font-medium num font-mono mt-0.5 text-center" :style="`color: ${kpi.color}`" x-text="kpi.value"></div>
           </div>
         </template>
       </div>
@@ -1271,11 +1295,18 @@
              @mousemove="hpChartHover($event)"
              @mouseleave="hpHoverInfo = null"
              style="width:100%;overflow-x:auto;"></div>
-        <div x-show="hpHoverInfo" class="px-4 py-2 flex flex-wrap gap-x-6 gap-y-1 text-xs num font-mono"
-             style="border-top: 1px solid var(--border); background: var(--surface-2)">
-          <span style="color: var(--text-3)" x-text="hpHoverInfo?.date || ''"></span>
-          <span :style="`color: ${(hpHoverInfo?.val ?? 0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
-                x-text="hpHoverInfo ? `Rolling ${hpHorizon}Y: ${(hpHoverInfo.val >= 0 ? '+' : '') + (hpHoverInfo.val * 100).toFixed(1)}%` : ''"></span>
+        <div class="px-4 py-2 flex justify-center items-center gap-6 text-xs num font-mono"
+             style="border-top: 1px solid var(--border); background: var(--surface-2); min-height: 32px;">
+          <template x-if="hpHoverInfo">
+            <div class="flex gap-6">
+              <span style="color: var(--text-3)" x-text="hpHoverInfo?.date || ''"></span>
+              <span :style="`color: ${(hpHoverInfo?.val ?? 0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
+                    x-text="`Rolling ${hpHorizon}Y: ${(hpHoverInfo.val >= 0 ? '+' : '') + (hpHoverInfo.val * 100).toFixed(1)}%`"></span>
+            </div>
+          </template>
+          <template x-if="!hpHoverInfo">
+            <span style="color: var(--text-3)" x-text="`Hover over the chart to see rolling ${hpHorizon}Y returns`"></span>
+          </template>
         </div>
       </div>
 
@@ -1286,12 +1317,19 @@
              @mousemove="hpDistHover($event)"
              @mouseleave="hpDistHoverInfo = null"
              style="width:100%;overflow-x:auto;"></div>
-        <div x-show="hpDistHoverInfo" class="px-4 py-2 flex flex-wrap gap-x-6 gap-y-1 text-xs num font-mono"
-             style="border-top: 1px solid var(--border); background: var(--surface-2)">
-          <span style="color: var(--text-3)"
-                x-text="hpDistHoverInfo ? `${(hpDistHoverInfo.lo>=0?'+':'') + (hpDistHoverInfo.lo*100).toFixed(1)}% → ${(hpDistHoverInfo.hi>=0?'+':'') + (hpDistHoverInfo.hi*100).toFixed(1)}%` : ''"></span>
-          <span style="color: var(--text)"
-                x-text="hpDistHoverInfo ? `${hpDistHoverInfo.count} window${hpDistHoverInfo.count === 1 ? '' : 's'}` : ''"></span>
+        <div class="px-4 py-2 flex justify-center items-center gap-6 text-xs num font-mono"
+             style="border-top: 1px solid var(--border); background: var(--surface-2); min-height: 32px;">
+          <template x-if="hpDistHoverInfo">
+            <div class="flex gap-6">
+              <span style="color: var(--text-3)"
+                    x-text="`${(hpDistHoverInfo.lo>=0?'+':'') + (hpDistHoverInfo.lo*100).toFixed(1)}% → ${(hpDistHoverInfo.hi>=0?'+':'') + (hpDistHoverInfo.hi*100).toFixed(1)}%`"></span>
+              <span style="color: var(--text)"
+                    x-text="`${hpDistHoverInfo.count} window${hpDistHoverInfo.count === 1 ? '' : 's'}`"></span>
+            </div>
+          </template>
+          <template x-if="!hpDistHoverInfo">
+            <span style="color: var(--text-3)">Hover over the bars to see return frequency distribution</span>
+          </template>
         </div>
       </div>
     </div>
@@ -1330,7 +1368,7 @@
 
       <!-- Seasonality heatmap -->
       <div class="rounded-lg border overflow-auto scrollbar" style="background: var(--bg); border-color: var(--border); max-height: 75vh">
-        <table class="matrix-table w-full text-xs">
+        <table class="matrix-table text-xs">
           <thead>
             <tr>
               <th class="matrix-sticky-corner" style="min-width:160px;padding:6px 10px;border-bottom:1px solid var(--border-2);border-right:1px solid var(--border-2);">
@@ -1352,7 +1390,7 @@
                   <span class="text-xs" style="color:var(--text)" x-text="row.name"></span>
                 </td>
                 <template x-for="(cell, mi) in row.months" :key="mi">
-                  <td>
+                  <td class="text-center">
                     <div class="matrix-cell"
                          :style="`background:${cellColor(cell.avg)};color:${cellTextColor(cell.avg)};opacity:${cell.avg !== null ? (0.4 + (cell.hitRate || 0.5) * 0.6) : 1};outline:${(new Date().getMonth()) === mi ? '2px solid var(--cyan)' : 'none'};outline-offset:-1px;`"
                          @mouseenter="showTt($event, `${row.name}\n${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][mi]}: avg ${cell.avg !== null ? ((cell.avg>=0?'+':'')+(cell.avg*100).toFixed(1)+'%') : '—'}\nHit rate: ${cell.hitRate !== null ? (cell.hitRate*100).toFixed(0)+'%' : '—'} (${cell.n} years)${cell.n < 10 ? '\n⚠ Low sample size' : ''}`)"
@@ -1896,6 +1934,7 @@ function marketsApp() {
     detailBarHoverInfo: null,   // { year, ret, partial, compareRet }
     detailCompareAsset: '',     // asset key to compare with in returns bar chart
     colorMode: 'return',  // 'return' | 'zscore'
+    matrixStartYear: 1970,
 
     // Vol Intelligence state
     volLookback: 'All',   // '1Y' | '3Y' | '5Y' | 'All'
@@ -2154,8 +2193,10 @@ function marketsApp() {
 
     get matrixYears() {
       if (!this.returnsData) return [];
-      // Memoize — only recompute when returnsData changes (Bug 10 fix)
-      if (this._matrixYearsCache && this._matrixYearsCacheData === this.returnsData) return this._matrixYearsCache;
+      // Memoize — only recompute when returnsData or matrixStartYear changes
+      if (this._matrixYearsCache && this._matrixYearsCacheData === this.returnsData && this._matrixYearsCacheStartYear === this.matrixStartYear) {
+        return this._matrixYearsCache;
+      }
       const assets = this.returnsData.assets || {};
       const yearSet = new Set();
       for (const val of Object.values(assets)) {
@@ -2171,12 +2212,15 @@ function marketsApp() {
           }
         }
       }
-      this._matrixYearsCache = Array.from(yearSet).sort((a, b) => b - a); // newest left
+      const sortedYears = Array.from(yearSet).sort((a, b) => b - a); // newest left
+      this._matrixYearsCache = sortedYears.filter(y => y >= this.matrixStartYear);
       this._matrixYearsCacheData = this.returnsData;
+      this._matrixYearsCacheStartYear = this.matrixStartYear;
       return this._matrixYearsCache;
     },
     _matrixYearsCache: null,
     _matrixYearsCacheData: null,
+    _matrixYearsCacheStartYear: null,
 
     // Cache for computed annual returns: { cacheKey: { year: {ret, partial} } }
     // cacheKey = `${assetKey}|${activeCcy}|${activeReal}`
@@ -3418,15 +3462,19 @@ function marketsApp() {
       const fp = (n, dp = 2) => (n == null || !isFinite(n)) ? '—' : (n >= 0 ? '+' : '') + (n * 100).toFixed(dp) + '%';
       return [
         { label: 'Close',     value: this.fmtClose(st.close_today),           color: 'var(--text)' },
+        { label: 'Prev Close', value: this.fmtClose(st.close_yesterday),       color: 'var(--text-3)' },
         { label: 'Day %',     value: fp(st.day_pct),                          color: this.pctColor(st.day_pct) },
         { label: '7d %',      value: fp(st.week_pct),                         color: this.pctColor(st.week_pct) },
         { label: '1M %',      value: fp(st.month_pct),                        color: this.pctColor(st.month_pct) },
         { label: 'YTD %',     value: fp(st.ytd_pct),                          color: this.pctColor(st.ytd_pct) },
-        { label: 'ATH',       value: st.all_time_high != null ? Number(st.all_time_high).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—', color: 'var(--up)' },
-        { label: 'ATL',       value: st.all_time_low  != null ? Number(st.all_time_low).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—', color: 'var(--down)' },
-        { label: '%-ile ATH', value: st.percentile_all_time != null ? Math.round(st.percentile_all_time * 100) + '%' : '—', color: 'var(--amber)' },
         { label: 'Streak',    value: this.fmtStreak(st.current_streak),        color: this.streakColor(st.current_streak) },
+        { label: 'ATH',       value: st.all_time_high != null ? Number(st.all_time_high).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—', color: 'var(--up)' },
+        { label: 'ATH Date',   value: st.all_time_high_date || '—',            color: 'var(--text-3)' },
+        { label: 'ATL',       value: st.all_time_low  != null ? Number(st.all_time_low).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—', color: 'var(--down)' },
+        { label: 'ATL Date',   value: st.all_time_low_date || '—',             color: 'var(--text-3)' },
+        { label: '%-ile ATH', value: st.percentile_all_time != null ? Math.round(st.percentile_all_time * 100) + '%' : '—', color: 'var(--amber)' },
         { label: '20d Up',    value: st.last_20_up != null ? `${st.last_20_up}/${(st.last_20_up || 0) + (st.last_20_down || 0)}` : '—', color: 'var(--text-2)' },
+        { label: 'History',   value: st.sessions_observed != null ? Number(st.sessions_observed).toLocaleString() + ' d' : '—', color: 'var(--text-3)' },
       ];
     },
 
@@ -3533,13 +3581,21 @@ function marketsApp() {
 
     yieldCellColor(val) {
       if (val === null || val === undefined) return 'transparent';
-      // Color by yield level: low = blue, high = orange/red
-      if (val < 0)    return '#1d4ed8';
-      if (val < 1)    return '#3b82f6';
-      if (val < 3)    return '#93c5fd';
-      if (val < 5)    return '#fdba74';
-      if (val < 8)    return '#f97316';
-      return '#c2410c';
+      // Premium sequential palette (optimized for rates)
+      if (val < 1.0) return 'rgba(30, 58, 138, 0.9)';   // Deep blue
+      if (val < 2.0) return 'rgba(30, 64, 175, 0.8)';   // Slate blue
+      if (val < 3.0) return 'rgba(59, 130, 246, 0.8)';   // Royal blue
+      if (val < 4.0) return 'rgba(14, 165, 233, 0.85)';  // Sky blue (light)
+      if (val < 5.0) return 'rgba(20, 184, 166, 0.9)';   // Teal
+      if (val < 6.0) return 'rgba(245, 158, 11, 0.9)';   // Amber
+      if (val < 8.0) return 'rgba(249, 115, 22, 0.9)';   // Orange
+      return 'rgba(220, 38, 38, 0.9)';                  // Red
+    },
+    yieldCellTextColor(val) {
+      if (val === null || val === undefined) return 'transparent';
+      // Dark text for lighter backgrounds (like sky-blue, teal, amber)
+      if (val >= 3.0 && val < 6.0) return 'rgba(0, 0, 0, 0.85)';
+      return 'rgba(255, 255, 255, 0.95)';
     },
 
     get yieldChartSvg() {
@@ -3809,7 +3865,7 @@ function marketsApp() {
           const sign = a.ret >= 0 ? '+' : '';
           const textColor = Math.abs(a.ret) > 0.15 ? 'rgba(255,255,255,0.95)' : 'rgba(0,0,0,0.85)';
           const tip = `${a.shortName}: ${yr} ${sign}${(a.ret * 100).toFixed(1)}%`;
-          html += `<td style="width:${CW}px;height:${RH}px;background:${a.color};border-radius:2px;cursor:pointer;vertical-align:middle;padding:1px 3px;overflow:hidden"
+          html += `<td style="width:${CW}px;height:${RH}px;background:${a.color};border-radius:2px;cursor:pointer;vertical-align:middle;padding:1px 3px;overflow:hidden;text-align:center;"
                        title="${tip}"
                        onmouseenter="(function(el){var k='${a.key}';document.querySelectorAll('[data-pkey]').forEach(function(c){c.style.opacity=c.dataset.pkey===k?'1':'0.15'});el.style.opacity='1'})(this)"
                        onmouseleave="document.querySelectorAll('[data-pkey]').forEach(function(c){c.style.opacity='1'})"
@@ -4159,7 +4215,7 @@ function marketsApp() {
     // ── View C: Holding-Period Lab ────────────────────────────────────────
 
     hpAsset: 'sp500',
-    hpHorizon: 10,
+    hpHorizon: 1,
     hpHoverInfo: null,
     hpDistHoverInfo: null,
 
@@ -4316,7 +4372,7 @@ function marketsApp() {
       const yAxis = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
       const xAxis = `<line x1="${PL}" y1="${H-PB}" x2="${W-PR}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
 
-      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:700px;height:${H}px;display:block">${yTicks}${bars}${xLabels}${yAxis}${xAxis}</svg>`;
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:700px;height:${H}px;display:block;margin:12px auto">${yTicks}${bars}${xLabels}${yAxis}${xAxis}</svg>`;
     },
 
     hpDistHover(e) {
