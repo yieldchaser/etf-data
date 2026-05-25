@@ -885,7 +885,7 @@
         </div>
 
         <!-- ETF list with expandable details -->
-        <div class="space-y-0.5 max-h-[55vh] overflow-y-auto scrollbar">
+        <div class="space-y-0.5">
           <template x-for="etfRow in etfSummary" :key="etfRow.etf">
             <div>
               <button @click="activeETF = etfRow.etf; expandedSidebarETF = expandedSidebarETF === etfRow.etf ? null : etfRow.etf"
