@@ -1548,6 +1548,9 @@ function labApp() {
         this._loadMarketData(),
         this._loadSimData(),
       ]);
+      if (!this.pricesData) {
+        this.pricesData = this._buildFallbackPricesData();
+      }
       this.loading = false;
       // Set default end date to latest available
       if (this.pricesData?.asof) {
@@ -1559,6 +1562,7 @@ function labApp() {
       }
       // Compute Kelly from defaults
       this.computeKelly();
+      this.runBacktest();
     },
 
     async _loadPrices() {
@@ -1585,6 +1589,49 @@ function labApp() {
     },
 
     // ── Tooltip ────────────────────────────────────────────────────────────
+    _buildFallbackPricesData() {
+      const tickers = {};
+      const sources = this.simData || {};
+      const names = {
+        SPX: 'S&P 500',
+        NDX: 'Nasdaq-100',
+        NVDA: 'NVIDIA',
+        AAPL: 'Apple',
+        TSLA: 'Tesla',
+        GOOG: 'Alphabet Class C',
+        GOOGL: 'Alphabet Class A',
+        MSFT: 'Microsoft',
+        AMZN: 'Amazon',
+        META: 'Meta Platforms',
+      };
+
+      for (const [symbol, daily] of Object.entries(sources)) {
+        if (!Array.isArray(daily) || daily.length < 2) continue;
+        const monthEnd = {};
+        for (const point of daily) {
+          if (!point?.d || point.c == null) continue;
+          monthEnd[String(point.d).slice(0, 7)] = Number(point.c);
+        }
+        const monthly = Object.entries(monthEnd)
+          .filter(([, close]) => Number.isFinite(close) && close > 0)
+          .sort(([a], [b]) => a.localeCompare(b));
+        if (monthly.length < 2) continue;
+        tickers[symbol] = {
+          name: names[symbol] || symbol,
+          first: monthly[0][0],
+          monthly,
+        };
+      }
+
+      const last = Object.values(tickers)
+        .map(t => t.monthly[t.monthly.length - 1]?.[0])
+        .filter(Boolean)
+        .sort()
+        .at(-1);
+
+      return Object.keys(tickers).length ? { asof: last || '', tickers } : null;
+    },
+
     showTt(el, text) { _showTt(el, text); },
     hideTt() { _hideTt(); },
 
@@ -1679,9 +1726,6 @@ function labApp() {
       reader.readAsText(file);
     },
 
-</script>
-
-<script>
     // ── Backtest runner ────────────────────────────────────────────────────
     runBacktest() {
       if (!this.pricesData) return;
@@ -1948,9 +1992,6 @@ function labApp() {
       });
     },
 
-</script>
-
-<script>
     // ── Computed properties ────────────────────────────────────────────────
     get quickKpis() {
       const r = this.backtestResult;
@@ -2062,9 +2103,6 @@ function labApp() {
       return rows.sort((a, b) => (a.maxDd ?? 0) - (b.maxDd ?? 0));
     },
 
-</script>
-
-<script>
     // ── Hover handlers ─────────────────────────────────────────────────────
     growthHover(e) {
       const svg = e.currentTarget.querySelector('svg');
