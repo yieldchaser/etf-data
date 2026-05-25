@@ -1391,43 +1391,49 @@
         </div>
       </div>
 
-      <!-- Seasonality heatmap -->
+      <!-- Seasonality heatmap — table fills the container width via table-layout:fixed.
+           Muted palette matches the periodic table; current month gets a cyan outline. -->
       <div class="rounded-lg border overflow-auto scrollbar" style="background: var(--bg); border-color: var(--border); max-height: 75vh">
-        <table class="matrix-table text-xs">
+        <table class="matrix-table text-xs" style="table-layout:fixed;width:100%;min-width:900px">
           <thead>
             <tr>
-              <th class="matrix-sticky-corner" style="min-width:160px;padding:6px 10px;border-bottom:1px solid var(--border-2);border-right:1px solid var(--border-2);">
+              <th class="matrix-sticky-corner" style="width:180px;min-width:180px;padding:6px 10px;border-bottom:1px solid var(--border-2);border-right:1px solid var(--border-2);">
                 <span class="label" style="font-size:9px;">Asset</span>
               </th>
               <template x-for="m in ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']" :key="m">
-                <th class="matrix-sticky-header matrix-year-cell"
-                    :style="(new Date().getMonth() + 1) === (['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(m) + 1) ? 'color:var(--cyan);border-bottom:2px solid var(--cyan)' : ''"
+                <th class="matrix-sticky-header"
+                    style="height:24px;text-align:center;font-size:10px;font-family:ui-monospace;color:var(--text-3);border-bottom:1px solid var(--border-2);"
+                    :style="(new Date().getMonth() + 1) === (['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(m) + 1) ? 'color:var(--cyan);border-bottom:2px solid var(--cyan);height:24px;text-align:center;font-size:10px;font-family:ui-monospace;' : ''"
                     x-text="m"></th>
               </template>
-              <th class="matrix-sticky-header matrix-year-cell" style="color:var(--cyan)">Best</th>
-              <th class="matrix-sticky-header matrix-year-cell" style="color:var(--down)">Worst</th>
+              <th class="matrix-sticky-header" style="width:60px;height:24px;text-align:center;font-size:10px;font-family:ui-monospace;color:var(--cyan);border-bottom:1px solid var(--border-2);">Best</th>
+              <th class="matrix-sticky-header" style="width:60px;height:24px;text-align:center;font-size:10px;font-family:ui-monospace;color:var(--down);border-bottom:1px solid var(--border-2);">Worst</th>
             </tr>
           </thead>
           <tbody>
             <template x-for="row in seasonalityRows" :key="row.key">
               <tr>
-                <td class="matrix-sticky-col" style="min-width:160px;padding:4px 10px;border-right:1px solid var(--border-2);border-bottom:1px solid rgba(255,255,255,0.03);">
+                <td class="matrix-sticky-col" style="width:180px;min-width:180px;padding:4px 10px;border-right:1px solid var(--border-2);border-bottom:1px solid rgba(255,255,255,0.03);">
                   <span class="text-xs" style="color:var(--text)" x-text="row.name"></span>
                 </td>
                 <template x-for="(cell, mi) in row.months" :key="mi">
-                  <td class="text-center">
-                    <div class="matrix-cell"
-                         :style="`background:${cellColor(cell.avg)};color:${cellTextColor(cell.avg)};opacity:${cell.avg !== null ? (0.4 + (cell.hitRate || 0.5) * 0.6) : 1};outline:${(new Date().getMonth()) === mi ? '2px solid var(--cyan)' : 'none'};outline-offset:-1px;`"
-                         @mouseenter="showTt($event, `${row.name}\n${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][mi]}: avg ${cell.avg !== null ? ((cell.avg>=0?'+':'')+(cell.avg*100).toFixed(1)+'%') : '—'}\nHit rate: ${cell.hitRate !== null ? (cell.hitRate*100).toFixed(0)+'%' : '—'} (${cell.n} years)${cell.n < 10 ? '\n⚠ Low sample size' : ''}`)"
+                  <td class="text-center" style="padding:0">
+                    <!-- §5 Muted heatmap: the diverging blue/orange palette is run through
+                         muteColor so the cells are calm and a single grid reads as one
+                         table. Hit rate still drives opacity (0.4..1.0). Low-sample cells
+                         (n<10) get an italic underline as a visual caveat. -->
+                    <div style="height:30px;display:flex;align-items:center;justify-content:center;font-size:10px;font-family:ui-monospace;font-variant-numeric:tabular-nums;cursor:default;border:1px solid rgba(0,0,0,0.3);"
+                         :style="`background:${seasonalityCellColor(cell.avg)};color:${seasonalityCellText(cell.avg)};opacity:${cell.avg !== null ? (0.45 + (cell.hitRate || 0.5) * 0.55) : 1};outline:${(new Date().getMonth()) === mi ? '2px solid var(--cyan)' : 'none'};outline-offset:-1px;text-decoration:${cell.n > 0 && cell.n < 10 ? 'underline dotted' : 'none'};`"
+                         @mouseenter="showTt($event, `${row.name}\n${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][mi]}: avg ${cell.avg !== null ? ((cell.avg>=0?'+':'')+(cell.avg*100).toFixed(1)+'%') : '—'}\nHit rate: ${cell.hitRate !== null ? (cell.hitRate*100).toFixed(0)+'%' : '—'} (n=${cell.n} years)${cell.n > 0 && cell.n < 10 ? '\n⚠ Low sample size' : ''}`)"
                          @mouseleave="hideTt()"
                          x-text="cell.avg !== null ? (cell.avg>=0?'+':'')+(cell.avg*100).toFixed(1)+'%' : ''">
                     </div>
                   </td>
                 </template>
-                <td class="px-1 text-center">
+                <td class="px-1 text-center" style="width:60px">
                   <span class="text-[9px] font-mono" style="color:var(--up)" x-text="row.bestMonth"></span>
                 </td>
-                <td class="px-1 text-center">
+                <td class="px-1 text-center" style="width:60px">
                   <span class="text-[9px] font-mono" style="color:var(--down)" x-text="row.worstMonth"></span>
                 </td>
               </tr>
@@ -2868,6 +2874,18 @@ function marketsApp() {
       if (ret === null || ret === undefined) return '';
       const pct = ret * 100;
       return (pct >= 0 ? '+' : '') + pct.toFixed(0) + '%';
+    },
+
+    // §5 Seasonality heatmap — runs the diverging cellColor through muteColor so cells
+    // read as one institutional table instead of a saturated heatmap. Same diverging
+    // semantics (blue ↑, orange ↓) but at calmer luminance, paired with AA-contrast text.
+    seasonalityCellColor(avg) {
+      if (avg === null || avg === undefined) return 'transparent';
+      return muteColor(this.cellColor(avg), 0.42, 0.56);
+    },
+    seasonalityCellText(avg) {
+      if (avg === null || avg === undefined) return 'transparent';
+      return contrastText(muteColor(this.cellColor(avg), 0.42, 0.56));
     },
 
     // ── Drilldown toggle ──────────────────────────────────────────────────
