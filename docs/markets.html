@@ -49,9 +49,18 @@
     .matrix-cell { width: 52px; min-width: 52px; height: 28px; text-align: center;
                    font-size: 10px; font-family: ui-monospace, monospace;
                    font-variant-numeric: tabular-nums; cursor: pointer;
-                   border: 1px solid rgba(0,0,0,0.3); transition: filter 0.1s;
+                   /* Hairline border matches the periodic-table palette — soft
+                      light overlay rather than a hard black line, so adjacent
+                      muted cells read as one continuous grid. */
+                   border: 1px solid rgba(255,255,255,0.06); transition: filter 0.1s;
                    display: inline-flex; align-items: center; justify-content: center; }
-    .matrix-cell:hover { filter: brightness(1.3); z-index: 1; position: relative; }
+    .matrix-cell:hover { filter: brightness(1.18); z-index: 1; position: relative; }
+    /* Partial-year cells (current year-to-date or first year of an asset's
+       history) get 40% opacity + italic so the user can tell at a glance the
+       cell isn't a full-year return. The trailing · in the cell text is the
+       explicit flag; opacity is the at-a-glance signal. */
+    .matrix-cell-partial { opacity: 0.40; font-style: italic; }
+    .matrix-cell-partial:hover { opacity: 0.65; }
     .matrix-cell-empty { background: transparent; cursor: default; }
     .matrix-cell-empty:hover { filter: none; }
     .matrix-name-cell { min-width: 180px; max-width: 180px; padding: 0 8px;
@@ -132,7 +141,7 @@
               :class="activeTab === 'holdingperiod' ? 'tab-active' : ''"
               class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
               :style="activeTab === 'holdingperiod' ? '' : 'color: var(--text-2); border-color: var(--border)'"
-              @mouseenter="showTt($event, 'Holding-Period Lab — best/worst/median rolling returns')" @mouseleave="hideTt()">
+              @mouseenter="showTt($event, 'Holding-Period Lab — best/worst/median rolling returns + plain trailing 1Y')" @mouseleave="hideTt()">
         Hold Lab
       </button>
       <button @click="activeTab = 'seasonality'"
@@ -365,11 +374,12 @@
                     <td>
                       <template x-if="getCellData(asset.key, yr) !== null">
                         <div class="matrix-cell"
-                             :style="`background: ${activeCellColor(asset.key, yr)}; color: ${cellTextColor(getCellData(asset.key, yr).ret)};`"
+                             :class="getCellData(asset.key, yr).partial ? 'matrix-cell-partial' : ''"
+                             :style="`background: ${activeCellColor(asset.key, yr)}; color: ${activeCellTextColor(asset.key, yr)};`"
                              @click="toggleDrilldown(asset.key, yr)"
                              @mouseenter="showCellTt($event, asset, yr, getCellData(asset.key, yr))"
                              @mouseleave="hideTt()"
-                             x-text="cellText(getCellData(asset.key, yr).ret)">
+                             x-text="cellText(getCellData(asset.key, yr))">
                         </div>
                       </template>
                       <template x-if="getCellData(asset.key, yr) === null">
@@ -1281,24 +1291,47 @@
       <div class="flex flex-wrap items-center gap-4 mb-5">
         <div>
           <h2 class="text-sm font-medium" style="color: var(--cyan)">HOLDING-PERIOD LAB</h2>
-          <div class="text-xs mt-0.5" style="color: var(--text-3)">Rolling N-year annualised returns — best, worst, median, % positive windows.</div>
+          <div class="text-xs mt-0.5" style="color: var(--text-3)">
+            <span x-show="hpMode === 'rolling'">Rolling N-year annualised returns — best, worst, median, % positive windows.</span>
+            <span x-show="hpMode === 'trailing'">Trailing 1-year total return — plain year-over-year %, not annualised. Same metric as the Portfolio Lab "Return" view.</span>
+          </div>
         </div>
-        <!-- Asset selector -->
-        <select x-model="hpAsset" class="bg-transparent border rounded px-2 py-1 text-xs" style="border-color: var(--border-2); color: var(--text)">
+        <!-- Asset selector. x-model handles binding; explicit @change is a
+             belt-and-suspenders fix for the live-site bug where the dropdown
+             showed (e.g.) "ASX 200" while the chart kept rendering S&P 500 —
+             :selected ensures the option that matches the current hpAsset is
+             marked as the active one even if Alpine's x-for renders the
+             options after the initial select sync. -->
+        <select x-model="hpAsset"
+                @change="hpAsset = $event.target.value"
+                class="bg-transparent border rounded px-2 py-1 text-xs"
+                style="border-color: var(--border-2); color: var(--text)">
           <template x-for="a in hpAssetList" :key="a.key">
-            <option :value="a.key" x-text="a.name" style="background:#111"></option>
+            <option :value="a.key" :selected="a.key === hpAsset" x-text="a.name" style="background:#111"></option>
           </template>
         </select>
-        <!-- Horizon selector -->
+        <!-- Horizon selector (rolling annualised) + plain 1Y trailing toggle.
+             The horizon buttons compute rolling annualised return for an N-year
+             window. The "1Y Plain" button switches to trailing 1-year total
+             return (12-month plain % change, NOT annualised) — the metric most
+             users actually mean when they ask for "1Y return". -->
         <div class="flex gap-1">
           <template x-for="h in [1,3,5,10,15,20]" :key="h">
-            <button @click="hpHorizon = h"
-                    :class="hpHorizon === h ? 'tab-active' : ''"
+            <button @click="hpMode = 'rolling'; hpHorizon = h"
+                    :class="(hpMode === 'rolling' && hpHorizon === h) ? 'tab-active' : ''"
                     class="px-2.5 py-1 rounded-md border font-medium text-xs transition"
-                    :style="hpHorizon === h ? '' : 'color: var(--text-2); border-color: var(--border)'"
+                    :style="(hpMode === 'rolling' && hpHorizon === h) ? '' : 'color: var(--text-2); border-color: var(--border)'"
+                    @mouseenter="showTt($event, `Rolling ${h}-year annualised return — geometric mean of the last ${h} years.`)"
+                    @mouseleave="hideTt()"
                     x-text="h + 'Y'">
             </button>
           </template>
+          <button @click="hpMode = 'trailing'"
+                  :class="hpMode === 'trailing' ? 'tab-active' : ''"
+                  class="px-2.5 py-1 rounded-md border font-medium text-xs transition"
+                  :style="hpMode === 'trailing' ? '' : 'color: var(--text-2); border-color: var(--border)'"
+                  @mouseenter="showTt($event, 'Plain trailing 1-year return — year-over-year %, NOT annualised. The simple Y/Y change most people mean by &quot;1Y return&quot;.')"
+                  @mouseleave="hideTt()">1Y Plain</button>
         </div>
       </div>
 
@@ -1312,10 +1345,14 @@
         </template>
       </div>
 
-      <!-- Rolling return time series chart -->
+      <!-- Rolling / Trailing return chart. Title and hover label adapt to hpMode
+           so it never says "Rolling 1Y Annualised" when the user is looking at
+           a plain trailing 1Y return, and vice-versa. -->
       <div class="rounded-lg border overflow-hidden mb-5" style="background: var(--surface); border-color: var(--border)">
         <div class="px-3 py-2 label" style="border-bottom: 1px solid var(--border); color: var(--cyan)"
-             x-text="`ROLLING ${hpHorizon}Y ANNUALISED RETURN — ${hpAssetName}`"></div>
+             x-text="hpMode === 'trailing'
+                 ? `TRAILING 1-YEAR RETURN — ${hpAssetName}`
+                 : `ROLLING ${hpHorizon}Y ANNUALISED RETURN — ${hpAssetName}`"></div>
         <div x-html="hpChartSvg"
              @mousemove="hpChartHover($event)"
              @mouseleave="hpHoverInfo = null"
@@ -1325,8 +1362,8 @@
           <template x-if="hpHoverInfo">
             <div class="flex gap-6">
               <span style="color: var(--text-3)" x-text="hpHoverInfo?.date || ''"></span>
-              <span :style="`color: ${(hpHoverInfo?.val ?? 0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
-                    x-text="`Rolling ${hpHorizon}Y: ${(hpHoverInfo.val >= 0 ? '+' : '') + (hpHoverInfo.val * 100).toFixed(1)}%`"></span>
+                <span :style="`color: ${(hpHoverInfo?.val ?? 0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
+                      x-text="`${hpMode === 'trailing' ? 'Trailing 1Y' : 'Rolling ' + hpHorizon + 'Y'}: ${(hpHoverInfo.val >= 0 ? '+' : '') + (hpHoverInfo.val * 100).toFixed(1)}%`"></span>
             </div>
           </template>
           <template x-if="!hpHoverInfo">
@@ -2659,16 +2696,22 @@ function marketsApp() {
       return result;
     },
 
-    // ── Color scale (diverging blue ↔ orange, winsorized at ±50%) ────────
+    // ── Color scale (diverging blue ↔ orange, muted institutional palette) ────────
+    // Same diverging semantics as the Periodic Table / Seasonality grid:
+    //   • blue (positive) ↔ orange-red (negative)
+    //   • saturation dampened to ~0.30–0.45 so cells read as one institutional table
+    //   • lightness scales with magnitude — deeper returns still read deeper
+    //   • paired with contrastText() for AA-contrast text
     cellColor(ret) {
       if (ret === null || ret === undefined) return 'transparent';
       const r = Math.max(-0.5, Math.min(0.5, ret));
-      if (r > 0.30)  return '#1d4ed8';
-      if (r > 0.10)  return '#3b82f6';
-      if (r > 0.00)  return '#93c5fd';
-      if (r > -0.10) return '#fdba74';
-      if (r > -0.30) return '#f97316';
-      return '#c2410c';
+      // hue 215° = calm blue, hue 18–25° = warm orange (no neon).
+      if (r > 0.30)  return _hsl2hex(215/360, 0.42, 0.40);  // big positive  — deep muted blue
+      if (r > 0.10)  return _hsl2hex(215/360, 0.36, 0.52);  // mid positive  — muted blue
+      if (r > 0.00)  return _hsl2hex(215/360, 0.28, 0.65);  // small positive — pale blue
+      if (r > -0.10) return _hsl2hex( 25/360, 0.32, 0.65);  // small negative — pale orange
+      if (r > -0.30) return _hsl2hex( 22/360, 0.40, 0.52);  // mid negative   — muted orange
+      return                _hsl2hex( 18/360, 0.45, 0.40);  // big negative   — deep muted red-orange
     },
 
     // ── §7 Z-score audit / "current" derivation contract ────────────────
@@ -2717,14 +2760,16 @@ function marketsApp() {
     //   as 'unusual vs full-year history' so we leave the z null and let
     //   activeCellColor fall through to a low-opacity return color.
 
-    // Z-score color scale (same blue-orange, but keyed on z-score ±2σ)
+    // Z-score color scale — same muted institutional palette, keyed on z-score ±2σ.
+    // Center band (|z| ≤ 1) uses a near-neutral dark gray so the eye reads "this
+    // year was unremarkable vs the asset's own history". Outliers diverge by hue.
     cellColorZscore(z) {
       if (z === null || z === undefined) return 'transparent';
-      if (z > 2.0)  return '#1d4ed8';
-      if (z > 1.0)  return '#93c5fd';
-      if (z > -1.0) return '#27272a';
-      if (z > -2.0) return '#f97316';
-      return '#c2410c';
+      if (z > 2.0)  return _hsl2hex(215/360, 0.42, 0.40);   // strongly above its own history
+      if (z > 1.0)  return _hsl2hex(215/360, 0.30, 0.58);   // mildly above
+      if (z > -1.0) return _hsl2hex(215/360, 0.04, 0.22);   // unremarkable — neutral dark
+      if (z > -2.0) return _hsl2hex( 22/360, 0.30, 0.58);   // mildly below
+      return                _hsl2hex( 18/360, 0.45, 0.40);  // strongly below
     },
 
     // Per-asset z-score cache: { cacheKey: { year: z } }
@@ -2935,18 +2980,36 @@ function marketsApp() {
 
     cellTextColor(ret) {
       if (ret === null || ret === undefined) return 'transparent';
-      const r = Math.max(-0.5, Math.min(0.5, ret));
-      // Light text on dark backgrounds, dark text on light backgrounds
-      if (r > 0.10)  return 'rgba(255,255,255,0.9)';
-      if (r > 0.00)  return 'rgba(0,0,0,0.75)';
-      if (r > -0.10) return 'rgba(0,0,0,0.75)';
-      return 'rgba(255,255,255,0.9)';
+      // AA-contrast picker — automatically dark-on-light or light-on-dark
+      // for whichever muted background cellColor produced.
+      return contrastText(this.cellColor(ret));
     },
 
-    cellText(ret) {
+    // Active-cell text color — picks contrast against the actual rendered
+    // background. In z-score mode that's a different palette than cellColor,
+    // so we feed contrastText() the z-score color directly when available.
+    activeCellTextColor(assetKey, year) {
+      if (this.colorMode === 'zscore') {
+        const z = this.getZscore(assetKey, year);
+        if (z !== null) return contrastText(this.cellColorZscore(z));
+        // Partial-year fallback uses cellColor + alpha; contrastText still
+        // reads the correct hue/lightness from the underlying cellColor.
+      }
+      const cd = this.getCellData(assetKey, year);
+      return cd ? contrastText(this.cellColor(cd.ret)) : 'transparent';
+    },
+
+    // §6 cellText now accepts either a cell-data object {ret, partial, count} OR
+    // a bare number (legacy). Partial-year cells get a trailing · so the explicit
+    // "this isn't a full year" signal is visible even to users without colour
+    // perception (paired with .matrix-cell-partial italic + 40% opacity).
+    cellText(retOrCd) {
+      if (retOrCd === null || retOrCd === undefined) return '';
+      const ret     = (typeof retOrCd === 'object') ? retOrCd.ret     : retOrCd;
+      const partial = (typeof retOrCd === 'object') ? retOrCd.partial : false;
       if (ret === null || ret === undefined) return '';
       const pct = ret * 100;
-      return (pct >= 0 ? '+' : '') + pct.toFixed(0) + '%';
+      return (pct >= 0 ? '+' : '') + pct.toFixed(0) + '%' + (partial ? '·' : '');
     },
 
     // §5 Seasonality heatmap — runs the diverging cellColor through muteColor so cells
@@ -4541,6 +4604,11 @@ function marketsApp() {
 
     hpAsset: 'sp500',
     hpHorizon: 1,
+    // §C-mode toggle. 'rolling' = N-year rolling annualised return (the
+    // historical Hold Lab default; "best/worst/median window" framing applies).
+    // 'trailing' = plain trailing 1-year total return — same metric as the
+    // Portfolio Lab "Return" view, NOT annualised. Honest plain-language Y/Y.
+    hpMode: 'rolling',
     hpHoverInfo: null,
     hpDistHoverInfo: null,
 
@@ -4555,16 +4623,31 @@ function marketsApp() {
       return this.returnsData?.assets?.[this.hpAsset]?.meta?.name || this.hpAsset;
     },
 
+    // §C series builder — returns {ym, ret}[] for the active Hold-Lab mode.
+    //   • mode='rolling'  : rolling annualised return over an N-year window
+    //                       (geometric mean — "what's the typical N-year IRR
+    //                       you'd have earned ending at this month?")
+    //   • mode='trailing' : plain trailing 12-month total return (NOT
+    //                       annualised) — the simple Y/Y % change. Same
+    //                       semantics as sim.html `_buildRollingChart`'s
+    //                       'Return' metric (window.reduce((p,r)=>p*(1+r),1)-1).
+    // We dispatch through this.hpMode (default 'rolling') so callers
+    // (hpKpis / hpChartSvg / hpDistSvg / hpChartHover) automatically render
+    // the right metric for the active toggle without any extra bookkeeping.
     _rollingReturns(assetKey, horizonYears) {
       const adjusted = this._getAdjustedClose(assetKey);
       if (adjusted.length < 2) return [];
-      const n = horizonYears * 12;
+      const isTrailing = this.hpMode === 'trailing';
+      const n = isTrailing ? 12 : horizonYears * 12;
       const results = [];
       for (let i = n; i < adjusted.length; i++) {
         const start = adjusted[i - n], end = adjusted[i];
         if (start.close > 0 && end.close != null) {
-          const ann = Math.pow(end.close / start.close, 1 / horizonYears) - 1;
-          results.push({ ym: end.ym, ret: ann });
+          const total = end.close / start.close - 1;     // window total return
+          const val = isTrailing
+            ? total                                       // plain Y/Y, NOT annualised
+            : Math.pow(end.close / start.close, 1 / horizonYears) - 1;  // annualised
+          results.push({ ym: end.ym, ret: val });
         }
       }
       return results;
@@ -4590,7 +4673,11 @@ function marketsApp() {
         { label: 'Windows',      value: n.toString(),   color: 'var(--text-3)' },
       ];
       if (neverLost) {
-        kpis.push({ label: '✓ Never Lost', value: this.hpHorizon + 'Y', color: 'var(--up)' });
+        // §C In trailing mode, the window is fixed at 12 months, so the
+        // "Never Lost" label should say 1Y (not the user's hpHorizon, which
+        // is a rolling-mode setting that's inert here).
+        const label = this.hpMode === 'trailing' ? '1Y' : (this.hpHorizon + 'Y');
+        kpis.push({ label: '✓ Never Lost', value: label, color: 'var(--up)' });
       }
       return kpis;
     },
