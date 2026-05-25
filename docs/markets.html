@@ -1678,33 +1678,33 @@
       <div x-show="volSubPanel === 'Overview'">
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
           <template x-for="tile in volTiles" :key="tile.key">
-            <div class="rounded-lg border p-3 transition"
-                 :style="`background: ${tile.bgColor}; border-color: ${tile.borderColor};`">
+            <div class="rounded-lg border p-3.5 transition duration-300 hover:-translate-y-0.5 hover:shadow-md cursor-pointer flex flex-col justify-between"
+                 :style="`background: ${tile.bgColor}; border-color: ${tile.borderColor}; min-height: 200px;`"
+                 @mouseenter="showTt($event, `${tile.name}: ${tile.description}`)"
+                 @mouseleave="hideTt()">
               <!-- Header: name + regime word -->
-              <div class="flex items-center justify-between mb-1">
-                <span class="text-sm font-bold font-mono" style="color: var(--text)" x-text="tile.name"></span>
-                <span class="text-[9px] font-mono px-1.5 py-0.5 rounded font-medium"
+              <div class="flex flex-col items-center mb-1.5">
+                <span class="text-xs font-bold font-mono uppercase tracking-wider" style="color: var(--cyan)" x-text="tile.name"></span>
+                <span class="text-[9px] font-mono px-1.5 py-0.5 rounded font-medium mt-1 inline-block"
                       :style="`background: ${tile.zBadgeBg}; color: ${tile.zBadgeColor};`"
                       x-text="tile.regime"></span>
               </div>
               <!-- Current level -->
-              <div class="text-2xl font-medium num font-mono mb-0.5" style="color: var(--text)"
+              <div class="text-3xl font-semibold num font-mono mb-1 text-center" style="color: var(--text)"
                    x-text="tile.current !== null ? tile.current.toFixed(1) : '—'"></div>
-              <!-- Percentile rank (§5.9 — more intuitive than z-score) -->
-              <div class="flex items-center gap-2 mb-1">
+              <!-- Percentile rank -->
+              <div class="flex items-center justify-center gap-2 mb-1.5">
                 <span class="text-[9px] font-mono" :style="`color: ${tile.zBadgeColor}`"
-                      x-text="tile.pctLabel"
-                      @mouseenter="showTt($event, 'Percentile rank vs full history — 95th = higher than 95% of all readings')"
-                      @mouseleave="hideTt()"></span>
+                      x-text="tile.pctLabel"></span>
                 <span class="text-[9px] font-mono" style="color: var(--text-3)"
                       x-text="tile.zLabel"></span>
               </div>
               <!-- Description -->
-              <div class="text-[9px] mb-2" style="color: var(--text-3)" x-text="tile.description"></div>
+              <div class="text-[9px] mb-2.5 text-center min-h-[24px] flex items-center justify-center" style="color: var(--text-3); line-height: 1.3;" x-text="tile.description"></div>
               <!-- Sparkline (12-month) -->
               <div x-html="tile.sparklineSvg" style="width:100%;"></div>
               <!-- Footer: first date -->
-              <div class="text-[9px] mt-1 font-mono" style="color: var(--text-3)"
+              <div class="text-[9px] mt-1.5 font-mono text-center" style="color: var(--text-3)"
                    x-text="`Since ${tile.first}`"></div>
             </div>
           </template>
@@ -1748,15 +1748,22 @@
         <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
           <div x-html="volLevelChartSvg"
                @mousemove="volChartHover($event)"
-               @mouseleave="volHoverInfo = null"
+               @mouseleave="volHoverInfo = null; if ($event.currentTarget.querySelector('#vol-crosshair')) $event.currentTarget.querySelector('#vol-crosshair').setAttribute('opacity', '0')"
                style="width: 100%; overflow-x: auto;"></div>
-          <!-- Hover info bar -->
-          <div x-show="volHoverInfo" class="px-4 py-2 flex flex-wrap gap-x-6 gap-y-1 text-xs num font-mono"
-               style="border-top: 1px solid var(--border); background: var(--surface-2)">
-            <span style="color: var(--text-3)" x-text="volHoverInfo?.date || ''"></span>
-            <template x-for="item in (volHoverInfo?.values || [])" :key="item.key">
-              <span :style="`color: ${item.color}`"
-                    x-text="`${item.name}: ${item.val !== null ? item.val.toFixed(1) : '—'}`"></span>
+          <!-- Hover info bar (centered & always visible) -->
+          <div class="px-4 py-2 flex justify-center flex-wrap gap-x-6 gap-y-1 text-xs num font-mono"
+               style="border-top: 1px solid var(--border); background: var(--surface-2); min-height: 32px;">
+            <template x-if="volHoverInfo">
+              <div class="flex justify-center flex-wrap gap-x-6 gap-y-1">
+                <span style="color: var(--text-3)" x-text="volHoverInfo?.date || ''"></span>
+                <template x-for="item in (volHoverInfo?.values || [])" :key="item.key">
+                  <span :style="`color: ${item.color}`"
+                        x-text="`${item.name}: ${item.val !== null ? item.val.toFixed(1) : '—'}`"></span>
+                </template>
+              </div>
+            </template>
+            <template x-if="!volHoverInfo">
+              <span style="color: var(--text-3)">Hover over the chart to see historical volatility levels</span>
             </template>
           </div>
         </div>
@@ -1779,12 +1786,12 @@
               <thead style="background: #050505; color: var(--text-3)">
                 <tr style="border-bottom: 1px solid var(--border)">
                   <th class="text-left px-3 py-2 label">Index</th>
-                  <th class="text-right px-3 py-2 label">Current Level</th>
-                  <th class="text-right px-3 py-2 label">Percentile</th>
-                  <th class="text-right px-3 py-2 label">Regime</th>
-                  <th class="text-right px-3 py-2 label">Z-Score</th>
-                  <th class="text-right px-3 py-2 label">Mean</th>
-                  <th class="text-right px-3 py-2 label">Stdev</th>
+                  <th class="text-center px-3 py-2 label">Current Level</th>
+                  <th class="text-center px-3 py-2 label">Percentile</th>
+                  <th class="text-center px-3 py-2 label">Regime</th>
+                  <th class="text-center px-3 py-2 label">Z-Score</th>
+                  <th class="text-center px-3 py-2 label">Mean</th>
+                  <th class="text-center px-3 py-2 label">Stdev</th>
                 </tr>
               </thead>
               <tbody>
@@ -1798,20 +1805,20 @@
                         <span class="text-[9px]" style="color: var(--text-3)" x-text="tile.description"></span>
                       </div>
                     </td>
-                    <td class="px-3 py-2 text-right num font-mono" style="color: var(--text)"
+                    <td class="px-3 py-2 text-center num font-mono" style="color: var(--text)"
                         x-text="tile.current !== null ? tile.current.toFixed(1) : '—'"></td>
-                    <td class="px-3 py-2 text-right num font-mono font-medium"
+                    <td class="px-3 py-2 text-center num font-mono font-medium"
                         :style="`color: ${tile.zBadgeColor}`"
                         x-text="tile.pctLabel"></td>
-                    <td class="px-3 py-2 text-right text-[10px] font-medium"
+                    <td class="px-3 py-2 text-center text-[10px] font-medium"
                         :style="`color: ${tile.zBadgeColor}`"
                         x-text="tile.regime"></td>
-                    <td class="px-3 py-2 text-right num font-mono"
+                    <td class="px-3 py-2 text-center num font-mono"
                         :style="`color: ${tile.zColor}`"
                         x-text="tile.z !== null ? (tile.z >= 0 ? '+' : '') + tile.z.toFixed(2) + 'σ' : '—'"></td>
-                    <td class="px-3 py-2 text-right num font-mono" style="color: var(--text-2)"
+                    <td class="px-3 py-2 text-center num font-mono" style="color: var(--text-2)"
                         x-text="tile.mean !== null ? tile.mean.toFixed(1) : '—'"></td>
-                    <td class="px-3 py-2 text-right num font-mono" style="color: var(--text-2)"
+                    <td class="px-3 py-2 text-center num font-mono" style="color: var(--text-2)"
                         x-text="tile.stdev !== null ? tile.stdev.toFixed(1) : '—'"></td>
                   </tr>
                 </template>
@@ -5108,10 +5115,10 @@ function marketsApp() {
         d += i === 0 ? `M${xS(i).toFixed(1)},${yS(vals[i]).toFixed(1)} ` : `L${xS(i).toFixed(1)},${yS(vals[i]).toFixed(1)} `;
       }
 
-      const lastVal = vals[vals.length - 1];
-      const color = lastVal > (minV + maxV) / 2 ? '#f97316' : '#34d399';
+      const { z } = this.computeZScore(key, this.volLookback);
+      const color = this._zColor(z);
 
-      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block"><path d="${d.trim()}" fill="none" stroke="${color}" stroke-width="1.5" opacity="0.8"/></svg>`;
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block"><path d="${d.trim()}" fill="none" stroke="${color}" stroke-width="1.5" opacity="0.85"/></svg>`;
     },
 
     // §5.9 Regime banner — auto-generated from z-scores
@@ -5221,7 +5228,7 @@ function marketsApp() {
         const ma = series[key].monthly_avg || {};
         Object.keys(ma).forEach(m => monthSet.add(m));
       }
-      const months = Array.from(monthSet).sort();
+      const months = Array.from(monthSet).sort().reverse();
       if (!months.length) return '<div style="padding:40px;text-align:center;color:var(--text-3)">No monthly data</div>';
 
       const CELL_W = 44, CELL_H = 28, NAME_W = 80;
@@ -5244,7 +5251,7 @@ function marketsApp() {
       const totalH = (this.volSeriesDefs.length + 1) * CELL_H + 4;
 
       let html = `<div style="overflow-x:auto;overflow-y:auto;max-height:320px;">`;
-      html += `<table style="border-collapse:separate;border-spacing:0;min-width:${totalW}px;">`;
+      html += `<table style="border-collapse:separate;border-spacing:1px;margin:12px auto;min-width:${totalW}px;">`;
 
       // Header row
       html += `<thead><tr>`;
@@ -5273,7 +5280,7 @@ function marketsApp() {
           const tc = this._zCellTextColor(z);
           const zText = z !== null ? (z >= 0 ? '+' : '') + z.toFixed(1) : '';
           const tip = rawVal !== null ? `${s.name}\\n${m}\\nAvg: ${rawVal.toFixed(1)}\\nZ: ${z !== null ? z.toFixed(2) : '—'}` : `${s.name}\\n${m}\\nNo data`;
-          html += `<td style="width:${CELL_W}px;min-width:${CELL_W}px;height:${CELL_H}px;text-align:center;font-size:9px;font-family:ui-monospace;background:${bg};color:${tc};border:1px solid rgba(0,0,0,0.3);cursor:pointer;" title="${tip.replace(/"/g, '&quot;')}" onmouseenter="document.getElementById('tt').innerHTML='${tip.replace(/'/g, '&#39;')}';document.getElementById('tt').style.opacity='1';_posTt(this)" onmouseleave="document.getElementById('tt').style.opacity='0'">${zText}</td>`;
+          html += `<td style="width:${CELL_W}px;min-width:${CELL_W}px;height:${CELL_H}px;text-align:center;font-size:9px;font-family:ui-monospace;background:${bg};color:${tc};border:1px solid rgba(0,0,0,0.3);cursor:pointer;" onmouseenter="document.getElementById('tt').innerHTML='${tip.replace(/'/g, '&#39;')}';document.getElementById('tt').style.opacity='1';_posTt(this)" onmouseleave="document.getElementById('tt').style.opacity='0'">${zText}</td>`;
         }
         html += `</tr>`;
       }
@@ -5327,11 +5334,13 @@ function marketsApp() {
         yTicks += `<text x="${PL - 4}" y="${(y + 4).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${v.toFixed(0)}</text>`;
       }
 
-      // X-axis year labels
+      // X-axis year labels with dynamic intervals
+      const years = [...new Set(dates.map(d => d.slice(0, 4)))].map(Number).sort((a,b) => a-b);
+      const span = years.length > 0 ? (years[years.length - 1] - years[0]) : 0;
+      const interval = span < 15 ? 2 : (span < 35 ? 5 : 10);
       let xLabels = '';
-      const years = [...new Set(dates.map(d => d.slice(0, 4)))];
       for (const yr of years) {
-        if (parseInt(yr) % 5 !== 0) continue;
+        if (yr % interval !== 0) continue;
         const d = useDaily ? `${yr}-01-01` : `${yr}-01`;
         const closest = dates.find(x => x >= d) || dates[0];
         const x = xScale(closest);
@@ -5382,8 +5391,11 @@ function marketsApp() {
       }
 
       const crosshair = `<line id="vol-crosshair" x1="0" y1="${PT}" x2="0" y2="${H - PB}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
+      
+      const yAxis = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H - PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
+      const xAxis = `<line x1="${PL}" y1="${H - PB}" x2="${W - PR}" y2="${H - PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
 
-      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block">${yTicks}${xLabels}${annotations}${lines}${legend}${crosshair}</svg>`;
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block">${yTicks}${xLabels}${annotations}${lines}${legend}${yAxis}${xAxis}${crosshair}</svg>`;
     },
 
     volChartHover(e) {
@@ -5417,7 +5429,8 @@ function marketsApp() {
 
       const crosshair = svg.getElementById('vol-crosshair');
       if (crosshair) {
-        const xPos = PL + frac * chartW;
+        // Snap crosshair to the exact date index
+        const xPos = PL + (idx / Math.max(dates.length - 1, 1)) * chartW;
         crosshair.setAttribute('x1', xPos);
         crosshair.setAttribute('x2', xPos);
         crosshair.setAttribute('opacity', '1');
@@ -5487,7 +5500,10 @@ function marketsApp() {
       // Title
       const title = `<text x="${W / 2}" y="16" text-anchor="middle" style="font-size:11px;fill:#a1a1aa;font-family:ui-sans-serif">Current Z-Scores vs ${this.volLookback} History (${this.volGranularity})</text>`;
 
-      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;height:${H}px;display:block">${title}${yTicks}${refLines}${bars}</svg>`;
+      const yAxis = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H - PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
+      const xAxis = `<line x1="${PL}" y1="${H - PB}" x2="${W - PR}" y2="${H - PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
+
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;height:${H}px;display:block">${title}${yTicks}${refLines}${bars}${yAxis}${xAxis}</svg>`;
     },
 
   };
