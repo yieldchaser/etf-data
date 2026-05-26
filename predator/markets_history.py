@@ -452,6 +452,10 @@ def _fetch_fred_series(
                 return pd.Series(dtype=float)
 
     if data is None or data.empty:
+        # Log empty-fetch evidence so the L1-vs-L2 root-cause discrimination
+        # in CI can confirm "yfinance/FRED returned empty" vs "live fetch
+        # never ran". Required by design Fix Implementation #6.
+        print(f"    EMPTY: fred returned 0 rows for {series_id}")
         return pd.Series(dtype=float)
 
     # Merge with existing if incremental
@@ -465,6 +469,12 @@ def _fetch_fred_series(
 
 # ─── yfinance Fetcher ────────────────────────────────────────────────────────
 
+# Tickers known to be intermittently empty from CI runners (Wave-0 diagnostic
+# established yfinance is IP-rate-limited from GitHub Actions egress for these
+# four). One bounded retry with backoff before degrading to cache.
+_YFINANCE_FLAKY_TICKERS = frozenset({"^GSPC", "^NDX", "^DJI", "NASDAQCOM"})
+_YFINANCE_RETRY_BACKOFF_SEC = 1.5
+
 def _fetch_yfinance_series(
     ticker: str,
     full_refresh: bool = False,
@@ -474,6 +484,13 @@ def _fetch_yfinance_series(
     Fetch monthly close data from yfinance for international indices.
 
     Returns a Series indexed by period-end dates with monthly close values.
+
+    For tickers in :data:`_YFINANCE_FLAKY_TICKERS` (^GSPC, ^NDX, ^DJI,
+    NASDAQCOM — established by the Wave-0 live-fetch diagnostic to be
+    intermittently empty from GitHub Actions egress), one bounded retry
+    with a short backoff is attempted before returning empty. Retries
+    only fire on the empty-result path; exceptions still flow through
+    the existing try/except and degrade to cache as before.
     """
     try:
         import yfinance as yf
@@ -481,25 +498,47 @@ def _fetch_yfinance_series(
         print(f"    ERROR: yfinance not installed. Run: pip install yfinance")
         return pd.Series(dtype=float)
 
-    try:
-        data = yf.download(ticker, period="max", interval="1mo", progress=False)
-    except Exception as e:
-        print(f"    ERROR fetching {ticker} from yfinance: {e}")
+    def _download_close(_ticker: str) -> pd.Series:
+        """One yfinance attempt → cleaned monthly Close Series (or empty)."""
+        try:
+            data = yf.download(_ticker, period="max", interval="1mo", progress=False)
+        except Exception as e:
+            print(f"    ERROR fetching {_ticker} from yfinance: {e}")
+            return pd.Series(dtype=float)
+
+        if data is None or data.empty:
+            return pd.Series(dtype=float)
+
+        # Extract Close column (handle MultiIndex columns from yfinance)
+        if isinstance(data.columns, pd.MultiIndex):
+            close = data[("Close", _ticker)] if ("Close", _ticker) in data.columns else data["Close"].iloc[:, 0]
+        else:
+            close = data["Close"]
+
+        close = close.dropna()
+        # Ensure tz-naive index to avoid concat issues with mixed tz-aware/naive series
+        if hasattr(close.index, 'tz') and close.index.tz is not None:
+            close = close.tz_localize(None)
+        return close
+
+    close = _download_close(ticker)
+
+    # Bounded retry for known-flaky tickers (Wave-0 evidence: yfinance is
+    # intermittently empty from CI runners for these). A single retry with
+    # short backoff is enough to absorb transient egress-rate-limit blips
+    # without slowing the build materially.
+    if (close is None or close.empty) and ticker in _YFINANCE_FLAKY_TICKERS:
+        print(f"    RETRY: yfinance empty for {ticker}, waiting "
+              f"{_YFINANCE_RETRY_BACKOFF_SEC}s before one retry")
+        time.sleep(_YFINANCE_RETRY_BACKOFF_SEC)
+        close = _download_close(ticker)
+
+    if close is None or close.empty:
+        # Log empty-fetch evidence (after any retries) so the root-cause
+        # discrimination loop in CI can read it from the build log.
+        # Required by design Fix Implementation #6.
+        print(f"    EMPTY: yfinance returned 0 rows for {ticker}")
         return pd.Series(dtype=float)
-
-    if data is None or data.empty:
-        return pd.Series(dtype=float)
-
-    # Extract Close column (handle MultiIndex columns from yfinance)
-    if isinstance(data.columns, pd.MultiIndex):
-        close = data[("Close", ticker)] if ("Close", ticker) in data.columns else data["Close"].iloc[:, 0]
-    else:
-        close = data["Close"]
-
-    close = close.dropna()
-    # Ensure tz-naive index to avoid concat issues with mixed tz-aware/naive series
-    if hasattr(close.index, 'tz') and close.index.tz is not None:
-        close = close.tz_localize(None)
 
     # Merge with existing if incremental
     if not full_refresh and existing is not None and not existing.empty:
@@ -786,9 +825,35 @@ def build_output(results: dict[str, pd.Series]) -> dict[str, Any]:
         if data is None or data.empty:
             data = _read_cache(key)
         if data is None or data.empty:
-            # Preserve existing asset if we have no new data
+            # No live data and no cache — fall through to the Excel-seeded
+            # existing entry so the deep-history months stay on the page.
+            #
+            # Honest-source path (design Fix Implementation #7): when the
+            # existing entry still carries the Mega_Markets_Historical Excel
+            # label, mark `meta._live_holdout = True` so the verdict block
+            # in predator/build.py (Task 3.5) can name this asset as a
+            # genuine holdout. We DO NOT modify the `source` label — the
+            # Excel label is honest when no live data is available.
+            #
+            # Scope: this loop only iterates ASSET_REGISTRY, every entry of
+            # which has source_type ∈ {yfinance, fred}. So any asset that
+            # falls through here is by construction a registry-source asset
+            # whose live fetch is genuinely unavailable in this run — which
+            # is the user-agreed widened holdout scope (Wave-0 finding).
             if key in existing_assets:
-                assets_out[key] = existing_assets[key]
+                existing_entry = existing_assets[key]
+                existing_meta = (existing_entry or {}).get("meta") or {}
+                existing_source = str(existing_meta.get("source", ""))
+                if existing_source.startswith("Mega_Markets_Historical"):
+                    # Shallow copy to avoid mutating the loaded `existing`
+                    # JSON object (defensive: it may be re-read elsewhere).
+                    new_meta = dict(existing_meta)
+                    new_meta["_live_holdout"] = True
+                    new_entry = dict(existing_entry)
+                    new_entry["meta"] = new_meta
+                    assets_out[key] = new_entry
+                else:
+                    assets_out[key] = existing_entry
             continue
 
         # Apply FX inversion if needed
@@ -797,8 +862,21 @@ def build_output(results: dict[str, pd.Series]) -> dict[str, Any]:
 
         new_monthly = _to_monthly_list(data)
         if not new_monthly:
+            # data was non-empty but every row dropped (all NaN). Treat
+            # identically to the empty-fetch case above: keep Excel
+            # deep-history and mark the live-holdout sentinel.
             if key in existing_assets:
-                assets_out[key] = existing_assets[key]
+                existing_entry = existing_assets[key]
+                existing_meta = (existing_entry or {}).get("meta") or {}
+                existing_source = str(existing_meta.get("source", ""))
+                if existing_source.startswith("Mega_Markets_Historical"):
+                    new_meta = dict(existing_meta)
+                    new_meta["_live_holdout"] = True
+                    new_entry = dict(existing_entry)
+                    new_entry["meta"] = new_meta
+                    assets_out[key] = new_entry
+                else:
+                    assets_out[key] = existing_entry
             continue
 
         # Merge with existing deep-history from Excel

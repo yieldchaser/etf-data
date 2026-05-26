@@ -1,0 +1,79 @@
+{
+  "aluminum": {
+    "count": 3,
+    "partial": true,
+    "partialFlag": true,
+    "renderStyle": "dimmed",
+    "ret": 0.17283473
+  },
+  "copper": {
+    "count": 3,
+    "partial": true,
+    "partialFlag": true,
+    "renderStyle": "dimmed",
+    "ret": 0.06256871
+  },
+  "gold": {
+    "count": 2,
+    "partial": true,
+    "partialFlag": true,
+    "renderStyle": "dimmed",
+    "ret": 0.18859609
+  },
+  "iron_ore": {
+    "count": 3,
+    "partial": true,
+    "partialFlag": true,
+    "renderStyle": "dimmed",
+    "ret": -8.458e-05
+  },
+  "lead": {
+    "count": 3,
+    "partial": true,
+    "partialFlag": true,
+    "renderStyle": "dimmed",
+    "ret": -0.0318914
+  },
+  "nickel": {
+    "count": 3,
+    "partial": true,
+    "partialFlag": true,
+    "renderStyle": "dimmed",
+    "ret": 0.14767513
+  },
+  "palladium": {
+    "count": 5,
+    "partial": true,
+    "partialFlag": true,
+    "renderStyle": "dimmed",
+    "ret": -0.16832918
+  },
+  "platinum": {
+    "count": 5,
+    "partial": true,
+    "partialFlag": true,
+    "renderStyle": "dimmed",
+    "ret": -0.05261056
+  },
+  "silver": {
+    "count": 2,
+    "partial": true,
+    "partialFlag": true,
+    "renderStyle": "dimmed",
+    "ret": 0.25989721
+  },
+  "tin": {
+    "count": 3,
+    "partial": true,
+    "partialFlag": true,
+    "renderStyle": "dimmed",
+    "ret": 0.14300378
+  },
+  "zinc": {
+    "count": 3,
+    "partial": true,
+    "partialFlag": true,
+    "renderStyle": "dimmed",
+    "ret": 0.00635193
+  }
+}

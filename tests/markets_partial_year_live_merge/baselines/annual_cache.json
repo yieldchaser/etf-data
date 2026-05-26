@@ -1,0 +1,9516 @@
+{
+  "aluminum": {
+    "1992": {
+      "count": 11,
+      "partial": true,
+      "ret": 0.02353188
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.0973296
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.72114812
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.11742022
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.09460617
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.01968559
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.18302819
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.24339553
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00921038
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.14042306
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.02012154
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.13222017
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.18945626
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.2147922
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.25446315
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.15612222
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.36864375
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.44990221
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0804178
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.14100156
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0308185
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.16626381
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.09751036
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.21590251
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.15397724
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.20416076
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.07694983
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.07758958
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.13734597
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.33795056
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.11030278
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08598158
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.15915888
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.13185003
+    },
+    "2026": {
+      "count": 3,
+      "partial": true,
+      "ret": 0.17283473
+    }
+  },
+  "asx200": {
+    "1992": {
+      "count": 1,
+      "partial": true,
+      "ret": 0.07739448
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.35080213
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.12121503
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.16017008
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.09879814
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08429762
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.05850285
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14722545
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.02838631
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06740066
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.12132189
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.09733627
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.22752897
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.17597388
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.19030525
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.11815022
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.4128679
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.30849209
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.02574629
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.14511508
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.1460336
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.15125838
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0109861
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.0212715
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06984647
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07047554
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.06903434
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.18378085
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.01451205
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.13017868
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.05452273
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07843772
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07486699
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06804668
+    },
+    "2026": {
+      "count": 5,
+      "partial": true,
+      "ret": -0.00657538
+    }
+  },
+  "bovespa": {
+    "1993": {
+      "count": 8,
+      "partial": true,
+      "ret": 14.58091286
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": 10.59493981
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.01260936
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.63756685
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.4484581
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.33470629
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.51945755
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.10724315
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.11016449
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.17012815
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.97337593
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.17808958
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.27714155
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.32932807
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.43647974
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.41223429
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.8265779
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.01045372
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.18109804
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07396835
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.154958
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.02912226
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.13312136
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.38931949
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.26856725
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.15032329
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.31946704
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.02881929
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.12140211
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04969377
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.21951995
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.10360323
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.33954923
+    },
+    "2026": {
+      "count": 5,
+      "partial": true,
+      "ret": 0.09362296
+    }
+  },
+  "brent_crude": {
+    "1987": {
+      "count": 7,
+      "partial": true,
+      "ret": -0.05274489
+    },
+    "1988": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.07784091
+    },
+    "1989": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.2969809
+    },
+    "1990": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.34679335
+    },
+    "1991": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.37389771
+    },
+    "1992": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0056338
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.26162465
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.23141123
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14910659
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.28150134
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.33640167
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.33543506
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.36527514
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.09426394
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.14304694
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.55658915
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0059761
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.33267327
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.44477464
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.01062736
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.58887381
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.6176345
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.17504188
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.19663715
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.15939075
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0250717
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00767148
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.49731696
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.33761534
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.50122917
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.21415575
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.24216994
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.3401226
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.24420835
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.50800469
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07224236
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.06194156
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.04003089
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.1773934
+    },
+    "2026": {
+      "count": 5,
+      "partial": true,
+      "ret": 0.90268949
+    }
+  },
+  "coffee": {
+    "1969": {
+      "count": 6,
+      "partial": true,
+      "ret": 0.32885906
+    },
+    "1970": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08080808
+    },
+    "1971": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.17757009
+    },
+    "1972": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.30681818
+    },
+    "1973": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.2
+    },
+    "1974": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.02173913
+    },
+    "1975": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.32624113
+    },
+    "1976": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.35294118
+    },
+    "1977": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.06818182
+    },
+    "1978": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.31707317
+    },
+    "1979": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.42857143
+    },
+    "1980": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.375
+    },
+    "1981": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.176
+    },
+    "1982": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.07482993
+    },
+    "1983": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.13970588
+    },
+    "1984": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.10967742
+    },
+    "1985": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.37681159
+    },
+    "1986": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.26315789
+    },
+    "1987": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.15714286
+    },
+    "1988": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.31355932
+    },
+    "1989": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.5483871
+    },
+    "1990": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14285714
+    },
+    "1991": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.3
+    },
+    "1992": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.17857143
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.06818182
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.60569106
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.38533541
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.38071066
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.23529412
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.30357143
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07264957
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.47011952
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.37969925
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07878788
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.28089888
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.67982456
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.09629243
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.12032009
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08231293
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.20608108
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.25937655
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.70799937
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.03151454
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.38535302
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.20462956
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.50269136
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.23076923
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08168903
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.07916819
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.1929477
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.27344134
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.01117965
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.76296296
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.26138877
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.17431138
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.63423589
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08721021
+    },
+    "2026": {
+      "count": 5,
+      "partial": true,
+      "ret": -0.22095626
+    }
+  },
+  "copper": {
+    "1992": {
+      "count": 11,
+      "partial": true,
+      "ret": 0.02853682
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.2207668
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.72932037
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.02096467
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.22397811
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.22217784
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.16218962
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.19591173
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04958835
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.20489792
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08155443
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.38235094
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.42585595
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.45775076
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.45967603
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.0075195
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.53171184
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.24694438
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.31186589
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.17415132
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.05392493
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.09434357
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.10650842
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.28040525
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.22020983
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.20732723
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.11100243
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00028751
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.27894655
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.22888412
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.12355422
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00439717
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.05970661
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.32335424
+    },
+    "2026": {
+      "count": 3,
+      "partial": true,
+      "ret": 0.06256871
+    }
+  },
+  "copper_lb": {
+    "1959": {
+      "count": 5,
+      "partial": true,
+      "ret": 0.0974271
+    },
+    "1960": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.13316661
+    },
+    "1961": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0872701
+    },
+    "1962": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.04510779
+    },
+    "1963": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.05800625
+    },
+    "1964": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.2196323
+    },
+    "1965": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.54966353
+    },
+    "1966": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.06149036
+    },
+    "1967": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06570424
+    },
+    "1968": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.1172282
+    },
+    "1969": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.43674995
+    },
+    "1970": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.36382309
+    },
+    "1971": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08415842
+    },
+    "1972": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00496327
+    },
+    "1973": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.35815883
+    },
+    "1974": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.03723636
+    },
+    "1975": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.09816295
+    },
+    "1976": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.01072928
+    },
+    "1977": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.03076923
+    },
+    "1978": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14095238
+    },
+    "1979": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.45381191
+    },
+    "1980": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.16143541
+    },
+    "1981": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.09848225
+    },
+    "1982": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.07594937
+    },
+    "1983": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.06164384
+    },
+    "1984": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.06569343
+    },
+    "1985": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.05859375
+    },
+    "1986": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.06081181
+    },
+    "1987": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.37309445
+    },
+    "1988": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04887417
+    },
+    "1989": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.30546786
+    },
+    "1990": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.1
+    },
+    "1991": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.16322314
+    },
+    "1992": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04197531
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.18483412
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.6627907
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.11888112
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.18253968
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.25242718
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.14285714
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.29166667
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00703812
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.2285883
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06738132
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.4964132
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.42569511
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.45359785
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.32037937
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06184303
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.53967992
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.38387097
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.33498722
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.2270526
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06105202
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.05479264
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.1752143
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.24784217
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.1735363
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.31562562
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.20201438
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06310827
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.25804606
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.26827743
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.14402259
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.01885212
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.03412829
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.41550696
+    },
+    "2026": {
+      "count": 5,
+      "partial": true,
+      "ret": 0.12022472
+    }
+  },
+  "corn": {
+    "1959": {
+      "count": 5,
+      "partial": true,
+      "ret": -0.03069054
+    },
+    "1960": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.03869833
+    },
+    "1961": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.01189387
+    },
+    "1962": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.01808318
+    },
+    "1963": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06660746
+    },
+    "1964": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.05162365
+    },
+    "1965": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.01266825
+    },
+    "1966": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.13873296
+    },
+    "1967": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.16690141
+    },
+    "1968": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.0035503
+    },
+    "1969": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0370716
+    },
+    "1970": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.27811861
+    },
+    "1971": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.2176
+    },
+    "1972": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.27811861
+    },
+    "1973": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.7056
+    },
+    "1974": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.28236398
+    },
+    "1975": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.25237747
+    },
+    "1976": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.0146771
+    },
+    "1977": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.12512413
+    },
+    "1978": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.03859251
+    },
+    "1979": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.18745355
+    },
+    "1980": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.33269521
+    },
+    "1981": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.30524862
+    },
+    "1982": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08946322
+    },
+    "1983": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.43668122
+    },
+    "1984": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.2112462
+    },
+    "1985": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08092486
+    },
+    "1986": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.40461216
+    },
+    "1987": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.22535211
+    },
+    "1988": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.53448276
+    },
+    "1989": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.1423221
+    },
+    "1990": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.02401747
+    },
+    "1991": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08053691
+    },
+    "1992": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.15942029
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.43103448
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.24612737
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.62557078
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.28370787
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00392157
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.21456693
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.05513784
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.11671088
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08551069
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.19220779
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.02614379
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.19957537
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06100796
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.825
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.16575342
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.11045828
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00660502
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.57047872
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.09483489
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07424594
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.41612671
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08261406
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.03561828
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.01881533
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00355114
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06913756
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.034
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.24822695
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.22572314
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14369996
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.30619013
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.02549124
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.0386921
+    },
+    "2026": {
+      "count": 5,
+      "partial": true,
+      "ret": 0.0515873
+    }
+  },
+  "cotton": {
+    "1969": {
+      "count": 6,
+      "partial": true,
+      "ret": -0.03846154
+    },
+    "1970": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1971": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.36
+    },
+    "1972": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.02941176
+    },
+    "1973": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.67666667
+    },
+    "1974": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.57715385
+    },
+    "1975": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.53547523
+    },
+    "1976": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.25457716
+    },
+    "1977": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.29895761
+    },
+    "1978": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.25535289
+    },
+    "1979": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.09459886
+    },
+    "1980": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.28942433
+    },
+    "1981": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.37316773
+    },
+    "1982": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06961799
+    },
+    "1983": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.17840454
+    },
+    "1984": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.13369211
+    },
+    "1985": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.04364885
+    },
+    "1986": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.07692308
+    },
+    "1987": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14444444
+    },
+    "1988": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.13851133
+    },
+    "1989": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.17054846
+    },
+    "1990": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.13206033
+    },
+    "1991": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.26052445
+    },
+    "1992": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00364194
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.22956455
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.3101895
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08061648
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08575113
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.10338505
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08069844
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.17453799
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.21330846
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.47736204
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.63157895
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.50390703
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.43018918
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.19686696
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.02441883
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.19679634
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.2667304
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.5412864
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.92217679
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.35052076
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.18814229
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14953401
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.2767425
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.05872511
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.1164665
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.11295117
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.0817754
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.04362881
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.13135409
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.44137225
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.26287744
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.02409639
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.16049383
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.05882353
+    },
+    "2026": {
+      "count": 5,
+      "partial": true,
+      "ret": 0.203125
+    }
+  },
+  "dax": {
+    "1970": {
+      "count": 11,
+      "partial": true,
+      "ret": -0.23759
+    },
+    "1971": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.19434687
+    },
+    "1972": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.15764204
+    },
+    "1973": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.11081102
+    },
+    "1974": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.099807
+    },
+    "1975": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.31020206
+    },
+    "1976": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.0057987
+    },
+    "1977": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.19566121
+    },
+    "1978": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.1980327
+    },
+    "1979": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.10176423
+    },
+    "1980": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.12608052
+    },
+    "1981": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.14552521
+    },
+    "1982": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00731131
+    },
+    "1983": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.20688279
+    },
+    "1984": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.07240869
+    },
+    "1985": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.02014365
+    },
+    "1986": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.25388108
+    },
+    "1987": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.15397391
+    },
+    "1988": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.24287103
+    },
+    "1989": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.32849432
+    },
+    "1990": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08344458
+    },
+    "1991": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07169928
+    },
+    "1992": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.06859804
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.33840114
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00154886
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.13183918
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.22979904
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.3254223
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.25513397
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.18175529
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.14358398
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.24035487
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.33328989
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.6517532
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.15758984
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.10055146
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.3617515
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.36690902
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.43630762
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.28201644
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07649102
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.1739269
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.31603142
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.31159527
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.09629004
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.01755605
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.03473609
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.28010979
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.21960296
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.23109402
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.13103904
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06872139
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.17454604
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.24642689
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.11739477
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.391258
+    },
+    "2026": {
+      "count": 4,
+      "partial": true,
+      "ret": -0.01213809
+    }
+  },
+  "djia": {
+    "1885": {
+      "count": 7,
+      "partial": true,
+      "ret": 0.28673835
+    },
+    "1886": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04431502
+    },
+    "1887": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08414161
+    },
+    "1888": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04818639
+    },
+    "1889": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06188431
+    },
+    "1890": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.14153187
+    },
+    "1891": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.1762261
+    },
+    "1892": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.06548881
+    },
+    "1893": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.24602975
+    },
+    "1894": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00568372
+    },
+    "1895": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.02286483
+    },
+    "1896": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.01709402
+    },
+    "1897": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.21070234
+    },
+    "1898": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.22458564
+    },
+    "1899": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.092037
+    },
+    "1900": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07002685
+    },
+    "1901": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08706564
+    },
+    "1902": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00401776
+    },
+    "1903": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.23609342
+    },
+    "1904": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.41717621
+    },
+    "1905": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.38203569
+    },
+    "1906": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.01915709
+    },
+    "1907": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.37731481
+    },
+    "1908": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.46631041
+    },
+    "1909": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14973855
+    },
+    "1910": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.1786108
+    },
+    "1911": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00402685
+    },
+    "1912": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07570187
+    },
+    "1913": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.10346435
+    },
+    "1914": {
+      "count": 8,
+      "partial": false,
+      "ret": -0.0542367
+    },
+    "1915": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.81659949
+    },
+    "1916": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.04185577
+    },
+    "1917": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.21705263
+    },
+    "1918": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.10513579
+    },
+    "1919": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.30450122
+    },
+    "1920": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.3290124
+    },
+    "1921": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.12717165
+    },
+    "1922": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.21738594
+    },
+    "1923": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.03251291
+    },
+    "1924": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.2616206
+    },
+    "1925": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.29997511
+    },
+    "1926": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00344696
+    },
+    "1927": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.28753181
+    },
+    "1928": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.48221344
+    },
+    "1929": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.17173333
+    },
+    "1930": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.33765293
+    },
+    "1931": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.52667396
+    },
+    "1932": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.23068036
+    },
+    "1933": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.66694477
+    },
+    "1934": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04144144
+    },
+    "1935": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.38533256
+    },
+    "1936": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.24817873
+    },
+    "1937": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.32823791
+    },
+    "1938": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.28059578
+    },
+    "1939": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.02920651
+    },
+    "1940": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.12719649
+    },
+    "1941": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.15381682
+    },
+    "1942": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07606345
+    },
+    "1943": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.1381072
+    },
+    "1944": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.12090662
+    },
+    "1945": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.26647847
+    },
+    "1946": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08143694
+    },
+    "1947": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.02234763
+    },
+    "1948": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.02130713
+    },
+    "1949": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.12876481
+    },
+    "1950": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.17628541
+    },
+    "1951": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14366425
+    },
+    "1952": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0842031
+    },
+    "1953": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.03768414
+    },
+    "1954": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.43962264
+    },
+    "1955": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.207745
+    },
+    "1956": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.02266585
+    },
+    "1957": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.12769536
+    },
+    "1958": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.33959926
+    },
+    "1959": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.16398527
+    },
+    "1960": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.09342617
+    },
+    "1961": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.18712757
+    },
+    "1962": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.10810515
+    },
+    "1963": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.16998927
+    },
+    "1964": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14572384
+    },
+    "1965": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.10882821
+    },
+    "1966": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.18939191
+    },
+    "1967": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.15199379
+    },
+    "1968": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04269094
+    },
+    "1969": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.15193642
+    },
+    "1970": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04817832
+    },
+    "1971": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06112621
+    },
+    "1972": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.1458324
+    },
+    "1973": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.16583989
+    },
+    "1974": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.27574454
+    },
+    "1975": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.38324354
+    },
+    "1976": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.1785995
+    },
+    "1977": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.17267705
+    },
+    "1978": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.03147371
+    },
+    "1979": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04186283
+    },
+    "1980": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14937225
+    },
+    "1981": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.09231424
+    },
+    "1982": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.19604571
+    },
+    "1983": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.20266784
+    },
+    "1984": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.03739751
+    },
+    "1985": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.27658328
+    },
+    "1986": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.2258271
+    },
+    "1987": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.02261663
+    },
+    "1988": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.11849414
+    },
+    "1989": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.2695924
+    },
+    "1990": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.04341857
+    },
+    "1991": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.20320391
+    },
+    "1992": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04174411
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.13722051
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.02140332
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.3345156
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.26013656
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.22641422
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.1609939
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.25221452
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.06177808
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.07095213
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.1676266
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.25322269
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.03148006
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.0060753
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.16287847
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06432322
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.33837097
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.18819355
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.1102277
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.05528391
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07256604
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.26499412
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07519066
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.02233285
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.13415013
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.25080809
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.05630275
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.22338394
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07246507
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.18727472
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08781506
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.13703369
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.12880709
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.1297255
+    },
+    "2026": {
+      "count": 5,
+      "partial": true,
+      "ret": 0.05235617
+    }
+  },
+  "ftse100": {
+    "1984": {
+      "count": 11,
+      "partial": true,
+      "ret": 0.15917215
+    },
+    "1985": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.1464048
+    },
+    "1986": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.18858842
+    },
+    "1987": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.02078618
+    },
+    "1988": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0462104
+    },
+    "1989": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.35112375
+    },
+    "1990": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.11524332
+    },
+    "1991": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.16309778
+    },
+    "1992": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14175119
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.20091337
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.10323541
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.20349046
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.11633643
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.24693456
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14547758
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.17808453
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.10211829
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.16152673
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.24475793
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.13615369
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07536463
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.16710634
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.10714032
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.03795334
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.31326174
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.22071617
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08997026
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.05552638
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.05841394
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14434201
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.02711473
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.04931395
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14425773
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07630061
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.12483412
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.12102968
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.14344239
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14302299
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00910017
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.03777661
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.05687164
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.21514749
+    },
+    "2026": {
+      "count": 5,
+      "partial": true,
+      "ret": 0.05385941
+    }
+  },
+  "gold": {
+    "1833": {
+      "count": 11,
+      "partial": true,
+      "ret": 0.0
+    },
+    "1834": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1835": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1836": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1837": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1838": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1839": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1840": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1841": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1842": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1843": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1844": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1845": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1846": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1847": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1848": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1849": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1850": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1851": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1852": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1853": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1854": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1855": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1856": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1857": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1858": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1859": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1860": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1861": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1862": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1863": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1864": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1865": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1866": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1867": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1868": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1869": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1870": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1871": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1872": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00052826
+    },
+    "1873": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1874": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1875": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1876": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1877": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1878": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1879": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1880": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1881": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1882": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1883": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1884": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1885": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1886": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1887": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1888": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1889": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00052798
+    },
+    "1890": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00052826
+    },
+    "1891": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00105597
+    },
+    "1892": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1893": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1894": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00105485
+    },
+    "1895": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00052798
+    },
+    "1896": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00264131
+    },
+    "1897": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1898": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1899": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00210748
+    },
+    "1900": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00105597
+    },
+    "1901": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00105485
+    },
+    "1902": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00052687
+    },
+    "1903": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.0010543
+    },
+    "1904": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0005277
+    },
+    "1905": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.0021097
+    },
+    "1906": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00105708
+    },
+    "1907": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0021164
+    },
+    "1908": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00052798
+    },
+    "1909": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0005277
+    },
+    "1910": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.0021097
+    },
+    "1911": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1912": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00052854
+    },
+    "1913": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00052826
+    },
+    "1914": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00369979
+    },
+    "1915": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1916": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1917": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1918": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1919": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.05055292
+    },
+    "1920": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.03659148
+    },
+    "1921": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00483559
+    },
+    "1922": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00388727
+    },
+    "1923": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.03194579
+    },
+    "1924": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.02954972
+    },
+    "1925": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00241663
+    },
+    "1926": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.0004845
+    },
+    "1927": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00048473
+    },
+    "1928": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00096899
+    },
+    "1929": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00145208
+    },
+    "1930": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00096946
+    },
+    "1931": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.17384988
+    },
+    "1932": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.21277843
+    },
+    "1933": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.27259546
+    },
+    "1934": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.31750855
+    },
+    "1935": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00432401
+    },
+    "1936": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00086108
+    },
+    "1937": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00229424
+    },
+    "1938": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00172463
+    },
+    "1939": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.01233859
+    },
+    "1940": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.01656014
+    },
+    "1941": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1942": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1943": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1944": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1945": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0254062
+    },
+    "1946": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1947": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1948": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1949": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08700663
+    },
+    "1950": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.09561376
+    },
+    "1951": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1952": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00345622
+    },
+    "1953": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00693642
+    },
+    "1954": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00574053
+    },
+    "1955": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00028539
+    },
+    "1956": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00114188
+    },
+    "1957": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00114318
+    },
+    "1958": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00429185
+    },
+    "1959": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1960": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0048433
+    },
+    "1961": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00056705
+    },
+    "1962": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00056738
+    },
+    "1963": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00397389
+    },
+    "1964": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00028498
+    },
+    "1965": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0005698
+    },
+    "1966": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00028474
+    },
+    "1967": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00512383
+    },
+    "1968": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.19885551
+    },
+    "1969": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.15990453
+    },
+    "1970": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06193182
+    },
+    "1971": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.16720171
+    },
+    "1972": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.4875086
+    },
+    "1973": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.72958398
+    },
+    "1974": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.66146993
+    },
+    "1975": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.24798928
+    },
+    "1976": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.04099822
+    },
+    "1977": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.22639405
+    },
+    "1978": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.37011216
+    },
+    "1979": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.26548673
+    },
+    "1980": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.15185547
+    },
+    "1981": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.32598559
+    },
+    "1982": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14943396
+    },
+    "1983": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.16305537
+    },
+    "1984": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.19377615
+    },
+    "1985": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06000649
+    },
+    "1986": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.18956548
+    },
+    "1987": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.24527331
+    },
+    "1988": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.15255113
+    },
+    "1989": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.02839732
+    },
+    "1990": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.03110888
+    },
+    "1991": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08557742
+    },
+    "1992": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.05734107
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.17677981
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.02169751
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00978474
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.04586563
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.2140826
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00827016
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00851286
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.05443583
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00746948
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.2556962
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.19887673
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04648649
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.17768595
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.23196881
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.31922468
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04317841
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.2503593
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.29241379
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08929207
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08262573
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.27330317
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00124533
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.12106136
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08103774
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.12662536
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00929512
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.18432369
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.24614623
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.04330896
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00437467
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14591316
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.25534065
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.67406385
+    },
+    "2026": {
+      "count": 2,
+      "partial": true,
+      "ret": 0.18859609
+    }
+  },
+  "hang_seng": {
+    "1987": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.10337577
+    },
+    "1988": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.16701403
+    },
+    "1989": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.05551842
+    },
+    "1990": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06606497
+    },
+    "1991": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.42106475
+    },
+    "1992": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.28275898
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.15666509
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.31100907
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.22981326
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.33534849
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.20285472
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.06287721
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.68800959
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.11004353
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.24499439
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.18214282
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.34916309
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.13153682
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04541699
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.34203711
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.39308988
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.48270013
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.52024533
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.05316947
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.19973818
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.22905717
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.02866545
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.01281402
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.07162194
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00393167
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.35992673
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.13614863
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.09069404
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.03400595
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.14077495
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.1545564
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.13821156
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.1767167
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.27769711
+    },
+    "2026": {
+      "count": 5,
+      "partial": true,
+      "ret": -0.00095627
+    }
+  },
+  "iron_ore": {
+    "1992": {
+      "count": 11,
+      "partial": true,
+      "ret": 0.0
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.12089448
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08982512
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07161572
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.05704971
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00539707
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.02837423
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.1103654
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04358759
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04337349
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.02386451
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08990536
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.18596237
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.71507016
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.18996798
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.09506726
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.91052689
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.50391383
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.60123157
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.19030346
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.05555898
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.05367115
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.4942658
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.40468504
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.94292437
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.09685919
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.03949505
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.32033327
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.68245485
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.27836961
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00862421
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.23461728
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.23414949
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.02131651
+    },
+    "2026": {
+      "count": 3,
+      "partial": true,
+      "ret": -8.458e-05
+    }
+  },
+  "lead": {
+    "1992": {
+      "count": 11,
+      "partial": true,
+      "ret": -0.11436458
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00805282
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.37795276
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14762767
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.05311511
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.23735013
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.04780479
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.04368711
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.03176139
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04180075
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08634477
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.56412566
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.40896
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.15202267
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.52582949
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.53062704
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.62991748
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.40275037
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.03737303
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.16104737
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.12607173
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.06275767
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.09295542
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.11945872
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.29488991
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.13579442
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.21419211
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.0363929
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06310399
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.139186
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.03283518
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08935335
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.01938237
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.02406818
+    },
+    "2026": {
+      "count": 3,
+      "partial": true,
+      "ret": -0.0318914
+    }
+  },
+  "nasdaq": {
+    "1971": {
+      "count": 10,
+      "partial": true,
+      "ret": 0.12611012
+    },
+    "1972": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.17183666
+    },
+    "1973": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.31062589
+    },
+    "1974": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.35112268
+    },
+    "1975": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.29755934
+    },
+    "1976": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.2610152
+    },
+    "1977": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07325296
+    },
+    "1978": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.12308425
+    },
+    "1979": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.28106459
+    },
+    "1980": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.33875877
+    },
+    "1981": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.03212415
+    },
+    "1982": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.18673407
+    },
+    "1983": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.1987436
+    },
+    "1984": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.11216798
+    },
+    "1985": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.31364463
+    },
+    "1986": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0735543
+    },
+    "1987": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.05263309
+    },
+    "1988": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.15405332
+    },
+    "1989": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.19256385
+    },
+    "1990": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.17804846
+    },
+    "1991": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.56842499
+    },
+    "1992": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.15453491
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14749982
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.03197734
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.39918347
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.2270632
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.21635438
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.39630656
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.85585286
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.3928897
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.21053058
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.31526354
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.49502437
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08956136
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.01373515
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.09521067
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.09812072
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.40540591
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.43887561
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.16910297
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.01798807
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.15905418
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.38320125
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.13395138
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.05729669
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0750308
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.28241429
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.03883744
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.35225642
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.43640416
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.21389123
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.33100032
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.43423099
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.28641261
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.20357531
+    },
+    "2026": {
+      "count": 5,
+      "partial": true,
+      "ret": 0.13346448
+    }
+  },
+  "nasdaq100": {
+    "1986": {
+      "count": 11,
+      "partial": true,
+      "ret": 0.06379297
+    },
+    "1987": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.10494307
+    },
+    "1988": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.135424
+    },
+    "1989": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.26171016
+    },
+    "1990": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.10413688
+    },
+    "1991": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.64992769
+    },
+    "1992": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08864777
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.10574974
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.01503967
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.42535929
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.42540305
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.206292
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.85305813
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.01950425
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.36844462
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.32653628
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.37585999
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.48233262
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.11051636
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.01536126
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06789448
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.18670955
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.41885339
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.53535262
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.19219915
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.02703958
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.16818639
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.34990398
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.17936526
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08426969
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.05885785
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.3151562
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.01039019
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.37964063
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.47580175
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.26627292
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.32967485
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.53805294
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.24879695
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.20167741
+    },
+    "2026": {
+      "count": 5,
+      "partial": true,
+      "ret": 0.16759664
+    }
+  },
+  "nickel": {
+    "1992": {
+      "count": 11,
+      "partial": true,
+      "ret": -0.23634497
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.10630679
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.66166986
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.05461411
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.18616836
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.09567226
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.34945887
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.08839365
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.09344894
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.27367553
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.35563818
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.9684365
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.02962475
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.01994382
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.54999102
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.24264078
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.62205049
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.73877761
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.40755214
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.24288954
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.04371018
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.20196292
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14632413
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.45446938
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.2600534
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04765013
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.05741804
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.27635665
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.21646696
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.18977012
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.44817017
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.43270652
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.06111022
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.03624839
+    },
+    "2026": {
+      "count": 3,
+      "partial": true,
+      "ret": 0.14767513
+    }
+  },
+  "nikkei": {
+    "1949": {
+      "count": 7,
+      "partial": true,
+      "ret": -0.37735101
+    },
+    "1950": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.07278683
+    },
+    "1951": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.62947699
+    },
+    "1952": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.19143683
+    },
+    "1953": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.03858097
+    },
+    "1954": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.05783834
+    },
+    "1955": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.1954562
+    },
+    "1956": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.28999977
+    },
+    "1957": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.14133008
+    },
+    "1958": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.40919984
+    },
+    "1959": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.31663857
+    },
+    "1960": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.55073839
+    },
+    "1961": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.05593679
+    },
+    "1962": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00849504
+    },
+    "1963": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.13146019
+    },
+    "1964": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.01390127
+    },
+    "1965": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.16545148
+    },
+    "1966": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.02417074
+    },
+    "1967": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.11612837
+    },
+    "1968": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.32381746
+    },
+    "1969": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.38194199
+    },
+    "1970": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.15369906
+    },
+    "1971": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.36565114
+    },
+    "1972": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.91910058
+    },
+    "1973": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.17303195
+    },
+    "1974": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.10909956
+    },
+    "1975": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.13164952
+    },
+    "1976": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14941986
+    },
+    "1977": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.02509593
+    },
+    "1978": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.23352721
+    },
+    "1979": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.09457417
+    },
+    "1980": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07514457
+    },
+    "1981": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08759714
+    },
+    "1982": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04358721
+    },
+    "1983": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.23415583
+    },
+    "1984": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.16664746
+    },
+    "1985": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.13346906
+    },
+    "1986": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.43853711
+    },
+    "1987": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14576337
+    },
+    "1988": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.39858097
+    },
+    "1989": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.29035678
+    },
+    "1990": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.38717264
+    },
+    "1991": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.03626779
+    },
+    "1992": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.26361298
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.02908664
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.13238722
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00735636
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.02550816
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.2118969
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.09283663
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.36787368
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.27192128
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.23524902
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.18626015
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.24451594
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07606513
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.40236457
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06916829
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.11134732
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.42123809
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.19040223
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.03010684
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.17338781
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.22942043
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.56719845
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07117046
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.09070889
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00423774
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.19098563
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.12080726
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.18195812
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.16010529
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04910114
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.09368009
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.28242235
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.19215687
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.26181377
+    },
+    "2026": {
+      "count": 5,
+      "partial": true,
+      "ret": 0.25823846
+    }
+  },
+  "palladium": {
+    "1977": {
+      "count": 11,
+      "partial": true,
+      "ret": -0.10025707
+    },
+    "1978": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.38095238
+    },
+    "1979": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.51724138
+    },
+    "1980": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.22054795
+    },
+    "1981": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.51282953
+    },
+    "1982": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.40692641
+    },
+    "1983": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.61487179
+    },
+    "1984": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.22832645
+    },
+    "1985": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.21481481
+    },
+    "1986": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.24004193
+    },
+    "1987": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04480135
+    },
+    "1988": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04368932
+    },
+    "1989": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0503876
+    },
+    "1990": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.400369
+    },
+    "1991": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00738462
+    },
+    "1992": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.29510229
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.19052178
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.28870125
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.19095164
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.04319321
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.63764611
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.63499877
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.35240102
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.12477738
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.53061973
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.46875
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.17016807
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.06202532
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.41160594
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.29445507
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.11728213
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.50105764
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.16666667
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.96477926
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.18318187
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07193477
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.02125542
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.1115133
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.29609218
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.21574733
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.5528723
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.12836946
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.59480454
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.28518305
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.22075964
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.10098844
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.35968883
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.18778583
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.79418345
+    },
+    "2026": {
+      "count": 5,
+      "partial": true,
+      "ret": -0.16832918
+    }
+  },
+  "platinum": {
+    "1969": {
+      "count": 11,
+      "partial": true,
+      "ret": -0.29401782
+    },
+    "1970": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.26959135
+    },
+    "1971": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.09823926
+    },
+    "1972": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.31332117
+    },
+    "1973": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.13936362
+    },
+    "1974": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00060976
+    },
+    "1975": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.09151922
+    },
+    "1976": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.01786434
+    },
+    "1977": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.24439166
+    },
+    "1978": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.87423118
+    },
+    "1979": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.95937535
+    },
+    "1980": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.13312157
+    },
+    "1981": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.36389074
+    },
+    "1982": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.02298911
+    },
+    "1983": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.01791656
+    },
+    "1984": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.26592909
+    },
+    "1985": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.16565048
+    },
+    "1986": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.40317367
+    },
+    "1987": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04712042
+    },
+    "1988": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.041
+    },
+    "1989": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.06147935
+    },
+    "1990": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.15711361
+    },
+    "1991": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.17850638
+    },
+    "1992": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.045085
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.1145686
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.05837563
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.04496403
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.07219083
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.01759134
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00757576
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.2297016
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.3972912
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.22455574
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.24583333
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.35953177
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.05904059
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.12078978
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.15854922
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.37209302
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.41460235
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.62694878
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.20123203
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.22849003
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.12776957
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.1113294
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.11127487
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.26073798
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.01295497
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.03806887
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.14701114
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.221169
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.10437062
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.10441007
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.10680858
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.06992217
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.09862206
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.26135511
+    },
+    "2026": {
+      "count": 5,
+      "partial": true,
+      "ret": -0.05261056
+    }
+  },
+  "sensex": {
+    "1979": {
+      "count": 8,
+      "partial": true,
+      "ret": -0.06502913
+    },
+    "1980": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.24831593
+    },
+    "1981": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.53605396
+    },
+    "1982": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.03561391
+    },
+    "1983": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07246746
+    },
+    "1984": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07492488
+    },
+    "1985": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.93975062
+    },
+    "1986": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00551805
+    },
+    "1987": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.15688817
+    },
+    "1988": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.50679603
+    },
+    "1989": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.16867289
+    },
+    "1990": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.34630895
+    },
+    "1991": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.82091788
+    },
+    "1992": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.37012861
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.27938303
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.17358924
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.20790191
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00813055
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.18597822
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.16495581
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.63834641
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.20649963
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.17869299
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.03523555
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.72889426
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.13079898
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.42334867
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.46701561
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.4714675
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.52445829
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.81032951
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.17430937
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.2464356
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.25699195
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08977176
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.29893891
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.05025124
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.01948576
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.27905963
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.05906304
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14376629
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.15750305
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.21994131
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04440773
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.18736656
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08165461
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0906281
+    },
+    "2026": {
+      "count": 5,
+      "partial": true,
+      "ret": -0.11505727
+    }
+  },
+  "shanghai": {
+    "1997": {
+      "count": 5,
+      "partial": true,
+      "ret": 0.00364956
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.03969686
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.19175024
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.51727458
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.2061784
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.17516519
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.1026696
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.1540021
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08325253
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.30434346
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.96659089
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.65394217
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.79982959
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.14313156
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.21675329
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.03169517
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.06749285
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.52869122
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.09413765
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.12306372
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06557954
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.24591284
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.22303576
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.13866489
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04800103
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.1512509
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.03700721
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.12666757
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.18410527
+    },
+    "2026": {
+      "count": 5,
+      "partial": true,
+      "ret": 0.03629746
+    }
+  },
+  "silver": {
+    "1968": {
+      "count": 11,
+      "partial": true,
+      "ret": -0.00510204
+    },
+    "1969": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08205128
+    },
+    "1970": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08938547
+    },
+    "1971": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.1595092
+    },
+    "1972": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.48175182
+    },
+    "1973": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.60591133
+    },
+    "1974": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.37116564
+    },
+    "1975": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.06487696
+    },
+    "1976": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0430622
+    },
+    "1977": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.09174312
+    },
+    "1978": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.26470588
+    },
+    "1979": {
+      "count": 12,
+      "partial": false,
+      "ret": 4.34883721
+    },
+    "1980": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.51863354
+    },
+    "1981": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.47419355
+    },
+    "1982": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.33374233
+    },
+    "1983": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.18031279
+    },
+    "1984": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.29405163
+    },
+    "1985": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.07790143
+    },
+    "1986": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08965517
+    },
+    "1987": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.26893939
+    },
+    "1988": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.09701493
+    },
+    "1989": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.13719008
+    },
+    "1990": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.19731801
+    },
+    "1991": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.07875895
+    },
+    "1992": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.0492228
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.39509537
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.05273438
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.05979381
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.06614786
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.25
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.16666667
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.066
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.14071295
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.01310044
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.03318584
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.27623126
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.1442953
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.29472141
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.46092865
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14418605
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.26897019
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.57460612
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.80282519
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.07998694
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0628105
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.34891486
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.18102564
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.13462743
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.17510854
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.03817734
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08303677
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.16752911
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.46703601
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.12802115
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.03724556
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00668058
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.21521648
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.49014182
+    },
+    "2026": {
+      "count": 2,
+      "partial": true,
+      "ret": 0.25989721
+    }
+  },
+  "soybeans": {
+    "1969": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00758221
+    },
+    "1970": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.16700201
+    },
+    "1971": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06637931
+    },
+    "1972": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.36216653
+    },
+    "1973": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.36617211
+    },
+    "1974": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.20677672
+    },
+    "1975": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.35817135
+    },
+    "1976": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.5737521
+    },
+    "1977": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.16322167
+    },
+    "1978": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14565588
+    },
+    "1979": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08364312
+    },
+    "1980": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.25070994
+    },
+    "1981": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.21440156
+    },
+    "1982": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.09000826
+    },
+    "1983": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.46914701
+    },
+    "1984": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.29400865
+    },
+    "1985": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08486439
+    },
+    "1986": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.09082218
+    },
+    "1987": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.23554154
+    },
+    "1988": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.34297872
+    },
+    "1989": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.28833967
+    },
+    "1990": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00801425
+    },
+    "1991": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00987433
+    },
+    "1992": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00725295
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.25382538
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.21679828
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.3299725
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.05168849
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.03197674
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.21021021
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.14923954
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08938547
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.15179487
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.35550181
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.38983051
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.30616175
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08788159
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.10969388
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.77471264
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.17271157
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06628392
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.31326481
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.11852404
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.2012685
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08236536
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.22516302
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.14430693
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.1617009
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.04407371
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.07007033
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06778711
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.37654774
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.01928574
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.12851961
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.14380384
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.22755418
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.03306613
+    },
+    "2026": {
+      "count": 5,
+      "partial": true,
+      "ret": 0.16100873
+    }
+  },
+  "sp500": {
+    "1871": {
+      "count": 11,
+      "partial": true,
+      "ret": 0.06756757
+    },
+    "1872": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06962025
+    },
+    "1873": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.12820513
+    },
+    "1874": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.02714932
+    },
+    "1875": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.03744493
+    },
+    "1876": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.18077803
+    },
+    "1877": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.09217877
+    },
+    "1878": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06153846
+    },
+    "1879": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.42608696
+    },
+    "1880": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.18699187
+    },
+    "1881": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.02910959
+    },
+    "1882": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.02828619
+    },
+    "1883": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08561644
+    },
+    "1884": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.18726592
+    },
+    "1885": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.19815668
+    },
+    "1886": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08461538
+    },
+    "1887": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.06560284
+    },
+    "1888": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.02466793
+    },
+    "1889": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.03501946
+    },
+    "1890": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.13533835
+    },
+    "1891": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.17608696
+    },
+    "1892": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.01848429
+    },
+    "1893": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.19963702
+    },
+    "1894": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.02494331
+    },
+    "1895": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00465116
+    },
+    "1896": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.02314815
+    },
+    "1897": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.12559242
+    },
+    "1898": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.18947368
+    },
+    "1899": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06548673
+    },
+    "1900": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14119601
+    },
+    "1901": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.15720524
+    },
+    "1902": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.01257862
+    },
+    "1903": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.18385093
+    },
+    "1904": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.25570776
+    },
+    "1905": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.15636364
+    },
+    "1906": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.03144654
+    },
+    "1907": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.33231707
+    },
+    "1908": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.37442922
+    },
+    "1909": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.1406423
+    },
+    "1910": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.12135922
+    },
+    "1911": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00662983
+    },
+    "1912": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.02963776
+    },
+    "1913": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.14285714
+    },
+    "1914": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.0858209
+    },
+    "1915": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.28979592
+    },
+    "1916": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.03375527
+    },
+    "1917": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.30612245
+    },
+    "1918": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.16176471
+    },
+    "1919": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.12911392
+    },
+    "1920": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.23654709
+    },
+    "1921": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07342144
+    },
+    "1922": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.20109439
+    },
+    "1923": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.0261959
+    },
+    "1924": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.18830409
+    },
+    "1925": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.22637795
+    },
+    "1926": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08266453
+    },
+    "1927": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.30911787
+    },
+    "1928": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.3788222
+    },
+    "1929": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.11909651
+    },
+    "1930": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.28484848
+    },
+    "1931": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.47066493
+    },
+    "1932": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.14778325
+    },
+    "1933": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.44075145
+    },
+    "1934": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.04714142
+    },
+    "1935": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.41368421
+    },
+    "1936": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.27922561
+    },
+    "1937": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.38591385
+    },
+    "1938": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.24549763
+    },
+    "1939": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.05175038
+    },
+    "1940": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.15088283
+    },
+    "1941": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.17863894
+    },
+    "1942": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.12428078
+    },
+    "1943": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.19447288
+    },
+    "1944": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.13796058
+    },
+    "1945": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.30722892
+    },
+    "1946": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.11866359
+    },
+    "1947": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0
+    },
+    "1948": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00653595
+    },
+    "1949": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.10460526
+    },
+    "1950": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.21679571
+    },
+    "1951": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.16348507
+    },
+    "1952": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.11779554
+    },
+    "1953": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.06624012
+    },
+    "1954": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.45022168
+    },
+    "1955": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.26403558
+    },
+    "1956": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.02616535
+    },
+    "1957": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.14313263
+    },
+    "1958": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.38059515
+    },
+    "1959": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08476725
+    },
+    "1960": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.02972116
+    },
+    "1961": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.23128549
+    },
+    "1962": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.11809923
+    },
+    "1963": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.1889065
+    },
+    "1964": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.12969875
+    },
+    "1965": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.09061947
+    },
+    "1966": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.13090988
+    },
+    "1967": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.2009212
+    },
+    "1968": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07660413
+    },
+    "1969": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.11361448
+    },
+    "1970": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00097762
+    },
+    "1971": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.10786761
+    },
+    "1972": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.15633265
+    },
+    "1973": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.17365523
+    },
+    "1974": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.29718093
+    },
+    "1975": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.31549008
+    },
+    "1976": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.19148464
+    },
+    "1977": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.11501954
+    },
+    "1978": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0106204
+    },
+    "1979": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.12308813
+    },
+    "1980": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.25773578
+    },
+    "1981": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.09730407
+    },
+    "1982": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14761322
+    },
+    "1983": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.17271047
+    },
+    "1984": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.01400594
+    },
+    "1985": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.26333413
+    },
+    "1986": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14620409
+    },
+    "1987": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.02027501
+    },
+    "1988": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.12400842
+    },
+    "1989": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.27250468
+    },
+    "1990": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.0655914
+    },
+    "1991": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.26306705
+    },
+    "1992": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04464264
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07055151
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.01539286
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.34110654
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.20263666
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.31008181
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.2666859
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.19526045
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.10139187
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.13042688
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.23365968
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.26380396
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08993453
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.03001023
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.13619431
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.03529578
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.38485794
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.23454193
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.1278271
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": -3.181e-05
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.13405693
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.29601245
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.11390638
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00726602
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.09535016
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.19419965
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.0623726
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.28878074
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.16258922
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.26892736
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.19442824
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.24230499
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.23309007
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.16387804
+    },
+    "2026": {
+      "count": 5,
+      "partial": true,
+      "ret": 0.09173472
+    }
+  },
+  "sugar": {
+    "1962": {
+      "count": 1,
+      "partial": true,
+      "ret": 0.08072917
+    },
+    "1963": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.49879518
+    },
+    "1964": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.75891996
+    },
+    "1965": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08
+    },
+    "1966": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.42608696
+    },
+    "1967": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.90909091
+    },
+    "1968": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.22222222
+    },
+    "1969": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.06493506
+    },
+    "1970": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.51388889
+    },
+    "1971": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.83256881
+    },
+    "1972": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.2465582
+    },
+    "1973": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.23795181
+    },
+    "1974": {
+      "count": 12,
+      "partial": false,
+      "ret": 2.82806164
+    },
+    "1975": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.69491525
+    },
+    "1976": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.44166667
+    },
+    "1977": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.16915423
+    },
+    "1978": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.10319149
+    },
+    "1979": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.93475682
+    },
+    "1980": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.75045984
+    },
+    "1981": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.54605954
+    },
+    "1982": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.52160494
+    },
+    "1983": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.16612903
+    },
+    "1984": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.5615491
+    },
+    "1985": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.49842271
+    },
+    "1986": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14315789
+    },
+    "1987": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.6961326
+    },
+    "1988": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.18675353
+    },
+    "1989": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.20219579
+    },
+    "1990": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.28310502
+    },
+    "1991": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.0403397
+    },
+    "1992": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08960177
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.2782503
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.42775665
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.16910786
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.05288462
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.07445008
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.32755906
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.28220141
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.73572594
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.2518797
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.05778894
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.24584323
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.64566929
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.5291866
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.19899875
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0171875
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.02073733
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.1654902
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.30930822
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.37012448
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.14712341
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.15653965
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.10805861
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04312115
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.28018373
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.22296258
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.20646438
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.11554447
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.15424739
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.21885087
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06197034
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.02194514
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.05856515
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.22498704
+    },
+    "2026": {
+      "count": 5,
+      "partial": true,
+      "ret": -0.0180602
+    }
+  },
+  "tin": {
+    "1992": {
+      "count": 11,
+      "partial": true,
+      "ret": 0.05156177
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.17068019
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.24129496
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.05733128
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.07163274
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.05493207
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.04428147
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08679539
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08597788
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.23050262
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.05089407
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.43319945
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.39867034
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.20194383
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.64524176
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.46007541
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.30487313
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.38049001
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.67453816
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.25731617
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.18022376
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00519078
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.12882851
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.2591073
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.44328864
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08149184
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.0111309
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.10999871
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.1511521
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.99790215
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.38742273
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.01878572
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.17304984
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.4345851
+    },
+    "2026": {
+      "count": 3,
+      "partial": true,
+      "ret": 0.14300378
+    }
+  },
+  "wheat": {
+    "1959": {
+      "count": 5,
+      "partial": true,
+      "ret": 0.04077472
+    },
+    "1960": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.02105779
+    },
+    "1961": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00623501
+    },
+    "1962": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.01882239
+    },
+    "1963": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.03931786
+    },
+    "1964": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.31768459
+    },
+    "1965": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.1255845
+    },
+    "1966": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.0421365
+    },
+    "1967": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.15888383
+    },
+    "1968": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08259986
+    },
+    "1969": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08767528
+    },
+    "1970": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14330303
+    },
+    "1971": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.03186944
+    },
+    "1972": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.6183412
+    },
+    "1973": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.06439394
+    },
+    "1974": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.1587156
+    },
+    "1975": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.2917121
+    },
+    "1976": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.16089299
+    },
+    "1977": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00183486
+    },
+    "1978": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.3489011
+    },
+    "1979": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.20638153
+    },
+    "1980": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04895892
+    },
+    "1981": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.18133047
+    },
+    "1982": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.1559633
+    },
+    "1983": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.15062112
+    },
+    "1984": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.0148448
+    },
+    "1985": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.02328767
+    },
+    "1986": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.17671809
+    },
+    "1987": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06303237
+    },
+    "1988": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.4150641
+    },
+    "1989": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.06568516
+    },
+    "1990": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.34787879
+    },
+    "1991": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.38104089
+    },
+    "1992": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00269179
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00939597
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.10298103
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.26044226
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.25146199
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.140625
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.23939394
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08964143
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08533917
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.21169355
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.13643927
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.10541728
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.07152318
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.06562054
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.4519084
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.69190326
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.39279055
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.15967247
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.90133983
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.18962204
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.21422925
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.16666667
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.071875
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.20875421
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.13191489
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04656863
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.17857143
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.11028316
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14630872
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.20335675
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.1621278
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.253006
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.0022568
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.09122502
+    },
+    "2026": {
+      "count": 5,
+      "partial": true,
+      "ret": 0.11508538
+    }
+  },
+  "wti_crude": {
+    "1986": {
+      "count": 11,
+      "partial": true,
+      "ret": -0.05382586
+    },
+    "1987": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.06636921
+    },
+    "1988": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.02270012
+    },
+    "1989": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.27570093
+    },
+    "1990": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.3040293
+    },
+    "1991": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.32759831
+    },
+    "1992": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.01775457
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.27193433
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.25229035
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.09960608
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.32548618
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.31853282
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.3121813
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.12191104
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.03726708
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.25299401
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.56362725
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04165332
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.33374346
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.40821033
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.00343924
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.57682827
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.53517457
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.78004484
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.15102658
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.08152769
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.0708287
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06904062
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.45553631
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.30533209
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.44761648
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.12483721
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.25322527
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.35415282
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.20919202
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.55801448
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06411788
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.10316866
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.00765058
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.20955273
+    },
+    "2026": {
+      "count": 5,
+      "partial": true,
+      "ret": 0.96035627
+    }
+  },
+  "zinc": {
+    "1992": {
+      "count": 11,
+      "partial": true,
+      "ret": -0.08308404
+    },
+    "1993": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08096385
+    },
+    "1994": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.14065615
+    },
+    "1995": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08590618
+    },
+    "1996": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.01906263
+    },
+    "1997": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06243264
+    },
+    "1998": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.12683912
+    },
+    "1999": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.23259287
+    },
+    "2000": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.10622811
+    },
+    "2001": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.28448113
+    },
+    "2002": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04787956
+    },
+    "2003": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.22976703
+    },
+    "2004": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.21025115
+    },
+    "2005": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.53903398
+    },
+    "2006": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.40828186
+    },
+    "2007": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.45712068
+    },
+    "2008": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.53211717
+    },
+    "2009": {
+      "count": 12,
+      "partial": false,
+      "ret": 1.13319064
+    },
+    "2010": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.03652709
+    },
+    "2011": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.16445935
+    },
+    "2012": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.06764456
+    },
+    "2013": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.0320785
+    },
+    "2014": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.10166554
+    },
+    "2015": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.29781577
+    },
+    "2016": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.74423186
+    },
+    "2017": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.19931417
+    },
+    "2018": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.18137279
+    },
+    "2019": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.13138913
+    },
+    "2020": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.22323676
+    },
+    "2021": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.22280432
+    },
+    "2022": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.08316381
+    },
+    "2023": {
+      "count": 12,
+      "partial": false,
+      "ret": -0.19443276
+    },
+    "2024": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.20839486
+    },
+    "2025": {
+      "count": 12,
+      "partial": false,
+      "ret": 0.04232928
+    },
+    "2026": {
+      "count": 3,
+      "partial": true,
+      "ret": 0.00635193
+    }
+  }
+}

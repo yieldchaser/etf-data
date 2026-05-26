@@ -1,0 +1,174 @@
+{
+  "asof_year": 2026,
+  "asof_month": 5,
+  "bug_1": {
+    "ag_asset_diagnosis": {
+      "wheat": {
+        "source": "Mega_Markets_Historical.xlsx:Commodities",
+        "cell_2026": {
+          "ret": 0.1151,
+          "partial": true,
+          "count": 5,
+          "months_present": 5,
+          "months_expected": 12
+        },
+        "boundary_jumps": [],
+        "zero_or_nan_base_months": []
+      },
+      "corn": {
+        "source": "Mega_Markets_Historical.xlsx:Commodities",
+        "cell_2026": {
+          "ret": 0.0516,
+          "partial": true,
+          "count": 5,
+          "months_present": 5,
+          "months_expected": 12
+        },
+        "boundary_jumps": [],
+        "zero_or_nan_base_months": []
+      },
+      "sugar": {
+        "source": "Mega_Markets_Historical.xlsx:Commodities",
+        "cell_2026": {
+          "ret": -0.0181,
+          "partial": true,
+          "count": 5,
+          "months_present": 5,
+          "months_expected": 12
+        },
+        "boundary_jumps": [],
+        "zero_or_nan_base_months": []
+      },
+      "soybeans": {
+        "source": "Mega_Markets_Historical.xlsx:Commodities",
+        "cell_2026": {
+          "ret": 0.161,
+          "partial": true,
+          "count": 5,
+          "months_present": 5,
+          "months_expected": 12
+        },
+        "boundary_jumps": [],
+        "zero_or_nan_base_months": []
+      },
+      "cotton": {
+        "source": "Mega_Markets_Historical.xlsx:Commodities",
+        "cell_2026": {
+          "ret": 0.2031,
+          "partial": true,
+          "count": 5,
+          "months_present": 5,
+          "months_expected": 12
+        },
+        "boundary_jumps": [
+          {
+            "from_ym": "1986-07",
+            "from_close": 0.655,
+            "to_ym": "1986-08",
+            "to_close": 0.275,
+            "ratio": 0.4198
+          }
+        ],
+        "zero_or_nan_base_months": []
+      },
+      "coffee": {
+        "source": "Mega_Markets_Historical.xlsx:Commodities",
+        "cell_2026": {
+          "ret": -0.221,
+          "partial": true,
+          "count": 5,
+          "months_present": 5,
+          "months_expected": 12
+        },
+        "boundary_jumps": [],
+        "zero_or_nan_base_months": []
+      }
+    },
+    "h1_unit_mismatch_evidence": [
+      "wheat: 0 boundary jump(s) outside [0.5, 2.0]",
+      "corn: 0 boundary jump(s) outside [0.5, 2.0]",
+      "sugar: 0 boundary jump(s) outside [0.5, 2.0]",
+      "soybeans: 0 boundary jump(s) outside [0.5, 2.0]",
+      "cotton: 1 boundary jump(s) outside [0.5, 2.0]",
+      "coffee: 0 boundary jump(s) outside [0.5, 2.0]"
+    ],
+    "h2_zero_or_nan_base_evidence": [
+      "wheat: 0 zero/NaN base month(s)",
+      "corn: 0 zero/NaN base month(s)",
+      "sugar: 0 zero/NaN base month(s)",
+      "soybeans: 0 zero/NaN base month(s)",
+      "cotton: 0 zero/NaN base month(s)",
+      "coffee: 0 zero/NaN base month(s)"
+    ],
+    "h3_magnitude_driven_color_evidence": "applies whenever a partial cell's |ret| >= 0.50; see test 1b saturation outcomes",
+    "verdict_for_bug_1": "If h1 boundary jumps are present in any ag asset \u2192 unit-mismatch is supported. If h1 is empty AND h2 is empty AND ag 2026 |ret| is moderate \u2192 root cause is h3 magnitude-driven-color overpowering the .matrix-cell-partial 40% opacity."
+  },
+  "bug_2": {
+    "dual_registry_diagnosis": {
+      "nasdaq": {
+        "source": "Mega_Markets_Historical.xlsx:Equities",
+        "starts_with_excel": true,
+        "last": "2026-05"
+      },
+      "nasdaq100": {
+        "source": "yfinance:^NDX",
+        "starts_with_excel": false,
+        "last": "2026-05"
+      },
+      "sp500": {
+        "source": "yfinance:^GSPC",
+        "starts_with_excel": false,
+        "last": "2026-05"
+      }
+    },
+    "metadata_has_markets_data_freshness": true,
+    "metadata_self_living_check": {
+      "live_source_count": 10,
+      "excel_only_count": 15,
+      "holdouts": [
+        "Brent Crude Oil",
+        "Coffee Arabica",
+        "Corn",
+        "Cotton",
+        "NASDAQ Composite",
+        "Soybeans",
+        "Sugar",
+        "WTI Crude Oil",
+        "Wheat"
+      ],
+      "holdout_keys": [
+        "brent_crude",
+        "coffee",
+        "corn",
+        "cotton",
+        "nasdaq",
+        "soybeans",
+        "sugar",
+        "wheat",
+        "wti_crude"
+      ],
+      "verdict": "LIVE_MERGE_DEGRADED"
+    },
+    "metadata_has_holdouts_field": true,
+    "verdict_for_bug_2": "If meta.markets_data_freshness is missing entirely (no slc block) \u2192 root cause supports L5 (verdict aggregation never built); the live-fetch path can only be discriminated between L1 (empty fetch) and L2 (cache drift) by capturing stdout from `python -m predator.markets_history --full-refresh --assets sp500,nasdaq,nasdaq100,djia` \u2014 see test_live_fetch_logging_record below."
+  },
+  "summary": {
+    "bug_1_finding": "h3_magnitude_driven_color_OR_h5_firstYear_shift",
+    "bug_1_h1_jumps_total": 1,
+    "bug_1_h1_recent_boundary_jumps": [],
+    "bug_1_h2_zero_or_nan_total": 0,
+    "bug_2_finding": [
+      "live-fetch path either L1 (empty) or L2 (cache drift); discriminate by capturing stdout from `python -m predator.markets_history --full-refresh --assets sp500,nasdaq,nasdaq100,djia` and reading the `EMPTY: ...` log lines added by design Fix Implementation #6"
+    ],
+    "bug_2_excel_holdouts": [
+      "nasdaq"
+    ],
+    "metadata_missing_self_living_check": false,
+    "user_constraints_acknowledged": [
+      "(1) KNOWN_REAL_EVENTS is a single-source-of-truth dict in tests/markets_partial_year_live_merge/known_real_events.py; extending the whitelist is one new line",
+      "(2) unvalidated extreme treatment is non-destructive (dim + \u26a0 + tooltip), never drop the cell \u2014 encoded in test 1c by allowing either suppression OR validation, and in design Fix Implementation #4",
+      "(3) S&P/NASDAQ holdouts: if live fetch genuinely fails, keep the honest Excel label and name them in `holdouts` \u2014 encoded in test 1f",
+      "(4) discriminator reports h1 vs h2 vs h3 for ag bug; L1 vs L2 vs L5 for live-fetch bug"
+    ]
+  }
+}

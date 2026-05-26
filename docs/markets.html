@@ -58,9 +58,22 @@
     /* Partial-year cells (current year-to-date or first year of an asset's
        history) get 40% opacity + italic so the user can tell at a glance the
        cell isn't a full-year return. The trailing · in the cell text is the
-       explicit flag; opacity is the at-a-glance signal. */
-    .matrix-cell-partial { opacity: 0.40; font-style: italic; }
+       explicit flag; opacity is the at-a-glance signal. The `filter:
+       saturate(0.3)` decouples cell-level dimming from the diverging palette
+       so a high-magnitude partial cell still reads visually dim — without
+       this, magnitude drives saturation and the 40% opacity alone is not
+       enough to make a deep-color cell look "partial". This is the
+       load-bearing visual change for the equity-partial-but-saturated bug. */
+    .matrix-cell-partial { opacity: 0.40; font-style: italic; filter: saturate(0.3); }
     .matrix-cell-partial:hover { opacity: 0.65; }
+    /* Unvalidated extreme cells — magnitude > ±0.70 and not in
+       KNOWN_REAL_EVENTS. Treat them visually identical to partial cells
+       (dim + de-saturated) so a "−99% wheat 2026" artifact doesn't
+       scream off the page in red. Cell value, click-through, and
+       colour-coded background are all preserved (non-destructive); the
+       ⚠ glyph and tooltip line surface the diagnostic. */
+    .matrix-cell-unvalidated { opacity: 0.40; font-style: italic; filter: saturate(0.3); }
+    .matrix-cell-unvalidated:hover { opacity: 0.65; }
     .matrix-cell-empty { background: transparent; cursor: default; }
     .matrix-cell-empty:hover { filter: none; }
     .matrix-name-cell { min-width: 180px; max-width: 180px; padding: 0 8px;
@@ -102,7 +115,12 @@
                   if (v === 'LIVE_MERGE_DEGRADED') return 'background: rgba(251,191,36,0.10); color: var(--amber); border: 1px solid rgba(251,191,36,0.25);';
                   return 'background: rgba(251,113,133,0.10); color: var(--down); border: 1px solid rgba(251,113,133,0.25);';
                 })()"
-                @mouseenter="showTt($event, `Live merge — ${freshness.self_living_check.live_source_count} of ${freshness.asset_count} assets carry live FRED/yfinance source · ${freshness.fx_pairs.length} FX pair${freshness.fx_pairs.length===1?'':'s'} · ${freshness.cpi_series.length} CPI series · ${freshness.rates_series.length} rate series.`)"
+                @mouseenter="showTt($event, (() => {
+                  const slc = freshness.self_living_check;
+                  const holdouts = Array.isArray(slc && slc.holdouts) ? slc.holdouts : [];
+                  const base = `Live merge — ${slc.live_source_count} of ${freshness.asset_count} assets carry live FRED/yfinance source · ${freshness.fx_pairs.length} FX pair${freshness.fx_pairs.length===1?'':'s'} · ${freshness.cpi_series.length} CPI series · ${freshness.rates_series.length} rate series.`;
+                  return holdouts.length ? `${base} · holdouts: ${holdouts.join(', ')}` : base;
+                })())"
                 @mouseleave="hideTt()"
                 x-text="(() => {
                   const v = freshness.self_living_check.verdict;
@@ -394,12 +412,12 @@
                     <td>
                       <template x-if="getCellData(asset.key, yr) !== null">
                         <div class="matrix-cell"
-                             :class="getCellData(asset.key, yr).partial ? 'matrix-cell-partial' : ''"
+                             :class="matrixCellClass(asset.key, yr)"
                              :style="`background: ${activeCellColor(asset.key, yr)}; color: ${activeCellTextColor(asset.key, yr)};`"
                              @click="toggleDrilldown(asset.key, yr)"
                              @mouseenter="showCellTt($event, asset, yr, getCellData(asset.key, yr))"
                              @mouseleave="hideTt()"
-                             x-text="cellText(getCellData(asset.key, yr))">
+                             x-text="cellText(getCellData(asset.key, yr), asset.key, yr)">
                         </div>
                       </template>
                       <template x-if="getCellData(asset.key, yr) === null">
@@ -2624,13 +2642,46 @@ function marketsApp() {
       const adjusted = this._getAdjustedClose(assetKey);
       if (!adjusted.length) { this._annualCache[ck] = {}; return; }
 
-      // Build monthly returns from adjusted close
+      // Pull asof from the loaded JSON (`market_returns.json` carries
+      // `asof: "YYYY-MM"`). Fall back to today when the field is missing
+      // so the function is still usable in standalone tests.
+      const asofStr = this.returnsData?.asof || this.marketState?.asof || '';
+      let asofYear  = NaN;
+      let asofMonth = NaN;
+      if (typeof asofStr === 'string' && asofStr.length >= 7) {
+        asofYear  = parseInt(asofStr.slice(0, 4));
+        asofMonth = parseInt(asofStr.slice(5, 7));
+      }
+      if (!Number.isFinite(asofYear) || !Number.isFinite(asofMonth)) {
+        const now = new Date();
+        asofYear  = now.getFullYear();
+        asofMonth = now.getMonth() + 1; // 1..12
+      }
+
+      // Asset metadata for boundaryAnomaly + validateExtreme later.
+      const assetMeta  = this.returnsData?.assets?.[assetKey]?.meta || {};
+      const assetClass = assetMeta.category || '';
+      const assetId    = assetKey;
+
+      // Build monthly returns from adjusted close, with sanity envelope.
+      // We track which months are flagged as boundary anomalies (a single
+      // month with |ret| > 0.50 on a non-equity series — that's the
+      // signature of an Excel↔FRED unit/scale collision).
       const monthlyRet = {};
+      const monthlyAnomaly = {}; // ym → true when |ret| > 0.50 on non-equity
       for (let i = 1; i < adjusted.length; i++) {
         const prev = adjusted[i - 1].close;
         const curr = adjusted[i].close;
-        if (prev > 0 && curr != null) {
-          monthlyRet[adjusted[i].ym] = curr / prev - 1;
+        // Guard: prev must be strictly positive AND finite; curr must
+        // exist AND be finite. Anything else means the divisor is
+        // unreliable and the resulting return is junk.
+        if (!(prev > 0) || !Number.isFinite(prev)) continue;
+        if (curr == null || !Number.isFinite(curr)) continue;
+        const r = curr / prev - 1;
+        if (!Number.isFinite(r)) continue;
+        monthlyRet[adjusted[i].ym] = r;
+        if (assetClass !== 'equity' && Math.abs(r) > 0.50) {
+          monthlyAnomaly[adjusted[i].ym] = true;
         }
       }
 
@@ -2658,16 +2709,18 @@ function marketsApp() {
       }
 
       const firstYm = adjusted[0].ym;
-      const lastYm = adjusted[adjusted.length - 1].ym;
       const firstYear = parseInt(firstYm.slice(0, 4));
-      const lastYear = parseInt(lastYm.slice(0, 4));
 
       const result = {};
       for (const [yr, mList] of Object.entries(byYear)) {
         const year = parseInt(yr);
         let compound = 1;
         let count = 0;
+        let monthsPresent = 0;
+        let boundaryAnomaly = false;
+        let dropYear = false;
         for (const ym of mList) {
+          monthsPresent++;
           const nomRet = monthlyRet[ym];
           if (nomRet === undefined) continue;
           let r = nomRet;
@@ -2675,12 +2728,43 @@ function marketsApp() {
             // Real return: (1 + nominal) / (1 + inflation) - 1
             r = (1 + nomRet) / (1 + cpiRet[ym]) - 1;
           }
+          if (!Number.isFinite(r)) continue;
           compound *= (1 + r);
+          if (!Number.isFinite(compound)) {
+            // NaN/Inf compound — drop the year cleanly rather than
+            // emitting a saturated −0.99 artifact.
+            dropYear = true;
+            break;
+          }
           count++;
+          if (monthlyAnomaly[ym]) boundaryAnomaly = true;
         }
+        if (dropYear) continue;
         if (count === 0) continue;
-        const partial = (year === firstYear || year === lastYear);
-        result[year] = { ret: compound - 1, partial, count };
+        const ret = compound - 1;
+        if (!Number.isFinite(ret)) continue;
+
+        // Calendar-based partial: a year is partial when its month-count
+        // is below the calendar expectation. For past years
+        // (year < asofYear) a complete year has 12 months; for the asof
+        // year a "complete-to-date" year has asofMonth months. The
+        // firstYear-with-fewer-than-12 clause preserves the
+        // deep-history-edge case where Excel supplies only a few months
+        // for the very first year of an asset's history.
+        const monthsExpected = (year < asofYear) ? 12 : asofMonth;
+        const partial = (count < monthsExpected) || (year === firstYear && count < 12);
+
+        result[year] = {
+          ret,
+          partial,
+          count,
+          monthsPresent,
+          monthsExpected,
+          boundaryAnomaly,
+          year,
+          assetId,
+          assetClass,
+        };
       }
       this._annualCache[ck] = result;
     },
@@ -2694,6 +2778,65 @@ function marketsApp() {
       } catch (e) {
         return null;
       }
+    },
+
+    // ── §3.3 validateExtreme — single-cell sanity check ──────────────────
+    // Curated whitelist of single-year returns whose magnitude exceeds
+    // ±0.70 yet correspond to genuine market events. Trivially extensible:
+    // append one new line per asset:year to whitelist a fresh validated
+    // extreme. Mirrors `tests/markets_partial_year_live_merge/known_real_events.py`.
+    KNOWN_REAL_EVENTS: {
+      'sp500:2008': true,    // -0.38 — 2008 financial crisis (informational, in-range)
+      'nasdaq:2000': true,   // -0.39 — dot-com (informational, in-range)
+      'nasdaq:1999': true,   // +0.86
+      'nasdaq100:1999': true,// +1.02
+      'dax:1922': true,      // +1.50  Weimar
+      'dax:1923': true,      // hyperinflation peak
+      'dax:1949': true,      // -0.85 post-war
+      'sensex:1991': true,   // +0.82
+      'sensex:1992': true,   // +0.74 Harshad Mehta
+      'hang_seng:1972': true,// +1.10
+      'hang_seng:1973': true,// -0.92
+      // Trivially extensible: append `'asset_id:year': true` to whitelist a new validated extreme.
+    },
+
+    // validateExtreme(ret, year, assetId, count, monthsExpected) → {ok, reason}
+    //   ok = true when |ret| <= 0.70  (in-range, render as usual)
+    //   ok = true when (assetId:year) is in KNOWN_REAL_EVENTS
+    //   ok = false otherwise, with reason = 'unvalidated_extreme'
+    // The renderer applies the dim treatment + ⚠ glyph + tooltip line —
+    // never destructive: the cell value, colour-coded background, and
+    // click-through interaction are all preserved.
+    validateExtreme(ret, year, assetId, count, monthsExpected) {
+      if (ret === null || ret === undefined || !Number.isFinite(ret)) return { ok: true };
+      if (Math.abs(ret) <= 0.70) return { ok: true };
+      const key = `${assetId}:${year}`;
+      if (this.KNOWN_REAL_EVENTS[key]) return { ok: true };
+      return { ok: false, reason: 'unvalidated_extreme' };
+    },
+
+    // Cached validation lookup keyed on asset:year. Used by the matrix
+    // template (class binding, cell text glyph, tooltip) so the validation
+    // is computed once per cell render.
+    getCellValidation(assetKey, year) {
+      const cd = this.getCellData(assetKey, year);
+      if (!cd) return { ok: true };
+      return this.validateExtreme(cd.ret, year, assetKey, cd.count, cd.monthsExpected);
+    },
+
+    // Compose the class string for a matrix cell: identical visual
+    // treatment for partial cells AND unvalidated extremes (both dim +
+    // de-saturated). The CSS rules use the same opacity/filter so the
+    // user can't distinguish them visually — the ⚠ glyph and tooltip
+    // line are the disambiguator.
+    matrixCellClass(assetKey, year) {
+      const cd = this.getCellData(assetKey, year);
+      if (!cd) return '';
+      const cls = [];
+      if (cd.partial) cls.push('matrix-cell-partial');
+      const v = this.validateExtreme(cd.ret, year, assetKey, cd.count, cd.monthsExpected);
+      if (!v.ok) cls.push('matrix-cell-unvalidated');
+      return cls.join(' ');
     },
 
     getMonthlyReturns(assetKey, year) {
@@ -3040,13 +3183,24 @@ function marketsApp() {
     // a bare number (legacy). Partial-year cells get a trailing · so the explicit
     // "this isn't a full year" signal is visible even to users without colour
     // perception (paired with .matrix-cell-partial italic + 40% opacity).
-    cellText(retOrCd) {
+    // §3.3 When (assetKey, year) are supplied AND the cell is an unvalidated
+    // extreme, append a leading ⚠ glyph (before the value, so the warning
+    // reads first) — never destructive: the value remains visible.
+    cellText(retOrCd, assetKey, year) {
       if (retOrCd === null || retOrCd === undefined) return '';
       const ret     = (typeof retOrCd === 'object') ? retOrCd.ret     : retOrCd;
       const partial = (typeof retOrCd === 'object') ? retOrCd.partial : false;
       if (ret === null || ret === undefined) return '';
+      const cd = (typeof retOrCd === 'object') ? retOrCd : null;
+      let warn = '';
+      if (cd && assetKey != null && year != null) {
+        const v = this.validateExtreme(ret, year, assetKey, cd.count, cd.monthsExpected);
+        if (!v.ok) warn = '⚠';
+      }
       const pct = ret * 100;
-      return (pct >= 0 ? '+' : '') + pct.toFixed(0) + '%' + (partial ? '·' : '');
+      // Order: value first (so the number is the load-bearing signal),
+      // then ⚠ for unvalidated extreme, then · for partial.
+      return (pct >= 0 ? '+' : '') + pct.toFixed(0) + '%' + warn + (partial ? '·' : '');
     },
 
     // §5 Seasonality heatmap — runs the diverging cellColor through muteColor so cells
@@ -3811,14 +3965,35 @@ function marketsApp() {
       if (!cellData) return;
       const pct = (cellData.ret * 100).toFixed(1);
       const sign = cellData.ret >= 0 ? '+' : '';
-      const partial = cellData.partial ? '\n⚠ Partial year (not all months available)' : '';
+      // §3.3 Honest tooltip — surface every diagnostic the renderer used:
+      // month count, expected count, partial flag, computed return, plus
+      // any boundaryAnomaly reason and any unvalidated_extreme reason.
+      const monthsPresent  = cellData.monthsPresent  ?? cellData.count ?? 0;
+      const monthsExpected = cellData.monthsExpected ?? 12;
+      const partial        = cellData.partial ? 'yes' : 'no';
+      const partialLine    = cellData.partial
+        ? `\n⚠ Partial year (${monthsPresent}/${monthsExpected} months) — not a full-year return`
+        : '';
+      const anomalyLine    = cellData.boundaryAnomaly
+        ? '\n⚠ Boundary anomaly (one monthly return >50% on a non-equity series — likely Excel↔FRED unit mismatch)'
+        : '';
+      let extremeLine = '';
+      const v = this.validateExtreme(cellData.ret, year, asset.key, cellData.count, cellData.monthsExpected);
+      if (!v.ok) {
+        extremeLine = `\n⚠ unvalidated extreme — verify against source data`;
+      }
       const src = asset.meta?.source || '';
       let zLine = '';
       if (this.colorMode === 'zscore') {
         const z = this.getZscore(asset.key, year);
         zLine = z !== null ? `\nZ-score: ${z >= 0 ? '+' : ''}${z.toFixed(2)}σ` : '';
       }
-      _showTt(el, `${asset.meta?.name}\n${year}  ${sign}${pct}%${zLine}${partial}\nSource: ${src}`);
+      _showTt(el,
+        `${asset.meta?.name}\n${year}  ${sign}${pct}%${zLine}` +
+        `\nMonths: ${monthsPresent}/${monthsExpected} · partial: ${partial}` +
+        partialLine + anomalyLine + extremeLine +
+        `\nSource: ${src}`
+      );
     },
 
     showMonthTt(el, asset, year, mr, mi) {

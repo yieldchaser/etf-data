@@ -1,0 +1,39 @@
+{
+  "results": [
+    {
+      "ticker": "^DJI",
+      "provider": "yfinance",
+      "ok": true,
+      "rows": 413,
+      "first": "1992-01-01 00:00:00",
+      "last": "2026-05-01 00:00:00",
+      "last_value": 50579.69921875
+    },
+    {
+      "ticker": "^GSPC",
+      "provider": "yfinance",
+      "ok": true,
+      "rows": 497,
+      "first": "1985-01-01 00:00:00",
+      "last": "2026-05-01 00:00:00",
+      "last_value": 7473.47021484375
+    },
+    {
+      "ticker": "^NDX",
+      "provider": "yfinance",
+      "ok": true,
+      "rows": 488,
+      "first": "1985-10-01 00:00:00",
+      "last": "2026-05-01 00:00:00",
+      "last_value": 29481.642578125
+    },
+    {
+      "ticker": "NASDAQCOM",
+      "provider": "fred",
+      "ok": false,
+      "rows": 0,
+      "error": "FRED_API_KEY not set in env"
+    }
+  ],
+  "verdict": "genuine live-fetch holdouts: ['NASDAQCOM'] \u2014 keep honest Excel label and name them in metadata.markets_data_freshness.self_living_check.holdouts"
+}

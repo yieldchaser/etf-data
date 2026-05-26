@@ -777,18 +777,60 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
             fx       = mr.get("fx", {})
             cpi      = mr.get("cpi", {})
             rates    = mr.get("rates", {})
+
+            # Derive the set of asset_ids that *should* carry a live source from
+            # the canonical asset registry — never hardcoded.  An asset is
+            # "live-eligible" when its registry entry declares a yfinance/FRED
+            # source AND it isn't an FX pair (FX series live in the top-level
+            # "fx" section, not in "assets"). Any registry asset still labelled
+            # "Mega_Markets_Historical*" after the live merge is a holdout —
+            # the verdict block below names it explicitly so the dashboard chip
+            # tooltip can surface which assets are blocking LIVE_MERGE_HEALTHY.
+            try:
+                from predator.markets_history import ASSET_REGISTRY as _MR_REGISTRY
+                live_eligible_keys: set[str] = {
+                    spec["key"]
+                    for spec in _MR_REGISTRY
+                    if spec.get("source_type") in {"yfinance", "fred"}
+                    and spec.get("return_type") != "fx"
+                }
+            except Exception as _reg_err:
+                # Registry import failure must not collapse the whole build —
+                # fall back to an empty set (verdict will report 0 holdouts and
+                # use the live/excel counts alone, matching the pre-fix
+                # behaviour). Charter v2 Part 3: external-data failures must
+                # never block the rest of the build.
+                print(f"  WARN: could not import ASSET_REGISTRY for live-eligible derivation: {_reg_err}")
+                live_eligible_keys = set()
+
             by_source: dict[str, int] = {}
             stale_assets: list[dict] = []
+            holdout_keys: list[str] = []
+            holdout_names: list[str] = []
             today_ym = datetime.now(timezone.utc).strftime("%Y-%m")
             for aid, av in assets.items():
-                src = av.get("meta", {}).get("source", "unknown")
+                meta = av.get("meta", {}) or {}
+                src = meta.get("source", "unknown")
                 # Bucket by source family (fred / yfinance / Excel / unknown)
                 family = ("fred" if src.startswith("fred:")
                           else "yfinance" if src.startswith("yfinance:")
                           else "excel" if "Mega_Markets_Historical" in src
                           else "other")
                 by_source[family] = by_source.get(family, 0) + 1
-                last = av.get("meta", {}).get("last", "")
+
+                # Live-merge holdout: a registry-eligible asset whose live
+                # fetch fell through to the Excel deep-history label. Keep the
+                # honest Excel label on the asset (no fake live source) AND
+                # name the asset in the verdict so the chip can call it out.
+                if (
+                    aid in live_eligible_keys
+                    and isinstance(src, str)
+                    and src.startswith("Mega_Markets_Historical")
+                ):
+                    holdout_keys.append(aid)
+                    holdout_names.append(meta.get("name") or aid)
+
+                last = meta.get("last", "")
                 if last and last < today_ym[:7]:
                     # asset's last month-of-data is older than this calendar month
                     try:
@@ -798,6 +840,21 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                             stale_assets.append({"asset": aid, "last": last, "age_days": int(age_days)})
                     except Exception:
                         pass
+
+            live_source_count = by_source.get("fred", 0) + by_source.get("yfinance", 0)
+            excel_only_count  = by_source.get("excel", 0)
+
+            # Verdict policy (design Fix Implementation #10):
+            #   HEALTHY  — no holdouts AND live sources outnumber excel-only.
+            #   DEGRADED — at least one holdout, OR live ≤ excel but live > 0.
+            #   FAILED   — no live sources at all (cold start / total outage).
+            if not holdout_keys and live_source_count > excel_only_count:
+                verdict = "LIVE_MERGE_HEALTHY"
+            elif live_source_count > 0:
+                verdict = "LIVE_MERGE_DEGRADED"
+            else:
+                verdict = "LIVE_MERGE_FAILED"
+
             markets_freshness = {
                 "available":     True,
                 "asof":          mr.get("asof"),
@@ -808,19 +865,20 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                 "rates_series":  sorted(rates.keys()),
                 "stale_assets":  stale_assets,
                 "self_living_check": {
-                    "live_source_count": by_source.get("fred", 0) + by_source.get("yfinance", 0),
-                    "excel_only_count":  by_source.get("excel", 0),
-                    # Honest verdict — if everything is excel, live merge isn't working.
-                    "verdict": (
-                        "LIVE_MERGE_HEALTHY" if by_source.get("fred", 0) + by_source.get("yfinance", 0) > by_source.get("excel", 0)
-                        else "LIVE_MERGE_DEGRADED" if by_source.get("fred", 0) + by_source.get("yfinance", 0) > 0
-                        else "LIVE_MERGE_FAILED"
-                    ),
+                    "live_source_count": live_source_count,
+                    "excel_only_count":  excel_only_count,
+                    # Honest verdict — names every live-eligible asset that
+                    # fell through to its Excel label so the chip tooltip can
+                    # call them out by name (display) and by id (programmatic).
+                    "holdouts":      sorted(holdout_names),
+                    "holdout_keys":  sorted(holdout_keys),
+                    "verdict":       verdict,
                 },
             }
             print(f"\n  Markets freshness: asof={mr.get('asof')}  "
                   f"sources={by_source}  "
                   f"fx={len(fx)}  cpi={len(cpi)}  rates={len(rates)}  "
+                  f"holdouts={len(holdout_keys)}  "
                   f"verdict={markets_freshness['self_living_check']['verdict']}")
         except Exception as e:
             print(f"  WARN: could not read market_returns.json for freshness summary: {e}")
