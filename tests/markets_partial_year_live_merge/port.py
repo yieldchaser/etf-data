@@ -143,8 +143,8 @@ def build_annual_cache_fixed(
 
     # Sensible defaults if asof not supplied — match the JS fallback to "now".
     if asof_year is None or asof_month is None:
-        from datetime import datetime
-        now = datetime.utcnow()
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc)
         if asof_year is None:
             asof_year = now.year
         if asof_month is None:
