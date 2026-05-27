@@ -214,6 +214,89 @@
             x-text="(leaderboardRow?.score_streak || 0) > 2 ? '↗ strengthening' : (leaderboardRow?.score_streak || 0) < -2 ? '↘ weakening' : '→ stable'"></span>
     </div>
 
+    <!-- PRICE HISTORY + DESCRIPTION -->
+    <div class="rounded-lg border mb-5" style="background: var(--surface); border-color: var(--border)">
+      <div class="px-3 py-2 flex items-center justify-between flex-wrap gap-y-1" style="border-bottom: 1px solid var(--border)">
+        <div class="flex items-center gap-3 flex-wrap">
+          <div class="label-cyan label">Price History</div>
+          <span class="font-mono text-xs" style="color: var(--text-2)" x-text="ticker"></span>
+          <span x-show="stockPriceChange !== null" class="text-xs font-mono"
+                :style="`color: ${(stockPriceChange||0)>=0?'var(--up)':'var(--down)'}`"
+                x-text="stockPriceChange !== null ? ((stockPriceChange>=0?'+':'')+stockPriceChange.toFixed(2)+'%') : ''"></span>
+        </div>
+        <div x-show="stockFilteredPrices.length > 1" class="flex items-center gap-1 text-[10px]">
+          <template x-for="r in ['1M','3M','6M','YTD','1Y','ALL']" :key="r">
+            <button @click="setStockRange(r)"
+                    :style="stockActiveRange===r ? 'background:rgba(34,211,238,0.08);color:var(--cyan);border-color:rgba(34,211,238,0.3)' : 'border-color:var(--border-2);color:var(--text-3)'"
+                    class="px-2 py-0.5 rounded border transition" x-text="r"></button>
+          </template>
+        </div>
+      </div>
+      <div x-show="stockFilteredPrices.length > 1" class="px-3 py-2 flex items-baseline gap-5 text-xs" style="border-bottom: 1px solid var(--border)">
+        <div><span class="label">Latest</span>
+          <span class="ml-1.5 num font-mono font-medium" style="color:var(--text)"
+                x-text="stockFilteredPrices.length ? '$'+stockFilteredPrices[stockFilteredPrices.length-1][1].toFixed(2) : '—'"></span></div>
+        <div><span class="label">High</span>
+          <span class="ml-1.5 num font-mono" style="color:var(--up)"
+                x-text="stockRangeHigh!==null ? '$'+stockRangeHigh.toFixed(2) : '—'"></span></div>
+        <div><span class="label">Low</span>
+          <span class="ml-1.5 num font-mono" style="color:var(--down)"
+                x-text="stockRangeLow!==null ? '$'+stockRangeLow.toFixed(2) : '—'"></span></div>
+        <div><span class="label">Period</span>
+          <span class="ml-1.5 text-[10px] font-mono" style="color:var(--text-3)"
+                x-text="stockFilteredPrices.length ? stockFilteredPrices[0][0].slice(5)+' → '+stockFilteredPrices[stockFilteredPrices.length-1][0].slice(5) : ''"></span></div>
+      </div>
+      <div class="px-3 pt-3 pb-2 chart-wrap" @mousemove="onSMM($event)" @mouseleave="onSML()">
+        <div x-show="stockPending && !stockFilteredPrices.length"
+             class="flex flex-col items-center justify-center gap-2 py-8 text-xs" style="color:var(--text-3)">
+          <span>⏳ Price history being fetched — updates each build</span>
+          <span class="text-[10px]">Coverage grows automatically each CI run.</span>
+        </div>
+        <div x-show="!stockPending && !stockFilteredPrices.length && !stockPrices.length"
+             class="flex items-center justify-center py-8 text-xs" style="color:var(--text-3)">
+          No price data available for this ticker
+        </div>
+        <div x-show="stockFilteredPrices.length > 1" style="position:relative">
+          <svg x-ref="stockSvg" viewBox="0 0 480 130" preserveAspectRatio="none"
+               width="100%" height="130" style="display:block;overflow:visible">
+            <defs>
+              <linearGradient id="stGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"   :stop-color="(stockPriceChange||0)>=0?'#22d3ee':'#fb7185'" stop-opacity="0.18"/>
+                <stop offset="100%" :stop-color="(stockPriceChange||0)>=0?'#22d3ee':'#fb7185'" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <line x1="0" :y1="stockEntryY" x2="480" :y2="stockEntryY"
+                  stroke="rgba(255,255,255,0.06)" stroke-width="1" stroke-dasharray="3 3"/>
+            <path :d="stockAreaPath" fill="url(#stGrad)"/>
+            <path :d="stockLinePath" fill="none"
+                  :stroke="(stockPriceChange||0)>=0?'var(--cyan)':'#fb7185'"
+                  stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x-show="stockHoverIdx!==null" :x1="stockHoverX" y1="0" :x2="stockHoverX" y2="130"
+                  class="crosshair-line"/>
+            <circle x-show="stockHoverIdx!==null" :cx="stockHoverX" :cy="stockHoverY"
+                    r="4" class="crosshair-dot"/>
+          </svg>
+          <div x-show="stockHoverIdx!==null" class="chart-tooltip"
+               :style="`top:4px;left:${Math.min((stockHoverXPx||0)+12,340)}px`">
+            <div class="font-mono text-[10px] mb-0.5" style="color:var(--text-3)" x-text="stockHoverDate"></div>
+            <div class="font-mono text-xs font-medium"
+                 :style="`color:${(stockPriceChange||0)>=0?'var(--cyan)':'#fb7185'}`"
+                 x-text="stockHoverPrice ? '$'+stockHoverPrice.toFixed(2) : ''"></div>
+          </div>
+          <div class="flex justify-between text-[9px] font-mono mt-1" style="color:var(--text-3)">
+            <span x-text="stockFilteredPrices[0]?.[0]?.slice(5)||''"></span>
+            <span x-text="stockFilteredPrices[Math.floor(stockFilteredPrices.length/2)]?.[0]?.slice(5)||''"></span>
+            <span x-text="stockFilteredPrices[stockFilteredPrices.length-1]?.[0]?.slice(5)||''"></span>
+          </div>
+        </div>
+      </div>
+      <div x-show="stockDescription || stockPending" class="px-3 pb-3 pt-1" style="border-top:1px solid var(--border)">
+        <div class="label mb-1">About</div>
+        <div x-show="stockDescription" class="text-xs leading-relaxed" style="color:var(--text-2);max-width:860px" x-text="stockDescription"></div>
+        <div x-show="!stockDescription && stockPending" class="text-xs" style="color:var(--text-3)">⏳ Company profile being fetched — check back on next build.</div>
+      </div>
+    </div>
+
     <!-- SCORE DECOMPOSITION — how each ETF contributes to the final score -->
     <div x-show="scoreComponents.length > 0" class="rounded-lg border mb-5" style="background: var(--surface); border-color: var(--border)">
       <div class="px-3 py-2 flex items-center justify-between flex-wrap gap-y-1" style="border-bottom: 1px solid var(--border)">
@@ -482,6 +565,17 @@ function stockApp() {
     tlci: null,            // crosshair index in signal timeline
     tlcx: null,            // crosshair x position in signal timeline
     recentlyViewed: [],    // sessionStorage-backed list of last-7 tickers viewed (excluding current)
+    stockPrices: [],
+    stockFilteredPrices: [],
+    stockDescription: '',
+    stockPending: false,
+    stockActiveRange: '1Y',
+    stockHoverIdx: null,
+    stockHoverX: 0,
+    stockHoverXPx: 0,
+    stockHoverY: 0,
+    stockHoverDate: '',
+    stockHoverPrice: null,
 
     async load() {
       const params = new URLSearchParams(location.search);
@@ -584,6 +678,18 @@ function stockApp() {
           this.flagHistory = fhData[this.ticker] || [];
         } catch { this.flagHistory = []; }
 
+        // Load stock detail file (price history + description)
+        try {
+          const detData = await fetch(`data/details/${encodeURIComponent(this.ticker)}.json`)
+            .then(r => r.ok ? r.json() : Promise.reject(r.status));
+          this.stockPending = detData.pending === true;
+          this.stockDescription = detData.description || '';
+          this.stockPrices = detData.prices || [];
+          this._stockFilter();
+        } catch {
+          this.stockPending = true;
+        }
+
         this.found = this.leaderboardRow !== null || this.scoreHistory.length > 0 || Object.keys(this.holdingsHistory).length > 0;
       } catch (e) {
         console.error('Stock detail load error:', e);
@@ -592,6 +698,60 @@ function stockApp() {
       }
     },
 
+    _stockFilter() {
+      const all = this.stockPrices;
+      if (!all.length) { this.stockFilteredPrices = []; return; }
+      const last = new Date(all[all.length - 1][0]);
+      let cut = null;
+      if (this.stockActiveRange === '1M') { cut = new Date(last); cut.setMonth(cut.getMonth()-1); }
+      else if (this.stockActiveRange === '3M') { cut = new Date(last); cut.setMonth(cut.getMonth()-3); }
+      else if (this.stockActiveRange === '6M') { cut = new Date(last); cut.setMonth(cut.getMonth()-6); }
+      else if (this.stockActiveRange === 'YTD') { cut = new Date(last.getFullYear(),0,1); }
+      else if (this.stockActiveRange === '1Y') { cut = new Date(last); cut.setFullYear(cut.getFullYear()-1); }
+      this.stockFilteredPrices = cut ? all.filter(p => new Date(p[0]) >= cut) : all;
+    },
+    setStockRange(r) { this.stockActiveRange = r; this._stockFilter(); },
+    get stockPriceChange() {
+      const fp = this.stockFilteredPrices;
+      if (fp.length < 2 || !fp[0][1]) return null;
+      return ((fp[fp.length-1][1] - fp[0][1]) / fp[0][1]) * 100;
+    },
+    get stockRangeHigh() { return this.stockFilteredPrices.length ? Math.max(...this.stockFilteredPrices.map(p=>p[1])) : null; },
+    get stockRangeLow()  { return this.stockFilteredPrices.length ? Math.min(...this.stockFilteredPrices.map(p=>p[1])) : null; },
+    _sY(val) {
+      const fp = this.stockFilteredPrices;
+      if (!fp.length) return 65;
+      const mn = Math.min(...fp.map(p=>p[1])), mx = Math.max(...fp.map(p=>p[1]));
+      return 120 - ((val - mn) / (mx - mn || 1)) * 100;
+    },
+    _sX(i) { const n = this.stockFilteredPrices.length; return n<=1?240:(i/(n-1))*480; },
+    get stockEntryY() { return this.stockFilteredPrices.length ? this._sY(this.stockFilteredPrices[0][1]) : 65; },
+    get stockLinePath() {
+      const fp = this.stockFilteredPrices;
+      if (fp.length<2) return '';
+      return fp.map((p,i)=>`${i===0?'M':'L'}${this._sX(i).toFixed(1)},${this._sY(p[1]).toFixed(1)}`).join(' ');
+    },
+    get stockAreaPath() {
+      if (this.stockFilteredPrices.length<2) return '';
+      const lastX = this._sX(this.stockFilteredPrices.length-1).toFixed(1);
+      return `${this.stockLinePath} L${lastX},130 L0,130 Z`;
+    },
+    onSMM(e) {
+      const fp = this.stockFilteredPrices;
+      if (!fp.length) return;
+      const svg = this.$refs.stockSvg;
+      if (!svg) return;
+      const rect = svg.getBoundingClientRect();
+      const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      const idx = Math.round(ratio * (fp.length-1));
+      this.stockHoverIdx = idx;
+      this.stockHoverX = this._sX(idx);
+      this.stockHoverXPx = e.clientX - rect.left;
+      this.stockHoverY = this._sY(fp[idx][1]);
+      this.stockHoverDate = fp[idx][0];
+      this.stockHoverPrice = fp[idx][1];
+    },
+    onSML() { this.stockHoverIdx = null; },
     goTo(t) {
       const q = (t || '').toUpperCase().trim();
       if (q) location.href = `stock.html?t=${encodeURIComponent(q)}`;

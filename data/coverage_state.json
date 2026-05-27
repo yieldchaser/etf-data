@@ -1,0 +1,8 @@
+{
+  "coverage_pct": 0.0,
+  "last_run_utc": null,
+  "note": "Self-healing: each CI run resolves ~150 tickers. Full coverage reached automatically.",
+  "pending": [],
+  "resolved": [],
+  "unresolved": {}
+}

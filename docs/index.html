@@ -582,7 +582,7 @@
                               </div>
                               <!-- Description -->
                               <div x-show="loading" class="desc-skeleton h-3 w-40 mt-1"></div>
-                              <div x-show="!loading" class="text-[10px] leading-snug" style="color: var(--text-3); max-width: 360px" x-text="description || ''"></div>
+                              <div x-show="!loading" class="text-[10px] leading-snug" style="color: var(--text-3); max-width: 360px" x-text="isPending && !description ? '⏳ Company profile being fetched…' : (description || '')"></div>
                             </div>
                             <!-- Range buttons -->
                             <div class="flex items-center gap-1 shrink-0">
@@ -616,8 +616,11 @@
                                @mouseleave="onMouseLeave()">
                             <!-- Loading skeleton -->
                             <div x-show="loading" class="desc-skeleton rounded" style="height: 130px"></div>
-                            <!-- No data state -->
-                            <div x-show="!loading && !filteredPrices.length" class="flex items-center justify-center" style="height: 130px; color: var(--text-3); font-size: 11px">No price data available</div>
+                            <!-- No data state — pending or truly unavailable -->
+                            <div x-show="!loading && !filteredPrices.length" class="flex flex-col items-center justify-center gap-1.5" style="height: 130px; font-size: 11px">
+                              <div x-show="isPending" style="color: var(--text-3)">⏳ Price data being fetched — updates each build</div>
+                              <div x-show="!isPending" style="color: var(--text-3)">No price data available</div>
+                            </div>
                             <!-- SVG chart -->
                             <div x-show="!loading && filteredPrices.length > 1" style="position: relative">
                               <svg x-ref="svg" viewBox="0 0 480 130" preserveAspectRatio="none" width="100%" height="130" style="display:block; overflow:visible">
@@ -1039,7 +1042,7 @@
                                   <span class="text-[10px]" x-show="priceChange !== null" :style="`color: ${priceChange >= 0 ? 'var(--up)' : 'var(--down)'}`" x-text="priceChange !== null ? (priceChange >= 0 ? '+' : '') + priceChange.toFixed(2) + '%' : ''"></span>
                                 </div>
                                 <div x-show="loading" class="desc-skeleton h-3 w-40 mt-1"></div>
-                                <div x-show="!loading" class="text-[10px] leading-snug" style="color: var(--text-3); max-width: 360px" x-text="description || ''"></div>
+                                <div x-show="!loading" class="text-[10px] leading-snug" style="color: var(--text-3); max-width: 360px" x-text="isPending && !description ? '⏳ Company profile being fetched…' : (description || '')"></div>
                               </div>
                               <div class="flex items-center gap-1 shrink-0">
                                 <template x-for="r in ranges" :key="r">
@@ -2499,6 +2502,7 @@ function detailChartPanel(ticker, _store) {
     hoverY: 0,
     hoverDate: '',
     hoverPrice: null,
+    isPending: false,
     gradId: `dg_${ticker.replace(/[^a-zA-Z0-9]/g, '_')}`,  // unique gradient ID per ticker
 
     async init() {
@@ -2515,12 +2519,14 @@ function detailChartPanel(ticker, _store) {
         cache[this.ticker] = data;
         this._applyData(data);
       } catch (e) {
-        // No file yet — show graceful empty state
+        // No file yet — treat as pending (stub file will appear next build)
+        this.isPending = true;
         this.loading = false;
       }
     },
 
     _applyData(data) {
+      this.isPending = data.pending === true;
       this.description = data.description || '';
       this.allPrices = data.prices || [];
       this._filter();
