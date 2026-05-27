@@ -207,22 +207,22 @@ ASSET_REGISTRY: list[dict[str, str]] = [
     {
         "key": "cotton", "name": "Cotton (USD/kg)", "category": "agriculture",
         "native_ccy": "USD", "source_type": "fred", "series_id": "PCOTTINDUSDM",
-        "return_type": "price", "notes": "IMF/World Bank monthly",
+        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 0.0220462,
     },
     {
         "key": "sugar", "name": "Sugar (USD/kg)", "category": "agriculture",
         "native_ccy": "USD", "source_type": "fred", "series_id": "PSUGAISAUSDM",
-        "return_type": "price", "notes": "ISA price, IMF monthly",
+        "return_type": "price", "notes": "ISA price, IMF monthly", "scale": 0.0220462,
     },
     {
         "key": "coffee", "name": "Coffee Arabica (USD/kg)", "category": "agriculture",
         "native_ccy": "USD", "source_type": "fred", "series_id": "PCOFFOTMUSDM",
-        "return_type": "price", "notes": "IMF/World Bank monthly",
+        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 0.0220462,
     },
     {
         "key": "cocoa", "name": "Cocoa (USD/kg)", "category": "agriculture",
         "native_ccy": "USD", "source_type": "fred", "series_id": "PCOCOUSDM",
-        "return_type": "price", "notes": "IMF/World Bank monthly",
+        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 0.001,
     },
     {
         "key": "rice", "name": "Rice (USD/mt)", "category": "agriculture",
@@ -421,6 +421,7 @@ def _fetch_fred_series(
     series_id: str,
     full_refresh: bool = False,
     existing: pd.Series | None = None,
+    scale: float = 1.0,
 ) -> pd.Series:
     """
     Fetch a FRED series with monthly EOP aggregation.
@@ -468,6 +469,9 @@ def _fetch_fred_series(
         # never ran". Required by design Fix Implementation #6.
         print(f"    EMPTY: fred returned 0 rows for {series_id}")
         return pd.Series(dtype=float)
+
+    if scale != 1.0:
+        data = data * scale
 
     # Merge with existing if incremental
     if not full_refresh and existing is not None and not existing.empty:
@@ -698,7 +702,7 @@ def fetch_all(
                 if fred is None:
                     print(f"    SKIP fetch (no FRED client) — will use cache if available")
                 else:
-                    data = _fetch_fred_series(fred, series_id, full_refresh, existing)
+                    data = _fetch_fred_series(fred, series_id, full_refresh, existing, scale=spec.get("scale", 1.0))
             elif source_type == "yfinance":
                 data = _fetch_yfinance_series(series_id, full_refresh, existing)
             else:

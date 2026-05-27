@@ -272,3 +272,45 @@ def test_process_graceful_when_excel_missing(tmp_path, monkeypatch):
     # It should load the existing JSON, check freshness, and return it without crashing
     assert result == dummy_returns
 
+
+# ── 6. FRED agricultural series scaling ────────────────────────────────────────
+
+class TestFredAgricultureScaling:
+    """Verify that FRED agricultural series are correctly scaled by markets_history."""
+
+    def test_fred_scaling_applied_correctly(self, monkeypatch):
+        # Mock fred.get_series to return a dummy series
+        class MockFred:
+            def get_series(self, series_id, **kwargs):
+                return pd.Series([100.0, 200.0], index=pd.date_range("2026-01-31", periods=2, freq="ME"))
+
+        mock_fred = MockFred()
+        from predator.markets_history import _fetch_fred_series
+
+        # With scale=0.5, [100.0, 200.0] should become [50.0, 100.0]
+        res = _fetch_fred_series(mock_fred, "DUMMY_SERIES", full_refresh=True, scale=0.5)
+        assert len(res) == 2
+        assert res.iloc[0] == 50.0
+        assert res.iloc[1] == 100.0
+
+    def test_agriculture_registry_has_correct_scale_factors(self):
+        from predator.markets_history import ASSET_REGISTRY
+        registry_by_key = {a["key"]: a for a in ASSET_REGISTRY}
+
+        # Sugar, Cotton, Coffee: scale factor converts cents/lb to USD/kg
+        for key in ("sugar", "cotton", "coffee"):
+            asset = registry_by_key[key]
+            assert "scale" in asset
+            assert abs(asset["scale"] - 0.0220462) < 0.0001
+
+        # Cocoa: scale factor converts USD/mt to USD/kg
+        cocoa = registry_by_key["cocoa"]
+        assert "scale" in cocoa
+        assert abs(cocoa["scale"] - 0.001) < 0.00001
+
+        # Wheat, Corn, Soybeans: no FRED scaling needed (already in USD/mt)
+        for key in ("wheat", "corn", "soybeans"):
+            asset = registry_by_key[key]
+            assert "scale" not in asset
+
+
