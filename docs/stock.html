@@ -333,34 +333,11 @@
           <path :d="sparkAreaPath(scoreHistory)" fill="rgba(34,211,238,0.07)"/>
           <!-- Line -->
           <path :d="sparkLinePath(scoreHistory)" fill="none" stroke="var(--cyan)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-          <!-- Crosshair vertical line -->
-          <template x-if="ci !== null">
-            <line class="crosshair-line"
-                  :x1="(ci / (scoreHistory.length - 1)) * 900"
-                  y1="0"
-                  :x2="(ci / (scoreHistory.length - 1)) * 900"
-                  y2="120"/>
-          </template>
-          <!-- Crosshair dot -->
-          <template x-if="ci !== null && ci < scoreHistory.length">
-            <circle class="crosshair-dot"
-                    :cx="(ci / (scoreHistory.length - 1)) * 900"
-                    :cy="sparkY(scoreHistory[ci]?.s ?? 0, scoreHistory)"
-                    r="4"/>
-          </template>
           <!-- Last point dot -->
           <template x-if="scoreHistory.length >= 2 && ci === null">
             <circle :cx="sparkX(scoreHistory.length - 1, scoreHistory.length)" :cy="sparkY(scoreHistory[scoreHistory.length-1]?.s || 0, scoreHistory)" r="3" fill="var(--cyan)"/>
           </template>
         </svg>
-        <!-- Crosshair tooltip label -->
-        <div x-show="ci !== null"
-             class="chart-tooltip"
-             :style="`top: 4px; left: ${Math.min(cx + 8, 300)}px`">
-          <span class="font-mono num" style="color: var(--cyan)" x-text="scoreHistory[ci]?.s?.toFixed(1)"></span>
-          <span style="color: var(--text-3)"> · </span>
-          <span style="color: var(--text-2)" x-text="scoreHistory[ci]?.d"></span>
-        </div>
         <!-- X-axis date labels -->
         <div class="flex justify-between text-[10px] font-mono mt-1" style="color: var(--text-3)">
           <span x-text="scoreHistory[0]?.d?.slice(5) || ''"></span>
