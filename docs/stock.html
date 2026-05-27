@@ -277,7 +277,7 @@
                     r="4" class="crosshair-dot"/>
           </svg>
           <div x-show="stockHoverIdx!==null" class="chart-tooltip"
-               :style="`top:4px;left:${Math.min((stockHoverXPx||0)+12,340)}px`">
+               :style="`top:4px;left:${Math.min((stockHoverXPx||0)+12, 780)}px`">
             <div class="font-mono text-[10px] mb-0.5" style="color:var(--text-3)" x-text="stockHoverDate"></div>
             <div class="font-mono text-xs font-medium"
                  :style="`color:${(stockPriceChange||0)>=0?'var(--cyan)':'#fb7185'}`"
@@ -378,7 +378,7 @@
         </div>
         <!-- Hover tooltip -->
         <div x-show="tlci !== null" class="chart-tooltip"
-             :style="`top: 4px; left: ${Math.min((tlcx || 0) + 12, 360)}px`">
+             :style="`top: 4px; left: ${Math.min((tlcx || 0) + 12, 780)}px`">
           <div class="font-mono text-[10px] mb-1" style="color: var(--text-3)" x-text="(flagHistory || [])[tlci]?.d || ''"></div>
           <!-- All active signals for this day -->
           <div class="flex flex-col gap-0.5">
@@ -417,15 +417,73 @@
           <!-- Line -->
           <path :d="sparkLinePath(scoreHistory)" fill="none" stroke="var(--cyan)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
           <!-- Last point dot -->
-          <template x-if="scoreHistory.length >= 2 && ci === null">
-            <circle :cx="sparkX(scoreHistory.length - 1, scoreHistory.length)" :cy="sparkY(scoreHistory[scoreHistory.length-1]?.s || 0, scoreHistory)" r="3" fill="var(--cyan)"/>
-          </template>
+          <circle x-show="scoreHistory.length >= 2 && ci === null"
+                  :cx="sparkX(scoreHistory.length - 1, scoreHistory.length)"
+                  :cy="sparkY(scoreHistory[scoreHistory.length-1]?.s || 0, scoreHistory)"
+                  r="3" fill="var(--cyan)"/>
+          <!-- Crosshair vertical line -->
+          <line x-show="scoreHistory.length >= 2 && ci !== null" class="crosshair-line"
+                :x1="(ci / Math.max(1, scoreHistory.length - 1)) * 900"
+                y1="0"
+                :x2="(ci / Math.max(1, scoreHistory.length - 1)) * 900"
+                y2="120"/>
+          <!-- Crosshair dot -->
+          <circle x-show="scoreHistory.length >= 2 && ci !== null && ci < scoreHistory.length" class="crosshair-dot"
+                  :cx="(ci / Math.max(1, scoreHistory.length - 1)) * 900"
+                  :cy="sparkY(scoreHistory[ci]?.s ?? 0, scoreHistory)"
+                  r="4"/>
         </svg>
+        <!-- Crosshair tooltip label -->
+        <div x-show="ci !== null && scoreHistory[ci]"
+             class="chart-tooltip"
+             :style="`top: 4px; left: ${Math.min((cx || 0) + 12, 780)}px`">
+          <span class="font-mono num" style="color: var(--cyan)" x-text="scoreHistory[ci]?.s?.toFixed(1)"></span>
+          <span style="color: var(--text-3)"> · </span>
+          <span style="color: var(--text-2)" x-text="scoreHistory[ci]?.d"></span>
+        </div>
         <!-- X-axis date labels -->
         <div class="flex justify-between text-[10px] font-mono mt-1" style="color: var(--text-3)">
           <span x-text="scoreHistory[0]?.d?.slice(5) || ''"></span>
           <span x-text="scoreHistory[Math.floor(scoreHistory.length/2)]?.d?.slice(5) || ''"></span>
           <span x-text="scoreHistory[scoreHistory.length-1]?.d?.slice(5) || ''"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEADERBOARD RANK HISTORY CHART (Empty State) -->
+    <div x-show="!lbRankSeries || lbRankSeries.length < 2" class="rounded-lg border mb-5 px-3 py-4 text-center text-xs" style="background: var(--surface); border-color: var(--border); color: var(--text-3)">
+      <div class="label-cyan label mb-2">LEADERBOARD RANK — <span class="font-mono" x-text="ticker"></span> global position</div>
+      <div class="py-4">No leaderboard rank history available for this ticker.</div>
+    </div>
+
+    <!-- LEADERBOARD RANK HISTORY CHART — global internal rank over time -->
+    <div x-show="lbRankSeries && lbRankSeries.length >= 2" class="rounded-lg border mb-5" style="background: var(--surface); border-color: var(--border)">
+      <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
+        <div class="flex items-center gap-2">
+          <div class="label-cyan label">LEADERBOARD RANK — <span class="font-mono" x-text="ticker"></span> global position</div>
+          <span x-show="lbCurrentRank" class="font-mono text-xs px-1.5 py-0.5 rounded" style="background: rgba(34,211,238,0.12); color: #22d3ee; border: 1px solid rgba(34,211,238,0.25)" x-text="'Currently #' + lbCurrentRank"></span>
+        </div>
+        <div class="text-xs" style="color: var(--text-3)">rank 1 = top of entire universe · line up = improving</div>
+      </div>
+      <div class="p-3 chart-wrap"
+           @mousemove="
+             const host = $el.querySelector('[data-lbsvg]');
+             if (!host || !lbRankSeries || !lbRankSeries.length || lbRankSeries.length < 2) return;
+             const rect = host.getBoundingClientRect();
+             const rx = $event.clientX - rect.left;
+             const idx = Math.round((rx / rect.width) * (lbRankSeries.length - 1));
+             lbci = Math.max(0, Math.min(lbRankSeries.length - 1, idx));
+             lbcx = (lbci / (lbRankSeries.length - 1)) * rect.width;
+           "
+           @mouseleave="lbci = null; lbcx = null">
+        <!-- SVG container via x-html to prevent Alpine template quirks -->
+        <div data-lbsvg x-html="lbRankSvg" class="w-full" style="height: 210px"></div>
+        <!-- Crosshair tooltip -->
+        <div x-show="lbci !== null && lbRankSeries && lbci < lbRankSeries.length && lbRankSeries[lbci]" class="chart-tooltip"
+             :style="`top: 4px; left: ${Math.min((lbcx || 0) + 12, 920)}px`">
+          <div class="font-mono text-[10px] mb-1" style="color: var(--text-3)" x-text="lbRankSeries[lbci]?.d || ''"></div>
+          <div class="font-mono text-xs" style="color: #22d3ee" x-text="'Global Rank #' + (lbRankSeries[lbci]?.rank || '')"></div>
+          <div class="text-[10px] mt-0.5" style="color: var(--text-3)" x-text="'out of ' + (lbRankSeries[lbci]?.total || '') + ' tracked'"></div>
         </div>
       </div>
     </div>
@@ -454,7 +512,7 @@
         <div x-html="rankHistorySvg" class="w-full" style="height: 250px"></div>
         <!-- Hover tooltip — built as HTML string to avoid Alpine template-in-template quirks -->
         <div x-show="rci !== null" x-html="rankHoverTooltipHtml"
-             class="chart-tooltip" :style="`top: 4px; left: ${Math.min((rcx || 0) + 12, 320)}px`"></div>
+             class="chart-tooltip" :style="`top: 4px; left: ${Math.min((rcx || 0) + 12, 920)}px`"></div>
         <!-- Legend row -->
         <div class="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-[10px]" style="color: var(--text-2)">
           <template x-for="line in rankLines" :key="line.etf">
@@ -564,6 +622,8 @@ function stockApp() {
     rcx: null,             // crosshair x position in rank chart
     tlci: null,            // crosshair index in signal timeline
     tlcx: null,            // crosshair x position in signal timeline
+    lbci: null,            // crosshair index in leaderboard rank chart
+    lbcx: null,            // crosshair x position in leaderboard rank chart
     recentlyViewed: [],    // sessionStorage-backed list of last-7 tickers viewed (excluding current)
     stockPrices: [],
     stockFilteredPrices: [],
@@ -1275,6 +1335,79 @@ function stockApp() {
       }
 
       return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" width="100%" height="${H}" style="display:block">${bg}${labels}${bars}${markers}${rankLine}${crosshair}</svg>`;
+    },
+
+    get lbRankSvg() {
+      if (!this.lbRankSeries || this.lbRankSeries.length < 2) return '';
+      const W = 1060, H = 230;
+      const xLeft = 50, xRight = 1010;
+
+      // 1. Y-axis labels + grid lines
+      let grid = '';
+      const yLabels = this.lbYLabels || [];
+      for (const lab of yLabels) {
+        grid += `<line x1="${xLeft}" x2="${xRight}" y1="${lab.y.toFixed(1)}" y2="${lab.y.toFixed(1)}" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>`;
+        grid += `<text x="44" y="${(lab.y + 3).toFixed(1)}" text-anchor="end" style="font-family:ui-monospace;font-size:9px;fill:var(--text-3)">#${lab.rank}</text>`;
+      }
+
+      // 2. Area fill + path
+      const path = this.lbRankPath;
+      let area = '';
+      let line = '';
+      if (path && this.lbRankSeries.length >= 2) {
+        const firstPt = this.lbRankSeries[0];
+        const lastPt = this.lbRankSeries[this.lbRankSeries.length - 1];
+        area = `<path d="${path} L${lastPt.x.toFixed(1)},210 L${firstPt.x.toFixed(1)},210 Z" fill="url(#lbGrad)" stroke="none"/>`;
+        line = `<path d="${path}" stroke="#22d3ee" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+      }
+
+      // 3. Best rank marker
+      let bestMarker = '';
+      const bw = this.lbBestWorst;
+      if (bw && bw.best) {
+        bestMarker = `<g>
+          <circle cx="${bw.best.x.toFixed(1)}" cy="${bw.best.y.toFixed(1)}" r="4" fill="var(--up)" stroke="#000" stroke-width="1"/>
+          <text x="${bw.best.x.toFixed(1)}" y="${(bw.best.y - 8).toFixed(1)}" text-anchor="middle" style="font-family:ui-monospace;font-size:8px;fill:var(--up)">Best #${bw.best.rank}</text>
+        </g>`;
+      }
+
+      // 4. Crosshair (vertical line + dot)
+      let crosshair = '';
+      if (this.lbci !== null && this.lbci >= 0 && this.lbci < this.lbRankSeries.length) {
+        const pt = this.lbRankSeries[this.lbci];
+        if (pt) {
+          crosshair += `<line stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3 3" x1="${pt.x.toFixed(1)}" y1="0" x2="${pt.x.toFixed(1)}" y2="220"/>`;
+          crosshair += `<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="4" fill="#22d3ee" stroke="#000" stroke-width="1.5"/>`;
+        }
+      }
+
+      // 5. X-axis date labels
+      let xAxis = '';
+      if (this.lbRankSeries.length >= 2) {
+        const first = this.lbRankSeries[0]?.d || '';
+        const mid = this.lbRankSeries[Math.floor(this.lbRankSeries.length / 2)]?.d || '';
+        const last = this.lbRankSeries[this.lbRankSeries.length - 1]?.d || '';
+        xAxis = `<g style="font-family:ui-monospace;font-size:9px" fill="var(--text-3)">
+          <text x="${xLeft}" y="225" text-anchor="start">${first}</text>
+          <text x="530" y="225" text-anchor="middle">${mid}</text>
+          <text x="${xRight}" y="225" text-anchor="end">${last}</text>
+        </g>`;
+      }
+
+      return `<svg viewBox="0 0 ${W} ${H}" class="w-full" style="height: 210px">
+        <defs>
+          <linearGradient id="lbGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.18"/>
+            <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        ${grid}
+        ${area}
+        ${line}
+        ${bestMarker}
+        ${crosshair}
+        ${xAxis}
+      </svg>`;
     },
 
     // ── Per-ETF Rank History SVG (built as string — same fix) ────────────────

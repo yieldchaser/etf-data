@@ -4158,21 +4158,16 @@ function marketsApp() {
 
     yieldCellColor(val) {
       if (val === null || val === undefined) return 'transparent';
-      // Premium sequential palette (optimized for rates)
-      if (val < 1.0) return 'rgba(30, 58, 138, 0.9)';   // Deep blue
-      if (val < 2.0) return 'rgba(30, 64, 175, 0.8)';   // Slate blue
-      if (val < 3.0) return 'rgba(59, 130, 246, 0.8)';   // Royal blue
-      if (val < 4.0) return 'rgba(14, 165, 233, 0.85)';  // Sky blue (light)
-      if (val < 5.0) return 'rgba(20, 184, 166, 0.9)';   // Teal
-      if (val < 6.0) return 'rgba(245, 158, 11, 0.9)';   // Amber
-      if (val < 8.0) return 'rgba(249, 115, 22, 0.9)';   // Orange
-      return 'rgba(220, 38, 38, 0.9)';                  // Red
+      if (val < 1.5) return _hsl2hex(215/360, 0.42, 0.40);
+      if (val < 3.0) return _hsl2hex(215/360, 0.36, 0.52);
+      if (val < 4.0) return _hsl2hex(215/360, 0.28, 0.65);
+      if (val < 5.0) return _hsl2hex( 25/360, 0.32, 0.65);
+      if (val < 6.5) return _hsl2hex( 22/360, 0.40, 0.52);
+      return                _hsl2hex( 18/360, 0.45, 0.40);
     },
     yieldCellTextColor(val) {
       if (val === null || val === undefined) return 'transparent';
-      // Dark text for lighter backgrounds (like sky-blue, teal, amber)
-      if (val >= 3.0 && val < 6.0) return 'rgba(0, 0, 0, 0.85)';
-      return 'rgba(255, 255, 255, 0.95)';
+      return contrastText(this.yieldCellColor(val));
     },
 
     get yieldChartSvg() {

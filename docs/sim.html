@@ -1432,9 +1432,9 @@ function _lineChart(series, opts = {}) {
   if (!allX.length) return '';
 
   // Y range
-  const allY = series.flatMap(s => s.data.map(p => p[1])).filter(v => v != null && v > 0);
+  const allY = series.flatMap(s => s.data.map(p => p[1])).filter(v => v != null && (logScale ? v > 0 : true));
   if (!allY.length) return '';
-  const minY = logScale ? Math.min(...allY) : 0;
+  const minY = logScale ? Math.min(...allY) : Math.min(...allY, 0);
   const maxY = Math.max(...allY);
   const yRange = maxY - minY || 1;
 
