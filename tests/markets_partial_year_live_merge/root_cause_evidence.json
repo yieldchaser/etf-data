@@ -7,10 +7,10 @@
         "source": "Mega_Markets_Historical.xlsx:Commodities",
         "cell_2026": {
           "ret": 0.1151,
-          "partial": true,
+          "partial": false,
           "count": 5,
           "months_present": 5,
-          "months_expected": 12
+          "months_expected": 5
         },
         "boundary_jumps": [],
         "zero_or_nan_base_months": []
@@ -19,10 +19,10 @@
         "source": "Mega_Markets_Historical.xlsx:Commodities",
         "cell_2026": {
           "ret": 0.0516,
-          "partial": true,
+          "partial": false,
           "count": 5,
           "months_present": 5,
-          "months_expected": 12
+          "months_expected": 5
         },
         "boundary_jumps": [],
         "zero_or_nan_base_months": []
@@ -31,10 +31,10 @@
         "source": "Mega_Markets_Historical.xlsx:Commodities",
         "cell_2026": {
           "ret": -0.0182,
-          "partial": true,
+          "partial": false,
           "count": 5,
           "months_present": 5,
-          "months_expected": 12
+          "months_expected": 5
         },
         "boundary_jumps": [],
         "zero_or_nan_base_months": []
@@ -43,10 +43,10 @@
         "source": "Mega_Markets_Historical.xlsx:Commodities",
         "cell_2026": {
           "ret": 0.161,
-          "partial": true,
+          "partial": false,
           "count": 5,
           "months_present": 5,
-          "months_expected": 12
+          "months_expected": 5
         },
         "boundary_jumps": [],
         "zero_or_nan_base_months": []
@@ -55,10 +55,10 @@
         "source": "Mega_Markets_Historical.xlsx:Commodities",
         "cell_2026": {
           "ret": 0.2031,
-          "partial": true,
+          "partial": false,
           "count": 5,
           "months_present": 5,
-          "months_expected": 12
+          "months_expected": 5
         },
         "boundary_jumps": [
           {
@@ -75,10 +75,10 @@
         "source": "Mega_Markets_Historical.xlsx:Commodities",
         "cell_2026": {
           "ret": -0.221,
-          "partial": true,
+          "partial": false,
           "count": 5,
           "months_present": 5,
-          "months_expected": 12
+          "months_expected": 5
         },
         "boundary_jumps": [],
         "zero_or_nan_base_months": []

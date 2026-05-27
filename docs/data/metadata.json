@@ -1,11 +1,11 @@
 {
-  "generated_at_utc": "2026-05-27T02:24:55+00:00",
+  "generated_at_utc": "2026-05-27T17:49:01+00:00",
   "source": "data/all_history.csv",
-  "source_rows_raw": 98527,
-  "source_rows_after_sanitize": 6497,
-  "leaderboard_rows": 3902,
+  "source_rows_raw": 101885,
+  "source_rows_after_sanitize": 6499,
+  "leaderboard_rows": 3904,
   "latest_holdings_as_of": "2026-05-26",
-  "latest_scrape_date": "2026-05-25",
+  "latest_scrape_date": "2026-05-26",
   "etfs": [
     "AVSC",
     "CALF",
@@ -133,7 +133,7 @@
     "HIGH_CONVICTION": 1,
     "SPECULATIVE_BETA": 94,
     "NEW": 124,
-    "NONE": 3807
+    "NONE": 3809
   },
   "flag_counts_yesterday": {
     "HIGH_CONVICTION": 1,
@@ -162,43 +162,23 @@
     "asof": "2026-05",
     "asset_count": 32,
     "by_source": {
-      "excel": 25,
+      "excel": 15,
+      "yfinance": 10,
       "fred": 7
     },
     "fx_pairs": [],
     "cpi_series": [],
     "rates_series": [],
-    "stale_assets": [
-      {
-        "asset": "gold",
-        "last": "2026-02",
-        "age_days": 88
-      },
-      {
-        "asset": "silver",
-        "last": "2026-02",
-        "age_days": 88
-      }
-    ],
+    "stale_assets": [],
     "self_living_check": {
-      "live_source_count": 7,
-      "excel_only_count": 25,
+      "live_source_count": 17,
+      "excel_only_count": 15,
       "holdouts": [
-        "BSE Sensex",
         "Brent Crude Oil",
         "Coffee Arabica",
         "Corn",
         "Cotton",
-        "DAX (Germany)",
-        "Dow Jones",
-        "Gold",
         "NASDAQ Composite",
-        "NASDAQ-100",
-        "Nikkei 225",
-        "Palladium",
-        "Platinum",
-        "S&P 500",
-        "Silver",
         "Soybeans",
         "Sugar",
         "WTI Crude Oil",
@@ -209,18 +189,8 @@
         "coffee",
         "corn",
         "cotton",
-        "dax",
-        "djia",
-        "gold",
         "nasdaq",
-        "nasdaq100",
-        "nikkei",
-        "palladium",
-        "platinum",
-        "sensex",
-        "silver",
         "soybeans",
-        "sp500",
         "sugar",
         "wheat",
         "wti_crude"

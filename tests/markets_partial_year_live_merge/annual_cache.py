@@ -97,6 +97,6 @@ def derive_render_style(cell: AnnualCell) -> str:
     """
     if cell.is_partial_strict:
         return "dimmed"
-    if abs(cell.ret) > 0.70 and not is_known_real_event(cell.asset_id, cell.year):
+    if cell.boundary_anomaly:
         return "dimmed"
     return "saturated"

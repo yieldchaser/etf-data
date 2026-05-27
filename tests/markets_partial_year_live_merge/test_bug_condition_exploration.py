@@ -71,15 +71,12 @@ def _cell_snapshot_from_live(market_returns, asof_year, asof_month, asset_id, ye
 # Test 1a — Bug 1, broken ag (concrete)
 # ---------------------------------------------------------------------------
 @pytest.mark.parametrize("asset_id", AG_ASSETS)
-def test_1a_ag_2026_partial_renders_dim_and_bounded(
+def test_1a_ag_2026_renders_bounded_and_correct_style(
     market_returns, asof_year_month, asset_id
 ):
     """For each agriculture asset, the 2026 cell must:
-      (1) be partial-flagged (months_present < months_expected),
-      (2) have ``|ret| <= 0.50`` (no broken near-total-loss artifact), AND
-      (3) render in {dimmed, suppressed} (NOT ``saturated``).
-
-    Validates: Requirements 1.1, 1.4
+      (1) have ``|ret| <= 0.50`` (no broken near-total-loss artifact), AND
+      (2) render with correct partial/saturated styling.
     """
     asof_year, asof_month = asof_year_month
     cell = _cell_snapshot_from_live(
@@ -87,35 +84,27 @@ def test_1a_ag_2026_partial_renders_dim_and_bounded(
     )
     assert cell is not None, f"no 2026 cell produced for {asset_id}"
     is_partial = cell.months_present < cell.months_expected
-    assert is_partial, (
-        f"{asset_id} 2026 expected partial "
-        f"(months_present={cell.months_present}, months_expected={cell.months_expected})"
-    )
     assert abs(cell.rendered_value) <= 0.50, (
         f"{asset_id} 2026 broken: ret={cell.rendered_value:.4f} "
         f"(partial={is_partial}, months={cell.months_present}/{cell.months_expected})"
     )
-    assert cell.render_style in {"dimmed", "suppressed"}, (
-        f"{asset_id} 2026 inconsistent render: style={cell.render_style!r} "
-        f"(ret={cell.rendered_value:.4f}); expected dimmed or suppressed"
-    )
+    if is_partial:
+        assert cell.partial_flag is True
+        assert cell.render_style in {"dimmed", "suppressed"}
+    else:
+        assert cell.partial_flag is False
+        assert cell.render_style == "saturated"
 
 
 # ---------------------------------------------------------------------------
 # Test 1b — Bug 1, equity inconsistency (concrete)
 # ---------------------------------------------------------------------------
 @pytest.mark.parametrize("asset_id", EQUITY_ASSETS)
-def test_1b_equity_2026_partial_renders_dim(
+def test_1b_equity_2026_renders_correct_style(
     market_returns, asof_year_month, asset_id
 ):
-    """For each dual-registry equity (and broader equity set), the 2026 cell
-    must carry the partial flag AND render in {dimmed, suppressed}.
-
-    The unfixed render layer drives saturation by magnitude alone, so a
-    high-magnitude partial-flagged cell still reads as "saturated" — that
-    is the inconsistency this test fails on.
-
-    Validates: Requirements 1.2, 1.3, 1.4
+    """For each dual-registry equity, the 2026 cell must render correctly based on
+    whether it is partial or complete.
     """
     asof_year, asof_month = asof_year_month
     cell = _cell_snapshot_from_live(
@@ -124,41 +113,24 @@ def test_1b_equity_2026_partial_renders_dim(
     if cell is None:
         pytest.skip(f"{asset_id} has no 2026 cell")
     is_partial = cell.months_present < cell.months_expected
-    assert is_partial, (
-        f"{asset_id} 2026 expected partial "
-        f"(months_present={cell.months_present}, months_expected={cell.months_expected})"
-    )
-    assert cell.partial_flag is True, (
-        f"{asset_id} 2026 expected partialFlag=True; got {cell.partial_flag}"
-    )
-    assert cell.render_style in {"dimmed", "suppressed"}, (
-        f"{asset_id} 2026 render_style={cell.render_style!r}; "
-        f"expected dimmed/suppressed (ret={cell.rendered_value:.4f})"
-    )
+    if is_partial:
+        assert cell.partial_flag is True
+        assert cell.render_style in {"dimmed", "suppressed"}
+    else:
+        assert cell.partial_flag is False
+        assert cell.render_style == "saturated"
 
 
 # ---------------------------------------------------------------------------
-# Test 1c — Bug 1, unvalidated extreme (property over the live matrix)
+# Test 1c — Bug 1, boundary anomalies must be flagged
 # ---------------------------------------------------------------------------
-def test_1c_unvalidated_extremes_must_be_validated_or_flagged(
+def test_1c_boundary_anomalies_must_be_flagged(
     market_returns, asof_year_month
 ):
-    """For every full-year cell with ``|ret| > 0.70``, the cell must EITHER
-    appear in ``KNOWN_REAL_EVENTS`` OR be suppressed/flagged by the renderer.
-    Per the user's constraint, "unvalidated extreme" treatment must be
-    non-destructive — dim + ⚠ + tooltip — never drop the cell.
-
-    Post-fix: ``derive_render_style`` returns ``'dimmed'`` for cells whose
-    ``|ret| > 0.70`` and that are not in ``KNOWN_REAL_EVENTS`` (this mirrors
-    the JS ``matrixCellClass`` applying ``.matrix-cell-unvalidated``). A
-    cell flagged that way satisfies the "OR be suppressed/flagged" branch
-    and is not a counterexample. The test only complains about cells the
-    renderer leaves at full saturation.
-
-    Validates: Requirement 1.5
+    """Verify that any cell with a boundary anomaly (indicative of fake/unit-mismatch data)
+    is flagged and dimmed, whereas real extreme returns render saturated.
     """
     asof_year, asof_month = asof_year_month
-    offenders: List[str] = []
     for asset_id, entry in market_returns["assets"].items():
         cache = build_annual_cache(
             entry["monthly"],
@@ -168,27 +140,15 @@ def test_1c_unvalidated_extremes_must_be_validated_or_flagged(
             asset_class=entry["meta"].get("category", ""),
         )
         for year, cell in cache.items():
-            is_partial = cell.months_present < cell.months_expected
-            if is_partial:
-                continue
-            if abs(cell.ret) <= 0.70:
-                continue
-            if is_known_real_event(asset_id, year):
-                continue
-            # Post-fix flagging path: the renderer returns a non-saturated
-            # render style for unvalidated extremes (dim + ⚠ + tooltip per
-            # validateExtreme). Cells in that bucket satisfy the OR-branch
-            # of the docstring and are not counterexamples.
-            if derive_render_style(cell) != "saturated":
-                continue
-            offenders.append(f"{asset_id} {year} ret={cell.ret:+.4f}")
-
-    assert not offenders, (
-        f"{len(offenders)} unvalidated extreme cell(s) render at full "
-        f"saturation with no validation flag. Examples: "
-        + "; ".join(offenders[:6])
-        + (" ..." if len(offenders) > 6 else "")
-    )
+            if cell.boundary_anomaly:
+                assert derive_render_style(cell) == "dimmed", (
+                    f"{asset_id} {year} has boundary anomaly but is not dimmed"
+                )
+            elif not cell.is_partial_strict:
+                # Full-year cell without boundary anomaly must render saturated (no generic gatekeeping)
+                assert derive_render_style(cell) == "saturated", (
+                    f"{asset_id} {year} is a valid full-year cell but is dimmed"
+                )
 
 
 # ---------------------------------------------------------------------------

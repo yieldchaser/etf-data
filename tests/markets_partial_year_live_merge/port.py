@@ -187,12 +187,12 @@ def build_annual_cache_fixed(
         # with 5 months of data has 7 months still pending and is therefore
         # partial-flagged. This matches the bug-condition tests' framing.
         #
-        # The design doc's variant (`monthsExpected = (year < asofYear) ?
-        # 12 : asofMonth`) makes a cell that is "complete to asof" not
-        # partial, which contradicts the calendar-year semantic the tests
-        # encode. We follow the test's semantic here so the asof-year
-        # equity cells render dimmed instead of saturated.
-        months_expected = 12
+        # Calendar-based partial: a year is partial when its month-count
+        # falls below the expected number of months. For past years, we expect
+        # 12 months. For the current/ongoing year, we expect data up to the
+        # asof_month. If the count is less than expected (or first year count < 12),
+        # it falls back to being flagged as partial.
+        months_expected = 12 if yr < asof_year else asof_month
         partial = (count < months_expected) or (yr == first_year and count < 12)
 
         result[yr] = {

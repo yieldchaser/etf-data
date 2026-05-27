@@ -2745,9 +2745,11 @@ function marketsApp() {
         if (!Number.isFinite(ret)) continue;
 
         // Calendar-based partial: a year is partial when its month-count
-        // falls below the 12-month calendar expectation. The current ongoing
-        // year (which has count < 12) is therefore always flagged as partial.
-        const monthsExpected = 12;
+        // falls below the expected number of months. For past years, we expect
+        // 12 months. For the current/ongoing year, we expect data up to the
+        // asofMonth. If the count is less than expected (or first year count < 12),
+        // it falls back to being flagged as partial.
+        const monthsExpected = (year < asofYear) ? 12 : asofMonth;
         const partial = (count < monthsExpected) || (year === firstYear && count < 12);
 
         result[year] = {
@@ -2877,10 +2879,11 @@ function marketsApp() {
     // click-through interaction are all preserved.
     validateExtreme(ret, year, assetId, count, monthsExpected) {
       if (ret === null || ret === undefined || !Number.isFinite(ret)) return { ok: true };
-      if (Math.abs(ret) <= 0.70) return { ok: true };
-      const key = `${assetId}:${year}`;
-      if (this.KNOWN_REAL_EVENTS[key]) return { ok: true };
-      return { ok: false, reason: 'unvalidated_extreme' };
+      const cd = this.getCellData(assetId, year);
+      if (cd && cd.boundaryAnomaly) {
+        return { ok: false, reason: 'boundary_anomaly' };
+      }
+      return { ok: true };
     },
 
     // Cached validation lookup keyed on asset:year. Used by the matrix
@@ -3844,6 +3847,19 @@ function marketsApp() {
       const closeByYm = {};
       for (const { ym, close } of adjusted) closeByYm[ym] = close;
 
+      const asofStr = this.returnsData?.asof || this.marketState?.asof || '';
+      let asofYear  = NaN;
+      let asofMonth = NaN;
+      if (typeof asofStr === 'string' && asofStr.length >= 7) {
+        asofYear  = parseInt(asofStr.slice(0, 4));
+        asofMonth = parseInt(asofStr.slice(5, 7));
+      }
+      if (!Number.isFinite(asofYear) || !Number.isFinite(asofMonth)) {
+        const now = new Date();
+        asofYear  = now.getFullYear();
+        asofMonth = now.getMonth() + 1;
+      }
+
       const result = {};
       for (const [yrStr, mList] of Object.entries(byYear)) {
         const yr = parseInt(yrStr);
@@ -3852,14 +3868,19 @@ function marketsApp() {
         const thisDec = `${yr}-12`;
         const startClose = closeByYm[prevDec] ?? null;
         const endClose   = closeByYm[thisDec] ?? null;
+
+        const count = mList.length;
+        const monthsExpected = (yr < asofYear) ? 12 : asofMonth;
+        const partial = (count < monthsExpected) || (yr === firstYr && count < 12);
+
         if (startClose && endClose && startClose > 0) {
-          result[yr] = { ret: endClose / startClose - 1, partial: (yr === firstYr || yr === lastYr) };
+          result[yr] = { ret: endClose / startClose - 1, partial };
         } else if (yr === firstYr || yr === lastYr) {
           // Partial year: first to last available month
           const first = adjusted.find(a => a.ym.startsWith(yrStr));
           const last  = [...adjusted].reverse().find(a => a.ym.startsWith(yrStr));
           if (first && last && first !== last && first.close > 0) {
-            result[yr] = { ret: last.close / first.close - 1, partial: true };
+            result[yr] = { ret: last.close / first.close - 1, partial };
           }
         }
       }
@@ -3912,8 +3933,22 @@ function marketsApp() {
           }
           const firstYr = parseInt(adjusted[0].ym.slice(0, 4));
           const lastYr = parseInt(adjusted[adjusted.length - 1].ym.slice(0, 4));
+          const asofStr = this.returnsData?.asof || this.marketState?.asof || '';
+          let asofYear  = NaN;
+          let asofMonth = NaN;
+          if (typeof asofStr === 'string' && asofStr.length >= 7) {
+            asofYear  = parseInt(asofStr.slice(0, 4));
+            asofMonth = parseInt(asofStr.slice(5, 7));
+          }
+          if (!Number.isFinite(asofYear) || !Number.isFinite(asofMonth)) {
+            const now = new Date();
+            asofYear  = now.getFullYear();
+            asofMonth = now.getMonth() + 1;
+          }
+
           const result = {};
-          for (const [yr, mList] of Object.entries(byYear)) {
+          for (const [yrStr, mList] of Object.entries(byYear)) {
+            const yr = parseInt(yrStr);
             let compound = 1, count = 0;
             for (const ym of mList) {
               const nom = monthlyRet[ym];
@@ -3922,7 +3957,9 @@ function marketsApp() {
               compound *= (1 + nom) / (1 + inf);
               count++;
             }
-            if (count > 0) result[parseInt(yr)] = { ret: compound - 1, partial: (parseInt(yr) === firstYr || parseInt(yr) === lastYr) };
+            const monthsExpected = (yr < asofYear) ? 12 : asofMonth;
+            const partial = (count < monthsExpected) || (yr === firstYr && count < 12);
+            if (count > 0) result[yr] = { ret: compound - 1, partial };
           }
           annualByLens[lens] = result;
         } else {
@@ -4048,7 +4085,7 @@ function marketsApp() {
       let extremeLine = '';
       const v = this.validateExtreme(cellData.ret, year, asset.key, cellData.count, cellData.monthsExpected);
       if (!v.ok) {
-        extremeLine = `\n⚠ unvalidated extreme — verify against source data`;
+        extremeLine = `\n⚠ fake/corrupt data — boundary anomaly detected`;
       }
       const src = asset.meta?.source || '';
       let zLine = '';
