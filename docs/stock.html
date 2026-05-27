@@ -350,7 +350,7 @@
           </template>
           <!-- Last point dot -->
           <template x-if="scoreHistory.length >= 2 && ci === null">
-            <circle :cx="sparkX(scoreHistory.length - 1, scoreHistory.length)" :cy="sparkY(scoreHistory[scoreHistory.length-1].s, scoreHistory)" r="3" fill="var(--cyan)"/>
+            <circle :cx="sparkX(scoreHistory.length - 1, scoreHistory.length)" :cy="sparkY(scoreHistory[scoreHistory.length-1]?.s || 0, scoreHistory)" r="3" fill="var(--cyan)"/>
           </template>
         </svg>
         <!-- Crosshair tooltip label -->
@@ -409,13 +409,17 @@
             </linearGradient>
           </defs>
           <!-- Area fill -->
-          <path :d="lbRankSeries.length ? (lbRankPath + ` L${lbRankSeries[lbRankSeries.length-1].x.toFixed(1)},210 L${lbRankSeries[0].x.toFixed(1)},210 Z`) : ''"
-                fill="url(#lbGrad)" stroke="none"/>
+          <template x-if="lbRankSeries.length >= 2">
+            <path :d="lbRankPath + ` L${lbRankSeries[lbRankSeries.length-1].x.toFixed(1)},210 L${lbRankSeries[0].x.toFixed(1)},210 Z`"
+                  fill="url(#lbGrad)" stroke="none"/>
+          </template>
           <!-- Rank line -->
-          <path :d="lbRankPath" stroke="#22d3ee" stroke-width="2.5" fill="none"
-                stroke-linecap="round" stroke-linejoin="round"/>
+          <template x-if="lbRankSeries.length >= 2">
+            <path :d="lbRankPath" stroke="#22d3ee" stroke-width="2.5" fill="none"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+          </template>
           <!-- Best rank marker -->
-          <template x-if="lbBestWorst.best">
+          <template x-if="lbBestWorst.best && lbRankSeries.length >= 2">
             <g>
               <circle :cx="lbBestWorst.best.x" :cy="lbBestWorst.best.y" r="4" fill="var(--up)" stroke="#000" stroke-width="1"/>
               <text :x="lbBestWorst.best.x" :y="lbBestWorst.best.y - 8" text-anchor="middle"
@@ -424,29 +428,31 @@
             </g>
           </template>
           <!-- Crosshair dot -->
-          <template x-if="lbci !== null && lbci < lbRankSeries.length">
+          <template x-if="lbci !== null && lbci >= 0 && lbci < lbRankSeries.length && lbRankSeries[lbci]">
             <circle :cx="lbRankSeries[lbci].x.toFixed(1)" :cy="lbRankSeries[lbci].y.toFixed(1)"
                     r="4" fill="#22d3ee" stroke="#000" stroke-width="1.5"/>
           </template>
           <!-- Crosshair line -->
-          <template x-if="lbci !== null && lbci < lbRankSeries.length">
+          <template x-if="lbci !== null && lbci >= 0 && lbci < lbRankSeries.length && lbRankSeries[lbci]">
             <line stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3 3"
                   :x1="lbRankSeries[lbci].x.toFixed(1)" y1="0"
                   :x2="lbRankSeries[lbci].x.toFixed(1)" y2="220"/>
           </template>
           <!-- X-axis labels -->
-          <g style="font-family: ui-monospace; font-size: 9px" fill="var(--text-3)">
-            <text x="50" y="225" text-anchor="start" x-text="lbRankSeries[0]?.d || ''"></text>
-            <text x="530" y="225" text-anchor="middle" x-text="lbRankSeries[Math.floor(lbRankSeries.length/2)]?.d || ''"></text>
-            <text x="1010" y="225" text-anchor="end" x-text="lbRankSeries[lbRankSeries.length-1]?.d || ''"></text>
-          </g>
+          <template x-if="lbRankSeries.length >= 2">
+            <g style="font-family: ui-monospace; font-size: 9px" fill="var(--text-3)">
+              <text x="50" y="225" text-anchor="start" x-text="lbRankSeries[0]?.d || ''"></text>
+              <text x="530" y="225" text-anchor="middle" x-text="lbRankSeries[Math.floor(lbRankSeries.length/2)]?.d || ''"></text>
+              <text x="1010" y="225" text-anchor="end" x-text="lbRankSeries[lbRankSeries.length-1]?.d || ''"></text>
+            </g>
+          </template>
         </svg>
         <!-- Crosshair tooltip -->
-        <div x-show="lbci !== null && lbci < lbRankSeries.length" class="chart-tooltip"
+        <div x-show="lbci !== null && lbci >= 0 && lbci < lbRankSeries.length && lbRankSeries[lbci]" class="chart-tooltip"
              :style="`top: 4px; left: ${Math.min((lbcx || 0) + 12, 280)}px`">
           <div class="font-mono text-[10px] mb-1" style="color: var(--text-3)" x-text="lbRankSeries[lbci]?.d || ''"></div>
-          <div class="font-mono text-xs" style="color: #22d3ee" x-text="'Global Rank #' + lbRankSeries[lbci]?.rank"></div>
-          <div class="text-[10px] mt-0.5" style="color: var(--text-3)" x-text="'out of ' + lbRankSeries[lbci]?.total + ' tracked'"></div>
+          <div class="font-mono text-xs" style="color: #22d3ee" x-text="'Global Rank #' + (lbRankSeries[lbci]?.rank || '')"></div>
+          <div class="text-[10px] mt-0.5" style="color: var(--text-3)" x-text="'out of ' + (lbRankSeries[lbci]?.total || '') + ' tracked'"></div>
         </div>
       </div>
     </div>
@@ -1305,17 +1311,17 @@ function stockApp() {
 
     // lbRankSeries is pre-computed in load() — O(1) reads here
     get lbRankPath() {
-      if (!this.lbRankSeries.length) return '';
+      if (!this.lbRankSeries || !this.lbRankSeries.length) return '';
       return this.smoothPath(this.lbRankSeries.map(p => [p.x, p.y]));
     },
 
     get lbCurrentRank() {
-      return this.lbRankSeries.length ? this.lbRankSeries[this.lbRankSeries.length - 1].rank : null;
+      return (this.lbRankSeries && this.lbRankSeries.length) ? this.lbRankSeries[this.lbRankSeries.length - 1].rank : null;
     },
 
     // Y-axis labels for the global rank chart
     get lbYLabels() {
-      if (!this.lbRankSeries.length) return [];
+      if (!this.lbRankSeries || !this.lbRankSeries.length) return [];
       const ranks = this.lbRankSeries.map(p => p.rank);
       const minR = Math.min(...ranks), maxR = Math.max(...ranks);
       const range = maxR - minR || 1;
@@ -1330,7 +1336,7 @@ function stockApp() {
 
     // Best/worst rank markers for the global rank chart
     get lbBestWorst() {
-      if (!this.lbRankSeries.length) return { best: null };
+      if (!this.lbRankSeries || !this.lbRankSeries.length) return { best: null };
       let best = this.lbRankSeries[0];
       for (const p of this.lbRankSeries) {
         if (p.rank < best.rank) best = p;
