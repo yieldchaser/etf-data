@@ -1,11 +1,11 @@
 {
-  "generated_at_utc": "2026-05-24T16:25:57+00:00",
+  "generated_at_utc": "2026-05-27T02:24:55+00:00",
   "source": "data/all_history.csv",
-  "source_rows_raw": 98180,
+  "source_rows_raw": 98527,
   "source_rows_after_sanitize": 6497,
-  "leaderboard_rows": 3944,
+  "leaderboard_rows": 3902,
   "latest_holdings_as_of": "2026-05-26",
-  "latest_scrape_date": "2026-05-23",
+  "latest_scrape_date": "2026-05-25",
   "etfs": [
     "AVSC",
     "CALF",
@@ -125,13 +125,15 @@
     "2026-05-20",
     "2026-05-21",
     "2026-05-22",
+    "2026-05-24",
+    "2026-05-25",
     "2026-05-26"
   ],
   "flag_counts_today": {
     "HIGH_CONVICTION": 1,
     "SPECULATIVE_BETA": 94,
     "NEW": 124,
-    "NONE": 3849
+    "NONE": 3807
   },
   "flag_counts_yesterday": {
     "HIGH_CONVICTION": 1,
@@ -155,6 +157,77 @@
     "VLUE"
   ],
   "stale_etfs": [],
+  "markets_data_freshness": {
+    "available": true,
+    "asof": "2026-05",
+    "asset_count": 32,
+    "by_source": {
+      "excel": 25,
+      "fred": 7
+    },
+    "fx_pairs": [],
+    "cpi_series": [],
+    "rates_series": [],
+    "stale_assets": [
+      {
+        "asset": "gold",
+        "last": "2026-02",
+        "age_days": 88
+      },
+      {
+        "asset": "silver",
+        "last": "2026-02",
+        "age_days": 88
+      }
+    ],
+    "self_living_check": {
+      "live_source_count": 7,
+      "excel_only_count": 25,
+      "holdouts": [
+        "BSE Sensex",
+        "Brent Crude Oil",
+        "Coffee Arabica",
+        "Corn",
+        "Cotton",
+        "DAX (Germany)",
+        "Dow Jones",
+        "Gold",
+        "NASDAQ Composite",
+        "NASDAQ-100",
+        "Nikkei 225",
+        "Palladium",
+        "Platinum",
+        "S&P 500",
+        "Silver",
+        "Soybeans",
+        "Sugar",
+        "WTI Crude Oil",
+        "Wheat"
+      ],
+      "holdout_keys": [
+        "brent_crude",
+        "coffee",
+        "corn",
+        "cotton",
+        "dax",
+        "djia",
+        "gold",
+        "nasdaq",
+        "nasdaq100",
+        "nikkei",
+        "palladium",
+        "platinum",
+        "sensex",
+        "silver",
+        "soybeans",
+        "sp500",
+        "sugar",
+        "wheat",
+        "wti_crude"
+      ],
+      "verdict": "LIVE_MERGE_DEGRADED"
+    }
+  },
   "scoring_mode": "conviction",
   "config_snapshot": {
     "sanitizer": {

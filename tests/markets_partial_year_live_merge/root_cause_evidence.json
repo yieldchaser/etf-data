@@ -30,7 +30,7 @@
       "sugar": {
         "source": "Mega_Markets_Historical.xlsx:Commodities",
         "cell_2026": {
-          "ret": -0.0181,
+          "ret": -0.0182,
           "partial": true,
           "count": 5,
           "months_present": 5,
@@ -63,10 +63,10 @@
         "boundary_jumps": [
           {
             "from_ym": "1986-07",
-            "from_close": 0.655,
+            "from_close": 1.444,
             "to_ym": "1986-08",
-            "to_close": 0.275,
-            "ratio": 0.4198
+            "to_close": 0.6063,
+            "ratio": 0.4199
           }
         ],
         "zero_or_nan_base_months": []
@@ -111,19 +111,65 @@
         "last": "2026-05"
       },
       "nasdaq100": {
-        "source": "Mega_Markets_Historical.xlsx:Equities",
-        "starts_with_excel": true,
+        "source": "yfinance:^NDX",
+        "starts_with_excel": false,
         "last": "2026-05"
       },
       "sp500": {
-        "source": "Mega_Markets_Historical.xlsx:Equities",
-        "starts_with_excel": true,
+        "source": "yfinance:^GSPC",
+        "starts_with_excel": false,
         "last": "2026-05"
       }
     },
-    "metadata_has_markets_data_freshness": false,
-    "metadata_self_living_check": null,
-    "metadata_has_holdouts_field": false,
+    "metadata_has_markets_data_freshness": true,
+    "metadata_self_living_check": {
+      "live_source_count": 7,
+      "excel_only_count": 25,
+      "holdouts": [
+        "BSE Sensex",
+        "Brent Crude Oil",
+        "Coffee Arabica",
+        "Corn",
+        "Cotton",
+        "DAX (Germany)",
+        "Dow Jones",
+        "Gold",
+        "NASDAQ Composite",
+        "NASDAQ-100",
+        "Nikkei 225",
+        "Palladium",
+        "Platinum",
+        "S&P 500",
+        "Silver",
+        "Soybeans",
+        "Sugar",
+        "WTI Crude Oil",
+        "Wheat"
+      ],
+      "holdout_keys": [
+        "brent_crude",
+        "coffee",
+        "corn",
+        "cotton",
+        "dax",
+        "djia",
+        "gold",
+        "nasdaq",
+        "nasdaq100",
+        "nikkei",
+        "palladium",
+        "platinum",
+        "sensex",
+        "silver",
+        "soybeans",
+        "sp500",
+        "sugar",
+        "wheat",
+        "wti_crude"
+      ],
+      "verdict": "LIVE_MERGE_DEGRADED"
+    },
+    "metadata_has_holdouts_field": true,
     "verdict_for_bug_2": "If meta.markets_data_freshness is missing entirely (no slc block) \u2192 root cause supports L5 (verdict aggregation never built); the live-fetch path can only be discriminated between L1 (empty fetch) and L2 (cache drift) by capturing stdout from `python -m predator.markets_history --full-refresh --assets sp500,nasdaq,nasdaq100,djia` \u2014 see test_live_fetch_logging_record below."
   },
   "summary": {
@@ -132,15 +178,12 @@
     "bug_1_h1_recent_boundary_jumps": [],
     "bug_1_h2_zero_or_nan_total": 0,
     "bug_2_finding": [
-      "L5_verdict_aggregation_never_built",
       "live-fetch path either L1 (empty) or L2 (cache drift); discriminate by capturing stdout from `python -m predator.markets_history --full-refresh --assets sp500,nasdaq,nasdaq100,djia` and reading the `EMPTY: ...` log lines added by design Fix Implementation #6"
     ],
     "bug_2_excel_holdouts": [
-      "nasdaq",
-      "nasdaq100",
-      "sp500"
+      "nasdaq"
     ],
-    "metadata_missing_self_living_check": true,
+    "metadata_missing_self_living_check": false,
     "user_constraints_acknowledged": [
       "(1) KNOWN_REAL_EVENTS is a single-source-of-truth dict in tests/markets_partial_year_live_merge/known_real_events.py; extending the whitelist is one new line",
       "(2) unvalidated extreme treatment is non-destructive (dim + \u26a0 + tooltip), never drop the cell \u2014 encoded in test 1c by allowing either suppression OR validation, and in design Fix Implementation #4",

@@ -125,6 +125,31 @@ ASSET_REGISTRY: dict[tuple[str, str], tuple[str, str, str, str]] = {
     ("Energy", "Brent Crude Oil (USD/bbl)"):              ("brent_crude", "energy",          "USD", "Brent Crude Oil"),
 }
 
+# ─── Unit Conversion Table ───────────────────────────────────────────────────
+# Excel stores commodity prices in imperial / mixed units; FRED stores them in
+# metric units.  This table normalises Excel prices to the FRED canonical unit
+# at read time (applied in _to_monthly_eop) so the two sources are directly
+# comparable and the stitch boundary never generates a phantom spike.
+#
+# Conversion factors (multiply Excel price by this to get FRED-unit price):
+#   Grains : Excel USD/bushel  →  FRED USD/mt
+#     Wheat     : 1 metric tonne = 36.7437 bushels  (US hard red winter wheat)
+#     Corn      : 1 metric tonne = 39.3683 bushels
+#     Soybeans  : 1 metric tonne = 36.7437 bushels
+#   Softs  : Excel USD/lb      →  FRED USD/kg
+#     Sugar / Cotton / Coffee : 1 kg = 2.20462 lb
+#
+# Assets NOT listed here (gold, silver, equities, energy, FX …) are already
+# in consistent units between Excel and FRED — no conversion applied.
+UNIT_CONVERSIONS: dict[str, float] = {
+    "wheat":    36.7437,   # 1 mt wheat    = 36.7437 bu  (USDA standard)
+    "corn":     39.3683,   # 1 mt corn     = 39.3683 bu  (USDA standard)
+    "soybeans": 36.7437,   # 1 mt soybeans = 36.7437 bu  (same as wheat)
+    "sugar":     2.20462,  # 1 kg          = 2.20462 lb
+    "cotton":    2.20462,  # 1 kg          = 2.20462 lb
+    "coffee":    2.20462,  # 1 kg          = 2.20462 lb
+}
+
 # FX series: sheet → (fx_pair_id, description)
 # Stored as USD per 1 unit of foreign currency (i.e. USDINR = USD/INR rate)
 FX_REGISTRY: dict[tuple[str, str], tuple[str, str]] = {
@@ -300,15 +325,30 @@ def _read_mega_xl(xl_path: Path, asset_filter: set[str] | None = None) -> dict[s
     return results
 
 
-def _to_monthly_eop(df: pd.DataFrame) -> list[list]:
+def _to_monthly_eop(df: pd.DataFrame, asset_id: str = "") -> list[list]:
     """
     Resample daily data to monthly end-of-period close.
 
     Returns sorted list of [YYYY-MM, value] pairs.
     Years are strings — kills the year-key type mismatch bug permanently.
+
+    If *asset_id* is present in UNIT_CONVERSIONS the raw Excel prices are
+    multiplied by the conversion factor **before** resampling so that the
+    result is always in the same unit as the corresponding FRED series.
+    This is the single normalisation point — no other layer needs to know
+    about Excel-vs-FRED unit differences.
     """
     if df.empty:
         return []
+    factor = UNIT_CONVERSIONS.get(asset_id, 1.0)
+    if factor != 1.0:
+        df = df.copy()
+        df["Close"] = df["Close"] * factor
+        raw_range = (df["Close"].min() / factor, df["Close"].max() / factor)
+        conv_range = (df["Close"].min(), df["Close"].max())
+        print(f"  UNIT CONVERT {asset_id}: ×{factor} "
+              f"raw=[{raw_range[0]:.3f}, {raw_range[1]:.3f}] "
+              f"→ [{conv_range[0]:.2f}, {conv_range[1]:.2f}]")
     monthly = df.resample("ME", on="Date")["Close"].last().dropna()
     result = []
     for dt, val in monthly.items():
@@ -428,7 +468,7 @@ def build_output(
             continue
         cat, ccy, display, sheet = meta
 
-        new_monthly = _to_monthly_eop(df)
+        new_monthly = _to_monthly_eop(df, asset_id=asset_id)
         if not new_monthly:
             print(f"  SKIP {asset_id}: no monthly data after resampling")
             continue
@@ -480,6 +520,11 @@ def build_output(
     fx_out    = existing.get("fx", {})
     cpi_out   = existing.get("cpi", {})
     rates_out = existing.get("rates", {})
+
+    # Preserve existing assets that are not in raw_series (e.g. FRED-only base metals)
+    for asset_id, val in existing.get("assets", {}).items():
+        if asset_id not in assets_out:
+            assets_out[asset_id] = val
 
     # Compute asof = latest last date across all assets AND fx/cpi/rates sections
     all_lasts = [v.get("meta", {}).get("last", v.get("last", "")) for v in assets_out.values() if v.get("meta", {}).get("last", v.get("last", ""))]
@@ -553,9 +598,16 @@ def process(
         except Exception as e:
             print(f"  WARNING: Could not inspect Markets_1_.xlsx ({e}) — falling back to {MEGA_XL.name}")
 
-    if not xl_path.exists():
-        print(f"ERROR: Excel file not found: {xl_path}")
-        sys.exit(1)
+    # Determine if Excel exists and is a valid binary (not a Git LFS pointer)
+    xl_exists = xl_path.exists() and not _is_lfs_pointer(xl_path)
+
+    if not xl_exists:
+        print(f"\n⚠️  Excel file not found or is a Git LFS pointer: {xl_path.name}")
+        print("  Since the JSON file is the permanent source of truth and Excel is only for backfill,")
+        print("  skipping Excel ingestion and retaining existing JSON data.")
+        existing = _load_existing(OUTPUT_PATH)
+        check_freshness(existing, fail_on_stale=fail_on_stale)
+        return existing
 
     # Read Excel
     raw_series = _read_mega_xl(xl_path, asset_filter=asset_filter)

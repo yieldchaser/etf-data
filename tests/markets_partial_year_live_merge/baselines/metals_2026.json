@@ -14,11 +14,11 @@
     "ret": 0.06256871
   },
   "gold": {
-    "count": 2,
+    "count": 4,
     "partial": true,
     "partialFlag": true,
     "renderStyle": "dimmed",
-    "ret": 0.18859609
+    "ret": 0.03331332
   },
   "iron_ore": {
     "count": 3,
@@ -46,21 +46,21 @@
     "partial": true,
     "partialFlag": true,
     "renderStyle": "dimmed",
-    "ret": -0.16832918
+    "ret": -0.12871348
   },
   "platinum": {
     "count": 5,
     "partial": true,
     "partialFlag": true,
     "renderStyle": "dimmed",
-    "ret": -0.05261056
+    "ret": -0.05573851
   },
   "silver": {
-    "count": 2,
+    "count": 4,
     "partial": true,
     "partialFlag": true,
     "renderStyle": "dimmed",
-    "ret": 0.25989721
+    "ret": 0.0663872
   },
   "tin": {
     "count": 3,

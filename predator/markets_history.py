@@ -380,8 +380,10 @@ ALL_SERIES = ASSET_REGISTRY + AUX_REGISTRY + RATES_REGISTRY
 CACHE_DIR = Path(__file__).resolve().parent.parent / "data" / "markets_history"
 # Output path
 OUTPUT_PATH = Path(__file__).resolve().parent.parent / "docs" / "data" / "market_returns.json"
-# Trailing months to refetch on incremental runs
-INCREMENTAL_TRAILING_MONTHS = 3
+# Trailing months to refetch on incremental runs.
+# 6 months covers the ~5-week FRED publication lag for agriculture series
+# AND ensures a run in late Q1 never skips Jan of the current year.
+INCREMENTAL_TRAILING_MONTHS = 6
 
 
 # ─── FRED Fetcher ────────────────────────────────────────────────────────────
@@ -431,10 +433,14 @@ def _fetch_fred_series(
         "aggregation_method": "eop",
     }
 
-    # Incremental: restrict observation_start to trailing window
+    # Incremental: restrict observation_start to trailing window,
+    # but always include Jan 1 of the current calendar year so a run
+    # in late Q1 never silently skips January's data point.
     if not full_refresh and existing is not None and not existing.empty:
         last_date = existing.index.max()
-        start = last_date - pd.DateOffset(months=INCREMENTAL_TRAILING_MONTHS)
+        trailing_start = last_date - pd.DateOffset(months=INCREMENTAL_TRAILING_MONTHS)
+        year_start = pd.Timestamp(f"{pd.Timestamp.now().year}-01-01")
+        start = min(trailing_start, year_start)  # whichever is earlier
         kwargs["observation_start"] = start.strftime("%Y-%m-%d")
 
     max_retries = 5
@@ -475,9 +481,18 @@ def _fetch_fred_series(
 # ─── yfinance Fetcher ────────────────────────────────────────────────────────
 
 # Tickers known to be intermittently empty from CI runners (Wave-0 diagnostic
-# established yfinance is IP-rate-limited from GitHub Actions egress for these
-# four). One bounded retry with backoff before degrading to cache.
-_YFINANCE_FLAKY_TICKERS = frozenset({"^GSPC", "^NDX", "^DJI", "NASDAQCOM"})
+# established yfinance is IP-rate-limited from GitHub Actions egress).
+# One bounded retry with backoff before degrading to cache.
+# Futures tickers (GC=F etc.) are equally rate-limited from CI runners.
+_YFINANCE_FLAKY_TICKERS = frozenset({
+    # Equity indices
+    "^GSPC", "^NDX", "^DJI", "NASDAQCOM",
+    # Precious metals futures
+    "GC=F",   # Gold
+    "SI=F",   # Silver
+    "PL=F",   # Platinum
+    "PA=F",   # Palladium
+})
 _YFINANCE_RETRY_BACKOFF_SEC = 1.5
 
 def _fetch_yfinance_series(
