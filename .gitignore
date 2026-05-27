@@ -28,14 +28,24 @@ data/markets_history/
 data/vol_history/
 data/markets/
 
-# data/history_parquet/ is the PERMANENT year-partitioned archive (charter v2 Part 3).
-# Past-year partitions are immutable, current-year is mutable. The CHECKSUMS.json
-# manifest at the store root is committed alongside the partitions. See
-# scripts/migrate_to_parquet.py and tests/test_parquet_immutability.py.
+# data/history_parquet/ is the PERMANENT year-partitioned archive (charter v2 Part 3)
+# and is INTENTIONALLY NOT IGNORED — it must be committed to Git as the permanent
+# zero-loss archive (Parquet_Store). Past-year partitions are immutable, current-year
+# is mutable. The CHECKSUMS.json manifest at the store root is committed alongside
+# the partitions. See scripts/migrate_to_parquet.py and tests/test_parquet_immutability.py.
+#
+# The authoritative source of the storage contract and the 5-year size analysis
+# (~12.5 MB Parquet archive + ~7.8 MB Rolling_CSV + ~11 MB docs payload ≈ 32 MB total,
+# well within GitHub's 1 GB limits) is .kiro/specs/bounded-data-zero-loss/design.md.
 
 # Stray test output files
 /test_audit_results.txt
 /test_full_results.txt
 
-# Git LFS note: Mega_Markets_Historical.xlsx should be tracked via Git LFS
-# Run: git lfs track "*.xlsx" && git add .gitattributes
+# Git LFS note: Mega_Markets_Historical.xlsx is tracked via Git LFS.
+# The .gitattributes file at the repo root now declares `*.xlsx filter=lfs diff=lfs
+# merge=lfs -text`, so future Excel blobs are routed through LFS automatically.
+# Maintainer one-time history rewrite (already performed): see
+# .kiro/specs/bounded-data-zero-loss/design.md → "Part C.1 — Git LFS migration procedure".
+# Clones without `git lfs install` will get a pointer file; predator/ingest_markets_xl.py
+# detects this and raises a clear LFS-specific error.

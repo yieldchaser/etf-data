@@ -595,7 +595,12 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                 }
                 if has_vs:
                     vs = row.get("velocity_score")
-                    entry["vs"] = round(float(vs), 1) if vs is not None and vs == vs else 0
+                    if vs is not None and vs == vs:
+                        rounded_vs = round(float(vs), 1)
+                        # Omit zero-valued vs to shrink payload (Req 6.3);
+                        # docs/stock.html tolerates absence via `e.vs == null` and `e.vs ?? null`
+                        if rounded_vs != 0:
+                            entry["vs"] = rounded_vs
                 if has_burst:
                     entry["burst"] = bool(row.get("burst_30d", False))
                 if t not in flag_history:
@@ -621,7 +626,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     if not latest.empty:
         latest_out = latest[[
             "ETF_Ticker", "ticker", "name", "weight", "rank", "tier", "is_new",
-            "rank_mult", "base_score", "new_bonus", "score", "Holdings_As_Of"
+            "base_score", "new_bonus", "score", "Holdings_As_Of"
         ]].copy()
         latest_out["Holdings_As_Of"] = pd.to_datetime(latest_out["Holdings_As_Of"]).dt.strftime("%Y-%m-%d")
         # Merge primary period columns (backward compat: rank_delta, weight_flow)
@@ -641,6 +646,14 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                 d[["ETF_Ticker", "ticker", "rank_delta", "weight_flow"]].rename(columns=rename_cols),
                 on=["ETF_Ticker", "ticker"], how="left"
             )
+        # Round numeric float columns to 4 decimals to bound JSON payload size
+        # (Req 6.2). Do NOT round `rank` or any `rank_delta*` integer-ish columns.
+        _float_round_cols = ["weight", "base_score", "new_bonus", "score"] + [
+            c for c in latest_out.columns if c.startswith("weight_flow")
+        ]
+        for _c in _float_round_cols:
+            if _c in latest_out.columns:
+                latest_out[_c] = latest_out[_c].round(4)
         (output_dir / "holdings_latest.json").parent.mkdir(parents=True, exist_ok=True)
         _write_json_atomic(
             output_dir / "holdings_latest.json",

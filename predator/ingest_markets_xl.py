@@ -192,6 +192,37 @@ def _dumps(obj: Any, **kwargs) -> str:
     return json.dumps(obj, **kwargs)
 
 
+# ─── Git LFS pointer detection ───────────────────────────────────────────────
+# When the repo is cloned without `git lfs install`/`git lfs pull`, when the LFS
+# server is unreachable, or when the LFS bandwidth quota is exhausted, the
+# `Mega_Markets_Historical.xlsx` working-tree file is a small text "pointer"
+# rather than the real binary blob. Letting `pandas.read_excel` see that file
+# produces a confusing `BadZipFile` error; detecting the pointer up front lets
+# us raise a clear, actionable LFS-specific message instead.
+
+_LFS_POINTER_HEADER = b"version https://git-lfs.github.com/spec/"
+_LFS_POINTER_MAX_BYTES = 1024
+
+
+def _is_lfs_pointer(path: Path) -> bool:
+    """Return True if ``path`` is a Git LFS pointer file rather than the real binary.
+
+    A Git LFS pointer is a tiny text stub (≤1024 bytes) whose first line begins
+    with ``version https://git-lfs.github.com/spec/``. This helper performs a
+    fast size + magic-bytes check without parsing the rest of the file.
+    """
+    try:
+        if path.stat().st_size > _LFS_POINTER_MAX_BYTES:
+            return False
+    except OSError:
+        return False
+    try:
+        head = path.read_bytes()[:64]
+    except OSError:
+        return False
+    return head.startswith(_LFS_POINTER_HEADER)
+
+
 # ─── Excel reader ─────────────────────────────────────────────────────────────
 
 def _read_mega_xl(xl_path: Path, asset_filter: set[str] | None = None) -> dict[str, pd.DataFrame]:
@@ -206,6 +237,16 @@ def _read_mega_xl(xl_path: Path, asset_filter: set[str] | None = None) -> dict[s
         asset_filter: If provided, only return these asset IDs (e.g. {'sp500', 'gold'}).
     """
     print(f"\nReading: {xl_path.name}")
+
+    # Fail fast with a clear LFS-specific error before invoking pandas.read_excel.
+    # This is the single error path for clone-without-LFS, LFS-server-unreachable,
+    # and LFS-quota-exhausted scenarios — all leave a pointer file in place.
+    if _is_lfs_pointer(xl_path):
+        raise RuntimeError(
+            "Mega_Markets_Historical.xlsx is a Git LFS pointer, not a real Excel file. "
+            "Run 'git lfs install && git lfs pull'."
+        )
+
     results: dict[str, pd.DataFrame] = {}
 
     # Build lookup: (sheet, index_name) → asset_id

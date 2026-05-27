@@ -411,17 +411,68 @@ def test_2f_out_of_scope_files_have_empty_diff(path):
 
 
 def test_2f_vol_history_unchanged():
-    """**Validates: Design Fix Implementation #13**
+    """**Validates: Design Fix Implementation #13** (with intentional carve-out)
 
-    `predator/vol_history.py` is a no-touch file under this fix. `git diff`
-    must be empty AND it must continue to set its sources as
-    `fred:{series_id}` (we sanity-check by grepping the source string format).
+    `predator/vol_history.py` is a no-touch file under THIS fix. The only
+    permitted post-baseline edit is the soft-skip change owned by the
+    `automation-self-living-data-flow` spec (task 1, Req 4.7): the
+    `sys.exit(1)` in `fetch_all()` was replaced with `return {}` so the
+    `continue-on-error` CI wrapper is not bypassed by a hard exit. Any
+    diff outside that exact two-line swap is a regression and must fail.
+    The file must continue to set its sources as `fred:{series_id}`
+    (sanity-checked by grepping the source string format).
     """
     path = "predator/vol_history.py"
     if not (REPO_ROOT / path).exists():
         pytest.skip(f"{path} not present in repo")
     diff = _git_diff(path)
-    assert diff == "", f"{path} must be untouched (design Fix Implementation #13)"
+
+    if diff != "":
+        # Permit ONLY the intentional automation-self-living-data-flow change:
+        #   -        print("\n  Cannot proceed without FRED API key.")
+        #   -        sys.exit(1)
+        #   +        print("\n  Cannot proceed without FRED API key — returning empty results (soft-skip).")
+        #   +        return {}
+        # All four lines must be present and no other content lines may be
+        # added or removed (only ± lines after stripping diff headers/hunk).
+        EXPECTED_REMOVED = {
+            'print("\\n  Cannot proceed without FRED API key.")',
+            "sys.exit(1)",
+        }
+        EXPECTED_ADDED = {
+            'print("\\n  Cannot proceed without FRED API key — returning empty results (soft-skip).")',
+            "return {}",
+        }
+        added: set[str] = set()
+        removed: set[str] = set()
+        for line in diff.splitlines():
+            # Skip diff headers, hunk markers, and context lines
+            if line.startswith(("+++", "---", "@@", "diff ", "index ")):
+                continue
+            if line.startswith("+"):
+                added.add(line[1:].strip())
+            elif line.startswith("-"):
+                removed.add(line[1:].strip())
+        unexpected_removed = removed - EXPECTED_REMOVED
+        unexpected_added   = added   - EXPECTED_ADDED
+        missing_removed    = EXPECTED_REMOVED - removed
+        missing_added      = EXPECTED_ADDED   - added
+        problems: list[str] = []
+        if unexpected_removed:
+            problems.append(f"unexpected removed lines: {unexpected_removed}")
+        if unexpected_added:
+            problems.append(f"unexpected added lines: {unexpected_added}")
+        if missing_removed:
+            problems.append(f"expected removed lines not present: {missing_removed}")
+        if missing_added:
+            problems.append(f"expected added lines not present: {missing_added}")
+        assert not problems, (
+            f"{path} diff outside the automation-self-living-data-flow soft-skip "
+            f"carve-out (design Fix Implementation #13):\n"
+            + "\n".join(f"  - {p}" for p in problems)
+            + f"\n\nFull diff:\n{diff[:1000]}"
+        )
+
     # Sanity: the file emits fred:{series_id} for its source labels.
     body = (REPO_ROOT / path).read_text(encoding="utf-8")
     assert 'fred:' in body, (

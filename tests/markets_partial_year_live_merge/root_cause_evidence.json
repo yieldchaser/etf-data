@@ -111,45 +111,19 @@
         "last": "2026-05"
       },
       "nasdaq100": {
-        "source": "yfinance:^NDX",
-        "starts_with_excel": false,
+        "source": "Mega_Markets_Historical.xlsx:Equities",
+        "starts_with_excel": true,
         "last": "2026-05"
       },
       "sp500": {
-        "source": "yfinance:^GSPC",
-        "starts_with_excel": false,
+        "source": "Mega_Markets_Historical.xlsx:Equities",
+        "starts_with_excel": true,
         "last": "2026-05"
       }
     },
-    "metadata_has_markets_data_freshness": true,
-    "metadata_self_living_check": {
-      "live_source_count": 10,
-      "excel_only_count": 15,
-      "holdouts": [
-        "Brent Crude Oil",
-        "Coffee Arabica",
-        "Corn",
-        "Cotton",
-        "NASDAQ Composite",
-        "Soybeans",
-        "Sugar",
-        "WTI Crude Oil",
-        "Wheat"
-      ],
-      "holdout_keys": [
-        "brent_crude",
-        "coffee",
-        "corn",
-        "cotton",
-        "nasdaq",
-        "soybeans",
-        "sugar",
-        "wheat",
-        "wti_crude"
-      ],
-      "verdict": "LIVE_MERGE_DEGRADED"
-    },
-    "metadata_has_holdouts_field": true,
+    "metadata_has_markets_data_freshness": false,
+    "metadata_self_living_check": null,
+    "metadata_has_holdouts_field": false,
     "verdict_for_bug_2": "If meta.markets_data_freshness is missing entirely (no slc block) \u2192 root cause supports L5 (verdict aggregation never built); the live-fetch path can only be discriminated between L1 (empty fetch) and L2 (cache drift) by capturing stdout from `python -m predator.markets_history --full-refresh --assets sp500,nasdaq,nasdaq100,djia` \u2014 see test_live_fetch_logging_record below."
   },
   "summary": {
@@ -158,12 +132,15 @@
     "bug_1_h1_recent_boundary_jumps": [],
     "bug_1_h2_zero_or_nan_total": 0,
     "bug_2_finding": [
+      "L5_verdict_aggregation_never_built",
       "live-fetch path either L1 (empty) or L2 (cache drift); discriminate by capturing stdout from `python -m predator.markets_history --full-refresh --assets sp500,nasdaq,nasdaq100,djia` and reading the `EMPTY: ...` log lines added by design Fix Implementation #6"
     ],
     "bug_2_excel_holdouts": [
-      "nasdaq"
+      "nasdaq",
+      "nasdaq100",
+      "sp500"
     ],
-    "metadata_missing_self_living_check": false,
+    "metadata_missing_self_living_check": true,
     "user_constraints_acknowledged": [
       "(1) KNOWN_REAL_EVENTS is a single-source-of-truth dict in tests/markets_partial_year_live_merge/known_real_events.py; extending the whitelist is one new line",
       "(2) unvalidated extreme treatment is non-destructive (dim + \u26a0 + tooltip), never drop the cell \u2014 encoded in test 1c by allowing either suppression OR validation, and in design Fix Implementation #4",
