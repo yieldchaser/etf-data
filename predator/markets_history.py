@@ -406,7 +406,12 @@ def _get_fred_client():
         print("ERROR: fredapi package not installed. Run: pip install fredapi")
         return None
 
-    return Fred(api_key=api_key)
+    client = Fred(api_key=api_key)
+    try:
+        print("FRED client initialised.")
+    except Exception:
+        pass  # logging failure must never block FRED operations
+    return client
 
 
 def _fetch_fred_series(

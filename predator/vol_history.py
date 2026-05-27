@@ -302,8 +302,8 @@ def fetch_all(
 
     fred = _get_fred_client()
     if fred is None:
-        print("\n  Cannot proceed without FRED API key.")
-        sys.exit(1)
+        print("\n  Cannot proceed without FRED API key — returning empty results (soft-skip).")
+        return {}
 
     results: dict[str, pd.Series] = {}
 
