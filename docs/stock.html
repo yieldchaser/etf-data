@@ -185,9 +185,9 @@
       </div>
       <!-- Tier-breadth chip -->
       <span x-show="(leaderboardRow?.tier_breadth || 0) >= 2" class="chip"
-            x-tooltip="`'Tier breadth: held by '+leaderboardRow.tier_breadth+' distinct strategy types. Higher = more independent confirmation.'`"
+            x-tooltip="`'Tier breadth: held by '+(leaderboardRow?.tier_breadth)+' distinct strategy types. Higher = more independent confirmation.'`"
             style="background: rgba(255,255,255,0.04); color: var(--text-2); border: 1px solid rgba(255,255,255,0.10)"
-            x-text="`${leaderboardRow.tier_breadth}-tier`"></span>
+            x-text="`${leaderboardRow?.tier_breadth}-tier`"></span>
       <!-- Quality adoption / defection -->
       <span x-show="leaderboardRow?.quality_adopted_30d" class="chip"
             x-tooltip="'Quality+ — A free-cash-flow / quality screen ETF (COWZ/CALF/SPHQ) added this name in the last 30 days. Strong fundamentals confirmation.'"
@@ -424,12 +424,12 @@
             </g>
           </template>
           <!-- Crosshair dot -->
-          <template x-if="lbci !== null">
+          <template x-if="lbci !== null && lbci < lbRankSeries.length">
             <circle :cx="lbRankSeries[lbci].x.toFixed(1)" :cy="lbRankSeries[lbci].y.toFixed(1)"
                     r="4" fill="#22d3ee" stroke="#000" stroke-width="1.5"/>
           </template>
           <!-- Crosshair line -->
-          <template x-if="lbci !== null">
+          <template x-if="lbci !== null && lbci < lbRankSeries.length">
             <line stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3 3"
                   :x1="lbRankSeries[lbci].x.toFixed(1)" y1="0"
                   :x2="lbRankSeries[lbci].x.toFixed(1)" y2="220"/>
