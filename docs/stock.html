@@ -150,7 +150,7 @@
         <div class="label">ETFs Added (30d)</div>
         <div class="num font-mono text-xl sm:text-2xl mt-0.5"
              :style="(leaderboardRow?.etf_count_delta_30d || 0) > 0 ? 'color: var(--up)' : ((leaderboardRow?.etf_count_delta_30d || 0) < 0 ? 'color: var(--down)' : '')"
-             x-text="(leaderboardRow?.etf_count_delta_30d || 0) > 0 ? \`+${leaderboardRow.etf_count_delta_30d}\` : (leaderboardRow?.etf_count_delta_30d ?? 0)"></div>
+             x-text="(leaderboardRow?.etf_count_delta_30d || 0) > 0 ? '+' + leaderboardRow?.etf_count_delta_30d : (leaderboardRow?.etf_count_delta_30d ?? 0)"></div>
       </div>
     </section>
 
@@ -342,10 +342,10 @@
                   y2="120"/>
           </template>
           <!-- Crosshair dot -->
-          <template x-if="ci !== null">
+          <template x-if="ci !== null && ci < scoreHistory.length">
             <circle class="crosshair-dot"
                     :cx="(ci / (scoreHistory.length - 1)) * 900"
-                    :cy="sparkY(scoreHistory[ci].s, scoreHistory)"
+                    :cy="sparkY(scoreHistory[ci]?.s ?? 0, scoreHistory)"
                     r="4"/>
           </template>
           <!-- Last point dot -->
@@ -392,13 +392,13 @@
            @mouseleave="lbci = null; lbcx = null">
         <svg viewBox="0 0 1060 230" class="w-full" style="height: 210px">
           <!-- Y-axis rank labels -->
-          <template x-for="label in lbYLabels" :key="label.rank">
+          <template x-for="lbLabel in lbYLabels" :key="lbLabel.rank">
             <g>
-              <line x1="50" x2="1010" :y1="label.y" :y2="label.y"
+              <line x1="50" x2="1010" :y1="lbLabel.y" :y2="lbLabel.y"
                     stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
-              <text x="44" :y="label.y + 3" text-anchor="end"
+              <text x="44" :y="lbLabel.y + 3" text-anchor="end"
                     style="font-family: ui-monospace; font-size: 9px; fill: var(--text-3)"
-                    x-text="'#' + label.rank"></text>
+                    x-text="'#' + lbLabel.rank"></text>
             </g>
           </template>
           <!-- Gradient fill beneath the rank line -->
@@ -442,7 +442,7 @@
           </g>
         </svg>
         <!-- Crosshair tooltip -->
-        <div x-show="lbci !== null" class="chart-tooltip"
+        <div x-show="lbci !== null && lbci < lbRankSeries.length" class="chart-tooltip"
              :style="`top: 4px; left: ${Math.min((lbcx || 0) + 12, 280)}px`">
           <div class="font-mono text-[10px] mb-1" style="color: var(--text-3)" x-text="lbRankSeries[lbci]?.d || ''"></div>
           <div class="font-mono text-xs" style="color: #22d3ee" x-text="'Global Rank #' + lbRankSeries[lbci]?.rank"></div>
