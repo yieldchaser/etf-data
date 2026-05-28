@@ -2,15 +2,17 @@ name: Daily ETF Scrape
 
 on:
   schedule:
-    # 14:00 UTC = 10:00 AM ET  — primary run, after all issuers publish T+1 data
-    #   Invesco API publishes overnight; Pacer CSV, First Trust, Alpha Architect
-    #   are all updated before US market open (9:30 AM ET). 10 AM ET is the
-    #   earliest safe window where every source is guaranteed to be fresh.
-    # 22:00 UTC = 06:00 PM ET  — catch-all run for any late publishers or retries
-    # 02:00 UTC = 10:00 PM ET  — late-night run to catch Invesco API updates that
-    #   arrive after 6 PM ET (T+1 data for same-day close can publish late).
-    # Weekdays only (Mon–Fri). No point running on weekends (no new trading data).
+    # Weekday schedule (Mon–Fri) — three runs per day:
+    #   02:00 UTC = 10:00 PM ET  — late-night: catches Invesco T+1 that publishes after 6 PM ET
+    #   14:00 UTC = 10:00 AM ET  — primary:    all sources guaranteed fresh after overnight publish
+    #   22:00 UTC = 06:00 PM ET  — catch-all:  late publishers and mid-day retries
     - cron: '0 2,14,22 * * 1-5'
+    # Weekend schedule (Sat–Sun) — one run per day at 10 AM ET:
+    #   Saturday:  Invesco T+1 for Friday's close publishes Saturday night — captures the
+    #              Friday effectiveDate that is structurally missing from the weekday runs.
+    #   Sunday:    safety net for any Saturday-published updates.
+    #   Worst case: no new data → git diff is empty → nothing commits (zero cost).
+    - cron: '0 14 * * 0,6'
   workflow_dispatch:      # Manual Run Button
 
 jobs:
