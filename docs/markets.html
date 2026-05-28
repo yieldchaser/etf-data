@@ -370,13 +370,11 @@
               <th class="matrix-sticky-corner" style="border-right: 1px solid var(--border-2); border-bottom: 1px solid var(--border-2); height: 18px;"></th>
               <template x-for="yr in matrixYears" :key="yr">
                 <th style="height: 18px; padding: 0; border-bottom: 1px solid var(--border-2);">
-                  <template x-if="matrixEvents[yr]">
-                    <div class="text-center" style="font-size: 7px; color: var(--amber); white-space: nowrap; overflow: hidden; cursor: default;"
-                         @mouseenter="showTt($event, matrixEvents[yr])"
-                         @mouseleave="hideTt()"
-                         x-text="'⚡'">
-                    </div>
-                  </template>
+                  <div class="text-center" x-show="matrixEvents[yr]" style="font-size: 7px; color: var(--amber); white-space: nowrap; overflow: hidden; cursor: default;"
+                       @mouseenter="showTt($event, matrixEvents[yr])"
+                       @mouseleave="hideTt()"
+                       x-text="'⚡'">
+                  </div>
                 </th>
               </template>
             </tr>
@@ -410,19 +408,16 @@
                   <!-- Year cells -->
                   <template x-for="yr in matrixYears" :key="yr">
                     <td>
-                      <template x-if="getCellData(asset.key, yr) !== null">
-                        <div class="matrix-cell"
-                             :class="matrixCellClass(asset.key, yr)"
-                             :style="`background: ${activeCellColor(asset.key, yr)}; color: ${activeCellTextColor(asset.key, yr)};`"
-                             @click="toggleDrilldown(asset.key, yr)"
-                             @mouseenter="showCellTt($event, asset, yr, getCellData(asset.key, yr))"
-                             @mouseleave="hideTt()"
-                             x-text="cellText(getCellData(asset.key, yr), asset.key, yr)">
-                        </div>
-                      </template>
-                      <template x-if="getCellData(asset.key, yr) === null">
-                        <div class="matrix-cell matrix-cell-empty"></div>
-                      </template>
+                      <div class="matrix-cell"
+                           x-show="getCellData(asset.key, yr) !== null"
+                           :class="matrixCellClass(asset.key, yr)"
+                           :style="`background: ${activeCellColor(asset.key, yr)}; color: ${activeCellTextColor(asset.key, yr)};`"
+                           @click="toggleDrilldown(asset.key, yr)"
+                           @mouseenter="showCellTt($event, asset, yr, getCellData(asset.key, yr))"
+                           @mouseleave="hideTt()"
+                           x-text="cellText(getCellData(asset.key, yr), asset.key, yr)">
+                      </div>
+                      <div class="matrix-cell matrix-cell-empty" x-show="getCellData(asset.key, yr) === null"></div>
                     </td>
                   </template>
                 </tr>

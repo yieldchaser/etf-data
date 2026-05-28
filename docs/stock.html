@@ -114,7 +114,7 @@
   </div>
 
   <!-- NOT FOUND STATE -->
-  <div x-show="!loading && !found" class="text-center py-20">
+  <div x-show="!loading && !found && ticker" class="text-center py-20">
     <div class="text-base mb-2" style="color: var(--down)" x-text="`'${ticker}' not found`"></div>
     <div class="text-xs mb-4" style="color: var(--text-3)">This ticker may not be in the top 300. Check the leaderboard.</div>
     <a href="index.html" class="text-xs px-3 py-1.5 rounded-md border transition" style="color: var(--cyan); border-color: rgba(34,211,238,0.3); text-decoration: none;">← Back to Dashboard</a>

@@ -187,6 +187,14 @@ def build(source: Path, output: Path) -> None:
             print(f"  {sym}: ERROR — {e}")
 
     sim_out = output / "sim_underlyings.json"
+    if sim_out.exists():
+        try:
+            existing_sim_count = len(json.loads(sim_out.read_text(encoding="utf-8")))
+            if len(sim_inputs) < existing_sim_count * 0.8:
+                print(f"\n⚠ Skipping sim_underlyings.json write — new count ({len(sim_inputs)}) < 80% of existing ({existing_sim_count}). Keeping existing file.")
+                return
+        except Exception:
+            pass
     sim_out.write_text(_dumps(sim_inputs, separators=(",", ":")), encoding="utf-8")
     sim_size_kb = sim_out.stat().st_size / 1024
     print(f"✓ sim_underlyings.json: {len(sim_inputs)} underlyings · {sim_size_kb:.0f} KB")

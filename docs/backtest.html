@@ -104,8 +104,8 @@
               <tr class="hover:bg-white/5 transition" style="border-bottom:1px solid rgba(255,255,255,0.03)">
                 <td class="px-3 py-2 font-medium">
                   <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full" :style="`background:${stratColor(key)}`"></span>
-                    <span x-text="strat.label"></span>
+                    <span class="w-2 h-2 rounded-full" :style="`background:${key ? stratColor(key) : 'transparent'}`"></span>
+                    <span x-text="strat ? strat.label : ''"></span>
                   </div>
                 </td>
                 <td class="px-3 py-2 hidden sm:table-cell text-xs" style="color:var(--text-2)" x-text="strat.description"></td>
@@ -148,19 +148,17 @@
            @mouseleave="hi=null;hx=null">
         <svg viewBox="0 0 1000 300" class="w-full" style="height:300px;overflow:visible">
           <!-- Grid lines -->
-          <template x-for="y in [0.25,0.5,0.75]" :key="y">
-            <line :x1="0" :x2="1000" :y1="y*280+10" :y2="y*280+10" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
-          </template>
+          <line x1="0" x2="1000" y1="80" y2="80" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+          <line x1="0" x2="1000" y1="150" y2="150" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+          <line x1="0" x2="1000" y1="220" y2="220" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
           <!-- Zero line -->
           <line :x1="0" :x2="1000" :y1="zeroY" :y2="zeroY" stroke="rgba(255,255,255,0.12)" stroke-width="1" stroke-dasharray="4 4"/>
           <!-- Strategy lines -->
           <template x-for="[key,strat] in Object.entries(data.strategies||{})" :key="key">
-            <path :d="chartPath(strat.cumulative_returns)" :stroke="stratColor(key)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <path :d="strat ? chartPath(strat.cumulative_returns) : ''" :stroke="key ? stratColor(key) : 'transparent'" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
           </template>
           <!-- Crosshair -->
-          <template x-if="hi !== null">
-            <line class="crosshair-line" :x1="(hi/(chartDates.length-1))*1000" y1="0" :x2="(hi/(chartDates.length-1))*1000" y2="300"/>
-          </template>
+          <line class="crosshair-line" x-show="hi !== null" :x1="hi !== null ? (hi/(chartDates.length-1))*1000 : 0" y1="0" :x2="hi !== null ? (hi/(chartDates.length-1))*1000 : 0" y2="300"/>
           <!-- X-axis labels -->
           <g style="font-family:ui-monospace;font-size:9px" fill="var(--text-3)">
             <text x="0" y="298" text-anchor="start" x-text="chartDates[0]?.slice(0,7)||''"></text>
@@ -174,10 +172,10 @@
           <div class="font-mono mb-1" style="color:var(--text-3)" x-text="chartDates[hi]||''"></div>
           <template x-for="[key,strat] in Object.entries(data.strategies||{})" :key="key">
             <div class="flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full" :style="`background:${stratColor(key)}`"></span>
-              <span class="font-mono" x-text="strat.label"></span>
-              <span class="num font-mono ml-auto" :style="`color:${stratColor(key)}`"
-                    x-text="chartReturnAt(strat.cumulative_returns, hi)"></span>
+              <span class="w-2 h-2 rounded-full" :style="`background:${key ? stratColor(key) : 'transparent'}`"></span>
+              <span class="font-mono" x-text="strat ? strat.label : ''"></span>
+              <span class="num font-mono ml-auto" :style="`color:${key ? stratColor(key) : 'transparent'}`"
+                    x-text="strat ? chartReturnAt(strat.cumulative_returns, hi) : ''"></span>
             </div>
           </template>
         </div>
@@ -185,8 +183,8 @@
         <div class="flex flex-wrap gap-4 mt-2 text-xs">
           <template x-for="[key,strat] in Object.entries(data.strategies||{})" :key="key">
             <div class="flex items-center gap-1.5">
-              <span class="inline-block w-5 h-0.5 rounded" :style="`background:${stratColor(key)}`"></span>
-              <span x-text="strat.label"></span>
+              <span class="inline-block w-5 h-0.5 rounded" :style="`background:${key ? stratColor(key) : 'transparent'}`"></span>
+              <span x-text="strat ? strat.label : ''"></span>
             </div>
           </template>
         </div>
@@ -202,16 +200,16 @@
       <div class="p-3">
         <svg viewBox="0 0 1000 400" class="w-full" style="height:400px">
           <!-- Grid -->
-          <template x-for="y in [0.25,0.5,0.75]" :key="y">
-            <line :x1="60" :x2="980" :y1="y*360+20" :y2="y*360+20" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
-          </template>
+          <line x1="60" x2="980" y1="110" y2="110" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+          <line x1="60" x2="980" y1="200" y2="200" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+          <line x1="60" x2="980" y1="290" y2="290" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
           <!-- Zero return line -->
           <line :x1="60" :x2="980" :y1="scatterZeroY" :y2="scatterZeroY" stroke="rgba(255,255,255,0.15)" stroke-width="1" stroke-dasharray="4 4"/>
           <!-- Zero velocity line -->
           <line :x1="scatterZeroX" :x2="scatterZeroX" y1="20" y2="380" stroke="rgba(255,255,255,0.08)" stroke-width="1" stroke-dasharray="4 4"/>
           <!-- Scatter dots -->
           <template x-for="(pt, i) in scatterPoints" :key="i">
-            <circle :cx="pt.x" :cy="pt.y" r="2.5" fill="rgba(34,211,238,0.35)" stroke="none"/>
+            <circle :cx="pt?.x ?? 0" :cy="pt?.y ?? 0" r="2.5" fill="rgba(34,211,238,0.35)" stroke="none"/>
           </template>
           <!-- Regression line -->
           <line :x1="regLine.x1" :y1="regLine.y1" :x2="regLine.x2" :y2="regLine.y2"
