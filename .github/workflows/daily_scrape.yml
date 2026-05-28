@@ -62,7 +62,7 @@ jobs:
           else
             git commit -m "Auto-update: Daily Holdings Data 📈"
             # Pull --rebase to incorporate any commits pushed to main while the scraper ran
-            git pull --rebase --autostash origin main
+            git pull --rebase --autostash -X theirs origin main
             git push origin main
             echo "data_changed=true" >> $GITHUB_OUTPUT
           fi
