@@ -223,16 +223,18 @@ def test_bridge_cleans_canonical_csv_to_pipeline_schema(tmp_path, monkeypatch):
         assert (cleaned["weight"] <= 1).all()
 
         # Property 4 — per-row faithful projection of etf, ticker, weight.
-        # Note: future as_of_dates are clamped to today (§28 date bug fix).
-        # Build input_keys using the same clamping logic — use scraper.TODAY
-        # (the module-level constant) to match what clean_canonical_csv uses.
+        # Note: future as_of_dates are clamped to today (§28 date bug fix) AND
+        # weekend/holiday dates are rolled back to the prev business day.
+        # Build input_keys using the same two-step logic so the assertion stays
+        # in sync with what clean_canonical_csv actually does.
         import scraper as _scraper
         today_str = _scraper.TODAY
         cleaned_keys = set(zip(
             cleaned["ETF_Ticker"], cleaned["ticker"], cleaned["Holdings_As_Of"]
         ))
         input_keys = {
-            (r["etf"], r["ticker"], min(r["as_of_date"], today_str))
+            (r["etf"], r["ticker"],
+             _scraper.roll_to_prev_biz_day(min(r["as_of_date"], today_str)))
             for r in rows
         }
         assert cleaned_keys == input_keys

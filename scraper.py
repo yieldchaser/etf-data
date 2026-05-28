@@ -43,6 +43,31 @@ DATA_DIR_LEGACY_BACKUP = 'data/legacy_backup'
 GIANT_HISTORY_FILE = 'data/all_history.csv' 
 TODAY = datetime.now().strftime('%Y-%m-%d')
 
+# ── US trading-day helper ─────────────────────────────────────────────────────
+# Build the holiday set once at import time so every caller shares the same
+# object (no repeated calendar construction inside hot loops).
+import datetime as _dt
+from pandas.tseries.holiday import USFederalHolidayCalendar as _USCal
+_US_HOLIDAYS: frozenset = frozenset(
+    _USCal().holidays(start='2010-01-01', end='2040-12-31')
+    .strftime('%Y-%m-%d')
+    .tolist()
+)
+
+def roll_to_prev_biz_day(d_str: str) -> str:
+    """Return the most recent US business day <= d_str.
+
+    Rolls back through weekends and US federal holidays.  Safe to call
+    on already-valid trading days (returns the input unchanged).
+    """
+    try:
+        d = _dt.date.fromisoformat(d_str)
+    except (ValueError, TypeError):
+        return d_str
+    while d.weekday() >= 5 or d.isoformat() in _US_HOLIDAYS:
+        d -= _dt.timedelta(days=1)
+    return d.isoformat()
+
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 }
@@ -231,24 +256,8 @@ def clean_canonical_csv(csv_path):
             df.loc[future_mask, "Holdings_As_Of"] = today_clamp
         # Belt-and-suspenders: roll back any weekend/holiday dates that slipped
         # through (e.g. GRIN's DOM scraper picking up a non-trading date).
-        from pandas.tseries.holiday import USFederalHolidayCalendar
-        import datetime as _dt
-        _us_hols = set(
-            USFederalHolidayCalendar()
-            .holidays(start='2020-01-01', end='2035-12-31')
-            .strftime('%Y-%m-%d')
-            .tolist()
-        )
-        def _roll_to_biz(d_str):
-            try:
-                d = _dt.date.fromisoformat(d_str)
-                while d.weekday() >= 5 or d.isoformat() in _us_hols:
-                    d -= _dt.timedelta(days=1)
-                return d.isoformat()
-            except Exception:
-                return d_str
         nonbiz_mask = df["Holdings_As_Of"].apply(
-            lambda s: pd.Timestamp(s).weekday() >= 5 or s in _us_hols
+            lambda s: pd.Timestamp(s).weekday() >= 5 or s in _US_HOLIDAYS
         )
         if nonbiz_mask.any():
             for _, row in df[nonbiz_mask].iterrows():
@@ -257,7 +266,7 @@ def clean_canonical_csv(csv_path):
                     f"{row.get('etf', '')}: {row.get('Holdings_As_Of', '')}"
                 )
             df.loc[nonbiz_mask, "Holdings_As_Of"] = (
-                df.loc[nonbiz_mask, "Holdings_As_Of"].apply(_roll_to_biz)
+                df.loc[nonbiz_mask, "Holdings_As_Of"].apply(roll_to_prev_biz_day)
             )
 
     # Step 8: Rename etf → ETF_Ticker, round weight, project to Pipeline_Schema.
