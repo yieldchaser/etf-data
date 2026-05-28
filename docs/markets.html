@@ -1950,6 +1950,7 @@ function _showTt(el, html) {
   _posTt(el);
 }
 function _posTt(el) {
+  if (el && typeof el.getBoundingClientRect !== 'function') el = el.currentTarget || el.target;
   const r = el.getBoundingClientRect();
   const tw = tt.offsetWidth || 200, th = tt.offsetHeight || 40;
   let x = r.left + r.width / 2 - tw / 2;

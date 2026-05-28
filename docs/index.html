@@ -505,7 +505,8 @@
                   </td>
                 </tr>
                 <!-- Expanded row -->
-                <tr x-show="open === row.ticker" x-transition.opacity style="background: #050505; border-bottom: 1px solid var(--border)">
+                <template x-if="open === row.ticker">
+                <tr x-transition.opacity style="background: #050505; border-bottom: 1px solid var(--border)">
                   <td colspan="14" class="px-4 py-4">
                     <!-- Explainer line -->
                     <div class="text-xs mb-3 px-3 py-2 rounded" style="background: rgba(34, 211, 238, 0.04); border: 1px solid rgba(34, 211, 238, 0.10); color: var(--text-2)" x-text="explainerFor(row)"></div>
@@ -660,6 +661,7 @@
                     </div><!-- /two-panel -->
                   </td>
                 </tr>
+                </template>
               </tbody>
             </template>
           </table>
@@ -967,7 +969,8 @@
                     </td>
                   </tr>
                   <!-- Expanded row -->
-                  <tr x-show="open === row.ticker" x-transition.opacity style="background: #050505; border-bottom: 1px solid var(--border)">
+                  <template x-if="open === row.ticker">
+                  <tr x-transition.opacity style="background: #050505; border-bottom: 1px solid var(--border)">
                     <td colspan="14" class="px-4 py-4">
                       <!-- Explainer line -->
                       <div class="text-xs mb-3 px-3 py-2 rounded" style="background: rgba(34, 211, 238, 0.04); border: 1px solid rgba(34, 211, 238, 0.10); color: var(--text-2)" x-text="explainerFor(row)"></div>
@@ -1104,6 +1107,7 @@
                       </div><!-- /two-panel -->
                     </td>
                   </tr>
+                  </template>
                 </tbody>
               </template>
             </table>

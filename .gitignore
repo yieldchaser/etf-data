@@ -49,3 +49,5 @@ data/markets/
 # .kiro/specs/bounded-data-zero-loss/design.md → "Part C.1 — Git LFS migration procedure".
 # Clones without `git lfs install` will get a pointer file; predator/ingest_markets_xl.py
 # detects this and raises a clear LFS-specific error.
+# Added by code-review-graph
+.code-review-graph/

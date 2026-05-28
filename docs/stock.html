@@ -256,6 +256,10 @@
              class="flex items-center justify-center py-8 text-xs" style="color:var(--text-3)">
           No price data available for this ticker
         </div>
+        <div x-show="!stockPending && stockPrices.length > 0 && stockFilteredPrices.length <= 1"
+             class="flex items-center justify-center py-8 text-xs" style="color:var(--text-3)">
+          No data in this range — try a wider window
+        </div>
         <div x-show="stockFilteredPrices.length > 1" style="position:relative">
           <svg x-ref="stockSvg" viewBox="0 0 480 130" preserveAspectRatio="none"
                width="100%" height="130" style="display:block;overflow:visible">
@@ -857,7 +861,9 @@ function stockApp() {
     // SVG sparkline helpers
     sparkX(i, n) { return (i / Math.max(1, n - 1)) * 900; },
     sparkY(s, series) {
-      const vals = series.map(x => x.s);
+      if (!series.length) return 60;
+      const vals = series.map(x => x.s).filter(v => Number.isFinite(v));
+      if (!vals.length) return 60;
       const mn = Math.min(...vals), mx = Math.max(...vals);
       const range = mx - mn || 1;
       return 110 - ((s - mn) / range) * 100;
@@ -1364,7 +1370,7 @@ function stockApp() {
       // 3. Best rank marker
       let bestMarker = '';
       const bw = this.lbBestWorst;
-      if (bw && bw.best) {
+      if (bw && bw.best && Number.isFinite(bw.best.x) && Number.isFinite(bw.best.y)) {
         bestMarker = `<g>
           <circle cx="${bw.best.x.toFixed(1)}" cy="${bw.best.y.toFixed(1)}" r="4" fill="var(--up)" stroke="#000" stroke-width="1"/>
           <text x="${bw.best.x.toFixed(1)}" y="${(bw.best.y - 8).toFixed(1)}" text-anchor="middle" style="font-family:ui-monospace;font-size:8px;fill:var(--up)">Best #${bw.best.rank}</text>
