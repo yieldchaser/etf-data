@@ -229,6 +229,36 @@ def clean_canonical_csv(csv_path):
                     f"{row.get('Holdings_As_Of', '')} → {today_clamp}"
                 )
             df.loc[future_mask, "Holdings_As_Of"] = today_clamp
+        # Belt-and-suspenders: roll back any weekend/holiday dates that slipped
+        # through (e.g. GRIN's DOM scraper picking up a non-trading date).
+        from pandas.tseries.holiday import USFederalHolidayCalendar
+        import datetime as _dt
+        _us_hols = set(
+            USFederalHolidayCalendar()
+            .holidays(start='2020-01-01', end='2035-12-31')
+            .strftime('%Y-%m-%d')
+            .tolist()
+        )
+        def _roll_to_biz(d_str):
+            try:
+                d = _dt.date.fromisoformat(d_str)
+                while d.weekday() >= 5 or d.isoformat() in _us_hols:
+                    d -= _dt.timedelta(days=1)
+                return d.isoformat()
+            except Exception:
+                return d_str
+        nonbiz_mask = df["Holdings_As_Of"].apply(
+            lambda s: pd.Timestamp(s).weekday() >= 5 or s in _us_hols
+        )
+        if nonbiz_mask.any():
+            for _, row in df[nonbiz_mask].iterrows():
+                print(
+                    f"  ⚠️  Non-trading Holdings_As_Of rolled back for "
+                    f"{row.get('etf', '')}: {row.get('Holdings_As_Of', '')}"
+                )
+            df.loc[nonbiz_mask, "Holdings_As_Of"] = (
+                df.loc[nonbiz_mask, "Holdings_As_Of"].apply(_roll_to_biz)
+            )
 
     # Step 8: Rename etf → ETF_Ticker, round weight, project to Pipeline_Schema.
     df = df.rename(columns={"etf": "ETF_Ticker"})

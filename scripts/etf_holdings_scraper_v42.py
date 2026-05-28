@@ -30,6 +30,30 @@ def prev_biz_day(d=None, n=1):
             d -= timedelta(days=1)
     return d
 
+def _clamp_to_prev_biz_day(date_str: str) -> str:
+    """
+    Clamp a date string to the most recent US business day <= today.
+    Rolls back through weekends and US federal holidays so that
+    Holdings_As_Of never lands on a Saturday, Sunday, or market holiday.
+    """
+    try:
+        d = pd.Timestamp(date_str).date()
+    except Exception:
+        return date_str
+    today = date.today()
+    if d > today:
+        d = today
+    from pandas.tseries.holiday import USFederalHolidayCalendar
+    _holidays = set(
+        USFederalHolidayCalendar()
+        .holidays(start='2020-01-01', end='2035-12-31')
+        .strftime('%Y-%m-%d')
+        .tolist()
+    )
+    while d.weekday() >= 5 or d.strftime('%Y-%m-%d') in _holidays:
+        d -= timedelta(days=1)
+    return d.strftime('%Y-%m-%d')
+
 TODAY   = date.today()
 TODAY_8 = TODAY.strftime('%Y%m%d')
 print(f"Run date: {TODAY_8}  |  Prev biz day: {prev_biz_day().strftime('%Y%m%d')}")
@@ -153,6 +177,8 @@ def _canonicalize(df: pd.DataFrame, etf: str, as_of_date: str = '') -> pd.DataFr
         df['as_of_date'] = df['as_of_date'].apply(_norm)
     else:
         df['as_of_date'] = as_of_date
+    # Clamp to most recent US business day <= today (catches weekends & holidays)
+    df['as_of_date'] = df['as_of_date'].apply(_clamp_to_prev_biz_day)
 
     # Step 5 — fill missing canonical cols
     for col in _CANON_COLS:
