@@ -335,29 +335,46 @@ def _fetch_description_one(symbol: str) -> str | None:
 # stock.html applies the IDENTICAL regex when building the fetch URL, so the
 # written name and the requested name stay in sync.
 _UNSAFE_FN_RE = re.compile(r"[^A-Za-z0-9._-]")
+# Windows reserved device names — invalid as a filename base regardless of the
+# characters used (e.g. ticker "CON" → CON.json can't exist on Windows).
+_WIN_RESERVED = {"CON", "PRN", "AUX", "NUL"} | {f"COM{i}" for i in range(1, 10)} | {f"LPT{i}" for i in range(1, 10)}
 
 
 def _safe_detail_stem(ticker: str) -> str:
-    return _UNSAFE_FN_RE.sub("_", ticker)
+    """Map a raw ticker to a stem that is a valid filename on every OS.
+
+    Mirrored verbatim in docs/stock.html so the written name and the requested
+    URL stay in sync. Handles: illegal chars, trailing dot/space (invalid on
+    Windows), empty result, and Windows reserved device names.
+    """
+    stem = _UNSAFE_FN_RE.sub("_", ticker).rstrip(". ")
+    if not stem:
+        stem = "_"
+    if stem.upper() in _WIN_RESERVED:
+        stem = stem + "_"
+    return stem
 
 
 def _cleanup_unsafe_detail_files() -> int:
-    """Delete pre-existing detail files whose names contain characters that are
-    invalid on Windows/NTFS (legacy artifacts written before names were
-    sanitised). Returns the count removed. The commit-back step stages these
-    deletions so the repo becomes checkout-safe on Windows."""
+    """Delete legacy detail files whose names are not already in canonical safe
+    form — covers illegal chars (WALMEX.*.json), trailing dot/space, AND Windows
+    reserved device names (CON.json). Returns the count removed. The commit-back
+    step stages these deletions so the repo is checkout-safe on every OS."""
     removed = 0
     if not DETAILS_DIR.exists():
         return 0
     for f in DETAILS_DIR.iterdir():
-        if f.is_file() and _UNSAFE_FN_RE.search(f.name):
+        if not f.is_file() or not f.name.endswith(".json"):
+            continue
+        stem = f.name[:-len(".json")]
+        if _safe_detail_stem(stem) + ".json" != f.name:
             try:
                 f.unlink()
                 removed += 1
             except OSError as e:
-                print(f"  WARNING: could not remove unsafe file {f.name}: {e}")
+                print(f"  WARNING: could not remove legacy file {f.name}: {e}")
     if removed:
-        print(f"  Removed {removed} legacy unsafe-named detail file(s).")
+        print(f"  Removed {removed} legacy non-canonical detail file(s).")
     return removed
 
 
