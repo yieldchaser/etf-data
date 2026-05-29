@@ -26,7 +26,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write   # commit-back of accumulated stock-detail coverage
   pages: write
   id-token: write
 
@@ -73,6 +73,37 @@ jobs:
         id: fetch_stock_details
         run: python -m predator.fetch_stock_details
         continue-on-error: true   # never break the build if yfinance is flaky
+
+      # ── Persist self-healing stock-detail coverage back to main ──────────
+      # fetch_stock_details resolves ~150 new tickers per run and writes them
+      # to docs/data/details/ plus data/coverage_state.json and the description
+      # cache. Without committing these back, every build re-reads coverage=0
+      # and reprocesses the SAME first batch forever, so the long tail of
+      # tickers never gets a detail page (permanent 404s). Commit them so
+      # coverage accumulates to full over successive runs.
+      #
+      # IMPORTANT:
+      #   * [skip ci] is mandatory — build_site's own push trigger watches
+      #     docs/**, so an un-guarded commit here would re-trigger build_site
+      #     in an infinite loop.
+      #   * Checkout is a detached HEAD (specific SHA), so push HEAD:main.
+      #   * pull --rebase -X theirs keeps our generated files on conflict,
+      #     mirroring the proven daily_scrape commit pattern.
+      - name: Persist stock-detail coverage (accumulate across runs)
+        if: steps.fetch_stock_details.outcome == 'success'
+        continue-on-error: true   # a push race must never fail the deploy
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/data/details data/coverage_state.json data/company_descriptions.json
+          if git diff --staged --quiet; then
+            echo "No stock-detail coverage changes to commit."
+          else
+            git commit -m "Auto-update: stock-detail coverage 📊 [skip ci]"
+            git pull --rebase --autostash -X theirs origin main
+            git push origin HEAD:main
+            echo "Committed accumulated stock-detail coverage."
+          fi
 
       # ── Markets data pipeline ─────────────────────────────────────────
       # ORDER (charter v2 Part 2 — self-living merge):
