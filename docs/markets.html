@@ -2805,6 +2805,7 @@ function marketsApp() {
       'gold:1973': true,
       'gold:1979': true,
       'silver:1979': true,
+      'silver:1980': true,
       'silver:2010': true,
       'silver:2025': true,
       'platinum:1978': true,
@@ -2834,24 +2835,33 @@ function marketsApp() {
       'copper_lb:2009': true,
       'wti_crude:1999': true,
       'wti_crude:2009': true,
+      'wti_crude:2020': true,
       'wti_crude:2026': true,
       'brent_crude:1999': true,
       'brent_crude:2009': true,
+      'brent_crude:2020': true,
       'brent_crude:2026': true,
       'wheat:1973': true,
       'wheat:2010': true,
       'corn:1973': true,
       'corn:2006': true,
+      'soybeans:1974': true,
       'soybeans:2007': true,
       'cotton:1973': true,
+      'cotton:1986': true,
       'cotton:2010': true,
       'sugar:1963': true,
       'sugar:1964': true,
+      'sugar:1965': true,
       'sugar:1967': true,
       'sugar:1971': true,
+      'sugar:1972': true,
       'sugar:1974': true,
       'sugar:1979': true,
       'sugar:1980': true,
+      'sugar:1983': true,
+      'sugar:1985': true,
+      'sugar:1986': true,
       'sugar:2000': true,
       'sugar:2009': true,
       'coffee:1976': true,
@@ -2874,6 +2884,10 @@ function marketsApp() {
     // click-through interaction are all preserved.
     validateExtreme(ret, year, assetId, count, monthsExpected) {
       if (ret === null || ret === undefined || !Number.isFinite(ret)) return { ok: true };
+      const key = `${assetId}:${year}`;
+      if (this.KNOWN_REAL_EVENTS[key]) {
+        return { ok: true };
+      }
       const cd = this.getCellData(assetId, year);
       if (cd && cd.boundaryAnomaly) {
         return { ok: false, reason: 'boundary_anomaly' };
@@ -4074,7 +4088,8 @@ function marketsApp() {
       const partialLine    = cellData.partial
         ? `\n⚠ Partial year (${monthsPresent}/${monthsExpected} months) — not a full-year return`
         : '';
-      const anomalyLine    = cellData.boundaryAnomaly
+      const isKnown        = this.KNOWN_REAL_EVENTS[`${asset.key}:${year}`] || false;
+      const anomalyLine    = (cellData.boundaryAnomaly && !isKnown)
         ? '\n⚠ Boundary anomaly (one monthly return >50% on a non-equity series — likely Excel↔FRED unit mismatch)'
         : '';
       let extremeLine = '';
