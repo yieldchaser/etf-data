@@ -44,6 +44,9 @@ sanitizer:
   blocked_name_patterns:
     - "Money Market"
     - "Securities Lending"
+    - "Index Future"
+    - "IFUS"
+    - " FUT "
   # blocked_name_patterns:
   #   - "CASH &"
   #   - "CASH COLLATERAL"

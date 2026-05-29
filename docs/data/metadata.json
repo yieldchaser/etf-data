@@ -1,9 +1,9 @@
 {
-  "generated_at_utc": "2026-05-29T16:53:21+00:00",
+  "generated_at_utc": "2026-05-29T17:29:39+00:00",
   "source": "data/all_history.csv",
   "source_rows_raw": 109568,
-  "source_rows_after_sanitize": 6495,
-  "leaderboard_rows": 3901,
+  "source_rows_after_sanitize": 6492,
+  "leaderboard_rows": 3898,
   "latest_holdings_as_of": "2026-05-28",
   "latest_scrape_date": "2026-05-29",
   "etfs": [
@@ -135,7 +135,7 @@
     "HIGH_CONVICTION": 1,
     "SPECULATIVE_BETA": 94,
     "NEW": 124,
-    "NONE": 3806
+    "NONE": 3803
   },
   "flag_counts_yesterday": {
     "HIGH_CONVICTION": 1,
@@ -225,7 +225,10 @@
       ],
       "blocked_name_patterns": [
         "Money Market",
-        "Securities Lending"
+        "Securities Lending",
+        "Index Future",
+        "IFUS",
+        " FUT "
       ]
     },
     "etfs": [

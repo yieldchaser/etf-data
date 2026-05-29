@@ -35,21 +35,21 @@
       "score_streak": 1
     },
     {
-      "ticker": "6488",
-      "company": "GLOBALWAFERS CO LTD TAIWAN (PROVINCE OF CHINA)",
-      "final_score": 22.0,
-      "etf_count": 1,
-      "tiers": "Quant",
-      "score_delta": 3.0,
-      "score_delta_pct": 0.1579,
-      "score_streak": 1
-    },
-    {
       "ticker": "URI",
       "company": "United Rentals Inc",
       "final_score": 22.0,
       "etf_count": 2,
       "tiers": "Quality + Quant",
+      "score_delta": 3.0,
+      "score_delta_pct": 0.1579,
+      "score_streak": 1
+    },
+    {
+      "ticker": "6488",
+      "company": "GLOBALWAFERS CO LTD TAIWAN (PROVINCE OF CHINA)",
+      "final_score": 22.0,
+      "etf_count": 1,
+      "tiers": "Quant",
       "score_delta": 3.0,
       "score_delta_pct": 0.1579,
       "score_streak": 1
@@ -267,6 +267,16 @@
       "score_streak": -1
     },
     {
+      "ticker": "068270",
+      "company": "CELLTRION INC KOREA (THE REPUBLIC OF)",
+      "final_score": 24.0,
+      "etf_count": 1,
+      "tiers": "Quant",
+      "score_delta": -2.0,
+      "score_delta_pct": -0.0769,
+      "score_streak": -1
+    },
+    {
       "ticker": "1150",
       "company": "ALINMA BANK SAUDI ARABIA",
       "final_score": 24.0,
@@ -279,16 +289,6 @@
     {
       "ticker": "ADVANC",
       "company": "ADVANCED INFO SERVICE NVDR THAILAND",
-      "final_score": 24.0,
-      "etf_count": 1,
-      "tiers": "Quant",
-      "score_delta": -2.0,
-      "score_delta_pct": -0.0769,
-      "score_streak": -1
-    },
-    {
-      "ticker": "068270",
-      "company": "CELLTRION INC KOREA (THE REPUBLIC OF)",
       "final_score": 24.0,
       "etf_count": 1,
       "tiers": "Quant",
@@ -474,8 +474,8 @@
       "company": "Williams-Sonoma Inc",
       "velocity_score": 179.16,
       "avg_rank_delta_7d": 11.0,
-      "global_rank_delta_30d": 204,
-      "global_rank_peak_30d": 497,
+      "global_rank_delta_30d": 205,
+      "global_rank_peak_30d": 498,
       "etf_count_delta_30d": 3,
       "burst_30d": false,
       "final_score": 52,
@@ -501,7 +501,7 @@
       "velocity_score": 170.17,
       "avg_rank_delta_7d": 106.5,
       "global_rank_delta_30d": 0,
-      "global_rank_peak_30d": 1001,
+      "global_rank_peak_30d": 1002,
       "etf_count_delta_30d": 0,
       "burst_30d": false,
       "final_score": 14,
@@ -591,8 +591,8 @@
       "company": "CIENA CORP UNITED STATES OF AMERICA (THE)",
       "velocity_score": 164.33,
       "avg_rank_delta_7d": -0.6,
-      "global_rank_delta_30d": 313,
-      "global_rank_peak_30d": 378,
+      "global_rank_delta_30d": 314,
+      "global_rank_peak_30d": 379,
       "etf_count_delta_30d": 3,
       "burst_30d": true,
       "final_score": 81,
