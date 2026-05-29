@@ -71,8 +71,11 @@ jobs:
       # so only new tickers need to be queried on each build (rate-limit safe).
       - name: Fetch stock details (descriptions + 2-year price history)
         id: fetch_stock_details
-        run: python -m predator.fetch_stock_details
-        continue-on-error: true   # never break the build if yfinance is flaky
+        # batch-size 250: with leaderboard-rank prioritisation this resolves the
+        # full top-250-by-rank in one run, then keeps growing the long tail
+        # ~250/run. continue-on-error: never break the build if yfinance is flaky.
+        run: python -m predator.fetch_stock_details --batch-size 250
+        continue-on-error: true
 
       # ── Persist self-healing stock-detail coverage back to main ──────────
       # fetch_stock_details resolves ~150 new tickers per run and writes them

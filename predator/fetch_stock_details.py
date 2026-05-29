@@ -162,6 +162,29 @@ def _load_leaderboard_tickers() -> dict[str, str]:
         return {}
 
 
+def _load_leaderboard_ranks() -> dict[str, int]:
+    """{ticker: leaderboard_rank} — lower rank = higher conviction. Drives
+    batch prioritisation so the most-viewed top names (e.g. MU #34) get real
+    price/description data before the long tail, rather than being starved
+    behind an alphabetical/US-first ordering."""
+    if not LEADERBOARD_PATH.exists():
+        return {}
+    try:
+        lb = json.loads(LEADERBOARD_PATH.read_text(encoding="utf-8"))
+        out: dict[str, int] = {}
+        for i, r in enumerate(lb):
+            t = r.get("ticker")
+            if t:
+                # Prefer the explicit field; fall back to row order (the file
+                # is emitted in rank order) if it's missing/null.
+                rank = r.get("leaderboard_rank")
+                out[t] = int(rank) if isinstance(rank, (int, float)) else i + 1
+        return out
+    except Exception as e:
+        print(f"  WARNING: could not load leaderboard ranks: {e}")
+        return {}
+
+
 def _load_ticker_metadata() -> dict[str, dict]:
     if not TICKER_META_PATH.exists():
         return {}
@@ -414,8 +437,19 @@ def _write_pending_stubs(pending_tickers: list[str], lb_map: dict[str, str]) -> 
 def _prioritize_batch(
     pending: list[str], metadata: dict,
     symbol_map: dict, batch_size: int,
+    lb_ranks: dict[str, int] | None = None,
 ) -> list[str]:
-    def priority(t: str) -> int:
+    """Order the pending tickers so the highest-conviction names resolve first.
+
+    Primary key is leaderboard rank (lower = better) so the top-of-board names
+    users actually open (e.g. MU #34) get real data before the long tail.
+    Secondary key keeps the original yfinance-resolvability tiering as a
+    tiebreak among equal/unknown ranks (already-mapped, then US, then known
+    country, then unknown), with ticker as a final stable tiebreak.
+    """
+    lb_ranks = lb_ranks or {}
+
+    def resolvability(t: str) -> int:
         if t in symbol_map:
             return 0
         country = (metadata.get(t) or {}).get("country", "")
@@ -424,7 +458,12 @@ def _prioritize_batch(
         if country and country not in ("Unknown", ""):
             return 2
         return 3
-    return sorted(pending, key=priority)[:batch_size]
+
+    # Unranked tickers sort after every ranked one.
+    def key(t: str) -> tuple[int, int, str]:
+        return (lb_ranks.get(t, 10**9), resolvability(t), t)
+
+    return sorted(pending, key=key)[:batch_size]
 
 
 def build_details(
@@ -446,6 +485,7 @@ def build_details(
         print("  No tickers found — run predator.build first.")
         return
 
+    lb_ranks   = _load_leaderboard_ranks()
     metadata   = _load_ticker_metadata()
     state      = _load_coverage_state()
     symbol_map = _load_symbol_map()
@@ -473,8 +513,8 @@ def build_details(
         batch = [t for t in tickers_filter if t in total_universe]
         print(f"\n  Filter mode: {len(batch)} tickers")
     else:
-        batch = _prioritize_batch(sorted(pending_set), metadata, symbol_map, batch_size)
-        print(f"\n  Batch: {len(batch)} of {len(pending_set)} pending")
+        batch = _prioritize_batch(sorted(pending_set), metadata, symbol_map, batch_size, lb_ranks)
+        print(f"\n  Batch: {len(batch)} of {len(pending_set)} pending (top by leaderboard rank)")
 
     if dry_run:
         print("\n  --dry-run plan:")
