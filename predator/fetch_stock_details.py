@@ -328,6 +328,39 @@ def _fetch_description_one(symbol: str) -> str | None:
         return None
 
 
+# Map a raw ticker to a filesystem- and URL-safe detail-file stem. Some
+# leaderboard tickers carry scraper junk — footnote asterisks, HTML entities,
+# encoding damage (e.g. "WALMEX.*", "PE&amp;OLES*", "�"). '*' and friends
+# are invalid in Windows/NTFS paths and break `git checkout`/clone on Windows.
+# stock.html applies the IDENTICAL regex when building the fetch URL, so the
+# written name and the requested name stay in sync.
+_UNSAFE_FN_RE = re.compile(r"[^A-Za-z0-9._-]")
+
+
+def _safe_detail_stem(ticker: str) -> str:
+    return _UNSAFE_FN_RE.sub("_", ticker)
+
+
+def _cleanup_unsafe_detail_files() -> int:
+    """Delete pre-existing detail files whose names contain characters that are
+    invalid on Windows/NTFS (legacy artifacts written before names were
+    sanitised). Returns the count removed. The commit-back step stages these
+    deletions so the repo becomes checkout-safe on Windows."""
+    removed = 0
+    if not DETAILS_DIR.exists():
+        return 0
+    for f in DETAILS_DIR.iterdir():
+        if f.is_file() and _UNSAFE_FN_RE.search(f.name):
+            try:
+                f.unlink()
+                removed += 1
+            except OSError as e:
+                print(f"  WARNING: could not remove unsafe file {f.name}: {e}")
+    if removed:
+        print(f"  Removed {removed} legacy unsafe-named detail file(s).")
+    return removed
+
+
 def _write_detail_file(
     ticker: str, company: str,
     desc: str | None, prices: list[list] | None,
@@ -342,13 +375,13 @@ def _write_detail_file(
             "description": desc or "", "prices": prices or [],
             "generated": generated,
         }
-    _write_json_atomic(DETAILS_DIR / f"{ticker}.json", _dumps(payload, separators=(",", ":")))
+    _write_json_atomic(DETAILS_DIR / f"{_safe_detail_stem(ticker)}.json", _dumps(payload, separators=(",", ":")))
 
 
 def _write_pending_stubs(pending_tickers: list[str], lb_map: dict[str, str]) -> int:
     count = 0
     for ticker in pending_tickers:
-        out_path = DETAILS_DIR / f"{ticker}.json"
+        out_path = DETAILS_DIR / f"{_safe_detail_stem(ticker)}.json"
         if out_path.exists():
             try:
                 existing = json.loads(out_path.read_text(encoding="utf-8"))
@@ -389,6 +422,7 @@ def build_details(
     print("═" * 62)
 
     DETAILS_DIR.mkdir(parents=True, exist_ok=True)
+    _cleanup_unsafe_detail_files()
 
     lb_map     = _load_leaderboard_tickers()
     if not lb_map:

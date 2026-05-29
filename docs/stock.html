@@ -742,9 +742,14 @@ function stockApp() {
           this.flagHistory = fhData[this.ticker] || [];
         } catch { this.flagHistory = []; }
 
-        // Load stock detail file (price history + description)
+        // Load stock detail file (price history + description).
+        // Sanitise the ticker to match the file name written by
+        // predator.fetch_stock_details (_safe_detail_stem) — some tickers carry
+        // scraper junk like "WALMEX.*" / "PE&amp;OLES*" whose '*'/'&' are invalid
+        // in file paths. Both sides use the identical [^A-Za-z0-9._-] → '_' rule.
         try {
-          const detData = await fetch(`data/details/${encodeURIComponent(this.ticker)}.json`)
+          const safeStem = this.ticker.replace(/[^A-Za-z0-9._-]/g, '_');
+          const detData = await fetch(`data/details/${safeStem}.json`)
             .then(r => r.ok ? r.json() : Promise.reject(r.status));
           this.stockPending = detData.pending === true;
           this.stockDescription = detData.description || '';
