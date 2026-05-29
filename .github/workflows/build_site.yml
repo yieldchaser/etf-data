@@ -89,8 +89,12 @@ jobs:
       #   * Checkout is a detached HEAD (specific SHA), so push HEAD:main.
       #   * pull --rebase -X theirs keeps our generated files on conflict,
       #     mirroring the proven daily_scrape commit pattern.
+      # No `if:` guard — fetch_stock_details runs under continue-on-error, so a
+      # flaky-yfinance exit sets its `outcome` to 'failure' even when it still
+      # wrote ~150 valid detail files. Gating on outcome=='success' would skip
+      # persistence on every such run. Instead run unconditionally and let the
+      # `git diff --staged --quiet` check below no-op when nothing was written.
       - name: Persist stock-detail coverage (accumulate across runs)
-        if: steps.fetch_stock_details.outcome == 'success'
         continue-on-error: true   # a push race must never fail the deploy
         run: |
           git config user.name "github-actions[bot]"
