@@ -17,6 +17,9 @@ import math
 import os
 import sys
 import time
+import urllib.error
+import urllib.parse
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -128,8 +131,18 @@ INCREMENTAL_TRAILING_DAYS = 30
 
 # ─── FRED Client ─────────────────────────────────────────────────────────────
 
+# FRED JSON REST endpoint. We talk to this directly via urllib (same proven
+# path as markets.fetch_fred) instead of the fredapi library: under CI's
+# pandas/numpy stack fredapi.get_series raised opaque ValueError(None) for
+# every series, leaving vol_history.json un-generated (a permanent 404 on the
+# site's Volatility tab). The JSON REST path works with the identical key.
+FRED_OBS_BASE = "https://api.stlouisfed.org/fred/series/observations"
+
+
 def _get_fred_client():
-    """Initialise fredapi.Fred with API key from env. Returns None on failure."""
+    """Return the FRED API key from env (or None if unset). Named for symmetry
+    with the previous fredapi-based client — callers treat a None return as a
+    soft-skip signal."""
     try:
         from dotenv import load_dotenv
         load_dotenv()
@@ -142,46 +155,47 @@ def _get_fred_client():
         print("  Set it in your shell or create a .env file with FRED_API_KEY=your_key")
         return None
 
-    try:
-        from fredapi import Fred
-    except ImportError:
-        print("ERROR: fredapi package not installed. Run: pip install fredapi")
-        return None
-
-    return Fred(api_key=api_key)
+    return api_key
 
 
-# ─── FRED Fetch (daily, no frequency param) ──────────────────────────────────
+# ─── FRED Fetch (daily, JSON REST API via urllib) ────────────────────────────
 
 def _fetch_fred_daily(
-    fred,
+    api_key: str,
     series_id: str,
     full_refresh: bool = False,
     existing: pd.Series | None = None,
 ) -> pd.Series:
     """
-    Fetch a FRED daily series (no frequency/aggregation params — daily is default).
+    Fetch a FRED daily series via the JSON REST API (urllib).
 
     Uses exponential backoff on 429 (rate limit) errors.
     On incremental runs, only fetches trailing 30 days and merges with cache.
     """
-    kwargs: dict[str, Any] = {}
+    params: dict[str, str] = {
+        "series_id": series_id,
+        "api_key": api_key,
+        "file_type": "json",
+    }
 
     # Incremental: restrict observation_start to trailing window
     if not full_refresh and existing is not None and not existing.empty:
         last_date = existing.index.max()
         start = last_date - pd.DateOffset(days=INCREMENTAL_TRAILING_DAYS)
-        kwargs["observation_start"] = start.strftime("%Y-%m-%d")
+        params["observation_start"] = start.strftime("%Y-%m-%d")
 
+    url = f"{FRED_OBS_BASE}?{urllib.parse.urlencode(params)}"
     max_retries = 5
+    payload: dict[str, Any] | None = None
     for attempt in range(max_retries + 1):
         try:
             print(f"    Fetching {series_id} from FRED (attempt {attempt + 1})…", flush=True)
-            data = fred.get_series(series_id, **kwargs)
+            req = urllib.request.Request(url, headers={"Accept": "application/json"})
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                payload = json.loads(resp.read())
             break
-        except Exception as e:
-            err_str = str(e)
-            if "429" in err_str or "Too Many Requests" in err_str:
+        except urllib.error.HTTPError as e:
+            if e.code == 429:
                 if attempt >= max_retries:
                     print(f"    FAILED after {max_retries} retries: {series_id}")
                     return pd.Series(dtype=float)
@@ -189,14 +203,34 @@ def _fetch_fred_daily(
                 print(f"    Rate limited on {series_id}, waiting {wait:.1f}s (attempt {attempt + 1})")
                 time.sleep(wait)
             else:
-                print(f"    ERROR fetching {series_id}: {e}")
+                print(f"    ERROR fetching {series_id}: HTTP {e.code} {e.reason}")
                 return pd.Series(dtype=float)
+        except Exception as e:
+            print(f"    ERROR fetching {series_id}: {e}")
+            return pd.Series(dtype=float)
 
-    if data is None or data.empty:
+    obs = (payload or {}).get("observations", [])
+    if not obs:
         return pd.Series(dtype=float)
 
-    # Drop NaN (FRED publishes "." as NaN for missing observations)
-    data = data.dropna()
+    # FRED publishes "." for missing observations — skip those.
+    dates: list[str] = []
+    values: list[float] = []
+    for o in obs:
+        v = o.get("value", ".")
+        if v == ".":
+            continue
+        try:
+            values.append(float(v))
+            dates.append(o["date"])
+        except (ValueError, KeyError):
+            continue
+
+    if not dates:
+        return pd.Series(dtype=float)
+
+    data = pd.Series(values, index=pd.to_datetime(dates)).sort_index()
+    data = data[~data.index.duplicated(keep="last")]
 
     # Merge with existing if incremental
     if not full_refresh and existing is not None and not existing.empty:
