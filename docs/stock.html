@@ -277,9 +277,11 @@
                   stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
             <line x-show="stockHoverIdx!==null" :x1="stockHoverX" y1="0" :x2="stockHoverX" y2="130"
                   class="crosshair-line"/>
-            <circle x-show="stockHoverIdx!==null" :cx="stockHoverX" :cy="stockHoverY"
-                    r="4" class="crosshair-dot"/>
           </svg>
+          <!-- HTML-based hover dot to prevent horizontal stretching in preserveAspectRatio="none" SVG -->
+          <div x-show="stockHoverIdx!==null"
+               class="absolute rounded-full pointer-events-none"
+               :style="`left: ${stockHoverXPx}px; top: ${stockHoverY}px; width: 8px; height: 8px; margin-left: -4px; margin-top: -4px; background: ${(stockPriceChange||0)>=0?'var(--cyan)':'#fb7185'}; border: 1.5px solid #000; box-sizing: border-box;`"></div>
           <div x-show="stockHoverIdx!==null" class="chart-tooltip"
                :style="`top:4px;left:${Math.min((stockHoverXPx||0)+12, 780)}px`">
             <div class="font-mono text-[10px] mb-0.5" style="color:var(--text-3)" x-text="stockHoverDate"></div>
@@ -415,28 +417,28 @@
            "
            @mouseleave="ci = null; cx = null">
         <div x-show="scoreHistory.length < 2" class="py-8 text-center text-xs" style="color: var(--text-3)">Insufficient history (need ≥2 snapshots)</div>
-        <svg x-show="scoreHistory.length >= 2" width="100%" height="120" viewBox="0 0 900 120" preserveAspectRatio="none" style="display:block">
-          <!-- Area fill -->
-          <path :d="sparkAreaPath(scoreHistory)" fill="rgba(34,211,238,0.07)"/>
-          <!-- Line -->
-          <path :d="sparkLinePath(scoreHistory)" fill="none" stroke="var(--cyan)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-          <!-- Last point dot -->
-          <circle x-show="scoreHistory.length >= 2 && ci === null"
-                  :cx="sparkX(scoreHistory.length - 1, scoreHistory.length)"
-                  :cy="sparkY(scoreHistory[scoreHistory.length-1]?.s || 0, scoreHistory)"
-                  r="3" fill="var(--cyan)"/>
-          <!-- Crosshair vertical line -->
-          <line x-show="scoreHistory.length >= 2 && ci !== null" class="crosshair-line"
-                :x1="(ci / Math.max(1, scoreHistory.length - 1)) * 900"
-                y1="0"
-                :x2="(ci / Math.max(1, scoreHistory.length - 1)) * 900"
-                y2="120"/>
-          <!-- Crosshair dot -->
-          <circle x-show="scoreHistory.length >= 2 && ci !== null && ci < scoreHistory.length" class="crosshair-dot"
-                  :cx="(ci / Math.max(1, scoreHistory.length - 1)) * 900"
-                  :cy="sparkY(scoreHistory[ci]?.s ?? 0, scoreHistory)"
-                  r="4"/>
-        </svg>
+        <div x-show="scoreHistory.length >= 2" style="position:relative">
+          <svg width="100%" height="120" viewBox="0 0 900 120" preserveAspectRatio="none" style="display:block">
+            <!-- Area fill -->
+            <path :d="sparkAreaPath(scoreHistory)" fill="rgba(34,211,238,0.07)"/>
+            <!-- Line -->
+            <path :d="sparkLinePath(scoreHistory)" fill="none" stroke="var(--cyan)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <!-- Crosshair vertical line -->
+            <line x-show="scoreHistory.length >= 2 && ci !== null" class="crosshair-line"
+                  :x1="(ci / Math.max(1, scoreHistory.length - 1)) * 900"
+                  y1="0"
+                  :x2="(ci / Math.max(1, scoreHistory.length - 1)) * 900"
+                  y2="120"/>
+          </svg>
+          <!-- HTML-based last point dot to prevent horizontal stretching -->
+          <div x-show="scoreHistory.length >= 2 && ci === null"
+               class="absolute rounded-full pointer-events-none"
+               :style="`right: 0px; top: ${sparkY(scoreHistory[scoreHistory.length-1]?.s || 0, scoreHistory)}px; width: 6px; height: 6px; margin-right: -3px; margin-top: -3px; background: var(--cyan);`"></div>
+          <!-- HTML-based hover dot to prevent horizontal stretching -->
+          <div x-show="scoreHistory.length >= 2 && ci !== null && ci < scoreHistory.length"
+               class="absolute rounded-full pointer-events-none"
+               :style="`left: ${cx}px; top: ${sparkY(scoreHistory[ci]?.s ?? 0, scoreHistory)}px; width: 8px; height: 8px; margin-left: -4px; margin-top: -4px; background: var(--cyan); border: 1.5px solid #000; box-sizing: border-box;`"></div>
+        </div>
         <!-- Crosshair tooltip label -->
         <div x-show="ci !== null && scoreHistory[ci]"
              class="chart-tooltip"
@@ -820,7 +822,7 @@ function stockApp() {
       const idx = Math.round(ratio * (fp.length-1));
       this.stockHoverIdx = idx;
       this.stockHoverX = this._sX(idx);
-      this.stockHoverXPx = e.clientX - rect.left;
+      this.stockHoverXPx = (idx / Math.max(1, fp.length - 1)) * rect.width;
       this.stockHoverY = this._sY(fp[idx][1]);
       this.stockHoverDate = fp[idx][0];
       this.stockHoverPrice = fp[idx][1];
