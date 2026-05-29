@@ -91,6 +91,7 @@ KNOWN_SYMBOL_MAP: dict[str, str] = {
     "0388": "0388.HK", "1398": "1398.HK",
     "3690": "3690.HK", "2020": "2020.HK",
     "INFY": "INFY", "WIT": "WIT", "HDB": "HDB", "IBN": "IBN",
+    "ATGL": "ATGL.NS",
 }
 
 COUNTRY_SUFFIX: dict[str, str] = {

@@ -298,7 +298,7 @@
       </div>
       <div x-show="stockDescription || stockPending" class="px-3 pb-3 pt-1" style="border-top:1px solid var(--border)">
         <div class="label mb-1">About</div>
-        <div x-show="stockDescription" class="text-xs leading-relaxed" style="color:var(--text-2);max-width:860px" x-text="stockDescription"></div>
+        <div x-show="stockDescription" class="text-xs leading-relaxed" style="color:var(--text-2)" x-text="stockDescription"></div>
         <div x-show="!stockDescription && stockPending" class="text-xs" style="color:var(--text-3)">⏳ Company profile being fetched — check back on next build.</div>
       </div>
     </div>
