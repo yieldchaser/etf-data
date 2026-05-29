@@ -1,11 +1,11 @@
 {
-  "generated_at_utc": "2026-05-27T17:49:01+00:00",
+  "generated_at_utc": "2026-05-29T16:53:21+00:00",
   "source": "data/all_history.csv",
-  "source_rows_raw": 101885,
-  "source_rows_after_sanitize": 6499,
-  "leaderboard_rows": 3904,
-  "latest_holdings_as_of": "2026-05-26",
-  "latest_scrape_date": "2026-05-26",
+  "source_rows_raw": 109568,
+  "source_rows_after_sanitize": 6495,
+  "leaderboard_rows": 3901,
+  "latest_holdings_as_of": "2026-05-28",
+  "latest_scrape_date": "2026-05-29",
   "etfs": [
     "AVSC",
     "CALF",
@@ -127,13 +127,15 @@
     "2026-05-22",
     "2026-05-24",
     "2026-05-25",
-    "2026-05-26"
+    "2026-05-26",
+    "2026-05-27",
+    "2026-05-28"
   ],
   "flag_counts_today": {
     "HIGH_CONVICTION": 1,
     "SPECULATIVE_BETA": 94,
     "NEW": 124,
-    "NONE": 3809
+    "NONE": 3806
   },
   "flag_counts_yesterday": {
     "HIGH_CONVICTION": 1,
@@ -369,12 +371,12 @@
       },
       {
         "ticker": "XLG",
-        "tier": "Blob",
+        "tier": "Core",
         "points": 2
       },
       {
         "ticker": "QQQM",
-        "tier": "Blob",
+        "tier": "Core",
         "points": 2
       }
     ],

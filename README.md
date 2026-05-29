@@ -88,7 +88,7 @@ The ETF count is derived from `config.yaml::etfs[]` — that file is the source 
 | **Quant** (40–60 pts) | QMOM, IMOM, XMMO, XSMO, PIE, PDP, DWAS, EEMO, PIZ, JHMM, JHEM, JHSC, MFEM, JOET | Factor-based momentum (US + International) |
 | **Quality** (30 pts) | COWZ, CALF, SPHQ, IVAL, QVAL, VLUE, AVSC, GRIN | Free cash flow, value, profitability |
 | **Trend** (10 pts) | SPMO, SPHB, RPG | Broad momentum confirmation |
-| **Blob** (2 pts) | XLG, QQQM | Mega-cap benchmarks |
+| **Core** (2 pts) | XLG, QQQM | Mega-cap benchmarks |
 
 International ETFs (FPXI, IMOM, EEMO, PIZ, JHEM, MFEM) carry 60 points instead of their tier default to level the playing field — global names naturally appear in fewer US-focused ETFs.
 
@@ -139,7 +139,7 @@ Final Alpha Score = Σ Single Scores across all ETFs holding this ticker
 | Quant | 40 | IMOM, EEMO, PIZ, JHEM, MFEM → 60 (international) |
 | Quality | 30 | — |
 | Trend | 10 | — |
-| Blob | 2 | — |
+| Core | 2 | — |
 
 ### Rank Multiplier
 
@@ -243,7 +243,7 @@ Built with Tailwind CSS + Alpine.js. Zero build step — static HTML/JS served d
 | `conviction_divergence` | Score rising but rank falling (crowded out) or score falling but rank rising (relative strength) |
 | `stealth_accumulation` | Weight growing in 3+ ETFs without rank improvement |
 | `momentum_regime` | accelerating / rising / stable / weakening / declining |
-| `tier_breadth` | Count of distinct strategy tiers (Scout/Quant/Quality/Trend/Blob) co-holding this name |
+| `tier_breadth` | Count of distinct strategy tiers (Scout/Quant/Quality/Trend/Core) co-holding this name |
 | `concentration_score` | % of final score from single top ETF (100 = mono-ETF, 25 = perfectly diversified across 4) |
 | `quality_adopted_30d` | Gained a Quality ETF (COWZ/CALF/SPHQ) in last 30 days |
 | `quality_defected_30d` | Lost a Quality ETF in last 30 days |

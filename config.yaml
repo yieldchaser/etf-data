@@ -141,9 +141,9 @@ etfs:
   - {ticker: SPHB, tier: Trend,   points: 10}
   - {ticker: RPG,  tier: Trend,   points: 10}
 
-  # Blob — mega-cap benchmarks
-  - {ticker: XLG,  tier: Blob,    points: 2}
-  - {ticker: QQQM, tier: Blob,    points: 2}
+  # Core — mega-cap benchmarks
+  - {ticker: XLG,  tier: Core,    points: 2}
+  - {ticker: QQQM, tier: Core,    points: 2}
 
 # Rank multiplier inside each ETF (Power Query AddRankBonus step).
 rank_breakpoints:

@@ -1420,7 +1420,7 @@ function computeMetrics(equity, returns, benchEquity, benchReturns, rfMonthly = 
 
 function _lineChart(series, opts = {}) {
   const {
-    W = 1200, H = 280, PL = 60, PR = 20, PT = 20, PB = 35,
+    W = 1200, H = 280, PL = 60, PR = 80, PT = 20, PB = 35,
     logScale = false, title = '', yFmt = v => v.toFixed(0),
     xFmt = ym => ym.slice(0, 4),
     xStep = 12,

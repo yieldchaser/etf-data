@@ -948,7 +948,7 @@ function stockApp() {
       for (const etf of Object.keys(hh).sort()) {
         const rows = hh[etf];
         if (!rows || !rows.length) continue;
-        const tier = this.tierMap[etf] || 'Blob';
+        const tier = this.tierMap[etf] || 'Core';
         const color = this.tierLineColor(tier);
         const series = rows
           .filter(p => dateToX[p.d] !== undefined)
@@ -1163,7 +1163,7 @@ function stockApp() {
     },
 
     tierLineColor(tier) {
-      return { Scout: '#e879f9', Quant: '#818cf8', Quality: '#2dd4bf', Trend: '#fbbf24', Blob: '#a1a1aa' }[tier] || '#a1a1aa';
+      return { Scout: '#e879f9', Quant: '#818cf8', Quality: '#2dd4bf', Trend: '#fbbf24', Core: '#a1a1aa' }[tier] || '#a1a1aa';
     },
 
     // ── Score Decomposition (per-ETF stacked bar) ────────────────────────
@@ -1171,7 +1171,7 @@ function stockApp() {
       const comps = (this.scoreComponents || [])
         .map(r => ({
           etf: r.ETF_Ticker,
-          tier: r.tier || this.tierMap[r.ETF_Ticker] || 'Blob',
+          tier: r.tier || this.tierMap[r.ETF_Ticker] || 'Core',
           score: r.score || 0,
           base: r.base_score || 0,
           bonus: r.new_bonus || 0,
@@ -1576,7 +1576,7 @@ function stockApp() {
         case 'Quant':   return base + 'background: rgba(99, 102, 241, 0.12); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.25)';
         case 'Quality': return base + 'background: rgba(20, 184, 166, 0.12); color: #5eead4; border: 1px solid rgba(20, 184, 166, 0.25)';
         case 'Trend':   return base + 'background: rgba(251, 191, 36, 0.10); color: #fcd34d; border: 1px solid rgba(251, 191, 36, 0.25)';
-        case 'Blob':    return base + 'background: rgba(255, 255, 255, 0.04); color: #a1a1aa; border: 1px solid rgba(255, 255, 255, 0.10)';
+        case 'Core':    return base + 'background: rgba(255, 255, 255, 0.04); color: #a1a1aa; border: 1px solid rgba(255, 255, 255, 0.10)';
         default:        return base + 'background: rgba(255, 255, 255, 0.04); color: #a1a1aa; border: 1px solid rgba(255, 255, 255, 0.10)';
       }
     },

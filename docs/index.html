@@ -248,7 +248,7 @@
                 x-text="`Q+Q ${counts.QUANT_QUALITY || 0}`"></button>
         <select x-model="selectedTier" class="chip border px-2 py-1 bg-transparent" style="border-color: var(--border-2)">
           <option value="" style="background: #000">all tiers</option>
-          <template x-for="t in ['Scout','Quant','Quality','Trend','Blob']" :key="t">
+          <template x-for="t in ['Scout','Quant','Quality','Trend','Core']" :key="t">
             <option :value="t" x-text="t" style="background: #000"></option>
           </template>
         </select>
@@ -403,7 +403,7 @@
               <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300 hidden md:table-cell" @click="sort('etf_count')" :class="sortClass('etf_count')" x-tooltip="'Count of distinct ETFs currently holding this ticker.'">ETFs</th>
               <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell" @click="sort('etf_count_delta_30d')" :class="sortClass('etf_count_delta_30d')" x-tooltip="'Net ETFs added or lost in the last 30 days. Positive = more funds picking up this name.'">±30d</th>
               <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell" @click="sort('total_weight')" :class="sortClass('total_weight')" x-tooltip="'Sum of position weights across all ETFs holding this name.'">Weight</th>
-              <th class="text-left px-3 py-2 hidden xl:table-cell" x-tooltip="{html:'Tiers represented. <b>Scout</b>=spinoffs/IPOs · <b>Quant</b>=factor momentum · <b>Quality</b>=FCF/profit · <b>Trend</b>=momentum · <b>Blob</b>=mega-cap'}">Strategies</th>
+              <th class="text-left px-3 py-2 hidden xl:table-cell" x-tooltip="{html:'Tiers represented. <b>Scout</b>=spinoffs/IPOs · <b>Quant</b>=factor momentum · <b>Quality</b>=FCF/profit · <b>Trend</b>=momentum · <b>Core</b>=mega-cap'}">Strategies</th>
               <th class="text-center px-3 py-2 hidden md:table-cell" x-tooltip="'Consecutive days the score moved in the same direction (▲ up · ▼ down).'">Streak</th>
               <th class="text-left px-3 py-2 hidden xl:table-cell" x-tooltip="'Today\'s score as a percentile of this ticker\'s own score history in the past 60 days.'">Level</th>
               <th class="text-left px-3 py-2" x-tooltip="{html:'<b>HC</b> = held by 4+ ETFs<br><b>SPEC</b> = Trend tier without Quality/Scout<br><b>NEW</b> = first appearance in any ETF within 14 days'}">Flag</th>
@@ -831,7 +831,7 @@
                   x-text="`Q+Q ${counts.QUANT_QUALITY || 0}`"></button>
           <select x-model="selectedTier" class="chip border px-2 py-1 bg-transparent" style="border-color: var(--border-2)">
             <option value="" style="background: #000">all tiers</option>
-            <template x-for="t in ['Scout','Quant','Quality','Trend','Blob']" :key="t">
+            <template x-for="t in ['Scout','Quant','Quality','Trend','Core']" :key="t">
               <option :value="t" x-text="t" style="background: #000"></option>
             </template>
           </select>
@@ -884,7 +884,7 @@
                 <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300 hidden md:table-cell" @click="sort('etf_count')" :class="sortClass('etf_count')" x-tooltip="'Count of distinct ETFs currently holding this ticker.'">ETFs</th>
                 <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell" @click="sort('etf_count_delta_30d')" :class="sortClass('etf_count_delta_30d')" x-tooltip="'Net ETFs added or lost in the last 30 days.'">±30d</th>
                 <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell" @click="sort('total_weight')" :class="sortClass('total_weight')" x-tooltip="'Sum of position weights across all ETFs holding this name.'">Weight</th>
-                <th class="text-left px-3 py-2 hidden xl:table-cell" x-tooltip="{html:'Tiers represented. <b>Scout</b>=spinoffs/IPOs · <b>Quant</b>=factor momentum · <b>Quality</b>=FCF/profit · <b>Trend</b>=momentum · <b>Blob</b>=mega-cap'}">Strategies</th>
+                <th class="text-left px-3 py-2 hidden xl:table-cell" x-tooltip="{html:'Tiers represented. <b>Scout</b>=spinoffs/IPOs · <b>Quant</b>=factor momentum · <b>Quality</b>=FCF/profit · <b>Trend</b>=momentum · <b>Core</b>=mega-cap'}">Strategies</th>
                 <th class="text-center px-3 py-2 hidden md:table-cell" x-tooltip="'Consecutive days the score moved in the same direction (▲ up · ▼ down).'">Streak</th>
                 <th class="text-left px-3 py-2 hidden xl:table-cell" x-tooltip="'Today\'s score as a percentile of this ticker\'s own score history in the past 60 days.'">Level</th>
                 <th class="text-left px-3 py-2" x-tooltip="{html:'<b>HC</b> = held by 4+ ETFs<br><b>SPEC</b> = Trend tier without Quality/Scout<br><b>NEW</b> = first appearance in any ETF within 14 days'}">Flag</th>
@@ -1716,7 +1716,7 @@ function app() {
         Quant:   'Factor-based momentum · QMOM, IMOM (60 pts), XMMO, XSMO, PIE',
         Quality: 'Free cash flow & profitability · COWZ, CALF, SPHQ',
         Trend:   'Broad momentum confirmation · SPMO, SPHB, RPG',
-        Blob:    'Mega-cap benchmarks · QQQM, XLG',
+        Core:    'Mega-cap benchmarks · QQQM, XLG',
       };
       return m[t] || '';
     },
@@ -1996,7 +1996,7 @@ function app() {
       etfMeta.forEach(e => tierMap[e.ticker] = e.tier);
       const counts = {};
       this.holdings.forEach(h => { counts[h.ETF_Ticker] = (counts[h.ETF_Ticker] || 0) + 1; });
-      const tierOrder = { Scout: 0, Quant: 1, Quality: 2, Trend: 3, Blob: 4 };
+      const tierOrder = { Scout: 0, Quant: 1, Quality: 2, Trend: 3, Core: 4 };
       return (this.meta.etfs || [])
         .map(e => ({ etf: e, tier: tierMap[e] || '', count: counts[e] || 0 }))
         .sort((a, b) => {
@@ -2043,8 +2043,8 @@ function app() {
 
     // ── Tier distribution pie chart slices ────────────────────────────────
     get tierPieSlices() {
-      const tierColors = { Scout: '#c084fc', Quant: '#a5b4fc', Quality: '#5eead4', Trend: '#fcd34d', Blob: '#a1a1aa' };
-      const tierOrder = ['Scout', 'Quant', 'Quality', 'Trend', 'Blob'];
+      const tierColors = { Scout: '#c084fc', Quant: '#a5b4fc', Quality: '#5eead4', Trend: '#fcd34d', Core: '#a1a1aa' };
+      const tierOrder = ['Scout', 'Quant', 'Quality', 'Trend', 'Core'];
       const counts = {};
       this.etfSummary.forEach(e => { counts[e.tier] = (counts[e.tier] || 0) + 1; });
       const total = this.etfSummary.length || 1;
@@ -2438,7 +2438,7 @@ function app() {
         case 'Quant':   return base + 'background: rgba(99, 102, 241, 0.12); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.25)';
         case 'Quality': return base + 'background: rgba(20, 184, 166, 0.12); color: #5eead4; border: 1px solid rgba(20, 184, 166, 0.25)';
         case 'Trend':   return base + 'background: rgba(251, 191, 36, 0.10); color: #fcd34d; border: 1px solid rgba(251, 191, 36, 0.25)';
-        case 'Blob':    return base + 'background: rgba(255, 255, 255, 0.04); color: #a1a1aa; border: 1px solid rgba(255, 255, 255, 0.10)';
+        case 'Core':    return base + 'background: rgba(255, 255, 255, 0.04); color: #a1a1aa; border: 1px solid rgba(255, 255, 255, 0.10)';
         default:        return base + 'background: rgba(255, 255, 255, 0.04); color: #a1a1aa; border: 1px solid rgba(255, 255, 255, 0.10)';
       }
     },

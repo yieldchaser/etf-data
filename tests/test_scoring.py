@@ -229,8 +229,8 @@ class TestScoring:
         assert lookup["SPMO"].points == 10
         assert lookup["QQQM"].points == 2
 
-    def test_blob_top_rank(self, legacy_cfg):
-        """Top-1 in QQQM (Blob, 2 pts) with 9% weight.
+    def test_core_top_rank(self, legacy_cfg):
+        """Top-1 in QQQM (Core, 2 pts) with 9% weight.
         Legacy formula: 9 × 2 × 1.5 = 27 (weight_pct × points × rank_mult)"""
         df = _h([
             ("QQQM", "NVDA", "NVIDIA", 0.10, "2026-01-01", "2026-01-01"),

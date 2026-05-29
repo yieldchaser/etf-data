@@ -435,7 +435,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     print(f"  new signals:    conviction_divergence, stealth_accumulation ({int(leaderboard['stealth_accumulation'].sum())}), momentum_regime")
 
     # ── Tier Breadth — how many distinct strategy types co-hold this name ────
-    # 5 = held by all five (Scout/Quant/Quality/Trend/Blob); 1 = mono-tier.
+    # 5 = held by all five (Scout/Quant/Quality/Trend/Core); 1 = mono-tier.
     # Higher breadth = more independent strategy types confirming the name.
     leaderboard["tier_breadth"] = leaderboard["tiers"].fillna("").apply(
         lambda s: len([t for t in s.split(" + ") if t.strip()])
