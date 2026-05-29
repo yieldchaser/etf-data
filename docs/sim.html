@@ -1843,6 +1843,14 @@ function labApp() {
       }
       this._updateInvalidWarning();
 
+      // Dynamic fetch for any details not in prices.json
+      const fetchPromises = this.portfolio
+        .filter(row => row.ticker && this.pricesData && this.pricesData.tickers && !this.pricesData.tickers[row.ticker.toUpperCase().trim()])
+        .map(row => this.fetchTickerDetailsIfNeeded(row.ticker));
+      if (fetchPromises.length > 0) {
+        await Promise.all(fetchPromises);
+      }
+
       // Compute Kelly from defaults
       this.computeKelly();
       this.runBacktest();
@@ -1953,10 +1961,71 @@ function labApp() {
 
     onTickerChange(i) {
       const row = this.portfolio[i];
+      if (!row.ticker) return;
       row.ticker = row.ticker.toUpperCase().trim();
       this._updateTickerMeta(row);
       this._updateInvalidWarning();
-      this.runBacktest();
+      
+      const tKey = row.ticker;
+      if (this.pricesData && this.pricesData.tickers && !this.pricesData.tickers[tKey]) {
+        row.name = 'Loading...';
+        this.fetchTickerDetailsIfNeeded(tKey);
+      } else {
+        this.runBacktest();
+      }
+    },
+
+    async fetchTickerDetailsIfNeeded(ticker) {
+      if (!ticker) return;
+      const tKey = ticker.toUpperCase().trim();
+      if (!this.pricesData || !this.pricesData.tickers) return;
+      
+      if (this.pricesData.tickers[tKey]) return;
+      if (!this.fetchingTickers) {
+        this.fetchingTickers = new Set();
+      }
+      if (this.fetchingTickers.has(tKey)) return;
+      this.fetchingTickers.add(tKey);
+      
+      try {
+        const r = await fetch(`data/details/${tKey}.json`);
+        if (!r.ok) throw new Error(`Detail file not found for ${tKey}`);
+        const data = await r.json();
+        
+        if (data.prices && data.prices.length > 0) {
+          const monthlyMap = {};
+          data.prices.forEach(([dateStr, price]) => {
+            const ym = dateStr.slice(0, 7);
+            monthlyMap[ym] = { dateStr, price };
+          });
+          
+          const monthlySorted = Object.keys(monthlyMap)
+            .sort()
+            .map(ym => [ym, monthlyMap[ym].price]);
+            
+          if (monthlySorted.length >= 2) {
+            this.pricesData.tickers[tKey] = {
+              name: data.company || data.ticker || tKey,
+              category: "equity",
+              first: monthlySorted[0][0],
+              last: monthlySorted[monthlySorted.length - 1][0],
+              monthly: monthlySorted
+            };
+            
+            this.portfolio.forEach(row => {
+              if (row.ticker === tKey) {
+                this._updateTickerMeta(row);
+              }
+            });
+            this._updateInvalidWarning();
+            this.runBacktest();
+          }
+        }
+      } catch (e) {
+        console.warn(`Dynamic ticker fetch failed for ${tKey}:`, e);
+      } finally {
+        this.fetchingTickers.delete(tKey);
+      }
     },
     _updateInvalidWarning() {
       if (!this.pricesData) {
@@ -2017,6 +2086,14 @@ function labApp() {
           if (data.end) this.endDate = data.end;
           this._updateInvalidWarning();
           this.runBacktest();
+
+          // Fetch missing tickers dynamically
+          this.portfolio
+            .filter(row => row.ticker && this.pricesData && this.pricesData.tickers && !this.pricesData.tickers[row.ticker.toUpperCase().trim()])
+            .forEach(row => {
+              row.name = 'Loading...';
+              this.fetchTickerDetailsIfNeeded(row.ticker);
+            });
         } catch (err) {
           alert('Could not parse portfolio file: ' + err.message);
         }
@@ -2055,6 +2132,14 @@ function labApp() {
       if (preset.endDate) this.endDate = preset.endDate;
       this._updateInvalidWarning();
       this.runBacktest();
+
+      // Fetch missing tickers dynamically
+      this.portfolio
+        .filter(row => row.ticker && this.pricesData && this.pricesData.tickers && !this.pricesData.tickers[row.ticker.toUpperCase().trim()])
+        .forEach(row => {
+          row.name = 'Loading...';
+          this.fetchTickerDetailsIfNeeded(row.ticker);
+        });
     },
 
     deleteCurrentPreset() {

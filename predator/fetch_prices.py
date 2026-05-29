@@ -138,6 +138,21 @@ def _load_etf_universe() -> dict[str, dict[str, str]]:
         return {}
 
 
+def _load_company_names() -> dict[str, str]:
+    """Try to load company names from leaderboard.json to provide honest names for custom tickers."""
+    lb_path = REPO_ROOT / "docs" / "data" / "leaderboard.json"
+    if lb_path.exists():
+        try:
+            lb = json.loads(lb_path.read_text(encoding="utf-8"))
+            return {r["ticker"]: r.get("company") or r["ticker"] for r in lb if r.get("ticker")}
+        except Exception:
+            pass
+    return {}
+
+
+
+
+
 # ─── yfinance fetcher ─────────────────────────────────────────────────────────
 
 def _fetch_monthly_adjusted(
@@ -244,12 +259,24 @@ def fetch_prices(
 
     # Apply filter
     if tickers_filter:
-        full_universe = {t: v for t, v in full_universe.items() if t in tickers_filter}
+        company_names = _load_company_names()
+        new_universe = {}
+        for t in tickers_filter:
+            if t in full_universe:
+                new_universe[t] = full_universe[t]
+            else:
+                comp_name = company_names.get(t) or f"{t} (Custom)"
+                new_universe[t] = {
+                    "name": comp_name,
+                    "category": "equity"
+                }
+        full_universe = new_universe
 
     print(f"\nFetch plan ({'FULL REFRESH' if full_refresh else 'INCREMENTAL'}):")
     print(f"  Universe: {len(full_universe)} tickers")
     for t in sorted(full_universe.keys()):
         print(f"    {t:8s} — {full_universe[t]['name']}")
+
 
     if dry_run:
         print("\n--dry-run: exiting without fetching.")

@@ -521,7 +521,7 @@ def build_details(
         return
 
     if tickers_filter:
-        batch = [t for t in tickers_filter if t in total_universe]
+        batch = tickers_filter
         print(f"\n  Filter mode: {len(batch)} tickers")
     else:
         batch = _prioritize_batch(sorted(pending_set), metadata, symbol_map, batch_size, lb_ranks)
