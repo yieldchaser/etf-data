@@ -153,7 +153,10 @@ def _load_leaderboard_tickers() -> dict[str, str]:
         return {}
     try:
         lb = json.loads(LEADERBOARD_PATH.read_text(encoding="utf-8"))
-        return {r["ticker"]: r.get("company", "") for r in lb if r.get("ticker")}
+        # `company` is null for ~800 rows in leaderboard.json; coalesce to ""
+        # so the map never holds None (None[:40] crashed the whole batch run
+        # before coverage_state could be saved — blocking coverage accumulation).
+        return {r["ticker"]: (r.get("company") or "") for r in lb if r.get("ticker")}
     except Exception as e:
         print(f"  ERROR reading leaderboard: {e}")
         return {}
@@ -437,7 +440,7 @@ def build_details(
     newly_unresolved: list[str] = []
 
     for i, ticker in enumerate(batch, 1):
-        company = lb_map.get(ticker, ticker)
+        company = lb_map.get(ticker) or ticker
         meta    = metadata.get(ticker, {})
         print(f"\n  [{i}/{len(batch)}] {ticker} ({company[:40]})")
 
