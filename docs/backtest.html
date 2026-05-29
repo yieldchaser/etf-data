@@ -153,10 +153,8 @@
           <line x1="0" x2="1000" y1="220" y2="220" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
           <!-- Zero line -->
           <line :x1="0" :x2="1000" :y1="zeroY" :y2="zeroY" stroke="rgba(255,255,255,0.12)" stroke-width="1" stroke-dasharray="4 4"/>
-          <!-- Strategy lines -->
-          <template x-for="[key,strat] in Object.entries(data.strategies||{})" :key="key">
-            <path :d="strat ? chartPath(strat.cumulative_returns) : ''" :stroke="key ? stratColor(key) : 'transparent'" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-          </template>
+          <!-- Strategy lines (x-html: SVG namespace can't host <template x-for>) -->
+          <g x-html="strategyLinesSvg"></g>
           <!-- Crosshair -->
           <line class="crosshair-line" x-show="hi !== null" :x1="hi !== null ? (hi/(chartDates.length-1))*1000 : 0" y1="0" :x2="hi !== null ? (hi/(chartDates.length-1))*1000 : 0" y2="300"/>
           <!-- X-axis labels -->
@@ -207,10 +205,8 @@
           <line :x1="60" :x2="980" :y1="scatterZeroY" :y2="scatterZeroY" stroke="rgba(255,255,255,0.15)" stroke-width="1" stroke-dasharray="4 4"/>
           <!-- Zero velocity line -->
           <line :x1="scatterZeroX" :x2="scatterZeroX" y1="20" y2="380" stroke="rgba(255,255,255,0.08)" stroke-width="1" stroke-dasharray="4 4"/>
-          <!-- Scatter dots -->
-          <template x-for="(pt, i) in scatterPoints" :key="i">
-            <circle :cx="pt?.x ?? 0" :cy="pt?.y ?? 0" r="2.5" fill="rgba(34,211,238,0.35)" stroke="none"/>
-          </template>
+          <!-- Scatter dots (x-html: SVG namespace can't host <template x-for>) -->
+          <g x-html="scatterDotsSvg"></g>
           <!-- Regression line -->
           <line :x1="regLine.x1" :y1="regLine.y1" :x2="regLine.x2" :y2="regLine.y2"
                 stroke="var(--amber)" stroke-width="1.5" stroke-dasharray="6 3"/>
@@ -320,6 +316,17 @@ function btApp() {
       return (v >= 0 ? '+' : '') + v.toFixed(1) + '%';
     },
 
+    // SVG markup for the strategy lines. Built as an x-html string because a
+    // <template x-for> nested inside <svg> has no .content fragment, so Alpine
+    // cannot scope it and the path bindings throw ReferenceError.
+    get strategyLinesSvg() {
+      return Object.entries(this.data.strategies || {})
+        .map(([key, strat]) => strat
+          ? `<path d="${this.chartPath(strat.cumulative_returns)}" stroke="${this.stratColor(key)}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
+          : '')
+        .join('');
+    },
+
     // ── Scatter plot ──────────────────────────────────────────────────────
     get scatterData() {
       return (this.data.scatter || []).filter(p =>
@@ -347,6 +354,13 @@ function btApp() {
         x: 60 + ((p.velocity_score - vMin) / vRange) * 920,
         y: 20 + (1 - (p.realized_return_30d - rMin) / rRange) * 360,
       }));
+    },
+
+    // SVG markup for scatter dots (x-html for the same SVG-template reason).
+    get scatterDotsSvg() {
+      return this.scatterPoints
+        .map(pt => `<circle cx="${(pt?.x ?? 0).toFixed(1)}" cy="${(pt?.y ?? 0).toFixed(1)}" r="2.5" fill="rgba(34,211,238,0.35)" stroke="none"/>`)
+        .join('');
     },
 
     get scatterZeroY() {
