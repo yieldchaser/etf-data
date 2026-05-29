@@ -142,7 +142,7 @@
   <!-- GLOBAL TOGGLE BAR -->
   <div class="flex flex-wrap gap-2 mb-5 items-center">
     <!-- Main tabs -->
-    <div class="flex gap-1">
+    <div class="flex flex-wrap gap-1">
       <button @click="activeTab = 'matrix'"
               :class="activeTab === 'matrix' ? 'tab-active' : ''"
               class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
@@ -876,18 +876,17 @@
               <!-- Thin neutral 30-day sparkline (no color, just shape) -->
               <div style="height: 20px; position: relative; overflow: hidden;">
                 <svg :viewBox="`0 0 100 20`" style="width:100%;height:20px;display:block" preserveAspectRatio="none">
-                  <template x-if="(s.log || []).length >= 2">
-                    <polyline
-                      :points="(s.log || []).slice(-30).map((r, i, arr) => {
-                        const closes = arr.map(x => x.close).filter(v => v != null);
-                        const mn = Math.min(...closes), mx = Math.max(...closes);
-                        const range = mx - mn || 1;
-                        const x = (i / Math.max(arr.length - 1, 1)) * 100;
-                        const y = 18 - ((r.close - mn) / range) * 16;
-                        return x.toFixed(1) + ',' + y.toFixed(1);
-                      }).join(' ')"
-                      fill="none" stroke="rgba(161,161,170,0.5)" stroke-width="1.2"/>
-                  </template>
+                  <polyline
+                    x-show="(s.log || []).length >= 2"
+                    :points="(s.log || []).slice(-30).map((r, i, arr) => {
+                      const closes = arr.map(x => x.close).filter(v => v != null);
+                      const mn = Math.min(...closes), mx = Math.max(...closes);
+                      const range = mx - mn || 1;
+                      const x = (i / Math.max(arr.length - 1, 1)) * 100;
+                      const y = 18 - ((r.close - mn) / range) * 16;
+                      return x.toFixed(1) + ',' + y.toFixed(1);
+                    }).join(' ')"
+                    fill="none" stroke="rgba(161,161,170,0.5)" stroke-width="1.2"/>
                 </svg>
               </div>
               <div class="flex gap-4 mt-1 text-[10px] num font-mono" style="color: var(--text-3)">
