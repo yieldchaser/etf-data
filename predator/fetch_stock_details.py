@@ -52,7 +52,6 @@ MAX_RETRY           = 5
 
 KNOWN_SYMBOL_MAP: dict[str, str] = {
     "BRK.B": "BRK-B", "BRK.A": "BRK-A", "BF.B": "BF-B", "BF.A": "BF-A",
-    "SNDK": "WDC",
     "005930": "005930.KS", "A005930": "005930.KS",
     "000660": "000660.KS", "A000660": "000660.KS",
     "005380": "005380.KS", "005935": "005935.KS",
