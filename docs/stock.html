@@ -748,7 +748,12 @@ function stockApp() {
         // scraper junk like "WALMEX.*" / "PE&amp;OLES*" whose '*'/'&' are invalid
         // in file paths. Both sides use the identical [^A-Za-z0-9._-] → '_' rule.
         try {
-          const safeStem = this.ticker.replace(/[^A-Za-z0-9._-]/g, '_');
+          // Mirror of predator.fetch_stock_details._safe_detail_stem: illegal
+          // chars → '_', strip trailing dot/space, guard empty + Windows
+          // reserved device names (CON/PRN/AUX/NUL/COM1-9/LPT1-9).
+          let safeStem = this.ticker.replace(/[^A-Za-z0-9._-]/g, '_').replace(/[. ]+$/, '');
+          if (!safeStem) safeStem = '_';
+          if (/^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i.test(safeStem)) safeStem += '_';
           const detData = await fetch(`data/details/${safeStem}.json`)
             .then(r => r.ok ? r.json() : Promise.reject(r.status));
           this.stockPending = detData.pending === true;
