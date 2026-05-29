@@ -496,6 +496,17 @@ def build_details(
     unresolved     = {k: v for k, v in (state.get("unresolved") or {}).items() if k in total_universe}
     pending_set    = (set(state.get("pending") or []) | (total_universe - resolved - set(unresolved.keys()))) & total_universe
 
+    # Guarantee top-N tickers (by leaderboard rank) are retried even if they
+    # previously exceeded MAX_RETRY. Transient yfinance failures must not
+    # permanently exclude high-priority names from coverage.
+    if lb_ranks:
+        top_n_guaranteed = batch_size
+        top_tickers_by_rank = sorted(lb_ranks, key=lambda t: lb_ranks[t])[:top_n_guaranteed]
+        for t in top_tickers_by_rank:
+            if t in total_universe and t not in resolved and t in unresolved:
+                unresolved.pop(t)
+                pending_set.add(t)
+
     prev_coverage = len(resolved) / max(len(total_universe), 1) * 100
     print(f"\n  Universe:   {len(total_universe)} tickers")
     print(f"  Resolved:   {len(resolved)} ({prev_coverage:.1f}%)")
