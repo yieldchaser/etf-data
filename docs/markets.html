@@ -2648,6 +2648,7 @@ function marketsApp() {
     },
 
     _buildAnnualCache(assetKey) {
+      if (!this.returnsData) return;
       const ck = this._cacheKey(assetKey);
       if (this._annualCache[ck]) return;
 
@@ -3053,6 +3054,7 @@ function marketsApp() {
     _zscoreCache: {},
 
     _buildZscoreCache(assetKey) {
+      if (!this.returnsData) return;
       const ck = this._cacheKey(assetKey);
       if (this._zscoreCache[ck]) return;
       this._buildAnnualCache(assetKey);
@@ -5181,7 +5183,7 @@ function marketsApp() {
     // default included 'us_home_prices' which is not in the asset dataset, leaving the
     // user with only 4 valid assets and giving the panel a half-empty look on first load.
     // copper_lb is industrial-cycle exposure and complements sp500/gold/sensex/wti_crude.
-    activeCorrAssets: new Set(['sp500', 'gold', 'wti_crude', 'sensex', 'copper_lb']),
+    activeCorrAssets: new Set(['sp500', 'gold']),
     growthHoverInfo: null,
     rollingCorrHoverInfo: null,
     ratioHoverInfo: { gold_silver: null, copper_gold: null, oil_gold: null, sp500_gold: null },
@@ -5269,6 +5271,7 @@ function marketsApp() {
     _growthSeriesCacheKey: '',
 
     _getGrowthSeries() {
+      if (!this.returnsData) return { months: [], growth: {}, assetDefs: [] };
       const active = this.activeCorrAssets;
       const assetDefs = this.corrAssetList.filter(a => active.has(a.key));
       // Cache key includes matrixStartYear so window change invalidates the cache.
@@ -5336,6 +5339,7 @@ function marketsApp() {
     _corrMatrixCacheKey: '',
 
     get corrMatrixHtml() {
+      if (!this.returnsData) return '<div style="padding:20px;color:var(--text-3);font-size:12px">Loading...</div>';
       const active = this.activeCorrAssets;
       const assetDefs = this.corrAssetList.filter(a => active.has(a.key));
       if (assetDefs.length < 2) return '<div style="padding:20px;color:var(--text-3);font-size:12px">Select at least 2 assets</div>';
