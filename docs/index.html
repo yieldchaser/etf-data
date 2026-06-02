@@ -1202,7 +1202,20 @@
               <span x-show="etfMetaLookup[activeETF]?.reconstitution" x-text="`↻ Reconstitution: ${etfMetaLookup[activeETF]?.reconstitution}`"></span>
             </div>
           </div>
-          <div class="text-xs label">holdings as of <span class="num font-mono" style="color: var(--text-2)" x-text="etfHoldings[0]?.Holdings_As_Of || '—'"></span></div>
+          <div class="flex flex-col items-end gap-1.5 shrink-0 ml-4">
+            <div class="text-xs label">holdings as of <span class="num font-mono" style="color: var(--text-2)" x-text="etfHoldings[0]?.Holdings_As_Of || '—'"></span></div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-[10px]" style="color: var(--text-3)">Horizon:</span>
+              <div class="flex border rounded overflow-hidden" style="border-color: var(--border-2)">
+                <template x-for="p in [1, 7, 14, 30, 60, 90]" :key="p">
+                  <button @click.stop="holdingsPeriod = p"
+                          :style="holdingsPeriod === p ? 'background: rgba(34,211,238,0.12); color: var(--cyan);' : 'color: var(--text-3);'"
+                          class="px-1.5 py-0.5 text-[9px] font-mono leading-none hover:text-zinc-300 transition"
+                          x-text="p === 7 ? '7d' : p === 30 ? '30d' : p === 90 ? '90d' : p + 'd'"></button>
+                </template>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Holdings Pie Chart — interactive, premium visualization -->
@@ -1236,6 +1249,16 @@
                     <span class="w-2.5 h-2.5 rounded-sm flex-shrink-0" :style="`background: ${slice.color}`"></span>
                     <span class="font-mono font-medium w-14 shrink-0" style="color: var(--text)" x-text="slice.ticker"></span>
                     <span class="flex-1 truncate text-[11px]" style="color: var(--text-2)" x-text="slice.name || ''"></span>
+                    <!-- Dynamic Rank Delta / NEW badge -->
+                    <div class="flex items-center gap-1 shrink-0 mr-1.5">
+                      <span x-show="etfHasHistoryForPeriod(holdingsPeriod) && getHoldingsDelta(slice.holding, holdingsPeriod) === null"
+                            class="chip text-[9px] px-1 py-0.5 leading-none font-bold" 
+                            style="background: rgba(96, 165, 250, 0.10); color: var(--blue); border: 1px solid rgba(96, 165, 250, 0.25)">NEW</span>
+                      <span x-show="getHoldingsDelta(slice.holding, holdingsPeriod) !== null"
+                            class="font-mono text-[9px]"
+                            :style="`color: ${rankDeltaColor(getHoldingsDelta(slice.holding, holdingsPeriod))}`"
+                            x-text="fmtRankDelta(getHoldingsDelta(slice.holding, holdingsPeriod))"></span>
+                    </div>
                     <!-- Weight bar -->
                     <div class="w-20 h-2 rounded-full overflow-hidden flex-shrink-0" style="background: rgba(255,255,255,0.04)">
                       <div class="h-full rounded-full transition-all duration-300" :style="`width: ${Math.min(slice.weight / (donutSlices[0]?.weight || 0.01) * 100, 100)}%; background: ${slice.color}; opacity: ${hoveredSlice === i ? 1 : 0.7}`"></div>
@@ -1260,9 +1283,9 @@
                 <th class="text-left px-3 py-2 label">Rank</th>
                 <th class="text-left px-3 py-2 label">Ticker</th>
                 <th class="text-left px-3 py-2 label">Name</th>
-                <th class="text-right px-3 py-2 label">7d Δ</th>
+                <th class="text-right px-3 py-2 label" x-text="`Rank Δ (${holdingsPeriod}d)`"></th>
                 <th class="text-right px-3 py-2 label">Weight</th>
-                <th class="text-right px-3 py-2 label">Flow</th>
+                <th class="text-right px-3 py-2 label" x-text="`Flow (${holdingsPeriod}d)`"></th>
                 <th class="text-right px-3 py-2 label">Score</th>
                 <th class="text-left px-3 py-2 label">Flags</th>
               </tr>
@@ -1273,17 +1296,46 @@
                   <td class="px-3 py-1.5 num font-mono" style="color: var(--text-3)" x-text="`#${h.rank}`"></td>
                   <td class="px-3 py-1.5 font-medium font-mono" x-text="h.ticker"></td>
                   <td class="px-3 py-1.5 truncate max-w-[280px]" style="color: var(--text-2)" :title="h.name" x-text="h.name"></td>
-                  <td class="px-3 py-1.5 text-right num font-mono" :style="`color: ${rankDeltaColor(h.rank_delta)}`" x-text="fmtRankDelta(h.rank_delta)"></td>
+                  <td class="px-3 py-1.5 text-right num font-mono" :style="`color: ${rankDeltaColor(getHoldingsDelta(h, holdingsPeriod))}`" x-text="fmtRankDelta(getHoldingsDelta(h, holdingsPeriod))"></td>
                   <td class="px-3 py-1.5 text-right num font-mono" x-text="fmtWeight(h.weight)"></td>
-                  <td class="px-3 py-1.5 text-right num font-mono" :style="`color: ${flowColor(h.weight_flow)}`" x-text="fmtFlow(h.weight_flow)"></td>
+                  <td class="px-3 py-1.5 text-right num font-mono" :style="`color: ${flowColor(getHoldingsFlow(h, holdingsPeriod))}`" x-text="fmtFlow(getHoldingsFlow(h, holdingsPeriod))"></td>
                   <td class="px-3 py-1.5 text-right num font-mono" x-text="fmt1(h.score)"></td>
                   <td class="px-3 py-1.5">
-                    <span x-show="h.is_new" class="chip" style="background: rgba(96, 165, 250, 0.10); color: var(--blue); border: 1px solid rgba(96, 165, 250, 0.25)">NEW</span>
+                    <span x-show="etfHasHistoryForPeriod(holdingsPeriod) && getHoldingsDelta(h, holdingsPeriod) === null" class="chip" style="background: rgba(96, 165, 250, 0.10); color: var(--blue); border: 1px solid rgba(96, 165, 250, 0.25)">NEW</span>
                   </td>
                 </tr>
               </tbody>
             </template>
           </table>
+        </div>
+
+        <!-- Liquidated / Exited Holdings section -->
+        <div x-show="exitsForActivePeriod.length > 0" class="px-3 py-3 border-t" style="border-color: var(--border); background: rgba(239, 68, 68, 0.02)">
+          <div class="flex items-center gap-1.5 mb-2.5">
+            <span class="w-2 h-2 rounded-sm flex-shrink-0" style="background: var(--down)"></span>
+            <span class="label label-red font-medium text-xs tracking-wider" style="color: var(--down)">LIQUIDATED / EXITED HOLDINGS (DURING THIS PERIOD)</span>
+            <span class="num font-mono text-[10px] ml-auto" style="color: var(--text-3)" x-text="`${exitsForActivePeriod.length} names exited`"></span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+            <template x-for="ex in exitsForActivePeriod" :key="ex.ticker">
+              <div class="flex items-center justify-between p-2 rounded border transition-colors hover:bg-white/5" 
+                   style="background: var(--surface); border-color: rgba(239, 68, 68, 0.15)">
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-1.5">
+                    <span class="font-mono text-xs font-semibold hover:underline cursor-pointer" style="color: var(--text)"
+                          @click="window.open(`stock.html?t=${ex.ticker}`, '_self')" x-text="ex.ticker"></span>
+                    <span class="text-[9px] px-1 rounded-sm leading-none border uppercase font-medium" 
+                          style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); color: var(--down)">EXIT</span>
+                  </div>
+                  <div class="text-[10px] truncate" style="color: var(--text-3)" x-text="ex.name || '—'"></div>
+                </div>
+                <div class="text-right shrink-0 pl-2">
+                  <div class="text-[10px]" style="color: var(--text-3)">Weight was</div>
+                  <div class="font-mono text-xs font-medium" style="color: var(--text-2)" x-text="fmtWeight(ex.weight_then)"></div>
+                </div>
+              </div>
+            </template>
+          </div>
         </div>
       </div>
     </div>
@@ -1536,6 +1588,8 @@ function app() {
     activeETF: 'QQQM',
     expandedSidebarETF: null,
     period: 7,
+    holdingsPeriod: 7,
+    holdingsExits: {},
     sortDialog: false,
     hoveredSlice: null,
     sortLevels: [{ key: 'leaderboard_rank', dir: 'asc' }],
@@ -1575,6 +1629,7 @@ function app() {
         // Load ETF overlap matrix (optional)
         try { this.overlap = await fetch('data/etf_overlap.json', { cache: 'no-store' }).then(r => r.json()); } catch (e) { this.overlap = {}; }
         try { this.scoreHistory = await fetch('data/score_history.json', { cache: 'no-store' }).then(r => r.json()); } catch (e) { this.scoreHistory = {}; }
+        try { this.holdingsExits = await fetch('data/holdings_exits.json', { cache: 'no-store' }).then(r => r.json()); } catch (e) { this.holdingsExits = {}; }
         // Hash routing — open #etf=XYZ jumps to the ETFs tab for that ETF
         const hash = location.hash || '';
         const etfMatch = hash.match(/#etf=([A-Z0-9.\-]+)/i);
@@ -2256,6 +2311,35 @@ function app() {
     _etfHoldingsIndexData: null,
     get etfHoldings() { return this.etfHoldingsIndex[this.activeETF] || []; },
 
+    get exitsForActivePeriod() {
+      if (!this.holdingsExits) return [];
+      const etfExits = this.holdingsExits[this.activeETF];
+      if (!etfExits) return [];
+      return etfExits[String(this.holdingsPeriod)] || [];
+    },
+
+    getHoldingsDelta(h, period) {
+      if (!h) return null;
+      if (period === 7) {
+        return h.rank_delta ?? null;
+      }
+      return h[`rank_delta_${period}d`] ?? null;
+    },
+
+    getHoldingsFlow(h, period) {
+      if (!h) return null;
+      if (period === 7) {
+        return h.weight_flow ?? null;
+      }
+      return h[`weight_flow_${period}d`] ?? null;
+    },
+
+    etfHasHistoryForPeriod(period) {
+      const hList = this.etfHoldings;
+      if (!hList || hList.length === 0) return false;
+      return hList.some(h => this.getHoldingsDelta(h, period) !== null);
+    },
+
     get donutSlices() {
       const holdings = this.etfHoldings.filter(h => (h.weight || 0) > 0).slice(0, 50);
       const total = holdings.reduce((s, h) => s + h.weight, 0) || 1;
@@ -2286,6 +2370,7 @@ function app() {
           rank:   h.rank   || i + 1,
           color:  palette[i % palette.length],
           path,
+          holding: h,
         });
         cumAngle = end;
       }

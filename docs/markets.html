@@ -752,11 +752,11 @@
 
     <!-- §6 Event Study — pick an event → table of each asset's drawdown, recovery, 1Y-forward return -->
     <div class="mt-8">
-      <div class="flex items-center gap-3 mb-4">
+      <div class="flex flex-wrap items-center gap-3 mb-4">
         <h2 class="text-sm font-medium" style="color: var(--cyan)">EVENT STUDY</h2>
         <span class="label">Pick a crisis event → see each asset's drawdown, recovery time, and 1Y-forward return</span>
         <select x-model="eventStudyEvent"
-                class="ml-auto bg-transparent border rounded px-2 py-1 text-xs"
+                class="ml-auto bg-transparent border rounded px-2 py-1 text-xs max-w-full"
                 style="border-color: var(--border-2); color: var(--text)">
           <template x-for="ev in eventStudyEvents" :key="ev.year">
             <option :value="ev.year" x-text="ev.year + ' — ' + ev.label" style="background:#111"></option>
