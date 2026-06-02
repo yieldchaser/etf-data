@@ -5,6 +5,7 @@ import pytest
 from pathlib import Path
 
 from predator.scoring import Config, ETF, Sanitizer, compute_leaderboard, rank_multiplier, conviction_multiplier
+from predator.history import compute_exits
 from predator import history as hist
 
 
@@ -940,3 +941,35 @@ class TestMaturityGate:
         fpx_row = latest[(latest["ETF_Ticker"] == "FPX") & (latest["ticker"] == "X3")].iloc[0]
         assert fpx_row["is_new"], "With maturity_days=0, NEW should fire normally"
         assert fpx_row["new_bonus"] == 200.0  # 40 × 5
+
+
+class TestExits:
+    def test_compute_exits_detects_liquidated_holdings(self, conviction_cfg):
+        """compute_exits successfully detects assets present in the past but absent now."""
+        # 7 days ago: QQQM had X1 and X2
+        # Today: QQQM has X1 only. X2 is liquidated/exited.
+        rows = [
+            ("QQQM", "X1", "X1 Corp", 0.05, "2026-05-01", "2026-05-01"),
+            ("QQQM", "X2", "X2 Corp", 0.03, "2026-05-01", "2026-05-01"),
+            ("QQQM", "X1", "X1 Corp", 0.06, "2026-05-08", "2026-05-08"),
+        ]
+        df = _h(rows)
+        exits = compute_exits(df, conviction_cfg, lookback_days=7)
+        assert not exits.empty
+        assert len(exits) == 1
+        exit_row = exits.iloc[0]
+        assert exit_row["ticker"] == "X2"
+        assert exit_row["ETF_Ticker"] == "QQQM"
+        assert exit_row["rank_then"] == 2
+        assert exit_row["weight_then"] == 0.03
+
+    def test_compute_exits_gracefully_handles_immature_history(self, conviction_cfg):
+        """compute_exits returns empty df when ETF does not have enough history for the lookback."""
+        # Today is first snapshot (no history 7 days ago)
+        rows = [
+            ("QQQM", "X1", "X1 Corp", 0.05, "2026-05-08", "2026-05-08"),
+        ]
+        df = _h(rows)
+        exits = compute_exits(df, conviction_cfg, lookback_days=7)
+        assert exits.empty
+

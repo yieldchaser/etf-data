@@ -239,3 +239,61 @@ def changelog(
         "biggest_losers": losers_recs,
         "new_entrants": new_records,
     }
+
+
+def compute_exits(
+    history: pd.DataFrame,
+    cfg: Config,
+    lookback_days: int,
+) -> pd.DataFrame:
+    """
+    For each (ETF, ticker), find holdings that were present ~lookback_days ago but are NOT present now.
+
+    Gracefully handles ETFs with history shorter than lookback_days by omitting them.
+    Returns a DataFrame with columns: ETF_Ticker, ticker, name, rank_then, weight_then.
+    """
+    etf_lookup = cfg.etf_lookup()
+    df = history.copy()
+    df["Holdings_As_Of"] = pd.to_datetime(df["Holdings_As_Of"], errors="coerce")
+    df = df.dropna(subset=["Holdings_As_Of", "ticker", "weight"])
+    df = df[df["weight"] > 0]
+    df = df[df["ETF_Ticker"].isin(etf_lookup)]
+    df = cfg.sanitizer.apply(df)
+    if df.empty:
+        return pd.DataFrame(columns=["ETF_Ticker", "ticker", "name", "rank_then", "weight_then"])
+
+    latest_date_per_etf = df.groupby("ETF_Ticker")["Holdings_As_Of"].max()
+    latest_date_per_etf.index.name = "ETF_Ticker"
+
+    def _ranked_at(date_per_etf: pd.Series) -> pd.DataFrame:
+        d = df.merge(date_per_etf.rename("target_date").reset_index(), on="ETF_Ticker")
+        d = d[d["Holdings_As_Of"] == d["target_date"]].copy()
+        d = d.sort_values(["ETF_Ticker", "weight", "ticker"], ascending=[True, False, True])
+        d["rank"] = d.groupby("ETF_Ticker").cumcount() + 1
+        return d[["ETF_Ticker", "ticker", "name", "rank", "weight"]]
+
+    now_df = _ranked_at(latest_date_per_etf)
+
+    # Past: closest snapshot <= (latest - lookback) per ETF
+    target_dates = latest_date_per_etf - pd.Timedelta(days=lookback_days)
+    snapshot_dates = df.groupby("ETF_Ticker")["Holdings_As_Of"].unique()
+    chosen = {}
+    for etf, dates in snapshot_dates.items():
+        target = target_dates[etf]
+        dates_le = [d for d in dates if d <= target]
+        if dates_le:
+            chosen[etf] = max(dates_le)
+
+    if not chosen:
+        return pd.DataFrame(columns=["ETF_Ticker", "ticker", "name", "rank_then", "weight_then"])
+
+    chosen_series = pd.Series(chosen, name="target_date")
+    chosen_series.index.name = "ETF_Ticker"
+    then_df = _ranked_at(chosen_series)
+
+    # Find exits: in then_df but NOT in now_df
+    merged = then_df.merge(now_df[["ETF_Ticker", "ticker"]], on=["ETF_Ticker", "ticker"], how="left", indicator=True)
+    exits = merged[merged["_merge"] == "left_only"].copy()
+
+    exits = exits.rename(columns={"rank": "rank_then", "weight": "weight_then"})
+    return exits[["ETF_Ticker", "ticker", "name", "rank_then", "weight_then"]]

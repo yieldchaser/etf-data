@@ -660,6 +660,29 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
             _dumps(latest_out.to_dict(orient="records"), separators=(",", ":"))
         )
 
+        # Compute exited holdings for each period and serialize
+        print("\nComputing exited holdings for all periods…")
+        holdings_exits = {}
+        for n_days in cfg.history.delta_periods_days:
+            try:
+                exits_df = hist.compute_exits(raw, cfg, lookback_days=n_days)
+                if not exits_df.empty:
+                    for etf, g in exits_df.groupby("ETF_Ticker"):
+                        etf_exits = holdings_exits.setdefault(etf, {})
+                        records = g[["ticker", "name", "rank_then", "weight_then"]].to_dict(orient="records")
+                        # Round weight_then to 4 decimals
+                        for r in records:
+                            if r["weight_then"] is not None and r["weight_then"] == r["weight_then"]:
+                                r["weight_then"] = round(float(r["weight_then"]), 4)
+                        etf_exits[str(n_days)] = records
+            except Exception as e:
+                print(f"  {n_days}d exits: ERROR — {e}")
+        _write_json_atomic(
+            output_dir / "holdings_exits.json",
+            _dumps(holdings_exits, separators=(",", ":"))
+        )
+        print(f"  holdings_exits.json:  {len(holdings_exits)} ETFs with exit data")
+
     # Top velocity movers (15 names, held by 2+ ETFs)
     if 'velocity_score' in leaderboard.columns:
         top_vel = leaderboard[leaderboard['etf_count'] >= 2].sort_values('velocity_score', ascending=False).head(15)
@@ -939,7 +962,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
 
     # Quick summary
     print(f"\n✓ Wrote outputs to {output_dir}/")
-    for name in ["leaderboard.json", "holdings_latest.json", "changelog.json",
+    for name in ["leaderboard.json", "holdings_latest.json", "holdings_exits.json", "changelog.json",
                  "score_history.json", "score_history.parquet", "leaderboard.parquet",
                  "holdings_history.parquet", "holdings_history.json", "metadata.json"]:
         p = output_dir / name
