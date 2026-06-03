@@ -664,12 +664,17 @@ function stockApp() {
         this.recentlyViewed = [];
       }
 
+      let safeStem = this.ticker.replace(/[^A-Za-z0-9._-]/g, '_').replace(/[. ]+$/, '');
+      if (!safeStem) safeStem = '_';
+      if (/^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i.test(safeStem)) safeStem += '_';
+
       try {
-        const [lbData, scoreData, hhData, hlData] = await Promise.all([
+        const [lbData, scoreData, hhData, hlData, tickerHist] = await Promise.all([
           fetch('data/leaderboard.json', { cache: 'no-store' }).then(r => r.json()),
           fetch('data/score_history.json', { cache: 'no-store' }).then(r => r.json()).catch(() => ({})),
           fetch('data/holdings_history.json', { cache: 'no-store' }).then(r => r.json()).catch(() => ({})),
           fetch('data/holdings_latest.json', { cache: 'no-store' }).then(r => r.json()).catch(() => []),
+          fetch(`data/history/${safeStem}.json`, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null),
         ]);
 
         // Leaderboard row
@@ -696,10 +701,13 @@ function stockApp() {
         } catch {}
 
         // Score history for this ticker
-        this.scoreHistory = scoreData[this.ticker] || [];
+        this.scoreHistory = (tickerHist && tickerHist.scoreHistory) ? tickerHist.scoreHistory : (scoreData[this.ticker] || []);
 
         // Compute global leaderboard rank per date (O(n) pre-pass, run once)
-        if (this.scoreHistory.length) {
+        let rawSeries = [];
+        if (tickerHist && tickerHist.rankHistory) {
+          rawSeries = tickerHist.rankHistory;
+        } else if (this.scoreHistory.length) {
           // Build date -> { ticker -> score } lookup in ONE pass
           const dateScoreMap = {};   // { date: [{tk, s}] }
           for (const [tk, snaps] of Object.entries(scoreData)) {
@@ -711,7 +719,6 @@ function stockApp() {
           // Sort each date's list once
           for (const arr of Object.values(dateScoreMap)) arr.sort((a, b) => b.s - a.s);
           // Build this ticker's rank series
-          const rawSeries = [];
           for (const snap of this.scoreHistory) {
             const arr = dateScoreMap[snap.d];
             if (!arr) continue;
@@ -719,30 +726,35 @@ function stockApp() {
             if (idx === -1) continue;
             rawSeries.push({ d: snap.d, rank: idx + 1, total: arr.length });
           }
-          if (rawSeries.length) {
-            const maxTotal = Math.max(...rawSeries.map(s => s.total));
-            // Filter out early dates where the universe was not yet fully tracked
-            // (removes the sharp spike at the start caused by warm-up with few tickers)
-            const stable = rawSeries.filter(s => s.total >= maxTotal * 0.85);
-            const filtered = stable.length >= 2 ? stable : rawSeries;
-            const maxRank = Math.max(...filtered.map(s => s.rank));
-            const n = filtered.length;
-            this.lbRankSeries = filtered.map((p, i) => ({
-              d: p.d, rank: p.rank, total: p.total,
-              y: ((p.rank - 1) / Math.max(1, maxRank - 1)) * 200 + 10,
-              x: 50 + (i / Math.max(1, n - 1)) * 960,
-            }));
-          }
+        }
+
+        if (rawSeries.length) {
+          const maxTotal = Math.max(...rawSeries.map(s => s.total));
+          // Filter out early dates where the universe was not yet fully tracked
+          // (removes the sharp spike at the start caused by warm-up with few tickers)
+          const stable = rawSeries.filter(s => s.total >= maxTotal * 0.85);
+          const filtered = stable.length >= 2 ? stable : rawSeries;
+          const maxRank = Math.max(...filtered.map(s => s.rank));
+          const n = filtered.length;
+          this.lbRankSeries = filtered.map((p, i) => ({
+            d: p.d, rank: p.rank, total: p.total,
+            y: ((p.rank - 1) / Math.max(1, maxRank - 1)) * 200 + 10,
+            x: 50 + (i / Math.max(1, n - 1)) * 960,
+          }));
         }
 
         // Holdings history for this ticker
-        this.holdingsHistory = hhData[this.ticker] || {};
+        this.holdingsHistory = (tickerHist && tickerHist.holdingsHistory) ? tickerHist.holdingsHistory : (hhData[this.ticker] || {});
 
         // Load flag history from separate file (on-demand)
-        try {
-          const fhData = await fetch('data/flag_history.json', { cache: 'no-store' }).then(r => r.json());
-          this.flagHistory = fhData[this.ticker] || [];
-        } catch { this.flagHistory = []; }
+        if (tickerHist && tickerHist.flagHistory) {
+          this.flagHistory = tickerHist.flagHistory;
+        } else {
+          try {
+            const fhData = await fetch('data/flag_history.json', { cache: 'no-store' }).then(r => r.json());
+            this.flagHistory = fhData[this.ticker] || [];
+          } catch { this.flagHistory = []; }
+        }
 
         // Load stock detail file (price history + description).
         // Sanitise the ticker to match the file name written by

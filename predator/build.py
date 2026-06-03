@@ -23,6 +23,8 @@ import argparse
 import json
 import math
 import os
+import re
+import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -753,6 +755,77 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         _dumps(holdings_history_json, separators=(",", ":"))
     )
     print(f"  holdings_history.json: {len(holdings_history_json)} tickers")
+
+    # ── Write individual ticker history JSON files ────────────────────────────
+    print("\nBuilding individual ticker history files...")
+    history_dir = output_dir / "history"
+    if history_dir.exists():
+        shutil.rmtree(history_dir)
+    history_dir.mkdir(parents=True, exist_ok=True)
+
+    _UNSAFE_FN_RE = re.compile(r"[^A-Za-z0-9._-]")
+    _WIN_RESERVED = {"CON", "PRN", "AUX", "NUL"} | {f"COM{i}" for i in range(1, 10)} | {f"LPT{i}" for i in range(1, 10)}
+
+    def _safe_detail_stem(ticker: str) -> str:
+        stem = _UNSAFE_FN_RE.sub("_", ticker).rstrip(". ")
+        if not stem:
+            stem = "_"
+        if stem.upper() in _WIN_RESERVED:
+            stem = stem + "_"
+        return stem
+
+    # Group all holdings history at once to avoid repeated queries
+    ticker_holdings_history: dict[str, dict] = {}
+    for (t, etf), g in hist_window.groupby(["ticker", "ETF_Ticker"]):
+        row_list = [
+            {"d": str(d)[:10], "r": int(r), "w": round(float(w), 6)}
+            for d, r, w in zip(g["Holdings_As_Of"], g["rank"], g["weight"])
+        ]
+        ticker_holdings_history.setdefault(t, {})[etf] = row_list
+
+    # Compute global rank history for each ticker from historical snapshots
+    ticker_rank_history: dict[str, list] = {}
+    if historical:
+        for d in sorted(historical.keys()):
+            lb_snap = historical[d]
+            d_str = d.strftime("%Y-%m-%d")
+            total_tracked = len(lb_snap)
+            for row in lb_snap.to_dict(orient="records"):
+                t = row["ticker"]
+                rank = row.get("leaderboard_rank")
+                if rank is not None and rank == rank:  # check not NaN
+                    entry = {
+                        "d": d_str,
+                        "rank": int(rank),
+                        "total": total_tracked
+                    }
+                    ticker_rank_history.setdefault(t, []).append(entry)
+
+    # All unique tickers with history
+    all_tickers = set(score_pnl.index.tolist()) | set(hist_window["ticker"].unique())
+
+    for t in all_tickers:
+        ticker_score_hist = []
+        if t in score_pnl.index:
+            series = score_pnl.loc[t].dropna()
+            ticker_score_hist = [{"d": d.strftime("%Y-%m-%d"), "s": round(float(v), 2)}
+                                 for d, v in series.items()]
+                                 
+        ticker_holdings = ticker_holdings_history.get(t, {})
+        ticker_flag_hist = flag_history.get(t, [])
+        ticker_rank_hist = ticker_rank_history.get(t, [])
+        
+        payload = {
+            "ticker": t,
+            "scoreHistory": ticker_score_hist,
+            "holdingsHistory": ticker_holdings,
+            "flagHistory": ticker_flag_hist,
+            "rankHistory": ticker_rank_hist
+        }
+        
+        stem = _safe_detail_stem(t)
+        _write_json_atomic(history_dir / f"{stem}.json", _dumps(payload, separators=(",", ":")))
+    print(f"  Wrote {len(all_tickers)} individual ticker history files.")
 
     # ── metadata.json — versioning, counts, config snapshot ───────────────────
     latest_holdings_date = pd.to_datetime(raw["Holdings_As_Of"]).max().strftime("%Y-%m-%d")
