@@ -12,6 +12,7 @@ on:
       - 'predator/**'
       - 'markets/**'
       - 'docs/**'
+      - 'data/**'           # rebuild whenever raw data is pushed (scraper or hotfix)
       - 'scraper.py'
       - 'config.yaml'
       - 'config.json'
@@ -40,7 +41,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+          # Always checkout latest main so workflow_run-triggered builds
+          # read the freshest data commit (head_sha is captured at scrape
+          # *start*, before the Save Data push, so it can point at stale data).
+          ref: main
 
       - name: Setup Python
         uses: actions/setup-python@v5
