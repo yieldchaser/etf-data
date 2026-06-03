@@ -1,11 +1,11 @@
 {
-  "generated_at_utc": "2026-05-29T17:29:39+00:00",
+  "generated_at_utc": "2026-06-03T02:45:05+00:00",
   "source": "data/all_history.csv",
-  "source_rows_raw": 109568,
-  "source_rows_after_sanitize": 6492,
-  "leaderboard_rows": 3898,
-  "latest_holdings_as_of": "2026-05-28",
-  "latest_scrape_date": "2026-05-29",
+  "source_rows_raw": 128481,
+  "source_rows_after_sanitize": 6497,
+  "leaderboard_rows": 3901,
+  "latest_holdings_as_of": "2026-06-02",
+  "latest_scrape_date": "2026-06-02",
   "etfs": [
     "AVSC",
     "CALF",
@@ -129,17 +129,20 @@
     "2026-05-25",
     "2026-05-26",
     "2026-05-27",
-    "2026-05-28"
+    "2026-05-28",
+    "2026-05-29",
+    "2026-06-01",
+    "2026-06-02"
   ],
   "flag_counts_today": {
-    "HIGH_CONVICTION": 1,
-    "SPECULATIVE_BETA": 94,
-    "NEW": 124,
-    "NONE": 3803
+    "HIGH_CONVICTION": 2,
+    "SPECULATIVE_BETA": 95,
+    "NEW": 24,
+    "NONE": 3804
   },
   "flag_counts_yesterday": {
-    "HIGH_CONVICTION": 1,
-    "SPECULATIVE_BETA": 94
+    "HIGH_CONVICTION": 2,
+    "SPECULATIVE_BETA": 95
   },
   "etf_maturity_days": 30,
   "immature_etfs": [
@@ -171,7 +174,43 @@
     "fx_pairs": [],
     "cpi_series": [],
     "rates_series": [],
-    "stale_assets": [],
+    "stale_assets": [
+      {
+        "asset": "copper",
+        "last": "2026-03",
+        "age_days": 64
+      },
+      {
+        "asset": "aluminum",
+        "last": "2026-03",
+        "age_days": 64
+      },
+      {
+        "asset": "nickel",
+        "last": "2026-03",
+        "age_days": 64
+      },
+      {
+        "asset": "zinc",
+        "last": "2026-03",
+        "age_days": 64
+      },
+      {
+        "asset": "iron_ore",
+        "last": "2026-03",
+        "age_days": 64
+      },
+      {
+        "asset": "tin",
+        "last": "2026-03",
+        "age_days": 64
+      },
+      {
+        "asset": "lead",
+        "last": "2026-03",
+        "age_days": 64
+      }
+    ],
     "self_living_check": {
       "live_source_count": 17,
       "excel_only_count": 15,
