@@ -220,6 +220,7 @@
         <div class="flex items-center gap-3 flex-wrap">
           <div class="label-cyan label">Price History</div>
           <span class="font-mono text-xs" style="color: var(--text-2)" x-text="ticker"></span>
+          <span x-show="stockCurrency && stockCurrency !== 'USD'" class="chip" style="background: rgba(255,255,255,0.04); color: var(--text-3); border: 1px solid rgba(255,255,255,0.08); font-size: 10px" x-text="stockCurrency"></span>
           <span x-show="stockPriceChange !== null" class="text-xs font-mono"
                 :style="`color: ${(stockPriceChange||0)>=0?'var(--up)':'var(--down)'}`"
                 x-text="stockPriceChange !== null ? ((stockPriceChange>=0?'+':'')+stockPriceChange.toFixed(2)+'%') : ''"></span>
@@ -235,13 +236,13 @@
       <div x-show="stockFilteredPrices.length > 1" class="px-3 py-2 flex items-baseline gap-5 text-xs" style="border-bottom: 1px solid var(--border)">
         <div><span class="label">Latest</span>
           <span class="ml-1.5 num font-mono font-medium" style="color:var(--text)"
-                x-text="stockFilteredPrices.length ? '$'+stockFilteredPrices[stockFilteredPrices.length-1][1].toFixed(2) : '—'"></span></div>
+                x-text="stockFilteredPrices.length ? _fmtPrice(stockFilteredPrices[stockFilteredPrices.length-1][1]) : '—'"></span></div>
         <div><span class="label">High</span>
           <span class="ml-1.5 num font-mono" style="color:var(--up)"
-                x-text="stockRangeHigh!==null ? '$'+stockRangeHigh.toFixed(2) : '—'"></span></div>
+                x-text="stockRangeHigh!==null ? _fmtPrice(stockRangeHigh) : '—'"></span></div>
         <div><span class="label">Low</span>
           <span class="ml-1.5 num font-mono" style="color:var(--down)"
-                x-text="stockRangeLow!==null ? '$'+stockRangeLow.toFixed(2) : '—'"></span></div>
+                x-text="stockRangeLow!==null ? _fmtPrice(stockRangeLow) : '—'"></span></div>
         <div><span class="label">Period</span>
           <span class="ml-1.5 text-[10px] font-mono" style="color:var(--text-3)"
                 x-text="stockFilteredPrices.length ? stockFilteredPrices[0][0].slice(5)+' → '+stockFilteredPrices[stockFilteredPrices.length-1][0].slice(5) : ''"></span></div>
@@ -287,7 +288,7 @@
             <div class="font-mono text-[10px] mb-0.5" style="color:var(--text-3)" x-text="stockHoverDate"></div>
             <div class="font-mono text-xs font-medium"
                  :style="`color:${(stockPriceChange||0)>=0?'var(--cyan)':'#fb7185'}`"
-                 x-text="stockHoverPrice ? '$'+stockHoverPrice.toFixed(2) : ''"></div>
+                 x-text="stockHoverPrice ? _fmtPrice(stockHoverPrice) : ''"></div>
           </div>
           <div class="flex justify-between text-[9px] font-mono mt-1" style="color:var(--text-3)">
             <span x-text="stockFilteredPrices[0]?.[0]?.slice(5)||''"></span>
@@ -635,6 +636,7 @@ function stockApp() {
     stockFilteredPrices: [],
     stockDescription: '',
     stockPending: false,
+    stockCurrency: 'USD',
     stockActiveRange: '1Y',
     stockHoverIdx: null,
     stockHoverX: 0,
@@ -642,6 +644,27 @@ function stockApp() {
     stockHoverY: 0,
     stockHoverDate: '',
     stockHoverPrice: null,
+
+    // Currency display helpers
+    _currencySymbols: {
+      USD:'$',EUR:'€',GBP:'£',JPY:'¥',KRW:'₩',CNY:'¥',TWD:'NT$',
+      BRL:'R$',INR:'₹',AUD:'A$',CAD:'C$',CHF:'CHF ',HKD:'HK$',
+      SGD:'S$',SEK:'kr ',NOK:'kr ',DKK:'kr ',MXN:'MX$',ZAR:'R ',
+      THB:'฿',TRY:'₺',PLN:'zł ',IDR:'Rp ',MYR:'RM ',PHP:'₱',
+      SAR:'SAR ',QAR:'QAR ',AED:'AED ',ILS:'₪',CLP:'CLP ',
+      COP:'COP ',PEN:'S/.',HUF:'Ft ',CZK:'Kč ',RON:'lei ',
+      ISK:'kr ',EGP:'E£',KWD:'KD ',NZD:'NZ$',VND:'₫',
+    },
+    _zeroDecimalCurrencies: new Set(['KRW','JPY','VND','IDR','CLP','ISK','HUF']),
+    _currSym() {
+      return this._currencySymbols[this.stockCurrency] || (this.stockCurrency + ' ');
+    },
+    _fmtPrice(val) {
+      if (val == null || !isFinite(val)) return '—';
+      const sym = this._currSym();
+      const decimals = this._zeroDecimalCurrencies.has(this.stockCurrency) ? 0 : 2;
+      return sym + val.toLocaleString(undefined, {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
+    },
 
     async load() {
       const params = new URLSearchParams(location.search);
@@ -772,6 +795,7 @@ function stockApp() {
             .then(r => r.ok ? r.json() : Promise.reject(r.status));
           this.stockPending = detData.pending === true;
           this.stockDescription = detData.description || '';
+          this.stockCurrency = detData.currency || 'USD';
           this.stockPrices = detData.prices || [];
           this._stockFilter();
         } catch {

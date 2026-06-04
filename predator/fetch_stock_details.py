@@ -42,6 +42,7 @@ DETAILS_DIR         = REPO_ROOT / "docs" / "data" / "details"
 COVERAGE_STATE_PATH = REPO_ROOT / "data" / "coverage_state.json"
 SYMBOL_MAP_PATH     = REPO_ROOT / "data" / "symbol_map.json"
 UNRESOLVED_PATH     = REPO_ROOT / "data" / "stocks_unresolved.json"
+CURRENCY_CACHE_PATH = REPO_ROOT / "data" / "currency_cache.json"
 TICKER_META_PATH    = REPO_ROOT / "data" / "ticker_metadata.csv"
 
 PRICE_PERIOD        = "2y"
@@ -114,6 +115,15 @@ COUNTRY_SUFFIX: dict[str, str] = {
 }
 
 PROBE_SUFFIXES = [".KS", ".TW", ".T", ".HK", ".SS", ".SZ", ".SA", ".NS", ".AX", ".L", ".DE", ".PA"]
+
+# Currency codes that appear as ETF "holdings" but are not equities.
+# Skip these from the stock-details universe to avoid wasting batch budget.
+KNOWN_CURRENCY_CODES = {
+    "AED", "ARS", "AUD", "BRL", "CAD", "CHF", "CLP", "CNY", "COP", "CZK",
+    "DKK", "EGP", "EUR", "GBP", "HKD", "HUF", "IDR", "ILS", "INR", "ISK",
+    "JPY", "KRW", "KWD", "MXN", "MYR", "NOK", "NZD", "PEN", "PHP", "PLN",
+    "QAR", "RON", "SAR", "SEK", "SGD", "THB", "TRY", "TWD", "USD", "ZAR",
+}
 
 _TEMPLATE_DESC_RE = re.compile(r"is a holding tracked across smart-beta ETFs", re.IGNORECASE)
 
@@ -249,6 +259,19 @@ def _save_desc_cache(cache: dict[str, str]) -> None:
     _write_json_atomic(DESC_CACHE_PATH, _dumps(cache, indent=2, sort_keys=True))
 
 
+def _load_currency_cache() -> dict[str, str]:
+    if CURRENCY_CACHE_PATH.exists():
+        try:
+            return json.loads(CURRENCY_CACHE_PATH.read_text(encoding="utf-8"))
+        except Exception as e:
+            print(f"  WARNING: Bad currency cache ({e})")
+    return {}
+
+
+def _save_currency_cache(cache: dict[str, str]) -> None:
+    _write_json_atomic(CURRENCY_CACHE_PATH, _dumps(cache, indent=2, sort_keys=True))
+
+
 def _is_us_ticker(ticker: str, country: str) -> bool:
     if country and country not in ("Unknown", ""):
         return country == "United States"
@@ -329,15 +352,17 @@ def _fetch_price_one(symbol: str) -> list[list] | None:
         return None
 
 
-def _fetch_description_one(symbol: str) -> str | None:
-    """Fetch real description from yfinance. Returns None if not found. NEVER fabricates."""
+def _fetch_description_one(symbol: str) -> tuple[str | None, str | None]:
+    """Fetch real description + trading currency from yfinance.
+    Returns (description, currency). NEVER fabricates descriptions."""
     try:
         import yfinance as yf
         info = yf.Ticker(symbol).info
+        currency = (info.get("currency") or info.get("financialCurrency") or "").strip().upper() or None
         desc = (info.get("longBusinessSummary") or info.get("description") or "").strip()
         if len(desc) < 20:
-            return None
-        if len(desc) > 620:
+            desc = None
+        elif len(desc) > 620:
             sentences = desc.split(". ")
             out, length = "", 0
             for s in sentences:
@@ -346,9 +371,9 @@ def _fetch_description_one(symbol: str) -> str | None:
                 out += s + ". "
                 length += len(s) + 2
             desc = out.strip() or desc[:600]
-        return desc
+        return desc, currency
     except Exception:
-        return None
+        return None, None
 
 
 # Map a raw ticker to a filesystem- and URL-safe detail-file stem. Some
@@ -405,6 +430,7 @@ def _write_detail_file(
     ticker: str, company: str,
     desc: str | None, prices: list[list] | None,
     pending: bool = False,
+    currency: str | None = None,
 ) -> None:
     generated = datetime.now(timezone.utc).isoformat(timespec="seconds")
     if pending:
@@ -413,6 +439,7 @@ def _write_detail_file(
         payload = {
             "ticker": ticker, "company": company,
             "description": desc or "", "prices": prices or [],
+            "currency": currency or "USD",
             "generated": generated,
         }
     _write_json_atomic(DETAILS_DIR / f"{_safe_detail_stem(ticker)}.json", _dumps(payload, separators=(",", ":")))
@@ -490,8 +517,14 @@ def build_details(
     state      = _load_coverage_state()
     symbol_map = _load_symbol_map()
     desc_cache = _load_desc_cache() if not refresh_descriptions else {}
+    currency_cache = _load_currency_cache()
 
     total_universe = set(lb_map.keys())
+    # Filter out currency codes — they appear as ETF cash positions, not equities
+    currency_tickers = total_universe & KNOWN_CURRENCY_CODES
+    if currency_tickers:
+        print(f"  Filtered {len(currency_tickers)} currency codes: {', '.join(sorted(currency_tickers)[:10])}…")
+        total_universe -= currency_tickers
     resolved       = set(state.get("resolved") or []) & total_universe
     unresolved     = {k: v for k, v in (state.get("unresolved") or {}).items() if k in total_universe}
     pending_set    = (set(state.get("pending") or []) | (total_universe - resolved - set(unresolved.keys()))) & total_universe
@@ -527,6 +560,28 @@ def build_details(
         batch = _prioritize_batch(sorted(pending_set), metadata, symbol_map, batch_size, lb_ranks)
         print(f"\n  Batch: {len(batch)} of {len(pending_set)} pending (top by leaderboard rank)")
 
+    # ── Resolved-ticker refresh: use leftover batch budget to refresh stale prices ──
+    refresh_batch: list[str] = []
+    if not tickers_filter and len(batch) < batch_size:
+        refresh_budget = batch_size - len(batch)
+        stale_resolved = []
+        for t in sorted(resolved):
+            detail_path = DETAILS_DIR / f"{_safe_detail_stem(t)}.json"
+            if detail_path.exists():
+                try:
+                    existing = json.loads(detail_path.read_text(encoding="utf-8"))
+                    prices = existing.get("prices", [])
+                    if prices:
+                        last_date = prices[-1][0]
+                        stale_resolved.append((last_date, t))
+                except Exception:
+                    stale_resolved.append(("0000-00-00", t))
+        # Sort by stalest first
+        stale_resolved.sort(key=lambda x: x[0])
+        refresh_batch = [t for _, t in stale_resolved[:refresh_budget]]
+        if refresh_batch:
+            print(f"  Refresh: {len(refresh_batch)} stale resolved tickers (oldest prices first)")
+
     if dry_run:
         print("\n  --dry-run plan:")
         for t in batch[:30]:
@@ -557,20 +612,30 @@ def build_details(
                 prices = _fetch_price_one(symbol)
 
         current_desc = desc_cache.get(ticker, "")
+        current_currency = currency_cache.get(ticker)
         needs_desc = not current_desc or _TEMPLATE_DESC_RE.search(current_desc)
         if needs_desc and symbol:
             time.sleep(DESC_DELAY)
-            desc = _fetch_description_one(symbol)
+            desc, fetched_currency = _fetch_description_one(symbol)
             if desc:
                 desc_cache[ticker] = desc
                 print(f"    Description: {len(desc)} chars")
             else:
                 print(f"    Description: not found")
+            if fetched_currency:
+                currency_cache[ticker] = fetched_currency
+        elif not current_currency and symbol:
+            # Have description cached but no currency yet — quick fetch
+            time.sleep(DESC_DELAY)
+            _, fetched_currency = _fetch_description_one(symbol)
+            if fetched_currency:
+                currency_cache[ticker] = fetched_currency
+            desc = current_desc or None
         else:
             desc = current_desc or None
 
         if prices:
-            _write_detail_file(ticker, company, desc, prices, pending=False)
+            _write_detail_file(ticker, company, desc, prices, pending=False, currency=currency_cache.get(ticker))
             resolved.add(ticker)
             pending_set.discard(ticker)
             unresolved.pop(ticker, None)
@@ -587,6 +652,28 @@ def build_details(
                 print(f"    ✗ Failed (attempt {fail_count}/{MAX_RETRY})")
             errors += 1
 
+    # ── Refresh loop for stale resolved tickers ──
+    for i, ticker in enumerate(refresh_batch, 1):
+        company = lb_map.get(ticker) or ticker
+        meta    = metadata.get(ticker, {})
+        print(f"\n  [refresh {i}/{len(refresh_batch)}] {ticker} ({company[:40]})")
+
+        symbol = _resolve_yf_symbol(ticker, meta, symbol_map)
+        prices = _fetch_price_one(symbol)
+
+        if not prices and re.search(r"\d", ticker):
+            probed = _probe_yf_symbol(ticker, symbol_map)
+            if probed and probed != symbol:
+                symbol = probed
+                prices = _fetch_price_one(symbol)
+
+        desc = desc_cache.get(ticker) or None
+        if prices:
+            _write_detail_file(ticker, company, desc, prices, pending=False, currency=currency_cache.get(ticker))
+            print(f"    ✓ refreshed {len(prices)} price points")
+        else:
+            print(f"    ✗ refresh failed")
+
     all_pending = sorted(pending_set | {t for t in unresolved if t not in resolved})
     print(f"\n  Writing pending stubs for {len(all_pending)} tickers…")
     stubs = _write_pending_stubs(all_pending, lb_map)
@@ -601,6 +688,7 @@ def build_details(
     _save_coverage_state(state)
     _save_symbol_map(symbol_map)
     _save_desc_cache(desc_cache)
+    _save_currency_cache(currency_cache)
 
     unresolved_report = {
         "generated_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
