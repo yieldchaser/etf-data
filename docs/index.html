@@ -2236,8 +2236,9 @@ function app() {
       svg += `<rect x="${labelW + pad - 5}" y="0" width="${W - labelW - pad - 7}" height="${matrixTop - 6}" rx="7" fill="rgba(255,255,255,0.018)"/>`;
       svg += `<line x1="${labelW + pad - 5}" y1="${matrixTop - 5}" x2="${W - pad}" y2="${matrixTop - 5}" stroke="rgba(255,255,255,0.08)"/>`;
       svg += `<line x1="${labelW + pad - 5}" y1="${matrixTop - 5}" x2="${labelW + pad - 5}" y2="${H - pad}" stroke="rgba(255,255,255,0.08)"/>`;
+      const topLabelNudges = { JHEM: -1.5, JHMM: 1.5, QMOM: -2.5, QQQM: 2.5, XMMO: -2, XSMO: 2 };
       for (let j = 0; j < etfs.length; j++) {
-        const x = labelW + pad + j * cell + cell / 2;
+        const x = labelW + pad + j * cell + cell / 2 + (topLabelNudges[etfs[j]] || 0);
         svg += `<text x="${x}" y="15" text-anchor="middle" style="font-family:ui-monospace;font-size:9px;font-weight:600;fill:var(--text-2);letter-spacing:0.01em">${etfs[j]}</text>`;
       }
       for (let i = 0; i < etfs.length; i++) {
