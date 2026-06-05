@@ -84,16 +84,21 @@
     .desc-skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 4px; }
     @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-    .overlap-panel { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 14px; align-items: start; }
-    .overlap-matrix-frame { min-width: 0; overflow: auto; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); background: rgba(0,0,0,0.18); }
-    .overlap-matrix-inner { min-width: max-content; padding: 14px; display: flex; justify-content: center; }
-    .overlap-stat { border: 1px solid rgba(255,255,255,0.07); border-radius: 7px; background: rgba(255,255,255,0.025); padding: 10px; }
+    .overlap-panel { display: grid; gap: 14px; }
+    .overlap-insight-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .overlap-detail-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .overlap-matrix-frame { min-width: 0; overflow: auto; border-radius: 10px; border: 1px solid rgba(255,255,255,0.06); background: radial-gradient(circle at top, rgba(34,211,238,0.08), rgba(0,0,0,0) 34%), rgba(0,0,0,0.18); }
+    .overlap-matrix-inner { min-width: max-content; padding: 18px 20px 16px; display: flex; justify-content: center; }
+    .overlap-stat { border: 1px solid rgba(255,255,255,0.07); border-radius: 9px; background: rgba(255,255,255,0.025); padding: 12px; }
+    .overlap-stat-hero { background: linear-gradient(180deg, rgba(34,211,238,0.10), rgba(255,255,255,0.025)); border-color: rgba(34,211,238,0.20); }
+    .overlap-stat-value { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 28px; line-height: 1; color: var(--cyan); }
     .overlap-pair { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; border-top: 1px solid rgba(255,255,255,0.06); }
     .overlap-pair:first-child { border-top: 0; padding-top: 0; }
     .overlap-cell { transition: opacity 0.12s ease, stroke 0.12s ease, filter 0.12s ease; }
     .overlap-cell:hover { stroke: rgba(255,255,255,0.68); filter: brightness(1.25); }
-    @media (max-width: 1024px) {
-      .overlap-panel { grid-template-columns: 1fr; }
+    @media (max-width: 1180px) {
+      .overlap-insight-grid,
+      .overlap-detail-grid { grid-template-columns: 1fr; }
       .overlap-matrix-inner { justify-content: flex-start; }
     }
   </style>
@@ -1365,6 +1370,26 @@
              x-text="overlapHover || 'Hover a cell for pair details'"></div>
       </div>
       <div class="p-3 overlap-panel">
+        <div class="overlap-insight-grid">
+          <div class="overlap-stat overlap-stat-hero">
+            <div class="label mb-2">Strongest Echo</div>
+            <div class="overlap-stat-value" x-text="overlapSummary.topPct"></div>
+            <div class="text-sm mt-2 font-mono" style="color: var(--text)" x-text="overlapSummary.topPair"></div>
+            <div class="text-[10px] mt-1" style="color: var(--text-3)" x-text="`${overlapSummary.topShared} shared holdings · heaviest consensus pocket`"></div>
+          </div>
+          <div class="overlap-stat">
+            <div class="label mb-2">Most Crowded Signal</div>
+            <div class="text-lg font-mono" style="color: var(--text)" x-text="crowdedOverlapEtfs[0]?.name || '--'"></div>
+            <div class="text-[11px] mt-2" style="color: var(--text-2)" x-text="`${crowdedOverlapEtfs[0]?.avgPct ?? 0}% average overlap across peers`"></div>
+            <div class="text-[10px] mt-1" style="color: var(--text-3)">Best used when you want to lean into the crowd.</div>
+          </div>
+          <div class="overlap-stat">
+            <div class="label mb-2">Best Diversifier</div>
+            <div class="text-lg font-mono" style="color: var(--text)" x-text="independentOverlapEtfs[0]?.name || '--'"></div>
+            <div class="text-[11px] mt-2" style="color: var(--text-2)" x-text="`${independentOverlapEtfs[0]?.avgPct ?? 0}% average overlap across peers`"></div>
+            <div class="text-[10px] mt-1" style="color: var(--text-3)">The cleanest signal if you want less duplication.</div>
+          </div>
+        </div>
         <div class="overlap-matrix-frame scrollbar">
           <div class="overlap-matrix-inner">
             <div x-html="overlapHeatmapSvg"
@@ -1372,13 +1397,7 @@
                  @mouseleave="overlapHover = ''"></div>
           </div>
         </div>
-        <aside class="space-y-3">
-          <div class="overlap-stat">
-            <div class="label mb-2">Overlap Readout</div>
-            <div class="text-lg font-mono" style="color: var(--cyan)" x-text="overlapSummary.topPct"></div>
-            <div class="text-xs mt-1" style="color: var(--text-2)" x-text="overlapSummary.topPair"></div>
-            <div class="text-[10px] mt-1" style="color: var(--text-3)" x-text="`${overlapSummary.topShared} shared holdings · strongest echo pair`"></div>
-          </div>
+        <div class="overlap-detail-grid">
           <div class="overlap-stat">
             <div class="label mb-2">Strongest Echoes</div>
             <template x-for="pair in topOverlapPairsList" :key="`${pair.a}-${pair.b}`">
@@ -1392,6 +1411,15 @@
             </template>
           </div>
           <div class="overlap-stat">
+            <div class="label mb-2">Crowded Signals</div>
+            <template x-for="etf in crowdedOverlapEtfs" :key="etf.name">
+              <div class="overlap-pair">
+                <div class="font-mono text-xs" style="color: var(--text)" x-text="etf.name"></div>
+                <div class="font-mono text-xs" style="color: var(--cyan)" x-text="`${etf.avgPct}% avg`"></div>
+              </div>
+            </template>
+          </div>
+          <div class="overlap-stat">
             <div class="label mb-2">Independent Signals</div>
             <template x-for="etf in independentOverlapEtfs" :key="etf.name">
               <div class="overlap-pair">
@@ -1400,7 +1428,7 @@
               </div>
             </template>
           </div>
-        </aside>
+        </div>
       </div>
     </div>
   </section>
@@ -2188,10 +2216,10 @@ function app() {
       const etfs = o.etfs || [];
       const J = o.jaccard || [];
       if (!etfs.length || !J.length) return '';
-      const cell = 25;
-      const labelW = 58;
-      const labelBandH = 42;
-      const pad = 10;
+      const cell = 32;
+      const labelW = 64;
+      const labelBandH = 22;
+      const pad = 12;
       const matrixTop = labelBandH + pad;
       const W = labelW + cell * etfs.length + pad * 2;
       const H = matrixTop + cell * etfs.length + pad * 2;
@@ -2205,12 +2233,12 @@ function app() {
       };
 
       let svg = `<rect x="0" y="0" width="${W}" height="${H}" rx="8" fill="rgba(255,255,255,0.012)"/>`;
+      svg += `<rect x="${labelW + pad - 5}" y="0" width="${W - labelW - pad - 7}" height="${matrixTop - 6}" rx="7" fill="rgba(255,255,255,0.018)"/>`;
       svg += `<line x1="${labelW + pad - 5}" y1="${matrixTop - 5}" x2="${W - pad}" y2="${matrixTop - 5}" stroke="rgba(255,255,255,0.08)"/>`;
       svg += `<line x1="${labelW + pad - 5}" y1="${matrixTop - 5}" x2="${labelW + pad - 5}" y2="${H - pad}" stroke="rgba(255,255,255,0.08)"/>`;
       for (let j = 0; j < etfs.length; j++) {
         const x = labelW + pad + j * cell + cell / 2;
-        const y = (j % 2 === 0) ? 14 : 29;
-        svg += `<text x="${x}" y="${y}" text-anchor="middle" style="font-family:ui-monospace;font-size:8px;font-weight:600;fill:var(--text-2);letter-spacing:0.01em">${etfs[j]}</text>`;
+        svg += `<text x="${x}" y="15" text-anchor="middle" style="font-family:ui-monospace;font-size:9px;font-weight:600;fill:var(--text-2);letter-spacing:0.01em">${etfs[j]}</text>`;
       }
       for (let i = 0; i < etfs.length; i++) {
         const y = matrixTop + i * cell;
@@ -2268,6 +2296,19 @@ function app() {
       return pairs;
     },
 
+    get overlapEtfAverages() {
+      const o = this.overlap || {};
+      const etfs = o.etfs || [];
+      const J = o.jaccard || [];
+      return etfs.map((name, i) => {
+        const values = etfs
+          .map((_, j) => (i === j ? null : (J[i]?.[j] || 0)))
+          .filter(v => v !== null);
+        const avg = values.length ? values.reduce((sum, v) => sum + v, 0) / values.length : 0;
+        return { name, avgPct: Math.round(avg * 100) };
+      });
+    },
+
     get topOverlapPairsList() {
       return this.overlapPairs.slice(0, 5);
     },
@@ -2285,16 +2326,17 @@ function app() {
     },
 
     get independentOverlapEtfs() {
-      const o = this.overlap || {};
-      const etfs = o.etfs || [];
-      const J = o.jaccard || [];
-      return etfs.map((name, i) => {
-        const values = etfs
-          .map((_, j) => (i === j ? null : (J[i]?.[j] || 0)))
-          .filter(v => v !== null);
-        const avg = values.length ? values.reduce((sum, v) => sum + v, 0) / values.length : 0;
-        return { name, avgPct: Math.round(avg * 100) };
-      }).sort((a, b) => a.avgPct - b.avgPct).slice(0, 4);
+      return this.overlapEtfAverages
+        .slice()
+        .sort((a, b) => a.avgPct - b.avgPct)
+        .slice(0, 4);
+    },
+
+    get crowdedOverlapEtfs() {
+      return this.overlapEtfAverages
+        .slice()
+        .sort((a, b) => b.avgPct - a.avgPct)
+        .slice(0, 4);
     },
 
     get topOverlapPairs() {
