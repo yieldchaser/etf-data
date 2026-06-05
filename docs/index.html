@@ -1360,7 +1360,9 @@
           <div class="label-cyan label">ETF Overlap Matrix</div>
           <span class="text-[10px]" style="color: var(--text-3)">Jaccard similarity · brighter = more shared holdings</span>
         </div>
-        <div class="text-[10px] font-mono truncate max-w-full" style="color: var(--cyan)" x-show="overlapHover" x-text="overlapHover || ''"></div>
+        <div class="text-[10px] font-mono truncate max-w-full"
+             :style="`color: ${overlapHover ? 'var(--cyan)' : 'var(--text-3)'}`"
+             x-text="overlapHover || 'Hover a cell for pair details'"></div>
       </div>
       <div class="p-3 overlap-panel">
         <div class="overlap-matrix-frame scrollbar">
@@ -2188,10 +2190,11 @@ function app() {
       if (!etfs.length || !J.length) return '';
       const cell = 25;
       const labelW = 58;
-      const labelH = 30;
+      const labelBandH = 42;
       const pad = 10;
+      const matrixTop = labelBandH + pad;
       const W = labelW + cell * etfs.length + pad * 2;
-      const H = labelH + cell * etfs.length + pad * 2;
+      const H = matrixTop + cell * etfs.length + pad * 2;
 
       // Color: cyan-tinted, intensity = jaccard (cap at 0.4 so saturation triggers earlier)
       const colorAt = (v) => {
@@ -2202,14 +2205,15 @@ function app() {
       };
 
       let svg = `<rect x="0" y="0" width="${W}" height="${H}" rx="8" fill="rgba(255,255,255,0.012)"/>`;
-      svg += `<line x1="${labelW + pad - 5}" y1="${labelH + pad - 5}" x2="${W - pad}" y2="${labelH + pad - 5}" stroke="rgba(255,255,255,0.08)"/>`;
-      svg += `<line x1="${labelW + pad - 5}" y1="${labelH + pad - 5}" x2="${labelW + pad - 5}" y2="${H - pad}" stroke="rgba(255,255,255,0.08)"/>`;
+      svg += `<line x1="${labelW + pad - 5}" y1="${matrixTop - 5}" x2="${W - pad}" y2="${matrixTop - 5}" stroke="rgba(255,255,255,0.08)"/>`;
+      svg += `<line x1="${labelW + pad - 5}" y1="${matrixTop - 5}" x2="${labelW + pad - 5}" y2="${H - pad}" stroke="rgba(255,255,255,0.08)"/>`;
       for (let j = 0; j < etfs.length; j++) {
         const x = labelW + pad + j * cell + cell / 2;
-        svg += `<text x="${x}" y="${labelH + 4}" text-anchor="middle" style="font-family:ui-monospace;font-size:9px;font-weight:600;fill:var(--text-2)">${etfs[j]}</text>`;
+        const y = (j % 2 === 0) ? 14 : 29;
+        svg += `<text x="${x}" y="${y}" text-anchor="middle" style="font-family:ui-monospace;font-size:8px;font-weight:600;fill:var(--text-2);letter-spacing:0.01em">${etfs[j]}</text>`;
       }
       for (let i = 0; i < etfs.length; i++) {
-        const y = labelH + pad + i * cell;
+        const y = matrixTop + i * cell;
         svg += `<text x="${labelW - 12}" y="${y + cell / 2 + 3}" text-anchor="end" style="font-family:ui-monospace;font-size:10px;font-weight:600;fill:var(--text-2)">${etfs[i]}</text>`;
         for (let j = 0; j < etfs.length; j++) {
           const x = labelW + pad + j * cell;
