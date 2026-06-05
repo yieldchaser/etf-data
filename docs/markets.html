@@ -1675,14 +1675,14 @@
     </div>
 
     <!-- No data state -->
-    <div x-show="!loadingVol && !volData" class="text-center py-20">
+    <div x-show="!loadingVol && !hasVolData" class="text-center py-20">
       <div class="text-base mb-2" style="color: var(--amber)">No volatility data yet</div>
       <div class="text-xs mb-4" style="color: var(--text-3)">Run the pipeline to generate <code>data/vol_history.json</code></div>
       <code class="text-xs px-3 py-2 rounded border inline-block" style="border-color: var(--border-2); background: var(--surface); color: var(--text-2)">python -m predator.vol_history</code>
     </div>
 
     <!-- Vol content -->
-    <div x-show="!loadingVol && volData">
+    <div x-show="!loadingVol && hasVolData">
 
       <!-- View I controls — collapsed from 4 sub-panels to 2 logical groups
            ("Levels & Regime" combines Overview + Cross-Asset; "History & Heatmap"
@@ -2387,6 +2387,10 @@ function marketsApp() {
       } finally {
         this.loadingVol = false;
       }
+    },
+
+    get hasVolData() {
+      return !!(this.volData?.series && Object.keys(this.volData.series).length);
     },
 
     // ── Returns matrix computed properties ───────────────────────────────

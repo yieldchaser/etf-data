@@ -220,7 +220,7 @@
             <button @click="loadSamplePortfolio()"
                     class="px-2.5 py-1 rounded border text-[10px] transition"
                     style="color: var(--text-2); border-color: var(--border)"
-                    @mouseenter="showTt($event, 'Load a sample portfolio (SPY 60% / TLT 40%)')"
+                    @mouseenter="showTt($event, 'Load a sample portfolio (SPY 60% / GLD 40%)')"
                     @mouseleave="hideTt()">Sample</button>
             <button @click="clearPortfolio()"
                     class="px-2.5 py-1 rounded border text-[10px] transition"
@@ -1711,7 +1711,7 @@ function labApp() {
     // Portfolio
     portfolio: [
       { ticker: 'SPY',  weight: 60, name: 'S&P 500 ETF (SPY)',    first: '' },
-      { ticker: 'TLT',  weight: 40, name: '20Y Treasury ETF (TLT)', first: '' },
+      { ticker: 'GLD',  weight: 40, name: 'Gold ETF proxy (GLD)', first: '' },
     ],
     invalidTickersWarning: '',
     adjustedStartWarning: '',
@@ -1826,14 +1826,14 @@ function labApp() {
 
       // §10 If the user previously cleared the portfolio (or first-run with no
       // localStorage), the rest of the page is empty until they enter tickers.
-      // Fall back to the SPY/TLT 60/40 sample so the result tabs (Backtest,
+      // Fall back to the SPY/GLD 60/40 sample so the result tabs (Backtest,
       // Risk, Stress, Monte Carlo, Kelly) all render with meaningful content
       // on first paint.
       const hasValidRow = this.portfolio.some(r => r && r.ticker && (r.weight || 0) !== 0);
       if (!hasValidRow) {
         this.portfolio = [
           { ticker: 'SPY', weight: 60, name: 'S&P 500 ETF (SPY)',    first: '' },
-          { ticker: 'TLT', weight: 40, name: '20Y Treasury ETF (TLT)', first: '' },
+          { ticker: 'GLD', weight: 40, name: 'Gold ETF proxy (GLD)', first: '' },
         ];
       }
 
@@ -1895,6 +1895,20 @@ function labApp() {
         AMZN: 'Amazon',
         META: 'Meta Platforms',
       };
+      const addTicker = (symbol, name, monthly, category = 'equity') => {
+        const cleanMonthly = (monthly || [])
+          .filter(row => Array.isArray(row) && row[0] && Number.isFinite(Number(row[1])) && Number(row[1]) > 0)
+          .map(row => [String(row[0]).slice(0, 7), Number(row[1])])
+          .sort((a, b) => a[0].localeCompare(b[0]));
+        if (cleanMonthly.length < 2) return;
+        tickers[symbol] = {
+          name,
+          category,
+          first: cleanMonthly[0][0],
+          last: cleanMonthly[cleanMonthly.length - 1][0],
+          monthly: cleanMonthly,
+        };
+      };
 
       for (const [symbol, daily] of Object.entries(sources)) {
         if (!Array.isArray(daily) || daily.length < 2) continue;
@@ -1907,12 +1921,15 @@ function labApp() {
           .filter(([, close]) => Number.isFinite(close) && close > 0)
           .sort(([a], [b]) => a.localeCompare(b));
         if (monthly.length < 2) continue;
-        tickers[symbol] = {
-          name: names[symbol] || symbol,
-          first: monthly[0][0],
-          monthly,
-        };
+        addTicker(symbol, names[symbol] || symbol, monthly);
       }
+
+      const marketAssets = this.marketData?.assets || {};
+      addTicker('SPY', 'S&P 500 ETF proxy (SPY)', marketAssets.sp500?.monthly, 'equity');
+      addTicker('QQQ', 'Nasdaq-100 ETF proxy (QQQ)', marketAssets.nasdaq100?.monthly, 'equity');
+      addTicker('DIA', 'Dow Jones ETF proxy (DIA)', marketAssets.djia?.monthly, 'equity');
+      addTicker('EWJ', 'Japan ETF proxy (EWJ)', marketAssets.nikkei?.monthly, 'equity');
+      addTicker('GLD', 'Gold ETF proxy (GLD)', marketAssets.gold?.monthly, 'commodity');
 
       const last = Object.values(tickers)
         .map(t => t.monthly[t.monthly.length - 1]?.[0])
@@ -1952,7 +1969,7 @@ function labApp() {
     loadSamplePortfolio() {
       this.portfolio = [
         { ticker: 'SPY', weight: 60, name: 'S&P 500 ETF (SPY)', first: '' },
-        { ticker: 'TLT', weight: 40, name: '20Y Treasury ETF (TLT)', first: '' },
+        { ticker: 'GLD', weight: 40, name: 'Gold ETF proxy (GLD)', first: '' },
       ];
       for (const row of this.portfolio) this._updateTickerMeta(row);
       this._updateInvalidWarning();

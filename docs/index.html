@@ -83,6 +83,19 @@
     .range-btn.active { background: rgba(34,211,238,0.10); border-color: rgba(34,211,238,0.40); color: var(--cyan); }
     .desc-skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 4px; }
     @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    .overlap-panel { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 14px; align-items: start; }
+    .overlap-matrix-frame { min-width: 0; overflow: auto; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); background: rgba(0,0,0,0.18); }
+    .overlap-matrix-inner { min-width: max-content; padding: 14px; display: flex; justify-content: center; }
+    .overlap-stat { border: 1px solid rgba(255,255,255,0.07); border-radius: 7px; background: rgba(255,255,255,0.025); padding: 10px; }
+    .overlap-pair { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; border-top: 1px solid rgba(255,255,255,0.06); }
+    .overlap-pair:first-child { border-top: 0; padding-top: 0; }
+    .overlap-cell { transition: opacity 0.12s ease, stroke 0.12s ease, filter 0.12s ease; }
+    .overlap-cell:hover { stroke: rgba(255,255,255,0.68); filter: brightness(1.25); }
+    @media (max-width: 1024px) {
+      .overlap-panel { grid-template-columns: 1fr; }
+      .overlap-matrix-inner { justify-content: flex-start; }
+    }
   </style>
 </head>
 <body>
@@ -1342,20 +1355,50 @@
 
     <!-- ETF Overlap Heatmap — surfaces which ETFs are echoes vs independent signals -->
     <div x-show="overlap?.etfs?.length" class="rounded-lg border mt-3" style="background: var(--surface); border-color: var(--border)">
-      <div class="px-3 py-2 flex items-center justify-between flex-wrap gap-y-1" style="border-bottom: 1px solid var(--border)">
+      <div class="px-3 py-2 flex items-center justify-between flex-wrap gap-y-1 gap-x-3" style="border-bottom: 1px solid var(--border)">
         <div class="flex items-center gap-2">
           <div class="label-cyan label">ETF Overlap Matrix</div>
-          <span class="text-[10px]" style="color: var(--text-3)">Jaccard similarity · darker = more shared holdings</span>
+          <span class="text-[10px]" style="color: var(--text-3)">Jaccard similarity · brighter = more shared holdings</span>
         </div>
-        <div class="text-[10px]" style="color: var(--text-3)" x-show="overlapHover" x-text="overlapHover || ''"></div>
+        <div class="text-[10px] font-mono truncate max-w-full" style="color: var(--cyan)" x-show="overlapHover" x-text="overlapHover || ''"></div>
       </div>
-      <div class="p-3 overflow-x-auto scrollbar">
-        <div x-html="overlapHeatmapSvg" class="inline-block"
-             @mousemove="overlapMouseMove($event)"
-             @mouseleave="overlapHover = ''"></div>
-      </div>
-      <div class="px-3 pb-3 text-[10px]" style="color: var(--text-3)">
-        <div>Top overlap pairs <span class="font-mono" style="color: var(--text-2)" x-text="topOverlapPairs"></span></div>
+      <div class="p-3 overlap-panel">
+        <div class="overlap-matrix-frame scrollbar">
+          <div class="overlap-matrix-inner">
+            <div x-html="overlapHeatmapSvg"
+                 @mousemove="overlapMouseMove($event)"
+                 @mouseleave="overlapHover = ''"></div>
+          </div>
+        </div>
+        <aside class="space-y-3">
+          <div class="overlap-stat">
+            <div class="label mb-2">Overlap Readout</div>
+            <div class="text-lg font-mono" style="color: var(--cyan)" x-text="overlapSummary.topPct"></div>
+            <div class="text-xs mt-1" style="color: var(--text-2)" x-text="overlapSummary.topPair"></div>
+            <div class="text-[10px] mt-1" style="color: var(--text-3)" x-text="`${overlapSummary.topShared} shared holdings · strongest echo pair`"></div>
+          </div>
+          <div class="overlap-stat">
+            <div class="label mb-2">Strongest Echoes</div>
+            <template x-for="pair in topOverlapPairsList" :key="`${pair.a}-${pair.b}`">
+              <div class="overlap-pair">
+                <div>
+                  <div class="font-mono text-xs" style="color: var(--text)" x-text="`${pair.a} -> ${pair.b}`"></div>
+                  <div class="text-[10px]" style="color: var(--text-3)" x-text="`${pair.shared} shared holdings`"></div>
+                </div>
+                <div class="font-mono text-xs" style="color: var(--cyan)" x-text="`${pair.pct}%`"></div>
+              </div>
+            </template>
+          </div>
+          <div class="overlap-stat">
+            <div class="label mb-2">Independent Signals</div>
+            <template x-for="etf in independentOverlapEtfs" :key="etf.name">
+              <div class="overlap-pair">
+                <div class="font-mono text-xs" style="color: var(--text)" x-text="etf.name"></div>
+                <div class="font-mono text-xs" style="color: var(--text-2)" x-text="`${etf.avgPct}% avg`"></div>
+              </div>
+            </template>
+          </div>
+        </aside>
       </div>
     </div>
   </section>
@@ -2143,11 +2186,12 @@ function app() {
       const etfs = o.etfs || [];
       const J = o.jaccard || [];
       if (!etfs.length || !J.length) return '';
-      const cell = 22;             // px per cell
-      const labelW = 42;
+      const cell = 25;
+      const labelW = 58;
       const labelH = 30;
-      const W = labelW + cell * etfs.length + 8;
-      const H = labelH + cell * etfs.length + 8;
+      const pad = 10;
+      const W = labelW + cell * etfs.length + pad * 2;
+      const H = labelH + cell * etfs.length + pad * 2;
 
       // Color: cyan-tinted, intensity = jaccard (cap at 0.4 so saturation triggers earlier)
       const colorAt = (v) => {
@@ -2157,28 +2201,27 @@ function app() {
         return `rgba(34, 211, 238, ${a.toFixed(3)})`;
       };
 
-      let svg = '';
-      // Top column labels (rotated 45°)
+      let svg = `<rect x="0" y="0" width="${W}" height="${H}" rx="8" fill="rgba(255,255,255,0.012)"/>`;
+      svg += `<line x1="${labelW + pad - 5}" y1="${labelH + pad - 5}" x2="${W - pad}" y2="${labelH + pad - 5}" stroke="rgba(255,255,255,0.08)"/>`;
+      svg += `<line x1="${labelW + pad - 5}" y1="${labelH + pad - 5}" x2="${labelW + pad - 5}" y2="${H - pad}" stroke="rgba(255,255,255,0.08)"/>`;
       for (let j = 0; j < etfs.length; j++) {
-        const x = labelW + j * cell + cell / 2;
-        svg += `<text x="${x}" y="${labelH - 6}" text-anchor="end" transform="rotate(-45 ${x} ${labelH - 6})" style="font-family:ui-monospace;font-size:9px;fill:var(--text-2)">${etfs[j]}</text>`;
+        const x = labelW + pad + j * cell + cell / 2;
+        svg += `<text x="${x}" y="${labelH + 4}" text-anchor="middle" style="font-family:ui-monospace;font-size:9px;font-weight:600;fill:var(--text-2)">${etfs[j]}</text>`;
       }
-      // Row labels + cells
       for (let i = 0; i < etfs.length; i++) {
-        const y = labelH + i * cell;
-        svg += `<text x="${labelW - 4}" y="${y + cell / 2 + 3}" text-anchor="end" style="font-family:ui-monospace;font-size:9px;fill:var(--text-2)">${etfs[i]}</text>`;
+        const y = labelH + pad + i * cell;
+        svg += `<text x="${labelW - 12}" y="${y + cell / 2 + 3}" text-anchor="end" style="font-family:ui-monospace;font-size:10px;font-weight:600;fill:var(--text-2)">${etfs[i]}</text>`;
         for (let j = 0; j < etfs.length; j++) {
-          const x = labelW + j * cell;
+          const x = labelW + pad + j * cell;
           const v = (J[i] && J[i][j] != null) ? J[i][j] : 0;
           const fill = (i === j) ? 'rgba(255,255,255,0.04)' : colorAt(v);
           const stroke = 'rgba(0,0,0,0.4)';
-          // Tooltip via title element + JS-driven hover (cheap)
           const txt = (v >= 0.05 && i !== j) ? `${Math.round(v * 100)}` : '';
-          svg += `<rect x="${x}" y="${y}" width="${cell - 1}" height="${cell - 1}" rx="2" fill="${fill}" stroke="${stroke}" stroke-width="0.5" data-i="${i}" data-j="${j}" class="ovl-cell"/>`;
-          if (txt) svg += `<text x="${x + cell / 2}" y="${y + cell / 2 + 3}" text-anchor="middle" style="font-family:ui-monospace;font-size:8px;fill:rgba(255,255,255,0.7);pointer-events:none">${txt}</text>`;
+          svg += `<rect x="${x}" y="${y}" width="${cell - 2}" height="${cell - 2}" rx="3" fill="${fill}" stroke="${stroke}" stroke-width="0.5" data-i="${i}" data-j="${j}" class="overlap-cell"/>`;
+          if (txt) svg += `<text x="${x + (cell - 2) / 2}" y="${y + cell / 2 + 3}" text-anchor="middle" style="font-family:ui-monospace;font-size:8px;fill:rgba(255,255,255,0.78);pointer-events:none">${txt}</text>`;
         }
       }
-      return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block">${svg}</svg>`;
+      return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;max-width:none">${svg}</svg>`;
     },
 
     overlapMouseMove(ev) {
@@ -2198,19 +2241,63 @@ function app() {
       }
     },
 
-    get topOverlapPairs() {
+    get overlapPairs() {
       const o = this.overlap || {};
       const etfs = o.etfs || [];
       const J = o.jaccard || [];
-      if (!etfs.length) return '';
+      const shared = o.shared || [];
+      if (!etfs.length) return [];
       const pairs = [];
       for (let i = 0; i < etfs.length; i++) {
         for (let j = i + 1; j < etfs.length; j++) {
-          pairs.push({ a: etfs[i], b: etfs[j], v: J[i]?.[j] || 0 });
+          const v = J[i]?.[j] || 0;
+          pairs.push({
+            a: etfs[i],
+            b: etfs[j],
+            v,
+            pct: Math.round(v * 100),
+            shared: shared[i]?.[j] || 0,
+          });
         }
       }
-      pairs.sort((a, b) => b.v - a.v);
-      return pairs.slice(0, 3).map(p => `${p.a}↔${p.b} ${(p.v * 100).toFixed(0)}%`).join(' · ');
+      pairs.sort((a, b) => (b.v - a.v) || (b.shared - a.shared));
+      return pairs;
+    },
+
+    get topOverlapPairsList() {
+      return this.overlapPairs.slice(0, 5);
+    },
+
+    get overlapSummary() {
+      const top = this.topOverlapPairsList[0];
+      if (!top) {
+        return { topPct: '--', topPair: 'No overlap data', topShared: 0 };
+      }
+      return {
+        topPct: `${top.pct}%`,
+        topPair: `${top.a} -> ${top.b}`,
+        topShared: top.shared,
+      };
+    },
+
+    get independentOverlapEtfs() {
+      const o = this.overlap || {};
+      const etfs = o.etfs || [];
+      const J = o.jaccard || [];
+      return etfs.map((name, i) => {
+        const values = etfs
+          .map((_, j) => (i === j ? null : (J[i]?.[j] || 0)))
+          .filter(v => v !== null);
+        const avg = values.length ? values.reduce((sum, v) => sum + v, 0) / values.length : 0;
+        return { name, avgPct: Math.round(avg * 100) };
+      }).sort((a, b) => a.avgPct - b.avgPct).slice(0, 4);
+    },
+
+    get topOverlapPairs() {
+      return this.topOverlapPairsList
+        .slice(0, 3)
+        .map(p => `${p.a}->${p.b} ${p.pct}%`)
+        .join(' / ');
     },
 
     // ── Compare Mode (top 4 pinned by score) ─────────────────────────────
