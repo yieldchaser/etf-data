@@ -1,6 +1,6 @@
 {
   "coverage_pct": 80.75,
-  "last_run_utc": "2026-06-08T17:39:08+00:00",
+  "last_run_utc": "2026-06-08T23:29:45+00:00",
   "note": "Self-healing: each CI run resolves ~150 tickers. Full coverage reached automatically.",
   "pending": [
     "285A.JP",
@@ -3225,7 +3225,7 @@
     "5110.JP": 5,
     "5214.JP": 5,
     "522.HK": 5,
-    "5274": 2,
+    "5274": 3,
     "5347": 5,
     "5803.JP": 5,
     "6098.JP": 5,
@@ -3641,7 +3641,7 @@
     "LTMC.IM": 5,
     "LUG": 5,
     "LUG.CN": 5,
-    "LUNR.CN": 2,
+    "LUNR.CN": 3,
     "LYB": 5,
     "LYC.AU": 5,
     "MAGEN": 5,
