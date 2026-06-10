@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Predator Protocol · How it works</title>
-  <meta name="description" content="How Predator Protocol works: the conviction-detection thesis, scoring formula, motion signals, and honest limitations of the system.">
+  <meta name="description" content="How Predator Protocol works: the conviction-detection thesis, the APEX (v3) scoring formula, motion signals, and honest limitations of the system.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📈%3C/text%3E%3C/svg%3E">
   <meta name="color-scheme" content="dark">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -68,7 +68,7 @@
     <div class="label mb-2">Contents</div>
     <a href="#thesis">1 · The thesis — what this system tries to detect</a>
     <a href="#universe">2 · The ETF universe (5 tiers)</a>
-    <a href="#conviction">3 · The Conviction Score</a>
+    <a href="#conviction">3 · The Conviction Score &amp; APEX (v3)</a>
     <a href="#motion">4 · Motion signals (velocity, burst, divergence)</a>
     <a href="#flags">5 · Flags &amp; chips</a>
     <a href="#sanitizer">6 · Sanitizer (what's filtered before scoring)</a>
@@ -103,8 +103,8 @@
   <p class="text-xs mt-2" style="color: var(--text-3)">* International ETFs carry 60 points instead of 40 — global names naturally appear in fewer US-focused ETFs, so the bump levels the playing field.</p>
 
   <!-- §3 Conviction Score -->
-  <h2 id="conviction">3 · The Conviction Score</h2>
-  <p>For every (ETF, ticker) pair, we compute a <strong>single-holding score</strong>; the leaderboard's <em>Final Alpha Score</em> is the sum of those across all ETFs holding the ticker. The current formula is the <strong>conviction-weighted</strong> mode (the legacy weight×rank model is preserved for backward compat).</p>
+  <h2 id="conviction">3 · The Conviction Score &amp; APEX (v3)</h2>
+  <p>For every (ETF, ticker) pair, we compute a <strong>single-holding score</strong>; the per-holding math below is the conviction-weighted core and hasn't changed. What's new: the current production mode is <strong>APEX (v3)</strong>, which takes the summed conviction mass and shapes it with three structural multipliers plus a bounded momentum kicker (§3.3).</p>
 
   <h3>3.1 — The two ingredients</h3>
   <p>Each holding contributes proportionally to two factors:</p>
@@ -117,6 +117,19 @@ Final Score   = Σ (Single Score) across all ETFs holding this ticker</pre>
 
   <h3>3.2 — Why this shape</h3>
   <p>The shape is deliberately additive across ETFs (so <strong>breadth</strong> matters) but multiplicative within each ETF (so an oversized #2 weight in a small fund counts more than a tiny #50 weight in a large fund). The OW★ anchor and 1.5 clamp keep extreme outliers from dominating; the rank floor keeps a #100 holding from becoming worthless when it might still be a real signal.</p>
+
+  <h3>3.3 — APEX (v3): structural multipliers + bounded kicker</h3>
+  <p>APEX starts from the conviction mass <strong>B</strong> (the sum of Single Scores from §3.1) and applies three structural multipliers, then a momentum kicker:</p>
+  <pre>B           = Σ TierPoints × W<sub>ovr</sub>(OW) × G<sub>rank</sub>(RP)        (conviction mass)
+Final Score = B × M<sub>conc</sub> × M<sub>breadth</sub> × M<sub>universe</sub>
+APEX Score  = Final × (1 + 0.25·tanh(v_z/2) + 0.10·tanh(i_z/2))</pre>
+  <ul class="list-disc pl-5 space-y-1">
+    <li><strong>M<sub>conc</sub> (0.60–1.00) — concentration guard.</strong> We compute the effective fund count N<sub>eff</sub> = 1/HHI of per-fund score shares; the penalty fully releases at 3 effective funds. The floor is 0.60 — a single fund's massive bet is dampened, never hidden.</li>
+    <li><strong>M<sub>breadth</sub> (1.00–1.35) — strategy dispersal.</strong> Shannon entropy of the score across the 5 tiers — a name confirmed by Quality AND Scout simultaneously outranks the same mass coming from one style.</li>
+    <li><strong>M<sub>universe</sub> (0.80–1.25) — opportunity normalization.</strong> Score per unit of demonstrated opportunity (Σ points of every ETF that has ever held the name, plus shrinkage), clipped so it can level the field for international names without fabricating signal.</li>
+    <li><strong>APEX kicker.</strong> A cross-sectional z-score of the 10-snapshot score slope (v_z) plus its acceleration (i_z), tanh-bounded at ±35% — momentum re-orders neighbours, never fabricates conviction.</li>
+  </ul>
+  <p>Legacy and conviction modes remain available via config for backward comparison.</p>
 
   <!-- §4 Motion -->
   <h2 id="motion">4 · Motion signals</h2>
@@ -141,7 +154,10 @@ Final Score   = Σ (Single Score) across all ETFs holding this ticker</pre>
   <h3>4.3 — Conviction divergence</h3>
   <p>Surfaces names where score is rising but rank is falling (being crowded out by faster movers — a "leaking" position) or the inverse (rank rising while score falls — relative-strength-on-cheap).</p>
 
-  <h3>4.4 — Extreme conviction moves (homepage ribbon)</h3>
+  <h3>4.4 — APEX momentum kicker</h3>
+  <p>The kicker described in §3.3 also lives here conceptually: <code>velocity_z</code> (z-scored 10-snapshot score slope) and <code>ignition_z</code> (z-scored acceleration) feed the bounded ±35% adjustment to the Final Score. These are <strong>distinct from the display velocity score in §4.1</strong> — that one is a hand-tuned composite for sorting the leaderboard; velocity_z / ignition_z are statistical OLS-slope measures that actually move the APEX Score.</p>
+
+  <h3>4.5 — Extreme conviction moves (homepage ribbon)</h3>
   <p>On the leaderboard, the top strip surfaces names whose motion metrics are statistically unusual (|z| ≥ 2) vs the leaderboard's own distribution today. Pure presentation — every value is already in the leaderboard JSON. Quality gate: requires ≥ 3 ETFs holding (so a single-ETF data hiccup can't surface a fake outlier).</p>
 
   <!-- §5 Flags -->
@@ -157,8 +173,10 @@ Final Score   = Σ (Single Score) across all ETFs holding this ticker</pre>
       <tr><td><strong>Quality−</strong></td><td>Lost a Quality ETF in last 30d</td><td>Fundamentals lens dropped the name</td></tr>
       <tr><td><strong>Pre-HC</strong></td><td>Held by exactly 3 ETFs with rising velocity</td><td>One pickup away from broad consensus</td></tr>
       <tr><td><strong>Stealth Buy</strong></td><td>Single fund growing position &gt; 10% in 7d before consensus</td><td>Lonely-buy-before-the-crowd</td></tr>
+      <tr><td><strong>CONCENTRATED</strong></td><td>One fund supplies ≥ 85% of the name's score mass (or a lone fund holds it at ≥ 4× equal-weight)</td><td>Single-fund story: conviction is real but undiversified</td></tr>
     </tbody>
   </table>
+  <p class="text-xs mt-2" style="color: var(--text-3)">The leaderboard's micro-badges (Q+, STEALTH, DIV±, CONC) and the regime chip are display-layer signals documented in the dashboard tooltips.</p>
 
   <!-- §6 Sanitizer -->
   <h2 id="sanitizer">6 · Sanitizer</h2>
@@ -210,7 +228,8 @@ Final Score   = Σ (Single Score) across all ETFs holding this ticker</pre>
     <li><strong>The system is one source.</strong> No earnings, no fundamentals, no macro overlay. Use it alongside other tools, not instead of them.</li>
     <li><strong>Daily granularity, not intraday.</strong> Scrapes run 14:00 + 22:00 UTC weekdays. Same-day moves are not captured.</li>
     <li><strong>Some positions are hidden.</strong> Equity-only filtering removes cash, derivatives, money-market, and currency placeholders. You see the equity book, not the full ETF.</li>
-    <li><strong>Tier weights are editorial.</strong> The 40 / 60 / 30 / 10 / 2 numbers are calibrated by hand. The current values are pinned by regression tests (Samsung &gt; Itaú in conviction mode); changes require a measured before/after.</li>
+    <li><strong>Tier weights are editorial.</strong> The 40 / 60 / 30 / 10 / 2 numbers are calibrated by hand. The current values are pinned by regression tests (Samsung &gt; Itaú under the conviction-weighted core that APEX builds on); changes require a measured before/after.</li>
+    <li><strong>APEX multipliers are calibrated to this 30-ETF universe.</strong> For example, the 0.85 concentration-dominance threshold sits above the structural median of 0.81 created by the 60/40/30/10/2 point asymmetry. A different universe needs recalibration.</li>
     <li><strong>Cold-start gaps.</strong> Each ETF has a 30-day maturity ramp during which NEW flags are suppressed. The system started in February 2026; the leaderboard reaches its full signal density once every ETF is past the maturity gate.</li>
   </ul>
 
