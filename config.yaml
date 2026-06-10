@@ -171,9 +171,12 @@ high_conviction_min_etfs: 4
 #                Backward-compatible; all existing tests pass.
 # 'conviction' : §24 conviction-weighted formula (OW × RP × points).
 #                Fixes the ITUB4 > Samsung structural bias.
-#                Activate this once the 15→30 ETF migration has matured.
+# 'apex'       : §30 Predator v3. Conviction per-holding scoring, then the
+#                per-ticker raw mass is shaped by concentration (HHI guard),
+#                strategy-breadth entropy, and shrunk universe normalization.
+#                Adds the bounded velocity overlay (apex_score / apex_rank).
 # =============================================================================
-scoring_mode: conviction
+scoring_mode: apex
 
 # =============================================================================
 # CONVICTION SCORING PARAMETERS (used when scoring_mode = conviction)
@@ -188,6 +191,29 @@ conviction:
   c_max:     1.5    # ceiling on Wovr (prevents extreme outliers dominating)
   rp_floor:  0.35   # minimum Grank contribution (rank never fully zeroes out)
   hc_theta:  0.8    # conviction threshold for HIGH_CONVICTION breadth count
+
+# =============================================================================
+# APEX SCORING PARAMETERS (§30, used when scoring_mode = apex)
+# Final = B × M_conc × M_breadth × M_universe, where B is the conviction raw
+# mass Σ points_i × C_i. Per-holding math is identical to conviction mode.
+# =============================================================================
+apex:
+  conc_floor:       0.60   # concentration floor — single-fund monsters stay visible
+                           # at >= 60% of raw mass (owner directive: really large
+                           # single bets must never disappear from the board)
+  conc_target_neff: 3.0    # effective-ETF count (1/HHI) at which the
+                           # concentration penalty fully releases to 1.0
+  breadth_alpha:    0.35   # max uplift when independent strategy tiers co-sign
+                           # (entropy of tier shares rewards style dispersal)
+  universe_eta:     0.50   # exponent damping universe normalization (sqrt —
+                           # halves the log-slope of the penetration ratio)
+  universe_lambda:  40.0   # shrinkage pseudo-mass added to opportunity mass
+                           # (~ one median fund's points; tames tiny universes)
+  universe_clip_lo: 0.80   # floor on universe multiplier — levels intl names
+  universe_clip_hi: 1.25   # ceiling — without false positives from clipping
+  conc_flag_share:  0.85   # max-share threshold for the CONCENTRATED flag —
+                           # one fund supplies >= 85% of score mass (>= 2 ETFs),
+                           # above this universe's structural median of ~0.81
 
 # =============================================================================
 # ETF MATURITY GATE (§28) — suppresses NEW flood from the 15→30 migration.

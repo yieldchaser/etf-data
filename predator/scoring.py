@@ -4,6 +4,44 @@ Predator Protocol — scoring engine.
 The algorithm is the documented Predator Protocol v1 from the etf-data README.
 Sanitizer mirrors the ArchiveToDatabase_Production VBA sub.
 
+Scoring modes:
+    legacy     — original Power Query formula: weight% × points × rank_mult × 100
+                 (+ flat NEW bonus for Scout/Quant entrants).
+    conviction — §24 conviction-weighted: C_i = Wovr(OW_i) × Grank(RP_i),
+                 Single_i = points_i × C_i, Final = Σ_i Single_i.
+    apex       — §30 Predator v3. Per-holding scoring identical to conviction;
+                 the per-ticker raw mass B = Σ Single_i is then shaped by three
+                 multipliers:
+
+                 (a) Concentration (single-fund manipulation guard)
+                     s_i    = score_i / Σ score_i      (holding share of mass)
+                     HHI    = Σ s_i²                   (Herfindahl index)
+                     N_eff  = 1 / HHI                  (effective ETF count)
+                     M_conc = floor + (1 − floor) × min(1, (N_eff − 1)/(N_eff★ − 1))
+                     clamped to [conc_floor, 1] — single-fund monsters stay
+                     visible at ≥ conc_floor of their raw mass.
+
+                 (b) Strategy breadth dispersal
+                     p_t       = tier-t share of the ticker's mass
+                     E         = −Σ_t p_t·ln(p_t)      (Shannon entropy)
+                     M_breadth = 1 + α × E / ln(N_tiers)
+                     Independent style co-sign (Scout+Quant+Quality…) earns up
+                     to α uplift; mono-tier names get exactly 1.0.
+
+                 (c) Universe / geographic normalization
+                     O(ticker) = ETFs that EVER held it (weight > 0, full
+                                 as_of-capped history)
+                     OM        = Σ points_e over e ∈ O  (opportunity mass)
+                     pen       = B / (OM + λ)           (shrunk penetration)
+                     M_universe = clip((pen / median pen)^η, clip_lo, clip_hi)
+                     Levels intl names with small opportunity sets without
+                     false positives — η damps, λ shrinks, clip bounds.
+
+                 Final = B × M_conc × M_breadth × M_universe.
+                 New flag "CONCENTRATED": not HC and (s_max ≥ θ_share with
+                 ≥ 2 ETFs, or a single-ETF holding at OW ≥ OW★), where s_max
+                 is the max per-ETF score share (dominance criterion).
+
 Inputs:
     history: long-form holdings, schema from yieldchaser/etf-data scraper.py.
              Columns: ETF_Ticker, ticker, name, weight, Holdings_As_Of, Date_Scraped
@@ -13,10 +51,12 @@ Outputs (from compute_leaderboard):
     latest:       one row per (ETF, ticker) in latest snapshot, with score components
 """
 from __future__ import annotations
+import math
 from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
 from typing import Iterable
+import numpy as np
 import pandas as pd
 import yaml
 
@@ -174,6 +214,32 @@ class ConvictionConfig:
 
 
 @dataclass(frozen=True)
+class ApexConfig:
+    """§30 apex-mode parameters (Predator v3)."""
+    conc_floor: float = 0.60        # minimum concentration multiplier (single-fund bets stay visible)
+    conc_target_neff: float = 3.0   # effective-ETF count at which concentration penalty fully releases
+    breadth_alpha: float = 0.35     # max uplift from full strategy-tier dispersal
+    universe_eta: float = 0.50      # exponent damping universe normalization
+    universe_lambda: float = 40.0   # shrinkage pseudo-mass (≈ one median fund's points)
+    universe_clip_lo: float = 0.80  # floor on universe multiplier
+    universe_clip_hi: float = 1.25  # ceiling on universe multiplier
+    conc_flag_share: float = 0.85   # max-share threshold for CONCENTRATED flag
+                                    # (one fund supplies ≥85% of score mass — above
+                                    # this universe's structural median of ~0.81)
+
+    def __post_init__(self):
+        if self.conc_target_neff <= 1:
+            raise ValueError(f"ApexConfig.conc_target_neff must be > 1, got {self.conc_target_neff}")
+        if not 0.0 <= self.conc_floor <= 1.0:
+            raise ValueError(f"ApexConfig.conc_floor must be in [0, 1], got {self.conc_floor}")
+        if self.universe_clip_lo > self.universe_clip_hi:
+            raise ValueError(
+                f"ApexConfig.universe_clip_lo ({self.universe_clip_lo}) must be "
+                f"<= universe_clip_hi ({self.universe_clip_hi})"
+            )
+
+
+@dataclass(frozen=True)
 class HistoryConfig:
     rank_delta_lookback_days: int          # kept for backward compat (= delta_periods_days[1])
     delta_periods_days: tuple[int, ...]    # Phase 2: multi-period deltas
@@ -191,9 +257,10 @@ class Config:
     new_bonus_tiers: tuple[str, ...]
     high_conviction_min_etfs: int
     history: HistoryConfig
-    scoring_mode: str = "legacy"                        # 'legacy' | 'conviction'
-    conviction: ConvictionConfig | None = None          # §24 params (conviction mode)
+    scoring_mode: str = "legacy"                        # 'legacy' | 'conviction' | 'apex'
+    conviction: ConvictionConfig | None = None          # §24 params (conviction + apex modes)
     etf_maturity_days: int = 30                         # §28 maturity gate
+    apex: ApexConfig | None = None                      # §30 params (apex mode)
 
     @classmethod
     def from_yaml(cls, path: str | Path) -> "Config":
@@ -232,7 +299,7 @@ class Config:
             changelog_top_n=int(h_cfg.get("changelog_top_n", 15)),
         )
 
-        # §24 conviction config
+        # §24 conviction config — apex mode REQUIRES it (per-holding path is shared)
         scoring_mode = cfg.get("scoring_mode", "legacy")
         cv_cfg = cfg.get("conviction", {})
         conviction = ConvictionConfig(
@@ -240,7 +307,20 @@ class Config:
             c_max=float(cv_cfg.get("c_max", 1.5)),
             rp_floor=float(cv_cfg.get("rp_floor", 0.35)),
             hc_theta=float(cv_cfg.get("hc_theta", 0.8)),
-        ) if cv_cfg or scoring_mode == "conviction" else None
+        ) if cv_cfg or scoring_mode in ("conviction", "apex") else None
+
+        # §30 apex config — optional block; every key falls back to its default
+        ax_cfg = cfg.get("apex", {})
+        apex = ApexConfig(
+            conc_floor=float(ax_cfg.get("conc_floor", 0.60)),
+            conc_target_neff=float(ax_cfg.get("conc_target_neff", 3.0)),
+            breadth_alpha=float(ax_cfg.get("breadth_alpha", 0.35)),
+            universe_eta=float(ax_cfg.get("universe_eta", 0.50)),
+            universe_lambda=float(ax_cfg.get("universe_lambda", 40.0)),
+            universe_clip_lo=float(ax_cfg.get("universe_clip_lo", 0.80)),
+            universe_clip_hi=float(ax_cfg.get("universe_clip_hi", 1.25)),
+            conc_flag_share=float(ax_cfg.get("conc_flag_share", 0.85)),
+        ) if ax_cfg or scoring_mode == "apex" else None
 
         return cls(
             sanitizer=sanitizer,
@@ -255,6 +335,7 @@ class Config:
             scoring_mode=scoring_mode,
             conviction=conviction,
             etf_maturity_days=int(cfg.get("etf_maturity_days", 30)),
+            apex=apex,
         )
 
     def etf_lookup(self) -> dict[str, ETF]:
@@ -415,8 +496,8 @@ def compute_leaderboard(
     latest["tier"] = latest["ETF_Ticker"].map(lambda e: etf_lookup[e].tier)
     latest["tier_points"] = latest["ETF_Ticker"].map(lambda e: etf_lookup[e].points)
 
-    # ── SCORE FORMULA — two modes ─────────────────────────────────────────────
-    if cfg.scoring_mode == "conviction" and cfg.conviction is not None:
+    # ── SCORE FORMULA — three modes (apex shares the conviction per-holding path)
+    if cfg.scoring_mode in ("conviction", "apex") and cfg.conviction is not None:
         # §24 Conviction-weighted formula:
         #   C_i        = Wovr(OW_i) × Grank(RP_i)        # overweight × rank percentile
         #   Single_i   = TierPoints_i × C_i              # each holding's contribution
@@ -469,24 +550,119 @@ def compute_leaderboard(
     ).reset_index()
 
     # §25 Conviction breadth: k_c = count of ETFs where C_i ≥ θ
-    if cfg.scoring_mode == "conviction" and cfg.conviction is not None:
+    if cfg.scoring_mode in ("conviction", "apex") and cfg.conviction is not None:
         theta = cfg.conviction.hc_theta
         conviction_etfs = latest[latest["conviction"] >= theta].groupby("ticker")["ETF_Ticker"].nunique()
         agg["conviction_etf_count"] = agg["ticker"].map(conviction_etfs).fillna(0).astype(int)
     else:
         agg["conviction_etf_count"] = agg["etf_count"]
 
+    # ── §30 Concentration / breadth / universe diagnostics ───────────────────
+    # Computed in ALL modes so the JSON schema stays stable. The multipliers
+    # only deviate from 1.0 in apex mode; hhi / n_eff / tier_entropy are
+    # purely descriptive in legacy/conviction modes.
+    #
+    #   s_i        = score_i / Σ score_i            (holding share of mass)
+    #   HHI        = Σ s_i²          N_eff = 1/HHI  (effective ETF count)
+    #   M_conc     = floor + (1−floor) × min(1, (N_eff−1)/(N_eff★−1))
+    #   E          = −Σ_t p_t·ln(p_t)               (tier-share entropy)
+    #   M_breadth  = 1 + α × E / ln(N_tiers)
+    #   pen        = B / (OM + λ)                   (shrunk penetration)
+    #   M_universe = clip((pen / median pen)^η, clip_lo, clip_hi)
+    #   Final      = B × M_conc × M_breadth × M_universe   (apex only)
+    score_totals = latest.groupby("ticker")["score"].sum()
+    tot_per_row = latest["ticker"].map(score_totals)
+    shares = latest["score"].div(tot_per_row.where(tot_per_row > 0))
+    hhi = agg["ticker"].map(shares.pow(2).groupby(latest["ticker"]).sum(min_count=1)).fillna(1.0)
+    n_eff = 1.0 / hhi
+    # s_max — max per-ETF score share (dominance: drives the CONCENTRATED flag)
+    s_max = agg["ticker"].map(shares.groupby(latest["ticker"]).max()).fillna(1.0)
+
+    tier_scores = latest.groupby(["ticker", "tier"])["score"].sum()
+    tier_totals = tier_scores.groupby(level="ticker").transform("sum")
+    p_t = tier_scores.div(tier_totals.where(tier_totals > 0))
+    p_pos = p_t.where(p_t > 0)
+    ent_terms = -(p_pos * np.log(p_pos))
+    tier_entropy = agg["ticker"].map(ent_terms.groupby(level="ticker").sum()).fillna(0.0)
+
+    n_tiers = len(cfg.all_tier_names())
+    e_norm = tier_entropy / math.log(n_tiers) if n_tiers > 1 else tier_entropy * 0.0
+
+    # Σ score = 0 guard — multipliers neutralized (skip, don't penalize)
+    zero_mass = agg["ticker"].map(score_totals).fillna(0.0) <= 0
+
+    if cfg.scoring_mode == "apex":
+        ax = cfg.apex if cfg.apex is not None else ApexConfig()
+
+        # (a) Concentration — single-fund manipulation guard
+        release = ((n_eff - 1.0) / (ax.conc_target_neff - 1.0)).clip(0.0, 1.0)
+        m_conc = (ax.conc_floor + (1.0 - ax.conc_floor) * release).clip(ax.conc_floor, 1.0)
+
+        # (b) Strategy breadth dispersal
+        m_breadth = 1.0 + ax.breadth_alpha * e_norm
+
+        # (c) Universe normalization — opportunity set over the FULL
+        # as_of-capped sanitized history (every ETF that EVER held the name)
+        pairs = df.loc[df["weight"] > 0, ["ticker", "ETF_Ticker"]].drop_duplicates()
+        opp_mass = pairs["ETF_Ticker"].map(lambda e: etf_lookup[e].points).groupby(pairs["ticker"]).sum()
+        om = agg["ticker"].map(opp_mass).fillna(0.0)
+        b_raw = agg["final_score"].astype(float)
+        penetration = b_raw / (om + ax.universe_lambda)
+        med = penetration[b_raw > 0].median()
+        if pd.isna(med) or med <= 0:
+            m_universe = pd.Series(1.0, index=agg.index)
+        else:
+            m_universe = penetration.div(med).pow(ax.universe_eta).clip(
+                ax.universe_clip_lo, ax.universe_clip_hi)
+
+        m_conc = m_conc.where(~zero_mass, 1.0)
+        m_breadth = m_breadth.where(~zero_mass, 1.0)
+        m_universe = m_universe.where(~zero_mass, 1.0)
+
+        # (d) Final — before sort/rank/normalize so they see apex scores
+        agg["final_score"] = b_raw * m_conc * m_breadth * m_universe
+
+        # Max per-holding OW per ticker — drives the single-ETF CONCENTRATED test
+        ow_max = (latest["weight"] * latest["n_holdings"]).groupby(latest["ticker"]).max()
+        agg["_max_ow"] = agg["ticker"].map(ow_max).fillna(0.0)
+    else:
+        m_conc = pd.Series(1.0, index=agg.index)
+        m_breadth = pd.Series(1.0, index=agg.index)
+        m_universe = pd.Series(1.0, index=agg.index)
+
+    agg["hhi"] = hhi.round(4)
+    agg["n_eff"] = n_eff.round(2)
+    agg["max_etf_share"] = s_max.round(4)
+    agg["m_conc"] = m_conc.round(4)
+    agg["m_breadth"] = m_breadth.round(4)
+    agg["m_universe"] = m_universe.round(4)
+    agg["tier_entropy"] = tier_entropy.round(4)
+
     def _flag(row) -> str:
         tier_set = set(row["tiers"].split(" + ")) if row["tiers"] else set()
-        # §25: HC uses conviction breadth in conviction mode, raw count in legacy
-        hc_count = row["conviction_etf_count"] if cfg.scoring_mode == "conviction" else row["etf_count"]
+        # §25: HC uses conviction breadth in conviction/apex modes, raw count in legacy
+        hc_count = (row["conviction_etf_count"]
+                    if cfg.scoring_mode in ("conviction", "apex") else row["etf_count"])
         if hc_count >= cfg.high_conviction_min_etfs:
             return "HIGH_CONVICTION"
+        if cfg.scoring_mode == "apex":
+            # §30 CONCENTRATED — conviction parked in too few books to be HC,
+            # but too much mass to ignore. Two triggers (dominance criterion —
+            # an equal 2-way split is the normal shape of a 2-book name, not
+            # an anomaly, so HHI=0.5 alone must not fire):
+            #   • multi-ETF: one fund supplies ≥ θ_share of score mass (≥ 2 books)
+            #   • single-ETF: the one holding is a real outsized bet (OW ≥ OW★)
+            ax = cfg.apex if cfg.apex is not None else ApexConfig()
+            ow_anchor = cfg.conviction.ow_star if cfg.conviction is not None else float("inf")
+            if ((row["max_etf_share"] >= ax.conc_flag_share and row["etf_count"] >= 2)
+                    or (row["etf_count"] == 1 and row.get("_max_ow", 0.0) >= ow_anchor)):
+                return "CONCENTRATED"
         if "Trend" in tier_set and not (tier_set & {"Quality", "Scout"}):
             return "SPECULATIVE_BETA"
         return ""
 
     agg["flag"] = agg.apply(_flag, axis=1)
+    agg = agg.drop(columns=["_max_ow"], errors="ignore")
     agg = agg.sort_values(["final_score", "etf_count", "total_weight"], ascending=False).reset_index(drop=True)
     agg["leaderboard_rank"] = agg.index + 1
 

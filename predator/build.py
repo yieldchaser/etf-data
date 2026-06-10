@@ -490,6 +490,24 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
           f"quality_adopted_30d={int(leaderboard['quality_adopted_30d'].sum())} · "
           f"quality_defected_30d={int(leaderboard['quality_defected_30d'].sum())}")
 
+    # ── §31 Apex predictive overlay — bounded temporal kicker (apex mode) ─────
+    # apex_score = final_score × (1 + 0.25·tanh(velocity_z/2) + 0.10·tanh(ignition_z/2))
+    # Does NOT touch leaderboard_rank or row sort order — apex_rank is a
+    # separate column the UI can sort by. Reuses the score panel computed
+    # above for streaks.
+    if cfg.scoring_mode == "apex" and historical:
+        leaderboard = hist.predictive_overlay(leaderboard, score_pnl)
+        adjusted = int((leaderboard["apex_score"] != leaderboard["final_score"]).sum())
+        print(f"  apex overlay:   velocity_z range "
+              f"[{leaderboard['velocity_z'].min():.2f}, {leaderboard['velocity_z'].max():.2f}] · "
+              f"{adjusted} scores adjusted")
+    else:
+        # Neutral columns — JSON schema stays stable across modes
+        leaderboard["velocity_z"] = 0.0
+        leaderboard["ignition_z"] = 0.0
+        leaderboard["apex_score"] = leaderboard["final_score"]
+        leaderboard["apex_rank"] = leaderboard["leaderboard_rank"]
+
     # ── Attach metadata (sector, industry, country) for flow analysis ─────────
     def _attach_metadata(leaderboard: pd.DataFrame) -> pd.DataFrame:
         """Merge ticker metadata (sector, industry, country) from cached CSV."""

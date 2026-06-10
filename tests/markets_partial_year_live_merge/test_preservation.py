@@ -10,7 +10,9 @@ Sub-tests follow the design's Step 2:
     2c — Dow Jones / Aluminum live source, concrete
     2d — non-dual-registry sources, property (Hypothesis)
     2e — other markets-dashboard tabs, snapshot (DOM text)
-    2f — out-of-scope files unchanged (git diff scraper.py / scoring.py / vol_history.py)
+    2f — out-of-scope files unchanged (git diff scraper.py / vol_history.py;
+         predator/scoring.py wall lifted by owner directive 2026-06-10 for
+         the apex-mode scoring overhaul)
     2g — legitimate extreme full-year cells preserved (KNOWN_REAL_EVENTS)
     2h — verdict states & palette unchanged
     2i — currently-green tests stay green
@@ -382,7 +384,9 @@ def test_2e_non_matrix_tab_dom_unchanged(tab_id, baseline_html_tabs):
 
 # ─── 2f — out-of-scope files unchanged (git diff) ───────────────────────────
 
-OUT_OF_SCOPE_FILES = ["scraper.py", "predator/scoring.py"]
+# predator/scoring.py was removed from this wall by owner directive 2026-06-10
+# (apex-mode / Predator v3 scoring overhaul). scraper.py remains walled.
+OUT_OF_SCOPE_FILES = ["scraper.py"]
 NO_TOUCH_FILES = ["predator/vol_history.py"]  # design Fix Implementation #13
 
 
@@ -402,8 +406,9 @@ def _git_diff(path: str) -> str:
 def test_2f_out_of_scope_files_have_empty_diff(path):
     """**Validates: Requirement 3.8**
 
-    `scraper.py` and `predator/scoring.py` are explicitly out of scope.
-    `git diff` must be empty against HEAD.
+    `scraper.py` is explicitly out of scope. `git diff` must be empty
+    against HEAD. (`predator/scoring.py` was lifted from this guard by
+    owner directive 2026-06-10 for the apex-mode scoring overhaul.)
     """
     if not (REPO_ROOT / path).exists():
         pytest.skip(f"{path} not present in repo")

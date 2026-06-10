@@ -116,6 +116,54 @@ COUNTRY_SUFFIX: dict[str, str] = {
 
 PROBE_SUFFIXES = [".KS", ".TW", ".T", ".HK", ".SS", ".SZ", ".SA", ".NS", ".AX", ".L", ".DE", ".PA"]
 
+# Exchange-suffix → native trading currency. Used to infer the price currency
+# when yfinance info doesn't return one (or returned a wrong default).
+SUFFIX_CURRENCY: dict[str, str] = {
+    "KS": "KRW", "KQ": "KRW",
+    "T": "JPY",
+    "TW": "TWD", "TWO": "TWD",
+    "HK": "HKD",
+    "SS": "CNY", "SZ": "CNY",
+    "SA": "BRL",
+    # ".L" (LSE) deliberately omitted: yfinance quotes pence (GBp); inferring "GBP" would mislabel by 100x. London names rely on yfinance info currency.
+    "TO": "CAD", "V": "CAD",
+    "AX": "AUD",
+    "NS": "INR", "BO": "INR",
+    "PA": "EUR", "AS": "EUR", "BR": "EUR", "MC": "EUR", "MI": "EUR",
+    "DE": "EUR", "F": "EUR", "VI": "EUR", "HE": "EUR", "LS": "EUR",
+    "SW": "CHF",
+    "ST": "SEK",
+    "OL": "NOK",
+    "CO": "DKK",
+    "MX": "MXN",
+    "JO": "ZAR",
+    "BK": "THB",
+    "IS": "TRY",
+    "WA": "PLN",
+    "JK": "IDR",
+    "KL": "MYR",
+    "SI": "SGD",
+    "NZ": "NZD",
+    "TA": "ILS",
+    "SN": "CLP",
+    "KW": "KWD",
+    "QA": "QAR",
+    "SR": "SAR",
+}
+
+
+def infer_currency_from_symbol(symbol: str) -> str | None:
+    """Infer trading currency from a yfinance symbol's exchange suffix.
+
+    Case-insensitive match on the part after the last dot ('000660.KS' → 'KRW').
+    Symbols without a dot (plain US listings) return None.
+    """
+    if not symbol or "." not in symbol:
+        return None
+    suffix = symbol.rsplit(".", 1)[1].upper()
+    return SUFFIX_CURRENCY.get(suffix)
+
+
 # Currency codes that appear as ETF "holdings" but are not equities.
 # Skip these from the stock-details universe to avoid wasting batch budget.
 KNOWN_CURRENCY_CODES = {
@@ -358,6 +406,8 @@ def _fetch_description_one(symbol: str) -> tuple[str | None, str | None]:
     try:
         import yfinance as yf
         info = yf.Ticker(symbol).info
+        # .upper() also normalizes London's 'GBp' (pence) to 'GBP' — display
+        # currency code only; prices are NOT rescaled.
         currency = (info.get("currency") or info.get("financialCurrency") or "").strip().upper() or None
         desc = (info.get("longBusinessSummary") or info.get("description") or "").strip()
         if len(desc) < 20:
@@ -635,7 +685,9 @@ def build_details(
             desc = current_desc or None
 
         if prices:
-            _write_detail_file(ticker, company, desc, prices, pending=False, currency=currency_cache.get(ticker))
+            # Currency priority: yfinance info > exchange-suffix inference > "USD" (writer default)
+            currency = currency_cache.get(ticker) or infer_currency_from_symbol(symbol)
+            _write_detail_file(ticker, company, desc, prices, pending=False, currency=currency)
             resolved.add(ticker)
             pending_set.discard(ticker)
             unresolved.pop(ticker, None)
@@ -669,7 +721,9 @@ def build_details(
 
         desc = desc_cache.get(ticker) or None
         if prices:
-            _write_detail_file(ticker, company, desc, prices, pending=False, currency=currency_cache.get(ticker))
+            # Currency priority: yfinance info > exchange-suffix inference > "USD" (writer default)
+            currency = currency_cache.get(ticker) or infer_currency_from_symbol(symbol)
+            _write_detail_file(ticker, company, desc, prices, pending=False, currency=currency)
             print(f"    ✓ refreshed {len(prices)} price points")
         else:
             print(f"    ✗ refresh failed")

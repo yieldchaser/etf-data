@@ -7,6 +7,7 @@ Holdings_As_Of <= D (so each leaderboard uses each ETF's latest available
 data as of D). The series of daily leaderboards drives every temporal feature.
 """
 from __future__ import annotations
+import numpy as np
 import pandas as pd
 from typing import Iterable
 
@@ -131,6 +132,124 @@ def streaks_and_deltas(
             "score_percentile": round(score_percentile, 3) if pd.notna(score_percentile) else None,
         })
     return pd.DataFrame(rows)
+
+
+def accumulation_velocity(score_pnl: pd.DataFrame, window: int = 10) -> pd.DataFrame:
+    """
+    §31 OLS accumulation velocity over the trailing `window` snapshots.
+
+    For each ticker with ≥ 4 non-NaN points in the window:
+        x_i       = (date_i − first window date).days   (actual date spacing)
+        slope     = cov(x, y) / var(x)                  (OLS on final_score)
+        slope_pct = slope / max(|mean(y)|, 1)           (scale-free)
+
+    Ignition (acceleration): split the ticker's non-NaN window points into a
+    first half and second half (each needs ≥ 3 points, else NaN);
+        ignition_raw = slope(second half) − slope(first half),
+    normalized by max(|mean(y)|, 1).
+
+    Both metrics are z-scored cross-sectionally over tickers with valid
+    values (std == 0 or < 2 valid → z = 0; invalid tickers stay NaN).
+
+    Returns columns: ticker, slope, slope_pct, velocity_z, ignition_z.
+    """
+    cols_out = ["ticker", "slope", "slope_pct", "velocity_z", "ignition_z"]
+    if score_pnl is None or score_pnl.empty:
+        return pd.DataFrame(columns=cols_out)
+
+    pnl = score_pnl.sort_index(axis=1).iloc[:, -window:]
+    first_col = pd.Timestamp(pnl.columns[0])
+
+    def _ols_slope(x: np.ndarray, y: np.ndarray) -> float:
+        """OLS slope = cov(x, y) / var(x); NaN when var(x) is 0."""
+        vx = x - x.mean()
+        denom = (vx ** 2).sum()
+        if denom <= 0:
+            return float("nan")
+        return float((vx * (y - y.mean())).sum() / denom)
+
+    rows = []
+    for ticker, series in pnl.iterrows():
+        s = series.dropna()
+        if len(s) < 4:
+            rows.append({"ticker": ticker, "slope": float("nan"),
+                         "slope_pct": float("nan"), "ignition_raw": float("nan")})
+            continue
+        x = np.array([(pd.Timestamp(d) - first_col).days for d in s.index], dtype=float)
+        y = s.to_numpy(dtype=float)
+        slope = _ols_slope(x, y)
+        denom_y = max(abs(float(y.mean())), 1.0)
+        slope_pct = slope / denom_y if pd.notna(slope) else float("nan")
+
+        # Ignition — acceleration between window halves (each needs ≥ 3 points)
+        half = len(s) // 2
+        if half >= 3 and (len(s) - half) >= 3:
+            s1 = _ols_slope(x[:half], y[:half])
+            s2 = _ols_slope(x[half:], y[half:])
+            ignition_raw = ((s2 - s1) / denom_y
+                            if pd.notna(s1) and pd.notna(s2) else float("nan"))
+        else:
+            ignition_raw = float("nan")
+        rows.append({"ticker": ticker, "slope": slope, "slope_pct": slope_pct,
+                     "ignition_raw": ignition_raw})
+
+    out = pd.DataFrame(rows)
+
+    def _zscore(col: pd.Series) -> pd.Series:
+        """Cross-sectional z-score; std == 0 or < 2 valid → 0 (NaN stays NaN)."""
+        valid = col.dropna()
+        if len(valid) < 2:
+            return pd.Series(0.0, index=col.index).where(col.notna())
+        std = valid.std()
+        if pd.isna(std) or std == 0:
+            return pd.Series(0.0, index=col.index).where(col.notna())
+        return (col - valid.mean()) / std
+
+    out["velocity_z"] = _zscore(out["slope_pct"])
+    out["ignition_z"] = _zscore(out["ignition_raw"])
+    return out[cols_out]
+
+
+def predictive_overlay(leaderboard: pd.DataFrame, score_pnl: pd.DataFrame,
+                       *, v_alpha: float = 0.25, i_alpha: float = 0.10,
+                       window: int = 10) -> pd.DataFrame:
+    """
+    §31 bounded temporal kicker on top of the leaderboard.
+
+        apex_score = final_score × (1 + v_alpha·tanh(velocity_z / 2)
+                                      + i_alpha·tanh(ignition_z / 2))
+
+    tanh bounds the kicker to ±(v_alpha + i_alpha), so momentum can re-order
+    neighbours but never fabricate conviction — risk-averse by construction.
+    apex_score is floored at 0 and cast int64; apex_rank is 1..n ordered by
+    (apex_score desc, etf_count desc, total_weight desc).
+
+    Empty/insufficient panel → apex_score = final_score,
+    apex_rank = leaderboard_rank (neutral columns, stable schema).
+    """
+    out = leaderboard.copy()
+    if out.empty or score_pnl is None or score_pnl.empty:
+        out["velocity_z"] = 0.0
+        out["ignition_z"] = 0.0
+        out["apex_score"] = out.get("final_score", pd.Series(dtype="int64"))
+        out["apex_rank"] = out.get("leaderboard_rank", pd.Series(dtype="int64"))
+        return out
+
+    vel = accumulation_velocity(score_pnl, window=window).set_index("ticker")
+    out["velocity_z"] = out["ticker"].map(vel["velocity_z"]).fillna(0.0).round(3) if not vel.empty else 0.0
+    out["ignition_z"] = out["ticker"].map(vel["ignition_z"]).fillna(0.0).round(3) if not vel.empty else 0.0
+
+    kicker = (1.0
+              + v_alpha * np.tanh(out["velocity_z"] / 2.0)
+              + i_alpha * np.tanh(out["ignition_z"] / 2.0))
+    out["apex_score"] = (out["final_score"] * kicker).clip(lower=0.0).astype("int64")
+
+    order = out.sort_values(
+        ["apex_score", "etf_count", "total_weight"],
+        ascending=[False, False, False],
+    ).index
+    out["apex_rank"] = pd.Series(range(1, len(out) + 1), index=order).astype("int64")
+    return out
 
 
 def changelog(

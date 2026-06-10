@@ -1,11 +1,11 @@
 {
-  "generated_at_utc": "2026-06-03T03:36:22+00:00",
+  "generated_at_utc": "2026-06-10T15:24:26+00:00",
   "source": "data/all_history.csv",
-  "source_rows_raw": 128481,
-  "source_rows_after_sanitize": 6497,
-  "leaderboard_rows": 3901,
-  "latest_holdings_as_of": "2026-06-02",
-  "latest_scrape_date": "2026-06-02",
+  "source_rows_raw": 160931,
+  "source_rows_after_sanitize": 6480,
+  "leaderboard_rows": 3895,
+  "latest_holdings_as_of": "2026-06-09",
+  "latest_scrape_date": "2026-06-09",
   "etfs": [
     "AVSC",
     "CALF",
@@ -132,17 +132,22 @@
     "2026-05-28",
     "2026-05-29",
     "2026-06-01",
-    "2026-06-02"
+    "2026-06-02",
+    "2026-06-03",
+    "2026-06-04",
+    "2026-06-05",
+    "2026-06-08",
+    "2026-06-09"
   ],
   "flag_counts_today": {
-    "HIGH_CONVICTION": 2,
-    "SPECULATIVE_BETA": 95,
-    "NEW": 24,
-    "NONE": 3804
+    "HIGH_CONVICTION": 1,
+    "SPECULATIVE_BETA": 71,
+    "NEW": 23,
+    "NONE": 3613
   },
   "flag_counts_yesterday": {
-    "HIGH_CONVICTION": 2,
-    "SPECULATIVE_BETA": 95
+    "HIGH_CONVICTION": 1,
+    "SPECULATIVE_BETA": 71
   },
   "etf_maturity_days": 30,
   "immature_etfs": [
@@ -178,37 +183,37 @@
       {
         "asset": "copper",
         "last": "2026-03",
-        "age_days": 64
+        "age_days": 71
       },
       {
         "asset": "aluminum",
         "last": "2026-03",
-        "age_days": 64
+        "age_days": 71
       },
       {
         "asset": "nickel",
         "last": "2026-03",
-        "age_days": 64
+        "age_days": 71
       },
       {
         "asset": "zinc",
         "last": "2026-03",
-        "age_days": 64
+        "age_days": 71
       },
       {
         "asset": "iron_ore",
         "last": "2026-03",
-        "age_days": 64
+        "age_days": 71
       },
       {
         "asset": "tin",
         "last": "2026-03",
-        "age_days": 64
+        "age_days": 71
       },
       {
         "asset": "lead",
         "last": "2026-03",
-        "age_days": 64
+        "age_days": 71
       }
     ],
     "self_living_check": {
@@ -239,7 +244,7 @@
       "verdict": "LIVE_MERGE_DEGRADED"
     }
   },
-  "scoring_mode": "conviction",
+  "scoring_mode": "apex",
   "config_snapshot": {
     "sanitizer": {
       "blocked_tickers": [

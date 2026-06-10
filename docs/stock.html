@@ -663,7 +663,7 @@ function stockApp() {
       if (val == null || !isFinite(val)) return '—';
       const sym = this._currSym();
       const decimals = this._zeroDecimalCurrencies.has(this.stockCurrency) ? 0 : 2;
-      return sym + val.toLocaleString(undefined, {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
+      return sym + val.toLocaleString('en-US', {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
     },
 
     async load() {
