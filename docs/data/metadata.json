@@ -1,11 +1,11 @@
 {
-  "generated_at_utc": "2026-06-10T15:24:26+00:00",
+  "generated_at_utc": "2026-06-10T15:41:20+00:00",
   "source": "data/all_history.csv",
-  "source_rows_raw": 160931,
-  "source_rows_after_sanitize": 6480,
-  "leaderboard_rows": 3895,
+  "source_rows_raw": 162289,
+  "source_rows_after_sanitize": 6476,
+  "leaderboard_rows": 3891,
   "latest_holdings_as_of": "2026-06-09",
-  "latest_scrape_date": "2026-06-09",
+  "latest_scrape_date": "2026-06-10",
   "etfs": [
     "AVSC",
     "CALF",
@@ -143,7 +143,7 @@
     "HIGH_CONVICTION": 1,
     "SPECULATIVE_BETA": 71,
     "NEW": 23,
-    "NONE": 3613
+    "NONE": 3609
   },
   "flag_counts_yesterday": {
     "HIGH_CONVICTION": 1,

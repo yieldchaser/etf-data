@@ -25,6 +25,16 @@
       "score_streak": 1
     },
     {
+      "ticker": "GH",
+      "company": "GUARDANT HEALTH INC UNITED STATES OF AMERICA (THE)",
+      "final_score": 20.0,
+      "etf_count": 2,
+      "tiers": "Quant",
+      "score_delta": 4.0,
+      "score_delta_pct": 0.25,
+      "score_streak": 1
+    },
+    {
       "ticker": "GTES",
       "company": "GATES INDUSTRIAL CORP PLC UNITED STATES OF AMERICA (THE)",
       "final_score": 20.0,
@@ -42,16 +52,6 @@
       "tiers": "Quant",
       "score_delta": 3.0,
       "score_delta_pct": 0.1429,
-      "score_streak": 1
-    },
-    {
-      "ticker": "BKR",
-      "company": "Baker Hughes Co",
-      "final_score": 33.0,
-      "etf_count": 4,
-      "tiers": "Core + Quant",
-      "score_delta": 4.0,
-      "score_delta_pct": 0.1379,
       "score_streak": 1
     },
     {
@@ -95,6 +95,36 @@
       "score_streak": 1
     },
     {
+      "ticker": "7173.JP",
+      "company": "Tokyo Kiraboshi Financial Group Inc",
+      "final_score": 20.0,
+      "etf_count": 1,
+      "tiers": "Quant",
+      "score_delta": 2.0,
+      "score_delta_pct": 0.1111,
+      "score_streak": 5
+    },
+    {
+      "ticker": "TIGO",
+      "company": "Millicom International Cellular SA",
+      "final_score": 42.0,
+      "etf_count": 2,
+      "tiers": "Quant",
+      "score_delta": 4.0,
+      "score_delta_pct": 0.1053,
+      "score_streak": 2
+    },
+    {
+      "ticker": "BKR",
+      "company": "Baker Hughes Co",
+      "final_score": 32.0,
+      "etf_count": 4,
+      "tiers": "Core + Quant",
+      "score_delta": 3.0,
+      "score_delta_pct": 0.1034,
+      "score_streak": 1
+    },
+    {
       "ticker": "7020",
       "company": "ETIHAD ETISALAT CO SAUDI ARABIA",
       "final_score": 22.0,
@@ -102,16 +132,6 @@
       "tiers": "Quant",
       "score_delta": 2.0,
       "score_delta_pct": 0.1,
-      "score_streak": 1
-    },
-    {
-      "ticker": "AEO",
-      "company": "AMERICAN EAGLE OUTFITTERS UNITED STATES OF AMERICA (THE)",
-      "final_score": 24.0,
-      "etf_count": 2,
-      "tiers": "Quality + Quant",
-      "score_delta": 2.0,
-      "score_delta_pct": 0.0909,
       "score_streak": 1
     },
     {
@@ -125,16 +145,6 @@
       "score_streak": 1
     },
     {
-      "ticker": "FLR",
-      "company": "FLUOR CORP UNITED STATES OF AMERICA (THE)",
-      "final_score": 26.0,
-      "etf_count": 2,
-      "tiers": "Quant",
-      "score_delta": 2.0,
-      "score_delta_pct": 0.0833,
-      "score_streak": 1
-    },
-    {
       "ticker": "1988",
       "company": "CHINA MINSHENG BANKING COR H HONG KONG",
       "final_score": 39.0,
@@ -142,16 +152,6 @@
       "tiers": "Quant",
       "score_delta": 3.0,
       "score_delta_pct": 0.0833,
-      "score_streak": 1
-    },
-    {
-      "ticker": "A",
-      "company": "KIMBERLY CLARK DE MEXICO A MEXICO",
-      "final_score": 53.0,
-      "etf_count": 3,
-      "tiers": "Quant",
-      "score_delta": 4.0,
-      "score_delta_pct": 0.0816,
       "score_streak": 1
     }
   ],
@@ -199,12 +199,22 @@
     {
       "ticker": "BRC",
       "company": "BRADY CORPORATION CL A UNITED STATES OF AMERICA (THE)",
-      "final_score": 25.0,
+      "final_score": 24.0,
+      "etf_count": 2,
+      "tiers": "Quality + Quant",
+      "score_delta": -3.0,
+      "score_delta_pct": -0.1111,
+      "score_streak": -2
+    },
+    {
+      "ticker": "NDA.GR",
+      "company": "Aurubis AG",
+      "final_score": 24.0,
       "etf_count": 2,
       "tiers": "Quality + Quant",
       "score_delta": -2.0,
-      "score_delta_pct": -0.0741,
-      "score_streak": -2
+      "score_delta_pct": -0.0769,
+      "score_streak": -3
     },
     {
       "ticker": "AXTA",
@@ -247,6 +257,26 @@
       "score_streak": -1
     },
     {
+      "ticker": "OPCH",
+      "company": "OPTION CARE HEALTH INC UNITED STATES OF AMERICA (THE)",
+      "final_score": 28.0,
+      "etf_count": 2,
+      "tiers": "Quality + Quant",
+      "score_delta": -2.0,
+      "score_delta_pct": -0.0667,
+      "score_streak": -1
+    },
+    {
+      "ticker": "RIG",
+      "company": "Transocean Ltd",
+      "final_score": 43.0,
+      "etf_count": 4,
+      "tiers": "Quant",
+      "score_delta": -3.0,
+      "score_delta_pct": -0.0652,
+      "score_streak": -1
+    },
+    {
       "ticker": "ASO",
       "company": "ACADEMY SPORTS + OUTDOORS IN UNITED STATES OF AMERICA (THE)",
       "final_score": 29.0,
@@ -257,6 +287,16 @@
       "score_streak": -1
     },
     {
+      "ticker": "GLW",
+      "company": "Corning Inc",
+      "final_score": 45.0,
+      "etf_count": 4,
+      "tiers": "Quant + Trend",
+      "score_delta": -3.0,
+      "score_delta_pct": -0.0625,
+      "score_streak": -1
+    },
+    {
       "ticker": "TTAN",
       "company": "TITAN CO LTD INDIA",
       "final_score": 31.0,
@@ -264,46 +304,6 @@
       "tiers": "Quant",
       "score_delta": -2.0,
       "score_delta_pct": -0.0606,
-      "score_streak": -1
-    },
-    {
-      "ticker": "FIVE",
-      "company": "Five Below Inc",
-      "final_score": 31.0,
-      "etf_count": 4,
-      "tiers": "Quant",
-      "score_delta": -2.0,
-      "score_delta_pct": -0.0606,
-      "score_streak": -1
-    },
-    {
-      "ticker": "IT",
-      "company": "Gartner Inc",
-      "final_score": 31.0,
-      "etf_count": 3,
-      "tiers": "Quality + Quant",
-      "score_delta": -2.0,
-      "score_delta_pct": -0.0606,
-      "score_streak": -1
-    },
-    {
-      "ticker": "ALB",
-      "company": "ALBEMARLE CORP UNITED STATES OF AMERICA (THE)",
-      "final_score": 32.0,
-      "etf_count": 5,
-      "tiers": "Quant + Trend",
-      "score_delta": -2.0,
-      "score_delta_pct": -0.0588,
-      "score_streak": -6
-    },
-    {
-      "ticker": "IDA",
-      "company": "IDACORP INC UNITED STATES OF AMERICA (THE)",
-      "final_score": 33.0,
-      "etf_count": 3,
-      "tiers": "Quant",
-      "score_delta": -2.0,
-      "score_delta_pct": -0.0571,
       "score_streak": -1
     }
   ],
@@ -393,23 +393,10 @@
       "tiers": "Quant"
     },
     {
-      "ticker": "KGS",
-      "company": "Kodiak Gas Services Inc",
-      "velocity_score": 183.0,
-      "avg_rank_delta_7d": 10.0,
-      "global_rank_delta_30d": 577,
-      "global_rank_peak_30d": 674,
-      "etf_count_delta_30d": 4,
-      "burst_30d": true,
-      "final_score": 95,
-      "etf_count": 5,
-      "tiers": "Quality + Quant + Scout"
-    },
-    {
       "ticker": "ENVA",
       "company": "Enova International Inc",
-      "velocity_score": 182.25,
-      "avg_rank_delta_7d": 16.0,
+      "velocity_score": 182.0,
+      "avg_rank_delta_7d": 15.75,
       "global_rank_delta_30d": 221,
       "global_rank_peak_30d": 280,
       "etf_count_delta_30d": 3,
@@ -419,15 +406,41 @@
       "tiers": "Quality + Quant"
     },
     {
+      "ticker": "KGS",
+      "company": "Kodiak Gas Services Inc",
+      "velocity_score": 178.92,
+      "avg_rank_delta_7d": 8.0,
+      "global_rank_delta_30d": 575,
+      "global_rank_peak_30d": 673,
+      "etf_count_delta_30d": 4,
+      "burst_30d": true,
+      "final_score": 94,
+      "etf_count": 5,
+      "tiers": "Quality + Quant + Scout"
+    },
+    {
+      "ticker": "KRT",
+      "company": "KNOWLEDGE REALTY TRUST INDIA",
+      "velocity_score": 177.0,
+      "avg_rank_delta_7d": 117.0,
+      "global_rank_delta_30d": 0,
+      "global_rank_peak_30d": 300,
+      "etf_count_delta_30d": 0,
+      "burst_30d": false,
+      "final_score": 2,
+      "etf_count": 2,
+      "tiers": "Quality + Quant"
+    },
+    {
       "ticker": "BKR",
       "company": "Baker Hughes Co",
-      "velocity_score": 175.0,
-      "avg_rank_delta_7d": 8.0,
-      "global_rank_delta_30d": 253,
-      "global_rank_peak_30d": 1128,
+      "velocity_score": 174.73,
+      "avg_rank_delta_7d": 7.75,
+      "global_rank_delta_30d": 225,
+      "global_rank_peak_30d": 1100,
       "etf_count_delta_30d": 3,
       "burst_30d": true,
-      "final_score": 33,
+      "final_score": 32,
       "etf_count": 4,
       "tiers": "Core + Quant"
     },
@@ -449,7 +462,7 @@
       "company": "Snap-on Inc",
       "velocity_score": 173.11,
       "avg_rank_delta_7d": 7.2,
-      "global_rank_delta_30d": 274,
+      "global_rank_delta_30d": 272,
       "global_rank_peak_30d": 794,
       "etf_count_delta_30d": 3,
       "burst_30d": true,
@@ -462,8 +475,8 @@
       "company": "HUBBELL INC UNITED STATES OF AMERICA (THE)",
       "velocity_score": 172.72,
       "avg_rank_delta_7d": 4.75,
-      "global_rank_delta_30d": 295,
-      "global_rank_peak_30d": 603,
+      "global_rank_delta_30d": 297,
+      "global_rank_peak_30d": 605,
       "etf_count_delta_30d": 3,
       "burst_30d": false,
       "final_score": 45,
@@ -484,19 +497,6 @@
       "tiers": "Quality + Quant"
     },
     {
-      "ticker": "FHI",
-      "company": "FEDERATED HERMES INC UNITED STATES OF AMERICA (THE)",
-      "velocity_score": 169.92,
-      "avg_rank_delta_7d": 10.0,
-      "global_rank_delta_30d": 231,
-      "global_rank_peak_30d": 1249,
-      "etf_count_delta_30d": 2,
-      "burst_30d": true,
-      "final_score": 40,
-      "etf_count": 3,
-      "tiers": "Quality + Quant"
-    },
-    {
       "ticker": "PHM",
       "company": "PulteGroup Inc",
       "velocity_score": 169.65,
@@ -514,7 +514,7 @@
       "company": "Textron Inc",
       "velocity_score": 169.64,
       "avg_rank_delta_7d": 2.0,
-      "global_rank_delta_30d": 370,
+      "global_rank_delta_30d": 371,
       "global_rank_peak_30d": 954,
       "etf_count_delta_30d": 3,
       "burst_30d": true,
@@ -523,11 +523,24 @@
       "tiers": "Quality + Quant"
     },
     {
+      "ticker": "HGTY",
+      "company": "HAGERTY INC A UNITED STATES OF AMERICA (THE)",
+      "velocity_score": 168.5,
+      "avg_rank_delta_7d": 109.5,
+      "global_rank_delta_30d": 0,
+      "global_rank_peak_30d": 275,
+      "etf_count_delta_30d": 0,
+      "burst_30d": false,
+      "final_score": 1,
+      "etf_count": 2,
+      "tiers": "Quality + Quant"
+    },
+    {
       "ticker": "COHR",
       "company": "COHERENT CORP UNITED STATES OF AMERICA (THE)",
       "velocity_score": 168.37,
       "avg_rank_delta_7d": 4.67,
-      "global_rank_delta_30d": 263,
+      "global_rank_delta_30d": 265,
       "global_rank_peak_30d": 455,
       "etf_count_delta_30d": 2,
       "burst_30d": false,
@@ -540,26 +553,13 @@
       "company": "AMETEK INC UNITED STATES OF AMERICA (THE)",
       "velocity_score": 167.55,
       "avg_rank_delta_7d": 3.25,
-      "global_rank_delta_30d": 333,
+      "global_rank_delta_30d": 332,
       "global_rank_peak_30d": 446,
       "etf_count_delta_30d": 3,
       "burst_30d": true,
       "final_score": 65,
       "etf_count": 4,
       "tiers": "Quality + Quant"
-    },
-    {
-      "ticker": "XPO",
-      "company": "XPO INC UNITED STATES OF AMERICA (THE)",
-      "velocity_score": 167.31,
-      "avg_rank_delta_7d": 11.33,
-      "global_rank_delta_30d": 182,
-      "global_rank_peak_30d": 348,
-      "etf_count_delta_30d": 2,
-      "burst_30d": true,
-      "final_score": 53,
-      "etf_count": 3,
-      "tiers": "Quant"
     }
   ]
 }
