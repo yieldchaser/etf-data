@@ -1,6 +1,6 @@
 {
   "coverage_pct": 80.71,
-  "last_run_utc": "2026-06-11T10:19:46+00:00",
+  "last_run_utc": "2026-06-11T11:26:26+00:00",
   "note": "Self-healing: each CI run resolves ~150 tickers. Full coverage reached automatically.",
   "pending": [
     "285A.JP",
