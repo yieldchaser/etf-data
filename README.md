@@ -161,6 +161,16 @@ New Bonus = tier_points × 5.0
 
 This amplifies early detection of names entering high-signal ETFs for the first time.
 
+### Conviction-Quality Layer (§31.2)
+
+Apex (v3) display ranking multiplies in a conviction-quality term so breadth-filler names (held underweight in many funds) no longer outrank concentrated conviction:
+
+```
+m_conv = clip(avg_conviction, 0.50, 1.25) ^ conv_gamma
+```
+
+Plus a conviction gate (clip 0.40–1.10) with an escape hatch: the gate is bypassed when the median per-ETF rank is ≤ 10. Raw `final_score` is unchanged — this layer affects display ranking only. Parameters `conv_floor` / `conv_cap` / `conv_gamma` live in `config.yaml`; full math on the methodology page, §3.3–3.4.
+
 ### Output Flags
 
 | Flag | Condition | Interpretation |
@@ -228,7 +238,7 @@ Built with Tailwind CSS + Alpine.js. Zero build step — static HTML/JS served d
 - **Score History**: sparkline area chart, score accumulation over time
 - **Global Rank History**: inverted Y-axis line chart, O(1) pre-computed lookup
 - **Per-ETF Rank History**: multi-line chart, tier-based coloring, crosshair tooltips
-- **Signal Timeline**: Gantt-style chart — HC/SPEC/VELO/BURST state history over 90 days with rank overlay, hover crosshair, duration counters
+- **Signal Timeline**: Gantt-style multi-lane chart — per-day signal history now includes all signals (velocity, burst, NEW, stealth, divergence, quality adopt/defect) stored compactly per day in `flag_history.json`, with rank overlay, hover crosshair, duration counters
 - **Score Decomposition Bar**: stacked bar showing each ETF's contribution, colored by tier
 - **Tier Breadth chip**: how many distinct strategy types co-hold this name (1–5)
 - **Quality+/Quality− chips**: gained/lost a Quality ETF in last 30 days
