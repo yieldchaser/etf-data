@@ -1,10 +1,10 @@
 {
-  "generated_at_utc": "2026-06-10T15:41:20+00:00",
+  "generated_at_utc": "2026-06-11T01:40:11+00:00",
   "source": "data/all_history.csv",
-  "source_rows_raw": 162289,
-  "source_rows_after_sanitize": 6476,
+  "source_rows_raw": 167203,
+  "source_rows_after_sanitize": 6475,
   "leaderboard_rows": 3891,
-  "latest_holdings_as_of": "2026-06-09",
+  "latest_holdings_as_of": "2026-06-10",
   "latest_scrape_date": "2026-06-10",
   "etfs": [
     "AVSC",
@@ -137,17 +137,18 @@
     "2026-06-04",
     "2026-06-05",
     "2026-06-08",
-    "2026-06-09"
+    "2026-06-09",
+    "2026-06-10"
   ],
   "flag_counts_today": {
     "HIGH_CONVICTION": 1,
-    "SPECULATIVE_BETA": 71,
+    "SPECULATIVE_BETA": 72,
     "NEW": 23,
-    "NONE": 3609
+    "NONE": 3607
   },
   "flag_counts_yesterday": {
     "HIGH_CONVICTION": 1,
-    "SPECULATIVE_BETA": 71
+    "SPECULATIVE_BETA": 72
   },
   "etf_maturity_days": 30,
   "immature_etfs": [
@@ -183,37 +184,37 @@
       {
         "asset": "copper",
         "last": "2026-03",
-        "age_days": 71
+        "age_days": 72
       },
       {
         "asset": "aluminum",
         "last": "2026-03",
-        "age_days": 71
+        "age_days": 72
       },
       {
         "asset": "nickel",
         "last": "2026-03",
-        "age_days": 71
+        "age_days": 72
       },
       {
         "asset": "zinc",
         "last": "2026-03",
-        "age_days": 71
+        "age_days": 72
       },
       {
         "asset": "iron_ore",
         "last": "2026-03",
-        "age_days": 71
+        "age_days": 72
       },
       {
         "asset": "tin",
         "last": "2026-03",
-        "age_days": 71
+        "age_days": 72
       },
       {
         "asset": "lead",
         "last": "2026-03",
-        "age_days": 71
+        "age_days": 72
       }
     ],
     "self_living_check": {

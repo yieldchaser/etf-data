@@ -360,6 +360,328 @@ def changelog(
     }
 
 
+QUALITY_ETFS: frozenset[str] = frozenset({"COWZ", "CALF", "SPHQ"})
+
+
+def signal_history(
+    raw: pd.DataFrame,
+    historical: dict[pd.Timestamp, pd.DataFrame],
+    cfg: Config,
+) -> dict[str, list[dict]]:
+    """
+    Per-ticker, per-date signal records.  Called from build.py to populate the
+    full flag_history payload.
+
+    For each snapshot date d (sorted ascending), computes:
+        n    any_new (omit when False)
+        st   stealth_accumulation (omit when False)
+        dv   conviction_divergence +1/-1 (omit when 0)
+        qa   quality_adopted (omit when False)
+        qd   quality_defected (omit when False)
+        vs   velocity_score rounded 1dp (omit when 0)
+        burst burst_30d (omit when False)
+
+    Returns dict[ticker -> list[{d, flag, rank, n?, st?, dv?, qa?, qd?, vs?, burst?}]].
+
+    Keys kept short (1-2 chars) to minimise JSON payload.
+    Performance: all cross-date panel operations are vectorized (numpy/pandas).
+    Only the outer loop (~99 dates) is Python-level.
+    """
+    if not historical:
+        return {}
+
+    import bisect
+    import numpy as np
+
+    # ── 1. Build wide panels (ticker × date) ──────────────────────────────────
+    dates_sorted: list[pd.Timestamp] = sorted(historical.keys())
+
+    def _build_panel(col: str) -> pd.DataFrame:
+        frames = []
+        for d in dates_sorted:
+            snap = historical[d]
+            if col in snap.columns:
+                frames.append(snap.set_index("ticker")[col].rename(d))
+        if not frames:
+            return pd.DataFrame()
+        return pd.concat(frames, axis=1).sort_index(axis=1)
+
+    rank_panel = _build_panel("leaderboard_rank")   # ticker × date, float (NaN for missing)
+    sc_pnl     = _build_panel("final_score")        # ticker × date
+    ec_panel   = _build_panel("etf_count")          # ticker × date
+    hb_panel   = _build_panel("held_by")            # ticker × date, str
+
+    rp_cols = list(rank_panel.columns) if not rank_panel.empty else []
+    sc_cols = list(sc_pnl.columns)     if not sc_pnl.empty     else []
+    ec_cols = list(ec_panel.columns)   if not ec_panel.empty   else []
+
+    # ── 2. Build per-(ETF,ticker) rank/weight panels from raw ────────────────
+    # Vectorized: sort once, assign rank via cumcount, pivot to wide panels.
+    raw2 = raw.copy()
+    raw2["Holdings_As_Of"] = pd.to_datetime(raw2["Holdings_As_Of"], errors="coerce")
+    etf_lookup = cfg.etf_lookup()
+    raw2 = raw2.dropna(subset=["Holdings_As_Of", "ticker", "weight"])
+    raw2 = raw2[raw2["weight"] > 0]
+    raw2 = raw2[raw2["ETF_Ticker"].isin(etf_lookup)]
+    raw2 = cfg.sanitizer.apply(raw2)
+
+    raw_dates_sorted: list[pd.Timestamp] = sorted(raw2["Holdings_As_Of"].unique().tolist())
+
+    # Rank within each (ETF, date) group once — vectorized
+    raw2 = raw2.sort_values(
+        ["Holdings_As_Of", "ETF_Ticker", "weight", "ticker"],
+        ascending=[True, True, False, True]
+    )
+    raw2["_rank"] = raw2.groupby(["Holdings_As_Of", "ETF_Ticker"]).cumcount() + 1
+
+    # Build ticker-level panels: avg_rank and avg_weight per (ticker, raw_date)
+    # avg across ETFs that hold the ticker on each date
+    # Shape: ticker × raw_date (float, NaN when ticker not held)
+    grp = raw2.groupby(["ticker", "Holdings_As_Of"])
+    avg_rank_raw = grp["_rank"].mean().unstack("Holdings_As_Of")   # ticker × raw_date
+    avg_wt_raw   = grp["weight"].mean().unstack("Holdings_As_Of")  # ticker × raw_date
+    avg_rank_raw = avg_rank_raw.reindex(columns=sorted(avg_rank_raw.columns))
+    avg_wt_raw   = avg_wt_raw.reindex(columns=sorted(avg_wt_raw.columns))
+
+    raw_date_list: list[pd.Timestamp] = list(avg_rank_raw.columns)  # sorted timestamps
+    rk_arr = avg_rank_raw.values    # shape (n_tickers_raw, n_raw_dates)
+    wt_arr = avg_wt_raw.values
+    tkr_idx_raw = {t: i for i, t in enumerate(avg_rank_raw.index)}
+
+    # ── 3. Pre-compute score_streak panel (ticker × date_idx → int) ──────────
+    # For each ticker and each column index, count consecutive same-direction moves.
+    # Vectorized across tickers using numpy.
+    streak_arr: np.ndarray | None = None
+    streak_tickers: list = []
+    if not sc_pnl.empty:
+        sc_vals = sc_pnl.values.astype(float)   # shape (n_tickers, n_dates)
+        n_tickers_sc, n_sc_dates = sc_vals.shape
+        streak_arr = np.zeros((n_tickers_sc, n_sc_dates), dtype=np.int32)
+        streak_tickers = list(sc_pnl.index)
+        # diffs: shape (n_tickers, n_dates-1); NaN where either end is NaN
+        diffs = np.diff(sc_vals, axis=1)
+        signs = np.sign(diffs)  # +1, 0, -1; NaN stays NaN
+        for i in range(1, n_sc_dates):
+            col_diff = diffs[:, i - 1] if i <= diffs.shape[1] else np.zeros(n_tickers_sc)
+            col_sign = signs[:, i - 1] if i <= signs.shape[1] else np.zeros(n_tickers_sc)
+            # For tickers with a valid same-direction step, streak continues
+            # Reset per ticker: streak[t, i] = streak[t, i-1] + sign if sign != 0 and same direction
+            prev = streak_arr[:, i - 1]
+            same_dir = (col_sign != 0) & (np.sign(prev) == col_sign)
+            new_streak = np.where(same_dir, prev + col_sign.astype(np.int32), col_sign.astype(np.int32))
+            # Where diff is NaN (either end is NaN), streak = 0
+            nan_mask = ~np.isfinite(col_diff)
+            streak_arr[:, i] = np.where(nan_mask, 0, new_streak).astype(np.int32)
+        streak_ticker_map = {t: i for i, t in enumerate(streak_tickers)}
+    else:
+        streak_ticker_map = {}
+
+    # ── 4. Pre-compute burst panel (ticker × date_idx → bool) ────────────────
+    # Do this once for all date indices to avoid repeating the window operation.
+    burst_sets: list[set] = []  # burst_sets[di] = set of burst tickers at date di
+    if not rank_panel.empty and len(rp_cols) >= 5:
+        rp_arr = rank_panel.values.astype(float)   # shape (n_tickers_rp, n_dates)
+        rp_tickers = list(rank_panel.index)
+        for di in range(len(rp_cols)):
+            if di < 5:
+                burst_sets.append(set())
+                continue
+            win_start = max(0, di - 30)
+            win = rp_arr[:, win_start: di + 1]  # shape (n_tickers_rp, win_len)
+            n_win = win.shape[1]
+            valid_mask = np.isfinite(win)
+            coverage = valid_mask.sum(axis=1) / n_win
+            # worst/best ignoring NaN
+            worst = np.where(valid_mask, win, -np.inf).max(axis=1)
+            best  = np.where(valid_mask, win,  np.inf).min(axis=1)
+            peak  = np.where(np.isfinite(worst) & np.isfinite(best), worst - best, 0.0)
+            # Sustained: better than window median for ≥8 of last 10 valid snapshots
+            recent10 = win[:, -10:] if n_win >= 10 else win
+            with_nan = np.where(valid_mask[:, -10:] if n_win >= 10 else valid_mask, win[:, -min(10, n_win):], np.nan)
+            med = np.nanmedian(rp_arr[:, win_start: di + 1], axis=1)
+            better = (with_nan < med[:, None])
+            better_count = np.nansum(better, axis=1)
+            is_burst_arr = (peak >= 40) & (coverage >= 0.80) & (better_count >= 8)
+            burst_sets.append(set(t for t, b in zip(rp_tickers, is_burst_arr) if b))
+    else:
+        burst_sets = [set()] * len(dates_sorted)
+
+    # ── 5. Pre-compute per-date quality sets from hb_panel ────────────────────
+    # For each (ticker, date_idx): now_q and then_q sets
+    # Precompute as frozensets: hb_q_panel[ticker][di] = frozenset of quality ETFs held
+    hb_q: dict[str, list[frozenset]] = {}  # ticker -> list[frozenset] len=n_dates
+    if not hb_panel.empty:
+        for tkr in hb_panel.index:
+            row_hb = hb_panel.loc[tkr]
+            q_list: list[frozenset] = []
+            for val in row_hb:
+                if isinstance(val, str) and val:
+                    q_set = frozenset(t.strip() for t in val.split(",") if t.strip()) & QUALITY_ETFS
+                else:
+                    q_set = frozenset()
+                q_list.append(q_set)
+            hb_q[tkr] = q_list
+
+    # ── 6. Per-date signal computation — outer loop only ─────────────────────
+    result: dict[str, list[dict]] = {}
+
+    for di, d in enumerate(dates_sorted):
+        snap = historical[d]
+        d_str = d.strftime("%Y-%m-%d")
+
+        # Find nearest raw date ≤ d for avg_rank/avg_wt "now"
+        # raw_date_list is sorted; use bisect to find the insertion point
+        raw_now_idx: int | None = None
+        raw_prev7_idx: int | None = None
+        if raw_date_list:
+            pos = bisect.bisect_right(raw_date_list, d) - 1
+            if pos >= 0:
+                raw_now_idx = pos
+                prev7_i = raw_now_idx - 7
+                if prev7_i >= 0:
+                    raw_prev7_idx = prev7_i
+
+        # Map leaderboard date index di to score_panel column index (they align since
+        # sc_pnl is built from the same historical dict, same dates).
+        # sc_cols is sorted and sc_pnl.columns = sorted historical keys that have final_score.
+        # Use bisect to find d in sc_cols.
+        sc_di = bisect.bisect_left(sc_cols, d) if sc_cols else -1
+        sc_di = sc_di if (sc_di < len(sc_cols) and sc_cols[sc_di] == d) else -1
+
+        # Score delta pct (7 leaderboard snapshots back) — vectorized
+        sdp_series: pd.Series | None = None
+        sc_7_idx_abs = sc_di - 7
+        if sc_di >= 0 and sc_7_idx_abs >= 0:
+            cur_col  = sc_pnl[sc_cols[sc_di]]
+            prev_col = sc_pnl[sc_cols[sc_7_idx_abs]]
+            valid = cur_col.notna() & prev_col.notna() & (prev_col != 0)
+            delta = ((cur_col - prev_col) / prev_col.abs()).clip(-10, 10)
+            sdp_series = delta.where(valid)
+
+        # Global rank delta ~30 snapshots back — vectorized
+        grd30_series: pd.Series | None = None
+        rank_30d_idx = di - 30
+        if rp_cols and di < len(rp_cols) and rank_30d_idx >= 0 and rank_30d_idx < len(rp_cols):
+            cur_r  = rank_panel[rp_cols[di]]
+            prev_r = rank_panel[rp_cols[rank_30d_idx]]
+            valid_r = cur_r.notna() & prev_r.notna()
+            grd30_series = (prev_r - cur_r).where(valid_r)
+
+        # Peak rank improvement in 30-snapshot window (for vs) — vectorized
+        peak30_series: pd.Series | None = None
+        if rp_cols and di >= 5:
+            win_start = max(0, di - 30)
+            win_cols_v = rp_cols[win_start: di + 1]
+            if len(win_cols_v) >= 2:
+                win_v = rank_panel[win_cols_v]
+                peak30_series = (win_v.max(axis=1) - win_v.min(axis=1)).fillna(0.0)
+
+        # etf_count delta ~30 snapshots back — vectorized
+        ec_delta_series: pd.Series | None = None
+        if ec_cols and di < len(ec_cols) and rank_30d_idx >= 0 and rank_30d_idx < len(ec_cols):
+            cur_ec  = ec_panel[ec_cols[di]]
+            prev_ec = ec_panel[ec_cols[rank_30d_idx]]
+            ec_delta_series = (cur_ec - prev_ec).fillna(0.0)
+
+        # Quality ~30d ago index
+        q_past_di: int | None = None
+        if di > 0:
+            target_past = d - pd.Timedelta(days=30)
+            q_past_di = min(range(di), key=lambda k: abs((dates_sorted[k] - target_past).total_seconds()))
+
+        # Burst set for this date
+        b_set = burst_sets[di] if di < len(burst_sets) else set()
+
+        # Iterate tickers in this snapshot
+        snap_tickers   = snap["ticker"].tolist()
+        snap_flags     = snap["flag"].tolist() if "flag" in snap.columns else [""] * len(snap_tickers)
+        snap_ranks     = snap["leaderboard_rank"].tolist() if "leaderboard_rank" in snap.columns else [0] * len(snap_tickers)
+        snap_any_new   = snap["any_new"].tolist() if "any_new" in snap.columns else [False] * len(snap_tickers)
+        snap_etf_count = snap["etf_count"].tolist() if "etf_count" in snap.columns else [0] * len(snap_tickers)
+
+        for j, tkr in enumerate(snap_tickers):
+            flag      = snap_flags[j] if snap_flags[j] else ""
+            rank_val  = int(snap_ranks[j]) if snap_ranks[j] == snap_ranks[j] else 0
+            any_new   = bool(snap_any_new[j])
+            etf_count = int(snap_etf_count[j]) if snap_etf_count[j] == snap_etf_count[j] else 0
+
+            entry: dict = {"d": d_str, "flag": flag, "rank": rank_val}
+
+            if any_new:
+                entry["n"] = 1
+
+            # avg rank delta and weight flow over 7 raw snapshots
+            rd7_tkr = 0.0
+            wf7_tkr = 0.0
+            if raw_now_idx is not None and raw_prev7_idx is not None and tkr in tkr_idx_raw:
+                ti = tkr_idx_raw[tkr]
+                r_now  = rk_arr[ti, raw_now_idx]
+                r_then = rk_arr[ti, raw_prev7_idx]
+                w_now  = wt_arr[ti, raw_now_idx]
+                w_then = wt_arr[ti, raw_prev7_idx]
+                if np.isfinite(r_now) and np.isfinite(r_then):
+                    rd7_tkr = float(r_then - r_now)   # positive = improved
+                if np.isfinite(w_now) and np.isfinite(w_then):
+                    wf7_tkr = float(w_now - w_then)
+                elif np.isfinite(w_now):
+                    wf7_tkr = float(w_now)
+
+            # st — stealth accumulation
+            if wf7_tkr > 0.03 and rd7_tkr < 1.0 and etf_count >= 3:
+                entry["st"] = 1
+
+            # dv — conviction divergence
+            sdp = float(sdp_series.get(tkr, 0.0) or 0.0) if sdp_series is not None else 0.0
+            grd = float(grd30_series.get(tkr, 0.0) or 0.0) if grd30_series is not None else 0.0
+            dv = 0
+            if sdp > 0 and grd < 0:
+                dv = -1
+            elif sdp < 0 and grd > 0:
+                dv = 1
+            if dv != 0:
+                entry["dv"] = dv
+
+            # qa / qd — quality adoption / defection
+            if q_past_di is not None and tkr in hb_q:
+                q_list = hb_q[tkr]
+                now_q  = q_list[di]         if di < len(q_list)         else frozenset()
+                then_q = q_list[q_past_di]  if q_past_di < len(q_list)  else frozenset()
+                if now_q - then_q:
+                    entry["qa"] = 1
+                if then_q - now_q:
+                    entry["qd"] = 1
+
+            # vs — velocity_score
+            grd30  = grd
+            peak30 = float(peak30_series.get(tkr, 0.0) or 0.0) if peak30_series is not None else 0.0
+            ec_d30 = float(ec_delta_series.get(tkr, 0.0) or 0.0) if ec_delta_series is not None else 0.0
+            streak_val = 0
+            if tkr in streak_ticker_map and streak_arr is not None and sc_di >= 0:
+                ti_sc = streak_ticker_map[tkr]
+                if sc_di < streak_arr.shape[1]:
+                    streak_val = int(streak_arr[ti_sc, sc_di])
+
+            vs = (
+                min(max(grd30,   -200), 200) * 0.5  +
+                min(max(peak30,     0), 200) * 0.25 +
+                rd7_tkr                      * 1.0  +
+                wf7_tkr                      * 20.0 +
+                ec_d30                       * 5.0  +
+                min(max(streak_val, -10), 10) * 1.0
+            )
+            vs_r = round(vs, 1)
+            if vs_r != 0:
+                entry["vs"] = vs_r
+
+            # burst
+            if tkr in b_set:
+                entry["burst"] = 1
+
+            result.setdefault(tkr, []).append(entry)
+
+    return result
+
+
 def compute_exits(
     history: pd.DataFrame,
     cfg: Config,

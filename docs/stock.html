@@ -346,11 +346,17 @@
           <span class="text-[10px] font-mono px-1.5 py-0.5 rounded" :style="currentStateChipStyle" x-text="currentStateLabel"></span>
           <span class="text-[10px]" style="color: var(--text-3)" x-text="`${flagHistory?.length || 0} days`"></span>
         </div>
-        <div class="flex items-center gap-3 text-[10px]" style="color: var(--text-2)">
+        <div class="flex items-center gap-3 text-[10px] flex-wrap" style="color: var(--text-2)">
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(168,85,247,0.85)"></span> BURST</span>
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(52,211,153,0.85)"></span> HC</span>
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(34,211,238,0.65)"></span> VELO</span>
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(251,191,36,0.7)"></span> SPEC</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(96,165,250,0.75)"></span> NEW</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(251,191,36,0.55)"></span> STEALTH</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(94,234,212,0.75)"></span> DIV+</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(251,113,133,0.7)"></span> DIV−</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(52,211,153,0.6)"></span> QUALITY</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(251,146,60,0.75)"></span> CONC</span>
           <span class="flex items-center gap-1" style="color: var(--text-3)"><span class="inline-block w-6 h-px" style="background: rgba(255,255,255,0.5)"></span> Rank</span>
           <span class="text-[9px]" style="color: var(--text-3)">bright = 10+ days sustained · tick = entry point</span>
         </div>
@@ -368,7 +374,7 @@
            "
            @mouseleave="tlci = null; tlcx = null">
         <!-- State bars + rank line — built as SVG string (Alpine 3 SVG-template fix) -->
-        <div data-tlsvg x-html="signalTimelineSvg" class="w-full" style="height: 110px"></div>
+        <div data-tlsvg x-html="signalTimelineSvg" class="w-full" :style="`height: ${signalTimelineHeight}px`"></div>
         <!-- X-axis date ticks (5 labels) -->
         <div class="flex justify-between text-[9px] font-mono mt-1" style="color: var(--text-3)">
           <template x-for="d in timelineDateTicks" :key="d">
@@ -381,6 +387,12 @@
           <span x-show="timelineStats.hcDays > 0" style="color: var(--up)" x-text="`HC · ${timelineStats.hcDays}d`"></span>
           <span x-show="timelineStats.veloDays > 0" style="color: var(--cyan)" x-text="`VELO · ${timelineStats.veloDays}d`"></span>
           <span x-show="timelineStats.specDays > 0" style="color: var(--amber)" x-text="`SPEC · ${timelineStats.specDays}d`"></span>
+          <span x-show="timelineStats.newDays > 0" style="color: rgba(96,165,250,0.9)" x-text="`NEW · ${timelineStats.newDays}d`"></span>
+          <span x-show="timelineStats.stealthDays > 0" style="color: var(--amber)" x-text="`STEALTH · ${timelineStats.stealthDays}d`"></span>
+          <span x-show="timelineStats.divPlusDays > 0" style="color: #5eead4" x-text="`DIV+ · ${timelineStats.divPlusDays}d`"></span>
+          <span x-show="timelineStats.divMinusDays > 0" style="color: var(--down)" x-text="`DIV− · ${timelineStats.divMinusDays}d`"></span>
+          <span x-show="timelineStats.qualityDays > 0" style="color: var(--up)" x-text="`QUALITY · ${timelineStats.qualityDays}d`"></span>
+          <span x-show="timelineStats.concDays > 0" style="color: #fb923c" x-text="`CONC · ${timelineStats.concDays}d`"></span>
           <span x-show="timelineStats.neutralDays > 0" style="color: var(--text-3)" x-text="`Neutral · ${timelineStats.neutralDays}d`"></span>
         </div>
         <!-- Hover tooltip -->
@@ -1019,37 +1031,36 @@ function stockApp() {
     },
 
     // ── Signal Timeline helpers ──────────────────────────────────────────
-    timelineBarColor(entry, i) {
-      // Derive VELO/BURST from rank trajectory
-      const isVelo = this._isVeloAt(i);
-      const isBurst = this._isBurstAt(i);
-      if (isBurst) return 'rgba(168,85,247,0.85)';   // purple — strongest
-      if (entry.flag === 'HIGH_CONVICTION') return 'rgba(52,211,153,0.85)';  // green
-      if (isVelo) return 'rgba(34,211,238,0.65)';    // cyan
-      if (entry.flag === 'SPECULATIVE_BETA') return 'rgba(251,191,36,0.70)';  // amber
-      return 'rgba(255,255,255,0.10)';  // neutral
-    },
 
+    // Prefer stored per-day fields; fall back to client-side reconstruction for old data.
     _isVeloAt(i) {
-      // VELO-like: rank improved by 5+ positions over previous 7 entries
       const fh = this.flagHistory || [];
+      const e = fh[i];
+      if (!e) return false;
+      // Prefer stored vs field (new data)
+      if (e.vs != null) return Number(e.vs) >= 25;
+      // Fallback: rank improved by 5+ positions over previous 7 entries (old data)
       if (i < 7) return false;
-      const cur = fh[i]?.rank;
+      const cur = e.rank;
       const prev = fh[i - 7]?.rank;
       if (!cur || !prev) return false;
-      return (prev - cur) >= 5;  // rank decreased = improved
+      return (prev - cur) >= 5;
     },
 
     _isBurstAt(i) {
-      // BURST-like: rank improved by 40+ positions at any point in a 30-entry window ending at i
       const fh = this.flagHistory || [];
+      const e = fh[i];
+      if (!e) return false;
+      // Prefer stored burst field (new data)
+      if ('burst' in e) return !!e.burst;
+      // Fallback: rank improved by 40+ positions in a 30-entry window (old data)
       if (i < 5) return false;
       const windowStart = Math.max(0, i - 30);
       let worstRank = 0;
       for (let j = windowStart; j <= i; j++) {
-        if (fh[j]?.rank > worstRank) worstRank = fh[j].rank;
+        if ((fh[j]?.rank || 0) > worstRank) worstRank = fh[j].rank;
       }
-      const curRank = fh[i]?.rank || 0;
+      const curRank = e.rank || 0;
       return (worstRank - curRank) >= 40;
     },
 
@@ -1077,20 +1088,48 @@ function stockApp() {
       }).join(' ');
     },
 
+    // Compute which optional lanes are active for this ticker (have ≥1 active day)
+    get _activeLaneKeys() {
+      const fh = this.flagHistory || [];
+      const keys = new Set(['burst', 'hc', 'velo', 'spec']);  // always shown
+      for (let i = 0; i < fh.length; i++) {
+        const e = fh[i];
+        if (e.n) keys.add('newentry');
+        if (e.st) keys.add('stealth');
+        if (e.dv === 1)  keys.add('divplus');
+        if (e.dv === -1) keys.add('divminus');
+        if (e.qa || e.qd) keys.add('quality');
+        if (e.flag === 'CONCENTRATED') keys.add('conc');
+      }
+      return keys;
+    },
+
     get timelineStats() {
       const fh = this.flagHistory || [];
       let hcDays = 0, veloDays = 0, burstDays = 0, specDays = 0, neutralDays = 0;
+      let newDays = 0, stealthDays = 0, divPlusDays = 0, divMinusDays = 0;
+      let qualityDays = 0, concDays = 0;
       for (let i = 0; i < fh.length; i++) {
+        const e = fh[i];
         const isB = this._isBurstAt(i);
         const isV = this._isVeloAt(i);
-        const flag = fh[i].flag;
+        const flag = e.flag;
         if (isB) burstDays++;
         if (flag === 'HIGH_CONVICTION') hcDays++;
         if (isV) veloDays++;
         if (flag === 'SPECULATIVE_BETA') specDays++;
-        if (!isB && flag !== 'HIGH_CONVICTION' && !isV && flag !== 'SPECULATIVE_BETA') neutralDays++;
+        if (e.n) newDays++;
+        if (e.st) stealthDays++;
+        if (e.dv === 1) divPlusDays++;
+        if (e.dv === -1) divMinusDays++;
+        if (e.qa || e.qd) qualityDays++;
+        if (flag === 'CONCENTRATED') concDays++;
+        const anySignal = isB || flag === 'HIGH_CONVICTION' || isV || flag === 'SPECULATIVE_BETA'
+          || e.n || e.st || e.dv || e.qa || e.qd || flag === 'CONCENTRATED';
+        if (!anySignal) neutralDays++;
       }
-      return { hcDays, veloDays, burstDays, specDays, neutralDays };
+      return { hcDays, veloDays, burstDays, specDays, neutralDays,
+               newDays, stealthDays, divPlusDays, divMinusDays, qualityDays, concDays };
     },
 
     // Five evenly-spaced date labels for the timeline x-axis
@@ -1107,7 +1146,7 @@ function stockApp() {
       return out;
     },
 
-    // State at index i — returns label + color for the given snapshot
+    // State at index i — returns label + color for the primary/most-important signal
     _stateAt(i) {
       const fh = this.flagHistory || [];
       const e = fh[i];
@@ -1116,6 +1155,13 @@ function stockApp() {
       if (e.flag === 'HIGH_CONVICTION') return { label: 'HC', color: 'var(--up)' };
       if (this._isVeloAt(i)) return { label: 'VELO', color: 'var(--cyan)' };
       if (e.flag === 'SPECULATIVE_BETA') return { label: 'SPEC β', color: 'var(--amber)' };
+      if (e.n) return { label: 'NEW', color: 'rgba(96,165,250,0.9)' };
+      if (e.st) return { label: 'STEALTH', color: 'var(--amber)' };
+      if (e.dv === 1) return { label: 'DIV+', color: '#5eead4' };
+      if (e.dv === -1) return { label: 'DIV−', color: 'var(--down)' };
+      if (e.qa) return { label: 'Q+', color: 'var(--up)' };
+      if (e.qd) return { label: 'Q−', color: 'var(--down)' };
+      if (e.flag === 'CONCENTRATED') return { label: 'CONC', color: '#fb923c' };
       return { label: 'Neutral', color: 'var(--text-3)' };
     },
 
@@ -1134,6 +1180,13 @@ function stockApp() {
         'HC':      'background: rgba(52,211,153,0.12); color: var(--up); border: 1px solid rgba(52,211,153,0.30)',
         'VELO':    'background: rgba(34,211,238,0.10); color: var(--cyan); border: 1px solid rgba(34,211,238,0.25)',
         'SPEC β':  'background: rgba(251,191,36,0.12); color: var(--amber); border: 1px solid rgba(251,191,36,0.30)',
+        'NEW':     'background: rgba(96,165,250,0.10); color: rgba(96,165,250,0.9); border: 1px solid rgba(96,165,250,0.25)',
+        'STEALTH': 'background: rgba(251,191,36,0.10); color: var(--amber); border: 1px solid rgba(251,191,36,0.25)',
+        'DIV+':    'background: rgba(20,184,166,0.12); color: #5eead4; border: 1px solid rgba(20,184,166,0.30)',
+        'DIV−':    'background: rgba(251,113,133,0.10); color: var(--down); border: 1px solid rgba(251,113,133,0.25)',
+        'Q+':      'background: rgba(52,211,153,0.10); color: var(--up); border: 1px solid rgba(52,211,153,0.25)',
+        'Q−':      'background: rgba(251,113,133,0.10); color: var(--down); border: 1px solid rgba(251,113,133,0.25)',
+        'CONC':    'background: rgba(251,146,60,0.10); color: #fb923c; border: 1px solid rgba(251,146,60,0.25)',
         'Neutral': 'background: rgba(255,255,255,0.04); color: var(--text-3); border: 1px solid rgba(255,255,255,0.10)',
       };
       return map[s.label] || map['Neutral'];
@@ -1155,10 +1208,17 @@ function stockApp() {
       const e = fh[this.tlci];
       if (!e) return [];
       const sigs = [];
-      if (this._isBurstAt(this.tlci)) sigs.push({ label: 'BURST', color: '#c084fc' });
-      if (e.flag === 'HIGH_CONVICTION') sigs.push({ label: 'HC', color: 'var(--up)' });
-      if (this._isVeloAt(this.tlci)) sigs.push({ label: 'VELO', color: 'var(--cyan)' });
+      if (this._isBurstAt(this.tlci)) sigs.push({ label: 'BURST',   color: '#c084fc' });
+      if (e.flag === 'HIGH_CONVICTION') sigs.push({ label: 'HC',     color: 'var(--up)' });
+      if (this._isVeloAt(this.tlci))   sigs.push({ label: 'VELO',   color: 'var(--cyan)' });
       if (e.flag === 'SPECULATIVE_BETA') sigs.push({ label: 'SPEC β', color: 'var(--amber)' });
+      if (e.n)      sigs.push({ label: 'NEW',     color: 'rgba(96,165,250,0.9)' });
+      if (e.st)     sigs.push({ label: 'STEALTH', color: 'var(--amber)' });
+      if (e.dv === 1)  sigs.push({ label: 'DIV+', color: '#5eead4' });
+      if (e.dv === -1) sigs.push({ label: 'DIV−', color: 'var(--down)' });
+      if (e.qa)     sigs.push({ label: 'Q+',      color: 'var(--up)' });
+      if (e.qd)     sigs.push({ label: 'Q−',      color: 'var(--down)' });
+      if (e.flag === 'CONCENTRATED') sigs.push({ label: 'CONC', color: '#fb923c' });
       if (!sigs.length) sigs.push({ label: 'Neutral', color: 'var(--text-3)' });
       return sigs;
     },
@@ -1248,6 +1308,33 @@ function stockApp() {
     },
 
     // ── Signal Timeline SVG (multi-lane Gantt — each signal gets its own row) ──
+
+    // All lane definitions (only rendered when active for this ticker)
+    _allLaneDefs() {
+      return [
+        { key: 'burst',    label: 'BURST',   always: true,  color: 'rgba(168,85,247,', bright: '1)',    dim: '0.55)' },
+        { key: 'hc',       label: 'HC',      always: true,  color: 'rgba(52,211,153,',  bright: '1)',    dim: '0.55)' },
+        { key: 'velo',     label: 'VELO',    always: true,  color: 'rgba(34,211,238,',  bright: '0.9)', dim: '0.45)' },
+        { key: 'spec',     label: 'SPEC',    always: true,  color: 'rgba(251,191,36,',  bright: '0.9)', dim: '0.45)' },
+        { key: 'newentry', label: 'NEW',     always: false, color: 'rgba(96,165,250,',  bright: '0.9)', dim: '0.5)'  },
+        { key: 'stealth',  label: 'STLTH',   always: false, color: 'rgba(251,191,36,',  bright: '0.75)', dim: '0.4)' },
+        { key: 'divplus',  label: 'DIV+',    always: false, color: 'rgba(94,234,212,',  bright: '0.9)', dim: '0.5)'  },
+        { key: 'divminus', label: 'DIV-',    always: false, color: 'rgba(251,113,133,',  bright: '0.85)', dim: '0.45)' },
+        { key: 'quality',  label: 'QUAL',    always: false, color: 'rgba(52,211,153,',  bright: '0.7)', dim: '0.35)' },
+        { key: 'conc',     label: 'CONC',    always: false, color: 'rgba(251,146,60,',  bright: '0.9)', dim: '0.45)' },
+      ];
+    },
+
+    get signalTimelineHeight() {
+      const fh = this.flagHistory || [];
+      if (fh.length < 2) return 110;
+      const LANE_H = 14, LANE_GAP = 3, RANK_H = 32;
+      const active = this._activeLaneKeys;
+      const nLanes = this._allLaneDefs().filter(l => active.has(l.key)).length;
+      const lanesTotal = nLanes * LANE_H + Math.max(0, nLanes - 1) * LANE_GAP;
+      return lanesTotal + 8 + RANK_H + 6 + 4;
+    },
+
     get signalTimelineSvg() {
       const fh = this.flagHistory || [];
       if (fh.length < 2) return '';
@@ -1255,30 +1342,37 @@ function stockApp() {
 
       // ── Layout constants ────────────────────────────────────────────────
       const W = 700, LANE_H = 14, LANE_GAP = 3, RANK_H = 32;
-      const LANES = [
-        { key: 'burst', label: 'BURST', color: 'rgba(168,85,247,', bright: '1)',   dim: '0.55)' },
-        { key: 'hc',    label: 'HC',    color: 'rgba(52,211,153,',  bright: '1)',   dim: '0.55)' },
-        { key: 'velo',  label: 'VELO',  color: 'rgba(34,211,238,',  bright: '0.9)', dim: '0.45)' },
-        { key: 'spec',  label: 'SPEC',  color: 'rgba(251,191,36,',  bright: '0.9)', dim: '0.45)' },
-      ];
+
+      // Filter to active lanes (always-shown + those with ≥1 active day)
+      const active = this._activeLaneKeys;
+      const LANES = this._allLaneDefs().filter(l => active.has(l.key));
       const nLanes = LANES.length;
-      const LANES_TOTAL = nLanes * LANE_H + (nLanes - 1) * LANE_GAP;
+      const LANES_TOTAL = nLanes * LANE_H + Math.max(0, nLanes - 1) * LANE_GAP;
       const RANK_Y = LANES_TOTAL + 8;
       const H = RANK_Y + RANK_H + 6;
 
-      const padL = 36, padR = 4; // left space for lane labels
+      const padL = 36, padR = 4;
       const innerW = W - padL - padR;
       const barW = Math.max(1.2, (innerW / n) * 0.96);
       const xAt = i => padL + ((i + 0.5) / n) * innerW;
 
       // ── Pre-compute active states per snapshot ──────────────────────────
       const states = fh.map((e, i) => ({
-        burst: this._isBurstAt(i),
-        hc:    e.flag === 'HIGH_CONVICTION',
-        velo:  this._isVeloAt(i),
-        spec:  e.flag === 'SPECULATIVE_BETA',
-        rank:  e.rank || 0,
-        vs:    e.vs ?? null,
+        burst:    this._isBurstAt(i),
+        hc:       e.flag === 'HIGH_CONVICTION',
+        velo:     this._isVeloAt(i),
+        spec:     e.flag === 'SPECULATIVE_BETA',
+        newentry: !!e.n,
+        stealth:  !!e.st,
+        divplus:  e.dv === 1,
+        divminus: e.dv === -1,
+        quality:  !!(e.qa || e.qd),
+        conc:     e.flag === 'CONCENTRATED',
+        rank:     e.rank || 0,
+        vs:       e.vs ?? null,
+        // For quality lane, track qa/qd separately for tick color
+        qa: !!e.qa,
+        qd: !!e.qd,
       }));
 
       // Compute consecutive run length at each index per signal (for intensity)
@@ -1300,7 +1394,6 @@ function stockApp() {
         const y = li * (LANE_H + LANE_GAP) + LANE_H / 2 + 1;
         labels += `<text x="${padL - 4}" y="${y + 3}" text-anchor="end" style="font-family:ui-monospace;font-size:8px;font-weight:600;fill:${lane.color}0.6)">${lane.label}</text>`;
       }
-      // Rank label
       labels += `<text x="${padL - 4}" y="${RANK_Y + RANK_H / 2 + 3}" text-anchor="end" style="font-family:ui-monospace;font-size:8px;fill:rgba(255,255,255,0.35)">RANK</text>`;
 
       // ── Lane backgrounds ─────────────────────────────────────────────────
@@ -1309,7 +1402,6 @@ function stockApp() {
         const y = li * (LANE_H + LANE_GAP);
         bg += `<rect x="${padL}" y="${y}" width="${innerW}" height="${LANE_H}" fill="rgba(255,255,255,0.025)" rx="2"/>`;
       }
-      // Rank area background
       bg += `<rect x="${padL}" y="${RANK_Y}" width="${innerW}" height="${RANK_H}" fill="rgba(255,255,255,0.02)" rx="2"/>`;
 
       // ── Signal bars + transition markers ─────────────────────────────────
@@ -1325,15 +1417,26 @@ function stockApp() {
           const y = li * (LANE_H + LANE_GAP);
           if (!s[lane.key]) continue;
 
-          // Intensity: brighter after 10+ consecutive days
           const intense = runs[lane.key] >= 10;
-          const fill = lane.color + (intense ? lane.bright : lane.dim);
+
+          // Quality lane: qa = green-tinted, qd = rose-tinted (event ticks)
+          let fill;
+          if (lane.key === 'quality') {
+            fill = s.qa
+              ? ('rgba(52,211,153,' + (intense ? '0.7)' : '0.38)'))
+              : ('rgba(251,113,133,' + (intense ? '0.7)' : '0.38)'));
+          } else {
+            fill = lane.color + (intense ? lane.bright : lane.dim);
+          }
           bars += `<rect x="${bx.toFixed(2)}" y="${y}" width="${barW.toFixed(2)}" height="${LANE_H}" fill="${fill}" rx="1"/>`;
 
-          // Transition marker: tick at the left edge when this is the first day active
+          // Transition marker: tick at the left edge when first day active
           if (runs[lane.key] === 1) {
             const mx = bx.toFixed(2);
-            markers += `<line x1="${mx}" y1="${y - 1}" x2="${mx}" y2="${y + LANE_H + 1}" stroke="${lane.color}1)" stroke-width="1.5"/>`;
+            const tickColor = (lane.key === 'quality')
+              ? (s.qa ? 'rgba(52,211,153,1)' : 'rgba(251,113,133,1)')
+              : (lane.color + '1)');
+            markers += `<line x1="${mx}" y1="${y - 1}" x2="${mx}" y2="${y + LANE_H + 1}" stroke="${tickColor}" stroke-width="1.5"/>`;
           }
         }
       }
@@ -1352,11 +1455,9 @@ function stockApp() {
         }
         if (pts.length >= 2) {
           const d = this.smoothPath(pts);
-          // Fill area
           const areaD = `${d} L${pts[pts.length-1][0].toFixed(1)},${(RANK_Y+RANK_H).toFixed(1)} L${pts[0][0].toFixed(1)},${(RANK_Y+RANK_H).toFixed(1)} Z`;
           rankLine  = `<path d="${areaD}" fill="rgba(255,255,255,0.06)" stroke="none"/>`;
           rankLine += `<path d="${d}" stroke="rgba(255,255,255,0.65)" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
-          // Best rank dot
           const bestR = Math.min(...ranks);
           const bestIdx = states.findIndex(s => s.rank === bestR);
           if (bestIdx >= 0) {
@@ -1371,7 +1472,6 @@ function stockApp() {
       if (this.tlci !== null && this.tlci >= 0 && this.tlci < n) {
         const cx = xAt(this.tlci).toFixed(1);
         crosshair  = `<line x1="${cx}" y1="0" x2="${cx}" y2="${H}" stroke="rgba(255,255,255,0.20)" stroke-width="1" stroke-dasharray="2 2"/>`;
-        // Highlight bar on each active lane
         const s = states[this.tlci];
         for (let li = 0; li < nLanes; li++) {
           if (!s[LANES[li].key]) continue;
@@ -1379,7 +1479,6 @@ function stockApp() {
           const bx = (xAt(this.tlci) - barW / 2).toFixed(1);
           crosshair += `<rect x="${bx}" y="${y - 0.5}" width="${barW.toFixed(1)}" height="${LANE_H + 1}" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="1" rx="1"/>`;
         }
-        // Dot on rank line
         if (s.rank && ranks.length >= 2) {
           const minR = Math.min(...ranks), maxR = Math.max(...ranks);
           const toY = r => RANK_Y + 2 + ((r - minR) / Math.max(maxR - minR, 2)) * (RANK_H - 4);

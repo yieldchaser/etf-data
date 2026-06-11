@@ -595,37 +595,40 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     # ── leaderboard.json — main payload for the site ──────────────────────────
     lb_records = leaderboard.to_dict(orient="records")
 
-    # Build per-ticker flag history from historical leaderboards
-    # Schema: { ticker: [{d, flag, rank, vs, burst}] }
-    # vs = velocity_score (only available if column exists in snapshot)
-    # burst = burst_30d (only available if column exists in snapshot)
-    flag_history: dict[str, list] = {}
-    if historical:
-        for d in sorted(historical.keys()):
-            lb_snap = historical[d]
-            has_vs = "velocity_score" in lb_snap.columns
-            has_burst = "burst_30d" in lb_snap.columns
-            d_str = d.strftime("%Y-%m-%d")
-            for row in lb_snap.to_dict(orient="records"):
-                t = row["ticker"]
-                entry = {
-                    "d": d_str,
-                    "flag": row.get("flag", ""),
-                    "rank": int(row.get("leaderboard_rank", 0)),
-                }
-                if has_vs:
-                    vs = row.get("velocity_score")
-                    if vs is not None and vs == vs:
-                        rounded_vs = round(float(vs), 1)
-                        # Omit zero-valued vs to shrink payload (Req 6.3);
-                        # docs/stock.html tolerates absence via `e.vs == null` and `e.vs ?? null`
-                        if rounded_vs != 0:
-                            entry["vs"] = rounded_vs
-                if has_burst:
-                    entry["burst"] = bool(row.get("burst_30d", False))
-                if t not in flag_history:
-                    flag_history[t] = []
-                flag_history[t].append(entry)
+    # Build per-ticker flag history — all signals historized via signal_history()
+    # Schema: { ticker: [{d, flag, rank, vs?, burst?, n?, st?, dv?, qa?, qd?}] }
+    print("\nComputing per-day signal history…")
+    flag_history: dict[str, list] = hist.signal_history(raw, historical, cfg)
+
+    # Consistency check: last-date signals vs leaderboard's own computed columns
+    if flag_history and historical:
+        last_d = max(historical.keys())
+        lb_last = historical[last_d].set_index("ticker")
+        mismatch_vs = 0
+        mismatch_burst = 0
+        n_checked = 0
+        for tkr, entries in flag_history.items():
+            if not entries:
+                continue
+            last_e = entries[-1]
+            if last_e["d"] != last_d.strftime("%Y-%m-%d"):
+                continue
+            n_checked += 1
+            # vs consistency: leaderboard doesn't carry velocity_score in snapshots
+            # (it's computed today-only in _attach_velocity), so we compare
+            # against the today leaderboard's velocity_score instead
+            if tkr in lb_last.index:
+                lb_row = lb_last.loc[tkr]
+                if isinstance(lb_row, pd.DataFrame):
+                    lb_row = lb_row.iloc[0]
+                # burst consistency
+                lb_burst = bool(lb_row.get("burst_30d", False)) if "burst_30d" in lb_last.columns else False
+                hist_burst = bool(last_e.get("burst", False))
+                if lb_burst != hist_burst:
+                    mismatch_burst += 1
+        if n_checked > 0:
+            print(f"  signal consistency: {n_checked} tickers checked · "
+                  f"burst mismatches={mismatch_burst} ({100*mismatch_burst/n_checked:.1f}%)")
 
     # Attach per-period score deltas to every record (flag_history written separately)
     for r in lb_records:

@@ -559,6 +559,16 @@
                               <span class="v" :style="`color: ${ln.c || 'var(--text-2)'}`" x-text="ln.v"></span>
                             </div>
                           </template>
+                          <!-- Chips row for Verdict cell: active signal badges -->
+                          <template x-if="cell.chips">
+                            <div class="flex flex-wrap gap-1 mt-1.5">
+                              <span x-show="row.flag === 'HIGH_CONVICTION'" class="chip sig-badge"
+                                    style="background: rgba(52,211,153,0.10); color: var(--up); border: 1px solid rgba(52,211,153,0.25)">HC</span>
+                              <template x-for="b in signalBadges(row).slice(0, 4)" :key="b.k">
+                                <span class="chip sig-badge" :style="b.style" x-tooltip="{ html: b.tip }" x-text="b.label"></span>
+                              </template>
+                            </div>
+                          </template>
                         </div>
                       </template>
                     </div>
@@ -567,7 +577,7 @@
                     <div class="flex flex-col xl:flex-row gap-4">
 
                       <!-- LEFT PANEL -->
-                      <div class="flex-1 min-w-0">
+                      <div class="flex-1 min-w-0 flex flex-col">
                         <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 mb-3 text-xs border rounded-lg p-3" style="border-color: var(--border); background: rgba(255,255,255,0.012)">
                           <div>
                             <div class="label mb-1">Company</div>
@@ -597,7 +607,7 @@
                             <div class="text-sm num font-mono mt-0.5 font-medium" style="color: var(--text-2)" x-text="fmtWeight(row.total_weight)"></div>
                           </div>
                         </div>
-                        <div class="overflow-x-auto scrollbar">
+                        <div class="overflow-x-auto scrollbar flex-1">
                           <table class="w-full text-xs">
                             <thead style="color: var(--text-3)">
                               <tr style="border-bottom: 1px solid var(--border)">
@@ -641,9 +651,9 @@
                                 <a :href="`stock.html?t=${ticker}`" class="text-xs font-mono font-medium" style="color: var(--cyan); text-decoration: none;" x-text="ticker"></a>
                                 <span class="text-[10px]" style="color: var(--text-3)" x-show="priceChange !== null" :style="`color: ${priceChange >= 0 ? 'var(--up)' : 'var(--down)'}`" x-text="priceChange !== null ? (priceChange >= 0 ? '+' : '') + priceChange.toFixed(2) + '%' : ''"></span>
                               </div>
-                              <!-- Description -->
+                              <!-- Description — capped to 3 lines to prevent right panel ballooning row height -->
                               <div x-show="loading" class="desc-skeleton h-3 w-40 mt-1"></div>
-                              <div x-show="!loading" class="text-[10px] leading-snug" style="color: var(--text-3); max-width: 360px" x-text="isPending && !description ? '⏳ Company profile being fetched…' : (description || '')"></div>
+                              <div x-show="!loading" class="text-[10px] leading-snug" style="color: var(--text-3); max-width: 360px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;" :title="isPending && !description ? '⏳ Company profile being fetched…' : (description || '')" x-text="isPending && !description ? '⏳ Company profile being fetched…' : (description || '')"></div>
                             </div>
                             <!-- Range buttons -->
                             <div class="flex items-center gap-1 shrink-0">
@@ -1052,6 +1062,16 @@
                                 <span class="v" :style="`color: ${ln.c || 'var(--text-2)'}`" x-text="ln.v"></span>
                               </div>
                             </template>
+                            <!-- Chips row for Verdict cell: active signal badges -->
+                            <template x-if="cell.chips">
+                              <div class="flex flex-wrap gap-1 mt-1.5">
+                                <span x-show="row.flag === 'HIGH_CONVICTION'" class="chip sig-badge"
+                                      style="background: rgba(52,211,153,0.10); color: var(--up); border: 1px solid rgba(52,211,153,0.25)">HC</span>
+                                <template x-for="b in signalBadges(row).slice(0, 4)" :key="b.k">
+                                  <span class="chip sig-badge" :style="b.style" x-tooltip="{ html: b.tip }" x-text="b.label"></span>
+                                </template>
+                              </div>
+                            </template>
                           </div>
                         </template>
                       </div>
@@ -1060,7 +1080,7 @@
                       <div class="flex flex-col xl:flex-row gap-4">
 
                         <!-- LEFT PANEL -->
-                        <div class="flex-1 min-w-0">
+                        <div class="flex-1 min-w-0 flex flex-col">
                           <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 mb-3 text-xs border rounded-lg p-3" style="border-color: var(--border); background: rgba(255,255,255,0.012)">
                             <div>
                               <div class="label mb-1">Company</div>
@@ -1090,7 +1110,7 @@
                               <div class="text-sm num font-mono mt-0.5 font-medium" style="color: var(--text-2)" x-text="fmtWeight(row.total_weight)"></div>
                             </div>
                           </div>
-                          <div class="overflow-x-auto scrollbar">
+                          <div class="overflow-x-auto scrollbar flex-1">
                             <table class="w-full text-xs">
                               <thead style="color: var(--text-3)">
                                 <tr style="border-bottom: 1px solid var(--border)">
@@ -1134,7 +1154,8 @@
                                   <span class="text-[10px]" x-show="priceChange !== null" :style="`color: ${priceChange >= 0 ? 'var(--up)' : 'var(--down)'}`" x-text="priceChange !== null ? (priceChange >= 0 ? '+' : '') + priceChange.toFixed(2) + '%' : ''"></span>
                                 </div>
                                 <div x-show="loading" class="desc-skeleton h-3 w-40 mt-1"></div>
-                                <div x-show="!loading" class="text-[10px] leading-snug" style="color: var(--text-3); max-width: 360px" x-text="isPending && !description ? '⏳ Company profile being fetched…' : (description || '')"></div>
+                                <!-- Description — capped to 3 lines to prevent right panel ballooning row height -->
+                                <div x-show="!loading" class="text-[10px] leading-snug" style="color: var(--text-3); max-width: 360px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;" :title="isPending && !description ? '⏳ Company profile being fetched…' : (description || '')" x-text="isPending && !description ? '⏳ Company profile being fetched…' : (description || '')"></div>
                               </div>
                               <div class="flex items-center gap-1 shrink-0">
                                 <template x-for="r in ranges" :key="r">
@@ -1506,27 +1527,43 @@
 
   <!-- ═════════════ TAB 3: CHANGES ════════════════════════════════════════ -->
   <section x-show="activeTab === 'changes'">
+    <!-- Tab-level header strip -->
+    <div class="flex items-center justify-between px-3 py-2 mb-3 rounded-lg text-xs" style="background: var(--surface); border: 1px solid var(--border)">
+      <div class="font-mono font-medium" style="color: var(--cyan)" x-text="`Changes — ${changelog.today || '—'} vs ${changelog.yesterday || '—'}`"></div>
+      <div class="num font-mono flex gap-3" style="color: var(--text-3)">
+        <span x-text="`${changelog.entered_hc?.length || 0} entered HC`"></span>
+        <span style="color: var(--border-2)">·</span>
+        <span x-text="`${changelog.exited_hc?.length || 0} exited`"></span>
+        <span style="color: var(--border-2)">·</span>
+        <span x-text="`${changelog.new_entrants?.length || 0} new`"></span>
+        <span style="color: var(--border-2)">·</span>
+        <span :style="`color: ${flowColor((changelog.biggest_gainers?.[0]?.score_delta_pct) ?? 0)}`"
+              x-text="changelog.biggest_gainers?.[0] ? `top mover ${fmtPct(changelog.biggest_gainers[0].score_delta_pct)}` : 'no movers'"></span>
+      </div>
+    </div>
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
       <!-- Entries to HC -->
       <div class="rounded-lg border" style="background: var(--surface); border-color: var(--border)">
         <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
           <div class="label-cyan label">Entered HIGH CONVICTION</div>
-          <div class="text-xs num font-mono" style="color: var(--text-3)" x-text="`${changelog.entered_hc?.length || 0} names · ${changelog.today} vs ${changelog.yesterday}`"></div>
+          <div class="text-xs num font-mono" style="color: var(--text-3)" x-text="`${changelog.entered_hc?.length || 0} names`"></div>
         </div>
         <div x-show="!changelog.entered_hc?.length" class="px-3 py-6 text-center text-xs" style="color: var(--text-3)">No entries today</div>
         <template x-for="r in changelog.entered_hc" :key="r.ticker">
-          <div class="px-3 py-2 flex items-center justify-between text-xs hover:bg-white/5 transition"
-               :style="`border-bottom: 1px solid rgba(255,255,255,0.03); ${isPinned(r.ticker) ? 'background: rgba(34,211,238,0.04); border-left: 2px solid var(--cyan);' : ''}`">
-            <div class="flex items-center gap-3">
-              <span x-show="isPinned(r.ticker)" style="color: var(--cyan)" class="text-xs">★</span>
-              <span class="font-mono font-medium" x-text="r.ticker"></span>
-              <span style="color: var(--text-2)" class="truncate max-w-[260px]" x-text="r.company"></span>
+          <a :href="`stock.html?t=${r.ticker}`" style="text-decoration: none; color: inherit; display: block;">
+            <div class="px-3 py-2 flex items-center justify-between text-xs hover:bg-white/5 transition"
+                 :style="`border-bottom: 1px solid rgba(255,255,255,0.03); ${isPinned(r.ticker) ? 'background: rgba(34,211,238,0.04); border-left: 2px solid var(--cyan);' : ''}`">
+              <div class="flex items-center gap-3">
+                <span x-show="isPinned(r.ticker)" style="color: var(--cyan)" class="text-xs">★</span>
+                <span class="font-mono font-medium" x-text="r.ticker"></span>
+                <span style="color: var(--text-2)" class="truncate max-w-[260px]" x-text="r.company"></span>
+              </div>
+              <div class="flex items-center gap-3 num font-mono">
+                <span style="color: var(--text-3)" x-text="`${r.etf_count} ETFs`"></span>
+                <span x-text="fmt1(r.final_score)"></span>
+              </div>
             </div>
-            <div class="flex items-center gap-3 num font-mono">
-              <span style="color: var(--text-3)" x-text="`${r.etf_count} ETFs`"></span>
-              <span x-text="fmt1(r.final_score)"></span>
-            </div>
-          </div>
+          </a>
         </template>
       </div>
 
@@ -1538,18 +1575,20 @@
         </div>
         <div x-show="!changelog.exited_hc?.length" class="px-3 py-6 text-center text-xs" style="color: var(--text-3)">No exits today</div>
         <template x-for="r in changelog.exited_hc" :key="r.ticker">
-          <div class="px-3 py-2 flex items-center justify-between text-xs hover:bg-white/5 transition"
-               :style="`border-bottom: 1px solid rgba(255,255,255,0.03); ${isPinned(r.ticker) ? 'background: rgba(34,211,238,0.04); border-left: 2px solid var(--cyan);' : ''}`">
-            <div class="flex items-center gap-3">
-              <span x-show="isPinned(r.ticker)" style="color: var(--cyan)" class="text-xs">★</span>
-              <span class="font-mono font-medium" x-text="r.ticker"></span>
-              <span style="color: var(--text-2)" class="truncate max-w-[260px]" x-text="r.company"></span>
+          <a :href="`stock.html?t=${r.ticker}`" style="text-decoration: none; color: inherit; display: block;">
+            <div class="px-3 py-2 flex items-center justify-between text-xs hover:bg-white/5 transition"
+                 :style="`border-bottom: 1px solid rgba(255,255,255,0.03); ${isPinned(r.ticker) ? 'background: rgba(34,211,238,0.04); border-left: 2px solid var(--cyan);' : ''}`">
+              <div class="flex items-center gap-3">
+                <span x-show="isPinned(r.ticker)" style="color: var(--cyan)" class="text-xs">★</span>
+                <span class="font-mono font-medium" x-text="r.ticker"></span>
+                <span style="color: var(--text-2)" class="truncate max-w-[260px]" x-text="r.company"></span>
+              </div>
+              <div class="flex items-center gap-3 num font-mono">
+                <span style="color: var(--text-3)" x-text="`${r.etf_count || '—'} ETFs`"></span>
+                <span x-text="fmt1(r.final_score)"></span>
+              </div>
             </div>
-            <div class="flex items-center gap-3 num font-mono">
-              <span style="color: var(--text-3)" x-text="`${r.etf_count || '—'} ETFs`"></span>
-              <span x-text="fmt1(r.final_score)"></span>
-            </div>
-          </div>
+          </a>
         </template>
       </div>
 
@@ -1559,18 +1598,28 @@
           <div class="label-cyan label">Biggest score gainers</div>
           <div class="text-xs num font-mono" style="color: var(--text-3)" x-text="`${changelog.biggest_gainers?.length || 0}`"></div>
         </div>
+        <div x-show="!changelog.biggest_gainers?.length" class="px-3 py-6 text-center text-xs" style="color: var(--text-3)">No gainers today</div>
         <template x-for="r in changelog.biggest_gainers" :key="r.ticker">
-          <div class="px-3 py-2 flex items-center justify-between text-xs hover:bg-white/5 transition" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
-            <div class="flex items-center gap-3">
-              <span class="font-mono font-medium" x-text="r.ticker"></span>
-              <span style="color: var(--text-2)" class="truncate max-w-[240px]" x-text="r.company"></span>
+          <a :href="`stock.html?t=${r.ticker}`" style="text-decoration: none; color: inherit; display: block;">
+            <div class="px-3 py-2 flex items-center justify-between text-xs hover:bg-white/5 transition"
+                 :style="`border-bottom: 1px solid rgba(255,255,255,0.03); ${isPinned(r.ticker) ? 'background: rgba(34,211,238,0.04); border-left: 2px solid var(--cyan);' : ''}`">
+              <div class="flex items-center gap-3 min-w-0">
+                <span x-show="isPinned(r.ticker)" style="color: var(--cyan)" class="text-xs shrink-0">★</span>
+                <span class="font-mono font-medium shrink-0" x-text="r.ticker"></span>
+                <span style="color: var(--text-2)" class="truncate" x-text="r.company"></span>
+                <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
+                  <span class="chip shrink-0" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
+                        x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
+                </template>
+              </div>
+              <div class="flex items-center gap-2 num font-mono shrink-0 ml-2">
+                <span style="color: var(--text-3)" x-text="`${r.etf_count} ETFs`"></span>
+                <span :style="`color: ${flowColor(r.score_delta_pct)}`" x-text="fmtPct(r.score_delta_pct)"></span>
+                <span x-text="fmt1(r.final_score)"></span>
+                <span class="text-[10px]" :style="`color: ${streakColor(r.score_streak)}`" x-show="r.score_streak" x-text="fmtStreak(r.score_streak)"></span>
+              </div>
             </div>
-            <div class="flex items-center gap-3 num font-mono">
-              <span :style="`color: ${flowColor(r.score_delta_pct)}`" x-text="fmtPct(r.score_delta_pct)"></span>
-              <span x-text="fmt1(r.final_score)"></span>
-              <span class="num font-mono text-[10px]" :style="`color: ${streakColor(r.score_streak)}`" x-text="fmtStreak(r.score_streak)"></span>
-            </div>
-          </div>
+          </a>
         </template>
       </div>
 
@@ -1580,18 +1629,62 @@
           <div class="label-cyan label">Biggest score losers</div>
           <div class="text-xs num font-mono" style="color: var(--text-3)" x-text="`${changelog.biggest_losers?.length || 0}`"></div>
         </div>
+        <div x-show="!changelog.biggest_losers?.length" class="px-3 py-6 text-center text-xs" style="color: var(--text-3)">No losers today</div>
         <template x-for="r in changelog.biggest_losers" :key="r.ticker">
-          <div class="px-3 py-2 flex items-center justify-between text-xs hover:bg-white/5 transition" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
-            <div class="flex items-center gap-3">
-              <span class="font-mono font-medium" x-text="r.ticker"></span>
-              <span style="color: var(--text-2)" class="truncate max-w-[240px]" x-text="r.company"></span>
+          <a :href="`stock.html?t=${r.ticker}`" style="text-decoration: none; color: inherit; display: block;">
+            <div class="px-3 py-2 flex items-center justify-between text-xs hover:bg-white/5 transition"
+                 :style="`border-bottom: 1px solid rgba(255,255,255,0.03); ${isPinned(r.ticker) ? 'background: rgba(34,211,238,0.04); border-left: 2px solid var(--cyan);' : ''}`">
+              <div class="flex items-center gap-3 min-w-0">
+                <span x-show="isPinned(r.ticker)" style="color: var(--cyan)" class="text-xs shrink-0">★</span>
+                <span class="font-mono font-medium shrink-0" x-text="r.ticker"></span>
+                <span style="color: var(--text-2)" class="truncate" x-text="r.company"></span>
+                <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
+                  <span class="chip shrink-0" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
+                        x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
+                </template>
+              </div>
+              <div class="flex items-center gap-2 num font-mono shrink-0 ml-2">
+                <span style="color: var(--text-3)" x-text="`${r.etf_count} ETFs`"></span>
+                <span :style="`color: ${flowColor(r.score_delta_pct)}`" x-text="fmtPct(r.score_delta_pct)"></span>
+                <span x-text="fmt1(r.final_score)"></span>
+                <span class="text-[10px]" :style="`color: ${streakColor(r.score_streak)}`" x-show="r.score_streak" x-text="fmtStreak(r.score_streak)"></span>
+              </div>
             </div>
-            <div class="flex items-center gap-3 num font-mono">
-              <span :style="`color: ${flowColor(r.score_delta_pct)}`" x-text="fmtPct(r.score_delta_pct)"></span>
-              <span x-text="fmt1(r.final_score)"></span>
-            </div>
-          </div>
+          </a>
         </template>
+      </div>
+
+      <!-- New entrants — first appearance ≤14d -->
+      <div class="lg:col-span-2 rounded-lg border" style="background: var(--surface); border-color: var(--border)">
+        <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
+          <div class="label-cyan label">New entrants — first appearance &le;14d</div>
+          <div class="text-xs num font-mono" style="color: var(--text-3)" x-text="`${changelog.new_entrants?.length || 0} names`"></div>
+        </div>
+        <div x-show="!changelog.new_entrants?.length" class="px-3 py-6 text-center text-xs" style="color: var(--text-3)">No new entrants this period</div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          <template x-for="r in (changelog.new_entrants || [])" :key="r.ticker">
+            <a :href="`stock.html?t=${r.ticker}`" style="text-decoration: none; color: inherit; display: block;">
+              <div class="px-3 py-2 text-xs hover:bg-white/5 transition flex items-center justify-between"
+                   :style="`border-bottom: 1px solid rgba(255,255,255,0.03); ${isPinned(r.ticker) ? 'background: rgba(34,211,238,0.04); border-left: 2px solid var(--cyan);' : ''}`">
+                <div class="flex flex-col min-w-0">
+                  <div class="flex items-center gap-2">
+                    <span x-show="isPinned(r.ticker)" style="color: var(--cyan)" class="text-xs">★</span>
+                    <span class="font-mono font-medium" x-text="r.ticker"></span>
+                    <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
+                      <span class="chip" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
+                            x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
+                    </template>
+                  </div>
+                  <span style="color: var(--text-2)" class="truncate max-w-[220px]" x-text="r.company"></span>
+                </div>
+                <div class="num font-mono text-right shrink-0 ml-2">
+                  <div x-text="fmt1(r.final_score)"></div>
+                  <div style="color: var(--text-3)" class="text-[10px]" x-text="`${r.etf_count} ETF${r.etf_count===1?'':'s'}`"></div>
+                </div>
+              </div>
+            </a>
+          </template>
+        </div>
       </div>
 
       <!-- Top Velocity Movers -->
@@ -1602,28 +1695,35 @@
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           <template x-for="r in (changelog.top_velocity || [])" :key="r.ticker">
-            <div class="px-3 py-2 text-xs hover:bg-white/5 transition" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
-              <div class="flex items-center justify-between">
-                <div class="flex flex-col">
-                  <a :href="`stock.html?t=${r.ticker}`" class="font-mono font-medium hover:text-cyan-300 transition" style="color: inherit; text-decoration: none;" x-text="r.ticker"></a>
-                  <span style="color: var(--text-2)" class="truncate max-w-[180px]" x-text="r.company"></span>
-                </div>
-                <div class="num font-mono text-right">
-                  <div :style="`color: ${velocityColor(r.velocity_score)}`" x-text="fmtVelocity(r.velocity_score)"></div>
-                  <div class="text-[10px]" style="color: var(--text-3)">
-                    <span x-show="r.burst_30d" style="color: #c084fc">⚡BURST </span>
-                    <span x-text="`${r.etf_count} ETF${r.etf_count===1?'':'s'}`"></span>
+            <a :href="`stock.html?t=${r.ticker}`" style="text-decoration: none; color: inherit; display: block;">
+              <div class="px-3 py-2 text-xs hover:bg-white/5 transition"
+                   :style="`border-bottom: 1px solid rgba(255,255,255,0.03); ${isPinned(r.ticker) ? 'background: rgba(34,211,238,0.04); border-left: 2px solid var(--cyan);' : ''}`">
+                <div class="flex items-center justify-between">
+                  <div class="flex flex-col min-w-0">
+                    <div class="flex items-center gap-2">
+                      <span x-show="isPinned(r.ticker)" style="color: var(--cyan)">★</span>
+                      <span class="font-mono font-medium" x-text="r.ticker"></span>
+                    </div>
+                    <span style="color: var(--text-2)" class="truncate max-w-[180px]" x-text="r.company"></span>
+                  </div>
+                  <div class="num font-mono text-right shrink-0 ml-2">
+                    <div :style="`color: ${velocityColor(r.velocity_score)}`" x-text="fmtVelocity(r.velocity_score)"></div>
+                    <div class="text-[10px] flex items-center justify-end gap-1">
+                      <span x-show="r.burst_30d" class="chip sig-badge" style="background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.3)">⚡BURST</span>
+                      <span style="color: var(--text-3)" x-text="`${r.etf_count} ETF${r.etf_count===1?'':'s'}`"></span>
+                    </div>
                   </div>
                 </div>
+                <div class="flex gap-3 mt-1" style="color: var(--text-3)">
+                  <span x-text="`Δrank7d: ${(r.avg_rank_delta_7d||0)>=0?'+':''}${(r.avg_rank_delta_7d||0).toFixed(1)}`"></span>
+                  <span x-show="r.etf_count_delta_30d != 0"
+                        :style="`color: ${(r.etf_count_delta_30d||0)>0?'var(--up)':'var(--down)'}`"
+                        x-text="`${(r.etf_count_delta_30d||0)>0?'+':''}${r.etf_count_delta_30d} ETFs 30d`"></span>
+                </div>
               </div>
-              <div class="flex gap-3 mt-1" style="color: var(--text-3)">
-                <span x-text="`Δrank7d: ${(r.avg_rank_delta_7d||0)>=0?'+':''}${(r.avg_rank_delta_7d||0).toFixed(1)}`"></span>
-                <span x-show="r.etf_count_delta_30d != 0" :style="`color: ${(r.etf_count_delta_30d||0)>0?'var(--up)':'var(--down)'}`"
-                      x-text="`ETFs: ${(r.etf_count_delta_30d||0)>0?'+':''}${r.etf_count_delta_30d}`"></span>
-              </div>
-            </div>
+            </a>
           </template>
-          <div x-show="!changelog.top_velocity?.length" class="px-3 py-4 text-xs" style="color: var(--text-3)">No data — rebuild required.</div>
+          <div x-show="!changelog.top_velocity?.length" class="px-3 py-6 text-center text-xs" style="color: var(--text-3)">No data — rebuild required.</div>
         </div>
       </div>
 
@@ -2759,18 +2859,15 @@ function app() {
     // ── Auto-explainer grid cells (expanded row) ─────────────────────────
     // Each cell: { label, lines: [{ k, v, c, w }] }. w=true renders a
     // full-width sentence; otherwise key/value with mono numerics.
+    // chips:true on a cell signals the template to render a badge row below lines.
     explainerCells(row) {
       const ec = row.etf_count ?? 0;
       const structure = [], flow = [], risk = [], verdict = [];
 
-      // STRUCTURE
+      // STRUCTURE — count-based lines only (concentration moved to RISK)
       structure.push({ k: 'held by', v: `${ec} ETF${ec === 1 ? '' : 's'}` });
       if (row.tiers) structure.push({ w: true, v: row.tiers, c: 'var(--text-3)' });
       structure.push({ k: 'breadth', v: row.n_eff != null ? `${row.n_eff.toFixed(1)} eff / ${ec} funds` : '—' });
-      const hhiPct = row.hhi != null ? Math.round(row.hhi * 100) : null;
-      structure.push({ k: 'concentration',
-        v: hhiPct != null ? `${hhiPct}%` : (row.concentration_score != null ? `${row.concentration_score}%` : '—'),
-        c: hhiPct != null ? (hhiPct >= 50 ? 'var(--down)' : hhiPct >= 35 ? 'var(--amber)' : 'var(--text-2)') : 'var(--text-2)' });
       structure.push({ k: 'conviction', v: row.avg_conviction != null ? row.avg_conviction.toFixed(2) + '×' : '—', c: (row.avg_conviction||0) > 1.0 ? 'var(--up)' : 'var(--text-2)' });
       structure.push({ k: 'tier breadth', v: `${row.tier_breadth ?? '—'}` });
       const ar = row.apex_rank, lr = row.leaderboard_rank;
@@ -2787,7 +2884,17 @@ function app() {
       const rd = row.global_rank_delta_30d;
       flow.push({ k: 'rank 30d', v: rd != null ? `${rd >= 0 ? '+' : ''}${rd} ranks` : '—', c: this.rankDeltaColor(rd) });
 
-      // RISK
+      // RISK — gains concentration + level (score_percentile as "NN% of 60d range")
+      const hhiPct = row.hhi != null ? Math.round(row.hhi * 100) : null;
+      risk.push({ k: 'concentration',
+        v: hhiPct != null ? `${hhiPct}%` : (row.concentration_score != null ? `${row.concentration_score}%` : '—'),
+        c: hhiPct != null ? (hhiPct >= 50 ? 'var(--down)' : hhiPct >= 35 ? 'var(--amber)' : 'var(--text-2)') : 'var(--text-2)' });
+      if (row.score_percentile != null) {
+        const pct = Math.round(row.score_percentile * 100);
+        risk.push({ k: 'level',
+          v: `${pct}% of 60d range`,
+          c: pct >= 66 ? 'var(--up)' : pct >= 33 ? 'var(--amber)' : 'var(--down)' });
+      }
       if (row.m_conc == null) risk.push({ k: 'conc penalty', v: '—', c: 'var(--text-3)' });
       else if (row.m_conc < 1) risk.push({ w: true, v: `−${Math.round((1 - row.m_conc) * 100)}% concentration penalty`, c: 'var(--amber)' });
       else risk.push({ w: true, v: 'no concentration penalty', c: 'var(--text-3)' });
@@ -2797,7 +2904,7 @@ function app() {
       if (row.quality_defected_30d) risk.push({ w: true, v: '⚠ Quality fund dropped this name in 30d', c: 'var(--down)' });
       if (row.stealth_accumulation) risk.push({ w: true, v: 'stealth accumulation underway', c: 'var(--amber)' });
 
-      // VERDICT
+      // VERDICT — regime + verdict sentence + active signal chips
       const reg = this.regimeInfo(row);
       verdict.push({ k: 'regime', v: reg ? reg.text : '—', c: reg ? reg.color : 'var(--text-3)' });
       verdict.push({ w: true, v: this.verdictLine(row), c: 'var(--text-2)' });
@@ -2806,7 +2913,7 @@ function app() {
         { label: 'Structure', lines: structure },
         { label: 'Flow', lines: flow },
         { label: 'Risk', lines: risk },
-        { label: 'Verdict', lines: verdict },
+        { label: 'Verdict', lines: verdict, chips: true },
       ];
     },
 
