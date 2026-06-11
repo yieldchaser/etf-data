@@ -44,7 +44,7 @@
     .xp-cell:first-child { border-left: 0; }
     .xp-label { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); margin-bottom: 5px; }
     .xp-kv { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-size: 11px; line-height: 1.65; }
-    .xp-kv .k { color: var(--text-3); white-space: nowrap; }
+    .xp-kv .k { color: var(--text-3); white-space: nowrap; text-transform: capitalize; font-size: 10px; font-weight: 500; letter-spacing: 0.01em; }
     .xp-kv .v { font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; text-align: right; white-space: normal; overflow-wrap: anywhere; min-width: 0; }
     .xp-kv.xp-wide { justify-content: flex-start; }
     .xp-kv.xp-wide .v { font-family: inherit; text-align: left; white-space: normal; }
@@ -331,18 +331,6 @@
               :class="sortLevels.length > 1 ? 'border-cyan-500/40 text-cyan-300' : ''">
         ⇅ Sort <span x-show="sortLevels.length > 1" class="num font-mono" x-text="`(${sortLevels.length})`"></span>
       </button>
-      <!-- Period selector (horizon for SC.Δ%) -->
-      <div class="flex items-center gap-1 shrink-0">
-        <span class="text-[9px] font-mono" style="color: var(--text-3)">Δ</span>
-        <div class="flex border rounded overflow-hidden" style="border-color: var(--border-2)">
-          <template x-for="p in [1,7,14,30,60,90,'YTD']" :key="p">
-            <button @click.stop="period = p"
-                    :style="period === p ? 'background: rgba(34,211,238,0.12); color: var(--cyan);' : 'color: var(--text-3);'"
-                    class="px-1 py-0.5 text-[9px] font-mono leading-none hover:text-zinc-300 transition"
-                    x-text="p === 'YTD' ? 'YTD' : p + 'd'"></button>
-          </template>
-        </div>
-      </div>
       <button @click="exportLeaderboardCSV()" class="chip border px-2 py-1 hover:border-cyan-500/30 whitespace-nowrap"
               style="border-color: var(--border-2); color: var(--text-2)"
               x-tooltip="'Download the current filtered leaderboard view as CSV (preserves your filters and sort order)'">
@@ -448,7 +436,24 @@
               <th class="text-left px-3 py-2 hidden sm:table-cell" x-tooltip="'Issuer\'s legal name as reported by the ETF.'">Company</th>
               <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('apex_score')" :class="sortClass('apex_score')" x-tooltip="'Forward score = structure × bounded momentum kicker'">Apex</th>
               <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300" @click="sort('final_score')" :class="sortClass('final_score')" x-tooltip="'Final Alpha Score = sum of (weight% × ETF points × rank multiplier × 100) across all ETFs holding this name. Hover score cell for percentile.'">Score</th>
-              <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell" @click="sort('score_delta_pct')" :class="sortClass('score_delta_pct')" x-tooltip="'Score change vs the prior reference date. Use the Δ horizon selector in the filter bar to pick period.'" x-text="`SC.Δ% (${period === 'YTD' ? 'YTD' : period + 'd'})`"></th>
+              <th class="text-right px-2 py-2 hidden lg:table-cell select-none" style="vertical-align: top;">
+                <div class="cursor-pointer hover:text-zinc-300 inline-block align-middle"
+                     @click="sort('score_delta_pct')"
+                     :class="sortClass('score_delta_pct')"
+                     x-tooltip="'Score change vs the prior reference date. Click to sort.'">
+                  SC.Δ% <span class="num font-mono text-[9px] opacity-80" x-text="`(${period === 'YTD' ? 'YTD' : period + 'd'})`"></span>
+                </div>
+                <div class="flex justify-end mt-1" @click.stop>
+                  <div class="flex border rounded overflow-hidden" style="border-color: rgba(255,255,255,0.08); background: rgba(0,0,0,0.25)">
+                    <template x-for="p in [1,7,14,30,60,90,'YTD']" :key="p">
+                      <button @click.stop="period = p"
+                              :style="period === p ? 'background: rgba(34,211,238,0.15); color: var(--cyan);' : 'color: rgba(255,255,255,0.45);'"
+                              class="px-1.5 py-0.5 text-[8.5px] font-mono leading-none hover:text-zinc-300 transition"
+                              x-text="p === 'YTD' ? 'YTD' : p + 'd'"></button>
+                    </template>
+                  </div>
+                </div>
+              </th>
               <th @click="sort('velocity_score')" :class="sortClass('velocity_score')"
                   class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
                   x-tooltip="'Velocity — composite rate-of-change signal across all ETFs. High positive = institutional accumulation accelerating. ⚡+N suffix = burst peak rank improvement.'">Velocity</th>
@@ -551,22 +556,53 @@
                     <!-- Auto-explainer grid -->
                     <div class="xp-grid mb-3">
                       <template x-for="cell in explainerCells(row)" :key="cell.label">
-                        <div class="xp-cell">
+                        <div class="xp-cell transition-all duration-300 flex flex-col"
+                             :style="cell.label === 'Verdict' ? 'background: linear-gradient(135deg, rgba(34,211,238,0.03) 0%, rgba(0,0,0,0) 100%); border-left: 1px solid rgba(34,211,238,0.15)' : ''">
                           <div class="xp-label" x-text="cell.label"></div>
-                          <template x-for="(ln, i) in cell.lines" :key="i">
-                            <div class="xp-kv" :class="ln.w ? 'xp-wide' : ''">
-                              <span class="k" x-show="!ln.w" x-text="ln.k || ''"></span>
-                              <span class="v" :style="`color: ${ln.c || 'var(--text-2)'}`" x-text="ln.v"></span>
+                          
+                          <!-- Standard key-values for Structure, Flow, Risk -->
+                          <template x-if="cell.label !== 'Verdict'">
+                            <div>
+                              <template x-for="(ln, i) in cell.lines" :key="i">
+                                <div class="xp-kv" :class="ln.w ? 'xp-wide' : ''">
+                                  <span class="k" x-show="!ln.w" x-text="ln.k || ''"></span>
+                                  <span class="v" :style="`color: ${ln.c || 'var(--text-2)'}`" x-text="ln.v"></span>
+                                </div>
+                              </template>
                             </div>
                           </template>
-                          <!-- Chips row for Verdict cell: active signal badges -->
-                          <template x-if="cell.chips">
-                            <div class="flex flex-wrap gap-1 mt-1.5">
-                              <span x-show="row.flag === 'HIGH_CONVICTION'" class="chip sig-badge"
-                                    style="background: rgba(52,211,153,0.10); color: var(--up); border: 1px solid rgba(52,211,153,0.25)">HC</span>
-                              <template x-for="b in signalBadges(row).slice(0, 4)" :key="b.k">
-                                <span class="chip sig-badge" :style="b.style" x-tooltip="{ html: b.tip }" x-text="b.label"></span>
-                              </template>
+
+                          <!-- Custom Premium layout for Verdict -->
+                          <template x-if="cell.label === 'Verdict'">
+                            <div class="flex-1 flex flex-col justify-between gap-2">
+                              <div>
+                                <!-- Regime Display -->
+                                <div class="flex items-center gap-2 mb-2 select-none">
+                                  <span class="text-[9px] uppercase tracking-wider font-semibold text-zinc-500">Regime</span>
+                                  <span class="px-2 py-0.5 rounded font-mono text-[11px] font-bold tracking-wider"
+                                        :style="`background: ${(() => {
+                                          const reg = regimeInfo(row);
+                                          return reg ? reg.color + '15' : 'rgba(255,255,255,0.05)';
+                                        })()}; color: ${(() => {
+                                          const reg = regimeInfo(row);
+                                          return reg ? reg.color : 'var(--text-3)';
+                                        })()}; border: 1px solid ${(() => {
+                                          const reg = regimeInfo(row);
+                                          return reg ? reg.color + '30' : 'rgba(255,255,255,0.1)';
+                                        })()}`"
+                                        x-text="regimeInfo(row) ? regimeInfo(row).text : '—'"></span>
+                                </div>
+                                <!-- Verdict Sentence -->
+                                <div class="text-xs font-medium leading-relaxed" style="color: var(--text)" x-text="verdictLine(row)"></div>
+                              </div>
+                              <!-- Active Signal Badges -->
+                              <div class="flex flex-wrap gap-1 mt-1.5">
+                                <span x-show="row.flag === 'HIGH_CONVICTION'" class="chip sig-badge"
+                                      style="background: rgba(52,211,153,0.10); color: var(--up); border: 1px solid rgba(52,211,153,0.25)">HC</span>
+                                <template x-for="b in signalBadges(row).slice(0, 4)" :key="b.k">
+                                  <span class="chip sig-badge" :style="b.style" x-tooltip="{ html: b.tip }" x-text="b.label"></span>
+                                </template>
+                              </div>
                             </div>
                           </template>
                         </div>
@@ -951,7 +987,24 @@
                 <th class="text-left px-3 py-2 hidden sm:table-cell" x-tooltip="'Issuer\'s legal name as reported by the ETF.'">Company</th>
                 <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('apex_score')" :class="sortClass('apex_score')" x-tooltip="'Forward score = structure × bounded momentum kicker'">Apex</th>
                 <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300" @click="sort('final_score')" :class="sortClass('final_score')" x-tooltip="'Final Alpha Score = sum of (weight% × ETF points × rank multiplier × 100) across all ETFs holding this name. Hover score cell for percentile.'">Score</th>
-                <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell" @click="sort('score_delta_pct')" :class="sortClass('score_delta_pct')" x-tooltip="'Score change vs the prior reference date. Use the Δ horizon selector in the filter bar to pick period.'" x-text="`SC.Δ% (${period === 'YTD' ? 'YTD' : period + 'd'})`"></th>
+                <th class="text-right px-2 py-2 hidden lg:table-cell select-none" style="vertical-align: top;">
+                  <div class="cursor-pointer hover:text-zinc-300 inline-block align-middle"
+                       @click="sort('score_delta_pct')"
+                       :class="sortClass('score_delta_pct')"
+                       x-tooltip="'Score change vs the prior reference date. Click to sort.'">
+                    SC.Δ% <span class="num font-mono text-[9px] opacity-80" x-text="`(${period === 'YTD' ? 'YTD' : period + 'd'})`"></span>
+                  </div>
+                  <div class="flex justify-end mt-1" @click.stop>
+                    <div class="flex border rounded overflow-hidden" style="border-color: rgba(255,255,255,0.08); background: rgba(0,0,0,0.25)">
+                      <template x-for="p in [1,7,14,30,60,90,'YTD']" :key="p">
+                        <button @click.stop="period = p"
+                                :style="period === p ? 'background: rgba(34,211,238,0.15); color: var(--cyan);' : 'color: rgba(255,255,255,0.45);'"
+                                class="px-1.5 py-0.5 text-[8.5px] font-mono leading-none hover:text-zinc-300 transition"
+                                x-text="p === 'YTD' ? 'YTD' : p + 'd'"></button>
+                      </template>
+                    </div>
+                  </div>
+                </th>
                 <th @click="sort('velocity_score')" :class="sortClass('velocity_score')"
                     class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
                     x-tooltip="'Velocity — composite rate-of-change signal across all ETFs. High positive = institutional accumulation accelerating. ⚡+N suffix = burst peak rank improvement.'">Velocity</th>
@@ -1054,22 +1107,53 @@
                       <!-- Auto-explainer grid -->
                       <div class="xp-grid mb-3">
                         <template x-for="cell in explainerCells(row)" :key="cell.label">
-                          <div class="xp-cell">
+                          <div class="xp-cell transition-all duration-300 flex flex-col"
+                               :style="cell.label === 'Verdict' ? 'background: linear-gradient(135deg, rgba(34,211,238,0.03) 0%, rgba(0,0,0,0) 100%); border-left: 1px solid rgba(34,211,238,0.15)' : ''">
                             <div class="xp-label" x-text="cell.label"></div>
-                            <template x-for="(ln, i) in cell.lines" :key="i">
-                              <div class="xp-kv" :class="ln.w ? 'xp-wide' : ''">
-                                <span class="k" x-show="!ln.w" x-text="ln.k || ''"></span>
-                                <span class="v" :style="`color: ${ln.c || 'var(--text-2)'}`" x-text="ln.v"></span>
+                            
+                            <!-- Standard key-values for Structure, Flow, Risk -->
+                            <template x-if="cell.label !== 'Verdict'">
+                              <div>
+                                <template x-for="(ln, i) in cell.lines" :key="i">
+                                  <div class="xp-kv" :class="ln.w ? 'xp-wide' : ''">
+                                    <span class="k" x-show="!ln.w" x-text="ln.k || ''"></span>
+                                    <span class="v" :style="`color: ${ln.c || 'var(--text-2)'}`" x-text="ln.v"></span>
+                                  </div>
+                                </template>
                               </div>
                             </template>
-                            <!-- Chips row for Verdict cell: active signal badges -->
-                            <template x-if="cell.chips">
-                              <div class="flex flex-wrap gap-1 mt-1.5">
-                                <span x-show="row.flag === 'HIGH_CONVICTION'" class="chip sig-badge"
-                                      style="background: rgba(52,211,153,0.10); color: var(--up); border: 1px solid rgba(52,211,153,0.25)">HC</span>
-                                <template x-for="b in signalBadges(row).slice(0, 4)" :key="b.k">
-                                  <span class="chip sig-badge" :style="b.style" x-tooltip="{ html: b.tip }" x-text="b.label"></span>
-                                </template>
+
+                            <!-- Custom Premium layout for Verdict -->
+                            <template x-if="cell.label === 'Verdict'">
+                              <div class="flex-1 flex flex-col justify-between gap-2">
+                                <div>
+                                  <!-- Regime Display -->
+                                  <div class="flex items-center gap-2 mb-2 select-none">
+                                    <span class="text-[9px] uppercase tracking-wider font-semibold text-zinc-500">Regime</span>
+                                    <span class="px-2 py-0.5 rounded font-mono text-[11px] font-bold tracking-wider"
+                                          :style="`background: ${(() => {
+                                            const reg = regimeInfo(row);
+                                            return reg ? reg.color + '15' : 'rgba(255,255,255,0.05)';
+                                          })()}; color: ${(() => {
+                                            const reg = regimeInfo(row);
+                                            return reg ? reg.color : 'var(--text-3)';
+                                          })()}; border: 1px solid ${(() => {
+                                            const reg = regimeInfo(row);
+                                            return reg ? reg.color + '30' : 'rgba(255,255,255,0.1)';
+                                          })()}`"
+                                          x-text="regimeInfo(row) ? regimeInfo(row).text : '—'"></span>
+                                  </div>
+                                  <!-- Verdict Sentence -->
+                                  <div class="text-xs font-medium leading-relaxed" style="color: var(--text)" x-text="verdictLine(row)"></div>
+                                </div>
+                                <!-- Active Signal Badges -->
+                                <div class="flex flex-wrap gap-1 mt-1.5">
+                                  <span x-show="row.flag === 'HIGH_CONVICTION'" class="chip sig-badge"
+                                        style="background: rgba(52,211,153,0.10); color: var(--up); border: 1px solid rgba(52,211,153,0.25)">HC</span>
+                                  <template x-for="b in signalBadges(row).slice(0, 4)" :key="b.k">
+                                    <span class="chip sig-badge" :style="b.style" x-tooltip="{ html: b.tip }" x-text="b.label"></span>
+                                  </template>
+                                </div>
                               </div>
                             </template>
                           </div>
