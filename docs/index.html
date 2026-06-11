@@ -39,7 +39,7 @@
     .regime { display: inline-block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; white-space: nowrap; min-width: 76px; }
 
     /* Auto-explainer grid (expanded row) */
-    .xp-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: rgba(255,255,255,0.012); }
+    .xp-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: rgba(255,255,255,0.012); }
     .xp-cell { padding: 9px 12px; border-left: 1px solid var(--border); min-width: 0; }
     .xp-cell:first-child { border-left: 0; }
     .xp-label { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); margin-bottom: 5px; }
@@ -49,9 +49,9 @@
     .xp-kv.xp-wide { justify-content: flex-start; }
     .xp-kv.xp-wide .v { font-family: inherit; text-align: left; white-space: normal; }
     @media (max-width: 900px) {
-      .xp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .xp-cell:nth-child(odd) { border-left: 0; }
-      .xp-cell:nth-child(n+3) { border-top: 1px solid var(--border); }
+      .xp-grid { grid-template-columns: 1fr; }
+      .xp-cell { border-left: 0 !important; border-top: 1px solid var(--border); }
+      .xp-cell:first-child { border-top: 0 !important; }
     }
 
     .pct-bar { position: relative; width: 64px; height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
@@ -84,6 +84,8 @@
     [x-cloak] { display: none !important; }
 
     .tab-active { background: rgba(34, 211, 238, 0.08); color: var(--cyan); border-color: rgba(34, 211, 238, 0.3); }
+    .tab-inactive { color: var(--text-2); border-color: var(--border); background: transparent; }
+    .tab-inactive:hover { color: #fff; border-color: var(--border-2); background: rgba(255, 255, 255, 0.02); }
 
     /* Sparkline */
     .spark { display: inline-block; height: 18px; width: 80px; vertical-align: middle; }
@@ -199,17 +201,16 @@
   <nav class="flex flex-wrap gap-1 mb-3 text-xs items-center">
     <template x-for="t in tabs" :key="t.id">
       <button @click="activeTab = t.id"
-              :class="activeTab === t.id ? 'tab-active' : ''"
-              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition"
-              :style="activeTab === t.id ? '' : 'color: var(--text-2); border-color: var(--border)'">
+              :class="activeTab === t.id ? 'tab-active' : 'tab-inactive'"
+              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition">
         <span x-text="t.label"></span>
         <span class="num font-mono ml-1 opacity-60" x-show="t.count !== undefined" x-text="`(${t.count})`"></span>
       </button>
     </template>
     <!-- External page links (same aesthetic as tabs) -->
-    <a href="markets.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color: var(--text-2); border-color: var(--border); text-decoration: none;">Markets</a>
-    <a href="sim.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color: var(--text-2); border-color: var(--border); text-decoration: none;">Simulator</a>
-    <a href="methodology.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color: var(--text-2); border-color: var(--border); text-decoration: none;"
+    <a href="markets.html" class="tab-inactive px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition no-underline">Markets</a>
+    <a href="sim.html" class="tab-inactive px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition no-underline">Simulator</a>
+    <a href="methodology.html" class="tab-inactive px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition no-underline"
        title="How Predator Protocol works — scoring, motion signals, sanitizer, self-living data, and honest limitations">How it works</a>
   </nav>
 
@@ -218,109 +219,107 @@
   <section x-show="activeTab === 'leaderboard'">
 
     <!-- Filter bar -->
-    <div class="rounded-lg p-2.5 mb-3 border flex flex-col sm:flex-row gap-2 items-stretch" style="background: var(--surface); border-color: var(--border)">
-      <div class="flex gap-1 flex-wrap">
-        <button @click="toggleFlag('HIGH_CONVICTION')"
-                :class="flag === 'HIGH_CONVICTION' ? 'border-emerald-500/40 text-emerald-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-emerald-500/30"
-                style="border-color: var(--border-2)"
-                x-text="`HC ${counts.HIGH_CONVICTION || 0}`"></button>
-        <button @click="toggleFlag('SPECULATIVE_BETA')"
-                :class="flag === 'SPECULATIVE_BETA' ? 'border-amber-500/40 text-amber-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-amber-500/30"
-                style="border-color: var(--border-2)"
-                x-text="`SPEC β ${counts.SPECULATIVE_BETA || 0}`"></button>
-        <button @click="newOnly = !newOnly"
-                :class="newOnly ? 'border-blue-500/40 text-blue-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-blue-500/30"
-                style="border-color: var(--border-2)"
-                x-text="`NEW ${counts.NEW || 0}`"></button>
-        <button @click="velocityOnly = !velocityOnly"
-                :class="velocityOnly ? 'border-cyan-500/40 text-cyan-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-cyan-500/30"
-                style="border-color: var(--border-2)"
-                x-tooltip="'Show only top-velocity names (velocity ≥ 25, held by 2+ ETFs, no burst)'"
-                x-text="`VELO ${counts.VELO || 0}`"></button>
-        <button @click="burstOnly = !burstOnly"
-                :class="burstOnly ? 'border-purple-500/40 text-purple-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-purple-500/30"
-                style="border-color: var(--border-2)"
-                x-tooltip="'Show only burst movers — stocks that improved global rank by 40+ in the last 30 days'"
-                x-text="`BURST ${counts.BURST || 0}`"></button>
-        <button @click="excludeConcentrated = !excludeConcentrated"
-                :class="excludeConcentrated ? 'border-emerald-500/40 text-emerald-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-emerald-500/30"
-                style="border-color: var(--border-2)"
-                x-tooltip="'Hide names where 80%+ of score comes from one ETF'">
-          ≤80% conc
-        </button>
-        <button @click="qualityAdoptedOnly = !qualityAdoptedOnly"
-                :class="qualityAdoptedOnly ? 'border-teal-400/50 text-teal-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-teal-400/40"
-                style="border-color: var(--border-2)"
-                x-tooltip="'Names a Quality ETF (COWZ/CALF/SPHQ) added in the last 30 days — momentum + fundamentals confirmation'"
-                x-text="`Quality+ ${counts.QADD || 0}`"></button>
-        <button @click="preHcOnly = !preHcOnly"
-                :class="preHcOnly ? 'border-emerald-400/50 text-emerald-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-emerald-400/40"
-                style="border-color: var(--border-2)"
-                x-tooltip="'Pre-HC — held by exactly 3 ETFs with rising velocity. One pickup away from HIGH_CONVICTION. Catches names the day before broad consensus.'"
-                x-text="`Pre-HC ${counts.PRE_HC || 0}`"></button>
-        <button @click="stealthBuyOnly = !stealthBuyOnly"
-                :class="stealthBuyOnly ? 'border-fuchsia-400/50 text-fuchsia-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-fuchsia-400/40"
-                style="border-color: var(--border-2)"
-                x-tooltip="'Stealth Buy — single fund loading position rapidly (>10% weight growth in 7d) before consensus forms. Lonely-buy-before-the-crowd signal.'"
-                x-text="`Stealth ${counts.STEALTH_BUY || 0}`"></button>
-        <button @click="stealthAccOnly = !stealthAccOnly"
-                :class="stealthAccOnly ? 'border-amber-400/50 text-amber-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-amber-400/40"
-                style="border-color: var(--border-2)"
-                x-tooltip="'STEALTH — stealth_accumulation flag: weight building without rank movement. Quiet loading before the crowd notices.'"
-                x-text="`STEALTH ${counts.STEALTH_ACC || 0}`"></button>
-        <button @click="divOnly = !divOnly"
-                :class="divOnly ? 'border-teal-400/50 text-teal-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-teal-400/40"
-                style="border-color: var(--border-2)"
-                x-tooltip="'DIV — conviction divergence (either direction): rank behavior inside its own funds diverges from the aggregate.'"
-                x-text="`DIV ${counts.DIV || 0}`"></button>
-        <button @click="toggleFlag('CONCENTRATED')"
-                :class="flag === 'CONCENTRATED' ? 'border-orange-400/50 text-orange-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-orange-400/40"
-                style="border-color: var(--border-2)"
-                x-tooltip="'CONC — flagged CONCENTRATED: the score rests on a single ETF. Fragile if that fund rebalances.'"
-                x-text="`CONC ${counts.CONCENTRATED || 0}`"></button>
-        <button @click="velOverScoreOnly = !velOverScoreOnly"
-                :class="velOverScoreOnly ? 'border-sky-400/50 text-sky-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-sky-400/40"
-                style="border-color: var(--border-2)"
-                x-tooltip="'Vel>Score — top 10% by velocity but score still ranked >100. Loading still in progress; the climb is happening.'"
-                x-text="`Vel>Score ${counts.VEL_OVER_SCORE || 0}`"></button>
-        <button @click="quantQualityOnly = !quantQualityOnly"
-                :class="quantQualityOnly ? 'border-yellow-400/50 text-yellow-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-yellow-400/40"
-                style="border-color: var(--border-2)"
-                x-tooltip="'Q+Q — held by both Quant (forward-looking) AND Quality (backward-looking) tiers, with recent ETF pickup. Two independent epistemologies agreeing.'"
-                x-text="`Q+Q ${counts.QUANT_QUALITY || 0}`"></button>
-        <select x-model="selectedTier" class="chip border px-2 py-1 bg-transparent" style="border-color: var(--border-2)">
-          <option value="" style="background: #000">all tiers</option>
-          <template x-for="t in ['Scout','Quant','Quality','Trend','Core']" :key="t">
-            <option :value="t" x-text="t" style="background: #000"></option>
-          </template>
-        </select>
-        <button @click="reset()" class="chip border px-2 py-1 hover:border-zinc-500" style="border-color: var(--border-2); color: var(--text-2)">clear</button>
-        <!-- Active filter chips (sector/country) -->
-        <span x-show="selectedSector" class="chip border px-2 py-1" style="border-color: rgba(34,211,238,0.3); color: var(--cyan); background: rgba(34,211,238,0.06)">
-          <span x-text="selectedSector"></span>
-          <button @click="selectedSector = ''; page = 1" class="ml-1 opacity-60 hover:opacity-100">✕</button>
-        </span>
-        <span x-show="selectedCountry" class="chip border px-2 py-1" style="border-color: rgba(34,211,238,0.3); color: var(--cyan); background: rgba(34,211,238,0.06)">
-          <span x-text="selectedCountry"></span>
-          <button @click="selectedCountry = ''; page = 1" class="ml-1 opacity-60 hover:opacity-100">✕</button>
-        </span>
-      </div>
+    <div class="rounded-lg p-2.5 mb-3 border flex flex-wrap gap-1.5 items-center" style="background: var(--surface); border-color: var(--border)">
+      <button @click="toggleFlag('HIGH_CONVICTION')"
+              :class="flag === 'HIGH_CONVICTION' ? 'border-emerald-500/40 text-emerald-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-emerald-500/30"
+              style="border-color: var(--border-2)"
+              x-text="`HC ${counts.HIGH_CONVICTION || 0}`"></button>
+      <button @click="toggleFlag('SPECULATIVE_BETA')"
+              :class="flag === 'SPECULATIVE_BETA' ? 'border-amber-500/40 text-amber-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-amber-500/30"
+              style="border-color: var(--border-2)"
+              x-text="`SPEC β ${counts.SPECULATIVE_BETA || 0}`"></button>
+      <button @click="newOnly = !newOnly"
+              :class="newOnly ? 'border-blue-500/40 text-blue-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-blue-500/30"
+              style="border-color: var(--border-2)"
+              x-text="`NEW ${counts.NEW || 0}`"></button>
+      <button @click="velocityOnly = !velocityOnly"
+              :class="velocityOnly ? 'border-cyan-500/40 text-cyan-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-cyan-500/30"
+              style="border-color: var(--border-2)"
+              x-tooltip="'Show only top-velocity names (velocity ≥ 25, held by 2+ ETFs, no burst)'"
+              x-text="`VELO ${counts.VELO || 0}`"></button>
+      <button @click="burstOnly = !burstOnly"
+              :class="burstOnly ? 'border-purple-500/40 text-purple-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-purple-500/30"
+              style="border-color: var(--border-2)"
+              x-tooltip="'Show only burst movers — stocks that improved global rank by 40+ in the last 30 days'"
+              x-text="`BURST ${counts.BURST || 0}`"></button>
+      <button @click="excludeConcentrated = !excludeConcentrated"
+              :class="excludeConcentrated ? 'border-emerald-500/40 text-emerald-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-emerald-500/30"
+              style="border-color: var(--border-2)"
+              x-tooltip="'Hide names where 80%+ of score comes from one ETF'">
+        ≤80% conc
+      </button>
+      <button @click="qualityAdoptedOnly = !qualityAdoptedOnly"
+              :class="qualityAdoptedOnly ? 'border-teal-400/50 text-teal-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-teal-400/40"
+              style="border-color: var(--border-2)"
+              x-tooltip="'Names a Quality ETF (COWZ/CALF/SPHQ) added in the last 30 days — momentum + fundamentals confirmation'"
+              x-text="`Quality+ ${counts.QADD || 0}`"></button>
+      <button @click="preHcOnly = !preHcOnly"
+              :class="preHcOnly ? 'border-emerald-400/50 text-emerald-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-emerald-400/40"
+              style="border-color: var(--border-2)"
+              x-tooltip="'Pre-HC — held by exactly 3 ETFs with rising velocity. One pickup away from HIGH_CONVICTION. Catches names the day before broad consensus.'"
+              x-text="`Pre-HC ${counts.PRE_HC || 0}`"></button>
+      <button @click="stealthBuyOnly = !stealthBuyOnly"
+              :class="stealthBuyOnly ? 'border-fuchsia-400/50 text-fuchsia-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-fuchsia-400/40"
+              style="border-color: var(--border-2)"
+              x-tooltip="'Stealth Buy — single fund loading position rapidly (>10% weight growth in 7d) before consensus forms. Lonely-buy-before-the-crowd signal.'"
+              x-text="`Stealth ${counts.STEALTH_BUY || 0}`"></button>
+      <button @click="stealthAccOnly = !stealthAccOnly"
+              :class="stealthAccOnly ? 'border-amber-400/50 text-amber-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-amber-400/40"
+              style="border-color: var(--border-2)"
+              x-tooltip="'STEALTH — stealth_accumulation flag: weight building without rank movement. Quiet loading before the crowd notices.'"
+              x-text="`STEALTH ${counts.STEALTH_ACC || 0}`"></button>
+      <button @click="divOnly = !divOnly"
+              :class="divOnly ? 'border-teal-400/50 text-teal-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-teal-400/40"
+              style="border-color: var(--border-2)"
+              x-tooltip="'DIV — conviction divergence (either direction): rank behavior inside its own funds diverges from the aggregate.'"
+              x-text="`DIV ${counts.DIV || 0}`"></button>
+      <button @click="toggleFlag('CONCENTRATED')"
+              :class="flag === 'CONCENTRATED' ? 'border-orange-400/50 text-orange-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-orange-400/40"
+              style="border-color: var(--border-2)"
+              x-tooltip="'CONC — flagged CONCENTRATED: the score rests on a single ETF. Fragile if that fund rebalances.'"
+              x-text="`CONC ${counts.CONCENTRATED || 0}`"></button>
+      <button @click="velOverScoreOnly = !velOverScoreOnly"
+              :class="velOverScoreOnly ? 'border-sky-400/50 text-sky-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-sky-400/40"
+              style="border-color: var(--border-2)"
+              x-tooltip="'Vel>Score — top 10% by velocity but score still ranked >100. Loading still in progress; the climb is happening.'"
+              x-text="`Vel>Score ${counts.VEL_OVER_SCORE || 0}`"></button>
+      <button @click="quantQualityOnly = !quantQualityOnly"
+              :class="quantQualityOnly ? 'border-yellow-400/50 text-yellow-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-yellow-400/40"
+              style="border-color: var(--border-2)"
+              x-tooltip="'Q+Q — held by both Quant (forward-looking) AND Quality (backward-looking) tiers, with recent ETF pickup. Two independent epistemologies agreeing.'"
+              x-text="`Q+Q ${counts.QUANT_QUALITY || 0}`"></button>
+      <select x-model="selectedTier" class="chip border px-2 py-1 bg-transparent" style="border-color: var(--border-2)">
+        <option value="" style="background: #000">all tiers</option>
+        <template x-for="t in ['Scout','Quant','Quality','Trend','Core']" :key="t">
+          <option :value="t" x-text="t" style="background: #000"></option>
+        </template>
+      </select>
+      <button @click="reset()" class="chip border px-2 py-1 hover:border-zinc-500" style="border-color: var(--border-2); color: var(--text-2)">clear</button>
+      <!-- Active filter chips (sector/country) -->
+      <span x-show="selectedSector" class="chip border px-2 py-1" style="border-color: rgba(34,211,238,0.3); color: var(--cyan); background: rgba(34,211,238,0.06)">
+        <span x-text="selectedSector"></span>
+        <button @click="selectedSector = ''; page = 1" class="ml-1 opacity-60 hover:opacity-100">✕</button>
+      </span>
+      <span x-show="selectedCountry" class="chip border px-2 py-1" style="border-color: rgba(34,211,238,0.3); color: var(--cyan); background: rgba(34,211,238,0.06)">
+        <span x-text="selectedCountry"></span>
+        <button @click="selectedCountry = ''; page = 1" class="ml-1 opacity-60 hover:opacity-100">✕</button>
+      </span>
       <input x-model.debounce.300ms="q" type="search" placeholder="search ticker or company…"
-             class="flex-1 bg-transparent border rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500/40"
+             class="w-full sm:w-48 bg-transparent border rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500/40"
              style="border-color: var(--border-2); color: var(--text)">
       <div class="text-xs num font-mono self-center whitespace-nowrap pr-1" style="color: var(--text-3)">
         <span x-text="filtered.length"></span> / <span x-text="leaderboard.length"></span>
@@ -553,58 +552,49 @@
                 <template x-if="open === row.ticker">
                 <tr x-transition.opacity style="background: #050505; border-bottom: 1px solid var(--border)">
                   <td colspan="14" class="px-4 py-4">
+                    <!-- Verdict Banner -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 mb-3 rounded-lg border text-xs"
+                         style="background: linear-gradient(135deg, rgba(34,211,238,0.03) 0%, rgba(0,0,0,0) 100%); border-color: rgba(34,211,238,0.15)">
+                      <div class="flex flex-wrap items-center gap-3">
+                        <div class="flex items-center gap-1.5 select-none">
+                          <span class="text-[9px] uppercase tracking-wider font-semibold text-zinc-500">Regime</span>
+                          <span class="px-2 py-0.5 rounded font-mono text-[11px] font-bold tracking-wider"
+                                :style="`background: ${(() => {
+                                  const reg = regimeInfo(row);
+                                  return reg ? reg.color + '15' : 'rgba(255,255,255,0.05)';
+                                })()}; color: ${(() => {
+                                  const reg = regimeInfo(row);
+                                  return reg ? reg.color : 'var(--text-3)';
+                                })()}; border: 1px solid ${(() => {
+                                  const reg = regimeInfo(row);
+                                  return reg ? reg.color + '30' : 'rgba(255,255,255,0.1)';
+                                })()}`"
+                                x-text="regimeInfo(row) ? regimeInfo(row).text : '—'"></span>
+                        </div>
+                        <div class="text-sm font-medium animate-fade-in" style="color: var(--text)" x-text="verdictLine(row)"></div>
+                      </div>
+                      <div class="flex flex-wrap gap-1">
+                        <span x-show="row.flag === 'HIGH_CONVICTION'" class="chip sig-badge"
+                              style="background: rgba(52,211,153,0.10); color: var(--up); border: 1px solid rgba(52,211,153,0.25)">HC</span>
+                        <template x-for="b in signalBadges(row).slice(0, 5)" :key="b.k">
+                          <span class="chip sig-badge" :style="b.style" x-tooltip="{ html: b.tip }" x-text="b.label"></span>
+                        </template>
+                      </div>
+                    </div>
+
                     <!-- Auto-explainer grid -->
                     <div class="xp-grid mb-3">
                       <template x-for="cell in explainerCells(row)" :key="cell.label">
-                        <div class="xp-cell transition-all duration-300 flex flex-col"
-                             :style="cell.label === 'Verdict' ? 'background: linear-gradient(135deg, rgba(34,211,238,0.03) 0%, rgba(0,0,0,0) 100%); border-left: 1px solid rgba(34,211,238,0.15)' : ''">
+                        <div class="xp-cell transition-all duration-300 flex flex-col">
                           <div class="xp-label" x-text="cell.label"></div>
-                          
-                          <!-- Standard key-values for Structure, Flow, Risk -->
-                          <template x-if="cell.label !== 'Verdict'">
-                            <div>
-                              <template x-for="(ln, i) in cell.lines" :key="i">
-                                <div class="xp-kv" :class="ln.w ? 'xp-wide' : ''">
-                                  <span class="k" x-show="!ln.w" x-text="ln.k || ''"></span>
-                                  <span class="v" :style="`color: ${ln.c || 'var(--text-2)'}`" x-text="ln.v"></span>
-                                </div>
-                              </template>
-                            </div>
-                          </template>
-
-                          <!-- Custom Premium layout for Verdict -->
-                          <template x-if="cell.label === 'Verdict'">
-                            <div class="flex-1 flex flex-col justify-between gap-2">
-                              <div>
-                                <!-- Regime Display -->
-                                <div class="flex items-center gap-2 mb-2 select-none">
-                                  <span class="text-[9px] uppercase tracking-wider font-semibold text-zinc-500">Regime</span>
-                                  <span class="px-2 py-0.5 rounded font-mono text-[11px] font-bold tracking-wider"
-                                        :style="`background: ${(() => {
-                                          const reg = regimeInfo(row);
-                                          return reg ? reg.color + '15' : 'rgba(255,255,255,0.05)';
-                                        })()}; color: ${(() => {
-                                          const reg = regimeInfo(row);
-                                          return reg ? reg.color : 'var(--text-3)';
-                                        })()}; border: 1px solid ${(() => {
-                                          const reg = regimeInfo(row);
-                                          return reg ? reg.color + '30' : 'rgba(255,255,255,0.1)';
-                                        })()}`"
-                                        x-text="regimeInfo(row) ? regimeInfo(row).text : '—'"></span>
-                                </div>
-                                <!-- Verdict Sentence -->
-                                <div class="text-xs font-medium leading-relaxed" style="color: var(--text)" x-text="verdictLine(row)"></div>
+                          <div>
+                            <template x-for="(ln, i) in cell.lines" :key="i">
+                              <div class="xp-kv" :class="ln.w ? 'xp-wide' : ''">
+                                <span class="k" x-show="!ln.w" x-text="ln.k || ''"></span>
+                                <span class="v" :style="`color: ${ln.c || 'var(--text-2)'}`" x-text="ln.v"></span>
                               </div>
-                              <!-- Active Signal Badges -->
-                              <div class="flex flex-wrap gap-1 mt-1.5">
-                                <span x-show="row.flag === 'HIGH_CONVICTION'" class="chip sig-badge"
-                                      style="background: rgba(52,211,153,0.10); color: var(--up); border: 1px solid rgba(52,211,153,0.25)">HC</span>
-                                <template x-for="b in signalBadges(row).slice(0, 4)" :key="b.k">
-                                  <span class="chip sig-badge" :style="b.style" x-tooltip="{ html: b.tip }" x-text="b.label"></span>
-                                </template>
-                              </div>
-                            </div>
-                          </template>
+                            </template>
+                          </div>
                         </div>
                       </template>
                     </div>
@@ -881,100 +871,98 @@
     <!-- Reuse leaderboard table (filtered by pins) -->
     <div x-show="pins.length > 0">
       <!-- Filter bar (same as leaderboard) -->
-      <div class="rounded-lg p-2.5 mb-3 border flex flex-col sm:flex-row gap-2 items-stretch" style="background: var(--surface); border-color: var(--border)">
-        <div class="flex gap-1 flex-wrap">
-          <button @click="toggleFlag('HIGH_CONVICTION')"
-                  :class="flag === 'HIGH_CONVICTION' ? 'border-emerald-500/40 text-emerald-300' : ''"
-                  class="chip border px-2 py-1 transition hover:border-emerald-500/30"
-                  style="border-color: var(--border-2)"
-                  x-text="`HC ${counts.HIGH_CONVICTION || 0}`"></button>
-          <button @click="toggleFlag('SPECULATIVE_BETA')"
-                  :class="flag === 'SPECULATIVE_BETA' ? 'border-amber-500/40 text-amber-300' : ''"
-                  class="chip border px-2 py-1 transition hover:border-amber-500/30"
-                  style="border-color: var(--border-2)"
-                  x-text="`SPEC β ${counts.SPECULATIVE_BETA || 0}`"></button>
-          <button @click="newOnly = !newOnly"
-                  :class="newOnly ? 'border-blue-500/40 text-blue-300' : ''"
-                  class="chip border px-2 py-1 transition hover:border-blue-500/30"
-                  style="border-color: var(--border-2)"
-                  x-text="`NEW ${counts.NEW || 0}`"></button>
-          <button @click="velocityOnly = !velocityOnly"
-                  :class="velocityOnly ? 'border-cyan-500/40 text-cyan-300' : ''"
-                  class="chip border px-2 py-1 transition hover:border-cyan-500/30"
-                  style="border-color: var(--border-2)"
-                  x-tooltip="'Show only top-velocity names (velocity ≥ 25, held by 2+ ETFs, no burst)'"
-                  x-text="`VELO ${counts.VELO || 0}`"></button>
-          <button @click="burstOnly = !burstOnly"
-                  :class="burstOnly ? 'border-purple-500/40 text-purple-300' : ''"
-                  class="chip border px-2 py-1 transition hover:border-purple-500/30"
-                  style="border-color: var(--border-2)"
-                  x-tooltip="'Show only burst movers — stocks that improved global rank by 40+ in the last 30 days'"
-                  x-text="`BURST ${counts.BURST || 0}`"></button>
-          <button @click="excludeConcentrated = !excludeConcentrated"
-                  :class="excludeConcentrated ? 'border-emerald-500/40 text-emerald-300' : ''"
-                  class="chip border px-2 py-1 transition hover:border-emerald-500/30"
-                  style="border-color: var(--border-2)"
-                  x-tooltip="'Hide names where 80%+ of score comes from one ETF'">
-            ≤80% conc
-          </button>
-          <button @click="qualityAdoptedOnly = !qualityAdoptedOnly"
-                  :class="qualityAdoptedOnly ? 'border-teal-400/50 text-teal-300' : ''"
-                  class="chip border px-2 py-1 transition hover:border-teal-400/40"
-                  style="border-color: var(--border-2)"
-                  x-tooltip="'Names a Quality ETF (COWZ/CALF/SPHQ) added in the last 30 days'"
-                  x-text="`Quality+ ${counts.QADD || 0}`"></button>
-          <button @click="preHcOnly = !preHcOnly"
-                  :class="preHcOnly ? 'border-emerald-400/50 text-emerald-300' : ''"
-                  class="chip border px-2 py-1 transition hover:border-emerald-400/40"
-                  style="border-color: var(--border-2)"
-                  x-tooltip="'Pre-HC — 3 ETFs with rising velocity, one pickup away from HC'"
-                  x-text="`Pre-HC ${counts.PRE_HC || 0}`"></button>
-          <button @click="stealthBuyOnly = !stealthBuyOnly"
-                  :class="stealthBuyOnly ? 'border-fuchsia-400/50 text-fuchsia-300' : ''"
-                  class="chip border px-2 py-1 transition hover:border-fuchsia-400/40"
-                  style="border-color: var(--border-2)"
-                  x-tooltip="'Stealth Buy — single fund loading >10% in 7d before consensus'"
-                  x-text="`Stealth ${counts.STEALTH_BUY || 0}`"></button>
-          <button @click="stealthAccOnly = !stealthAccOnly"
-                  :class="stealthAccOnly ? 'border-amber-400/50 text-amber-300' : ''"
-                  class="chip border px-2 py-1 transition hover:border-amber-400/40"
-                  style="border-color: var(--border-2)"
-                  x-tooltip="'STEALTH — stealth_accumulation flag: weight building without rank movement'"
-                  x-text="`STEALTH ${counts.STEALTH_ACC || 0}`"></button>
-          <button @click="divOnly = !divOnly"
-                  :class="divOnly ? 'border-teal-400/50 text-teal-300' : ''"
-                  class="chip border px-2 py-1 transition hover:border-teal-400/40"
-                  style="border-color: var(--border-2)"
-                  x-tooltip="'DIV — conviction divergence (either direction) vs the aggregate'"
-                  x-text="`DIV ${counts.DIV || 0}`"></button>
-          <button @click="toggleFlag('CONCENTRATED')"
-                  :class="flag === 'CONCENTRATED' ? 'border-orange-400/50 text-orange-300' : ''"
-                  class="chip border px-2 py-1 transition hover:border-orange-400/40"
-                  style="border-color: var(--border-2)"
-                  x-tooltip="'CONC — flagged CONCENTRATED: score rests on a single ETF'"
-                  x-text="`CONC ${counts.CONCENTRATED || 0}`"></button>
-          <button @click="velOverScoreOnly = !velOverScoreOnly"
-                  :class="velOverScoreOnly ? 'border-sky-400/50 text-sky-300' : ''"
-                  class="chip border px-2 py-1 transition hover:border-sky-400/40"
-                  style="border-color: var(--border-2)"
-                  x-tooltip="'Vel>Score — top 10% velocity but score rank >100 (loading in progress)'"
-                  x-text="`Vel>Score ${counts.VEL_OVER_SCORE || 0}`"></button>
-          <button @click="quantQualityOnly = !quantQualityOnly"
-                  :class="quantQualityOnly ? 'border-yellow-400/50 text-yellow-300' : ''"
-                  class="chip border px-2 py-1 transition hover:border-yellow-400/40"
-                  style="border-color: var(--border-2)"
-                  x-tooltip="'Q+Q — both Quant and Quality tiers + recent pickup'"
-                  x-text="`Q+Q ${counts.QUANT_QUALITY || 0}`"></button>
-          <select x-model="selectedTier" class="chip border px-2 py-1 bg-transparent" style="border-color: var(--border-2)">
-            <option value="" style="background: #000">all tiers</option>
-            <template x-for="t in ['Scout','Quant','Quality','Trend','Core']" :key="t">
-              <option :value="t" x-text="t" style="background: #000"></option>
-            </template>
-          </select>
-          <button @click="reset()" class="chip border px-2 py-1 hover:border-zinc-500" style="border-color: var(--border-2); color: var(--text-2)">clear</button>
-        </div>
+      <div class="rounded-lg p-2.5 mb-3 border flex flex-wrap gap-1.5 items-center" style="background: var(--surface); border-color: var(--border)">
+        <button @click="toggleFlag('HIGH_CONVICTION')"
+                :class="flag === 'HIGH_CONVICTION' ? 'border-emerald-500/40 text-emerald-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-emerald-500/30"
+                style="border-color: var(--border-2)"
+                x-text="`HC ${counts.HIGH_CONVICTION || 0}`"></button>
+        <button @click="toggleFlag('SPECULATIVE_BETA')"
+                :class="flag === 'SPECULATIVE_BETA' ? 'border-amber-500/40 text-amber-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-amber-500/30"
+                style="border-color: var(--border-2)"
+                x-text="`SPEC β ${counts.SPECULATIVE_BETA || 0}`"></button>
+        <button @click="newOnly = !newOnly"
+                :class="newOnly ? 'border-blue-500/40 text-blue-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-blue-500/30"
+                style="border-color: var(--border-2)"
+                x-text="`NEW ${counts.NEW || 0}`"></button>
+        <button @click="velocityOnly = !velocityOnly"
+                :class="velocityOnly ? 'border-cyan-500/40 text-cyan-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-cyan-500/30"
+                style="border-color: var(--border-2)"
+                x-tooltip="'Show only top-velocity names (velocity ≥ 25, held by 2+ ETFs, no burst)'"
+                x-text="`VELO ${counts.VELO || 0}`"></button>
+        <button @click="burstOnly = !burstOnly"
+                :class="burstOnly ? 'border-purple-500/40 text-purple-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-purple-500/30"
+                style="border-color: var(--border-2)"
+                x-tooltip="'Show only burst movers — stocks that improved global rank by 40+ in the last 30 days'"
+                x-text="`BURST ${counts.BURST || 0}`"></button>
+        <button @click="excludeConcentrated = !excludeConcentrated"
+                :class="excludeConcentrated ? 'border-emerald-500/40 text-emerald-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-emerald-500/30"
+                style="border-color: var(--border-2)"
+                x-tooltip="'Hide names where 80%+ of score comes from one ETF'">
+          ≤80% conc
+        </button>
+        <button @click="qualityAdoptedOnly = !qualityAdoptedOnly"
+                :class="qualityAdoptedOnly ? 'border-teal-400/50 text-teal-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-teal-400/40"
+                style="border-color: var(--border-2)"
+                x-tooltip="'Names a Quality ETF (COWZ/CALF/SPHQ) added in the last 30 days'"
+                x-text="`Quality+ ${counts.QADD || 0}`"></button>
+        <button @click="preHcOnly = !preHcOnly"
+                :class="preHcOnly ? 'border-emerald-400/50 text-emerald-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-emerald-400/40"
+                style="border-color: var(--border-2)"
+                x-tooltip="'Pre-HC — 3 ETFs with rising velocity, one pickup away from HC'"
+                x-text="`Pre-HC ${counts.PRE_HC || 0}`"></button>
+        <button @click="stealthBuyOnly = !stealthBuyOnly"
+                :class="stealthBuyOnly ? 'border-fuchsia-400/50 text-fuchsia-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-fuchsia-400/40"
+                style="border-color: var(--border-2)"
+                x-tooltip="'Stealth Buy — single fund loading >10% in 7d before consensus'"
+                x-text="`Stealth ${counts.STEALTH_BUY || 0}`"></button>
+        <button @click="stealthAccOnly = !stealthAccOnly"
+                :class="stealthAccOnly ? 'border-amber-400/50 text-amber-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-amber-400/40"
+                style="border-color: var(--border-2)"
+                x-tooltip="'STEALTH — stealth_accumulation flag: weight building without rank movement'"
+                x-text="`STEALTH ${counts.STEALTH_ACC || 0}`"></button>
+        <button @click="divOnly = !divOnly"
+                :class="divOnly ? 'border-teal-400/50 text-teal-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-teal-400/40"
+                style="border-color: var(--border-2)"
+                x-tooltip="'DIV — conviction divergence (either direction) vs the aggregate'"
+                x-text="`DIV ${counts.DIV || 0}`"></button>
+        <button @click="toggleFlag('CONCENTRATED')"
+                :class="flag === 'CONCENTRATED' ? 'border-orange-400/50 text-orange-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-orange-400/40"
+                style="border-color: var(--border-2)"
+                x-tooltip="'CONC — flagged CONCENTRATED: score rests on a single ETF'"
+                x-text="`CONC ${counts.CONCENTRATED || 0}`"></button>
+        <button @click="velOverScoreOnly = !velOverScoreOnly"
+                :class="velOverScoreOnly ? 'border-sky-400/50 text-sky-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-sky-400/40"
+                style="border-color: var(--border-2)"
+                x-tooltip="'Vel>Score — top 10% velocity but score rank >100 (loading in progress)'"
+                x-text="`Vel>Score ${counts.VEL_OVER_SCORE || 0}`"></button>
+        <button @click="quantQualityOnly = !quantQualityOnly"
+                :class="quantQualityOnly ? 'border-yellow-400/50 text-yellow-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-yellow-400/40"
+                style="border-color: var(--border-2)"
+                x-tooltip="'Q+Q — both Quant and Quality tiers + recent pickup'"
+                x-text="`Q+Q ${counts.QUANT_QUALITY || 0}`"></button>
+        <select x-model="selectedTier" class="chip border px-2 py-1 bg-transparent" style="border-color: var(--border-2)">
+          <option value="" style="background: #000">all tiers</option>
+          <template x-for="t in ['Scout','Quant','Quality','Trend','Core']" :key="t">
+            <option :value="t" x-text="t" style="background: #000"></option>
+          </template>
+        </select>
+        <button @click="reset()" class="chip border px-2 py-1 hover:border-zinc-500" style="border-color: var(--border-2); color: var(--text-2)">clear</button>
         <input x-model.debounce.300ms="q" type="search" placeholder="search ticker or company…"
-               class="flex-1 bg-transparent border rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500/40"
+               class="w-full sm:w-48 bg-transparent border rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500/40"
                style="border-color: var(--border-2); color: var(--text)">
         <div class="text-xs num font-mono self-center whitespace-nowrap pr-1" style="color: var(--text-3)">
           <span x-text="filtered.length"></span> / <span x-text="pins.length"></span>
@@ -1116,61 +1104,52 @@
                   <template x-if="open === row.ticker">
                   <tr x-transition.opacity style="background: #050505; border-bottom: 1px solid var(--border)">
                     <td colspan="14" class="px-4 py-4">
-                      <!-- Auto-explainer grid -->
-                      <div class="xp-grid mb-3">
-                        <template x-for="cell in explainerCells(row)" :key="cell.label">
-                          <div class="xp-cell transition-all duration-300 flex flex-col"
-                               :style="cell.label === 'Verdict' ? 'background: linear-gradient(135deg, rgba(34,211,238,0.03) 0%, rgba(0,0,0,0) 100%); border-left: 1px solid rgba(34,211,238,0.15)' : ''">
-                            <div class="xp-label" x-text="cell.label"></div>
-                            
-                            <!-- Standard key-values for Structure, Flow, Risk -->
-                            <template x-if="cell.label !== 'Verdict'">
-                              <div>
-                                <template x-for="(ln, i) in cell.lines" :key="i">
-                                  <div class="xp-kv" :class="ln.w ? 'xp-wide' : ''">
-                                    <span class="k" x-show="!ln.w" x-text="ln.k || ''"></span>
-                                    <span class="v" :style="`color: ${ln.c || 'var(--text-2)'}`" x-text="ln.v"></span>
-                                  </div>
-                                </template>
-                              </div>
-                            </template>
+                    <!-- Verdict Banner -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 mb-3 rounded-lg border text-xs"
+                         style="background: linear-gradient(135deg, rgba(34,211,238,0.03) 0%, rgba(0,0,0,0) 100%); border-color: rgba(34,211,238,0.15)">
+                      <div class="flex flex-wrap items-center gap-3">
+                        <div class="flex items-center gap-1.5 select-none">
+                          <span class="text-[9px] uppercase tracking-wider font-semibold text-zinc-500">Regime</span>
+                          <span class="px-2 py-0.5 rounded font-mono text-[11px] font-bold tracking-wider"
+                                :style="`background: ${(() => {
+                                  const reg = regimeInfo(row);
+                                  return reg ? reg.color + '15' : 'rgba(255,255,255,0.05)';
+                                })()}; color: ${(() => {
+                                  const reg = regimeInfo(row);
+                                  return reg ? reg.color : 'var(--text-3)';
+                                })()}; border: 1px solid ${(() => {
+                                  const reg = regimeInfo(row);
+                                  return reg ? reg.color + '30' : 'rgba(255,255,255,0.1)';
+                                })()}`"
+                                x-text="regimeInfo(row) ? regimeInfo(row).text : '—'"></span>
+                        </div>
+                        <div class="text-sm font-medium animate-fade-in" style="color: var(--text)" x-text="verdictLine(row)"></div>
+                      </div>
+                      <div class="flex flex-wrap gap-1">
+                        <span x-show="row.flag === 'HIGH_CONVICTION'" class="chip sig-badge"
+                              style="background: rgba(52,211,153,0.10); color: var(--up); border: 1px solid rgba(52,211,153,0.25)">HC</span>
+                        <template x-for="b in signalBadges(row).slice(0, 5)" :key="b.k">
+                          <span class="chip sig-badge" :style="b.style" x-tooltip="{ html: b.tip }" x-text="b.label"></span>
+                        </template>
+                      </div>
+                    </div>
 
-                            <!-- Custom Premium layout for Verdict -->
-                            <template x-if="cell.label === 'Verdict'">
-                              <div class="flex-1 flex flex-col justify-between gap-2">
-                                <div>
-                                  <!-- Regime Display -->
-                                  <div class="flex items-center gap-2 mb-2 select-none">
-                                    <span class="text-[9px] uppercase tracking-wider font-semibold text-zinc-500">Regime</span>
-                                    <span class="px-2 py-0.5 rounded font-mono text-[11px] font-bold tracking-wider"
-                                          :style="`background: ${(() => {
-                                            const reg = regimeInfo(row);
-                                            return reg ? reg.color + '15' : 'rgba(255,255,255,0.05)';
-                                          })()}; color: ${(() => {
-                                            const reg = regimeInfo(row);
-                                            return reg ? reg.color : 'var(--text-3)';
-                                          })()}; border: 1px solid ${(() => {
-                                            const reg = regimeInfo(row);
-                                            return reg ? reg.color + '30' : 'rgba(255,255,255,0.1)';
-                                          })()}`"
-                                          x-text="regimeInfo(row) ? regimeInfo(row).text : '—'"></span>
-                                  </div>
-                                  <!-- Verdict Sentence -->
-                                  <div class="text-xs font-medium leading-relaxed" style="color: var(--text)" x-text="verdictLine(row)"></div>
-                                </div>
-                                <!-- Active Signal Badges -->
-                                <div class="flex flex-wrap gap-1 mt-1.5">
-                                  <span x-show="row.flag === 'HIGH_CONVICTION'" class="chip sig-badge"
-                                        style="background: rgba(52,211,153,0.10); color: var(--up); border: 1px solid rgba(52,211,153,0.25)">HC</span>
-                                  <template x-for="b in signalBadges(row).slice(0, 4)" :key="b.k">
-                                    <span class="chip sig-badge" :style="b.style" x-tooltip="{ html: b.tip }" x-text="b.label"></span>
-                                  </template>
-                                </div>
+                    <!-- Auto-explainer grid -->
+                    <div class="xp-grid mb-3">
+                      <template x-for="cell in explainerCells(row)" :key="cell.label">
+                        <div class="xp-cell transition-all duration-300 flex flex-col">
+                          <div class="xp-label" x-text="cell.label"></div>
+                          <div>
+                            <template x-for="(ln, i) in cell.lines" :key="i">
+                              <div class="xp-kv" :class="ln.w ? 'xp-wide' : ''">
+                                <span class="k" x-show="!ln.w" x-text="ln.k || ''"></span>
+                                <span class="v" :style="`color: ${ln.c || 'var(--text-2)'}`" x-text="ln.v"></span>
                               </div>
                             </template>
                           </div>
-                        </template>
-                      </div>
+                        </div>
+                      </template>
+                    </div>
 
                       <!-- Two-panel layout -->
                       <div class="flex flex-col xl:flex-row gap-4">
@@ -3012,16 +2991,10 @@ function app() {
       if (row.quality_defected_30d) risk.push({ w: true, v: '⚠ Quality fund dropped this name in 30d', c: 'var(--down)' });
       if (row.stealth_accumulation) risk.push({ w: true, v: 'stealth accumulation underway', c: 'var(--amber)' });
 
-      // VERDICT — regime + verdict sentence + active signal chips
-      const reg = this.regimeInfo(row);
-      verdict.push({ k: 'regime', v: reg ? reg.text : '—', c: reg ? reg.color : 'var(--text-3)' });
-      verdict.push({ w: true, v: this.verdictLine(row), c: 'var(--text-2)' });
-
       return [
         { label: 'Structure', lines: structure },
         { label: 'Flow', lines: flow },
         { label: 'Risk', lines: risk },
-        { label: 'Verdict', lines: verdict, chips: true },
       ];
     },
 
