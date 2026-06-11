@@ -28,7 +28,7 @@
     body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Inter", sans-serif; }
     .num, table td, .mono { font-variant-numeric: tabular-nums; }
     .font-mono { font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; }
-    .label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); }
+    .label { font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); }
     .label-cyan { color: var(--cyan); }
     .chip { display: inline-flex; align-items: center; padding: 1px 6px; border-radius: 4px; font-size: 10.5px; font-weight: 500; line-height: 1.5; white-space: nowrap; letter-spacing: 0.02em; }
     .row-hover:hover { background: rgba(34, 211, 238, 0.025); }
@@ -124,94 +124,174 @@
   <div x-show="!loading && found">
 
     <!-- KPI strip -->
-    <section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 mb-3">
-      <template x-for="kpi in kpis" :key="kpi.label">
-        <div class="rounded-lg px-3 py-2.5 border" style="background: var(--surface); border-color: var(--border)">
-          <div class="label" x-text="kpi.label"></div>
-          <div class="flex items-baseline gap-2 mt-0.5">
-            <div class="text-xl sm:text-2xl font-medium num font-mono" :style="`color: ${kpi.color || 'var(--text)'}`" x-text="kpi.value"></div>
-            <div class="text-xs num font-mono" :style="`color: ${kpi.deltaColor}`" x-show="kpi.delta !== undefined && kpi.delta !== null" x-text="kpi.delta"></div>
-          </div>
+    <section class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-4 select-none">
+      <!-- 1. Score -->
+      <div class="rounded-lg px-3.5 py-3 border transition-colors duration-200 hover:border-zinc-800" style="background: var(--surface); border-color: var(--border)"
+           x-tooltip="'Final conviction score: sum of weight% × ETF points × rank multiplier × 100 across all holding ETFs'">
+        <div class="label">Score</div>
+        <div class="text-2xl font-medium num font-mono mt-1" style="color: var(--text)" x-text="leaderboardRow?.final_score?.toFixed(0) || '—'"></div>
+      </div>
+      <!-- 2. Rank -->
+      <div class="rounded-lg px-3.5 py-3 border transition-colors duration-200 hover:border-zinc-800" style="background: var(--surface); border-color: var(--border)"
+           x-tooltip="'Global conviction rank inside the Predator Protocol universe (1 = highest conviction)'">
+        <div class="label">Rank</div>
+        <div class="text-2xl font-medium num font-mono mt-1" style="color: var(--cyan)" x-text="leaderboardRow ? `#${leaderboardRow.leaderboard_rank}` : '—'"></div>
+      </div>
+      <!-- 3. Percentile -->
+      <div class="rounded-lg px-3.5 py-3 border transition-colors duration-200 hover:border-zinc-800" style="background: var(--surface); border-color: var(--border)"
+           x-tooltip="'Today\'s conviction score as a percentile of this stock\'s own historical scores'">
+        <div class="label">Percentile</div>
+        <div class="text-2xl font-medium num font-mono mt-1" style="color: var(--amber)" x-text="leaderboardRow && leaderboardRow.score_percentile != null ? Math.round(leaderboardRow.score_percentile * 100) + '%' : '—'"></div>
+      </div>
+      <!-- 4. Weight -->
+      <div class="rounded-lg px-3.5 py-3 border transition-colors duration-200 hover:border-zinc-800" style="background: var(--surface); border-color: var(--border)"
+           x-tooltip="'Sum of position weights across all ETFs holding this ticker'">
+        <div class="label">Total Weight</div>
+        <div class="text-2xl font-medium num font-mono mt-1" style="color: var(--text-2)" x-text="leaderboardRow ? ((leaderboardRow.total_weight * 100).toFixed(2) + '%') : '—'"></div>
+      </div>
+      <!-- 5. ETFs -->
+      <div class="rounded-lg px-3.5 py-3 border transition-colors duration-200 hover:border-zinc-800" style="background: var(--surface); border-color: var(--border)"
+           x-tooltip="'Total number of ETFs currently holding this ticker'">
+        <div class="label">ETFs</div>
+        <div class="text-2xl font-medium num font-mono mt-1" style="color: var(--text)" x-text="leaderboardRow?.etf_count || '—'"></div>
+      </div>
+      <!-- 6. Score Δ% -->
+      <div class="rounded-lg px-3.5 py-3 border transition-colors duration-200 hover:border-zinc-800" style="background: var(--surface); border-color: var(--border)"
+           x-tooltip="'Conviction score change over the selected timeframe'">
+        <div class="label">Score Δ%</div>
+        <div class="text-2xl font-medium num font-mono mt-1"
+             :style="`color: ${leaderboardRow?.score_delta_pct > 0 ? 'var(--up)' : (leaderboardRow?.score_delta_pct < 0 ? 'var(--down)' : 'var(--text-2)')}`"
+             x-text="leaderboardRow ? (leaderboardRow.score_delta_pct >= 0 ? '+' : '') + (leaderboardRow.score_delta_pct * 100).toFixed(1) + '%' : '—'"></div>
+      </div>
+      <!-- 7. Velocity -->
+      <div class="rounded-lg px-3.5 py-3 border transition-colors duration-200 hover:border-zinc-800" style="background: var(--surface); border-color: var(--border)"
+           x-tooltip="'Composite velocity score: institutional accumulation rate-of-change'">
+        <div class="flex items-center justify-between">
+          <div class="label">Velocity</div>
+          <div class="text-[9px] px-1.5 py-0.5 rounded font-mono font-bold leading-none bg-purple-500/10 text-purple-400 border border-purple-500/25 shrink-0"
+               x-show="leaderboardRow?.burst_30d">⚡ BURST</div>
         </div>
-      </template>
-      <!-- VELOCITY KPI -->
-      <div class="rounded-lg px-3 py-2.5 border" style="background: var(--surface); border-color: var(--border)"
-           x-tooltip="'Composite velocity score across all ETFs holding this name. High positive = institutional accumulation accelerating.'">
-        <div class="label">Velocity</div>
-        <div class="num font-mono text-xl sm:text-2xl mt-0.5"
+        <div class="text-2xl font-medium num font-mono mt-1"
              :style="`color: ${velocityColor(leaderboardRow?.velocity_score)}`"
              x-text="fmtVelocity(leaderboardRow?.velocity_score)"></div>
-        <div class="text-[10px] mt-0.5"
-             x-show="leaderboardRow?.burst_30d" style="color: #c084fc">⚡ BURST</div>
       </div>
-      <!-- ETFs ADDED 30d KPI -->
-      <div class="rounded-lg px-3 py-2.5 border" style="background: var(--surface); border-color: var(--border)"
-           x-tooltip="'Net change in number of ETFs holding this name over the last 30 days.'">
+      <!-- 8. ETFs Added (30d) -->
+      <div class="rounded-lg px-3.5 py-3 border transition-colors duration-200 hover:border-zinc-800" style="background: var(--surface); border-color: var(--border)"
+           x-tooltip="'Net change in number of ETFs holding this ticker over the last 30 days'">
         <div class="label">ETFs Added (30d)</div>
-        <div class="num font-mono text-xl sm:text-2xl mt-0.5"
+        <div class="text-2xl font-medium num font-mono mt-1"
              :style="(leaderboardRow?.etf_count_delta_30d || 0) > 0 ? 'color: var(--up)' : ((leaderboardRow?.etf_count_delta_30d || 0) < 0 ? 'color: var(--down)' : '')"
-             x-text="(leaderboardRow?.etf_count_delta_30d || 0) > 0 ? '+' + leaderboardRow?.etf_count_delta_30d : (leaderboardRow?.etf_count_delta_30d ?? 0)"></div>
+             x-text="leaderboardRow ? ((leaderboardRow.etf_count_delta_30d || 0) > 0 ? '+' + leaderboardRow.etf_count_delta_30d : leaderboardRow.etf_count_delta_30d ?? 0) : '—'"></div>
+      </div>
+      <!-- 9. HC Streak -->
+      <div class="rounded-lg px-3.5 py-3 border transition-colors duration-200 hover:border-zinc-800" style="background: var(--surface); border-color: var(--border)"
+           x-tooltip="'Consecutive days this ticker has remained in the High Conviction tier'">
+        <div class="label">HC Streak</div>
+        <div class="text-2xl font-medium num font-mono mt-1"
+             :style="leaderboardRow?.hc_streak > 0 ? 'color: var(--up)' : 'color: var(--text-3)'"
+             x-text="leaderboardRow && leaderboardRow.hc_streak > 0 ? `▲${leaderboardRow.hc_streak}` : '—'"></div>
+      </div>
+      <!-- 10. Score Streak -->
+      <div class="rounded-lg px-3.5 py-3 border transition-colors duration-200 hover:border-zinc-800" style="background: var(--surface); border-color: var(--border)"
+           x-tooltip="'Consecutive days the conviction score has moved in the same direction'">
+        <div class="label">Score Streak</div>
+        <div class="text-2xl font-medium num font-mono mt-1"
+             :style="`color: ${leaderboardRow?.score_streak > 0 ? 'var(--up)' : (leaderboardRow?.score_streak < 0 ? 'var(--down)' : 'var(--text-3)')}`"
+             x-text="leaderboardRow && leaderboardRow.score_streak !== 0 ? (leaderboardRow.score_streak > 0 ? `▲${leaderboardRow.score_streak}` : `▼${Math.abs(leaderboardRow.score_streak)}`) : '—'"></div>
       </div>
     </section>
 
-    <!-- B6: Status / HC banner -->
-    <div class="rounded-lg border mb-5 px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs"
+    <!-- STATUS & METADATA BANNER -->
+    <div class="rounded-lg border mb-5 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
          style="background: var(--surface); border-color: var(--border)">
-      <!-- Sector / Industry / Country -->
-      <div x-show="leaderboardRow?.sector && leaderboardRow.sector !== 'Unknown'" class="flex items-center gap-2">
-        <span style="color: var(--text-3)">Sector:</span>
-        <span class="font-medium" style="color: var(--text-2)" x-text="leaderboardRow?.sector"></span>
-        <span x-show="leaderboardRow?.industry && leaderboardRow.industry !== 'Unknown'" style="color: var(--text-3)" x-text="'· ' + leaderboardRow?.industry"></span>
-        <span x-show="leaderboardRow?.country && leaderboardRow.country !== 'Unknown'" class="chip" style="background: rgba(255,255,255,0.04); color: var(--text-3); border: 1px solid rgba(255,255,255,0.08)" x-text="leaderboardRow?.country"></span>
-      </div>
-      <!-- Flag badge -->
-      <div x-show="leaderboardRow?.flag === 'HIGH_CONVICTION'" class="flex items-center gap-2">
-        <span class="chip" style="background: rgba(52,211,153,0.12); color: var(--up); border: 1px solid rgba(52,211,153,0.3)">HC</span>
-        <span style="color: var(--up)" x-text="`High Conviction · ${leaderboardRow?.hc_streak || 0} day streak`"></span>
-      </div>
-      <div x-show="leaderboardRow?.flag === 'SPECULATIVE_BETA'" class="flex items-center gap-2">
-        <span class="chip" style="background: rgba(251,191,36,0.12); color: var(--amber); border: 1px solid rgba(251,191,36,0.3)">SPEC β</span>
-        <span style="color: var(--amber)">Speculative Beta — Trend tier without Quality/Scout backing</span>
-      </div>
-      <div x-show="!leaderboardRow?.flag" class="flex items-center gap-2">
-        <span class="chip" style="background: rgba(255,255,255,0.04); color: var(--text-3); border: 1px solid rgba(255,255,255,0.10)">NEUTRAL</span>
-        <span style="color: var(--text-3)">No flag · watching</span>
-      </div>
-      <!-- Tier badges -->
-      <div class="flex items-center gap-1 ml-auto flex-wrap">
-        <template x-for="t in (leaderboardRow?.tiers || '').split(' + ').filter(Boolean)" :key="t">
-          <span class="chip" :style="tierChipStyle(t)" x-text="t"></span>
+      
+      <!-- Left: Flag & Stance -->
+      <div class="flex items-center flex-wrap gap-2.5">
+        <!-- High Conviction -->
+        <template x-if="leaderboardRow?.flag === 'HIGH_CONVICTION'">
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">HIGH CONVICTION</span>
+            <span class="font-medium text-emerald-400/90" x-text="`${leaderboardRow?.hc_streak || 0} day streak`"></span>
+          </div>
         </template>
+        <!-- Speculative Beta -->
+        <template x-if="leaderboardRow?.flag === 'SPECULATIVE_BETA'">
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/30">SPECULATIVE BETA</span>
+            <span class="text-zinc-400">Trend tier without Quality/Scout backing</span>
+          </div>
+        </template>
+        <!-- Concentrated -->
+        <template x-if="leaderboardRow?.flag === 'CONCENTRATED'">
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-orange-500/10 text-orange-400 border border-orange-500/30">CONCENTRATED</span>
+            <span class="text-zinc-400" x-text="`Score concentrated in single ETF (${leaderboardRow?.concentration_score}%)`"></span>
+          </div>
+        </template>
+        <!-- Neutral -->
+        <template x-if="!leaderboardRow?.flag">
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-zinc-500/10 text-zinc-400 border border-zinc-500/30">NEUTRAL</span>
+            <span class="text-zinc-500">No flag · watching</span>
+          </div>
+        </template>
+
+        <!-- Separator -->
+        <div class="h-3 w-px bg-zinc-800 hidden sm:block mx-0.5" x-show="leaderboardRow?.any_new || leaderboardRow?.burst_30d || (leaderboardRow?.velocity_score || 0) >= 25 || leaderboardRow?.quality_adopted_30d || leaderboardRow?.quality_defected_30d || (leaderboardRow?.tier_breadth || 0) >= 2"></div>
+
+        <!-- NEW -->
+        <span x-show="leaderboardRow?.any_new" class="chip"
+              style="background: rgba(96,165,250,0.12); color: #60a5fa; border: 1px solid rgba(96,165,250,0.3)">NEW</span>
+        <!-- BURST -->
+        <span x-show="leaderboardRow?.burst_30d" class="chip"
+              x-tooltip="`BURST move — global rank improved by ${leaderboardRow?.global_rank_peak_30d}+ positions in last 30d. Best rank: #${leaderboardRow?.global_rank_best_30d}`"
+              style="background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.30)">⚡ BURST</span>
+        <!-- VELO -->
+        <span x-show="(leaderboardRow?.velocity_score || 0) >= 25 && !leaderboardRow?.burst_30d" class="chip"
+              style="background: rgba(34,211,238,0.10); color: var(--cyan); border: 1px solid rgba(34,211,238,0.25)">VELO</span>
+        <!-- Quality+ -->
+        <span x-show="leaderboardRow?.quality_adopted_30d" class="chip"
+              x-tooltip="'Quality+ — A free-cash-flow / quality screen ETF (COWZ/CALF/SPHQ) added this name in the last 30 days. Strong fundamentals confirmation.'"
+              style="background: rgba(20,184,166,0.12); color: #5eead4; border: 1px solid rgba(20,184,166,0.30)">Quality+</span>
+        <!-- Quality- -->
+        <span x-show="leaderboardRow?.quality_defected_30d" class="chip"
+              x-tooltip="'Quality− — A quality screen ETF (COWZ/CALF/SPHQ) dropped this name in the last 30 days. Possible fundamentals warning.'"
+              style="background: rgba(251,113,133,0.10); color: #fda4af; border: 1px solid rgba(251,113,133,0.25)">Quality−</span>
+        <!-- Tier breadth -->
+        <span x-show="(leaderboardRow?.tier_breadth || 0) >= 2" class="chip"
+              x-tooltip="`Held by ${leaderboardRow?.tier_breadth} distinct strategy types (Scout/Quant/Quality/Trend/Core)`"
+              style="background: rgba(255,255,255,0.04); color: var(--text-2); border: 1px solid rgba(255,255,255,0.10)"
+              x-text="`${leaderboardRow?.tier_breadth}-tier`"></span>
+
+        <!-- Momentum gauge -->
+        <span x-show="leaderboardRow" class="font-mono text-[9px] tracking-wider select-none ml-1 shrink-0"
+              :style="`color: ${(leaderboardRow?.score_streak || 0) > 2 ? 'var(--up)' : (leaderboardRow?.score_streak || 0) < -2 ? 'var(--down)' : 'var(--text-3)'}`"
+              x-text="(leaderboardRow?.score_streak || 0) > 2 ? '↗ STRENGTHENING' : (leaderboardRow?.score_streak || 0) < -2 ? '↘ WEAKENING' : '→ STABLE'"></span>
       </div>
-      <!-- Tier-breadth chip -->
-      <span x-show="(leaderboardRow?.tier_breadth || 0) >= 2" class="chip"
-            x-tooltip="`'Tier breadth: held by '+(leaderboardRow?.tier_breadth)+' distinct strategy types. Higher = more independent confirmation.'`"
-            style="background: rgba(255,255,255,0.04); color: var(--text-2); border: 1px solid rgba(255,255,255,0.10)"
-            x-text="`${leaderboardRow?.tier_breadth}-tier`"></span>
-      <!-- Quality adoption / defection -->
-      <span x-show="leaderboardRow?.quality_adopted_30d" class="chip"
-            x-tooltip="'Quality+ — A free-cash-flow / quality screen ETF (COWZ/CALF/SPHQ) added this name in the last 30 days. Strong fundamentals confirmation.'"
-            style="background: rgba(20,184,166,0.12); color: #5eead4; border: 1px solid rgba(20,184,166,0.30)">Quality+</span>
-      <span x-show="leaderboardRow?.quality_defected_30d" class="chip"
-            x-tooltip="'Quality− — A quality screen ETF (COWZ/CALF/SPHQ) dropped this name in the last 30 days. Possible fundamentals warning.'"
-            style="background: rgba(251,113,133,0.10); color: #fda4af; border: 1px solid rgba(251,113,133,0.25)">Quality−</span>
-      <!-- Any-new badge -->
-      <span x-show="leaderboardRow?.any_new" class="chip"
-            style="background: rgba(96,165,250,0.12); color: #60a5fa; border: 1px solid rgba(96,165,250,0.3)">NEW</span>
-      <!-- BURST badge -->
-      <span x-show="leaderboardRow?.burst_30d" class="chip"
-            x-tooltip="`'BURST move — global rank improved by '+ leaderboardRow?.global_rank_peak_30d +'+ positions in last 30d. Best rank: #'+ leaderboardRow?.global_rank_best_30d +'’`"
-            style="background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.30)">⚡ BURST</span>
-      <!-- VELO badge -->
-      <span x-show="(leaderboardRow?.velocity_score || 0) >= 25 && !leaderboardRow?.burst_30d" class="chip"
-            style="background: rgba(34,211,238,0.10); color: var(--cyan); border: 1px solid rgba(34,211,238,0.25)">VELO</span>
-      <!-- Duration badges -->
-      <span x-show="leaderboardRow?.hc_streak > 0" class="text-[10px] font-mono" style="color: var(--text-3)"
-            x-text="`HC ${leaderboardRow?.hc_streak}d`"></span>
-      <!-- Momentum gauge -->
-      <span x-show="leaderboardRow" class="text-[10px] font-mono ml-auto"
-            :style="`color: ${(leaderboardRow?.score_streak || 0) > 2 ? 'var(--up)' : (leaderboardRow?.score_streak || 0) < -2 ? 'var(--down)' : 'var(--text-3)'}`"
-            x-text="(leaderboardRow?.score_streak || 0) > 2 ? '↗ strengthening' : (leaderboardRow?.score_streak || 0) < -2 ? '↘ weakening' : '→ stable'"></span>
+
+      <!-- Right: Badges and metadata -->
+      <div class="flex items-center flex-wrap gap-2 sm:justify-end">
+        <template x-if="leaderboardRow?.country && leaderboardRow.country !== 'Unknown'">
+          <span class="px-2 py-0.5 rounded bg-white/[0.015] border border-white/[0.06] text-zinc-400 font-medium" x-text="leaderboardRow.country"></span>
+        </template>
+        <template x-if="leaderboardRow?.sector && leaderboardRow.sector !== 'Unknown'">
+          <span class="px-2 py-0.5 rounded bg-white/[0.015] border border-white/[0.06] text-zinc-400 font-medium" x-text="leaderboardRow.sector"></span>
+        </template>
+        <template x-if="leaderboardRow?.industry && leaderboardRow.industry !== 'Unknown'">
+          <span class="px-2 py-0.5 rounded bg-white/[0.015] border border-white/[0.06] text-zinc-500" x-text="leaderboardRow.industry"></span>
+        </template>
+        <template x-if="leaderboardRow?.market_cap_usd">
+          <span class="px-2 py-0.5 rounded bg-white/[0.015] border border-white/[0.06] text-zinc-400 font-mono" x-text="formatMarketCap(leaderboardRow.market_cap_usd)"></span>
+        </template>
+
+        <!-- Strategy tiers -->
+        <div class="h-4 w-px bg-zinc-800 mx-1 hidden sm:block"></div>
+        <div class="flex items-center gap-1">
+          <template x-for="t in (leaderboardRow?.tiers || '').split(' + ').filter(Boolean)" :key="t">
+            <span class="chip" :style="tierChipStyle(t)" x-text="t"></span>
+          </template>
+        </div>
+      </div>
     </div>
 
     <!-- PRICE HISTORY + DESCRIPTION -->
@@ -245,7 +325,7 @@
                 x-text="stockRangeLow!==null ? _fmtPrice(stockRangeLow) : '—'"></span></div>
         <div><span class="label">Period</span>
           <span class="ml-1.5 text-[10px] font-mono" style="color:var(--text-3)"
-                x-text="stockFilteredPrices.length ? stockFilteredPrices[0][0].slice(5)+' → '+stockFilteredPrices[stockFilteredPrices.length-1][0].slice(5) : ''"></span></div>
+                x-text="stockFilteredPrices.length ? stockFilteredPrices[0][0]+' → '+stockFilteredPrices[stockFilteredPrices.length-1][0] : ''"></span></div>
       </div>
       <div class="px-3 pt-3 pb-2 chart-wrap" @mousemove="onSMM($event)" @mouseleave="onSML()">
         <div x-show="stockPending && !stockFilteredPrices.length"
@@ -297,10 +377,10 @@
           </div>
         </div>
       </div>
-      <div x-show="stockDescription || stockPending" class="px-3 pb-3 pt-1" style="border-top:1px solid var(--border)">
-        <div class="label mb-1">About</div>
-        <div x-show="stockDescription" class="text-xs leading-relaxed" style="color:var(--text-2)" x-text="stockDescription"></div>
-        <div x-show="!stockDescription && stockPending" class="text-xs" style="color:var(--text-3)">⏳ Company profile being fetched — check back on next build.</div>
+      <div x-show="stockDescription || stockPending" class="px-4 pb-4 pt-3" style="border-top:1px solid var(--border)">
+        <div class="text-[10px] uppercase tracking-wider font-semibold text-zinc-500 mb-1.5">About</div>
+        <div x-show="stockDescription" class="text-xs leading-relaxed text-zinc-300 font-sans" x-text="stockDescription"></div>
+        <div x-show="!stockDescription && stockPending" class="text-xs text-zinc-500 italic">⏳ Company profile being fetched — check back on next build.</div>
       </div>
     </div>
 
@@ -559,22 +639,22 @@
       <div x-show="!holdingsHistory || Object.keys(holdingsHistory).length === 0" class="px-3 py-6 text-center text-xs" style="color: var(--text-3)">No holdings history available for this ticker</div>
 
       <template x-for="[etf, rows] in etfEntries" :key="etf">
-        <div class="border-b" style="border-color: var(--border)">
-          <div class="px-3 py-1.5 flex items-center gap-2" style="background: rgba(255,255,255,0.02)">
-            <span class="font-mono font-medium text-sm" x-text="etf"></span>
+        <div class="border rounded-lg mb-4 overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+          <div class="px-4 py-2.5 flex items-center gap-2 border-b" style="background: rgba(255,255,255,0.015); border-color: var(--border)">
+            <span class="font-mono font-medium text-sm text-cyan-400" x-text="etf"></span>
             <span class="chip text-[10px]" :style="tierChipStyle(etfTier(etf))" x-text="etfTier(etf)"></span>
-            <span class="text-xs num font-mono ml-auto" style="color: var(--text-3)" x-text="`${rows.length} snapshots`"></span>
+            <span class="text-xs num font-mono ml-auto text-zinc-500" x-text="`${rows.length} snapshots`"></span>
           </div>
           <div class="overflow-x-auto scrollbar">
             <table class="w-full text-xs">
-              <thead style="color: var(--text-3); border-bottom: 1px solid var(--border)">
+              <thead class="text-zinc-500 uppercase tracking-wider" style="background: rgba(0,0,0,0.08); border-bottom: 1px solid var(--border)">
                 <tr>
-                  <th class="text-left px-3 py-1.5">Date</th>
-                  <th class="text-right px-3 py-1.5">Rank</th>
-                  <th class="text-right px-3 py-1.5">Rank Δ</th>
-                  <th class="text-right px-3 py-1.5">Weight</th>
-                  <th class="text-right px-3 py-1.5">Weight Δ</th>
-                  <th class="px-3 py-1.5 cursor-default"
+                  <th class="text-left px-4 py-2 text-[10px] font-semibold">Date</th>
+                  <th class="text-right px-4 py-2 text-[10px] font-semibold">Rank</th>
+                  <th class="text-right px-4 py-2 text-[10px] font-semibold">Rank Δ</th>
+                  <th class="text-right px-4 py-2 text-[10px] font-semibold">Weight</th>
+                  <th class="text-right px-4 py-2 text-[10px] font-semibold">Weight Δ</th>
+                  <th class="text-left px-4 py-2 text-[10px] font-semibold cursor-help"
                       x-tooltip="{html: '<b>STATUS</b> column:<br><b>NEW</b> = first appeared in this ETF within 14 days<br><b>HC</b> = held by 4+ ETFs overall<br><b>—</b> = no special flag'}">
                     Status ⓘ</th>
                 </tr>
@@ -582,12 +662,12 @@
               <tbody>
                 <template x-for="(row, i) in rows.slice().reverse()" :key="row.d">
                   <tr class="row-hover" style="border-bottom: 1px solid rgba(255,255,255,0.02)">
-                    <td class="px-3 py-1.5 font-mono" style="color: var(--text-2)" x-text="row.d"></td>
-                    <td class="px-3 py-1.5 text-right num font-mono" x-text="row.r"></td>
-                    <td class="px-3 py-1.5 text-right num font-mono" :style="`color: ${rankDeltaColor(i < rows.length - 1 ? rows[rows.length - 2 - i]?.r - row.r : null)}`" x-text="fmtRankDelta(i < rows.length - 1 ? rows[rows.length - 2 - i]?.r - row.r : null)"></td>
-                    <td class="px-3 py-1.5 text-right num font-mono" style="color: var(--text-2)" x-text="fmtWeight(row.w)"></td>
-                    <td class="px-3 py-1.5 text-right num font-mono" :style="`color: ${flowColor(i < rows.length - 1 && rows[rows.length - 2 - i]?.w ? (row.w - rows[rows.length - 2 - i].w) / rows[rows.length - 2 - i].w : null)}`" x-text="fmtFlow(i < rows.length - 1 && rows[rows.length - 2 - i]?.w ? (row.w - rows[rows.length - 2 - i].w) / rows[rows.length - 2 - i].w : null)"></td>
-                    <td class="px-3 py-1.5">
+                    <td class="px-4 py-2 font-mono text-zinc-300" x-text="row.d"></td>
+                    <td class="px-4 py-2 text-right num font-mono font-medium" style="color: var(--text)" x-text="row.r"></td>
+                    <td class="px-4 py-2 text-right num font-mono" :style="`color: ${rankDeltaColor(i < rows.length - 1 ? rows[rows.length - 2 - i]?.r - row.r : null)}`" x-text="fmtRankDelta(i < rows.length - 1 ? rows[rows.length - 2 - i]?.r - row.r : null)"></td>
+                    <td class="px-4 py-2 text-right num font-mono text-zinc-300" x-text="fmtWeight(row.w)"></td>
+                    <td class="px-4 py-2 text-right num font-mono" :style="`color: ${flowColor(i < rows.length - 1 && rows[rows.length - 2 - i]?.w ? (row.w - rows[rows.length - 2 - i].w) / rows[rows.length - 2 - i].w : null)}`" x-text="fmtFlow(i < rows.length - 1 && rows[rows.length - 2 - i]?.w ? (row.w - rows[rows.length - 2 - i].w) / rows[rows.length - 2 - i].w : null)"></td>
+                    <td class="px-4 py-2 text-left">
                       <!-- NEW chip if this row is the first snapshot for this ETF -->
                       <span x-show="row.is_new" class="chip"
                             style="background: rgba(96,165,250,0.12); color: #60a5fa; border: 1px solid rgba(96,165,250,0.3)"
@@ -598,7 +678,7 @@
                             x-tooltip="`'Held by ' + leaderboardRow?.etf_count + ' ETFs · HC streak ' + (leaderboardRow?.hc_streak || 0) + ' days'`">HC</span>
                       <!-- em-dash fallback — never empty -->
                       <span x-show="!row.is_new && leaderboardRow?.flag !== 'HIGH_CONVICTION'"
-                            class="text-xs" style="color: var(--text-3)">—</span>
+                            class="text-xs text-zinc-600" style="margin-left: 2px">—</span>
                     </td>
                   </tr>
                 </template>
@@ -1698,6 +1778,13 @@ function stockApp() {
     },
 
     // Formatting
+    formatMarketCap(val) {
+      if (val == null || !isFinite(val)) return '—';
+      if (val >= 1e12) return '$' + (val / 1e12).toFixed(2) + ' T';
+      if (val >= 1e9) return '$' + (val / 1e9).toFixed(1) + ' B';
+      if (val >= 1e6) return '$' + (val / 1e6).toFixed(1) + ' M';
+      return '$' + val.toLocaleString();
+    },
     fmtWeight(n) { if (n == null || !isFinite(n)) return '—'; return (Number(n) * 100).toFixed(2) + '%'; },
     fmtFlow(n) { if (n == null || !isFinite(n)) return '—'; const v = Number(n) * 100; if (Math.abs(v) > 9999) return '—'; return (v >= 0 ? '+' : '') + v.toFixed(1) + '%'; },
     fmtRankDelta(n) { if (n == null || !isFinite(n)) return '—'; const v = Number(n); if (v === 0) return '—'; return v > 0 ? `▲${v}` : `▼${Math.abs(v)}`; },
