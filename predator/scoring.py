@@ -226,6 +226,12 @@ class ApexConfig:
     conc_flag_share: float = 0.85   # max-share threshold for CONCENTRATED flag
                                     # (one fund supplies ≥85% of score mass — above
                                     # this universe's structural median of ~0.81)
+    # §31.2 conviction-quality multiplier (display-ranking only; final_score unchanged)
+    # breadth-summed score lets multi-fund filler outrank single-fund conviction;
+    # m_conv discounts underweight breadth while rewarding overweight conviction.
+    conv_floor: float = 0.50        # floor on avg_conviction before raising to conv_gamma
+    conv_cap: float = 1.25          # ceiling on avg_conviction (limits upward boost)
+    conv_gamma: float = 1.0         # exponent: 1.0 = linear; <1 = compressed; >1 = amplified
 
     def __post_init__(self):
         if self.conc_target_neff <= 1:
@@ -320,6 +326,9 @@ class Config:
             universe_clip_lo=float(ax_cfg.get("universe_clip_lo", 0.80)),
             universe_clip_hi=float(ax_cfg.get("universe_clip_hi", 1.25)),
             conc_flag_share=float(ax_cfg.get("conc_flag_share", 0.85)),
+            conv_floor=float(ax_cfg.get("conv_floor", 0.50)),
+            conv_cap=float(ax_cfg.get("conv_cap", 1.25)),
+            conv_gamma=float(ax_cfg.get("conv_gamma", 1.0)),
         ) if ax_cfg or scoring_mode == "apex" else None
 
         return cls(

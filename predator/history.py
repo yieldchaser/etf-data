@@ -212,12 +212,22 @@ def accumulation_velocity(score_pnl: pd.DataFrame, window: int = 10) -> pd.DataF
 
 def predictive_overlay(leaderboard: pd.DataFrame, score_pnl: pd.DataFrame,
                        *, v_alpha: float = 0.25, i_alpha: float = 0.10,
-                       window: int = 10) -> pd.DataFrame:
+                       window: int = 10,
+                       conv_floor: float = 0.50, conv_cap: float = 1.25,
+                       conv_gamma: float = 1.0) -> pd.DataFrame:
     """
     §31 bounded temporal kicker on top of the leaderboard.
 
         apex_score = final_score × (1 + v_alpha·tanh(velocity_z / 2)
                                       + i_alpha·tanh(ignition_z / 2))
+                                 × m_conv
+
+    where m_conv = clip(avg_conviction, conv_floor, conv_cap) ** conv_gamma.
+
+    Breadth-summed score lets multi-fund filler outrank single-fund conviction;
+    m_conv discounts underweight breadth (avg_conviction < 1) and rewards
+    overweight conviction (avg_conviction > 1), capped at conv_cap ** conv_gamma.
+    Missing/None avg_conviction → m_conv = 1.0 (neutral).
 
     tanh bounds the kicker to ±(v_alpha + i_alpha), so momentum can re-order
     neighbours but never fabricate conviction — risk-averse by construction.
@@ -242,7 +252,13 @@ def predictive_overlay(leaderboard: pd.DataFrame, score_pnl: pd.DataFrame,
     kicker = (1.0
               + v_alpha * np.tanh(out["velocity_z"] / 2.0)
               + i_alpha * np.tanh(out["ignition_z"] / 2.0))
-    out["apex_score"] = (out["final_score"] * kicker).clip(lower=0.0).astype("int64")
+
+    # §31.2 conviction-quality multiplier — breadth-summed score lets multi-fund
+    # filler outrank single-fund conviction; m_conv discounts underweight breadth.
+    _conv = out["avg_conviction"].fillna(1.0) if "avg_conviction" in out.columns else pd.Series(1.0, index=out.index)
+    m_conv = _conv.clip(lower=conv_floor, upper=conv_cap).pow(conv_gamma)
+
+    out["apex_score"] = (out["final_score"] * kicker * m_conv).clip(lower=0.0).astype("int64")
 
     order = out.sort_values(
         ["apex_score", "etf_count", "total_weight"],

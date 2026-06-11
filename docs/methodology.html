@@ -119,17 +119,36 @@ Final Score   = Σ (Single Score) across all ETFs holding this ticker</pre>
   <p>The shape is deliberately additive across ETFs (so <strong>breadth</strong> matters) but multiplicative within each ETF (so an oversized #2 weight in a small fund counts more than a tiny #50 weight in a large fund). The OW★ anchor and 1.5 clamp keep extreme outliers from dominating; the rank floor keeps a #100 holding from becoming worthless when it might still be a real signal.</p>
 
   <h3>3.3 — APEX (v3): structural multipliers + bounded kicker</h3>
-  <p>APEX starts from the conviction mass <strong>B</strong> (the sum of Single Scores from §3.1) and applies three structural multipliers, then a momentum kicker:</p>
+  <p>APEX starts from the conviction mass <strong>B</strong> (the sum of Single Scores from §3.1) and applies three structural multipliers, then a momentum kicker with a conviction-quality factor:</p>
   <pre>B           = Σ TierPoints × W<sub>ovr</sub>(OW) × G<sub>rank</sub>(RP)        (conviction mass)
 Final Score = B × M<sub>conc</sub> × M<sub>breadth</sub> × M<sub>universe</sub>
-APEX Score  = Final × (1 + 0.25·tanh(v_z/2) + 0.10·tanh(i_z/2))</pre>
+m_conv      = clip(avg_conviction, 0.50, 1.25) ** 1.0     (conviction-quality factor)
+APEX Score  = Final × (1 + 0.25·tanh(v_z/2) + 0.10·tanh(i_z/2)) × m_conv</pre>
   <ul class="list-disc pl-5 space-y-1">
     <li><strong>M<sub>conc</sub> (0.60–1.00) — concentration guard.</strong> We compute the effective fund count N<sub>eff</sub> = 1/HHI of per-fund score shares; the penalty fully releases at 3 effective funds. The floor is 0.60 — a single fund's massive bet is dampened, never hidden.</li>
     <li><strong>M<sub>breadth</sub> (1.00–1.35) — strategy dispersal.</strong> Shannon entropy of the score across the 5 tiers — a name confirmed by Quality AND Scout simultaneously outranks the same mass coming from one style.</li>
     <li><strong>M<sub>universe</sub> (0.80–1.25) — opportunity normalization.</strong> Score per unit of demonstrated opportunity (Σ points of every ETF that has ever held the name, plus shrinkage), clipped so it can level the field for international names without fabricating signal.</li>
     <li><strong>APEX kicker.</strong> A cross-sectional z-score of the 10-snapshot score slope (v_z) plus its acceleration (i_z), tanh-bounded at ±35% — momentum re-orders neighbours, never fabricates conviction.</li>
+    <li><strong>m_conv (0.50–1.25) — conviction-quality factor.</strong> Because Final Score sums contributions across all holding ETFs, a name carried as low-conviction filler by many funds accumulates breadth-inflated score. <code>avg_conviction</code> is the mean of C<sub>i</sub> = W<sub>ovr</sub> × G<sub>rank</sub> across all current holders (&lt;1 = underweight filler, &gt;1 = overweight conviction). Clipping to [0.50, 1.25] and raising to gamma=1.0 gives a proportional discount to breadth-filler names while modestly rewarding genuine overweight positions. Missing conviction defaults to 1.0 (neutral). This factor affects only <code>apex_score</code> and <code>apex_rank</code> — <code>final_score</code> is unchanged.</li>
   </ul>
   <p>Legacy and conviction modes remain available via config for backward comparison.</p>
+
+  <h3>3.4 — Conviction gate (v3.1)</h3>
+  <p><strong>Rationale.</strong> Because APEX Score is additive across ETFs, a ticker held as a low-conviction filler by many funds can outscore a name that every holder puts in its top-3. The gate prevents breadth-without-conviction inflation: it multiplies the APEX Score by a per-ticker gate factor <strong>g</strong> derived from how convincingly each fund holds the name.</p>
+  <pre>median_rank  = median of per-ETF ranks across all current holders
+g            = clip(avg_conviction, 0.40, 1.10)
+if median_rank ≤ 10:  g = max(g, 1.0)   (top-of-book escape hatch)
+APEX Score   = round(APEX Score × g)</pre>
+  <ul class="list-disc pl-5 space-y-1">
+    <li><strong>avg_conviction</strong> is the mean of C<sub>i</sub> = W<sub>ovr</sub>(OW<sub>i</sub>) × G<sub>rank</sub>(RP<sub>i</sub>) across all current (ETF, ticker) pairs — the same per-holding conviction that drives the base score.</li>
+    <li><strong>Clip bounds [0.40, 1.10]</strong> — a filler held at 0.10 conviction is capped at a 40% penalty; a 1.50 overweight position is capped at a 10% bonus. This keeps g a gentle correction, not a second score.</li>
+    <li><strong>median_rank ≤ 10 escape</strong> — names genuinely at the top of every holder's book (e.g. #1/#1/#2 across three funds) have g floored at 1.0 even if their weight implies slightly-under-equal-weight conviction.</li>
+    <li><strong>Final Alpha Score is unchanged</strong> — the conviction gate applies only to apex_score and apex_rank. The leaderboard's default sort and flag logic use final_score, which is byte-identical to the pre-gate computation.</li>
+    <li>Each leaderboard record carries <code>conviction_gate</code> (the g value, 2 decimal places) for tooltip display.</li>
+  </ul>
+  <div class="callout callout-cyan">
+    <p><strong>Example.</strong> A ticker held as filler (#30/#40/#55) across five funds has avg_conviction ≈ 0.55 → g = 0.55. A genuine conviction name with #2/#3 in two funds and avg_conviction = 0.95 has g = 0.95, and if both ranks are in the top 10, g is floored to 1.0. The filler's apex score is cut nearly in half; the conviction name is protected.</p>
+  </div>
 
   <!-- §4 Motion -->
   <h2 id="motion">4 · Motion signals</h2>

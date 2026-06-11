@@ -426,3 +426,78 @@ class TestPredictiveOverlay:
         assert (out["apex_rank"] == out["leaderboard_rank"]).all()
         assert (out["velocity_z"] == 0.0).all()
         assert (out["ignition_z"] == 0.0).all()
+
+    # ── §31.2 conviction-quality multiplier (m_conv) ──────────────────────────
+
+    def test_low_conviction_lowers_apex_below_no_factor(self):
+        """avg_conviction < 1 must produce apex_score strictly below the value
+        that would result with no m_conv factor (i.e., m_conv == 1.0)."""
+        lb, panel = self._fixture()
+        # Inject avg_conviction < 1 for all tickers
+        lb["avg_conviction"] = 0.60
+
+        out_with   = predictive_overlay(lb, panel, conv_floor=0.50, conv_cap=1.25, conv_gamma=1.0)
+        out_neutral = predictive_overlay(lb.assign(avg_conviction=1.0), panel,
+                                         conv_floor=0.50, conv_cap=1.25, conv_gamma=1.0)
+
+        # Every apex_score with low conviction must be ≤ the neutral baseline
+        for ticker in ["UP", "DOWN", "FLAT"]:
+            gated = out_with.loc[out_with["ticker"] == ticker, "apex_score"].iloc[0]
+            base  = out_neutral.loc[out_neutral["ticker"] == ticker, "apex_score"].iloc[0]
+            assert gated <= base, (
+                f"{ticker}: low-conviction apex_score {gated} should be ≤ neutral {base}"
+            )
+        # At least one must be strictly lower (not all tied at 0)
+        assert any(
+            out_with.loc[out_with["ticker"] == t, "apex_score"].iloc[0]
+            < out_neutral.loc[out_neutral["ticker"] == t, "apex_score"].iloc[0]
+            for t in ["UP", "FLAT"]
+        )
+
+    def test_high_conviction_raises_apex_capped_at_conv_cap_gamma(self):
+        """avg_conviction > 1 raises apex_score, but is capped at conv_cap ** conv_gamma."""
+        lb, panel = self._fixture()
+        # Very high avg_conviction — should be clipped to conv_cap
+        conv_cap = 1.25
+        conv_gamma = 1.0
+        lb["avg_conviction"] = 2.00  # above cap
+
+        out = predictive_overlay(lb, panel, conv_floor=0.50, conv_cap=conv_cap, conv_gamma=conv_gamma)
+        # Effective multiplier is conv_cap ** conv_gamma = 1.25
+        out_at_cap = predictive_overlay(lb.assign(avg_conviction=conv_cap), panel,
+                                        conv_floor=0.50, conv_cap=conv_cap, conv_gamma=conv_gamma)
+
+        for ticker in ["UP", "DOWN", "FLAT"]:
+            score_high = out.loc[out["ticker"] == ticker, "apex_score"].iloc[0]
+            score_cap  = out_at_cap.loc[out_at_cap["ticker"] == ticker, "apex_score"].iloc[0]
+            # Both should be identical (avg_conviction=2.0 clips to conv_cap=1.25)
+            assert score_high == score_cap, (
+                f"{ticker}: apex_score with avg_conviction=2.0 ({score_high}) "
+                f"should equal cap value ({score_cap})"
+            )
+
+        # Capped scores must be higher than neutral (avg_conviction=1.0)
+        out_neutral = predictive_overlay(lb.assign(avg_conviction=1.0), panel,
+                                         conv_floor=0.50, conv_cap=conv_cap, conv_gamma=conv_gamma)
+        flat_capped  = out.loc[out["ticker"] == "FLAT", "apex_score"].iloc[0]
+        flat_neutral = out_neutral.loc[out_neutral["ticker"] == "FLAT", "apex_score"].iloc[0]
+        assert flat_capped >= flat_neutral
+
+    def test_missing_conviction_is_neutral(self):
+        """Missing (None/NaN) avg_conviction must give m_conv = 1.0 (neutral)."""
+        lb, panel = self._fixture()
+        # No avg_conviction column at all
+        lb_no_conv = lb.drop(columns=["avg_conviction"], errors="ignore")
+        # avg_conviction = 1.0 explicitly
+        lb_one = lb.assign(avg_conviction=1.0)
+
+        out_missing = predictive_overlay(lb_no_conv, panel, conv_floor=0.50, conv_cap=1.25, conv_gamma=1.0)
+        out_one     = predictive_overlay(lb_one, panel, conv_floor=0.50, conv_cap=1.25, conv_gamma=1.0)
+
+        for ticker in ["UP", "DOWN", "FLAT"]:
+            score_missing = out_missing.loc[out_missing["ticker"] == ticker, "apex_score"].iloc[0]
+            score_one     = out_one.loc[out_one["ticker"] == ticker, "apex_score"].iloc[0]
+            assert score_missing == score_one, (
+                f"{ticker}: missing conviction score {score_missing} != "
+                f"explicit 1.0 score {score_one}"
+            )

@@ -214,6 +214,14 @@ apex:
   conc_flag_share:  0.85   # max-share threshold for the CONCENTRATED flag —
                            # one fund supplies >= 85% of score mass (>= 2 ETFs),
                            # above this universe's structural median of ~0.81
+  # §31.2 conviction-quality multiplier applied inside the apex kicker
+  # (display-ranking only — final_score is NOT touched).
+  # breadth-summed score lets multi-fund filler outrank single-fund conviction;
+  # m_conv = clip(avg_conviction, conv_floor, conv_cap) ** conv_gamma
+  # discounts underweight breadth (<1) and rewards overweight conviction (>1).
+  conv_floor:       0.50   # floor: deepest discount a filler can receive
+  conv_cap:         1.25   # cap: maximum boost a high-conviction name can receive
+  conv_gamma:       1.0    # exponent: 1.0 = linear scaling (default)
 
 # =============================================================================
 # ETF MATURITY GATE (§28) — suppresses NEW flood from the 15→30 migration.
