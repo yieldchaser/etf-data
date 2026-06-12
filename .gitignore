@@ -51,3 +51,9 @@ data/markets/
 # detects this and raises a clear LFS-specific error.
 # Added by code-review-graph
 .code-review-graph/
+
+# Ignore local agent loop files
+docs/data/details/
+docs/data/history/
+*.csv
+*.json

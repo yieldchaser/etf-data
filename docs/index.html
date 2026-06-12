@@ -308,6 +308,11 @@
           <option :value="t" x-text="t" style="background: #000"></option>
         </template>
       </select>
+      <select x-model="regionFilter" @change="page = 1" class="chip border px-2 py-1 bg-transparent" style="border-color: var(--border-2)">
+        <option value="" style="background: #000">all regions</option>
+        <option value="US" style="background: #000">US Listed</option>
+        <option value="INTL" style="background: #000">International</option>
+      </select>
       <button @click="reset()" class="chip border px-2 py-1 hover:border-zinc-500" style="border-color: var(--border-2); color: var(--text-2)">clear</button>
       <!-- Active filter chips (sector/country) -->
       <span x-show="selectedSector" class="chip border px-2 py-1" style="border-color: rgba(34,211,238,0.3); color: var(--cyan); background: rgba(34,211,238,0.06)">
@@ -435,14 +440,14 @@
               <th class="text-left px-3 py-2 hidden sm:table-cell" x-tooltip="'Issuer\'s legal name as reported by the ETF.'">Company</th>
               <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('apex_score')" :class="sortClass('apex_score')" x-tooltip="'Forward score = structure × bounded momentum kicker'">Apex</th>
               <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300" @click="sort('final_score')" :class="sortClass('final_score')" x-tooltip="'Final Alpha Score = sum of (weight% × ETF points × rank multiplier × 100) across all ETFs holding this name. Hover score cell for percentile.'">Score</th>
-              <th class="text-right px-2 py-2 hidden lg:table-cell select-none" style="vertical-align: top;">
+              <th class="text-center px-2 py-2 hidden lg:table-cell select-none" style="vertical-align: top;">
                 <div class="cursor-pointer hover:text-zinc-300 inline-block align-middle"
                      @click="sort('score_delta_pct')"
                      :class="sortClass('score_delta_pct')"
                      x-tooltip="'Score change vs the prior reference date. Click to sort.'">
                   SC.Δ% <span class="num font-mono text-[9px] opacity-80" x-text="`(${period === 'YTD' ? 'YTD' : period + 'd'})`"></span>
                 </div>
-                <div class="flex justify-end mt-1" @click.stop>
+                <div class="flex justify-center mt-1" @click.stop>
                   <div class="flex border rounded overflow-hidden" style="border-color: rgba(255,255,255,0.08); background: rgba(0,0,0,0.25)">
                     <template x-for="p in [1,7,14,30,60,90,'YTD']" :key="p">
                       <button @click.stop="period = p"
@@ -492,7 +497,7 @@
                   <td class="px-2 py-2 text-right num font-mono font-medium"
                       x-tooltip="`Score: ${fmt1(row.final_score)}<br>Percentile: ${row.normalized_score != null ? row.normalized_score.toFixed(0) : '—'}/100<br>Concentration: ${row.concentration_score != null ? row.concentration_score : '—'}% from top ETF<br>${row.concentration_score == null ? 'No data' : row.concentration_score < 40 ? '✓ Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : '⚠ Highly concentrated — fragile if top ETF rebalances'}`"
                       x-text="fmt1(row.final_score)"></td>
-                  <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell" :style="`color: ${flowColor(activeDeltaValue(row))}`" x-text="fmtPct(activeDeltaValue(row))"></td>
+                  <td class="px-2 py-2 text-center num font-mono hidden lg:table-cell" :style="`color: ${flowColor(activeDeltaValue(row))}`" x-text="fmtPct(activeDeltaValue(row))"></td>
                   <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell"
                       :style="`color: ${velocityColor(row.velocity_score)}`"
                       x-tooltip="velocityTip(row)">
@@ -987,14 +992,14 @@
                 <th class="text-left px-3 py-2 hidden sm:table-cell" x-tooltip="'Issuer\'s legal name as reported by the ETF.'">Company</th>
                 <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('apex_score')" :class="sortClass('apex_score')" x-tooltip="'Forward score = structure × bounded momentum kicker'">Apex</th>
                 <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300" @click="sort('final_score')" :class="sortClass('final_score')" x-tooltip="'Final Alpha Score = sum of (weight% × ETF points × rank multiplier × 100) across all ETFs holding this name. Hover score cell for percentile.'">Score</th>
-                <th class="text-right px-2 py-2 hidden lg:table-cell select-none" style="vertical-align: top;">
+                <th class="text-center px-2 py-2 hidden lg:table-cell select-none" style="vertical-align: top;">
                   <div class="cursor-pointer hover:text-zinc-300 inline-block align-middle"
                        @click="sort('score_delta_pct')"
                        :class="sortClass('score_delta_pct')"
                        x-tooltip="'Score change vs the prior reference date. Click to sort.'">
                     SC.Δ% <span class="num font-mono text-[9px] opacity-80" x-text="`(${period === 'YTD' ? 'YTD' : period + 'd'})`"></span>
                   </div>
-                  <div class="flex justify-end mt-1" @click.stop>
+                  <div class="flex justify-center mt-1" @click.stop>
                     <div class="flex border rounded overflow-hidden" style="border-color: rgba(255,255,255,0.08); background: rgba(0,0,0,0.25)">
                       <template x-for="p in [1,7,14,30,60,90,'YTD']" :key="p">
                         <button @click.stop="period = p"
@@ -1044,7 +1049,7 @@
                     <td class="px-2 py-2 text-right num font-mono font-medium"
                         x-tooltip="`Score: ${fmt1(row.final_score)}<br>Percentile: ${row.normalized_score != null ? row.normalized_score.toFixed(0) : '—'}/100<br>Concentration: ${row.concentration_score != null ? row.concentration_score : '—'}% from top ETF<br>${row.concentration_score == null ? 'No data' : row.concentration_score < 40 ? '✓ Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : '⚠ Highly concentrated — fragile if top ETF rebalances'}`"
                         x-text="fmt1(row.final_score)"></td>
-                    <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell" :style="`color: ${flowColor(activeDeltaValue(row))}`" x-text="fmtPct(activeDeltaValue(row))"></td>
+                    <td class="px-2 py-2 text-center num font-mono hidden lg:table-cell" :style="`color: ${flowColor(activeDeltaValue(row))}`" x-text="fmtPct(activeDeltaValue(row))"></td>
                     <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell"
                         :style="`color: ${velocityColor(row.velocity_score)}`"
                         x-tooltip="velocityTip(row)">
@@ -1913,7 +1918,7 @@ function app() {
     loading: true, error: '',
     activeTab: 'leaderboard',
     overlapHover: '',
-    flag: '', selectedTier: '', selectedSector: '', selectedCountry: '', newOnly: false, velocityOnly: false, burstOnly: false, q: '', excludeConcentrated: false, qualityAdoptedOnly: false, preHcOnly: false, stealthBuyOnly: false, velOverScoreOnly: false, quantQualityOnly: false, stealthAccOnly: false, divOnly: false,
+    flag: '', selectedTier: '', selectedSector: '', selectedCountry: '', regionFilter: '', newOnly: false, velocityOnly: false, burstOnly: false, q: '', excludeConcentrated: false, qualityAdoptedOnly: false, preHcOnly: false, stealthBuyOnly: false, velOverScoreOnly: false, quantQualityOnly: false, stealthAccOnly: false, divOnly: false,
     sortKey: 'leaderboard_rank', sortDir: 'asc',
     page: 1, pageSize: 50, open: null,
     activeETF: 'QQQM',
@@ -2123,7 +2128,7 @@ function app() {
     },
 
     toggleFlag(f) { this.flag = (this.flag === f) ? '' : f; this.page = 1; },
-    reset() { this.flag = ''; this.newOnly = false; this.velocityOnly = false; this.burstOnly = false; this.excludeConcentrated = false; this.qualityAdoptedOnly = false; this.preHcOnly = false; this.stealthBuyOnly = false; this.velOverScoreOnly = false; this.quantQualityOnly = false; this.stealthAccOnly = false; this.divOnly = false; this.selectedTier = ''; this.selectedSector = ''; this.selectedCountry = ''; this.q = ''; this.page = 1; },
+    reset() { this.flag = ''; this.newOnly = false; this.velocityOnly = false; this.burstOnly = false; this.excludeConcentrated = false; this.qualityAdoptedOnly = false; this.preHcOnly = false; this.stealthBuyOnly = false; this.velOverScoreOnly = false; this.quantQualityOnly = false; this.stealthAccOnly = false; this.divOnly = false; this.selectedTier = ''; this.selectedSector = ''; this.selectedCountry = ''; this.regionFilter = ''; this.q = ''; this.page = 1; },
 
     togglePin(t) {
       const i = this.pins.indexOf(t);
@@ -2274,7 +2279,7 @@ function app() {
     },
 
     get filtered() {
-      const q = this.q.trim().toLowerCase(), tier = this.selectedTier, sector = this.selectedSector, country = this.selectedCountry;
+      const q = this.q.trim().toLowerCase(), tier = this.selectedTier, sector = this.selectedSector, country = this.selectedCountry, region = this.regionFilter;
       let r = this.leaderboard;
       if (this.activeTab === 'watchlist') r = r.filter(x => this.pins.includes(x.ticker));
       if (this.flag)         r = r.filter(x => x.flag === this.flag);
@@ -2291,6 +2296,12 @@ function app() {
       if (tier)              r = r.filter(x => (x.tiers || '').split(' + ').includes(tier));
       if (sector)            r = r.filter(x => x.sector === sector);
       if (country)           r = r.filter(x => x.country === country);
+      if (region) {
+        r = r.filter(x => {
+          const isUS = x.country === 'United States' || (x.country === 'Unknown' && x.ticker && /^[A-Z]{1,5}$/.test(x.ticker) && !['SBIN', 'ASELS', 'KGH', 'SSW', 'CPI', 'PWGR', 'TCS', 'HNDL', 'NPN'].includes(x.ticker));
+          return region === 'US' ? isUS : !isUS;
+        });
+      }
       if (this.excludeConcentrated) r = r.filter(x => (x.concentration_score || 0) <= 80);
       if (q)                 r = r.filter(x => (x.ticker || '').toLowerCase().includes(q) || (x.company || '').toLowerCase().includes(q));
       return [...r].sort((a, b) => {
@@ -2387,6 +2398,7 @@ function app() {
       const url = URL.createObjectURL(blob);
       const filterTag = [
         this.flag, this.selectedTier, this.selectedSector, this.selectedCountry,
+        this.regionFilter && (this.regionFilter === 'US' ? 'US' : 'INTL'),
         this.newOnly && 'NEW', this.velocityOnly && 'VELO', this.burstOnly && 'BURST',
       ].filter(Boolean).join('-').replace(/[^A-Za-z0-9_-]/g, '');
       const stamp = new Date().toISOString().slice(0, 10);
