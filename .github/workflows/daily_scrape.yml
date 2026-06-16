@@ -36,25 +36,65 @@ jobs:
           sudo apt-get install -y xvfb
           pip install -r requirements.txt
           pip install -r requirements-scraper.txt
+          # pyarrow is required for the history-isolation layer
+          # (hydrate_csv_from_parquet.py + migrate_to_parquet.py). It is in
+          # requirements.txt already, but pinned here for clarity since the
+          # Parquet store is now the SOLE durable history — a missing dep
+          # would silently no-op the persistence step.
+          pip install pyarrow==18.0.0
           python -m playwright install chromium --with-deps
+
+      # ── History isolation: hydrate the working CSV from the Parquet store ──
+      # data/all_history.csv is no longer committed to Git (the daily append
+      # was the dominant driver of .git growth). The committed, SHA-256-guarded
+      # Parquet store (data/history_parquet/) is the durable history. Each run
+      # reconstructs the CSV before scraper.py so the scraper sees the exact
+      # file it expects — byte-identical to what used to be in Git. Verified by
+      # scripts/validate_zero_loss.py. scraper.py itself is UNCHANGED.
+      - name: Hydrate all_history.csv from Parquet store
+        run: python scripts/hydrate_csv_from_parquet.py
 
       - name: Run Scraper
         run: xvfb-run -a python scraper.py
 
       # ── Permanent year-partitioned archive (charter v2 Part 3) ─────────
-      # Append today's scrape into data/history_parquet/year=YYYY/holdings.parquet
-      # and refresh data/history_parquet/CHECKSUMS.json. Past-year partitions
-      # are contractually immutable — the migrate script REFUSES to overwrite
-      # them. On any drift, --verify-only fails CI loudly. continue-on-error
-      # is set so a parquet hiccup never blocks the CSV-side scrape commit.
-      - name: Update parquet archive (immutable past years)
-        run: |
-          python scripts/migrate_to_parquet.py
-          python scripts/migrate_to_parquet.py --verify-only
+      # Fold today's appended rows into data/history_parquet/year=YYYY/holdings.parquet
+      # and refresh CHECKSUMS.json. Past-year partitions are contractually
+      # immutable — the migrate script REFUSES to overwrite them.
+      #
+      # This step is now MANDATORY (no longer continue-on-error). The Parquet
+      # store is the SOLE durable home for holdings history now that
+      # all_history.csv is untracked. If migrate fails, the CSV wipe step below
+      # is skipped (id: parquet_persist checks out) so the local CSV survives
+      # and the run fails loudly — never silently lose a day's scrape.
+      - name: Update parquet archive (persist today's scrape)
+        id: parquet_persist
+        run: python scripts/migrate_to_parquet.py
+
+      # Advisory drift check only — never blocks the run. Recomputes SHA-256
+      # vs the manifest; a past-year drift here is a loud signal but the
+      # authoritative persistence already happened in the step above.
+      - name: Verify parquet immutability (advisory)
+        run: python scripts/migrate_to_parquet.py --verify-only
         continue-on-error: true
+
+      # ── History isolation: wipe the local CSV so Git never stages it ─────
+      # Runs ONLY after parquet persistence succeeded. The CSV is the
+      # transient working buffer between hydrate → scraper → migrate; once
+      # migrate has folded it into the store, it is dead weight on disk and
+      # MUST be removed before `git add data/` below — otherwise it would be
+      # re-staged and re-committed, defeating the whole isolation strategy.
+      # If migrate failed, this step is skipped and the run fails on the
+      # missing `parquet_persist` outcome check, preserving the CSV on disk.
+      - name: Wipe local all_history.csv (post-persist)
+        if: steps.parquet_persist.outcome == 'success'
+        run: |
+          rm -f data/all_history.csv
+          echo "✓ Wiped local data/all_history.csv — Parquet store is the sole history."
 
       - name: Save Data
         id: save_data
+        if: steps.parquet_persist.outcome == 'success'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

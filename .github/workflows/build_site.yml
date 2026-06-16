@@ -101,6 +101,18 @@ jobs:
       # wrote ~150 valid detail files. Gating on outcome=='success' would skip
       # persistence on every such run. Instead run unconditionally and let the
       # `git diff --staged --quiet` check below no-op when nothing was written.
+      #
+      # HISTORY-ISOLATION NOTE (2026-06): this step is INTENTIONALLY RETAINED
+      # despite the all_history.csv / leaderboard.json / flag_history.json /
+      # holdings_latest.json untracking migration. Those four heavy artifacts
+      # are deployed purely via the actions/upload-pages-artifact step below
+      # (runner memory → Pages), and are no longer committed. This step commits
+      # a DIFFERENT thing — the small, incremental docs/data/details/*.json
+      # coverage accumulator — which is functionally essential (without it,
+      # ~3,700 tickers get permanent 404 detail pages) and unrelated to the
+      # git-history bloat. Do NOT remove this step as part of history isolation.
+      # The four untracked files are covered by .gitignore (*.csv / *.json)
+      # and cannot be re-staged by this git add (explicit path list, not docs/**).
       - name: Persist stock-detail coverage (accumulate across runs)
         continue-on-error: true   # a push race must never fail the deploy
         run: |
