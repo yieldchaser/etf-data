@@ -1471,10 +1471,10 @@
         <div class="flex items-center justify-between px-1">
           <span class="text-[9px] uppercase tracking-wider font-bold text-zinc-500">Sort By</span>
           <div class="flex p-0.5 rounded-full border bg-black/25" style="border-color: var(--border-2)">
-            <template x-for="s in [{id:'tier', label:'Tier'}, {id:'size', label:'Size'}, {id:'alpha', label:'A-Z'}]" :key="s.id">
+            <template x-for="s in [{id:'tier', label:'Tier'}, {id:'holdings', label:'Holdings'}, {id:'alpha', label:'A-Z'}]" :key="s.id">
               <button @click.stop="etfSort = s.id"
                       :class="etfSort === s.id ? 'bg-cyan-400/10 text-cyan-400 border-white/[0.05] shadow-[0_1px_3px_rgba(34,211,238,0.1)]' : 'text-zinc-500 hover:text-zinc-300 border-transparent'"
-                      class="px-2 py-0.5 text-[8px] font-semibold rounded-full border leading-none transition-all duration-200 cursor-pointer uppercase tracking-wider"
+                      class="px-2 py-0.5 text-[8px] font-semibold rounded-full border leading-none transition-all duration-200 cursor-pointer tracking-wider"
                       x-text="s.label"></button>
             </template>
           </div>
@@ -3205,7 +3205,7 @@ function app() {
           if (this.etfSort === 'alpha') {
             return a.etf.localeCompare(b.etf);
           }
-          if (this.etfSort === 'size') {
+          if (this.etfSort === 'holdings') {
             return b.count - a.count || a.etf.localeCompare(b.etf);
           }
           // Default: Risk-Spectrum Tier Order (Core -> Quality -> Quant -> Trend -> Scout)
