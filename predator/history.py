@@ -369,6 +369,32 @@ def changelog(
     else:
         new_records = []
 
+    # Universe exits — present yesterday but not today
+    exited_universe = set(yday_lb["ticker"]) - set(today_lb["ticker"])
+
+    def _enrich_exit(ticker: str) -> dict:
+        if ticker not in by_ticker_yday.index:
+            return {"ticker": ticker, "company": "", "final_score": 0.0, "etf_count": 0,
+                    "tiers": "", "score_delta": None, "score_delta_pct": -1.0}
+        row = by_ticker_yday.loc[ticker]
+        if isinstance(row, pd.DataFrame):
+            row = row.iloc[0]
+        yday_score = float(row.get("final_score")) if pd.notna(row.get("final_score")) else 0.0
+        return {
+            "ticker": ticker,
+            "company": row.get("company", ""),
+            "final_score": 0.0,
+            "etf_count": 0,
+            "tiers": row.get("tiers", ""),
+            "score_delta": -yday_score,
+            "score_delta_pct": -1.0,
+        }
+
+    exited_universe_records = sorted(
+        [_enrich_exit(t) for t in exited_universe],
+        key=lambda r: -(abs(r["score_delta"]) if r["score_delta"] is not None else 0)
+    )[:top_n]
+
     return {
         "today": today.strftime("%Y-%m-%d"),
         "yesterday": yday.strftime("%Y-%m-%d"),
@@ -377,6 +403,7 @@ def changelog(
         "biggest_gainers": gainers_recs,
         "biggest_losers": losers_recs,
         "new_entrants": new_records,
+        "universe_exits": exited_universe_records,
     }
 
 
