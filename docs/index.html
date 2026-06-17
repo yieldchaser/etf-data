@@ -1438,56 +1438,79 @@
   <section x-show="activeTab === 'etfs'">
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-3">
       <!-- ETF picker -->
-      <aside class="lg:col-span-1 rounded-lg border p-2" style="background: var(--surface); border-color: var(--border)">
-        <div class="label mb-2 px-1" x-text="(etfSummary.length || 30) + ' ETFs · tap to inspect'"></div>
+      <aside class="lg:col-span-1 rounded-lg border p-2.5 flex flex-col gap-2.5" style="background: var(--surface); border-color: var(--border)">
+        <!-- Header & Reset Controls -->
+        <div class="flex items-center justify-between px-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 select-none">
+          <span x-text="selectedTier ? `${etfSummary.filter(e => e.tier === selectedTier).length} ${selectedTier} ETFs` : `${etfSummary.length} ETFs`"></span>
+          <button x-show="selectedTier" @click="selectedTier = ''" class="text-cyan-400 hover:text-cyan-300 transition text-[9px] font-bold uppercase tracking-normal cursor-pointer bg-transparent border-0 p-0">Reset filter</button>
+        </div>
 
-        <!-- Tier distribution pie chart — rendered via x-html to avoid Alpine SVG template limitation -->
-        <div class="flex items-center justify-center mb-3 pb-3" style="border-bottom: 1px solid var(--border)">
+        <!-- Tier distribution pie chart card -->
+        <div class="flex items-center justify-center p-2.5 rounded-lg border bg-white/[0.01] border-white/[0.04] shadow-sm">
           <div x-html="tierPieSvgHtml"
                @click="$event.target.closest('[data-tier]') && (selectedTier = selectedTier === $event.target.closest('[data-tier]').dataset.tier ? '' : $event.target.closest('[data-tier]').dataset.tier)"
                @mouseenter="$event.target.closest('[data-tier]') && showTt($event, $event.target.closest('[data-tier]').dataset.tooltip)"
                @mouseleave="hideTt()"
-               style="width: 100px; height: 100px; cursor: pointer; flex-shrink: 0;"></div>
-          <div class="ml-3 text-[10px] space-y-0.5">
+               style="width: 95px; height: 95px; cursor: pointer; flex-shrink: 0;"></div>
+          <div class="ml-3 text-[10px] space-y-1 select-none flex-1">
             <template x-for="seg in tierPieSlices" :key="seg.tier">
-              <div class="flex items-center gap-1.5 cursor-pointer hover:opacity-80"
+              <div class="flex items-center justify-between cursor-pointer transition-all duration-200"
                    @click="selectedTier = selectedTier === seg.tier ? '' : seg.tier"
-                   :style="selectedTier === seg.tier ? 'color: var(--cyan)' : 'color: var(--text-2)'">
-                <span class="w-2 h-2 rounded-sm flex-shrink-0" :style="`background: ${seg.color}`"></span>
-                <span x-text="`${seg.tier} (${seg.count})`"></span>
+                   :class="!selectedTier ? 'opacity-90 hover:opacity-100' : (selectedTier === seg.tier ? 'scale-[1.02] font-semibold' : 'opacity-40 hover:opacity-60')">
+                <span class="flex items-center gap-1.5 min-w-0">
+                  <span class="w-2 h-2 rounded-sm flex-shrink-0" :style="`background: ${seg.color}`"></span>
+                  <span class="truncate" :style="selectedTier === seg.tier ? 'color: var(--cyan)' : 'color: var(--text-2)'" x-text="seg.tier"></span>
+                </span>
+                <span class="num font-mono text-[9px] text-zinc-500 pl-1" x-text="`(${seg.count})`"></span>
               </div>
             </template>
           </div>
         </div>
 
+        <!-- Sort controls segmented capsule -->
+        <div class="flex items-center justify-between px-1">
+          <span class="text-[9px] uppercase tracking-wider font-bold text-zinc-500">Sort By</span>
+          <div class="flex p-0.5 rounded-full border bg-black/25" style="border-color: var(--border-2)">
+            <template x-for="s in [{id:'tier', label:'Tier'}, {id:'size', label:'Size'}, {id:'alpha', label:'A-Z'}]" :key="s.id">
+              <button @click.stop="etfSort = s.id"
+                      :class="etfSort === s.id ? 'bg-cyan-400/10 text-cyan-400 border-white/[0.05] shadow-[0_1px_3px_rgba(34,211,238,0.1)]' : 'text-zinc-500 hover:text-zinc-300 border-transparent'"
+                      class="px-2 py-0.5 text-[8px] font-semibold rounded-full border leading-none transition-all duration-200 cursor-pointer uppercase tracking-wider"
+                      x-text="s.label"></button>
+            </template>
+          </div>
+        </div>
+
         <!-- ETF list with expandable details -->
-        <div class="space-y-0.5">
+        <div class="space-y-1 overflow-y-auto max-h-[500px] pr-1">
           <template x-for="etfRow in etfSummary" :key="etfRow.etf">
-            <div>
+            <div x-show="!selectedTier || etfRow.tier === selectedTier" x-transition.opacity>
               <button @click="activeETF = etfRow.etf; expandedSidebarETF = expandedSidebarETF === etfRow.etf ? null : etfRow.etf"
-                      :class="activeETF === etfRow.etf ? 'tab-active' : ''"
-                      class="w-full flex items-center justify-between px-2 py-1.5 rounded-md text-left text-xs hover:bg-white/5 transition"
+                      :class="activeETF === etfRow.etf ? 'bg-cyan-500/[0.05] border-cyan-500/20 text-cyan-400' : 'border-white/[0.02] hover:border-white/[0.06] hover:bg-white/[0.015] text-zinc-400'"
+                      class="w-full flex items-center justify-between px-2.5 py-1.8 rounded-lg border text-left text-xs transition duration-200"
                       style="color: var(--text)">
-                <span class="flex items-center gap-2">
-                  <span class="font-mono font-medium" x-text="etfRow.etf"></span>
-                  <span class="chip" :style="tierChipStyle(etfRow.tier)" x-text="etfRow.tier"></span>
+                <span class="flex items-center">
+                  <!-- Fixed-width ticker for perfect vertical alignment of chips -->
+                  <span class="font-mono font-semibold text-zinc-200 w-[46px] flex-shrink-0" :class="activeETF === etfRow.etf ? 'text-cyan-400' : ''" x-text="etfRow.etf"></span>
+                  <span class="chip font-medium text-[9px] scale-90 -translate-x-1" :style="tierChipStyle(etfRow.tier)" x-text="etfRow.tier"></span>
                 </span>
-                <span class="num font-mono text-[10px]" style="color: var(--text-3)" x-text="`${etfRow.count}`"></span>
+                <!-- Quantitative holdings count badge -->
+                <span class="num font-mono text-[9px] text-zinc-400 bg-zinc-900/50 border border-white/[0.04] px-1.5 py-0.5 rounded shadow-[inset_0_1px_rgba(255,255,255,0.01)]" x-text="etfRow.count"></span>
               </button>
-              <!-- Expanded details panel -->
+              
+              <!-- Expanded details disclosure card -->
               <div x-show="expandedSidebarETF === etfRow.etf" x-transition.opacity
-                   class="mx-2 mb-1 px-2 py-2 rounded text-[10px] space-y-1"
-                   style="background: rgba(34,211,238,0.03); border: 1px solid rgba(34,211,238,0.08)">
-                <div style="color: var(--text-2)" x-text="etfMetaLookup[etfRow.etf]?.name || ''"></div>
-                <div class="flex flex-wrap gap-x-3 gap-y-0.5" style="color: var(--text-3)">
-                  <span x-show="etfMetaLookup[etfRow.etf]?.rebalance">
-                    <span style="color: var(--text-2)">⟳</span> <span x-text="etfMetaLookup[etfRow.etf]?.rebalance"></span>
+                   class="mx-0.5 my-1 p-3 rounded-lg border text-[10px] space-y-2 shadow-sm"
+                   style="background: rgba(0, 0, 0, 0.2); border-color: rgba(255, 255, 255, 0.04)">
+                <div class="font-semibold text-zinc-200 tracking-wide text-[10.5px]" x-text="etfMetaLookup[etfRow.etf]?.name || 'ETF Portfolio'"></div>
+                <div class="flex flex-wrap gap-1.5 mt-1 select-none">
+                  <span x-show="etfMetaLookup[etfRow.etf]?.rebalance" class="px-1.5 py-0.5 rounded bg-white/[0.02] border border-white/[0.05] text-[9px] text-zinc-400 font-medium">
+                    ⟳ Rebalance: <span class="text-zinc-300 font-semibold" x-text="etfMetaLookup[etfRow.etf]?.rebalance"></span>
                   </span>
-                  <span x-show="etfMetaLookup[etfRow.etf]?.reconstitution">
-                    <span style="color: var(--text-2)">↻</span> <span x-text="etfMetaLookup[etfRow.etf]?.reconstitution"></span>
+                  <span x-show="etfMetaLookup[etfRow.etf]?.reconstitution" class="px-1.5 py-0.5 rounded bg-white/[0.02] border border-white/[0.05] text-[9px] text-zinc-400 font-medium">
+                    ↻ Reconstitute: <span class="text-zinc-300 font-semibold" x-text="etfMetaLookup[etfRow.etf]?.reconstitution"></span>
                   </span>
                 </div>
-                <div x-show="etfMetaLookup[etfRow.etf]?.notes" class="italic" style="color: var(--text-3)"
+                <div x-show="etfMetaLookup[etfRow.etf]?.notes" class="text-zinc-400 italic pl-2 border-l border-zinc-700 leading-normal mt-2 text-[10px]"
                      x-text="etfMetaLookup[etfRow.etf]?.notes"></div>
               </div>
             </div>
@@ -2066,6 +2089,7 @@ function app() {
     expandedSidebarETF: null,
     period: 7,
     holdingsPeriod: 7,
+    etfSort: 'tier',
     holdingsExits: {},
     sortDialog: false,
     hoveredSlice: null,
@@ -2561,10 +2585,17 @@ function app() {
       etfMeta.forEach(e => tierMap[e.ticker] = e.tier);
       const counts = {};
       this.holdings.forEach(h => { counts[h.ETF_Ticker] = (counts[h.ETF_Ticker] || 0) + 1; });
-      const tierOrder = { Scout: 0, Quant: 1, Quality: 2, Trend: 3, Core: 4 };
       return (this.meta.etfs || [])
         .map(e => ({ etf: e, tier: tierMap[e] || '', count: counts[e] || 0 }))
         .sort((a, b) => {
+          if (this.etfSort === 'alpha') {
+            return a.etf.localeCompare(b.etf);
+          }
+          if (this.etfSort === 'size') {
+            return b.count - a.count || a.etf.localeCompare(b.etf);
+          }
+          // Default: Risk-Spectrum Tier Order (Core -> Quality -> Quant -> Trend -> Scout)
+          const tierOrder = { Core: 0, Quality: 1, Quant: 2, Trend: 3, Scout: 4 };
           const ta = tierOrder[a.tier] ?? 99, tb = tierOrder[b.tier] ?? 99;
           if (ta !== tb) return ta - tb;
           return a.etf.localeCompare(b.etf);
