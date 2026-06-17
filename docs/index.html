@@ -2933,22 +2933,71 @@ function app() {
     },
 
     get universeExits() {
-      if (this.changelog.universe_exits) return this.changelog.universe_exits;
-      if (!this.scoreHistory || !this.changelog.today || !this.changelog.yesterday) return [];
+      if (!this.scoreHistory || !this.changelog.today || !this.meta.snapshot_dates_in_window) return [];
+      
+      const latestDateStr = this.changelog.today;
+      const latestDate = new Date(latestDateStr);
+      let targetDate = new Date(latestDate);
+      
+      if (this.changesPeriod === 'YTD') {
+        const year = latestDate.getFullYear();
+        targetDate = new Date(`${year}-01-01`);
+      } else {
+        const days = parseInt(this.changesPeriod) || 1;
+        targetDate.setDate(latestDate.getDate() - days);
+      }
+      
+      const dates = this.meta.snapshot_dates_in_window || [];
+      if (!dates.length) return [];
+      
+      // Find closest trading/snapshot date in metadata
+      let targetDateStr = dates[0];
+      const targetTime = targetDate.getTime();
+      let minDiff = Math.abs(new Date(targetDateStr).getTime() - targetTime);
+      
+      for (const d of dates) {
+        const diff = Math.abs(new Date(d).getTime() - targetTime);
+        if (diff < minDiff) {
+          minDiff = diff;
+          targetDateStr = d;
+        }
+      }
+      
+      // If targetDateStr is today's date, there can be no exits
+      if (targetDateStr === latestDateStr) {
+        const idx = dates.indexOf(latestDateStr);
+        if (idx > 0) {
+          targetDateStr = dates[idx - 1];
+        } else {
+          return [];
+        }
+      }
+      
       const todayTickers = new Set(this.leaderboard.map(l => l.ticker));
-      const todayDate = this.changelog.today;
-      const yesterdayDate = this.changelog.yesterday;
       const exits = [];
+      
+      const findCompany = (ticker) => {
+        const lbMatch = this.leaderboard.find(l => l.ticker === ticker);
+        if (lbMatch && lbMatch.company) return lbMatch.company;
+        for (const etfExits of Object.values(this.holdingsExits || {})) {
+          for (const periodExits of Object.values(etfExits || {})) {
+            const match = periodExits.find(ex => ex.ticker === ticker);
+            if (match && match.name) return match.name;
+          }
+        }
+        return '—';
+      };
+      
       for (const [ticker, history] of Object.entries(this.scoreHistory)) {
-        const ydayEntry = history.find(h => h.d === yesterdayDate);
-        if (ydayEntry && ydayEntry.s > 0) {
-          const todayEntry = history.find(h => h.d === todayDate);
+        const targetEntry = history.find(h => h.d === targetDateStr);
+        if (targetEntry && targetEntry.s > 0) {
+          const todayEntry = history.find(h => h.d === latestDateStr);
           if (!todayEntry || todayEntry.s === 0) {
             exits.push({
               ticker: ticker,
-              company: '',
+              company: findCompany(ticker),
               final_score: 0.0,
-              score_delta: -ydayEntry.s,
+              score_delta: -targetEntry.s,
               score_delta_pct: -1.0,
               tiers: ''
             });
