@@ -66,7 +66,7 @@ KNOWN_SYMBOL_MAP: dict[str, str] = {
     "028260": "028260.KS", "010130": "010130.KS",
     "086790": "086790.KS", "105560": "105560.KS",
     "066570": "066570.KS", "009540": "009540.KS",
-    "000830": "000830.KS", "011200": "011200.KS",
+    "000830": "000830.SZ", "011200": "011200.KS",
     "042660": "042660.KS", "033780": "033780.KS",
     "2330": "2330.TW", "2317": "2317.TW", "2454": "2454.TW",
     "2308": "2308.TW", "2303": "2303.TW", "2382": "2382.TW",
@@ -329,6 +329,37 @@ def _is_us_ticker(ticker: str, country: str) -> bool:
 def _resolve_yf_symbol(ticker: str, meta: dict, symbol_map: dict) -> str:
     if ticker in symbol_map:
         return symbol_map[ticker]
+
+    # Translate Bloomberg/exchange suffixes to Yahoo Finance suffixes
+    # E.g. "285A.JP" -> "285A.T", "VALE3.BZ" -> "VALE3.SA"
+    if "." in ticker:
+        base, suffix = ticker.rsplit(".", 1)
+        suffix_map = {
+            "JP": "T",
+            "JT": "T",
+            "TT": "TW",
+            "CN": "SS",
+            "CT": "TO",
+            "GY": "DE",
+            "GR": "DE",
+            "BB": "BR",
+            "SE": "ST",
+            "LN": "L",
+            "NO": "OL",
+            "FP": "PA",
+            "NA": "AS",
+            "BZ": "SA",
+            "IM": "MI",
+            "AU": "AX",
+        }
+        if suffix in suffix_map:
+            suffix = suffix_map[suffix]
+        if suffix == "US":
+            return base
+        if suffix == "HK" and base.isdigit():
+            return f"{base.zfill(4)}.HK"
+        return f"{base}.{suffix}"
+
     country = (meta.get("country") or "").strip()
     if _is_us_ticker(ticker, country):
         return ticker
@@ -351,6 +382,9 @@ def _probe_yf_symbol(ticker: str, symbol_map: dict) -> str | None:
     except ImportError:
         return None
     base = ticker.lstrip("A") if re.fullmatch(r"A\d{6}", ticker) else ticker
+    # If ticker contains a dot suffix (e.g. "285A.JP"), strip it to probe the base ticker
+    if "." in base:
+        base = base.split(".")[0]
     for suffix in PROBE_SUFFIXES:
         sym = base + suffix
         try:
