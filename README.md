@@ -63,7 +63,7 @@ The system operates as five tightly integrated components:
 │  ├── Flow aggregation (sector + country, Unknown excluded)          │
 │  └── ETF overlap matrix (30×30 Jaccard)                             │
 │                                                                     │
-│  predator/markets_history.py + ingest_mega_xl.py + vol_history.py  │
+│  predator/markets_history + ingest_markets_xl.py + vol_history.py   │
 │  └── docs/data/market_returns.json (25 assets, gold from 1833)      │
 │                                                                     │
 │  Output: docs/data/*.json → GitHub Pages                            │
@@ -338,9 +338,9 @@ Asset registry covers 50+ series across:
 - **Rates**: 3M T-Bill, 2Y/10Y/30Y Treasury, Fed Funds, Moody's BAA/AAA, 10Y–2Y Spread
 - **Auxiliary**: US CPI (for real-return adjustment), USD/INR (for currency lens)
 
-#### `predator/ingest_mega_xl.py`
+#### `predator/ingest_markets_xl.py`
 
-Reads `Mega_Markets_Historical.xlsx` (5 sheets: Equities, International_Equities, Precious_Metals, Commodities, Energy) and merges 25 series into `market_returns.json`. Excel data takes priority for overlapping months, extending history back to:
+Reads `Mega_Markets_Historical.xlsx` (and optionally `Markets_1_.xlsx` when present) and merges its deep historical data into the `market_returns.json` payload in the canonical shape. Excel data takes priority for overlapping months, extending history back to:
 
 | Asset | History from |
 |-------|-------------|
@@ -432,14 +432,17 @@ Correlation matrix + Growth of $100 log-scale chart for selected assets.
 
 #### `daily_scrape.yml` — Data Collection
 ```
-Trigger: cron 14:00 + 22:00 UTC weekdays, workflow_dispatch
+Trigger: cron 14:00 + 22:00 UTC weekdays (plus weekend runs), workflow_dispatch
 Runner:  ubuntu-latest
 Steps:
-  1. Install: pandas, selenium, playwright, curl_cffi, pdfplumber, xlrd
-  2. Install Chromium (playwright)
-  3. xvfb-run python scraper.py
-  4. git add data/* && git commit (only if data changed)
-  5. Dispatch build_site.yml
+  1. Install libraries: pandas, selenium, playwright, curl_cffi, pdfplumber, xlrd, pyarrow
+  2. Install Chromium (playwright) + xvfb
+  3. Hydrate transient all_history.csv from Parquet store (hydrate_csv_from_parquet.py)
+  4. Run scraper: xvfb-run -a python scraper.py
+  5. Update parquet archive: fold new rows into data/history_parquet/ (migrate_to_parquet.py)
+  6. Wipe local transient data/all_history.csv
+  7. Commit and push Parquet partition deltas + CHECKSUMS.json (only if data changed)
+  8. Trigger site rebuild (Workflow dispatch)
 ```
 
 #### `build_site.yml` — Site Build & Deploy
@@ -451,12 +454,15 @@ Steps:
      (No selenium/curl_cffi/pdfplumber — scraper-only, not needed for build)
   2. pytest tests/ -v  (316 tests)
   3. predator.build  → docs/data/*.json
-  4. markets.fetch_yf + markets.fetch_fred + markets.build  → docs/data/markets.json
-  5. predator.markets_history --full-refresh  → docs/data/market_returns.json
-  6. predator.ingest_mega_xl  → merges Excel historical data
-  7. predator.vol_history --full-refresh  → docs/data/vol_history.json
-  8. Verify required outputs exist
-  9. Upload Pages artifact → Deploy to GitHub Pages
+  4. predator.fetch_prices  → Portfolio Lab prices (yfinance adjusted-close)
+  5. predator.fetch_stock_details  → descriptions + 2-year price history
+  6. Persist stock-detail coverage  → commit-back coverage state to main
+  7. predator.ingest_markets_xl  → 1/2: Markets Excel deep-history seed (backfill only)
+  8. predator.markets_history  → 2/2: Live FRED + yfinance merge (current months, fx, cpi, rates)
+  9. markets.fetch_yf + markets.fetch_fred + markets.build  → docs/data/markets.json + sim_underlyings.json
+  10. predator.vol_history --full-refresh  → docs/data/vol_history.json
+  11. Verify required outputs exist
+  12. Upload Pages artifact → Deploy to GitHub Pages
 ```
 
 ### Key Design Decisions
@@ -534,8 +540,8 @@ python -m predator.markets_history --full-refresh
 # Preview fetch plan without writing
 python -m predator.markets_history --dry-run
 
-# Merge Mega_Markets_Historical.xlsx into market_returns.json
-python -m predator.ingest_mega_xl
+# Seed deep history from Mega_Markets_Historical.xlsx (run first before markets_history)
+python -m predator.ingest_markets_xl
 
 # Fetch CBOE vol indices — requires FRED_API_KEY
 python -m predator.vol_history --full-refresh
@@ -599,7 +605,8 @@ etf-data/
 │   ├── scoring.py                # Score formula + sanitizer
 │   ├── history.py                # Temporal analytics
 │   ├── markets_history.py        # FRED + yfinance market data
-│   ├── ingest_mega_xl.py         # Excel historical data ingestion
+│   ├── ingest_markets_xl.py      # Active Excel deep-history backfill ingestion
+│   ├── ingest_mega_xl.py         # Backward-compat shim (delegates to ingest_markets_xl)
 │   ├── vol_history.py            # CBOE vol indices
 │   └── backtest.py               # Strategy backtest engine
 │
