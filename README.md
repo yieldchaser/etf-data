@@ -222,11 +222,17 @@ Built with Tailwind CSS + Alpine.js. Zero build step — static HTML/JS served d
 - **VELO** and **BURST** badges with micro-breakdown tooltips
 - Filter chips: HC only, BURST, VELO, Quality+, Concentration ≤80%
 - Auto-generated explainer line per row: compresses tier breadth, score delta, burst state, HC streak, quality signals, concentration, stealth, divergence into one scannable sentence
+- **Expanded Row Detail Drawer**:
+  - **Auto-Explainer Grid**: A frosted glassmorphic card container (`STRUCTURE`, `FLOW`, `RISK`) featuring dynamic left-border colored callout bars (`border-l-2 pl-2 border-current`) matching alert severity.
+  - **Metadata Card**: Displays score breakdown, HC streak, best rank, score streak, and total weight separated by vertical dividers (`xl:border-l xl:border-white/[0.04]`).
+  - **Holdings Table**: Polished layout with clean padding, soft borders, and standardized column alignments.
+  - **Interactive Price Card (Right Panel)**: Includes pre-loaded price charts, capsule timeframe controls (1M to ALL), 2x2 key metrics grid (Latest Price, Avg Volatility, Period Low, Period High), a horizontal range slider track showing current position, and a horizontally expandable full-width company description.
 
 #### ETFs Tab
 - Per-ETF 50-slice SVG donut chart (20-color institutional palette)
 - Tier pie chart (fixed Alpine SVG template limitation via `x-html`)
 - Holdings sorted by rank, weight, 7-day rank delta
+- **Official Strategy Descriptions**: Integrated investment objectives and systematic index mechanics for all 30 ETFs, cleanly parsed from research and embedded right below the detail header.
 - Sidebar metadata: rebalance/reconstitution schedule from `ETF DATA.csv`
 - ETF overlap heatmap: 30×30 Jaccard similarity matrix
 
