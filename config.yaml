@@ -47,10 +47,8 @@ sanitizer:
     - "Index Future"
     - "IFUS"
     - " FUT "
-  # blocked_name_patterns:
-  #   - "CASH &"
-  #   - "CASH COLLATERAL"
-  #   - "TREASURY"
+    - "CASH &"
+    - "CASH COLLATERAL"
 
   # Ticker punctuation standardization (BRK-B → BRK.B, BF/B → BF.B).
   ticker_replacements:

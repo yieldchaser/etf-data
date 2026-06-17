@@ -63,9 +63,9 @@ class TestSanitizer:
 
     def test_partial_company_name_match_does_not_block(self, cfg):
         """Power Query uses exact (case-insensitive) company match, not substring.
-        A holding NAMED 'Cash & Equivalents' is NOT blocked by the default config."""
+        A holding NAMED 'Cash Flow Inc' is NOT blocked by the default config."""
         df = _h([
-            ("FPX", "X1", "Cash & Equivalents",  0.01, "2026-05-01", "2026-05-01"),
+            ("FPX", "X1", "Cash Flow Inc",        0.01, "2026-05-01", "2026-05-01"),
             ("FPX", "X2", "U.S. Treasury Bill",  0.01, "2026-05-01", "2026-05-01"),
             ("FPX", "X4", "Microsoft Corp",      0.05, "2026-05-01", "2026-05-01"),
         ])
