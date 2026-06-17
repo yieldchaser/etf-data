@@ -633,7 +633,17 @@ def build_details(
     if currency_tickers:
         print(f"  Filtered {len(currency_tickers)} currency codes: {', '.join(sorted(currency_tickers)[:10])}…")
         total_universe -= currency_tickers
-    resolved       = set(state.get("resolved") or []) & total_universe
+    raw_resolved   = set(state.get("resolved") or []) & total_universe
+    resolved       = set()
+    for t in raw_resolved:
+        detail_path = DETAILS_DIR / f"{_safe_detail_stem(t)}.json"
+        if detail_path.exists():
+            try:
+                existing = json.loads(detail_path.read_text(encoding="utf-8"))
+                if not existing.get("pending", False) and existing.get("prices"):
+                    resolved.add(t)
+            except Exception:
+                pass
     unresolved     = {k: v for k, v in (state.get("unresolved") or {}).items() if k in total_universe}
     pending_set    = (set(state.get("pending") or []) | (total_universe - resolved - set(unresolved.keys()))) & total_universe
 
@@ -679,11 +689,16 @@ def build_details(
                 try:
                     existing = json.loads(detail_path.read_text(encoding="utf-8"))
                     prices = existing.get("prices", [])
-                    if prices:
+                    is_pending = existing.get("pending", False)
+                    if prices and not is_pending:
                         last_date = prices[-1][0]
                         stale_resolved.append((last_date, t))
+                    else:
+                        stale_resolved.append(("0000-00-00", t))
                 except Exception:
                     stale_resolved.append(("0000-00-00", t))
+            else:
+                stale_resolved.append(("0000-00-00", t))
         # Sort by stalest first
         stale_resolved.sort(key=lambda x: x[0])
         refresh_batch = [t for _, t in stale_resolved[:refresh_budget]]

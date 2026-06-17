@@ -24,6 +24,39 @@ sanitizer:
     - $SAR            # Saudi Riyal
     - $TWD            # New Taiwan Dollar
     - $CNY            # Yuan Renminbi
+    # Bare currency codes that represent cash/equivalents in holdings
+    - EUR
+    - JPY
+    - GBP
+    - CAD
+    - CHF
+    - AUD
+    - HKD
+    - SGD
+    - SEK
+    - NOK
+    - INR
+    - TWD
+    - KRW
+    - BRL
+    - MXN
+    - ZAR
+    - CNY
+    - DKK
+    - HUF
+    - TRY
+    - THB
+    - AED
+    - SAR
+    - QAR
+    - ILS
+    - CLP
+    - CZK
+    - RON
+    - PLN
+    - NZD
+    - MYR
+    - PHP
     - Cash&Other      # placeholder ticker seen in live data
     - AGPXX           # Invesco Government & Agency Portfolio (money market fund)
     - FGXXX           # First American Government Obligations Fund (money market)
