@@ -114,7 +114,10 @@ COUNTRY_SUFFIX: dict[str, str] = {
     "Singapore": ".SI",
 }
 
-PROBE_SUFFIXES = [".KS", ".TW", ".T", ".HK", ".SS", ".SZ", ".SA", ".NS", ".AX", ".L", ".DE", ".PA"]
+PROBE_SUFFIXES = [
+    ".KS", ".TW", ".T", ".HK", ".SS", ".SZ", ".SA", ".NS", ".AX", ".L", ".DE", ".PA",
+    ".MX", ".KL", ".JK", ".BK", ".IS", ".WA", ".SR", ".SN", ".PS", ".TA", ".JO", ".AT"
+]
 
 # Exchange-suffix → native trading currency. Used to infer the price currency
 # when yfinance info doesn't return one (or returned a wrong default).
@@ -330,6 +333,9 @@ def _resolve_yf_symbol(ticker: str, meta: dict, symbol_map: dict) -> str:
     if ticker in symbol_map:
         return symbol_map[ticker]
 
+    # Normalize share classes (e.g. "BBD.B" -> "BBD-B", "BBD.B.C" -> "BBD-B-C")
+    ticker = re.sub(r"\.(A|B|C|U|W)(?=\.|$)", r"-\1", ticker)
+
     # Translate Bloomberg/exchange suffixes to Yahoo Finance suffixes
     # E.g. "285A.JP" -> "285A.T", "VALE3.BZ" -> "VALE3.SA"
     if "." in ticker:
@@ -351,6 +357,17 @@ def _resolve_yf_symbol(ticker: str, meta: dict, symbol_map: dict) -> str:
             "BZ": "SA",
             "IM": "MI",
             "AU": "AX",
+            "TB": "BK",
+            "SJ": "JO",
+            "JN": "JO",
+            "AB": "SR",
+            "TI": "IS",
+            "PW": "WA",
+            "IJ": "JK",
+            "MK": "KL",
+            "GA": "AT",
+            "CI": "SN",
+            "IT": "TA",
         }
         if suffix in suffix_map:
             suffix = suffix_map[suffix]
@@ -688,7 +705,7 @@ def build_details(
         symbol = _resolve_yf_symbol(ticker, meta, symbol_map)
         prices = _fetch_price_one(symbol)
 
-        if not prices and re.search(r"\d", ticker):
+        if not prices and (re.search(r"\d", ticker) or not _is_us_ticker(ticker, meta.get("country", ""))):
             print(f"    No data for {symbol} — probing…")
             probed = _probe_yf_symbol(ticker, symbol_map)
             if probed and probed != symbol:
@@ -747,7 +764,7 @@ def build_details(
         symbol = _resolve_yf_symbol(ticker, meta, symbol_map)
         prices = _fetch_price_one(symbol)
 
-        if not prices and re.search(r"\d", ticker):
+        if not prices and (re.search(r"\d", ticker) or not _is_us_ticker(ticker, meta.get("country", ""))):
             probed = _probe_yf_symbol(ticker, symbol_map)
             if probed and probed != symbol:
                 symbol = probed
