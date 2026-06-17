@@ -35,6 +35,21 @@ if sys.platform.startswith("win"):
     except AttributeError:
         pass
 
+# Monkeypatch yfinance to prevent AttributeError: 'NoneType' object has no attribute 'text'
+# when a 404 occurs on the quoteSummary endpoint.
+try:
+    import yfinance as yf
+    import yfinance.scrapers.quote as yfq
+    old_fetch = yfq.Quote._fetch
+    def _patched_fetch(self, modules):
+        try:
+            return old_fetch(self, modules)
+        except Exception:
+            return None
+    yfq.Quote._fetch = _patched_fetch
+except Exception:
+    pass
+
 REPO_ROOT           = Path(__file__).resolve().parent.parent
 LEADERBOARD_PATH    = REPO_ROOT / "docs" / "data" / "leaderboard.json"
 DESC_CACHE_PATH     = REPO_ROOT / "data" / "company_descriptions.json"
@@ -116,7 +131,8 @@ COUNTRY_SUFFIX: dict[str, str] = {
 
 PROBE_SUFFIXES = [
     ".KS", ".TW", ".T", ".HK", ".SS", ".SZ", ".SA", ".NS", ".AX", ".L", ".DE", ".PA",
-    ".MX", ".KL", ".JK", ".BK", ".IS", ".WA", ".SR", ".SN", ".PS", ".TA", ".JO", ".AT"
+    ".MX", ".KL", ".JK", ".BK", ".IS", ".WA", ".SR", ".SN", ".PS", ".TA", ".JO", ".AT",
+    ".AD", ".AE"
 ]
 
 # Exchange-suffix → native trading currency. Used to infer the price currency
@@ -152,6 +168,8 @@ SUFFIX_CURRENCY: dict[str, str] = {
     "KW": "KWD",
     "QA": "QAR",
     "SR": "SAR",
+    "AD": "AED",
+    "AE": "AED",
 }
 
 
@@ -400,8 +418,38 @@ def _resolve_yf_symbol(ticker: str, meta: dict, symbol_map: dict) -> str:
     return ticker
 
 
-def _probe_yf_symbol(ticker: str, symbol_map: dict) -> str | None:
+def _company_name_matches(lb_company: str, yf_company: str) -> bool:
+    if not lb_company or not yf_company:
+        return False
+    # Common stop words in company names
+    stop_words = {
+        "sa", "plc", "ltd", "inc", "corp", "co", "holdings", "holding", "common", "stock",
+        "class", "ord", "ordinary", "bhd", "as", "sab", "de", "cv", "group", "the", "and",
+        "of", "in", "sa-registered", "shs", "sponsored", "adr", "foreign", "forgn", "sh",
+        "units", "unit", "trust", "investment", "financial", "bank", "banking", "sae", "ksc"
+    }
+    
+    def tokenize(name: str) -> set[str]:
+        # Split by non-alphanumeric, convert to lower, filter out stop words and short tokens
+        tokens = re.split(r"[^A-Za-z0-9]", name.lower())
+        return {t for t in tokens if t and t not in stop_words and len(t) > 1}
+
+    lb_tokens = tokenize(lb_company)
+    yf_tokens = tokenize(yf_company)
+    
+    # If no significant tokens in either, fallback to basic comparison
+    if not lb_tokens or not yf_tokens:
+        return lb_company.lower().strip() == yf_company.lower().strip()
+        
+    # Return True if there is at least one overlapping token
+    return bool(lb_tokens & yf_tokens)
+
+
+def _probe_yf_symbol(ticker: str, company: str, symbol_map: dict) -> str | None:
     try:
+        import urllib.request
+        import urllib.parse
+        import json
         import yfinance as yf
     except ImportError:
         return None
@@ -409,19 +457,114 @@ def _probe_yf_symbol(ticker: str, symbol_map: dict) -> str | None:
     # If ticker contains a dot suffix (e.g. "285A.JP"), strip it to probe the base ticker
     if "." in base:
         base = base.split(".")[0]
-    for suffix in PROBE_SUFFIXES:
-        sym = base + suffix
+    base = re.sub(r"[^A-Za-z0-9]", "", base)
+    if not base:
+        return None
+
+    # Clean the company name for a better Search API query
+    def clean_company_for_query(co: str) -> str:
+        import html
+        name = html.unescape(co).upper()
+        # Remove currency valuation stuff like INR2.0, TRY1.0
+        name = re.sub(r'\b(INR|TRY|MXN|AED|KWD|PHP|THB|USD|EUR|KWD)\d+(\.\d+)?\b', '', name)
+        name = re.sub(r'\bCOMMON\s+STOCK\b', '', name)
+        # Suffixes to drop
+        suffixes = [
+            "LTD INDIA", "LTD", "LIMITED", "INC", "INCORPORATED", "PLC", "PUBLIC LIMITED COMPANY",
+            "SA", "S.A.", "S.A.B. DE C.V.", "SAB DE CV", "SER B", "SER A", "SER C",
+            "BHD MALAYSIA", "MALAYSIA", "SOUTH AFRICA", "CO", "CORP", "CORPORATION",
+            "GROUP", "HOLDINGS", "HOLDING", "SPONS", "ADR", "SPONSORED", "GDR",
+            "SHS", "UNIT", "UNITS", "CLASS B", "CLASS A", "SERIES B", "SERIES A",
+            "NET OTHER ASSETS", "OTHER ASSETS", "INDIA", "MEXICO", "INDONESIA", "MALAYSIA",
+            "THAILAND", "CHILE", "PORTUGAL", "GEORGIA", "TURKEY", "KOREA", "TAIWAN", "JAPAN",
+            "BRAZIL", "SAUDI ARABIA", "SPAIN", "ITALY", "GERMANY", "FRANCE", "UK", "UNITED KINGDOM",
+            "CANADA", "AUSTRALIA", "USA", "UNITED STATES"
+        ]
+        for suf in suffixes:
+            name = re.sub(r'\b' + re.escape(suf) + r'\b', ' ', name)
+        name = re.sub(r'[^A-Z0-9\s]', ' ', name)
+        return " ".join(name.split())
+
+    cleaned_company = clean_company_for_query(company)
+
+    # Step 1: Hit Yahoo Finance Search API for both ticker base and company name
+    queries = [base]
+    if cleaned_company and cleaned_company.upper() != base.upper():
+        queries.append(cleaned_company)
+
+    candidates = []
+    seen_syms = set()
+    for q in queries:
+        url = f"https://query2.finance.yahoo.com/v1/finance/search?q={urllib.parse.quote(q)}"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         try:
-            fi = yf.Ticker(sym).fast_info
-            price = fi.get("last_price") or fi.get("lastPrice") or 0
-            if price and float(price) > 0:
-                symbol_map[ticker] = sym
-                print(f"    PROBE HIT: {ticker} → {sym} (price={float(price):.2f})")
-                return sym
+            with urllib.request.urlopen(req, timeout=5) as response:
+                res = json.loads(response.read().decode('utf-8'))
+                for quote in res.get('quotes', []):
+                    sym = quote.get('symbol')
+                    name = quote.get('shortname', '') or quote.get('longname', '') or ''
+                    if sym and sym not in seen_syms:
+                        seen_syms.add(sym)
+                        candidates.append((sym, name))
+        except Exception as e:
+            print(f"    Search API error for query '{q}': {e}")
+
+    # Prefer candidates from Search API, sort them to prefer local/clean symbols over NVDR/Foreign
+    def candidate_sort_key(item: tuple[str, str]) -> tuple[int, int, int, int, int]:
+        sym, name = item
+        sym_base = sym.split(".")[0].replace("-", "")
+        # Priority 1: base ticker matches exactly (0 is better)
+        base_match = 0 if sym_base.upper() == base.upper() else 1
+        # Priority 2: company name matches (0 is better)
+        matches = 0 if _company_name_matches(company, name) else 1
+        # Priority 3: local board preferred over NVDR (-R) or Foreign (-F)
+        has_r = 1 if "-R." in sym or sym.endswith("-R") else 0
+        has_f = 1 if "-F." in sym or sym.endswith("-F") else 0
+        dots = sym.count(".")
+        return (base_match, matches, has_r, has_f, dots)
+
+    # Filter candidates to only include those matching base ticker as a prefix or in the company name
+    valid_candidates = []
+    for sym, name in candidates:
+        sym_base = sym.split(".")[0].replace("-", "")
+        # If searched by company name, it's fine if the base ticker doesn't match the symbol's base ticker,
+        # as long as the company name matches!
+        if base.upper() in sym_base.upper() or base.upper() in name.upper() or _company_name_matches(company, name):
+            valid_candidates.append((sym, name))
+    valid_candidates.sort(key=candidate_sort_key)
+    
+    # Extract just the symbols to test
+    symbols_to_test = [sym for sym, name in valid_candidates]
+
+    # Fall back to PROBE_SUFFIXES if search API returned no valid candidates
+    if not symbols_to_test:
+        for suffix in PROBE_SUFFIXES:
+            symbols_to_test.append(base + suffix)
+
+    tested = set()
+    for sym in symbols_to_test:
+        if sym in tested:
+            continue
+        tested.add(sym)
+        try:
+            df = yf.download(sym, period="5d", progress=False, threads=False)
+            if df is not None and not df.empty:
+                # Check if we have at least one valid price point
+                if "Close" in df.columns:
+                    close = df["Close"].dropna()
+                else:
+                    close = df.iloc[:, 0].dropna()
+                if not close.empty:
+                    val = float(close.values.flatten()[-1])
+                    if val > 0:
+                        symbol_map[ticker] = sym
+                        print(f"    PROBE HIT: {ticker} → {sym} (price={val:.2f})")
+                        return sym
         except Exception:
             pass
         time.sleep(PROBE_DELAY)
     return None
+
 
 
 def _fetch_price_one(symbol: str) -> list[list] | None:
@@ -534,6 +677,28 @@ def _cleanup_unsafe_detail_files() -> int:
     return removed
 
 
+def _cleanup_stale_detail_files(universe_stems: set[str]) -> int:
+    """Delete detail files that do not correspond to any ticker in the current
+    leaderboard universe. Covers old tickers, and blocked tickers like EUR."""
+    removed = 0
+    if not DETAILS_DIR.exists():
+        return 0
+    for f in DETAILS_DIR.iterdir():
+        if not f.is_file() or not f.name.endswith(".json"):
+            continue
+        stem = f.name[:-len(".json")]
+        if stem not in universe_stems:
+            try:
+                f.unlink()
+                removed += 1
+            except OSError as e:
+                print(f"  WARNING: could not remove stale file {f.name}: {e}")
+    if removed:
+        print(f"  Removed {removed} stale detail file(s) not in current universe (e.g. cash/old tickers).")
+    return removed
+
+
+
 def _write_detail_file(
     ticker: str, company: str,
     desc: str | None, prices: list[list] | None,
@@ -633,9 +798,11 @@ def build_details(
     if currency_tickers:
         print(f"  Filtered {len(currency_tickers)} currency codes: {', '.join(sorted(currency_tickers)[:10])}…")
         total_universe -= currency_tickers
-    raw_resolved   = set(state.get("resolved") or []) & total_universe
+    _cleanup_stale_detail_files({_safe_detail_stem(t) for t in total_universe})
+    # Discover resolved tickers by scanning all files in the details directory.
+    # This recovers any tickers that were successfully processed in previous runs or interrupted runs.
     resolved       = set()
-    for t in raw_resolved:
+    for t in total_universe:
         detail_path = DETAILS_DIR / f"{_safe_detail_stem(t)}.json"
         if detail_path.exists():
             try:
@@ -727,9 +894,9 @@ def build_details(
         symbol = _resolve_yf_symbol(ticker, meta, symbol_map)
         prices = _fetch_price_one(symbol)
 
-        if not prices and (re.search(r"\d", ticker) or not _is_us_ticker(ticker, meta.get("country", ""))):
+        if not prices:
             print(f"    No data for {symbol} — probing…")
-            probed = _probe_yf_symbol(ticker, symbol_map)
+            probed = _probe_yf_symbol(ticker, company, symbol_map)
             if probed and probed != symbol:
                 symbol = probed
                 prices = _fetch_price_one(symbol)
@@ -787,8 +954,8 @@ def build_details(
         symbol = _resolve_yf_symbol(ticker, meta, symbol_map)
         prices = _fetch_price_one(symbol)
 
-        if not prices and (re.search(r"\d", ticker) or not _is_us_ticker(ticker, meta.get("country", ""))):
-            probed = _probe_yf_symbol(ticker, symbol_map)
+        if not prices:
+            probed = _probe_yf_symbol(ticker, company, symbol_map)
             if probed and probed != symbol:
                 symbol = probed
                 prices = _fetch_price_one(symbol)
