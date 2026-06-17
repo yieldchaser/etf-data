@@ -1675,32 +1675,147 @@
           </table>
         </div>
 
-        <!-- Liquidated / Exited Holdings section -->
-        <div x-show="exitsForActivePeriod.length > 0" class="px-3 py-3 border-t" style="border-color: var(--border); background: rgba(239, 68, 68, 0.02)">
-          <div class="flex items-center gap-1.5 mb-2.5">
-            <span class="w-2 h-2 rounded-sm flex-shrink-0" style="background: var(--down)"></span>
-            <span class="label label-red font-medium text-xs tracking-wider" style="color: var(--down)">LIQUIDATED / EXITED HOLDINGS (DURING THIS PERIOD)</span>
-            <span class="num font-mono text-[10px] ml-auto" style="color: var(--text-3)" x-text="`${exitsForActivePeriod.length} names exited`"></span>
+        <!-- Period Activity & Conviction Flows Dashboard -->
+        <div x-show="etfHasHistoryForPeriod(holdingsPeriod) && (entriesForActivePeriod.length > 0 || exitsForActivePeriod.length > 0 || topAdditionsForActivePeriod.length > 0 || topTrimsForActivePeriod.length > 0)"
+             class="px-4 py-4 border-t space-y-4"
+             style="border-color: var(--border); background: rgba(0, 0, 0, 0.12)">
+          
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 select-none">
+            <div>
+              <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Period Activity & Conviction Flows</span>
+              <span class="text-[9px] text-zinc-500 ml-1.5 hidden sm:inline" x-text="`Changes observed over the active ${holdingsPeriod}d lookback timeframe`"></span>
+            </div>
+            <div class="text-[9px] font-mono text-zinc-500 bg-white/[0.01] border border-white/[0.04] px-2 py-0.5 rounded-full w-max">
+              Analysis Window: <span class="text-zinc-300 font-semibold" x-text="`${holdingsPeriod}d`"></span>
+            </div>
           </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-            <template x-for="ex in exitsForActivePeriod" :key="ex.ticker">
-              <div class="flex items-center justify-between p-2 rounded border transition-colors hover:bg-white/5" 
-                   style="background: var(--surface); border-color: rgba(239, 68, 68, 0.15)">
-                <div class="min-w-0 flex-1">
-                  <div class="flex items-center gap-1.5">
-                    <span class="font-mono text-xs font-semibold hover:underline cursor-pointer" style="color: var(--text)"
-                          @click="window.open(`stock.html?t=${ex.ticker}`, '_self')" x-text="ex.ticker"></span>
-                    <span class="text-[9px] px-1 rounded-sm leading-none border uppercase font-medium" 
-                          style="background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); color: var(--down)">EXIT</span>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            
+            <!-- Column 1: New Positions (Green) -->
+            <div class="flex flex-col h-full">
+              <div class="flex items-center gap-1.5 mb-2 px-1 select-none">
+                <span class="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-emerald-400"></span>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-400">New Positions</span>
+                <span class="num font-mono text-[9px] text-zinc-500 ml-auto" x-text="`${entriesForActivePeriod.length} added`"></span>
+              </div>
+              <div class="flex-1 space-y-2">
+                <template x-for="h in entriesForActivePeriod" :key="h.ticker">
+                  <div class="flex items-center justify-between p-2 rounded-lg border transition duration-200 hover:bg-white/[0.02] bg-zinc-950/40 border-white/[0.03]">
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-center gap-1.5">
+                        <span class="font-mono text-xs font-semibold hover:underline cursor-pointer text-zinc-100 hover:text-cyan-400"
+                              @click="window.open(`stock.html?t=${h.ticker}`, '_self')" x-text="h.ticker"></span>
+                        <span class="text-[8px] px-1 py-0.2 rounded-sm border uppercase font-semibold bg-emerald-500/10 border-emerald-500/20 text-emerald-400 leading-none">NEW</span>
+                      </div>
+                      <div class="text-[9px] truncate text-zinc-400 mt-0.5" x-text="h.company || '—'"></div>
+                    </div>
+                    <div class="text-right shrink-0 pl-2">
+                      <div class="text-[8px] text-zinc-500 uppercase tracking-wider font-semibold">Weight</div>
+                      <div class="font-mono text-xs font-semibold text-zinc-200" x-text="fmtWeight(h.weight)"></div>
+                    </div>
                   </div>
-                  <div class="text-[10px] truncate" style="color: var(--text-3)" x-text="ex.name || '—'"></div>
-                </div>
-                <div class="text-right shrink-0 pl-2">
-                  <div class="text-[10px]" style="color: var(--text-3)">Weight was</div>
-                  <div class="font-mono text-xs font-medium" style="color: var(--text-2)" x-text="fmtWeight(ex.weight_then)"></div>
+                </template>
+                <div x-show="entriesForActivePeriod.length === 0" 
+                     class="flex items-center justify-center p-4 rounded-lg border border-dashed border-white/[0.04] bg-white/[0.002] h-[60px] text-[9px] text-zinc-500 italic select-none">
+                  No new listings in this period
                 </div>
               </div>
-            </template>
+            </div>
+
+            <!-- Column 2: Exited Positions (Red) -->
+            <div class="flex flex-col h-full">
+              <div class="flex items-center gap-1.5 mb-2 px-1 select-none">
+                <span class="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-rose-400"></span>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Exited Positions</span>
+                <span class="num font-mono text-[9px] text-zinc-500 ml-auto" x-text="`${exitsForActivePeriod.length} liquidated`"></span>
+              </div>
+              <div class="flex-1 space-y-2">
+                <template x-for="ex in exitsForActivePeriod" :key="ex.ticker">
+                  <div class="flex items-center justify-between p-2 rounded-lg border transition duration-200 hover:bg-white/[0.02] bg-zinc-950/40 border-white/[0.03]">
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-center gap-1.5">
+                        <span class="font-mono text-xs font-semibold hover:underline cursor-pointer text-zinc-100 hover:text-cyan-400"
+                              @click="window.open(`stock.html?t=${ex.ticker}`, '_self')" x-text="ex.ticker"></span>
+                        <span class="text-[8px] px-1 py-0.2 rounded-sm border uppercase font-semibold bg-rose-500/10 border-rose-500/20 text-rose-400 leading-none">EXIT</span>
+                      </div>
+                      <div class="text-[9px] truncate text-zinc-400 mt-0.5" x-text="ex.name || '—'"></div>
+                    </div>
+                    <div class="text-right shrink-0 pl-2">
+                      <div class="text-[8px] text-zinc-500 uppercase tracking-wider font-semibold">Weight was</div>
+                      <div class="font-mono text-xs font-semibold text-zinc-200" x-text="fmtWeight(ex.weight_then)"></div>
+                    </div>
+                  </div>
+                </template>
+                <div x-show="exitsForActivePeriod.length === 0" 
+                     class="flex items-center justify-center p-4 rounded-lg border border-dashed border-white/[0.04] bg-white/[0.002] h-[60px] text-[9px] text-zinc-500 italic select-none">
+                  No liquidations in this period
+                </div>
+              </div>
+            </div>
+
+            <!-- Column 3: Weight Increased (Teal) -->
+            <div class="flex flex-col h-full">
+              <div class="flex items-center gap-1.5 mb-2 px-1 select-none">
+                <span class="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-teal-400"></span>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Weight Increased</span>
+                <span class="num font-mono text-[9px] text-zinc-500 ml-auto">Top 5 additions</span>
+              </div>
+              <div class="flex-1 space-y-2">
+                <template x-for="h in topAdditionsForActivePeriod" :key="h.ticker">
+                  <div class="flex items-center justify-between p-2 rounded-lg border transition duration-200 hover:bg-white/[0.02] bg-zinc-950/40 border-white/[0.03]">
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-center gap-1.5">
+                        <span class="font-mono text-xs font-semibold hover:underline cursor-pointer text-zinc-100 hover:text-cyan-400"
+                              @click="window.open(`stock.html?t=${h.ticker}`, '_self')" x-text="h.ticker"></span>
+                        <span class="num font-mono text-[9px] text-emerald-400 font-bold" x-text="fmtFlow(getHoldingsFlow(h, holdingsPeriod))"></span>
+                      </div>
+                      <div class="text-[9px] truncate text-zinc-400 mt-0.5" x-text="h.company || '—'"></div>
+                    </div>
+                    <div class="text-right shrink-0 pl-2">
+                      <div class="text-[8px] text-zinc-500 uppercase tracking-wider font-semibold">Weight</div>
+                      <div class="font-mono text-xs font-semibold text-zinc-200" x-text="fmtWeight(h.weight)"></div>
+                    </div>
+                  </div>
+                </template>
+                <div x-show="topAdditionsForActivePeriod.length === 0" 
+                     class="flex items-center justify-center p-4 rounded-lg border border-dashed border-white/[0.04] bg-white/[0.002] h-[60px] text-[9px] text-zinc-500 italic select-none">
+                  No significant weight additions
+                </div>
+              </div>
+            </div>
+
+            <!-- Column 4: Weight Decreased (Orange) -->
+            <div class="flex flex-col h-full">
+              <div class="flex items-center gap-1.5 mb-2 px-1 select-none">
+                <span class="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-orange-400"></span>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Weight Decreased</span>
+                <span class="num font-mono text-[9px] text-zinc-500 ml-auto">Top 5 trims</span>
+              </div>
+              <div class="flex-1 space-y-2">
+                <template x-for="h in topTrimsForActivePeriod" :key="h.ticker">
+                  <div class="flex items-center justify-between p-2 rounded-lg border transition duration-200 hover:bg-white/[0.02] bg-zinc-950/40 border-white/[0.03]">
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-center gap-1.5">
+                        <span class="font-mono text-xs font-semibold hover:underline cursor-pointer text-zinc-100 hover:text-cyan-400"
+                              @click="window.open(`stock.html?t=${h.ticker}`, '_self')" x-text="h.ticker"></span>
+                        <span class="num font-mono text-[9px] text-rose-400 font-bold" x-text="fmtFlow(getHoldingsFlow(h, holdingsPeriod))"></span>
+                      </div>
+                      <div class="text-[9px] truncate text-zinc-400 mt-0.5" x-text="h.company || '—'"></div>
+                    </div>
+                    <div class="text-right shrink-0 pl-2">
+                      <div class="text-[8px] text-zinc-500 uppercase tracking-wider font-semibold">Weight</div>
+                      <div class="font-mono text-xs font-semibold text-zinc-200" x-text="fmtWeight(h.weight)"></div>
+                    </div>
+                  </div>
+                </template>
+                <div x-show="topTrimsForActivePeriod.length === 0" 
+                     class="flex items-center justify-center p-4 rounded-lg border border-dashed border-white/[0.04] bg-white/[0.002] h-[60px] text-[9px] text-zinc-500 italic select-none">
+                  No significant weight trims
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
@@ -2924,6 +3039,29 @@ function app() {
       const period = this.holdingsPeriod;
       if (!this.etfHasHistoryForPeriod(period)) return [];
       return this.etfHoldings.filter(h => this.getHoldingsDelta(h, period) === null);
+    },
+
+    get topAdditionsForActivePeriod() {
+      const period = this.holdingsPeriod;
+      return this.etfHoldings
+        .filter(h => {
+          const flow = this.getHoldingsFlow(h, period);
+          const delta = this.getHoldingsDelta(h, period);
+          return flow > 0 && delta !== null;
+        })
+        .sort((a, b) => (this.getHoldingsFlow(b, period) || 0) - (this.getHoldingsFlow(a, period) || 0))
+        .slice(0, 5);
+    },
+
+    get topTrimsForActivePeriod() {
+      const period = this.holdingsPeriod;
+      return this.etfHoldings
+        .filter(h => {
+          const flow = this.getHoldingsFlow(h, period);
+          return flow < 0;
+        })
+        .sort((a, b) => (this.getHoldingsFlow(a, period) || 0) - (this.getHoldingsFlow(b, period) || 0))
+        .slice(0, 5);
     },
 
     getHoldingsDelta(h, period) {
