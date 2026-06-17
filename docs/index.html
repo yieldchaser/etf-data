@@ -1224,72 +1224,75 @@
 
                         <!-- LEFT PANEL -->
                         <div class="flex-1 min-w-0 flex flex-col">
-                          <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 mb-3 text-xs border rounded-lg p-3" style="border-color: var(--border); background: rgba(255,255,255,0.012)">
+                          <!-- Summary metrics card -->
+                          <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4 mb-4 text-xs border border-white/[0.06] rounded-xl p-4 bg-gradient-to-b from-white/[0.02] to-white/[0.005] shadow-[0_4px_24px_rgba(0,0,0,0.3)]">
                             <div>
                               <div class="label mb-1">Company</div>
-                              <div class="text-sm mt-0.5 font-medium" style="color: var(--text)" x-text="row.company"></div>
+                              <div class="text-sm mt-0.5 font-bold tracking-tight" style="color: var(--text)" x-text="row.company"></div>
                               <!-- Sector, Country, Market Cap badges -->
                               <div class="text-[9px] mt-1.5 flex flex-wrap gap-1 select-none" style="color: var(--text-2)">
                                 <template x-if="row.country && row.country !== 'Unknown'">
-                                  <span class="px-1 py-0.2 rounded border bg-white/[0.01] border-white/[0.05]" x-text="row.country"></span>
+                                  <span class="px-1.5 py-0.5 rounded bg-white/[0.03] border border-white/[0.05]" x-text="row.country"></span>
                                 </template>
                                 <template x-if="row.sector && row.sector !== 'Unknown'">
-                                  <span class="px-1 py-0.2 rounded border bg-white/[0.01] border-white/[0.05]" x-text="row.sector"></span>
+                                  <span class="px-1.5 py-0.5 rounded bg-white/[0.03] border border-white/[0.05]" x-text="row.sector"></span>
                                 </template>
                                 <template x-if="row.market_cap_usd">
-                                  <span class="px-1 py-0.2 rounded border bg-white/[0.01] border-white/[0.05]" x-text="formatMarketCap(row.market_cap_usd)"></span>
+                                  <span class="px-1.5 py-0.5 rounded bg-white/[0.03] border border-white/[0.05]" x-text="formatMarketCap(row.market_cap_usd)"></span>
                                 </template>
                               </div>
                             </div>
-                            <div>
+                            <div class="xl:border-l xl:border-white/[0.04] xl:pl-4">
                               <div class="label mb-1">Score breakdown</div>
-                              <div class="num font-mono mt-0.5" style="color: var(--text)">
-                                <span class="text-sm font-medium" x-text="fmt1(row.final_score)"></span>
-                                <span x-show="row.score_delta" :style="`color: ${flowColor(row.score_delta_pct)}`" class="ml-1 text-[10px]" x-text="`(${row.score_delta > 0 ? '+' : ''}${fmt1(row.score_delta)})`"></span>
+                              <div class="num font-mono mt-0.5 flex items-baseline gap-1">
+                                <span class="text-sm font-bold" style="color: var(--text)" x-text="fmt1(row.final_score)"></span>
+                                <span x-show="row.score_delta" :style="`color: ${flowColor(row.score_delta_pct)}`" class="text-[10px] font-semibold" x-text="`(${row.score_delta > 0 ? '+' : ''}${fmt1(row.score_delta)})`"></span>
                               </div>
                             </div>
-                            <div>
+                            <div class="xl:border-l xl:border-white/[0.04] xl:pl-4">
                               <div class="label mb-1">HC streak</div>
-                              <div class="text-sm num font-mono mt-0.5 font-medium" :style="row.hc_streak > 0 ? 'color: var(--up)' : 'color: var(--text-2)'" x-text="`${row.hc_streak || 0}d`"></div>
+                              <div class="text-sm num font-mono mt-0.5 font-bold" :style="row.hc_streak > 0 ? 'color: var(--up)' : 'color: var(--text-2)'" x-text="`${row.hc_streak || 0}d`"></div>
                             </div>
-                            <div>
+                            <div class="xl:border-l xl:border-white/[0.04] xl:pl-4">
                               <div class="label mb-1">Best rank</div>
-                              <div class="text-sm num font-mono mt-0.5 font-medium" style="color: var(--text-2)" x-text="`#${row.best_rank}`"></div>
+                              <div class="text-sm num font-mono mt-0.5 font-bold" style="color: var(--text-2)" x-text="`#${row.best_rank}`"></div>
                             </div>
-                            <div>
+                            <div class="xl:border-l xl:border-white/[0.04] xl:pl-4">
                               <div class="label mb-1">Score streak</div>
-                              <div class="text-sm num font-mono mt-0.5 font-medium" :style="`color: ${streakColor(row.score_streak)}`" x-text="fmtStreak(row.score_streak) || '—'"></div>
+                              <div class="text-sm num font-mono mt-0.5 font-bold" :style="`color: ${streakColor(row.score_streak)}`" x-text="fmtStreak(row.score_streak) || '—'"></div>
                             </div>
-                            <div>
+                            <div class="xl:border-l xl:border-white/[0.04] xl:pl-4">
                               <div class="label mb-1">Weight</div>
-                              <div class="text-sm num font-mono mt-0.5 font-medium" style="color: var(--text-2)" x-text="fmtWeight(row.total_weight)"></div>
+                              <div class="text-sm num font-mono mt-0.5 font-bold" style="color: var(--text-2)" x-text="fmtWeight(row.total_weight)"></div>
                             </div>
                           </div>
+
+                          <!-- Holdings table -->
                           <div class="overflow-x-auto scrollbar flex-1">
                             <table class="w-full text-xs">
-                              <thead style="color: var(--text-3)">
-                                <tr style="border-bottom: 1px solid var(--border)">
-                                  <th class="text-left py-1.5 pr-3 label">ETF</th>
-                                  <th class="text-left py-1.5 pr-3 label">Tier</th>
-                                  <th class="text-right py-1.5 pr-3 label">Rank</th>
-                                  <th class="text-right py-1.5 pr-3 label">7d Δ</th>
-                                  <th class="text-right py-1.5 pr-3 label">Weight</th>
-                                  <th class="text-right py-1.5 pr-3 label">Flow</th>
-                                  <th class="text-right py-1.5 pr-3 label">Score</th>
-                                  <th class="text-left py-1.5 label">Flags</th>
+                              <thead>
+                                <tr class="border-b border-white/[0.06] bg-white/[0.01]">
+                                  <th class="text-left py-2.5 px-3 label">ETF</th>
+                                  <th class="text-left py-2.5 px-3 label">Tier</th>
+                                  <th class="text-right py-2.5 px-3 label">Rank</th>
+                                  <th class="text-right py-2.5 px-3 label">7d Δ</th>
+                                  <th class="text-right py-2.5 px-3 label">Weight</th>
+                                  <th class="text-right py-2.5 px-3 label">Flow</th>
+                                  <th class="text-right py-2.5 px-3 label">Score</th>
+                                  <th class="text-left py-2.5 px-3 label">Flags</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 <template x-for="h in detailsFor(row.ticker)" :key="h.ETF_Ticker">
-                                <tr class="hover:bg-white/[0.015] transition-colors" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
-                                    <td class="py-1.5 pr-3 font-medium font-mono" x-text="h.ETF_Ticker"></td>
-                                    <td class="py-1.5 pr-3"><span class="chip" :style="tierChipStyle(h.tier)" x-text="h.tier"></span></td>
-                                    <td class="py-1.5 pr-3 text-right num font-mono" x-text="`#${h.rank}`"></td>
-                                    <td class="py-1.5 pr-3 text-right num font-mono" :style="`color: ${rankDeltaColor(h.rank_delta)}`" x-text="fmtRankDelta(h.rank_delta)"></td>
-                                    <td class="py-1.5 pr-3 text-right num font-mono" style="color: var(--text-2)" x-text="fmtWeight(h.weight)"></td>
-                                    <td class="py-1.5 pr-3 text-right num font-mono" :style="`color: ${flowColor(h.weight_flow)}`" x-text="fmtFlow(h.weight_flow)"></td>
-                                    <td class="py-1.5 pr-3 text-right num font-mono" x-text="fmt1(h.score)"></td>
-                                    <td class="py-1.5">
+                                  <tr class="hover:bg-white/[0.015] transition-colors border-b border-white/[0.02]">
+                                    <td class="text-left py-2.5 px-3 font-semibold font-mono" style="color: var(--cyan)" x-text="h.ETF_Ticker"></td>
+                                    <td class="text-left py-2.5 px-3"><span class="chip" :style="tierChipStyle(h.tier)" x-text="h.tier"></span></td>
+                                    <td class="text-right py-2.5 px-3 num font-mono font-medium" style="color: var(--text)" x-text="`#${h.rank}`"></td>
+                                    <td class="text-right py-2.5 px-3 num font-mono font-medium" :style="`color: ${rankDeltaColor(h.rank_delta)}`" x-text="fmtRankDelta(h.rank_delta)"></td>
+                                    <td class="text-right py-2.5 px-3 num font-mono" style="color: var(--text-2)" x-text="fmtWeight(h.weight)"></td>
+                                    <td class="text-right py-2.5 px-3 num font-mono" :style="`color: ${flowColor(h.weight_flow)}`" x-text="fmtFlow(h.weight_flow)"></td>
+                                    <td class="text-right py-2.5 px-3 num font-mono font-semibold" style="color: var(--text)" x-text="fmt1(h.score)"></td>
+                                    <td class="text-left py-2.5 px-3">
                                       <span x-show="h.is_new" class="chip" style="background: rgba(96, 165, 250, 0.10); color: var(--blue); border: 1px solid rgba(96, 165, 250, 0.25)">NEW</span>
                                     </td>
                                   </tr>
