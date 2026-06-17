@@ -1481,7 +1481,7 @@
         </div>
 
         <!-- ETF list with expandable details -->
-        <div class="space-y-1 overflow-y-auto max-h-[500px] pr-1">
+        <div class="space-y-1 overflow-y-auto max-h-[500px] pr-1 scrollbar">
           <template x-for="etfRow in etfSummary" :key="etfRow.etf">
             <div x-show="!selectedTier || etfRow.tier === selectedTier" x-transition.opacity>
               <button @click="activeETF = etfRow.etf; expandedSidebarETF = expandedSidebarETF === etfRow.etf ? null : etfRow.etf"
@@ -1532,7 +1532,7 @@
                 <span class="num text-zinc-300 font-mono mr-1" x-text="etfHoldings.length"></span> holdings
               </span>
               <!-- Tier Badge -->
-              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold flex items-center" :style="tierChipStyle(currentETFTier) + '; border-radius: 9999px;'" x-text="`tier ${currentETFTier}`"></span>
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold flex items-center" :style="tierChipStyle(currentETFTier) + '; border-radius: 9999px;'" x-text="`Tier ${currentETFTier}`"></span>
               <!-- Rebalance Badge -->
               <template x-if="etfMetaLookup[activeETF]?.rebalance">
                 <span class="px-2.5 py-0.5 rounded-full border border-white/[0.06] bg-white/[0.02] text-[10px] text-zinc-400 flex items-center gap-1">
@@ -1898,276 +1898,706 @@
 
   <!-- ═════════════ TAB 3: CHANGES ════════════════════════════════════════ -->
   <section x-show="activeTab === 'changes'">
-    <!-- Tab-level header strip -->
-    <div class="flex items-center justify-between px-3 py-2 mb-3 rounded-lg text-xs" style="background: var(--surface); border: 1px solid var(--border)">
-      <div class="font-mono font-medium" style="color: var(--cyan)" x-text="`Changes — ${changelog.today || '—'} vs ${changelog.yesterday || '—'}`"></div>
-      <div class="num font-mono flex gap-3" style="color: var(--text-3)">
-        <span x-text="`${changelog.entered_hc?.length || 0} entered HC`"></span>
-        <span style="color: var(--border-2)">·</span>
-        <span x-text="`${changelog.exited_hc?.length || 0} exited`"></span>
-        <span style="color: var(--border-2)">·</span>
-        <span x-text="`${changelog.new_entrants?.length || 0} new`"></span>
-        <span style="color: var(--border-2)">·</span>
-        <span :style="`color: ${flowColor((changelog.biggest_gainers?.[0]?.score_delta_pct) ?? 0)}`"
-              x-text="changelog.biggest_gainers?.[0] ? `top mover ${fmtPct(changelog.biggest_gainers[0].score_delta_pct)}` : 'no movers'"></span>
+    <!-- Tab-level Header Strip (Sticky glassmorphic header strip) -->
+    <div class="sticky top-[52px] z-30 flex items-center justify-between px-3 py-2.5 mb-3 rounded-lg text-xs backdrop-blur-md border" style="background: rgba(20, 20, 20, 0.85); border-color: var(--border); box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+      <div class="flex flex-col gap-1 min-w-0">
+        <div class="font-mono font-semibold text-zinc-100" x-text="`Changes — ${changelog.today || '—'} vs ${changelog.yesterday || '—'}`"></div>
+        <!-- Summary capsule badges showing key counts at a glance -->
+        <div class="flex items-center gap-1.5 flex-wrap text-[10px] text-zinc-400">
+          <span class="bg-white/[0.03] border border-white/[0.04] px-1.5 py-0.5 rounded-full select-none" x-text="`📈 ${dynamicScoreGainers.length} gainers`"></span>
+          <span class="bg-white/[0.03] border border-white/[0.04] px-1.5 py-0.5 rounded-full select-none" x-text="`📉 ${dynamicScoreLosers.length} losers`"></span>
+          <span class="bg-white/[0.03] border border-white/[0.04] px-1.5 py-0.5 rounded-full select-none" x-text="`⚡ ${activeSignalCounts.burst} bursts`"></span>
+          <span class="bg-white/[0.03] border border-white/[0.04] px-1.5 py-0.5 rounded-full select-none" x-text="`🆕 ${changelog.new_entrants?.length || 0} new`"></span>
+          <span class="bg-white/[0.03] border border-white/[0.04] px-1.5 py-0.5 rounded-full select-none" x-text="`⚖️ ${(changelog.entered_hc?.length || 0) + (changelog.exited_hc?.length || 0)} HC`"></span>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 shrink-0">
+        <span class="text-zinc-500 font-mono text-[10px] hidden sm:inline">Look-back:</span>
+        <div class="flex border rounded overflow-hidden" style="border-color: rgba(255,255,255,0.08); background: rgba(0,0,0,0.25)">
+          <template x-for="p in [1,7,14,30,60,90,'YTD']" :key="p">
+            <button @click.stop="changesPeriod = p"
+                    :style="changesPeriod === p ? 'background: rgba(34,211,238,0.15); color: var(--cyan); border-color: transparent;' : 'color: rgba(255,255,255,0.45); border-color: transparent;'"
+                    class="px-2.5 py-1 text-[10px] font-mono leading-none hover:text-zinc-200 transition outline-none cursor-pointer"
+                    x-text="p === 'YTD' ? 'YTD' : p + 'd'"></button>
+          </template>
+        </div>
       </div>
     </div>
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-      <!-- Entries to HC -->
-      <div class="rounded-lg border" style="background: var(--surface); border-color: var(--border)">
-        <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
-          <div class="label-cyan label">Entered HIGH CONVICTION</div>
-          <div class="text-xs num font-mono" style="color: var(--text-3)" x-text="`${changelog.entered_hc?.length || 0} names`"></div>
+
+    <!-- Section 1: Score Movers — Biggest Gainers & Losers (Side by side) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
+      <!-- Biggest Gainers -->
+      <div class="rounded-lg border" style="border-color: var(--border); background: var(--surface);">
+        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
+          <div class="label flex items-center gap-1.5 text-emerald-400 font-semibold text-xs tracking-wider uppercase">
+            <span>📈</span> Biggest Score Gainers
+          </div>
+          <div class="text-[10px] font-mono text-zinc-500" x-text="`Max 15 rows · &ge;2 ETFs`"></div>
         </div>
-        <div x-show="!changelog.entered_hc?.length" class="px-3 py-6 text-center text-xs" style="color: var(--text-3)">No entries today</div>
-        <template x-for="r in changelog.entered_hc" :key="r.ticker">
-          <a :href="`stock.html?t=${r.ticker}`" style="text-decoration: none; color: inherit; display: block;">
-            <div class="px-3 py-2 flex items-center justify-between text-xs hover:bg-white/5 transition"
-                 :style="`border-bottom: 1px solid rgba(255,255,255,0.03); ${isPinned(r.ticker) ? 'background: rgba(34,211,238,0.04); border-left: 2px solid var(--cyan);' : ''}`">
-              <div class="flex items-center gap-3">
-                <span x-show="isPinned(r.ticker)" style="color: var(--cyan)" class="text-xs">★</span>
-                <span class="font-mono font-medium" x-text="r.ticker"></span>
-                <span style="color: var(--text-2)" class="truncate max-w-[260px]" x-text="r.company"></span>
-              </div>
-              <div class="flex items-center gap-3 num font-mono">
-                <span style="color: var(--text-3)" x-text="`${r.etf_count} ETFs`"></span>
-                <span x-text="fmt1(r.final_score)"></span>
-              </div>
-            </div>
-          </a>
-        </template>
+        <div class="overflow-x-auto scrollbar">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04]">
+                <th class="px-3 py-1.5 font-semibold">#</th>
+                <th class="px-2 py-1.5 font-semibold">Ticker</th>
+                <th class="px-2 py-1.5 font-semibold hidden sm:table-cell">Company</th>
+                <th class="px-2 py-1.5 font-semibold text-right">ETFs</th>
+                <th class="px-2 py-1.5 font-semibold text-right">Δ%</th>
+                <th class="px-2 py-1.5 font-semibold text-right">Score</th>
+                <th class="px-3 py-1.5 font-semibold text-center">Streak</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="r in dynamicScoreGainers" :key="r.ticker">
+                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
+                    @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
+                  <td class="px-3 py-2 font-mono text-zinc-400" x-text="r.leaderboard_rank"></td>
+                  <td class="px-2 py-2 font-mono font-medium text-zinc-200">
+                    <div class="flex items-center gap-1.5">
+                      <span x-text="r.ticker"></span>
+                      <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
+                        <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
+                              x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
+                      </template>
+                    </div>
+                  </td>
+                  <td class="px-2 py-2 text-zinc-400 truncate hidden sm:table-cell max-w-[150px]" x-text="r.company"></td>
+                  <td class="px-2 py-2 text-right font-mono text-zinc-400" x-text="r.etf_count"></td>
+                  <td class="px-2 py-2 text-right font-mono font-semibold" :style="`color: ${flowColor(r.score_deltas_by_period[String(changesPeriod)])}`"
+                      x-text="fmtPct(r.score_deltas_by_period[String(changesPeriod)])"></td>
+                  <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
+                  <td class="px-3 py-2 text-center font-mono text-[10px]" :style="`color: ${streakColor(r.score_streak)}`"
+                      x-text="r.score_streak ? fmtStreak(r.score_streak) : '—'"></td>
+                </tr>
+              </template>
+              <tr x-show="dynamicScoreGainers.length === 0">
+                <td colspan="7" class="px-3 py-6 text-center text-zinc-500 italic select-none">No gainers detected in this period</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <!-- Exits from HC -->
-      <div class="rounded-lg border" style="background: var(--surface); border-color: var(--border)">
-        <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
-          <div class="label-cyan label">Exited HIGH CONVICTION</div>
-          <div class="text-xs num font-mono" style="color: var(--text-3)" x-text="`${changelog.exited_hc?.length || 0} names`"></div>
+      <!-- Biggest Losers -->
+      <div class="rounded-lg border" style="border-color: var(--border); background: var(--surface);">
+        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
+          <div class="label flex items-center gap-1.5 text-rose-400 font-semibold text-xs tracking-wider uppercase">
+            <span>📉</span> Biggest Score Losers
+          </div>
+          <div class="text-[10px] font-mono text-zinc-500" x-text="`Max 15 rows · &ge;2 ETFs`"></div>
         </div>
-        <div x-show="!changelog.exited_hc?.length" class="px-3 py-6 text-center text-xs" style="color: var(--text-3)">No exits today</div>
-        <template x-for="r in changelog.exited_hc" :key="r.ticker">
-          <a :href="`stock.html?t=${r.ticker}`" style="text-decoration: none; color: inherit; display: block;">
-            <div class="px-3 py-2 flex items-center justify-between text-xs hover:bg-white/5 transition"
-                 :style="`border-bottom: 1px solid rgba(255,255,255,0.03); ${isPinned(r.ticker) ? 'background: rgba(34,211,238,0.04); border-left: 2px solid var(--cyan);' : ''}`">
-              <div class="flex items-center gap-3">
-                <span x-show="isPinned(r.ticker)" style="color: var(--cyan)" class="text-xs">★</span>
-                <span class="font-mono font-medium" x-text="r.ticker"></span>
-                <span style="color: var(--text-2)" class="truncate max-w-[260px]" x-text="r.company"></span>
-              </div>
-              <div class="flex items-center gap-3 num font-mono">
-                <span style="color: var(--text-3)" x-text="`${r.etf_count || '—'} ETFs`"></span>
-                <span x-text="fmt1(r.final_score)"></span>
-              </div>
-            </div>
-          </a>
-        </template>
+        <div class="overflow-x-auto scrollbar">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04]">
+                <th class="px-3 py-1.5 font-semibold">#</th>
+                <th class="px-2 py-1.5 font-semibold">Ticker</th>
+                <th class="px-2 py-1.5 font-semibold hidden sm:table-cell">Company</th>
+                <th class="px-2 py-1.5 font-semibold text-right">ETFs</th>
+                <th class="px-2 py-1.5 font-semibold text-right">Δ%</th>
+                <th class="px-2 py-1.5 font-semibold text-right">Score</th>
+                <th class="px-3 py-1.5 font-semibold text-center">Streak</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="r in dynamicScoreLosers" :key="r.ticker">
+                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
+                    @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
+                  <td class="px-3 py-2 font-mono text-zinc-400" x-text="r.leaderboard_rank"></td>
+                  <td class="px-2 py-2 font-mono font-medium text-zinc-200">
+                    <div class="flex items-center gap-1.5">
+                      <span x-text="r.ticker"></span>
+                      <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
+                        <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
+                              x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
+                      </template>
+                    </div>
+                  </td>
+                  <td class="px-2 py-2 text-zinc-400 truncate hidden sm:table-cell max-w-[150px]" x-text="r.company"></td>
+                  <td class="px-2 py-2 text-right font-mono text-zinc-400" x-text="r.etf_count"></td>
+                  <td class="px-2 py-2 text-right font-mono font-semibold" :style="`color: ${flowColor(r.score_deltas_by_period[String(changesPeriod)])}`"
+                      x-text="fmtPct(r.score_deltas_by_period[String(changesPeriod)])"></td>
+                  <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
+                  <td class="px-3 py-2 text-center font-mono text-[10px]" :style="`color: ${streakColor(r.score_streak)}`"
+                      x-text="r.score_streak ? fmtStreak(r.score_streak) : '—'"></td>
+                </tr>
+              </template>
+              <tr x-show="dynamicScoreLosers.length === 0">
+                <td colspan="7" class="px-3 py-6 text-center text-zinc-500 italic select-none">No losers detected in this period</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Rank Movers — Biggest Rank Jumps & Drops (NEW) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
+      <!-- Rank Climbers -->
+      <div class="rounded-lg border border-l-4" style="border-color: var(--border); border-left-color: var(--up); background: var(--surface);">
+        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
+          <div class="label flex items-center gap-1.5 text-emerald-400 font-semibold text-xs tracking-wider uppercase">
+            <span>🚀</span> Biggest Rank Climbers (30d)
+          </div>
+          <div class="text-[10px] font-mono text-zinc-500" x-text="`Max 10 rows · &ge;2 ETFs · Rank Δ &ge; +20`"></div>
+        </div>
+        <div class="overflow-x-auto scrollbar">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04]">
+                <th class="px-3 py-1.5 font-semibold">Rank Path</th>
+                <th class="px-2 py-1.5 font-semibold">Ticker</th>
+                <th class="px-2 py-1.5 font-semibold hidden sm:table-cell">Company</th>
+                <th class="px-2 py-1.5 font-semibold text-right">ETFs added</th>
+                <th class="px-2 py-1.5 font-semibold text-right">Velocity</th>
+                <th class="px-2 py-1.5 font-semibold text-right">Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="r in rankClimbers" :key="r.ticker">
+                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
+                    @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
+                  <td class="px-3 py-2 font-mono text-emerald-400">
+                    <div class="flex items-center gap-1">
+                      <span class="text-zinc-500" x-text="`#${r.leaderboard_rank + r.global_rank_delta_30d}`"></span>
+                      <span class="text-[9px] text-zinc-600">&rarr;</span>
+                      <span class="font-bold" x-text="`#${r.leaderboard_rank}`"></span>
+                      <span class="text-[10px] ml-0.5 font-bold" x-text="`(+${r.global_rank_delta_30d})`"></span>
+                    </div>
+                  </td>
+                  <td class="px-2 py-2 font-mono font-medium text-zinc-200">
+                    <div class="flex items-center gap-1.5">
+                      <span x-text="r.ticker"></span>
+                      <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
+                        <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
+                              x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
+                      </template>
+                    </div>
+                  </td>
+                  <td class="px-2 py-2 text-zinc-400 truncate hidden sm:table-cell max-w-[150px]" x-text="r.company"></td>
+                  <td class="px-2 py-2 text-right font-mono" :style="`color: ${r.etf_count_delta_30d > 0 ? 'var(--up)' : 'var(--text-3)'}`"
+                      x-text="r.etf_count_delta_30d ? `+${r.etf_count_delta_30d}` : '—'"></td>
+                  <td class="px-2 py-2 text-right font-mono text-zinc-300" :style="`color: ${velocityColor(r.velocity_score)}`" x-text="fmtVelocity(r.velocity_score)"></td>
+                  <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
+                </tr>
+              </template>
+              <tr x-show="rankClimbers.length === 0">
+                <td colspan="6" class="px-3 py-6 text-center text-zinc-500 italic select-none">No significant rank climbers detected</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <!-- Biggest gainers -->
-      <div class="rounded-lg border" style="background: var(--surface); border-color: var(--border)">
-        <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
-          <div class="label-cyan label">Biggest score gainers</div>
-          <div class="text-xs num font-mono" style="color: var(--text-3)" x-text="`${changelog.biggest_gainers?.length || 0}`"></div>
+      <!-- Rank Fallers -->
+      <div class="rounded-lg border border-l-4" style="border-color: var(--border); border-left-color: var(--down); background: var(--surface);">
+        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
+          <div class="label flex items-center gap-1.5 text-rose-400 font-semibold text-xs tracking-wider uppercase">
+            <span>☄️</span> Biggest Rank Fallers (30d)
+          </div>
+          <div class="text-[10px] font-mono text-zinc-500" x-text="`Max 10 rows · &ge;2 ETFs · Rank Δ &le; -20`"></div>
         </div>
-        <div x-show="!changelog.biggest_gainers?.length" class="px-3 py-6 text-center text-xs" style="color: var(--text-3)">No gainers today</div>
-        <template x-for="r in changelog.biggest_gainers" :key="r.ticker">
-          <a :href="`stock.html?t=${r.ticker}`" style="text-decoration: none; color: inherit; display: block;">
-            <div class="px-3 py-2 flex items-center justify-between text-xs hover:bg-white/5 transition"
-                 :style="`border-bottom: 1px solid rgba(255,255,255,0.03); ${isPinned(r.ticker) ? 'background: rgba(34,211,238,0.04); border-left: 2px solid var(--cyan);' : ''}`">
-              <div class="flex items-center gap-3 min-w-0">
-                <span x-show="isPinned(r.ticker)" style="color: var(--cyan)" class="text-xs shrink-0">★</span>
-                <span class="font-mono font-medium shrink-0" x-text="r.ticker"></span>
-                <span style="color: var(--text-2)" class="truncate" x-text="r.company"></span>
-                <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
-                  <span class="chip shrink-0" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
-                        x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
-                </template>
-              </div>
-              <div class="flex items-center gap-2 num font-mono shrink-0 ml-2">
-                <span style="color: var(--text-3)" x-text="`${r.etf_count} ETFs`"></span>
-                <span :style="`color: ${flowColor(r.score_delta_pct)}`" x-text="fmtPct(r.score_delta_pct)"></span>
-                <span x-text="fmt1(r.final_score)"></span>
-                <span class="text-[10px]" :style="`color: ${streakColor(r.score_streak)}`" x-show="r.score_streak" x-text="fmtStreak(r.score_streak)"></span>
-              </div>
-            </div>
-          </a>
-        </template>
+        <div class="overflow-x-auto scrollbar">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04]">
+                <th class="px-3 py-1.5 font-semibold">Rank Path</th>
+                <th class="px-2 py-1.5 font-semibold">Ticker</th>
+                <th class="px-2 py-1.5 font-semibold hidden sm:table-cell">Company</th>
+                <th class="px-2 py-1.5 font-semibold text-right">ETFs lost</th>
+                <th class="px-2 py-1.5 font-semibold text-right">Velocity</th>
+                <th class="px-2 py-1.5 font-semibold text-right">Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="r in rankFallers" :key="r.ticker">
+                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
+                    @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
+                  <td class="px-3 py-2 font-mono text-rose-400">
+                    <div class="flex items-center gap-1">
+                      <span class="text-zinc-500" x-text="`#${r.leaderboard_rank + r.global_rank_delta_30d}`"></span>
+                      <span class="text-[9px] text-zinc-600">&rarr;</span>
+                      <span class="font-bold" x-text="`#${r.leaderboard_rank}`"></span>
+                      <span class="text-[10px] ml-0.5 font-bold" x-text="`(${r.global_rank_delta_30d})`"></span>
+                    </div>
+                  </td>
+                  <td class="px-2 py-2 font-mono font-medium text-zinc-200">
+                    <div class="flex items-center gap-1.5">
+                      <span x-text="r.ticker"></span>
+                      <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
+                        <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
+                              x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
+                      </template>
+                    </div>
+                  </td>
+                  <td class="px-2 py-2 text-zinc-400 truncate hidden sm:table-cell max-w-[150px]" x-text="r.company"></td>
+                  <td class="px-2 py-2 text-right font-mono" :style="`color: ${r.etf_count_delta_30d < 0 ? 'var(--down)' : 'var(--text-3)'}`"
+                      x-text="r.etf_count_delta_30d ? `${r.etf_count_delta_30d}` : '—'"></td>
+                  <td class="px-2 py-2 text-right font-mono text-zinc-300" :style="`color: ${velocityColor(r.velocity_score)}`" x-text="fmtVelocity(r.velocity_score)"></td>
+                  <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
+                </tr>
+              </template>
+              <tr x-show="rankFallers.length === 0">
+                <td colspan="6" class="px-3 py-6 text-center text-zinc-500 italic select-none">No significant rank fallers detected</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: ETF Adoption & Dropout (NEW) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
+      <!-- ETF Pickups (Adoption) -->
+      <div class="rounded-lg border" style="border-color: var(--border); background: var(--surface);">
+        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
+          <div class="label flex items-center gap-1.5 text-cyan-400 font-semibold text-xs tracking-wider uppercase">
+            <span>🎯</span> ETF Adoption (Pickups 30d)
+          </div>
+          <div class="text-[10px] font-mono text-zinc-500" x-text="`Max 10 rows · &ge;2 ETFs`"></div>
+        </div>
+        <div class="overflow-x-auto scrollbar">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04]">
+                <th class="px-3 py-1.5 font-semibold">Ticker</th>
+                <th class="px-2 py-1.5 font-semibold hidden sm:table-cell">Company</th>
+                <th class="px-2 py-1.5 font-semibold text-right">ETFs Path</th>
+                <th class="px-2 py-1.5 font-semibold text-right">Score</th>
+                <th class="px-2 py-1.5 font-semibold text-right">Velocity</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="r in etfPickups" :key="r.ticker">
+                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
+                    @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
+                  <td class="px-3 py-2 font-mono font-medium text-zinc-200">
+                    <div class="flex items-center gap-1.5">
+                      <span x-text="r.ticker"></span>
+                      <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
+                        <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
+                              x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
+                      </template>
+                    </div>
+                  </td>
+                  <td class="px-2 py-2 text-zinc-400 truncate hidden sm:table-cell max-w-[180px]" x-text="r.company"></td>
+                  <td class="px-2 py-2 text-right font-mono text-emerald-400 font-semibold">
+                    <span class="text-zinc-500 font-normal" x-text="`${r.etf_count - r.etf_count_delta_30d}`"></span>
+                    <span class="text-[9px] text-zinc-600 font-normal">&rarr;</span>
+                    <span x-text="r.etf_count"></span>
+                    <span class="text-[10px]" x-text="` (+${r.etf_count_delta_30d})`"></span>
+                  </td>
+                  <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
+                  <td class="px-2 py-2 text-right font-mono" :style="`color: ${velocityColor(r.velocity_score)}`" x-text="fmtVelocity(r.velocity_score)"></td>
+                </tr>
+              </template>
+              <tr x-show="etfPickups.length === 0">
+                <td colspan="5" class="px-3 py-6 text-center text-zinc-500 italic select-none">No ETF pickups detected</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <!-- Biggest losers -->
-      <div class="rounded-lg border" style="background: var(--surface); border-color: var(--border)">
-        <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
-          <div class="label-cyan label">Biggest score losers</div>
-          <div class="text-xs num font-mono" style="color: var(--text-3)" x-text="`${changelog.biggest_losers?.length || 0}`"></div>
+      <!-- ETF Dropouts -->
+      <div class="rounded-lg border" style="border-color: var(--border); background: var(--surface);">
+        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
+          <div class="label flex items-center gap-1.5 text-zinc-400 font-semibold text-xs tracking-wider uppercase">
+            <span>⚠️</span> ETF Defections (Dropouts 30d)
+          </div>
+          <div class="text-[10px] font-mono text-zinc-500" x-text="`Max 10 rows`"></div>
         </div>
-        <div x-show="!changelog.biggest_losers?.length" class="px-3 py-6 text-center text-xs" style="color: var(--text-3)">No losers today</div>
-        <template x-for="r in changelog.biggest_losers" :key="r.ticker">
-          <a :href="`stock.html?t=${r.ticker}`" style="text-decoration: none; color: inherit; display: block;">
-            <div class="px-3 py-2 flex items-center justify-between text-xs hover:bg-white/5 transition"
-                 :style="`border-bottom: 1px solid rgba(255,255,255,0.03); ${isPinned(r.ticker) ? 'background: rgba(34,211,238,0.04); border-left: 2px solid var(--cyan);' : ''}`">
-              <div class="flex items-center gap-3 min-w-0">
-                <span x-show="isPinned(r.ticker)" style="color: var(--cyan)" class="text-xs shrink-0">★</span>
-                <span class="font-mono font-medium shrink-0" x-text="r.ticker"></span>
-                <span style="color: var(--text-2)" class="truncate" x-text="r.company"></span>
-                <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
-                  <span class="chip shrink-0" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
-                        x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
-                </template>
-              </div>
-              <div class="flex items-center gap-2 num font-mono shrink-0 ml-2">
-                <span style="color: var(--text-3)" x-text="`${r.etf_count} ETFs`"></span>
-                <span :style="`color: ${flowColor(r.score_delta_pct)}`" x-text="fmtPct(r.score_delta_pct)"></span>
-                <span x-text="fmt1(r.final_score)"></span>
-                <span class="text-[10px]" :style="`color: ${streakColor(r.score_streak)}`" x-show="r.score_streak" x-text="fmtStreak(r.score_streak)"></span>
-              </div>
-            </div>
-          </a>
-        </template>
+        <div class="overflow-x-auto scrollbar">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04]">
+                <th class="px-3 py-1.5 font-semibold">Ticker</th>
+                <th class="px-2 py-1.5 font-semibold hidden sm:table-cell">Company</th>
+                <th class="px-2 py-1.5 font-semibold text-right">ETFs Path</th>
+                <th class="px-2 py-1.5 font-semibold text-right">Score</th>
+                <th class="px-2 py-1.5 font-semibold text-right">Velocity</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="r in etfDropouts" :key="r.ticker">
+                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
+                    @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
+                  <td class="px-3 py-2 font-mono font-medium text-zinc-200">
+                    <div class="flex items-center gap-1.5">
+                      <span x-text="r.ticker"></span>
+                      <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
+                        <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
+                              x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
+                      </template>
+                    </div>
+                  </td>
+                  <td class="px-2 py-2 text-zinc-400 truncate hidden sm:table-cell max-w-[180px]" x-text="r.company"></td>
+                  <td class="px-2 py-2 text-right font-mono text-rose-400 font-semibold">
+                    <span class="text-zinc-500 font-normal" x-text="`${r.etf_count - r.etf_count_delta_30d}`"></span>
+                    <span class="text-[9px] text-zinc-600 font-normal">&rarr;</span>
+                    <span x-text="r.etf_count"></span>
+                    <span class="text-[10px]" x-text="` (${r.etf_count_delta_30d})`"></span>
+                  </td>
+                  <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
+                  <td class="px-2 py-2 text-right font-mono" :style="`color: ${velocityColor(r.velocity_score)}`" x-text="fmtVelocity(r.velocity_score)"></td>
+                </tr>
+              </template>
+              <tr x-show="etfDropouts.length === 0">
+                <td colspan="5" class="px-3 py-6 text-center text-zinc-500 italic select-none">No ETF dropouts detected</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
+    </div>
 
-      <!-- New entrants — first appearance ≤14d -->
-      <div class="lg:col-span-2 rounded-lg border" style="background: var(--surface); border-color: var(--border)">
-        <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
-          <div class="label-cyan label">New entrants — first appearance &le;14d</div>
-          <div class="text-xs num font-mono" style="color: var(--text-3)" x-text="`${changelog.new_entrants?.length || 0} names`"></div>
+    <!-- Section 4: Top Velocity Movers + Active Signals Dashboard -->
+    <div class="rounded-lg border mb-4" style="border-color: var(--border); background: var(--surface);">
+      <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
+        <div class="label flex items-center gap-1.5 text-cyan-400 font-semibold text-xs tracking-wider uppercase">
+          <span>⚡</span> Top Velocity Movers (Last 30 Days)
         </div>
-        <div x-show="!changelog.new_entrants?.length" class="px-3 py-6 text-center text-xs" style="color: var(--text-3)">No new entrants this period</div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          <template x-for="r in (changelog.new_entrants || [])" :key="r.ticker">
-            <a :href="`stock.html?t=${r.ticker}`" style="text-decoration: none; color: inherit; display: block;">
-              <div class="px-3 py-2 text-xs hover:bg-white/5 transition flex items-center justify-between"
-                   :style="`border-bottom: 1px solid rgba(255,255,255,0.03); ${isPinned(r.ticker) ? 'background: rgba(34,211,238,0.04); border-left: 2px solid var(--cyan);' : ''}`">
+        <div class="text-[10px] text-zinc-500">Highest acceleration of institutional conviction</div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        <template x-for="r in (changelog.top_velocity || [])" :key="r.ticker">
+          <a :href="`stock.html?t=${r.ticker}`" style="text-decoration: none; color: inherit; display: block;"
+             class="border-b border-r last:border-b-0 sm:last:border-r-0 border-white/[0.03]">
+            <div class="px-3 py-2.5 text-xs hover:bg-white/5 transition flex flex-col justify-between h-full border-l-2"
+                 :style="`border-left-color: ${velocityColor(r.velocity_score)}; ${isPinned(r.ticker) ? 'background: rgba(34,211,238,0.03);' : ''}`">
+              <div class="flex items-center justify-between">
                 <div class="flex flex-col min-w-0">
-                  <div class="flex items-center gap-2">
-                    <span x-show="isPinned(r.ticker)" style="color: var(--cyan)" class="text-xs">★</span>
-                    <span class="font-mono font-medium" x-text="r.ticker"></span>
+                  <div class="flex items-center gap-1.5">
+                    <span x-show="isPinned(r.ticker)" style="color: var(--cyan)">★</span>
+                    <span class="font-mono font-semibold text-zinc-200" x-text="r.ticker"></span>
                     <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
-                      <span class="chip" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
+                      <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
                             x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
                     </template>
                   </div>
-                  <span style="color: var(--text-2)" class="truncate max-w-[220px]" x-text="r.company"></span>
+                  <span style="color: var(--text-2)" class="truncate text-[11px]" x-text="r.company"></span>
                 </div>
                 <div class="num font-mono text-right shrink-0 ml-2">
-                  <div x-text="fmt1(r.final_score)"></div>
-                  <div style="color: var(--text-3)" class="text-[10px]" x-text="`${r.etf_count} ETF${r.etf_count===1?'':'s'}`"></div>
-                </div>
-              </div>
-            </a>
-          </template>
-        </div>
-      </div>
-
-      <!-- Top Velocity Movers -->
-      <div class="lg:col-span-2 rounded-lg border" style="background: var(--surface); border-color: var(--border)">
-        <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
-          <div class="label" style="color: var(--cyan)">Top velocity movers &mdash; last 30 days</div>
-          <div class="text-xs num font-mono" style="color: var(--text-3)">⚡ highest acceleration of institutional conviction</div>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          <template x-for="r in (changelog.top_velocity || [])" :key="r.ticker">
-            <a :href="`stock.html?t=${r.ticker}`" style="text-decoration: none; color: inherit; display: block;">
-              <div class="px-3 py-2 text-xs hover:bg-white/5 transition"
-                   :style="`border-bottom: 1px solid rgba(255,255,255,0.03); ${isPinned(r.ticker) ? 'background: rgba(34,211,238,0.04); border-left: 2px solid var(--cyan);' : ''}`">
-                <div class="flex items-center justify-between">
-                  <div class="flex flex-col min-w-0">
-                    <div class="flex items-center gap-2">
-                      <span x-show="isPinned(r.ticker)" style="color: var(--cyan)">★</span>
-                      <span class="font-mono font-medium" x-text="r.ticker"></span>
-                    </div>
-                    <span style="color: var(--text-2)" class="truncate max-w-[180px]" x-text="r.company"></span>
-                  </div>
-                  <div class="num font-mono text-right shrink-0 ml-2">
-                    <div :style="`color: ${velocityColor(r.velocity_score)}`" x-text="fmtVelocity(r.velocity_score)"></div>
-                    <div class="text-[10px] flex items-center justify-end gap-1">
-                      <span x-show="r.burst_30d" class="chip sig-badge" style="background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.3)">⚡BURST</span>
-                      <span style="color: var(--text-3)" x-text="`${r.etf_count} ETF${r.etf_count===1?'':'s'}`"></span>
-                    </div>
+                  <div :style="`color: ${velocityColor(r.velocity_score)}`" class="font-bold" x-text="fmtVelocity(r.velocity_score)"></div>
+                  <div class="text-[10px] flex items-center justify-end gap-1">
+                    <span x-show="r.burst_30d" class="chip sig-badge text-[8px] px-1 py-0" style="background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.3)">⚡BURST</span>
+                    <span style="color: var(--text-3)" x-text="`${r.etf_count} ETF${r.etf_count===1?'':'s'}`"></span>
                   </div>
                 </div>
-                <div class="flex gap-3 mt-1" style="color: var(--text-3)">
-                  <span x-text="`Δrank7d: ${(r.avg_rank_delta_7d||0)>=0?'+':''}${(r.avg_rank_delta_7d||0).toFixed(1)}`"></span>
-                  <span x-show="r.etf_count_delta_30d != 0"
-                        :style="`color: ${(r.etf_count_delta_30d||0)>0?'var(--up)':'var(--down)'}`"
-                        x-text="`${(r.etf_count_delta_30d||0)>0?'+':''}${r.etf_count_delta_30d} ETFs 30d`"></span>
-                </div>
               </div>
-            </a>
-          </template>
-          <div x-show="!changelog.top_velocity?.length" class="px-3 py-6 text-center text-xs" style="color: var(--text-3)">No data — rebuild required.</div>
-        </div>
-      </div>
-
-      <!-- SECTOR FLOW -->
-      <div class="lg:col-span-2 rounded-lg border" style="background: var(--surface); border-color: var(--border)">
-        <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
-          <div class="label-cyan label">SECTOR FLOW — net velocity by sector</div>
-          <div class="text-xs num font-mono" style="color: var(--text-3)">sum of velocity scores · 2+ ETFs only</div>
-        </div>
-        <div x-show="!flow?.by_sector?.length" class="px-3 py-6 text-center text-xs" style="color: var(--text-3)">No flow data available</div>
-        <template x-for="r in (flow?.by_sector || []).slice(0, 12)" :key="r.label">
-          <div class="px-3 py-2 flex items-center gap-3 text-xs hover:bg-white/5 transition cursor-pointer"
-               style="border-bottom: 1px solid rgba(255,255,255,0.03)"
-               @click="selectedSector = r.label; activeTab = 'leaderboard'">
-            <span class="font-mono flex-1 truncate" x-text="r.label"></span>
-            <div class="flex-1 h-1.5 rounded" style="background: rgba(255,255,255,0.05)">
-              <div class="h-full rounded"
-                   :style="`width: ${Math.min(100, Math.abs(r.net_velocity||0) / sectorMax * 100)}%; background: ${(r.net_velocity||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"></div>
+              <div class="flex gap-3 mt-1.5 text-[10px] text-zinc-500 font-mono">
+                <span x-text="`Δrank7d: ${(r.avg_rank_delta_7d||0)>=0?'+':''}${(r.avg_rank_delta_7d||0).toFixed(1)}`"></span>
+                <span x-show="r.etf_count_delta_30d != 0"
+                      :style="`color: ${(r.etf_count_delta_30d||0)>0?'var(--up)':'var(--down)'}`"
+                      x-text="`${(r.etf_count_delta_30d||0)>0?'+':''}${r.etf_count_delta_30d} ETFs 30d`"></span>
+              </div>
             </div>
-            <span class="num font-mono w-20 text-right"
-                  :style="`color: ${(r.net_velocity||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
-                  x-text="`${(r.net_velocity||0) >= 0 ? '+' : ''}${(r.net_velocity||0).toFixed(0)}`"></span>
-            <span class="num font-mono w-12 text-right" style="color: var(--text-3)"
-                  x-text="`${r.names}n`"></span>
-          </div>
+          </a>
         </template>
+        <div x-show="!changelog.top_velocity?.length" class="col-span-3 px-3 py-6 text-center text-xs text-zinc-500 italic select-none">No velocity data available.</div>
       </div>
 
-      <!-- COUNTRY FLOW -->
-      <div class="lg:col-span-2 rounded-lg border" style="background: var(--surface); border-color: var(--border)">
-        <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
-          <div class="label-cyan label">COUNTRY FLOW — net velocity by country</div>
-          <div class="text-xs num font-mono" style="color: var(--text-3)">sum of velocity scores · 2+ ETFs only</div>
-        </div>
-        <div x-show="!flow?.by_country?.length" class="px-3 py-6 text-center text-xs" style="color: var(--text-3)">No flow data available</div>
-        <template x-for="r in (flow?.by_country || []).slice(0, 12)" :key="r.label">
-          <div class="px-3 py-2 flex items-center gap-3 text-xs hover:bg-white/5 transition cursor-pointer"
-               style="border-bottom: 1px solid rgba(255,255,255,0.03)"
-               @click="selectedCountry = r.label; activeTab = 'leaderboard'">
-            <span class="font-mono flex-1 truncate" x-text="r.label"></span>
-            <div class="flex-1 h-1.5 rounded" style="background: rgba(255,255,255,0.05)">
-              <div class="h-full rounded"
-                   :style="`width: ${Math.min(100, Math.abs(r.net_velocity||0) / countryMax * 100)}%; background: ${(r.net_velocity||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"></div>
-            </div>
-            <span class="num font-mono w-20 text-right"
-                  :style="`color: ${(r.net_velocity||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
-                  x-text="`${(r.net_velocity||0) >= 0 ? '+' : ''}${(r.net_velocity||0).toFixed(0)}`"></span>
-            <span class="num font-mono w-12 text-right" style="color: var(--text-3)"
-                  x-text="`${r.names}n`"></span>
+      <!-- Active Signal Summary Strip -->
+      <div class="p-2.5 bg-white/[0.01] border-t flex flex-wrap items-center justify-start gap-2 text-xs border-white/[0.04]">
+        <span class="text-zinc-500 font-mono text-[10px] uppercase tracking-wider pl-1 mr-1">Active Signals:</span>
+        <button @click="reset(); burstOnly = true; activeTab = 'leaderboard'; window.scrollTo({ top: 0, behavior: 'smooth' });"
+                class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/25 transition cursor-pointer select-none">
+          <span class="font-bold">⚡</span>
+          <span x-text="`${activeSignalCounts.burst} Burst`"></span>
+        </button>
+        <button @click="reset(); stealthAccOnly = true; activeTab = 'leaderboard'; window.scrollTo({ top: 0, behavior: 'smooth' });"
+                class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/25 transition cursor-pointer select-none">
+          <span class="font-bold">🥷</span>
+          <span x-text="`${activeSignalCounts.stealth} Stealth Accum`"></span>
+        </button>
+        <button @click="reset(); qualityAdoptedOnly = true; activeTab = 'leaderboard'; window.scrollTo({ top: 0, behavior: 'smooth' });"
+                class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 border border-teal-500/25 transition cursor-pointer select-none">
+          <span class="font-bold">🎯</span>
+          <span x-text="`${activeSignalCounts.qualityAdopted} Quality Adopted`"></span>
+        </button>
+        <button @click="reset(); qualityDefectedOnly = true; activeTab = 'leaderboard'; window.scrollTo({ top: 0, behavior: 'smooth' });"
+                x-show="activeSignalCounts.qualityDefected > 0"
+                class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 transition cursor-pointer select-none">
+          <span class="font-bold">⚠️</span>
+          <span x-text="`${activeSignalCounts.qualityDefected} Defections`"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Section 5: New Entrants + Universe Exits -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
+      <!-- New Entrants -->
+      <div class="rounded-lg border" style="border-color: var(--border); background: var(--surface);">
+        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
+          <div class="label flex items-center gap-1.5 text-blue-400 font-semibold text-xs tracking-wider uppercase">
+            <span>🆕</span> New Entrants (&le;14d)
           </div>
-        </template>
+          <div class="text-[10px] font-mono text-zinc-500" x-text="`${changelog.new_entrants?.length || 0} names`"></div>
+        </div>
+        <div class="overflow-x-auto max-h-[350px] scrollbar">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04]">
+                <th class="px-3 py-1.5 font-semibold">Ticker</th>
+                <th class="px-2 py-1.5 font-semibold">Company</th>
+                <th class="px-2 py-1.5 font-semibold text-right">Score</th>
+                <th class="px-3 py-1.5 font-semibold text-right">ETFs</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="r in (changelog.new_entrants || [])" :key="r.ticker">
+                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
+                    @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
+                  <td class="px-3 py-2 font-mono font-medium text-zinc-200">
+                    <div class="flex items-center gap-1.5">
+                      <span x-text="r.ticker"></span>
+                      <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
+                        <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
+                              x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
+                      </template>
+                    </div>
+                  </td>
+                  <td class="px-2 py-2 text-zinc-400 truncate max-w-[180px]" x-text="r.company || '—'"></td>
+                  <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
+                  <td class="px-3 py-2 text-right font-mono text-zinc-400" x-text="r.etf_count"></td>
+                </tr>
+              </template>
+              <tr x-show="!changelog.new_entrants?.length">
+                <td colspan="4" class="px-3 py-6 text-center text-zinc-500 italic select-none">No new entrants detected</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <!-- New entrants this week -->
-      <div class="lg:col-span-2 rounded-lg border" style="background: var(--surface); border-color: var(--border)">
-        <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
-          <div class="label-cyan label">New tickers this week</div>
-          <div class="text-xs num font-mono" style="color: var(--text-3)" x-text="`${changelog.new_entrants?.length || 0} names · not seen 7+ days ago`"></div>
+      <!-- Dropped from Universe (Exits) -->
+      <div class="rounded-lg border" style="border-color: var(--border); background: var(--surface);">
+        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
+          <div class="label flex items-center gap-1.5 text-zinc-400 font-semibold text-xs tracking-wider uppercase">
+            <span>❌</span> Dropped from Universe (Exits)
+          </div>
+          <div class="text-[10px] font-mono text-zinc-500" x-text="`${universeExits.length} exits`"></div>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          <template x-for="r in changelog.new_entrants" :key="r.ticker">
-            <div class="px-3 py-2 text-xs hover:bg-white/5 transition flex items-center justify-between" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
-              <div class="flex flex-col">
-                <span class="font-mono font-medium" x-text="r.ticker"></span>
-                <span style="color: var(--text-2)" class="truncate max-w-[220px]" x-text="r.company"></span>
+        <div class="overflow-x-auto max-h-[350px] scrollbar">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04]">
+                <th class="px-3 py-1.5 font-semibold">Ticker</th>
+                <th class="px-2 py-1.5 font-semibold">Company</th>
+                <th class="px-2 py-1.5 font-semibold text-right">Prev. Score</th>
+                <th class="px-3 py-1.5 font-semibold text-right">Change</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="r in universeExits" :key="r.ticker">
+                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
+                    @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
+                  <td class="px-3 py-2 font-mono font-medium text-zinc-400">
+                    <div class="flex items-center gap-1.5">
+                      <span x-text="r.ticker"></span>
+                      <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
+                        <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
+                              x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
+                      </template>
+                    </div>
+                  </td>
+                  <td class="px-2 py-2 text-zinc-500 truncate max-w-[180px]" x-text="r.company || '—'"></td>
+                  <td class="px-2 py-2 text-right font-mono text-zinc-400" x-text="fmt1(r.final_score - r.score_delta)"></td>
+                  <td class="px-3 py-2 text-right font-mono text-rose-500" x-text="fmtPct(r.score_delta_pct)"></td>
+                </tr>
+              </template>
+              <tr x-show="universeExits.length === 0">
+                <td colspan="4" class="px-3 py-6 text-center text-zinc-500 italic select-none">
+                  <div class="border border-dashed rounded p-4 border-white/[0.08]">No exits detected</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 6: Sector & Country Flow Intelligence (UPGRADED) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
+      <!-- Sector Flow Table -->
+      <div class="rounded-lg border" style="border-color: var(--border); background: var(--surface);">
+        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
+          <div class="label flex items-center gap-1.5 text-cyan-400 font-semibold text-xs tracking-wider uppercase">
+            <span>📂</span> Sector Flow Intelligence
+          </div>
+          <div class="text-[10px] font-mono text-zinc-500">Net velocity sum · 2+ ETFs only</div>
+        </div>
+        <div class="overflow-x-auto scrollbar">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04]">
+                <th class="px-3 py-1.5 font-semibold">Sector</th>
+                <th class="px-2 py-1.5 font-semibold">Flow</th>
+                <th class="px-2 py-1.5 font-semibold text-right">Net Velo</th>
+                <th class="px-2 py-1.5 font-semibold text-right">Avg Velo</th>
+                <th class="px-2 py-1.5 font-semibold text-right">Names</th>
+                <th class="px-3 py-1.5 font-semibold text-right">⚡ Bursts</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="r in (flow?.by_sector || []).slice(0, 12)" :key="r.label">
+                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
+                    @click="selectedSector = r.label; activeTab = 'leaderboard'; window.scrollTo({ top: 0, behavior: 'smooth' });">
+                  <td class="px-3 py-2 font-medium text-zinc-200" x-text="r.label"></td>
+                  <td class="px-2 py-2">
+                    <div class="w-24 h-1.5 rounded bg-white/[0.05] overflow-hidden">
+                      <div class="h-full rounded"
+                           :style="`width: ${Math.min(100, Math.abs(r.net_velocity||0) / sectorMax * 100)}%; background: ${(r.net_velocity||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"></div>
+                    </div>
+                  </td>
+                  <td class="px-2 py-2 text-right font-mono font-semibold" :style="`color: ${(r.net_velocity||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
+                      x-text="`${(r.net_velocity||0) >= 0 ? '+' : ''}${(r.net_velocity||0).toFixed(0)}`"></td>
+                  <td class="px-2 py-2 text-right font-mono" :style="`color: ${(r.avg_velocity||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
+                      x-text="`${(r.avg_velocity||0) >= 0 ? '+' : ''}${(r.avg_velocity||0).toFixed(1)}`"></td>
+                  <td class="px-2 py-2 text-right font-mono text-zinc-400" x-text="r.names"></td>
+                  <td class="px-3 py-2 text-right font-mono text-purple-400" x-text="r.burst_count || '0'"></td>
+                </tr>
+              </template>
+              <tr x-show="!flow?.by_sector?.length">
+                <td colspan="6" class="px-3 py-6 text-center text-zinc-500 italic select-none">No sector flow data available</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Country Flow Table -->
+      <div class="rounded-lg border" style="border-color: var(--border); background: var(--surface);">
+        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
+          <div class="label flex items-center gap-1.5 text-cyan-400 font-semibold text-xs tracking-wider uppercase">
+            <span>🌍</span> Country Flow Intelligence
+          </div>
+          <div class="text-[10px] font-mono text-zinc-500">Net velocity sum · 2+ ETFs only</div>
+        </div>
+        <div class="overflow-x-auto scrollbar">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04]">
+                <th class="px-3 py-1.5 font-semibold">Country</th>
+                <th class="px-2 py-1.5 font-semibold">Flow</th>
+                <th class="px-2 py-1.5 font-semibold text-right">Net Velo</th>
+                <th class="px-2 py-1.5 font-semibold text-right">Avg Velo</th>
+                <th class="px-2 py-1.5 font-semibold text-right">Names</th>
+                <th class="px-3 py-1.5 font-semibold text-right">⚡ Bursts</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="r in (flow?.by_country || []).slice(0, 12)" :key="r.label">
+                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
+                    @click="selectedCountry = r.label; activeTab = 'leaderboard'; window.scrollTo({ top: 0, behavior: 'smooth' });">
+                  <td class="px-3 py-2 font-medium text-zinc-200" x-text="r.label"></td>
+                  <td class="px-2 py-2">
+                    <div class="w-24 h-1.5 rounded bg-white/[0.05] overflow-hidden">
+                      <div class="h-full rounded"
+                           :style="`width: ${Math.min(100, Math.abs(r.net_velocity||0) / countryMax * 100)}%; background: ${(r.net_velocity||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"></div>
+                    </div>
+                  </td>
+                  <td class="px-2 py-2 text-right font-mono font-semibold" :style="`color: ${(r.net_velocity||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
+                      x-text="`${(r.net_velocity||0) >= 0 ? '+' : ''}${(r.net_velocity||0).toFixed(0)}`"></td>
+                  <td class="px-2 py-2 text-right font-mono" :style="`color: ${(r.avg_velocity||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
+                      x-text="`${(r.avg_velocity||0) >= 0 ? '+' : ''}${(r.avg_velocity||0).toFixed(1)}`"></td>
+                  <td class="px-2 py-2 text-right font-mono text-zinc-400" x-text="r.names"></td>
+                  <td class="px-3 py-2 text-right font-mono text-purple-400" x-text="r.burst_count || '0'"></td>
+                </tr>
+              </template>
+              <tr x-show="!flow?.by_country?.length">
+                <td colspan="6" class="px-3 py-6 text-center text-zinc-500 italic select-none">No country flow data available</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 7: HC Transitions ⬇ BOTTOM (Compact) -->
+    <div class="mb-4">
+      <div x-show="changelog.entered_hc?.length || changelog.exited_hc?.length">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <!-- Entered HC -->
+          <div class="rounded-lg border" style="border-color: var(--border); background: var(--surface);">
+            <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
+              <div class="label flex items-center gap-1.5 text-emerald-400 font-semibold text-xs tracking-wider uppercase">
+                <span>➕</span> Entered HIGH CONVICTION Today
               </div>
-              <div class="num font-mono text-right">
-                <div x-text="fmt1(r.final_score)"></div>
-                <div style="color: var(--text-3)" class="text-[10px]" x-text="r.tiers"></div>
-              </div>
+              <div class="text-[10px] font-mono text-zinc-500" x-text="`${changelog.entered_hc?.length || 0} names`"></div>
             </div>
-          </template>
+            <div class="overflow-x-auto scrollbar">
+              <table class="w-full text-left border-collapse text-xs">
+                <tbody>
+                  <template x-for="r in changelog.entered_hc" :key="r.ticker">
+                    <tr class="hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
+                        @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
+                      <td class="px-3 py-2 font-mono font-medium text-zinc-200">
+                        <div class="flex items-center gap-1.5">
+                          <span x-show="isPinned(r.ticker)" style="color: var(--cyan)">★</span>
+                          <span x-text="r.ticker"></span>
+                          <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
+                            <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
+                                  x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
+                          </template>
+                        </div>
+                      </td>
+                      <td class="px-2 py-2 text-zinc-400 truncate max-w-[200px]" x-text="r.company"></td>
+                      <td class="px-2 py-2 text-right font-mono text-zinc-400" x-text="`${r.etf_count} ETFs`"></td>
+                      <td class="px-3 py-2 text-right font-mono text-zinc-200 font-bold" x-text="fmt1(r.final_score)"></td>
+                    </tr>
+                  </template>
+                  <tr x-show="!changelog.entered_hc?.length">
+                    <td class="px-3 py-4 text-center text-zinc-500 italic">No new entries today</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Exited HC -->
+          <div class="rounded-lg border" style="border-color: var(--border); background: var(--surface);">
+            <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
+              <div class="label flex items-center gap-1.5 text-rose-400 font-semibold text-xs tracking-wider uppercase">
+                <span>➖</span> Exited HIGH CONVICTION Today
+              </div>
+              <div class="text-[10px] font-mono text-zinc-500" x-text="`${changelog.exited_hc?.length || 0} names`"></div>
+            </div>
+            <div class="overflow-x-auto scrollbar">
+              <table class="w-full text-left border-collapse text-xs">
+                <tbody>
+                  <template x-for="r in changelog.exited_hc" :key="r.ticker">
+                    <tr class="hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
+                        @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
+                      <td class="px-3 py-2 font-mono font-medium text-zinc-200">
+                        <div class="flex items-center gap-1.5">
+                          <span x-show="isPinned(r.ticker)" style="color: var(--cyan)">★</span>
+                          <span x-text="r.ticker"></span>
+                          <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
+                            <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
+                                  x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
+                          </template>
+                        </div>
+                      </td>
+                      <td class="px-2 py-2 text-zinc-400 truncate max-w-[200px]" x-text="r.company"></td>
+                      <td class="px-2 py-2 text-right font-mono text-zinc-400" x-text="`${r.etf_count || '—'} ETFs`"></td>
+                      <td class="px-3 py-2 text-right font-mono text-zinc-200 font-bold" x-text="fmt1(r.final_score)"></td>
+                    </tr>
+                  </template>
+                  <tr x-show="!changelog.exited_hc?.length">
+                    <td class="px-3 py-4 text-center text-zinc-500 italic">No exits today</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
+      </div>
+      <!-- Smart Collapse when both empty -->
+      <div x-show="!(changelog.entered_hc?.length || changelog.exited_hc?.length)"
+           class="flex items-center justify-center p-4 rounded-lg border border-dashed text-xs text-zinc-500 italic select-none"
+           style="border-color: var(--border); background: var(--surface);">
+        No HIGH CONVICTION transitions today
       </div>
     </div>
   </section>
@@ -2197,13 +2627,14 @@ function app() {
     loading: true, error: '',
     activeTab: 'leaderboard',
     overlapHover: '',
-    flag: '', selectedTier: '', selectedSector: '', selectedCountry: '', regionFilter: '', newOnly: false, velocityOnly: false, burstOnly: false, q: '', excludeConcentrated: false, qualityAdoptedOnly: false, preHcOnly: false, stealthBuyOnly: false, velOverScoreOnly: false, quantQualityOnly: false, stealthAccOnly: false, divOnly: false,
+    flag: '', selectedTier: '', selectedSector: '', selectedCountry: '', regionFilter: '', newOnly: false, velocityOnly: false, burstOnly: false, q: '', excludeConcentrated: false, qualityAdoptedOnly: false, qualityDefectedOnly: false, preHcOnly: false, stealthBuyOnly: false, velOverScoreOnly: false, quantQualityOnly: false, stealthAccOnly: false, divOnly: false,
     sortKey: 'leaderboard_rank', sortDir: 'asc',
     page: 1, pageSize: 50, open: null,
     activeETF: 'QQQM',
     expandedSidebarETF: null,
     period: 7,
     holdingsPeriod: 7,
+    changesPeriod: 7,
     etfSort: 'tier',
     holdingsExits: {},
     sortDialog: false,
@@ -2377,7 +2808,7 @@ function app() {
         { id: 'leaderboard', label: 'leaderboard', count: this.leaderboard.length },
         { id: 'watchlist',   label: 'watchlist',   count: activePins.length },
         { id: 'etfs',        label: 'etfs',        count: this.meta.etfs?.length },
-        { id: 'changes',     label: 'changes',     count: (this.changelog.entered_hc?.length || 0) + (this.changelog.exited_hc?.length || 0) + (this.changelog.new_entrants?.length || 0) },
+        { id: 'changes',     label: 'changes',     count: (this.changelog.entered_hc?.length || 0) + (this.changelog.exited_hc?.length || 0) + this.dynamicScoreGainers.length + this.dynamicScoreLosers.length },
       ];
     },
 
@@ -2408,7 +2839,7 @@ function app() {
     },
 
     toggleFlag(f) { this.flag = (this.flag === f) ? '' : f; this.page = 1; },
-    reset() { this.flag = ''; this.newOnly = false; this.velocityOnly = false; this.burstOnly = false; this.excludeConcentrated = false; this.qualityAdoptedOnly = false; this.preHcOnly = false; this.stealthBuyOnly = false; this.velOverScoreOnly = false; this.quantQualityOnly = false; this.stealthAccOnly = false; this.divOnly = false; this.selectedTier = ''; this.selectedSector = ''; this.selectedCountry = ''; this.regionFilter = ''; this.q = ''; this.page = 1; },
+    reset() { this.flag = ''; this.newOnly = false; this.velocityOnly = false; this.burstOnly = false; this.excludeConcentrated = false; this.qualityAdoptedOnly = false; this.qualityDefectedOnly = false; this.preHcOnly = false; this.stealthBuyOnly = false; this.velOverScoreOnly = false; this.quantQualityOnly = false; this.stealthAccOnly = false; this.divOnly = false; this.selectedTier = ''; this.selectedSector = ''; this.selectedCountry = ''; this.regionFilter = ''; this.q = ''; this.page = 1; },
 
     togglePin(t) {
       const i = this.pins.indexOf(t);
@@ -2440,6 +2871,73 @@ function app() {
         if (row) snap[t] = { flag: row.flag, burst_30d: row.burst_30d };
       }
       localStorage.setItem('predator_pin_snapshot', JSON.stringify(snap));
+    },
+
+    get dynamicScoreGainers() {
+      const p = String(this.changesPeriod);
+      return this.leaderboard
+        .filter(r => {
+          const d = r.score_deltas_by_period?.[p];
+          return d != null && d > 0 && (r.etf_count || 0) >= 2;
+        })
+        .sort((a, b) => (b.score_deltas_by_period[p] || 0) - (a.score_deltas_by_period[p] || 0))
+        .slice(0, 15);
+    },
+
+    get dynamicScoreLosers() {
+      const p = String(this.changesPeriod);
+      return this.leaderboard
+        .filter(r => {
+          const d = r.score_deltas_by_period?.[p];
+          return d != null && d < 0 && (r.etf_count || 0) >= 2;
+        })
+        .sort((a, b) => (a.score_deltas_by_period[p] || 0) - (b.score_deltas_by_period[p] || 0))
+        .slice(0, 15);
+    },
+
+    get rankClimbers() {
+      return this.leaderboard
+        .filter(r => (r.global_rank_delta_30d || 0) > 20 && (r.etf_count || 0) >= 2)
+        .sort((a, b) => (b.global_rank_delta_30d || 0) - (a.global_rank_delta_30d || 0))
+        .slice(0, 10);
+    },
+
+    get rankFallers() {
+      return this.leaderboard
+        .filter(r => (r.global_rank_delta_30d || 0) < -20 && (r.etf_count || 0) >= 2)
+        .sort((a, b) => (a.global_rank_delta_30d || 0) - (b.global_rank_delta_30d || 0))
+        .slice(0, 10);
+    },
+
+    get etfPickups() {
+      return this.leaderboard
+        .filter(r => (r.etf_count_delta_30d || 0) > 0 && (r.etf_count || 0) >= 2)
+        .sort((a, b) => (b.etf_count_delta_30d || 0) - (a.etf_count_delta_30d || 0))
+        .slice(0, 10);
+    },
+
+    get etfDropouts() {
+      return this.leaderboard
+        .filter(r => (r.etf_count_delta_30d || 0) < 0)
+        .sort((a, b) => (a.etf_count_delta_30d || 0) - (b.etf_count_delta_30d || 0))
+        .slice(0, 10);
+    },
+
+    get activeSignalCounts() {
+      return {
+        burst: this.leaderboard.filter(r => r.burst_30d).length,
+        stealth: this.leaderboard.filter(r => r.stealth_accumulation).length,
+        qualityAdopted: this.leaderboard.filter(r => r.quality_adopted_30d).length,
+        qualityDefected: this.leaderboard.filter(r => r.quality_defected_30d).length,
+      };
+    },
+
+    get universeExits() {
+      if (!this.changelog.biggest_losers) return [];
+      return this.changelog.biggest_losers.filter(r => {
+        const inLb = this.leaderboard.some(l => l.ticker === r.ticker);
+        return r.final_score === 0 || !inLb;
+      });
     },
 
     get sectorMax() {
@@ -2567,6 +3065,7 @@ function app() {
       if (this.velocityOnly) r = r.filter(x => (x.velocity_score || 0) >= 25 && (x.etf_count || 0) >= 2 && !x.burst_30d);
       if (this.burstOnly)    r = r.filter(x => x.burst_30d);
       if (this.qualityAdoptedOnly) r = r.filter(x => x.quality_adopted_30d);
+      if (this.qualityDefectedOnly) r = r.filter(x => x.quality_defected_30d);
       if (this.preHcOnly)        r = r.filter(x => this._isPreHc(x));
       if (this.stealthBuyOnly)   r = r.filter(x => this._isStealthBuy(x));
       if (this.velOverScoreOnly) r = r.filter(x => this._isVelOverScore(x));
@@ -3155,7 +3654,7 @@ function app() {
       } else {
         center = `<text x="130" y="122" text-anchor="middle" style="font-family:ui-monospace;font-size:20px;font-weight:600;fill:#22d3ee">${this.activeETF}</text>` +
                  `<text x="130" y="143" text-anchor="middle" style="font-family:ui-monospace;font-size:11px;fill:#52525b">${this.etfHoldings.length} holdings</text>` +
-                 `<text x="130" y="158" text-anchor="middle" style="font-family:ui-monospace;font-size:9px;fill:#52525b">tier ${this.currentETFTier}</text>`;
+                 `<text x="130" y="158" text-anchor="middle" style="font-family:ui-monospace;font-size:9px;fill:#52525b">Tier ${this.currentETFTier}</text>`;
       }
       // Also update slice opacity via a style tag (avoids re-rendering paths)
       const styleRules = hi !== null
