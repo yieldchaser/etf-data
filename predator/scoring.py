@@ -51,6 +51,7 @@ Outputs (from compute_leaderboard):
     latest:       one row per (ETF, ticker) in latest snapshot, with score components
 """
 from __future__ import annotations
+import hashlib
 import math
 from dataclasses import dataclass
 from datetime import timedelta
@@ -77,6 +78,58 @@ class ETF:
 Tier = ETF
 
 
+# ─── Sanitization memoization (build perf) ─────────────────────────────────
+# During a single build, cfg.sanitizer.apply() is invoked from 4 call sites
+# (compute_leaderboard, compute_rank_deltas ×6 periods, and two history.py
+# paths) on what is functionally the SAME input dataframe — the same raw rows
+# after the same copy/coerce/dropna/weight>0/etf-lookup pre-filter. Without
+# caching, the full 192k-row sanitization (blocklist scan, ticker regex
+# replacements, cross-listing collapse, dedupe) runs ~9 times, dominating
+# the build at ~19 minutes and flooding CI logs with the 100-line
+# cross-listing report on every call.
+#
+# The cache is keyed on a content fingerprint of (sanitizer config, input df).
+# Identical inputs return a deep copy of the cached result; distinct inputs
+# (each test case, each genuinely different dataframe) recompute. The
+# cross-listing audit log now prints exactly once per DISTINCT input — on
+# the cache miss — instead of once per call.
+#
+# Correctness guarantees:
+#   * Cache hits return df.copy() — callers freely mutate `out` without
+#     corrupting the cached canonical result.
+#   * The fingerprint hashes columns + dtypes + a value hash, so any real
+#     data change is a guaranteed miss.
+#   * The cache is bounded (FIFO, 16 entries) — no unbounded memory growth.
+_SANITIZER_CACHE: dict[tuple[str, str], "pd.DataFrame"] = {}
+_SANITIZER_CACHE_MAX: int = 16
+
+
+def _df_fingerprint(df: pd.DataFrame) -> str:
+    """Content hash of a dataframe: shape + dtypes + aggregate row-hash.
+
+    Includes shape, column dtype signature, and a hash of all row values so
+    that any real data change produces a different key (cache miss).
+    """
+    try:
+        row_hashes = pd.util.hash_pandas_object(df, index=False)
+        val = int(row_hashes.sum()) & 0xFFFFFFFFFFFFFFFF
+    except TypeError:
+        # Fallback for object-dtype columns hash_pandas_object can't handle
+        val = hash(df.astype(str).values.tobytes()) & 0xFFFFFFFFFFFFFFFF
+    dtypes_sig = "/".join(str(dt) for dt in df.dtypes)
+    return f"{df.shape[0]}x{df.shape[1]}|{dtypes_sig}|{val}"
+
+
+def clear_sanitizer_cache() -> None:
+    """Clear the sanitizer memoization cache.
+
+    Tests that mutate sanitizer config or pass a dataframe, then assert on a
+    fresh computation, can call this to bypass the cache. Normal builds never
+    need it — the cache is content-keyed so distinct inputs always miss.
+    """
+    _SANITIZER_CACHE.clear()
+
+
 @dataclass(frozen=True)
 class Sanitizer:
     """Filters garbage holdings and normalizes ticker symbols.
@@ -100,9 +153,43 @@ class Sanitizer:
     cross_listing_patterns: tuple[tuple[str, str], ...] = ()  # regex (pattern, replacement) — collapses cross-listings (e.g. KRX 'A005930' → '005930')
 
     def apply(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Drop blocked rows, standardize ticker punctuation, then apply renames."""
+        """Drop blocked rows, standardize ticker punctuation, then apply renames.
+
+        Memoized: identical inputs return a deep copy of a cached result so the
+        ~9 redundant calls during a build collapse to one computation per
+        distinct input. See the module-level `_SANITIZER_CACHE` docstring for
+        the correctness contract.
+        """
         if df.empty:
             return df.copy()
+
+        key = (self._config_fingerprint(), _df_fingerprint(df))
+        cached = _SANITIZER_CACHE.get(key)
+        if cached is not None:
+            return cached.copy()
+
+        out = self._compute(df)
+
+        # Bounded LRU: evict oldest when at capacity.
+        if len(_SANITIZER_CACHE) >= _SANITIZER_CACHE_MAX:
+            _SANITIZER_CACHE.pop(next(iter(_SANITIZER_CACHE)))
+        _SANITIZER_CACHE[key] = out
+        return out.copy()
+
+    def _config_fingerprint(self) -> str:
+        """Stable hash of the sanitizer's own config (its frozen dataclass fields)."""
+        payload = (
+            self.blocked_tickers,
+            self.blocked_name_patterns,
+            self.blocked_name_exact,
+            self.ticker_replacements,
+            tuple(sorted(self.ticker_renames.items())) if self.ticker_renames else (),
+            self.cross_listing_patterns,
+        )
+        return hashlib.sha256(repr(payload).encode("utf-8")).hexdigest()
+
+    def _compute(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Actual sanitization (uncached path). Returns the canonical cleaned df."""
         out = df.copy()
 
         # 1. Ticker blocklist (case-insensitive exact match) + empty/null guard
@@ -161,9 +248,9 @@ class Sanitizer:
         if self.ticker_renames or self.cross_listing_patterns:
             out = self._dedupe_after_renames(out)
 
-        # 7. Audit log for cross-listing merges (printed once per call). Capped to
-        # 20 examples; a summary line always emits when any merge occurs so CI
-        # logs surface the magnitude.
+        # 7. Audit log for cross-listing merges. Runs only on the cache-miss path
+        # (i.e. once per distinct input), so a build no longer floods CI with the
+        # 100-line report on every one of the ~9 sanitizer invocations.
         if merged_pairs:
             print(
                 f"[sanitizer] cross-listing collapse: {len(merged_pairs)} unique raw→canonical mappings",
