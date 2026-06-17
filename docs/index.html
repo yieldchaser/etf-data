@@ -1899,7 +1899,7 @@
   <!-- ═════════════ TAB 3: CHANGES ════════════════════════════════════════ -->
   <section x-show="activeTab === 'changes'">
     <!-- Tab-level Header Strip (Sticky glassmorphic header strip) -->
-    <div class="sticky top-0 z-30 flex items-center justify-between px-3 py-2.5 mb-3 rounded-lg text-xs backdrop-blur-md border" style="background: rgba(20, 20, 20, 0.85); border-color: var(--border); box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+    <div class="sticky top-0 z-30 flex items-center justify-between px-3 py-2.5 mb-3 text-xs backdrop-blur-sm border-b" style="background: rgba(12, 12, 12, 0.92); border-color: var(--border); box-shadow: 0 2px 12px rgba(0,0,0,0.4); margin-left: -1px; margin-right: -1px;">
       <div class="flex flex-col gap-1 min-w-0">
         <div class="font-mono font-semibold text-zinc-100" x-text="`Changes — ${changelog.today || '—'} vs ${changelog.yesterday || '—'}`"></div>
         <!-- Summary capsule badges showing key counts at a glance -->
@@ -1931,6 +1931,7 @@
         <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
           <div class="label flex items-center gap-1.5 text-emerald-400 font-semibold text-xs tracking-wider uppercase">
             <span>📈</span> Biggest Score Gainers
+            <span class="chip text-[9px] font-mono ml-1 normal-case" style="background: rgba(34,211,238,0.08); color: var(--cyan); border: 1px solid rgba(34,211,238,0.2)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
           </div>
           <div class="text-[10px] font-mono text-zinc-500" x-text="`Max 15 rows · &ge;2 ETFs`"></div>
         </div>
@@ -1983,6 +1984,7 @@
         <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
           <div class="label flex items-center gap-1.5 text-rose-400 font-semibold text-xs tracking-wider uppercase">
             <span>📉</span> Biggest Score Losers
+            <span class="chip text-[9px] font-mono ml-1 normal-case" style="background: rgba(34,211,238,0.08); color: var(--cyan); border: 1px solid rgba(34,211,238,0.2)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
           </div>
           <div class="text-[10px] font-mono text-zinc-500" x-text="`Max 15 rows · &ge;2 ETFs`"></div>
         </div>
@@ -2037,7 +2039,8 @@
       <div class="rounded-lg border border-l-4" style="border-color: var(--border); border-left-color: var(--up); background: var(--surface);">
         <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
           <div class="label flex items-center gap-1.5 text-emerald-400 font-semibold text-xs tracking-wider uppercase">
-            <span>🚀</span> Biggest Rank Climbers (30d)
+            <span>🚀</span> Biggest Rank Climbers
+            <span class="chip text-[9px] font-mono ml-1 normal-case" style="background: rgba(113,113,122,0.12); color: #71717a; border: 1px solid rgba(113,113,122,0.2)">fixed 30d</span>
           </div>
           <div class="text-[10px] font-mono text-zinc-500" x-text="`Max 10 rows · &ge;2 ETFs · Rank Δ &ge; +20`"></div>
         </div>
@@ -2093,7 +2096,8 @@
       <div class="rounded-lg border border-l-4" style="border-color: var(--border); border-left-color: var(--down); background: var(--surface);">
         <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
           <div class="label flex items-center gap-1.5 text-rose-400 font-semibold text-xs tracking-wider uppercase">
-            <span>☄️</span> Biggest Rank Fallers (30d)
+            <span>☄️</span> Biggest Rank Fallers
+            <span class="chip text-[9px] font-mono ml-1 normal-case" style="background: rgba(113,113,122,0.12); color: #71717a; border: 1px solid rgba(113,113,122,0.2)">fixed 30d</span>
           </div>
           <div class="text-[10px] font-mono text-zinc-500" x-text="`Max 10 rows · &ge;2 ETFs · Rank Δ &le; -20`"></div>
         </div>
@@ -2152,7 +2156,8 @@
       <div class="rounded-lg border" style="border-color: var(--border); background: var(--surface);">
         <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
           <div class="label flex items-center gap-1.5 text-cyan-400 font-semibold text-xs tracking-wider uppercase">
-            <span>🎯</span> ETF Adoption (Pickups 30d)
+            <span>🎯</span> ETF Adoption (Pickups)
+            <span class="chip text-[9px] font-mono ml-1 normal-case" style="background: rgba(113,113,122,0.12); color: #71717a; border: 1px solid rgba(113,113,122,0.2)">fixed 30d</span>
           </div>
           <div class="text-[10px] font-mono text-zinc-500" x-text="`Max 10 rows · &ge;2 ETFs`"></div>
         </div>
@@ -2203,7 +2208,8 @@
       <div class="rounded-lg border" style="border-color: var(--border); background: var(--surface);">
         <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
           <div class="label flex items-center gap-1.5 text-zinc-400 font-semibold text-xs tracking-wider uppercase">
-            <span>⚠️</span> ETF Defections (Dropouts 30d)
+            <span>⚠️</span> ETF Defections (Dropouts)
+            <span class="chip text-[9px] font-mono ml-1 normal-case" style="background: rgba(113,113,122,0.12); color: #71717a; border: 1px solid rgba(113,113,122,0.2)">fixed 30d</span>
           </div>
           <div class="text-[10px] font-mono text-zinc-500" x-text="`Max 10 rows`"></div>
         </div>
@@ -2330,9 +2336,9 @@
       <div class="rounded-lg border" style="border-color: var(--border); background: var(--surface);">
         <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
           <div class="label flex items-center gap-1.5 text-blue-400 font-semibold text-xs tracking-wider uppercase">
-            <span>🆕</span> New Entrants (&le;14d)
+            <span>🆕</span> New Entrants (<span x-text="changesPeriod === 'YTD' ? 'YTD' : `&le;${changesPeriod}d`"></span>)
           </div>
-          <div class="text-[10px] font-mono text-zinc-500" x-text="`${changelog.new_entrants?.length || 0} names`"></div>
+          <div class="text-[10px] font-mono text-zinc-500" x-text="`${newEntrants.length} names`"></div>
         </div>
         <div class="overflow-x-auto max-h-[350px] scrollbar">
           <table class="w-full text-left border-collapse">
@@ -2345,7 +2351,7 @@
               </tr>
             </thead>
             <tbody>
-              <template x-for="r in (changelog.new_entrants || [])" :key="r.ticker">
+              <template x-for="r in newEntrants" :key="r.ticker">
                 <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
                     @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
                   <td class="px-3 py-2 font-mono font-medium text-zinc-200">
@@ -2362,7 +2368,7 @@
                   <td class="px-3 py-2 text-right font-mono text-zinc-400" x-text="r.etf_count"></td>
                 </tr>
               </template>
-              <tr x-show="!changelog.new_entrants?.length">
+              <tr x-show="!newEntrants.length">
                 <td colspan="4" class="px-3 py-6 text-center text-zinc-500 italic select-none">No new entrants detected</td>
               </tr>
             </tbody>
@@ -2374,7 +2380,8 @@
       <div class="rounded-lg border" style="border-color: var(--border); background: var(--surface);">
         <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
           <div class="label flex items-center gap-1.5 text-zinc-400 font-semibold text-xs tracking-wider uppercase">
-            <span>❌</span> Dropped from Universe (Exits)
+            <span>❌</span> Dropped from Universe
+            <span class="chip text-[9px] font-mono ml-1 normal-case" style="background: rgba(34,211,238,0.08); color: var(--cyan); border: 1px solid rgba(34,211,238,0.2)" x-text="changesPeriod === 'YTD' ? 'YTD exits' : changesPeriod + 'd exits'"></span>
           </div>
           <div class="text-[10px] font-mono text-zinc-500" x-text="`${universeExits.length} exits`"></div>
         </div>
@@ -3005,6 +3012,71 @@ function app() {
         }
       }
       return exits.sort((a, b) => a.score_delta - b.score_delta);
+    },
+
+    get newEntrants() {
+      if (!this.scoreHistory || !this.changelog.today || !this.meta.snapshot_dates_in_window) return [];
+      
+      const latestDateStr = this.changelog.today;
+      const latestDate = new Date(latestDateStr);
+      let targetDate = new Date(latestDate);
+      
+      if (this.changesPeriod === 'YTD') {
+        const year = latestDate.getFullYear();
+        targetDate = new Date(`${year}-01-01`);
+      } else {
+        const days = parseInt(this.changesPeriod) || 1;
+        targetDate.setDate(latestDate.getDate() - days);
+      }
+      
+      const dates = this.meta.snapshot_dates_in_window || [];
+      if (!dates.length) return [];
+      
+      let targetDateStr = dates[0];
+      const targetTime = targetDate.getTime();
+      let minDiff = Math.abs(new Date(targetDateStr).getTime() - targetTime);
+      for (const d of dates) {
+        const diff = Math.abs(new Date(d).getTime() - targetTime);
+        if (diff < minDiff) {
+          minDiff = diff;
+          targetDateStr = d;
+        }
+      }
+      
+      if (targetDateStr === latestDateStr) {
+        const idx = dates.indexOf(latestDateStr);
+        if (idx > 0) {
+          targetDateStr = dates[idx - 1];
+        } else {
+          return [];
+        }
+      }
+      
+      const entrants = [];
+      for (const row of this.leaderboard) {
+        const history = this.scoreHistory[row.ticker];
+        if (history) {
+          const targetEntry = history.find(h => h.d === targetDateStr);
+          if (!targetEntry || targetEntry.s === 0) {
+            entrants.push({
+              ticker: row.ticker,
+              company: row.company,
+              final_score: row.final_score,
+              etf_count: row.etf_count,
+              tiers: row.tiers
+            });
+          }
+        } else {
+          entrants.push({
+            ticker: row.ticker,
+            company: row.company,
+            final_score: row.final_score,
+            etf_count: row.etf_count,
+            tiers: row.tiers
+          });
+        }
+      }
+      return entrants.sort((a, b) => b.final_score - a.final_score);
     },
 
     get sectorMax() {
