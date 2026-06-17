@@ -1,12 +1,11 @@
 {
-  "coverage_pct": 81.82,
-  "last_run_utc": "2026-06-17T06:50:04+00:00",
+  "coverage_pct": 81.84,
+  "last_run_utc": "2026-06-17T07:31:52+00:00",
   "note": "Self-healing: each CI run resolves ~150 tickers. Full coverage reached automatically.",
   "pending": [
     "*",
     "000983",
     "1385",
-    "1605.JP",
     "1787.HK",
     "1801.JP",
     "1878.JP",
@@ -850,6 +849,7 @@
     "1530",
     "16.HK",
     "1605",
+    "1605.JP",
     "161390",
     "1618",
     "1672",

@@ -540,9 +540,11 @@ def _fetch_yfinance_series(
             close = data["Close"]
 
         close = close.dropna()
-        # Ensure tz-naive index to avoid concat issues with mixed tz-aware/naive series
+        # Ensure tz-naive index to avoid concat issues with mixed tz-aware/naive series.
+        # tz_convert(None) is the correct pandas API for stripping tz from an already-aware
+        # DatetimeIndex (tz_localize(None) raises TypeError on tz-aware indexes).
         if hasattr(close.index, 'tz') and close.index.tz is not None:
-            close = close.tz_localize(None)
+            close = close.tz_convert(None)
         return close
 
     close = _download_close(ticker)

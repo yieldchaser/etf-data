@@ -81,7 +81,7 @@ def _get_price(cache: dict, ticker: str, date: pd.Timestamp) -> float | None:
     return float(future["Close"].iloc[0])
 
 
-def _compute_stats(trades: list[dict]) -> dict:
+def _compute_stats(trades: list[dict], hold_days: int = 30) -> dict:
     """Compute summary stats from a list of trade dicts."""
     if not trades:
         return {"n_trades": 0, "win_rate": None, "avg_return": None,
@@ -93,7 +93,10 @@ def _compute_stats(trades: list[dict]) -> dict:
     wins = sum(1 for r in returns if r > 0)
     avg_r = float(np.mean(returns))
     std_r = float(np.std(returns)) if len(returns) > 1 else 0.0
-    sharpe = float(avg_r / std_r * math.sqrt(12)) if std_r > 0 else None
+    # Annualize Sharpe based on hold_days: sqrt(365 / hold_days) so the factor
+    # adapts correctly when --hold is changed (was hardcoded sqrt(12) = monthly).
+    annualize = math.sqrt(365.0 / max(hold_days, 1))
+    sharpe = float(avg_r / std_r * annualize) if std_r > 0 else None
     # Max drawdown on cumulative equity curve
     cum = np.cumprod([1 + r for r in returns])
     peak = np.maximum.accumulate(cum)
@@ -131,12 +134,34 @@ def run_backtest(
     output_path: Path,
     hold_days: int = 30,
 ) -> None:
+    import os
     from .scoring import Config, compute_leaderboard
     from . import history as hist
 
-    cfg = Config.from_yaml("config.yaml")
-    print(f"Loading history from {history_path}…")
-    raw = pd.read_csv(history_path)
+    # BUG-1 fix: anchor config to repo root via __file__ so CWD doesn't matter.
+    _repo_root = Path(__file__).resolve().parent.parent
+    cfg = Config.from_yaml(_repo_root / "config.yaml")
+
+    # BUG-2 fix: use the same Parquet-first fetch logic as build.py so the backtest
+    # works in CI where all_history.csv is no longer committed to git.
+    from .build import _read_parquet_store, PARQUET_STORE, FALLBACK_SOURCE
+    print("Loading history…")
+    parquet_df = _read_parquet_store(PARQUET_STORE)
+    if parquet_df is not None and not parquet_df.empty:
+        raw = parquet_df
+        print(f"  Loaded {len(raw):,} rows from Parquet store ({PARQUET_STORE})")
+    else:
+        p = Path(history_path)
+        if not p.exists():
+            if os.environ.get("CI"):
+                raise FileNotFoundError(
+                    f"CI: {history_path} not found and Parquet store is empty. "
+                    f"Run predator.build first to populate the store."
+                )
+            print(f"  {history_path} not found locally — falling back to {FALLBACK_SOURCE}")
+            history_path = FALLBACK_SOURCE
+        print(f"  Loading CSV: {history_path}")
+        raw = pd.read_csv(history_path)
     raw["Holdings_As_Of"] = pd.to_datetime(raw["Holdings_As_Of"], errors="coerce")
 
     print("Loading price cache…")
@@ -324,35 +349,35 @@ def run_backtest(
                 "description": "Buy on day ticker first enters HIGH_CONVICTION",
                 "trades": hc_trades,
                 "cumulative_returns": _cumulative_returns(hc_trades),
-                "stats": _compute_stats(hc_trades),
+                "stats": _compute_stats(hc_trades, hold_days),
             },
             "burst_trigger": {
                 "label": "BURST Trigger",
                 "description": "Buy on day burst_30d first flips True",
                 "trades": burst_trades,
                 "cumulative_returns": _cumulative_returns(burst_trades),
-                "stats": _compute_stats(burst_trades),
+                "stats": _compute_stats(burst_trades, hold_days),
             },
             "top10_score": {
                 "label": "Top-10 Score",
                 "description": "Buy top 10 by Final Alpha Score each Monday",
                 "trades": score_trades,
                 "cumulative_returns": _cumulative_returns(score_trades),
-                "stats": _compute_stats(score_trades),
+                "stats": _compute_stats(score_trades, hold_days),
             },
             "top10_velocity": {
                 "label": "Top-10 Velocity",
                 "description": "Buy top 10 by Velocity Score each Monday",
                 "trades": vel_trades,
                 "cumulative_returns": _cumulative_returns(vel_trades),
-                "stats": _compute_stats(vel_trades),
+                "stats": _compute_stats(vel_trades, hold_days),
             },
             "baseline": {
                 "label": "Baseline (SPX)",
                 "description": "Buy S&P 500 each Monday (benchmark)",
                 "trades": baseline_trades,
                 "cumulative_returns": _cumulative_returns(baseline_trades),
-                "stats": _compute_stats(baseline_trades),
+                "stats": _compute_stats(baseline_trades, hold_days),
             },
         },
         "scatter": scatter,

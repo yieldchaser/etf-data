@@ -19,6 +19,10 @@ def snapshot_dates(history: pd.DataFrame, lookback_days: int) -> list[pd.Timesta
     s = pd.to_datetime(history["Holdings_As_Of"], errors="coerce").dropna()
     if s.empty:
         return []
+    # Normalize to tz-naive so sorted() and comparisons never raise TypeError when
+    # the source data contains ISO-8601 strings with timezone offsets.
+    if getattr(s.dt, "tz", None) is not None:
+        s = s.dt.tz_convert(None)
     latest = s.max()
     cutoff = latest - pd.Timedelta(days=lookback_days)
     return sorted(s[s >= cutoff].unique().tolist())

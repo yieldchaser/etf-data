@@ -56,7 +56,12 @@ class _SafeEncoder(json.JSONEncoder):
 
 
 def _write_json_atomic(path: Path, text: str) -> None:
-    """Write JSON atomically: write to .tmp then os.replace to avoid truncated files."""
+    """Write JSON atomically: write to .tmp then os.replace to avoid truncated files.
+
+    Creates parent directories automatically so callers never need to mkdir
+    themselves (mirrors the markets_history.py version of this helper).
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp")
     tmp.write_text(text, encoding="utf-8")
     os.replace(tmp, path)
@@ -79,8 +84,11 @@ from .scoring import Config, compute_leaderboard, compute_rank_deltas
 from . import history as hist
 
 
+# Repo root — anchored to this file's location so DEFAULT_SOURCE is correct
+# regardless of the working directory the caller uses (CWD-independent).
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 # Default: scraper writes here, build reads from here. Same repo.
-DEFAULT_SOURCE = "data/all_history.csv"
+DEFAULT_SOURCE = str(_REPO_ROOT / "data" / "all_history.csv")
 # Fallback: pull live from GitHub if local file is missing (for first-time / local dev runs).
 FALLBACK_SOURCE = "https://raw.githubusercontent.com/yieldchaser/etf-data/main/data/all_history.csv"
 # Partitioned Parquet store (Tier 2). Tests / advanced callers can override
@@ -348,8 +356,16 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                 is_better_than_median = recent10.lt(median_per_ticker, axis=0)
                 sustained_count = is_better_than_median.sum(axis=1)
                 
-                # Burst qualifier: peak ≥ 40 AND coverage ≥ 80% AND sustained ≥ 8 days
-                is_burst = (peak_improvement_30 >= 40) & (coverage >= 0.80) & (sustained_count >= 8)
+                # Burst qualifier: peak ≥ 40 AND (coverage ≥ 80% OR ticker has < 15 window
+                # snapshots — newer names get a pass on the coverage gate since they can't
+                # possibly reach 80% of a 30-day window; sustained_count ≥ 8 still guards
+                # against noise from tickers with only a handful of appearances).
+                #
+                # Without this, any ticker added in the last ~6 days of the window fails
+                # the 80% gate and can never qualify for burst regardless of rank movement.
+                actual_obs = rank_panel.notna().sum(axis=1)
+                coverage_ok = (coverage >= 0.80) | (actual_obs < 15)
+                is_burst = (peak_improvement_30 >= 40) & coverage_ok & (sustained_count >= 8)
         else:
             is_burst = pd.Series(dtype=bool)
 

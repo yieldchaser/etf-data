@@ -387,7 +387,14 @@ def _resolve_yf_symbol(ticker: str, meta: dict, symbol_map: dict) -> str:
     if re.fullmatch(r"\d{4}", ticker):
         return ticker + ".TW"
     if re.fullmatch(r"[A-Z]{4}(3|4|11)", ticker):
-        return ticker + ".SA"
+        # Only apply the Brazilian .SA suffix when country is unknown/unset.
+        # If country is known and is NOT Brazil, skip this pattern — it could
+        # false-positive on a coincidental 4-letter+digit ticker from another
+        # exchange (e.g. an Indian or Chinese name that the metadata doesn't map).
+        # Brazil-specific names should already have been caught by COUNTRY_SUFFIX
+        # above; this heuristic is only for tickers with no country metadata.
+        if not country or country == "Brazil":
+            return ticker + ".SA"
     if re.fullmatch(r"\d{1,4}", ticker):
         return ticker.zfill(4) + ".HK"
     return ticker
@@ -756,6 +763,7 @@ def build_details(
             errors += 1
 
     # ── Refresh loop for stale resolved tickers ──
+    refresh_failures = state.get("refresh_failures", {})
     for i, ticker in enumerate(refresh_batch, 1):
         company = lb_map.get(ticker) or ticker
         meta    = metadata.get(ticker, {})
@@ -776,8 +784,21 @@ def build_details(
             currency = currency_cache.get(ticker) or infer_currency_from_symbol(symbol)
             _write_detail_file(ticker, company, desc, prices, pending=False, currency=currency)
             print(f"    ✓ refreshed {len(prices)} price points")
+            refresh_failures.pop(ticker, None)  # reset consecutive failure counter on success
         else:
-            print(f"    ✗ refresh failed")
+            fail_n = refresh_failures.get(ticker, 0) + 1
+            refresh_failures[ticker] = fail_n
+            if fail_n >= 3:
+                # Ticker has failed refresh 3 times in a row — likely delisted or URL changed.
+                # Move back to pending so the full resolution pipeline (probe, symbol_map
+                # update) gets another chance rather than silently serving stale prices forever.
+                resolved.discard(ticker)
+                pending_set.add(ticker)
+                refresh_failures.pop(ticker, None)
+                print(f"    ✗ refresh failed {fail_n}x — moving back to pending for re-resolution")
+            else:
+                print(f"    ✗ refresh failed ({fail_n}/3 before re-queue)")
+    state["refresh_failures"] = refresh_failures
 
     all_pending = sorted(pending_set | {t for t in unresolved if t not in resolved})
     print(f"\n  Writing pending stubs for {len(all_pending)} tickers…")
