@@ -105,9 +105,18 @@ International ETFs (FPXI, IMOM, EEMO, PIZ, JHEM, MFEM) carry 60 points instead o
 Issuer website
     → scraper.py (fetch + parse + normalise)
     → data/latest/{TICKER}.csv          (current snapshot per ETF)
-    → data/history/YYYY/MM/DD/master_archive.csv  (dated daily snapshot)
-    → data/all_history.csv              (append-only master file, ~100k rows)
+    → data/history/YYYY/MM/DD/master_archive.csv  (dated daily snapshot, gitignored)
+    → data/all_history.csv              (transient working buffer, hydrated from Parquet)
 ```
+
+**History isolation architecture (2026-06):** `data/all_history.csv` is no longer committed to Git — the daily append was the single biggest driver of `.git` growth (~11 MB blob per commit, poorly compressing). The durable history is now the **year-partitioned Parquet store** at `data/history_parquet/year=YYYY/holdings.parquet`, guarded by a SHA-256 manifest (`CHECKSUMS.json`) with an immutability contract enforced by `tests/test_parquet_immutability.py`. Each scrape run:
+
+1. `scripts/hydrate_csv_from_parquet.py` reconstructs `data/all_history.csv` from the Parquet store (byte-identical to what used to be committed — verified by `scripts/validate_zero_loss.py`).
+2. `scraper.py` runs unchanged, appending today's scrape to the CSV.
+3. `scripts/migrate_to_parquet.py` folds the new rows into the Parquet store (mandatory, fail-loud — past-year partitions are immutable, current-year is append-only).
+4. The local CSV is wiped so `git add data/` never stages it.
+
+The committed daily scrape is now a ~1-line manifest refresh + small Parquet partition delta, down from a multi-megabyte CSV blob. `predator/build.py` reads the Parquet store directly (Parquet-first `fetch_history`), so the build never depends on the transient CSV.
 
 Idempotency is enforced on the composite key `(ETF_Ticker, ticker, Holdings_As_Of)` — reruns within the same UTC day are safe.
 
@@ -440,7 +449,7 @@ Runner:  ubuntu-latest
 Steps:
   1. Install: pandas, pyyaml, pyarrow, pytest, hypothesis, yfinance, openpyxl, fredapi, python-dotenv
      (No selenium/curl_cffi/pdfplumber — scraper-only, not needed for build)
-  2. pytest tests/ -v  (33 tests)
+  2. pytest tests/ -v  (316 tests)
   3. predator.build  → docs/data/*.json
   4. markets.fetch_yf + markets.fetch_fred + markets.build  → docs/data/markets.json
   5. predator.markets_history --full-refresh  → docs/data/market_returns.json
@@ -461,7 +470,7 @@ Steps:
 
 ## Testing
 
-**33 tests** — 27 scoring + 6 bridge — with full property-based and deterministic coverage.
+**316 tests** across 20 files — property-based (Hypothesis) and deterministic coverage of scoring, sanitization, the v42 bridge contract, Parquet immutability, markets engine, signal history, and CI config.
 
 ```bash
 python -m pytest tests/ -v
@@ -469,18 +478,18 @@ python -m pytest tests/ -v
 
 ### Test Suite
 
-#### `tests/test_scoring.py` (27 tests)
-Covers the scoring algorithm, sanitizer, temporal analytics, velocity, and burst detection:
-- Score formula correctness (tier weights × rank multipliers × new bonuses)
-- Sanitizer: blocked tickers, name patterns, ticker normalisation
-- Rank delta computation across all periods (1/7/14/30/60/90d)
-- Velocity score components and composite formula
-- Burst detection: 4σ threshold, coverage requirement, sustained improvement requirement
-- Concentration score calculation
-- Flag assignment (HIGH_CONVICTION, SPECULATIVE_BETA)
+The suite covers the full pipeline end-to-end. Key areas:
 
-#### `tests/test_bridge.py` (6 tests)
-Property-based tests using [Hypothesis](https://hypothesis.readthedocs.io/) validating the bridge pipeline contract:
+| Area | Test file(s) | Coverage |
+|------|-------------|----------|
+| Scoring & sanitizer | `test_scoring.py`, `test_apex_scoring.py`, `test_apex_gate.py` | Score formula, tier weights, rank multipliers, conviction layer, **sanitizer memoization correctness** |
+| Temporal analytics | `test_scoring.py`, `test_signal_history.py` | Rank deltas (1/7/14/30/60/90d), velocity, burst detection, signal timeline |
+| v42 bridge contract | `test_bridge.py`, `test_fault_isolation.py` | Property-based (Hypothesis) validation of the bridge pipeline, failure isolation |
+| History isolation | `test_parquet_immutability.py` | SHA-256 manifest integrity, past-year immutability, zero-loss reconstruction, append-only contract |
+| Markets engine | `test_markets_engine.py`, `test_markets_unit_conversion.py`, `test_self_living_merge.py`, `test_unit_gaps.py` | Market returns pipeline, currency conversion, partial-year merge |
+| CI config | `test_ci_config.py`, `test_pipeline_automation.py` | Workflow structure invariants (e.g. `continue-on-error` policy) |
+
+The sanitizer tests in `test_scoring.py` (44 tests) exercise `cfg.sanitizer.apply()` with distinct synthetic inputs, validating blocked tickers, name patterns, ticker normalization (BRK-B → BRK.B), GOOG → GOOGL dedup, and KRX cross-listing collapse — and prove the build-time memoization cache returns byte-identical results via deep copies.
 
 | Test | Properties Covered |
 |------|-------------------|
@@ -508,10 +517,15 @@ pip install selenium curl_cffi pdfplumber xlrd
 ### Commands
 
 ```bash
-# Run all 33 tests
+# Reconstruct data/all_history.csv from Parquet store (required for local development/queries)
+python scripts/hydrate_csv_from_parquet.py
+
+# Run all 316 tests
 python -m pytest tests/ -v
 
 # Build site artifacts (leaderboard, holdings, changelog, flow, overlap)
+# Note: --source data/all_history.csv is ignored when the Parquet store is
+# populated (Parquet-first fetch_history). The path is retained for compat.
 python -m predator.build --source data/all_history.csv --output docs/data --config config.yaml
 
 # Fetch market returns (FRED + yfinance) — requires FRED_API_KEY in .env
@@ -555,9 +569,10 @@ etf-data/
 ├── requirements.txt
 │
 ├── data/
-│   ├── all_history.csv           # Master holdings file (~100k rows)
+│   ├── all_history.csv           # Transient master holdings CSV (hydrate via scripts/hydrate_csv_from_parquet.py)
+│   ├── history_parquet/          # Append-only Parquet store (sole durable source of truth)
 │   ├── latest/                   # Current snapshot per ETF
-│   ├── history/                  # Dated daily snapshots
+│   ├── history/                  # Dated daily snapshots (gitignored)
 │   └── ticker_metadata.csv       # Sector/industry/country/market_cap per ticker
 │
 ├── docs/                         # GitHub Pages root
@@ -589,10 +604,11 @@ etf-data/
 │   └── backtest.py               # Strategy backtest engine
 │
 ├── scripts/
-│   └── etf_holdings_scraper_v42.py  # Extended scraper (8 ETFs)
+│   ├── etf_holdings_scraper_v42.py  # Extended scraper (8 ETFs)
+│   └── hydrate_csv_from_parquet.py # Reconstructs transient CSV from Parquet store
 │
-├── tests/
-│   ├── test_scoring.py           # 27 scoring tests
+├── tests/                        # pytest suite (20 files, 316 tests)
+│   ├── test_scoring.py           # 44 scoring & sanitizer tests
 │   └── test_bridge.py            # 6 bridge PBT tests
 │
 └── .github/workflows/
