@@ -1497,25 +1497,55 @@
 
       <!-- ETF detail -->
       <div class="lg:col-span-3 rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
-        <div class="px-3 py-2.5 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
-          <div>
-            <div class="text-base font-medium font-mono" :style="`color: var(--cyan)`" x-text="activeETF"></div>
-            <div class="text-xs" style="color: var(--text-2)" x-text="etfMetaLookup[activeETF]?.name || `${etfHoldings.length} holdings · tier ${currentETFTier}`"></div>
-            <div class="flex flex-wrap gap-x-3 mt-0.5 text-[10px]" style="color: var(--text-3)">
-              <span x-text="`${etfHoldings.length} holdings · tier ${currentETFTier}`"></span>
-              <span x-show="etfMetaLookup[activeETF]?.rebalance" x-text="`⟳ Rebalance: ${etfMetaLookup[activeETF]?.rebalance}`"></span>
-              <span x-show="etfMetaLookup[activeETF]?.reconstitution" x-text="`↻ Reconstitution: ${etfMetaLookup[activeETF]?.reconstitution}`"></span>
+        <div class="px-4 py-3.5 flex flex-col md:flex-row md:items-start justify-between gap-4" style="border-bottom: 1px solid var(--border)">
+          <div class="space-y-2.5">
+            <div>
+              <div class="text-xl font-bold font-mono tracking-wide" style="color: var(--cyan)" x-text="activeETF"></div>
+              <div class="text-sm font-semibold mt-0.5 text-zinc-100" x-text="etfMetaLookup[activeETF]?.name || 'ETF Portfolio'"></div>
+            </div>
+            <div class="flex flex-wrap gap-2 select-none">
+              <!-- Holdings Badge -->
+              <span class="px-2.5 py-0.5 rounded-full border border-white/[0.06] bg-white/[0.02] text-[10px] text-zinc-400 font-medium flex items-center">
+                <span class="num text-zinc-300 font-mono mr-1" x-text="etfHoldings.length"></span> holdings
+              </span>
+              <!-- Tier Badge -->
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold flex items-center" :style="tierChipStyle(currentETFTier) + '; border-radius: 9999px;'" x-text="`tier ${currentETFTier}`"></span>
+              <!-- Rebalance Badge -->
+              <template x-if="etfMetaLookup[activeETF]?.rebalance">
+                <span class="px-2.5 py-0.5 rounded-full border border-white/[0.06] bg-white/[0.02] text-[10px] text-zinc-400 flex items-center gap-1">
+                  <span class="text-zinc-500 font-medium">⟳</span> Rebalance: <span class="text-zinc-300 font-semibold" x-text="etfMetaLookup[activeETF].rebalance"></span>
+                </span>
+              </template>
+              <!-- Reconstitution Badge -->
+              <template x-if="etfMetaLookup[activeETF]?.reconstitution">
+                <span class="px-2.5 py-0.5 rounded-full border border-white/[0.06] bg-white/[0.02] text-[10px] text-zinc-400 flex items-center gap-1">
+                  <span class="text-zinc-500 font-medium">↻</span> Reconstitute: <span class="text-zinc-300 font-semibold" x-text="etfMetaLookup[activeETF].reconstitution"></span>
+                </span>
+              </template>
             </div>
           </div>
-          <div class="flex flex-col items-end gap-1.5 shrink-0 ml-4">
-            <div class="text-xs label">holdings as of <span class="num font-mono" style="color: var(--text-2)" x-text="etfHoldings[0]?.Holdings_As_Of || '—'"></span></div>
-            <div class="flex items-center gap-1.5">
-              <span class="text-[10px]" style="color: var(--text-3)">Horizon:</span>
-              <div class="flex border rounded overflow-hidden" style="border-color: var(--border-2)">
+          <div class="flex flex-col items-start md:items-end gap-2.5 shrink-0 ml-0 md:ml-4">
+            <!-- As Of Date glass container -->
+            <div class="text-[10px] text-zinc-400 flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-white/[0.04] bg-white/[0.015]">
+              <span class="text-zinc-500 uppercase tracking-wider text-[9px] font-bold">As Of</span>
+              <span class="num font-mono font-medium text-zinc-200" x-text="etfHoldings[0]?.Holdings_As_Of || '—'"></span>
+            </div>
+            <!-- Lookback Period Picker -->
+            <div class="flex items-center gap-2">
+              <div class="flex items-center gap-1.5">
+                <span class="text-[9px] uppercase tracking-wider font-bold text-zinc-500">Lookback</span>
+                <!-- Lookback Activity Badge -->
+                <span x-show="etfHasHistoryForPeriod(holdingsPeriod)" class="text-[9px] font-mono text-zinc-400 font-semibold bg-white/[0.02] border border-white/[0.05] px-1.5 py-0.5 rounded-full flex items-center gap-1 select-none" x-tooltip="'Active period additions (+) and liquidations (-)'">
+                  <span class="text-emerald-400" x-text="`+${entriesForActivePeriod.length}`"></span>
+                  <span class="text-zinc-600">/</span>
+                  <span class="text-rose-400" x-text="`-${exitsForActivePeriod.length}`"></span>
+                </span>
+              </div>
+              <div class="flex p-0.5 rounded-full border bg-black/20" style="border-color: var(--border)">
                 <template x-for="p in [1, 7, 14, 30, 60, 90]" :key="p">
                   <button @click.stop="holdingsPeriod = p"
-                          :style="holdingsPeriod === p ? 'background: rgba(34,211,238,0.12); color: var(--cyan);' : 'color: var(--text-3);'"
-                          class="px-1.5 py-0.5 text-[9px] font-mono leading-none hover:text-zinc-300 transition"
+                          :class="holdingsPeriod === p ? 'bg-cyan-400/10 text-cyan-400 border-white/[0.05] shadow-[0_1px_3px_rgba(34,211,238,0.1)]' : 'text-zinc-400 hover:text-zinc-200 border-transparent'"
+                          class="px-2.5 py-0.5 text-[9px] font-mono font-semibold rounded-full border leading-none transition-all duration-200 cursor-pointer"
                           x-text="p === 7 ? '7d' : p === 30 ? '30d' : p === 90 ? '90d' : p + 'd'"></button>
                 </template>
               </div>
@@ -2857,6 +2887,12 @@ function app() {
       const etfExits = this.holdingsExits[this.activeETF];
       if (!etfExits) return [];
       return etfExits[String(this.holdingsPeriod)] || [];
+    },
+
+    get entriesForActivePeriod() {
+      const period = this.holdingsPeriod;
+      if (!this.etfHasHistoryForPeriod(period)) return [];
+      return this.etfHoldings.filter(h => this.getHoldingsDelta(h, period) === null);
     },
 
     getHoldingsDelta(h, period) {
