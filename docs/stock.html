@@ -53,6 +53,55 @@
     .crosshair-line { stroke: rgba(255,255,255,0.15); stroke-width: 1; stroke-dasharray: 3 3; pointer-events: none; }
     .crosshair-dot  { fill: var(--cyan); pointer-events: none; }
     .chart-tooltip  { position: absolute; pointer-events: none; background: var(--surface-2); border: 1px solid var(--border-2); border-radius: 6px; padding: 5px 9px; font-size: 11px; white-space: nowrap; }
+
+    /* Premium stock detail card styles */
+    .premium-card {
+      background: radial-gradient(100% 100% at 0% 0%, rgba(255,255,255,0.035) 0%, rgba(255,255,255,0.01) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-color: rgba(34, 211, 238, 0.12);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      backdrop-filter: blur(4px);
+      border-radius: 10px;
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+    .premium-card:hover {
+      border-color: rgba(34, 211, 238, 0.22);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45), 0 0 12px rgba(34, 211, 238, 0.03);
+    }
+    .segment-control {
+      display: inline-flex;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 2px;
+      border-radius: 9999px;
+    }
+    .segment-btn {
+      font-size: 9px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 9999px;
+      color: var(--text-3);
+      cursor: pointer;
+      background: transparent;
+      border: none;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .segment-btn:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .segment-btn.active {
+      background: rgba(34, 211, 238, 0.15);
+      border: 1px solid rgba(34, 211, 238, 0.25);
+      color: var(--cyan);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+    .display-3-lines {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
   </style>
 </head>
 <body>
@@ -295,37 +344,64 @@
     </div>
 
     <!-- PRICE HISTORY + DESCRIPTION -->
-    <div class="rounded-lg border mb-5" style="background: var(--surface); border-color: var(--border)">
-      <div class="px-3 py-2 flex items-center justify-between flex-wrap gap-y-1" style="border-bottom: 1px solid var(--border)">
-        <div class="flex items-center gap-3 flex-wrap">
-          <div class="label-cyan label">Price History</div>
-          <span class="font-mono text-xs" style="color: var(--text-2)" x-text="ticker"></span>
-          <span x-show="stockCurrency && stockCurrency !== 'USD'" class="chip" style="background: rgba(255,255,255,0.04); color: var(--text-3); border: 1px solid rgba(255,255,255,0.08); font-size: 10px" x-text="stockCurrency"></span>
-          <span x-show="stockPriceChange !== null" class="text-xs font-mono"
-                :style="`color: ${(stockPriceChange||0)>=0?'var(--up)':'var(--down)'}`"
-                x-text="stockPriceChange !== null ? ((stockPriceChange>=0?'+':'')+stockPriceChange.toFixed(2)+'%') : ''"></span>
+    <div class="premium-card mb-5">
+      <!-- Chart header: company info + range buttons -->
+      <div class="p-4 flex items-start justify-between gap-3 border-b border-[rgba(255,255,255,0.06)]">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-xs font-mono font-semibold tracking-wider" style="color: var(--cyan)" x-text="ticker"></span>
+            <span x-show="stockCurrency && stockCurrency !== 'USD'" class="text-[9px] font-medium font-mono px-1.5 py-0.5 rounded bg-[rgba(255,255,255,0.04)] text-[var(--text-2)]" x-text="stockCurrency"></span>
+            <span x-show="stockPriceChange !== null" class="text-[10px] font-medium font-mono px-1.5 py-0.5 rounded"
+                  :style="`color: ${(stockPriceChange||0)>=0?'var(--up)':'var(--down)'}; background-color: ${(stockPriceChange||0)>=0?'rgba(16,185,129,0.06)':'rgba(239,68,68,0.06)'}`"
+                  x-text="stockPriceChange !== null ? ((stockPriceChange>=0?'+':'')+stockPriceChange.toFixed(2)+'%') : ''"></span>
+          </div>
+          <div class="text-[10px] font-medium uppercase tracking-wider text-[var(--text-3)]">Price History & Range</div>
         </div>
-        <div x-show="stockFilteredPrices.length > 1" class="flex items-center gap-1 text-[10px]">
+        <!-- Range buttons -->
+        <div x-show="stockFilteredPrices.length > 1" class="segment-control shrink-0">
           <template x-for="r in ['1M','3M','6M','YTD','1Y','ALL']" :key="r">
             <button @click="setStockRange(r)"
-                    :style="stockActiveRange===r ? 'background:rgba(34,211,238,0.08);color:var(--cyan);border-color:rgba(34,211,238,0.3)' : 'border-color:var(--border-2);color:var(--text-3)'"
-                    class="px-2 py-0.5 rounded border transition" x-text="r"></button>
+                    :class="stockActiveRange === r ? 'segment-btn active' : 'segment-btn'"
+                    x-text="r"></button>
           </template>
         </div>
       </div>
-      <div x-show="stockFilteredPrices.length > 1" class="px-3 py-2 flex items-baseline gap-5 text-xs" style="border-bottom: 1px solid var(--border)">
-        <div><span class="label">Latest</span>
-          <span class="ml-1.5 num font-mono font-medium" style="color:var(--text)"
-                x-text="stockFilteredPrices.length ? _fmtPrice(stockFilteredPrices[stockFilteredPrices.length-1][1]) : '—'"></span></div>
-        <div><span class="label">High</span>
-          <span class="ml-1.5 num font-mono" style="color:var(--up)"
-                x-text="stockRangeHigh!==null ? _fmtPrice(stockRangeHigh) : '—'"></span></div>
-        <div><span class="label">Low</span>
-          <span class="ml-1.5 num font-mono" style="color:var(--down)"
-                x-text="stockRangeLow!==null ? _fmtPrice(stockRangeLow) : '—'"></span></div>
-        <div><span class="label">Period</span>
-          <span class="ml-1.5 text-[10px] font-mono" style="color:var(--text-3)"
-                x-text="stockFilteredPrices.length ? stockFilteredPrices[0][0]+' → '+stockFilteredPrices[stockFilteredPrices.length-1][0] : ''"></span></div>
+
+      <!-- 2x2 Key Metrics Grid -->
+      <div class="grid grid-cols-2 gap-3 p-4 border-b border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.01)]" x-show="!stockPending && stockFilteredPrices.length > 1">
+        <div class="flex flex-col">
+          <span class="text-[9px] uppercase tracking-wider font-semibold" style="color: var(--text-3)">Latest Price</span>
+          <span class="text-sm font-mono font-bold mt-0.5" style="color: var(--text)" x-text="stockFilteredPrices.length ? _fmtPrice(stockFilteredPrices[stockFilteredPrices.length-1][1]) : '—'"></span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-[9px] uppercase tracking-wider font-semibold" style="color: var(--text-3)">Avg Volatility</span>
+          <span class="text-sm font-mono font-medium mt-0.5" style="color: var(--text-2)" x-text="stockRangeVolatility !== null ? stockRangeVolatility.toFixed(1) + '% ann.' : '—'"></span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-[9px] uppercase tracking-wider font-semibold" style="color: var(--text-3)">Period Low</span>
+          <span class="text-sm font-mono font-medium mt-0.5" style="color: var(--down)" x-text="stockRangeLow !== null ? _fmtPrice(stockRangeLow) : '—'"></span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-[9px] uppercase tracking-wider font-semibold" style="color: var(--text-3)">Period High</span>
+          <span class="text-sm font-mono font-medium mt-0.5" style="color: var(--up)" x-text="stockRangeHigh !== null ? _fmtPrice(stockRangeHigh) : '—'"></span>
+        </div>
+      </div>
+
+      <!-- Day/Year Range Slider Track -->
+      <div class="px-4 py-3 border-b border-[rgba(255,255,255,0.06)]" x-show="!stockPending && stockFilteredPrices.length > 1 && stockRangeHigh !== null && stockRangeLow !== null && stockRangeHigh > stockRangeLow">
+        <div class="flex items-center justify-between text-[9px] mb-1.5" style="color: var(--text-3)">
+          <span class="font-medium">Period Range Position</span>
+          <span class="font-mono font-semibold" x-text="stockFilteredPrices.length && stockRangeHigh > stockRangeLow ? (Math.min(100, Math.max(0, ((stockFilteredPrices[stockFilteredPrices.length-1][1] - stockRangeLow) / (stockRangeHigh - stockRangeLow)) * 100)) : 50).toFixed(0) + '%' : ''"></span>
+        </div>
+        <div class="relative w-full h-1.5 bg-[rgba(255,255,255,0.06)] rounded-full">
+          <!-- Gradient track filler -->
+          <div class="absolute h-full rounded-full bg-gradient-to-r from-[var(--down)] to-[var(--up)] opacity-25" style="left: 0; right: 0;"></div>
+          <!-- Marker/Indicator for latest price -->
+          <div class="absolute w-2.5 h-2.5 rounded-full bg-[var(--cyan)] border border-[#000] -top-[2px] shadow-[0_0_8px_rgba(34,211,238,0.5)] transform -translate-x-1/2 transition-all duration-300"
+               :style="`left: ${stockFilteredPrices.length && stockRangeHigh > stockRangeLow ? Math.min(100, Math.max(0, ((stockFilteredPrices[stockFilteredPrices.length-1][1] - stockRangeLow) / (stockRangeHigh - stockRangeLow)) * 100)) : 50}%`"
+               :title="`Latest: ${stockFilteredPrices.length ? _fmtPrice(stockFilteredPrices[stockFilteredPrices.length-1][1]) : ''}`">
+          </div>
+        </div>
       </div>
       <div class="px-3 pt-3 pb-2 chart-wrap" @mousemove="onSMM($event)" @mouseleave="onSML()">
         <div x-show="stockPending && !stockFilteredPrices.length"
@@ -922,6 +998,18 @@ function stockApp() {
     },
     get stockRangeHigh() { return this.stockFilteredPrices.length ? Math.max(...this.stockFilteredPrices.map(p=>p[1])) : null; },
     get stockRangeLow()  { return this.stockFilteredPrices.length ? Math.min(...this.stockFilteredPrices.map(p=>p[1])) : null; },
+    get stockRangeVolatility() {
+      const fp = this.stockFilteredPrices;
+      if (fp.length < 10) return null;
+      const returns = [];
+      for (let i = 1; i < fp.length; i++) {
+        if (fp[i-1][1] > 0) returns.push(Math.log(fp[i][1] / fp[i-1][1]));
+      }
+      if (!returns.length) return null;
+      const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
+      const variance = returns.reduce((a, b) => a + (b - mean) ** 2, 0) / returns.length;
+      return Math.sqrt(variance * 252) * 100;
+    },
     _sY(val) {
       const fp = this.stockFilteredPrices;
       if (!fp.length) return 65;

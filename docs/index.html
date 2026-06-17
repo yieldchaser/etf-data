@@ -95,6 +95,53 @@
     .pulse-load { animation: pulse-fade 1.4s ease-in-out infinite; }
 
     /* Premium stock detail chart */
+    .premium-card {
+      background: radial-gradient(100% 100% at 0% 0%, rgba(255,255,255,0.035) 0%, rgba(255,255,255,0.01) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-color: rgba(34, 211, 238, 0.12);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      backdrop-filter: blur(4px);
+      border-radius: 10px;
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+    .premium-card:hover {
+      border-color: rgba(34, 211, 238, 0.22);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45), 0 0 12px rgba(34, 211, 238, 0.03);
+    }
+    .segment-control {
+      display: inline-flex;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 2px;
+      border-radius: 9999px;
+    }
+    .segment-btn {
+      font-size: 9px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 9999px;
+      color: var(--text-3);
+      cursor: pointer;
+      background: transparent;
+      border: none;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .segment-btn:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .segment-btn.active {
+      background: rgba(34, 211, 238, 0.15);
+      border: 1px solid rgba(34, 211, 238, 0.25);
+      color: var(--cyan);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+    .display-3-lines {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
     .detail-chart-wrap { position: relative; user-select: none; }
     .detail-chart-wrap svg { display: block; overflow: visible; }
     .detail-crosshair-line { stroke: rgba(255,255,255,0.18); stroke-width: 1px; stroke-dasharray: 3 3; pointer-events: none; }
@@ -686,42 +733,58 @@
 
                       <!-- RIGHT PANEL: Premium Price Chart -->
                       <div class="xl:w-[480px] shrink-0" x-data="detailChartPanel(row.ticker, $store)" x-init="init()">
-                        <div class="rounded-lg border" style="background: rgba(255,255,255,0.02); border-color: rgba(34,211,238,0.15)">
+                        <div class="premium-card">
                           <!-- Chart header: company info + range buttons -->
-                          <div class="px-3 pt-3 pb-2 flex items-start justify-between gap-2">
+                          <div class="p-4 flex items-start justify-between gap-3 border-b border-[rgba(255,255,255,0.06)]">
                             <div class="min-w-0">
-                              <div class="flex items-center gap-1.5 mb-0.5">
-                                <a :href="`stock.html?t=${ticker}`" class="text-xs font-mono font-medium" style="color: var(--cyan); text-decoration: none;" x-text="ticker"></a>
-                                <span class="text-[10px]" style="color: var(--text-3)" x-show="priceChange !== null" :style="`color: ${priceChange >= 0 ? 'var(--up)' : 'var(--down)'}`" x-text="priceChange !== null ? (priceChange >= 0 ? '+' : '') + priceChange.toFixed(2) + '%' : ''"></span>
+                              <div class="flex items-center gap-2 mb-1">
+                                <a :href="`stock.html?t=${ticker}`" class="text-xs font-mono font-semibold tracking-wider hover:opacity-85 transition-opacity" style="color: var(--cyan); text-decoration: none;" x-text="ticker"></a>
+                                <span class="text-[10px] font-medium font-mono px-1.5 py-0.5 rounded" x-show="priceChange !== null" :style="`color: ${priceChange >= 0 ? 'var(--up)' : 'var(--down)'}; background-color: ${priceChange >= 0 ? 'rgba(16,185,129,0.06)' : 'rgba(239,68,68,0.06)'}`" x-text="priceChange !== null ? (priceChange >= 0 ? '+' : '') + priceChange.toFixed(2) + '%' : ''"></span>
                               </div>
                               <!-- Description — capped to 3 lines to prevent right panel ballooning row height -->
                               <div x-show="loading" class="desc-skeleton h-3 w-40 mt-1"></div>
-                              <div x-show="!loading" class="text-[10px] leading-snug" style="color: var(--text-3); max-width: 360px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;" :title="isPending && !description ? '⏳ Company profile being fetched…' : (description || '')" x-text="isPending && !description ? '⏳ Company profile being fetched…' : (description || '')"></div>
+                              <div x-show="!loading" class="text-[10px] leading-relaxed display-3-lines" style="color: var(--text-3); max-width: 320px;" :title="isPending && !description ? '⏳ Company profile being fetched…' : (description || '')" x-text="isPending && !description ? '⏳ Company profile being fetched…' : (description || '')"></div>
                             </div>
                             <!-- Range buttons -->
-                            <div class="flex items-center gap-1 shrink-0">
+                            <div class="segment-control shrink-0">
                               <template x-for="r in ranges" :key="r">
-                                <button @click="setRange(r)" :class="activeRange === r ? 'range-btn active' : 'range-btn'" x-text="r"></button>
+                                <button @click="setRange(r)" :class="activeRange === r ? 'segment-btn active' : 'segment-btn'" x-text="r"></button>
                               </template>
                             </div>
                           </div>
-                          <!-- Price + High/Low KPIs -->
-                          <div class="px-3 pb-2 flex items-baseline gap-4 text-xs" x-show="!loading && filteredPrices.length">
-                            <div>
-                              <span class="label">Latest</span>
-                              <span class="ml-1.5 num font-mono font-medium" style="color: var(--text)" x-text="filteredPrices.length ? fmtMoney(filteredPrices[filteredPrices.length-1][1], detailCurrency) : '—'"></span>
+                          <!-- 2x2 Key Metrics Grid -->
+                          <div class="grid grid-cols-2 gap-3 p-4 border-b border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.01)]" x-show="!loading && filteredPrices.length">
+                            <div class="flex flex-col">
+                              <span class="text-[9px] uppercase tracking-wider font-semibold" style="color: var(--text-3)">Latest Price</span>
+                              <span class="text-sm font-mono font-bold mt-0.5" style="color: var(--text)" x-text="filteredPrices.length ? fmtMoney(filteredPrices[filteredPrices.length-1][1], detailCurrency) : '—'"></span>
                             </div>
-                            <div>
-                              <span class="label">High</span>
-                              <span class="ml-1.5 num font-mono" style="color: var(--up)" x-text="rangeHigh !== null ? fmtMoney(rangeHigh, detailCurrency) : '—'"></span>
+                            <div class="flex flex-col">
+                              <span class="text-[9px] uppercase tracking-wider font-semibold" style="color: var(--text-3)">Avg Volatility</span>
+                              <span class="text-sm font-mono font-medium mt-0.5" style="color: var(--text-2)" x-text="rangeVolatility !== null ? rangeVolatility.toFixed(1) + '% ann.' : '—'"></span>
                             </div>
-                            <div>
-                              <span class="label">Low</span>
-                              <span class="ml-1.5 num font-mono" style="color: var(--down)" x-text="rangeLow !== null ? fmtMoney(rangeLow, detailCurrency) : '—'"></span>
+                            <div class="flex flex-col">
+                              <span class="text-[9px] uppercase tracking-wider font-semibold" style="color: var(--text-3)">Period Low</span>
+                              <span class="text-sm font-mono font-medium mt-0.5" style="color: var(--down)" x-text="rangeLow !== null ? fmtMoney(rangeLow, detailCurrency) : '—'"></span>
                             </div>
-                            <div>
-                              <span class="label">Vol Ø</span>
-                              <span class="ml-1.5 num font-mono" style="color: var(--text-2)" x-text="rangeVolatility !== null ? rangeVolatility.toFixed(1) + '% ann.' : '—'"></span>
+                            <div class="flex flex-col">
+                              <span class="text-[9px] uppercase tracking-wider font-semibold" style="color: var(--text-3)">Period High</span>
+                              <span class="text-sm font-mono font-medium mt-0.5" style="color: var(--up)" x-text="rangeHigh !== null ? fmtMoney(rangeHigh, detailCurrency) : '—'"></span>
+                            </div>
+                          </div>
+                          <!-- Day/Year Range Slider Track -->
+                          <div class="px-4 py-3 border-b border-[rgba(255,255,255,0.06)]" x-show="!loading && filteredPrices.length && rangeHigh !== null && rangeLow !== null && rangeHigh > rangeLow">
+                            <div class="flex items-center justify-between text-[9px] mb-1.5" style="color: var(--text-3)">
+                              <span class="font-medium">Period Range Position</span>
+                              <span class="font-mono font-semibold" x-text="filteredPrices.length && rangeHigh > rangeLow ? (Math.min(100, Math.max(0, ((filteredPrices[filteredPrices.length-1][1] - rangeLow) / (rangeHigh - rangeLow)) * 100))).toFixed(0) + '%' : ''"></span>
+                            </div>
+                            <div class="relative w-full h-1.5 bg-[rgba(255,255,255,0.06)] rounded-full">
+                              <!-- Gradient track filler -->
+                              <div class="absolute h-full rounded-full bg-gradient-to-r from-[var(--down)] to-[var(--up)] opacity-25" style="left: 0; right: 0;"></div>
+                              <!-- Marker/Indicator for latest price -->
+                              <div class="absolute w-2.5 h-2.5 rounded-full bg-[var(--cyan)] border border-[#000] -top-[2px] shadow-[0_0_8px_rgba(34,211,238,0.5)] transform -translate-x-1/2 transition-all duration-300"
+                                   :style="`left: ${filteredPrices.length && rangeHigh > rangeLow ? Math.min(100, Math.max(0, ((filteredPrices[filteredPrices.length-1][1] - rangeLow) / (rangeHigh - rangeLow)) * 100)) : 50}%`"
+                                   :title="`Latest: ${filteredPrices.length ? fmtMoney(filteredPrices[filteredPrices.length-1][1], detailCurrency) : ''}`">
+                              </div>
                             </div>
                           </div>
                           <!-- Chart area -->
@@ -1238,39 +1301,58 @@
 
                         <!-- RIGHT PANEL: Premium Price Chart -->
                         <div class="xl:w-[480px] shrink-0" x-data="detailChartPanel(row.ticker, $store)" x-init="init()">
-                          <div class="rounded-lg border" style="background: rgba(255,255,255,0.02); border-color: rgba(34,211,238,0.15)">
-                            <div class="px-3 pt-3 pb-2 flex items-start justify-between gap-2">
+                          <div class="premium-card">
+                            <!-- Chart header: company info + range buttons -->
+                            <div class="p-4 flex items-start justify-between gap-3 border-b border-[rgba(255,255,255,0.06)]">
                               <div class="min-w-0">
-                                <div class="flex items-center gap-1.5 mb-0.5">
-                                  <a :href="`stock.html?t=${ticker}`" class="text-xs font-mono font-medium" style="color: var(--cyan); text-decoration: none;" x-text="ticker"></a>
-                                  <span class="text-[10px]" x-show="priceChange !== null" :style="`color: ${priceChange >= 0 ? 'var(--up)' : 'var(--down)'}`" x-text="priceChange !== null ? (priceChange >= 0 ? '+' : '') + priceChange.toFixed(2) + '%' : ''"></span>
+                                <div class="flex items-center gap-2 mb-1">
+                                  <a :href="`stock.html?t=${ticker}`" class="text-xs font-mono font-semibold tracking-wider hover:opacity-85 transition-opacity" style="color: var(--cyan); text-decoration: none;" x-text="ticker"></a>
+                                  <span class="text-[10px] font-medium font-mono px-1.5 py-0.5 rounded" x-show="priceChange !== null" :style="`color: ${priceChange >= 0 ? 'var(--up)' : 'var(--down)'}; background-color: ${priceChange >= 0 ? 'rgba(16,185,129,0.06)' : 'rgba(239,68,68,0.06)'}`" x-text="priceChange !== null ? (priceChange >= 0 ? '+' : '') + priceChange.toFixed(2) + '%' : ''"></span>
                                 </div>
-                                <div x-show="loading" class="desc-skeleton h-3 w-40 mt-1"></div>
                                 <!-- Description — capped to 3 lines to prevent right panel ballooning row height -->
-                                <div x-show="!loading" class="text-[10px] leading-snug" style="color: var(--text-3); max-width: 360px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;" :title="isPending && !description ? '⏳ Company profile being fetched…' : (description || '')" x-text="isPending && !description ? '⏳ Company profile being fetched…' : (description || '')"></div>
+                                <div x-show="loading" class="desc-skeleton h-3 w-40 mt-1"></div>
+                                <div x-show="!loading" class="text-[10px] leading-relaxed display-3-lines" style="color: var(--text-3); max-width: 320px;" :title="isPending && !description ? '⏳ Company profile being fetched…' : (description || '')" x-text="isPending && !description ? '⏳ Company profile being fetched…' : (description || '')"></div>
                               </div>
-                              <div class="flex items-center gap-1 shrink-0">
+                              <!-- Range buttons -->
+                              <div class="segment-control shrink-0">
                                 <template x-for="r in ranges" :key="r">
-                                  <button @click="setRange(r)" :class="activeRange === r ? 'range-btn active' : 'range-btn'" x-text="r"></button>
+                                  <button @click="setRange(r)" :class="activeRange === r ? 'segment-btn active' : 'segment-btn'" x-text="r"></button>
                                 </template>
                               </div>
                             </div>
-                            <div class="px-3 pb-2 flex items-baseline gap-4 text-xs" x-show="!loading && filteredPrices.length">
-                              <div>
-                                <span class="label">Latest</span>
-                                <span class="ml-1.5 num font-mono font-medium" style="color: var(--text)" x-text="filteredPrices.length ? fmtMoney(filteredPrices[filteredPrices.length-1][1], detailCurrency) : '—'"></span>
+                            <!-- 2x2 Key Metrics Grid -->
+                            <div class="grid grid-cols-2 gap-3 p-4 border-b border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.01)]" x-show="!loading && filteredPrices.length">
+                              <div class="flex flex-col">
+                                <span class="text-[9px] uppercase tracking-wider font-semibold" style="color: var(--text-3)">Latest Price</span>
+                                <span class="text-sm font-mono font-bold mt-0.5" style="color: var(--text)" x-text="filteredPrices.length ? fmtMoney(filteredPrices[filteredPrices.length-1][1], detailCurrency) : '—'"></span>
                               </div>
-                              <div>
-                                <span class="label">High</span>
-                                <span class="ml-1.5 num font-mono" style="color: var(--up)" x-text="rangeHigh !== null ? fmtMoney(rangeHigh, detailCurrency) : '—'"></span>
+                              <div class="flex flex-col">
+                                <span class="text-[9px] uppercase tracking-wider font-semibold" style="color: var(--text-3)">Avg Volatility</span>
+                                <span class="text-sm font-mono font-medium mt-0.5" style="color: var(--text-2)" x-text="rangeVolatility !== null ? rangeVolatility.toFixed(1) + '% ann.' : '—'"></span>
                               </div>
-                              <div>
-                                <span class="label">Low</span>
-                                <span class="ml-1.5 num font-mono" style="color: var(--down)" x-text="rangeLow !== null ? fmtMoney(rangeLow, detailCurrency) : '—'"></span>
+                              <div class="flex flex-col">
+                                <span class="text-[9px] uppercase tracking-wider font-semibold" style="color: var(--text-3)">Period Low</span>
+                                <span class="text-sm font-mono font-medium mt-0.5" style="color: var(--down)" x-text="rangeLow !== null ? fmtMoney(rangeLow, detailCurrency) : '—'"></span>
                               </div>
-                              <div>
-                                <span class="label">Vol Ø</span>
-                                <span class="ml-1.5 num font-mono" style="color: var(--text-2)" x-text="rangeVolatility !== null ? rangeVolatility.toFixed(1) + '% ann.' : '—'"></span>
+                              <div class="flex flex-col">
+                                <span class="text-[9px] uppercase tracking-wider font-semibold" style="color: var(--text-3)">Period High</span>
+                                <span class="text-sm font-mono font-medium mt-0.5" style="color: var(--up)" x-text="rangeHigh !== null ? fmtMoney(rangeHigh, detailCurrency) : '—'"></span>
+                              </div>
+                            </div>
+                            <!-- Day/Year Range Slider Track -->
+                            <div class="px-4 py-3 border-b border-[rgba(255,255,255,0.06)]" x-show="!loading && filteredPrices.length && rangeHigh !== null && rangeLow !== null && rangeHigh > rangeLow">
+                              <div class="flex items-center justify-between text-[9px] mb-1.5" style="color: var(--text-3)">
+                                <span class="font-medium">Period Range Position</span>
+                                <span class="font-mono font-semibold" x-text="filteredPrices.length && rangeHigh > rangeLow ? (Math.min(100, Math.max(0, ((filteredPrices[filteredPrices.length-1][1] - rangeLow) / (rangeHigh - rangeLow)) * 100))).toFixed(0) + '%' : ''"></span>
+                              </div>
+                              <div class="relative w-full h-1.5 bg-[rgba(255,255,255,0.06)] rounded-full">
+                                <!-- Gradient track filler -->
+                                <div class="absolute h-full rounded-full bg-gradient-to-r from-[var(--down)] to-[var(--up)] opacity-25" style="left: 0; right: 0;"></div>
+                                <!-- Marker/Indicator for latest price -->
+                                <div class="absolute w-2.5 h-2.5 rounded-full bg-[var(--cyan)] border border-[#000] -top-[2px] shadow-[0_0_8px_rgba(34,211,238,0.5)] transform -translate-x-1/2 transition-all duration-300"
+                                     :style="`left: ${filteredPrices.length && rangeHigh > rangeLow ? Math.min(100, Math.max(0, ((filteredPrices[filteredPrices.length-1][1] - rangeLow) / (rangeHigh - rangeLow)) * 100)) : 50}%`"
+                                     :title="`Latest: ${filteredPrices.length ? fmtMoney(filteredPrices[filteredPrices.length-1][1], detailCurrency) : ''}`">
+                                </div>
                               </div>
                             </div>
                             <div class="detail-chart-wrap px-2 pb-3"
