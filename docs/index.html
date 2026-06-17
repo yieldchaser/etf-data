@@ -39,18 +39,18 @@
     .regime { display: inline-block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; white-space: nowrap; min-width: 76px; }
 
     /* Auto-explainer grid (expanded row) */
-    .xp-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: rgba(255,255,255,0.012); }
-    .xp-cell { padding: 9px 12px; border-left: 1px solid var(--border); min-width: 0; }
+    .xp-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid rgba(255, 255, 255, 0.04); border-radius: 8px; overflow: hidden; background: rgba(255, 255, 255, 0.015); backdrop-filter: blur(12px); box-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.03); }
+    .xp-cell { padding: 12px 16px; border-left: 1px solid rgba(255, 255, 255, 0.04); min-width: 0; }
     .xp-cell:first-child { border-left: 0; }
-    .xp-label { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); margin-bottom: 5px; }
-    .xp-kv { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-size: 11px; line-height: 1.65; }
+    .xp-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); margin-bottom: 8px; }
+    .xp-kv { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-size: 11px; line-height: 1.8; }
     .xp-kv .k { color: var(--text-3); white-space: nowrap; text-transform: capitalize; font-size: 10px; font-weight: 500; letter-spacing: 0.01em; }
-    .xp-kv .v { font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; text-align: right; white-space: normal; overflow-wrap: anywhere; min-width: 0; }
-    .xp-kv.xp-wide { justify-content: flex-start; }
-    .xp-kv.xp-wide .v { font-family: inherit; text-align: left; white-space: normal; }
+    .xp-kv .v { font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; text-align: right; white-space: normal; overflow-wrap: anywhere; min-width: 0; color: var(--text); font-weight: 500; }
+    .xp-kv.xp-wide { justify-content: flex-start; border-left: 2px solid currentColor; padding-left: 8px; margin-top: 4px; margin-bottom: 4px; font-size: 10px; }
+    .xp-kv.xp-wide .v { font-family: inherit; text-align: left; white-space: normal; font-weight: 500; }
     @media (max-width: 900px) {
       .xp-grid { grid-template-columns: 1fr; }
-      .xp-cell { border-left: 0 !important; border-top: 1px solid var(--border); }
+      .xp-cell { border-left: 0 !important; border-top: 1px solid rgba(255, 255, 255, 0.04); }
       .xp-cell:first-child { border-top: 0 !important; }
     }
 
@@ -735,27 +735,30 @@
                       <div class="xl:w-[480px] shrink-0" x-data="detailChartPanel(row.ticker, $store)" x-init="init()">
                         <div class="premium-card">
                           <!-- Chart header: company info + range buttons -->
-                          <div class="p-4 flex items-start justify-between gap-3 border-b border-[rgba(255,255,255,0.06)]">
-                            <div class="min-w-0">
-                              <div class="flex items-center gap-2 mb-1">
+                          <div class="p-4 flex flex-col gap-3 border-b border-[rgba(255,255,255,0.06)]">
+                            <!-- Top row: Ticker + Change (left) and Range buttons (right) -->
+                            <div class="flex items-center justify-between w-full">
+                              <div class="flex items-center gap-2">
                                 <a :href="`stock.html?t=${ticker}`" class="text-xs font-mono font-semibold tracking-wider hover:opacity-85 transition-opacity" style="color: var(--cyan); text-decoration: none;" x-text="ticker"></a>
                                 <span class="text-[10px] font-medium font-mono px-1.5 py-0.5 rounded" x-show="priceChange !== null" :style="`color: ${priceChange >= 0 ? 'var(--up)' : 'var(--down)'}; background-color: ${priceChange >= 0 ? 'rgba(16,185,129,0.06)' : 'rgba(239,68,68,0.06)'}`" x-text="priceChange !== null ? (priceChange >= 0 ? '+' : '') + priceChange.toFixed(2) + '%' : ''"></span>
                               </div>
-                              <!-- Description — capped to 3 lines by default to prevent right panel ballooning, expandable on click -->
-                              <div x-show="loading" class="desc-skeleton h-3 w-40 mt-1"></div>
+                              <!-- Range buttons -->
+                              <div class="segment-control shrink-0">
+                                <template x-for="r in ranges" :key="r">
+                                  <button @click="setRange(r)" :class="activeRange === r ? 'segment-btn active' : 'segment-btn'" x-text="r"></button>
+                                </template>
+                              </div>
+                            </div>
+                            <!-- Bottom row: Description spanning full width -->
+                            <div>
+                              <div x-show="loading" class="desc-skeleton h-3 w-full mt-1"></div>
                               <div x-show="!loading" 
                                    class="text-[10px] leading-relaxed cursor-pointer hover:text-zinc-200 transition-colors"
                                    :class="expandDescription ? '' : 'display-3-lines'"
-                                   style="color: var(--text-3); max-width: 320px;" 
+                                   style="color: var(--text-3);" 
                                    @click="expandDescription = !expandDescription"
                                    :title="isPending && !description ? '⏳ Company profile being fetched…' : (expandDescription ? 'Click to collapse description' : 'Click to expand description')" 
                                    x-text="isPending && !description ? '⏳ Company profile being fetched…' : (description || '')"></div>
-                            </div>
-                            <!-- Range buttons -->
-                            <div class="segment-control shrink-0">
-                              <template x-for="r in ranges" :key="r">
-                                <button @click="setRange(r)" :class="activeRange === r ? 'segment-btn active' : 'segment-btn'" x-text="r"></button>
-                              </template>
                             </div>
                           </div>
                           <!-- 2x2 Key Metrics Grid -->
@@ -1312,27 +1315,30 @@
                         <div class="xl:w-[480px] shrink-0" x-data="detailChartPanel(row.ticker, $store)" x-init="init()">
                           <div class="premium-card">
                             <!-- Chart header: company info + range buttons -->
-                            <div class="p-4 flex items-start justify-between gap-3 border-b border-[rgba(255,255,255,0.06)]">
-                              <div class="min-w-0">
-                                <div class="flex items-center gap-2 mb-1">
+                            <div class="p-4 flex flex-col gap-3 border-b border-[rgba(255,255,255,0.06)]">
+                              <!-- Top row: Ticker + Change (left) and Range buttons (right) -->
+                              <div class="flex items-center justify-between w-full">
+                                <div class="flex items-center gap-2">
                                   <a :href="`stock.html?t=${ticker}`" class="text-xs font-mono font-semibold tracking-wider hover:opacity-85 transition-opacity" style="color: var(--cyan); text-decoration: none;" x-text="ticker"></a>
                                   <span class="text-[10px] font-medium font-mono px-1.5 py-0.5 rounded" x-show="priceChange !== null" :style="`color: ${priceChange >= 0 ? 'var(--up)' : 'var(--down)'}; background-color: ${priceChange >= 0 ? 'rgba(16,185,129,0.06)' : 'rgba(239,68,68,0.06)'}`" x-text="priceChange !== null ? (priceChange >= 0 ? '+' : '') + priceChange.toFixed(2) + '%' : ''"></span>
                                 </div>
-                                <!-- Description — capped to 3 lines by default to prevent right panel ballooning, expandable on click -->
-                                <div x-show="loading" class="desc-skeleton h-3 w-40 mt-1"></div>
+                                <!-- Range buttons -->
+                                <div class="segment-control shrink-0">
+                                  <template x-for="r in ranges" :key="r">
+                                    <button @click="setRange(r)" :class="activeRange === r ? 'segment-btn active' : 'segment-btn'" x-text="r"></button>
+                                  </template>
+                                </div>
+                              </div>
+                              <!-- Bottom row: Description spanning full width -->
+                              <div>
+                                <div x-show="loading" class="desc-skeleton h-3 w-full mt-1"></div>
                                 <div x-show="!loading" 
                                      class="text-[10px] leading-relaxed cursor-pointer hover:text-zinc-200 transition-colors"
                                      :class="expandDescription ? '' : 'display-3-lines'"
-                                     style="color: var(--text-3); max-width: 320px;" 
+                                     style="color: var(--text-3);" 
                                      @click="expandDescription = !expandDescription"
                                      :title="isPending && !description ? '⏳ Company profile being fetched…' : (expandDescription ? 'Click to collapse description' : 'Click to expand description')" 
                                      x-text="isPending && !description ? '⏳ Company profile being fetched…' : (description || '')"></div>
-                              </div>
-                              <!-- Range buttons -->
-                              <div class="segment-control shrink-0">
-                                <template x-for="r in ranges" :key="r">
-                                  <button @click="setRange(r)" :class="activeRange === r ? 'segment-btn active' : 'segment-btn'" x-text="r"></button>
-                                </template>
                               </div>
                             </div>
                             <!-- 2x2 Key Metrics Grid -->
@@ -3092,13 +3098,13 @@ function app() {
           c: pct >= 66 ? 'var(--up)' : pct >= 33 ? 'var(--amber)' : 'var(--down)' });
       }
       if (row.m_conc == null) risk.push({ k: 'conc penalty', v: '—', c: 'var(--text-3)' });
-      else if (row.m_conc < 1) risk.push({ w: true, v: `−${Math.round((1 - row.m_conc) * 100)}% concentration penalty`, c: 'var(--amber)' });
-      else risk.push({ w: true, v: 'no concentration penalty', c: 'var(--text-3)' });
+      else if (row.m_conc < 1) risk.push({ w: true, v: `−${Math.round((1 - row.m_conc) * 100)}% Concentration penalty`, c: 'var(--amber)' });
+      else risk.push({ w: true, v: 'No concentration penalty', c: 'var(--text-3)' });
       const div = row.conviction_divergence;
       risk.push({ k: 'divergence', v: div === 1 ? 'relative strength' : div === -1 ? 'crowding out' : 'aligned',
         c: div === 1 ? 'var(--up)' : div === -1 ? 'var(--down)' : 'var(--text-3)' });
       if (row.quality_defected_30d) risk.push({ w: true, v: '⚠ Quality fund dropped this name in 30d', c: 'var(--down)' });
-      if (row.stealth_accumulation) risk.push({ w: true, v: 'stealth accumulation underway', c: 'var(--amber)' });
+      if (row.stealth_accumulation) risk.push({ w: true, v: 'Stealth accumulation underway', c: 'var(--amber)' });
 
       return [
         { label: 'Structure', lines: structure },
