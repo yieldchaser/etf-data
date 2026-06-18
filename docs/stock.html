@@ -968,20 +968,15 @@ function stockApp() {
         // Holdings history for this ticker
         this.holdingsHistory = (tickerHist && tickerHist.holdingsHistory) ? tickerHist.holdingsHistory : (hhData[this.ticker] || {});
 
-        // Flag history + stock detail fetched in parallel (BUG-14).
-        // flagHistory may already be embedded in tickerHist (no fetch); otherwise
-        // pull it from the standalone flag_history.json.
         // Load stock detail file (price history + description).
-        // Sanitise the ticker to match the file name written by
-        // predator.fetch_stock_details (_safe_detail_stem) - some tickers carry
-        // scraper junk like "WALMEX.*" / "PE&amp;OLES*" whose '*'/'&' are invalid
-        // in file paths. Both sides use the identical [^A-Za-z0-9._-] → '_' rule.
-        // Mirror of predator.fetch_stock_details._safe_detail_stem: illegal
-        // chars → '_', strip trailing dot/space, guard empty + Windows
-        // reserved device names (CON/PRN/AUX/NUL/COM1-9/LPT1-9).
-        let safeStem = this.ticker.replace(/[^A-Za-z0-9._-]/g, '_').replace(/[. ]+$/, '');
-        if (!safeStem) safeStem = '_';
-        if (/^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i.test(safeStem)) safeStem += '_';
+        // Reuse the `safeStem` already computed above (line 886) — it sanitises
+        // the ticker to match the file name written by predator.fetch_stock_details
+        // (_safe_detail_stem): illegal chars → '_', strip trailing dot/space,
+        // guard empty + Windows reserved device names (CON/PRN/AUX/NUL/COM1-9/LPT1-9).
+        // Some tickers carry scraper junk like "WALMEX.*" / "PE&amp;OLES*" whose
+        // '*'/'&' are invalid in file paths; both sides use the identical rule.
+        // (Do NOT redeclare safeStem here — it already exists in this scope and a
+        // duplicate `let` would throw SyntaxError and break the whole component.)
 
         const flagP = (tickerHist && tickerHist.flagHistory)
           ? Promise.resolve(tickerHist.flagHistory)
