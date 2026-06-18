@@ -1424,8 +1424,8 @@ function stockApp() {
         'SPEC β':  'SPECULATIVE BETA - Trend tier momentum without Quality or Scout backing.',
         'NEW':     'NEW - first appearance in any mature ETF within the last 14 days.',
         'STEALTH': 'Stealth accumulation - weight building without rank movement. Quiet loading.',
-        'DIV+':    'Divergence+ - holding rank strength inside its own funds while peers slip.',
-        'DIV−':    'Divergence− - losing rank inside its own funds while the aggregate holds.',
+        'DIV+':    'Divergence+ - gaining global rank despite falling conviction inside its own funds.',
+        'DIV−':    'Divergence− - losing global rank despite rising conviction inside its own funds.',
         'Q+':      'Quality+ - a Quality ETF added this name in the last 30 days.',
         'Q−':      'Quality− - a Quality ETF dropped this name in the last 30 days.',
         'CONC':    `CONCENTRATED - score concentrated in single ETF (${this.leaderboardRow?.concentration_score || 0}%) · fragile conviction`,
@@ -1974,20 +1974,50 @@ function stockApp() {
 <script>
 // Alpine directive: x-tooltip="'plain string'" or x-tooltip="{ html: '...', side: 'top' }"
 document.addEventListener('alpine:init', () => {
+  const tt = document.getElementById('tt');
+  if (tt) {
+    window.addEventListener('click', () => { tt.style.opacity = '0'; window.activeTooltipEl = null; });
+    window.addEventListener('scroll', () => { tt.style.opacity = '0'; window.activeTooltipEl = null; }, { passive: true });
+    window.addEventListener('mousemove', (e) => {
+      if (!window.activeTooltipEl) return;
+      const el = window.activeTooltipEl;
+      const rect = el.getBoundingClientRect();
+      const pad = 15;
+      if (
+        rect.width === 0 || rect.height === 0 ||
+        e.clientX < rect.left - pad ||
+        e.clientX > rect.right + pad ||
+        e.clientY < rect.top - pad ||
+        e.clientY > rect.bottom + pad
+      ) {
+        tt.style.opacity = '0';
+        window.activeTooltipEl = null;
+      }
+    });
+  }
+
   Alpine.directive('tooltip', (el, { expression }, { evaluate, cleanup }) => {
-    const tt = document.getElementById('tt');
     let timer;
     const show = () => {
       const v = evaluate(expression);
       const cfg = typeof v === 'string' ? { html: v } : (v || {});
       if (!cfg.html) return;
       timer = setTimeout(() => {
+        const rect = el.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) return;
         tt.innerHTML = cfg.html;
         tt.style.opacity = '1';
         positionTip(tt, el);
+        window.activeTooltipEl = el;
       }, 120);
     };
-    const hide = () => { clearTimeout(timer); tt.style.opacity = '0'; };
+    const hide = () => {
+      clearTimeout(timer);
+      if (window.activeTooltipEl === el) {
+        tt.style.opacity = '0';
+        window.activeTooltipEl = null;
+      }
+    };
     el.addEventListener('mouseenter', show);
     el.addEventListener('mouseleave', hide);
     el.addEventListener('click', hide);

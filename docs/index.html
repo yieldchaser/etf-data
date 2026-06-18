@@ -743,10 +743,11 @@
                           <!-- Chart header: company info + range buttons -->
                           <div class="p-4 flex flex-col gap-3 border-b border-[rgba(255,255,255,0.06)]">
                             <!-- Top row: Ticker + Change (left) and Range buttons (right) -->
-                            <div class="flex items-center justify-between w-full">
-                              <div class="flex items-center gap-2">
+                            <div class="flex items-center justify-between w-full gap-2">
+                              <div class="flex items-center gap-2 min-w-0">
                                 <a :href="`stock.html?t=${ticker}`" class="text-xs font-mono font-semibold tracking-wider hover:opacity-85 transition-opacity" style="color: var(--cyan); text-decoration: none;" x-text="ticker"></a>
-                                <span class="text-[10px] font-medium font-mono px-1.5 py-0.5 rounded" x-show="priceChange !== null" :style="`color: ${priceChange >= 0 ? 'var(--up)' : 'var(--down)'}; background-color: ${priceChange >= 0 ? 'rgba(16,185,129,0.06)' : 'rgba(239,68,68,0.06)'}`" x-text="priceChange !== null ? (priceChange >= 0 ? '+' : '') + priceChange.toFixed(2) + '%' : ''"></span>
+                                <span class="text-[10px] text-zinc-400 truncate max-w-[150px]" x-show="row.company" x-text="row.company"></span>
+                                <span class="text-[10px] font-medium font-mono px-1.5 py-0.5 rounded shrink-0" x-show="priceChange !== null" :style="`color: ${priceChange >= 0 ? 'var(--up)' : 'var(--down)'}; background-color: ${priceChange >= 0 ? 'rgba(16,185,129,0.06)' : 'rgba(239,68,68,0.06)'}`" x-text="priceChange !== null ? (priceChange >= 0 ? '+' : '') + priceChange.toFixed(2) + '%' : ''"></span>
                               </div>
                               <!-- Range buttons -->
                               <div class="segment-control shrink-0">
@@ -767,23 +768,45 @@
                                    x-text="isPending && !description ? '⏳ Company profile being fetched…' : (description || '')"></div>
                             </div>
                           </div>
-                          <!-- 2x2 Key Metrics Grid -->
-                          <div class="grid grid-cols-2 gap-3 p-4 border-b border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.01)]" x-show="!loading && filteredPrices.length">
+                          <!-- Key Metrics Grid -->
+                          <div class="grid grid-cols-2 gap-y-4 gap-x-6 p-4 border-b border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.01)] text-xs select-none" x-show="!loading && filteredPrices.length">
+                            <!-- Row 1: Latest Price (left) & Avg Volatility (right) -->
                             <div class="flex flex-col">
                               <span class="text-[9px] uppercase tracking-wider font-semibold" style="color: var(--text-3)">Latest Price</span>
                               <span class="text-sm font-mono font-bold mt-0.5" style="color: var(--text)" x-text="filteredPrices.length ? fmtMoney(filteredPrices[filteredPrices.length-1][1], detailCurrency) : '–'"></span>
                             </div>
-                            <div class="flex flex-col">
+                            <div class="flex flex-col items-end text-right">
                               <span class="text-[9px] uppercase tracking-wider font-semibold" style="color: var(--text-3)">Avg Volatility</span>
                               <span class="text-sm font-mono font-medium mt-0.5" style="color: var(--text-2)" x-text="rangeVolatility !== null ? rangeVolatility.toFixed(1) + '% ann.' : '–'"></span>
                             </div>
+
+                            <!-- Row 2: Period Return (left) & Range Position (right) -->
+                            <div class="flex flex-col">
+                              <span class="text-[9px] uppercase tracking-wider font-semibold" style="color: var(--text-3)">Period Return</span>
+                              <span class="text-sm font-mono font-bold mt-0.5"
+                                    :style="`color: ${(priceChange||0)>=0?'var(--up)':'var(--down)'}`"
+                                    x-text="priceChange !== null ? ((priceChange>=0?'+':'')+priceChange.toFixed(2)+'%') : '–'"></span>
+                            </div>
+                            <div class="flex flex-col items-end text-right">
+                              <span class="text-[9px] uppercase tracking-wider font-semibold" style="color: var(--text-3)">Range Position</span>
+                              <span class="text-sm font-mono font-bold mt-0.5" style="color: var(--cyan)"
+                                    x-text="filteredPrices.length && rangeHigh > rangeLow ? (Math.min(100, Math.max(0, ((filteredPrices[filteredPrices.length-1][1] - rangeLow) / (rangeHigh - rangeLow)) * 100)).toFixed(0) + '%') : '–'"></span>
+                            </div>
+
+                            <!-- Row 3: Period Low (left) & Period High (right) -->
                             <div class="flex flex-col">
                               <span class="text-[9px] uppercase tracking-wider font-semibold" style="color: var(--text-3)">Period Low</span>
-                              <span class="text-sm font-mono font-medium mt-0.5" style="color: var(--down)" x-text="rangeLow !== null ? fmtMoney(rangeLow, detailCurrency) : '–'"></span>
+                              <div class="flex items-baseline gap-1.5 mt-0.5">
+                                <span class="text-sm font-mono font-medium" style="color: var(--down)" x-text="rangeLow !== null ? fmtMoney(rangeLow, detailCurrency) : '–'"></span>
+                                <span class="text-[9px] font-mono text-[var(--text-3)]" x-show="rangeLowDate" x-text="rangeLowDate"></span>
+                              </div>
                             </div>
-                            <div class="flex flex-col">
+                            <div class="flex flex-col items-end text-right">
                               <span class="text-[9px] uppercase tracking-wider font-semibold" style="color: var(--text-3)">Period High</span>
-                              <span class="text-sm font-mono font-medium mt-0.5" style="color: var(--up)" x-text="rangeHigh !== null ? fmtMoney(rangeHigh, detailCurrency) : '–'"></span>
+                              <div class="flex items-baseline justify-end gap-1.5 mt-0.5">
+                                <span class="text-[9px] font-mono text-[var(--text-3)]" x-show="rangeHighDate" x-text="rangeHighDate"></span>
+                                <span class="text-sm font-mono font-medium" style="color: var(--up)" x-text="rangeHigh !== null ? fmtMoney(rangeHigh, detailCurrency) : '–'"></span>
+                              </div>
                             </div>
                           </div>
                           <!-- Day/Year Range Slider Track -->
@@ -1329,10 +1352,11 @@
                             <!-- Chart header: company info + range buttons -->
                             <div class="p-4 flex flex-col gap-3 border-b border-[rgba(255,255,255,0.06)]">
                               <!-- Top row: Ticker + Change (left) and Range buttons (right) -->
-                              <div class="flex items-center justify-between w-full">
-                                <div class="flex items-center gap-2">
+                              <div class="flex items-center justify-between w-full gap-2">
+                                <div class="flex items-center gap-2 min-w-0">
                                   <a :href="`stock.html?t=${ticker}`" class="text-xs font-mono font-semibold tracking-wider hover:opacity-85 transition-opacity" style="color: var(--cyan); text-decoration: none;" x-text="ticker"></a>
-                                  <span class="text-[10px] font-medium font-mono px-1.5 py-0.5 rounded" x-show="priceChange !== null" :style="`color: ${priceChange >= 0 ? 'var(--up)' : 'var(--down)'}; background-color: ${priceChange >= 0 ? 'rgba(16,185,129,0.06)' : 'rgba(239,68,68,0.06)'}`" x-text="priceChange !== null ? (priceChange >= 0 ? '+' : '') + priceChange.toFixed(2) + '%' : ''"></span>
+                                  <span class="text-[10px] text-zinc-400 truncate max-w-[150px]" x-show="row.company" x-text="row.company"></span>
+                                  <span class="text-[10px] font-medium font-mono px-1.5 py-0.5 rounded shrink-0" x-show="priceChange !== null" :style="`color: ${priceChange >= 0 ? 'var(--up)' : 'var(--down)'}; background-color: ${priceChange >= 0 ? 'rgba(16,185,129,0.06)' : 'rgba(239,68,68,0.06)'}`" x-text="priceChange !== null ? (priceChange >= 0 ? '+' : '') + priceChange.toFixed(2) + '%' : ''"></span>
                                 </div>
                                 <!-- Range buttons -->
                                 <div class="segment-control shrink-0">
@@ -1353,23 +1377,45 @@
                                      x-text="isPending && !description ? '⏳ Company profile being fetched…' : (description || '')"></div>
                               </div>
                             </div>
-                            <!-- 2x2 Key Metrics Grid -->
-                            <div class="grid grid-cols-2 gap-3 p-4 border-b border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.01)]" x-show="!loading && filteredPrices.length">
+                            <!-- Key Metrics Grid -->
+                            <div class="grid grid-cols-2 gap-y-4 gap-x-6 p-4 border-b border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.01)] text-xs select-none" x-show="!loading && filteredPrices.length">
+                              <!-- Row 1: Latest Price (left) & Avg Volatility (right) -->
                               <div class="flex flex-col">
                                 <span class="text-[9px] uppercase tracking-wider font-semibold" style="color: var(--text-3)">Latest Price</span>
                                 <span class="text-sm font-mono font-bold mt-0.5" style="color: var(--text)" x-text="filteredPrices.length ? fmtMoney(filteredPrices[filteredPrices.length-1][1], detailCurrency) : '–'"></span>
                               </div>
-                              <div class="flex flex-col">
+                              <div class="flex flex-col items-end text-right">
                                 <span class="text-[9px] uppercase tracking-wider font-semibold" style="color: var(--text-3)">Avg Volatility</span>
                                 <span class="text-sm font-mono font-medium mt-0.5" style="color: var(--text-2)" x-text="rangeVolatility !== null ? rangeVolatility.toFixed(1) + '% ann.' : '–'"></span>
                               </div>
+
+                              <!-- Row 2: Period Return (left) & Range Position (right) -->
+                              <div class="flex flex-col">
+                                <span class="text-[9px] uppercase tracking-wider font-semibold" style="color: var(--text-3)">Period Return</span>
+                                <span class="text-sm font-mono font-bold mt-0.5"
+                                      :style="`color: ${(priceChange||0)>=0?'var(--up)':'var(--down)'}`"
+                                      x-text="priceChange !== null ? ((priceChange>=0?'+':'')+priceChange.toFixed(2)+'%') : '–'"></span>
+                              </div>
+                              <div class="flex flex-col items-end text-right">
+                                <span class="text-[9px] uppercase tracking-wider font-semibold" style="color: var(--text-3)">Range Position</span>
+                                <span class="text-sm font-mono font-bold mt-0.5" style="color: var(--cyan)"
+                                      x-text="filteredPrices.length && rangeHigh > rangeLow ? (Math.min(100, Math.max(0, ((filteredPrices[filteredPrices.length-1][1] - rangeLow) / (rangeHigh - rangeLow)) * 100)).toFixed(0) + '%') : '–'"></span>
+                              </div>
+
+                              <!-- Row 3: Period Low (left) & Period High (right) -->
                               <div class="flex flex-col">
                                 <span class="text-[9px] uppercase tracking-wider font-semibold" style="color: var(--text-3)">Period Low</span>
-                                <span class="text-sm font-mono font-medium mt-0.5" style="color: var(--down)" x-text="rangeLow !== null ? fmtMoney(rangeLow, detailCurrency) : '–'"></span>
+                                <div class="flex items-baseline gap-1.5 mt-0.5">
+                                  <span class="text-sm font-mono font-medium" style="color: var(--down)" x-text="rangeLow !== null ? fmtMoney(rangeLow, detailCurrency) : '–'"></span>
+                                  <span class="text-[9px] font-mono text-[var(--text-3)]" x-show="rangeLowDate" x-text="rangeLowDate"></span>
+                                </div>
                               </div>
-                              <div class="flex flex-col">
+                              <div class="flex flex-col items-end text-right">
                                 <span class="text-[9px] uppercase tracking-wider font-semibold" style="color: var(--text-3)">Period High</span>
-                                <span class="text-sm font-mono font-medium mt-0.5" style="color: var(--up)" x-text="rangeHigh !== null ? fmtMoney(rangeHigh, detailCurrency) : '–'"></span>
+                                <div class="flex items-baseline justify-end gap-1.5 mt-0.5">
+                                  <span class="text-[9px] font-mono text-[var(--text-3)]" x-show="rangeHighDate" x-text="rangeHighDate"></span>
+                                  <span class="text-sm font-mono font-medium" style="color: var(--up)" x-text="rangeHigh !== null ? fmtMoney(rangeHigh, detailCurrency) : '–'"></span>
+                                </div>
                               </div>
                             </div>
                             <!-- Day/Year Range Slider Track -->
@@ -4235,10 +4281,10 @@ function app() {
         tip: 'Stealth accumulation - weight building without rank movement. Quiet loading before consensus.' });
       if (row.conviction_divergence === 1) b.push({ k: 'divp', label: 'DIV+',
         style: 'background: rgba(20,184,166,0.12); color: #5eead4; border: 1px solid rgba(20,184,166,0.30)',
-        tip: 'Divergence+ - holding rank strength inside its own funds while peers slip. Relative strength.' });
+        tip: 'Divergence+ - gaining global rank despite falling conviction inside its own funds. Relative strength.' });
       else if (row.conviction_divergence === -1) b.push({ k: 'divm', label: 'DIV−',
         style: 'background: rgba(251,113,133,0.10); color: var(--down); border: 1px solid rgba(251,113,133,0.25)',
-        tip: 'Divergence− - losing rank inside its own funds while the aggregate holds. Crowding out.' });
+        tip: 'Divergence− - losing global rank despite rising conviction inside its own funds. Crowding out.' });
       if (row.quality_defected_30d) b.push({ k: 'qminus', label: 'Q−',
         style: 'background: transparent; color: var(--down); border: 1px solid rgba(251,113,133,0.35)',
         tip: 'Quality− - a Quality ETF dropped this name in the last 30 days.' });
@@ -4276,8 +4322,8 @@ function app() {
       if (row.stealth_accumulation) return 'Quiet accumulation: weight building without rank movement.';
       if ((row.velocity_z ?? 0) > 1.5) return `Velocity ${row.velocity_z.toFixed(1)}σ above universe - accumulation accelerating.`;
       if (row.flag === 'CONCENTRATED') return 'Single-fund dependency - score rests on one ETF.';
-      if (row.conviction_divergence === 1) return 'Relative strength - holding rank while peers slip.';
-      if (row.conviction_divergence === -1) return 'Crowding out - losing rank inside its own funds.';
+      if (row.conviction_divergence === 1) return 'Relative strength - gaining global rank despite falling conviction inside its own funds.';
+      if (row.conviction_divergence === -1) return 'Crowding out - losing global rank despite rising conviction inside its own funds.';
       const m = {
         accelerating: 'Momentum accelerating across holders.',
         rising: 'Rising structural support across holders.',
@@ -4328,7 +4374,7 @@ function app() {
       }
       if (row.m_conc == null) risk.push({ k: 'conc penalty', v: '–', c: 'var(--text-3)' });
       else if (row.m_conc < 1) risk.push({ w: true, v: `−${Math.round((1 - row.m_conc) * 100)}% Concentration penalty`, c: 'var(--amber)' });
-      else risk.push({ w: true, v: 'No concentration penalty', c: 'var(--text-3)' });
+      else risk.push({ k: 'conc penalty', v: 'none', c: 'var(--text-3)' });
       const div = row.conviction_divergence;
       risk.push({ k: 'divergence', v: div === 1 ? 'relative strength' : div === -1 ? 'crowding out' : 'aligned',
         c: div === 1 ? 'var(--up)' : div === -1 ? 'var(--down)' : 'var(--text-3)' });
@@ -4543,6 +4589,30 @@ function detailChartPanel(ticker, _store) {
       if (!this.filteredPrices.length) return null;
       return Math.min(...this.filteredPrices.map(p => p[1]));
     },
+    get rangeLowDate() {
+      const fp = this.filteredPrices;
+      if (!fp.length) return '';
+      let minVal = Infinity, minDate = '';
+      for (let i = 0; i < fp.length; i++) {
+        if (fp[i][1] < minVal) {
+          minVal = fp[i][1];
+          minDate = fp[i][0];
+        }
+      }
+      return minDate;
+    },
+    get rangeHighDate() {
+      const fp = this.filteredPrices;
+      if (!fp.length) return '';
+      let maxVal = -Infinity, maxDate = '';
+      for (let i = 0; i < fp.length; i++) {
+        if (fp[i][1] > maxVal) {
+          maxVal = fp[i][1];
+          maxDate = fp[i][0];
+        }
+      }
+      return maxDate;
+    },
     get rangeVolatility() {
       const fp = this.filteredPrices;
       if (fp.length < 10) return null;
@@ -4617,20 +4687,50 @@ function detailChartPanel(ticker, _store) {
 <script>
 // Alpine directive: x-tooltip="'plain string'" or x-tooltip="{ html: '...', side: 'top' }"
 document.addEventListener('alpine:init', () => {
+  const tt = document.getElementById('tt');
+  if (tt) {
+    window.addEventListener('click', () => { tt.style.opacity = '0'; window.activeTooltipEl = null; });
+    window.addEventListener('scroll', () => { tt.style.opacity = '0'; window.activeTooltipEl = null; }, { passive: true });
+    window.addEventListener('mousemove', (e) => {
+      if (!window.activeTooltipEl) return;
+      const el = window.activeTooltipEl;
+      const rect = el.getBoundingClientRect();
+      const pad = 15;
+      if (
+        rect.width === 0 || rect.height === 0 ||
+        e.clientX < rect.left - pad ||
+        e.clientX > rect.right + pad ||
+        e.clientY < rect.top - pad ||
+        e.clientY > rect.bottom + pad
+      ) {
+        tt.style.opacity = '0';
+        window.activeTooltipEl = null;
+      }
+    });
+  }
+
   Alpine.directive('tooltip', (el, { expression }, { evaluate, cleanup }) => {
-    const tt = document.getElementById('tt');
     let timer;
     const show = () => {
       const v = evaluate(expression);
       const cfg = typeof v === 'string' ? { html: v } : (v || {});
       if (!cfg.html) return;
       timer = setTimeout(() => {
+        const rect = el.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) return;
         tt.innerHTML = cfg.html;
         tt.style.opacity = '1';
         positionTip(tt, el);
+        window.activeTooltipEl = el;
       }, 120);
     };
-    const hide = () => { clearTimeout(timer); tt.style.opacity = '0'; };
+    const hide = () => {
+      clearTimeout(timer);
+      if (window.activeTooltipEl === el) {
+        tt.style.opacity = '0';
+        window.activeTooltipEl = null;
+      }
+    };
     el.addEventListener('mouseenter', show);
     el.addEventListener('mouseleave', hide);
     el.addEventListener('click', hide);
