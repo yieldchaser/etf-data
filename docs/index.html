@@ -2940,6 +2940,16 @@ function app() {
     },
 
     get universeExits() {
+      // For the 1d window, use the backend-computed list from changelog.json.
+      // The backend computes this as: tickers in yesterday's leaderboard that are
+      // absent from today's leaderboard — always correct, never affected by the
+      // top-N filter that caused score_history.json to exclude dropped tickers.
+      if (this.changesPeriod === 1) {
+        return (this.changelog.universe_exits || []);
+      }
+
+      // For longer windows, scan score_history.json (backend now includes exited
+      // tickers — not just the current top-N — so dropped tickers appear here).
       if (!this.scoreHistory || !this.changelog.today || !this.meta.snapshot_dates_in_window) return [];
       
       const latestDateStr = this.changelog.today;
@@ -2980,7 +2990,6 @@ function app() {
         }
       }
       
-      const todayTickers = new Set(this.leaderboard.map(l => l.ticker));
       const exits = [];
       
       const findCompany = (ticker) => {

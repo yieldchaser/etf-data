@@ -816,15 +816,26 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     # ── score_history.parquet + JSON — for sparklines ─────────────────────────
     if not score_pnl.empty:
         score_pnl.to_parquet(output_dir / "score_history.parquet")
-        # Compact JSON: { ticker: [{ d, s }, ...] } limited to top-N by today's score
-        top_n_for_spark = 200
-        top_tickers = leaderboard.head(top_n_for_spark)["ticker"].tolist()
+        # Compact JSON: { ticker: [{ d, s }, ...] }
+        # Include ALL tickers that ever appeared in any historical snapshot so that
+        # the frontend universeExits getter can detect tickers that have since dropped
+        # out of the universe (score > 0 on a past date, missing/zero today).
+        # We cap at a generous limit to keep file size reasonable.
+        all_historical_tickers = set(score_pnl.index.tolist())
+        # Sort by today's score (descending) so the most relevant tickers come first,
+        # but include every ticker ever seen — not just current top-N.
+        current_tickers_ordered = leaderboard["ticker"].tolist()  # already sorted by score desc
+        # Build ordered list: current tickers first (already sorted), then exited tickers
+        exited_tickers = sorted(all_historical_tickers - set(current_tickers_ordered))
+        all_tickers_ordered = current_tickers_ordered + exited_tickers
+        max_history_tickers = 600  # generous cap; exited tickers have sparse series so file stays small
         spark = {}
-        for t in top_tickers:
+        for t in all_tickers_ordered[:max_history_tickers]:
             if t in score_pnl.index:
                 series = score_pnl.loc[t].dropna()
-                spark[t] = [{"d": d.strftime("%Y-%m-%d"), "s": round(float(v), 2)}
-                             for d, v in series.items()]
+                if not series.empty:
+                    spark[t] = [{"d": d.strftime("%Y-%m-%d"), "s": round(float(v), 2)}
+                                 for d, v in series.items()]
         _write_json_atomic(output_dir / "score_history.json", _dumps(spark, separators=(",", ":")))
 
     # ── leaderboard.parquet — for DuckDB-WASM time-travel queries ─────────────
