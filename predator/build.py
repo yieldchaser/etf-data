@@ -416,6 +416,44 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         burst_count = 0
     print(f"  burst_30d:      {burst_count} tickers with >=40 peak rank improvement")
 
+    # ── Multi-period rank delta and ETF count delta ───────────────────────────
+    # Mirrors score_deltas_by_period so the frontend can switch all Change sections
+    # using a single changesPeriod picker (not just Score Gainers/Losers).
+    RANK_DELTA_PERIODS: list[int] = list(cfg.history.delta_periods_days)
+    global_rank_delta_by_period_map: dict[int, "pd.Series"] = {}
+    etf_count_past_by_period_map:  dict[int, "pd.Series"] = {}
+
+    if historical:
+        _dates_sorted = sorted(historical.keys())
+        _today_dt     = _dates_sorted[-1]
+
+        for _n in RANK_DELTA_PERIODS:
+            # ── Global rank delta ──────────────────────────────────────────
+            _wstart = _today_dt - pd.Timedelta(days=_n)
+            _wcols  = [c for c in _dates_sorted if c >= _wstart]
+            if len(_wcols) >= 2:
+                _rp_rows = {}
+                for _d in _wcols:
+                    _snap = historical[_d]
+                    if "leaderboard_rank" in _snap.columns:
+                        _rp_rows[_d] = _snap.set_index("ticker")["leaderboard_rank"]
+                if len(_rp_rows) >= 2:
+                    _panel = pd.DataFrame(_rp_rows)
+                    global_rank_delta_by_period_map[_n] = (
+                        _panel.iloc[:, 0] - _panel.iloc[:, -1]
+                    ).round(0)  # positive = improved (rank number went down)
+
+            # ── ETF count at period start (for delta computation) ──────────
+            if len(_dates_sorted) >= 2:
+                _target = _today_dt - pd.Timedelta(days=_n)
+                _past   = min(_dates_sorted, key=lambda d: abs((d - _target).total_seconds()))
+                _snap   = historical[_past]
+                if "etf_count" in _snap.columns:
+                    etf_count_past_by_period_map[_n] = _snap.set_index("ticker")["etf_count"]
+
+        print(f"  multi-period rank delta: {len(global_rank_delta_by_period_map)} periods computed")
+
+
     # ── Conviction Divergence ─────────────────────────────────────────────
     # Score rising but rank falling = being crowded out; inverse = relative strength
     leaderboard["conviction_divergence"] = 0
@@ -714,17 +752,28 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
             print(f"  signal consistency: {n_checked} tickers checked · "
                   f"burst mismatches={mismatch_burst} ({100*mismatch_burst/n_checked:.1f}%)")
 
-    # Attach per-period score deltas to every record (flag_history written separately)
+    # Attach per-period score deltas AND multi-period rank/ETF-count deltas to every record
     for r in lb_records:
         t = r.get("ticker", "")
+        # Score deltas (existing)
         r["score_deltas_by_period"] = {}
         for p in all_periods:
             v = score_deltas_by_period.get(p, {}).get(t)
-            # Treat NaN, None, missing — all as null in JSON
             if v is None or (isinstance(v, float) and v != v):
                 r["score_deltas_by_period"][str(p)] = None
             else:
                 r["score_deltas_by_period"][str(p)] = round(float(v), 4)
+        # Global rank delta by period — positive = climbed (rank number improved)
+        r["global_rank_delta_by_period"] = {}
+        for _n, _s in global_rank_delta_by_period_map.items():
+            v = _s.get(t) if t in _s.index else None
+            r["global_rank_delta_by_period"][str(_n)] = int(v) if v is not None and v == v else 0
+        # ETF count delta by period
+        r["etf_count_delta_by_period"] = {}
+        current_etf = int(r.get("etf_count", 0) or 0)
+        for _n, _ps in etf_count_past_by_period_map.items():
+            past = int(_ps.get(t)) if t in _ps.index and not pd.isna(_ps.get(t)) else current_etf
+            r["etf_count_delta_by_period"][str(_n)] = current_etf - past
     _write_json_atomic(output_dir / "leaderboard.json", _dumps(lb_records, separators=(",", ":")))
     # Write flag_history to separate file (keyed by ticker) to reduce leaderboard.json payload
     _write_json_atomic(output_dir / "flag_history.json", _dumps(flag_history, separators=(",", ":")))
