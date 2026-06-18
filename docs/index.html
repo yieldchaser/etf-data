@@ -235,7 +235,7 @@
   </section>
 
   <!-- â”€â”€ TABS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
-  <!-- Â§28 Maturity banner – shown while any ETF is still building its baseline -->
+  <!-- §28 Maturity banner – shown while any ETF is still building its baseline -->
   <div x-show="immatureEtfCount > 0"
        class="mb-3 px-3 py-2 rounded-lg border text-xs flex items-center gap-2"
        style="background: rgba(251,191,36,0.06); border-color: rgba(251,191,36,0.25); color: var(--amber)">
@@ -289,7 +289,7 @@
               :class="velocityOnly ? 'border-cyan-500/40 text-cyan-300' : ''"
               class="chip border px-2 py-1 transition hover:border-cyan-500/30"
               style="border-color: var(--border-2)"
-              x-tooltip="'Show only top-velocity names (velocity â‰¥ 25, held by 2+ ETFs, no burst)'"
+              x-tooltip="'Show only top-velocity names (velocity ≥ 25, held by 2+ ETFs, no burst)'"
               x-text="`VELO ${counts.VELO || 0}`"></button>
       <button @click="burstOnly = !burstOnly"
               :class="burstOnly ? 'border-purple-500/40 text-purple-300' : ''"
@@ -431,7 +431,7 @@
          Surfaces names whose motion metrics are statistically unusual vs the
          rest of the leaderboard right now. Pure presentation: every value is
          already in leaderboard.json (velocity_score, score_delta_pct,
-         avg_weight_flow_7d, global_rank_delta_30d). |z| â‰¥ 2.0 against the
+         avg_weight_flow_7d, global_rank_delta_30d). |z| ≥ 2.0 against the
          leaderboard's own mean/std on each metric; the dominant driver is
          shown as the headline number.
 
@@ -445,7 +445,7 @@
       <div class="flex items-center justify-between px-3 py-2 border-b" style="border-color: var(--border)">
         <div class="flex items-baseline gap-3">
           <span class="text-[10px] uppercase tracking-[0.12em] font-medium" style="color: var(--cyan)">Extreme Conviction Moves</span>
-          <span class="text-[10px]" style="color: var(--text-3)">|z| â‰¥ 2 vs leaderboard · today's outliers</span>
+          <span class="text-[10px]" style="color: var(--text-3)">|z| ≥ 2 vs leaderboard · today's outliers</span>
         </div>
         <div class="flex items-center gap-2">
           <span class="text-[10px] num font-mono" style="color: var(--text-3)"
@@ -469,7 +469,7 @@
             </div>
             <div class="text-[10px] truncate mb-1.5" style="color: var(--text-3)" x-text="m.company || '–'"></div>
             <div class="flex items-center justify-between gap-2 text-[9px]" style="color: var(--text-3)">
-              <span class="font-mono num" x-tooltip="`Z-score on ${m.driverLabel} vs leaderboard distribution. |z| â‰¥ 2 = unusual.`"
+              <span class="font-mono num" x-tooltip="`Z-score on ${m.driverLabel} vs leaderboard distribution. |z| ≥ 2 = unusual.`"
                     x-text="`|z|=${m.absZ.toFixed(1)}`"></span>
               <span class="truncate min-w-0" :title="m.context" x-text="m.context"></span>
             </div>
@@ -495,7 +495,7 @@
                      @click="sort('score_delta_pct')"
                      :class="sortClass('score_delta_pct')"
                      x-tooltip="'Score change vs the prior reference date. Click to sort.'">
-                  SC.Î”% <span class="num font-mono text-[9px] opacity-80" x-text="`(${period === 'YTD' ? 'YTD' : period + 'd'})`"></span>
+                  SC.Δ% <span class="num font-mono text-[9px] opacity-80" x-text="`(${period === 'YTD' ? 'YTD' : period + 'd'})`"></span>
                 </div>
                 <div class="flex justify-center mt-1" @click.stop>
                   <div class="flex border rounded overflow-hidden" style="border-color: rgba(255,255,255,0.08); background: rgba(0,0,0,0.25)">
@@ -708,7 +708,7 @@
                                 <th class="text-left py-1.5 pr-3 label">ETF</th>
                                 <th class="text-left py-1.5 pr-3 label">Tier</th>
                                 <th class="text-right py-1.5 pr-3 label">Rank</th>
-                                <th class="text-right py-1.5 pr-3 label">7d Î”</th>
+                                <th class="text-right py-1.5 pr-3 label">7d Δ</th>
                                 <th class="text-right py-1.5 pr-3 label">Weight</th>
                                 <th class="text-right py-1.5 pr-3 label">Flow</th>
                                 <th class="text-right py-1.5 pr-3 label">Score</th>
@@ -977,7 +977,7 @@
                 :class="velocityOnly ? 'border-cyan-500/40 text-cyan-300' : ''"
                 class="chip border px-2 py-1 transition hover:border-cyan-500/30"
                 style="border-color: var(--border-2)"
-                x-tooltip="'Show only top-velocity names (velocity â‰¥ 25, held by 2+ ETFs, no burst)'"
+                x-tooltip="'Show only top-velocity names (velocity ≥ 25, held by 2+ ETFs, no burst)'"
                 x-text="`VELO ${counts.VELO || 0}`"></button>
         <button @click="burstOnly = !burstOnly"
                 :class="burstOnly ? 'border-purple-500/40 text-purple-300' : ''"
@@ -1078,7 +1078,7 @@
                        @click="sort('score_delta_pct')"
                        :class="sortClass('score_delta_pct')"
                        x-tooltip="'Score change vs the prior reference date. Click to sort.'">
-                    SC.Î”% <span class="num font-mono text-[9px] opacity-80" x-text="`(${period === 'YTD' ? 'YTD' : period + 'd'})`"></span>
+                    SC.Δ% <span class="num font-mono text-[9px] opacity-80" x-text="`(${period === 'YTD' ? 'YTD' : period + 'd'})`"></span>
                   </div>
                   <div class="flex justify-center mt-1" @click.stop>
                     <div class="flex border rounded overflow-hidden" style="border-color: rgba(255,255,255,0.08); background: rgba(0,0,0,0.25)">
@@ -1294,7 +1294,7 @@
                                   <th class="text-left py-2.5 px-3 label">ETF</th>
                                   <th class="text-left py-2.5 px-3 label">Tier</th>
                                   <th class="text-right py-2.5 px-3 label">Rank</th>
-                                  <th class="text-right py-2.5 px-3 label">7d Î”</th>
+                                  <th class="text-right py-2.5 px-3 label">7d Δ</th>
                                   <th class="text-right py-2.5 px-3 label">Weight</th>
                                   <th class="text-right py-2.5 px-3 label">Flow</th>
                                   <th class="text-right py-2.5 px-3 label">Score</th>
@@ -2708,16 +2708,16 @@ function app() {
       { key: 'company',          label: 'Company' },
       { key: 'apex_score',       label: 'Apex (forward score)' },
       { key: 'final_score',      label: 'Score' },
-      { key: 'score_delta_pct',  label: 'Score Î”% (active period)' },
+      { key: 'score_delta_pct',  label: 'Score Δ% (active period)' },
       { key: 'etf_count',        label: 'ETF count' },
       { key: 'total_weight',     label: 'Total weight' },
       { key: 'score_streak',     label: 'Score streak' },
       { key: 'hc_streak',        label: 'HC streak' },
       { key: 'score_percentile',      label: 'Percentile (level)' },
       { key: 'velocity_score',         label: 'Velocity (composite)' },
-      { key: 'global_rank_delta_30d',  label: 'Global rank Î” (30d)' },
+      { key: 'global_rank_delta_30d',  label: 'Global rank Δ (30d)' },
       { key: 'global_rank_peak_30d',   label: 'Peak rank improvement (30d)' },
-      { key: 'avg_rank_delta_7d',      label: 'Avg per-ETF rank Î” (7d)' },
+      { key: 'avg_rank_delta_7d',      label: 'Avg per-ETF rank Δ (7d)' },
       { key: 'etf_count_delta_30d',    label: 'ETFs added (30d)' },
       { key: 'concentration_score',    label: 'Concentration risk' },
     ],
@@ -2824,7 +2824,7 @@ function app() {
           color: 'var(--up)',
           delta: yc.HIGH_CONVICTION !== undefined ? c.HIGH_CONVICTION - (yc.HIGH_CONVICTION || 0) : null,
           deltaColor: this.deltaColor(c.HIGH_CONVICTION - (yc.HIGH_CONVICTION || 0)),
-          tooltip: 'Tickers held by 4 or more ETFs with conviction (Â§25 conviction breadth).' },
+          tooltip: 'Tickers held by 4 or more ETFs with conviction (§25 conviction breadth).' },
         { label: 'speculative β', value: c.SPECULATIVE_BETA,
           color: 'var(--amber)',
           delta: yc.SPECULATIVE_BETA !== undefined ? c.SPECULATIVE_BETA - (yc.SPECULATIVE_BETA || 0) : null,
@@ -2838,7 +2838,7 @@ function app() {
       ];
     },
 
-    // Â§28 Maturity gate – detect immature ETFs (< etf_maturity_days of history)
+    // §28 Maturity gate – detect immature ETFs (< etf_maturity_days of history)
     get immatureEtfCount() {
       return this.immatureEtfNames.length;
     },
@@ -3248,7 +3248,7 @@ function app() {
     // â”€â”€ Extreme Conviction Moves (ribbon) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // For each motion metric, compute z-score against the leaderboard's own
     // distribution; pick the dominant driver per ticker; surface those with
-    // |z| â‰¥ EXTREME_Z_THRESHOLD. Pure presentation – no new fetches, no
+    // |z| ≥ EXTREME_Z_THRESHOLD. Pure presentation – no new fetches, no
     // recomputation of scores, no scoring math touched. Only used to
     // populate the ribbon at top of the leaderboard tab.
     //
@@ -3269,9 +3269,9 @@ function app() {
       // Labels are intentionally Predator-language; we are NOT a factor model.
       const drivers = [
         { key: 'velocity_score',        label: 'velocity',         display: v => `velocity ${(v || 0).toFixed(1)}` },
-        { key: 'global_rank_delta_30d', label: '30d rank Î”',       display: v => `${v >= 0 ? '+' : ''}${(v|0)} ranks 30d` },
-        { key: 'global_rank_peak_30d',  label: '30d peak Î”',       display: v => `+${(v|0)} peak 30d` },
-        { key: 'score_delta_pct',       label: 'score Î”%',         display: v => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1)}% score` },
+        { key: 'global_rank_delta_30d', label: '30d rank Δ',       display: v => `${v >= 0 ? '+' : ''}${(v|0)} ranks 30d` },
+        { key: 'global_rank_peak_30d',  label: '30d peak Δ',       display: v => `+${(v|0)} peak 30d` },
+        { key: 'score_delta_pct',       label: 'score Δ%',         display: v => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1)}% score` },
         { key: 'avg_weight_flow_7d',    label: '7d weight flow',   display: v => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1)}% wflow 7d` },
       ];
 
@@ -3279,7 +3279,7 @@ function app() {
       // The leaderboard contains some single-ETF entries whose extreme z-score
       // is data-quality artifact (currency placeholders, scrape transitions,
       // ticker-symbology collapses), not a conviction signal. Filter
-      // conservatively: require multi-ETF agreement (â‰¥3) so a sanitizer
+      // conservatively: require multi-ETF agreement (≥3) so a sanitizer
       // hiccup on one ETF can't surface a fake outlier.
       const qualifies = row => {
         if ((row.etf_count || 0) < 3) return false;
@@ -3314,7 +3314,7 @@ function app() {
           if (typeof v !== 'number' || !isFinite(v)) continue;
           // Per-metric noise gates – surface real conviction signal, not artifacts.
           //   weight-flow under 5% is just rebalance jitter
-          //   score Î” between Â±10% is normal; |Î”|â‰¥100% is usually entry/exit, not a real move
+          //   score Δ between ±10% is normal; |Δ|≥100% is usually entry/exit, not a real move
           if (d.key === 'avg_weight_flow_7d' && Math.abs(v) < 0.05) continue;
           if (d.key === 'score_delta_pct') {
             if (Math.abs(v) < 0.10) continue;
@@ -3529,15 +3529,15 @@ function app() {
         ['final_score',            'Score'],
         ['normalized_score',       'Score (pct)'],
         ['etf_count',              'ETFs'],
-        ['conviction_etf_count',   'ETFs (conviction â‰¥ 0.8)'],
+        ['conviction_etf_count',   'ETFs (conviction ≥ 0.8)'],
         ['tiers',                  'Tiers'],
         ['flag',                   'Flag'],
         ['avg_conviction',         'Avg conviction'],
         ['velocity_score',         'Velocity'],
         ['burst_30d',              'Burst'],
-        ['global_rank_delta_30d',  'Global rank Î” 30d'],
-        ['global_rank_peak_30d',   'Peak rank Î” 30d'],
-        ['score_delta_pct',        'Score Î”% (period)'],
+        ['global_rank_delta_30d',  'Global rank Δ 30d'],
+        ['global_rank_peak_30d',   'Peak rank Δ 30d'],
+        ['score_delta_pct',        'Score Δ% (period)'],
         ['avg_weight_flow_7d',     'Avg weight flow 7d'],
         ['etf_count_delta_30d',    'ETFs added 30d'],
         ['concentration_score',    'Concentration'],
@@ -3616,16 +3616,16 @@ function app() {
     // â”€â”€ ETF metadata from ETF DATA.csv – data property (not getter) to avoid re-allocation â”€â”€
     etfMetaLookup: {
         CSD:  { name: 'Invesco S&P Spin-Off ETF', rebalance: 'Monthly', reconstitution: 'Monthly (Rolling)', notes: 'Adds spin-offs as they occur; formal monthly reset.', desc: 'The primary investment objective of the Invesco S&P Spin-Off ETF is to track the investment results, before fees and expenses, of the S&P U.S. Spin-Off Index. The fund generally invests at least 90% of its total assets in U.S. common stocks that comprise the underlying index, which is designed to measure the performance of U.S. companies that have been spun off from a parent corporation within the past four years. This non-diversified fund targets a baseline configuration of 24 structural holdings, allowing it to maintain concentrated exposure to corporate restructuring events. Corporate spinoffs often create an operational transition where the newly independent subsidiary can establish dedicated management incentives, optimize capital allocation, and resolve conglomerate discounts. Because parent companies distribute subsidiary shares directly to their existing shareholder base, initial institutional selling often temporarily depresses the spinoff\'s stock price, creating a potential valuation anomaly that the index is structured to capture.' },
-        FPX:  { name: 'First Trust US Equity Opportunities ETF', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: 'IPOX 100 US Index.', desc: 'The First Trust US Equity Opportunities ETF seeks investment results that correspond generally to the price and yield, before fees and expenses, of the IPOXÂ®-100 U.S. Index. The fund normally invests at least 90% of its net assets in the common stocks comprising the index, which represents a market-capitalization-weighted, 10% capped index measuring the performance of the 100 largest and most liquid U.S. initial public offerings (IPOs) during their first 1,000 trading days. The systematic index methodology purchases eligible securities after the close of their sixth trading day and removes them on their 1000th trading day, corresponding to a holding period of roughly four years. This design provides disciplined exposure to newly public firms during their early growth phase, capturing the private-equity-to-public transition while managing concentration risks through a 10% maximum constituent weight applied during quarterly reconstructions.' },
-        FPXI: { name: 'First Trust IPOX International Equity ETF', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: 'IPOX 100 Intl Index.', desc: 'The First Trust International Equity Opportunities ETF seeks investment results that correspond generally to the price and yield, before fees and expenses, of the IPOXÂ® International Index. The fund is designed to provide systematic exposure to the capital market activity of non-U.S. domiciled firms trading on global exchanges, tracking their growth and innovation through a semi-passive indexing approach. The fund targets a structure of 50 holdings, utilizing a market-capitalization-weighted index based on the IPOXÂ® Global Composite Index. By applying a 1,000-trading-day inclusion window and a 10% cap per constituent, the methodology captures early-stage public growth outside the United States, offering global equity exposure with minimal overlap with traditional developed and emerging market benchmarks.' },
+        FPX:  { name: 'First Trust US Equity Opportunities ETF', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: 'IPOX 100 US Index.', desc: 'The First Trust US Equity Opportunities ETF seeks investment results that correspond generally to the price and yield, before fees and expenses, of the IPOX®-100 U.S. Index. The fund normally invests at least 90% of its net assets in the common stocks comprising the index, which represents a market-capitalization-weighted, 10% capped index measuring the performance of the 100 largest and most liquid U.S. initial public offerings (IPOs) during their first 1,000 trading days. The systematic index methodology purchases eligible securities after the close of their sixth trading day and removes them on their 1000th trading day, corresponding to a holding period of roughly four years. This design provides disciplined exposure to newly public firms during their early growth phase, capturing the private-equity-to-public transition while managing concentration risks through a 10% maximum constituent weight applied during quarterly reconstructions.' },
+        FPXI: { name: 'First Trust IPOX International Equity ETF', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: 'IPOX 100 Intl Index.', desc: 'The First Trust International Equity Opportunities ETF seeks investment results that correspond generally to the price and yield, before fees and expenses, of the IPOX® International Index. The fund is designed to provide systematic exposure to the capital market activity of non-U.S. domiciled firms trading on global exchanges, tracking their growth and innovation through a semi-passive indexing approach. The fund targets a structure of 50 holdings, utilizing a market-capitalization-weighted index based on the IPOX® Global Composite Index. By applying a 1,000-trading-day inclusion window and a 10% cap per constituent, the methodology captures early-stage public growth outside the United States, offering global equity exposure with minimal overlap with traditional developed and emerging market benchmarks.' },
         QMOM: { name: 'Alpha Architect US Quant Momentum ETF', rebalance: 'Monthly', reconstitution: 'Monthly', notes: 'ðŸš¨ Shifted Oct 2023. High monthly turnover.', desc: 'The Alpha Architect US Quantitative Momentum ETF seeks to deliver consistent exposure to the strongest momentum stocks on the U.S. market. The fund targets a concentrated, equal-weighted portfolio of 50 holdings. Similar to IMOM, the index model scores eligible U.S. stocks based on their 12-month momentum (excluding the most recent month) and uses the frog-in-the-pan (FIP) algorithm to select stocks with gradual, trend-following momentum. The portfolio is rebalanced monthly to ensure rapid alignment with shifting momentum trends.' },
         IMOM: { name: 'Alpha Architect Intl Quant Momentum ETF', rebalance: 'Monthly', reconstitution: 'Monthly', notes: 'ðŸš¨ Shifted Oct 2023. High monthly turnover.', desc: 'The Alpha Architect International Quantitative Momentum ETF seeks to deliver consistent exposure to the strongest momentum stocks in the developed international marketplace, excluding U.S. and emerging market equities. The fund targets a concentrated portfolio of 50 holdings, using a rules-based quantitative model that ranks international developed stocks by their 12-month momentum score, excluding the most recent month of performance to mitigate short-term mean reversion. The model also applies a proprietary "frog-in-the-pan" (FIP) momentum filter, which seeks to identify stocks with smooth, consistent price trends rather than sharp, erratic moves, on the theory that gradual price adjustments are more likely to persist. The resulting portfolio is equally weighted and rebalanced frequently to maintain consistent exposure to high-conviction momentum names.' },
         QVAL: { name: 'Alpha Architect US Quant Value ETF', rebalance: 'Monthly', reconstitution: 'Monthly', notes: 'ðŸš¨ Shifted Oct 2023. High monthly turnover.', desc: 'The Alpha Architect US Quantitative Value ETF targets U.S. stocks with high earnings relative to their total equity and debt. The fund targets a portfolio of 50 holdings, using a systematic model designed to select undervalued, high-quality U.S. companies characterized by strong earnings growth, low leverage, and positive cash flows. The portfolio is equally weighted and rebalanced monthly, aiming to capture the value premium while avoiding sector concentration risks.' },
         IVAL: { name: 'Alpha Architect Intl Quant Value ETF', rebalance: 'Monthly', reconstitution: 'Monthly', notes: 'ðŸš¨ Shifted Oct 2023. High monthly turnover.', desc: 'The Alpha Architect International Quantitative Value ETF targets consistent exposure to attractively priced international stocks, on the expectation that undervalued companies will benefit from mean reversion. The fund targets a concentrated portfolio of 50 holdings, using a quantitative value filter based on the ratio of earnings before interest and taxes to total enterprise value. This screen evaluates operating earnings relative to total enterprise value to identify undervalued international developed stocks while maintaining an equal-weighted structure to manage concentration risk.' },
         XMMO: { name: 'Invesco S&P MidCap Momentum ETF', rebalance: 'Semi-Annual', reconstitution: 'Semi-Annual', notes: 'March & September.', desc: 'The Invesco S&P MidCap Momentum ETF seeks to track the performance of the S&P MidCap 400 Momentum Index. The fund targets 76 mid-cap U.S. companies, selecting components from the S&P MidCap 400 Index that have the highest momentum scores. The index methodology evaluates the 12-month price performance of eligible stocks, excluding the most recent month, and weights constituents by a combination of their momentum score and market capitalization to capture momentum within the mid-cap segment.' },
-        XSMO: { name: 'Invesco S&P SmallCap Momentum ETF', rebalance: 'Semi-Annual', reconstitution: 'Semi-Annual', notes: 'March & September.', desc: 'The Invesco S&P SmallCap Momentum ETF seeks to track the investment results, before fees and expenses, of the S&P SmallCap 600 Momentum Index. The fund targets a cohort of 112 small-cap U.S. companies, selecting constituents from the S&P SmallCap 600Â® Index that have the highest momentum scores. The index is reconstituted semi-annually and uses a rules-based process to calculate 12-month momentum (excluding the most recent month), allowing the fund to capture price trends within the small-cap universe.' },
+        XSMO: { name: 'Invesco S&P SmallCap Momentum ETF', rebalance: 'Semi-Annual', reconstitution: 'Semi-Annual', notes: 'March & September.', desc: 'The Invesco S&P SmallCap Momentum ETF seeks to track the investment results, before fees and expenses, of the S&P SmallCap 600 Momentum Index. The fund targets a cohort of 112 small-cap U.S. companies, selecting constituents from the S&P SmallCap 600® Index that have the highest momentum scores. The index is reconstituted semi-annually and uses a rules-based process to calculate 12-month momentum (excluding the most recent month), allowing the fund to capture price trends within the small-cap universe.' },
         PIE:  { name: 'Invesco DWA Emerging Markets Momentum', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: 'DWA Technical Leaders.', desc: 'The Invesco Dorsey Wright Emerging Markets Momentum ETF seeks to track the investment results of the Dorsey Wright Emerging Markets Technical Leaders Index. The fund targets a cohort of 100 large-capitalization companies based in emerging market countries. The index selects constituents using point-and-figure relative strength comparisons, rebalancing quarterly to target emerging market equities that display powerful momentum and structural relative strength.' },
-        PDP:  { name: 'Invesco DWA Momentum ETF', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: 'DWA Technical Leaders.', desc: 'The Invesco DWA Momentum ETF seeks to track the investment results of the Dorsey WrightÂ® Technical Leaders Index. The fund targets a structural portfolio of 100 holdings, selecting U.S. companies that exhibit powerful relative strength characteristics. The rules-based index focuses strictly on technical price momentum rather than fundamental accounting metrics, using a relative strength scoring system to systematically capture upward trends and rebalancing quarterly to maintain style exposure.' },
+        PDP:  { name: 'Invesco DWA Momentum ETF', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: 'DWA Technical Leaders.', desc: 'The Invesco DWA Momentum ETF seeks to track the investment results of the Dorsey Wright® Technical Leaders Index. The fund targets a structural portfolio of 100 holdings, selecting U.S. companies that exhibit powerful relative strength characteristics. The rules-based index focuses strictly on technical price momentum rather than fundamental accounting metrics, using a relative strength scoring system to systematically capture upward trends and rebalancing quarterly to maintain style exposure.' },
         DWAS: { name: 'Invesco DWA SmallCap Momentum ETF', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: 'DWA Technical Leaders.', desc: 'The Invesco DWA SmallCap Momentum ETF seeks to track the investment results of the Dorsey Wright SmallCap Technical Leaders Index. The fund, targeting a structural cohort of 199 holdings, utilizes a technical index consisting of small-capitalization U.S. securities that exhibit powerful relative strength characteristics. Rather than relying on accounting-based fundamentals, the Dorsey Wright methodology uses point-and-figure charting techniques to identify trends across the small-cap universe. This momentum-driven model seeks to overweight small-cap sectors showing strong price momentum, rebalancing quarterly to adapt to changing market cycles.' },
         EEMO: { name: 'Invesco S&P EM Momentum ETF', rebalance: 'Semi-Annual', reconstitution: 'Semi-Annual', notes: 'March & September.', desc: 'The Invesco S&P Emerging Markets Momentum ETF seeks to track the investment results, before fees and expenses, of the S&P Emerging Markets Momentum Index. The fund targets a cohort of 253 emerging market equities, selecting constituents from the S&P Emerging Markets LargeMidCap Index that display strong price momentum. By scoring companies on their historical momentum and weighting them by their momentum score scaled by float-adjusted market capitalization, the index seeks to capture persistent upward trends in emerging markets, rebalancing semi-annually to manage trading costs in less liquid jurisdictions.' },
         PIZ:  { name: 'Invesco DWA Developed Markets ex-US', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: 'DWA Technical Leaders.', desc: 'The Invesco Dorsey Wright Developed Markets Momentum ETF seeks to track the investment results of the Dorsey Wright Developed Markets Technical Leaders Index. The fund targets 101 holdings, selecting companies in developed markets outside the United States that exhibit strong price relative strength. By using technical indicators to identify and overweight high-momentum international stocks, the fund offers a systematic approach to capturing trends across foreign developed markets.' },
@@ -3636,15 +3636,15 @@ function app() {
         JOET: { name: 'Virtus Terranova US Quality Momentum', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: '', desc: 'The Virtus Terranova U.S. Quality Momentum ETF seeks investment results that correspond, before fees and expenses, to the performance of the Terranova U.S. Quality Momentum Index. The fund targets a cohort of 124 holdings, selecting U.S. large-cap companies that exhibit a combination of strong quality fundamentals and positive technical momentum trends. The underlying index uses an equal-weighting methodology at each quarterly rebalance to mitigate the single-stock concentration risks and sector biases common in traditional market-capitalization-weighted growth strategies.' },
         COWZ: { name: 'Pacer US Cash Cows 100 ETF', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: '', desc: 'The Pacer US Cash Cows 100 ETF seeks to track the total return performance, before fees and expenses, of the Pacer US Cash Cows 100 Index. The fund targets a portfolio of 99 holdings, screening the Russell 1000 Index to select the top 100 companies with the highest free cash flow yields. The index calculates free cash flow yield using Enterprise Value (EV) in the denominator to account for debt obligations. By incorporating EV rather than market capitalization, the screen penalizes highly leveraged firms, prioritizing companies with strong cash flow generation, low debt, and high returns on equity.' },
         CALF: { name: 'Pacer US Small Cap Cash Cows 100', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: '', desc: 'The Pacer US Small Cap Cash Cows 100 ETF seeks to track the total return performance, before fees and expenses, of the Pacer US Small Cap Cash Cows Index. The fund targets a portfolio of 199 holdings, screening the S&P SmallCap 600 Index to identify the top 100 companies ranked by their free cash flow yield. By targeting small-cap companies that generate strong cash flows relative to their enterprise value, the strategy seeks to identify financially disciplined, high-quality small-cap firms trading at attractive valuations.' },
-        SPHQ: { name: 'Invesco S&P 500 Quality ETF', rebalance: 'Semi-Annual', reconstitution: 'Semi-Annual', notes: 'June & December.', desc: 'The Invesco S&P 500 Quality ETF seeks to track the investment results, before fees and expenses, of the S&P 500Â® Quality Index. The fund targets a portfolio of 99 holdings, selecting the 100 top-performing stocks from the S&P 500 Index based on their quality scores. The index calculates a quality score using three equally weighted metrics: Return on Equity (measuring profitability), the accruals ratio (evaluating earnings quality by assessing changes in net operating assets), and the financial leverage ratio (debt-to-book value). SPHQ weights constituents by their quality scores scaled by market capitalization, capping single-sector exposures at 40%.' },
+        SPHQ: { name: 'Invesco S&P 500 Quality ETF', rebalance: 'Semi-Annual', reconstitution: 'Semi-Annual', notes: 'June & December.', desc: 'The Invesco S&P 500 Quality ETF seeks to track the investment results, before fees and expenses, of the S&P 500® Quality Index. The fund targets a portfolio of 99 holdings, selecting the 100 top-performing stocks from the S&P 500 Index based on their quality scores. The index calculates a quality score using three equally weighted metrics: Return on Equity (measuring profitability), the accruals ratio (evaluating earnings quality by assessing changes in net operating assets), and the financial leverage ratio (debt-to-book value). SPHQ weights constituents by their quality scores scaled by market capitalization, capping single-sector exposures at 40%.' },
         VLUE: { name: 'iShares MSCI USA Value Factor ETF', rebalance: 'Semi-Annual', reconstitution: 'Semi-Annual', notes: 'May & November.', desc: 'The iShares MSCI USA Value Factor ETF seeks to track the investment results of an index composed of U.S. large- and mid-capitalization stocks with value characteristics and lower valuations. The fund targets 151 holdings, tracking the MSCI USA Enhanced Value Index. The index targets undervalued companies relative to their fundamentals, using price-to-book, price-to-earnings, and price-to-cash flow ratios. It applies a modified market-capitalization weighting approach that tilts toward value characteristics while remaining sector-neutral relative to the parent MSCI USA Index.' },
         AVSC: { name: 'Avantis US Small Cap Equity ETF', rebalance: 'Continuous', reconstitution: 'Continuous', notes: 'Actively managed. No fixed schedule.', desc: 'The Avantis U.S. Small Cap Equity ETF is an actively managed fund that seeks long-term capital appreciation by investing primarily in U.S. small-cap stocks. The fund targets a diversified portfolio of 1,252 holdings. Its systematic active strategy uses financial research to overweight small-cap companies with high profitability and low valuations relative to their book value, cash flow, and other financial metrics. Conversely, the fund underweight or excludes larger, highly priced, and less profitable small-cap firms to optimize risk-adjusted returns within the Russell 2000 Index benchmark.' },
         GRIN: { name: 'VictoryShares Intl Free Cash Flow Growth', rebalance: 'Semi-Annual', reconstitution: 'Semi-Annual', notes: '', desc: 'The VictoryShares International Free Cash Flow Growth ETF seeks to provide investment results that closely track the performance of the Victory International Growth Free Cash Flow Index, before fees and expenses. The fund targets a cohort of 100 holdings, focusing on international developed market growth companies (excluding the U.S.) with high free cash flow profitability and strong growth indicators. The growth index evaluates five key variables: long-term forward EPS growth, short-term forward EPS growth, internal growth rate, historical EPS growth, and historical sales growth, systematically targeting high-quality international stocks with stable cash generation.' },
         SPMO: { name: 'Invesco S&P 500 Momentum ETF', rebalance: 'Semi-Annual', reconstitution: 'Semi-Annual', notes: 'March & September.', desc: 'The Invesco S&P 500 Momentum ETF seeks investment results that correspond to the price and yield of the S&P 500 Momentum Index. The fund targets 98 holdings, selecting the 100 stocks within the S&P 500 Index that exhibit the highest momentum scores, measured by price performance over the past year. Constituents are weighted by their momentum scores scaled by market capitalization, with the index rebalancing semi-annually to adjust for shifting price trends.' },
-        SPHB: { name: 'Invesco S&P 500 High Beta ETF', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: 'Feb, May, Aug, Nov.', desc: 'The Invesco S&P 500 High Beta ETF seeks to track the investment results, before fees and expenses, of the S&P 500Â® High Beta Index. The fund targets 100 holdings, selecting the 100 stocks from the S&P 500 Index with the highest sensitivity (beta) to market movements over the past 12 months. Constituents are weighted based on their historical beta scores, allowing the portfolio to systematically capture high-volatility trends during bullish market cycles.' },
-        RPG:  { name: 'Invesco S&P 500 Pure Growth ETF', rebalance: 'Annually', reconstitution: 'Annually', notes: 'Pure style index.', desc: 'The Invesco S&P 500 Pure Growth ETF seeks to replicate as closely as possible the performance of the S&P 500/Citigroup Pure Growth Index (and more recently, the S&P 500Â® Pure Growth Index). The fund targets a cohort of 64 holdings, selecting companies from the S&P 500 Index that exhibit strong growth characteristics. The index evaluates stocks using three growth factors (three-year sales per share growth, three-year ratio of EPS change to price, and 12-month momentum) relative to three value factors (book-value-to-price, earnings-to-price, and sales-to-price). It isolates "deep growth" companies and weights them proportionally to their growth scores, rebalancing annually to manage portfolio turnover.' },
+        SPHB: { name: 'Invesco S&P 500 High Beta ETF', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: 'Feb, May, Aug, Nov.', desc: 'The Invesco S&P 500 High Beta ETF seeks to track the investment results, before fees and expenses, of the S&P 500® High Beta Index. The fund targets 100 holdings, selecting the 100 stocks from the S&P 500 Index with the highest sensitivity (beta) to market movements over the past 12 months. Constituents are weighted based on their historical beta scores, allowing the portfolio to systematically capture high-volatility trends during bullish market cycles.' },
+        RPG:  { name: 'Invesco S&P 500 Pure Growth ETF', rebalance: 'Annually', reconstitution: 'Annually', notes: 'Pure style index.', desc: 'The Invesco S&P 500 Pure Growth ETF seeks to replicate as closely as possible the performance of the S&P 500/Citigroup Pure Growth Index (and more recently, the S&P 500® Pure Growth Index). The fund targets a cohort of 64 holdings, selecting companies from the S&P 500 Index that exhibit strong growth characteristics. The index evaluates stocks using three growth factors (three-year sales per share growth, three-year ratio of EPS change to price, and 12-month momentum) relative to three value factors (book-value-to-price, earnings-to-price, and sales-to-price). It isolates "deep growth" companies and weights them proportionally to their growth scores, rebalancing annually to manage portfolio turnover.' },
         XLG:  { name: 'Invesco S&P 500 Top 50 ETF', rebalance: 'Quarterly', reconstitution: 'Annually', notes: 'Weights drift quarterly; top 50 resets yearly.', desc: 'The Invesco S&P 500 Top 50 ETF (historically tracked under Rydex/Guggenheim structures as ticker XG or XLG) seeks to track the performance of the S&P 500 Top 50 Index. The fund targets 50 holdings, representing the 50 largest companies within the S&P 500 Index. By using a float-adjusted market-capitalization weighting methodology, the fund focuses on the largest U.S. mega-cap companies. The index and portfolio are reconstituted annually, providing a highly liquid, concentrated core equity allocation.' },
-        QQQM: { name: 'Invesco NASDAQ 100 ETF', rebalance: 'Quarterly', reconstitution: 'Annually', notes: 'Weights drift quarterly; Nasdaq 100 resets yearly (Dec).', desc: 'The Invesco NASDAQ 100 ETF seeks to track the investment results, before fees and expenses, of the NASDAQ-100 IndexÂ®. The fund targets 100 holdings, consisting of the 100 largest non-financial domestic and international companies listed on the Nasdaq Stock Market based on market capitalization. The index employs a modified market-capitalization methodology that caps individual constituent weights at 24% to manage concentration risks. The fund utilizes a full replication strategy, providing concentrated exposure to large-cap technology, consumer services, and healthcare companies.' },
+        QQQM: { name: 'Invesco NASDAQ 100 ETF', rebalance: 'Quarterly', reconstitution: 'Annually', notes: 'Weights drift quarterly; Nasdaq 100 resets yearly (Dec).', desc: 'The Invesco NASDAQ 100 ETF seeks to track the investment results, before fees and expenses, of the NASDAQ-100 Index®. The fund targets 100 holdings, consisting of the 100 largest non-financial domestic and international companies listed on the Nasdaq Stock Market based on market capitalization. The index employs a modified market-capitalization methodology that caps individual constituent weights at 24% to manage concentration risks. The fund utilizes a full replication strategy, providing concentrated exposure to large-cap technology, consumer services, and healthcare companies.' },
     },
 
     // â”€â”€ Tier distribution pie chart slices â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -4119,7 +4119,7 @@ function app() {
 
     donutPalette() { return this._donutPalette; },
 
-    // Â§29 Early-vs-Crowded quadrant
+    // §29 Early-vs-Crowded quadrant
     // EARLY: rising weight in 2â€“3 ETFs (not yet consensus)
     // CROWDED: flat weight in 9+ ETFs (consensus formed)
     earlyVsCrowded(row) {
@@ -4239,7 +4239,7 @@ function app() {
       flow.push({ k: 'velocity', v: this.fmtVelocity(row.velocity_score), c: this.velocityColor(row.velocity_score) });
       flow.push({ k: 'wt flow 7d', v: this.fmtPct(row.avg_weight_flow_7d), c: this.flowColor(row.avg_weight_flow_7d) });
       const fd = row.etf_count_delta_30d ?? 0;
-      flow.push({ k: 'funds 30d', v: fd === 0 ? 'Â±0' : `${fd > 0 ? '+' : ''}${fd} fund${Math.abs(fd) === 1 ? '' : 's'}`,
+      flow.push({ k: 'funds 30d', v: fd === 0 ? '±0' : `${fd > 0 ? '+' : ''}${fd} fund${Math.abs(fd) === 1 ? '' : 's'}`,
         c: fd > 0 ? 'var(--up)' : fd < 0 ? 'var(--down)' : 'var(--text-3)' });
       const rd = row.global_rank_delta_30d;
       flow.push({ k: 'rank 30d', v: rd != null ? `${rd >= 0 ? '+' : ''}${rd} ranks` : '–', c: this.rankDeltaColor(rd) });
@@ -4295,7 +4295,7 @@ function app() {
     rankDeltaColor(n) { if (n == null || !isFinite(n)) return 'var(--text-3)'; if (n > 0) return 'var(--up)'; if (n < 0) return 'var(--down)'; return 'var(--text-3)'; },
     streakColor(n) { if (n == null || n === 0) return 'var(--text-3)'; return n > 0 ? 'var(--up)' : 'var(--down)'; },
     deltaColor(n) { if (n == null || n === 0) return 'var(--text-3)'; return n > 0 ? 'var(--up)' : 'var(--down)'; },
-    formatDelta(n) { if (n == null) return ''; const v = Number(n); if (v === 0) return 'Â±0'; return v > 0 ? `▲${v}` : `▼${Math.abs(v)}`; },
+    formatDelta(n) { if (n == null) return ''; const v = Number(n); if (v === 0) return '±0'; return v > 0 ? `▲${v}` : `▼${Math.abs(v)}`; },
 
     tierChipStyle(t) {
       const base = 'padding: 1px 5px; font-size: 10px; border-radius: 3px; ';
@@ -4335,9 +4335,9 @@ function app() {
       const grp30 = row.global_rank_peak_30d ?? 0;
       return `<div class="font-mono text-[10px]">`
         + `<div style="color: var(--cyan)">VELOCITY ${this.fmtVelocity(row.velocity_score)}</div>`
-        + `<div>global rank Î” (30d): ${grd30 >= 0 ? '+' : ''}${grd30} positions</div>`
+        + `<div>global rank Δ (30d): ${grd30 >= 0 ? '+' : ''}${grd30} positions</div>`
         + `<div>peak improvement (30d): +${grp30} positions</div>`
-        + `<div>avg per-ETF rank Î” (7d): ${rd7 >= 0 ? '+' : ''}${rd7.toFixed(1)}</div>`
+        + `<div>avg per-ETF rank Δ (7d): ${rd7 >= 0 ? '+' : ''}${rd7.toFixed(1)}</div>`
         + `<div>avg weight flow (7d): ${wf7 >= 0 ? '+' : ''}${wf7.toFixed(1)}%</div>`
         + `<div>ETFs added (30d): ${ed30 >= 0 ? '+' : ''}${ed30}</div>`
         + `<div>score streak: ${sst >= 0 ? '+' : ''}${sst} days</div>`
@@ -4356,13 +4356,13 @@ function app() {
 
 // â”€â”€ Shared currency formatting (mirrors stock.html) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const CURRENCY_SYMBOLS = {
-  USD:'$',EUR:'â‚¬',GBP:'Â£',JPY:'Â¥',KRW:'â‚©',CNY:'Â¥',TWD:'NT$',
+  USD:'$',EUR:'€',GBP:'£',JPY:'¥',KRW:'₩',CNY:'¥',TWD:'NT$',
   BRL:'R$',INR:'â‚¹',AUD:'A$',CAD:'C$',CHF:'CHF ',HKD:'HK$',
   SGD:'S$',SEK:'kr ',NOK:'kr ',DKK:'kr ',MXN:'MX$',ZAR:'R ',
   THB:'à¸¿',TRY:'â‚º',PLN:'zÅ‚ ',IDR:'Rp ',MYR:'RM ',PHP:'â‚±',
   SAR:'SAR ',QAR:'QAR ',AED:'AED ',ILS:'â‚ª',CLP:'CLP ',
   COP:'COP ',PEN:'S/.',HUF:'Ft ',CZK:'KÄ ',RON:'lei ',
-  ISK:'kr ',EGP:'EÂ£',KWD:'KD ',NZD:'NZ$',VND:'â‚«',
+  ISK:'kr ',EGP:'E£',KWD:'KD ',NZD:'NZ$',VND:'₫',
 };
 const ZERO_DECIMAL_CURRENCIES = new Set(['KRW','JPY','VND','IDR','CLP','ISK','HUF']);
 
