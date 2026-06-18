@@ -1995,8 +1995,8 @@
         <!-- Changes Lookback Period Picker -->
         <div class="flex border rounded overflow-hidden" style="border-color: rgba(255,255,255,0.08); background: rgba(0,0,0,0.25)">
           <template x-for="p in [1,7,14,30,60,90,'YTD']" :key="p">
-            <button @click="changesPeriod = p"
-                    :style="changesPeriod === p ? 'background: rgba(34,211,238,0.15); color: var(--cyan);' : 'color: rgba(255,255,255,0.45);'"
+            <button @click="setChangesPeriod(p)"
+                    :style="_changesPeriodActive === p ? 'background: rgba(34,211,238,0.15); color: var(--cyan);' : 'color: rgba(255,255,255,0.45);'"
                     class="px-2.5 py-1 text-[10px] font-mono leading-none hover:text-zinc-300 transition cursor-pointer select-none"
                     x-text="p === 'YTD' ? 'YTD' : p + 'd'"></button>
           </template>
@@ -2750,7 +2750,12 @@ function app() {
     expandedSidebarETF: null,
     period: 7,
     holdingsPeriod: 7,
+    // changesPeriod feeds the heavy Changes-tab getters (debounced via
+    // setChangesPeriod so rapid clicks coalesce into one render); the
+    // _changesPeriodActive mirror updates instantly for the button highlight.
     changesPeriod: 7,
+    _changesPeriodActive: 7,
+    _changesPeriodTimer: null,
     changesSort: {
       gainers: { key: '', dir: '' },
       losers: { key: '', dir: '' },
@@ -3215,6 +3220,23 @@ function app() {
       }
 
       const computeExits = () => {
+        // Prefer the backend-computed universe_exits_by_period for EVERY period
+        // (built from full ~3900-name leaderboards in build.py). The previous
+        // client-side scoreHistory scan was capped at 600 tickers, so exited
+        // names were truncated and never rendered for 7d/30d/90d/YTD.
+        const pStr = String(this.changesPeriod);
+        const backend = this.changelog.universe_exits_by_period?.[pStr];
+        if (backend) {
+          const exits = [...backend];
+          const sortState = this.changesSort.universeExits;
+          if (sortState && sortState.key) {
+            this.sortItemList(exits, sortState.key, sortState.dir, pStr);
+          }
+          return exits;
+        }
+
+        // Fallback (older changelog.json without universe_exits_by_period, or
+        // 1-day when only the legacy universe_exits key exists).
         if (this.changesPeriod === 1) {
           const exits = [...(this.changelog.universe_exits || [])];
           const sortState = this.changesSort.universeExits;
@@ -3660,6 +3682,16 @@ function app() {
       return (top.key !== k) ? '' : (top.dir === 'asc' ? 'sort-asc' : 'sort-desc');
     },
 
+    // Changes-tab lookback picker — debounce so rapid clicks coalesce into a
+    // single re-render instead of queuing 8+ getter recomputes on top of each
+    // other (the source of the "whole thing hangs" symptom). The active-button
+    // highlight reads _changesPeriodActive (updated instantly) so the UI stays
+    // responsive; the heavy table getters read changesPeriod (120ms lag).
+    setChangesPeriod(p) {
+      this._changesPeriodActive = p;
+      clearTimeout(this._changesPeriodTimer);
+      this._changesPeriodTimer = setTimeout(() => { this.changesPeriod = p; }, 120);
+    },
     sortChangesTable(tableId, key) {
       const t = this.changesSort[tableId];
       if (!t) return;

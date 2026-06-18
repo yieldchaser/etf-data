@@ -858,6 +858,23 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
             for _, r in top_vel.iterrows()
         ]
 
+    # ── Multi-period universe exits ───────────────────────────────────────────
+    # The 1-day universe_exits above is computed from full uncapped leaderboards,
+    # but the frontend's multi-day "Dropped from Universe" table previously scanned
+    # score_history.json (capped at 600 tickers → exited names truncated). Compute
+    # exits for every period the Changes-tab picker exposes, using the same full
+    # leaderboards, so 7d/30d/90d/YTD drops actually render.
+    try:
+        exit_periods = list(cfg.history.delta_periods_days) + ["YTD"]
+        chg['universe_exits_by_period'] = hist.compute_universe_exits_by_period(
+            historical, leaderboard, exit_periods, top_n=cfg.history.changelog_top_n,
+        )
+        total_exits = sum(len(v) for v in chg['universe_exits_by_period'].values())
+        print(f"  universe_exits_by_period: {total_exits} exits across {len(exit_periods)} periods")
+    except Exception as e:
+        print(f"  universe_exits_by_period: ERROR — {e}")
+        chg['universe_exits_by_period'] = {str(p): [] for p in exit_periods}
+
     # ── changelog.json — entries / exits / movers ─────────────────────────────
     _write_json_atomic(output_dir / "changelog.json", _dumps(chg, indent=2))
 

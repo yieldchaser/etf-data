@@ -407,6 +407,107 @@ def changelog(
     }
 
 
+def compute_universe_exits_by_period(
+    historical: dict[pd.Timestamp, pd.DataFrame],
+    latest: pd.DataFrame,
+    periods: list[int | str],
+    top_n: int = 50,
+) -> dict[str, list[dict]]:
+    """
+    Universe exits for every lookback period, computed from the FULL uncapped
+    daily leaderboards (not the 600-ticker-capped score_history.json the
+    frontend previously scanned).
+
+    A ticker is an "exit" for period N if it had final_score > 0 in the
+    snapshot closest to (today − N days) but is absent from today's
+    leaderboard (i.e. held by zero ETFs now). "YTD" uses Jan-1 of the
+    current year as the start.
+
+    Mirrors the 1-day logic in changelog()'s universe_exits path, but
+    generalised across periods so the frontend "Dropped from Universe"
+    table is accurate for 7d/14d/30d/60d/90d/YTD — not just 1d.
+
+    Returns {str(period): [{ticker, company, final_score, etf_count, tiers,
+                            score_delta, score_delta_pct}, ...]} keyed by the
+    stringified period (matching the frontend's String(changesPeriod) reads).
+    """
+    dates = sorted(historical.keys())
+    if len(dates) < 2:
+        return {str(p): [] for p in periods}
+
+    today = dates[-1]
+    today_lb = historical[today]
+    today_tickers: set[str] = set(today_lb["ticker"].tolist())
+
+    # Company / tier lookup from today's leaderboard (enrichment source for the
+    # exit record; falls back to "" if the ticker is already gone).
+    by_ticker_today = today_lb.set_index("ticker") if "ticker" in today_lb.columns else pd.DataFrame()
+
+    def _enrich_exit(ticker: str, start_lb: pd.DataFrame, start_idx) -> dict:
+        # Pull the prior score/company from the START snapshot (the day the
+        # ticker was last seen) so the "Prev. Score" column reflects what it
+        # was before dropping out. NB: `in` on a DataFrame checks COLUMNS, so
+        # test membership against the index explicitly.
+        if "ticker" not in start_lb.columns or ticker not in start_idx.index:
+            return {"ticker": ticker, "company": "", "final_score": 0.0,
+                    "etf_count": 0, "tiers": "", "score_delta": None,
+                    "score_delta_pct": -1.0}
+        row = start_idx.loc[ticker]
+        if isinstance(row, pd.DataFrame):
+            row = row.iloc[0]
+        prior_score = float(row.get("final_score")) if pd.notna(row.get("final_score")) else 0.0
+        return {
+            "ticker": ticker,
+            "company": row.get("company", ""),
+            "final_score": 0.0,
+            "etf_count": int(row.get("etf_count")) if pd.notna(row.get("etf_count")) else 0,
+            "tiers": row.get("tiers", ""),
+            "score_delta": -prior_score,
+            "score_delta_pct": -1.0,
+        }
+
+    out: dict[str, list[dict]] = {}
+    for p in periods:
+        # Resolve the start snapshot for this period.
+        if p == "YTD":
+            start_target = pd.Timestamp(year=today.year, month=1, day=1)
+        else:
+            try:
+                n_days = int(p)
+            except (ValueError, TypeError):
+                out[str(p)] = []
+                continue
+            start_target = today - pd.Timedelta(days=n_days)
+
+        # Snapshot closest to the target date (must be strictly before today so
+        # 1-day doesn't collapse to today itself).
+        candidates = [d for d in dates if d < today]
+        if not candidates:
+            out[str(p)] = []
+            continue
+        start_d = min(candidates, key=lambda d: abs((d - start_target).total_seconds()))
+
+        start_lb = historical[start_d]
+        if "ticker" not in start_lb.columns or "final_score" not in start_lb.columns:
+            out[str(p)] = []
+            continue
+
+        # Held-and-scored at the start date, gone from today's universe.
+        scored_at_start = start_lb.loc[start_lb["final_score"].fillna(0) > 0, "ticker"]
+        start_tickers: set[str] = set(scored_at_start.tolist())
+        exited = start_tickers - today_tickers
+
+        start_idx = start_lb.set_index("ticker")
+        records = sorted(
+            (_enrich_exit(t, start_lb, start_idx) for t in exited),
+            # Biggest absolute score drop first (most material exits on top)
+            key=lambda r: -(abs(r["score_delta"]) if r["score_delta"] is not None else 0),
+        )[:top_n]
+        out[str(p)] = records
+
+    return out
+
+
 QUALITY_ETFS: frozenset[str] = frozenset({"COWZ", "CALF", "SPHQ"})
 
 
