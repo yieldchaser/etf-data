@@ -259,21 +259,24 @@
         <!-- High Conviction -->
         <template x-if="leaderboardRow?.flag === 'HIGH_CONVICTION'">
           <div class="flex items-center gap-2">
-            <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">HIGH CONVICTION</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 cursor-help"
+                  x-tooltip="`HIGH CONVICTION — held by ${leaderboardRow?.etf_count || 0} ETFs · HC streak: ${leaderboardRow?.hc_streak || 0} days`">HIGH CONVICTION</span>
             <span class="font-medium text-emerald-400/90" x-text="`${leaderboardRow?.hc_streak || 0} day streak`"></span>
           </div>
         </template>
         <!-- Speculative Beta -->
         <template x-if="leaderboardRow?.flag === 'SPECULATIVE_BETA'">
           <div class="flex items-center gap-2">
-            <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/30">SPECULATIVE BETA</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/30 cursor-help"
+                  x-tooltip="'SPECULATIVE BETA — Trend tier momentum without Quality or Scout backing'">SPECULATIVE BETA</span>
             <span class="text-zinc-400">Trend tier without Quality/Scout backing</span>
           </div>
         </template>
         <!-- Concentrated -->
         <template x-if="leaderboardRow?.flag === 'CONCENTRATED'">
           <div class="flex items-center gap-2">
-            <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-orange-500/10 text-orange-400 border border-orange-500/30">CONCENTRATED</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-orange-500/10 text-orange-400 border border-orange-500/30 cursor-help"
+                  x-tooltip="`CONCENTRATED — score concentrated in single ETF (${leaderboardRow?.concentration_score || 0}%) · fragile conviction`">CONCENTRATED</span>
             <span class="text-zinc-400" x-text="`Score concentrated in single ETF (${leaderboardRow?.concentration_score}%)`"></span>
           </div>
         </template>
@@ -290,6 +293,7 @@
 
         <!-- NEW -->
         <span x-show="leaderboardRow?.any_new" class="chip"
+              x-tooltip="'NEW — first appearance in any mature ETF within the last 14 days'"
               style="background: rgba(96,165,250,0.12); color: #60a5fa; border: 1px solid rgba(96,165,250,0.3)">NEW</span>
         <!-- BURST -->
         <span x-show="leaderboardRow?.burst_30d" class="chip"
@@ -297,6 +301,7 @@
               style="background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.30)">⚡ BURST</span>
         <!-- VELO -->
         <span x-show="(leaderboardRow?.velocity_score || 0) >= 25 && !leaderboardRow?.burst_30d" class="chip"
+              x-tooltip="`Top-velocity composite (${(leaderboardRow?.velocity_score || 0).toFixed(0)}). Conviction is concentrating.`"
               style="background: rgba(34,211,238,0.10); color: var(--cyan); border: 1px solid rgba(34,211,238,0.25)">VELO</span>
         <!-- Quality+ -->
         <span x-show="leaderboardRow?.quality_adopted_30d" class="chip"
@@ -499,7 +504,7 @@
         <div class="flex items-center gap-2 flex-wrap">
           <div class="label-cyan label">Signal Timeline</div>
           <span class="font-mono text-xs" style="color: var(--text-2)" x-text="ticker"></span>
-          <span class="text-[10px] font-mono px-1.5 py-0.5 rounded" :style="currentStateChipStyle" x-text="currentStateLabel"></span>
+          <span class="text-[10px] font-mono px-1.5 py-0.5 rounded cursor-help" :style="currentStateChipStyle" x-tooltip="currentStateTip" x-text="currentStateLabel"></span>
           <span class="text-[10px]" style="color: var(--text-3)" x-text="`${flagHistory?.length || 0} days`"></span>
         </div>
         <div class="flex items-center gap-3 text-[10px] flex-wrap" style="color: var(--text-2)">
@@ -1356,6 +1361,27 @@ function stockApp() {
         'Q−':      'background: rgba(251,113,133,0.10); color: var(--down); border: 1px solid rgba(251,113,133,0.25)',
         'CONC':    'background: rgba(251,146,60,0.10); color: #fb923c; border: 1px solid rgba(251,146,60,0.25)',
         'Neutral': 'background: rgba(255,255,255,0.04); color: var(--text-3); border: 1px solid rgba(255,255,255,0.10)',
+      };
+      return map[s.label] || map['Neutral'];
+    },
+
+    get currentStateTip() {
+      const fh = this.flagHistory || [];
+      if (!fh.length) return '';
+      const s = this._stateAt(fh.length - 1);
+      const map = {
+        'BURST':   `BURST move – global rank improved by ${this.leaderboardRow?.global_rank_peak_30d ?? 0}+ positions in last 30d.`,
+        'HC':      `HIGH CONVICTION – held by ${this.leaderboardRow?.etf_count || 0} ETFs · HC streak: ${this.leaderboardRow?.hc_streak || 0} days`,
+        'VELO':    `Top-velocity composite (${(this.leaderboardRow?.velocity_score || 0).toFixed(0)}). Conviction is concentrating.`,
+        'SPEC β':  'SPECULATIVE BETA – Trend tier momentum without Quality or Scout backing.',
+        'NEW':     'NEW – first appearance in any mature ETF within the last 14 days.',
+        'STEALTH': 'Stealth accumulation – weight building without rank movement. Quiet loading.',
+        'DIV+':    'Divergence+ – holding rank strength inside its own funds while peers slip.',
+        'DIV−':    'Divergence− – losing rank inside its own funds while the aggregate holds.',
+        'Q+':      'Quality+ – a Quality ETF added this name in the last 30 days.',
+        'Q−':      'Quality− – a Quality ETF dropped this name in the last 30 days.',
+        'CONC':    `CONCENTRATED – score concentrated in single ETF (${this.leaderboardRow?.concentration_score || 0}%) · fragile conviction`,
+        'Neutral': 'Neutral status – no major structural anomalies.',
       };
       return map[s.label] || map['Neutral'];
     },
