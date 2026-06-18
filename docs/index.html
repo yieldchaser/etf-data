@@ -1542,7 +1542,7 @@
         <div class="space-y-1 overflow-y-auto max-h-[500px] pr-1 scrollbar">
           <template x-for="etfRow in etfSummary" :key="etfRow.etf">
             <div x-show="!selectedTier || etfRow.tier === selectedTier" x-transition.opacity>
-              <button @click="activeETF = etfRow.etf; expandedSidebarETF = expandedSidebarETF === etfRow.etf ? null : etfRow.etf"
+              <button @click="activeETF = etfRow.etf; etfPage = 1; expandedSidebarETF = expandedSidebarETF === etfRow.etf ? null : etfRow.etf"
                       :class="activeETF === etfRow.etf ? 'bg-cyan-500/[0.05] border-cyan-500/20 text-cyan-400' : 'border-white/[0.02] hover:border-white/[0.06] hover:bg-white/[0.015] text-zinc-400'"
                       class="w-full flex items-center justify-between px-2.5 py-1.8 rounded-lg border text-left text-xs transition duration-200"
                       style="color: var(--text)">
@@ -1624,7 +1624,7 @@
               </div>
               <div class="flex p-0.5 rounded-full border bg-black/20" style="border-color: var(--border)">
                 <template x-for="p in [1, 7, 14, 30, 60, 90]" :key="p">
-                  <button @click.stop="holdingsPeriod = p"
+                  <button @click.stop="holdingsPeriod = p; etfPage = 1"
                           :class="holdingsPeriod === p ? 'bg-cyan-400/10 text-cyan-400 border-white/[0.05] shadow-[0_1px_3px_rgba(34,211,238,0.1)]' : 'text-zinc-400 hover:text-zinc-200 border-transparent'"
                           class="px-2.5 py-0.5 text-[9px] font-mono font-semibold rounded-full border leading-none transition-all duration-200 cursor-pointer"
                           x-text="p === 7 ? '7d' : p === 30 ? '30d' : p === 90 ? '90d' : p + 'd'"></button>
@@ -1714,7 +1714,7 @@
                 <th class="text-left px-3 py-2 label select-none">Flags</th>
               </tr>
             </thead>
-            <template x-for="h in etfHoldings" :key="`${h.ETF_Ticker}-${h.rank}`">
+            <template x-for="h in pagedEtfHoldings" :key="`${h.ETF_Ticker}-${h.rank}`">
               <tbody>
                 <tr class="row-hover" style="border-bottom: 1px solid rgba(255,255,255,0.03)">
                   <td class="px-3 py-1.5 num font-mono" style="color: var(--text-3)" x-text="`#${h.rank}`"></td>
@@ -1731,6 +1731,18 @@
               </tbody>
             </template>
           </table>
+        </div>
+        <!-- Pagination -->
+        <div class="px-3 py-2 flex items-center justify-between text-xs border-t" style="border-color: var(--border); color: var(--text-3); background: rgba(0, 0, 0, 0.05)">
+          <div>
+            <span class="num font-mono" x-text="etfHoldings.length ? (etfPage-1)*etfPageSize + 1 : 0"></span>–<span class="num font-mono" x-text="Math.min(etfPage*etfPageSize, etfHoldings.length)"></span>
+            of <span class="num font-mono" x-text="etfHoldings.length"></span>
+          </div>
+          <div class="flex gap-1" x-show="etfHoldings.length > etfPageSize">
+            <button @click="etfPage = Math.max(1, etfPage-1)" :disabled="etfPage === 1" class="px-2 py-1 border rounded disabled:opacity-30 hover:border-zinc-500 cursor-pointer" style="border-color: var(--border-2)">‹ prev</button>
+            <span class="px-2 py-1 num font-mono">page <span x-text="etfPage"></span> / <span x-text="Math.ceil(etfHoldings.length / etfPageSize)"></span></span>
+            <button @click="etfPage = Math.min(Math.ceil(etfHoldings.length / etfPageSize), etfPage+1)" :disabled="etfPage >= Math.ceil(etfHoldings.length / etfPageSize)" class="px-2 py-1 border rounded disabled:opacity-30 hover:border-zinc-500 cursor-pointer" style="border-color: var(--border-2)">next ›</button>
+          </div>
         </div>
 
         <!-- Period Activity & Conviction Flows Dashboard -->
@@ -1995,11 +2007,12 @@
     <!-- Section 1: Score Movers - Biggest Gainers & Losers (Side by side) -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
       <!-- Biggest Gainers -->
-      <div class="rounded-lg border border-l-4" style="border-color: var(--border); border-left-color: var(--up); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
-          <div class="label flex items-center gap-1.5 text-emerald-400 font-semibold text-xs tracking-wider uppercase">
+      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
+        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
+          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
             <span>📈</span> Biggest Score Gainers
-            <span class="chip text-[9px] font-mono ml-1 normal-case" style="background: rgba(16,185,129,0.1); color: #34d399; border: 1px solid rgba(16,185,129,0.25)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
+            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">GAINERS</span>
+            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
           </div>
           <div class="text-[10px] font-mono text-zinc-500" x-text="`Max 15 rows · &ge;2 ETFs`"></div>
         </div>
@@ -2048,11 +2061,12 @@
       </div>
 
       <!-- Biggest Losers -->
-      <div class="rounded-lg border border-l-4" style="border-color: var(--border); border-left-color: var(--down); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
-          <div class="label flex items-center gap-1.5 text-rose-400 font-semibold text-xs tracking-wider uppercase">
+      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
+        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
+          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
             <span>📉</span> Biggest Score Losers
-            <span class="chip text-[9px] font-mono ml-1 normal-case" style="background: rgba(244,63,94,0.1); color: #fb7185; border: 1px solid rgba(244,63,94,0.25)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
+            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">LOSERS</span>
+            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
           </div>
           <div class="text-[10px] font-mono text-zinc-500" x-text="`Max 15 rows · &ge;2 ETFs`"></div>
         </div>
@@ -2104,11 +2118,12 @@
     <!-- Section 2: Rank Movers (Climbers & Fallers) - period-aware -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
       <!-- Rank Climbers -->
-      <div class="rounded-lg border border-l-4" style="border-color: var(--border); border-left-color: var(--up); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
-          <div class="label flex items-center gap-1.5 text-emerald-400 font-semibold text-xs tracking-wider uppercase">
+      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
+        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
+          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
             <span>🚀</span> Biggest Rank Climbers
-            <span class="chip text-[9px] font-mono ml-1 normal-case" style="background: rgba(16,185,129,0.1); color: #34d399; border: 1px solid rgba(16,185,129,0.25)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
+            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">CLIMBERS</span>
+            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
           </div>
           <div class="text-[10px] font-mono text-zinc-500" x-text="`Max 10 rows · &ge;2 ETFs · Rank Δ &ge; +${(changesPeriod === 1 || changesPeriod === 7) ? 10 : 20}`"></div>
         </div>
@@ -2161,11 +2176,12 @@
       </div>
 
       <!-- Rank Fallers -->
-      <div class="rounded-lg border border-l-4" style="border-color: var(--border); border-left-color: var(--down); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
-          <div class="label flex items-center gap-1.5 text-rose-400 font-semibold text-xs tracking-wider uppercase">
+      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
+        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
+          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
             <span>☄️</span> Biggest Rank Fallers
-            <span class="chip text-[9px] font-mono ml-1 normal-case" style="background: rgba(244,63,94,0.1); color: #fb7185; border: 1px solid rgba(244,63,94,0.25)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
+            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">FALLERS</span>
+            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
           </div>
           <div class="text-[10px] font-mono text-zinc-500" x-text="`Max 10 rows · &ge;2 ETFs · Rank Δ &le; -${(changesPeriod === 1 || changesPeriod === 7) ? 10 : 20}`"></div>
         </div>
@@ -2221,11 +2237,12 @@
     <!-- Section 3: ETF Adoption & Dropout - period-aware -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
       <!-- ETF Pickups (Adoption) -->
-      <div class="rounded-lg border border-l-4" style="border-color: var(--border); border-left-color: #22d3ee; background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
-          <div class="label flex items-center gap-1.5 text-cyan-400 font-semibold text-xs tracking-wider uppercase">
+      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
+        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
+          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
             <span>🎯</span> ETF Adoption (Pickups)
-            <span class="chip text-[9px] font-mono ml-1 normal-case" style="background: rgba(34,211,238,0.1); color: #22d3ee; border: 1px solid rgba(34,211,238,0.25)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
+            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">ADOPTIONS</span>
+            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
           </div>
           <div class="text-[10px] font-mono text-zinc-500" x-text="`${etfPickups.length} names · &ge;2 ETFs`"></div>
         </div>
@@ -2273,11 +2290,12 @@
       </div>
 
       <!-- ETF Dropouts -->
-      <div class="rounded-lg border border-l-4" style="border-color: var(--border); border-left-color: var(--down); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
-          <div class="label flex items-center gap-1.5 text-rose-400 font-semibold text-xs tracking-wider uppercase">
+      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
+        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
+          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
             <span>⚠️</span> ETF Defections (Dropouts)
-            <span class="chip text-[9px] font-mono ml-1 normal-case" style="background: rgba(244,63,94,0.1); color: #fb7185; border: 1px solid rgba(244,63,94,0.25)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
+            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">DEFECTIONS</span>
+            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
           </div>
           <div class="text-[10px] font-mono text-zinc-500" x-text="`${etfDropouts.length} names`"></div>
         </div>
@@ -2328,11 +2346,12 @@
     <!-- Section 4: Burst Movers (Winners & Crashers) - fixed 30d signal -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
       <!-- Burst Winners -->
-      <div class="rounded-lg border border-l-4" style="border-color: var(--border); border-left-color: #a855f7; background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
-          <div class="label flex items-center gap-1.5 font-semibold text-xs tracking-wider uppercase" style="color: #c084fc;">
+      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
+        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
+          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
             <span>⚡</span> Burst Winners
-            <span class="chip text-[9px] font-mono ml-1 normal-case" style="background: rgba(168,85,247,0.1); color: #c084fc; border: 1px solid rgba(168,85,247,0.3)">fixed 30d</span>
+            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">BURST</span>
+            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)">fixed 30d</span>
           </div>
           <div class="text-[10px] font-mono text-zinc-500" x-text="`${burstWinners.length} burst · &ge;2 ETFs`"></div>
         </div>
@@ -2374,11 +2393,12 @@
       </div>
 
       <!-- Burst Crashers (rank cratered, no burst recovery) -->
-      <div class="rounded-lg border border-l-4" style="border-color: var(--border); border-left-color: #ef4444; background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
-          <div class="label flex items-center gap-1.5 text-rose-500 font-semibold text-xs tracking-wider uppercase">
+      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
+        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
+          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
             <span>💥</span> Rank Crashers
-            <span class="chip text-[9px] font-mono ml-1 normal-case" style="background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.3)">fixed 30d</span>
+            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">BURST DROPS</span>
+            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)">fixed 30d</span>
           </div>
           <div class="text-[10px] font-mono text-zinc-500" x-text="`${burstLosers.length} names · Δ &le; −30`"></div>
         </div>
@@ -2502,10 +2522,12 @@
     <!-- Section 5: New Entrants + Universe Exits -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
       <!-- New Entrants -->
-      <div class="rounded-lg border border-l-4" style="border-color: var(--border); border-left-color: #3b82f6; background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
-          <div class="label flex items-center gap-1.5 text-blue-400 font-semibold text-xs tracking-wider uppercase">
-            <span>🆕</span> New Entrants (<span x-text="changesPeriod === 'YTD' ? 'YTD' : `&le;${changesPeriod}d`"></span>)
+      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
+        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
+          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
+            <span>🆕</span> New Entrants
+            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">NEW</span>
+            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD' : `&le;${changesPeriod}d`"></span>
           </div>
           <div class="text-[10px] font-mono text-zinc-500" x-text="`${newEntrants.length} names`"></div>
         </div>
@@ -2546,11 +2568,12 @@
       </div>
 
       <!-- Dropped from Universe (Exits) -->
-      <div class="rounded-lg border border-l-4" style="border-color: var(--border); border-left-color: #71717a; background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
-          <div class="label flex items-center gap-1.5 text-zinc-400 font-semibold text-xs tracking-wider uppercase">
+      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
+        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
+          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
             <span>❌</span> Dropped from Universe
-            <span class="chip text-[9px] font-mono ml-1 normal-case" style="background: rgba(34,211,238,0.08); color: var(--cyan); border: 1px solid rgba(34,211,238,0.2)" x-text="changesPeriod === 'YTD' ? 'YTD exits' : changesPeriod + 'd exits'"></span>
+            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-zinc-500/10 text-zinc-300 border border-zinc-500/20">EXITS</span>
+            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD exits' : changesPeriod + 'd exits'"></span>
           </div>
           <div class="text-[10px] font-mono text-zinc-500" x-text="`${universeExits.length} exits`"></div>
         </div>
@@ -2717,6 +2740,7 @@ function app() {
     flag: '', selectedTier: '', selectedSector: '', selectedCountry: '', regionFilter: '', newOnly: false, velocityOnly: false, burstOnly: false, q: '', excludeConcentrated: false, qualityAdoptedOnly: false, qualityDefectedOnly: false, preHcOnly: false, stealthBuyOnly: false, velOverScoreOnly: false, quantQualityOnly: false, stealthAccOnly: false, divOnly: false,
     sortKey: 'leaderboard_rank', sortDir: 'asc',
     page: 1, pageSize: 50, open: null,
+    etfPage: 1, etfPageSize: 50,
     activeETF: 'QQQM',
     expandedSidebarETF: null,
     period: 7,
@@ -2980,112 +3004,186 @@ function app() {
 
     get dynamicScoreGainers() {
       const p = String(this.changesPeriod);
-      const list = this.leaderboard
-        .filter(r => {
-          const d = r.score_deltas_by_period?.[p];
-          return d != null && d > 0 && (r.etf_count || 0) >= 2;
-        })
-        .sort((a, b) => (b.score_deltas_by_period[p] || 0) - (a.score_deltas_by_period[p] || 0));
-      const sliced = list.slice(0, 15);
-      const sortState = this.changesSort.gainers;
-      if (sortState && sortState.key) {
-        this.sortItemList(sliced, sortState.key, sortState.dir, p);
+      const cacheKey = `${p}_${JSON.stringify(this.changesSort.gainers)}_${this.leaderboard.length}`;
+      if (this._dynamicScoreGainersCache && this._dynamicScoreGainersCache.key === cacheKey) {
+        return this._dynamicScoreGainersCache.value;
       }
-      return sliced;
+      const compute = () => {
+        const list = this.leaderboard
+          .filter(r => {
+            const d = r.score_deltas_by_period?.[p];
+            return d != null && d > 0 && (r.etf_count || 0) >= 2;
+          })
+          .sort((a, b) => (b.score_deltas_by_period[p] || 0) - (a.score_deltas_by_period[p] || 0));
+        const sliced = list.slice(0, 15);
+        const sortState = this.changesSort.gainers;
+        if (sortState && sortState.key) {
+          this.sortItemList(sliced, sortState.key, sortState.dir, p);
+        }
+        return sliced;
+      };
+      const result = compute();
+      this._dynamicScoreGainersCache = { key: cacheKey, value: result };
+      return result;
     },
 
     get dynamicScoreLosers() {
       const p = String(this.changesPeriod);
-      const list = this.leaderboard
-        .filter(r => {
-          const d = r.score_deltas_by_period?.[p];
-          return d != null && d < 0 && (r.etf_count || 0) >= 2;
-        })
-        .sort((a, b) => (a.score_deltas_by_period[p] || 0) - (b.score_deltas_by_period[p] || 0));
-      const sliced = list.slice(0, 15);
-      const sortState = this.changesSort.losers;
-      if (sortState && sortState.key) {
-        this.sortItemList(sliced, sortState.key, sortState.dir, p);
+      const cacheKey = `${p}_${JSON.stringify(this.changesSort.losers)}_${this.leaderboard.length}`;
+      if (this._dynamicScoreLosersCache && this._dynamicScoreLosersCache.key === cacheKey) {
+        return this._dynamicScoreLosersCache.value;
       }
-      return sliced;
+      const compute = () => {
+        const list = this.leaderboard
+          .filter(r => {
+            const d = r.score_deltas_by_period?.[p];
+            return d != null && d < 0 && (r.etf_count || 0) >= 2;
+          })
+          .sort((a, b) => (a.score_deltas_by_period[p] || 0) - (b.score_deltas_by_period[p] || 0));
+        const sliced = list.slice(0, 15);
+        const sortState = this.changesSort.losers;
+        if (sortState && sortState.key) {
+          this.sortItemList(sliced, sortState.key, sortState.dir, p);
+        }
+        return sliced;
+      };
+      const result = compute();
+      this._dynamicScoreLosersCache = { key: cacheKey, value: result };
+      return result;
     },
 
     get rankClimbers() {
       const p = String(this.changesPeriod);
-      const threshold = (this.changesPeriod === 1 || this.changesPeriod === 7) ? 10 : 20;
-      const list = this.leaderboard
-        .filter(r => (r.global_rank_delta_by_period?.[p] || 0) > threshold && (r.etf_count || 0) >= 2)
-        .sort((a, b) => (b.global_rank_delta_by_period?.[p] || 0) - (a.global_rank_delta_by_period?.[p] || 0));
-      const sliced = list.slice(0, 10);
-      const sortState = this.changesSort.climbers;
-      if (sortState && sortState.key) {
-        this.sortItemList(sliced, sortState.key, sortState.dir, p);
+      const cacheKey = `${p}_${JSON.stringify(this.changesSort.climbers)}_${this.leaderboard.length}`;
+      if (this._rankClimbersCache && this._rankClimbersCache.key === cacheKey) {
+        return this._rankClimbersCache.value;
       }
-      return sliced;
+      const compute = () => {
+        const threshold = (this.changesPeriod === 1 || this.changesPeriod === 7) ? 10 : 20;
+        const list = this.leaderboard
+          .filter(r => (r.global_rank_delta_by_period?.[p] || 0) > threshold && (r.etf_count || 0) >= 2)
+          .sort((a, b) => (b.global_rank_delta_by_period?.[p] || 0) - (a.global_rank_delta_by_period?.[p] || 0));
+        const sliced = list.slice(0, 10);
+        const sortState = this.changesSort.climbers;
+        if (sortState && sortState.key) {
+          this.sortItemList(sliced, sortState.key, sortState.dir, p);
+        }
+        return sliced;
+      };
+      const result = compute();
+      this._rankClimbersCache = { key: cacheKey, value: result };
+      return result;
     },
 
     get rankFallers() {
       const p = String(this.changesPeriod);
-      const threshold = (this.changesPeriod === 1 || this.changesPeriod === 7) ? -10 : -20;
-      const list = this.leaderboard
-        .filter(r => (r.global_rank_delta_by_period?.[p] || 0) < threshold && (r.etf_count || 0) >= 2)
-        .sort((a, b) => (a.global_rank_delta_by_period?.[p] || 0) - (b.global_rank_delta_by_period?.[p] || 0));
-      const sliced = list.slice(0, 10);
-      const sortState = this.changesSort.fallers;
-      if (sortState && sortState.key) {
-        this.sortItemList(sliced, sortState.key, sortState.dir, p);
+      const cacheKey = `${p}_${JSON.stringify(this.changesSort.fallers)}_${this.leaderboard.length}`;
+      if (this._rankFallersCache && this._rankFallersCache.key === cacheKey) {
+        return this._rankFallersCache.value;
       }
-      return sliced;
+      const compute = () => {
+        const threshold = (this.changesPeriod === 1 || this.changesPeriod === 7) ? -10 : -20;
+        const list = this.leaderboard
+          .filter(r => (r.global_rank_delta_by_period?.[p] || 0) < threshold && (r.etf_count || 0) >= 2)
+          .sort((a, b) => (a.global_rank_delta_by_period?.[p] || 0) - (b.global_rank_delta_by_period?.[p] || 0));
+        const sliced = list.slice(0, 10);
+        const sortState = this.changesSort.fallers;
+        if (sortState && sortState.key) {
+          this.sortItemList(sliced, sortState.key, sortState.dir, p);
+        }
+        return sliced;
+      };
+      const result = compute();
+      this._rankFallersCache = { key: cacheKey, value: result };
+      return result;
     },
 
     get etfPickups() {
       const p = String(this.changesPeriod);
-      const list = this.leaderboard
-        .filter(r => (r.etf_count_delta_by_period?.[p] || 0) > 0 && (r.etf_count || 0) >= 2)
-        .sort((a, b) => (b.etf_count_delta_by_period?.[p] || 0) - (a.etf_count_delta_by_period?.[p] || 0));
-      const sliced = list.slice(0, 10);
-      const sortState = this.changesSort.pickups;
-      if (sortState && sortState.key) {
-        this.sortItemList(sliced, sortState.key, sortState.dir, p);
+      const cacheKey = `${p}_${JSON.stringify(this.changesSort.pickups)}_${this.leaderboard.length}`;
+      if (this._etfPickupsCache && this._etfPickupsCache.key === cacheKey) {
+        return this._etfPickupsCache.value;
       }
-      return sliced;
+      const compute = () => {
+        const list = this.leaderboard
+          .filter(r => (r.etf_count_delta_by_period?.[p] || 0) > 0 && (r.etf_count || 0) >= 2)
+          .sort((a, b) => (b.etf_count_delta_by_period?.[p] || 0) - (a.etf_count_delta_by_period?.[p] || 0));
+        const sliced = list.slice(0, 10);
+        const sortState = this.changesSort.pickups;
+        if (sortState && sortState.key) {
+          this.sortItemList(sliced, sortState.key, sortState.dir, p);
+        }
+        return sliced;
+      };
+      const result = compute();
+      this._etfPickupsCache = { key: cacheKey, value: result };
+      return result;
     },
 
     get etfDropouts() {
       const p = String(this.changesPeriod);
-      const list = this.leaderboard
-        .filter(r => (r.etf_count_delta_by_period?.[p] || 0) < 0)
-        .sort((a, b) => (a.etf_count_delta_by_period?.[p] || 0) - (b.etf_count_delta_by_period?.[p] || 0));
-      const sliced = list.slice(0, 10);
-      const sortState = this.changesSort.dropouts;
-      if (sortState && sortState.key) {
-        this.sortItemList(sliced, sortState.key, sortState.dir, p);
+      const cacheKey = `${p}_${JSON.stringify(this.changesSort.dropouts)}_${this.leaderboard.length}`;
+      if (this._etfDropoutsCache && this._etfDropoutsCache.key === cacheKey) {
+        return this._etfDropoutsCache.value;
       }
-      return sliced;
+      const compute = () => {
+        const list = this.leaderboard
+          .filter(r => (r.etf_count_delta_by_period?.[p] || 0) < 0)
+          .sort((a, b) => (a.etf_count_delta_by_period?.[p] || 0) - (b.etf_count_delta_by_period?.[p] || 0));
+        const sliced = list.slice(0, 10);
+        const sortState = this.changesSort.dropouts;
+        if (sortState && sortState.key) {
+          this.sortItemList(sliced, sortState.key, sortState.dir, p);
+        }
+        return sliced;
+      };
+      const result = compute();
+      this._etfDropoutsCache = { key: cacheKey, value: result };
+      return result;
     },
 
     get burstWinners() {
-      const list = this.leaderboard
-        .filter(r => r.burst_30d && (r.etf_count || 0) >= 2)
-        .sort((a, b) => (b.global_rank_peak_30d || 0) - (a.global_rank_peak_30d || 0));
-      const sliced = list.slice(0, 10);
-      const sortState = this.changesSort.burstWinners;
-      if (sortState && sortState.key) {
-        this.sortItemList(sliced, sortState.key, sortState.dir, String(this.changesPeriod));
+      const p = String(this.changesPeriod);
+      const cacheKey = `${p}_${JSON.stringify(this.changesSort.burstWinners)}_${this.leaderboard.length}`;
+      if (this._burstWinnersCache && this._burstWinnersCache.key === cacheKey) {
+        return this._burstWinnersCache.value;
       }
-      return sliced;
+      const compute = () => {
+        const list = this.leaderboard
+          .filter(r => r.burst_30d && (r.etf_count || 0) >= 2)
+          .sort((a, b) => (b.global_rank_peak_30d || 0) - (a.global_rank_peak_30d || 0));
+        const sliced = list.slice(0, 10);
+        const sortState = this.changesSort.burstWinners;
+        if (sortState && sortState.key) {
+          this.sortItemList(sliced, sortState.key, sortState.dir, p);
+        }
+        return sliced;
+      };
+      const result = compute();
+      this._burstWinnersCache = { key: cacheKey, value: result };
+      return result;
     },
 
     get burstLosers() {
-      const list = this.leaderboard
-        .filter(r => !r.burst_30d && (r.global_rank_delta_30d || 0) < -30 && (r.etf_count || 0) >= 2)
-        .sort((a, b) => (a.global_rank_delta_30d || 0) - (b.global_rank_delta_30d || 0));
-      const sliced = list.slice(0, 10);
-      const sortState = this.changesSort.burstLosers;
-      if (sortState && sortState.key) {
-        this.sortItemList(sliced, sortState.key, sortState.dir, String(this.changesPeriod));
+      const p = String(this.changesPeriod);
+      const cacheKey = `${p}_${JSON.stringify(this.changesSort.burstLosers)}_${this.leaderboard.length}`;
+      if (this._burstLosersCache && this._burstLosersCache.key === cacheKey) {
+        return this._burstLosersCache.value;
       }
-      return sliced;
+      const compute = () => {
+        const list = this.leaderboard
+          .filter(r => !r.burst_30d && (r.global_rank_delta_30d || 0) < -30 && (r.etf_count || 0) >= 2)
+          .sort((a, b) => (a.global_rank_delta_30d || 0) - (b.global_rank_delta_30d || 0));
+        const sliced = list.slice(0, 10);
+        const sortState = this.changesSort.burstLosers;
+        if (sortState && sortState.key) {
+          this.sortItemList(sliced, sortState.key, sortState.dir, p);
+        }
+        return sliced;
+      };
+      const result = compute();
+      this._burstLosersCache = { key: cacheKey, value: result };
+      return result;
     },
 
     get activeSignalCounts() {
@@ -3547,6 +3645,7 @@ function app() {
       return t.dir === 'asc' ? 'sort-asc' : 'sort-desc';
     },
     sortEtfHoldings(key) {
+      this.etfPage = 1;
       if (this.etfHoldingsSortKey === key) {
         if (this.etfHoldingsSortDir === 'desc') {
           this.etfHoldingsSortKey = 'rank';
@@ -4088,6 +4187,10 @@ function app() {
         });
       }
       return list;
+    },
+    get pagedEtfHoldings() {
+      const s = (this.etfPage - 1) * this.etfPageSize;
+      return this.etfHoldings.slice(s, s + this.etfPageSize);
     },
 
     get exitsForActivePeriod() {
