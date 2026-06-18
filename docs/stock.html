@@ -260,7 +260,7 @@
         <template x-if="leaderboardRow?.flag === 'HIGH_CONVICTION'">
           <div class="flex items-center gap-2">
             <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 cursor-help"
-                  x-tooltip="`HIGH CONVICTION — held by ${leaderboardRow?.etf_count || 0} ETFs · HC streak: ${leaderboardRow?.hc_streak || 0} days`">HIGH CONVICTION</span>
+                  x-tooltip="`HIGH CONVICTION - held by ${leaderboardRow?.etf_count || 0} ETFs · HC streak: ${leaderboardRow?.hc_streak || 0} days`">HIGH CONVICTION</span>
             <span class="font-medium text-emerald-400/90" x-text="`${leaderboardRow?.hc_streak || 0} day streak`"></span>
           </div>
         </template>
@@ -268,7 +268,7 @@
         <template x-if="leaderboardRow?.flag === 'SPECULATIVE_BETA'">
           <div class="flex items-center gap-2">
             <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/30 cursor-help"
-                  x-tooltip="'SPECULATIVE BETA — Trend tier momentum without Quality or Scout backing'">SPECULATIVE BETA</span>
+                  x-tooltip="'SPECULATIVE BETA - Trend tier momentum without Quality or Scout backing'">SPECULATIVE BETA</span>
             <span class="text-zinc-400">Trend tier without Quality/Scout backing</span>
           </div>
         </template>
@@ -276,7 +276,7 @@
         <template x-if="leaderboardRow?.flag === 'CONCENTRATED'">
           <div class="flex items-center gap-2">
             <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-orange-500/10 text-orange-400 border border-orange-500/30 cursor-help"
-                  x-tooltip="`CONCENTRATED — score concentrated in single ETF (${leaderboardRow?.concentration_score || 0}%) · fragile conviction`">CONCENTRATED</span>
+                  x-tooltip="`CONCENTRATED - score concentrated in single ETF (${leaderboardRow?.concentration_score || 0}%) · fragile conviction`">CONCENTRATED</span>
             <span class="text-zinc-400" x-text="`Score concentrated in single ETF (${leaderboardRow?.concentration_score}%)`"></span>
           </div>
         </template>
@@ -293,11 +293,11 @@
 
         <!-- NEW -->
         <span x-show="leaderboardRow?.any_new" class="chip"
-              x-tooltip="'NEW — first appearance in any mature ETF within the last 14 days'"
+              x-tooltip="'NEW - first appearance in any mature ETF within the last 14 days'"
               style="background: rgba(96,165,250,0.12); color: #60a5fa; border: 1px solid rgba(96,165,250,0.3)">NEW</span>
         <!-- BURST -->
         <span x-show="leaderboardRow?.burst_30d" class="chip"
-              x-tooltip="`BURST move — global rank improved by ${leaderboardRow?.global_rank_peak_30d}+ positions in last 30d. Best rank: #${leaderboardRow?.global_rank_best_30d}`"
+              x-tooltip="`BURST move - global rank improved by ${leaderboardRow?.global_rank_peak_30d}+ positions in last 30d. Best rank: #${leaderboardRow?.global_rank_best_30d}`"
               style="background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.30)">⚡ BURST</span>
         <!-- VELO -->
         <span x-show="(leaderboardRow?.velocity_score || 0) >= 25 && !leaderboardRow?.burst_30d" class="chip"
@@ -305,11 +305,11 @@
               style="background: rgba(34,211,238,0.10); color: var(--cyan); border: 1px solid rgba(34,211,238,0.25)">VELO</span>
         <!-- Quality+ -->
         <span x-show="leaderboardRow?.quality_adopted_30d" class="chip"
-              x-tooltip="'Quality+ — A free-cash-flow / quality screen ETF (COWZ/CALF/SPHQ) added this name in the last 30 days. Strong fundamentals confirmation.'"
+              x-tooltip="'Quality+ - A free-cash-flow / quality screen ETF (COWZ/CALF/SPHQ) added this name in the last 30 days. Strong fundamentals confirmation.'"
               style="background: rgba(20,184,166,0.12); color: #5eead4; border: 1px solid rgba(20,184,166,0.30)">Quality+</span>
         <!-- Quality- -->
         <span x-show="leaderboardRow?.quality_defected_30d" class="chip"
-              x-tooltip="'Quality− — A quality screen ETF (COWZ/CALF/SPHQ) dropped this name in the last 30 days. Possible fundamentals warning.'"
+              x-tooltip="'Quality− - A quality screen ETF (COWZ/CALF/SPHQ) dropped this name in the last 30 days. Possible fundamentals warning.'"
               style="background: rgba(251,113,133,0.10); color: #fda4af; border: 1px solid rgba(251,113,133,0.25)">Quality−</span>
         <!-- Tier breadth -->
         <span x-show="(leaderboardRow?.tier_breadth || 0) >= 2" class="chip"
@@ -411,7 +411,7 @@
       <div class="px-3 pt-3 pb-2 chart-wrap" @mousemove="onSMM($event)" @mouseleave="onSML()">
         <div x-show="stockPending && !stockFilteredPrices.length"
              class="flex flex-col items-center justify-center gap-2 py-8 text-xs" style="color:var(--text-3)">
-          <span>⏳ Price history being fetched — updates each build</span>
+          <span>⏳ Price history being fetched - updates each build</span>
           <span class="text-[10px]">Coverage grows automatically each CI run.</span>
         </div>
         <div x-show="!stockPending && !stockFilteredPrices.length && !stockPrices.length"
@@ -420,7 +420,7 @@
         </div>
         <div x-show="!stockPending && stockPrices.length > 0 && stockFilteredPrices.length <= 1"
              class="flex items-center justify-center py-8 text-xs" style="color:var(--text-3)">
-          No data in this range — try a wider window
+          No data in this range - try a wider window
         </div>
         <div x-show="stockFilteredPrices.length > 1" style="position:relative">
           <svg x-ref="stockSvg" viewBox="0 0 480 130" preserveAspectRatio="none"
@@ -461,11 +461,11 @@
       <div x-show="stockDescription || stockPending" class="px-4 pb-4 pt-3" style="border-top:1px solid var(--border)">
         <div class="text-[10px] uppercase tracking-wider font-semibold text-zinc-500 mb-1.5">About</div>
         <div x-show="stockDescription" class="text-xs leading-relaxed text-zinc-300 font-sans" x-text="stockDescription"></div>
-        <div x-show="!stockDescription && stockPending" class="text-xs text-zinc-500 italic">⏳ Company profile being fetched — check back on next build.</div>
+        <div x-show="!stockDescription && stockPending" class="text-xs text-zinc-500 italic">⏳ Company profile being fetched - check back on next build.</div>
       </div>
     </div>
 
-    <!-- SCORE DECOMPOSITION — how each ETF contributes to the final score -->
+    <!-- SCORE DECOMPOSITION - how each ETF contributes to the final score -->
     <div x-show="scoreComponents.length > 0" class="rounded-lg border mb-5" style="background: var(--surface); border-color: var(--border)">
       <div class="px-3 py-2 flex items-center justify-between flex-wrap gap-y-1" style="border-bottom: 1px solid var(--border)">
         <div class="flex items-center gap-2 flex-wrap">
@@ -473,7 +473,7 @@
           <span class="text-[10px]" style="color: var(--text-3)">how each ETF contributes to the final score</span>
         </div>
         <span x-show="(leaderboardRow?.concentration_score || 0) >= 70" class="chip"
-              x-tooltip="`'Top ETF accounts for '+ leaderboardRow?.concentration_score +'% of score — fragile conviction'`"
+              x-tooltip="`'Top ETF accounts for '+ leaderboardRow?.concentration_score +'% of score - fragile conviction'`"
               style="background: rgba(251,113,133,0.10); color: #fda4af; border: 1px solid rgba(251,113,133,0.25)"
               x-text="`Concentrated · ${leaderboardRow?.concentration_score}%`"></span>
         <span x-show="(leaderboardRow?.concentration_score || 0) < 70 && (leaderboardRow?.etf_count || 0) >= 2" class="chip"
@@ -498,7 +498,7 @@
       </div>
     </div>
 
-    <!-- SIGNAL TIMELINE — state history with rank overlay -->
+    <!-- SIGNAL TIMELINE - state history with rank overlay -->
     <div x-show="flagHistory?.length > 5" class="rounded-lg border mb-5" style="background: var(--surface); border-color: var(--border)">
       <div class="px-3 py-2 flex items-center justify-between flex-wrap gap-y-1" style="border-bottom: 1px solid var(--border)">
         <div class="flex items-center gap-2 flex-wrap">
@@ -534,7 +534,7 @@
              tlcx = (tlci / Math.max(1, fh.length - 1)) * rect.width;
            "
            @mouseleave="tlci = null; tlcx = null">
-        <!-- State bars + rank line — built as SVG string (Alpine 3 SVG-template fix) -->
+        <!-- State bars + rank line - built as SVG string (Alpine 3 SVG-template fix) -->
         <div data-tlsvg x-html="signalTimelineSvg" class="w-full" :style="`height: ${signalTimelineHeight}px`"></div>
         <!-- X-axis date ticks (5 labels) -->
         <div class="flex justify-between text-[9px] font-mono mt-1" style="color: var(--text-3)">
@@ -576,7 +576,7 @@
     </div>
     <div class="rounded-lg border mb-5" style="background: var(--surface); border-color: var(--border)">
       <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
-        <div class="label-cyan label">Score history — <span class="font-mono" x-text="ticker"></span> · <span class="num" x-text="scoreHistory.length"></span> snapshots</div>
+        <div class="label-cyan label">Score history - <span class="font-mono" x-text="ticker"></span> · <span class="num" x-text="scoreHistory.length"></span> snapshots</div>
         <div class="text-xs num font-mono" style="color: var(--text-3)" x-text="scoreHistory.length ? `${scoreHistory[0].d} → ${scoreHistory[scoreHistory.length-1].d}` : ''"></div>
       </div>
       <div class="p-3 chart-wrap" x-data="{ cx: null, ci: null }"
@@ -632,15 +632,15 @@
 
     <!-- LEADERBOARD RANK HISTORY CHART (Empty State) -->
     <div x-show="!lbRankSeries || lbRankSeries.length < 2" class="rounded-lg border mb-5 px-3 py-4 text-center text-xs" style="background: var(--surface); border-color: var(--border); color: var(--text-3)">
-      <div class="label-cyan label mb-2">LEADERBOARD RANK — <span class="font-mono" x-text="ticker"></span> global position</div>
+      <div class="label-cyan label mb-2">LEADERBOARD RANK - <span class="font-mono" x-text="ticker"></span> global position</div>
       <div class="py-4">No leaderboard rank history available for this ticker.</div>
     </div>
 
-    <!-- LEADERBOARD RANK HISTORY CHART — global internal rank over time -->
+    <!-- LEADERBOARD RANK HISTORY CHART - global internal rank over time -->
     <div x-show="lbRankSeries && lbRankSeries.length >= 2" class="rounded-lg border mb-5" style="background: var(--surface); border-color: var(--border)">
       <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
         <div class="flex items-center gap-2">
-          <div class="label-cyan label">LEADERBOARD RANK — <span class="font-mono" x-text="ticker"></span> global position</div>
+          <div class="label-cyan label">LEADERBOARD RANK - <span class="font-mono" x-text="ticker"></span> global position</div>
           <span x-show="lbCurrentRank" class="font-mono text-xs px-1.5 py-0.5 rounded" style="background: rgba(34,211,238,0.12); color: #22d3ee; border: 1px solid rgba(34,211,238,0.25)" x-text="'Currently #' + lbCurrentRank"></span>
         </div>
         <div class="text-xs" style="color: var(--text-3)">rank 1 = top of entire universe · line up = improving</div>
@@ -668,10 +668,10 @@
       </div>
     </div>
 
-    <!-- RANK HISTORY CHART (per-ETF rank lines — upgraded) -->
+    <!-- RANK HISTORY CHART (per-ETF rank lines - upgraded) -->
     <div class="rounded-lg border mb-5" style="background: var(--surface); border-color: var(--border)">
       <div class="px-3 py-2 flex items-center justify-between" style="border-bottom: 1px solid var(--border)">
-        <div class="label-cyan label">Rank history — across ETFs holding <span class="font-mono" x-text="ticker"></span></div>
+        <div class="label-cyan label">Rank history - across ETFs holding <span class="font-mono" x-text="ticker"></span></div>
         <div class="text-xs" style="color: var(--text-3)">rank 1 = top · line up = improving</div>
       </div>
       <div x-show="Object.keys(holdingsHistory).length === 0" class="py-8 text-center text-xs" style="color: var(--text-3)">No holdings history available</div>
@@ -688,9 +688,9 @@
              rcx = (rci / (n - 1)) * rect.width;
            "
            @mouseleave="rci = null; rcx = null">
-        <!-- Static SVG via x-html — bypasses Alpine 3 SVG-template rendering issue -->
+        <!-- Static SVG via x-html - bypasses Alpine 3 SVG-template rendering issue -->
         <div x-html="rankHistorySvg" class="w-full" style="height: 250px"></div>
-        <!-- Hover tooltip — built as HTML string to avoid Alpine template-in-template quirks -->
+        <!-- Hover tooltip - built as HTML string to avoid Alpine template-in-template quirks -->
         <div x-show="rci !== null" x-html="rankHoverTooltipHtml"
              class="chart-tooltip" :style="`top: 4px; left: ${Math.min((rcx || 0) + 12, 920)}px`"></div>
         <!-- Legend row -->
@@ -757,7 +757,7 @@
                       <span x-show="!row.is_new && leaderboardRow?.flag === 'HIGH_CONVICTION'" class="chip"
                             style="background: rgba(52,211,153,0.10); color: var(--up); border: 1px solid rgba(52,211,153,0.25)"
                             x-tooltip="`'Held by ' + leaderboardRow?.etf_count + ' ETFs · HC streak ' + (leaderboardRow?.hc_streak || 0) + ' days'`">HC</span>
-                      <!-- em-dash fallback — never empty -->
+                      <!-- em-dash fallback - never empty -->
                       <span x-show="!row.is_new && leaderboardRow?.flag !== 'HIGH_CONVICTION'"
                             class="text-xs text-zinc-600" style="margin-left: 2px">—</span>
                     </td>
@@ -791,11 +791,11 @@ function stockApp() {
     loading: true,
     found: false,
     scoreHistory: [],      // [{d, s}]
-    lbRankSeries: [],      // [{d, rank, total, x, y}] — computed once in load()
+    lbRankSeries: [],      // [{d, rank, total, x, y}] - computed once in load()
     holdingsHistory: {},   // {ETF: [{d, r, w}]}
     leaderboardRow: null,  // single row from leaderboard for KPIs
     tierMap: {},           // ETF_Ticker -> tier name
-    flagHistory: [],       // [{d, flag, rank}] — loaded from flag_history.json
+    flagHistory: [],       // [{d, flag, rank}] - loaded from flag_history.json
     scoreComponents: [],   // per-ETF score components for this ticker
     rhover: null,          // hovered ETF line in rank chart
     rci: null,             // crosshair index in rank chart
@@ -954,7 +954,7 @@ function stockApp() {
 
         // Load stock detail file (price history + description).
         // Sanitise the ticker to match the file name written by
-        // predator.fetch_stock_details (_safe_detail_stem) — some tickers carry
+        // predator.fetch_stock_details (_safe_detail_stem) - some tickers carry
         // scraper junk like "WALMEX.*" / "PE&amp;OLES*" whose '*'/'&' are invalid
         // in file paths. Both sides use the identical [^A-Za-z0-9._-] → '_' rule.
         try {
@@ -1138,12 +1138,12 @@ function stockApp() {
       return d;
     },
 
-    // Rank History chart — shared time axis so every ETF's vertices are calendar-aligned
+    // Rank History chart - shared time axis so every ETF's vertices are calendar-aligned
     get rankLines() {
       const hh = this.holdingsHistory;
       if (!hh || !Object.keys(hh).length) return [];
 
-      // 1. Build shared time axis — union of all dates, sorted ascending
+      // 1. Build shared time axis - union of all dates, sorted ascending
       const dateSet = new Set();
       for (const series of Object.values(hh)) {
         for (const p of series) dateSet.add(p.d);
@@ -1319,7 +1319,7 @@ function stockApp() {
       return out;
     },
 
-    // State at index i — returns label + color for the primary/most-important signal
+    // State at index i - returns label + color for the primary/most-important signal
     _stateAt(i) {
       const fh = this.flagHistory || [];
       const e = fh[i];
@@ -1338,7 +1338,7 @@ function stockApp() {
       return { label: 'Neutral', color: 'var(--text-3)' };
     },
 
-    // ── Timeline header — current state pill ──────────────────────────────
+    // ── Timeline header - current state pill ──────────────────────────────
     get currentStateLabel() {
       const fh = this.flagHistory || [];
       if (!fh.length) return 'NO DATA';
@@ -1370,18 +1370,18 @@ function stockApp() {
       if (!fh.length) return '';
       const s = this._stateAt(fh.length - 1);
       const map = {
-        'BURST':   `BURST move – global rank improved by ${this.leaderboardRow?.global_rank_peak_30d ?? 0}+ positions in last 30d.`,
-        'HC':      `HIGH CONVICTION – held by ${this.leaderboardRow?.etf_count || 0} ETFs · HC streak: ${this.leaderboardRow?.hc_streak || 0} days`,
+        'BURST':   `BURST move - global rank improved by ${this.leaderboardRow?.global_rank_peak_30d ?? 0}+ positions in last 30d.`,
+        'HC':      `HIGH CONVICTION - held by ${this.leaderboardRow?.etf_count || 0} ETFs · HC streak: ${this.leaderboardRow?.hc_streak || 0} days`,
         'VELO':    `Top-velocity composite (${(this.leaderboardRow?.velocity_score || 0).toFixed(0)}). Conviction is concentrating.`,
-        'SPEC β':  'SPECULATIVE BETA – Trend tier momentum without Quality or Scout backing.',
-        'NEW':     'NEW – first appearance in any mature ETF within the last 14 days.',
-        'STEALTH': 'Stealth accumulation – weight building without rank movement. Quiet loading.',
-        'DIV+':    'Divergence+ – holding rank strength inside its own funds while peers slip.',
-        'DIV−':    'Divergence− – losing rank inside its own funds while the aggregate holds.',
-        'Q+':      'Quality+ – a Quality ETF added this name in the last 30 days.',
-        'Q−':      'Quality− – a Quality ETF dropped this name in the last 30 days.',
-        'CONC':    `CONCENTRATED – score concentrated in single ETF (${this.leaderboardRow?.concentration_score || 0}%) · fragile conviction`,
-        'Neutral': 'Neutral status – no major structural anomalies.',
+        'SPEC β':  'SPECULATIVE BETA - Trend tier momentum without Quality or Scout backing.',
+        'NEW':     'NEW - first appearance in any mature ETF within the last 14 days.',
+        'STEALTH': 'Stealth accumulation - weight building without rank movement. Quiet loading.',
+        'DIV+':    'Divergence+ - holding rank strength inside its own funds while peers slip.',
+        'DIV−':    'Divergence− - losing rank inside its own funds while the aggregate holds.',
+        'Q+':      'Quality+ - a Quality ETF added this name in the last 30 days.',
+        'Q−':      'Quality− - a Quality ETF dropped this name in the last 30 days.',
+        'CONC':    `CONCENTRATED - score concentrated in single ETF (${this.leaderboardRow?.concentration_score || 0}%) · fragile conviction`,
+        'Neutral': 'Neutral status - no major structural anomalies.',
       };
       return map[s.label] || map['Neutral'];
     },
@@ -1501,7 +1501,7 @@ function stockApp() {
       return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" width="100%" height="${H}" style="display:block;border-radius:3px;overflow:hidden">${parts}</svg>`;
     },
 
-    // ── Signal Timeline SVG (multi-lane Gantt — each signal gets its own row) ──
+    // ── Signal Timeline SVG (multi-lane Gantt - each signal gets its own row) ──
 
     // All lane definitions (only rendered when active for this ticker)
     _allLaneDefs() {
@@ -1757,7 +1757,7 @@ function stockApp() {
       </svg>`;
     },
 
-    // ── Per-ETF Rank History SVG (built as string — same fix) ────────────────
+    // ── Per-ETF Rank History SVG (built as string - same fix) ────────────────
     get rankHistorySvg() {
       const lines = this.rankLines;
       if (!lines.length) return '';
@@ -1773,7 +1773,7 @@ function stockApp() {
         grid += `<text x="${xLeft - 6}" y="${lab.y + 3}" text-anchor="end" style="font-family:ui-monospace;font-size:9px;fill:var(--text-3)">#${lab.rank}</text>`;
       }
 
-      // 2. One group per ETF — glow stroke, main line, end-of-line pill
+      // 2. One group per ETF - glow stroke, main line, end-of-line pill
       let pathStr = '';
       const hover = this.rhover;
       for (const line of lines) {
@@ -1839,7 +1839,7 @@ function stockApp() {
       return `<div class="font-mono text-[10px] mb-1" style="color:var(--text-3)">${targetDate}</div>${rows}`;
     },
 
-    // lbRankSeries is pre-computed in load() — O(1) reads here
+    // lbRankSeries is pre-computed in load() - O(1) reads here
     get lbRankPath() {
       if (!this.lbRankSeries || !this.lbRankSeries.length) return '';
       return this.smoothPath(this.lbRankSeries.map(p => [p.x, p.y]));
