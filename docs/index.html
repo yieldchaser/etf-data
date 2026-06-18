@@ -176,7 +176,7 @@
 
 <div x-data="app()" x-init="load()" x-cloak class="max-w-[1500px] mx-auto px-3 sm:px-5 py-4 sm:py-6">
 
-  <!-- â”€â”€ HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+  <!-- ── HEADER ─────────────────────────────────────────────────────────── -->
   <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5 pb-4 border-b" style="border-color: var(--border)">
     <div>
       <div class="flex items-center gap-3 mb-1">
@@ -212,15 +212,15 @@
            })()"
            x-text="(() => {
              const v = meta.markets_data_freshness?.self_living_check?.verdict;
-             if (v === 'LIVE_MERGE_HEALTHY')  return 'â— Markets live';
-             if (v === 'LIVE_MERGE_DEGRADED') return 'â— Markets degraded';
-             return 'â—Œ Markets stale';
+             if (v === 'LIVE_MERGE_HEALTHY')  return '● Markets live';
+             if (v === 'LIVE_MERGE_DEGRADED') return '◐ Markets degraded';
+             return '◌ Markets stale';
            })()"></a>
       </div>
     </div>
   </header>
 
-  <!-- â”€â”€ KPI STRIP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+  <!-- ── KPI STRIP ──────────────────────────────────────────────────────── -->
   <section class="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3 mb-5">
     <template x-for="kpi in kpis" :key="kpi.label">
       <div class="rounded-lg px-3 py-2.5 border" style="background: var(--surface); border-color: var(--border)"
@@ -234,7 +234,7 @@
     </template>
   </section>
 
-  <!-- â”€â”€ TABS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+  <!-- ── TABS ───────────────────────────────────────────────────────────── -->
   <!-- §28 Maturity banner – shown while any ETF is still building its baseline -->
   <div x-show="immatureEtfCount > 0"
        class="mb-3 px-3 py-2 rounded-lg border text-xs flex items-center gap-2"
@@ -262,7 +262,7 @@
   </nav>
 
 
-  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â• TAB 1: LEADERBOARD â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+  <!-- ═════════════ TAB 1: LEADERBOARD ═════════════════════════════════════ -->
   <section x-show="activeTab === 'leaderboard'">
 
     <!-- Filter bar -->
@@ -302,7 +302,7 @@
               class="chip border px-2 py-1 transition hover:border-emerald-500/30"
               style="border-color: var(--border-2)"
               x-tooltip="'Hide names where 80%+ of score comes from one ETF'">
-        â‰¤80% conc
+        ≤80% conc
       </button>
       <button @click="qualityAdoptedOnly = !qualityAdoptedOnly"
               :class="qualityAdoptedOnly ? 'border-teal-400/50 text-teal-300' : ''"
@@ -367,13 +367,13 @@
       <!-- Active filter chips (sector/country) -->
       <span x-show="selectedSector" class="chip border px-2 py-1" style="border-color: rgba(34,211,238,0.3); color: var(--cyan); background: rgba(34,211,238,0.06)">
         <span x-text="selectedSector"></span>
-        <button @click="selectedSector = ''; page = 1" class="ml-1 opacity-60 hover:opacity-100">âœ•</button>
+        <button @click="selectedSector = ''; page = 1" class="ml-1 opacity-60 hover:opacity-100">✕</button>
       </span>
       <span x-show="selectedCountry" class="chip border px-2 py-1" style="border-color: rgba(34,211,238,0.3); color: var(--cyan); background: rgba(34,211,238,0.06)">
         <span x-text="selectedCountry"></span>
-        <button @click="selectedCountry = ''; page = 1" class="ml-1 opacity-60 hover:opacity-100">âœ•</button>
+        <button @click="selectedCountry = ''; page = 1" class="ml-1 opacity-60 hover:opacity-100">✕</button>
       </span>
-      <input x-model.debounce.300ms="q" type="search" placeholder="search ticker or companyâ€¦"
+      <input x-model.debounce.300ms="q" type="search" placeholder="search ticker or company…"
              class="w-full sm:w-48 bg-transparent border rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500/40"
              style="border-color: var(--border-2); color: var(--text)">
       <div class="text-xs num font-mono self-center whitespace-nowrap pr-1" style="color: var(--text-3)">
@@ -383,12 +383,12 @@
               style="border-color: var(--border-2); color: var(--text-2)"
               x-tooltip="'Open multi-level sort dialog'"
               :class="sortLevels.length > 1 ? 'border-cyan-500/40 text-cyan-300' : ''">
-        â‡… Sort <span x-show="sortLevels.length > 1" class="num font-mono" x-text="`(${sortLevels.length})`"></span>
+        ⇅ Sort <span x-show="sortLevels.length > 1" class="num font-mono" x-text="`(${sortLevels.length})`"></span>
       </button>
       <button @click="exportLeaderboardCSV()" class="chip border px-2 py-1 hover:border-cyan-500/30 whitespace-nowrap"
               style="border-color: var(--border-2); color: var(--text-2)"
               x-tooltip="'Download the current filtered leaderboard view as CSV (preserves your filters and sort order)'">
-        â†“ CSV
+        ↓ CSV
       </button>
     </div>
 
@@ -399,7 +399,7 @@
       <div class="rounded-xl border p-5 w-full max-w-sm text-sm" style="background: var(--surface-2); border-color: var(--border-2)">
         <div class="flex items-center justify-between mb-4">
           <span class="font-medium" style="color: var(--cyan)">Multi-level Sort</span>
-          <button @click="sortDialog = false" style="color: var(--text-3)" class="hover:text-white">âœ•</button>
+          <button @click="sortDialog = false" style="color: var(--text-3)" class="hover:text-white">✕</button>
         </div>
         <template x-for="(lvl, i) in sortLevels" :key="i">
           <div class="flex items-center gap-2 mb-2">
@@ -413,7 +413,7 @@
                     class="chip border px-2 py-1 font-mono text-xs" style="border-color: var(--border-2)"
                     x-text="lvl.dir === 'asc' ? '▲ asc' : '▼ desc'"></button>
             <button x-show="sortLevels.length > 1" @click="sortLevels.splice(i, 1)"
-                    class="text-xs hover:text-red-400" style="color: var(--text-3)">âœ•</button>
+                    class="text-xs hover:text-red-400" style="color: var(--text-3)">✕</button>
           </div>
         </template>
         <div class="flex gap-2 mt-4">
@@ -427,7 +427,7 @@
       </div>
     </div>
 
-    <!-- â”€â”€ Extreme Conviction Moves ribbon â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    <!-- ── Extreme Conviction Moves ribbon ─────────────────────────────────
          Surfaces names whose motion metrics are statistically unusual vs the
          rest of the leaderboard right now. Pure presentation: every value is
          already in leaderboard.json (velocity_score, score_delta_pct,
@@ -488,8 +488,8 @@
               <th class="text-left px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('leaderboard_rank')" :class="sortClass('leaderboard_rank')" x-tooltip="'Rank by Final Alpha Score (1 = highest conviction)'">#</th>
               <th class="text-left px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('ticker')" :class="sortClass('ticker')" x-tooltip="'Stock ticker. Click to open per-stock detail page.'">Ticker</th>
               <th class="text-left px-3 py-2 hidden sm:table-cell cursor-pointer hover:text-zinc-300" @click="sort('company')" :class="sortClass('company')" x-tooltip="'Issuer\'s legal name as reported by the ETF.'">Company</th>
-              <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('apex_score')" :class="sortClass('apex_score')" x-tooltip="'Forward score = structure Ã— bounded momentum kicker'">Apex</th>
-              <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300" @click="sort('final_score')" :class="sortClass('final_score')" x-tooltip="'Final Alpha Score = sum of (weight% Ã— ETF points Ã— rank multiplier Ã— 100) across all ETFs holding this name. Hover score cell for percentile.'">Score</th>
+              <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('apex_score')" :class="sortClass('apex_score')" x-tooltip="'Forward score = structure × bounded momentum kicker'">Apex</th>
+              <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300" @click="sort('final_score')" :class="sortClass('final_score')" x-tooltip="'Final Alpha Score = sum of (weight% × ETF points × rank multiplier × 100) across all ETFs holding this name. Hover score cell for percentile.'">Score</th>
               <th class="text-center px-2 py-2 hidden lg:table-cell select-none" style="vertical-align: top;">
                 <div class="cursor-pointer hover:text-zinc-300 inline-block align-middle"
                      @click="sort('score_delta_pct')"
@@ -529,7 +529,7 @@
                     <button @click.stop="togglePin(row.ticker)" class="text-base leading-none transition"
                             :style="`color: ${isPinned(row.ticker) ? 'var(--cyan)' : 'var(--text-3)'}`"
                             x-tooltip="isPinned(row.ticker) ? 'Pinned – click to unpin' : 'Pin to watchlist'">
-                      <span x-text="isPinned(row.ticker) ? '★' : 'â˜†'"></span>
+                      <span x-text="isPinned(row.ticker) ? '★' : '☆'"></span>
                     </button>
                   </td>
                   <td class="px-3 py-2 num font-mono" style="color: var(--text-3)" x-text="row.leaderboard_rank"></td>
@@ -542,7 +542,7 @@
                   <!-- APEX forward score -->
                   <td class="px-2 py-2 text-right num font-mono font-medium"
                       style="color: #fafafa"
-                      x-tooltip="'Forward score = structure Ã— bounded momentum kicker'"
+                      x-tooltip="'Forward score = structure × bounded momentum kicker'"
                       x-text="row.apex_score != null ? Math.round(row.apex_score) : '–'"></td>
                   <td class="px-2 py-2 text-right num font-mono font-medium"
                       x-tooltip="`Score: ${fmt1(row.final_score)}<br>Percentile: ${row.normalized_score != null ? row.normalized_score.toFixed(0) : '–'}/100<br>Concentration: ${row.concentration_score != null ? row.concentration_score : '–'}% from top ETF<br>${row.concentration_score == null ? 'No data' : row.concentration_score < 40 ? '✓ Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : '⚠ Highly concentrated – fragile if top ETF rebalances'}`"
@@ -555,7 +555,7 @@
                   </td>
                   <td class="px-2 py-2 text-right num font-mono hidden md:table-cell"
                       x-tooltip="(row.etf_count_delta_30d || 0) !== 0 ? 'Net ETFs added/lost in 30d' : ''">
-                    <span x-text="row.etf_count"></span><span x-show="(row.etf_count_delta_30d || 0) > 0" class="ml-1 text-[10px]" style="color: var(--up)" x-text="`â†‘${row.etf_count_delta_30d}`"></span><span x-show="(row.etf_count_delta_30d || 0) < 0" class="ml-1 text-[10px]" style="color: var(--down)" x-text="`â†“${Math.abs(row.etf_count_delta_30d)}`"></span>
+                    <span x-text="row.etf_count"></span><span x-show="(row.etf_count_delta_30d || 0) > 0" class="ml-1 text-[10px]" style="color: var(--up)" x-text="`↑${row.etf_count_delta_30d}`"></span><span x-show="(row.etf_count_delta_30d || 0) < 0" class="ml-1 text-[10px]" style="color: var(--down)" x-text="`↓${Math.abs(row.etf_count_delta_30d)}`"></span>
                   </td>
                   <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell" style="color: var(--text-2)" x-text="fmtWeight(row.total_weight)"></td>
                   <td class="px-2 py-2 hidden xl:table-cell">
@@ -763,8 +763,8 @@
                                    :class="expandDescription ? '' : 'display-3-lines'"
                                    style="color: var(--text-3);" 
                                    @click="expandDescription = !expandDescription"
-                                   :title="isPending && !description ? 'â³ Company profile being fetchedâ€¦' : (expandDescription ? 'Click to collapse description' : 'Click to expand description')" 
-                                   x-text="isPending && !description ? 'â³ Company profile being fetchedâ€¦' : (description || '')"></div>
+                                   :title="isPending && !description ? '⏳ Company profile being fetched…' : (expandDescription ? 'Click to collapse description' : 'Click to expand description')" 
+                                   x-text="isPending && !description ? '⏳ Company profile being fetched…' : (description || '')"></div>
                             </div>
                           </div>
                           <!-- 2x2 Key Metrics Grid -->
@@ -810,7 +810,7 @@
                             <div x-show="loading" class="desc-skeleton rounded" style="height: 130px"></div>
                             <!-- No data state – pending or truly unavailable -->
                             <div x-show="!loading && !filteredPrices.length" class="flex flex-col items-center justify-center gap-1.5" style="height: 130px; font-size: 11px">
-                              <div x-show="isPending" style="color: var(--text-3)">â³ Price data being fetched – updates each build</div>
+                              <div x-show="isPending" style="color: var(--text-3)">⏳ Price data being fetched – updates each build</div>
                               <div x-show="!isPending" style="color: var(--text-3)">No price data available</div>
                             </div>
                             <!-- SVG chart -->
@@ -861,7 +861,7 @@
       <!-- Pagination -->
       <div class="px-3 py-2 flex items-center justify-between text-xs" style="border-top: 1px solid var(--border); color: var(--text-3)">
         <div>
-          <span class="num font-mono" x-text="(page-1)*pageSize + 1"></span>â€“<span class="num font-mono" x-text="Math.min(page*pageSize, filtered.length)"></span>
+          <span class="num font-mono" x-text="(page-1)*pageSize + 1"></span>–<span class="num font-mono" x-text="Math.min(page*pageSize, filtered.length)"></span>
           of <span class="num font-mono" x-text="filtered.length"></span>
         </div>
         <div class="flex gap-1">
@@ -873,7 +873,7 @@
     </div>
   </section>
 
-  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â• TAB 2: WATCHLIST â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+  <!-- ═════════════ TAB 2: WATCHLIST ═══════════════════════════════════════ -->
   <section x-show="activeTab === 'watchlist'">
     
     <!-- Watchlist changelog strip -->
@@ -897,9 +897,9 @@
 
     <!-- Empty state -->
     <div x-show="pins.length === 0" class="rounded-lg border px-6 py-12 text-center" style="background: var(--surface); border-color: var(--border)">
-      <div class="text-4xl mb-3">â˜†</div>
+      <div class="text-4xl mb-3">☆</div>
       <div class="text-sm mb-1" style="color: var(--text-2)">Your watchlist is empty</div>
-      <div class="text-xs" style="color: var(--text-3)">Click the â˜† icon on any ticker in the leaderboard to pin it here</div>
+      <div class="text-xs" style="color: var(--text-3)">Click the ☆ icon on any ticker in the leaderboard to pin it here</div>
     </div>
 
     <!-- COMPARE MODE – side-by-side cards for top pinned names -->
@@ -990,7 +990,7 @@
                 class="chip border px-2 py-1 transition hover:border-emerald-500/30"
                 style="border-color: var(--border-2)"
                 x-tooltip="'Hide names where 80%+ of score comes from one ETF'">
-          â‰¤80% conc
+          ≤80% conc
         </button>
         <button @click="qualityAdoptedOnly = !qualityAdoptedOnly"
                 :class="qualityAdoptedOnly ? 'border-teal-400/50 text-teal-300' : ''"
@@ -1047,7 +1047,7 @@
           </template>
         </select>
         <button @click="reset()" class="chip border px-2 py-1 hover:border-zinc-500" style="border-color: var(--border-2); color: var(--text-2)">clear</button>
-        <input x-model.debounce.300ms="q" type="search" placeholder="search ticker or companyâ€¦"
+        <input x-model.debounce.300ms="q" type="search" placeholder="search ticker or company…"
                class="w-full sm:w-48 bg-transparent border rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500/40"
                style="border-color: var(--border-2); color: var(--text)">
         <div class="text-xs num font-mono self-center whitespace-nowrap pr-1" style="color: var(--text-3)">
@@ -1057,7 +1057,7 @@
                 style="border-color: var(--border-2); color: var(--text-2)"
                 x-tooltip="'Open multi-level sort dialog'"
                 :class="sortLevels.length > 1 ? 'border-cyan-500/40 text-cyan-300' : ''">
-          â‡… Sort <span x-show="sortLevels.length > 1" class="num font-mono" x-text="`(${sortLevels.length})`"></span>
+          ⇅ Sort <span x-show="sortLevels.length > 1" class="num font-mono" x-text="`(${sortLevels.length})`"></span>
         </button>
       </div>
 
@@ -1071,8 +1071,8 @@
                 <th class="text-left px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('leaderboard_rank')" :class="sortClass('leaderboard_rank')" x-tooltip="'Rank by Final Alpha Score (1 = highest conviction)'">#</th>
                 <th class="text-left px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('ticker')" :class="sortClass('ticker')" x-tooltip="'Stock ticker. Click to open per-stock detail page.'">Ticker</th>
                 <th class="text-left px-3 py-2 hidden sm:table-cell cursor-pointer hover:text-zinc-300" @click="sort('company')" :class="sortClass('company')" x-tooltip="'Issuer\'s legal name as reported by the ETF.'">Company</th>
-                <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('apex_score')" :class="sortClass('apex_score')" x-tooltip="'Forward score = structure Ã— bounded momentum kicker'">Apex</th>
-                <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300" @click="sort('final_score')" :class="sortClass('final_score')" x-tooltip="'Final Alpha Score = sum of (weight% Ã— ETF points Ã— rank multiplier Ã— 100) across all ETFs holding this name. Hover score cell for percentile.'">Score</th>
+                <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('apex_score')" :class="sortClass('apex_score')" x-tooltip="'Forward score = structure × bounded momentum kicker'">Apex</th>
+                <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300" @click="sort('final_score')" :class="sortClass('final_score')" x-tooltip="'Final Alpha Score = sum of (weight% × ETF points × rank multiplier × 100) across all ETFs holding this name. Hover score cell for percentile.'">Score</th>
                 <th class="text-center px-2 py-2 hidden lg:table-cell select-none" style="vertical-align: top;">
                   <div class="cursor-pointer hover:text-zinc-300 inline-block align-middle"
                        @click="sort('score_delta_pct')"
@@ -1112,7 +1112,7 @@
                       <button @click.stop="togglePin(row.ticker)" class="text-base leading-none transition"
                               :style="`color: ${isPinned(row.ticker) ? 'var(--cyan)' : 'var(--text-3)'}`"
                               x-tooltip="isPinned(row.ticker) ? 'Pinned – click to unpin' : 'Pin to watchlist'">
-                        <span x-text="isPinned(row.ticker) ? '★' : 'â˜†'"></span>
+                        <span x-text="isPinned(row.ticker) ? '★' : '☆'"></span>
                       </button>
                     </td>
                     <td class="px-3 py-2 num font-mono" style="color: var(--text-3)" x-text="row.leaderboard_rank"></td>
@@ -1125,7 +1125,7 @@
                     <!-- APEX forward score -->
                     <td class="px-2 py-2 text-right num font-mono font-medium"
                         style="color: #fafafa"
-                        x-tooltip="'Forward score = structure Ã— bounded momentum kicker'"
+                        x-tooltip="'Forward score = structure × bounded momentum kicker'"
                         x-text="row.apex_score != null ? Math.round(row.apex_score) : '–'"></td>
                     <td class="px-2 py-2 text-right num font-mono font-medium"
                         x-tooltip="`Score: ${fmt1(row.final_score)}<br>Percentile: ${row.normalized_score != null ? row.normalized_score.toFixed(0) : '–'}/100<br>Concentration: ${row.concentration_score != null ? row.concentration_score : '–'}% from top ETF<br>${row.concentration_score == null ? 'No data' : row.concentration_score < 40 ? '✓ Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : '⚠ Highly concentrated – fragile if top ETF rebalances'}`"
@@ -1138,7 +1138,7 @@
                     </td>
                     <td class="px-2 py-2 text-right num font-mono hidden md:table-cell"
                         x-tooltip="(row.etf_count_delta_30d || 0) !== 0 ? 'Net ETFs added/lost in 30d' : ''">
-                      <span x-text="row.etf_count"></span><span x-show="(row.etf_count_delta_30d || 0) > 0" class="ml-1 text-[10px]" style="color: var(--up)" x-text="`â†‘${row.etf_count_delta_30d}`"></span><span x-show="(row.etf_count_delta_30d || 0) < 0" class="ml-1 text-[10px]" style="color: var(--down)" x-text="`â†“${Math.abs(row.etf_count_delta_30d)}`"></span>
+                      <span x-text="row.etf_count"></span><span x-show="(row.etf_count_delta_30d || 0) > 0" class="ml-1 text-[10px]" style="color: var(--up)" x-text="`↑${row.etf_count_delta_30d}`"></span><span x-show="(row.etf_count_delta_30d || 0) < 0" class="ml-1 text-[10px]" style="color: var(--down)" x-text="`↓${Math.abs(row.etf_count_delta_30d)}`"></span>
                     </td>
                     <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell" style="color: var(--text-2)" x-text="fmtWeight(row.total_weight)"></td>
                     <td class="px-2 py-2 hidden xl:table-cell">
@@ -1349,8 +1349,8 @@
                                      :class="expandDescription ? '' : 'display-3-lines'"
                                      style="color: var(--text-3);" 
                                      @click="expandDescription = !expandDescription"
-                                     :title="isPending && !description ? 'â³ Company profile being fetchedâ€¦' : (expandDescription ? 'Click to collapse description' : 'Click to expand description')" 
-                                     x-text="isPending && !description ? 'â³ Company profile being fetchedâ€¦' : (description || '')"></div>
+                                     :title="isPending && !description ? '⏳ Company profile being fetched…' : (expandDescription ? 'Click to collapse description' : 'Click to expand description')" 
+                                     x-text="isPending && !description ? '⏳ Company profile being fetched…' : (description || '')"></div>
                               </div>
                             </div>
                             <!-- 2x2 Key Metrics Grid -->
@@ -1433,7 +1433,7 @@
         <!-- Pagination -->
         <div class="px-3 py-2 flex items-center justify-between text-xs" style="border-top: 1px solid var(--border); color: var(--text-3)">
           <div>
-            <span class="num font-mono" x-text="(page-1)*pageSize + 1"></span>â€“<span class="num font-mono" x-text="Math.min(page*pageSize, filtered.length)"></span>
+            <span class="num font-mono" x-text="(page-1)*pageSize + 1"></span>–<span class="num font-mono" x-text="Math.min(page*pageSize, filtered.length)"></span>
             of <span class="num font-mono" x-text="filtered.length"></span>
           </div>
           <div class="flex gap-1">
@@ -1446,7 +1446,7 @@
     </div>
   </section>
 
-  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â• TAB 3: ETFs â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+  <!-- ═════════════ TAB 3: ETFs ════════════════════════════════════════════ -->
   <section x-show="activeTab === 'etfs'">
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-3">
       <!-- ETF picker -->
@@ -1516,10 +1516,10 @@
                 <div class="font-semibold text-zinc-200 tracking-wide text-[10.5px]" x-text="etfMetaLookup[etfRow.etf]?.name || 'ETF Portfolio'"></div>
                 <div class="flex flex-wrap gap-1.5 mt-1 select-none">
                   <span x-show="etfMetaLookup[etfRow.etf]?.rebalance" class="px-1.5 py-0.5 rounded bg-white/[0.02] border border-white/[0.05] text-[9px] text-zinc-400 font-medium">
-                    âŸ³ Rebalance: <span class="text-zinc-300 font-semibold" x-text="etfMetaLookup[etfRow.etf]?.rebalance"></span>
+                    ⟳ Rebalance: <span class="text-zinc-300 font-semibold" x-text="etfMetaLookup[etfRow.etf]?.rebalance"></span>
                   </span>
                   <span x-show="etfMetaLookup[etfRow.etf]?.reconstitution" class="px-1.5 py-0.5 rounded bg-white/[0.02] border border-white/[0.05] text-[9px] text-zinc-400 font-medium">
-                    â†» Reconstitute: <span class="text-zinc-300 font-semibold" x-text="etfMetaLookup[etfRow.etf]?.reconstitution"></span>
+                    ↻ Reconstitute: <span class="text-zinc-300 font-semibold" x-text="etfMetaLookup[etfRow.etf]?.reconstitution"></span>
                   </span>
                 </div>
                 <div x-show="etfMetaLookup[etfRow.etf]?.notes" class="text-zinc-400 italic pl-2 border-l border-zinc-700 leading-normal mt-2 text-[10px]"
@@ -1548,13 +1548,13 @@
               <!-- Rebalance Badge -->
               <template x-if="etfMetaLookup[activeETF]?.rebalance">
                 <span class="px-2.5 py-0.5 rounded-full border border-white/[0.06] bg-white/[0.02] text-[10px] text-zinc-400 flex items-center gap-1">
-                  <span class="text-zinc-500 font-medium">âŸ³</span> Rebalance: <span class="text-zinc-300 font-semibold" x-text="etfMetaLookup[activeETF].rebalance"></span>
+                  <span class="text-zinc-500 font-medium">⟳</span> Rebalance: <span class="text-zinc-300 font-semibold" x-text="etfMetaLookup[activeETF].rebalance"></span>
                 </span>
               </template>
               <!-- Reconstitution Badge -->
               <template x-if="etfMetaLookup[activeETF]?.reconstitution">
                 <span class="px-2.5 py-0.5 rounded-full border border-white/[0.06] bg-white/[0.02] text-[10px] text-zinc-400 flex items-center gap-1">
-                  <span class="text-zinc-500 font-medium">â†»</span> Reconstitute: <span class="text-zinc-300 font-semibold" x-text="etfMetaLookup[activeETF].reconstitution"></span>
+                  <span class="text-zinc-500 font-medium">↻</span> Reconstitute: <span class="text-zinc-300 font-semibold" x-text="etfMetaLookup[activeETF].reconstitution"></span>
                 </span>
               </template>
             </div>
@@ -1908,7 +1908,7 @@
     </div>
   </section>
 
-  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â• TAB 3: CHANGES â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+  <!-- ═════════════ TAB 3: CHANGES ════════════════════════════════════════ -->
   <section x-show="activeTab === 'changes'">
     <!-- Tab-level Header Strip (Sticky glassmorphic header strip) -->
     <div class="sticky top-0 z-30 flex items-center justify-between px-3 py-2.5 mb-3 text-xs backdrop-blur-sm border-b" style="background: rgba(12, 12, 12, 0.92); border-color: var(--border); box-shadow: 0 2px 12px rgba(0,0,0,0.4); margin-left: -1px; margin-right: -1px;">
@@ -2643,7 +2643,7 @@
         </div>
       </div>
     </div>
-  </section><!-- â”€â”€ FOOTER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+  </section><!-- ── FOOTER ─────────────────────────────────────────────────────────── -->
   <footer class="mt-6 pt-4 text-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2" style="border-top: 1px solid var(--border); color: var(--text-3)">
     <div>
       Data: <a class="hover:underline" style="color: var(--text-2)" href="https://github.com/yieldchaser/etf-data" target="_blank" rel="noopener">yieldchaser/etf-data</a>
@@ -2778,7 +2778,7 @@ function app() {
       };
     },
 
-    // â”€â”€ Predictive filter helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Predictive filter helpers ─────────────────────────────────────────
     // Pre-HC: 3 ETFs + rising velocity, one pickup away from HC threshold
     _isPreHc(r) {
       return (r.etf_count || 0) === 3
@@ -3245,7 +3245,7 @@ function app() {
       return list.slice(0, 12);
     },
 
-    // â”€â”€ Extreme Conviction Moves (ribbon) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Extreme Conviction Moves (ribbon) ────────────────────────────────
     // For each motion metric, compute z-score against the leaderboard's own
     // distribution; pick the dominant driver per ticker; surface those with
     // |z| ≥ EXTREME_Z_THRESHOLD. Pure presentation – no new fetches, no
@@ -3284,7 +3284,7 @@ function app() {
       const qualifies = row => {
         if ((row.etf_count || 0) < 3) return false;
         // Currency / non-equity placeholders that occasionally leak past the
-        // sanitizer (CAD, EUR, USD, GBP â€¦). Real tickers can be 1-2 chars (X, F)
+        // sanitizer (CAD, EUR, USD, GBP …). Real tickers can be 1-2 chars (X, F)
         // but those are equities; the suspect set is ISO-currency 3-letter codes.
         const t = (row.ticker || '').toUpperCase();
         const ISO_CCY = new Set(['CAD','EUR','USD','GBP','JPY','KRW','MXN','SAR','TWD','CNY','BRL','NOK','HKD','AUD','SGD','CHF','INR']);
@@ -3513,10 +3513,10 @@ function app() {
 
     toggle(t) { this.open = (this.open === t) ? null : t; },
 
-    // â”€â”€ CSV export (current filtered leaderboard view) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── CSV export (current filtered leaderboard view) ───────────────────
     // Honest scope: exports `this.filtered` – the rows the user is currently
     // looking at, with their filters & sort applied. Columns chosen for
-    // analytical usefulness (score, rank, motion, structural). Click â†’ file.
+    // analytical usefulness (score, rank, motion, structural). Click → file.
     exportLeaderboardCSV() {
       const rows = this.filtered;
       if (!rows || rows.length === 0) return;
@@ -3613,15 +3613,15 @@ function app() {
     },
     get currentETFTier() { return this.etfSummary.find(e => e.etf === this.activeETF)?.tier || ''; },
 
-    // â”€â”€ ETF metadata from ETF DATA.csv – data property (not getter) to avoid re-allocation â”€â”€
+    // ── ETF metadata from ETF DATA.csv – data property (not getter) to avoid re-allocation ──
     etfMetaLookup: {
         CSD:  { name: 'Invesco S&P Spin-Off ETF', rebalance: 'Monthly', reconstitution: 'Monthly (Rolling)', notes: 'Adds spin-offs as they occur; formal monthly reset.', desc: 'The primary investment objective of the Invesco S&P Spin-Off ETF is to track the investment results, before fees and expenses, of the S&P U.S. Spin-Off Index. The fund generally invests at least 90% of its total assets in U.S. common stocks that comprise the underlying index, which is designed to measure the performance of U.S. companies that have been spun off from a parent corporation within the past four years. This non-diversified fund targets a baseline configuration of 24 structural holdings, allowing it to maintain concentrated exposure to corporate restructuring events. Corporate spinoffs often create an operational transition where the newly independent subsidiary can establish dedicated management incentives, optimize capital allocation, and resolve conglomerate discounts. Because parent companies distribute subsidiary shares directly to their existing shareholder base, initial institutional selling often temporarily depresses the spinoff\'s stock price, creating a potential valuation anomaly that the index is structured to capture.' },
         FPX:  { name: 'First Trust US Equity Opportunities ETF', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: 'IPOX 100 US Index.', desc: 'The First Trust US Equity Opportunities ETF seeks investment results that correspond generally to the price and yield, before fees and expenses, of the IPOX®-100 U.S. Index. The fund normally invests at least 90% of its net assets in the common stocks comprising the index, which represents a market-capitalization-weighted, 10% capped index measuring the performance of the 100 largest and most liquid U.S. initial public offerings (IPOs) during their first 1,000 trading days. The systematic index methodology purchases eligible securities after the close of their sixth trading day and removes them on their 1000th trading day, corresponding to a holding period of roughly four years. This design provides disciplined exposure to newly public firms during their early growth phase, capturing the private-equity-to-public transition while managing concentration risks through a 10% maximum constituent weight applied during quarterly reconstructions.' },
         FPXI: { name: 'First Trust IPOX International Equity ETF', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: 'IPOX 100 Intl Index.', desc: 'The First Trust International Equity Opportunities ETF seeks investment results that correspond generally to the price and yield, before fees and expenses, of the IPOX® International Index. The fund is designed to provide systematic exposure to the capital market activity of non-U.S. domiciled firms trading on global exchanges, tracking their growth and innovation through a semi-passive indexing approach. The fund targets a structure of 50 holdings, utilizing a market-capitalization-weighted index based on the IPOX® Global Composite Index. By applying a 1,000-trading-day inclusion window and a 10% cap per constituent, the methodology captures early-stage public growth outside the United States, offering global equity exposure with minimal overlap with traditional developed and emerging market benchmarks.' },
-        QMOM: { name: 'Alpha Architect US Quant Momentum ETF', rebalance: 'Monthly', reconstitution: 'Monthly', notes: 'ðŸš¨ Shifted Oct 2023. High monthly turnover.', desc: 'The Alpha Architect US Quantitative Momentum ETF seeks to deliver consistent exposure to the strongest momentum stocks on the U.S. market. The fund targets a concentrated, equal-weighted portfolio of 50 holdings. Similar to IMOM, the index model scores eligible U.S. stocks based on their 12-month momentum (excluding the most recent month) and uses the frog-in-the-pan (FIP) algorithm to select stocks with gradual, trend-following momentum. The portfolio is rebalanced monthly to ensure rapid alignment with shifting momentum trends.' },
-        IMOM: { name: 'Alpha Architect Intl Quant Momentum ETF', rebalance: 'Monthly', reconstitution: 'Monthly', notes: 'ðŸš¨ Shifted Oct 2023. High monthly turnover.', desc: 'The Alpha Architect International Quantitative Momentum ETF seeks to deliver consistent exposure to the strongest momentum stocks in the developed international marketplace, excluding U.S. and emerging market equities. The fund targets a concentrated portfolio of 50 holdings, using a rules-based quantitative model that ranks international developed stocks by their 12-month momentum score, excluding the most recent month of performance to mitigate short-term mean reversion. The model also applies a proprietary "frog-in-the-pan" (FIP) momentum filter, which seeks to identify stocks with smooth, consistent price trends rather than sharp, erratic moves, on the theory that gradual price adjustments are more likely to persist. The resulting portfolio is equally weighted and rebalanced frequently to maintain consistent exposure to high-conviction momentum names.' },
-        QVAL: { name: 'Alpha Architect US Quant Value ETF', rebalance: 'Monthly', reconstitution: 'Monthly', notes: 'ðŸš¨ Shifted Oct 2023. High monthly turnover.', desc: 'The Alpha Architect US Quantitative Value ETF targets U.S. stocks with high earnings relative to their total equity and debt. The fund targets a portfolio of 50 holdings, using a systematic model designed to select undervalued, high-quality U.S. companies characterized by strong earnings growth, low leverage, and positive cash flows. The portfolio is equally weighted and rebalanced monthly, aiming to capture the value premium while avoiding sector concentration risks.' },
-        IVAL: { name: 'Alpha Architect Intl Quant Value ETF', rebalance: 'Monthly', reconstitution: 'Monthly', notes: 'ðŸš¨ Shifted Oct 2023. High monthly turnover.', desc: 'The Alpha Architect International Quantitative Value ETF targets consistent exposure to attractively priced international stocks, on the expectation that undervalued companies will benefit from mean reversion. The fund targets a concentrated portfolio of 50 holdings, using a quantitative value filter based on the ratio of earnings before interest and taxes to total enterprise value. This screen evaluates operating earnings relative to total enterprise value to identify undervalued international developed stocks while maintaining an equal-weighted structure to manage concentration risk.' },
+        QMOM: { name: 'Alpha Architect US Quant Momentum ETF', rebalance: 'Monthly', reconstitution: 'Monthly', notes: '🚨 Shifted Oct 2023. High monthly turnover.', desc: 'The Alpha Architect US Quantitative Momentum ETF seeks to deliver consistent exposure to the strongest momentum stocks on the U.S. market. The fund targets a concentrated, equal-weighted portfolio of 50 holdings. Similar to IMOM, the index model scores eligible U.S. stocks based on their 12-month momentum (excluding the most recent month) and uses the frog-in-the-pan (FIP) algorithm to select stocks with gradual, trend-following momentum. The portfolio is rebalanced monthly to ensure rapid alignment with shifting momentum trends.' },
+        IMOM: { name: 'Alpha Architect Intl Quant Momentum ETF', rebalance: 'Monthly', reconstitution: 'Monthly', notes: '🚨 Shifted Oct 2023. High monthly turnover.', desc: 'The Alpha Architect International Quantitative Momentum ETF seeks to deliver consistent exposure to the strongest momentum stocks in the developed international marketplace, excluding U.S. and emerging market equities. The fund targets a concentrated portfolio of 50 holdings, using a rules-based quantitative model that ranks international developed stocks by their 12-month momentum score, excluding the most recent month of performance to mitigate short-term mean reversion. The model also applies a proprietary "frog-in-the-pan" (FIP) momentum filter, which seeks to identify stocks with smooth, consistent price trends rather than sharp, erratic moves, on the theory that gradual price adjustments are more likely to persist. The resulting portfolio is equally weighted and rebalanced frequently to maintain consistent exposure to high-conviction momentum names.' },
+        QVAL: { name: 'Alpha Architect US Quant Value ETF', rebalance: 'Monthly', reconstitution: 'Monthly', notes: '🚨 Shifted Oct 2023. High monthly turnover.', desc: 'The Alpha Architect US Quantitative Value ETF targets U.S. stocks with high earnings relative to their total equity and debt. The fund targets a portfolio of 50 holdings, using a systematic model designed to select undervalued, high-quality U.S. companies characterized by strong earnings growth, low leverage, and positive cash flows. The portfolio is equally weighted and rebalanced monthly, aiming to capture the value premium while avoiding sector concentration risks.' },
+        IVAL: { name: 'Alpha Architect Intl Quant Value ETF', rebalance: 'Monthly', reconstitution: 'Monthly', notes: '🚨 Shifted Oct 2023. High monthly turnover.', desc: 'The Alpha Architect International Quantitative Value ETF targets consistent exposure to attractively priced international stocks, on the expectation that undervalued companies will benefit from mean reversion. The fund targets a concentrated portfolio of 50 holdings, using a quantitative value filter based on the ratio of earnings before interest and taxes to total enterprise value. This screen evaluates operating earnings relative to total enterprise value to identify undervalued international developed stocks while maintaining an equal-weighted structure to manage concentration risk.' },
         XMMO: { name: 'Invesco S&P MidCap Momentum ETF', rebalance: 'Semi-Annual', reconstitution: 'Semi-Annual', notes: 'March & September.', desc: 'The Invesco S&P MidCap Momentum ETF seeks to track the performance of the S&P MidCap 400 Momentum Index. The fund targets 76 mid-cap U.S. companies, selecting components from the S&P MidCap 400 Index that have the highest momentum scores. The index methodology evaluates the 12-month price performance of eligible stocks, excluding the most recent month, and weights constituents by a combination of their momentum score and market capitalization to capture momentum within the mid-cap segment.' },
         XSMO: { name: 'Invesco S&P SmallCap Momentum ETF', rebalance: 'Semi-Annual', reconstitution: 'Semi-Annual', notes: 'March & September.', desc: 'The Invesco S&P SmallCap Momentum ETF seeks to track the investment results, before fees and expenses, of the S&P SmallCap 600 Momentum Index. The fund targets a cohort of 112 small-cap U.S. companies, selecting constituents from the S&P SmallCap 600® Index that have the highest momentum scores. The index is reconstituted semi-annually and uses a rules-based process to calculate 12-month momentum (excluding the most recent month), allowing the fund to capture price trends within the small-cap universe.' },
         PIE:  { name: 'Invesco DWA Emerging Markets Momentum', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: 'DWA Technical Leaders.', desc: 'The Invesco Dorsey Wright Emerging Markets Momentum ETF seeks to track the investment results of the Dorsey Wright Emerging Markets Technical Leaders Index. The fund targets a cohort of 100 large-capitalization companies based in emerging market countries. The index selects constituents using point-and-figure relative strength comparisons, rebalancing quarterly to target emerging market equities that display powerful momentum and structural relative strength.' },
@@ -3647,7 +3647,7 @@ function app() {
         QQQM: { name: 'Invesco NASDAQ 100 ETF', rebalance: 'Quarterly', reconstitution: 'Annually', notes: 'Weights drift quarterly; Nasdaq 100 resets yearly (Dec).', desc: 'The Invesco NASDAQ 100 ETF seeks to track the investment results, before fees and expenses, of the NASDAQ-100 Index®. The fund targets 100 holdings, consisting of the 100 largest non-financial domestic and international companies listed on the Nasdaq Stock Market based on market capitalization. The index employs a modified market-capitalization methodology that caps individual constituent weights at 24% to manage concentration risks. The fund utilizes a full replication strategy, providing concentrated exposure to large-cap technology, consumer services, and healthcare companies.' },
     },
 
-    // â”€â”€ Tier distribution pie chart slices â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Tier distribution pie chart slices ────────────────────────────────
     get tierPieSlices() {
       const tierColors = { Scout: '#c084fc', Quant: '#a5b4fc', Quality: '#5eead4', Trend: '#fcd34d', Core: '#a1a1aa' };
       const tierOrder = ['Scout', 'Quant', 'Quality', 'Trend', 'Core'];
@@ -3688,7 +3688,7 @@ function app() {
       return `<svg viewBox="0 0 120 120" style="width:100px;height:100px">${paths}${hole}${label}</svg>`;
     },
 
-    // â”€â”€ ETF Overlap Heatmap â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── ETF Overlap Heatmap ──────────────────────────────────────────────
     get overlapHeatmapSvg() {
       const o = this.overlap || {};
       const etfs = o.etfs || [];
@@ -3748,7 +3748,7 @@ function app() {
       } else {
         const j_val = (o.jaccard?.[i]?.[j] || 0) * 100;
         const sh = o.shared?.[i]?.[j] || 0;
-        this.overlapHover = `${a} â†” ${b} · ${j_val.toFixed(0)}% Jaccard · ${sh} shared holdings`;
+        this.overlapHover = `${a} ↔ ${b} · ${j_val.toFixed(0)}% Jaccard · ${sh} shared holdings`;
       }
     },
 
@@ -3825,7 +3825,7 @@ function app() {
         .join(' / ');
     },
 
-    // â”€â”€ Compare Mode (top 4 pinned by score) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Compare Mode (top 4 pinned by score) ─────────────────────────────
     get compareCards() {
       if (!this.pins || this.pins.length < 2) return [];
       const rows = this.pins
@@ -4120,7 +4120,7 @@ function app() {
     donutPalette() { return this._donutPalette; },
 
     // §29 Early-vs-Crowded quadrant
-    // EARLY: rising weight in 2â€“3 ETFs (not yet consensus)
+    // EARLY: rising weight in 2–3 ETFs (not yet consensus)
     // CROWDED: flat weight in 9+ ETFs (consensus formed)
     earlyVsCrowded(row) {
       const etfs = row.etf_count || 0;
@@ -4131,7 +4131,7 @@ function app() {
       return null;
     },
 
-    // â”€â”€ Macro status – momentum regime glyph + word (text-color only) â”€â”€â”€â”€
+    // ── Macro status – momentum regime glyph + word (text-color only) ────
     regimeInfo(row) {
       const m = {
         accelerating: { text: '▲▲ ACCEL',   color: '#6ee7b7' },
@@ -4143,7 +4143,7 @@ function app() {
       return m[row.momentum_regime] || null;
     },
 
-    // â”€â”€ Structural anomalies – priority-ordered micro-badge stack â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Structural anomalies – priority-ordered micro-badge stack ────────
     // Shared by both table copies. Priority: BURST > VELO > Q+ > STEALTH >
     // DIV± > Q− > CONC > SPEC β, then legacy NEW / EARLY / CROWD so nothing
     // previously surfaced in the Flag column is lost (they land in overflow).
@@ -4183,7 +4183,7 @@ function app() {
       const quad = this.earlyVsCrowded(row);
       if (quad === 'EARLY') b.push({ k: 'early', label: 'EARLY',
         style: 'background: rgba(52,211,153,0.08); color: #6ee7b7; border: 1px solid rgba(52,211,153,0.2)',
-        tip: 'EARLY – rising weight in 2â€“4 ETFs, not yet consensus. The alpha window before it becomes crowded.' });
+        tip: 'EARLY – rising weight in 2–4 ETFs, not yet consensus. The alpha window before it becomes crowded.' });
       else if (quad === 'CROWDED') b.push({ k: 'crowd', label: 'CROWD',
         style: 'background: rgba(161,161,170,0.08); color: var(--text-3); border: 1px solid rgba(161,161,170,0.2)',
         tip: 'CROWDED – flat weight in 9+ ETFs. Consensus has formed; alpha may be behind you.' });
@@ -4194,7 +4194,7 @@ function app() {
       return this.signalBadges(row).map(x => `<b>${x.label}</b> – ${x.tip}`).join('<br>');
     },
 
-    // â”€â”€ Auto-explainer verdict – deterministic, priority-ordered â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Auto-explainer verdict – deterministic, priority-ordered ─────────
     verdictLine(row) {
       if (row.burst_30d) {
         const peak = row.global_rank_peak_30d ?? 0;
@@ -4203,7 +4203,7 @@ function app() {
       }
       if (row.quality_adopted_30d) return 'Quality cosign added in last 30 days – institutional validation.';
       if (row.stealth_accumulation) return 'Quiet accumulation: weight building without rank movement.';
-      if ((row.velocity_z ?? 0) > 1.5) return `Velocity ${row.velocity_z.toFixed(1)}Ïƒ above universe – accumulation accelerating.`;
+      if ((row.velocity_z ?? 0) > 1.5) return `Velocity ${row.velocity_z.toFixed(1)}σ above universe – accumulation accelerating.`;
       if (row.flag === 'CONCENTRATED') return 'Single-fund dependency – score rests on one ETF.';
       if (row.conviction_divergence === 1) return 'Relative strength – holding rank while peers slip.';
       if (row.conviction_divergence === -1) return 'Crowding out – losing rank inside its own funds.';
@@ -4216,7 +4216,7 @@ function app() {
       return m[row.momentum_regime] || 'Stable structural holding · no anomalies.';
     },
 
-    // â”€â”€ Auto-explainer grid cells (expanded row) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Auto-explainer grid cells (expanded row) ─────────────────────────
     // Each cell: { label, lines: [{ k, v, c, w }] }. w=true renders a
     // full-width sentence; otherwise key/value with mono numerics.
     // chips:true on a cell signals the template to render a badge row below lines.
@@ -4228,7 +4228,7 @@ function app() {
       structure.push({ k: 'held by', v: `${ec} ETF${ec === 1 ? '' : 's'}` });
       if (row.tiers) structure.push({ w: true, v: row.tiers, c: 'var(--text-3)' });
       structure.push({ k: 'breadth', v: row.n_eff != null ? `${row.n_eff.toFixed(1)} eff / ${ec} funds` : '–' });
-      structure.push({ k: 'conviction', v: row.avg_conviction != null ? row.avg_conviction.toFixed(2) + 'Ã—' : '–', c: (row.avg_conviction||0) > 1.0 ? 'var(--up)' : 'var(--text-2)' });
+      structure.push({ k: 'conviction', v: row.avg_conviction != null ? row.avg_conviction.toFixed(2) + '×' : '–', c: (row.avg_conviction||0) > 1.0 ? 'var(--up)' : 'var(--text-2)' });
       structure.push({ k: 'tier breadth', v: `${row.tier_breadth ?? '–'}` });
       const ar = row.apex_rank, lr = row.leaderboard_rank;
       if (ar != null && lr != null && ar !== lr) {
@@ -4354,19 +4354,19 @@ function app() {
   };
 }
 
-// â”€â”€ Shared currency formatting (mirrors stock.html) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Shared currency formatting (mirrors stock.html) ───────────────────────────
 const CURRENCY_SYMBOLS = {
   USD:'$',EUR:'€',GBP:'£',JPY:'¥',KRW:'₩',CNY:'¥',TWD:'NT$',
-  BRL:'R$',INR:'â‚¹',AUD:'A$',CAD:'C$',CHF:'CHF ',HKD:'HK$',
+  BRL:'R$',INR:'₹',AUD:'A$',CAD:'C$',CHF:'CHF ',HKD:'HK$',
   SGD:'S$',SEK:'kr ',NOK:'kr ',DKK:'kr ',MXN:'MX$',ZAR:'R ',
-  THB:'à¸¿',TRY:'â‚º',PLN:'zÅ‚ ',IDR:'Rp ',MYR:'RM ',PHP:'â‚±',
-  SAR:'SAR ',QAR:'QAR ',AED:'AED ',ILS:'â‚ª',CLP:'CLP ',
-  COP:'COP ',PEN:'S/.',HUF:'Ft ',CZK:'KÄ ',RON:'lei ',
+  THB:'฿',TRY:'₺',PLN:'zł ',IDR:'Rp ',MYR:'RM ',PHP:'₱',
+  SAR:'SAR ',QAR:'QAR ',AED:'AED ',ILS:'₪',CLP:'CLP ',
+  COP:'COP ',PEN:'S/.',HUF:'Ft ',CZK:'Kč ',RON:'lei ',
   ISK:'kr ',EGP:'E£',KWD:'KD ',NZD:'NZ$',VND:'₫',
 };
 const ZERO_DECIMAL_CURRENCIES = new Set(['KRW','JPY','VND','IDR','CLP','ISK','HUF']);
 
-// â”€â”€ Premium detail chart panel – standalone Alpine component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Premium detail chart panel – standalone Alpine component ──────────────────
 // Each expanded row mounts its own independent instance of this component,
 // which lazy-fetches the static JSON file the first time it is opened.
 function detailChartPanel(ticker, _store) {
@@ -4455,7 +4455,7 @@ function detailChartPanel(ticker, _store) {
       this._filter();
     },
 
-    // â”€â”€ Computed properties â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Computed properties ───────────────────────────────────────────────
     get priceChange() {
       const fp = this.filteredPrices;
       if (fp.length < 2) return null;
@@ -4486,7 +4486,7 @@ function detailChartPanel(ticker, _store) {
       return Math.sqrt(variance * 252) * 100;
     },
 
-    // â”€â”€ SVG path builders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── SVG path builders ─────────────────────────────────────────────────
     _yScale(val) {
       const fp = this.filteredPrices;
       if (!fp.length) return 65;
@@ -4516,7 +4516,7 @@ function detailChartPanel(ticker, _store) {
       return `${line} L${lastX},130 L0,130 Z`;
     },
 
-    // â”€â”€ Mouse interaction â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Mouse interaction ─────────────────────────────────────────────────
     onMouseMove(e) {
       const fp = this.filteredPrices;
       if (!fp.length) return;
