@@ -2261,202 +2261,202 @@
     "1987": {
       "count": 12,
       "partial": false,
-      "ret": -0.97232291
+      "ret": -0.15397391
     },
     "1988": {
       "count": 12,
       "partial": false,
-      "ret": 0.32336175
+      "ret": 0.24287103
     },
     "1989": {
       "count": 12,
       "partial": false,
-      "ret": 0.33670117
+      "ret": 0.32849432
     },
     "1990": {
       "count": 12,
       "partial": false,
-      "ret": -0.21864104
+      "ret": -0.08344458
     },
     "1991": {
       "count": 12,
       "partial": false,
-      "ret": 0.1352503
+      "ret": 0.07169928
     },
     "1992": {
       "count": 12,
       "partial": false,
-      "ret": -0.02461858
+      "ret": -0.06859804
     },
     "1993": {
       "count": 12,
       "partial": false,
-      "ret": 0.46596846
+      "ret": 0.33840114
     },
     "1994": {
       "count": 12,
       "partial": false,
-      "ret": -0.06995996
+      "ret": -0.00154886
     },
     "1995": {
       "count": 12,
       "partial": false,
-      "ret": 0.07779696
+      "ret": 0.13183918
     },
     "1996": {
       "count": 12,
       "partial": false,
-      "ret": 0.2739784
+      "ret": 0.22979904
     },
     "1997": {
       "count": 12,
       "partial": false,
-      "ret": 0.46673506
+      "ret": 0.3254223
     },
     "1998": {
       "count": 12,
       "partial": false,
-      "ret": 0.18518335
+      "ret": 0.25513397
     },
     "1999": {
       "count": 12,
       "partial": false,
-      "ret": 0.38980188
+      "ret": 0.18175529
     },
     "2000": {
       "count": 12,
       "partial": false,
-      "ret": -0.07538368
+      "ret": -0.14358398
     },
     "2001": {
       "count": 12,
       "partial": false,
-      "ret": -0.19794638
+      "ret": -0.24035487
     },
     "2002": {
       "count": 12,
       "partial": false,
-      "ret": -0.43942368
+      "ret": -0.33328989
     },
     "2003": {
       "count": 12,
       "partial": false,
-      "ret": 0.37078024
+      "ret": 0.6517532
     },
     "2004": {
       "count": 12,
       "partial": false,
-      "ret": 0.0733691
+      "ret": 0.15758984
     },
     "2005": {
       "count": 12,
       "partial": false,
-      "ret": 0.27071382
+      "ret": 0.10055146
     },
     "2006": {
       "count": 12,
       "partial": false,
-      "ret": 0.21978606
+      "ret": 0.3617515
     },
     "2007": {
       "count": 12,
       "partial": false,
-      "ret": 0.22289188
+      "ret": 0.36690902
     },
     "2008": {
       "count": 12,
       "partial": false,
-      "ret": -0.40374247
+      "ret": -0.43630762
     },
     "2009": {
       "count": 12,
       "partial": false,
-      "ret": 0.23849943
+      "ret": 0.28201644
     },
     "2010": {
       "count": 12,
       "partial": false,
-      "ret": 0.1605994
+      "ret": 0.07649102
     },
     "2011": {
       "count": 12,
       "partial": false,
-      "ret": -0.14692102
+      "ret": -0.1739269
     },
     "2012": {
       "count": 12,
       "partial": false,
-      "ret": 0.29059652
+      "ret": 0.31603142
     },
     "2013": {
       "count": 12,
       "partial": false,
-      "ret": 0.25481748
+      "ret": 0.31159527
     },
     "2014": {
       "count": 12,
       "partial": false,
-      "ret": 0.02652694
+      "ret": -0.09629004
     },
     "2015": {
       "count": 12,
       "partial": false,
-      "ret": 0.09560504
+      "ret": -0.01755605
     },
     "2016": {
       "count": 12,
       "partial": false,
-      "ret": 0.06870047
+      "ret": 0.03473609
     },
     "2017": {
       "count": 12,
       "partial": false,
-      "ret": 0.12512608
+      "ret": 0.28010979
     },
     "2018": {
       "count": 12,
       "partial": false,
-      "ret": -0.1825937
+      "ret": -0.21960296
     },
     "2019": {
       "count": 12,
       "partial": false,
-      "ret": 0.25476465
+      "ret": 0.23109402
     },
     "2020": {
       "count": 12,
       "partial": false,
-      "ret": 0.03545703
+      "ret": 0.13103904
     },
     "2021": {
       "count": 12,
       "partial": false,
-      "ret": 0.15789159
+      "ret": 0.06872139
     },
     "2022": {
       "count": 12,
       "partial": false,
-      "ret": -0.12346792
+      "ret": -0.17454604
     },
     "2023": {
       "count": 12,
       "partial": false,
-      "ret": 0.20311219
+      "ret": 0.24642689
     },
     "2024": {
       "count": 12,
       "partial": false,
-      "ret": 0.188489
+      "ret": 0.11739477
     },
     "2025": {
       "count": 12,
       "partial": false,
-      "ret": 0.23010886
+      "ret": 0.391258
     },
     "2026": {
       "count": 5,
       "partial": true,
-      "ret": 0.02970758
+      "ret": -0.96396702
     }
   },
   "djia": {
@@ -2998,7 +2998,7 @@
     "1992": {
       "count": 12,
       "partial": false,
-      "ret": 0.04174415
+      "ret": 0.04174411
     },
     "1993": {
       "count": 12,
@@ -3008,47 +3008,47 @@
     "1994": {
       "count": 12,
       "partial": false,
-      "ret": 0.02140327
+      "ret": 0.02140332
     },
     "1995": {
       "count": 12,
       "partial": false,
-      "ret": 0.33451566
+      "ret": 0.3345156
     },
     "1996": {
       "count": 12,
       "partial": false,
-      "ret": 0.26013654
+      "ret": 0.26013656
     },
     "1997": {
       "count": 12,
       "partial": false,
-      "ret": 0.22642194
+      "ret": 0.22641422
     },
     "1998": {
       "count": 12,
       "partial": false,
-      "ret": 0.16098655
+      "ret": 0.1609939
     },
     "1999": {
       "count": 12,
       "partial": false,
-      "ret": 0.25221458
+      "ret": 0.25221452
     },
     "2000": {
       "count": 12,
       "partial": false,
-      "ret": -0.06167892
+      "ret": -0.06177808
     },
     "2001": {
       "count": 12,
       "partial": false,
-      "ret": -0.07104381
+      "ret": -0.07095213
     },
     "2002": {
       "count": 12,
       "partial": false,
-      "ret": -0.16763245
+      "ret": -0.1676266
     },
     "2003": {
       "count": 12,
@@ -3058,52 +3058,52 @@
     "2004": {
       "count": 12,
       "partial": false,
-      "ret": 0.03148005
+      "ret": 0.03148006
     },
     "2005": {
       "count": 12,
       "partial": false,
-      "ret": -0.00607528
+      "ret": -0.0060753
     },
     "2006": {
       "count": 12,
       "partial": false,
-      "ret": 0.16287851
+      "ret": 0.16287847
     },
     "2007": {
       "count": 12,
       "partial": false,
-      "ret": 0.06432321
+      "ret": 0.06432322
     },
     "2008": {
       "count": 12,
       "partial": false,
-      "ret": -0.33837101
+      "ret": -0.33837097
     },
     "2009": {
       "count": 12,
       "partial": false,
-      "ret": 0.18819358
+      "ret": 0.18819355
     },
     "2010": {
       "count": 12,
       "partial": false,
-      "ret": 0.11022771
+      "ret": 0.1102277
     },
     "2011": {
       "count": 12,
       "partial": false,
-      "ret": 0.05528389
+      "ret": 0.05528391
     },
     "2012": {
       "count": 12,
       "partial": false,
-      "ret": 0.07256605
+      "ret": 0.07256604
     },
     "2013": {
       "count": 12,
       "partial": false,
-      "ret": 0.26499417
+      "ret": 0.26499412
     },
     "2014": {
       "count": 12,
@@ -3113,47 +3113,47 @@
     "2015": {
       "count": 12,
       "partial": false,
-      "ret": -0.02233291
+      "ret": -0.02233285
     },
     "2016": {
       "count": 12,
       "partial": false,
-      "ret": 0.13415015
+      "ret": 0.13415013
     },
     "2017": {
       "count": 12,
       "partial": false,
-      "ret": 0.25080815
+      "ret": 0.25080809
     },
     "2018": {
       "count": 12,
       "partial": false,
-      "ret": -0.05630274
+      "ret": -0.05630275
     },
     "2019": {
       "count": 12,
       "partial": false,
-      "ret": 0.22338387
+      "ret": 0.22338394
     },
     "2020": {
       "count": 12,
       "partial": false,
-      "ret": 0.0724651
+      "ret": 0.07246507
     },
     "2021": {
       "count": 12,
       "partial": false,
-      "ret": 0.18727473
+      "ret": 0.18727472
     },
     "2022": {
       "count": 12,
       "partial": false,
-      "ret": -0.08781508
+      "ret": -0.08781506
     },
     "2023": {
       "count": 12,
       "partial": false,
-      "ret": 0.13703366
+      "ret": 0.13703369
     },
     "2024": {
       "count": 12,
@@ -3163,12 +3163,12 @@
     "2025": {
       "count": 12,
       "partial": false,
-      "ret": 0.12972551
+      "ret": 0.1297255
     },
     "2026": {
       "count": 5,
       "partial": true,
-      "ret": 0.05312957
+      "ret": 0.05235617
     }
   },
   "ftse100": {
@@ -4227,137 +4227,137 @@
     "2000": {
       "count": 12,
       "partial": false,
-      "ret": -0.06287683
+      "ret": -0.05443583
     },
     "2001": {
       "count": 12,
       "partial": false,
-      "ret": 0.02463235
+      "ret": 0.00746948
     },
     "2002": {
       "count": 12,
       "partial": false,
-      "ret": 0.245784
+      "ret": 0.2556962
     },
     "2003": {
       "count": 12,
       "partial": false,
-      "ret": 0.19729263
+      "ret": 0.19887673
     },
     "2004": {
       "count": 12,
       "partial": false,
-      "ret": 0.05244166
+      "ret": 0.04648649
     },
     "2005": {
       "count": 12,
       "partial": false,
-      "ret": 0.18194286
+      "ret": 0.17768595
     },
     "2006": {
       "count": 12,
       "partial": false,
-      "ret": 0.22838909
+      "ret": 0.23196881
     },
     "2007": {
       "count": 12,
       "partial": false,
-      "ret": 0.31438917
+      "ret": 0.31922468
     },
     "2008": {
       "count": 12,
       "partial": false,
-      "ret": 0.05833034
+      "ret": 0.04317841
     },
     "2009": {
       "count": 12,
       "partial": false,
-      "ret": 0.23947488
+      "ret": 0.2503593
     },
     "2010": {
       "count": 12,
       "partial": false,
-      "ret": 0.29757122
+      "ret": 0.29241379
     },
     "2011": {
       "count": 12,
       "partial": false,
-      "ret": 0.10182253
+      "ret": 0.08929207
     },
     "2012": {
       "count": 12,
       "partial": false,
-      "ret": 0.06961298
+      "ret": 0.08262573
     },
     "2013": {
       "count": 12,
       "partial": false,
-      "ret": -0.28080965
+      "ret": -0.27330317
     },
     "2014": {
       "count": 12,
       "partial": false,
-      "ret": -0.01710253
+      "ret": 0.00124533
     },
     "2015": {
       "count": 12,
       "partial": false,
-      "ret": -0.10440071
+      "ret": -0.12106136
     },
     "2016": {
       "count": 12,
       "partial": false,
-      "ret": 0.0845987
+      "ret": 0.08103774
     },
     "2017": {
       "count": 12,
       "partial": false,
-      "ret": 0.13591304
+      "ret": 0.12662536
     },
     "2018": {
       "count": 12,
       "partial": false,
-      "ret": -0.02143459
+      "ret": -0.00929512
     },
     "2019": {
       "count": 12,
       "partial": false,
-      "ret": 0.18497223
+      "ret": 0.18432369
     },
     "2020": {
       "count": 12,
       "partial": false,
-      "ret": 0.24977719
+      "ret": 0.24614623
     },
     "2021": {
       "count": 12,
       "partial": false,
-      "ret": -0.03465216
+      "ret": -0.04330896
     },
     "2022": {
       "count": 12,
       "partial": false,
-      "ret": -0.00426813
+      "ret": 0.00437467
     },
     "2023": {
       "count": 12,
       "partial": false,
-      "ret": 0.13337358
+      "ret": 0.14591316
     },
     "2024": {
       "count": 12,
       "partial": false,
-      "ret": 0.26507958
+      "ret": 0.25534065
     },
     "2025": {
       "count": 12,
       "partial": false,
-      "ret": 0.65788973
+      "ret": 0.67406385
     },
     "2026": {
       "count": 4,
       "partial": true,
-      "ret": 0.03331332
+      "ret": 0.02605433
     }
   },
   "hang_seng": {
@@ -5207,12 +5207,12 @@
     "1986": {
       "count": 12,
       "partial": false,
-      "ret": 0.06886126
+      "ret": 0.06889905
     },
     "1987": {
       "count": 12,
       "partial": false,
-      "ret": 0.10498214
+      "ret": 0.10494307
     },
     "1988": {
       "count": 12,
@@ -5222,27 +5222,27 @@
     "1989": {
       "count": 12,
       "partial": false,
-      "ret": 0.26168198
+      "ret": 0.26171016
     },
     "1990": {
       "count": 12,
       "partial": false,
-      "ret": -0.10411687
+      "ret": -0.10413688
     },
     "1991": {
       "count": 12,
       "partial": false,
-      "ret": 0.64990276
+      "ret": 0.64992769
     },
     "1992": {
       "count": 12,
       "partial": false,
-      "ret": 0.08864911
+      "ret": 0.08864777
     },
     "1993": {
       "count": 12,
       "partial": false,
-      "ret": 0.10576509
+      "ret": 0.10574974
     },
     "1994": {
       "count": 12,
@@ -5262,22 +5262,22 @@
     "1997": {
       "count": 12,
       "partial": false,
-      "ret": 0.20632853
+      "ret": 0.206292
     },
     "1998": {
       "count": 12,
       "partial": false,
-      "ret": 0.85300203
+      "ret": 0.85305813
     },
     "1999": {
       "count": 12,
       "partial": false,
-      "ret": 1.01950431
+      "ret": 1.01950425
     },
     "2000": {
       "count": 12,
       "partial": false,
-      "ret": -0.36844463
+      "ret": -0.36844462
     },
     "2001": {
       "count": 12,
@@ -5287,22 +5287,22 @@
     "2002": {
       "count": 12,
       "partial": false,
-      "ret": -0.37581561
+      "ret": -0.37585999
     },
     "2003": {
       "count": 12,
       "partial": false,
-      "ret": 0.49122789
+      "ret": 0.48233262
     },
     "2004": {
       "count": 12,
       "partial": false,
-      "ret": 0.10436536
+      "ret": 0.11051636
     },
     "2005": {
       "count": 12,
       "partial": false,
-      "ret": 0.01485393
+      "ret": 0.01536126
     },
     "2006": {
       "count": 12,
@@ -5312,22 +5312,22 @@
     "2007": {
       "count": 12,
       "partial": false,
-      "ret": 0.18670949
+      "ret": 0.18670955
     },
     "2008": {
       "count": 12,
       "partial": false,
-      "ret": -0.41885336
+      "ret": -0.41885339
     },
     "2009": {
       "count": 12,
       "partial": false,
-      "ret": 0.5353527
+      "ret": 0.53535262
     },
     "2010": {
       "count": 12,
       "partial": false,
-      "ret": 0.19219914
+      "ret": 0.19219915
     },
     "2011": {
       "count": 12,
@@ -5337,57 +5337,57 @@
     "2012": {
       "count": 12,
       "partial": false,
-      "ret": 0.16818629
+      "ret": 0.16818639
     },
     "2013": {
       "count": 12,
       "partial": false,
-      "ret": 0.34990403
+      "ret": 0.34990398
     },
     "2014": {
       "count": 12,
       "partial": false,
-      "ret": 0.1793652
+      "ret": 0.17936526
     },
     "2015": {
       "count": 12,
       "partial": false,
-      "ret": 0.08426974
+      "ret": 0.08426969
     },
     "2016": {
       "count": 12,
       "partial": false,
-      "ret": 0.05885787
+      "ret": 0.05885785
     },
     "2017": {
       "count": 12,
       "partial": false,
-      "ret": 0.31515615
+      "ret": 0.3151562
     },
     "2018": {
       "count": 12,
       "partial": false,
-      "ret": -0.01038858
+      "ret": -0.01039019
     },
     "2019": {
       "count": 12,
       "partial": false,
-      "ret": 0.37963845
+      "ret": 0.37964063
     },
     "2020": {
       "count": 12,
       "partial": false,
-      "ret": 0.47580173
+      "ret": 0.47580175
     },
     "2021": {
       "count": 12,
       "partial": false,
-      "ret": 0.2662729
+      "ret": 0.26627292
     },
     "2022": {
       "count": 12,
       "partial": false,
-      "ret": -0.32967487
+      "ret": -0.32967485
     },
     "2023": {
       "count": 12,
@@ -5397,17 +5397,17 @@
     "2024": {
       "count": 12,
       "partial": false,
-      "ret": 0.24879696
+      "ret": 0.24879695
     },
     "2025": {
       "count": 12,
       "partial": false,
-      "ret": 0.2016774
+      "ret": 0.20167741
     },
     "2026": {
       "count": 5,
       "partial": true,
-      "ret": 0.18105639
+      "ret": 0.16759664
     }
   },
   "nickel": {
@@ -5771,17 +5771,17 @@
     "1985": {
       "count": 12,
       "partial": false,
-      "ret": 0.13346904
+      "ret": 0.13346906
     },
     "1986": {
       "count": 12,
       "partial": false,
-      "ret": 0.42939258
+      "ret": 0.43853711
     },
     "1987": {
       "count": 12,
       "partial": false,
-      "ret": 0.15309342
+      "ret": 0.14576337
     },
     "1988": {
       "count": 12,
@@ -5791,32 +5791,32 @@
     "1989": {
       "count": 12,
       "partial": false,
-      "ret": 0.29035681
+      "ret": 0.29035678
     },
     "1990": {
       "count": 12,
       "partial": false,
-      "ret": -0.38717263
+      "ret": -0.38717264
     },
     "1991": {
       "count": 12,
       "partial": false,
-      "ret": -0.03626785
+      "ret": -0.03626779
     },
     "1992": {
       "count": 12,
       "partial": false,
-      "ret": -0.26361299
+      "ret": -0.26361298
     },
     "1993": {
       "count": 12,
       "partial": false,
-      "ret": 0.0290867
+      "ret": 0.02908664
     },
     "1994": {
       "count": 12,
       "partial": false,
-      "ret": 0.13238724
+      "ret": 0.13238722
     },
     "1995": {
       "count": 12,
@@ -5826,47 +5826,47 @@
     "1996": {
       "count": 12,
       "partial": false,
-      "ret": -0.0255082
+      "ret": -0.02550816
     },
     "1997": {
       "count": 12,
       "partial": false,
-      "ret": -0.21189687
+      "ret": -0.2118969
     },
     "1998": {
       "count": 12,
       "partial": false,
-      "ret": -0.09283665
+      "ret": -0.09283663
     },
     "1999": {
       "count": 12,
       "partial": false,
-      "ret": 0.36787367
+      "ret": 0.36787368
     },
     "2000": {
       "count": 12,
       "partial": false,
-      "ret": -0.27192125
+      "ret": -0.27192128
     },
     "2001": {
       "count": 12,
       "partial": false,
-      "ret": -0.23524903
+      "ret": -0.23524902
     },
     "2002": {
       "count": 12,
       "partial": false,
-      "ret": -0.18626014
+      "ret": -0.18626015
     },
     "2003": {
       "count": 12,
       "partial": false,
-      "ret": 0.24451586
+      "ret": 0.24451594
     },
     "2004": {
       "count": 12,
       "partial": false,
-      "ret": 0.07606515
+      "ret": 0.07606513
     },
     "2005": {
       "count": 12,
@@ -5876,62 +5876,62 @@
     "2006": {
       "count": 12,
       "partial": false,
-      "ret": 0.06916831
+      "ret": 0.06916829
     },
     "2007": {
       "count": 12,
       "partial": false,
-      "ret": -0.11134731
+      "ret": -0.11134732
     },
     "2008": {
       "count": 12,
       "partial": false,
-      "ret": -0.42123813
+      "ret": -0.42123809
     },
     "2009": {
       "count": 12,
       "partial": false,
-      "ret": 0.19040233
+      "ret": 0.19040223
     },
     "2010": {
       "count": 12,
       "partial": false,
-      "ret": -0.03010689
+      "ret": -0.03010684
     },
     "2011": {
       "count": 12,
       "partial": false,
-      "ret": -0.17338784
+      "ret": -0.17338781
     },
     "2012": {
       "count": 12,
       "partial": false,
-      "ret": 0.22942045
+      "ret": 0.22942043
     },
     "2013": {
       "count": 12,
       "partial": false,
-      "ret": 0.56719846
+      "ret": 0.56719845
     },
     "2014": {
       "count": 12,
       "partial": false,
-      "ret": 0.07117045
+      "ret": 0.07117046
     },
     "2015": {
       "count": 12,
       "partial": false,
-      "ret": 0.09070897
+      "ret": 0.09070889
     },
     "2016": {
       "count": 12,
       "partial": false,
-      "ret": 0.00423765
+      "ret": 0.00423774
     },
     "2017": {
       "count": 12,
       "partial": false,
-      "ret": 0.19098566
+      "ret": 0.19098563
     },
     "2018": {
       "count": 12,
@@ -5941,42 +5941,42 @@
     "2019": {
       "count": 12,
       "partial": false,
-      "ret": 0.18195811
+      "ret": 0.18195812
     },
     "2020": {
       "count": 12,
       "partial": false,
-      "ret": 0.16010533
+      "ret": 0.16010529
     },
     "2021": {
       "count": 12,
       "partial": false,
-      "ret": 0.04910118
+      "ret": 0.04910114
     },
     "2022": {
       "count": 12,
       "partial": false,
-      "ret": -0.09368012
+      "ret": -0.09368009
     },
     "2023": {
       "count": 12,
       "partial": false,
-      "ret": 0.28242242
+      "ret": 0.28242235
     },
     "2024": {
       "count": 12,
       "partial": false,
-      "ret": 0.19215677
+      "ret": 0.19215687
     },
     "2025": {
       "count": 12,
       "partial": false,
-      "ret": 0.26181381
+      "ret": 0.26181377
     },
     "2026": {
       "count": 5,
       "partial": true,
-      "ret": 0.29122131
+      "ret": 0.25823846
     }
   },
   "palladium": {
@@ -6123,47 +6123,47 @@
     "2005": {
       "count": 12,
       "partial": false,
-      "ret": 0.42213225
+      "ret": 0.41160594
     },
     "2006": {
       "count": 12,
       "partial": false,
-      "ret": 0.23894477
+      "ret": 0.29445507
     },
     "2007": {
       "count": 12,
       "partial": false,
-      "ret": 0.11841299
+      "ret": 0.11728213
     },
     "2008": {
       "count": 12,
       "partial": false,
-      "ret": -0.48870018
+      "ret": -0.50105764
     },
     "2009": {
       "count": 12,
       "partial": false,
-      "ret": 1.18189124
+      "ret": 1.16666667
     },
     "2010": {
       "count": 12,
       "partial": false,
-      "ret": 0.97249847
+      "ret": 0.96477926
     },
     "2011": {
       "count": 12,
       "partial": false,
-      "ret": -0.18386655
+      "ret": -0.18318187
     },
     "2012": {
       "count": 12,
       "partial": false,
-      "ret": 0.07176632
+      "ret": 0.07193477
     },
     "2013": {
       "count": 12,
       "partial": false,
-      "ret": 0.02227282
+      "ret": 0.02125542
     },
     "2014": {
       "count": 12,
@@ -6173,62 +6173,62 @@
     "2015": {
       "count": 12,
       "partial": false,
-      "ret": -0.29759519
+      "ret": -0.29609218
     },
     "2016": {
       "count": 12,
       "partial": false,
-      "ret": 0.21727889
+      "ret": 0.21574733
     },
     "2017": {
       "count": 12,
       "partial": false,
-      "ret": 0.57291438
+      "ret": 0.5528723
     },
     "2018": {
       "count": 12,
       "partial": false,
-      "ret": 0.16777648
+      "ret": 0.12836946
     },
     "2019": {
       "count": 12,
       "partial": false,
-      "ret": 0.52268921
+      "ret": 0.59480454
     },
     "2020": {
       "count": 12,
       "partial": false,
-      "ret": 0.28240716
+      "ret": 0.28518305
     },
     "2021": {
       "count": 12,
       "partial": false,
-      "ret": -0.22070656
+      "ret": -0.22075964
     },
     "2022": {
       "count": 12,
       "partial": false,
-      "ret": -0.06226089
+      "ret": -0.10098844
     },
     "2023": {
       "count": 12,
       "partial": false,
-      "ret": -0.38299894
+      "ret": -0.35968883
     },
     "2024": {
       "count": 12,
       "partial": false,
-      "ret": -0.19021739
+      "ret": -0.18778583
     },
     "2025": {
       "count": 12,
       "partial": false,
-      "ret": 0.82237136
+      "ret": 0.79418345
     },
     "2026": {
       "count": 5,
       "partial": true,
-      "ret": -0.12871348
+      "ret": -0.16832918
     }
   },
   "platinum": {
@@ -6375,152 +6375,152 @@
     "1997": {
       "count": 12,
       "partial": false,
-      "ret": 0.00351827
+      "ret": -0.01759134
     },
     "1998": {
       "count": 12,
       "partial": false,
-      "ret": -0.01699029
+      "ret": -0.00757576
     },
     "1999": {
       "count": 12,
       "partial": false,
-      "ret": 0.18024691
+      "ret": 0.2297016
     },
     "2000": {
       "count": 12,
       "partial": false,
-      "ret": 0.41701534
+      "ret": 0.3972912
     },
     "2001": {
       "count": 12,
       "partial": false,
-      "ret": -0.19127297
+      "ret": -0.22455574
     },
     "2002": {
       "count": 12,
       "partial": false,
-      "ret": 0.21298174
+      "ret": 0.24583333
     },
     "2003": {
       "count": 12,
       "partial": false,
-      "ret": 0.35668896
+      "ret": 0.35953177
     },
     "2004": {
       "count": 12,
       "partial": false,
-      "ret": 0.0645877
+      "ret": 0.05904059
     },
     "2005": {
       "count": 12,
       "partial": false,
-      "ret": 0.12654857
+      "ret": 0.12078978
     },
     "2006": {
       "count": 12,
       "partial": false,
-      "ret": 0.1709147
+      "ret": 0.15854922
     },
     "2007": {
       "count": 12,
       "partial": false,
-      "ret": 0.3415255
+      "ret": 0.37209302
     },
     "2008": {
       "count": 12,
       "partial": false,
-      "ret": -0.38746401
+      "ret": -0.41460235
     },
     "2009": {
       "count": 12,
       "partial": false,
-      "ret": 0.55949583
+      "ret": 0.62694878
     },
     "2010": {
       "count": 12,
       "partial": false,
-      "ret": 0.21458904
+      "ret": 0.20123203
     },
     "2011": {
       "count": 12,
       "partial": false,
-      "ret": -0.21068065
+      "ret": -0.22849003
     },
     "2012": {
       "count": 12,
       "partial": false,
-      "ret": 0.09930699
+      "ret": 0.12776957
     },
     "2013": {
       "count": 12,
       "partial": false,
-      "ret": -0.1180867
+      "ret": -0.1113294
     },
     "2014": {
       "count": 12,
       "partial": false,
-      "ret": -0.1091378
+      "ret": -0.11127487
     },
     "2015": {
       "count": 12,
       "partial": false,
-      "ret": -0.26238729
+      "ret": -0.26073798
     },
     "2016": {
       "count": 12,
       "partial": false,
-      "ret": 0.01110239
+      "ret": 0.01295497
     },
     "2017": {
       "count": 12,
       "partial": false,
-      "ret": 0.03615794
+      "ret": 0.03806887
     },
     "2018": {
       "count": 12,
       "partial": false,
-      "ret": -0.1480411
+      "ret": -0.14701114
     },
     "2019": {
       "count": 12,
       "partial": false,
-      "ret": 0.22693806
+      "ret": 0.221169
     },
     "2020": {
       "count": 12,
       "partial": false,
-      "ret": 0.10125753
+      "ret": 0.10437062
     },
     "2021": {
       "count": 12,
       "partial": false,
-      "ret": -0.10321741
+      "ret": -0.10441007
     },
     "2022": {
       "count": 12,
       "partial": false,
-      "ret": 0.11333472
+      "ret": 0.10680858
     },
     "2023": {
       "count": 12,
       "partial": false,
-      "ret": -0.07329794
+      "ret": -0.06992217
     },
     "2024": {
       "count": 12,
       "partial": false,
-      "ret": -0.09929859
+      "ret": -0.09862206
     },
     "2025": {
       "count": 12,
       "partial": false,
-      "ret": 1.27014591
+      "ret": 1.26135511
     },
     "2026": {
       "count": 5,
       "partial": true,
-      "ret": -0.05573851
+      "ret": -0.05261056
     }
   },
   "sensex": {
@@ -6622,17 +6622,17 @@
     "1998": {
       "count": 12,
       "partial": false,
-      "ret": -0.16495583
+      "ret": -0.16495581
     },
     "1999": {
       "count": 12,
       "partial": false,
-      "ret": 0.6383464
+      "ret": 0.63834641
     },
     "2000": {
       "count": 12,
       "partial": false,
-      "ret": -0.20649958
+      "ret": -0.20649963
     },
     "2001": {
       "count": 12,
@@ -6642,7 +6642,7 @@
     "2002": {
       "count": 12,
       "partial": false,
-      "ret": 0.03523552
+      "ret": 0.03523555
     },
     "2003": {
       "count": 12,
@@ -6652,37 +6652,37 @@
     "2004": {
       "count": 12,
       "partial": false,
-      "ret": 0.13079896
+      "ret": 0.13079898
     },
     "2005": {
       "count": 12,
       "partial": false,
-      "ret": 0.42334864
+      "ret": 0.42334867
     },
     "2006": {
       "count": 12,
       "partial": false,
-      "ret": 0.46701568
+      "ret": 0.46701561
     },
     "2007": {
       "count": 12,
       "partial": false,
-      "ret": 0.47146749
+      "ret": 0.4714675
     },
     "2008": {
       "count": 12,
       "partial": false,
-      "ret": -0.52445831
+      "ret": -0.52445829
     },
     "2009": {
       "count": 12,
       "partial": false,
-      "ret": 0.81032964
+      "ret": 0.81032951
     },
     "2010": {
       "count": 12,
       "partial": false,
-      "ret": 0.17430932
+      "ret": 0.17430937
     },
     "2011": {
       "count": 12,
@@ -6692,42 +6692,42 @@
     "2012": {
       "count": 12,
       "partial": false,
-      "ret": 0.25699201
+      "ret": 0.25699195
     },
     "2013": {
       "count": 12,
       "partial": false,
-      "ret": 0.0897717
+      "ret": 0.08977176
     },
     "2014": {
       "count": 12,
       "partial": false,
-      "ret": 0.29893892
+      "ret": 0.29893891
     },
     "2015": {
       "count": 12,
       "partial": false,
-      "ret": -0.05025127
+      "ret": -0.05025124
     },
     "2016": {
       "count": 12,
       "partial": false,
-      "ret": 0.01948583
+      "ret": 0.01948576
     },
     "2017": {
       "count": 12,
       "partial": false,
-      "ret": 0.27905951
+      "ret": 0.27905963
     },
     "2018": {
       "count": 12,
       "partial": false,
-      "ret": 0.05906305
+      "ret": 0.05906304
     },
     "2019": {
       "count": 12,
       "partial": false,
-      "ret": 0.1437663
+      "ret": 0.14376629
     },
     "2020": {
       "count": 12,
@@ -6737,17 +6737,17 @@
     "2021": {
       "count": 12,
       "partial": false,
-      "ret": 0.21994136
+      "ret": 0.21994131
     },
     "2022": {
       "count": 12,
       "partial": false,
-      "ret": 0.0444077
+      "ret": 0.04440773
     },
     "2023": {
       "count": 12,
       "partial": false,
-      "ret": 0.18736655
+      "ret": 0.18736656
     },
     "2024": {
       "count": 12,
@@ -6757,12 +6757,12 @@
     "2025": {
       "count": 12,
       "partial": false,
-      "ret": 0.09062815
+      "ret": 0.0906281
     },
     "2026": {
       "count": 5,
       "partial": true,
-      "ret": -0.10974817
+      "ret": -0.11505727
     }
   },
   "shanghai": {
@@ -7081,137 +7081,137 @@
     "2000": {
       "count": 12,
       "partial": false,
-      "ret": -0.13977486
+      "ret": -0.14071295
     },
     "2001": {
       "count": 12,
       "partial": false,
-      "ret": -0.00130862
+      "ret": -0.01310044
     },
     "2002": {
       "count": 12,
       "partial": false,
-      "ret": 0.01987333
+      "ret": 0.03318584
     },
     "2003": {
       "count": 12,
       "partial": false,
-      "ret": 0.27473233
+      "ret": 0.27623126
     },
     "2004": {
       "count": 12,
       "partial": false,
-      "ret": 0.14345708
+      "ret": 0.1442953
     },
     "2005": {
       "count": 12,
       "partial": false,
-      "ret": 0.29572499
+      "ret": 0.29472141
     },
     "2006": {
       "count": 12,
       "partial": false,
-      "ret": 0.45328798
+      "ret": 0.46092865
     },
     "2007": {
       "count": 12,
       "partial": false,
-      "ret": 0.15439226
+      "ret": 0.14418605
     },
     "2008": {
       "count": 12,
       "partial": false,
-      "ret": -0.23835913
+      "ret": -0.26897019
     },
     "2009": {
       "count": 12,
       "partial": false,
-      "ret": 0.49263531
+      "ret": 0.57460612
     },
     "2010": {
       "count": 12,
       "partial": false,
-      "ret": 0.83747474
+      "ret": 0.80282519
     },
     "2011": {
       "count": 12,
       "partial": false,
-      "ret": -0.09818829
+      "ret": -0.07998694
     },
     "2012": {
       "count": 12,
       "partial": false,
-      "ret": 0.08243946
+      "ret": 0.0628105
     },
     "2013": {
       "count": 12,
       "partial": false,
-      "ret": -0.35372684
+      "ret": -0.34891486
     },
     "2014": {
       "count": 12,
       "partial": false,
-      "ret": -0.20179487
+      "ret": -0.18102564
     },
     "2015": {
       "count": 12,
       "partial": false,
-      "ret": -0.11500161
+      "ret": -0.13462743
     },
     "2016": {
       "count": 12,
       "partial": false,
-      "ret": 0.1568784
+      "ret": 0.17510854
     },
     "2017": {
       "count": 12,
       "partial": false,
-      "ret": 0.07053213
+      "ret": 0.03817734
     },
     "2018": {
       "count": 12,
       "partial": false,
-      "ret": -0.09536928
+      "ret": -0.08303677
     },
     "2019": {
       "count": 12,
       "partial": false,
-      "ret": 0.1695717
+      "ret": 0.16752911
     },
     "2020": {
       "count": 12,
       "partial": false,
-      "ret": 0.45883657
+      "ret": 0.46703601
     },
     "2021": {
       "count": 12,
       "partial": false,
-      "ret": -0.11408173
+      "ret": -0.12802115
     },
     "2022": {
       "count": 12,
       "partial": false,
-      "ret": 0.02289095
+      "ret": 0.03724556
     },
     "2023": {
       "count": 12,
       "partial": false,
-      "ret": -0.00037717
+      "ret": -0.00668058
     },
     "2024": {
       "count": 12,
       "partial": false,
-      "ret": 0.21200688
+      "ret": 0.21521648
     },
     "2025": {
       "count": 12,
       "partial": false,
-      "ret": 1.42594258
+      "ret": 1.49014182
     },
     "2026": {
       "count": 4,
       "partial": true,
-      "ret": 0.0663872
+      "ret": 0.04056119
     }
   },
   "soybeans": {
@@ -8215,17 +8215,17 @@
     "2012": {
       "count": 12,
       "partial": false,
-      "ret": 0.13405685
+      "ret": 0.13405693
     },
     "2013": {
       "count": 12,
       "partial": false,
-      "ret": 0.29601254
+      "ret": 0.29601245
     },
     "2014": {
       "count": 12,
       "partial": false,
-      "ret": 0.11390633
+      "ret": 0.11390638
     },
     "2015": {
       "count": 12,
@@ -8235,12 +8235,12 @@
     "2016": {
       "count": 12,
       "partial": false,
-      "ret": 0.09535026
+      "ret": 0.09535016
     },
     "2017": {
       "count": 12,
       "partial": false,
-      "ret": 0.19419964
+      "ret": 0.19419965
     },
     "2018": {
       "count": 12,
@@ -8250,42 +8250,42 @@
     "2019": {
       "count": 12,
       "partial": false,
-      "ret": 0.28878069
+      "ret": 0.28878074
     },
     "2020": {
       "count": 12,
       "partial": false,
-      "ret": 0.16258925
+      "ret": 0.16258922
     },
     "2021": {
       "count": 12,
       "partial": false,
-      "ret": 0.26892738
+      "ret": 0.26892736
     },
     "2022": {
       "count": 12,
       "partial": false,
-      "ret": -0.19442828
+      "ret": -0.19442824
     },
     "2023": {
       "count": 12,
       "partial": false,
-      "ret": 0.24230501
+      "ret": 0.24230499
     },
     "2024": {
       "count": 12,
       "partial": false,
-      "ret": 0.23309002
+      "ret": 0.23309007
     },
     "2025": {
       "count": 12,
       "partial": false,
-      "ret": 0.16387806
+      "ret": 0.16387804
     },
     "2026": {
       "count": 5,
       "partial": true,
-      "ret": 0.09606312
+      "ret": 0.09173472
     }
   },
   "sugar": {
