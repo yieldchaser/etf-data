@@ -516,7 +516,7 @@
               <th class="text-left px-2 py-2 hidden xl:table-cell" x-tooltip="{html:'Tiers represented. <b>Scout</b>=spinoffs/IPOs · <b>Quant</b>=factor momentum · <b>Quality</b>=FCF/profit · <b>Trend</b>=momentum · <b>Core</b>=mega-cap'}">Strategies</th>
               <th class="text-center px-3 py-2 hidden md:table-cell" x-tooltip="'Consecutive days the score moved in the same direction (▲ up · ▼ down).'">Streak</th>
               <th class="text-left px-3 py-2 hidden xl:table-cell" x-tooltip="'Today\'s score as a percentile of this ticker\'s own score history in the past 60 days.'">Level</th>
-              <th class="text-left px-3 py-2" x-tooltip="{html:'Priority-ordered signal stack (top 2 shown, +n = hover for full list)<br><b>HC</b> = held by 4+ ETFs · <b>⚡BURST</b> = +40 ranks in 30d · <b>VELO</b> = top velocity · <b>Q+/Qâˆ’</b> = Quality ETF added/dropped 30d · <b>STEALTH</b> = weight building quietly · <b>DIVÂ±</b> = conviction divergence · <b>CONC</b> = single-ETF score · <b>SPEC Î²</b> = Trend without Quality/Scout · <b>NEW</b> = first appearance within 14d'}">Flag</th>
+              <th class="text-left px-3 py-2" x-tooltip="{html:'Priority-ordered signal stack (top 2 shown, +n = hover for full list)<br><b>HC</b> = held by 4+ ETFs · <b>⚡BURST</b> = +40 ranks in 30d · <b>VELO</b> = top velocity · <b>Q+/Q−</b> = Quality ETF added/dropped 30d · <b>STEALTH</b> = weight building quietly · <b>DIV±</b> = conviction divergence · <b>CONC</b> = single-ETF score · <b>SPEC β</b> = Trend without Quality/Scout · <b>NEW</b> = first appearance within 14d'}">Flag</th>
             </tr>
           </thead>
           <template x-for="row in paged" :key="row.ticker">
@@ -1099,7 +1099,7 @@
                 <th class="text-left px-2 py-2 hidden xl:table-cell" x-tooltip="{html:'Tiers represented. <b>Scout</b>=spinoffs/IPOs · <b>Quant</b>=factor momentum · <b>Quality</b>=FCF/profit · <b>Trend</b>=momentum · <b>Core</b>=mega-cap'}">Strategies</th>
                 <th class="text-center px-3 py-2 hidden md:table-cell" x-tooltip="'Consecutive days the score moved in the same direction (▲ up · ▼ down).'">Streak</th>
                 <th class="text-left px-3 py-2 hidden xl:table-cell" x-tooltip="'Today\'s score as a percentile of this ticker\'s own score history in the past 60 days.'">Level</th>
-                <th class="text-left px-3 py-2" x-tooltip="{html:'Priority-ordered signal stack (top 2 shown, +n = hover for full list)<br><b>HC</b> = held by 4+ ETFs · <b>⚡BURST</b> = +40 ranks in 30d · <b>VELO</b> = top velocity · <b>Q+/Qâˆ’</b> = Quality ETF added/dropped 30d · <b>STEALTH</b> = weight building quietly · <b>DIVÂ±</b> = conviction divergence · <b>CONC</b> = single-ETF score · <b>SPEC Î²</b> = Trend without Quality/Scout · <b>NEW</b> = first appearance within 14d'}">Flag</th>
+                <th class="text-left px-3 py-2" x-tooltip="{html:'Priority-ordered signal stack (top 2 shown, +n = hover for full list)<br><b>HC</b> = held by 4+ ETFs · <b>⚡BURST</b> = +40 ranks in 30d · <b>VELO</b> = top velocity · <b>Q+/Q−</b> = Quality ETF added/dropped 30d · <b>STEALTH</b> = weight building quietly · <b>DIV±</b> = conviction divergence · <b>CONC</b> = single-ETF score · <b>SPEC β</b> = Trend without Quality/Scout · <b>NEW</b> = first appearance within 14d'}">Flag</th>
               </tr>
             </thead>
             <template x-for="row in paged" :key="row.ticker">
@@ -3333,7 +3333,7 @@ function app() {
         if (row.flag === 'HIGH_CONVICTION') ctxParts.push('HC');
         if (row.burst_30d)                  ctxParts.push('BURST');
         if (row.quality_adopted_30d)        ctxParts.push('Quality+');
-        if (row.quality_defected_30d)       ctxParts.push('Qualityâˆ’');
+        if (row.quality_defected_30d)       ctxParts.push('Quality−');
         ctxParts.push(`${row.etf_count || 0} ETFs`);
 
         scored.push({
@@ -4145,7 +4145,7 @@ function app() {
 
     // â”€â”€ Structural anomalies – priority-ordered micro-badge stack â”€â”€â”€â”€â”€â”€â”€â”€
     // Shared by both table copies. Priority: BURST > VELO > Q+ > STEALTH >
-    // DIVÂ± > Qâˆ’ > CONC > SPEC Î², then legacy NEW / EARLY / CROWD so nothing
+    // DIV± > Q− > CONC > SPEC β, then legacy NEW / EARLY / CROWD so nothing
     // previously surfaced in the Flag column is lost (they land in overflow).
     signalBadges(row) {
       const b = [];
@@ -4165,12 +4165,12 @@ function app() {
       if (row.conviction_divergence === 1) b.push({ k: 'divp', label: 'DIV+',
         style: 'background: rgba(20,184,166,0.12); color: #5eead4; border: 1px solid rgba(20,184,166,0.30)',
         tip: 'Divergence+ – holding rank strength inside its own funds while peers slip. Relative strength.' });
-      else if (row.conviction_divergence === -1) b.push({ k: 'divm', label: 'DIVâˆ’',
+      else if (row.conviction_divergence === -1) b.push({ k: 'divm', label: 'DIV−',
         style: 'background: rgba(251,113,133,0.10); color: var(--down); border: 1px solid rgba(251,113,133,0.25)',
-        tip: 'Divergenceâˆ’ – losing rank inside its own funds while the aggregate holds. Crowding out.' });
-      if (row.quality_defected_30d) b.push({ k: 'qminus', label: 'Qâˆ’',
+        tip: 'Divergence− – losing rank inside its own funds while the aggregate holds. Crowding out.' });
+      if (row.quality_defected_30d) b.push({ k: 'qminus', label: 'Q−',
         style: 'background: transparent; color: var(--down); border: 1px solid rgba(251,113,133,0.35)',
-        tip: 'Qualityâˆ’ – a Quality ETF dropped this name in the last 30 days.' });
+        tip: 'Quality− – a Quality ETF dropped this name in the last 30 days.' });
       if (row.flag === 'CONCENTRATED') b.push({ k: 'conc', label: 'CONC',
         style: 'background: rgba(251,146,60,0.10); color: #fb923c; border: 1px solid rgba(251,146,60,0.30)',
         tip: 'CONCENTRATED – most of this score comes from a single ETF. Fragile if that fund rebalances.' });
@@ -4256,7 +4256,7 @@ function app() {
           c: pct >= 66 ? 'var(--up)' : pct >= 33 ? 'var(--amber)' : 'var(--down)' });
       }
       if (row.m_conc == null) risk.push({ k: 'conc penalty', v: '–', c: 'var(--text-3)' });
-      else if (row.m_conc < 1) risk.push({ w: true, v: `âˆ’${Math.round((1 - row.m_conc) * 100)}% Concentration penalty`, c: 'var(--amber)' });
+      else if (row.m_conc < 1) risk.push({ w: true, v: `−${Math.round((1 - row.m_conc) * 100)}% Concentration penalty`, c: 'var(--amber)' });
       else risk.push({ w: true, v: 'No concentration penalty', c: 'var(--text-3)' });
       const div = row.conviction_divergence;
       risk.push({ k: 'divergence', v: div === 1 ? 'relative strength' : div === -1 ? 'crowding out' : 'aligned',
