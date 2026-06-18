@@ -3052,134 +3052,163 @@ function app() {
     },
 
     get universeExits() {
-      if (this.changesPeriod === 1) {
-        const exits = [...(this.changelog.universe_exits || [])];
-        const sortState = this.changesSort.universeExits;
-        if (sortState && sortState.key) {
-          this.sortItemList(exits, sortState.key, sortState.dir, '1');
-        }
-        return exits;
+      const cacheKey = `${this.changesPeriod}_${JSON.stringify(this.changesSort.universeExits)}`;
+      if (this._universeExitsCache && this._universeExitsCache.key === cacheKey) {
+        return this._universeExitsCache.value;
       }
 
-      if (!this.scoreHistory || !this.changelog.today || !this.meta.snapshot_dates_in_window) return [];
-      
-      const latestDateStr = this.changelog.today;
-      const latestDate = new Date(latestDateStr);
-      let targetDate = new Date(latestDate);
-      
-      if (this.changesPeriod === 'YTD') {
-        const year = latestDate.getFullYear();
-        targetDate = new Date(`${year}-01-01`);
-      } else {
-        const days = parseInt(this.changesPeriod) || 1;
-        targetDate.setDate(latestDate.getDate() - days);
-      }
-      
-      const dates = this.meta.snapshot_dates_in_window || [];
-      if (!dates.length) return [];
-      
-      let targetDateStr = dates[0];
-      const targetTime = targetDate.getTime();
-      let minDiff = Math.abs(new Date(targetDateStr).getTime() - targetTime);
-      
-      for (const d of dates) {
-        const diff = Math.abs(new Date(d).getTime() - targetTime);
-        if (diff < minDiff) {
-          minDiff = diff;
-          targetDateStr = d;
+      const computeExits = () => {
+        if (this.changesPeriod === 1) {
+          const exits = [...(this.changelog.universe_exits || [])];
+          const sortState = this.changesSort.universeExits;
+          if (sortState && sortState.key) {
+            this.sortItemList(exits, sortState.key, sortState.dir, '1');
+          }
+          return exits;
         }
-      }
-      
-      if (targetDateStr === latestDateStr) {
-        const idx = dates.indexOf(latestDateStr);
-        if (idx > 0) {
-          targetDateStr = dates[idx - 1];
+
+        if (!this.scoreHistory || !this.changelog.today || !this.meta.snapshot_dates_in_window) return [];
+        
+        const latestDateStr = this.changelog.today;
+        const latestDate = new Date(latestDateStr);
+        let targetDate = new Date(latestDate);
+        
+        if (this.changesPeriod === 'YTD') {
+          const year = latestDate.getFullYear();
+          targetDate = new Date(`${year}-01-01`);
         } else {
-          return [];
+          const days = parseInt(this.changesPeriod) || 1;
+          targetDate.setDate(latestDate.getDate() - days);
         }
-      }
-      
-      const exits = [];
-      const findCompany = (ticker) => {
-        const lbMatch = this.leaderboard.find(l => l.ticker === ticker);
-        if (lbMatch && lbMatch.company) return lbMatch.company;
+        
+        const dates = this.meta.snapshot_dates_in_window || [];
+        if (!dates.length) return [];
+        
+        let targetDateStr = dates[0];
+        const targetTime = targetDate.getTime();
+        let minDiff = Math.abs(new Date(targetDateStr).getTime() - targetTime);
+        
+        for (const d of dates) {
+          const diff = Math.abs(new Date(d).getTime() - targetTime);
+          if (diff < minDiff) {
+            minDiff = diff;
+            targetDateStr = d;
+          }
+        }
+        
+        if (targetDateStr === latestDateStr) {
+          const idx = dates.indexOf(latestDateStr);
+          if (idx > 0) {
+            targetDateStr = dates[idx - 1];
+          } else {
+            return [];
+          }
+        }
+        
+        // Pre-build company lookup map
+        const companyLookup = {};
+        for (const row of this.leaderboard) {
+          companyLookup[row.ticker] = row.company;
+        }
         for (const etfExits of Object.values(this.holdingsExits || {})) {
           for (const periodExits of Object.values(etfExits || {})) {
-            const match = periodExits.find(ex => ex.ticker === ticker);
-            if (match && match.name) return match.name;
+            for (const ex of periodExits) {
+              if (ex.ticker && ex.name && !companyLookup[ex.ticker]) {
+                companyLookup[ex.ticker] = ex.name;
+              }
+            }
           }
         }
-        return '—';
+
+        const exits = [];
+        for (const [ticker, history] of Object.entries(this.scoreHistory)) {
+          const targetEntry = history.find(h => h.d === targetDateStr);
+          if (targetEntry && targetEntry.s > 0) {
+            const todayEntry = history.find(h => h.d === latestDateStr);
+            if (!todayEntry || todayEntry.s === 0) {
+              exits.push({
+                ticker: ticker,
+                company: companyLookup[ticker] || '—',
+                final_score: 0.0,
+                score_delta: -targetEntry.s,
+                score_delta_pct: -1.0,
+                tiers: ''
+              });
+            }
+          }
+        }
+        exits.sort((a, b) => a.score_delta - b.score_delta);
+        const sortState = this.changesSort.universeExits;
+        if (sortState && sortState.key) {
+          this.sortItemList(exits, sortState.key, sortState.dir, String(this.changesPeriod));
+        }
+        return exits;
       };
-      
-      for (const [ticker, history] of Object.entries(this.scoreHistory)) {
-        const targetEntry = history.find(h => h.d === targetDateStr);
-        if (targetEntry && targetEntry.s > 0) {
-          const todayEntry = history.find(h => h.d === latestDateStr);
-          if (!todayEntry || todayEntry.s === 0) {
-            exits.push({
-              ticker: ticker,
-              company: findCompany(ticker),
-              final_score: 0.0,
-              score_delta: -targetEntry.s,
-              score_delta_pct: -1.0,
-              tiers: ''
-            });
-          }
-        }
-      }
-      exits.sort((a, b) => a.score_delta - b.score_delta);
-      const sortState = this.changesSort.universeExits;
-      if (sortState && sortState.key) {
-        this.sortItemList(exits, sortState.key, sortState.dir, String(this.changesPeriod));
-      }
-      return exits;
+
+      const result = computeExits();
+      this._universeExitsCache = { key: cacheKey, value: result };
+      return result;
     },
 
     get newEntrants() {
-      if (!this.scoreHistory || !this.changelog.today || !this.meta.snapshot_dates_in_window) return [];
-      
-      const latestDateStr = this.changelog.today;
-      const latestDate = new Date(latestDateStr);
-      let targetDate = new Date(latestDate);
-      
-      if (this.changesPeriod === 'YTD') {
-        const year = latestDate.getFullYear();
-        targetDate = new Date(`${year}-01-01`);
-      } else {
-        const days = parseInt(this.changesPeriod) || 1;
-        targetDate.setDate(latestDate.getDate() - days);
+      const cacheKey = `${this.changesPeriod}_${JSON.stringify(this.changesSort.newEntrants)}`;
+      if (this._newEntrantsCache && this._newEntrantsCache.key === cacheKey) {
+        return this._newEntrantsCache.value;
       }
-      
-      const dates = this.meta.snapshot_dates_in_window || [];
-      if (!dates.length) return [];
-      
-      let targetDateStr = dates[0];
-      const targetTime = targetDate.getTime();
-      let minDiff = Math.abs(new Date(targetDateStr).getTime() - targetTime);
-      for (const d of dates) {
-        const diff = Math.abs(new Date(d).getTime() - targetTime);
-        if (diff < minDiff) {
-          minDiff = diff;
-          targetDateStr = d;
-        }
-      }
-      
-      if (targetDateStr === latestDateStr) {
-        const idx = dates.indexOf(latestDateStr);
-        if (idx > 0) {
-          targetDateStr = dates[idx - 1];
+
+      const computeEntrants = () => {
+        if (!this.scoreHistory || !this.changelog.today || !this.meta.snapshot_dates_in_window) return [];
+        
+        const latestDateStr = this.changelog.today;
+        const latestDate = new Date(latestDateStr);
+        let targetDate = new Date(latestDate);
+        
+        if (this.changesPeriod === 'YTD') {
+          const year = latestDate.getFullYear();
+          targetDate = new Date(`${year}-01-01`);
         } else {
-          return [];
+          const days = parseInt(this.changesPeriod) || 1;
+          targetDate.setDate(latestDate.getDate() - days);
         }
-      }
-      
-      const entrants = [];
-      for (const row of this.leaderboard) {
-        const history = this.scoreHistory[row.ticker];
-        if (history) {
-          const targetEntry = history.find(h => h.d === targetDateStr);
-          if (!targetEntry || targetEntry.s === 0) {
+        
+        const dates = this.meta.snapshot_dates_in_window || [];
+        if (!dates.length) return [];
+        
+        let targetDateStr = dates[0];
+        const targetTime = targetDate.getTime();
+        let minDiff = Math.abs(new Date(targetDateStr).getTime() - targetTime);
+        for (const d of dates) {
+          const diff = Math.abs(new Date(d).getTime() - targetTime);
+          if (diff < minDiff) {
+            minDiff = diff;
+            targetDateStr = d;
+          }
+        }
+        
+        if (targetDateStr === latestDateStr) {
+          const idx = dates.indexOf(latestDateStr);
+          if (idx > 0) {
+            targetDateStr = dates[idx - 1];
+          } else {
+            return [];
+          }
+        }
+        
+        const entrants = [];
+        for (const row of this.leaderboard) {
+          const history = this.scoreHistory[row.ticker];
+          if (history) {
+            const targetEntry = history.find(h => h.d === targetDateStr);
+            if (!targetEntry || targetEntry.s === 0) {
+              entrants.push({
+                ticker: row.ticker,
+                company: row.company,
+                final_score: row.final_score,
+                etf_count: row.etf_count,
+                tiers: row.tiers
+              });
+            }
+          } else {
             entrants.push({
               ticker: row.ticker,
               company: row.company,
@@ -3188,22 +3217,18 @@ function app() {
               tiers: row.tiers
             });
           }
-        } else {
-          entrants.push({
-            ticker: row.ticker,
-            company: row.company,
-            final_score: row.final_score,
-            etf_count: row.etf_count,
-            tiers: row.tiers
-          });
         }
-      }
-      const sorted = entrants.sort((a, b) => b.final_score - a.final_score);
-      const sortState = this.changesSort.newEntrants;
-      if (sortState && sortState.key) {
-        this.sortItemList(sorted, sortState.key, sortState.dir, String(this.changesPeriod));
-      }
-      return sorted;
+        const sorted = entrants.sort((a, b) => b.final_score - a.final_score);
+        const sortState = this.changesSort.newEntrants;
+        if (sortState && sortState.key) {
+          this.sortItemList(sorted, sortState.key, sortState.dir, String(this.changesPeriod));
+        }
+        return sorted;
+      };
+
+      const result = computeEntrants();
+      this._newEntrantsCache = { key: cacheKey, value: result };
+      return result;
     },
 
     get sectorMax() {
