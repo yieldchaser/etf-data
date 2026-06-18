@@ -284,12 +284,21 @@ def _read_mega_xl(xl_path: Path, asset_filter: set[str] | None = None) -> dict[s
 
     sheets_to_read = set(sheet for (sheet, _) in lookup.keys())
 
-    for sheet in sheets_to_read:
-        try:
-            df = pd.read_excel(xl_path, sheet_name=sheet)
-        except Exception as e:
-            print(f"  WARNING: Could not read sheet '{sheet}': {e}")
-            continue
+    # Open the 11MB workbook ONCE and read sheets from the open handle.
+    # Re-parsing the zip/XML for each sheet was ~5x slower (BUG-6).
+    sheet_dfs: dict[str, pd.DataFrame] = {}
+    try:
+        with pd.ExcelFile(xl_path) as xls:
+            for sheet in sheets_to_read:
+                try:
+                    sheet_dfs[sheet] = pd.read_excel(xls, sheet_name=sheet)
+                except Exception as e:
+                    print(f"  WARNING: Could not read sheet '{sheet}': {e}")
+    except Exception as e:
+        print(f"  ERROR: Could not open workbook: {e}")
+        return
+
+    for sheet, df in sheet_dfs.items():
 
         # Locate the Date and Close columns robustly
         cols_lower = {c: c for c in df.columns}

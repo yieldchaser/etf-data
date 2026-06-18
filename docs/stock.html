@@ -906,18 +906,21 @@ function stockApp() {
         // Store full score map for global rank computation
         this._allScores = scoreData;
 
-        // Tier map from score_history (meta missing here, so build from leaderboard held_by + tiers)
-        // We load metadata separately
-        try {
-          const meta = await fetch('data/metadata.json', { cache: 'no-store' }).then(r => r.json());
-          // Support new flat etfs[] format AND old tiers[] format
-          const etfsMeta = meta.config_snapshot?.etfs || [];
-          if (etfsMeta.length) {
-            etfsMeta.forEach(e => this.tierMap[e.ticker] = e.tier);
-          } else {
-            (meta.config_snapshot?.tiers || []).forEach(t => t.etfs.forEach(e => this.tierMap[e] = t.name));
-          }
-        } catch {}
+        // Kick off the remaining 3 fetches in parallel (BUG-14: previously
+        // sequential — metadata → flag_history → details = 3 round-trips).
+        // Each resolves independently; the detail fetch drives stockPending.
+        const metaP = fetch('data/metadata.json', { cache: 'no-store' })
+          .then(r => r.json())
+          .then(meta => {
+            // Support new flat etfs[] format AND old tiers[] format
+            const etfsMeta = meta.config_snapshot?.etfs || [];
+            if (etfsMeta.length) {
+              etfsMeta.forEach(e => this.tierMap[e.ticker] = e.tier);
+            } else {
+              (meta.config_snapshot?.tiers || []).forEach(t => t.etfs.forEach(e => this.tierMap[e] = t.name));
+            }
+          })
+          .catch(() => {});
 
         // Score history for this ticker
         this.scoreHistory = (tickerHist && tickerHist.scoreHistory) ? tickerHist.scoreHistory : (scoreData[this.ticker] || []);
@@ -965,38 +968,46 @@ function stockApp() {
         // Holdings history for this ticker
         this.holdingsHistory = (tickerHist && tickerHist.holdingsHistory) ? tickerHist.holdingsHistory : (hhData[this.ticker] || {});
 
-        // Load flag history from separate file (on-demand)
-        if (tickerHist && tickerHist.flagHistory) {
-          this.flagHistory = tickerHist.flagHistory;
-        } else {
-          try {
-            const fhData = await fetch('data/flag_history.json', { cache: 'no-store' }).then(r => r.json());
-            this.flagHistory = fhData[this.ticker] || [];
-          } catch { this.flagHistory = []; }
-        }
-
+        // Flag history + stock detail fetched in parallel (BUG-14).
+        // flagHistory may already be embedded in tickerHist (no fetch); otherwise
+        // pull it from the standalone flag_history.json.
         // Load stock detail file (price history + description).
         // Sanitise the ticker to match the file name written by
         // predator.fetch_stock_details (_safe_detail_stem) - some tickers carry
         // scraper junk like "WALMEX.*" / "PE&amp;OLES*" whose '*'/'&' are invalid
         // in file paths. Both sides use the identical [^A-Za-z0-9._-] → '_' rule.
-        try {
-          // Mirror of predator.fetch_stock_details._safe_detail_stem: illegal
-          // chars → '_', strip trailing dot/space, guard empty + Windows
-          // reserved device names (CON/PRN/AUX/NUL/COM1-9/LPT1-9).
-          let safeStem = this.ticker.replace(/[^A-Za-z0-9._-]/g, '_').replace(/[. ]+$/, '');
-          if (!safeStem) safeStem = '_';
-          if (/^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i.test(safeStem)) safeStem += '_';
-          const detData = await fetch(`data/details/${safeStem}.json`)
-            .then(r => r.ok ? r.json() : Promise.reject(r.status));
+        // Mirror of predator.fetch_stock_details._safe_detail_stem: illegal
+        // chars → '_', strip trailing dot/space, guard empty + Windows
+        // reserved device names (CON/PRN/AUX/NUL/COM1-9/LPT1-9).
+        let safeStem = this.ticker.replace(/[^A-Za-z0-9._-]/g, '_').replace(/[. ]+$/, '');
+        if (!safeStem) safeStem = '_';
+        if (/^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i.test(safeStem)) safeStem += '_';
+
+        const flagP = (tickerHist && tickerHist.flagHistory)
+          ? Promise.resolve(tickerHist.flagHistory)
+          : fetch('data/flag_history.json', { cache: 'no-store' })
+              .then(r => r.json()).then(d => d[this.ticker] || []).catch(() => []);
+        const detailP = fetch(`data/details/${safeStem}.json`)
+          .then(r => r.ok ? r.json() : Promise.reject(r.status));
+
+        // allSettled so a detail 404 (common for un-resolved tickers) doesn't
+        // reject the whole batch; flagP already resolves to [] on error.
+        const [flagRes, detailRes] = await Promise.allSettled([flagP, detailP]);
+
+        this.flagHistory = flagRes.status === 'fulfilled' ? (Array.isArray(flagRes.value) ? flagRes.value : []) : [];
+        if (detailRes.status === 'fulfilled') {
+          const detData = detailRes.value;
           this.stockPending = detData.pending === true;
           this.stockDescription = detData.description || '';
           this.stockCurrency = detData.currency || 'USD';
           this.stockPrices = detData.prices || [];
           this._stockFilter();
-        } catch {
+        } else {
           this.stockPending = true;
         }
+
+        // Ensure the parallel metadata fetch completes before we finish loading.
+        await metaP;
 
         this.found = this.leaderboardRow !== null || this.scoreHistory.length > 0 || Object.keys(this.holdingsHistory).length > 0;
       } catch (e) {

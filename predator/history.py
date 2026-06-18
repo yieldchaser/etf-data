@@ -548,7 +548,12 @@ def signal_history(
             med = np.nanmedian(rp_arr[:, win_start: di + 1], axis=1)
             better = (with_nan < med[:, None])
             better_count = np.nansum(better, axis=1)
-            is_burst_arr = (peak >= 40) & (coverage >= 0.80) & (better_count >= 8)
+            # Coverage gate mirrors build.py's _attach_velocity: newer names
+            # (actual_obs < 15) get a pass since they can't reach 80% of a
+            # 30-day window; sustained_count ≥ 8 still guards against noise.
+            actual_obs = valid_mask.sum(axis=1)
+            coverage_ok = (coverage >= 0.80) | (actual_obs < 15)
+            is_burst_arr = (peak >= 40) & coverage_ok & (better_count >= 8)
             burst_sets.append(set(t for t, b in zip(rp_tickers, is_burst_arr) if b))
     else:
         burst_sets = [set()] * len(dates_sorted)

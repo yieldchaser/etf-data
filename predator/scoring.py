@@ -357,7 +357,9 @@ class Config:
 
     @classmethod
     def from_yaml(cls, path: str | Path) -> "Config":
-        cfg = yaml.safe_load(Path(path).read_text())
+        # Explicit UTF-8: config.yaml contains non-ASCII chars (→ arrows, etc.).
+        # On Windows the default encoding (CP1252) would raise UnicodeDecodeError.
+        cfg = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
         san = cfg.get("sanitizer", {})
         # cross_listing_patterns: list of {pattern: regex, replacement: str} dicts
         # in YAML; loaded as ((pattern, replacement), ...) tuple here.
@@ -579,8 +581,19 @@ def compute_leaderboard(
 
     # NEW detection: not seen in this ETF before the cutoff window
     # §28: only flag NEW for mature ETFs (suppresses the 15→30 migration flood)
-    cutoff = df["Holdings_As_Of"].max() - timedelta(days=cfg.new_lookback_days)
-    historical_pairs = set(map(tuple, df.loc[df["Holdings_As_Of"] < cutoff,
+    #
+    # Per-ETF cutoff: a lagging ETF whose latest snapshot is older than the
+    # global max must NOT have its newest holdings silently classified as
+    # historical (which would permanently suppress is_new for them). Compute
+    # the lookback cutoff relative to each ETF's own latest date instead of
+    # the global max. (BUG-11: global cutoff penalized lagging ETFs.)
+    etf_cutoff = (etf_last_seen - timedelta(days=cfg.new_lookback_days)).to_dict()
+    cutoff_global = df["Holdings_As_Of"].max() - timedelta(days=cfg.new_lookback_days)
+    hist_mask = [
+        asof < etf_cutoff.get(etf, cutoff_global)
+        for etf, asof in zip(df["ETF_Ticker"], df["Holdings_As_Of"])
+    ]
+    historical_pairs = set(map(tuple, df.loc[hist_mask,
                                               ["ETF_Ticker", "ticker"]].itertuples(index=False, name=None)))
     pair_index = pd.Series(list(zip(latest["ETF_Ticker"], latest["ticker"])), index=latest.index)
     is_new_raw = ~pair_index.isin(historical_pairs)

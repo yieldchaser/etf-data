@@ -194,7 +194,10 @@ KNOWN_CURRENCY_CODES = {
     "QAR", "RON", "SAR", "SEK", "SGD", "THB", "TRY", "TWD", "USD", "ZAR",
 }
 
-_TEMPLATE_DESC_RE = re.compile(r"is a holding tracked across smart-beta ETFs", re.IGNORECASE)
+# Matches the auto-generated placeholder description so stale template
+# entries get refreshed. Flexible across tier phrasings ("smart-beta ETFs",
+# "quant ETFs", etc.) rather than pinning one literal string.
+_TEMPLATE_DESC_RE = re.compile(r"is a holding tracked across[\w\s-]*ETFs", re.IGNORECASE)
 
 
 class _SafeEncoder(json.JSONEncoder):

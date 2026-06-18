@@ -7,6 +7,7 @@ Usage:
 """
 from __future__ import annotations
 import argparse
+import os
 from pathlib import Path
 import pandas as pd
 import yfinance as yf
@@ -84,7 +85,11 @@ def fetch_one(symbol: str, yf_ticker: str, out_dir: Path, period: str = "max") -
     if not existing.empty:
         df = pd.concat([existing, df]).drop_duplicates(subset=["Date"], keep="last")
     df = df.sort_values("Date").reset_index(drop=True)
-    df.to_parquet(target, index=False)
+    # Atomic write: write to .tmp then os.replace — an interrupted write
+    # leaves the previous good file intact rather than a truncated parquet.
+    tmp = target.with_suffix(target.suffix + ".tmp")
+    df.to_parquet(tmp, index=False)
+    os.replace(tmp, target)
     print(f"    → {len(df)} total rows (added {len(df) - len(existing) if not existing.empty else len(df)})")
 
 

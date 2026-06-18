@@ -82,7 +82,11 @@ def fetch_one(series_id: str, api_key: str, out_dir: Path) -> None:
     else:
         combined = new_df
     combined = combined.sort_values("Date").reset_index(drop=True)
-    combined.to_parquet(target, index=False)
+    # Atomic write: write to .tmp then os.replace — an interrupted write
+    # leaves the previous good file intact rather than a truncated parquet.
+    tmp = target.with_suffix(target.suffix + ".tmp")
+    combined.to_parquet(tmp, index=False)
+    os.replace(tmp, target)
     added = len(new_df)
     print(f"    → {len(combined)} total rows (+{added} new)")
 

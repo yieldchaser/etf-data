@@ -522,10 +522,14 @@ def _fetch_yfinance_series(
         print(f"    ERROR: yfinance not installed. Run: pip install yfinance")
         return pd.Series(dtype=float)
 
-    def _download_close(_ticker: str) -> pd.Series:
-        """One yfinance attempt → cleaned monthly Close Series (or empty)."""
+    def _download_close(_ticker: str, period: str = "max", interval: str = "1mo") -> pd.Series:
+        """One yfinance attempt → cleaned Close Series (or empty).
+
+        interval is "1mo" (default) for the monthly EOP close series, or "1d"
+        for the daily fallback used to gap-fill monthly holes (e.g. Gold).
+        """
         try:
-            data = yf.download(_ticker, period="max", interval="1mo", progress=False)
+            data = yf.download(_ticker, period=period, interval=interval, progress=False)
         except Exception as e:
             print(f"    ERROR fetching {_ticker} from yfinance: {e}")
             return pd.Series(dtype=float)
@@ -547,7 +551,47 @@ def _fetch_yfinance_series(
             close = close.tz_convert(None)
         return close
 
-    close = _download_close(ticker)
+    # BUG-13: on incremental runs we already have cached history; only the
+    # trailing months are potentially stale. Pulling period="max" every run
+    # wastes bandwidth and rate-limit budget. Restrict to the recent window.
+    incremental = (not full_refresh) and (existing is not None) and (not existing.empty)
+    fetch_period = "2y" if incremental else "max"
+
+    close = _download_close(ticker, period=fetch_period)
+
+    # ── Gold-style gap fill ──────────────────────────────────────────────────
+    # yfinance's monthly endpoint is buggy for some futures (GC=F skipped
+    # Feb/Mar 2026). Fetch trailing-1y DAILY data, resample to monthly EOP
+    # close, and merge it in — daily coverage is reliable where monthly is not.
+    # Overwrites any overlapping (often-wrong) monthly bar's last value with
+    # the verified month-end daily close.
+    try:
+        daily = _download_close(ticker, period="1y", interval="1d")
+    except Exception as e:
+        print(f"    WARN: daily gap-fill fetch failed for {ticker}: {e}")
+        daily = pd.Series(dtype=float)
+
+    if daily is not None and not daily.empty:
+        # Resample to month-end close (EOP). label="right" + closed="right"
+        # assigns each month's bar to the period-end timestamp, matching the
+        # monthly interval's timestamp convention.
+        daily_monthly = daily.resample("ME", label="right").last().dropna()
+        if not daily_monthly.empty:
+            if close is None or close.empty:
+                close = daily_monthly
+            else:
+                # Snap monthly bar timestamps to month-end to align indexes
+                # before combining (monthly bars index at month start in some
+                # yfinance versions, at month end in others).
+                close_snapped = close.copy()
+                close_snapped.index = close_snapped.index.to_period("M").to_timestamp("M")
+                combined = pd.concat([close_snapped, daily_monthly])
+                # Daily-resampled wins on overlap (keep="last")
+                combined = combined[~combined.index.duplicated(keep="last")]
+                close = combined.sort_index()
+            print(f"    gap-fill: merged daily→monthly ({len(daily_monthly)} months) for {ticker}")
+
+    close = close if close is not None else pd.Series(dtype=float)
 
     # Bounded retry for known-flaky tickers (Wave-0 evidence: yfinance is
     # intermittently empty from CI runners for these). A single retry with
@@ -557,7 +601,7 @@ def _fetch_yfinance_series(
         print(f"    RETRY: yfinance empty for {ticker}, waiting "
               f"{_YFINANCE_RETRY_BACKOFF_SEC}s before one retry")
         time.sleep(_YFINANCE_RETRY_BACKOFF_SEC)
-        close = _download_close(ticker)
+        close = _download_close(ticker, period=fetch_period)
 
     if close is None or close.empty:
         # Log empty-fetch evidence (after any retries) so the root-cause

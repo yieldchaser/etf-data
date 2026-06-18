@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -19,6 +20,17 @@ import pandas as pd
 
 from .fetch_yf import SYMBOLS as YF_SYMBOLS  # noqa: F401 (used for reference)
 from .stats import series_stats, log_rows
+
+
+def _write_atomic(path: Path, text: str) -> None:
+    """Write text atomically: write to .tmp then os.replace.
+
+    Prevents truncated/corrupt files if the process is interrupted mid-write.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, path)
 
 if sys.platform.startswith("win"):
     try:
@@ -162,7 +174,7 @@ def build(source: Path, output: Path) -> None:
         except Exception:
             pass
     text = _dumps(markets_json, separators=(",", ":"))
-    out_path.write_text(text, encoding="utf-8")
+    _write_atomic(out_path, text)
     size_mb = len(text.encode()) / 1_048_576
     print(f"\n✓ markets.json: {len(series_list)} series · {size_mb:.2f} MB")
 
@@ -195,7 +207,7 @@ def build(source: Path, output: Path) -> None:
                 return
         except Exception:
             pass
-    sim_out.write_text(_dumps(sim_inputs, separators=(",", ":")), encoding="utf-8")
+    _write_atomic(sim_out, _dumps(sim_inputs, separators=(",", ":")))
     sim_size_kb = sim_out.stat().st_size / 1024
     print(f"✓ sim_underlyings.json: {len(sim_inputs)} underlyings · {sim_size_kb:.0f} KB")
 

@@ -2740,6 +2740,11 @@ function app() {
     flag: '', selectedTier: '', selectedSector: '', selectedCountry: '', regionFilter: '', newOnly: false, velocityOnly: false, burstOnly: false, q: '', excludeConcentrated: false, qualityAdoptedOnly: false, qualityDefectedOnly: false, preHcOnly: false, stealthBuyOnly: false, velOverScoreOnly: false, quantQualityOnly: false, stealthAccOnly: false, divOnly: false,
     sortKey: 'leaderboard_rank', sortDir: 'asc',
     page: 1, pageSize: 50, open: null,
+    // Reactive caches for expensive getters (BUG-5): _filteredCacheKey holds
+    // a serialised snapshot of every input filtered() reads; the getter
+    // recomputes only when the key changes. Same pattern for etfSummary.
+    _filteredCache: null, _filteredCacheKey: null,
+    _etfSummaryCache: null, _etfSummaryCacheKey: null,
     etfPage: 1, etfPageSize: 50,
     activeETF: 'QQQM',
     expandedSidebarETF: null,
@@ -2794,13 +2799,27 @@ function app() {
 
     async load() {
       try {
-        const [lb, hd, chg, mt] = await Promise.all([
-          fetch('data/leaderboard.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)),
-          fetch('data/holdings_latest.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)),
-          fetch('data/changelog.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)),
-          fetch('data/metadata.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)),
+        // All initial fetches run in parallel — the 4 optional data files
+        // (flow/overlap/scoreHistory/holdingsExits) each carry their own
+        // catch fallback so a missing file doesn't break the rest.
+        // (BUG-4: previously these were sequential awaits = 4 round-trips.)
+        const [
+          [lb, hd, chg, mt],
+          flow, overlap, scoreHistory, holdingsExits,
+        ] = await Promise.all([
+          Promise.all([
+            fetch('data/leaderboard.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)),
+            fetch('data/holdings_latest.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)),
+            fetch('data/changelog.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)),
+            fetch('data/metadata.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)),
+          ]),
+          fetch('data/flow.json', { cache: 'no-store' }).then(r => r.json()).catch(() => ({})),
+          fetch('data/etf_overlap.json', { cache: 'no-store' }).then(r => r.json()).catch(() => ({})),
+          fetch('data/score_history.json', { cache: 'no-store' }).then(r => r.json()).catch(() => ({})),
+          fetch('data/holdings_exits.json', { cache: 'no-store' }).then(r => r.json()).catch(() => ({})),
         ]);
         this.leaderboard = lb; this.holdings = hd; this.changelog = chg; this.meta = mt;
+        this.flow = flow; this.overlap = overlap; this.scoreHistory = scoreHistory; this.holdingsExits = holdingsExits;
         // Default sort: APEX forward score (desc) when the backend emits it.
         // Runs once at load - any header click after this overrides it as usual.
         if (Array.isArray(lb) && lb.some(r => r && r.apex_score != null)) {
@@ -2808,12 +2827,6 @@ function app() {
           this.sortKey = 'apex_score';
           this.sortDir = 'desc';
         }
-        // Load flow data (optional)
-        try { this.flow = await fetch('data/flow.json', { cache: 'no-store' }).then(r => r.json()); } catch (e) { this.flow = {}; }
-        // Load ETF overlap matrix (optional)
-        try { this.overlap = await fetch('data/etf_overlap.json', { cache: 'no-store' }).then(r => r.json()); } catch (e) { this.overlap = {}; }
-        try { this.scoreHistory = await fetch('data/score_history.json', { cache: 'no-store' }).then(r => r.json()); } catch (e) { this.scoreHistory = {}; }
-        try { this.holdingsExits = await fetch('data/holdings_exits.json', { cache: 'no-store' }).then(r => r.json()); } catch (e) { this.holdingsExits = {}; }
         // Hash routing - open #etf=XYZ jumps to the ETFs tab for that ETF
         const hash = location.hash || '';
         const etfMatch = hash.match(/#etf=([A-Z0-9.\-]+)/i);
@@ -3570,6 +3583,22 @@ function app() {
     },
 
     get filtered() {
+      // Reactive cache (BUG-5): filtered() runs heavy filter+sort over ~4k rows
+      // and is referenced by both paged & totalPages, so it evaluated multiple
+      // times per render tick. Recompute only when an input actually changes.
+      const key = JSON.stringify({
+        n: this.leaderboard.length, tab: this.activeTab, pins: this.pins.join(','),
+        flag: this.flag, newOnly: this.newOnly, velocityOnly: this.velocityOnly,
+        burstOnly: this.burstOnly, qualityAdoptedOnly: this.qualityAdoptedOnly,
+        qualityDefectedOnly: this.qualityDefectedOnly, preHcOnly: this.preHcOnly,
+        stealthBuyOnly: this.stealthBuyOnly, velOverScoreOnly: this.velOverScoreOnly,
+        quantQualityOnly: this.quantQualityOnly, stealthAccOnly: this.stealthAccOnly,
+        divOnly: this.divOnly, tier: this.selectedTier, sector: this.selectedSector,
+        country: this.selectedCountry, region: this.regionFilter,
+        excl: this.excludeConcentrated, q: this.q.trim().toLowerCase(),
+        sort: this.sortLevels,
+      });
+      if (this._filteredCacheKey === key && this._filteredCache) return this._filteredCache;
       const q = this.q.trim().toLowerCase(), tier = this.selectedTier, sector = this.selectedSector, country = this.selectedCountry, region = this.regionFilter;
       let r = this.leaderboard;
       if (this.activeTab === 'watchlist') r = r.filter(x => this.pins.includes(x.ticker));
@@ -3596,7 +3625,7 @@ function app() {
       }
       if (this.excludeConcentrated) r = r.filter(x => (x.concentration_score || 0) <= 80);
       if (q)                 r = r.filter(x => (x.ticker || '').toLowerCase().includes(q) || (x.company || '').toLowerCase().includes(q));
-      return [...r].sort((a, b) => {
+      const out = [...r].sort((a, b) => {
         for (const lvl of this.sortLevels) {
           const av = a[lvl.key], bv = b[lvl.key];
           const dir = lvl.dir === 'asc' ? 1 : -1;
@@ -3610,6 +3639,9 @@ function app() {
         }
         return 0;
       });
+      this._filteredCacheKey = key;
+      this._filteredCache = out;
+      return out;
     },
 
     get totalPages() { return Math.max(1, Math.ceil(this.filtered.length / this.pageSize)); },
@@ -3806,12 +3838,17 @@ function app() {
 
     // ETF tab
     get etfSummary() {
+      // Reactive cache (BUG-5): iterates over the full holdings array to count
+      // per-ETF holdings. Referenced in several template spots, so it ran on
+      // every render tick. Recompute only when holdings or sort order changes.
+      const key = `${this.holdings.length}|${this.etfSort}`;
+      if (this._etfSummaryCacheKey === key && this._etfSummaryCache) return this._etfSummaryCache;
       const etfMeta = this.meta.config_snapshot?.etfs || [];
       const tierMap = {};
       etfMeta.forEach(e => tierMap[e.ticker] = e.tier);
       const counts = {};
       this.holdings.forEach(h => { counts[h.ETF_Ticker] = (counts[h.ETF_Ticker] || 0) + 1; });
-      return (this.meta.etfs || [])
+      const out = (this.meta.etfs || [])
         .map(e => ({ etf: e, tier: tierMap[e] || '', count: counts[e] || 0 }))
         .sort((a, b) => {
           if (this.etfSort === 'alpha') {
@@ -3826,6 +3863,9 @@ function app() {
           if (ta !== tb) return ta - tb;
           return a.etf.localeCompare(b.etf);
         });
+      this._etfSummaryCacheKey = key;
+      this._etfSummaryCache = out;
+      return out;
     },
     get currentETFTier() { return this.etfSummary.find(e => e.etf === this.activeETF)?.tier || ''; },
 

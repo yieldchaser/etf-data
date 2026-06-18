@@ -725,27 +725,26 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     # Consistency check: last-date signals vs leaderboard's own computed columns
     if flag_history and historical:
         last_d = max(historical.keys())
-        lb_last = historical[last_d].set_index("ticker")
-        mismatch_vs = 0
+        last_d_str = last_d.strftime("%Y-%m-%d")
+        # Use the ENRICHED leaderboard (carries today's burst_30d / velocity_score
+        # added by _attach_velocity) rather than the raw historical snapshot, which
+        # never carries those columns and would always report a false mismatch.
+        lb_indexed = leaderboard.set_index("ticker") if "ticker" in leaderboard.columns else None
         mismatch_burst = 0
         n_checked = 0
         for tkr, entries in flag_history.items():
             if not entries:
                 continue
             last_e = entries[-1]
-            if last_e["d"] != last_d.strftime("%Y-%m-%d"):
+            if last_e["d"] != last_d_str:
                 continue
             n_checked += 1
-            # vs consistency: leaderboard doesn't carry velocity_score in snapshots
-            # (it's computed today-only in _attach_velocity), so we compare
-            # against the today leaderboard's velocity_score instead
-            if tkr in lb_last.index:
-                lb_row = lb_last.loc[tkr]
+            hist_burst = bool(last_e.get("burst", False))
+            if lb_indexed is not None and tkr in lb_indexed.index:
+                lb_row = lb_indexed.loc[tkr]
                 if isinstance(lb_row, pd.DataFrame):
                     lb_row = lb_row.iloc[0]
-                # burst consistency
-                lb_burst = bool(lb_row.get("burst_30d", False)) if "burst_30d" in lb_last.columns else False
-                hist_burst = bool(last_e.get("burst", False))
+                lb_burst = bool(lb_row.get("burst_30d", False))
                 if lb_burst != hist_burst:
                     mismatch_burst += 1
         if n_checked > 0:
