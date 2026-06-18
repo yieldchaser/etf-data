@@ -49,7 +49,7 @@
     .matrix-cell { width: 52px; min-width: 52px; height: 28px; text-align: center;
                    font-size: 10px; font-family: ui-monospace, monospace;
                    font-variant-numeric: tabular-nums; cursor: pointer;
-                   /* Hairline border matches the periodic-table palette — soft
+                   /* Hairline border matches the periodic-table palette - soft
                       light overlay rather than a hard black line, so adjacent
                       muted cells read as one continuous grid. */
                    border: 1px solid rgba(255,255,255,0.06); transition: filter 0.1s;
@@ -60,13 +60,13 @@
        cell isn't a full-year return. The trailing · in the cell text is the
        explicit flag; opacity is the at-a-glance signal. The `filter:
        saturate(0.3)` decouples cell-level dimming from the diverging palette
-       so a high-magnitude partial cell still reads visually dim — without
+       so a high-magnitude partial cell still reads visually dim - without
        this, magnitude drives saturation and the 40% opacity alone is not
        enough to make a deep-color cell look "partial". This is the
        load-bearing visual change for the equity-partial-but-saturated bug. */
     .matrix-cell-partial { opacity: 0.40; font-style: italic; filter: saturate(0.3); }
     .matrix-cell-partial:hover { opacity: 0.65; }
-    /* Unvalidated extreme cells — magnitude > ±0.70 and not in
+    /* Unvalidated extreme cells - magnitude > ±0.70 and not in
        KNOWN_REAL_EVENTS. Treat them visually identical to partial cells
        (dim + de-saturated) so a "−99% wheat 2026" artifact doesn't
        scream off the page in red. Cell value, click-through, and
@@ -106,7 +106,7 @@
       <div class="flex items-baseline gap-3 mt-1 flex-wrap">
         <h1 class="text-base font-medium" style="color: var(--cyan)">LONG-HORIZON RETURNS</h1>
         <span class="label" x-text="returnsData ? `Returns data: ${returnsData.asof || (returnsData.generated_utc||'').slice(0,10)}` : (meta.generated_at_utc ? `Price log: ${meta.generated_at_utc.slice(0,10)}` : 'Loading…')"></span>
-        <!-- Live-merge verdict chip — charter v2 Part 2 -->
+        <!-- Live-merge verdict chip - charter v2 Part 2 -->
         <template x-if="freshness && freshness.self_living_check">
           <span class="chip text-[10px] font-mono"
                 :style="(() => {
@@ -118,7 +118,7 @@
                 @mouseenter="showTt($event, (() => {
                   const slc = freshness.self_living_check;
                   const holdouts = Array.isArray(slc && slc.holdouts) ? slc.holdouts : [];
-                  const base = `Live merge — ${slc.live_source_count} of ${freshness.asset_count} assets carry live FRED/yfinance source · ${freshness.fx_pairs.length} FX pair${freshness.fx_pairs.length===1?'':'s'} · ${freshness.cpi_series.length} CPI series · ${freshness.rates_series.length} rate series.`;
+                  const base = `Live merge - ${slc.live_source_count} of ${freshness.asset_count} assets carry live FRED/yfinance source · ${freshness.fx_pairs.length} FX pair${freshness.fx_pairs.length===1?'':'s'} · ${freshness.cpi_series.length} CPI series · ${freshness.rates_series.length} rate series.`;
                   return holdouts.length ? `${base} · holdouts: ${holdouts.join(', ')}` : base;
                 })())"
                 @mouseleave="hideTt()"
@@ -135,7 +135,7 @@
       <span x-show="returnsData" x-text="`${Object.keys(returnsData?.assets||{}).length} assets`"></span>
       <span x-show="series.length" x-text="`${series.length} price series`"></span>
       <a href="methodology.html" class="label hover:text-zinc-400 transition" style="text-decoration: none;"
-         title="How Predator Protocol works — scoring, motion signals, sanitizer, self-living data, and honest limitations">How it works ↗</a>
+         title="How Predator Protocol works - scoring, motion signals, sanitizer, self-living data, and honest limitations">How it works ↗</a>
     </div>
   </header>
 
@@ -165,28 +165,28 @@
               :class="activeTab === 'periodic' ? 'tab-active' : ''"
               class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
               :style="activeTab === 'periodic' ? '' : 'color: var(--text-2); border-color: var(--border)'"
-              @mouseenter="showTt($event, 'Callan Periodic Table — best to worst asset each year')" @mouseleave="hideTt()">
+              @mouseenter="showTt($event, 'Callan Periodic Table - best to worst asset each year')" @mouseleave="hideTt()">
         Periodic Table
       </button>
       <button @click="activeTab = 'drawdown'"
               :class="activeTab === 'drawdown' ? 'tab-active' : ''"
               class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
               :style="activeTab === 'drawdown' ? '' : 'color: var(--text-2); border-color: var(--border)'"
-              @mouseenter="showTt($event, 'Drawdown Studio — underwater curves and recovery stats')" @mouseleave="hideTt()">
+              @mouseenter="showTt($event, 'Drawdown Studio - underwater curves and recovery stats')" @mouseleave="hideTt()">
         Drawdowns
       </button>
       <button @click="activeTab = 'holdingperiod'"
               :class="activeTab === 'holdingperiod' ? 'tab-active' : ''"
               class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
               :style="activeTab === 'holdingperiod' ? '' : 'color: var(--text-2); border-color: var(--border)'"
-              @mouseenter="showTt($event, 'Holding-Period Lab — best/worst/median rolling returns + plain trailing 1Y')" @mouseleave="hideTt()">
+              @mouseenter="showTt($event, 'Holding-Period Lab - best/worst/median rolling returns + plain trailing 1Y')" @mouseleave="hideTt()">
         Hold Lab
       </button>
       <button @click="activeTab = 'seasonality'"
               :class="activeTab === 'seasonality' ? 'tab-active' : ''"
               class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
               :style="activeTab === 'seasonality' ? '' : 'color: var(--text-2); border-color: var(--border)'"
-              @mouseenter="showTt($event, 'Seasonality — average return by month of year')" @mouseleave="hideTt()">
+              @mouseenter="showTt($event, 'Seasonality - average return by month of year')" @mouseleave="hideTt()">
         Seasonality
       </button>
       <button @click="activeTab = 'correlation'"
@@ -200,13 +200,13 @@
               :class="activeTab === 'volatility' ? 'tab-active' : ''"
               class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
               :style="activeTab === 'volatility' ? '' : 'color: var(--text-2); border-color: var(--border)'"
-              @mouseenter="showTt($event, 'Volatility Intelligence — CBOE implied vol indices')" @mouseleave="hideTt()">
+              @mouseenter="showTt($event, 'Volatility Intelligence - CBOE implied vol indices')" @mouseleave="hideTt()">
         Volatility
       </button>
     </div>
     <!-- Divider -->
     <div class="w-px h-5 mx-1" style="background: var(--border-2)"></div>
-    <!-- Currency lens (matrix only) — only render lenses with usable data.
+    <!-- Currency lens (matrix only) - only render lenses with usable data.
          Local/USD always available; Gold/Silver available when monthly data is loaded;
          INR only if fx.USDINR is populated (requires FRED DEXINUS or USD/INR Excel). -->
     <div x-show="activeTab === 'matrix'" class="flex gap-1">
@@ -217,14 +217,14 @@
           class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
           :style="activeCcy === ccy ? '' : 'color: var(--text-2); border-color: var(--border)'"
           x-text="ccy"
-          @mouseenter="showTt($event, ccy === 'USD' ? 'Convert all returns to USD using monthly FX rates' : ccy === 'INR' ? 'Convert all returns to INR using monthly USD/INR rates' : ccy === 'Gold' ? 'Price in oz of gold — shows real purchasing power over time' : ccy === 'Silver' ? 'Price in oz of silver — shows real purchasing power over time' : 'Native local currency — no FX adjustment')"
+          @mouseenter="showTt($event, ccy === 'USD' ? 'Convert all returns to USD using monthly FX rates' : ccy === 'INR' ? 'Convert all returns to INR using monthly USD/INR rates' : ccy === 'Gold' ? 'Price in oz of gold - shows real purchasing power over time' : ccy === 'Silver' ? 'Price in oz of silver - shows real purchasing power over time' : 'Native local currency - no FX adjustment')"
           @mouseleave="hideTt()">
         </button>
       </template>
     </div>
     <!-- Divider -->
     <div x-show="activeTab === 'matrix'" class="w-px h-5 mx-1" style="background: var(--border-2)"></div>
-    <!-- Nominal / Real toggle (matrix only) — Real only available when CPI data is present -->
+    <!-- Nominal / Real toggle (matrix only) - Real only available when CPI data is present -->
     <div x-show="activeTab === 'matrix' && hasCpiData" class="flex gap-1">
       <button @click="activeReal = false"
               :class="!activeReal ? 'tab-active' : ''"
@@ -236,7 +236,7 @@
               :class="activeReal ? 'tab-active' : ''"
               class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
               :style="activeReal ? '' : (activeCcy === 'INR' ? 'color: var(--text-3); border-color: var(--border); opacity: 0.5; cursor: not-allowed;' : 'color: var(--text-2); border-color: var(--border)')"
-              @mouseenter="showTt($event, activeCcy === 'INR' ? 'Real returns in INR — India CPI data limited. Use USD Real instead.' : 'CPI-adjusted returns using US CPI (CPIAUCSL)')"
+              @mouseenter="showTt($event, activeCcy === 'INR' ? 'Real returns in INR - India CPI data limited. Use USD Real instead.' : 'CPI-adjusted returns using US CPI (CPIAUCSL)')"
               @mouseleave="hideTt()">
         Real
       </button>
@@ -262,16 +262,16 @@
               :class="colorMode === 'zscore' ? 'tab-active' : ''"
               class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
               :style="colorMode === 'zscore' ? '' : 'color: var(--text-2); border-color: var(--border)'"
-              @mouseenter="showTt($event, 'Color by z-score — how unusual was this year vs that asset\'s own history')"
+              @mouseenter="showTt($event, 'Color by z-score - how unusual was this year vs that asset\'s own history')"
               @mouseleave="hideTt()">
         Z-score
       </button>
     </div>
     <!-- Divider -->
     <div x-show="activeTab === 'matrix'" class="w-px h-5 mx-1" style="background: var(--border-2)"></div>
-    <!-- Year window preset bar (matrix only) — default 30Y; gold from 1833 reachable via Max -->
+    <!-- Year window preset bar (matrix only) - default 30Y; gold from 1833 reachable via Max -->
     <div x-show="activeTab === 'matrix'" class="flex items-center gap-1"
-         @mouseenter="showTt($event, 'Time window — applies to matrix, asset detail bars, periodic table, and correlation growth chart')"
+         @mouseenter="showTt($event, 'Time window - applies to matrix, asset detail bars, periodic table, and correlation growth chart')"
          @mouseleave="hideTt()">
       <span class="label" style="font-size:9px;color: var(--text-3)">RANGE</span>
       <template x-for="r in [10,20,30,50,100]" :key="r">
@@ -309,13 +309,13 @@
     <!-- Loading state for returns -->
     <div x-show="loadingReturns" class="pulse-load text-center py-20" style="color: var(--text-3)">
       <div class="text-lg mb-2">Loading returns data…</div>
-      <div class="text-xs">Returns data is building — refresh in a minute if this persists.</div>
+      <div class="text-xs">Returns data is building - refresh in a minute if this persists.</div>
     </div>
 
     <!-- No data state -->
     <div x-show="!loadingReturns && !returnsData" class="text-center py-20">
       <div class="text-base mb-2" style="color: var(--amber)">Returns data still building</div>
-      <div class="text-xs mb-4" style="color: var(--text-3)">The pipeline is generating <code>data/market_returns.json</code> — refresh in a minute.</div>
+      <div class="text-xs mb-4" style="color: var(--text-3)">The pipeline is generating <code>data/market_returns.json</code> - refresh in a minute.</div>
     </div>
 
     <!-- Matrix content -->
@@ -327,7 +327,7 @@
           Annual price returns. Click any cell for monthly breakdown.
           <span x-show="colorMode === 'zscore'" style="color: var(--amber)"> · Z-score mode: color = how unusual vs own history</span>
         </div>
-        <!-- Color legend — changes by mode -->
+        <!-- Color legend - changes by mode -->
         <div class="flex items-center gap-1 text-[10px] font-mono" style="color: var(--text-3)">
           <template x-if="colorMode === 'return'">
             <div class="flex items-center gap-1">
@@ -421,7 +421,7 @@
                     </td>
                   </template>
                 </tr>
-                <!-- Monthly drilldown row — spans full width -->
+                <!-- Monthly drilldown row - spans full width -->
                 <tr x-show="expandedCell && expandedCell.assetKey === asset.key" x-transition.opacity>
                   <td class="matrix-sticky-col" style="padding: 4px 8px; background: rgba(34,211,238,0.04); border-right: 1px solid var(--border-2); border-bottom: 1px solid rgba(34,211,238,0.15); vertical-align: middle;">
                     <div class="label" style="font-size:9px; color: var(--cyan)" x-text="expandedCell ? expandedCell.year + ' monthly' : ''"></div>
@@ -485,14 +485,14 @@
                           class="px-2 py-1 rounded border text-[10px] font-mono transition"
                           :class="detailChartMode === 'heatmap' ? 'tab-active' : ''"
                           :style="detailChartMode === 'heatmap' ? '' : 'color: var(--text-2); border-color: var(--border)'"
-                          @mouseenter="showTt($event, 'Monthly return heatmap — year × month')" @mouseleave="hideTt()">
+                          @mouseenter="showTt($event, 'Monthly return heatmap - year × month')" @mouseleave="hideTt()">
                     Heatmap
                   </button>
                   <button @click="detailChartMode = 'multiccy'"
                           class="px-2 py-1 rounded border text-[10px] font-mono transition"
                           :class="detailChartMode === 'multiccy' ? 'tab-active' : ''"
                           :style="detailChartMode === 'multiccy' ? '' : 'color: var(--text-2); border-color: var(--border)'"
-                          @mouseenter="showTt($event, 'Year × currency table — all lenses at once')" @mouseleave="hideTt()">
+                          @mouseenter="showTt($event, 'Year × currency table - all lenses at once')" @mouseleave="hideTt()">
                     Multi-CCY
                   </button>
                 </div>
@@ -511,7 +511,7 @@
               </div>
             </div>
 
-            <!-- Key stats strip — §4 enhanced with max DD, current DD, return/vol ratio -->
+            <!-- Key stats strip - §4 enhanced with max DD, current DD, return/vol ratio -->
             <div class="flex flex-wrap gap-5 px-4 py-3" style="border-bottom: 1px solid var(--border)">
               <div>
                 <div class="label" style="font-size:9px;">CAGR</div>
@@ -530,7 +530,7 @@
                 <div class="label" style="font-size:9px;">RET/VOL</div>
                 <div class="num font-mono font-medium text-xs" style="color: var(--cyan)"
                      x-text="computeStats(selectedAsset).retVolRatio !== null ? computeStats(selectedAsset).retVolRatio.toFixed(2) : '—'"
-                     @mouseenter="showTt($event, 'CAGR ÷ Annualised Vol — higher = better risk-adjusted return')"
+                     @mouseenter="showTt($event, 'CAGR ÷ Annualised Vol - higher = better risk-adjusted return')"
                      @mouseleave="hideTt()">
                 </div>
               </div>
@@ -613,7 +613,7 @@
               </div>
             </div>
 
-            <!-- §2.5 Time-Range Control — preset bar + dual range slider -->
+            <!-- §2.5 Time-Range Control - preset bar + dual range slider -->
             <div x-show="detailChartMode === 'price'" class="px-4 py-2" style="border-bottom: 1px solid var(--border); background: var(--surface-2)">
               <!-- Preset bar -->
               <div class="flex items-center gap-1 flex-wrap mb-2">
@@ -629,7 +629,7 @@
                 <span class="ml-2 text-[10px] font-mono" style="color: var(--text-3)"
                       x-text="trcWindowLabel + ' (' + trcMonthCount + ' months)'"></span>
               </div>
-              <!-- Dual range slider — start and end handles -->
+              <!-- Dual range slider - start and end handles -->
               <div class="flex items-center gap-2" x-show="_trcAllMonths.length > 1">
                 <span class="text-[9px] font-mono" style="color: var(--text-3); min-width:50px"
                       x-text="_trcAllMonths[trcStartIdx] || ''"></span>
@@ -665,12 +665,12 @@
                  x-html="assetDetailChartSvg"
                  style="width:100%;overflow-x:auto;"></div>
 
-            <!-- Monthly Heatmap — year × month, colored by monthly return -->
+            <!-- Monthly Heatmap - year × month, colored by monthly return -->
             <div x-show="detailChartMode === 'heatmap'" class="overflow-auto scrollbar" style="max-height: 60vh;">
               <div x-html="assetMonthlyHeatmapHtml" x-effect="if (assetMonthlyHeatmapHtml) $nextTick(() => _initDecadeObserver())" style="min-width: 500px;"></div>
             </div>
 
-            <!-- Multi-Currency Table — all 5 lenses at once -->
+            <!-- Multi-Currency Table - all 5 lenses at once -->
             <div x-show="detailChartMode === 'multiccy'" class="overflow-auto scrollbar" style="max-height: 60vh;">
               <div x-html="assetMultiCcyTableHtml" style="min-width: 600px;"></div>
             </div>
@@ -750,7 +750,7 @@
 
     </div><!-- /matrix content -->
 
-    <!-- §6 Event Study — pick an event → table of each asset's drawdown, recovery, 1Y-forward return -->
+    <!-- §6 Event Study - pick an event → table of each asset's drawdown, recovery, 1Y-forward return -->
     <div class="mt-8">
       <div class="flex flex-wrap items-center gap-3 mb-4">
         <h2 class="text-sm font-medium" style="color: var(--cyan)">EVENT STUDY</h2>
@@ -759,7 +759,7 @@
                 class="ml-auto bg-transparent border rounded px-2 py-1 text-xs max-w-full"
                 style="border-color: var(--border-2); color: var(--text)">
           <template x-for="ev in eventStudyEvents" :key="ev.year">
-            <option :value="ev.year" x-text="ev.year + ' — ' + ev.label" style="background:#111"></option>
+            <option :value="ev.year" x-text="ev.year + ' - ' + ev.label" style="background:#111"></option>
           </template>
         </select>
       </div>
@@ -1024,7 +1024,7 @@
         </div>
       </div>
 
-      <!-- Yield table — annual averages -->
+      <!-- Yield table - annual averages -->
       <div class="mt-6">
         <div class="flex items-center gap-3 mb-3">
           <h3 class="text-xs font-medium" style="color: var(--cyan)">ANNUAL AVERAGES</h3>
@@ -1160,7 +1160,7 @@
           <h2 class="text-sm font-medium" style="color: var(--cyan)">DRAWDOWN STUDIO</h2>
           <div class="text-xs mt-0.5" style="color: var(--text-3)">% below prior all-time high. Select any assets. Hover chart for exact values.</div>
         </div>
-        <!-- Time range filter — §2.5 preset bar -->
+        <!-- Time range filter - §2.5 preset bar -->
         <div class="flex items-center gap-2">
           <span class="label" style="font-size:9px;">SHOW</span>
           <div class="flex gap-1">
@@ -1179,7 +1179,7 @@
       <!-- Two-column layout: asset picker + chart -->
       <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
 
-        <!-- Asset picker — left sidebar, all assets grouped by category -->
+        <!-- Asset picker - left sidebar, all assets grouped by category -->
         <div class="lg:col-span-1 rounded-lg border p-3" style="background: var(--surface); border-color: var(--border)">
           <div class="flex items-center justify-between mb-2">
             <div class="label" style="font-size:9px; color: var(--cyan)">SELECT ASSETS</div>
@@ -1187,11 +1187,11 @@
               <button @click="activeDrawdownAssets = new Set(drawdownAllAssets.map(a=>a.key))"
                       class="text-[9px] px-1.5 py-0.5 rounded border transition"
                       style="color: var(--text-3); border-color: var(--border)"
-                      @mouseenter="showTt($event,'Select all')" @mouseleave="hideTt()">All</button>
+                      @mouseenter="showTt($event, 'Select all')" @mouseleave="hideTt()">All</button>
               <button @click="activeDrawdownAssets = new Set(['sp500','gold','wti_crude','sensex'])"
                       class="text-[9px] px-1.5 py-0.5 rounded border transition"
                       style="color: var(--text-3); border-color: var(--border)"
-                      @mouseenter="showTt($event,'Reset to defaults')" @mouseleave="hideTt()">Reset</button>
+                      @mouseenter="showTt($event, 'Reset to defaults')" @mouseleave="hideTt()">Reset</button>
             </div>
           </div>
           <!-- Search -->
@@ -1220,7 +1220,7 @@
                x-text="`${activeDrawdownAssets.size} selected`"></div>
         </div>
 
-        <!-- Chart + table — right panel -->
+        <!-- Chart + table - right panel -->
         <div class="lg:col-span-3 space-y-4">
           <!-- Underwater chart -->
           <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
@@ -1250,7 +1250,7 @@
           <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
             <div class="px-3 py-2 label" style="border-bottom: 1px solid var(--border); color: var(--cyan)">
               MAX DRAWDOWN EVENTS
-              <span class="ml-2 font-mono text-[10px]" style="color: var(--text-3)">sorted by severity · Ulcer Index = √mean(DD²) — captures depth × duration</span>
+              <span class="ml-2 font-mono text-[10px]" style="color: var(--text-3)">sorted by severity · Ulcer Index = √mean(DD²) - captures depth × duration</span>
             </div>
             <div class="overflow-x-auto scrollbar">
               <table class="w-full text-xs">
@@ -1263,11 +1263,11 @@
                     <th class="text-center px-3 py-2 label">Recovery</th>
                     <th class="text-center px-3 py-2 label">Months</th>
                     <th class="text-center px-3 py-2 label"
-                        @mouseenter="showTt($event, 'Ulcer Index = √mean(DD²) — captures both depth and duration of drawdowns')"
+                        @mouseenter="showTt($event, 'Ulcer Index = √mean(DD²) - captures both depth and duration of drawdowns')"
                         @mouseleave="hideTt()">Ulcer Idx</th>
                     <th class="text-center px-3 py-2 label">Current DD</th>
                     <th class="text-center px-3 py-2 label"
-                        @mouseenter="showTt($event, 'Current drawdown percentile vs full history — how bad is today vs all past drawdowns')"
+                        @mouseenter="showTt($event, 'Current drawdown percentile vs full history - how bad is today vs all past drawdowns')"
                         @mouseleave="hideTt()">DD %ile</th>
                   </tr>
                 </thead>
@@ -1290,7 +1290,7 @@
                           x-text="row.monthsToRecover !== null ? row.monthsToRecover + 'm' : '—'"></td>
                       <td class="px-3 py-2 text-center num font-mono" style="color: var(--amber)"
                           x-text="row.ulcerIndex !== null ? row.ulcerIndex.toFixed(1) + '%' : '—'"
-                          @mouseenter="showTt($event, row.name + ' Ulcer Index: ' + (row.ulcerIndex !== null ? row.ulcerIndex.toFixed(1) + '% — higher = more painful drawdown history' : 'n/a'))"
+                          @mouseenter="showTt($event, row.name + ' Ulcer Index: ' + (row.ulcerIndex !== null ? row.ulcerIndex.toFixed(1) + '% - higher = more painful drawdown history' : 'n/a'))"
                           @mouseleave="hideTt()"></td>
                       <td class="px-3 py-2 text-center num font-mono font-medium"
                           :style="`color: ${(row.currentDd || 0) < -0.1 ? 'var(--down)' : (row.currentDd || 0) < -0.05 ? 'var(--amber)' : 'var(--up)'}`"
@@ -1324,8 +1324,8 @@
         <div>
           <h2 class="text-sm font-medium" style="color: var(--cyan)">HOLDING-PERIOD LAB</h2>
           <div class="text-xs mt-0.5" style="color: var(--text-3)">
-            <span x-show="hpMode === 'rolling'">Rolling N-year annualised returns — best, worst, median, % positive windows.</span>
-            <span x-show="hpMode === 'trailing'">Trailing 1-year total return — plain year-over-year %, not annualised. Same metric as the Portfolio Lab "Return" view.</span>
+            <span x-show="hpMode === 'rolling'">Rolling N-year annualised returns - best, worst, median, % positive windows.</span>
+            <span x-show="hpMode === 'trailing'">Trailing 1-year total return - plain year-over-year %, not annualised. Same metric as the Portfolio Lab "Return" view.</span>
           </div>
         </div>
         <!-- Asset selector. x-model handles binding; explicit @change is a
@@ -1345,7 +1345,7 @@
         <!-- Horizon selector (rolling annualised) + plain 1Y trailing toggle.
              The horizon buttons compute rolling annualised return for an N-year
              window. The "1Y Plain" button switches to trailing 1-year total
-             return (12-month plain % change, NOT annualised) — the metric most
+             return (12-month plain % change, NOT annualised) - the metric most
              users actually mean when they ask for "1Y return". -->
         <div class="flex gap-1">
           <template x-for="h in [1,3,5,10,15,20]" :key="h">
@@ -1353,7 +1353,7 @@
                     :class="(hpMode === 'rolling' && hpHorizon === h) ? 'tab-active' : ''"
                     class="px-2.5 py-1 rounded-md border font-medium text-xs transition"
                     :style="(hpMode === 'rolling' && hpHorizon === h) ? '' : 'color: var(--text-2); border-color: var(--border)'"
-                    @mouseenter="showTt($event, `Rolling ${h}-year annualised return — geometric mean of the last ${h} years.`)"
+                    @mouseenter="showTt($event, `Rolling ${h}-year annualised return - geometric mean of the last ${h} years.`)"
                     @mouseleave="hideTt()"
                     x-text="h + 'Y'">
             </button>
@@ -1362,7 +1362,7 @@
                   :class="hpMode === 'trailing' ? 'tab-active' : ''"
                   class="px-2.5 py-1 rounded-md border font-medium text-xs transition"
                   :style="hpMode === 'trailing' ? '' : 'color: var(--text-2); border-color: var(--border)'"
-                  @mouseenter="showTt($event, 'Plain trailing 1-year return — year-over-year %, NOT annualised. The simple Y/Y change most people mean by &quot;1Y return&quot;.')"
+                  @mouseenter="showTt($event, 'Plain trailing 1-year return - year-over-year %, NOT annualised. The simple Y/Y change most people mean by &quot;1Y return&quot;.')"
                   @mouseleave="hideTt()">1Y Plain</button>
         </div>
       </div>
@@ -1383,8 +1383,8 @@
       <div class="rounded-lg border overflow-hidden mb-5" style="background: var(--surface); border-color: var(--border)">
         <div class="px-3 py-2 label" style="border-bottom: 1px solid var(--border); color: var(--cyan)"
              x-text="hpMode === 'trailing'
-                 ? `TRAILING 1-YEAR RETURN — ${hpAssetName}`
-                 : `ROLLING ${hpHorizon}Y ANNUALISED RETURN — ${hpAssetName}`"></div>
+                 ? `TRAILING 1-YEAR RETURN - ${hpAssetName}`
+                 : `ROLLING ${hpHorizon}Y ANNUALISED RETURN - ${hpAssetName}`"></div>
         <div x-html="hpChartSvg"
              @mousemove="hpChartHover($event)"
              @mouseleave="hpHoverInfo = null"
@@ -1460,7 +1460,7 @@
         </div>
       </div>
 
-      <!-- Seasonality heatmap — table fills the container width via table-layout:fixed.
+      <!-- Seasonality heatmap - table fills the container width via table-layout:fixed.
            Muted palette matches the periodic table; current month gets a cyan outline. -->
       <div class="rounded-lg border overflow-auto scrollbar" style="background: var(--bg); border-color: var(--border); max-height: 75vh">
         <table class="matrix-table text-xs" style="table-layout:fixed;width:100%;min-width:900px">
@@ -1558,7 +1558,7 @@
                   :class="corrSubTab === 'ratios' ? 'tab-active' : ''"
                   class="px-2.5 py-1 rounded-md border text-[10px] transition"
                   :style="corrSubTab === 'ratios' ? '' : 'color: var(--text-2); border-color: var(--border)'"
-                  @mouseenter="showTt($event, 'Cross-asset ratio charts — Gold/Silver, Copper/Gold, Stocks/Bonds, Oil/Gold')"
+                  @mouseenter="showTt($event, 'Cross-asset ratio charts - Gold/Silver, Copper/Gold, Stocks/Bonds, Oil/Gold')"
                   @mouseleave="hideTt()">Ratios</button>
         </div>
       </div>
@@ -1684,7 +1684,7 @@
     <!-- Vol content -->
     <div x-show="!loadingVol && hasVolData">
 
-      <!-- View I controls — collapsed from 4 sub-panels to 2 logical groups
+      <!-- View I controls - collapsed from 4 sub-panels to 2 logical groups
            ("Levels & Regime" combines Overview + Cross-Asset; "History & Heatmap"
            combines History + Heatmap). Keeps the same data, halves the click cost. -->
       <div class="flex flex-wrap gap-2 mb-5 items-center">
@@ -1734,12 +1734,12 @@
              x-text="volData ? `Vol data: ${(volData.generated_utc||'').slice(0,10)}` : ''"></div>
       </div>
 
-      <!-- Sub-panel label — combined headers for the two consolidated tabs -->
+      <!-- Sub-panel label - combined headers for the two consolidated tabs -->
       <div class="mb-4">
         <template x-if="volSubPanel === 'Levels'">
           <div>
             <h2 class="text-sm font-medium" style="color: var(--cyan)">LEVELS &amp; REGIME</h2>
-            <div class="text-xs mt-0.5" style="color: var(--text-3)">Current level, percentile rank, regime per index — followed by a cross-asset percentile comparison so the 7 indices are readable at the same scale.</div>
+            <div class="text-xs mt-0.5" style="color: var(--text-3)">Current level, percentile rank, regime per index - followed by a cross-asset percentile comparison so the 7 indices are readable at the same scale.</div>
           </div>
         </template>
         <template x-if="volSubPanel === 'History'">
@@ -1750,7 +1750,7 @@
         </template>
       </div>
 
-      <!-- Regime banner — auto-generated from z-scores -->
+      <!-- Regime banner - auto-generated from z-scores -->
       <div x-show="volSubPanel === 'Levels' && volData" class="mb-4 px-4 py-3 rounded-lg border text-xs" style="background: var(--surface); border-color: var(--border)">
         <div class="font-medium mb-1" style="color: var(--cyan)">REGIME SUMMARY</div>
         <div x-html="volRegimeBanner" style="color: var(--text-2); line-height: 1.6;"></div>
@@ -1795,11 +1795,11 @@
 
       <!-- ─── Heatmap (now part of "History & Heatmap" tab) ─────────────── -->
       <div x-show="volSubPanel === 'History'" class="mt-5">
-        <div class="text-xs mb-2" style="color: var(--text-3)">MONTHLY Z-SCORE HEATMAP — rows = vol indices · columns = months · cell = z-score of monthly average vs full history</div>
+        <div class="text-xs mb-2" style="color: var(--text-3)">MONTHLY Z-SCORE HEATMAP - rows = vol indices · columns = months · cell = z-score of monthly average vs full history</div>
         <div class="rounded-lg border overflow-auto scrollbar" style="max-height: 60vh; background: var(--bg); border-color: var(--border)">
           <div x-html="volMonthlyZHeatmapHtml"></div>
         </div>
-        <!-- Color legend — bound to _zCellColor() so what you see in the heatmap is what's documented here. -->
+        <!-- Color legend - bound to _zCellColor() so what you see in the heatmap is what's documented here. -->
         <div class="flex items-center gap-2 mt-3 text-[10px] font-mono flex-wrap" style="color: var(--text-3)">
           <span>Z-score scale:</span>
           <span :style="`background:${_zCellColor(-2.5)};width:14px;height:14px;display:inline-block;border-radius:2px;`"></span><span>≤ −2</span>
@@ -1863,14 +1863,14 @@
 
       <!-- ─── Cross-Asset (now part of "Levels & Regime" tab) ─────────── -->
       <div x-show="volSubPanel === 'Levels'" class="mt-6">
-        <div class="text-xs mb-2" style="color: var(--text-3)">CROSS-ASSET COMPARISON — percentile rank of all 7 vol indices vs own history. Comparable across indices regardless of raw level.</div>
+        <div class="text-xs mb-2" style="color: var(--text-3)">CROSS-ASSET COMPARISON - percentile rank of all 7 vol indices vs own history. Comparable across indices regardless of raw level.</div>
         <div class="rounded-lg border overflow-hidden flex justify-center" style="background: var(--surface); border-color: var(--border); padding: 12px 0;">
           <div x-html="volZBarHtml" style="width:100%;max-width:780px;"></div>
         </div>
         <!-- Z-score table -->
         <div class="mt-4 rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
           <div class="px-3 py-2 label" style="border-bottom: 1px solid var(--border); color: var(--cyan)">
-            CURRENT LEVELS — PERCENTILE RANK &amp; Z-SCORE
+            CURRENT LEVELS - PERCENTILE RANK &amp; Z-SCORE
             <span class="ml-2 font-mono text-[10px]" style="color: var(--text-3)"
                   x-text="`Lookback: ${volLookback} · ${volGranularity}`"></span>
           </div>
@@ -2102,14 +2102,14 @@ function marketsApp() {
   return {
     // ── §2.1 Unified app state ────────────────────────────────────────────
     // Single reactive store consumed by every tab. Changing lens here
-    // changes everything — matrix, detail, drawdowns, correlation, etc.
+    // changes everything - matrix, detail, drawdowns, correlation, etc.
     marketState: {
       lens:        'local',    // 'local' | 'usd' | 'inr' | 'gold' | 'silver'
       basis:       'nominal',  // 'nominal' | 'real'
       preset:      'max',      // '1m'|'6m'|'1y'|'2y'|'5y'|'10y'|'max'|'custom'
       granularity: 'monthly',  // 'monthly' | 'daily'
       asof:        null,       // populated from JSON on load
-      // §2.5 Time-Range Control — single source of truth for all charts
+      // §2.5 Time-Range Control - single source of truth for all charts
       window:      { start: null, end: null },  // YYYY-MM strings
     },
 
@@ -2142,7 +2142,7 @@ function marketsApp() {
     detailBarHoverInfo: null,   // { year, ret, partial, compareRet }
     detailCompareAsset: '',     // asset key to compare with in returns bar chart
     colorMode: 'return',  // 'return' | 'zscore'
-    // §2.5 Default 30-year window — gold from 1833 wrecks shared axes; Max button reaches all history.
+    // §2.5 Default 30-year window - gold from 1833 wrecks shared axes; Max button reaches all history.
     // matrixStartYear is the actual filter boundary; matrixWindowYears is the active preset (0 = Max).
     matrixStartYear: (new Date().getFullYear() - 30),
     matrixWindowYears: 30,
@@ -2159,7 +2159,7 @@ function marketsApp() {
     volCommonWindow: true,
     activeVolSeries: new Set(['vix', 'gvz', 'ovx']),
     volHoverInfo: null,
-    // Charter v2 Part 2 — live-merge freshness (loaded from metadata.json).
+    // Charter v2 Part 2 - live-merge freshness (loaded from metadata.json).
     // Drives the small "live merge healthy / degraded / failed" chip in the
     // markets header so the operator can verify on the live site without DevTools.
     freshness: null,
@@ -2173,7 +2173,7 @@ function marketsApp() {
     },
 
     async _loadFreshness() {
-      // metadata.json carries `markets_data_freshness` — surfaced as a small
+      // metadata.json carries `markets_data_freshness` - surfaced as a small
       // header chip so the user can see whether the live merge is healthy
       // without opening DevTools. Loaded best-effort; missing → no chip.
       try {
@@ -2195,7 +2195,7 @@ function marketsApp() {
         this.selectedAsset = assetParam.toLowerCase();
         this.activeTab = 'matrix';
         // Wait for Alpine to flush reactive updates before initialising the
-        // time-range chart — returnsData must be fully rendered first (H1 fix).
+        // time-range chart - returnsData must be fully rendered first (H1 fix).
         this.$nextTick(() => this._trcInit(this.selectedAsset));
       }
       if (lensParam) {
@@ -2257,7 +2257,7 @@ function marketsApp() {
       if (startIdx < 0) startIdx = 0;
       // Check if series is shorter than preset
       if (startIdx === 0 && months[0] > startYm) {
-        // Series shorter than preset — show all available, disable preset highlight
+        // Series shorter than preset - show all available, disable preset highlight
         this.trcPreset = 'custom';
       } else {
         this.trcPreset = preset;
@@ -2267,7 +2267,7 @@ function marketsApp() {
       this._trcSyncWindow();
     },
 
-    // Custom dual-handle slider — computed getters
+    // Custom dual-handle slider - computed getters
     get _sliderStartPct() {
       const total = this._trcAllMonths.length - 1;
       return total > 0 ? (this.trcStartIdx / total) * 100 : 0;
@@ -2278,7 +2278,7 @@ function marketsApp() {
       return total > 0 ? (this.trcEndIdx / total) * 100 : 100;
     },
 
-    // Custom dual-handle slider — pointer event handlers
+    // Custom dual-handle slider - pointer event handlers
     _sliderPointerDown(e) {
       const rect = e.currentTarget.getBoundingClientRect();
       const pct = (e.clientX - rect.left) / rect.width;
@@ -2405,13 +2405,13 @@ function marketsApp() {
         .sort((a, b) => a.name.localeCompare(b.name));
     },
 
-    // Category display order — underscore form matches pipeline output (Minor 4 fix)
+    // Category display order - underscore form matches pipeline output (Minor 4 fix)
     _categoryOrder: ['equity', 'precious_metals', 'energy', 'commodities', 'base_metals', 'agriculture', 'fx', 'real_estate'],
 
     get matrixGroups() {
       if (!this.returnsData) return [];
       const assets = this.returnsData.assets || {};
-      // Group by category — only pass key + meta (NOT close) to keep Alpine reactive objects small
+      // Group by category - only pass key + meta (NOT close) to keep Alpine reactive objects small
       const groups = {};
       for (const [key, val] of Object.entries(assets)) {
         const cat = (val.meta?.category || 'other').toLowerCase();
@@ -2437,7 +2437,7 @@ function marketsApp() {
 
     get matrixYears() {
       if (!this.returnsData) return [];
-      // Memoize — only recompute when returnsData or matrixStartYear changes
+      // Memoize - only recompute when returnsData or matrixStartYear changes
       if (this._matrixYearsCache && this._matrixYearsCacheData === this.returnsData && this._matrixYearsCacheStartYear === this.matrixStartYear) {
         return this._matrixYearsCache;
       }
@@ -2474,10 +2474,10 @@ function marketsApp() {
       return `${assetKey}|${this.activeCcy}|${this.activeReal}`;
     },
 
-    // ── §3 FX/CPI honesty — reflect what the JSON actually has, never show dead controls.
+    // ── §3 FX/CPI honesty - reflect what the JSON actually has, never show dead controls.
     // The pipeline currently leaves fx={} and cpi={} unless DEXINUS / CPIAUCSL are wired up
     // (see predator/markets_history.py). Until then we simply hide INR/Real instead of
-    // pretending they work. Gold/Silver lenses don't need fx — they convert via the gold
+    // pretending they work. Gold/Silver lenses don't need fx - they convert via the gold
     // and silver close series which are populated from Mega_Markets_Historical.xlsx.
     get lensesAvailable() {
       const lenses = ['Local', 'USD'];
@@ -2519,7 +2519,7 @@ function marketsApp() {
 
     // Build monthly close series for an asset in the requested currency lens.
     // Returns a sorted array of {ym, close} objects.
-    // Memoized by cacheKey (assetKey|activeCcy|activeReal) — Bug 3 fix.
+    // Memoized by cacheKey (assetKey|activeCcy|activeReal) - Bug 3 fix.
     _adjustedCloseCache: {},
 
     _getAdjustedClose(assetKey) {
@@ -2544,7 +2544,7 @@ function marketsApp() {
       // Helper: get FX series from aux (values dict) or new top-level fx section
       const aux = this.returnsData?.aux || {};
       const fxSection = this.returnsData?.fx || {};
-      // USD per 1 INR — from aux.usdinr or fx.USDINR
+      // USD per 1 INR - from aux.usdinr or fx.USDINR
       const usdinrRaw = aux.usdinr?.values || {};
       // Build usdinr lookup from new fx section if available
       const usdinrFx = {};
@@ -2607,7 +2607,7 @@ function marketsApp() {
           nativeToUsd = fxEur !== null ? fxEur : 1;
         }
         // For other currencies (AUD, BRL, GBP, HKD, CNY), assume USD-native
-        // when no FX data is available — returns local price, not blank
+        // when no FX data is available - returns local price, not blank
 
         if (targetCcy === 'USD') return nativeToUsd;
 
@@ -2682,7 +2682,7 @@ function marketsApp() {
 
       // Build monthly returns from adjusted close, with sanity envelope.
       // We track which months are flagged as boundary anomalies (a single
-      // month with |ret| > 0.50 on a non-equity series — that's the
+      // month with |ret| > 0.50 on a non-equity series - that's the
       // signature of an Excel↔FRED unit/scale collision).
       const monthlyRet = {};
       const monthlyAnomaly = {}; // ym → true when |ret| > 0.50 on non-equity
@@ -2748,7 +2748,7 @@ function marketsApp() {
           if (!Number.isFinite(r)) continue;
           compound *= (1 + r);
           if (!Number.isFinite(compound)) {
-            // NaN/Inf compound — drop the year cleanly rather than
+            // NaN/Inf compound - drop the year cleanly rather than
             // emitting a saturated −0.99 artifact.
             dropYear = true;
             break;
@@ -2795,14 +2795,14 @@ function marketsApp() {
       }
     },
 
-    // ── §3.3 validateExtreme — single-cell sanity check ──────────────────
+    // ── §3.3 validateExtreme - single-cell sanity check ──────────────────
     // Curated whitelist of single-year returns whose magnitude exceeds
     // ±0.70 yet correspond to genuine market events. Trivially extensible:
     // append one new line per asset:year to whitelist a fresh validated
     // extreme. Mirrors `tests/markets_partial_year_live_merge/known_real_events.py`.
     KNOWN_REAL_EVENTS: {
-      'sp500:2008': true,    // -0.38 — 2008 financial crisis (informational, in-range)
-      'nasdaq:2000': true,   // -0.39 — dot-com (informational, in-range)
+      'sp500:2008': true,    // -0.38 - 2008 financial crisis (informational, in-range)
+      'nasdaq:2000': true,   // -0.39 - dot-com (informational, in-range)
       'nasdaq:1999': true,   // +0.86
       'nasdaq100:1999': true,// +1.02
       'nasdaq100:1998': true,
@@ -2929,7 +2929,7 @@ function marketsApp() {
     // Compose the class string for a matrix cell: identical visual
     // treatment for partial cells AND unvalidated extremes (both dim +
     // de-saturated). The CSS rules use the same opacity/filter so the
-    // user can't distinguish them visually — the ⚠ glyph and tooltip
+    // user can't distinguish them visually - the ⚠ glyph and tooltip
     // line are the disambiguator.
     matrixCellClass(assetKey, year) {
       const cd = this.getCellData(assetKey, year);
@@ -2982,18 +2982,18 @@ function marketsApp() {
     // Same diverging semantics as the Periodic Table / Seasonality grid:
     //   • blue (positive) ↔ orange-red (negative)
     //   • saturation dampened to ~0.30–0.45 so cells read as one institutional table
-    //   • lightness scales with magnitude — deeper returns still read deeper
+    //   • lightness scales with magnitude - deeper returns still read deeper
     //   • paired with contrastText() for AA-contrast text
     cellColor(ret) {
       if (ret === null || ret === undefined) return 'transparent';
       const r = Math.max(-0.5, Math.min(0.5, ret));
       // hue 215° = calm blue, hue 18–25° = warm orange (no neon).
-      if (r > 0.30)  return _hsl2hex(215/360, 0.42, 0.40);  // big positive  — deep muted blue
-      if (r > 0.10)  return _hsl2hex(215/360, 0.36, 0.52);  // mid positive  — muted blue
-      if (r > 0.00)  return _hsl2hex(215/360, 0.28, 0.65);  // small positive — pale blue
-      if (r > -0.10) return _hsl2hex( 25/360, 0.32, 0.65);  // small negative — pale orange
-      if (r > -0.30) return _hsl2hex( 22/360, 0.40, 0.52);  // mid negative   — muted orange
-      return                _hsl2hex( 18/360, 0.45, 0.40);  // big negative   — deep muted red-orange
+      if (r > 0.30)  return _hsl2hex(215/360, 0.42, 0.40);  // big positive  - deep muted blue
+      if (r > 0.10)  return _hsl2hex(215/360, 0.36, 0.52);  // mid positive  - muted blue
+      if (r > 0.00)  return _hsl2hex(215/360, 0.28, 0.65);  // small positive - pale blue
+      if (r > -0.10) return _hsl2hex( 25/360, 0.32, 0.65);  // small negative - pale orange
+      if (r > -0.30) return _hsl2hex( 22/360, 0.40, 0.52);  // mid negative   - muted orange
+      return                _hsl2hex( 18/360, 0.45, 0.40);  // big negative   - deep muted red-orange
     },
 
     // ── §7 Z-score audit / "current" derivation contract ────────────────
@@ -3013,13 +3013,13 @@ function marketsApp() {
     //                user sees that no z is defined.
     //
     // VOLATILITY TILES (Levels & Regime, current level / σ / percentile)
-    //   current    : the latest available point in _volValues(key) — i.e.
+    //   current    : the latest available point in _volValues(key) - i.e.
     //                the most recent daily close (Daily) or the most
     //                recent monthly average (Monthly avg). Never a future
-    //                value, never a stale snapshot — the JSON is rebuilt
+    //                value, never a stale snapshot - the JSON is rebuilt
     //                on every CI run from FRED.
     //   z baseline : the chosen lookback window {1Y, 3Y, 5Y, All} of the
-    //                same series — see computeZScore() above.
+    //                same series - see computeZScore() above.
     //   percentile : ALWAYS full daily history (lookback-independent).
     //                The regime word ("Calm/Normal/Elevated/Stress/Crisis")
     //                is derived from this full-history percentile, so the
@@ -3032,7 +3032,7 @@ function marketsApp() {
     //
     // VOLATILITY MONTHLY HEATMAP (volMonthlyZHeatmapHtml)
     //   per cell   : z = (monthly_avg - mean(all monthly_avg)) / stdev.
-    //   baseline   : entire monthly_avg series for that index — every
+    //   baseline   : entire monthly_avg series for that index - every
     //                cell in a row is z'd against the same full history,
     //                making the heatmap a regime calendar.
     //
@@ -3042,14 +3042,14 @@ function marketsApp() {
     //   as 'unusual vs full-year history' so we leave the z null and let
     //   activeCellColor fall through to a low-opacity return color.
 
-    // Z-score color scale — same muted institutional palette, keyed on z-score ±2σ.
+    // Z-score color scale - same muted institutional palette, keyed on z-score ±2σ.
     // Center band (|z| ≤ 1) uses a near-neutral dark gray so the eye reads "this
     // year was unremarkable vs the asset's own history". Outliers diverge by hue.
     cellColorZscore(z) {
       if (z === null || z === undefined) return 'transparent';
       if (z > 2.0)  return _hsl2hex(215/360, 0.42, 0.40);   // strongly above its own history
       if (z > 1.0)  return _hsl2hex(215/360, 0.30, 0.58);   // mildly above
-      if (z > -1.0) return _hsl2hex(215/360, 0.04, 0.22);   // unremarkable — neutral dark
+      if (z > -1.0) return _hsl2hex(215/360, 0.04, 0.22);   // unremarkable - neutral dark
       if (z > -2.0) return _hsl2hex( 22/360, 0.30, 0.58);   // mildly below
       return                _hsl2hex( 18/360, 0.45, 0.40);  // strongly below
     },
@@ -3072,7 +3072,7 @@ function marketsApp() {
       if (fullYears.length < 3) { this._zscoreCache[ck] = {}; return; }
       const rets = fullYears.map(y => cache[y].ret);
       const mean = rets.reduce((a, b) => a + b, 0) / rets.length;
-      // Population stdev — matches what the matrix interprets as "history of
+      // Population stdev - matches what the matrix interprets as "history of
       // this asset"; for sample stdev divide by (n-1) instead.
       const std = Math.sqrt(rets.reduce((a, b) => a + (b - mean) ** 2, 0) / rets.length);
       const result = {};
@@ -3088,7 +3088,7 @@ function marketsApp() {
       return cache?.[year] ?? null;
     },
 
-    // Active cell color — respects colorMode toggle.
+    // Active cell color - respects colorMode toggle.
     // §7 In z-score mode, partial years (no full-year baseline → null z) fall
     // back to a dimmed return color rather than going invisible-transparent.
     // This is the "omit z, but keep the cell visible" choice from the prompt.
@@ -3096,7 +3096,7 @@ function marketsApp() {
       if (this.colorMode === 'zscore') {
         const z = this.getZscore(assetKey, year);
         if (z !== null) return this.cellColorZscore(z);
-        // No z (partial year) — dim the return color so the cell is clearly
+        // No z (partial year) - dim the return color so the cell is clearly
         // "shown but not z-scored". Hex with alpha keeps it muted.
         const cd = this.getCellData(assetKey, year);
         if (!cd) return 'transparent';
@@ -3106,7 +3106,7 @@ function marketsApp() {
       return cd ? this.cellColor(cd.ret) : 'transparent';
     },
 
-    // ── Event annotations — data property (not getter) to avoid re-allocation ──
+    // ── Event annotations - data property (not getter) to avoid re-allocation ──
     matrixEvents: {
       1973: 'Oil embargo (Oct 1973)',
       1979: 'Volcker shock / Iran crisis',
@@ -3189,7 +3189,7 @@ function marketsApp() {
     },
 
     // ── CSV Export ────────────────────────────────────────────────────────
-    // §2.5 Time-window preset — applies to matrix, asset detail bars, periodic table, correlation growth.
+    // §2.5 Time-window preset - applies to matrix, asset detail bars, periodic table, correlation growth.
     // years=0 means "Max" (1833 onward). All other presets compute startYear = currentYear - years.
     setMatrixWindow(years) {
       this.matrixWindowYears = years;
@@ -3263,12 +3263,12 @@ function marketsApp() {
 
     cellTextColor(ret) {
       if (ret === null || ret === undefined) return 'transparent';
-      // AA-contrast picker — automatically dark-on-light or light-on-dark
+      // AA-contrast picker - automatically dark-on-light or light-on-dark
       // for whichever muted background cellColor produced.
       return contrastText(this.cellColor(ret));
     },
 
-    // Active-cell text color — picks contrast against the actual rendered
+    // Active-cell text color - picks contrast against the actual rendered
     // background. In z-score mode that's a different palette than cellColor,
     // so we feed contrastText() the z-score color directly when available.
     activeCellTextColor(assetKey, year) {
@@ -3288,7 +3288,7 @@ function marketsApp() {
     // perception (paired with .matrix-cell-partial italic + 40% opacity).
     // §3.3 When (assetKey, year) are supplied AND the cell is an unvalidated
     // extreme, append a leading ⚠ glyph (before the value, so the warning
-    // reads first) — never destructive: the value remains visible.
+    // reads first) - never destructive: the value remains visible.
     cellText(retOrCd, assetKey, year) {
       if (retOrCd === null || retOrCd === undefined) return '';
       const ret     = (typeof retOrCd === 'object') ? retOrCd.ret     : retOrCd;
@@ -3306,7 +3306,7 @@ function marketsApp() {
       return (pct >= 0 ? '+' : '') + pct.toFixed(0) + '%' + warn + (partial ? '·' : '');
     },
 
-    // §5 Seasonality heatmap — runs the diverging cellColor through muteColor so cells
+    // §5 Seasonality heatmap - runs the diverging cellColor through muteColor so cells
     // read as one institutional table instead of a saturated heatmap. Same diverging
     // semantics (blue ↑, orange ↓) but at calmer luminance, paired with AA-contrast text.
     seasonalityCellColor(avg) {
@@ -3407,12 +3407,12 @@ function marketsApp() {
       return stats;
     },
 
-    // ── Asset Detail Panel — Annual Returns Bar Chart ────────────────────
+    // ── Asset Detail Panel - Annual Returns Bar Chart ────────────────────
     get assetReturnsBarSvg() {
       if (!this.selectedAsset || !this.returnsData) return '';
       this._buildAnnualCache(this.selectedAsset);
       const cache = this._annualCache[this._cacheKey(this.selectedAsset)] || {};
-      // §2.5 Apply global window — gold (1833+) and S&P (1871+) would otherwise squash bars to 1px.
+      // §2.5 Apply global window - gold (1833+) and S&P (1871+) would otherwise squash bars to 1px.
       // Max preset (matrixStartYear=1833) reverts to full history.
       const minYear = this.matrixStartYear || 1833;
       const years = Object.keys(cache).map(Number).filter(y => y >= minYear).sort((a, b) => a - b);
@@ -3422,7 +3422,7 @@ function marketsApp() {
       const H = 320, PL = 58, PR = 20, PT = 24, PB = 36;
       const chartW = W - PL - PR, chartH = H - PT - PB;
 
-      // Y range — symmetric around 0, padded 10%
+      // Y range - symmetric around 0, padded 10%
       let maxAbs = 0;
       for (const y of years) { maxAbs = Math.max(maxAbs, Math.abs(cache[y].ret)); }
       maxAbs = Math.max(maxAbs * 1.12, 0.05);
@@ -3444,7 +3444,7 @@ function marketsApp() {
         yTicks += `<text x="${PL - 5}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:${isZero ? '#a1a1aa' : '#52525b'};font-family:ui-monospace">${label}</text>`;
       }
 
-      // X-axis year labels (adaptive — every N years)
+      // X-axis year labels (adaptive - every N years)
       let xLabels = '';
       const step = years.length > 120 ? 20 : years.length > 60 ? 10 : years.length > 30 ? 5 : years.length > 15 ? 2 : 1;
       for (let i = 0; i < years.length; i++) {
@@ -3489,7 +3489,7 @@ function marketsApp() {
         cagrLine += `<text x="${W - PR + 3}" y="${(yc + 3.5).toFixed(1)}" style="font-size:8px;fill:#fbbf24;font-family:ui-monospace;opacity:0.7">CAGR ${cagrPct}%</text>`;
       }
 
-      // Compare asset overlay — dashed line connecting annual returns
+      // Compare asset overlay - dashed line connecting annual returns
       let compareLine = '';
       if (this.detailCompareAsset && this.returnsData?.assets?.[this.detailCompareAsset]) {
         this._buildAnnualCache(this.detailCompareAsset);
@@ -3638,7 +3638,7 @@ function marketsApp() {
       return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block">${title}${ticks}${xLabels}<path d="${d.trim()}" fill="none" stroke="var(--cyan)" stroke-width="1.5" opacity="0.9"/></svg>`;
     },
 
-    // ── §4 Monthly Heatmap — year × month, colored by monthly return ──────
+    // ── §4 Monthly Heatmap - year × month, colored by monthly return ──────
     get assetMonthlyHeatmapHtml() {
       if (!this.selectedAsset || !this.returnsData) return '';
       const adjusted = this._getAdjustedClose(this.selectedAsset);
@@ -3674,7 +3674,7 @@ function marketsApp() {
       const W = LW + 12 * CW + TW + 4, H = HH + years.length * RH + 4;
 
       let html = `<table style="border-collapse:separate;border-spacing:0;font-size:10px;font-family:ui-monospace;width:${W}px">`;
-      // Header row — sticky top
+      // Header row - sticky top
       html += `<thead><tr><th style="position:sticky;left:0;top:0;z-index:4;background:var(--bg);min-width:${LW}px;padding:4px 6px;border-bottom:1px solid var(--border-2);color:var(--text-3);font-size:9px;text-align:left">Year</th>`;
       for (const m of MONTHS) {
         html += `<th style="position:sticky;top:0;z-index:3;background:var(--bg);width:${CW}px;min-width:${CW}px;height:${HH}px;text-align:center;vertical-align:middle;padding:2px 0;border-bottom:1px solid var(--border-2);color:var(--text-3);font-size:9px">${m}</th>`;
@@ -3723,7 +3723,7 @@ function marketsApp() {
       // Wrap table in scroll container for observer targeting
       html = `<div class="heatmap-scroll-container">${html}</div>`;
 
-      // Decade navigator bar — only shown when years.length > 30
+      // Decade navigator bar - only shown when years.length > 30
       if (years.length > 30) {
         const decades = [...new Set(years.map(y => Math.floor(y / 10) * 10))].sort((a, b) => b - a);
         let decadeNav = `<div class="heatmap-decade-nav flex gap-1 flex-wrap mb-2 sticky top-0 z-10 py-1" style="background:var(--surface)">`;
@@ -3807,7 +3807,7 @@ function marketsApp() {
       rows.forEach(row => this._decadeObserver.observe(row));
     },
 
-    // ── §4 Multi-Currency Table — all 5 lenses at once ────────────────────
+    // ── §4 Multi-Currency Table - all 5 lenses at once ────────────────────
     // Pure helper: compute annual returns for a given (ccy, real) lens
     // WITHOUT mutating this.activeCcy / this.activeReal (fixes C3 re-render cascade).
     _computeAnnualForLens(assetKey, ccy, real) {
@@ -3919,14 +3919,14 @@ function marketsApp() {
       return result;
     },
 
-    // ── §4 Multi-Currency Table — all 5 lenses at once ────────────────────
+    // ── §4 Multi-Currency Table - all 5 lenses at once ────────────────────
     // Rows = years (newest first), columns = Local / USD / INR / Gold / Real
     get assetMultiCcyTableHtml() {
       if (!this.selectedAsset || !this.returnsData) return '';
       const asset = this.returnsData.assets[this.selectedAsset];
       if (!asset) return '';
 
-      // §3 FX/CPI honesty — show only the lenses that actually have data.
+      // §3 FX/CPI honesty - show only the lenses that actually have data.
       // local + usd are always available (usd uses native_ccy + fx assets when present;
       // for USD-native assets it's a no-op). inr, gold, real are gated.
       const lenses = ['local', 'usd'];
@@ -3995,7 +3995,7 @@ function marketsApp() {
           }
           annualByLens[lens] = result;
         } else {
-          // Use pure helper — does NOT mutate this.activeCcy / this.activeReal
+          // Use pure helper - does NOT mutate this.activeCcy / this.activeReal
           const ccy = lens === 'local' ? 'Local' : lens.toUpperCase();
           annualByLens[lens] = this._computeAnnualForLens(this.selectedAsset, ccy, false);
         }
@@ -4102,23 +4102,23 @@ function marketsApp() {
       if (!cellData) return;
       const pct = (cellData.ret * 100).toFixed(1);
       const sign = cellData.ret >= 0 ? '+' : '';
-      // §3.3 Honest tooltip — surface every diagnostic the renderer used:
+      // §3.3 Honest tooltip - surface every diagnostic the renderer used:
       // month count, expected count, partial flag, computed return, plus
       // any boundaryAnomaly reason and any unvalidated_extreme reason.
       const monthsPresent  = cellData.monthsPresent  ?? cellData.count ?? 0;
       const monthsExpected = cellData.monthsExpected ?? 12;
       const partial        = cellData.partial ? 'yes' : 'no';
       const partialLine    = cellData.partial
-        ? `\n⚠ Partial year (${monthsPresent}/${monthsExpected} months) — not a full-year return`
+        ? `\n⚠ Partial year (${monthsPresent}/${monthsExpected} months) - not a full-year return`
         : '';
       const isKnown        = this.KNOWN_REAL_EVENTS[`${asset.key}:${year}`] || false;
       const anomalyLine    = (cellData.boundaryAnomaly && !isKnown)
-        ? '\n⚠ Boundary anomaly (one monthly return >50% on a non-equity series — likely Excel↔FRED unit mismatch)'
+        ? '\n⚠ Boundary anomaly (one monthly return >50% on a non-equity series - likely Excel↔FRED unit mismatch)'
         : '';
       let extremeLine = '';
       const v = this.validateExtreme(cellData.ret, year, asset.key, cellData.count, cellData.monthsExpected);
       if (!v.ok) {
-        extremeLine = `\n⚠ fake/corrupt data — boundary anomaly detected`;
+        extremeLine = `\n⚠ fake/corrupt data - boundary anomaly detected`;
       }
       const src = asset.meta?.source || '';
       let zLine = '';
@@ -4139,7 +4139,7 @@ function marketsApp() {
       const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
       const label = MONTHS[mi] || '';
       if (mr.ret === null) {
-        _showTt(el, `${asset.meta?.name}\n${label} ${year}  — no data`);
+        _showTt(el, `${asset.meta?.name}\n${label} ${year}  - no data`);
       } else {
         const pct = (mr.ret * 100).toFixed(2);
         const sign = mr.ret >= 0 ? '+' : '';
@@ -4505,7 +4505,7 @@ function marketsApp() {
 
     periodicCatFilter: '',
 
-    // 20-color palette — one per asset, consistent across all views
+    // 20-color palette - one per asset, consistent across all views
     _assetPalette: [
       '#22d3ee','#a5b4fc','#34d399','#fbbf24','#fb923c','#f472b6',
       '#60a5fa','#c084fc','#5eead4','#fcd34d','#86efac','#fdba74',
@@ -4543,14 +4543,14 @@ function marketsApp() {
       return Array.from(cats).map(c => ({ key: c, label: labels[c] || c }));
     },
 
-    // §5.4 Periodic Table — fixed overflow, responsive cells, sticky header
+    // §5.4 Periodic Table - fixed overflow, responsive cells, sticky header
     periodicYearWindow: 30,  // default: show last 30 years (matches global 30Y window)
 
     get periodicTableHtml() {
       const assets = this.periodicAssets;
       if (!assets.length) return '<div style="padding:40px;text-align:center;color:var(--text-3)">No assets match filter</div>';
 
-      // Cap to last N years (default 25) — prevents overflow
+      // Cap to last N years (default 25) - prevents overflow
       const allYears = this.matrixYears; // newest first
       const years = allYears.slice(0, this.periodicYearWindow);
       if (!years.length) return '';
@@ -4576,7 +4576,7 @@ function marketsApp() {
       const CW = Math.max(52, Math.min(80, Math.floor(1200 / years.length)));
       const RH = 28;
 
-      // Build HTML table — responsive, sticky header, hover highlight
+      // Build HTML table - responsive, sticky header, hover highlight
       let html = `<table id="periodic-tbl" style="border-collapse:separate;border-spacing:1px;font-size:9px;font-family:ui-monospace;table-layout:fixed;width:${years.length * (CW + 1)}px">`;
       // Sticky year header
       html += `<thead><tr>`;
@@ -4597,7 +4597,7 @@ function marketsApp() {
           }
           const pct = (a.ret * 100).toFixed(0);
           const sign = a.ret >= 0 ? '+' : '';
-          // §1 Muted institutional palette — consistent luminance so no cell screams.
+          // §1 Muted institutional palette - consistent luminance so no cell screams.
           // Asset identity is preserved (gold-hue stays gold-ish) but at calm saturation.
           const bg = muteColor(a.color, 0.40, 0.55);
           const textColor = contrastText(bg);
@@ -4659,7 +4659,7 @@ function marketsApp() {
       return result;
     },
 
-    // Backward compat — used by chart/table
+    // Backward compat - used by chart/table
     get drawdownAssets() {
       return this.drawdownAllAssets.filter(a => this.activeDrawdownAssets.has(a.key));
     },
@@ -4672,7 +4672,7 @@ function marketsApp() {
     },
 
     // Compute underwater curve for an asset: [{ym, dd}] where dd = (close/peak - 1) ≤ 0
-    // Memoized by cacheKey (Bug 17 fix — called from drawdownHover on every mousemove)
+    // Memoized by cacheKey (Bug 17 fix - called from drawdownHover on every mousemove)
     _underwaterCurveCache: {},
 
     _computeUnderwaterCurve(assetKey) {
@@ -4732,7 +4732,7 @@ function marketsApp() {
       const xScale = (m) => PL + (months.indexOf(m) / Math.max(months.length - 1, 1)) * chartW;
       const yScale = (v) => PT + (1 - v / minDd) * chartH;
 
-      // Y-axis ticks — negative labels going down (0% at top, −10%, −20%... at bottom)
+      // Y-axis ticks - negative labels going down (0% at top, −10%, −20%... at bottom)
       let yTicks = '';
       const nTicks = 6;
       for (let i = 0; i <= nTicks; i++) {
@@ -4757,7 +4757,7 @@ function marketsApp() {
         xLabels += `<line x1="${x.toFixed(1)}" y1="${PT}" x2="${x.toFixed(1)}" y2="${H - PB}" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>`;
       }
 
-      // Filled area + line per asset — reference style: dark fill, bright line on top
+      // Filled area + line per asset - reference style: dark fill, bright line on top
       let areas = '';
       const y0 = yScale(0);
       for (const a of assetDefs) {
@@ -4782,13 +4782,13 @@ function marketsApp() {
 
         // Dark fill (like the reference: solid dark fill from line down to 0%)
         areas += `<path d="${areaPath}" fill="${a.color}" opacity="0.35"/>`;
-        // Bright line on top (thicker, fully opaque — matches reference style)
+        // Bright line on top (thicker, fully opaque - matches reference style)
         areas += `<path d="${linePath.trim()}" fill="none" stroke="${a.color}" stroke-width="2" opacity="1" data-series="${a.key}"/>`;
       }
 
       const crosshair = `<line id="dd-crosshair" x1="0" y1="${PT}" x2="0" y2="${H - PB}" stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
 
-      // Explicit axis lines (consistency pass — Requirement 5.1)
+      // Explicit axis lines (consistency pass - Requirement 5.1)
       const yAxis = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H - PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
       const xAxis = `<line x1="${PL}" y1="${H - PB}" x2="${W - PR}" y2="${H - PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
 
@@ -4857,7 +4857,7 @@ function marketsApp() {
 
         for (const { ym, close } of data) {
           if (close >= runningPeak) {
-            // New peak — if we were in a drawdown, it just recovered
+            // New peak - if we were in a drawdown, it just recovered
             if (currentDdStart !== null && currentDdDepth < worstDd) {
               worstDd = currentDdDepth;
               worstPeakDate = currentDdStart;
@@ -4899,7 +4899,7 @@ function marketsApp() {
           monthsToRecover = Math.round((r - p) / (1000 * 60 * 60 * 24 * 30.5));
         }
 
-        // §5.5 Ulcer Index = √mean(DD²) — captures depth × duration
+        // §5.5 Ulcer Index = √mean(DD²) - captures depth × duration
         let ulcerIndex = null;
         {
           let peak = data[0].close;
@@ -4951,7 +4951,7 @@ function marketsApp() {
     hpHorizon: 1,
     // §C-mode toggle. 'rolling' = N-year rolling annualised return (the
     // historical Hold Lab default; "best/worst/median window" framing applies).
-    // 'trailing' = plain trailing 1-year total return — same metric as the
+    // 'trailing' = plain trailing 1-year total return - same metric as the
     // Portfolio Lab "Return" view, NOT annualised. Honest plain-language Y/Y.
     hpMode: 'rolling',
     hpHoverInfo: null,
@@ -4968,12 +4968,12 @@ function marketsApp() {
       return this.returnsData?.assets?.[this.hpAsset]?.meta?.name || this.hpAsset;
     },
 
-    // §C series builder — returns {ym, ret}[] for the active Hold-Lab mode.
+    // §C series builder - returns {ym, ret}[] for the active Hold-Lab mode.
     //   • mode='rolling'  : rolling annualised return over an N-year window
-    //                       (geometric mean — "what's the typical N-year IRR
+    //                       (geometric mean - "what's the typical N-year IRR
     //                       you'd have earned ending at this month?")
     //   • mode='trailing' : plain trailing 12-month total return (NOT
-    //                       annualised) — the simple Y/Y % change. Same
+    //                       annualised) - the simple Y/Y % change. Same
     //                       semantics as sim.html `_buildRollingChart`'s
     //                       'Return' metric (window.reduce((p,r)=>p*(1+r),1)-1).
     // We dispatch through this.hpMode (default 'rolling') so callers
@@ -5183,7 +5183,7 @@ function marketsApp() {
 
     // ── View F: Correlation & Growth ──────────────────────────────────────
 
-    // §4 Default selection — every key MUST exist in market_returns.json. The previous
+    // §4 Default selection - every key MUST exist in market_returns.json. The previous
     // default included 'us_home_prices' which is not in the asset dataset, leaving the
     // user with only 4 valid assets and giving the panel a half-empty look on first load.
     // copper_lb is industrial-cycle exposure and complements sp500/gold/sensex/wti_crude.
@@ -5264,7 +5264,7 @@ function marketsApp() {
         if (d) lines += `<path d="${d.trim()}" fill="none" stroke="${a.color}" stroke-width="1.5" opacity="0.85"/>`;
       }
       const ch = `<line id="growth-crosshair" x1="0" y1="${PT}" x2="0" y2="${H-PB}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
-      // Explicit axis lines (consistency pass — Requirement 5.4)
+      // Explicit axis lines (consistency pass - Requirement 5.4)
       const yAxis = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
       const xAxis = `<line x1="${PL}" y1="${H-PB}" x2="${W-PR}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
       return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block" preserveAspectRatio="none">${ticks}${xLabels}${lines}${yAxis}${xAxis}${ch}</svg>`;
@@ -5295,7 +5295,7 @@ function marketsApp() {
       const latestStartMonth = startMonths.length > 0 
         ? startMonths.reduce((max, m) => m > max ? m : max, startMonths[0]) 
         : '';
-      // §2.5 Apply global matrix window — gold from 1833 would otherwise squash the axis.
+      // §2.5 Apply global matrix window - gold from 1833 would otherwise squash the axis.
       const minYm = `${this.matrixStartYear || 1833}-01`;
       const months = Array.from(allMonths).sort().filter(m => m >= latestStartMonth && m >= minYm);
 
@@ -5328,7 +5328,7 @@ function marketsApp() {
       const W = 1200, PL = 60, PR = 20;
       const frac = Math.max(0, Math.min(1, ((e.clientX - rect.left) / (rect.width / W) - PL) / (W - PL - PR)));
       const month = months[Math.round(frac * (months.length - 1))];
-      // O(1) lookup — no loop over months
+      // O(1) lookup - no loop over months
       const values = assetDefs.map(a => ({
         key: a.key, name: a.shortName, color: a.color,
         val: growth[a.key]?.[month] ?? null,
@@ -5354,7 +5354,7 @@ function marketsApp() {
 
       const retSeries = {}, allMonths = new Set();
       for (const a of assetDefs) { retSeries[a.key] = this._monthlyRetSeries(a.key); Object.keys(retSeries[a.key]).forEach(m => allMonths.add(m)); }
-      // §2.5 Same window as everything else — correlation over a 30Y window is more
+      // §2.5 Same window as everything else - correlation over a 30Y window is more
       // useful than 'all of recorded history' for asset-allocation decisions today.
       const minYm = `${this.matrixStartYear || 1833}-01`;
       const months = Array.from(allMonths).sort().filter(m => m >= minYm);
@@ -5395,7 +5395,7 @@ function marketsApp() {
             else                bg = _hsl2hex( 18/360, 0.45, 0.40);   // deep muted red-orange
           }
           const tc = c !== null && Math.abs(c) > 0.3 ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.6)';
-          html += `<td style="width:${CELL}px;height:28px;text-align:center;font-size:10px;font-family:ui-monospace;background:${bg};color:${tc};border-radius:2px;" title="${assetDefs[i].shortName} vs ${assetDefs[j].shortName}: ${c !== null ? c.toFixed(2) : '—'}">${c !== null ? c.toFixed(2) : '—'}</td>`;
+          html += `<td style="width:${CELL}px;height:28px;text-align:center;font-size:10px;font-family:ui-monospace;background:${bg};color:${tc};border-radius:2px;" title="${assetDefs[i].shortName} vs ${assetDefs[j].shortName}: ${c !== null ? c.toFixed(2) : '-'}">${c !== null ? c.toFixed(2) : '—'}</td>`;
         }
         html += `</tr>`;
       }
@@ -5434,7 +5434,7 @@ function marketsApp() {
         ? startMonths.reduce((max, m) => m > max ? m : max, startMonths[0])
         : '';
 
-      // §2.5 Apply global matrix window — otherwise the rolling-correlation x-axis
+      // §2.5 Apply global matrix window - otherwise the rolling-correlation x-axis
       // can span 1986→2026 even when the user has selected 30Y everywhere else.
       const minYm = `${this.matrixStartYear || 1833}-01`;
       const allMonths = Object.keys(baseRets).sort()
@@ -5562,8 +5562,8 @@ function marketsApp() {
       const assets = this.returnsData.assets || {};
 
       const RATIOS = [
-        { id: 'gold_silver',  title: 'Gold / Silver Ratio',    num: 'gold',      den: 'silver',     description: 'Risk appetite — rising = risk-off' },
-        { id: 'copper_gold',  title: 'Copper / Gold Ratio',    num: 'copper_lb', den: 'gold',       description: 'Growth vs fear — rising = growth' },
+        { id: 'gold_silver',  title: 'Gold / Silver Ratio',    num: 'gold',      den: 'silver',     description: 'Risk appetite - rising = risk-off' },
+        { id: 'copper_gold',  title: 'Copper / Gold Ratio',    num: 'copper_lb', den: 'gold',       description: 'Growth vs fear - rising = growth' },
         { id: 'oil_gold',     title: 'Oil / Gold Ratio',       num: 'wti_crude', den: 'gold',       description: 'Energy vs safety' },
         { id: 'sp500_gold',   title: 'S&P 500 / Gold Ratio',   num: 'sp500',     den: 'gold',       description: 'Equity vs hard assets' },
       ];
@@ -5735,10 +5735,10 @@ function marketsApp() {
     // Z-score → tile background color (green=low, neutral, orange=elevated, red=high)
     _zTileBg(z) {
       if (z === null) return 'var(--surface)';
-      if (z < -1)  return 'rgba(52,211,153,0.08)';   // green — historically low
+      if (z < -1)  return 'rgba(52,211,153,0.08)';   // green - historically low
       if (z < 1)   return 'var(--surface)';            // neutral
-      if (z < 2)   return 'rgba(251,146,60,0.10)';    // orange — elevated
-      return 'rgba(251,113,133,0.12)';                  // red — very elevated
+      if (z < 2)   return 'rgba(251,146,60,0.10)';    // orange - elevated
+      return 'rgba(251,113,133,0.12)';                  // red - very elevated
     },
 
     _zTileBorder(z) {
@@ -5766,7 +5766,7 @@ function marketsApp() {
       return 'Very elevated';
     },
 
-    // Z-score → heatmap cell color. Calm institutional palette (HSL) — same
+    // Z-score → heatmap cell color. Calm institutional palette (HSL) - same
     // muted blue ↔ red-orange diverging tones used by the returns Matrix's
     // cellColor() and cellColorZscore(), so the volatility regime calendar
     // and the returns matrix read as ONE table when scrolled past each other.
@@ -5774,12 +5774,12 @@ function marketsApp() {
     // 6 buckets so the heatmap reads with the same granularity as before.
     _zCellColor(z) {
       if (z === null || z === undefined) return 'transparent';
-      if (z <= -2)  return _hsl2hex(215/360, 0.42, 0.40);  // unusually calm   — deep muted blue
-      if (z <= -1)  return _hsl2hex(215/360, 0.36, 0.52);  // calmer than usual — muted blue
-      if (z <  0)   return _hsl2hex(215/360, 0.28, 0.65);  // mild calm        — pale blue
-      if (z <  1)   return _hsl2hex( 25/360, 0.32, 0.65);  // mild stress      — pale orange
-      if (z <  2)   return _hsl2hex( 22/360, 0.40, 0.52);  // stressed         — muted orange
-      return                _hsl2hex( 18/360, 0.45, 0.40);  // unusually stressed — deep muted red-orange
+      if (z <= -2)  return _hsl2hex(215/360, 0.42, 0.40);  // unusually calm   - deep muted blue
+      if (z <= -1)  return _hsl2hex(215/360, 0.36, 0.52);  // calmer than usual - muted blue
+      if (z <  0)   return _hsl2hex(215/360, 0.28, 0.65);  // mild calm        - pale blue
+      if (z <  1)   return _hsl2hex( 25/360, 0.32, 0.65);  // mild stress      - pale orange
+      if (z <  2)   return _hsl2hex( 22/360, 0.40, 0.52);  // stressed         - muted orange
+      return                _hsl2hex( 18/360, 0.45, 0.40);  // unusually stressed - deep muted red-orange
     },
 
     _zCellTextColor(z) {
@@ -5822,7 +5822,7 @@ function marketsApp() {
       return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block"><path d="${d.trim()}" fill="none" stroke="${color}" stroke-width="1.5" opacity="0.85"/></svg>`;
     },
 
-    // §5.9 Regime banner — auto-generated from z-scores
+    // §5.9 Regime banner - auto-generated from z-scores
     get volRegimeBanner() {
       if (!this.volData) return '';
       const tiles = this.volTiles;
@@ -5851,7 +5851,7 @@ function marketsApp() {
         const vix = tiles.find(t => t.key === 'vix');
         if (vix && vix.current !== null) {
           const pct = vix.percentile !== null ? Math.round(vix.percentile * 100) : null;
-          const pctStr = pct !== null ? ` — ${pct}th percentile` : '';
+          const pctStr = pct !== null ? ` - ${pct}th percentile` : '';
           parts.push(`<span style="color:var(--text-2)">Volatility is broadly <strong>Normal</strong>. VIX at ${vix.current.toFixed(1)}${pctStr}.</span>`);
         } else {
           parts.push('<span style="color:var(--text-3)">Volatility data loading…</span>');
@@ -6008,7 +6008,7 @@ function marketsApp() {
         if (keys.length) seriesStarts.push(keys.sort()[0]);
       }
       let dates = Array.from(allDates).sort();
-      // §6 Ragged-start fix — when the user has multiple series active and the
+      // §6 Ragged-start fix - when the user has multiple series active and the
       // 'Align series start' toggle is on, clip the x-axis to the latest start
       // date among active series. Otherwise VIX (1990+) creates ~17 years of
       // single-line wasteland before GVZ/OVX/RVX/VXD/VXEEM appear.
@@ -6163,7 +6163,7 @@ function marketsApp() {
       const tiles = this.volTiles;
       if (!tiles.length) return '';
 
-      // §6 Cross-asset chart rebuild — match the drawdown tab's polish:
+      // §6 Cross-asset chart rebuild - match the drawdown tab's polish:
       //   * dark #111 background like the underwater chart
       //   * y-axis ticks include 0σ as the emphasised baseline
       //   * σ labels always render ABOVE the bar regardless of sign so they
@@ -6204,7 +6204,7 @@ function marketsApp() {
         const z = t.z;
         const barTop = Math.min(y0, yScale(z));
         const barH = Math.max(2, Math.abs(y0 - yScale(z)));
-        // Calmer 4-stop palette — same semantics as the tiles (calm/stress/crisis)
+        // Calmer 4-stop palette - same semantics as the tiles (calm/stress/crisis)
         const color = z < -1 ? '#34d399' : z < 1 ? '#94a3b8' : z < 2 ? '#f59e0b' : '#fb7185';
 
         bars += `<rect x="${slotX.toFixed(1)}" y="${barTop.toFixed(1)}" width="${barW}" height="${barH.toFixed(1)}" fill="${color}" opacity="0.85" rx="2"
@@ -6212,7 +6212,7 @@ function marketsApp() {
                        onmouseleave="document.getElementById('tt').style.opacity='0'"
                        style="cursor:pointer"/>`;
 
-        // σ value: always at the top label band — single line of values across the chart
+        // σ value: always at the top label band - single line of values across the chart
         const sigmaLabel = (z >= 0 ? '+' : '') + z.toFixed(1) + 'σ';
         bars += `<text x="${(slotX + barW / 2).toFixed(1)}" y="${labelBandY.toFixed(1)}" text-anchor="middle" style="font-size:9px;font-weight:500;fill:${color};font-family:ui-monospace">${sigmaLabel}</text>`;
 

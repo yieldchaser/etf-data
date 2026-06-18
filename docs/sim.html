@@ -87,11 +87,11 @@
     <div class="flex items-center gap-2 text-xs" style="color: var(--text-3)">
       <span x-show="pricesData" x-text="`${Object.keys(pricesData?.tickers||{}).length} tickers`"></span>
       <a href="methodology.html" class="label hover:text-zinc-400 transition" style="text-decoration: none;"
-         title="How Predator Protocol works — scoring, motion signals, sanitizer, self-living data, and honest limitations">How it works ↗</a>
+         title="How Predator Protocol works - scoring, motion signals, sanitizer, self-living data, and honest limitations">How it works ↗</a>
     </div>
   </header>
 
-  <!-- NO DATA BANNER — shown when prices.json is not available -->
+  <!-- NO DATA BANNER - shown when prices.json is not available -->
   <div x-show="!loading && !pricesData"
        class="rounded-lg border px-6 py-8 text-center mb-6"
        style="background: var(--surface); border-color: var(--border)">
@@ -109,7 +109,7 @@
     </div>
   </div>
 
-  <!-- MAIN CONTENT — only shown when prices.json is loaded -->
+  <!-- MAIN CONTENT - only shown when prices.json is loaded -->
   <div x-show="pricesData">
 
   <!-- MAIN TABS -->
@@ -344,7 +344,7 @@
 
 
   <!-- ═══════════════════════════════════════════════════════════════════ -->
-  <!-- TAB: BACKTEST (Performance Summary — §13)                          -->
+  <!-- TAB: BACKTEST (Performance Summary - §13)                          -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <div x-show="activeTab === 'backtest'">
     <div x-show="!backtestResult" class="text-center py-20" style="color: var(--text-3)">
@@ -365,7 +365,7 @@
         </div>
       </div>
 
-      <!-- Metrics table — §13 full set -->
+      <!-- Metrics table - §13 full set -->
       <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
         <table class="w-full text-xs">
           <thead style="background: #050505; color: var(--text-3)">
@@ -400,7 +400,7 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════════════ -->
-  <!-- TAB: RISK vs BENCHMARK (VAMI — §14)                                -->
+  <!-- TAB: RISK vs BENCHMARK (VAMI - §14)                                -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <div x-show="activeTab === 'risk'">
     <div x-show="!backtestResult" class="text-center py-20" style="color: var(--text-3)">
@@ -420,7 +420,7 @@
       <!-- VAMI Chart -->
       <div class="rounded-lg border overflow-hidden mb-5" style="background: var(--surface); border-color: var(--border)">
         <div class="px-3 py-2 label" style="border-bottom: 1px solid var(--border); color: var(--cyan)">
-          VAMI — VAMI₀ = 1000 · VAMIₜ = VAMIₜ₋₁ × (1 + rₜ)
+          VAMI - VAMI₀ = 1000 · VAMIₜ = VAMIₜ₋₁ × (1 + rₜ)
         </div>
         <div x-html="vamiChartSvg"
              @mousemove="vamiHover($event)"
@@ -565,7 +565,7 @@
           <template x-for="m in ['Return','Sharpe','Vol','Beta']" :key="m">
             <button @click="rollingMetric = m"
                     :class="rollingMetric === m ? 'tab-active' : ''"
-                    @mouseenter="m === 'Return' ? showTt($event, 'Trailing N-month total return (plain % change, not annualised). For 12M = trailing 1-year return.') : showTt($event, 'Rolling N-month ' + m + ' — windowed statistic over the trailing period.')"
+                    @mouseenter="m === 'Return' ? showTt($event, 'Trailing N-month total return (plain % change, not annualised). For 12M = trailing 1-year return.') : showTt($event, 'Rolling N-month ' + m + ' - windowed statistic over the trailing period.')"
                     @mouseleave="hideTt()"
                     class="px-2.5 py-1 rounded border text-[10px] transition"
                     :style="rollingMetric === m ? '' : 'color: var(--text-2); border-color: var(--border)'"
@@ -659,7 +659,7 @@
               <th class="text-center px-3 py-2 label">Recovery</th>
               <th class="text-center px-3 py-2 label">Months</th>
               <th class="text-center px-3 py-2 label"
-                  @mouseenter="showTt($event, 'Ulcer Index = √mean(DD²) — captures depth × duration')"
+                  @mouseenter="showTt($event, 'Ulcer Index = √mean(DD²) - captures depth × duration')"
                   @mouseleave="hideTt()">Ulcer Idx</th>
               <th class="text-center px-3 py-2 label">Current DD</th>
             </tr>
@@ -746,7 +746,7 @@
       <!-- Fan chart -->
       <div class="rounded-lg border overflow-hidden mb-5" style="background: var(--surface); border-color: var(--border)">
         <div class="px-3 py-2 label" style="border-bottom: 1px solid var(--border); color: var(--violet)">
-          TERMINAL WEALTH FAN CHART — Percentile bands (5/25/50/75/95)
+          TERMINAL WEALTH FAN CHART - Percentile bands (5/25/50/75/95)
         </div>
         <div x-show="!mcResult" class="py-10 text-center text-xs" style="color: var(--text-3)">
           Click Simulate to run Monte Carlo
@@ -853,7 +853,7 @@
         <!-- Kelly curve chart -->
         <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
           <div class="px-3 py-2 label" style="border-bottom: 1px solid var(--border); color: var(--cyan)">
-            KELLY CURVE — Return (blue) vs Volatility (red) · Peak at f*
+            KELLY CURVE - Return (blue) vs Volatility (red) · Peak at f*
           </div>
           <div x-html="kellyCurveSvg"
                @mousemove="kellyHover($event)"
@@ -987,7 +987,7 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════════════ -->
-  <!-- TAB: LEVERAGE DECAY (§18 — upgraded ETN simulator)                 -->
+  <!-- TAB: LEVERAGE DECAY (§18 - upgraded ETN simulator)                 -->
   <!-- ═══════════════════════════════════════════════════════════════════ -->
   <div x-show="activeTab === 'leverage'">
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-5">
@@ -1402,7 +1402,7 @@ function computeMetrics(equity, returns, benchEquity, benchReturns, rfMonthly = 
 
   // Best/worst year
   const byYear = {};
-  // (simplified — use annual returns from equity curve)
+  // (simplified - use annual returns from equity curve)
   let bestYear = null, worstYear = null;
 
   return {
@@ -2393,7 +2393,7 @@ function labApp() {
         const bWindow = benchRets?.slice(i - W, i);
         let val, bVal;
         if (metric === 'Return') {
-          // §9 Plain trailing-window return — total % change over the last W months,
+          // §9 Plain trailing-window return - total % change over the last W months,
           // NOT annualised. The user explicitly asked for "1Y return" not "rolling
           // 1Y annualised return". For W=12 this is the trailing 1-year return; for
           // W=60 it's the trailing 5-year cumulative return.
@@ -2561,7 +2561,7 @@ function labApp() {
         { label: 'Upside Capture',   portfolio: _fp(p.upCapture, 1, false), benchmark: '100%',                    portfolioColor: p.upCapture > 1 ? 'var(--up)' : 'var(--text)', formula: 'geoMean(port|bench↑) / geoMean(bench|bench↑)', formulaShort: 'gm(p|b↑)/gm(b|b↑)' },
         { label: 'Downside Capture', portfolio: _fp(p.dnCapture, 1, false), benchmark: '100%',                    portfolioColor: p.dnCapture < 1 ? 'var(--up)' : 'var(--down)', formula: 'geoMean(port|bench↓) / geoMean(bench|bench↓)', formulaShort: 'gm(p|b↓)/gm(b|b↓)' },
         { label: 'Omega Ratio',      portfolio: _fn(p.omega),          benchmark: b ? _fn(b.omega) : '—',          portfolioColor: p.omega > 1 ? 'var(--up)' : 'var(--text)', formula: 'Σgains above MAR / Σ|losses below MAR|', formulaShort: 'Σ(r>0)/Σ|r<0|' },
-        { label: 'Ulcer Index',      portfolio: _fn(p.ulcer) + '%',    benchmark: b ? _fn(b.ulcer) + '%' : '—',    portfolioColor: 'var(--amber)', formula: '√mean(DD²) — captures depth × duration', formulaShort: '√mean(DD²)' },
+        { label: 'Ulcer Index',      portfolio: _fn(p.ulcer) + '%',    benchmark: b ? _fn(b.ulcer) + '%' : '—',    portfolioColor: 'var(--amber)', formula: '√mean(DD²) - captures depth × duration', formulaShort: '√mean(DD²)' },
         { label: 'Martin Ratio',     portfolio: _fn(p.martin),         benchmark: b ? _fn(b.martin) : '—',         portfolioColor: p.martin > 1 ? 'var(--up)' : 'var(--text)', formula: 'CAGR / Ulcer Index', formulaShort: 'CAGR/UI' },
         { label: '% Positive',       portfolio: _fp(p.pctPos, 0, false), benchmark: b ? _fp(b.pctPos, 0, false) : '—', portfolioColor: p.pctPos > 0.6 ? 'var(--up)' : 'var(--text)', formula: 'count(r>0) / N', formulaShort: 'n(r>0)/N' },
       ];
@@ -2690,7 +2690,7 @@ function labApp() {
         const metric = this.rollingMetric;
         let val, bVal;
         if (metric === 'Return') {
-          // §9 Plain trailing-window return (NOT annualised) — must match _buildRollingChart.
+          // §9 Plain trailing-window return (NOT annualised) - must match _buildRollingChart.
           val = window.reduce((p, r) => p * (1 + r), 1) - 1;
           if (bWindow) {
             bVal = bWindow.reduce((p, r) => p * (1 + r), 1) - 1;

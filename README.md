@@ -216,7 +216,7 @@ Built with Tailwind CSS + Alpine.js. Zero build step — static HTML/JS served d
 
 #### Leaderboard
 - ~3,950 unique tickers ranked by Final Alpha Score
-- Sortable columns: score, rank, velocity, burst, concentration, tier breadth
+- Sortable columns: score, rank, velocity, burst, concentration, tier breadth, ticker, company (3-way click sort toggle: desc → asc → default, with alphabetical columns and rank defaulting to ascending on first click)
 - Day-over-day score deltas with honest `—` display when no comparable past data exists
 - HC streaks, percentile-of-own-history progress bars
 - **VELO** and **BURST** badges with micro-breakdown tooltips
@@ -231,7 +231,7 @@ Built with Tailwind CSS + Alpine.js. Zero build step — static HTML/JS served d
 #### ETFs Tab
 - Per-ETF 50-slice SVG donut chart (20-color institutional palette)
 - Tier pie chart (fixed Alpine SVG template limitation via `x-html`)
-- Holdings sorted by rank, weight, 7-day rank delta
+- Holdings sorted by rank, weight, rank delta, weight flow (supporting 3-way click sort toggle: desc → asc → default)
 - **Official Strategy Descriptions**: Integrated investment objectives and systematic index mechanics for all 30 ETFs, cleanly parsed from research and embedded right below the detail header.
 - Sidebar metadata: rebalance/reconstitution schedule from `ETF DATA.csv`
 - ETF overlap heatmap: 30×30 Jaccard similarity matrix
@@ -242,6 +242,9 @@ Built with Tailwind CSS + Alpine.js. Zero build step — static HTML/JS served d
 - Sector flow: velocity-weighted exposure by GICS sector (Unknown excluded)
 - Country flow: velocity-weighted exposure by domicile (Unknown excluded)
 - Click a sector/country to filter the leaderboard
+- **Interactive Sorting**: All 10 tables, sector flow, and country flow tables support 3-way toggle sorting (descending → ascending → default/clear) with visual indicators.
+- **Dynamic Lookbacks**: Climbers and Fallers tables dynamically respect the selected lookback changesPeriod.
+- **Color-Coded Card Accents**: Category-matched left-border highlights (green for gainers/climbers, red/rose for losers/fallers/crashed, cyan for pickups, purple for burst, blue for entrants, grey for exits).
 
 #### Watchlist Tab
 - Pin tickers with ★, persisted to localStorage

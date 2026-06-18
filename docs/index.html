@@ -545,7 +545,7 @@
                       x-tooltip="'Forward score = structure × bounded momentum kicker'"
                       x-text="row.apex_score != null ? Math.round(row.apex_score) : '–'"></td>
                   <td class="px-2 py-2 text-right num font-mono font-medium"
-                      x-tooltip="`Score: ${fmt1(row.final_score)}<br>Percentile: ${row.normalized_score != null ? row.normalized_score.toFixed(0) : '–'}/100<br>Concentration: ${row.concentration_score != null ? row.concentration_score : '–'}% from top ETF<br>${row.concentration_score == null ? 'No data' : row.concentration_score < 40 ? '✓ Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : '⚠ Highly concentrated - fragile if top ETF rebalances'}`"
+                      x-tooltip="`Score: ${fmt1(row.final_score)}<br>Percentile: ${row.normalized_score != null ? row.normalized_score.toFixed(0) : '-'}/100<br>Concentration: ${row.concentration_score != null ? row.concentration_score : '-'}% from top ETF<br>${row.concentration_score == null ? 'No data' : row.concentration_score < 40 ? '✓ Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : '⚠ Highly concentrated - fragile if top ETF rebalances'}`"
                       x-text="fmt1(row.final_score)"></td>
                   <td class="px-2 py-2 text-center num font-mono hidden lg:table-cell" :style="`color: ${flowColor(activeDeltaValue(row))}`" x-text="fmtPct(activeDeltaValue(row))"></td>
                   <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell"
@@ -713,7 +713,7 @@
                                 <th class="text-right py-1.5 pr-3 label">Flow</th>
                                 <th class="text-right py-1.5 pr-3 label">Score</th>
                                 <th class="text-left py-1.5 label cursor-help"
-                                    x-tooltip="{html: '<b>STATUS</b> column:<br><b>NEW</b> = first appeared in this ETF within 14 days<br><b>HC</b> = held by 4+ ETFs overall<br><b>—</b> = no special flag'}">Flags</th>
+                                    x-tooltip="{html: '<b>STATUS</b> column:<br><b>NEW</b> = first appeared in this ETF within 14 days<br><b>HC</b> = held by 4+ ETFs overall<br><b>-</b> = no special flag'}">Flags</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -1128,7 +1128,7 @@
                         x-tooltip="'Forward score = structure × bounded momentum kicker'"
                         x-text="row.apex_score != null ? Math.round(row.apex_score) : '–'"></td>
                     <td class="px-2 py-2 text-right num font-mono font-medium"
-                        x-tooltip="`Score: ${fmt1(row.final_score)}<br>Percentile: ${row.normalized_score != null ? row.normalized_score.toFixed(0) : '–'}/100<br>Concentration: ${row.concentration_score != null ? row.concentration_score : '–'}% from top ETF<br>${row.concentration_score == null ? 'No data' : row.concentration_score < 40 ? '✓ Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : '⚠ Highly concentrated - fragile if top ETF rebalances'}`"
+                        x-tooltip="`Score: ${fmt1(row.final_score)}<br>Percentile: ${row.normalized_score != null ? row.normalized_score.toFixed(0) : '-'}/100<br>Concentration: ${row.concentration_score != null ? row.concentration_score : '-'}% from top ETF<br>${row.concentration_score == null ? 'No data' : row.concentration_score < 40 ? '✓ Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : '⚠ Highly concentrated - fragile if top ETF rebalances'}`"
                         x-text="fmt1(row.final_score)"></td>
                     <td class="px-2 py-2 text-center num font-mono hidden lg:table-cell" :style="`color: ${flowColor(activeDeltaValue(row))}`" x-text="fmtPct(activeDeltaValue(row))"></td>
                     <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell"
@@ -1299,7 +1299,7 @@
                                   <th class="text-right py-2.5 px-3 label">Flow</th>
                                   <th class="text-right py-2.5 px-3 label">Score</th>
                                   <th class="text-left py-2.5 px-3 label cursor-help"
-                                      x-tooltip="{html: '<b>STATUS</b> column:<br><b>NEW</b> = first appeared in this ETF within 14 days<br><b>HC</b> = held by 4+ ETFs overall<br><b>—</b> = no special flag'}">Flags</th>
+                                      x-tooltip="{html: '<b>STATUS</b> column:<br><b>NEW</b> = first appeared in this ETF within 14 days<br><b>HC</b> = held by 4+ ETFs overall<br><b>-</b> = no special flag'}">Flags</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -1913,7 +1913,7 @@
     <!-- Tab-level Header Strip (Sticky glassmorphic header strip) -->
     <div class="sticky top-0 z-30 flex items-center justify-between px-3 py-2.5 mb-3 text-xs backdrop-blur-sm border-b" style="background: rgba(12, 12, 12, 0.92); border-color: var(--border); box-shadow: 0 2px 12px rgba(0,0,0,0.4); margin-left: -1px; margin-right: -1px;">
       <div class="flex items-center gap-3">
-        <div class="font-mono font-semibold text-zinc-100" x-text="`Changes - ${changelog.today || '—'} vs ${changelog.yesterday || '—'}`"></div>
+        <div class="font-mono font-semibold text-zinc-100" x-text="`Changes - ${changelog.today || '-'} vs ${changesPeriodTargetDate || '-'}`"></div>
         <!-- Summary capsule badges showing key counts at a glance -->
         <div class="flex items-center gap-1.5 flex-wrap text-[10px] text-zinc-400">
           <span class="bg-white/[0.03] border border-white/[0.04] px-1.5 py-0.5 rounded-full select-none cursor-help"
@@ -3229,6 +3229,52 @@ function app() {
       const result = computeEntrants();
       this._newEntrantsCache = { key: cacheKey, value: result };
       return result;
+    },
+
+    get changesPeriodTargetDate() {
+      if (!this.scoreHistory || !this.changelog.today || !this.meta.snapshot_dates_in_window) {
+        return this.changelog.yesterday || '-';
+      }
+      if (this.changesPeriod === 1) {
+        return this.changelog.yesterday || '-';
+      }
+      
+      const latestDateStr = this.changelog.today;
+      const latestDate = new Date(latestDateStr);
+      let targetDate = new Date(latestDate);
+      
+      if (this.changesPeriod === 'YTD') {
+        const year = latestDate.getFullYear();
+        targetDate = new Date(`${year}-01-01`);
+      } else {
+        const days = parseInt(this.changesPeriod) || 1;
+        targetDate.setDate(latestDate.getDate() - days);
+      }
+      
+      const dates = this.meta.snapshot_dates_in_window || [];
+      if (!dates.length) return '-';
+      
+      let targetDateStr = dates[0];
+      const targetTime = targetDate.getTime();
+      let minDiff = Math.abs(new Date(targetDateStr).getTime() - targetTime);
+      
+      for (const d of dates) {
+        const diff = Math.abs(new Date(d).getTime() - targetTime);
+        if (diff < minDiff) {
+          minDiff = diff;
+          targetDateStr = d;
+        }
+      }
+      
+      if (targetDateStr === latestDateStr) {
+        const idx = dates.indexOf(latestDateStr);
+        if (idx > 0) {
+          targetDateStr = dates[idx - 1];
+        } else {
+          return '-';
+        }
+      }
+      return targetDateStr;
     },
 
     get sectorMax() {
