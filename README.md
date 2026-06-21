@@ -461,7 +461,7 @@ Runner:  ubuntu-latest
 Steps:
   1. Install: pandas, pyyaml, pyarrow, pytest, hypothesis, yfinance, openpyxl, fredapi, python-dotenv
      (No selenium/curl_cffi/pdfplumber — scraper-only, not needed for build)
-  2. pytest tests/ -v  (316 tests)
+  2. pytest tests/ -v  (325 tests)
   3. predator.build  → docs/data/*.json
   4. predator.fetch_prices  → Portfolio Lab prices (yfinance adjusted-close)
   5. predator.fetch_stock_details  → descriptions + 2-year price history
@@ -485,7 +485,7 @@ Steps:
 
 ## Testing
 
-**316 tests** across 20 files — property-based (Hypothesis) and deterministic coverage of scoring, sanitization, the v42 bridge contract, Parquet immutability, markets engine, signal history, and CI config.
+**325 tests** across 21 files — property-based (Hypothesis) and deterministic coverage of scoring, sanitization, the v42 bridge contract, Parquet immutability, markets engine, signal history, multi-period universe exits, and CI config.
 
 ```bash
 python -m pytest tests/ -v
@@ -535,7 +535,7 @@ pip install selenium curl_cffi pdfplumber xlrd
 # Reconstruct data/all_history.csv from Parquet store (required for local development/queries)
 python scripts/hydrate_csv_from_parquet.py
 
-# Run all 316 tests
+# Run all 325 tests
 python -m pytest tests/ -v
 
 # Build site artifacts (leaderboard, holdings, changelog, flow, overlap)
