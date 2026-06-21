@@ -771,6 +771,7 @@ def _prioritize_batch(
 
 def build_details(
     batch_size: int = BATCH_SIZE_DEFAULT,
+    refresh_size: int = 100,
     tickers_filter: list[str] | None = None,
     fill_pending_only: bool = False,
     dry_run: bool = False,
@@ -848,32 +849,52 @@ def build_details(
         batch = _prioritize_batch(sorted(pending_set), metadata, symbol_map, batch_size, lb_ranks)
         print(f"\n  Batch: {len(batch)} of {len(pending_set)} pending (top by leaderboard rank)")
 
-    # ── Resolved-ticker refresh: use leftover batch budget to refresh stale prices ──
+    # ── Resolved-ticker refresh: prioritized refresh of stale prices ──
     refresh_batch: list[str] = []
-    if not tickers_filter and len(batch) < batch_size:
-        refresh_budget = batch_size - len(batch)
-        stale_resolved = []
-        for t in sorted(resolved):
-            detail_path = DETAILS_DIR / f"{_safe_detail_stem(t)}.json"
-            if detail_path.exists():
-                try:
-                    existing = json.loads(detail_path.read_text(encoding="utf-8"))
-                    prices = existing.get("prices", [])
-                    is_pending = existing.get("pending", False)
-                    if prices and not is_pending:
-                        last_date = prices[-1][0]
-                        stale_resolved.append((last_date, t))
-                    else:
-                        stale_resolved.append(("0000-00-00", t))
-                except Exception:
-                    stale_resolved.append(("0000-00-00", t))
-            else:
-                stale_resolved.append(("0000-00-00", t))
-        # Sort by stalest first
-        stale_resolved.sort(key=lambda x: x[0])
-        refresh_batch = [t for _, t in stale_resolved[:refresh_budget]]
-        if refresh_batch:
-            print(f"  Refresh: {len(refresh_batch)} stale resolved tickers (oldest prices first)")
+    if not tickers_filter:
+        # Decouple refresh budget from pending batch:
+        # Default dedicated refresh budget + any leftover batch_size budget
+        leftover_budget = max(0, batch_size - len(batch))
+        refresh_budget = refresh_size + leftover_budget
+        
+        if refresh_budget > 0:
+            stale_resolved = []
+            today_dt = datetime.now(timezone.utc).date()
+            
+            for t in sorted(resolved):
+                detail_path = DETAILS_DIR / f"{_safe_detail_stem(t)}.json"
+                last_dt = datetime(1970, 1, 1).date()
+                if detail_path.exists():
+                    try:
+                        existing = json.loads(detail_path.read_text(encoding="utf-8"))
+                        prices = existing.get("prices", [])
+                        is_pending = existing.get("pending", False)
+                        if prices and not is_pending:
+                            last_dt = datetime.strptime(prices[-1][0], "%Y-%m-%d").date()
+                    except Exception:
+                        pass
+                
+                # Priority calculation
+                age_days = (today_dt - last_dt).days
+                rank = lb_ranks.get(t, 10**9)
+                
+                if rank <= 250:
+                    target = 1
+                elif rank <= 1000:
+                    target = 3
+                else:
+                    target = 7
+                    
+                overdue_ratio = age_days / target
+                stale_resolved.append((overdue_ratio, rank, t))
+                
+            # Sort by overdue_ratio descending (most overdue first), then rank ascending (higher conviction first)
+            stale_resolved.sort(key=lambda x: (-x[0], x[1], x[2]))
+            
+            # Select up to refresh_budget tickers
+            refresh_batch = [t for _, _, t in stale_resolved[:refresh_budget]]
+            if refresh_batch:
+                print(f"  Refresh: {len(refresh_batch)} prioritized resolved tickers (overdue first)")
 
     if dry_run:
         print("\n  --dry-run plan:")
@@ -1022,6 +1043,7 @@ def build_details(
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(prog="predator.fetch_stock_details")
     p.add_argument("--batch-size",   type=int, default=BATCH_SIZE_DEFAULT)
+    p.add_argument("--refresh-size", type=int, default=100)
     p.add_argument("--fill-pending", action="store_true")
     p.add_argument("--dry-run",      action="store_true")
     p.add_argument("--tickers",      type=str, default=None)
@@ -1036,6 +1058,7 @@ def main(argv: list[str] | None = None) -> int:
         tickers_filter = [t.strip().upper() for t in args.tickers.split(",")]
     build_details(
         batch_size=args.batch_size,
+        refresh_size=args.refresh_size,
         tickers_filter=tickers_filter,
         fill_pending_only=args.fill_pending,
         dry_run=args.dry_run,
