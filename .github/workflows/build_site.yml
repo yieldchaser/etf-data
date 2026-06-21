@@ -118,7 +118,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/data/details data/coverage_state.json data/company_descriptions.json
+          git add -f docs/data/details data/coverage_state.json data/company_descriptions.json
           if git diff --staged --quiet; then
             echo "No stock-detail coverage changes to commit."
           else
