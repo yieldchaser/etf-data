@@ -1,3 +1,10 @@
+import sys
+try:
+    sys.stdout.reconfigure(errors='replace')
+    sys.stderr.reconfigure(errors='replace')
+except AttributeError:
+    pass
+
 import pandas as pd
 import time
 import json
