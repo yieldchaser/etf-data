@@ -93,6 +93,7 @@ sanitizer:
   # Merges these tickers so they group together in the leaderboard.
   ticker_renames:
     GOOG: GOOGL
+    ASML: ASML.NA
 
   # Cross-listing collapse (regex). Same security trading under two ticker forms
   # gets merged into one canonical leaderboard entry. Each rule is a regex
