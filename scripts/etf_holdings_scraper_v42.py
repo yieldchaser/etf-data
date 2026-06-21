@@ -13,6 +13,13 @@ Sources & methods (all confirmed via browser network recon):
   AVSC  → Avantis Playwright
 """
 
+import sys
+try:
+    sys.stdout.reconfigure(errors='replace')
+    sys.stderr.reconfigure(errors='replace')
+except AttributeError:
+    pass
+
 import requests, pandas as pd, io, re, warnings, traceback, os
 from datetime import date, timedelta
 from typing import Optional
@@ -534,7 +541,7 @@ def fetch_vlue() -> pd.DataFrame:
             'Referer': 'https://www.blackrock.com/',
             'Origin':  'https://www.blackrock.com',
         }, timeout=30)
-        print(f"  VLUE: {dstr} → {r.status_code} | {len(r.content)} bytes")
+        print(f"  VLUE: {dstr} -> {r.status_code} | {len(r.content)} bytes")
         if r.status_code != 200 or len(r.content) < 5000:
             continue
         lines = r.text.splitlines()
@@ -626,10 +633,11 @@ def fetch_mfem() -> pd.DataFrame:
         'Accept':      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,*/*',
         'Client':      'WEB',
         'Countrycode': 'US',
-        'Language':    'en',
-        'Username':    'FL',
+        'langcode':    'en',
+        'userrole':    'FI',
         'Origin':      'https://www.pimco.com',
-        'Referer':     MFEM_PAGE_URL,
+        'Referer':     'https://www.pimco.com/',
+        'User-Agent':  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
     }
     print("  MFEM: trying direct API (no session)...")
     for n in range(1, 10):
@@ -642,7 +650,7 @@ def fetch_mfem() -> pd.DataFrame:
             )
             try:
                 r = S.get(url, headers=_api_hdrs_public, timeout=30)
-                print(f"  MFEM T0 ({endpoint}) {dstr} → {r.status_code} | {len(r.content):,} B")
+                print(f"  MFEM T0 ({endpoint}) {dstr} -> {r.status_code} | {len(r.content):,} B")
                 if r.status_code in (200, 201) and r.content[:4] == b'PK\x03\x04':
                     df, a1_aod = _parse_mfem_excel(r.content)
                     df['as_of_date'] = a1_aod or dstr
@@ -675,7 +683,7 @@ def fetch_mfem() -> pd.DataFrame:
                 page.mouse.move(cx, cy)
                 page.wait_for_timeout(120)
                 page.mouse.click(cx, cy)
-                print(f"  MFEM PW: mouse.click({cx:.0f},{cy:.0f}) → {label}")
+                print(f"  MFEM PW: mouse.click({cx:.0f},{cy:.0f}) -> {label}")
                 return True
         except Exception as e:
             print(f"  MFEM PW: bbox click failed for {label}: {e!s:.70}")
@@ -683,7 +691,7 @@ def fetch_mfem() -> pd.DataFrame:
         # Strategy 2 — standard Playwright click
         try:
             locator.click(timeout=4000)
-            print(f"  MFEM PW: locator.click() → {label}")
+            print(f"  MFEM PW: locator.click() -> {label}")
             return True
         except Exception as e:
             print(f"  MFEM PW: locator.click failed for {label}: {e!s:.70}")
@@ -691,7 +699,7 @@ def fetch_mfem() -> pd.DataFrame:
         # Strategy 3 — force click (overrides pointer-events:none on hidden inputs)
         try:
             locator.click(force=True, timeout=4000)
-            print(f"  MFEM PW: force-click → {label}")
+            print(f"  MFEM PW: force-click -> {label}")
             return True
         except Exception as e:
             print(f"  MFEM PW: force-click failed for {label}: {e!s:.70}")
@@ -788,7 +796,7 @@ def fetch_mfem() -> pd.DataFrame:
                     )
                     try:
                         r = S.get(url, headers=api_hdrs, timeout=30)
-                        print(f"  MFEM early-API ({endpoint}) {dstr} → {r.status_code} | {len(r.content):,} B")
+                        print(f"  MFEM early-API ({endpoint}) {dstr} -> {r.status_code} | {len(r.content):,} B")
                         if r.status_code in (200, 201) and r.content[:4] == b'PK\x03\x04':
                             browser.close()
                             df, a1_aod = _parse_mfem_excel(r.content)
@@ -1059,7 +1067,7 @@ def fetch_mfem() -> pd.DataFrame:
                             captured['bytes'] = raw
                             print(f"  MFEM PW: ✓ download via '{sel}': {len(raw):,} bytes")
                         else:
-                            print(f"  MFEM PW: '{sel}' → {len(raw):,} bytes — too small, skipping")
+                            print(f"  MFEM PW: '{sel}' -> {len(raw):,} bytes -- too small, skipping")
                     except Exception:
                         if captured:  # might have landed in on_response
                             break
@@ -1091,10 +1099,11 @@ def fetch_mfem() -> pd.DataFrame:
             'Accept':      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,*/*',
             'Client':      'WEB',
             'Countrycode': 'US',
-            'Language':    'en',
-            'Username':    'FL',
+            'langcode':    'en',
+            'userrole':    'FI',
             'Origin':      'https://www.pimco.com',
-            'Referer':     MFEM_PAGE_URL,
+            'Referer':     'https://www.pimco.com/',
+            'User-Agent':  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
             'Cookie':      all_cookie_str,
         }
         for n in range(1, 10):
@@ -1106,7 +1115,7 @@ def fetch_mfem() -> pd.DataFrame:
                     f'{endpoint}/export?asOfDate={dstr}'
                 )
                 r = S.get(url, headers=api_hdrs, timeout=30)
-                print(f"  MFEM API ({endpoint}) {dstr} → {r.status_code} | {len(r.content):,} bytes")
+                print(f"  MFEM API ({endpoint}) {dstr} -> {r.status_code} | {len(r.content):,} bytes")
                 if r.status_code in (200, 201) and r.content[:4] == b'PK\x03\x04':
                     df, a1_aod = _parse_mfem_excel(r.content)
                     df['as_of_date'] = a1_aod or dstr   # A1 > URL param
