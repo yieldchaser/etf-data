@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-20T15:52:56+00:00",
+  "generated_at": "2026-06-21T09:52:47+00:00",
   "partitions": {
     "2026": {
       "etfs": 30,
@@ -7,7 +7,7 @@
       "first_date": "2026-02-12",
       "last_date": "2026-06-18",
       "rows": 209235,
-      "sha256": "7b8bd773d15ddf391498685bcd529e1085cb821b586ecac66eb1005ee01f1b0e",
+      "sha256": "9b17d3da768064b889ddbde929b46b76f2f991b7eba203ab6d07b3ec1096a644",
       "year": 2026
     }
   },
