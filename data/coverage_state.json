@@ -1,19 +1,10 @@
 {
   "coverage_pct": 99.59,
-  "last_run_utc": "2026-06-22T23:29:49+00:00",
+  "last_run_utc": "2026-06-23T03:51:06+00:00",
   "note": "Self-healing: each CI run resolves ~150 tickers. Full coverage reached automatically.",
   "pending": [
-    "*",
     "2223637D",
-    "ADNOCDRILL",
-    "ADNOCGAS",
-    "ARIj",
-    "BOROUGE",
-    "GLXO",
-    "MMFS",
-    "PEPL",
-    "PWGR",
-    "SMPH"
+    "PWGR"
   ],
   "refresh_failures": {},
   "resolved": [
@@ -2465,6 +2456,7 @@
     "LOGC",
     "LOPE",
     "LOVE",
+    "LOW",
     "LPC",
     "LPG",
     "LPLA",
@@ -3467,6 +3459,7 @@
     "TDW",
     "TDY",
     "TE",
+    "TEAM",
     "TECH",
     "TECHM",
     "TECX",
@@ -3866,21 +3859,21 @@
     "ZYDUSLIF"
   ],
   "unresolved": {
-    "*": 4,
-    "2223637D": 3,
+    "*": 5,
+    "2223637D": 4,
     "ADIB": 5,
     "ADNOCDIST": 5,
-    "ADNOCDRILL": 4,
-    "ADNOCGAS": 4,
-    "ARIj": 4,
+    "ADNOCDRILL": 5,
+    "ADNOCGAS": 5,
+    "ARIj": 5,
     "BJHI": 5,
-    "BOROUGE": 4,
+    "BOROUGE": 5,
     "EAND": 5,
-    "GLXO": 4,
-    "MMFS": 4,
-    "PEPL": 4,
+    "GLXO": 5,
+    "MMFS": 5,
+    "PEPL": 5,
     "PWGR": 1,
-    "SMPH": 4,
+    "SMPH": 5,
     "\u2014": 5
   }
 }
