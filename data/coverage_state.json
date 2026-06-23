@@ -1,9 +1,8 @@
 {
   "coverage_pct": 99.59,
-  "last_run_utc": "2026-06-23T03:51:06+00:00",
+  "last_run_utc": "2026-06-23T06:15:10+00:00",
   "note": "Self-healing: each CI run resolves ~150 tickers. Full coverage reached automatically.",
   "pending": [
-    "2223637D",
     "PWGR"
   ],
   "refresh_failures": {},
@@ -3271,7 +3270,6 @@
     "SGE.LN",
     "SGI",
     "SGMT",
-    "SGU",
     "SHAK",
     "SHBI",
     "SHC",
@@ -3430,7 +3428,6 @@
     "TARA",
     "TASE",
     "TASE.IT",
-    "TASK",
     "TATA",
     "TATACONS",
     "TAYD",
@@ -3860,7 +3857,7 @@
   ],
   "unresolved": {
     "*": 5,
-    "2223637D": 4,
+    "2223637D": 5,
     "ADIB": 5,
     "ADNOCDIST": 5,
     "ADNOCDRILL": 5,
