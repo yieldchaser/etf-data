@@ -1,13 +1,15 @@
 {
   "coverage_pct": 99.59,
-  "last_run_utc": "2026-06-24T16:21:41+00:00",
+  "last_run_utc": "2026-06-24T23:12:50+00:00",
   "note": "Self-healing: each CI run resolves ~150 tickers. Full coverage reached automatically.",
   "pending": [
     "2223637D",
     "PWGR",
     "\u2014"
   ],
-  "refresh_failures": {},
+  "refresh_failures": {
+    "CARE": 1
+  },
   "resolved": [
     "000001",
     "000050",
@@ -3888,7 +3890,7 @@
   ],
   "unresolved": {
     "*": 5,
-    "2223637D": 1,
+    "2223637D": 2,
     "ADIB": 5,
     "ADNOCDIST": 5,
     "ADNOCDRILL": 5,
@@ -3902,6 +3904,6 @@
     "PEPL": 5,
     "PWGR": 1,
     "SMPH": 5,
-    "\u2014": 1
+    "\u2014": 2
   }
 }
