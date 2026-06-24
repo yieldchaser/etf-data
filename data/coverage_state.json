@@ -1,9 +1,11 @@
 {
-  "coverage_pct": 99.64,
-  "last_run_utc": "2026-06-24T06:12:51+00:00",
+  "coverage_pct": 99.59,
+  "last_run_utc": "2026-06-24T16:21:41+00:00",
   "note": "Self-healing: each CI run resolves ~150 tickers. Full coverage reached automatically.",
   "pending": [
-    "PWGR"
+    "2223637D",
+    "PWGR",
+    "\u2014"
   ],
   "refresh_failures": {},
   "resolved": [
@@ -661,6 +663,7 @@
     "688036",
     "688041",
     "688072",
+    "688082",
     "6881",
     "688111",
     "688183",
@@ -745,6 +748,7 @@
     "9696",
     "9698",
     "9766.JP",
+    "9863",
     "9866",
     "9868",
     "9888",
@@ -1686,6 +1690,7 @@
     "EL",
     "ELA",
     "ELAN",
+    "ELDN",
     "ELF",
     "ELMD",
     "ELPE",
@@ -2396,6 +2401,7 @@
     "KYTX",
     "L",
     "LAD",
+    "LAKE",
     "LAMR",
     "LASR",
     "LAUR",
@@ -3164,6 +3170,7 @@
     "RLI",
     "RLMD",
     "RM",
+    "RMAX",
     "RMBS",
     "RMD",
     "RMR",
@@ -3206,6 +3213,7 @@
     "RWE.GR",
     "RXO",
     "RXRX",
+    "RXST",
     "RY",
     "RYA.ID",
     "RYAM",
@@ -3880,6 +3888,7 @@
   ],
   "unresolved": {
     "*": 5,
+    "2223637D": 1,
     "ADIB": 5,
     "ADNOCDIST": 5,
     "ADNOCDRILL": 5,
@@ -3892,6 +3901,7 @@
     "MMFS": 5,
     "PEPL": 5,
     "PWGR": 1,
-    "SMPH": 5
+    "SMPH": 5,
+    "\u2014": 1
   }
 }
