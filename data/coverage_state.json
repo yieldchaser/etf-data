@@ -1,6 +1,6 @@
 {
   "coverage_pct": 99.61,
-  "last_run_utc": "2026-06-26T23:10:49+00:00",
+  "last_run_utc": "2026-06-27T15:34:24+00:00",
   "note": "Self-healing: each CI run resolves ~150 tickers. Full coverage reached automatically.",
   "pending": [
     "PWGR"
@@ -1788,7 +1788,6 @@
     "FALABELLA",
     "FANG",
     "FAST",
-    "FATE",
     "FB",
     "FBIN",
     "FBIZ",
@@ -2520,7 +2519,6 @@
     "MASS",
     "MAT",
     "MATV",
-    "MATW",
     "MATX",
     "MAXF",
     "MAXHEALT",
@@ -2605,7 +2603,6 @@
     "MNPR",
     "MNSB",
     "MNST",
-    "MNTK",
     "MO",
     "MOD",
     "MOFS",
@@ -3020,7 +3017,6 @@
     "PPL",
     "PPLI",
     "PR",
-    "PRA",
     "PRAA",
     "PRAX",
     "PRDO",
@@ -3227,7 +3223,6 @@
     "SAP.GR",
     "SARO",
     "SAVE.SS",
-    "SB",
     "SB1NO",
     "SBAC",
     "SBCF",
