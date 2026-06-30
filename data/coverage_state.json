@@ -1,6 +1,6 @@
 {
   "coverage_pct": 99.61,
-  "last_run_utc": "2026-06-30T16:35:13+00:00",
+  "last_run_utc": "2026-06-30T23:15:50+00:00",
   "note": "Self-healing: each CI run resolves ~150 tickers. Full coverage reached automatically.",
   "pending": [
     "PEPL",
@@ -3888,7 +3888,7 @@
     "EAND": 5,
     "GLXO": 5,
     "MMFS": 5,
-    "PEPL": 1,
+    "PEPL": 2,
     "PWGR": 1,
     "SMPH": 5,
     "\u2014": 5
