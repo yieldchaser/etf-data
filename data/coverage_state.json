@@ -1,6 +1,6 @@
 {
   "coverage_pct": 99.62,
-  "last_run_utc": "2026-06-29T22:58:46+00:00",
+  "last_run_utc": "2026-06-30T06:13:56+00:00",
   "note": "Self-healing: each CI run resolves ~150 tickers. Full coverage reached automatically.",
   "pending": [
     "PWGR"
@@ -2712,7 +2712,6 @@
     "P",
     "P911.GY",
     "PAAS.US",
-    "PACK",
     "PACS",
     "PAGP",
     "PAHC",
@@ -3662,7 +3661,7 @@
     "EAND": 5,
     "GLXO": 5,
     "MMFS": 5,
-    "PWGR": 3,
+    "PWGR": 4,
     "SMPH": 5,
     "\u2014": 5
   }
