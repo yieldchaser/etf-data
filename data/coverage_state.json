@@ -1,6 +1,6 @@
 {
   "coverage_pct": 99.62,
-  "last_run_utc": "2026-07-06T06:33:47+00:00",
+  "last_run_utc": "2026-07-06T17:00:35+00:00",
   "note": "Self-healing: each CI run resolves ~150 tickers. Full coverage reached automatically.",
   "pending": [
     "PWGR"
@@ -73,6 +73,7 @@
     "002475",
     "002493",
     "002532",
+    "002595",
     "002600",
     "002602",
     "002648",
@@ -672,7 +673,6 @@
     "688036",
     "688041",
     "688072",
-    "688082",
     "6881",
     "688111",
     "688126",
@@ -1565,6 +1565,7 @@
     "CWT",
     "CXDO",
     "CXM",
+    "CXSE3",
     "CXSE3.BZ",
     "CXT",
     "CYRX",
@@ -2649,6 +2650,7 @@
     "MPT",
     "MPTI",
     "MPWR",
+    "MQ",
     "MRAM",
     "MRBK",
     "MRCO",
@@ -3246,6 +3248,7 @@
     "SAP.GR",
     "SARO",
     "SAVE.SS",
+    "SB",
     "SB1NO",
     "SBAC",
     "SBCF",
