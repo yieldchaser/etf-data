@@ -762,12 +762,22 @@ def main():
                 driver.get(etf['url']); time.sleep(3)
                 text = driver.find_element(By.TAG_NAME, "body").text
                 h_date = clean_date_string(text) or TODAY
-                r = requests.get(etf['url'], headers=HEADERS, timeout=15)
+                if cffi_requests is not None:
+                    r = cffi_requests.get(etf['url'], impersonate="chrome", timeout=15)
+                else:
+                    r = requests.get(etf['url'], headers=HEADERS, timeout=15)
                 content = r.text.splitlines()
                 start = 0
                 for i, line in enumerate(content[:20]):
                     if "Ticker" in line or "Symbol" in line: start = i; break
                 df = pd.read_csv(StringIO('\n'.join(content[start:])))
+                if not df.empty:
+                    date_col = next((c for c in df.columns if str(c).strip().lower() == "date"), None)
+                    if date_col is not None and len(df) > 0:
+                        first_val = str(df[date_col].iloc[0]).strip()
+                        parsed = clean_date_string(first_val)
+                        if parsed:
+                            h_date = parsed
 
             elif etf['scraper_type'] == 'selenium_alpha':
                 driver.get(etf['url']); time.sleep(3)
