@@ -605,6 +605,60 @@ def update_giant_history(new_dfs):
     combined.to_csv(GIANT_HISTORY_FILE, index=False)
     print(f"    ✅ Giant History Saved: {len(combined)} total rows.")
 
+def fetch_pacer_with_proxies(url):
+    """Try to fetch Pacer CSV using curl_cffi and free proxies as fallback."""
+    # First attempt: direct request without proxy (works in non-datacenter environments)
+    try:
+        if cffi_requests is not None:
+            r = cffi_requests.get(url, impersonate="chrome", timeout=15)
+            if r.status_code == 200 and "Date" in r.text and ("Ticker" in r.text or "Symbol" in r.text):
+                return r.text
+        else:
+            r = requests.get(url, headers=HEADERS, timeout=15)
+            if r.status_code == 200 and "Date" in r.text and ("Ticker" in r.text or "Symbol" in r.text):
+                return r.text
+    except Exception as e:
+        print(f"      Direct fetch failed: {e}")
+
+    # Fallback: try free proxies
+    print("      Attempting free proxy list fallback...")
+    try:
+        proxies = []
+        for list_url in [
+            "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/http.txt",
+            "https://raw.githubusercontent.com/clketc/Free-Proxy-List/main/free_proxy_list.txt"
+        ]:
+            try:
+                res = requests.get(list_url, timeout=10)
+                if res.status_code == 200:
+                    proxies.extend(res.text.strip().splitlines())
+            except Exception as e:
+                print(f"      Failed to load proxy list from {list_url}: {e}")
+        
+        # Clean and unique
+        proxies = list(set([p.strip() for p in proxies if p.strip()]))
+        import random
+        random.shuffle(proxies)
+        
+        print(f"      Loaded {len(proxies)} proxies. Trying up to 30...")
+        for p in proxies[:30]:
+            proxy_dict = {"http": f"http://{p}", "https": f"http://{p}"}
+            try:
+                if cffi_requests is not None:
+                    res = cffi_requests.get(url, impersonate="chrome", proxies=proxy_dict, timeout=5)
+                else:
+                    res = requests.get(url, headers=HEADERS, proxies=proxy_dict, timeout=5)
+                
+                if res.status_code == 200 and "Date" in res.text and ("Ticker" in res.text or "Symbol" in res.text):
+                    print(f"      ✅ SUCCESS: Fetched via proxy {p}")
+                    return res.text
+            except Exception:
+                pass
+    except Exception as e:
+        print(f"      Proxy fallback failed: {e}")
+        
+    return None
+
 def setup_driver():
     options = Options()
     options.add_argument("--headless=new")
@@ -762,11 +816,10 @@ def main():
                 driver.get(etf['url']); time.sleep(3)
                 text = driver.find_element(By.TAG_NAME, "body").text
                 h_date = clean_date_string(text) or TODAY
-                if cffi_requests is not None:
-                    r = cffi_requests.get(etf['url'], impersonate="chrome", timeout=15)
-                else:
-                    r = requests.get(etf['url'], headers=HEADERS, timeout=15)
-                content = r.text.splitlines()
+                csv_text = fetch_pacer_with_proxies(etf['url'])
+                if csv_text is None:
+                    raise Exception("Failed to fetch Pacer CSV data (all proxy options exhausted)")
+                content = csv_text.splitlines()
                 start = 0
                 for i, line in enumerate(content[:20]):
                     if "Ticker" in line or "Symbol" in line: start = i; break
