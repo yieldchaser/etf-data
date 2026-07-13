@@ -409,7 +409,7 @@ def test_bridge_idempotent_on_repeat_invocation(tmp_path, monkeypatch):
 
         first_gh_keys = {
             (r.ETF_Ticker, r.ticker, r.Holdings_As_Of)
-            for r in pd.read_csv(gh_path).itertuples(index=False)
+            for r in pd.read_csv(gh_path, keep_default_na=False, na_values=[]).itertuples(index=False)
         }
         first_latest_bytes = {
             etf: (latest_dir / f"{etf}.csv").read_bytes()
@@ -423,7 +423,7 @@ def test_bridge_idempotent_on_repeat_invocation(tmp_path, monkeypatch):
         # Property 7 — Giant_History composite-key row set is unchanged.
         second_gh_keys = {
             (r.ETF_Ticker, r.ticker, r.Holdings_As_Of)
-            for r in pd.read_csv(gh_path).itertuples(index=False)
+            for r in pd.read_csv(gh_path, keep_default_na=False, na_values=[]).itertuples(index=False)
         }
         assert second_gh_keys == first_gh_keys
 
