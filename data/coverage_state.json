@@ -1,6 +1,6 @@
 {
   "coverage_pct": 99.62,
-  "last_run_utc": "2026-07-13T23:02:31+00:00",
+  "last_run_utc": "2026-07-14T04:54:40+00:00",
   "note": "Self-healing: each CI run resolves ~150 tickers. Full coverage reached automatically.",
   "pending": [
     "PWGR"
