@@ -1,13 +1,12 @@
 {
   "coverage_pct": 99.61,
-  "last_run_utc": "2026-07-15T04:54:40+00:00",
+  "last_run_utc": "2026-07-15T15:33:12+00:00",
   "note": "Self-healing: each CI run resolves ~150 tickers. Full coverage reached automatically.",
   "pending": [
     "PWGR"
   ],
   "refresh_failures": {},
   "resolved": [
-    "$AED",
     "000001",
     "000050",
     "000069",
@@ -22,6 +21,7 @@
     "000408",
     "000415",
     "000425",
+    "000426",
     "000538",
     "000568",
     "000630",
@@ -393,6 +393,7 @@
     "300033",
     "300059",
     "300124",
+    "300223",
     "300274",
     "300308",
     "300394",
@@ -2213,7 +2214,6 @@
     "IMP",
     "IMPC",
     "IMRX",
-    "IMSR",
     "IMVT",
     "IMXI",
     "INBK",
@@ -3849,6 +3849,7 @@
     "XPEL",
     "XPER",
     "XPO",
+    "XPRO",
     "XRAY",
     "XYL",
     "XYZ",
