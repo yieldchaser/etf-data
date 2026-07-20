@@ -1,6 +1,6 @@
 {
   "coverage_pct": 99.61,
-  "last_run_utc": "2026-07-20T05:47:03+00:00",
+  "last_run_utc": "2026-07-20T16:01:11+00:00",
   "note": "Self-healing: each CI run resolves ~150 tickers. Full coverage reached automatically.",
   "pending": [
     "PWGR"
@@ -72,7 +72,6 @@
     "002493",
     "002532",
     "002595",
-    "002602",
     "002648",
     "002714",
     "002736",
@@ -522,6 +521,7 @@
     "600010",
     "600015",
     "600019",
+    "600021",
     "600031",
     "600039",
     "600048",
@@ -1098,6 +1098,7 @@
     "BANC",
     "BAND",
     "BANF",
+    "BANPU.F",
     "BANR",
     "BAP",
     "BAX",
@@ -1857,6 +1858,7 @@
     "FLOC",
     "FLR",
     "FLS",
+    "FLUOROCH",
     "FLWS",
     "FLXS",
     "FLYW",
