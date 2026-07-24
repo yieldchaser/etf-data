@@ -511,7 +511,7 @@
               <th @click="sort('velocity_score')" :class="sortClass('velocity_score')"
                   class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
                   x-tooltip="'Velocity - composite rate-of-change signal across all ETFs. High positive = institutional accumulation accelerating.'">Velocity</th>
-              <th @click="sort('global_rank_peak_30d')" :class="sortClass('global_rank_peak_30d')"
+              <th @click="sort('burst_score')" :class="sortClass('burst_score')"
                   class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
                   x-tooltip="'Burst - 30-day peak rank improvement. Shows rapid upward rank acceleration.'">Burst</th>
               <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden md:table-cell" @click="sort('etf_count')" :class="sortClass('etf_count')" x-tooltip="'Count of ETFs holding this ticker. Suffix shows net ETFs added/lost in 30d.'">ETFs</th>
@@ -1125,7 +1125,7 @@
                 <th @click="sort('velocity_score')" :class="sortClass('velocity_score')"
                     class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
                     x-tooltip="'Velocity - composite rate-of-change signal across all ETFs. High positive = institutional accumulation accelerating.'">Velocity</th>
-                <th @click="sort('global_rank_peak_30d')" :class="sortClass('global_rank_peak_30d')"
+                <th @click="sort('burst_score')" :class="sortClass('burst_score')"
                     class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
                     x-tooltip="'Burst - 30-day peak rank improvement. Shows rapid upward rank acceleration.'">Burst</th>
                 <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden md:table-cell" @click="sort('etf_count')" :class="sortClass('etf_count')" x-tooltip="'Count of ETFs holding this ticker. Suffix shows net ETFs added/lost in 30d.'">ETFs</th>
@@ -3665,7 +3665,11 @@ function app() {
       if (q)                 r = r.filter(x => (x.ticker || '').toLowerCase().includes(q) || (x.company || '').toLowerCase().includes(q));
       const out = [...r].sort((a, b) => {
         for (const lvl of this.sortLevels) {
-          const av = a[lvl.key], bv = b[lvl.key];
+          let av = a[lvl.key], bv = b[lvl.key];
+          if (lvl.key === 'burst_score' || lvl.key === 'global_rank_peak_30d') {
+            av = a.burst_30d ? (a.global_rank_peak_30d || 0) : 0;
+            bv = b.burst_30d ? (b.global_rank_peak_30d || 0) : 0;
+          }
           const dir = lvl.dir === 'asc' ? 1 : -1;
           if (av == null && bv == null) continue;
           if (av == null) return 1;
