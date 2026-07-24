@@ -1,11 +1,11 @@
 {
-  "generated_at_utc": "2026-06-18T04:27:38+00:00",
+  "generated_at_utc": "2026-07-24T18:21:45+00:00",
   "source": "C:\\Users\\Dell\\Github\\etf-data\\data\\all_history.csv",
-  "source_rows_raw": 199634,
-  "source_rows_after_sanitize": 6454,
-  "leaderboard_rows": 3874,
-  "latest_holdings_as_of": "2026-06-17",
-  "latest_scrape_date": "2026-06-17",
+  "source_rows_raw": 349688,
+  "source_rows_after_sanitize": 6439,
+  "leaderboard_rows": 3892,
+  "latest_holdings_as_of": "2026-07-23",
+  "latest_scrape_date": "2026-07-24",
   "etfs": [
     "AVSC",
     "CALF",
@@ -39,37 +39,6 @@
     "XSMO"
   ],
   "snapshot_dates_in_window": [
-    "2026-02-17",
-    "2026-02-18",
-    "2026-02-19",
-    "2026-02-20",
-    "2026-02-22",
-    "2026-02-23",
-    "2026-02-24",
-    "2026-02-25",
-    "2026-02-26",
-    "2026-02-27",
-    "2026-03-01",
-    "2026-03-02",
-    "2026-03-03",
-    "2026-03-04",
-    "2026-03-05",
-    "2026-03-06",
-    "2026-03-08",
-    "2026-03-09",
-    "2026-03-10",
-    "2026-03-11",
-    "2026-03-12",
-    "2026-03-13",
-    "2026-03-15",
-    "2026-03-16",
-    "2026-03-17",
-    "2026-03-18",
-    "2026-03-19",
-    "2026-03-20",
-    "2026-03-22",
-    "2026-03-23",
-    "2026-03-24",
     "2026-03-25",
     "2026-03-26",
     "2026-03-27",
@@ -140,34 +109,46 @@
     "2026-06-12",
     "2026-06-15",
     "2026-06-16",
-    "2026-06-17"
+    "2026-06-17",
+    "2026-06-18",
+    "2026-06-22",
+    "2026-06-23",
+    "2026-06-24",
+    "2026-06-25",
+    "2026-06-26",
+    "2026-06-29",
+    "2026-06-30",
+    "2026-07-01",
+    "2026-07-02",
+    "2026-07-06",
+    "2026-07-07",
+    "2026-07-08",
+    "2026-07-09",
+    "2026-07-10",
+    "2026-07-13",
+    "2026-07-14",
+    "2026-07-15",
+    "2026-07-16",
+    "2026-07-17",
+    "2026-07-18",
+    "2026-07-19",
+    "2026-07-20",
+    "2026-07-21",
+    "2026-07-22",
+    "2026-07-23"
   ],
   "flag_counts_today": {
     "HIGH_CONVICTION": 1,
-    "SPECULATIVE_BETA": 68,
-    "NEW": 1,
-    "NONE": 3593
+    "SPECULATIVE_BETA": 76,
+    "NEW": 18,
+    "NONE": 3621
   },
   "flag_counts_yesterday": {
     "HIGH_CONVICTION": 1,
-    "SPECULATIVE_BETA": 67
+    "SPECULATIVE_BETA": 76
   },
   "etf_maturity_days": 30,
-  "immature_etfs": [
-    "AVSC",
-    "DWAS",
-    "EEMO",
-    "GRIN",
-    "JHEM",
-    "JHMM",
-    "JHSC",
-    "JOET",
-    "MFEM",
-    "PDP",
-    "PIZ",
-    "QVAL",
-    "VLUE"
-  ],
+  "immature_etfs": [],
   "stale_etfs": [],
   "markets_data_freshness": {
     "available": true,
@@ -185,37 +166,37 @@
       {
         "asset": "copper",
         "last": "2026-03",
-        "age_days": 79
+        "age_days": 115
       },
       {
         "asset": "aluminum",
         "last": "2026-03",
-        "age_days": 79
+        "age_days": 115
       },
       {
         "asset": "nickel",
         "last": "2026-03",
-        "age_days": 79
+        "age_days": 115
       },
       {
         "asset": "zinc",
         "last": "2026-03",
-        "age_days": 79
+        "age_days": 115
       },
       {
         "asset": "iron_ore",
         "last": "2026-03",
-        "age_days": 79
+        "age_days": 115
       },
       {
         "asset": "tin",
         "last": "2026-03",
-        "age_days": 79
+        "age_days": 115
       },
       {
         "asset": "lead",
         "last": "2026-03",
-        "age_days": 79
+        "age_days": 115
       }
     ],
     "self_living_check": {

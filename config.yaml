@@ -223,6 +223,10 @@ conviction:
   c_max:     1.5    # ceiling on Wovr (prevents extreme outliers dominating)
   rp_floor:  0.35   # minimum Grank contribution (rank never fully zeroes out)
   hc_theta:  0.8    # conviction threshold for HIGH_CONVICTION breadth count
+  overlap_discount_enabled: true
+  overlap_penalty_weight:   1.5    # Scales Jaccard overlap discount rate
+  min_overlap_multiplier:   0.20   # Floor multiplier for heavily overlapped ETFs
+  tier_diversity_bonus:     0.15   # +15% per additional unique factor tier
 
 # =============================================================================
 # APEX SCORING PARAMETERS (§30, used when scoring_mode = apex)

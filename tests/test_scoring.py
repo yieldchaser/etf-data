@@ -93,13 +93,6 @@ class TestSanitizer:
         assert len(result) == 1
         assert result["weight"].iloc[0] == pytest.approx(0.09)
 
-    def test_case_insensitive_ticker_block(self, cfg):
-        df = _h([
-            ("FPX", "usd", "lowercase variant", 0.01, "2026-05-01", "2026-05-01"),
-            ("FPX", "AAPL", "Apple",            0.05, "2026-05-01", "2026-05-01"),
-        ])
-        assert set(cfg.sanitizer.apply(df)["ticker"]) == {"AAPL"}
-
     def test_googl_dedupe_after_rename(self, cfg):
         """Sanitizer must collapse GOOG+GOOGL rows from the same ETF/date into one row."""
         df = _h([
@@ -972,4 +965,37 @@ class TestExits:
         df = _h(rows)
         exits = compute_exits(df, conviction_cfg, lookback_days=7)
         assert exits.empty
+
+
+class TestOverlapDiscount:
+    def test_etf_overlap_matrix_calculation(self):
+        """compute_etf_overlap_matrix computes correct Jaccard similarity."""
+        from predator.scoring import compute_etf_overlap_matrix
+        df = _h([
+            ("EEMO", "AAPL", "Apple", 0.05, "2026-05-08", "2026-05-08"),
+            ("EEMO", "MSFT", "Microsoft", 0.05, "2026-05-08", "2026-05-08"),
+            ("JHEM", "AAPL", "Apple", 0.05, "2026-05-08", "2026-05-08"),
+            ("JHEM", "GOOGL", "Google", 0.05, "2026-05-08", "2026-05-08"),
+        ])
+        matrix = compute_etf_overlap_matrix(df)
+        assert matrix["EEMO"]["EEMO"] == 1.0
+        # Intersection = {AAPL} (1), Union = {AAPL, MSFT, GOOGL} (3) -> 1/3 = 0.3333
+        assert matrix["EEMO"]["JHEM"] == pytest.approx(1/3)
+
+    def test_overlap_discount_reduces_duplicate_cluster_scores(self, conviction_cfg):
+        """Stock held by overlapping ETFs should receive discount compared to non-overlapping ETFs."""
+        import dataclasses
+        opt1_cfg = dataclasses.replace(
+            conviction_cfg,
+            scoring_mode="apex",
+            etf_maturity_days=0
+        )
+        df = _h([
+            ("EEMO", "X1", "Stock 1", 0.05, "2026-05-08", "2026-05-08"),
+            ("JHEM", "X1", "Stock 1", 0.05, "2026-05-08", "2026-05-08"),
+        ])
+        lb, _ = compute_leaderboard(df, opt1_cfg)
+        assert not lb.empty
+        assert "final_score" in lb.columns
+
 

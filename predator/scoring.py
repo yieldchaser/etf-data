@@ -294,10 +294,15 @@ class ConvictionConfig:
     c_max:    float   # ceiling on Wovr
     rp_floor: float   # minimum Grank contribution
     hc_theta: float   # conviction threshold for HC breadth count
+    overlap_discount_enabled: bool = False
+    overlap_penalty_weight: float = 1.5
+    min_overlap_multiplier: float = 0.20
+    tier_diversity_bonus: float = 0.15
 
     def __post_init__(self):
         if self.ow_star <= 0:
             raise ValueError(f"ConvictionConfig.ow_star must be > 0, got {self.ow_star}")
+
 
 
 @dataclass(frozen=True)
@@ -402,6 +407,10 @@ class Config:
             c_max=float(cv_cfg.get("c_max", 1.5)),
             rp_floor=float(cv_cfg.get("rp_floor", 0.35)),
             hc_theta=float(cv_cfg.get("hc_theta", 0.8)),
+            overlap_discount_enabled=bool(cv_cfg.get("overlap_discount_enabled", False)),
+            overlap_penalty_weight=float(cv_cfg.get("overlap_penalty_weight", 1.5)),
+            min_overlap_multiplier=float(cv_cfg.get("min_overlap_multiplier", 0.20)),
+            tier_diversity_bonus=float(cv_cfg.get("tier_diversity_bonus", 0.15)),
         ) if cv_cfg or scoring_mode in ("conviction", "apex") else None
 
         # §30 apex config — optional block; every key falls back to its default
@@ -503,6 +512,26 @@ def conviction_multiplier(
     grank = cv.rp_floor + (1.0 - cv.rp_floor) * rp
 
     return wovr * grank
+
+
+def compute_etf_overlap_matrix(latest_df: pd.DataFrame) -> dict[str, dict[str, float]]:
+    """
+    Computes pairwise Jaccard similarity of tickers held across all active ETFs.
+    Returns similarity[etf1][etf2] = intersection / union.
+    """
+    etfs = sorted(latest_df["ETF_Ticker"].unique())
+    etf_sets = {e: set(latest_df[latest_df["ETF_Ticker"] == e]["ticker"].unique()) for e in etfs}
+    matrix = {}
+    for e1 in etfs:
+        matrix[e1] = {}
+        for e2 in etfs:
+            if e1 == e2:
+                matrix[e1][e2] = 1.0
+            else:
+                inter = len(etf_sets[e1] & etf_sets[e2])
+                union = len(etf_sets[e1] | etf_sets[e2])
+                matrix[e1][e2] = inter / union if union > 0 else 0.0
+    return matrix
 
 
 def _validate_input(df: pd.DataFrame) -> None:
@@ -657,6 +686,35 @@ def compute_leaderboard(
         best_rank=("rank", "min"),
         avg_conviction=("conviction", "mean"),
     ).reset_index()
+
+    # Apply ETF Overlap Discount & Tier Synergy Scaling (Option 1)
+    cv = cfg.conviction
+    if cfg.scoring_mode in ("conviction", "apex") and cv is not None and getattr(cv, "overlap_discount_enabled", False):
+        overlap_matrix = compute_etf_overlap_matrix(latest)
+        penalty_weight = getattr(cv, "overlap_penalty_weight", 1.5)
+        floor_mult = getattr(cv, "min_overlap_multiplier", 0.20)
+        tier_bonus = getattr(cv, "tier_diversity_bonus", 0.15)
+        
+        ticker_scores = {}
+        for ticker, group in latest.groupby("ticker"):
+            group_sorted = group.sort_values("score", ascending=False)
+            included_etfs = []
+            disc_score = 0.0
+            for _, row in group_sorted.iterrows():
+                etf = row["ETF_Ticker"]
+                if not included_etfs:
+                    mult = 1.0
+                else:
+                    max_sim = max(overlap_matrix[etf][prev_e] for prev_e in included_etfs)
+                    mult = max(floor_mult, 1.0 - (max_sim * penalty_weight))
+                included_etfs.append(etf)
+                disc_score += row["score"] * mult
+            
+            num_unique_tiers = len(set(group["tier"]))
+            tier_mult = 1.0 + (num_unique_tiers - 1) * tier_bonus
+            ticker_scores[ticker] = disc_score * tier_mult
+
+        agg["final_score"] = agg["ticker"].map(ticker_scores).fillna(agg["final_score"])
 
     # §25 Conviction breadth: k_c = count of ETFs where C_i ≥ θ
     if cfg.scoring_mode in ("conviction", "apex") and cfg.conviction is not None:

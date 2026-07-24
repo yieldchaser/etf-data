@@ -1,355 +1,323 @@
 {
-  "today": "2026-06-17",
-  "yesterday": "2026-06-16",
+  "today": "2026-07-23",
+  "yesterday": "2026-07-22",
   "entered_hc": [],
   "exited_hc": [],
   "biggest_gainers": [
     {
-      "ticker": "KMB",
-      "company": "KOTAK MAHINDRA BANK LTD INDIA",
-      "final_score": 29.0,
-      "etf_count": 2,
-      "tiers": "Quality + Quant",
-      "score_delta": 28.0,
-      "score_delta_pct": 28.0,
-      "score_streak": 1
-    },
-    {
-      "ticker": "DRRD",
-      "company": "DR. REDDY S LABORATORIES INDIA",
-      "final_score": 26.0,
-      "etf_count": 2,
-      "tiers": "Quant",
-      "score_delta": 25.0,
-      "score_delta_pct": 25.0,
-      "score_streak": 1
-    },
-    {
-      "ticker": "ES",
-      "company": "EVERSOURCE ENERGY UNITED STATES OF AMERICA (THE)",
-      "final_score": 25.0,
-      "etf_count": 2,
-      "tiers": "Quality + Quant",
-      "score_delta": 24.0,
-      "score_delta_pct": 24.0,
-      "score_streak": 1
-    },
-    {
-      "ticker": "APNT",
-      "company": "ASIAN PAINTS LTD INDIA",
-      "final_score": 24.0,
-      "etf_count": 2,
-      "tiers": "Quant",
-      "score_delta": 23.0,
-      "score_delta_pct": 23.0,
-      "score_streak": 1
-    },
-    {
-      "ticker": "*",
-      "company": "WALMART DE MEXICO SAB DE CV MEXICO",
-      "final_score": 21.0,
-      "etf_count": 1,
-      "tiers": "Quant",
-      "score_delta": 20.0,
-      "score_delta_pct": 20.0,
-      "score_streak": 1
-    },
-    {
-      "ticker": "NU",
-      "company": "NU HOLDINGS LTD/CAYMAN ISL A UNITED STATES OF AMERICA (THE)",
-      "final_score": 38.0,
-      "etf_count": 2,
-      "tiers": "Quant",
-      "score_delta": 36.0,
-      "score_delta_pct": 18.0,
-      "score_streak": 1
-    },
-    {
-      "ticker": "ROK",
-      "company": "ROCKWELL AUTOMATION INC UNITED STATES OF AMERICA (THE)",
-      "final_score": 36.0,
-      "etf_count": 3,
-      "tiers": "Quality + Quant + Trend",
-      "score_delta": 33.0,
-      "score_delta_pct": 11.0,
-      "score_streak": 1
-    },
-    {
-      "ticker": "INDUSTOW",
-      "company": "INDUS TOWERS LTD INDIA",
-      "final_score": 22.0,
-      "etf_count": 2,
-      "tiers": "Quant",
-      "score_delta": 20.0,
-      "score_delta_pct": 10.0,
-      "score_streak": 1
-    },
-    {
-      "ticker": "5880",
-      "company": "TAIWAN COOPERATIVE FINANCIAL TAIWAN (PROVINCE OF CHINA)",
-      "final_score": 20.0,
-      "etf_count": 2,
-      "tiers": "Quant",
-      "score_delta": 18.0,
-      "score_delta_pct": 9.0,
-      "score_streak": 1
-    },
-    {
-      "ticker": "ACGL",
-      "company": "ARCH CAPITAL GROUP LTD UNITED STATES OF AMERICA (THE)",
-      "final_score": 26.0,
-      "etf_count": 3,
-      "tiers": "Quality + Quant",
-      "score_delta": 23.0,
-      "score_delta_pct": 7.6667,
-      "score_streak": 1
-    },
-    {
-      "ticker": "TECHM",
-      "company": "TECH MAHINDRA LTD INDIA",
-      "final_score": 34.0,
-      "etf_count": 2,
-      "tiers": "Quant",
-      "score_delta": 30.0,
-      "score_delta_pct": 7.5,
-      "score_streak": 1
-    },
-    {
-      "ticker": "EAT",
-      "company": "BRINKER INTERNATIONAL INC UNITED STATES OF AMERICA (THE)",
+      "ticker": "2382",
+      "company": "QUANTA COMPUTER INC TAIWAN (PROVINCE OF CHINA)",
       "final_score": 47.0,
-      "etf_count": 3,
-      "tiers": "Quality + Quant",
-      "score_delta": 41.0,
-      "score_delta_pct": 6.8333,
-      "score_streak": 1
-    },
-    {
-      "ticker": "BBCA",
-      "company": "BANK CENTRAL ASIA TBK PT INDONESIA",
-      "final_score": 34.0,
-      "etf_count": 2,
-      "tiers": "Quant",
-      "score_delta": 29.0,
-      "score_delta_pct": 5.8,
-      "score_streak": 1
-    },
-    {
-      "ticker": "PZU",
-      "company": "Powszechny Zaklad Ubezpieczen SA",
-      "final_score": 32.0,
       "etf_count": 2,
       "tiers": "Quant",
       "score_delta": 27.0,
-      "score_delta_pct": 5.4,
+      "score_delta_pct": 1.35,
       "score_streak": 1
     },
     {
-      "ticker": "G",
-      "company": "Genpact Ltd",
-      "final_score": 37.0,
+      "ticker": "2099",
+      "company": "China Gold International Resources Corp Ltd",
+      "final_score": 20.0,
+      "etf_count": 2,
+      "tiers": "Quant",
+      "score_delta": 3.0,
+      "score_delta_pct": 0.1765,
+      "score_streak": 4
+    },
+    {
+      "ticker": "SMCI",
+      "company": "SUPER MICRO COMPUTER INC UNITED STATES OF AMERICA (THE)",
+      "final_score": 27.0,
+      "etf_count": 3,
+      "tiers": "Quality + Quant + Trend",
+      "score_delta": 3.0,
+      "score_delta_pct": 0.125,
+      "score_streak": 3
+    },
+    {
+      "ticker": "WAB",
+      "company": "WABTEC CORP UNITED STATES OF AMERICA (THE)",
+      "final_score": 83.0,
+      "etf_count": 4,
+      "tiers": "Quality + Quant",
+      "score_delta": 8.0,
+      "score_delta_pct": 0.1067,
+      "score_streak": 2
+    },
+    {
+      "ticker": "EQT",
+      "company": "EQT Corp",
+      "final_score": 118.0,
+      "etf_count": 6,
+      "tiers": "Quality + Quant",
+      "score_delta": 10.0,
+      "score_delta_pct": 0.0926,
+      "score_streak": 2
+    },
+    {
+      "ticker": "TVSL",
+      "company": "TVS MOTOR CO LTD INDIA",
+      "final_score": 24.0,
+      "etf_count": 2,
+      "tiers": "Quant",
+      "score_delta": 2.0,
+      "score_delta_pct": 0.0909,
+      "score_streak": 1
+    },
+    {
+      "ticker": "NRG",
+      "company": "NRG ENERGY INC UNITED STATES OF AMERICA (THE)",
+      "final_score": 27.0,
+      "etf_count": 3,
+      "tiers": "Quant + Trend",
+      "score_delta": 2.0,
+      "score_delta_pct": 0.08,
+      "score_streak": 2
+    },
+    {
+      "ticker": "APTV",
+      "company": "APTIV PLC UNITED STATES OF AMERICA (THE)",
+      "final_score": 28.0,
+      "etf_count": 3,
+      "tiers": "Quality + Quant + Trend",
+      "score_delta": 2.0,
+      "score_delta_pct": 0.0769,
+      "score_streak": 1
+    },
+    {
+      "ticker": "LAD",
+      "company": "LITHIA MOTORS INC UNITED STATES OF AMERICA (THE)",
+      "final_score": 28.0,
+      "etf_count": 2,
+      "tiers": "Quant",
+      "score_delta": 2.0,
+      "score_delta_pct": 0.0769,
+      "score_streak": 1
+    },
+    {
+      "ticker": "064350",
+      "company": "Hyundai Rotem Co Ltd",
+      "final_score": 29.0,
+      "etf_count": 2,
+      "tiers": "Quant",
+      "score_delta": 2.0,
+      "score_delta_pct": 0.0741,
+      "score_streak": 1
+    },
+    {
+      "ticker": "2404",
+      "company": "UNITED INTEGRATED SERVICES TAIWAN (PROVINCE OF CHINA)",
+      "final_score": 30.0,
+      "etf_count": 2,
+      "tiers": "Quant",
+      "score_delta": 2.0,
+      "score_delta_pct": 0.0714,
+      "score_streak": 1
+    },
+    {
+      "ticker": "AEIS",
+      "company": "ADVANCED ENERGY INDUSTRIES UNITED STATES OF AMERICA (THE)",
+      "final_score": 30.0,
+      "etf_count": 3,
+      "tiers": "Quant",
+      "score_delta": 2.0,
+      "score_delta_pct": 0.0714,
+      "score_streak": 3
+    },
+    {
+      "ticker": "GPOR",
+      "company": "Gulfport Energy Corp",
+      "final_score": 30.0,
       "etf_count": 3,
       "tiers": "Quality + Quant",
-      "score_delta": 31.0,
-      "score_delta_pct": 5.1667,
+      "score_delta": 2.0,
+      "score_delta_pct": 0.0714,
+      "score_streak": 2
+    },
+    {
+      "ticker": "LTM",
+      "company": "Latam Airlines Group SA",
+      "final_score": 45.0,
+      "etf_count": 4,
+      "tiers": "Quant + Scout",
+      "score_delta": 3.0,
+      "score_delta_pct": 0.0714,
       "score_streak": 1
+    },
+    {
+      "ticker": "RIOT",
+      "company": "Riot Platforms Inc",
+      "final_score": 30.0,
+      "etf_count": 3,
+      "tiers": "Quant",
+      "score_delta": 2.0,
+      "score_delta_pct": 0.0714,
+      "score_streak": 4
     }
   ],
   "biggest_losers": [
     {
-      "ticker": "1211",
-      "company": "SAUDI ARABIAN MINING CO SAUDI ARABIA",
-      "final_score": 36.0,
+      "ticker": "2020",
+      "company": "SABIC AGRI NUTRIENTS CO SAUDI ARABIA",
+      "final_score": 20.0,
       "etf_count": 2,
       "tiers": "Quant",
-      "score_delta": -7.0,
-      "score_delta_pct": -0.1628,
+      "score_delta": -19.0,
+      "score_delta_pct": -0.4872,
+      "score_streak": -1
+    },
+    {
+      "ticker": "PLTR",
+      "company": "Palantir Technologies Inc",
+      "final_score": 20.0,
+      "etf_count": 6,
+      "tiers": "Core + Quant + Trend",
+      "score_delta": -3.0,
+      "score_delta_pct": -0.1304,
+      "score_streak": -2
+    },
+    {
+      "ticker": "1698",
+      "company": "TENCENT MUSIC ENT CLASS A HONG KONG",
+      "final_score": 21.0,
+      "etf_count": 2,
+      "tiers": "Quant",
+      "score_delta": -2.0,
+      "score_delta_pct": -0.087,
+      "score_streak": -1
+    },
+    {
+      "ticker": "RIVN",
+      "company": "Rivian Automotive, Inc. (Class A)",
+      "final_score": 21.0,
+      "etf_count": 2,
+      "tiers": "Quant + Scout",
+      "score_delta": -2.0,
+      "score_delta_pct": -0.087,
+      "score_streak": -1
+    },
+    {
+      "ticker": "TEL",
+      "company": "PLDT INC PHILIPPINES (THE)",
+      "final_score": 43.0,
+      "etf_count": 6,
+      "tiers": "Quality + Quant + Trend",
+      "score_delta": -4.0,
+      "score_delta_pct": -0.0851,
+      "score_streak": -1
+    },
+    {
+      "ticker": "HQY",
+      "company": "HEALTHEQUITY INC UNITED STATES OF AMERICA (THE)",
+      "final_score": 22.0,
+      "etf_count": 2,
+      "tiers": "Quant",
+      "score_delta": -2.0,
+      "score_delta_pct": -0.0833,
+      "score_streak": -1
+    },
+    {
+      "ticker": "DRRD",
+      "company": "DR. REDDY S LABORATORIES INDIA",
+      "final_score": 24.0,
+      "etf_count": 2,
+      "tiers": "Quant",
+      "score_delta": -2.0,
+      "score_delta_pct": -0.0769,
+      "score_streak": -1
+    },
+    {
+      "ticker": "RDDT",
+      "company": "Reddit, Inc. (Class A)",
+      "final_score": 24.0,
+      "etf_count": 2,
+      "tiers": "Quant + Scout",
+      "score_delta": -2.0,
+      "score_delta_pct": -0.0769,
+      "score_streak": -2
+    },
+    {
+      "ticker": "YOU",
+      "company": "Clear Secure Inc",
+      "final_score": 49.0,
+      "etf_count": 3,
+      "tiers": "Quality + Quant",
+      "score_delta": -4.0,
+      "score_delta_pct": -0.0755,
       "score_streak": -2
     },
     {
       "ticker": "GLW",
       "company": "Corning Inc",
-      "final_score": 40.0,
-      "etf_count": 4,
-      "tiers": "Quant + Trend",
-      "score_delta": -6.0,
-      "score_delta_pct": -0.1304,
-      "score_streak": -1
-    },
-    {
-      "ticker": "BKR",
-      "company": "Baker Hughes Co",
-      "final_score": 20.0,
-      "etf_count": 4,
-      "tiers": "Core + Quant",
-      "score_delta": -2.0,
-      "score_delta_pct": -0.0909,
-      "score_streak": -4
-    },
-    {
-      "ticker": "MPWR",
-      "company": "MONOLITHIC POWER SYSTEMS INC UNITED STATES OF AMERICA (THE)",
-      "final_score": 82.0,
-      "etf_count": 7,
-      "tiers": "Core + Quant + Trend",
-      "score_delta": -8.0,
-      "score_delta_pct": -0.0889,
-      "score_streak": -2
-    },
-    {
-      "ticker": "MTSI",
-      "company": "MACOM TECHNOLOGY SOLUTIONS H UNITED STATES OF AMERICA (THE)",
-      "final_score": 54.0,
-      "etf_count": 3,
-      "tiers": "Quant",
-      "score_delta": -5.0,
-      "score_delta_pct": -0.0847,
-      "score_streak": -2
-    },
-    {
-      "ticker": "VRT",
-      "company": "Vertiv Holdings Co",
-      "final_score": 40.0,
+      "final_score": 25.0,
       "etf_count": 4,
       "tiers": "Quant + Trend",
       "score_delta": -2.0,
-      "score_delta_pct": -0.0476,
+      "score_delta_pct": -0.0741,
       "score_streak": -1
     },
     {
-      "ticker": "AVGO",
-      "company": "Broadcom Inc",
-      "final_score": 40.0,
-      "etf_count": 6,
-      "tiers": "Core + Quant + Trend",
-      "score_delta": -2.0,
-      "score_delta_pct": -0.0476,
-      "score_streak": -1
-    },
-    {
-      "ticker": "TGT",
-      "company": "Target Corp",
-      "final_score": 21.0,
+      "ticker": "SHP",
+      "company": "SHOPRITE HOLDINGS LTD SOUTH AFRICA",
+      "final_score": 27.0,
       "etf_count": 2,
-      "tiers": "Quality",
-      "score_delta": -1.0,
-      "score_delta_pct": -0.0455,
-      "score_streak": -1
-    },
-    {
-      "ticker": "OXY",
-      "company": "Occidental Petroleum Corp",
-      "final_score": 21.0,
-      "etf_count": 3,
-      "tiers": "Quality + Quant",
-      "score_delta": -1.0,
-      "score_delta_pct": -0.0455,
-      "score_streak": -1
-    },
-    {
-      "ticker": "GS",
-      "company": "Goldman Sachs Group Inc/The",
-      "final_score": 21.0,
-      "etf_count": 4,
-      "tiers": "Core + Quant + Trend",
-      "score_delta": -1.0,
-      "score_delta_pct": -0.0455,
-      "score_streak": -1
-    },
-    {
-      "ticker": "XPO",
-      "company": "XPO INC UNITED STATES OF AMERICA (THE)",
-      "final_score": 43.0,
-      "etf_count": 3,
       "tiers": "Quant",
       "score_delta": -2.0,
-      "score_delta_pct": -0.0444,
-      "score_streak": -3
-    },
-    {
-      "ticker": "UCB.BB",
-      "company": "UCB S.A.",
-      "final_score": 22.0,
-      "etf_count": 2,
-      "tiers": "Quality + Scout",
-      "score_delta": -1.0,
-      "score_delta_pct": -0.0435,
-      "score_streak": -3
-    },
-    {
-      "ticker": "COP",
-      "company": "ConocoPhillips",
-      "final_score": 23.0,
-      "etf_count": 2,
-      "tiers": "Quality",
-      "score_delta": -1.0,
-      "score_delta_pct": -0.0417,
-      "score_streak": -4
-    },
-    {
-      "ticker": "CNC",
-      "company": "CENTENE CORP UNITED STATES OF AMERICA (THE)",
-      "final_score": 23.0,
-      "etf_count": 2,
-      "tiers": "Quality + Quant",
-      "score_delta": -1.0,
-      "score_delta_pct": -0.0417,
+      "score_delta_pct": -0.069,
       "score_streak": -1
     },
     {
-      "ticker": "ULTA",
-      "company": "ULTA BEAUTY INC UNITED STATES OF AMERICA (THE)",
-      "final_score": 24.0,
-      "etf_count": 5,
-      "tiers": "Quality + Quant + Trend",
-      "score_delta": -1.0,
-      "score_delta_pct": -0.04,
+      "ticker": "REGN",
+      "company": "Regeneron Pharmaceuticals Inc",
+      "final_score": 41.0,
+      "etf_count": 4,
+      "tiers": "Core + Quality + Quant",
+      "score_delta": -3.0,
+      "score_delta_pct": -0.0682,
+      "score_streak": -2
+    },
+    {
+      "ticker": "BMI",
+      "company": "BADGER METER INC UNITED STATES OF AMERICA (THE)",
+      "final_score": 28.0,
+      "etf_count": 2,
+      "tiers": "Quality + Quant",
+      "score_delta": -2.0,
+      "score_delta_pct": -0.0667,
+      "score_streak": -2
+    },
+    {
+      "ticker": "CARG",
+      "company": "Cargurus Inc",
+      "final_score": 29.0,
+      "etf_count": 3,
+      "tiers": "Quality + Quant",
+      "score_delta": -2.0,
+      "score_delta_pct": -0.0645,
+      "score_streak": -1
+    },
+    {
+      "ticker": "RNST",
+      "company": "RENASANT CORP UNITED STATES OF AMERICA (THE)",
+      "final_score": 30.0,
+      "etf_count": 2,
+      "tiers": "Quality + Quant",
+      "score_delta": -2.0,
+      "score_delta_pct": -0.0625,
       "score_streak": -1
     }
   ],
   "new_entrants": [
     {
-      "ticker": "VAML",
-      "company": "VEDANTA ALUMINIUM METAL LTD INDIA",
-      "final_score": 36.0,
-      "etf_count": 2,
-      "tiers": "Quant",
-      "score_delta": 24.0
-    },
-    {
-      "ticker": "SPCX",
-      "company": "Space Exploration Technologies Corp.",
-      "final_score": 18.0,
+      "ticker": "MBGL",
+      "company": "Mobility Global Inc",
+      "final_score": 7.0,
       "etf_count": 1,
       "tiers": "Scout",
       "score_delta": 0.0
     },
     {
-      "ticker": "ATROB",
-      "company": "Astronics Corp",
-      "final_score": 3.0,
-      "etf_count": 2,
-      "tiers": "Quality + Quant",
-      "score_delta": 0.0
-    },
-    {
-      "ticker": "VEDPOWER",
-      "company": "VEDANTA POWER LTD INDIA",
-      "final_score": 1.0,
-      "etf_count": 2,
-      "tiers": "Quant",
-      "score_delta": 1.0
-    },
-    {
-      "ticker": "VOGL",
-      "company": "VEDANTA OIL AND GAS LTD INDIA",
-      "final_score": 1.0,
-      "etf_count": 2,
-      "tiers": "Quant",
-      "score_delta": 1.0
-    },
-    {
-      "ticker": "PAYS",
+      "ticker": "BETA",
       "company": null,
       "final_score": 0.0,
       "etf_count": 1,
@@ -357,7 +325,7 @@
       "score_delta": 0.0
     },
     {
-      "ticker": "SHOE",
+      "ticker": "DLO",
       "company": null,
       "final_score": 0.0,
       "etf_count": 1,
@@ -365,62 +333,59 @@
       "score_delta": 0.0
     },
     {
-      "ticker": "SNDA",
-      "company": null,
-      "final_score": 0.0,
-      "etf_count": 1,
-      "tiers": "Quality",
-      "score_delta": 0.0
-    },
-    {
-      "ticker": "VISL",
-      "company": "VEDANTA IRON AND STEEL LTD COMMON STOCK INR1.0",
+      "ticker": "FLUOROCH",
+      "company": "GUJARAT FLUOROCHEMICALS LTD INDIA",
       "final_score": 0.0,
       "etf_count": 1,
       "tiers": "Quant",
+      "score_delta": 0.0
+    },
+    {
+      "ticker": "MRX",
+      "company": null,
+      "final_score": 0.0,
+      "etf_count": 1,
+      "tiers": "Quality",
+      "score_delta": 0.0
+    },
+    {
+      "ticker": "NWFL",
+      "company": null,
+      "final_score": 0.0,
+      "etf_count": 1,
+      "tiers": "Quality",
+      "score_delta": 0.0
+    },
+    {
+      "ticker": "OMDA",
+      "company": null,
+      "final_score": 0.0,
+      "etf_count": 1,
+      "tiers": "Quality",
+      "score_delta": 0.0
+    },
+    {
+      "ticker": "SIF",
+      "company": null,
+      "final_score": 0.0,
+      "etf_count": 1,
+      "tiers": "Quality",
       "score_delta": 0.0
     }
   ],
   "universe_exits": [
     {
-      "ticker": "AMX",
-      "company": "AMERICA MOVIL SAB DE C MEXICO",
+      "ticker": "NSA",
+      "company": "NATIONAL STORAGE AFFILIATES UNITED STATES OF AMERICA (THE)",
       "final_score": 0.0,
       "etf_count": 0,
       "tiers": "Quant",
-      "score_delta": -21.0,
+      "score_delta": -5.0,
       "score_delta_pct": -1.0
     },
     {
-      "ticker": "SERVICES",
-      "company": "GENPACT LTD UNITED STATES OF",
-      "final_score": 0.0,
-      "etf_count": 0,
-      "tiers": "Quant",
-      "score_delta": -12.0,
-      "score_delta_pct": -1.0
-    },
-    {
-      "ticker": "BANKSBSANTANDE",
-      "company": "BANCO SANTANDER CHILE CHILE",
-      "final_score": 0.0,
-      "etf_count": 0,
-      "tiers": "Quant",
-      "score_delta": -2.0,
-      "score_delta_pct": -1.0
-    },
-    {
-      "ticker": "OBEROIRLT",
-      "company": "OBEROI REALTY LTD INDIA",
-      "final_score": 0.0,
-      "etf_count": 0,
-      "tiers": "Quant",
-      "score_delta": -0.0,
-      "score_delta_pct": -1.0
-    },
-    {
-      "ticker": "002595",
-      "company": "SHANDONG HIMILE HONG KONG",
+      "ticker": "002602",
+      "company": "ZHEJIANG CENTURY HUATONG A HONG KONG",
       "final_score": 0.0,
       "etf_count": 0,
       "tiers": "Quant",
@@ -430,199 +395,872 @@
   ],
   "top_velocity": [
     {
-      "ticker": "2382",
-      "company": "QUANTA COMPUTER INC TAIWAN (PROVINCE OF CHINA)",
-      "velocity_score": 464.63,
-      "avg_rank_delta_7d": 264.5,
-      "global_rank_delta_30d": 0,
-      "global_rank_peak_30d": 1043,
+      "ticker": "BCPC",
+      "company": "BALCHEM CORP UNITED STATES OF AMERICA (THE)",
+      "velocity_score": 446.5,
+      "avg_rank_delta_7d": 241.5,
+      "global_rank_delta_30d": 583,
+      "global_rank_peak_30d": 643,
+      "etf_count_delta_30d": 1,
+      "burst_30d": true,
+      "final_score": 29,
+      "etf_count": 2,
+      "tiers": "Quality + Quant"
+    },
+    {
+      "ticker": "SHOE",
+      "company": "Shoe Station Group Inc",
+      "velocity_score": 279.0,
+      "avg_rank_delta_7d": 119.0,
+      "global_rank_delta_30d": 246,
+      "global_rank_peak_30d": 568,
       "etf_count_delta_30d": 0,
       "burst_30d": false,
-      "final_score": 76,
+      "final_score": 1,
+      "etf_count": 2,
+      "tiers": "Quality"
+    },
+    {
+      "ticker": "601006",
+      "company": "DAQIN RAILWAY CO LTD A HONG KONG",
+      "velocity_score": 264.0,
+      "avg_rank_delta_7d": 99.0,
+      "global_rank_delta_30d": 841,
+      "global_rank_peak_30d": 869,
+      "etf_count_delta_30d": 0,
+      "burst_30d": false,
+      "final_score": 9,
       "etf_count": 2,
       "tiers": "Quant"
     },
     {
-      "ticker": "VSEC",
-      "company": "VSE Corp",
-      "velocity_score": 195.99,
-      "avg_rank_delta_7d": 33.0,
-      "global_rank_delta_30d": 345,
-      "global_rank_peak_30d": 568,
-      "etf_count_delta_30d": 2,
-      "burst_30d": true,
-      "final_score": 67,
-      "etf_count": 3,
-      "tiers": "Quality + Quant"
-    },
-    {
-      "ticker": "COCO",
-      "company": "The Vita Coco Company, Inc.",
-      "velocity_score": 193.67,
-      "avg_rank_delta_7d": 30.67,
-      "global_rank_delta_30d": 233,
-      "global_rank_peak_30d": 476,
-      "etf_count_delta_30d": 2,
-      "burst_30d": false,
-      "final_score": 57,
-      "etf_count": 3,
-      "tiers": "Quality + Quant + Scout"
-    },
-    {
-      "ticker": "SIMO",
-      "company": "Silicon Motion Technology Corp",
-      "velocity_score": 193.28,
-      "avg_rank_delta_7d": 31.5,
-      "global_rank_delta_30d": 241,
-      "global_rank_peak_30d": 460,
-      "etf_count_delta_30d": 1,
-      "burst_30d": false,
-      "final_score": 43,
-      "etf_count": 2,
-      "tiers": "Quant"
-    },
-    {
-      "ticker": "M",
-      "company": "Macy's Inc",
-      "velocity_score": 193.26,
-      "avg_rank_delta_7d": 25.0,
-      "global_rank_delta_30d": 328,
-      "global_rank_peak_30d": 470,
-      "etf_count_delta_30d": 3,
-      "burst_30d": true,
-      "final_score": 101,
-      "etf_count": 4,
-      "tiers": "Quality + Quant"
-    },
-    {
-      "ticker": "CCL",
-      "company": "CARNIVAL CORP LTD UNITED STATES OF AMERICA (THE)",
-      "velocity_score": 187.2,
-      "avg_rank_delta_7d": 19.2,
-      "global_rank_delta_30d": 685,
-      "global_rank_peak_30d": 733,
-      "etf_count_delta_30d": 3,
-      "burst_30d": true,
-      "final_score": 73,
-      "etf_count": 5,
-      "tiers": "Quality + Quant + Trend"
-    },
-    {
-      "ticker": "SEI",
-      "company": "Solaris Energy Infrastructure Inc",
-      "velocity_score": 185.74,
-      "avg_rank_delta_7d": 24.33,
-      "global_rank_delta_30d": 371,
-      "global_rank_peak_30d": 703,
-      "etf_count_delta_30d": 2,
-      "burst_30d": false,
-      "final_score": 43,
-      "etf_count": 3,
-      "tiers": "Quality + Quant"
-    },
-    {
-      "ticker": "UAL",
-      "company": "United Airlines Holdings Inc",
-      "velocity_score": 184.35,
-      "avg_rank_delta_7d": 12.83,
-      "global_rank_delta_30d": 399,
-      "global_rank_peak_30d": 428,
-      "etf_count_delta_30d": 4,
-      "burst_30d": false,
-      "final_score": 91,
-      "etf_count": 6,
-      "tiers": "Quality + Quant + Trend"
-    },
-    {
-      "ticker": "BDC",
-      "company": "Belden Inc",
-      "velocity_score": 182.37,
-      "avg_rank_delta_7d": 19.33,
-      "global_rank_delta_30d": 701,
-      "global_rank_peak_30d": 1153,
-      "etf_count_delta_30d": 2,
-      "burst_30d": true,
-      "final_score": 48,
-      "etf_count": 3,
-      "tiers": "Quality + Quant"
-    },
-    {
-      "ticker": "AGX",
-      "company": "Argan Inc",
-      "velocity_score": 181.27,
-      "avg_rank_delta_7d": 18.33,
-      "global_rank_delta_30d": 370,
+      "ticker": "CPK",
+      "company": "CHESAPEAKE UTILITIES CORP UNITED STATES OF AMERICA (THE)",
+      "velocity_score": 251.83,
+      "avg_rank_delta_7d": 91.0,
+      "global_rank_delta_30d": 647,
       "global_rank_peak_30d": 647,
-      "etf_count_delta_30d": 2,
-      "burst_30d": true,
-      "final_score": 62,
-      "etf_count": 3,
-      "tiers": "Quant"
-    },
-    {
-      "ticker": "COF",
-      "company": "Capital One Financial Corp",
-      "velocity_score": 180.53,
-      "avg_rank_delta_7d": 15.33,
-      "global_rank_delta_30d": 667,
-      "global_rank_peak_30d": 734,
-      "etf_count_delta_30d": 2,
-      "burst_30d": true,
-      "final_score": 35,
-      "etf_count": 3,
-      "tiers": "Quality + Quant + Trend"
-    },
-    {
-      "ticker": "SSW",
-      "company": "Sibanye Stillwater Ltd",
-      "velocity_score": 179.24,
-      "avg_rank_delta_7d": 16.33,
-      "global_rank_delta_30d": 277,
-      "global_rank_peak_30d": 339,
-      "etf_count_delta_30d": 2,
+      "etf_count_delta_30d": 0,
       "burst_30d": false,
-      "final_score": 91,
-      "etf_count": 3,
+      "final_score": 18,
+      "etf_count": 2,
+      "tiers": "Quality + Quant"
+    },
+    {
+      "ticker": "AMRT",
+      "company": "SUMBER ALFARIA TRIJAYA TBK P INDONESIA",
+      "velocity_score": 248.5,
+      "avg_rank_delta_7d": 88.5,
+      "global_rank_delta_30d": 313,
+      "global_rank_peak_30d": 412,
+      "etf_count_delta_30d": 0,
+      "burst_30d": false,
+      "final_score": 2,
+      "etf_count": 2,
       "tiers": "Quant"
     },
     {
-      "ticker": "ICHR",
-      "company": "Ichor Holdings Ltd",
-      "velocity_score": 178.99,
-      "avg_rank_delta_7d": 47.5,
-      "global_rank_delta_30d": 146,
-      "global_rank_peak_30d": 485,
+      "ticker": "CECO",
+      "company": "CECO Environmental Corp",
+      "velocity_score": 238.54,
+      "avg_rank_delta_7d": 79.0,
+      "global_rank_delta_30d": 624,
+      "global_rank_peak_30d": 680,
       "etf_count_delta_30d": 1,
+      "burst_30d": true,
+      "final_score": 31,
+      "etf_count": 2,
+      "tiers": "Quality + Quant"
+    },
+    {
+      "ticker": "322",
+      "company": "TINGYI (CAYMAN ISLN) HLDG CO HONG KONG",
+      "velocity_score": 227.5,
+      "avg_rank_delta_7d": 67.5,
+      "global_rank_delta_30d": 239,
+      "global_rank_peak_30d": 396,
+      "etf_count_delta_30d": 0,
+      "burst_30d": true,
+      "final_score": 6,
+      "etf_count": 2,
+      "tiers": "Quant"
+    },
+    {
+      "ticker": "MARA",
+      "company": "MARA HOLDINGS INC UNITED STATES OF AMERICA (THE)",
+      "velocity_score": 222.5,
+      "avg_rank_delta_7d": 88.0,
+      "global_rank_delta_30d": 159,
+      "global_rank_peak_30d": 455,
+      "etf_count_delta_30d": 0,
       "burst_30d": false,
+      "final_score": 36,
+      "etf_count": 2,
+      "tiers": "Quality + Quant"
+    },
+    {
+      "ticker": "BRPT",
+      "company": "Barito Pacific Tbk PT",
+      "velocity_score": 216.69,
+      "avg_rank_delta_7d": 60.5,
+      "global_rank_delta_30d": 304,
+      "global_rank_peak_30d": 382,
+      "etf_count_delta_30d": 0,
+      "burst_30d": true,
+      "final_score": 4,
+      "etf_count": 2,
+      "tiers": "Quant"
+    },
+    {
+      "ticker": "1818",
+      "company": "Zhaojin Mining Industry Co Ltd",
+      "velocity_score": 211.81,
+      "avg_rank_delta_7d": 54.0,
+      "global_rank_delta_30d": 320,
+      "global_rank_peak_30d": 425,
+      "etf_count_delta_30d": 0,
+      "burst_30d": true,
+      "final_score": 8,
+      "etf_count": 2,
+      "tiers": "Quant"
+    },
+    {
+      "ticker": "TNET",
+      "company": "TriNet Group Inc",
+      "velocity_score": 208.94,
+      "avg_rank_delta_7d": 55.0,
+      "global_rank_delta_30d": 354,
+      "global_rank_peak_30d": 395,
+      "etf_count_delta_30d": 0,
+      "burst_30d": true,
+      "final_score": 8,
+      "etf_count": 2,
+      "tiers": "Quality"
+    },
+    {
+      "ticker": "PGE",
+      "company": "PGE SA POLAND",
+      "velocity_score": 207.5,
+      "avg_rank_delta_7d": 52.0,
+      "global_rank_delta_30d": 280,
+      "global_rank_peak_30d": 574,
+      "etf_count_delta_30d": 0,
+      "burst_30d": false,
+      "final_score": 9,
+      "etf_count": 2,
+      "tiers": "Quant"
+    },
+    {
+      "ticker": "ELF",
+      "company": "ELF BEAUTY INC UNITED STATES OF AMERICA (THE)",
+      "velocity_score": 206.53,
+      "avg_rank_delta_7d": 53.5,
+      "global_rank_delta_30d": 345,
+      "global_rank_peak_30d": 385,
+      "etf_count_delta_30d": 0,
+      "burst_30d": false,
+      "final_score": 21,
+      "etf_count": 2,
+      "tiers": "Quality + Quant"
+    },
+    {
+      "ticker": "VOD",
+      "company": "Vodacom Group Ltd",
+      "velocity_score": 204.45,
+      "avg_rank_delta_7d": 47.67,
+      "global_rank_delta_30d": 305,
+      "global_rank_peak_30d": 954,
+      "etf_count_delta_30d": 0,
+      "burst_30d": false,
+      "final_score": 27,
+      "etf_count": 3,
+      "tiers": "Quant"
+    },
+    {
+      "ticker": "AGL",
+      "company": "agilon health Inc",
+      "velocity_score": 197.07,
+      "avg_rank_delta_7d": 39.0,
+      "global_rank_delta_30d": 2443,
+      "global_rank_peak_30d": 2491,
+      "etf_count_delta_30d": 1,
+      "burst_30d": true,
       "final_score": 40,
       "etf_count": 2,
       "tiers": "Quality + Quant"
-    },
-    {
-      "ticker": "ALHC",
-      "company": "Alignment Healthcare, Inc.",
-      "velocity_score": 178.61,
-      "avg_rank_delta_7d": 16.33,
-      "global_rank_delta_30d": 689,
-      "global_rank_peak_30d": 1289,
-      "etf_count_delta_30d": 2,
-      "burst_30d": true,
-      "final_score": 33,
-      "etf_count": 3,
-      "tiers": "Quality + Quant + Scout"
-    },
-    {
-      "ticker": "FTDR",
-      "company": "Frontdoor Inc",
-      "velocity_score": 178.06,
-      "avg_rank_delta_7d": 15.67,
-      "global_rank_delta_30d": 553,
-      "global_rank_peak_30d": 884,
-      "etf_count_delta_30d": 2,
-      "burst_30d": true,
-      "final_score": 60,
-      "etf_count": 3,
-      "tiers": "Quality + Quant"
     }
-  ]
+  ],
+  "universe_exits_by_period": {
+    "1": [
+      {
+        "ticker": "NSA",
+        "company": "NATIONAL STORAGE AFFILIATES UNITED STATES OF AMERICA (THE)",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -5.0,
+        "score_delta_pct": -1.0
+      }
+    ],
+    "7": [
+      {
+        "ticker": "NSA",
+        "company": "NATIONAL STORAGE AFFILIATES UNITED STATES OF AMERICA (THE)",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -6.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "NFBK",
+        "company": null,
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quality",
+        "score_delta": -2.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "QXO",
+        "company": "QXO INC UNITED STATES OF AMERICA (THE)",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -2.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "NUVL",
+        "company": "NUVALENT INC A UNITED STATES OF AMERICA (THE)",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -1.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "CCRN",
+        "company": "Cross Country Healthcare Inc",
+        "final_score": 0.0,
+        "etf_count": 2,
+        "tiers": "Quality",
+        "score_delta": -1.0,
+        "score_delta_pct": -1.0
+      }
+    ],
+    "14": [
+      {
+        "ticker": "CPRX",
+        "company": null,
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quality",
+        "score_delta": -19.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "NSA",
+        "company": "NATIONAL STORAGE AFFILIATES UNITED STATES OF AMERICA (THE)",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -6.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "NFBK",
+        "company": null,
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quality",
+        "score_delta": -2.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "QXO",
+        "company": "QXO INC UNITED STATES OF AMERICA (THE)",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -2.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "NUVL",
+        "company": "NUVALENT INC A UNITED STATES OF AMERICA (THE)",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -1.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "CCRN",
+        "company": "Cross Country Healthcare Inc",
+        "final_score": 0.0,
+        "etf_count": 2,
+        "tiers": "Quality",
+        "score_delta": -1.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "FDP",
+        "company": "Del Monte Corp",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quality",
+        "score_delta": -1.0,
+        "score_delta_pct": -1.0
+      }
+    ],
+    "30": [
+      {
+        "ticker": "SATS",
+        "company": "EchoStar Corp",
+        "final_score": 0.0,
+        "etf_count": 4,
+        "tiers": "Quant + Trend",
+        "score_delta": -46.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "5803",
+        "company": "Fujikura Ltd",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -43.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "RR",
+        "company": "Rolls-Royce Holdings PLC",
+        "final_score": 0.0,
+        "etf_count": 2,
+        "tiers": "Quality + Quant",
+        "score_delta": -36.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "5801",
+        "company": "Furukawa Electric Co Ltd",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -31.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "FHZN",
+        "company": "Flughafen Zurich AG",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -30.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "NXSN",
+        "company": "Next Vision Stabilized Systems Ltd",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -27.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "MZTF",
+        "company": "Mizrahi Tefahot Bank Ltd",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -26.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "JHG",
+        "company": "JANUS HENDERSON GROUP PLC UNITED STATES OF AMERICA (THE)",
+        "final_score": 0.0,
+        "etf_count": 2,
+        "tiers": "Quant",
+        "score_delta": -23.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "KOD",
+        "company": "Kodiak Sciences Inc",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -23.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "NUVL",
+        "company": "Nuvalent Inc",
+        "final_score": 0.0,
+        "etf_count": 2,
+        "tiers": "Quant",
+        "score_delta": -23.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "CPRX",
+        "company": null,
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quality",
+        "score_delta": -20.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "HLMA",
+        "company": "Halma PLC",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -20.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "KOG",
+        "company": "Kongsberg Gruppen ASA",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -20.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "7173.JP",
+        "company": "Tokyo Kiraboshi Financial Group Inc",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -19.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "FDP",
+        "company": "Del Monte Corp",
+        "final_score": 0.0,
+        "etf_count": 3,
+        "tiers": "Quality + Quant",
+        "score_delta": -18.0,
+        "score_delta_pct": -1.0
+      }
+    ],
+    "60": [
+      {
+        "ticker": "SATS",
+        "company": "EchoStar Corp",
+        "final_score": 0.0,
+        "etf_count": 4,
+        "tiers": "Quant + Trend",
+        "score_delta": -71.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "VSCO",
+        "company": "VICTORIA S SECRET + CO UNITED STATES OF AMERICA (THE)",
+        "final_score": 0.0,
+        "etf_count": 2,
+        "tiers": "Quality + Quant",
+        "score_delta": -40.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "5803",
+        "company": "Fujikura Ltd",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -37.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "5801",
+        "company": "Furukawa Electric Co Ltd",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -34.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "RR",
+        "company": "Rolls-Royce Holdings PLC",
+        "final_score": 0.0,
+        "etf_count": 2,
+        "tiers": "Quality + Quant",
+        "score_delta": -33.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "NUVL",
+        "company": "Nuvalent Inc",
+        "final_score": 0.0,
+        "etf_count": 3,
+        "tiers": "Quant + Scout",
+        "score_delta": -32.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "MZTF",
+        "company": "Mizrahi Tefahot Bank Ltd",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -31.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "NXSN",
+        "company": "Next Vision Stabilized Systems Ltd",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -29.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "FHZN",
+        "company": "Flughafen Zurich AG",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -29.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "CPRX",
+        "company": "Catalyst Pharmaceuticals Inc",
+        "final_score": 0.0,
+        "etf_count": 2,
+        "tiers": "Quality",
+        "score_delta": -28.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "030200",
+        "company": "KT CORP COMMON STOCK KRW5000.0",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -26.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "KOD",
+        "company": "Kodiak Sciences Inc",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -24.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "AEM",
+        "company": "Agnico Eagle Mines Limited",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Scout",
+        "score_delta": -24.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "JHG",
+        "company": "JANUS HENDERSON GROUP PLC UNITED STATES OF AMERICA (THE)",
+        "final_score": 0.0,
+        "etf_count": 2,
+        "tiers": "Quant",
+        "score_delta": -23.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "HLMA",
+        "company": "Halma PLC",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -23.0,
+        "score_delta_pct": -1.0
+      }
+    ],
+    "90": [
+      {
+        "ticker": "AEM",
+        "company": "Agnico Eagle Mines Limited",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Scout",
+        "score_delta": -27.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "EMR.AU",
+        "company": "Emerald Resources NL",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -21.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "NST.AU",
+        "company": "Northern Star Resources Ltd",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -18.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "TRE.SM",
+        "company": "Tecnicas Reunidas SA",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -18.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "TFPM",
+        "company": "Triple Flag Precious Metals Corp.",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Scout",
+        "score_delta": -18.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "RRL.AU",
+        "company": "Regis Resources Ltd",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -17.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "CMM.AU",
+        "company": "Capricorn Metals Ltd",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -16.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "NTR",
+        "company": "Nutrien Ltd.",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Scout",
+        "score_delta": -15.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "4186.JP",
+        "company": "Tokyo Ohka Kogyo Co Ltd",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -15.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "BPE.IM",
+        "company": "BPER Banca SPA",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -14.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "BAMNB.NA",
+        "company": "Koninklijke BAM Groep NV",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -14.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "SATS",
+        "company": "EchoStar Corp",
+        "final_score": 0.0,
+        "etf_count": 2,
+        "tiers": "Quant + Trend",
+        "score_delta": -14.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "TEL2B.SS",
+        "company": "Tele2 AB (Class B)",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Scout",
+        "score_delta": -13.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "ALQ.AU",
+        "company": "ALS Ltd",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -13.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "TPE:.2345",
+        "company": "Accton Technology Corporation",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -12.0,
+        "score_delta_pct": -1.0
+      }
+    ],
+    "YTD": [
+      {
+        "ticker": "AEM",
+        "company": "Agnico Eagle Mines Limited",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Scout",
+        "score_delta": -29.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "SATS",
+        "company": "EchoStar Corp",
+        "final_score": 0.0,
+        "etf_count": 2,
+        "tiers": "Quant + Trend",
+        "score_delta": -25.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "RWE.GR",
+        "company": "RWE AG",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -19.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "3563.JP",
+        "company": "Food & Life Cos Ltd",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -19.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "LDO.IM",
+        "company": "LEONARDO-FINMECCANICA SPA",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -19.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "TFPM",
+        "company": "Triple Flag Precious Metals Corp.",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Scout",
+        "score_delta": -19.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "NTR",
+        "company": "Nutrien Ltd.",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Scout",
+        "score_delta": -18.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "1942.JP",
+        "company": "Kandenko Co Ltd",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -17.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "POLI.IT",
+        "company": "Bank Hapoalim BM",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -17.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "CABK.SM",
+        "company": "CaixaBank SA",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -17.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "ABN.NA",
+        "company": "ABN AMRO Bank NV",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -16.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "SAABB.SS",
+        "company": "Saab AB",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -16.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "TEL2B.SS",
+        "company": "Tele2 AB (Class B)",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Scout",
+        "score_delta": -15.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "LUMI.IT",
+        "company": "Bank Leumi Le-Israel BM",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -15.0,
+        "score_delta_pct": -1.0
+      },
+      {
+        "ticker": "BKT.SM",
+        "company": "Bankinter SA",
+        "final_score": 0.0,
+        "etf_count": 1,
+        "tiers": "Quant",
+        "score_delta": -15.0,
+        "score_delta_pct": -1.0
+      }
+    ]
+  }
 }

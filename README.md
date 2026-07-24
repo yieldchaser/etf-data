@@ -180,6 +180,13 @@ m_conv = clip(avg_conviction, 0.50, 1.25) ^ conv_gamma
 
 Plus a conviction gate (clip 0.40–1.10) with an escape hatch: the gate is bypassed when the median per-ETF rank is ≤ 10. Raw `final_score` is unchanged — this layer affects display ranking only. Parameters `conv_floor` / `conv_cap` / `conv_gamma` live in `config.yaml`; full math on the methodology page, §3.3–3.4.
 
+### ETF Overlap Discount & Tier Synergy Scaling (Option 1)
+
+To prevent duplicate holdings within highly correlated ETF strategy clusters (e.g. `JHEM` + `MFEM` + `EEMO`) from artificially inflating leaderboard scores:
+1. **Jaccard Overlap Matrix**: Pairwise holding similarities are computed across all active ETFs (`similarity[etf1][etf2]`).
+2. **Marginal Overlap Discount**: For an asset held by multiple ETFs, subsequent ETF score contributions are scaled down by `max(min_mult, 1.0 - max_sim * 1.5)` relative to previously processed higher-conviction ETFs for that asset.
+3. **Multi-Tier Synergy Multiplier**: Multi-factor consensus spanning distinct strategy tiers (e.g. *Quality + Trend + Scout*) earns a `+15%` multiplier per unique tier (`1.0 + (num_unique_tiers - 1) * 0.15`), rewarding cross-strategy alignment over duplicate single-factor stacking.
+
 ### Output Flags
 
 | Flag | Condition | Interpretation |

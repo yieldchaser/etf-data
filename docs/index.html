@@ -489,7 +489,7 @@
               <th class="text-left px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('ticker')" :class="sortClass('ticker')" x-tooltip="'Stock ticker. Click to open per-stock detail page.'">Ticker</th>
               <th class="text-left px-3 py-2 hidden sm:table-cell cursor-pointer hover:text-zinc-300" @click="sort('company')" :class="sortClass('company')" x-tooltip="'Issuer\'s legal name as reported by the ETF.'">Company</th>
               <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('apex_score')" :class="sortClass('apex_score')" x-tooltip="'Forward score = structure × bounded momentum kicker'">Apex</th>
-              <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300" @click="sort('final_score')" :class="sortClass('final_score')" x-tooltip="'Final Alpha Score = sum of (weight% × ETF points × rank multiplier × 100) across all ETFs holding this name. Hover score cell for percentile.'">Score</th>
+              <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300" @click="sort('final_score')" :class="sortClass('final_score')" x-tooltip="'Final Alpha Score = overlap-discounted sum of ETF conviction points with multi-tier synergy scaling. Hover cell for percentile.'">Score</th>
               <th class="text-center px-2 py-2 hidden lg:table-cell select-none" style="vertical-align: top;">
                 <div class="cursor-pointer hover:text-zinc-300 inline-block align-middle"
                      @click="sort('score_delta_pct')"
