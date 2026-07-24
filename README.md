@@ -349,7 +349,7 @@ Asset registry covers 50+ series across:
 
 #### `predator/ingest_markets_xl.py`
 
-Reads `Mega_Markets_Historical.xlsx` (and optionally `Markets_1_.xlsx` when present) and merges its deep historical data into the `market_returns.json` payload in the canonical shape. Excel data takes priority for overlapping months, extending history back to:
+Reads `data/Mega_Markets_Historical.xlsx` (and optionally `Markets_1_.xlsx` when present) and merges its deep historical data into the `market_returns.json` payload in the canonical shape. Excel data takes priority for overlapping months, extending history back to:
 
 | Asset | History from |
 |-------|-------------|
@@ -549,7 +549,7 @@ python -m predator.markets_history --full-refresh
 # Preview fetch plan without writing
 python -m predator.markets_history --dry-run
 
-# Seed deep history from Mega_Markets_Historical.xlsx (run first before markets_history)
+# Seed deep history from data/Mega_Markets_Historical.xlsx (run first before markets_history)
 python -m predator.ingest_markets_xl
 
 # Fetch CBOE vol indices — requires FRED_API_KEY
