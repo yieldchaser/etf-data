@@ -510,7 +510,10 @@
               </th>
               <th @click="sort('velocity_score')" :class="sortClass('velocity_score')"
                   class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
-                  x-tooltip="'Velocity - composite rate-of-change signal across all ETFs. High positive = institutional accumulation accelerating. ⚡+N suffix = burst peak rank improvement.'">Velocity</th>
+                  x-tooltip="'Velocity - composite rate-of-change signal across all ETFs. High positive = institutional accumulation accelerating.'">Velocity</th>
+              <th @click="sort('global_rank_peak_30d')" :class="sortClass('global_rank_peak_30d')"
+                  class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
+                  x-tooltip="'Burst - 30-day peak rank improvement. Shows rapid upward rank acceleration.'">Burst</th>
               <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden md:table-cell" @click="sort('etf_count')" :class="sortClass('etf_count')" x-tooltip="'Count of ETFs holding this ticker. Suffix shows net ETFs added/lost in 30d.'">ETFs</th>
               <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell" @click="sort('total_weight')" :class="sortClass('total_weight')" x-tooltip="'Sum of position weights across all ETFs holding this name.'">Weight</th>
               <th class="text-left px-2 py-2 hidden xl:table-cell" x-tooltip="{html:'Tiers represented. <b>Scout</b>=spinoffs/IPOs · <b>Quant</b>=factor momentum · <b>Quality</b>=FCF/profit · <b>Trend</b>=momentum · <b>Core</b>=mega-cap'}">Strategies</th>
@@ -551,7 +554,12 @@
                   <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell"
                       :style="`color: ${velocityColor(row.velocity_score)}`"
                       x-tooltip="velocityTip(row)">
-                    <span x-text="fmtVelocity(row.velocity_score)"></span><span x-show="row.burst_30d" class="ml-1 font-mono" style="color: #c084fc; font-size: 10px" x-text="`⚡+${row.global_rank_peak_30d}`"></span>
+                    <span x-text="fmtVelocity(row.velocity_score)"></span>
+                  </td>
+                  <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell"
+                      x-tooltip="row.burst_30d ? `⚡ Burst: +${row.global_rank_peak_30d} ranks peak improvement in 30d` : 'No burst signal'">
+                    <span x-show="row.burst_30d" class="font-mono text-[10px] font-semibold" style="color: #c084fc" x-text="`⚡+${row.global_rank_peak_30d}`"></span>
+                    <span x-show="!row.burst_30d" class="text-[10px]" style="color: var(--text-3)">–</span>
                   </td>
                   <td class="px-2 py-2 text-right num font-mono hidden md:table-cell"
                       x-tooltip="(row.etf_count_delta_30d || 0) !== 0 ? 'Net ETFs added/lost in 30d' : ''">
@@ -1116,7 +1124,10 @@
                 </th>
                 <th @click="sort('velocity_score')" :class="sortClass('velocity_score')"
                     class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
-                    x-tooltip="'Velocity - composite rate-of-change signal across all ETFs. High positive = institutional accumulation accelerating. ⚡+N suffix = burst peak rank improvement.'">Velocity</th>
+                    x-tooltip="'Velocity - composite rate-of-change signal across all ETFs. High positive = institutional accumulation accelerating.'">Velocity</th>
+                <th @click="sort('global_rank_peak_30d')" :class="sortClass('global_rank_peak_30d')"
+                    class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
+                    x-tooltip="'Burst - 30-day peak rank improvement. Shows rapid upward rank acceleration.'">Burst</th>
                 <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden md:table-cell" @click="sort('etf_count')" :class="sortClass('etf_count')" x-tooltip="'Count of ETFs holding this ticker. Suffix shows net ETFs added/lost in 30d.'">ETFs</th>
                 <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell" @click="sort('total_weight')" :class="sortClass('total_weight')" x-tooltip="'Sum of position weights across all ETFs holding this name.'">Weight</th>
                 <th class="text-left px-2 py-2 hidden xl:table-cell" x-tooltip="{html:'Tiers represented. <b>Scout</b>=spinoffs/IPOs · <b>Quant</b>=factor momentum · <b>Quality</b>=FCF/profit · <b>Trend</b>=momentum · <b>Core</b>=mega-cap'}">Strategies</th>
@@ -1157,7 +1168,12 @@
                     <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell"
                         :style="`color: ${velocityColor(row.velocity_score)}`"
                         x-tooltip="velocityTip(row)">
-                      <span x-text="fmtVelocity(row.velocity_score)"></span><span x-show="row.burst_30d" class="ml-1 font-mono" style="color: #c084fc; font-size: 10px" x-text="`⚡+${row.global_rank_peak_30d}`"></span>
+                      <span x-text="fmtVelocity(row.velocity_score)"></span>
+                    </td>
+                    <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell"
+                        x-tooltip="row.burst_30d ? `⚡ Burst: +${row.global_rank_peak_30d} ranks peak improvement in 30d` : 'No burst signal'">
+                      <span x-show="row.burst_30d" class="font-mono text-[10px] font-semibold" style="color: #c084fc" x-text="`⚡+${row.global_rank_peak_30d}`"></span>
+                      <span x-show="!row.burst_30d" class="text-[10px]" style="color: var(--text-3)">–</span>
                     </td>
                     <td class="px-2 py-2 text-right num font-mono hidden md:table-cell"
                         x-tooltip="(row.etf_count_delta_30d || 0) !== 0 ? 'Net ETFs added/lost in 30d' : ''">
