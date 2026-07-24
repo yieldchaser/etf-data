@@ -81,7 +81,7 @@ if sys.platform.startswith("win"):
 # ─── Paths ───────────────────────────────────────────────────────────────────
 
 REPO_ROOT    = Path(__file__).resolve().parent.parent
-MEGA_XL      = REPO_ROOT / "Mega_Markets_Historical.xlsx"
+MEGA_XL      = REPO_ROOT / "data" / "Mega_Markets_Historical.xlsx"
 MARKETS1_XL  = REPO_ROOT / "Markets_1_.xlsx"   # optional; used when present
 OUTPUT_PATH  = REPO_ROOT / "docs" / "data" / "market_returns.json"
 

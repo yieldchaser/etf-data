@@ -580,10 +580,10 @@ etf-data/
 ├── scraper.py                    # Primary scraper (21 ETFs)
 ├── config.yaml                   # Scoring config — source of truth for ETF universe
 ├── config.json                   # Per-ETF scraper routing (URL, scraper_type, CUSIP)
-├── Mega_Markets_Historical.xlsx  # Historical market data (gold 1833+, S&P 1871+)
 ├── requirements.txt
 │
 ├── data/
+│   ├── Mega_Markets_Historical.xlsx  # Historical market data (gold 1833+, S&P 1871+)
 │   ├── all_history.csv           # Transient master holdings CSV (hydrate via scripts/hydrate_csv_from_parquet.py)
 │   ├── history_parquet/          # Append-only Parquet store (sole durable source of truth)
 │   ├── latest/                   # Current snapshot per ETF

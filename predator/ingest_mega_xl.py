@@ -34,7 +34,7 @@ if sys.platform.startswith("win"):
 # ─── Paths ───────────────────────────────────────────────────────────────────
 
 REPO_ROOT   = Path(__file__).resolve().parent.parent
-EXCEL_PATH  = REPO_ROOT / "Mega_Markets_Historical.xlsx"
+EXCEL_PATH  = REPO_ROOT / "data" / "Mega_Markets_Historical.xlsx"
 OUTPUT_PATH = REPO_ROOT / "docs" / "data" / "market_returns.json"
 
 
