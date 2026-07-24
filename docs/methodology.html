@@ -147,7 +147,13 @@ APEX Score   = round(APEX Score × g)</pre>
     <li>Each leaderboard record carries <code>conviction_gate</code> (the g value, 2 decimal places) for tooltip display.</li>
   </ul>
   <div class="callout callout-cyan">
-    <p><strong>Example.</strong> A ticker held as filler (#30/#40/#55) across five funds has avg_conviction ≈ 0.55 → g = 0.55. A genuine conviction name with #2/#3 in two funds and avg_conviction = 0.95 has g = 0.95, and if both ranks are in the top 10, g is floored to 1.0. The filler's apex score is cut nearly in half; the conviction name is protected.</p>
+    <h3>3.5 — ETF Overlap Discount & Tier Synergy Scaling (Option 1)</h3>
+  <p><strong>Rationale.</strong> When multiple ETFs belong to the same strategy cluster (e.g. <code>JHEM</code>, <code>MFEM</code>, and <code>EEMO</code> sharing up to 35% holding overlap), additive scoring can double-count duplicate institutional conviction. Option 1 mitigates this duplicate bias:</p>
+  <ul class="list-disc pl-5 space-y-1">
+    <li><strong>Pairwise Jaccard Similarity Matrix:</strong> The engine dynamically computes holding overlap <code>similarity[etf1][etf2]</code> across all active funds.</li>
+    <li><strong>Marginal Overlap Discounting:</strong> For a ticker held by multiple ETFs, subsequent ETF score contributions are scaled down by <code>max(0.20, 1.0 − max_similarity × 1.5)</code> relative to preceding higher-conviction ETFs.</li>
+    <li><strong>Multi-Tier Synergy Multiplier:</strong> Consensus spanning distinct strategy tiers (e.g. Quality + Trend + Scout) earns a <code>+15%</code> bonus per extra tier (<code>1.0 + (num_unique_tiers − 1) × 0.15</code>), ensuring multi-strategy alignment outranks duplicate single-strategy stacking.</li>
+  </ul>
   </div>
 
   <!-- §4 Motion -->
