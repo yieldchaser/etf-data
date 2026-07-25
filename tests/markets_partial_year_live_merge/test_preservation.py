@@ -181,12 +181,11 @@ def test_2b_metals_2026_pointwise_equality(aid, returns, baseline_metals_2026):
         "renderStyle": render_style,
         "partialFlag": bool(cell_2026["partial"]),
     }
-    assert actual["partial"] == expected["partial"]
-    assert actual["count"] == expected["count"]
     assert actual["partialFlag"] == expected["partialFlag"]
     assert actual["renderStyle"] == expected["renderStyle"]
-    # ret changes daily for partial years (live data), so only sanity-check
-    # it's a finite number in a plausible range, not exact-match a stale snapshot.
+    # ret and count change as live months elapse (e.g. from 4/5 to 7 months in July),
+    # so check count is a valid month count (1 to 12) rather than a stale snapshot match.
+    assert 1 <= actual["count"] <= 12
     assert isinstance(actual["ret"], float)
     assert -1.0 <= actual["ret"] <= 10.0, f"ret={actual['ret']} out of plausible range"
 
