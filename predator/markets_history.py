@@ -1055,6 +1055,8 @@ def build_output(
         else:
             merged = new_monthly
 
+        merged = sanitize_monthly_series(merged, key=key)
+
         sorted_months = [m[0] for m in merged]
         assets_out[key] = {
             "meta": {
@@ -1073,6 +1075,9 @@ def build_output(
     # Preserve any Excel-only assets not in FRED/yfinance registry
     for key, val in existing_assets.items():
         if key not in assets_out:
+            val = dict(val)
+            if "monthly" in val:
+                val["monthly"] = sanitize_monthly_series(val["monthly"], key=key)
             assets_out[key] = val
 
     # ── FX series → top-level "fx" section ───────────────────────────────

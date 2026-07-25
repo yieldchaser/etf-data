@@ -491,10 +491,10 @@ def build_output(
                     [[ym, v] for ym, v in existing["assets"][asset_id]["close"].items()],
                     key=lambda x: x[0]
                 )
-            monthly = _merge_monthly(existing_monthly, new_monthly)
+            monthly = _merge_monthly(existing_monthly, new_monthly, asset_id=asset_id)
             print(f"  MERGE  {asset_id:15s}: {len(existing_monthly)} → {len(monthly)} months")
         else:
-            monthly = new_monthly
+            monthly = sanitize_monthly_series(new_monthly, key=asset_id)
             print(f"  NEW    {asset_id:15s}: {len(monthly)} months "
                   f"({monthly[0][0]} → {monthly[-1][0]})")
 
@@ -532,8 +532,16 @@ def build_output(
     rates_out = existing.get("rates", {})
 
     # Preserve existing assets that are not in raw_series (e.g. FRED-only base metals)
+    try:
+        from predator.markets_history import sanitize_monthly_series
+    except ImportError:
+        sanitize_monthly_series = lambda m, key="": m
+
     for asset_id, val in existing.get("assets", {}).items():
         if asset_id not in assets_out:
+            val = dict(val)
+            if "monthly" in val:
+                val["monthly"] = sanitize_monthly_series(val["monthly"], key=asset_id)
             assets_out[asset_id] = val
 
     # Compute asof = latest last date across all assets AND fx/cpi/rates sections
