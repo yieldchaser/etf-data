@@ -657,6 +657,98 @@ def process(
     return output
 
 
+def sync_completed_months_to_excel(xl_path: Path = MEGA_XL, output_data: dict[str, Any] | None = None) -> int:
+    """
+    Auto-append fully completed calendar months from market_returns.json to Mega_Markets_Historical.xlsx.
+
+    For any asset, if a calendar month (e.g. 2026-06) is fully completed (strictly prior to
+    current YYYY-MM) and not yet present in the Excel sheet for that asset, append it.
+    Returns count of new rows appended across all sheets.
+    """
+    if output_data is None:
+        if not OUTPUT_PATH.exists():
+            print("  SKIP Excel sync: market_returns.json does not exist")
+            return 0
+        output_data = _load_existing(OUTPUT_PATH)
+
+    if not xl_path.exists() or _is_lfs_pointer(xl_path):
+        print(f"  SKIP Excel sync: {xl_path.name} does not exist or is Git LFS pointer")
+        return 0
+
+    try:
+        import openpyxl
+    except ImportError:
+        print("  SKIP Excel sync: openpyxl package not installed")
+        return 0
+
+    current_ym = date.today().strftime("%Y-%m")
+    assets = output_data.get("assets", {})
+    if not assets:
+        return 0
+
+    wb = openpyxl.load_workbook(xl_path)
+    added_count = 0
+
+    for (sheet_name, raw_name), (asset_id, cat, ccy, display_name) in ASSET_REGISTRY.items():
+        if asset_id not in assets:
+            continue
+        if sheet_name not in wb.sheetnames:
+            continue
+
+        ws = wb[sheet_name]
+        monthly_data = assets[asset_id].get("monthly", [])
+        if not monthly_data:
+            continue
+
+        # Get existing dates for this asset in the sheet
+        existing_yms = set()
+        date_col_idx = 1
+        name_col_idx = 2
+        close_col_idx = 3
+
+        # Read header to find column indexes
+        header = [str(cell.value).strip().lower() if cell.value is not None else "" for cell in ws[1]]
+        if "date" in header:
+            date_col_idx = header.index("date") + 1
+        if "index_name" in header:
+            name_col_idx = header.index("index_name") + 1
+        elif "name" in header:
+            name_col_idx = header.index("name") + 1
+        if "close" in header:
+            close_col_idx = header.index("close") + 1
+
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            if not row or len(row) < name_col_idx:
+                continue
+            r_name = str(row[name_col_idx - 1]).strip() if row[name_col_idx - 1] else ""
+            if r_name == raw_name:
+                r_date = str(row[date_col_idx - 1])[:7] if row[date_col_idx - 1] else ""
+                if r_date:
+                    existing_yms.add(r_date)
+
+        # Append completed months that are not in existing_yms and strictly prior to current_ym
+        for ym, close_val in monthly_data:
+            if ym < current_ym and ym not in existing_yms:
+                row_data = [None] * max(len(header), close_col_idx)
+                row_data[date_col_idx - 1] = f"{ym}-01"
+                row_data[name_col_idx - 1] = raw_name
+                row_data[close_col_idx - 1] = close_val
+                if "frequency" in header:
+                    freq_idx = header.index("frequency")
+                    row_data[freq_idx] = "monthly"
+
+                ws.append(row_data)
+                existing_yms.add(ym)
+                added_count += 1
+                print(f"  EXCEL AUTO-APPEND: {sheet_name} | {raw_name} | {ym}-01 = {close_val}")
+
+    if added_count > 0:
+        wb.save(xl_path)
+        print(f"✓ Saved {xl_path.name} with {added_count} newly completed month rows appended.")
+    wb.close()
+    return added_count
+
+
 # ─── CLI ─────────────────────────────────────────────────────────────────────
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -672,6 +764,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                         help="Only run the freshness gate on the existing JSON.")
     parser.add_argument("--no-fail-on-stale", action="store_true",
                         help="Warn on stale data instead of failing the build.")
+    parser.add_argument("--sync-excel", action="store_true",
+                        help="Auto-append completed months from market_returns.json to Mega_Markets_Historical.xlsx.")
     parser.add_argument("--assets", type=str, default=None,
                         help="Comma-separated asset keys to process (e.g. sp500,gold). Default: all.")
     return parser.parse_args(argv)
@@ -683,6 +777,10 @@ def main(argv: list[str] | None = None) -> int:
     print("═" * 60)
     print("  Predator Protocol — Markets Excel Ingest v2")
     print("═" * 60)
+
+    if args.sync_excel:
+        sync_completed_months_to_excel()
+        return 0
 
     # Parse --assets filter if provided
     asset_filter: set[str] | None = None

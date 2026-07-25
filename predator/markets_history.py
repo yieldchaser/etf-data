@@ -784,9 +784,18 @@ def fetch_all(
                         print(f"    SKIP fetch (no FRED client) — will use cache if available")
                 else:
                     data = _fetch_fred_series(fred, series_id, full_refresh, existing, scale=spec.get("scale", 1.0))
-                    if (data is None or data.empty) and spec.get("fallback_series_id"):
-                        print(f"    FRED returned empty — fallback to yfinance:{spec['fallback_series_id']}")
-                        data = _fetch_yfinance_series(spec["fallback_series_id"], full_refresh, existing)
+                    # Freshness-First Priority: extend FRED series with yfinance trailing daily bars
+                    # so that current trailing months update to today even if FRED lags.
+                    if spec.get("fallback_series_id"):
+                        yf_data = _fetch_yfinance_series(spec["fallback_series_id"], full_refresh=False, existing=data)
+                        if yf_data is not None and not yf_data.empty:
+                            if data is None or data.empty:
+                                data = yf_data
+                            else:
+                                combined = pd.concat([data, yf_data])
+                                combined = combined[~combined.index.duplicated(keep="last")]
+                                data = combined.sort_index()
+                                print(f"    extended FRED series with yfinance:{spec['fallback_series_id']} (latest: {pd.Timestamp(data.index.max()).strftime('%Y-%m')})")
             elif source_type == "yfinance":
                 data = _fetch_yfinance_series(series_id, full_refresh, existing)
             else:
