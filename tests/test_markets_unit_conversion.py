@@ -186,20 +186,18 @@ class TestFredAgricultureScaling:
         from predator.markets_history import ASSET_REGISTRY
         registry_by_key = {a["key"]: a for a in ASSET_REGISTRY}
 
-        # Sugar, Cotton, Coffee: scale factor converts FRED USD/kg to cents/lb
+        # Sugar, Cotton, Coffee: fallback_scale converts yfinance fallback series
         for key in ("sugar", "cotton", "coffee"):
             asset = registry_by_key[key]
-            assert "scale" in asset
-            assert abs(asset["scale"] - 45.359237) < 0.001
+            assert "fallback_scale" in asset
+            assert abs(asset["fallback_scale"] - 0.022046226) < 0.001
 
         # Cocoa: scale factor converts FRED USD/kg to USD/MT
         cocoa = registry_by_key["cocoa"]
         assert "scale" in cocoa
         assert abs(cocoa["scale"] - 1000.0) < 0.01
 
-        # Copper: scale factor converts FRED USD/MT to USD/lb
-        copper = registry_by_key["copper"]
-        assert "scale" in copper
-        assert abs(copper["scale"] - 0.00045359237) < 0.00001
-
-
+        # Rice: fallback_scale converts ZR=F cwt to USD/MT
+        rice = registry_by_key["rice"]
+        assert "fallback_scale" in rice
+        assert abs(rice["fallback_scale"] - 22.046226) < 0.0101
