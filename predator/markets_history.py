@@ -223,42 +223,42 @@ ASSET_REGISTRY: list[dict[str, str]] = [
     {
         "key": "wheat", "name": "Wheat (USD/mt)", "category": "agriculture",
         "native_ccy": "USD", "source_type": "fred", "series_id": "PWHEAMTUSDM", "fallback_series_id": "ZW=F",
-        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 2.72155,
+        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 1.0, "fallback_scale": 0.367437,
     },
     {
         "key": "corn", "name": "Corn / Maize (USD/mt)", "category": "agriculture",
         "native_ccy": "USD", "source_type": "fred", "series_id": "PMAIZMTUSDM", "fallback_series_id": "ZC=F",
-        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 2.54012,
+        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 1.0, "fallback_scale": 0.393683,
     },
     {
         "key": "soybeans", "name": "Soybeans (USD/mt)", "category": "agriculture",
         "native_ccy": "USD", "source_type": "fred", "series_id": "PSOYBUSDM", "fallback_series_id": "ZS=F",
-        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 3.04814,
+        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 1.0, "fallback_scale": 0.367437,
     },
     {
         "key": "cotton", "name": "Cotton (USD/kg)", "category": "agriculture",
         "native_ccy": "USD", "source_type": "fred", "series_id": "PCOTTINDUSDM", "fallback_series_id": "CT=F",
-        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 45.359237,
+        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 1.0, "fallback_scale": 0.022046226,
     },
     {
         "key": "sugar", "name": "Sugar (USD/kg)", "category": "agriculture",
         "native_ccy": "USD", "source_type": "fred", "series_id": "PSUGAISAUSDM", "fallback_series_id": "SB=F",
-        "return_type": "price", "notes": "ISA price, IMF monthly", "scale": 45.359237,
+        "return_type": "price", "notes": "ISA price, IMF monthly", "scale": 1.0, "fallback_scale": 0.022046226,
     },
     {
         "key": "coffee", "name": "Coffee Arabica (USD/kg)", "category": "agriculture",
         "native_ccy": "USD", "source_type": "fred", "series_id": "PCOFFOTMUSDM", "fallback_series_id": "KC=F",
-        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 45.359237,
+        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 1.0, "fallback_scale": 0.022046226,
     },
     {
         "key": "cocoa", "name": "Cocoa (USD/kg)", "category": "agriculture",
         "native_ccy": "USD", "source_type": "fred", "series_id": "PCOCOUSDM", "fallback_series_id": "CC=F",
-        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 1000.0,
+        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 1000.0, "fallback_scale": 1.0,
     },
     {
         "key": "rice", "name": "Rice (USD/mt)", "category": "agriculture",
         "native_ccy": "USD", "source_type": "fred", "series_id": "PRICENPQUSDM", "fallback_series_id": "ZR=F",
-        "return_type": "price", "notes": "IMF/World Bank monthly",
+        "return_type": "price", "notes": "IMF 5% broken, USD/MT", "scale": 1.0, "fallback_scale": 22.046226,
     },
     {
         "key": "palm_oil", "name": "Palm Oil (USD/mt)", "category": "agriculture",
@@ -534,18 +534,12 @@ def _fetch_yfinance_series(
     ticker: str,
     full_refresh: bool = False,
     existing: pd.Series | None = None,
+    fallback_scale: float = 1.0,
 ) -> pd.Series:
     """
     Fetch monthly close data from yfinance for international indices.
 
     Returns a Series indexed by period-end dates with monthly close values.
-
-    For tickers in :data:`_YFINANCE_FLAKY_TICKERS` (^GSPC, ^NDX, ^DJI,
-    NASDAQCOM — established by the Wave-0 live-fetch diagnostic to be
-    intermittently empty from GitHub Actions egress), one bounded retry
-    with a short backoff is attempted before returning empty. Retries
-    only fire on the empty-result path; exceptions still flow through
-    the existing try/except and degrade to cache as before.
     """
     try:
         import yfinance as yf
@@ -554,11 +548,6 @@ def _fetch_yfinance_series(
         return pd.Series(dtype=float)
 
     def _download_close(_ticker: str, period: str = "max", interval: str = "1mo") -> pd.Series:
-        """One yfinance attempt → cleaned Close Series (or empty).
-
-        interval is "1mo" (default) for the monthly EOP close series, or "1d"
-        for the daily fallback used to gap-fill monthly holes (e.g. Gold).
-        """
         try:
             data = yf.download(_ticker, period=period, interval=interval, progress=False)
         except Exception as e:
@@ -568,34 +557,21 @@ def _fetch_yfinance_series(
         if data is None or data.empty:
             return pd.Series(dtype=float)
 
-        # Extract Close column (handle MultiIndex columns from yfinance)
         if isinstance(data.columns, pd.MultiIndex):
             close = data[("Close", _ticker)] if ("Close", _ticker) in data.columns else data["Close"].iloc[:, 0]
         else:
             close = data["Close"]
 
         close = close.dropna()
-        # Ensure tz-naive index to avoid concat issues with mixed tz-aware/naive series.
-        # tz_convert(None) is the correct pandas API for stripping tz from an already-aware
-        # DatetimeIndex (tz_localize(None) raises TypeError on tz-aware indexes).
         if hasattr(close.index, 'tz') and close.index.tz is not None:
             close = close.tz_convert(None)
         return close
 
-    # BUG-13: on incremental runs we already have cached history; only the
-    # trailing months are potentially stale. Pulling period="max" every run
-    # wastes bandwidth and rate-limit budget. Restrict to the recent window.
     incremental = (not full_refresh) and (existing is not None) and (not existing.empty)
     fetch_period = "2y" if incremental else "max"
 
     close = _download_close(ticker, period=fetch_period)
 
-    # ── Gold-style gap fill ──────────────────────────────────────────────────
-    # yfinance's monthly endpoint is buggy for some futures (GC=F skipped
-    # Feb/Mar 2026). Fetch trailing-1y DAILY data, resample to monthly EOP
-    # close, and merge it in — daily coverage is reliable where monthly is not.
-    # Overwrites any overlapping (often-wrong) monthly bar's last value with
-    # the verified month-end daily close.
     try:
         daily = _download_close(ticker, period=fetch_period, interval="1d")
     except Exception as e:
@@ -603,31 +579,20 @@ def _fetch_yfinance_series(
         daily = pd.Series(dtype=float)
 
     if daily is not None and not daily.empty:
-        # Resample to month-end close (EOP). label="right" + closed="right"
-        # assigns each month's bar to the period-end timestamp, matching the
-        # monthly interval's timestamp convention.
         daily_monthly = daily.resample("ME", label="right").last().dropna()
         if not daily_monthly.empty:
             if close is None or close.empty:
                 close = daily_monthly
             else:
-                # Snap monthly bar timestamps to month-end to align indexes
-                # before combining (monthly bars index at month start in some
-                # yfinance versions, at month end in others).
                 close_snapped = close.copy()
                 close_snapped.index = close_snapped.index.to_period("M").to_timestamp("M")
                 combined = pd.concat([close_snapped, daily_monthly])
-                # Daily-resampled wins on overlap (keep="last")
                 combined = combined[~combined.index.duplicated(keep="last")]
                 close = combined.sort_index()
             print(f"    gap-fill: merged daily→monthly ({len(daily_monthly)} months) for {ticker}")
 
     close = close if close is not None else pd.Series(dtype=float)
 
-    # Bounded retry for known-flaky tickers (Wave-0 evidence: yfinance is
-    # intermittently empty from CI runners for these). A single retry with
-    # short backoff is enough to absorb transient egress-rate-limit blips
-    # without slowing the build materially.
     if (close is None or close.empty) and ticker in _YFINANCE_FLAKY_TICKERS:
         print(f"    RETRY: yfinance empty for {ticker}, waiting "
               f"{_YFINANCE_RETRY_BACKOFF_SEC}s before one retry")
@@ -635,13 +600,12 @@ def _fetch_yfinance_series(
         close = _download_close(ticker, period=fetch_period)
 
     if close is None or close.empty:
-        # Log empty-fetch evidence (after any retries) so the root-cause
-        # discrimination loop in CI can read it from the build log.
-        # Required by design Fix Implementation #6.
         print(f"    EMPTY: yfinance returned 0 rows for {ticker}")
         return pd.Series(dtype=float)
 
-    # Merge with existing if incremental
+    if fallback_scale != 1.0:
+        close = close * fallback_scale
+
     if not full_refresh and existing is not None and not existing.empty:
         combined = pd.concat([existing, close])
         combined = combined[~combined.index.duplicated(keep="last")]
@@ -775,11 +739,12 @@ def fetch_all(
         # ── degrades to cache, never propagates and never kills the loop.
         data = pd.Series(dtype=float)
         try:
+            fallback_scale = spec.get("fallback_scale", 1.0)
             if source_type == "fred":
                 if fred is None:
                     if spec.get("fallback_series_id"):
                         print(f"    Fallback to yfinance:{spec['fallback_series_id']} (no FRED client)")
-                        data = _fetch_yfinance_series(spec["fallback_series_id"], full_refresh, existing)
+                        data = _fetch_yfinance_series(spec["fallback_series_id"], full_refresh, existing, fallback_scale=fallback_scale)
                     else:
                         print(f"    SKIP fetch (no FRED client) — will use cache if available")
                 else:
@@ -787,7 +752,7 @@ def fetch_all(
                     # Freshness-First Priority: extend FRED series with yfinance trailing daily bars
                     # so that current trailing months update to today even if FRED lags.
                     if spec.get("fallback_series_id"):
-                        yf_data = _fetch_yfinance_series(spec["fallback_series_id"], full_refresh=False, existing=data)
+                        yf_data = _fetch_yfinance_series(spec["fallback_series_id"], full_refresh=False, existing=data, fallback_scale=fallback_scale)
                         if yf_data is not None and not yf_data.empty:
                             if data is None or data.empty:
                                 data = yf_data
@@ -797,7 +762,7 @@ def fetch_all(
                                 data = combined.sort_index()
                                 print(f"    extended FRED series with yfinance:{spec['fallback_series_id']} (latest: {pd.Timestamp(data.index.max()).strftime('%Y-%m')})")
             elif source_type == "yfinance":
-                data = _fetch_yfinance_series(series_id, full_refresh, existing)
+                data = _fetch_yfinance_series(series_id, full_refresh, existing, fallback_scale=fallback_scale)
             else:
                 print(f"    SKIP: unknown source_type '{source_type}'")
                 continue
