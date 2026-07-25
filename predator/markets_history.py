@@ -597,7 +597,7 @@ def _fetch_yfinance_series(
     # Overwrites any overlapping (often-wrong) monthly bar's last value with
     # the verified month-end daily close.
     try:
-        daily = _download_close(ticker, period="1y", interval="1d")
+        daily = _download_close(ticker, period=fetch_period, interval="1d")
     except Exception as e:
         print(f"    WARN: daily gap-fill fetch failed for {ticker}: {e}")
         daily = pd.Series(dtype=float)

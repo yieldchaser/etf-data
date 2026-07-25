@@ -141,14 +141,7 @@ ASSET_REGISTRY: dict[tuple[str, str], tuple[str, str, str, str]] = {
 #
 # Assets NOT listed here (gold, silver, equities, energy, FX …) are already
 # in consistent units between Excel and FRED — no conversion applied.
-UNIT_CONVERSIONS: dict[str, float] = {
-    "wheat":    36.7437,   # 1 mt wheat    = 36.7437 bu  (USDA standard)
-    "corn":     39.3683,   # 1 mt corn     = 39.3683 bu  (USDA standard)
-    "soybeans": 36.7437,   # 1 mt soybeans = 36.7437 bu  (same as wheat)
-    "sugar":     2.20462,  # 1 kg          = 2.20462 lb
-    "cotton":    2.20462,  # 1 kg          = 2.20462 lb
-    "coffee":    2.20462,  # 1 kg          = 2.20462 lb
-}
+UNIT_CONVERSIONS: dict[str, float] = {}
 
 # FX series: sheet → (fx_pair_id, description)
 # Stored as USD per 1 unit of foreign currency (i.e. USDINR = USD/INR rate)
@@ -384,7 +377,7 @@ def _load_existing(path: Path) -> dict[str, Any]:
 load_existing = _load_existing
 
 
-def _merge_monthly(existing: list[list], new: list[list]) -> list[list]:
+def _merge_monthly(existing: list[list], new: list[list], asset_id: str = "") -> list[list]:
     """
     Merge two sorted [YYYY-MM, value] lists.
     New data takes priority for overlapping months.
@@ -395,7 +388,13 @@ def _merge_monthly(existing: list[list], new: list[list]) -> list[list]:
         merged[ym] = val
     for ym, val in new:
         merged[ym] = val  # new overwrites existing
-    return sorted([[ym, v] for ym, v in merged.items()], key=lambda x: x[0])
+    res = sorted([[ym, v] for ym, v in merged.items()], key=lambda x: x[0])
+    try:
+        from predator.markets_history import sanitize_monthly_series
+        res = sanitize_monthly_series(res, key=asset_id)
+    except Exception:
+        pass
+    return res
 
 
 # Public alias
