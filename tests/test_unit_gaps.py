@@ -345,9 +345,12 @@ class TestVolHistoryNoSysExit:
         Patch _get_fred_client to return None.
         fetch_all() must return {} and must not raise SystemExit.
         """
+        import pandas as pd
         import predator.vol_history as vol_history
 
         monkeypatch.setattr(vol_history, "_get_fred_client", lambda: None)
+        monkeypatch.setattr(vol_history, "_fetch_yfinance_vol", lambda *args, **kwargs: pd.Series(dtype=float))
+        monkeypatch.setattr(vol_history, "_read_cache", lambda key: None)
 
         try:
             result = vol_history.fetch_all()

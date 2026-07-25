@@ -75,6 +75,7 @@ VOL_SERIES: list[dict[str, str]] = [
         "name": "VIX",
         "description": "CBOE S&P 500 Volatility",
         "series_id": "VIXCLS",
+        "yf_ticker": "^VIX",
         "first": "1990-01-02",
     },
     {
@@ -82,6 +83,7 @@ VOL_SERIES: list[dict[str, str]] = [
         "name": "GVZ",
         "description": "CBOE Gold ETF Volatility",
         "series_id": "GVZCLS",
+        "yf_ticker": "^GVZ",
         "first": "2008-06-03",
     },
     {
@@ -89,6 +91,7 @@ VOL_SERIES: list[dict[str, str]] = [
         "name": "OVX",
         "description": "CBOE Crude Oil ETF Volatility",
         "series_id": "OVXCLS",
+        "yf_ticker": "^OVX",
         "first": "2007-05-10",
     },
     {
@@ -96,6 +99,7 @@ VOL_SERIES: list[dict[str, str]] = [
         "name": "VXN",
         "description": "CBOE Nasdaq 100 Volatility",
         "series_id": "VXNCLS",
+        "yf_ticker": "^VXN",
         "first": "2001-01-02",
     },
     {
@@ -103,6 +107,7 @@ VOL_SERIES: list[dict[str, str]] = [
         "name": "RVX",
         "description": "CBOE Russell 2000 Volatility",
         "series_id": "RVXCLS",
+        "yf_ticker": "^RVX",
         "first": "2004-01-02",
     },
     {
@@ -110,6 +115,7 @@ VOL_SERIES: list[dict[str, str]] = [
         "name": "VXD",
         "description": "CBOE DJIA Volatility",
         "series_id": "VXDCLS",
+        "yf_ticker": "^VXD",
         "first": "2005-01-03",
     },
     {
@@ -117,6 +123,7 @@ VOL_SERIES: list[dict[str, str]] = [
         "name": "VXEEM",
         "description": "CBOE EM ETF Volatility",
         "series_id": "VXEEMCLS",
+        "yf_ticker": "^VXEEM",
         "first": "2011-03-16",
     },
 ]
@@ -241,6 +248,43 @@ def _fetch_fred_daily(
     return data
 
 
+def _fetch_yfinance_vol(yf_ticker: str, full_refresh: bool = False, existing: pd.Series | None = None) -> pd.Series:
+    """Fetch daily volatility index close from yfinance."""
+    import yfinance as yf
+    try:
+        if not full_refresh and existing is not None and not existing.empty:
+            last_date = existing.index.max()
+            start = (last_date + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
+            df = yf.download(yf_ticker, start=start, progress=False, auto_adjust=False)
+        else:
+            df = yf.download(yf_ticker, period="max", progress=False, auto_adjust=False)
+
+        if df is None or df.empty:
+            for p in ["10y", "5y", "2y"]:
+                try:
+                    df = yf.download(yf_ticker, period=p, progress=False, auto_adjust=False)
+                    if df is not None and not df.empty:
+                        break
+                except Exception:
+                    pass
+
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
+
+        col = "Close" if "Close" in df.columns else df.columns[0]
+        s = df[col].dropna()
+        s.index = pd.to_datetime(s.index).tz_localize(None)
+
+        if not full_refresh and existing is not None and not existing.empty:
+            combined = pd.concat([existing, s])
+            combined = combined[~combined.index.duplicated(keep="last")]
+            return combined.sort_index()
+        return s.sort_index()
+    except Exception as e:
+        print(f"    yfinance error for {yf_ticker}: {e}")
+        return existing if existing is not None else pd.Series(dtype=float)
+
+
 # ─── Cache (Parquet) ─────────────────────────────────────────────────────────
 
 def _read_cache(key: str) -> pd.Series | None:
@@ -336,23 +380,36 @@ def fetch_all(
 
     fred = _get_fred_client()
     if fred is None:
-        print("\n  Cannot proceed without FRED API key — returning empty results (soft-skip).")
-        return {}
+        print("\n  FRED API key not set — using yfinance fallback for all series.")
 
     results: dict[str, pd.Series] = {}
 
     for i, spec in enumerate(VOL_SERIES):
         key = spec["key"]
         series_id = spec["series_id"]
+        yf_ticker = spec.get("yf_ticker")
 
         # Load existing cache for incremental
         existing = None if full_refresh else _read_cache(key)
         cached_points = len(existing) if existing is not None else 0
 
-        print(f"\n  [{i + 1}/{len(VOL_SERIES)}] {key} (fred:{series_id})"
+        print(f"\n  [{i + 1}/{len(VOL_SERIES)}] {key} (fred:{series_id} / yf:{yf_ticker})"
               f" — cached: {cached_points} pts")
 
-        data = _fetch_fred_daily(fred, series_id, full_refresh, existing)
+        data = pd.Series(dtype=float)
+        if fred is not None:
+            data = _fetch_fred_daily(fred, series_id, full_refresh, existing)
+
+        if (data is None or data.empty) and yf_ticker:
+            print(f"    Fallback to yfinance:{yf_ticker}")
+            data = _fetch_yfinance_vol(yf_ticker, full_refresh, existing)
+        elif yf_ticker:
+            # Extend FRED series with live yfinance trailing daily bars
+            yf_data = _fetch_yfinance_vol(yf_ticker, full_refresh=False, existing=data)
+            if yf_data is not None and not yf_data.empty:
+                combined = pd.concat([data, yf_data])
+                combined = combined[~combined.index.duplicated(keep="last")]
+                data = combined.sort_index()
 
         if data is not None and not data.empty:
             _write_cache(key, data)
