@@ -465,6 +465,11 @@ def build_output(
 
     If merge=True, merges with existing JSON (new data takes priority).
     """
+    try:
+        from predator.markets_history import sanitize_monthly_series
+    except ImportError:
+        sanitize_monthly_series = lambda m, key="": m
+
     # Build asset lookup: asset_id → (cat, ccy, display, sheet)
     id_to_meta: dict[str, tuple[str, str, str, str]] = {}
     for (sheet, idx), (aid, cat, ccy, display) in ASSET_REGISTRY.items():
@@ -532,11 +537,6 @@ def build_output(
     rates_out = existing.get("rates", {})
 
     # Preserve existing assets that are not in raw_series (e.g. FRED-only base metals)
-    try:
-        from predator.markets_history import sanitize_monthly_series
-    except ImportError:
-        sanitize_monthly_series = lambda m, key="": m
-
     for asset_id, val in existing.get("assets", {}).items():
         if asset_id not in assets_out:
             val = dict(val)
