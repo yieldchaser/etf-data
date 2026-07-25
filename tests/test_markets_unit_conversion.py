@@ -23,114 +23,41 @@ from predator.ingest_markets_xl import UNIT_CONVERSIONS, _to_monthly_eop
 # ── 1. Conversion table sanity ────────────────────────────────────────────────
 
 class TestConversionTableSanity:
-    """Quick checks that the conversion factors are physically reasonable."""
+    """Quick checks that UNIT_CONVERSIONS does not contain unwanted multipliers."""
 
-    def test_wheat_factor_is_correct(self):
-        # 1 metric tonne of wheat = 36.7437 bushels (US hard red winter wheat)
-        factor = UNIT_CONVERSIONS["wheat"]
-        assert 36.5 < factor < 37.0, f"wheat factor {factor} outside expected range"
-
-    def test_corn_factor_is_correct(self):
-        # 1 metric tonne of corn = 39.3683 bushels
-        factor = UNIT_CONVERSIONS["corn"]
-        assert 39.0 < factor < 40.0, f"corn factor {factor} outside expected range"
-
-    def test_soybeans_factor_is_correct(self):
-        # 1 metric tonne of soybeans = 36.7437 bushels
-        factor = UNIT_CONVERSIONS["soybeans"]
-        assert 36.5 < factor < 37.0, f"soybeans factor {factor} outside expected range"
-
-    def test_sugar_factor_is_correct(self):
-        # 1 kg = 2.20462 lb
-        factor = UNIT_CONVERSIONS["sugar"]
-        assert abs(factor - 2.20462) < 0.001, f"sugar factor {factor} wrong"
-
-    def test_cotton_factor_is_correct(self):
-        factor = UNIT_CONVERSIONS["cotton"]
-        assert abs(factor - 2.20462) < 0.001, f"cotton factor {factor} wrong"
-
-    def test_coffee_factor_is_correct(self):
-        factor = UNIT_CONVERSIONS["coffee"]
-        assert abs(factor - 2.20462) < 0.001, f"coffee factor {factor} wrong"
-
-    def test_no_conversion_for_equities(self):
-        # Gold, Silver, SP500 — no factor means the value for these keys is
-        # absent from the table (not 1.0). _to_monthly_eop defaults to 1.0.
-        for key in ("gold", "silver", "sp500", "platinum", "palladium"):
+    def test_no_unwanted_conversion_multipliers(self):
+        # All commodities are now natively in consistent units between Excel, yfinance, and FRED.
+        # No corrupt legacy conversion factors should be present in UNIT_CONVERSIONS.
+        for key in ("wheat", "corn", "soybeans", "sugar", "cotton", "coffee", "gold", "silver", "sp500"):
             assert key not in UNIT_CONVERSIONS, (
-                f"{key} unexpectedly found in UNIT_CONVERSIONS — would corrupt metal prices"
+                f"{key} unexpectedly found in UNIT_CONVERSIONS — would corrupt commodity prices"
             )
 
 
-# ── 2. _to_monthly_eop applies the factor correctly ───────────────────────────
+# ── 2. _to_monthly_eop passes values through cleanly ─────────────────────────
 
 class TestToMonthlyEopConversion:
-    """Check that _to_monthly_eop multiplies by the conversion factor."""
+    """Check that _to_monthly_eop handles series cleanly without corrupting prices."""
 
     def _make_df(self, closes: list[float], start: str = "2025-01-31") -> pd.DataFrame:
         dates = pd.date_range(start, periods=len(closes), freq="ME")
         return pd.DataFrame({"Date": dates, "Close": closes})
 
-    def test_wheat_converted(self):
-        # 5.50 USD/bushel → should become 5.50 × 36.7437 ≈ 202.09 USD/mt
+    def test_wheat_passthrough(self):
         df = self._make_df([5.50, 5.60, 5.45])
         result = _to_monthly_eop(df, asset_id="wheat")
         assert len(result) == 3
-        expected = round(5.50 * UNIT_CONVERSIONS["wheat"], 4)
-        assert abs(result[0][1] - expected) < 0.01, (
-            f"wheat first month: got {result[0][1]}, expected {expected}"
-        )
+        assert abs(result[0][1] - 5.50) < 0.01
 
-    def test_corn_converted(self):
-        # 4.50 USD/bushel → 4.50 × 39.3683 ≈ 177.16 USD/mt
-        df = self._make_df([4.50, 4.60])
-        result = _to_monthly_eop(df, asset_id="corn")
-        expected = round(4.50 * UNIT_CONVERSIONS["corn"], 4)
-        assert abs(result[0][1] - expected) < 0.01
-
-    def test_soybeans_converted(self):
-        df = self._make_df([11.50, 11.80])
-        result = _to_monthly_eop(df, asset_id="soybeans")
-        expected = round(11.50 * UNIT_CONVERSIONS["soybeans"], 4)
-        assert abs(result[0][1] - expected) < 0.01
-
-    def test_sugar_converted(self):
-        # 0.20 USD/lb → 0.20 × 2.20462 ≈ 0.4409 USD/kg
-        df = self._make_df([0.20, 0.22])
+    def test_sugar_passthrough(self):
+        df = self._make_df([19.20, 19.50])
         result = _to_monthly_eop(df, asset_id="sugar")
-        expected = round(0.20 * UNIT_CONVERSIONS["sugar"], 4)
-        assert abs(result[0][1] - expected) < 0.0001
+        assert abs(result[0][1] - 19.20) < 0.01
 
-    def test_cotton_converted(self):
-        df = self._make_df([0.75, 0.78])
-        result = _to_monthly_eop(df, asset_id="cotton")
-        expected = round(0.75 * UNIT_CONVERSIONS["cotton"], 4)
-        assert abs(result[0][1] - expected) < 0.001
-
-    def test_coffee_converted(self):
-        df = self._make_df([1.50, 1.55])
-        result = _to_monthly_eop(df, asset_id="coffee")
-        expected = round(1.50 * UNIT_CONVERSIONS["coffee"], 4)
-        assert abs(result[0][1] - expected) < 0.001
-
-    def test_gold_not_converted(self):
-        # Gold is in USD/oz in both Excel and yfinance — no conversion wanted
+    def test_gold_passthrough(self):
         df = self._make_df([1900.0, 1950.0])
         result = _to_monthly_eop(df, asset_id="gold")
-        assert abs(result[0][1] - 1900.0) < 0.01, (
-            f"gold should not be converted: got {result[0][1]}"
-        )
-
-    def test_sp500_not_converted(self):
-        df = self._make_df([4500.0, 4600.0])
-        result = _to_monthly_eop(df, asset_id="sp500")
-        assert abs(result[0][1] - 4500.0) < 0.01
-
-    def test_unknown_asset_not_converted(self):
-        # An asset_id not in UNIT_CONVERSIONS must pass through unchanged
-        df = self._make_df([100.0, 110.0])
-        result = _to_monthly_eop(df, asset_id="some_new_asset_xyz")
-        assert abs(result[0][1] - 100.0) < 0.01
+        assert abs(result[0][1] - 1900.0) < 0.01
 
     def test_empty_df_returns_empty(self):
         df = pd.DataFrame({"Date": pd.Series(dtype="datetime64[ns]"), "Close": pd.Series(dtype=float)})
@@ -138,55 +65,17 @@ class TestToMonthlyEopConversion:
         assert result == []
 
 
-# ── 3. Boundary return anomaly is eliminated ──────────────────────────────────
+# ── 3. Boundary return sanitizer ──────────────────────────────────────────────
 
 class TestBoundaryReturnAnomaly:
-    """
-    THE KEY REGRESSION TEST.
+    """Check that sanitize_monthly_series rescales unit mismatches cleanly."""
 
-    Simulate the pre-fix failure: last Excel month (USD/bushel) followed by the
-    first FRED month (USD/mt). After _to_monthly_eop applies the conversion, both
-    must be in USD/mt, and the month-over-month return must be < 30% (realistic
-    agricultural price movement, not the pre-fix +3900% phantom spike).
-    """
-
-    @pytest.mark.parametrize("asset_id, excel_price, fred_price_mt, expected_return_pct", [
-        # Realistic Dec-2025 Excel price (USD/bushel) vs realistic Jan-2026 FRED price (USD/mt)
-        ("wheat",    5.50, 202.0,  None),   # ~37× conversion, return should be near 0%
-        ("corn",     4.40, 174.0,  None),   # ~39× conversion
-        ("soybeans", 11.50, 424.0, None),   # ~37× conversion
-    ])
-    def test_boundary_return_below_30pct(self, asset_id, excel_price, fred_price_mt, expected_return_pct):
-        """After unit conversion the stitch-point return must be < 30%."""
-        # Simulate: two Excel months in USD/bushel, then FRED comes in at USD/mt
-        factor = UNIT_CONVERSIONS[asset_id]
-        converted_excel_price = excel_price * factor
-
-        # The monthly return at the boundary after conversion:
-        boundary_return = fred_price_mt / converted_excel_price - 1
-
-        assert abs(boundary_return) < 0.30, (
-            f"{asset_id}: boundary return {boundary_return:.1%} still anomalous after unit conversion.\n"
-            f"  Excel price: {excel_price} USD/bushel → converted: {converted_excel_price:.2f} USD/mt\n"
-            f"  FRED price:  {fred_price_mt} USD/mt\n"
-            f"  Factor used: {factor}\n"
-            f"  This means the UNIT_CONVERSIONS table is wrong — check bushels-per-tonne."
-        )
-
-    @pytest.mark.parametrize("asset_id, excel_price_lb, fred_price_kg", [
-        ("sugar",  0.20, 0.44),   # ~$0.20/lb × 2.20462 = ~$0.441/kg; FRED ≈ $0.44/kg → ~0% return
-        ("cotton", 0.75, 1.65),   # ~$0.75/lb × 2.20462 = ~$1.653/kg; FRED ≈ $1.65/kg → ~0% return
-        ("coffee", 1.50, 3.30),   # ~$1.50/lb × 2.20462 = ~$3.307/kg; FRED ≈ $3.30/kg → ~0% return
-    ])
-    def test_soft_commodity_boundary_return_below_30pct(self, asset_id, excel_price_lb, fred_price_kg):
-        """lb-quoted commodities: boundary return < 30% after conversion."""
-        factor = UNIT_CONVERSIONS[asset_id]
-        converted = excel_price_lb * factor
-        boundary_return = fred_price_kg / converted - 1
-        assert abs(boundary_return) < 0.30, (
-            f"{asset_id}: boundary return {boundary_return:.1%} anomalous.\n"
-            f"  Excel {excel_price_lb} USD/lb → {converted:.4f} USD/kg; FRED {fred_price_kg} USD/kg"
-        )
+    def test_cocoa_unit_sanitizer(self):
+        from predator.markets_history import sanitize_monthly_series
+        raw = [["2024-11", 9220.0], ["2024-12", 10.37], ["2025-01", 10987.0]]
+        res = sanitize_monthly_series(raw, key="cocoa")
+        assert len(res) == 3
+        assert abs(res[1][1] - 10370.0) < 1.0
 
 
 # ── 4. Return value structure ─────────────────────────────────────────────────
