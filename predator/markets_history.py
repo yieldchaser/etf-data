@@ -185,9 +185,9 @@ ASSET_REGISTRY: list[dict[str, str]] = [
     },
     # Base Metals
     {
-        "key": "copper", "name": "Copper (USD/mt)", "category": "base_metals",
+        "key": "copper", "name": "Copper (USD/lb)", "category": "base_metals",
         "native_ccy": "USD", "source_type": "fred", "series_id": "PCOPPUSDM", "fallback_series_id": "HG=F",
-        "return_type": "price", "notes": "IMF/World Bank monthly",
+        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 0.00045359237,
     },
     {
         "key": "aluminum", "name": "Aluminum (USD/mt)", "category": "base_metals",
@@ -223,37 +223,37 @@ ASSET_REGISTRY: list[dict[str, str]] = [
     {
         "key": "wheat", "name": "Wheat (USD/mt)", "category": "agriculture",
         "native_ccy": "USD", "source_type": "fred", "series_id": "PWHEAMTUSDM", "fallback_series_id": "ZW=F",
-        "return_type": "price", "notes": "IMF/World Bank monthly",
+        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 2.72155,
     },
     {
         "key": "corn", "name": "Corn / Maize (USD/mt)", "category": "agriculture",
         "native_ccy": "USD", "source_type": "fred", "series_id": "PMAIZMTUSDM", "fallback_series_id": "ZC=F",
-        "return_type": "price", "notes": "IMF/World Bank monthly",
+        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 2.54012,
     },
     {
         "key": "soybeans", "name": "Soybeans (USD/mt)", "category": "agriculture",
         "native_ccy": "USD", "source_type": "fred", "series_id": "PSOYBUSDM", "fallback_series_id": "ZS=F",
-        "return_type": "price", "notes": "IMF/World Bank monthly",
+        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 3.04814,
     },
     {
         "key": "cotton", "name": "Cotton (USD/kg)", "category": "agriculture",
         "native_ccy": "USD", "source_type": "fred", "series_id": "PCOTTINDUSDM", "fallback_series_id": "CT=F",
-        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 0.0220462,
+        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 45.359237,
     },
     {
         "key": "sugar", "name": "Sugar (USD/kg)", "category": "agriculture",
         "native_ccy": "USD", "source_type": "fred", "series_id": "PSUGAISAUSDM", "fallback_series_id": "SB=F",
-        "return_type": "price", "notes": "ISA price, IMF monthly", "scale": 0.0220462,
+        "return_type": "price", "notes": "ISA price, IMF monthly", "scale": 45.359237,
     },
     {
         "key": "coffee", "name": "Coffee Arabica (USD/kg)", "category": "agriculture",
         "native_ccy": "USD", "source_type": "fred", "series_id": "PCOFFOTMUSDM", "fallback_series_id": "KC=F",
-        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 0.0220462,
+        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 45.359237,
     },
     {
         "key": "cocoa", "name": "Cocoa (USD/kg)", "category": "agriculture",
         "native_ccy": "USD", "source_type": "fred", "series_id": "PCOCOUSDM", "fallback_series_id": "CC=F",
-        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 0.001,
+        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 1000.0,
     },
     {
         "key": "rice", "name": "Rice (USD/mt)", "category": "agriculture",
@@ -874,7 +874,56 @@ def validate(results: dict[str, pd.Series]) -> bool:
 
 # ─── Build Output JSON ───────────────────────────────────────────────────────
 
-def build_output(results: dict[str, pd.Series]) -> dict[str, Any]:
+def sanitize_monthly_series(monthly: list[list[Any]], key: str = "") -> list[list[Any]]:
+    """Sanitize monthly price series to eliminate unit-mismatch anomalies (>300% or <-67% MoM jumps)."""
+    if len(monthly) < 2:
+        return monthly
+
+    unit_scales = {
+        'cocoa': (lambda p: p * 1000.0 if p < 100 else p),
+        'sugar': (lambda p: p * 45.359237 if p < 2.0 else p),
+        'coffee': (lambda p: p * 45.359237 if p < 15.0 else p),
+        'cotton': (lambda p: p * 45.359237 if p < 5.0 else p),
+        'copper': (lambda p: round(p * 0.00045359237, 4) if p > 100 else p),
+        'wheat': (lambda p: round(p * 2.72155, 2) if p < 350 else p),
+        'corn': (lambda p: round(p * 2.54012, 2) if p < 250 else p),
+        'soybeans': (lambda p: round(p * 3.04814, 2) if p < 600 else p),
+    }
+
+    scale_fn = unit_scales.get(key)
+    fixed = []
+    for ym, p in monthly:
+        if p is not None and scale_fn:
+            p = scale_fn(p)
+        fixed.append([ym, round(float(p), 4) if p is not None else p])
+
+    sanitized = [fixed[0]]
+    for i in range(1, len(fixed)):
+        ym, p = fixed[i]
+        prev_ym, prev_p = sanitized[-1]
+        if prev_p and prev_p > 0 and p and p > 0:
+            ratio = p / prev_p
+            if ratio > 3.0 or ratio < 0.33:
+                rescaled = False
+                for factor in [1000.0, 1 / 1000.0, 45.359237, 1 / 45.359237, 100.0, 1 / 100.0, 2204.6226, 1 / 2204.6226]:
+                    cand_p = p * factor
+                    cand_ratio = cand_p / prev_p
+                    if 0.5 <= cand_ratio <= 2.0:
+                        print(f"  UNIT SANITIZER: {key} {ym} rescaled {p} → {cand_p:.4f} (factor {factor})")
+                        p = cand_p
+                        rescaled = True
+                        break
+                if not rescaled and (ratio > 5.0 or ratio < 0.2) and key not in {"dax", "brent_crude"}:
+                    print(f"  UNIT SANITIZER: {key} {ym} dropped anomaly point {p} (ratio {ratio:.2f})")
+                    continue
+        sanitized.append([ym, p])
+    return sanitized
+
+
+def build_output(
+    results: dict[str, pd.Series],
+    existing: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """
     Build the market_returns.json structure from fetched data.
 
