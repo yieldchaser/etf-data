@@ -230,14 +230,16 @@ _LFS_POINTER_MAX_BYTES = 1024
 
 
 def _is_lfs_pointer(path: Path) -> bool:
-    """Return True if ``path`` is a Git LFS pointer file rather than the real binary.
+    """Return True if ``path`` is a Git LFS pointer file or empty stub rather than the real binary.
 
     A Git LFS pointer is a tiny text stub (≤1024 bytes) whose first line begins
-    with ``version https://git-lfs.github.com/spec/``. This helper performs a
-    fast size + magic-bytes check without parsing the rest of the file.
+    with ``version https://git-lfs.github.com/spec/``.
     """
     try:
-        if path.stat().st_size > _LFS_POINTER_MAX_BYTES:
+        size = path.stat().st_size
+        if size == 0:
+            return True
+        if size > _LFS_POINTER_MAX_BYTES:
             return False
     except OSError:
         return False
@@ -615,6 +617,13 @@ def process(
         print("  Since the JSON file is the permanent source of truth and Excel is only for backfill,")
         print("  skipping Excel ingestion and retaining existing JSON data.")
         existing = _load_existing(OUTPUT_PATH)
+        if not existing or not existing.get("assets"):
+            default_json = REPO_ROOT / "docs" / "data" / "market_returns.json"
+            if default_json.exists() and default_json != OUTPUT_PATH:
+                existing = _load_existing(default_json)
+        if not dry_run:
+            OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+            _write_json_atomic(OUTPUT_PATH, _dumps(existing, separators=(",", ":")))
         check_freshness(existing, fail_on_stale=fail_on_stale)
         return existing
 
