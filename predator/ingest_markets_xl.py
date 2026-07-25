@@ -113,7 +113,7 @@ ASSET_REGISTRY: dict[tuple[str, str], tuple[str, str, str, str]] = {
     ("Precious_Metals", "Platinum (USD/oz)"):             ("platinum",    "precious_metals", "USD", "Platinum"),
     ("Precious_Metals", "Palladium (USD/oz)"):            ("palladium",   "precious_metals", "USD", "Palladium"),
     # ── Commodities ───────────────────────────────────────────────────────
-    ("Commodities", "Copper (USD/lb)"):                   ("copper_lb",   "base_metals",     "USD", "Copper"),
+    ("Commodities", "Copper (USD/lb)"):                   ("copper",      "base_metals",     "USD", "Copper (USD/lb)"),
     ("Commodities", "Corn (USD/bushel)"):                 ("corn",        "agriculture",     "USD", "Corn"),
     ("Commodities", "Wheat (USD/bushel)"):                ("wheat",       "agriculture",     "USD", "Wheat"),
     ("Commodities", "Soybeans (USD/bushel)"):             ("soybeans",    "agriculture",     "USD", "Soybeans"),

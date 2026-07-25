@@ -62,7 +62,7 @@ SERIES_MAP: dict[str, tuple[str, str, str]] = {
     "Platinum (USD/oz)":                    ("platinum",    "precious_metals", "USD"),
     "Palladium (USD/oz)":                   ("palladium",   "precious_metals", "USD"),
     # Commodities sheet
-    "Copper (USD/lb)":                      ("copper_lb",   "base_metals",     "USD"),
+    "Copper (USD/lb)":                      ("copper",      "base_metals",     "USD"),
     "Corn (USD/bushel)":                    ("corn",        "agriculture",     "USD"),
     "Wheat (USD/bushel)":                   ("wheat",       "agriculture",     "USD"),
     "Soybeans (USD/bushel)":                ("soybeans",    "agriculture",     "USD"),

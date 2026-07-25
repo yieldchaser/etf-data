@@ -5197,7 +5197,7 @@ function marketsApp() {
     get corrAssetList() {
       if (!this.returnsData) return [];
       const assets = this.returnsData.assets || {};
-      const preferred = ['sp500', 'nasdaq', 'gold', 'silver', 'wti_crude', 'copper_lb', 'sensex', 'nikkei', 'dax', 'us_home_prices', 'wheat', 'fx_eurusd'];
+      const preferred = ['sp500', 'nasdaq', 'gold', 'silver', 'wti_crude', 'copper', 'sensex', 'nikkei', 'dax', 'us_home_prices', 'wheat', 'fx_eurusd'];
       return preferred.filter(k => assets[k]).map((k, i) => ({
         key: k,
         shortName: assets[k].meta?.name?.split(' ').slice(0, 2).join(' ') || k,
@@ -5563,7 +5563,7 @@ function marketsApp() {
 
       const RATIOS = [
         { id: 'gold_silver',  title: 'Gold / Silver Ratio',    num: 'gold',      den: 'silver',     description: 'Risk appetite - rising = risk-off' },
-        { id: 'copper_gold',  title: 'Copper / Gold Ratio',    num: 'copper_lb', den: 'gold',       description: 'Growth vs fear - rising = growth' },
+        { id: 'copper_gold',  title: 'Copper / Gold Ratio',    num: 'copper',    den: 'gold',       description: 'Growth vs fear - rising = growth' },,
         { id: 'oil_gold',     title: 'Oil / Gold Ratio',       num: 'wti_crude', den: 'gold',       description: 'Energy vs safety' },
         { id: 'sp500_gold',   title: 'S&P 500 / Gold Ratio',   num: 'sp500',     den: 'gold',       description: 'Equity vs hard assets' },
       ];
