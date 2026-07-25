@@ -1,10 +1,10 @@
 {
-  "generated_at_utc": "2026-07-24T18:21:45+00:00",
+  "generated_at_utc": "2026-07-24T19:15:00+00:00",
   "source": "C:\\Users\\Dell\\Github\\etf-data\\data\\all_history.csv",
-  "source_rows_raw": 349688,
-  "source_rows_after_sanitize": 6439,
-  "leaderboard_rows": 3892,
-  "latest_holdings_as_of": "2026-07-23",
+  "source_rows_raw": 355966,
+  "source_rows_after_sanitize": 6435,
+  "leaderboard_rows": 3889,
+  "latest_holdings_as_of": "2026-07-24",
   "latest_scrape_date": "2026-07-24",
   "etfs": [
     "AVSC",
@@ -39,7 +39,6 @@
     "XSMO"
   ],
   "snapshot_dates_in_window": [
-    "2026-03-25",
     "2026-03-26",
     "2026-03-27",
     "2026-03-29",
@@ -135,17 +134,18 @@
     "2026-07-20",
     "2026-07-21",
     "2026-07-22",
-    "2026-07-23"
+    "2026-07-23",
+    "2026-07-24"
   ],
   "flag_counts_today": {
     "HIGH_CONVICTION": 1,
-    "SPECULATIVE_BETA": 76,
-    "NEW": 18,
-    "NONE": 3621
+    "SPECULATIVE_BETA": 75,
+    "NEW": 25,
+    "NONE": 3612
   },
   "flag_counts_yesterday": {
     "HIGH_CONVICTION": 1,
-    "SPECULATIVE_BETA": 76
+    "SPECULATIVE_BETA": 75
   },
   "etf_maturity_days": 30,
   "immature_etfs": [],

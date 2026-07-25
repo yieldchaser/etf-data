@@ -110,6 +110,37 @@ ASSET_REGISTRY: list[dict[str, str]] = [
         "native_ccy": "INR", "source_type": "yfinance", "series_id": "^BSESN",
         "return_type": "price", "notes": "no FRED",
     },
+    # International Equities
+    {
+        "key": "asx200", "name": "ASX 200 (Australia)", "category": "equity",
+        "native_ccy": "AUD", "source_type": "yfinance", "series_id": "^AXJO",
+        "return_type": "price", "notes": "yfinance",
+    },
+    {
+        "key": "ftse100", "name": "FTSE 100 (UK)", "category": "equity",
+        "native_ccy": "GBP", "source_type": "yfinance", "series_id": "^FTSE",
+        "return_type": "price", "notes": "yfinance",
+    },
+    {
+        "key": "hang_seng", "name": "Hang Seng Index (Hong Kong)", "category": "equity",
+        "native_ccy": "HKD", "source_type": "yfinance", "series_id": "^HSI",
+        "return_type": "price", "notes": "yfinance",
+    },
+    {
+        "key": "bovespa", "name": "Bovespa (Brazil)", "category": "equity",
+        "native_ccy": "BRL", "source_type": "yfinance", "series_id": "^BVSP",
+        "return_type": "price", "notes": "yfinance",
+    },
+    {
+        "key": "shanghai", "name": "Shanghai Composite (China)", "category": "equity",
+        "native_ccy": "CNY", "source_type": "yfinance", "series_id": "000001.SS",
+        "return_type": "price", "notes": "yfinance",
+    },
+    {
+        "key": "msci_em", "name": "MSCI Emerging Markets", "category": "equity",
+        "native_ccy": "USD", "source_type": "yfinance", "series_id": "EEM",
+        "return_type": "price", "notes": "yfinance ETF proxy",
+    },
     # Precious Metals — use yfinance futures for longer history (FRED series are limited/discontinued)
     {
         "key": "gold", "name": "Gold (USD/oz)", "category": "precious_metals",
@@ -134,17 +165,17 @@ ASSET_REGISTRY: list[dict[str, str]] = [
     # Energy
     {
         "key": "wti_crude", "name": "WTI Crude Oil (USD/bbl)", "category": "energy",
-        "native_ccy": "USD", "source_type": "fred", "series_id": "DCOILWTICO",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "DCOILWTICO", "fallback_series_id": "CL=F",
         "return_type": "price", "notes": "daily → EOP monthly",
     },
     {
         "key": "brent_crude", "name": "Brent Crude Oil (USD/bbl)", "category": "energy",
-        "native_ccy": "USD", "source_type": "fred", "series_id": "DCOILBRENTEU",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "DCOILBRENTEU", "fallback_series_id": "BZ=F",
         "return_type": "price", "notes": "daily → EOP monthly",
     },
     {
         "key": "natural_gas", "name": "Natural Gas (USD/MMBtu)", "category": "energy",
-        "native_ccy": "USD", "source_type": "fred", "series_id": "MHHNGSP",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "MHHNGSP", "fallback_series_id": "NG=F",
         "return_type": "price", "notes": "",
     },
     {
@@ -155,7 +186,7 @@ ASSET_REGISTRY: list[dict[str, str]] = [
     # Base Metals
     {
         "key": "copper", "name": "Copper (USD/mt)", "category": "base_metals",
-        "native_ccy": "USD", "source_type": "fred", "series_id": "PCOPPUSDM",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "PCOPPUSDM", "fallback_series_id": "HG=F",
         "return_type": "price", "notes": "IMF/World Bank monthly",
     },
     {
@@ -191,42 +222,42 @@ ASSET_REGISTRY: list[dict[str, str]] = [
     # Agriculture
     {
         "key": "wheat", "name": "Wheat (USD/mt)", "category": "agriculture",
-        "native_ccy": "USD", "source_type": "fred", "series_id": "PWHEAMTUSDM",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "PWHEAMTUSDM", "fallback_series_id": "ZW=F",
         "return_type": "price", "notes": "IMF/World Bank monthly",
     },
     {
         "key": "corn", "name": "Corn / Maize (USD/mt)", "category": "agriculture",
-        "native_ccy": "USD", "source_type": "fred", "series_id": "PMAIZMTUSDM",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "PMAIZMTUSDM", "fallback_series_id": "ZC=F",
         "return_type": "price", "notes": "IMF/World Bank monthly",
     },
     {
         "key": "soybeans", "name": "Soybeans (USD/mt)", "category": "agriculture",
-        "native_ccy": "USD", "source_type": "fred", "series_id": "PSOYBUSDM",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "PSOYBUSDM", "fallback_series_id": "ZS=F",
         "return_type": "price", "notes": "IMF/World Bank monthly",
     },
     {
         "key": "cotton", "name": "Cotton (USD/kg)", "category": "agriculture",
-        "native_ccy": "USD", "source_type": "fred", "series_id": "PCOTTINDUSDM",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "PCOTTINDUSDM", "fallback_series_id": "CT=F",
         "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 0.0220462,
     },
     {
         "key": "sugar", "name": "Sugar (USD/kg)", "category": "agriculture",
-        "native_ccy": "USD", "source_type": "fred", "series_id": "PSUGAISAUSDM",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "PSUGAISAUSDM", "fallback_series_id": "SB=F",
         "return_type": "price", "notes": "ISA price, IMF monthly", "scale": 0.0220462,
     },
     {
         "key": "coffee", "name": "Coffee Arabica (USD/kg)", "category": "agriculture",
-        "native_ccy": "USD", "source_type": "fred", "series_id": "PCOFFOTMUSDM",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "PCOFFOTMUSDM", "fallback_series_id": "KC=F",
         "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 0.0220462,
     },
     {
         "key": "cocoa", "name": "Cocoa (USD/kg)", "category": "agriculture",
-        "native_ccy": "USD", "source_type": "fred", "series_id": "PCOCOUSDM",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "PCOCOUSDM", "fallback_series_id": "CC=F",
         "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 0.001,
     },
     {
         "key": "rice", "name": "Rice (USD/mt)", "category": "agriculture",
-        "native_ccy": "USD", "source_type": "fred", "series_id": "PRICENPQUSDM",
+        "native_ccy": "USD", "source_type": "fred", "series_id": "PRICENPQUSDM", "fallback_series_id": "ZR=F",
         "return_type": "price", "notes": "IMF/World Bank monthly",
     },
     {
@@ -237,73 +268,73 @@ ASSET_REGISTRY: list[dict[str, str]] = [
     # FX Rates (stored as USD per 1 unit of foreign currency — inverted where needed)
     {
         "key": "fx_usdinr", "name": "USD/INR", "category": "fx",
-        "native_ccy": "INR", "source_type": "fred", "series_id": "DEXINUS",
+        "native_ccy": "INR", "source_type": "fred", "series_id": "DEXINUS", "fallback_series_id": "USDINR=X",
         "return_type": "fx", "notes": "FRED: INR per USD → inverted to USD per INR",
         "invert": True,
     },
     {
         "key": "fx_usdjpy", "name": "USD/JPY", "category": "fx",
-        "native_ccy": "JPY", "source_type": "fred", "series_id": "DEXJPUS",
+        "native_ccy": "JPY", "source_type": "fred", "series_id": "DEXJPUS", "fallback_series_id": "JPY=X",
         "return_type": "fx", "notes": "FRED: JPY per USD → inverted",
         "invert": True,
     },
     {
         "key": "fx_eurusd", "name": "EUR/USD", "category": "fx",
-        "native_ccy": "EUR", "source_type": "fred", "series_id": "DEXUSEU",
+        "native_ccy": "EUR", "source_type": "fred", "series_id": "DEXUSEU", "fallback_series_id": "EURUSD=X",
         "return_type": "fx", "notes": "FRED: USD per EUR — no inversion",
         "invert": False,
     },
     {
         "key": "fx_gbpusd", "name": "GBP/USD", "category": "fx",
-        "native_ccy": "GBP", "source_type": "fred", "series_id": "DEXUSUK",
+        "native_ccy": "GBP", "source_type": "fred", "series_id": "DEXUSUK", "fallback_series_id": "GBPUSD=X",
         "return_type": "fx", "notes": "FRED: USD per GBP — no inversion",
         "invert": False,
     },
     {
         "key": "fx_usdcny", "name": "USD/CNY", "category": "fx",
-        "native_ccy": "CNY", "source_type": "fred", "series_id": "DEXCHUS",
+        "native_ccy": "CNY", "source_type": "fred", "series_id": "DEXCHUS", "fallback_series_id": "CNY=X",
         "return_type": "fx", "notes": "FRED: CNY per USD → inverted",
         "invert": True,
     },
     {
         "key": "fx_usdcad", "name": "USD/CAD", "category": "fx",
-        "native_ccy": "CAD", "source_type": "fred", "series_id": "DEXCAUS",
+        "native_ccy": "CAD", "source_type": "fred", "series_id": "DEXCAUS", "fallback_series_id": "CAD=X",
         "return_type": "fx", "notes": "FRED: CAD per USD → inverted",
         "invert": True,
     },
     {
         "key": "fx_usdaud", "name": "USD/AUD", "category": "fx",
-        "native_ccy": "AUD", "source_type": "fred", "series_id": "DEXUSAL",
+        "native_ccy": "AUD", "source_type": "fred", "series_id": "DEXUSAL", "fallback_series_id": "AUDUSD=X",
         "return_type": "fx", "notes": "FRED: AUD per USD → inverted",
         "invert": True,
     },
     {
         "key": "fx_usdsgd", "name": "USD/SGD", "category": "fx",
-        "native_ccy": "SGD", "source_type": "fred", "series_id": "DEXSIUS",
+        "native_ccy": "SGD", "source_type": "fred", "series_id": "DEXSIUS", "fallback_series_id": "USDSGD=X",
         "return_type": "fx", "notes": "FRED: SGD per USD → inverted",
         "invert": True,
     },
     {
         "key": "fx_usdbrl", "name": "USD/BRL", "category": "fx",
-        "native_ccy": "BRL", "source_type": "fred", "series_id": "DEXBZUS",
+        "native_ccy": "BRL", "source_type": "fred", "series_id": "DEXBZUS", "fallback_series_id": "USDBRL=X",
         "return_type": "fx", "notes": "FRED: BRL per USD → inverted",
         "invert": True,
     },
     {
         "key": "fx_usdmxn", "name": "USD/MXN", "category": "fx",
-        "native_ccy": "MXN", "source_type": "fred", "series_id": "DEXMXUS",
+        "native_ccy": "MXN", "source_type": "fred", "series_id": "DEXMXUS", "fallback_series_id": "USDMXN=X",
         "return_type": "fx", "notes": "FRED: MXN per USD → inverted",
         "invert": True,
     },
     {
         "key": "fx_usdkrw", "name": "USD/KRW", "category": "fx",
-        "native_ccy": "KRW", "source_type": "fred", "series_id": "DEXKOUS",
+        "native_ccy": "KRW", "source_type": "fred", "series_id": "DEXKOUS", "fallback_series_id": "KRW=X",
         "return_type": "fx", "notes": "FRED: KRW per USD → inverted",
         "invert": True,
     },
     {
         "key": "fx_usdchf", "name": "USD/CHF", "category": "fx",
-        "native_ccy": "CHF", "source_type": "fred", "series_id": "DEXSZUS",
+        "native_ccy": "CHF", "source_type": "fred", "series_id": "DEXSZUS", "fallback_series_id": "USDCHF=X",
         "return_type": "fx", "notes": "FRED: CHF per USD → inverted",
         "invert": True,
     },
@@ -746,9 +777,16 @@ def fetch_all(
         try:
             if source_type == "fred":
                 if fred is None:
-                    print(f"    SKIP fetch (no FRED client) — will use cache if available")
+                    if spec.get("fallback_series_id"):
+                        print(f"    Fallback to yfinance:{spec['fallback_series_id']} (no FRED client)")
+                        data = _fetch_yfinance_series(spec["fallback_series_id"], full_refresh, existing)
+                    else:
+                        print(f"    SKIP fetch (no FRED client) — will use cache if available")
                 else:
                     data = _fetch_fred_series(fred, series_id, full_refresh, existing, scale=spec.get("scale", 1.0))
+                    if (data is None or data.empty) and spec.get("fallback_series_id"):
+                        print(f"    FRED returned empty — fallback to yfinance:{spec['fallback_series_id']}")
+                        data = _fetch_yfinance_series(spec["fallback_series_id"], full_refresh, existing)
             elif source_type == "yfinance":
                 data = _fetch_yfinance_series(series_id, full_refresh, existing)
             else:

@@ -61,6 +61,22 @@ jobs:
       - name: Run tests
         run: python -m pytest tests/ -v
 
+      # ── Markets data pipeline ─────────────────────────────────────────
+      # ORDER (charter v2 Part 2 — self-living merge):
+      #   1. Excel BACKFILL ONLY: seed deep history (gold 1833+, S&P 1871+).
+      #   2. Live FRED+yfinance: extend each series with current months and
+      #      populate fx/cpi/rates. Source labels from this step are PRESERVED
+      #      by the Excel ingester — Excel is no longer re-run after this.
+      - name: 1/2 — Markets Excel deep-history seed (backfill only)
+        run: python -m predator.ingest_markets_xl --no-fail-on-stale
+        continue-on-error: true
+
+      - name: 2/2 — Live FRED + yfinance merge (current months, fx, cpi, rates)
+        run: python -m predator.markets_history --full-refresh
+        continue-on-error: true
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+
       - name: Build site artifacts (predator)
         run: python -m predator.build --source data/all_history.csv --output docs/data --config config.yaml
 
@@ -127,27 +143,6 @@ jobs:
             git push origin HEAD:main
             echo "Committed accumulated stock-detail coverage."
           fi
-
-      # ── Markets data pipeline ─────────────────────────────────────────
-      # ORDER (charter v2 Part 2 — self-living merge):
-      #   1. Excel BACKFILL ONLY: seed deep history (gold 1833+, S&P 1871+).
-      #   2. Live FRED+yfinance: extend each series with current months and
-      #      populate fx/cpi/rates. Source labels from this step are PRESERVED
-      #      by the Excel ingester — Excel is no longer re-run after this.
-      #
-      # The previous pipeline ran a third step (`ingest_markets_xl
-      # --merge-existing` after FRED) which unconditionally clobbered the
-      # live source labels back to the Excel filename. That step is removed —
-      # the Excel run only happens once, as the deep-history seed.
-      - name: 1/2 — Markets Excel deep-history seed (backfill only)
-        run: python -m predator.ingest_markets_xl --no-fail-on-stale
-        continue-on-error: true
-
-      - name: 2/2 — Live FRED + yfinance merge (current months, fx, cpi, rates)
-        run: python -m predator.markets_history --full-refresh
-        continue-on-error: true
-        env:
-          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
 
       # Step 4: Price log (markets.json) — separate from market_returns.json
       - name: Fetch market data (yfinance price log)
