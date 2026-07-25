@@ -1,11 +1,8 @@
 {
   "coverage_pct": 99.59,
-  "last_run_utc": "2026-07-24T23:12:02+00:00",
+  "last_run_utc": "2026-07-25T04:39:52+00:00",
   "note": "Self-healing: each CI run resolves ~150 tickers. Full coverage reached automatically.",
-  "pending": [
-    "BANPUU.F",
-    "PWGR"
-  ],
+  "pending": [],
   "refresh_failures": {},
   "resolved": [
     "000001",
@@ -3885,14 +3882,14 @@
     "ADNOCDRILL": 5,
     "ADNOCGAS": 5,
     "ARIj": 5,
-    "BANPUU.F": 4,
+    "BANPUU.F": 5,
     "BJHI": 5,
     "BOROUGE": 5,
     "EAND": 5,
     "GLXO": 5,
     "MMFS": 5,
     "PEPL": 5,
-    "PWGR": 4,
+    "PWGR": 5,
     "SMPH": 5,
     "\u2014": 5
   }
