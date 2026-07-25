@@ -903,7 +903,7 @@ def sanitize_monthly_series(monthly: list[list[Any]], key: str = "") -> list[lis
         prev_ym, prev_p = sanitized[-1]
         if prev_p and prev_p > 0 and p and p > 0:
             ratio = p / prev_p
-            if ratio > 3.0 or ratio < 0.33:
+            if (ratio > 3.0 or ratio < 0.33) and key in unit_scales:
                 rescaled = False
                 for factor in [1000.0, 1 / 1000.0, 45.359237, 1 / 45.359237, 100.0, 1 / 100.0, 2204.6226, 1 / 2204.6226]:
                     cand_p = p * factor
@@ -913,9 +913,6 @@ def sanitize_monthly_series(monthly: list[list[Any]], key: str = "") -> list[lis
                         p = cand_p
                         rescaled = True
                         break
-                if not rescaled and (ratio > 5.0 or ratio < 0.2) and key not in {"dax", "brent_crude"}:
-                    print(f"  UNIT SANITIZER: {key} {ym} dropped anomaly point {p} (ratio {ratio:.2f})")
-                    continue
         sanitized.append([ym, p])
     return sanitized
 
