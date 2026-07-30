@@ -3834,7 +3834,8 @@ function app() {
         ['flag',                   'Flag'],
         ['avg_conviction',         'Avg conviction'],
         ['velocity_score',         'Velocity'],
-        ['burst_30d',              'Burst'],
+        ['burst_value',            'Burst'],
+        ['burst_30d',              'Burst (signal)'],
         ['global_rank_delta_30d',  'Global rank Δ 30d'],
         ['global_rank_peak_30d',   'Peak rank Δ 30d'],
         ['score_delta_pct',        'Score Δ% (period)'],
@@ -3866,7 +3867,11 @@ function app() {
       };
       const lines = [cols.map(c => c[1]).join(',')];
       for (const r of rows) {
-        lines.push(cols.map(([k]) => escape(r[k])).join(','));
+        const rowData = {
+          ...r,
+          burst_value: r.burst_30d ? (r.global_rank_peak_30d || 0) : 0,
+        };
+        lines.push(cols.map(([k]) => escape(rowData[k])).join(','));
       }
       const csv = lines.join('\n');
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
