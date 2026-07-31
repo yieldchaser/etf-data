@@ -528,8 +528,9 @@ def signal_history(
         qd   quality_defected (omit when False)
         vs   velocity_score rounded 1dp (omit when 0)
         burst burst_30d (omit when False)
+        crater crater_30d (omit when False)
 
-    Returns dict[ticker -> list[{d, flag, rank, n?, st?, dv?, qa?, qd?, vs?, burst?}]].
+    Returns dict[ticker -> list[{d, flag, rank, n?, st?, dv?, qa?, qd?, vs?, burst?, crater?}]].
 
     Keys kept short (1-2 chars) to minimise JSON payload.
     Performance: all cross-date panel operations are vectorized (numpy/pandas).
@@ -627,12 +628,14 @@ def signal_history(
     # ── 4. Pre-compute burst panel (ticker × date_idx → bool) ────────────────
     # Do this once for all date indices to avoid repeating the window operation.
     burst_sets: list[set] = []  # burst_sets[di] = set of burst tickers at date di
+    crater_sets: list[set] = []  # crater_sets[di] = set of crater tickers at date di
     if not rank_panel.empty and len(rp_cols) >= 5:
         rp_arr = rank_panel.values.astype(float)   # shape (n_tickers_rp, n_dates)
         rp_tickers = list(rank_panel.index)
         for di in range(len(rp_cols)):
             if di < 5:
                 burst_sets.append(set())
+                crater_sets.append(set())
                 continue
             win_start = max(0, di - 30)
             win = rp_arr[:, win_start: di + 1]  # shape (n_tickers_rp, win_len)
@@ -656,8 +659,15 @@ def signal_history(
             coverage_ok = (coverage >= 0.80) | (actual_obs < 15)
             is_burst_arr = (peak >= 40) & coverage_ok & (better_count >= 8)
             burst_sets.append(set(t for t, b in zip(rp_tickers, is_burst_arr) if b))
+
+            # Crater: exact polar opposite — sustained WORSE than median
+            worse = (with_nan > med[:, None])
+            worse_count = np.nansum(worse, axis=1)
+            is_crater_arr = (peak >= 40) & coverage_ok & (worse_count >= 8)
+            crater_sets.append(set(t for t, b in zip(rp_tickers, is_crater_arr) if b))
     else:
         burst_sets = [set()] * len(dates_sorted)
+        crater_sets = [set()] * len(dates_sorted)
 
     # ── 5. Pre-compute per-date quality sets from hb_panel ────────────────────
     # For each (ticker, date_idx): now_q and then_q sets
@@ -744,6 +754,7 @@ def signal_history(
 
         # Burst set for this date
         b_set = burst_sets[di] if di < len(burst_sets) else set()
+        c_set = crater_sets[di] if di < len(crater_sets) else set()
 
         # Iterate tickers in this snapshot
         snap_tickers   = snap["ticker"].tolist()
@@ -829,6 +840,10 @@ def signal_history(
             # burst
             if tkr in b_set:
                 entry["burst"] = 1
+
+            # crater
+            if tkr in c_set:
+                entry["crater"] = 1
 
             result.setdefault(tkr, []).append(entry)
 

@@ -233,7 +233,36 @@ def run_backtest(
         prev_burst = curr_burst
     print(f"  {len(burst_trades)} trades")
 
-    # ── Strategy 3: Top-10 Score (weekly rebalance on Mondays) ───────────
+    # ── Strategy 3: CRATER Trigger (Short) ─────────────────────────────────
+    print("Strategy: crater_trigger_short…")
+    crater_trades: list[dict] = []
+    prev_crater: set[str] = set()
+    for d in dates_sorted:
+        lb = historical[d]
+        if "crater_30d" not in lb.columns:
+            continue
+        curr_crater = set(lb.loc[lb["crater_30d"] == True, "ticker"])
+        new_crater = curr_crater - prev_crater
+        for ticker in new_crater:
+            entry_price = _get_price(price_cache, ticker, d)
+            if entry_price is None:
+                continue
+            exit_date = d + pd.Timedelta(days=hold_days)
+            exit_price = _get_price(price_cache, ticker, exit_date)
+            ret = (entry_price - exit_price) / entry_price if exit_price else None
+            crater_trades.append({
+                "date": d.strftime("%Y-%m-%d"),
+                "ticker": ticker,
+                "entry": round(entry_price, 4),
+                "exit": round(exit_price, 4) if exit_price else None,
+                "exit_date": exit_date.strftime("%Y-%m-%d"),
+                "return_pct": round(ret, 4) if ret is not None else None,
+                "days_held": hold_days,
+            })
+        prev_crater = curr_crater
+    print(f"  {len(crater_trades)} trades")
+
+    # ── Strategy 4: Top-10 Score (weekly rebalance on Mondays) ───────────
     print("Strategy: top10_score…")
     score_trades: list[dict] = []
     mondays = [d for d in dates_sorted if d.weekday() == 0]
@@ -357,6 +386,13 @@ def run_backtest(
                 "trades": burst_trades,
                 "cumulative_returns": _cumulative_returns(burst_trades),
                 "stats": _compute_stats(burst_trades, hold_days),
+            },
+            "crater_trigger_short": {
+                "label": "CRATER Trigger (Short)",
+                "description": "Short on day crater_30d first flips True",
+                "trades": crater_trades,
+                "cumulative_returns": _cumulative_returns(crater_trades),
+                "stats": _compute_stats(crater_trades, hold_days),
             },
             "top10_score": {
                 "label": "Top-10 Score",

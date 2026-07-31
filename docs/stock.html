@@ -219,6 +219,9 @@
           <div class="label">Velocity</div>
           <div class="text-[9px] px-1.5 py-0.5 rounded font-mono font-bold leading-none bg-purple-500/10 text-purple-400 border border-purple-500/25 shrink-0"
                x-show="leaderboardRow?.burst_30d">⚡ BURST</div>
+          <div class="text-[9px] px-1.5 py-0.5 rounded font-mono font-bold leading-none shrink-0"
+               style="background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.3)"
+               x-show="leaderboardRow?.crater_30d">📉 CRATER</div>
         </div>
         <div class="text-2xl font-medium num font-mono mt-1"
              :style="`color: ${velocityColor(leaderboardRow?.velocity_score)}`"
@@ -289,7 +292,7 @@
         </template>
 
         <!-- Separator -->
-        <div class="h-3 w-px bg-zinc-800 hidden sm:block mx-0.5" x-show="leaderboardRow?.any_new || leaderboardRow?.burst_30d || (leaderboardRow?.velocity_score || 0) >= 25 || leaderboardRow?.quality_adopted_30d || leaderboardRow?.quality_defected_30d || (leaderboardRow?.tier_breadth || 0) >= 2"></div>
+        <div class="h-3 w-px bg-zinc-800 hidden sm:block mx-0.5" x-show="leaderboardRow?.any_new || leaderboardRow?.burst_30d || leaderboardRow?.crater_30d || (leaderboardRow?.velocity_score || 0) >= 25 || leaderboardRow?.quality_adopted_30d || leaderboardRow?.quality_defected_30d || (leaderboardRow?.tier_breadth || 0) >= 2"></div>
 
         <!-- NEW -->
         <span x-show="leaderboardRow?.any_new" class="chip"
@@ -299,6 +302,10 @@
         <span x-show="leaderboardRow?.burst_30d" class="chip"
               x-tooltip="`BURST move - global rank improved by ${leaderboardRow?.global_rank_peak_30d}+ positions in last 30d. Best rank: #${leaderboardRow?.global_rank_best_30d}`"
               style="background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.30)">⚡ BURST</span>
+        <!-- CRATER -->
+        <span x-show="leaderboardRow?.crater_30d" class="chip"
+              x-tooltip="`CRATER signal - global rank dropped by ${leaderboardRow?.global_rank_drop_30d}+ positions in last 30d. Sustained downward rank acceleration.`"
+              style="background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.30)">📉 CRATER</span>
         <!-- VELO -->
         <span x-show="(leaderboardRow?.velocity_score || 0) >= 25 && !leaderboardRow?.burst_30d" class="chip"
               x-tooltip="`Top-velocity composite (${(leaderboardRow?.velocity_score || 0).toFixed(0)}). Conviction is concentrating.`"

@@ -366,8 +366,15 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                 actual_obs = rank_panel.notna().sum(axis=1)
                 coverage_ok = (coverage >= 0.80) | (actual_obs < 15)
                 is_burst = (peak_improvement_30 >= 40) & coverage_ok & (sustained_count >= 8)
+
+                # Crater: exact polar opposite of burst — rank worsened and
+                # currently near its WORST in the 30d window.
+                is_worse_than_median = recent10.gt(median_per_ticker, axis=0)
+                sustained_worse_count = is_worse_than_median.sum(axis=1)
+                is_crater = (peak_improvement_30 >= 40) & coverage_ok & (sustained_worse_count >= 8)
         else:
-            is_burst = pd.Series(dtype=bool)
+            is_burst  = pd.Series(dtype=bool)
+            is_crater = pd.Series(dtype=bool)
 
         # 3. ETF count change vs ~30d ago
         past_counts = pd.Series(dtype=float)
@@ -388,6 +395,11 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         leaderboard["etf_count_delta_30d"]   = (leaderboard["etf_count"] - leaderboard["etf_count_30d_ago"]).astype(int)
         # Burst: peak improvement of >=40 global ranks at any point in last 30d, with sustained presence
         leaderboard["burst_30d"]             = leaderboard["ticker"].map(is_burst).fillna(False)
+        # Crater: peak drop of >=40 global ranks at any point in last 30d, currently near worst
+        leaderboard["crater_30d"]            = leaderboard["ticker"].map(is_crater).fillna(False)
+        leaderboard["global_rank_drop_30d"]  = leaderboard["ticker"].map(
+            lambda t: int(peak_improvement_30.get(t, 0)) if (is_crater.get(t, False)) else 0
+        ).fillna(0).astype(int)
 
         # 5. Composite velocity score
         # Tuning: global rank Δ30d of +50 → +25; peak +50 → +12.5;
@@ -407,14 +419,18 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         leaderboard = _attach_velocity(leaderboard, deltas_by_period, historical)
         print(f"  velocity_score: range [{leaderboard['velocity_score'].min():.1f}, {leaderboard['velocity_score'].max():.1f}]")
         burst_count = int(leaderboard['burst_30d'].sum())
+        crater_count = int(leaderboard['crater_30d'].sum())
     else:
-        print("  WARNING: No historical data — skipping velocity/burst computation")
+        print("  WARNING: No historical data — skipping velocity/burst/crater computation")
         for col in ["avg_rank_delta_7d", "avg_weight_flow_7d", "avg_rank_delta_30d",
                     "global_rank_delta_30d", "global_rank_peak_30d", "global_rank_best_30d",
-                    "etf_count_30d_ago", "etf_count_delta_30d", "burst_30d", "velocity_score"]:
-            leaderboard[col] = 0 if col != "burst_30d" else False
+                    "etf_count_30d_ago", "etf_count_delta_30d", "burst_30d", "crater_30d",
+                    "global_rank_drop_30d", "velocity_score"]:
+            leaderboard[col] = 0 if col not in ("burst_30d", "crater_30d") else False
         burst_count = 0
+        crater_count = 0
     print(f"  burst_30d:      {burst_count} tickers with >=40 peak rank improvement")
+    print(f"  crater_30d:     {crater_count} tickers with >=40 peak rank drop")
 
     # ── Multi-period rank delta and ETF count delta ───────────────────────────
     # Mirrors score_deltas_by_period so the frontend can switch all Change sections
@@ -663,6 +679,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
             names=("ticker", "count"),
             total_weight=("total_weight", "sum"),
             burst_count=("burst_30d", "sum"),
+            crater_count=("crater_30d", "sum"),
             hc_count=("flag", lambda s: (s == "HIGH_CONVICTION").sum()),
         ).reset_index().rename(columns={dim: "label"}).sort_values("net_velocity", ascending=False)
         return g.round(2).to_dict(orient="records")
@@ -731,6 +748,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         # never carries those columns and would always report a false mismatch.
         lb_indexed = leaderboard.set_index("ticker") if "ticker" in leaderboard.columns else None
         mismatch_burst = 0
+        mismatch_crater = 0
         n_checked = 0
         for tkr, entries in flag_history.items():
             if not entries:
@@ -740,6 +758,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                 continue
             n_checked += 1
             hist_burst = bool(last_e.get("burst", False))
+            hist_crater = bool(last_e.get("crater", False))
             if lb_indexed is not None and tkr in lb_indexed.index:
                 lb_row = lb_indexed.loc[tkr]
                 if isinstance(lb_row, pd.DataFrame):
@@ -747,9 +766,13 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                 lb_burst = bool(lb_row.get("burst_30d", False))
                 if lb_burst != hist_burst:
                     mismatch_burst += 1
+                lb_crater = bool(lb_row.get("crater_30d", False))
+                if lb_crater != hist_crater:
+                    mismatch_crater += 1
         if n_checked > 0:
             print(f"  signal consistency: {n_checked} tickers checked · "
-                  f"burst mismatches={mismatch_burst} ({100*mismatch_burst/n_checked:.1f}%)")
+                  f"burst mismatches={mismatch_burst} ({100*mismatch_burst/n_checked:.1f}%) · "
+                  f"crater mismatches={mismatch_crater} ({100*mismatch_crater/n_checked:.1f}%)")
 
     # Attach per-period score deltas AND multi-period rank/ETF-count deltas to every record
     for r in lb_records:
@@ -851,6 +874,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                 'global_rank_peak_30d': int(r.get('global_rank_peak_30d', 0)),
                 'etf_count_delta_30d':  int(r['etf_count_delta_30d']),
                 'burst_30d':            bool(r.get('burst_30d', False)),
+                'crater_30d':           bool(r.get('crater_30d', False)),
                 'final_score':          int(r['final_score']),
                 'etf_count':            int(r['etf_count']),
                 'tiers':                str(r.get('tiers', '')),
