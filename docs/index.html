@@ -2436,15 +2436,15 @@
         </div>
       </div>
 
-      <!-- Burst Crashers (rank cratered, no burst recovery) -->
+      <!-- Crater Movers (rank cratered / active crater signal) -->
       <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
         <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
           <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <span>💥</span> Rank Crashers
-            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">BURST DROPS</span>
+            <span>📉</span> Crater Movers
+            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">CRATER</span>
             <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)">fixed 30d</span>
           </div>
-          <div class="text-[10px] font-mono text-zinc-500" x-text="`${burstLosers.length} names · Δ &le; −30`"></div>
+          <div class="text-[10px] font-mono text-zinc-500" x-text="`${burstLosers.length} names · crater / Δ &le; −30`"></div>
         </div>
         <div class="overflow-x-auto scrollbar">
           <table class="w-full text-left border-collapse">
@@ -2464,7 +2464,10 @@
                   <td class="px-3 py-2 font-mono font-medium text-zinc-200">
                     <div class="flex items-center gap-1.5">
                       <span x-text="r.ticker"></span>
-                      <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
+                      <template x-if="r.crater_30d">
+                        <span class="chip text-[8px] px-1 py-0" style="background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.3)">📉CRATER</span>
+                      </template>
+                      <template x-if="!r.crater_30d && (r.tiers || '').split(' + ').filter(Boolean)[0]">
                         <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
                               x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
                       </template>
@@ -3237,8 +3240,12 @@ function app() {
       }
       const compute = () => {
         const list = this.leaderboard
-          .filter(r => !r.burst_30d && (r.global_rank_delta_30d || 0) < -30 && (r.etf_count || 0) >= 2)
-          .sort((a, b) => (a.global_rank_delta_30d || 0) - (b.global_rank_delta_30d || 0));
+          .filter(r => r.crater_30d || (!r.burst_30d && (r.global_rank_delta_30d || 0) < -30 && (r.etf_count || 0) >= 2))
+          .sort((a, b) => {
+            if (a.crater_30d && !b.crater_30d) return -1;
+            if (!a.crater_30d && b.crater_30d) return 1;
+            return (a.global_rank_delta_30d || 0) - (b.global_rank_delta_30d || 0);
+          });
         const sliced = list.slice(0, 10);
         const sortState = this.changesSort.burstLosers;
         if (sortState && sortState.key) {
