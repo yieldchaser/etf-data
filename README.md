@@ -275,6 +275,7 @@ Built with Tailwind CSS + Alpine.js. Zero build step — static HTML/JS served d
 |--------|-----------|
 | `velocity_score` | `0.5×GlobalRankΔ30d + 0.25×PeakImprovement30d + 1.0×AvgRankΔ7d + 20.0×AvgWeightFlow7d + 5.0×ETFsAdded30d + 1.0×ScoreStreak` |
 | `burst_30d` | Peak rank improvement ≥ 40 positions in 30d, with ≥80% continuous presence AND sustained improvement in ≥8 of last 10 snapshots |
+| `crater_30d` | Peak rank drop ≥ 40 positions in 30d, with ≥80% continuous presence AND sustained deterioration in ≥8 of last 10 snapshots |
 | `conviction_divergence` | Score rising but rank falling (crowded out) or score falling but rank rising (relative strength) |
 | `stealth_accumulation` | Weight growing in 3+ ETFs without rank improvement |
 | `momentum_regime` | accelerating / rising / stable / weakening / declining |
