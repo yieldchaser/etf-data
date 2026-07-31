@@ -1,11 +1,11 @@
 {
-  "generated_at_utc": "2026-07-24T19:15:00+00:00",
+  "generated_at_utc": "2026-07-31T06:49:22+00:00",
   "source": "C:\\Users\\Dell\\Github\\etf-data\\data\\all_history.csv",
-  "source_rows_raw": 355966,
-  "source_rows_after_sanitize": 6435,
-  "leaderboard_rows": 3889,
-  "latest_holdings_as_of": "2026-07-24",
-  "latest_scrape_date": "2026-07-24",
+  "source_rows_raw": 382784,
+  "source_rows_after_sanitize": 6443,
+  "leaderboard_rows": 3897,
+  "latest_holdings_as_of": "2026-07-30",
+  "latest_scrape_date": "2026-07-31",
   "etfs": [
     "AVSC",
     "CALF",
@@ -39,11 +39,6 @@
     "XSMO"
   ],
   "snapshot_dates_in_window": [
-    "2026-03-26",
-    "2026-03-27",
-    "2026-03-29",
-    "2026-03-30",
-    "2026-03-31",
     "2026-04-01",
     "2026-04-02",
     "2026-04-03",
@@ -135,13 +130,19 @@
     "2026-07-21",
     "2026-07-22",
     "2026-07-23",
-    "2026-07-24"
+    "2026-07-24",
+    "2026-07-25",
+    "2026-07-26",
+    "2026-07-27",
+    "2026-07-28",
+    "2026-07-29",
+    "2026-07-30"
   ],
   "flag_counts_today": {
     "HIGH_CONVICTION": 1,
     "SPECULATIVE_BETA": 75,
-    "NEW": 25,
-    "NONE": 3612
+    "NEW": 71,
+    "NONE": 3619
   },
   "flag_counts_yesterday": {
     "HIGH_CONVICTION": 1,
@@ -152,77 +153,74 @@
   "stale_etfs": [],
   "markets_data_freshness": {
     "available": true,
-    "asof": "2026-05",
-    "asset_count": 32,
+    "asof": "2026-07",
+    "asset_count": 35,
     "by_source": {
-      "excel": 15,
-      "yfinance": 10,
-      "fred": 7
+      "yfinance": 16,
+      "excel": 1,
+      "fred": 18
     },
-    "fx_pairs": [],
+    "fx_pairs": [
+      "EURUSD",
+      "GBPUSD",
+      "USDAUD",
+      "USDBRL",
+      "USDCAD",
+      "USDCHF",
+      "USDCNY",
+      "USDINR",
+      "USDJPY",
+      "USDKRW",
+      "USDMXN",
+      "USDSGD"
+    ],
     "cpi_series": [],
     "rates_series": [],
     "stale_assets": [
       {
-        "asset": "copper",
-        "last": "2026-03",
-        "age_days": 115
+        "asset": "nasdaq",
+        "last": "2026-05",
+        "age_days": 61
       },
       {
         "asset": "aluminum",
         "last": "2026-03",
-        "age_days": 115
+        "age_days": 122
       },
       {
         "asset": "nickel",
         "last": "2026-03",
-        "age_days": 115
+        "age_days": 122
       },
       {
         "asset": "zinc",
         "last": "2026-03",
-        "age_days": 115
+        "age_days": 122
       },
       {
         "asset": "iron_ore",
         "last": "2026-03",
-        "age_days": 115
+        "age_days": 122
       },
       {
         "asset": "tin",
         "last": "2026-03",
-        "age_days": 115
+        "age_days": 122
       },
       {
         "asset": "lead",
         "last": "2026-03",
-        "age_days": 115
+        "age_days": 122
       }
     ],
     "self_living_check": {
-      "live_source_count": 17,
-      "excel_only_count": 15,
+      "live_source_count": 34,
+      "excel_only_count": 1,
       "holdouts": [
-        "Brent Crude Oil",
-        "Coffee Arabica",
-        "Corn",
-        "Cotton",
-        "NASDAQ Composite",
-        "Soybeans",
-        "Sugar",
-        "WTI Crude Oil",
-        "Wheat"
+        "NASDAQ Composite"
       ],
       "holdout_keys": [
-        "brent_crude",
-        "coffee",
-        "corn",
-        "cotton",
-        "nasdaq",
-        "soybeans",
-        "sugar",
-        "wheat",
-        "wti_crude"
+        "nasdaq"
       ],
       "verdict": "LIVE_MERGE_DEGRADED"
     }
