@@ -539,6 +539,7 @@
         </div>
         <div class="flex items-center gap-3 text-[10px] flex-wrap" style="color: var(--text-2)">
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(168,85,247,0.85)"></span> BURST</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(248,113,113,0.85)"></span> CRATER</span>
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(52,211,153,0.85)"></span> HC</span>
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(34,211,238,0.65)"></span> VELO</span>
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(251,191,36,0.7)"></span> SPEC</span>
@@ -575,6 +576,7 @@
         <!-- Duration summary chips -->
         <div class="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-[10px] font-mono">
           <span x-show="timelineStats.burstDays > 0" style="color: #c084fc" x-text="`BURST · ${timelineStats.burstDays}d`"></span>
+          <span x-show="timelineStats.craterDays > 0" style="color: #f87171" x-text="`CRATER · ${timelineStats.craterDays}d`"></span>
           <span x-show="timelineStats.hcDays > 0" style="color: var(--up)" x-text="`HC · ${timelineStats.hcDays}d`"></span>
           <span x-show="timelineStats.veloDays > 0" style="color: var(--cyan)" x-text="`VELO · ${timelineStats.veloDays}d`"></span>
           <span x-show="timelineStats.specDays > 0" style="color: var(--amber)" x-text="`SPEC · ${timelineStats.specDays}d`"></span>
@@ -1325,7 +1327,7 @@ function stockApp() {
     // Compute which optional lanes are active for this ticker (have ≥1 active day)
     get _activeLaneKeys() {
       const fh = this.flagHistory || [];
-      const keys = new Set(['burst', 'hc', 'velo', 'spec']);  // always shown
+      const keys = new Set(['burst', 'crater', 'hc', 'velo', 'spec']);  // always shown
       for (let i = 0; i < fh.length; i++) {
         const e = fh[i];
         if (e.n) keys.add('newentry');
@@ -1340,15 +1342,17 @@ function stockApp() {
 
     get timelineStats() {
       const fh = this.flagHistory || [];
-      let hcDays = 0, veloDays = 0, burstDays = 0, specDays = 0, neutralDays = 0;
+      let hcDays = 0, veloDays = 0, burstDays = 0, craterDays = 0, specDays = 0, neutralDays = 0;
       let newDays = 0, stealthDays = 0, divPlusDays = 0, divMinusDays = 0;
       let qualityDays = 0, concDays = 0;
       for (let i = 0; i < fh.length; i++) {
         const e = fh[i];
         const isB = this._isBurstAt(i);
+        const isCr = !!e.crater;
         const isV = this._isVeloAt(i);
         const flag = e.flag;
         if (isB) burstDays++;
+        if (isCr) craterDays++;
         if (flag === 'HIGH_CONVICTION') hcDays++;
         if (isV) veloDays++;
         if (flag === 'SPECULATIVE_BETA') specDays++;
@@ -1358,11 +1362,11 @@ function stockApp() {
         if (e.dv === -1) divMinusDays++;
         if (e.qa || e.qd) qualityDays++;
         if (flag === 'CONCENTRATED') concDays++;
-        const anySignal = isB || flag === 'HIGH_CONVICTION' || isV || flag === 'SPECULATIVE_BETA'
+        const anySignal = isB || isCr || flag === 'HIGH_CONVICTION' || isV || flag === 'SPECULATIVE_BETA'
           || e.n || e.st || e.dv || e.qa || e.qd || flag === 'CONCENTRATED';
         if (!anySignal) neutralDays++;
       }
-      return { hcDays, veloDays, burstDays, specDays, neutralDays,
+      return { hcDays, veloDays, burstDays, craterDays, specDays, neutralDays,
                newDays, stealthDays, divPlusDays, divMinusDays, qualityDays, concDays };
     },
 
@@ -1464,6 +1468,7 @@ function stockApp() {
       if (!e) return [];
       const sigs = [];
       if (this._isBurstAt(this.tlci)) sigs.push({ label: 'BURST',   color: '#c084fc' });
+      if (e.crater) sigs.push({ label: 'CRATER',  color: '#f87171' });
       if (e.flag === 'HIGH_CONVICTION') sigs.push({ label: 'HC',     color: 'var(--up)' });
       if (this._isVeloAt(this.tlci))   sigs.push({ label: 'VELO',   color: 'var(--cyan)' });
       if (e.flag === 'SPECULATIVE_BETA') sigs.push({ label: 'SPEC β', color: 'var(--amber)' });
@@ -1568,6 +1573,7 @@ function stockApp() {
     _allLaneDefs() {
       return [
         { key: 'burst',    label: 'BURST',   always: true,  color: 'rgba(168,85,247,', bright: '1)',    dim: '0.55)' },
+        { key: 'crater',   label: 'CRATER',  always: true,  color: 'rgba(248,113,113,', bright: '1)',    dim: '0.55)' },
         { key: 'hc',       label: 'HC',      always: true,  color: 'rgba(52,211,153,',  bright: '1)',    dim: '0.55)' },
         { key: 'velo',     label: 'VELO',    always: true,  color: 'rgba(34,211,238,',  bright: '0.9)', dim: '0.45)' },
         { key: 'spec',     label: 'SPEC',    always: true,  color: 'rgba(251,191,36,',  bright: '0.9)', dim: '0.45)' },
@@ -1614,6 +1620,7 @@ function stockApp() {
       // ── Pre-compute active states per snapshot ──────────────────────────
       const states = fh.map((e, i) => ({
         burst:    this._isBurstAt(i),
+        crater:   !!e.crater,
         hc:       e.flag === 'HIGH_CONVICTION',
         velo:     this._isVeloAt(i),
         spec:     e.flag === 'SPECULATIVE_BETA',

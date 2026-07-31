@@ -515,20 +515,20 @@
                 </div>
               </th>
               <th @click="sort('velocity_score')" :class="sortClass('velocity_score')"
-                  class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
+                  class="text-right px-1 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
                   x-tooltip="'Velocity - composite rate-of-change signal across all ETFs. High positive = institutional accumulation accelerating.'">Velocity</th>
               <th @click="sort('burst_score')" :class="sortClass('burst_score')"
-                  class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
+                  class="text-right px-1 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
                   x-tooltip="'Burst - 30-day peak rank improvement. Shows rapid upward rank acceleration.'">Burst</th>
               <th @click="sort('crater_score')" :class="sortClass('crater_score')"
-                  class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
+                  class="text-right px-1 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
                   x-tooltip="'Crater - 30-day peak rank drop. Shows rapid downward rank acceleration.'">Crater</th>
               <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden md:table-cell" @click="sort('etf_count')" :class="sortClass('etf_count')" x-tooltip="'Count of ETFs holding this ticker. Suffix shows net ETFs added/lost in 30d.'">ETFs</th>
               <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell" @click="sort('total_weight')" :class="sortClass('total_weight')" x-tooltip="'Sum of position weights across all ETFs holding this name.'">Weight</th>
               <th class="text-left px-2 py-2 hidden xl:table-cell" x-tooltip="{html:'Tiers represented. <b>Scout</b>=spinoffs/IPOs · <b>Quant</b>=factor momentum · <b>Quality</b>=FCF/profit · <b>Trend</b>=momentum · <b>Core</b>=mega-cap'}">Strategies</th>
               <th class="text-center px-3 py-2 hidden md:table-cell" x-tooltip="'Consecutive days the score moved in the same direction (▲ up · ▼ down).'">Streak</th>
               <th class="text-left px-3 py-2 hidden xl:table-cell" x-tooltip="'Today\'s score as a percentile of this ticker\'s own score history in the past 60 days.'">Level</th>
-              <th class="text-left px-3 py-2" x-tooltip="{html:'Priority-ordered signal stack (top 2 shown, +n = hover for full list)<br><b>HC</b> = held by 4+ ETFs · <b>⚡BURST</b> = +40 ranks in 30d · <b>VELO</b> = top velocity · <b>Q+/Q−</b> = Quality ETF added/dropped 30d · <b>STEALTH</b> = weight building quietly · <b>DIV±</b> = conviction divergence · <b>CONC</b> = single-ETF score · <b>SPEC β</b> = Trend without Quality/Scout · <b>NEW</b> = first appearance within 14d'}">Flag</th>
+              <th class="text-left px-3 py-2" x-tooltip="{html:'Priority-ordered signal stack (top 2 shown, +n = hover for full list)<br><b>HC</b> = held by 4+ ETFs · <b>⚡BURST</b> = +40 ranks in 30d · <b>📉CRATER</b> = −40 ranks in 30d · <b>VELO</b> = top velocity · <b>Q+/Q−</b> = Quality ETF added/dropped 30d · <b>STEALTH</b> = weight building quietly · <b>DIV±</b> = conviction divergence · <b>CONC</b> = single-ETF score · <b>SPEC β</b> = Trend without Quality/Scout · <b>NEW</b> = first appearance within 14d'}">Flag</th>
             </tr>
           </thead>
           <template x-for="row in paged" :key="row.ticker">
@@ -560,17 +560,17 @@
                       x-tooltip="`Score: ${fmt1(row.final_score)}<br>Percentile: ${row.normalized_score != null ? row.normalized_score.toFixed(0) : '-'}/100<br>Concentration: ${row.concentration_score != null ? row.concentration_score : '-'}% from top ETF<br>${row.concentration_score == null ? 'No data' : row.concentration_score < 40 ? '✓ Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : '⚠ Highly concentrated - fragile if top ETF rebalances'}`"
                       x-text="fmt1(row.final_score)"></td>
                   <td class="px-2 py-2 text-center num font-mono hidden lg:table-cell" :style="`color: ${flowColor(activeDeltaValue(row))}`" x-text="fmtPct(activeDeltaValue(row))"></td>
-                  <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell"
+                  <td class="px-1 py-2 text-right num font-mono hidden lg:table-cell"
                       :style="`color: ${velocityColor(row.velocity_score)}`"
                       x-tooltip="velocityTip(row)">
                     <span x-text="fmtVelocity(row.velocity_score)"></span>
                   </td>
-                  <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell"
+                  <td class="px-1 py-2 text-right num font-mono hidden lg:table-cell"
                       x-tooltip="row.burst_30d ? `⚡ Burst: +${row.global_rank_peak_30d} ranks peak improvement in 30d` : 'No burst signal'">
                     <span x-show="row.burst_30d" class="font-mono text-[10px] font-semibold" style="color: #c084fc" x-text="`⚡+${row.global_rank_peak_30d}`"></span>
                     <span x-show="!row.burst_30d" class="text-[10px]" style="color: var(--text-3)">–</span>
                   </td>
-                  <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell"
+                  <td class="px-1 py-2 text-right num font-mono hidden lg:table-cell"
                       x-tooltip="row.crater_30d ? `📉 Crater: -${row.global_rank_drop_30d} ranks peak drop in 30d` : 'No crater signal'">
                     <span x-show="row.crater_30d" class="font-mono text-[10px] font-semibold" style="color: #f87171" x-text="`📉-${row.global_rank_drop_30d}`"></span>
                     <span x-show="!row.crater_30d" class="text-[10px]" style="color: var(--text-3)">–</span>
@@ -1143,20 +1143,20 @@
                   </div>
                 </th>
                 <th @click="sort('velocity_score')" :class="sortClass('velocity_score')"
-                    class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
+                    class="text-right px-1 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
                     x-tooltip="'Velocity - composite rate-of-change signal across all ETFs. High positive = institutional accumulation accelerating.'">Velocity</th>
                 <th @click="sort('burst_score')" :class="sortClass('burst_score')"
-                    class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
+                    class="text-right px-1 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
                     x-tooltip="'Burst - 30-day peak rank improvement. Shows rapid upward rank acceleration.'">Burst</th>
                 <th @click="sort('crater_score')" :class="sortClass('crater_score')"
-                    class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
+                    class="text-right px-1 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
                     x-tooltip="'Crater - 30-day peak rank drop. Shows rapid downward rank acceleration.'">Crater</th>
                 <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden md:table-cell" @click="sort('etf_count')" :class="sortClass('etf_count')" x-tooltip="'Count of ETFs holding this ticker. Suffix shows net ETFs added/lost in 30d.'">ETFs</th>
                 <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell" @click="sort('total_weight')" :class="sortClass('total_weight')" x-tooltip="'Sum of position weights across all ETFs holding this name.'">Weight</th>
                 <th class="text-left px-2 py-2 hidden xl:table-cell" x-tooltip="{html:'Tiers represented. <b>Scout</b>=spinoffs/IPOs · <b>Quant</b>=factor momentum · <b>Quality</b>=FCF/profit · <b>Trend</b>=momentum · <b>Core</b>=mega-cap'}">Strategies</th>
                 <th class="text-center px-3 py-2 hidden md:table-cell" x-tooltip="'Consecutive days the score moved in the same direction (▲ up · ▼ down).'">Streak</th>
                 <th class="text-left px-3 py-2 hidden xl:table-cell" x-tooltip="'Today\'s score as a percentile of this ticker\'s own score history in the past 60 days.'">Level</th>
-                <th class="text-left px-3 py-2" x-tooltip="{html:'Priority-ordered signal stack (top 2 shown, +n = hover for full list)<br><b>HC</b> = held by 4+ ETFs · <b>⚡BURST</b> = +40 ranks in 30d · <b>VELO</b> = top velocity · <b>Q+/Q−</b> = Quality ETF added/dropped 30d · <b>STEALTH</b> = weight building quietly · <b>DIV±</b> = conviction divergence · <b>CONC</b> = single-ETF score · <b>SPEC β</b> = Trend without Quality/Scout · <b>NEW</b> = first appearance within 14d'}">Flag</th>
+                <th class="text-left px-3 py-2" x-tooltip="{html:'Priority-ordered signal stack (top 2 shown, +n = hover for full list)<br><b>HC</b> = held by 4+ ETFs · <b>⚡BURST</b> = +40 ranks in 30d · <b>📉CRATER</b> = −40 ranks in 30d · <b>VELO</b> = top velocity · <b>Q+/Q−</b> = Quality ETF added/dropped 30d · <b>STEALTH</b> = weight building quietly · <b>DIV±</b> = conviction divergence · <b>CONC</b> = single-ETF score · <b>SPEC β</b> = Trend without Quality/Scout · <b>NEW</b> = first appearance within 14d'}">Flag</th>
               </tr>
             </thead>
             <template x-for="row in paged" :key="row.ticker">
@@ -1188,17 +1188,17 @@
                         x-tooltip="`Score: ${fmt1(row.final_score)}<br>Percentile: ${row.normalized_score != null ? row.normalized_score.toFixed(0) : '-'}/100<br>Concentration: ${row.concentration_score != null ? row.concentration_score : '-'}% from top ETF<br>${row.concentration_score == null ? 'No data' : row.concentration_score < 40 ? '✓ Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : '⚠ Highly concentrated - fragile if top ETF rebalances'}`"
                         x-text="fmt1(row.final_score)"></td>
                     <td class="px-2 py-2 text-center num font-mono hidden lg:table-cell" :style="`color: ${flowColor(activeDeltaValue(row))}`" x-text="fmtPct(activeDeltaValue(row))"></td>
-                    <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell"
+                    <td class="px-1 py-2 text-right num font-mono hidden lg:table-cell"
                         :style="`color: ${velocityColor(row.velocity_score)}`"
                         x-tooltip="velocityTip(row)">
                       <span x-text="fmtVelocity(row.velocity_score)"></span>
                     </td>
-                    <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell"
+                    <td class="px-1 py-2 text-right num font-mono hidden lg:table-cell"
                         x-tooltip="row.burst_30d ? `⚡ Burst: +${row.global_rank_peak_30d} ranks peak improvement in 30d` : 'No burst signal'">
                       <span x-show="row.burst_30d" class="font-mono text-[10px] font-semibold" style="color: #c084fc" x-text="`⚡+${row.global_rank_peak_30d}`"></span>
                       <span x-show="!row.burst_30d" class="text-[10px]" style="color: var(--text-3)">–</span>
                     </td>
-                    <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell"
+                    <td class="px-1 py-2 text-right num font-mono hidden lg:table-cell"
                         x-tooltip="row.crater_30d ? `📉 Crater: -${row.global_rank_drop_30d} ranks peak drop in 30d` : 'No crater signal'">
                       <span x-show="row.crater_30d" class="font-mono text-[10px] font-semibold" style="color: #f87171" x-text="`📉-${row.global_rank_drop_30d}`"></span>
                       <span x-show="!row.crater_30d" class="text-[10px]" style="color: var(--text-3)">–</span>
