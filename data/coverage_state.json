@@ -1,11 +1,9 @@
 {
   "coverage_pct": 99.59,
-  "last_run_utc": "2026-07-31T02:10:02+00:00",
+  "last_run_utc": "2026-07-31T05:49:30+00:00",
   "note": "Self-healing: each CI run resolves ~150 tickers. Full coverage reached automatically.",
   "pending": [],
-  "refresh_failures": {
-    "UBBL": 1
-  },
+  "refresh_failures": {},
   "resolved": [
     "000001",
     "000050",
