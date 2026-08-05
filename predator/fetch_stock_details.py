@@ -345,9 +345,11 @@ def _save_currency_cache(cache: dict[str, str]) -> None:
 
 
 def _is_us_ticker(ticker: str, country: str) -> bool:
+    if re.fullmatch(r"[A-Z]{1,5}", ticker):
+        return True
     if country and country not in ("Unknown", ""):
         return country == "United States"
-    return bool(re.fullmatch(r"[A-Z]{1,5}", ticker))
+    return False
 
 
 def _resolve_yf_symbol(ticker: str, meta: dict, symbol_map: dict) -> str:
