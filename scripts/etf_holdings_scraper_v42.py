@@ -212,16 +212,29 @@ def fetch_grin() -> pd.DataFrame:
     return _grin_playwright(page_url)
 
 
+def _launch_playwright_browser(p):
+    args = [
+        '--no-sandbox',
+        '--disable-blink-features=AutomationControlled',
+        '--disable-dev-shm-usage',
+    ]
+    is_ci = os.environ.get('CI') is not None or os.environ.get('GITHUB_ACTIONS') is not None
+    headless = True if is_ci else False
+
+    try:
+        return p.chromium.launch(headless=headless, args=args)
+    except Exception:
+        try:
+            return p.chromium.launch(channel='chrome', headless=headless, args=args)
+        except Exception:
+            return p.chromium.launch(headless=True, args=args)
+
+
 def _grin_playwright(page_url):
     from playwright.sync_api import sync_playwright
     captured = {}
     with sync_playwright() as p:
-        # headless=False: vcm.com detects headless Chrome and suppresses
-        # interactive elements (#allHoldingsCSVExport, Portfolio tab nav).
-        # MFEM uses headless=False for the same reason — consistent here.
-        browser = p.chromium.launch(channel='chrome', headless=False,
-                                    args=['--no-sandbox',
-                                          '--disable-blink-features=AutomationControlled'])
+        browser = _launch_playwright_browser(p)
         ctx  = browser.new_context(accept_downloads=True,
                                    viewport={'width': 1280, 'height': 900})
         page = ctx.new_page()
@@ -709,15 +722,7 @@ def fetch_mfem() -> pd.DataFrame:
     # ── Playwright tier ─────────────────────────────────────────────────────────
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(
-            channel='chrome',
-            headless=False,
-            args=[
-                '--no-sandbox',
-                '--disable-blink-features=AutomationControlled',
-                '--disable-dev-shm-usage',
-            ]
-        )
+        browser = _launch_playwright_browser(p)
         ctx = browser.new_context(
             user_agent=(
                 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
@@ -1244,12 +1249,7 @@ def fetch_avsc() -> pd.DataFrame:
     avsc_aod  = ''
 
     with sync_playwright() as p:
-        # headless=False: avantisinvestors.com suppresses the "All Holdings" link
-        # in headless Chrome (same pattern as vcm.com / GRIN).  Running with a
-        # visible browser makes the element appear and the beacon fire.
-        browser = p.chromium.launch(channel='chrome', headless=False,
-                                    args=['--no-sandbox',
-                                          '--disable-blink-features=AutomationControlled'])
+        browser = _launch_playwright_browser(p)
         ctx     = browser.new_context(accept_downloads=True,
                                       viewport={'width': 1280, 'height': 900})
         page    = ctx.new_page()
