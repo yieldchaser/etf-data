@@ -1,12 +1,12 @@
 {
   "coverage_pct": 99.59,
-  "last_run_utc": "2026-08-13T15:11:47+00:00",
+  "last_run_utc": "2026-08-13T22:48:38+00:00",
   "note": "Self-healing: each CI run resolves ~150 tickers. Full coverage reached automatically.",
   "pending": [
     "FERTIGLB"
   ],
   "refresh_failures": {
-    "MAXIS": 1
+    "MAXIS": 2
   },
   "resolved": [
     "000001",
@@ -3902,7 +3902,7 @@
     "BJHI": 5,
     "BOROUGE": 5,
     "EAND": 5,
-    "FERTIGLB": 1,
+    "FERTIGLB": 2,
     "GLXO": 5,
     "MMFS": 5,
     "PEPL": 5,
