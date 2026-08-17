@@ -1,0 +1,120 @@
+full universe: 30 ETFs
+  Parquet store: 456,766 rows from 1 year partition(s) (lookback 180d)
+Loading from partitioned Parquet store: /workspace/56d40feb-509a-4ae5-8e49-e7e07078677d/sessions/agent_73c16fba-0919-4a9c-93da-229f2f687223/data/history_parquet
+  456,766 rows · 30 ETFs · 2026-02-19 → 2026-08-17
+filtered rows 378,511 · 30 ETFs · 2026-05-18→2026-08-17
+snapshot dates: 73 total · sampling every 1 → 73 leaderboard computations
+[sanitizer] cross-listing collapse: 100 unique raw→canonical mappings
+  A005380  →  005380
+  A000660  →  000660
+  A005930  →  005930
+  A012330  →  012330
+  A000150  →  000150
+  A005490  →  005490
+  A066570  →  066570
+  A009150  →  009150
+  A000270  →  000270
+  A034730  →  034730
+  A105560  →  105560
+  A015760  →  015760
+  A055550  →  055550
+  A000720  →  000720
+  A032830  →  032830
+  A034020  →  034020
+  A000880  →  000880
+  A086790  →  086790
+  A006260  →  006260
+  A047040  →  047040
+  … and 80 more
+  5/73 leaderboards  [24s]
+  10/73 leaderboards  [38s]
+  15/73 leaderboards  [50s]
+  20/73 leaderboards  [62s]
+  25/73 leaderboards  [74s]
+  30/73 leaderboards  [87s]
+  35/73 leaderboards  [100s]
+  40/73 leaderboards  [112s]
+  45/73 leaderboards  [125s]
+  50/73 leaderboards  [138s]
+  55/73 leaderboards  [152s]
+  60/73 leaderboards  [166s]
+  65/73 leaderboards  [180s]
+  70/73 leaderboards  [193s]
+historical built: 73 [203s]
+rank panel: 4246 tickers x 73 dates
+RECENT triggers [2026-06-15..2026-07-22]: burst=2119 climb=1821 crater=2268
+
+========================================================================
+LONG — BURST triggers: 2119 triggers  (expect UP after signal)
+========================================================================
+  direction-correct: 0/2021 = 0%
+  median ret_now +0.0% | ret20 +2.2% | ret40 +4.3%
+
+  --- TOP 15 by forward return (genius cases) ---
+ ticker                                           company       trig  rank@trig ret_now ret20  ret40    ok
+     ZD                                    Ziff Davis Inc 2026-07-22     1121.0   +0.0%   NaN    NaN False
+ 006360 GS ENGINEERING + CONSTRUCT COMMON STOCK KRW5000.0 2026-06-15     1576.0   +0.0% -2.6% +14.9% False
+   1102             ASIA CEMENT CORP COMMON STOCK TWD10.0 2026-06-15     2652.0   +0.0% -3.5%    NaN False
+   1402 FAR EASTERN NEW CENTURY CORP COMMON STOCK TWD10.0 2026-06-15     2654.0   +0.0% +0.3%    NaN False
+1928.HK                                   SANDS CHINA LTD 2026-06-15     3548.0   +0.0% -9.2%    NaN False
+   1258                  China Nonferrous Mining Corp Ltd 2026-07-22     2935.0   +0.0%   NaN    NaN False
+   1618            METALLURGICAL CORP OF CHIN H HONG KONG 2026-07-22     2140.0   +0.0%   NaN    NaN False
+   2388           BOC HONG KONG HOLDINGS LTD COMMON STOCK 2026-07-22      715.0   +0.0%   NaN    NaN False
+   3900       GREENTOWN CHINA HOLDINGS COMMON STOCK HKD.1 2026-07-22     2311.0   +0.0%   NaN    NaN False
+ 600019               BAOSHAN IRON + STEEL CO A HONG KONG 2026-07-22     1530.0   +0.0%   NaN    NaN False
+ 600519                KWEICHOW MOUTAI CO LTD A HONG KONG 2026-07-22      460.0   +0.0%   NaN    NaN False
+    966           China Taiping Insurance Holdings Co Ltd 2026-07-22      791.0   +0.0%   NaN    NaN False
+   9961                      TRIP.COM GROUP LTD HONG KONG 2026-07-22      649.0   +0.0%   NaN    NaN False
+ PMETAL             PRESS METAL ALUMINIUM HOLDIN MALAYSIA 2026-07-21     1165.0   +0.0%   NaN    NaN False
+   PTON                           Peloton Interactive Inc 2026-07-21     2092.0   +0.0%   NaN    NaN False
+
+========================================================================
+LONG — STRONG CLIMB (velocity proxy): 1821 triggers  (expect UP after signal)
+========================================================================
+  direction-correct: 0/1714 = 0%
+  median ret_now +0.0% | ret20 +3.3% | ret40 +6.3%
+
+  --- TOP 15 by forward return (genius cases) ---
+ ticker                                                 company       trig  rank@trig ret_now  ret20  ret40    ok
+   ZURA                                                    None 2026-07-22     3840.0   +0.0%    NaN    NaN False
+   1216 UNI PRESIDENT ENTERPRISES CO TAIWAN (PROVINCE OF CHINA) 2026-06-15      656.0   +0.0%  +2.9%  +3.4% False
+ 138040      MERITZ FINANCIAL GROUP INC KOREA (THE REPUBLIC OF) 2026-06-15     1306.0   +0.0%  +5.1% +11.2% False
+   2400                                                  XD Inc 2026-06-15     3174.0   +0.0% -12.3% -13.6% False
+ 300014                           EVE ENERGY CO LTD A HONG KONG 2026-06-15     2955.0   +0.0% -11.1%  -4.6% False
+ 300476                    VICTORY GIANT TECHNOLOGY A HONG KONG 2026-06-15     3091.0   +0.0% -15.7% -20.3% False
+4751.JP                                          CyberAgent Inc 2026-06-15     1982.0   +0.0% +15.6%  -3.7% False
+ 600015                          HUAXIA BANK CO LTD A HONG KONG 2026-06-15     1961.0   +0.0%  +0.0%  +1.9% False
+   6691                               Yankey Engineering Co Ltd 2026-06-15      971.0   +0.0%  -6.9%    NaN False
+6754.JP                                            Anritsu Corp 2026-06-15     2232.0   +0.0%  +3.0%  -8.7% False
+   7010                           SAUDI TELECOM CO SAUDI ARABIA 2026-06-15      320.0   +0.0%  -6.2%  -9.4% False
+8035.JT                                      Tokyo Electron Ltd 2026-06-15      909.0   +0.0%  -2.0% -20.0% False
+   ABBN                                                 ABB Ltd 2026-06-15      503.0   +0.0%  +1.5%  -0.9% False
+ABBN.SW                                                 ABB Ltd 2026-06-15     1382.0   +0.0%  +1.5%  -0.6% False
+   ACLN                                Accelleron Industries AG 2026-06-15     2544.0   +0.0%  +0.3%  -3.1% False
+
+========================================================================
+SHORT — CRATER triggers: 2268 triggers  (expect DOWN after signal)
+========================================================================
+  direction-correct: 0/2188 = 0%
+  median ret_now +0.0% | ret20 +2.3% | ret40 -0.1%
+
+  --- TOP 15 by forward return (genius cases) ---
+  ticker                                               company       trig  rank@trig ret_now  ret20  ret40    ok
+    VSEC                                              VSE Corp 2026-07-22        177   +0.0%    NaN    NaN False
+  000720             Hyundai Engineering & Construction Co Ltd 2026-06-15         96   +0.0% -30.0% -22.6% False
+  000880                                           Hanwha Corp 2026-06-15        581   +0.0% -23.2% -30.3% False
+  034730                                                SK Inc 2026-06-15         70   +0.0%  -9.8% -18.9% False
+    2039                CHINA INTERNATIONAL MARINE H HONG KONG 2026-06-15       1686   +0.0%  -2.0%    NaN False
+    2338                                  Weichai Power Co Ltd 2026-06-15        228   +0.0%  -9.2% -26.0% False
+    2600                            Aluminum Corp of China Ltd 2026-06-15        222   +0.0% -12.5%  -5.0% False
+  277810                                      Rainbow Robotics 2026-06-15       1754   +0.0% -37.1% -27.3% False
+    3036 WT MICROELECTRONICS CO LTD TAIWAN (PROVINCE OF CHINA) 2026-06-15        592   +0.0% -10.0%  -2.7% False
+    3702                 WPG HOLDINGS LTD COMMON STOCK TWD10.0 2026-06-15       1229   +0.0% +11.2% +16.7% False
+ 3750.HK   Contemporary Amperex Technology Co., Ltd. (Class H) 2026-06-15        419   +0.0% -11.8%  -7.0% False
+    3996                CHINA ENERGY ENGINEERING C H HONG KONG 2026-06-15       1821   +0.0%    NaN    NaN False
+     VIR                                                  None 2026-07-21       1918   +0.0%    NaN    NaN False
+ZYDUSLIF                          ZYDUS LIFESCIENCES LTD INDIA 2026-07-21       1944   +0.0%    NaN    NaN False
+    2855                             President Securities Corp 2026-07-22       1981   +0.0%    NaN    NaN False
+
+DONE
+EXIT 0
