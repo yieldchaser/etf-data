@@ -1,0 +1,134 @@
+  Parquet store: 456,766 rows from 1 year partition(s) (lookback 180d)
+Loading from partitioned Parquet store: /workspace/56d40feb-509a-4ae5-8e49-e7e07078677d/sessions/agent_73c16fba-0919-4a9c-93da-229f2f687223/data/history_parquet
+  456,766 rows · 30 ETFs · 2026-02-19 → 2026-08-17
+
+##############################################################################
+# RECOMMENDATION DATE (as-if): 2026-06-15  — selection uses ONLY data <= 2026-06-15
+##############################################################################
+[sanitizer] cross-listing collapse: 100 unique raw→canonical mappings
+  A005380  →  005380
+  A000660  →  000660
+  A005930  →  005930
+  A012330  →  012330
+  A000150  →  000150
+  A005490  →  005490
+  A066570  →  066570
+  A009150  →  009150
+  A000270  →  000270
+  A034730  →  034730
+  A105560  →  105560
+  A015760  →  015760
+  A055550  →  055550
+  A000720  →  000720
+  A032830  →  032830
+  A034020  →  034020
+  A000880  →  000880
+  A086790  →  086790
+  A006260  →  006260
+  A047040  →  047040
+  … and 80 more
+[sanitizer] cross-listing collapse: 100 unique raw→canonical mappings
+  A005380  →  005380
+  A000660  →  000660
+  A005930  →  005930
+  A012330  →  012330
+  A000150  →  000150
+  A005490  →  005490
+  A066570  →  066570
+  A009150  →  009150
+  A000270  →  000270
+  A034730  →  034730
+  A105560  →  105560
+  A015760  →  015760
+  A055550  →  055550
+  A000720  →  000720
+  A032830  →  032830
+  A034020  →  034020
+  A000880  →  000880
+  A086790  →  086790
+  A006260  →  006260
+  A047040  →  047040
+  … and 80 more
+universe at T: 3879 tickers · burst names: 483 (0 also HIGH_CONVICTION) · recommending TOP 5 by apex final_score
+
+ticker     company                                vel  peak   gΔ30  eΔ30   score   rank
+2327       Yageo Corp                            76.1    71     71     3   201.0     11
+2330       TAIWAN SEMICONDUCTOR MANUFAC TAIWA   141.4   185    172     2   184.0     15
+CSCO       Cisco Systems Inc                     45.0    61     49     2   178.0     18
+NTAP       NetApp Inc                            74.3   125     70     2   155.0     27
+000150     Doosan Co Ltd                         59.1    77     54     0   151.0     31
+
+  -> ACTUAL forward returns from recommendation date (measured now, not used for selection):
+   2327       Yageo Corp                      fwd_to_now -34.8%  +20d -17.2%  +40d -34.4%   DOWN ✗
+   2330       TAIWAN SEMICONDUCTOR MANUFAC T  fwd_to_now +1.3%  +20d +1.9%  +40d +0.8%   UP ✓
+   CSCO       Cisco Systems Inc               fwd_to_now -5.7%  +20d -6.6%  +40d +3.5%   DOWN ✗
+   NTAP       NetApp Inc                      fwd_to_now +25.8%  +20d +0.5%  +40d +25.2%   UP ✓
+   000150     Doosan Co Ltd                   fwd_to_now -25.3%  +20d -27.6%  +40d -31.1%   DOWN ✗
+   => 2/5 recommended names went UP after the signal
+
+##############################################################################
+# RECOMMENDATION DATE (as-if): 2026-07-01  — selection uses ONLY data <= 2026-07-01
+##############################################################################
+[sanitizer] cross-listing collapse: 100 unique raw→canonical mappings
+  A005380  →  005380
+  A000660  →  000660
+  A005930  →  005930
+  A012330  →  012330
+  A000150  →  000150
+  A005490  →  005490
+  A066570  →  066570
+  A009150  →  009150
+  A000270  →  000270
+  A034730  →  034730
+  A105560  →  105560
+  A015760  →  015760
+  A055550  →  055550
+  A000720  →  000720
+  A032830  →  032830
+  A034020  →  034020
+  A000880  →  000880
+  A086790  →  086790
+  A006260  →  006260
+  A047040  →  047040
+  … and 80 more
+[sanitizer] cross-listing collapse: 100 unique raw→canonical mappings
+  A005380  →  005380
+  A000660  →  000660
+  A005930  →  005930
+  A012330  →  012330
+  A000150  →  000150
+  A005490  →  005490
+  A066570  →  066570
+  A009150  →  009150
+  A000270  →  000270
+  A034730  →  034730
+  A105560  →  105560
+  A015760  →  015760
+  A055550  →  055550
+  A000720  →  000720
+  A032830  →  032830
+  A034020  →  034020
+  A000880  →  000880
+  A086790  →  086790
+  A006260  →  006260
+  A047040  →  047040
+  … and 80 more
+universe at T: 3903 tickers · burst names: 1034 (0 also HIGH_CONVICTION) · recommending TOP 5 by apex final_score
+
+ticker     company                                vel  peak   gΔ30  eΔ30   score   rank
+1303       Nan Ya Plastics Corp                  42.4    45     45     0   180.0     18
+2345       ACCTON TECHNOLOGY CORP TAIWAN (PRO    23.0    70      8     0   163.0     23
+FIX        COMFORT SYSTEMS USA INC UNITED STA    70.3   243     40     1   153.0     28
+HPE        Hewlett Packard Enterprise Co         64.1    80     80     2   151.0     30
+BTSG       BrightSpring Health Services Inc      42.0    53     44     1   151.0     29
+
+  -> ACTUAL forward returns from recommendation date (measured now, not used for selection):
+   1303       Nan Ya Plastics Corp            fwd_to_now +15.0%  +20d -22.3%  +40d    UP ✓
+   2345       ACCTON TECHNOLOGY CORP TAIWAN   fwd_to_now -12.8%  +20d -28.2%  +40d    DOWN ✗
+   FIX        COMFORT SYSTEMS USA INC UNITED  fwd_to_now -0.6%  +20d -9.0%  +40d    DOWN ✗
+   HPE        Hewlett Packard Enterprise Co   fwd_to_now +31.1%  +20d +7.3%  +40d    UP ✓
+   BTSG       BrightSpring Health Services I  fwd_to_now -12.6%  +20d +4.3%  +40d    DOWN ✗
+   => 2/5 recommended names went UP after the signal
+
+DONE
+EXIT 0
