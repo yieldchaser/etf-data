@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Predator Protocol · Portfolio Lab</title>
+  <title>Conviction Labs · Portfolio Lab</title>
   <meta name="description" content="Portfolio backtester, VAMI analytics, Monte Carlo simulation, Kelly position sizing, and leveraged ETN decay.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📊%3C/text%3E%3C/svg%3E">
   <meta name="color-scheme" content="dark">
@@ -72,7 +72,7 @@
   <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5 pb-4 border-b" style="border-color: var(--border)">
     <div>
       <div class="flex items-center gap-3 mb-1">
-        <a href="index.html" class="label hover:text-zinc-400 transition" style="text-decoration:none">← PREDATOR PROTOCOL</a>
+        <a href="index.html" class="label hover:text-zinc-400 transition" style="text-decoration:none">← CONVICTION LABS</a>
         <span class="label">›</span>
         <span class="label-cyan label">PORTFOLIO LAB</span>
       </div>
@@ -87,7 +87,7 @@
     <div class="flex items-center gap-2 text-xs" style="color: var(--text-3)">
       <span x-show="pricesData" x-text="`${Object.keys(pricesData?.tickers||{}).length} tickers`"></span>
       <a href="methodology.html" class="label hover:text-zinc-400 transition" style="text-decoration: none;"
-         title="How Predator Protocol works - scoring, motion signals, sanitizer, self-living data, and honest limitations">How it works ↗</a>
+         title="How Conviction Labs works - scoring, motion signals, sanitizer, self-living data, and honest limitations">How it works ↗</a>
     </div>
   </header>
 
@@ -102,7 +102,7 @@
       Run the price fetcher to enable the Portfolio Lab:
     </div>
     <code class="text-xs px-3 py-1.5 rounded" style="background: var(--bg); color: var(--cyan); border: 1px solid var(--border)">
-      python -m predator.fetch_prices
+      python -m conviction.fetch_prices
     </code>
     <div class="text-xs mt-3" style="color: var(--text-3)">
       This requires an internet connection and fetches adjusted-close data from yfinance.
@@ -313,7 +313,7 @@
           <span>
             <strong>Warning:</strong> The following tickers are not in the price database and will be ignored in the backtest: 
             <strong class="font-mono text-white" x-text="invalidTickersWarning"></strong>. 
-            Run the price fetcher to add them: <code class="bg-black/45 px-1 py-0.5 rounded text-cyan border border-white/5 font-mono">python -m predator.fetch_prices --tickers <span x-text="invalidTickersWarning"></span></code>
+            Run the price fetcher to add them: <code class="bg-black/45 px-1 py-0.5 rounded text-cyan border border-white/5 font-mono">python -m conviction.fetch_prices --tickers <span x-text="invalidTickersWarning"></span></code>
           </span>
         </div>
       </div>

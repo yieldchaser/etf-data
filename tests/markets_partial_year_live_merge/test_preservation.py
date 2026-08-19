@@ -11,7 +11,7 @@ Sub-tests follow the design's Step 2:
     2d — non-dual-registry sources, property (Hypothesis)
     2e — other markets-dashboard tabs, snapshot (DOM text)
     2f — out-of-scope files unchanged (git diff scraper.py / vol_history.py;
-         predator/scoring.py wall lifted by owner directive 2026-06-10 for
+         conviction/scoring.py wall lifted by owner directive 2026-06-10 for
          the apex-mode scoring overhaul)
     2g — legitimate extreme full-year cells preserved (KNOWN_REAL_EVENTS)
     2h — verdict states & palette unchanged
@@ -383,10 +383,10 @@ def test_2e_non_matrix_tab_dom_unchanged(tab_id, baseline_html_tabs):
 
 # ─── 2f — out-of-scope files unchanged (git diff) ───────────────────────────
 
-# predator/scoring.py was removed from this wall by owner directive 2026-06-10
-# (apex-mode / Predator v3 scoring overhaul). scraper.py remains walled.
+# conviction/scoring.py was removed from this wall by owner directive 2026-06-10
+# (apex-mode / Conviction v3 scoring overhaul). scraper.py remains walled.
 OUT_OF_SCOPE_FILES = ["scraper.py"]
-NO_TOUCH_FILES = ["predator/vol_history.py"]  # design Fix Implementation #13
+NO_TOUCH_FILES = ["conviction/vol_history.py"]  # design Fix Implementation #13
 
 
 def _git_diff(path: str) -> str:
@@ -406,7 +406,7 @@ def test_2f_out_of_scope_files_have_empty_diff(path):
     """**Validates: Requirement 3.8**
 
     `scraper.py` is explicitly out of scope. `git diff` must be empty
-    against HEAD. (`predator/scoring.py` was lifted from this guard by
+    against HEAD. (`conviction/scoring.py` was lifted from this guard by
     owner directive 2026-06-10 for the apex-mode scoring overhaul.)
     """
     if not (REPO_ROOT / path).exists():
@@ -421,7 +421,7 @@ def test_2f_vol_history_invariants():
     """**Validates: vol_history fetch invariants** (supersedes the old
     frozen-file no-touch guard).
 
-    The previous version of this test pinned `predator/vol_history.py` to an
+    The previous version of this test pinned `conviction/vol_history.py` to an
     exact two-line soft-skip diff (design Fix Implementation #13, scoped to the
     partial-year-merge fix). That constraint became obsolete once the file had
     to be fixed: under CI's pandas/numpy stack the `fredapi` library raised
@@ -437,14 +437,14 @@ def test_2f_vol_history_invariants():
       3. the missing-key path soft-skips (returns {}), never `sys.exit`,
          so the `continue-on-error` CI wrapper is honoured.
     """
-    path = "predator/vol_history.py"
+    path = "conviction/vol_history.py"
     if not (REPO_ROOT / path).exists():
         pytest.skip(f"{path} not present in repo")
     body = (REPO_ROOT / path).read_text(encoding="utf-8")
 
     # 1. fred:{series_id} source labels preserved.
     assert "fred:" in body, (
-        "predator/vol_history.py must continue to emit 'fred:{series_id}' source labels"
+        "conviction/vol_history.py must continue to emit 'fred:{series_id}' source labels"
     )
 
     # 2. JSON REST path in use (the fix), not the fredapi library (the bug).

@@ -1,5 +1,5 @@
 """
-Predator Protocol — Markets Excel Ingest (v2)
+Conviction Labs — Markets Excel Ingest (v2)
 =============================================
 Reads Mega_Markets_Historical.xlsx (and optionally Markets_1_.xlsx when it
 exists) and emits docs/data/market_returns.json in the §2.3 canonical
@@ -51,10 +51,10 @@ Key design decisions:
   supersedes it for the new dashboard.
 
 Usage:
-    python -m predator.ingest_markets_xl                    # full rebuild
-    python -m predator.ingest_markets_xl --dry-run          # print plan, no write
-    python -m predator.ingest_markets_xl --merge-existing   # merge with existing JSON
-    python -m predator.ingest_markets_xl --check-freshness  # freshness gate only
+    python -m conviction.ingest_markets_xl                    # full rebuild
+    python -m conviction.ingest_markets_xl --dry-run          # print plan, no write
+    python -m conviction.ingest_markets_xl --merge-existing   # merge with existing JSON
+    python -m conviction.ingest_markets_xl --check-freshness  # freshness gate only
 """
 from __future__ import annotations
 
@@ -390,7 +390,7 @@ def _merge_monthly(existing: list[list], new: list[list], asset_id: str = "") ->
         merged[ym] = val  # new overwrites existing
     res = sorted([[ym, v] for ym, v in merged.items()], key=lambda x: x[0])
     try:
-        from predator.markets_history import sanitize_monthly_series
+        from conviction.markets_history import sanitize_monthly_series
         res = sanitize_monthly_series(res, key=asset_id)
     except Exception:
         pass
@@ -466,7 +466,7 @@ def build_output(
     If merge=True, merges with existing JSON (new data takes priority).
     """
     try:
-        from predator.markets_history import sanitize_monthly_series
+        from conviction.markets_history import sanitize_monthly_series
     except ImportError:
         sanitize_monthly_series = lambda m, key="": m
 
@@ -769,7 +769,7 @@ def sync_completed_months_to_excel(xl_path: Path = MEGA_XL, output_data: dict[st
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        prog="predator.ingest_markets_xl",
+        prog="conviction.ingest_markets_xl",
         description="Ingest Markets Excel → docs/data/market_returns.json (§2.3 contract)",
     )
     parser.add_argument("--dry-run", action="store_true",
@@ -791,7 +791,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
 
     print("═" * 60)
-    print("  Predator Protocol — Markets Excel Ingest v2")
+    print("  Conviction Labs — Markets Excel Ingest v2")
     print("═" * 60)
 
     if args.sync_excel:

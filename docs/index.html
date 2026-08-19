@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Predator Protocol · Cross-ETF Conviction Scanner</title>
+  <title>Conviction Labs · Cross-ETF Conviction Scanner</title>
   <meta name="description" content="Cross-ETF conviction scanner. Tracks 30 smart-beta ETFs to detect early institutional accumulation. Live from yieldchaser/etf-data.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📈%3C/text%3E%3C/svg%3E">
   <meta name="color-scheme" content="dark">
@@ -180,7 +180,7 @@
   <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5 pb-4 border-b" style="border-color: var(--border)">
     <div>
       <div class="flex items-center gap-3 mb-1">
-        <h1 class="text-base font-medium tracking-tight" style="color: var(--cyan)">PREDATOR PROTOCOL</h1>
+        <h1 class="text-base font-medium tracking-tight" style="color: var(--cyan)">CONVICTION LABS</h1>
         <span class="label">cross-etf conviction scanner</span>
       </div>
       <div class="text-xs flex flex-wrap items-center gap-x-4 gap-y-1" style="color: var(--text-2)">
@@ -258,7 +258,7 @@
     <a href="markets.html" class="tab-inactive px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition no-underline">Markets</a>
     <a href="sim.html" class="tab-inactive px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition no-underline">Simulator</a>
     <a href="methodology.html" class="tab-inactive px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition no-underline"
-       title="How Predator Protocol works - scoring, motion signals, sanitizer, self-living data, and honest limitations">How it works</a>
+       title="How Conviction Labs works - scoring, motion signals, sanitizer, self-living data, and honest limitations">How it works</a>
   </nav>
 
 
@@ -441,7 +441,7 @@
          leaderboard's own mean/std on each metric; the dominant driver is
          shown as the headline number.
 
-         Translation to Predator's thesis: "what's statistically unusual right
+         Translation to Conviction's thesis: "what's statistically unusual right
          now" inside the conviction-detection lens - not factor decomposition.
          Adapted from the peer-product hero strip; restrained palette to match
          the Drawdowns/Periodic Table calm.
@@ -457,7 +457,7 @@
           <span class="text-[10px] num font-mono" style="color: var(--text-3)"
                 x-text="extremeMoves.length > 6 ? `showing 6 of ${extremeMoves.length} outliers` : `${extremeMoves.length} of ${leaderboard.length}`"
                 x-tooltip="extremeMoves.length > 6 ? { html: extremeMoves.slice(6).map(m => `<b>${m.ticker}</b> - ${m.driverDisplay}`).join('<br>') } : ''"></span>
-          <button @click="hideExtremes = true; sessionStorage.setItem('predator.hideExtremes', '1')"
+          <button @click="hideExtremes = true; sessionStorage.setItem('conviction.hideExtremes', '1')"
                   class="text-[10px] hover:text-zinc-300 transition" style="color: var(--text-3)"
                   x-tooltip="'Hide this ribbon for the session'">Hide</button>
         </div>
@@ -2827,8 +2827,8 @@ function app() {
     hoveredSlice: null,
     sortLevels: [{ key: 'leaderboard_rank', dir: 'asc' }],
     // Extreme Conviction Moves ribbon - dismiss persists in sessionStorage
-    hideExtremes: (() => { try { return sessionStorage.getItem('predator.hideExtremes') === '1'; } catch { return false; } })(),
-    pins: (() => { try { return JSON.parse(localStorage.getItem('predator_pins') || '[]'); } catch { return []; } })(),
+    hideExtremes: (() => { try { return (sessionStorage.getItem('conviction.hideExtremes') || sessionStorage.getItem('predator.hideExtremes')) === '1'; } catch { return false; } })(),
+    pins: (() => { try { return JSON.parse(localStorage.getItem('conviction_pins') || localStorage.getItem('predator_pins') || '[]'); } catch { return []; } })(),
     sortableCols: [
       { key: 'leaderboard_rank', label: '# (default rank)' },
       { key: 'ticker',           label: 'Ticker' },
@@ -2887,11 +2887,11 @@ function app() {
           this.activeTab = 'etfs';
         }
         // Auto-snapshot pins on first visit if no snapshot exists
-        if (!localStorage.getItem('predator_pin_snapshot') && this.pins.length) {
+        if (!localStorage.getItem('conviction_pin_snapshot') && !localStorage.getItem('predator_pin_snapshot') && this.pins.length) {
           this.snapshotPins();
         }
       } catch (e) {
-        this.error = `${e}. Run \`python -m predator.build\` then refresh.`;
+        this.error = `${e}. Run \`python -m conviction.build\` then refresh.`;
       } finally { this.loading = false; }
     },
 
@@ -3040,12 +3040,12 @@ function app() {
       const i = this.pins.indexOf(t);
       if (i >= 0) this.pins.splice(i, 1);
       else this.pins.push(t);
-      localStorage.setItem('predator_pins', JSON.stringify(this.pins));
+      localStorage.setItem('conviction_pins', JSON.stringify(this.pins));
     },
     isPinned(t) { return this.pins.includes(t); },
 
     get watchlistDelta() {
-      const last = JSON.parse(localStorage.getItem('predator_pin_snapshot') || '{}');
+      const last = JSON.parse(localStorage.getItem('conviction_pin_snapshot') || localStorage.getItem('predator_pin_snapshot') || '{}');
       const out = { entered_hc: [], exited_hc: [], new_burst: [], no_longer_burst: [], new_crater: [], no_longer_crater: [] };
       for (const t of this.pins) {
         const row = this.leaderboard.find(r => r.ticker === t);
@@ -3067,7 +3067,7 @@ function app() {
         const row = this.leaderboard.find(r => r.ticker === t);
         if (row) snap[t] = { flag: row.flag, burst_30d: row.burst_30d, crater_30d: row.crater_30d };
       }
-      localStorage.setItem('predator_pin_snapshot', JSON.stringify(snap));
+      localStorage.setItem('conviction_pin_snapshot', JSON.stringify(snap));
     },
 
     get dynamicScoreGainers() {
@@ -3571,7 +3571,7 @@ function app() {
       const TOP_N = 8;
 
       // Drivers - each row gets a z-score on each, we pick the dominant one.
-      // Labels are intentionally Predator-language; we are NOT a factor model.
+      // Labels are intentionally Conviction-language; we are NOT a factor model.
       const drivers = [
         { key: 'velocity_score',        label: 'velocity',         display: v => `velocity ${(v || 0).toFixed(1)}` },
         { key: 'global_rank_delta_30d', label: '30d rank Δ',       display: v => `${v >= 0 ? '+' : ''}${(v|0)} ranks 30d` },
@@ -3930,7 +3930,7 @@ function app() {
         this.newOnly && 'NEW', this.velocityOnly && 'VELO', this.burstOnly && 'BURST', this.craterOnly && 'CRATER',
       ].filter(Boolean).join('-').replace(/[^A-Za-z0-9_-]/g, '');
       const stamp = new Date().toISOString().slice(0, 10);
-      const name = `predator_leaderboard${filterTag ? '_' + filterTag : ''}_${stamp}.csv`;
+      const name = `conviction_leaderboard${filterTag ? '_' + filterTag : ''}_${stamp}.csv`;
       const a = document.createElement('a');
       a.href = url;
       a.download = name;

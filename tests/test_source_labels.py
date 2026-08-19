@@ -14,7 +14,7 @@ import pytest
 from hypothesis import given, settings, HealthCheck
 from hypothesis import strategies as st
 
-from predator.ingest_markets_xl import build_output, ASSET_REGISTRY
+from conviction.ingest_markets_xl import build_output, ASSET_REGISTRY
 
 # ─── Asset IDs that exist in the Excel ASSET_REGISTRY ────────────────────────
 # These are the only keys build_output() will process (it skips unknown IDs).

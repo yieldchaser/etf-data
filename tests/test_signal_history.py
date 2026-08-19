@@ -1,4 +1,4 @@
-"""Tests for signal_history() in predator/history.py.
+"""Tests for signal_history() in conviction/history.py.
 
 Covers:
   - Schema: optional fields omitted when false/zero
@@ -15,8 +15,8 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from predator.scoring import Config, compute_leaderboard
-from predator import history as hist
+from conviction.scoring import Config, compute_leaderboard
+from conviction import history as hist
 
 CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
 

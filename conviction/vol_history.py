@@ -4,10 +4,10 @@ Vol History — daily close data for 7 CBOE volatility indices from FRED.
 Fetches daily close data and writes docs/data/vol_history.json.
 
 Usage:
-    python -m predator.vol_history
-    python -m predator.vol_history --full-refresh
-    python -m predator.vol_history --dry-run
-    python -m predator.vol_history --validate-only
+    python -m conviction.vol_history
+    python -m conviction.vol_history --full-refresh
+    python -m conviction.vol_history --dry-run
+    python -m conviction.vol_history --validate-only
 """
 from __future__ import annotations
 

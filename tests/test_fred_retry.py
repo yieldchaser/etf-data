@@ -18,7 +18,7 @@ import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
-from predator.markets_history import _fetch_fred_series
+from conviction.markets_history import _fetch_fred_series
 
 
 # ---------------------------------------------------------------------------
@@ -72,7 +72,7 @@ def test_fred_retry_backoff(n_failures: int) -> None:
     """
     mock_fred, call_log = _make_mock_fred(n_failures)
 
-    with patch("predator.markets_history.time.sleep"):
+    with patch("conviction.markets_history.time.sleep"):
         result = _fetch_fred_series(mock_fred, "TEST", full_refresh=True)
 
     # Exactly N+1 total attempts: N failures + 1 success
@@ -100,7 +100,7 @@ def test_fred_retry_backoff_five_failures() -> None:
     """
     mock_fred, call_log = _make_mock_fred(5)
 
-    with patch("predator.markets_history.time.sleep"):
+    with patch("conviction.markets_history.time.sleep"):
         result = _fetch_fred_series(mock_fred, "TEST", full_refresh=True)
 
     assert len(call_log) == 6
@@ -117,7 +117,7 @@ def test_fred_retry_no_failures() -> None:
     """
     mock_fred, call_log = _make_mock_fred(0)
 
-    with patch("predator.markets_history.time.sleep"):
+    with patch("conviction.markets_history.time.sleep"):
         result = _fetch_fred_series(mock_fred, "TEST", full_refresh=True)
 
     assert len(call_log) == 1
@@ -135,7 +135,7 @@ def test_fred_retry_exhausted() -> None:
     """
     mock_fred, call_log = _make_mock_fred(6)
 
-    with patch("predator.markets_history.time.sleep"):
+    with patch("conviction.markets_history.time.sleep"):
         result = _fetch_fred_series(mock_fred, "TEST", full_refresh=True)
 
     # max_retries=5 means the loop runs for attempt in range(6): 0,1,2,3,4,5
@@ -159,7 +159,7 @@ def test_fred_retry_sleep_durations() -> None:
     def _record_sleep(secs: float) -> None:
         sleep_calls.append(secs)
 
-    with patch("predator.markets_history.time.sleep", side_effect=_record_sleep):
+    with patch("conviction.markets_history.time.sleep", side_effect=_record_sleep):
         _fetch_fred_series(mock_fred, "TEST", full_refresh=True)
 
     # attempt 0 → wait = min(2^0 * 0.5, 30) = 0.5

@@ -3,13 +3,13 @@ Markets History — monthly close data for broad market indices, metals, and ene
 
 Fetches end-of-period monthly data from FRED (primary) and yfinance (fallback
 for international indices without FRED series). Writes the consolidated output
-to docs/data/market_returns.json for the Predator Protocol dashboard.
+to docs/data/market_returns.json for the Conviction Labs dashboard.
 
 Usage:
-    python -m predator.markets_history
-    python -m predator.markets_history --full-refresh
-    python -m predator.markets_history --assets sp500,gold --dry-run
-    python -m predator.markets_history --validate-only
+    python -m conviction.markets_history
+    python -m conviction.markets_history --full-refresh
+    python -m conviction.markets_history --assets sp500,gold --dry-run
+    python -m conviction.markets_history --validate-only
 """
 from __future__ import annotations
 
@@ -913,7 +913,7 @@ def build_output(
     only fetches recent data.
     """
     from datetime import date as _date
-    from predator.ingest_markets_xl import (
+    from conviction.ingest_markets_xl import (
         EVENTS as _EVENTS,
         load_existing as _load_xl_existing,
         merge_monthly as _merge_monthly_fn,
@@ -959,7 +959,7 @@ def build_output(
             # Honest-source path (design Fix Implementation #7): when the
             # existing entry still carries the Mega_Markets_Historical Excel
             # label, mark `meta._live_holdout = True` so the verdict block
-            # in predator/build.py (Task 3.5) can name this asset as a
+            # in conviction/build.py (Task 3.5) can name this asset as a
             # genuine holdout. We DO NOT modify the `source` label — the
             # Excel label is honest when no live data is available.
             #
@@ -1178,7 +1178,7 @@ def write_output(output: dict[str, Any], path: Path | None = None) -> None:
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        prog="predator.markets_history",
+        prog="conviction.markets_history",
         description="Fetch monthly market close data from FRED/yfinance and build market_returns.json",
     )
     parser.add_argument(
@@ -1212,11 +1212,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Entry point for python -m predator.markets_history."""
+    """Entry point for python -m conviction.markets_history."""
     args = parse_args(argv)
 
     print("═" * 60)
-    print("  Predator Protocol — Markets History Builder")
+    print("  Conviction Labs — Markets History Builder")
     print("═" * 60)
 
     assets = [a.strip() for a in args.assets.split(",")] if args.assets else None

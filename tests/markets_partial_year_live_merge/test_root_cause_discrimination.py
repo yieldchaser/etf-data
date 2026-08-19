@@ -161,7 +161,7 @@ def test_record_root_cause_evidence(market_returns, metadata, asof_year_month):
             "→ root cause supports L5 (verdict aggregation never built); the "
             "live-fetch path can only be discriminated between L1 (empty fetch) "
             "and L2 (cache drift) by capturing stdout from "
-            "`python -m predator.markets_history --full-refresh "
+            "`python -m conviction.markets_history --full-refresh "
             "--assets sp500,nasdaq,nasdaq100,djia` — see "
             "test_live_fetch_logging_record below."
         ),
@@ -207,7 +207,7 @@ def test_record_root_cause_evidence(market_returns, metadata, asof_year_month):
     if excel_holdouts:
         bug2_finding.append(
             "live-fetch path either L1 (empty) or L2 (cache drift); "
-            "discriminate by capturing stdout from `python -m predator.markets_history "
+            "discriminate by capturing stdout from `python -m conviction.markets_history "
             "--full-refresh --assets sp500,nasdaq,nasdaq100,djia` and reading "
             "the `EMPTY: ...` log lines added by design Fix Implementation #6"
         )

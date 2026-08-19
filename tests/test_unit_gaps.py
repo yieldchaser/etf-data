@@ -30,7 +30,7 @@ def compute_self_living_check(
     live_eligible_keys: set[str],
 ) -> dict[str, Any]:
     """
-    Replicate the self_living_check verdict logic from predator/build.py.
+    Replicate the self_living_check verdict logic from conviction/build.py.
 
     This is intentionally a copy — not an import — so that the test is
     independent of build.py's internal structure and can verify the logic
@@ -192,7 +192,7 @@ def _simulate_markets_freshness_block(output_dir: Path) -> dict[str, Any]:
 
             # Import ASSET_REGISTRY with graceful fallback
             try:
-                from predator.markets_history import ASSET_REGISTRY as _MR_REGISTRY
+                from conviction.markets_history import ASSET_REGISTRY as _MR_REGISTRY
                 live_eligible_keys: set[str] = {
                     spec["key"]
                     for spec in _MR_REGISTRY
@@ -225,7 +225,7 @@ def _simulate_markets_freshness_block(output_dir: Path) -> dict[str, Any]:
 
 class TestBuildWithoutMarketReturns:
     """
-    Req 7.6: WHEN market_returns.json does not exist at the time predator.build runs,
+    Req 7.6: WHEN market_returns.json does not exist at the time conviction.build runs,
     THE Build_Step SHALL complete with markets_data_freshness.available = false
     rather than crashing.
 
@@ -309,7 +309,7 @@ class TestBuildWithoutMarketReturns:
         available=False BEFORE the if-block that reads market_returns.json.
         This is a static code check that the guard is in place.
         """
-        build_py = REPO_ROOT / "predator" / "build.py"
+        build_py = REPO_ROOT / "conviction" / "build.py"
         source = build_py.read_text(encoding="utf-8")
 
         # The initialisation line must appear before the if-block
@@ -346,7 +346,7 @@ class TestVolHistoryNoSysExit:
         fetch_all() must return {} and must not raise SystemExit.
         """
         import pandas as pd
-        import predator.vol_history as vol_history
+        import conviction.vol_history as vol_history
 
         monkeypatch.setattr(vol_history, "_get_fred_client", lambda: None)
         monkeypatch.setattr(vol_history, "_fetch_yfinance_vol", lambda *args, **kwargs: pd.Series(dtype=float))
@@ -381,7 +381,7 @@ class TestFredClientLogsSuccess:
         """
         import types
         import sys as _sys
-        import predator.markets_history as mh
+        import conviction.markets_history as mh
 
         # Ensure the key is present
         monkeypatch.setenv("FRED_API_KEY", "test-key-12345")
@@ -422,7 +422,7 @@ class TestFredClientSoftSkip:
         Call _get_fred_client() and assert it returns None without raising SystemExit.
         Assert "ERROR: FRED_API_KEY environment variable not set" appears in stdout.
         """
-        import predator.markets_history as mh
+        import conviction.markets_history as mh
 
         # Ensure the key is absent
         monkeypatch.delenv("FRED_API_KEY", raising=False)
@@ -462,7 +462,7 @@ class TestYfinanceFlakeyTickerRetry:
         non-empty on second. Assert one retry fires for a flaky ticker.
         """
         import pandas as pd
-        import predator.markets_history as mh
+        import conviction.markets_history as mh
 
         call_count = 0
 
@@ -505,7 +505,7 @@ class TestYfinanceFlakeyTickerRetry:
 
 def _simulate_stale_etf_warning(raw: "pd.DataFrame") -> list[dict]:
     """
-    Replicate the stale ETF warning logic from predator/build.py.
+    Replicate the stale ETF warning logic from conviction/build.py.
 
     This mirrors the exact logic in build.py lines 740–764:
         STALE_TRADING_DAYS = 5

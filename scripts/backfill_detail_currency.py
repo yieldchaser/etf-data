@@ -5,7 +5,7 @@ docs/data/details/{TICKER}.json.
 Historic builds defaulted currency to "USD" (or left it null) even for
 international listings whose prices are stored in their native currency
 (e.g. SK hynix 000660 priced in KRW). This script repairs that using the
-exchange-suffix inference from predator.fetch_stock_details:
+exchange-suffix inference from conviction.fetch_stock_details:
 
   - inferred = infer_currency_from_symbol(symbol_map.get(ticker, ticker))
   - inferred is not None, file currency in {null, "", "USD"} and != inferred
@@ -33,7 +33,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from predator.fetch_stock_details import infer_currency_from_symbol  # noqa: E402
+from conviction.fetch_stock_details import infer_currency_from_symbol  # noqa: E402
 
 DETAILS_DIR     = REPO_ROOT / "docs" / "data" / "details"
 SYMBOL_MAP_PATH = REPO_ROOT / "data" / "symbol_map.json"

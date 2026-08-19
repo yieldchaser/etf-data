@@ -1,6 +1,6 @@
 """Tests for the §31.1 conviction gate on apex_score (breadth-inflation guard).
 
-The gate is applied in predator/build.py after predictive_overlay.
+The gate is applied in conviction/build.py after predictive_overlay.
 These tests exercise the gate logic in isolation using synthetic DataFrames
 that mirror the shape of the leaderboard and latest DataFrames at that point.
 

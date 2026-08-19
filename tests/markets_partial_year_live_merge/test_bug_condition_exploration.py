@@ -288,8 +288,8 @@ def test_1e_dual_registry_equities_carry_live_source(market_returns, metadata, a
         f"OR an honest Excel label with the asset named in holdouts."
     )
     # Build-artifact dependency: the verdict block is written by
-    # ``predator/build.py`` (task 3.5). In CI the test job runs *before*
-    # ``predator.build`` (see .github/workflows/build_site.yml — pytest is
+    # ``conviction/build.py`` (task 3.5). In CI the test job runs *before*
+    # ``conviction.build`` (see .github/workflows/build_site.yml — pytest is
     # step "Run tests", build is step "Build site artifacts"), so on the
     # very first build of this fix the on-disk metadata.json is the
     # pre-fix snapshot and lacks ``markets_data_freshness``. Skip
@@ -332,8 +332,8 @@ def test_1f_verdict_block_includes_holdouts(metadata, market_returns):
     mdf = metadata.get("markets_data_freshness")
     if mdf is None:
         # Build-artifact dependency: same gate as Test 1e. The verdict block
-        # is written by predator/build.py (task 3.5); in CI pytest runs
-        # before predator.build, so the on-disk metadata.json on the very
+        # is written by conviction/build.py (task 3.5); in CI pytest runs
+        # before conviction.build, so the on-disk metadata.json on the very
         # first build of this fix lacks the verdict block. Skip gracefully —
         # every subsequent build will exercise this path.
         pytest.skip(

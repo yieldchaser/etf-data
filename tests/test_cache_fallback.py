@@ -88,7 +88,7 @@ def test_cache_fallback_in_output(asset_key, cached_monthly):
     cached monthly data.
     """
     import tempfile
-    import predator.markets_history as mh
+    import conviction.markets_history as mh
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)
@@ -114,7 +114,7 @@ def test_cache_fallback_in_output(asset_key, cached_monthly):
 
         with (
             patch.object(mh, "CACHE_DIR", tmp_path),
-            patch("predator.ingest_markets_xl.load_existing", return_value=empty_existing),
+            patch("conviction.ingest_markets_xl.load_existing", return_value=empty_existing),
         ):
             # Pass empty results — simulates all live fetches failing
             output = mh.build_output({})

@@ -4,9 +4,9 @@ import pandas as pd
 import pytest
 from pathlib import Path
 
-from predator.scoring import Config, ETF, Sanitizer, compute_leaderboard, rank_multiplier, conviction_multiplier
-from predator.history import compute_exits
-from predator import history as hist
+from conviction.scoring import Config, ETF, Sanitizer, compute_leaderboard, rank_multiplier, conviction_multiplier
+from conviction.history import compute_exits
+from conviction import history as hist
 
 
 CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
@@ -391,7 +391,7 @@ class TestVelocity:
         Strategy: X grows from 0.001 → 0.20 over 14 days. 9 stable fillers stay constant.
         """
         import datetime
-        from predator.scoring import compute_rank_deltas, compute_leaderboard
+        from conviction.scoring import compute_rank_deltas, compute_leaderboard
 
         rows = []
         base = datetime.date(2026, 4, 1)
@@ -436,8 +436,8 @@ class TestVelocity:
     def test_burst_flag_triggers_on_global_rank_jump(self, cfg):
         """A ticker that improved global leaderboard rank by 40+ in last 30d gets burst_30d=True."""
         import datetime
-        from predator.scoring import compute_leaderboard
-        from predator import history as hist
+        from conviction.scoring import compute_leaderboard
+        from conviction import history as hist
 
         rows = []
         base = datetime.date(2026, 3, 1)
@@ -970,7 +970,7 @@ class TestExits:
 class TestOverlapDiscount:
     def test_etf_overlap_matrix_calculation(self):
         """compute_etf_overlap_matrix computes correct Jaccard similarity."""
-        from predator.scoring import compute_etf_overlap_matrix
+        from conviction.scoring import compute_etf_overlap_matrix
         df = _h([
             ("EEMO", "AAPL", "Apple", 0.05, "2026-05-08", "2026-05-08"),
             ("EEMO", "MSFT", "Microsoft", 0.05, "2026-05-08", "2026-05-08"),

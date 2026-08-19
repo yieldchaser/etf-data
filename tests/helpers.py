@@ -1,5 +1,5 @@
 """
-Shared test utilities for the Predator Protocol test suite.
+Shared test utilities for the Conviction Labs test suite.
 
 Import from here instead of duplicating across test files.
 """

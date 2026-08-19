@@ -1,94 +1,1042 @@
 {
   "asof_year": 2026,
-  "asof_month": 5,
+  "asof_month": 7,
   "bug_1": {
     "ag_asset_diagnosis": {
       "wheat": {
-        "source": "Mega_Markets_Historical.xlsx:Commodities",
+        "source": "fred:PWHEAMTUSDM",
         "cell_2026": {
-          "ret": 0.1151,
+          "ret": 0.3373,
           "partial": false,
-          "count": 5,
-          "months_present": 5,
-          "months_expected": 5
+          "count": 7,
+          "months_present": 7,
+          "months_expected": 7
         },
-        "boundary_jumps": [],
+        "boundary_jumps": [
+          {
+            "from_ym": "1968-06",
+            "from_close": 352.99,
+            "to_ym": "1968-07",
+            "to_close": 922.14,
+            "ratio": 2.6124
+          },
+          {
+            "from_ym": "1968-10",
+            "from_close": 951.78,
+            "to_ym": "1968-11",
+            "to_close": 362.67,
+            "ratio": 0.381
+          },
+          {
+            "from_ym": "1969-02",
+            "from_close": 356.33,
+            "to_ym": "1969-03",
+            "to_close": 932.38,
+            "ratio": 2.6166
+          },
+          {
+            "from_ym": "1969-03",
+            "from_close": 932.38,
+            "to_ym": "1969-04",
+            "to_close": 353.67,
+            "ratio": 0.3793
+          },
+          {
+            "from_ym": "1969-04",
+            "from_close": 353.67,
+            "to_ym": "1969-05",
+            "to_close": 949.03,
+            "ratio": 2.6834
+          },
+          {
+            "from_ym": "1969-07",
+            "from_close": 916.59,
+            "to_ym": "1969-08",
+            "to_close": 360.69,
+            "ratio": 0.3935
+          },
+          {
+            "from_ym": "1973-06",
+            "from_close": 729.7,
+            "to_ym": "1973-07",
+            "to_close": 364.0,
+            "ratio": 0.4988
+          },
+          {
+            "from_ym": "1975-01",
+            "from_close": 379.5,
+            "to_ym": "1975-02",
+            "to_close": 949.0,
+            "ratio": 2.5007
+          },
+          {
+            "from_ym": "1975-02",
+            "from_close": 949.0,
+            "to_ym": "1975-03",
+            "to_close": 387.25,
+            "ratio": 0.4081
+          },
+          {
+            "from_ym": "1975-03",
+            "from_close": 387.25,
+            "to_ym": "1975-04",
+            "to_close": 928.73,
+            "ratio": 2.3983
+          },
+          {
+            "from_ym": "1975-06",
+            "from_close": 806.26,
+            "to_ym": "1975-07",
+            "to_close": 351.75,
+            "ratio": 0.4363
+          },
+          {
+            "from_ym": "1975-10",
+            "from_close": 366.25,
+            "to_ym": "1975-11",
+            "to_close": 931.45,
+            "ratio": 2.5432
+          },
+          {
+            "from_ym": "1975-12",
+            "from_close": 883.82,
+            "to_ym": "1976-01",
+            "to_close": 350.75,
+            "ratio": 0.3969
+          },
+          {
+            "from_ym": "1976-02",
+            "from_close": 394.5,
+            "to_ym": "1976-03",
+            "to_close": 907.64,
+            "ratio": 2.3007
+          },
+          {
+            "from_ym": "1978-08",
+            "from_close": 913.08,
+            "to_ym": "1978-09",
+            "to_close": 351.75,
+            "ratio": 0.3852
+          },
+          {
+            "from_ym": "1981-05",
+            "from_close": 372.5,
+            "to_ym": "1981-06",
+            "to_close": 920.56,
+            "ratio": 2.4713
+          },
+          {
+            "from_ym": "1981-06",
+            "from_close": 920.56,
+            "to_ym": "1981-07",
+            "to_close": 377.5,
+            "ratio": 0.4101
+          },
+          {
+            "from_ym": "1982-03",
+            "from_close": 369.0,
+            "to_ym": "1982-04",
+            "to_close": 874.98,
+            "ratio": 2.3712
+          },
+          {
+            "from_ym": "1983-02",
+            "from_close": 827.35,
+            "to_ym": "1983-03",
+            "to_close": 358.0,
+            "ratio": 0.4327
+          },
+          {
+            "from_ym": "1983-04",
+            "from_close": 358.5,
+            "to_ym": "1983-05",
+            "to_close": 909.0,
+            "ratio": 2.5356
+          },
+          {
+            "from_ym": "1983-06",
+            "from_close": 925.33,
+            "to_ym": "1983-07",
+            "to_close": 363.5,
+            "ratio": 0.3928
+          },
+          {
+            "from_ym": "1983-12",
+            "from_close": 370.5,
+            "to_ym": "1984-01",
+            "to_close": 917.16,
+            "ratio": 2.4755
+          },
+          {
+            "from_ym": "1984-02",
+            "from_close": 922.61,
+            "to_ym": "1984-03",
+            "to_close": 387.0,
+            "ratio": 0.4195
+          },
+          {
+            "from_ym": "1984-04",
+            "from_close": 361.0,
+            "to_ym": "1984-05",
+            "to_close": 930.77,
+            "ratio": 2.5783
+          },
+          {
+            "from_ym": "1984-09",
+            "from_close": 938.93,
+            "to_ym": "1984-10",
+            "to_close": 369.5,
+            "ratio": 0.3935
+          },
+          {
+            "from_ym": "1985-03",
+            "from_close": 371.0,
+            "to_ym": "1985-04",
+            "to_close": 940.3,
+            "ratio": 2.5345
+          },
+          {
+            "from_ym": "1985-11",
+            "from_close": 929.41,
+            "to_ym": "1985-12",
+            "to_close": 356.5,
+            "ratio": 0.3836
+          },
+          {
+            "from_ym": "1985-12",
+            "from_close": 356.5,
+            "to_ym": "1986-01",
+            "to_close": 937.57,
+            "ratio": 2.6299
+          },
+          {
+            "from_ym": "1986-02",
+            "from_close": 947.1,
+            "to_ym": "1986-03",
+            "to_close": 360.0,
+            "ratio": 0.3801
+          },
+          {
+            "from_ym": "1986-03",
+            "from_close": 360.0,
+            "to_ym": "1986-04",
+            "to_close": 798.77,
+            "ratio": 2.2188
+          },
+          {
+            "from_ym": "1988-07",
+            "from_close": 951.18,
+            "to_ym": "1988-08",
+            "to_close": 379.5,
+            "ratio": 0.399
+          },
+          {
+            "from_ym": "1990-03",
+            "from_close": 372.5,
+            "to_ym": "1990-04",
+            "to_close": 923.97,
+            "ratio": 2.4805
+          },
+          {
+            "from_ym": "1991-11",
+            "from_close": 933.49,
+            "to_ym": "1991-12",
+            "to_close": 371.5,
+            "ratio": 0.398
+          },
+          {
+            "from_ym": "1992-04",
+            "from_close": 354.5,
+            "to_ym": "1992-05",
+            "to_close": 934.85,
+            "ratio": 2.6371
+          },
+          {
+            "from_ym": "1992-10",
+            "from_close": 941.66,
+            "to_ym": "1992-11",
+            "to_close": 380.5,
+            "ratio": 0.4041
+          },
+          {
+            "from_ym": "1993-03",
+            "from_close": 404.5,
+            "to_ym": "1993-04",
+            "to_close": 815.1,
+            "ratio": 2.0151
+          },
+          {
+            "from_ym": "1993-11",
+            "from_close": 913.08,
+            "to_ym": "1993-12",
+            "to_close": 369.0,
+            "ratio": 0.4041
+          },
+          {
+            "from_ym": "1994-01",
+            "from_close": 368.0,
+            "to_ym": "1994-02",
+            "to_close": 918.52,
+            "ratio": 2.496
+          },
+          {
+            "from_ym": "1994-08",
+            "from_close": 943.02,
+            "to_ym": "1994-09",
+            "to_close": 379.5,
+            "ratio": 0.4024
+          },
+          {
+            "from_ym": "1995-02",
+            "from_close": 353.5,
+            "to_ym": "1995-03",
+            "to_close": 925.33,
+            "ratio": 2.6176
+          },
+          {
+            "from_ym": "1995-03",
+            "from_close": 925.33,
+            "to_ym": "1995-04",
+            "to_close": 350.5,
+            "ratio": 0.3788
+          },
+          {
+            "from_ym": "1997-05",
+            "from_close": 354.5,
+            "to_ym": "1997-06",
+            "to_close": 881.78,
+            "ratio": 2.4874
+          },
+          {
+            "from_ym": "1997-06",
+            "from_close": 881.78,
+            "to_ym": "1997-07",
+            "to_close": 356.0,
+            "ratio": 0.4037
+          },
+          {
+            "from_ym": "1997-08",
+            "from_close": 372.0,
+            "to_ym": "1997-09",
+            "to_close": 922.61,
+            "ratio": 2.4801
+          },
+          {
+            "from_ym": "1997-09",
+            "from_close": 922.61,
+            "to_ym": "1997-10",
+            "to_close": 360.0,
+            "ratio": 0.3902
+          },
+          {
+            "from_ym": "1997-11",
+            "from_close": 355.5,
+            "to_ym": "1997-12",
+            "to_close": 898.11,
+            "ratio": 2.5263
+          },
+          {
+            "from_ym": "2000-06",
+            "from_close": 651.81,
+            "to_ym": "2000-07",
+            "to_close": 246.0,
+            "ratio": 0.3774
+          },
+          {
+            "from_ym": "2008-01",
+            "from_close": 929.5,
+            "to_ym": "2008-02",
+            "to_close": 394.2599,
+            "ratio": 0.4242
+          },
+          {
+            "from_ym": "2008-02",
+            "from_close": 394.2599,
+            "to_ym": "2008-03",
+            "to_close": 929.0,
+            "ratio": 2.3563
+          },
+          {
+            "from_ym": "2022-02",
+            "from_close": 928.0,
+            "to_ym": "2022-03",
+            "to_close": 369.6416,
+            "ratio": 0.3983
+          },
+          {
+            "from_ym": "2022-05",
+            "from_close": 399.5877,
+            "to_ym": "2022-06",
+            "to_close": 868.75,
+            "ratio": 2.1741
+          }
+        ],
         "zero_or_nan_base_months": []
       },
       "corn": {
-        "source": "Mega_Markets_Historical.xlsx:Commodities",
+        "source": "fred:PMAIZMTUSDM",
         "cell_2026": {
-          "ret": 0.0516,
+          "ret": 0.0545,
           "partial": false,
-          "count": 5,
-          "months_present": 5,
-          "months_expected": 5
+          "count": 7,
+          "months_present": 7,
+          "months_expected": 7
         },
-        "boundary_jumps": [],
+        "boundary_jumps": [
+          {
+            "from_ym": "1973-07",
+            "from_close": 291.25,
+            "to_ym": "1973-08",
+            "to_close": 624.87,
+            "ratio": 2.1455
+          },
+          {
+            "from_ym": "1973-08",
+            "from_close": 624.87,
+            "to_ym": "1973-09",
+            "to_close": 256.5,
+            "ratio": 0.4105
+          },
+          {
+            "from_ym": "1973-09",
+            "from_close": 256.5,
+            "to_ym": "1973-10",
+            "to_close": 593.12,
+            "ratio": 2.3124
+          },
+          {
+            "from_ym": "1973-10",
+            "from_close": 593.12,
+            "to_ym": "1973-11",
+            "to_close": 261.75,
+            "ratio": 0.4413
+          },
+          {
+            "from_ym": "1976-09",
+            "from_close": 258.75,
+            "to_ym": "1976-10",
+            "to_close": 589.94,
+            "ratio": 2.28
+          },
+          {
+            "from_ym": "1976-11",
+            "from_close": 616.61,
+            "to_ym": "1976-12",
+            "to_close": 251.75,
+            "ratio": 0.4083
+          },
+          {
+            "from_ym": "1977-02",
+            "from_close": 254.75,
+            "to_ym": "1977-03",
+            "to_close": 634.39,
+            "ratio": 2.4902
+          },
+          {
+            "from_ym": "1978-02",
+            "from_close": 565.18,
+            "to_ym": "1978-03",
+            "to_close": 251.25,
+            "ratio": 0.4445
+          },
+          {
+            "from_ym": "1978-05",
+            "from_close": 264.5,
+            "to_ym": "1978-06",
+            "to_close": 617.25,
+            "ratio": 2.3336
+          },
+          {
+            "from_ym": "1979-02",
+            "from_close": 608.99,
+            "to_ym": "1979-03",
+            "to_close": 253.5,
+            "ratio": 0.4163
+          },
+          {
+            "from_ym": "1979-09",
+            "from_close": 280.75,
+            "to_ym": "1979-10",
+            "to_close": 633.76,
+            "ratio": 2.2574
+          },
+          {
+            "from_ym": "1979-10",
+            "from_close": 633.76,
+            "to_ym": "1979-11",
+            "to_close": 270.5,
+            "ratio": 0.4268
+          },
+          {
+            "from_ym": "1980-02",
+            "from_close": 263.0,
+            "to_ym": "1980-03",
+            "to_close": 633.12,
+            "ratio": 2.4073
+          },
+          {
+            "from_ym": "1980-03",
+            "from_close": 633.12,
+            "to_ym": "1980-04",
+            "to_close": 260.75,
+            "ratio": 0.4118
+          },
+          {
+            "from_ym": "1982-06",
+            "from_close": 250.0,
+            "to_ym": "1982-07",
+            "to_close": 589.31,
+            "ratio": 2.3572
+          },
+          {
+            "from_ym": "1982-12",
+            "from_close": 581.69,
+            "to_ym": "1983-01",
+            "to_close": 250.5,
+            "ratio": 0.4306
+          },
+          {
+            "from_ym": "1985-06",
+            "from_close": 260.0,
+            "to_ym": "1985-07",
+            "to_close": 602.01,
+            "ratio": 2.3154
+          },
+          {
+            "from_ym": "1988-10",
+            "from_close": 264.5,
+            "to_ym": "1988-11",
+            "to_close": 632.49,
+            "ratio": 2.3913
+          },
+          {
+            "from_ym": "1988-11",
+            "from_close": 632.49,
+            "to_ym": "1988-12",
+            "to_close": 267.0,
+            "ratio": 0.4221
+          },
+          {
+            "from_ym": "1989-06",
+            "from_close": 260.5,
+            "to_ym": "1989-07",
+            "to_close": 571.53,
+            "ratio": 2.194
+          },
+          {
+            "from_ym": "1990-02",
+            "from_close": 612.17,
+            "to_ym": "1990-03",
+            "to_close": 251.0,
+            "ratio": 0.41
+          },
+          {
+            "from_ym": "1990-07",
+            "from_close": 262.5,
+            "to_ym": "1990-08",
+            "to_close": 624.87,
+            "ratio": 2.3805
+          },
+          {
+            "from_ym": "1991-06",
+            "from_close": 560.1,
+            "to_ym": "1991-07",
+            "to_close": 251.0,
+            "ratio": 0.4481
+          },
+          {
+            "from_ym": "1991-07",
+            "from_close": 251.0,
+            "to_ym": "1991-08",
+            "to_close": 621.06,
+            "ratio": 2.4743
+          },
+          {
+            "from_ym": "1991-12",
+            "from_close": 613.44,
+            "to_ym": "1992-01",
+            "to_close": 256.5,
+            "ratio": 0.4181
+          },
+          {
+            "from_ym": "1992-03",
+            "from_close": 258.5,
+            "to_ym": "1992-04",
+            "to_close": 613.44,
+            "ratio": 2.3731
+          },
+          {
+            "from_ym": "1992-04",
+            "from_close": 613.44,
+            "to_ym": "1992-05",
+            "to_close": 253.5,
+            "ratio": 0.4132
+          },
+          {
+            "from_ym": "1992-05",
+            "from_close": 253.5,
+            "to_ym": "1992-06",
+            "to_close": 626.14,
+            "ratio": 2.47
+          },
+          {
+            "from_ym": "1993-10",
+            "from_close": 596.93,
+            "to_ym": "1993-11",
+            "to_close": 272.5,
+            "ratio": 0.4565
+          },
+          {
+            "from_ym": "1994-05",
+            "from_close": 271.0,
+            "to_ym": "1994-06",
+            "to_close": 617.25,
+            "ratio": 2.2777
+          },
+          {
+            "from_ym": "1995-04",
+            "from_close": 617.25,
+            "to_ym": "1995-05",
+            "to_close": 254.5,
+            "ratio": 0.4123
+          },
+          {
+            "from_ym": "1997-05",
+            "from_close": 265.0,
+            "to_ym": "1997-06",
+            "to_close": 605.82,
+            "ratio": 2.2861
+          },
+          {
+            "from_ym": "1997-06",
+            "from_close": 605.82,
+            "to_ym": "1997-07",
+            "to_close": 258.0,
+            "ratio": 0.4259
+          },
+          {
+            "from_ym": "1997-08",
+            "from_close": 265.0,
+            "to_ym": "1997-09",
+            "to_close": 619.79,
+            "ratio": 2.3388
+          },
+          {
+            "from_ym": "1997-09",
+            "from_close": 619.79,
+            "to_ym": "1997-10",
+            "to_close": 270.0,
+            "ratio": 0.4356
+          },
+          {
+            "from_ym": "1998-02",
+            "from_close": 253.0,
+            "to_ym": "1998-03",
+            "to_close": 631.22,
+            "ratio": 2.4949
+          },
+          {
+            "from_ym": "2000-06",
+            "from_close": 411.5,
+            "to_ym": "2000-07",
+            "to_close": 180.25,
+            "ratio": 0.438
+          },
+          {
+            "from_ym": "2008-05",
+            "from_close": 599.25,
+            "to_ym": "2008-06",
+            "to_close": 285.3218,
+            "ratio": 0.4761
+          },
+          {
+            "from_ym": "2008-06",
+            "from_close": 285.3218,
+            "to_ym": "2008-07",
+            "to_close": 587.5,
+            "ratio": 2.0591
+          },
+          {
+            "from_ym": "2010-12",
+            "from_close": 629.0,
+            "to_ym": "2011-01",
+            "to_close": 259.6339,
+            "ratio": 0.4128
+          },
+          {
+            "from_ym": "2011-05",
+            "from_close": 294.278,
+            "to_ym": "2011-06",
+            "to_close": 629.0,
+            "ratio": 2.1374
+          },
+          {
+            "from_ym": "2011-06",
+            "from_close": 629.0,
+            "to_ym": "2011-07",
+            "to_close": 261.996,
+            "ratio": 0.4165
+          },
+          {
+            "from_ym": "2011-09",
+            "from_close": 592.5,
+            "to_ym": "2011-10",
+            "to_close": 254.7129,
+            "ratio": 0.4299
+          },
+          {
+            "from_ym": "2011-10",
+            "from_close": 254.7129,
+            "to_ym": "2011-11",
+            "to_close": 601.25,
+            "ratio": 2.3605
+          },
+          {
+            "from_ym": "2011-11",
+            "from_close": 601.25,
+            "to_ym": "2011-12",
+            "to_close": 254.5161,
+            "ratio": 0.4233
+          },
+          {
+            "from_ym": "2012-04",
+            "from_close": 259.9292,
+            "to_ym": "2012-05",
+            "to_close": 555.25,
+            "ratio": 2.1362
+          },
+          {
+            "from_ym": "2012-05",
+            "from_close": 555.25,
+            "to_ym": "2012-06",
+            "to_close": 264.7518,
+            "ratio": 0.4768
+          },
+          {
+            "from_ym": "2022-01",
+            "from_close": 626.0,
+            "to_ym": "2022-02",
+            "to_close": 274.5939,
+            "ratio": 0.4386
+          },
+          {
+            "from_ym": "2022-06",
+            "from_close": 292.8017,
+            "to_ym": "2022-07",
+            "to_close": 616.25,
+            "ratio": 2.1047
+          },
+          {
+            "from_ym": "2022-07",
+            "from_close": 616.25,
+            "to_ym": "2022-08",
+            "to_close": 265.2439,
+            "ratio": 0.4304
+          },
+          {
+            "from_ym": "2023-01",
+            "from_close": 267.606,
+            "to_ym": "2023-02",
+            "to_close": 629.5,
+            "ratio": 2.3523
+          },
+          {
+            "from_ym": "2023-02",
+            "from_close": 629.5,
+            "to_ym": "2023-03",
+            "to_close": 260.0276,
+            "ratio": 0.4131
+          },
+          {
+            "from_ym": "2023-04",
+            "from_close": 250.3824,
+            "to_ym": "2023-05",
+            "to_close": 594.0,
+            "ratio": 2.3724
+          }
+        ],
         "zero_or_nan_base_months": []
       },
       "sugar": {
-        "source": "Mega_Markets_Historical.xlsx:Commodities",
+        "source": "fred:PSUGAISAUSDM",
         "cell_2026": {
-          "ret": -0.0182,
+          "ret": -0.016,
           "partial": false,
-          "count": 5,
-          "months_present": 5,
-          "months_expected": 5
+          "count": 7,
+          "months_present": 7,
+          "months_expected": 7
         },
         "boundary_jumps": [],
         "zero_or_nan_base_months": []
       },
       "soybeans": {
-        "source": "Mega_Markets_Historical.xlsx:Commodities",
+        "source": "fred:PSOYBUSDM",
         "cell_2026": {
-          "ret": 0.161,
+          "ret": 0.2111,
           "partial": false,
-          "count": 5,
-          "months_present": 5,
-          "months_expected": 5
+          "count": 7,
+          "months_present": 7,
+          "months_expected": 7
         },
-        "boundary_jumps": [],
+        "boundary_jumps": [
+          {
+            "from_ym": "1973-01",
+            "from_close": 1645.51,
+            "to_ym": "1973-02",
+            "to_close": 726.88,
+            "ratio": 0.4417
+          },
+          {
+            "from_ym": "1975-01",
+            "from_close": 669.76,
+            "to_ym": "1975-02",
+            "to_close": 1698.42,
+            "ratio": 2.5359
+          },
+          {
+            "from_ym": "1975-02",
+            "from_close": 1698.42,
+            "to_ym": "1975-03",
+            "to_close": 679.84,
+            "ratio": 0.4003
+          },
+          {
+            "from_ym": "1975-04",
+            "from_close": 615.16,
+            "to_ym": "1975-05",
+            "to_close": 1720.61,
+            "ratio": 2.797
+          },
+          {
+            "from_ym": "1975-06",
+            "from_close": 1729.15,
+            "to_ym": "1975-07",
+            "to_close": 645.68,
+            "ratio": 0.3734
+          },
+          {
+            "from_ym": "1975-09",
+            "from_close": 620.2,
+            "to_ym": "1975-10",
+            "to_close": 1573.82,
+            "ratio": 2.5376
+          },
+          {
+            "from_ym": "1976-04",
+            "from_close": 1611.37,
+            "to_ym": "1976-05",
+            "to_close": 640.64,
+            "ratio": 0.3976
+          },
+          {
+            "from_ym": "1977-07",
+            "from_close": 661.92,
+            "to_ym": "1977-08",
+            "to_close": 1817.91,
+            "ratio": 2.7464
+          },
+          {
+            "from_ym": "1977-10",
+            "from_close": 1794.87,
+            "to_ym": "1977-11",
+            "to_close": 642.6,
+            "ratio": 0.358
+          },
+          {
+            "from_ym": "1982-08",
+            "from_close": 616.56,
+            "to_ym": "1982-09",
+            "to_close": 1706.96,
+            "ratio": 2.7685
+          },
+          {
+            "from_ym": "1982-10",
+            "from_close": 1759.87,
+            "to_ym": "1982-11",
+            "to_close": 622.72,
+            "ratio": 0.3538
+          },
+          {
+            "from_ym": "1985-06",
+            "from_close": 623.84,
+            "to_ym": "1985-07",
+            "to_close": 1756.46,
+            "ratio": 2.8156
+          },
+          {
+            "from_ym": "1986-03",
+            "from_close": 1819.62,
+            "to_ym": "1986-04",
+            "to_close": 602.0,
+            "ratio": 0.3308
+          },
+          {
+            "from_ym": "1986-04",
+            "from_close": 602.0,
+            "to_ym": "1986-05",
+            "to_close": 1780.36,
+            "ratio": 2.9574
+          },
+          {
+            "from_ym": "1987-10",
+            "from_close": 1759.87,
+            "to_ym": "1987-11",
+            "to_close": 651.84,
+            "ratio": 0.3704
+          },
+          {
+            "from_ym": "1991-05",
+            "from_close": 647.36,
+            "to_ym": "1991-06",
+            "to_close": 1797.43,
+            "ratio": 2.7766
+          },
+          {
+            "from_ym": "1991-06",
+            "from_close": 1797.43,
+            "to_ym": "1991-07",
+            "to_close": 641.76,
+            "ratio": 0.357
+          },
+          {
+            "from_ym": "1992-08",
+            "from_close": 613.76,
+            "to_ym": "1992-09",
+            "to_close": 1799.13,
+            "ratio": 2.9313
+          },
+          {
+            "from_ym": "1992-10",
+            "from_close": 1809.38,
+            "to_ym": "1992-11",
+            "to_close": 621.6,
+            "ratio": 0.3435
+          },
+          {
+            "from_ym": "1994-08",
+            "from_close": 604.8,
+            "to_ym": "1994-09",
+            "to_close": 1753.05,
+            "ratio": 2.8986
+          },
+          {
+            "from_ym": "1994-10",
+            "from_close": 1783.77,
+            "to_ym": "1994-11",
+            "to_close": 617.12,
+            "ratio": 0.346
+          },
+          {
+            "from_ym": "1998-07",
+            "from_close": 648.48,
+            "to_ym": "1998-08",
+            "to_close": 1759.87,
+            "ratio": 2.7138
+          },
+          {
+            "from_ym": "1998-09",
+            "from_close": 1730.86,
+            "to_ym": "1998-10",
+            "to_close": 600.32,
+            "ratio": 0.3468
+          },
+          {
+            "from_ym": "1998-11",
+            "from_close": 649.04,
+            "to_ym": "1998-12",
+            "to_close": 1795.72,
+            "ratio": 2.7667
+          },
+          {
+            "from_ym": "2000-08",
+            "from_close": 1635.27,
+            "to_ym": "2000-09",
+            "to_close": 558.88,
+            "ratio": 0.3418
+          },
+          {
+            "from_ym": "2012-06",
+            "from_close": 1694.28,
+            "to_ym": "2012-07",
+            "to_close": 632.3591,
+            "ratio": 0.3732
+          },
+          {
+            "from_ym": "2012-08",
+            "from_close": 648.3426,
+            "to_ym": "2012-09",
+            "to_close": 1793.12,
+            "ratio": 2.7657
+          },
+          {
+            "from_ym": "2022-01",
+            "from_close": 1669.36,
+            "to_ym": "2022-02",
+            "to_close": 604.1583,
+            "ratio": 0.3619
+          },
+          {
+            "from_ym": "2022-02",
+            "from_close": 604.1583,
+            "to_ym": "2022-03",
+            "to_close": 1812.44,
+            "ratio": 2.9999
+          },
+          {
+            "from_ym": "2022-03",
+            "from_close": 1812.44,
+            "to_ym": "2022-04",
+            "to_close": 627.6743,
+            "ratio": 0.3463
+          },
+          {
+            "from_ym": "2022-07",
+            "from_close": 601.4944,
+            "to_ym": "2022-08",
+            "to_close": 1688.4,
+            "ratio": 2.807
+          }
+        ],
         "zero_or_nan_base_months": []
       },
       "cotton": {
-        "source": "Mega_Markets_Historical.xlsx:Commodities",
+        "source": "fred:PCOTTINDUSDM",
         "cell_2026": {
-          "ret": 0.2031,
+          "ret": 0.2222,
           "partial": false,
-          "count": 5,
-          "months_present": 5,
-          "months_expected": 5
+          "count": 7,
+          "months_present": 7,
+          "months_expected": 7
         },
         "boundary_jumps": [
           {
             "from_ym": "1986-07",
-            "from_close": 1.444,
+            "from_close": 65.4987,
             "to_ym": "1986-08",
-            "to_close": 0.6063,
+            "to_close": 27.5013,
             "ratio": 0.4199
           }
         ],
         "zero_or_nan_base_months": []
       },
       "coffee": {
-        "source": "Mega_Markets_Historical.xlsx:Commodities",
+        "source": "fred:PCOFFOTMUSDM",
         "cell_2026": {
-          "ret": -0.221,
+          "ret": -0.1002,
           "partial": false,
-          "count": 5,
-          "months_present": 5,
-          "months_expected": 5
+          "count": 7,
+          "months_present": 7,
+          "months_expected": 7
         },
         "boundary_jumps": [],
         "zero_or_nan_base_months": []
       }
     },
     "h1_unit_mismatch_evidence": [
-      "wheat: 0 boundary jump(s) outside [0.5, 2.0]",
-      "corn: 0 boundary jump(s) outside [0.5, 2.0]",
+      "wheat: 51 boundary jump(s) outside [0.5, 2.0]",
+      "corn: 53 boundary jump(s) outside [0.5, 2.0]",
       "sugar: 0 boundary jump(s) outside [0.5, 2.0]",
-      "soybeans: 0 boundary jump(s) outside [0.5, 2.0]",
+      "soybeans: 31 boundary jump(s) outside [0.5, 2.0]",
       "cotton: 1 boundary jump(s) outside [0.5, 2.0]",
       "coffee: 0 boundary jump(s) outside [0.5, 2.0]"
     ],
@@ -113,52 +1061,213 @@
       "nasdaq100": {
         "source": "yfinance:^NDX",
         "starts_with_excel": false,
-        "last": "2026-05"
+        "last": "2026-07"
       },
       "sp500": {
         "source": "yfinance:^GSPC",
         "starts_with_excel": false,
-        "last": "2026-05"
+        "last": "2026-07"
       }
     },
     "metadata_has_markets_data_freshness": true,
     "metadata_self_living_check": {
-      "live_source_count": 17,
-      "excel_only_count": 15,
+      "live_source_count": 34,
+      "excel_only_count": 1,
       "holdouts": [
-        "Brent Crude Oil",
-        "Coffee Arabica",
-        "Corn",
-        "Cotton",
-        "NASDAQ Composite",
-        "Soybeans",
-        "Sugar",
-        "WTI Crude Oil",
-        "Wheat"
+        "NASDAQ Composite"
       ],
       "holdout_keys": [
-        "brent_crude",
-        "coffee",
-        "corn",
-        "cotton",
-        "nasdaq",
-        "soybeans",
-        "sugar",
-        "wheat",
-        "wti_crude"
+        "nasdaq"
       ],
       "verdict": "LIVE_MERGE_DEGRADED"
     },
     "metadata_has_holdouts_field": true,
-    "verdict_for_bug_2": "If meta.markets_data_freshness is missing entirely (no slc block) \u2192 root cause supports L5 (verdict aggregation never built); the live-fetch path can only be discriminated between L1 (empty fetch) and L2 (cache drift) by capturing stdout from `python -m predator.markets_history --full-refresh --assets sp500,nasdaq,nasdaq100,djia` \u2014 see test_live_fetch_logging_record below."
+    "verdict_for_bug_2": "If meta.markets_data_freshness is missing entirely (no slc block) \u2192 root cause supports L5 (verdict aggregation never built); the live-fetch path can only be discriminated between L1 (empty fetch) and L2 (cache drift) by capturing stdout from `python -m conviction.markets_history --full-refresh --assets sp500,nasdaq,nasdaq100,djia` \u2014 see test_live_fetch_logging_record below."
   },
   "summary": {
-    "bug_1_finding": "h3_magnitude_driven_color_OR_h5_firstYear_shift",
-    "bug_1_h1_jumps_total": 1,
-    "bug_1_h1_recent_boundary_jumps": [],
+    "bug_1_finding": "h1_unit_mismatch \u2014 at least one ag asset has a recent (>=2010) month-over-month price ratio outside [0.5, 2.0] near the Excel\u2194FRED boundary (the unit/scale-mismatch signature)",
+    "bug_1_h1_jumps_total": 136,
+    "bug_1_h1_recent_boundary_jumps": [
+      {
+        "asset": "wheat",
+        "from_ym": "2022-02",
+        "from_close": 928.0,
+        "to_ym": "2022-03",
+        "to_close": 369.6416,
+        "ratio": 0.3983
+      },
+      {
+        "asset": "wheat",
+        "from_ym": "2022-05",
+        "from_close": 399.5877,
+        "to_ym": "2022-06",
+        "to_close": 868.75,
+        "ratio": 2.1741
+      },
+      {
+        "asset": "corn",
+        "from_ym": "2010-12",
+        "from_close": 629.0,
+        "to_ym": "2011-01",
+        "to_close": 259.6339,
+        "ratio": 0.4128
+      },
+      {
+        "asset": "corn",
+        "from_ym": "2011-05",
+        "from_close": 294.278,
+        "to_ym": "2011-06",
+        "to_close": 629.0,
+        "ratio": 2.1374
+      },
+      {
+        "asset": "corn",
+        "from_ym": "2011-06",
+        "from_close": 629.0,
+        "to_ym": "2011-07",
+        "to_close": 261.996,
+        "ratio": 0.4165
+      },
+      {
+        "asset": "corn",
+        "from_ym": "2011-09",
+        "from_close": 592.5,
+        "to_ym": "2011-10",
+        "to_close": 254.7129,
+        "ratio": 0.4299
+      },
+      {
+        "asset": "corn",
+        "from_ym": "2011-10",
+        "from_close": 254.7129,
+        "to_ym": "2011-11",
+        "to_close": 601.25,
+        "ratio": 2.3605
+      },
+      {
+        "asset": "corn",
+        "from_ym": "2011-11",
+        "from_close": 601.25,
+        "to_ym": "2011-12",
+        "to_close": 254.5161,
+        "ratio": 0.4233
+      },
+      {
+        "asset": "corn",
+        "from_ym": "2012-04",
+        "from_close": 259.9292,
+        "to_ym": "2012-05",
+        "to_close": 555.25,
+        "ratio": 2.1362
+      },
+      {
+        "asset": "corn",
+        "from_ym": "2012-05",
+        "from_close": 555.25,
+        "to_ym": "2012-06",
+        "to_close": 264.7518,
+        "ratio": 0.4768
+      },
+      {
+        "asset": "corn",
+        "from_ym": "2022-01",
+        "from_close": 626.0,
+        "to_ym": "2022-02",
+        "to_close": 274.5939,
+        "ratio": 0.4386
+      },
+      {
+        "asset": "corn",
+        "from_ym": "2022-06",
+        "from_close": 292.8017,
+        "to_ym": "2022-07",
+        "to_close": 616.25,
+        "ratio": 2.1047
+      },
+      {
+        "asset": "corn",
+        "from_ym": "2022-07",
+        "from_close": 616.25,
+        "to_ym": "2022-08",
+        "to_close": 265.2439,
+        "ratio": 0.4304
+      },
+      {
+        "asset": "corn",
+        "from_ym": "2023-01",
+        "from_close": 267.606,
+        "to_ym": "2023-02",
+        "to_close": 629.5,
+        "ratio": 2.3523
+      },
+      {
+        "asset": "corn",
+        "from_ym": "2023-02",
+        "from_close": 629.5,
+        "to_ym": "2023-03",
+        "to_close": 260.0276,
+        "ratio": 0.4131
+      },
+      {
+        "asset": "corn",
+        "from_ym": "2023-04",
+        "from_close": 250.3824,
+        "to_ym": "2023-05",
+        "to_close": 594.0,
+        "ratio": 2.3724
+      },
+      {
+        "asset": "soybeans",
+        "from_ym": "2012-06",
+        "from_close": 1694.28,
+        "to_ym": "2012-07",
+        "to_close": 632.3591,
+        "ratio": 0.3732
+      },
+      {
+        "asset": "soybeans",
+        "from_ym": "2012-08",
+        "from_close": 648.3426,
+        "to_ym": "2012-09",
+        "to_close": 1793.12,
+        "ratio": 2.7657
+      },
+      {
+        "asset": "soybeans",
+        "from_ym": "2022-01",
+        "from_close": 1669.36,
+        "to_ym": "2022-02",
+        "to_close": 604.1583,
+        "ratio": 0.3619
+      },
+      {
+        "asset": "soybeans",
+        "from_ym": "2022-02",
+        "from_close": 604.1583,
+        "to_ym": "2022-03",
+        "to_close": 1812.44,
+        "ratio": 2.9999
+      },
+      {
+        "asset": "soybeans",
+        "from_ym": "2022-03",
+        "from_close": 1812.44,
+        "to_ym": "2022-04",
+        "to_close": 627.6743,
+        "ratio": 0.3463
+      },
+      {
+        "asset": "soybeans",
+        "from_ym": "2022-07",
+        "from_close": 601.4944,
+        "to_ym": "2022-08",
+        "to_close": 1688.4,
+        "ratio": 2.807
+      }
+    ],
     "bug_1_h2_zero_or_nan_total": 0,
     "bug_2_finding": [
-      "live-fetch path either L1 (empty) or L2 (cache drift); discriminate by capturing stdout from `python -m predator.markets_history --full-refresh --assets sp500,nasdaq,nasdaq100,djia` and reading the `EMPTY: ...` log lines added by design Fix Implementation #6"
+      "live-fetch path either L1 (empty) or L2 (cache drift); discriminate by capturing stdout from `python -m conviction.markets_history --full-refresh --assets sp500,nasdaq,nasdaq100,djia` and reading the `EMPTY: ...` log lines added by design Fix Implementation #6"
     ],
     "bug_2_excel_holdouts": [
       "nasdaq"

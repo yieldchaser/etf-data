@@ -46,7 +46,7 @@ class TestSourceLabelHonesty:
         Without S2 (the source-honesty patch), this test fails because the
         old code unconditionally overwrote source on every merge.
         """
-        from predator.ingest_markets_xl import build_output
+        from conviction.ingest_markets_xl import build_output
 
         existing = {
             "asof": "2026-04",
@@ -85,7 +85,7 @@ class TestSourceLabelHonesty:
 
     def test_new_asset_gets_excel_source(self, tmp_path):
         """When Excel introduces a brand-new asset, its source label is Excel."""
-        from predator.ingest_markets_xl import build_output
+        from conviction.ingest_markets_xl import build_output
 
         existing = {"asof": "", "assets": {}, "fx": {}, "cpi": {}, "rates": {}}
         raw = {
@@ -107,7 +107,7 @@ class TestSourceLabelHonesty:
         also set it), it's OK to re-set it to the new Excel sheet/file label.
         The honesty rule only protects LIVE (non-Excel) sources.
         """
-        from predator.ingest_markets_xl import build_output
+        from conviction.ingest_markets_xl import build_output
 
         existing = {
             "asof": "2026-01",
@@ -147,7 +147,7 @@ class TestFetchAllResilience:
         normally (returning an empty dict or a cache-served dict), NOT
         sys.exit.
         """
-        from predator import markets_history as mh
+        from conviction import markets_history as mh
 
         monkeypatch.delenv("FRED_API_KEY", raising=False)
         monkeypatch.setattr(mh, "_get_fred_client", lambda: None)
@@ -172,7 +172,7 @@ class TestFetchAllResilience:
 
     def test_fetch_all_per_series_exception_isolated(self, monkeypatch):
         """A single series throwing an exception must not abort the loop."""
-        from predator import markets_history as mh
+        from conviction import markets_history as mh
 
         monkeypatch.delenv("FRED_API_KEY", raising=False)
         monkeypatch.setattr(mh, "_get_fred_client", lambda: object())  # truthy
@@ -199,10 +199,10 @@ class TestLiveJsonShape:
 
     def test_build_output_populates_fx_section(self, monkeypatch):
         """fx_usdinr → fx['USDINR'] = [[YYYY-MM, val], ...] (non-empty)."""
-        from predator.markets_history import build_output, _read_cache
+        from conviction.markets_history import build_output, _read_cache
 
         # Stub _read_cache so the function doesn't read parquet from disk
-        monkeypatch.setattr("predator.markets_history._read_cache", lambda key: None)
+        monkeypatch.setattr("conviction.markets_history._read_cache", lambda key: None)
 
         idx = pd.to_datetime(["2024-01-31", "2024-02-29", "2024-03-31"])
         results = {
@@ -239,8 +239,8 @@ class TestWorkflowOrder:
         yml = (REPO_ROOT / ".github" / "workflows" / "build_site.yml").read_text()
         # Count occurrences. ingest_markets_xl should appear once (the seed).
         # markets_history --full-refresh appears once.
-        excel_runs = yml.count("python -m predator.ingest_markets_xl")
-        fred_runs  = yml.count("python -m predator.markets_history --full-refresh")
+        excel_runs = yml.count("python -m conviction.ingest_markets_xl")
+        fred_runs  = yml.count("python -m conviction.markets_history --full-refresh")
         assert excel_runs == 1, (
             f"Expected exactly 1 Excel ingest run (backfill seed), got {excel_runs}.\n"
             f"Charter v2 Part 2: Excel is backfill-only. The previous pipeline ran it\n"

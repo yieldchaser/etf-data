@@ -451,7 +451,7 @@ def test_metadata_json_contains_all_configured_etfs(tmp_path):
     assert configured_etfs, "config.yaml::etfs[] is empty — fixture preconditions broken"
 
     # Build a minimal Giant_History fixture: one row per Configured_ETF, two
-    # snapshot dates so predator.build's historical/leaderboard pipeline has
+    # snapshot dates so conviction.build's historical/leaderboard pipeline has
     # something to chew on. We use synthetic holding tickers that are NOT in
     # config.yaml::sanitizer.blocked_tickers so the rows survive sanitization.
     today = "2026-05-20"
@@ -476,17 +476,18 @@ def test_metadata_json_contains_all_configured_etfs(tmp_path):
     output_dir = tmp_path / "build_output"
     output_dir.mkdir()
 
-    # Run predator.build as a subprocess so it cannot leak global state into
+    # Run conviction.build as a subprocess so it cannot leak global state into
     # the rest of the test session.
     env = os.environ.copy()
     env["PYTHONIOENCODING"] = "utf-8"
     # Force CSV ingestion path: point parquet store at an empty tmp dir so
     # the build doesn't accidentally pick up the real repo's parquet archive
     # (which would shadow the synthetic --source CSV the test gave it).
+    env["CONVICTION_PARQUET_STORE"] = str(tmp_path / "no_parquet")
     env["PREDATOR_PARQUET_STORE"] = str(tmp_path / "no_parquet")
     result = subprocess.run(
         [
-            sys.executable, "-m", "predator.build",
+            sys.executable, "-m", "conviction.build",
             "--source", str(fixture_csv),
             "--output", str(output_dir),
             "--config", str(CONFIG_YAML),
@@ -498,7 +499,7 @@ def test_metadata_json_contains_all_configured_etfs(tmp_path):
         timeout=180,
     )
     assert result.returncode == 0, (
-        f"predator.build exited {result.returncode}\n"
+        f"conviction.build exited {result.returncode}\n"
         f"STDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
     )
 

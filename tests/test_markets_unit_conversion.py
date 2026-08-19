@@ -1,5 +1,5 @@
 """
-Tests for agriculture/commodity unit normalisation in predator.ingest_markets_xl.
+Tests for agriculture/commodity unit normalisation in conviction.ingest_markets_xl.
 
 These are REGRESSION GUARD tests. Before the fix, wheat/corn/soybeans were stored
 in the Excel file as USD/bushel while FRED stores them in USD/mt (~36-39× larger).
@@ -17,7 +17,7 @@ import math
 import pandas as pd
 import pytest
 
-from predator.ingest_markets_xl import UNIT_CONVERSIONS, _to_monthly_eop
+from conviction.ingest_markets_xl import UNIT_CONVERSIONS, _to_monthly_eop
 
 
 # ── 1. Conversion table sanity ────────────────────────────────────────────────
@@ -71,7 +71,7 @@ class TestBoundaryReturnAnomaly:
     """Check that sanitize_monthly_series rescales unit mismatches cleanly."""
 
     def test_cocoa_unit_sanitizer(self):
-        from predator.markets_history import sanitize_monthly_series
+        from conviction.markets_history import sanitize_monthly_series
         raw = [["2024-11", 9220.0], ["2024-12", 10.37], ["2025-01", 10987.0]]
         res = sanitize_monthly_series(raw, key="cocoa")
         assert len(res) == 3
@@ -122,7 +122,7 @@ class TestReturnStructure:
 def test_process_graceful_when_excel_missing(tmp_path, monkeypatch):
     """Verify process() runs successfully and doesn't fail when Excel is missing or pointer."""
     import json
-    import predator.ingest_markets_xl as ixl
+    import conviction.ingest_markets_xl as ixl
 
     # Patch MEGA_XL to a non-existent path
     monkeypatch.setattr(ixl, "MEGA_XL", tmp_path / "NonExistent_Mega_Markets.xlsx")
@@ -174,7 +174,7 @@ class TestFredAgricultureScaling:
                 return pd.Series([100.0, 200.0], index=pd.date_range("2026-01-31", periods=2, freq="ME"))
 
         mock_fred = MockFred()
-        from predator.markets_history import _fetch_fred_series
+        from conviction.markets_history import _fetch_fred_series
 
         # With scale=0.5, [100.0, 200.0] should become [50.0, 100.0]
         res = _fetch_fred_series(mock_fred, "DUMMY_SERIES", full_refresh=True, scale=0.5)
@@ -183,7 +183,7 @@ class TestFredAgricultureScaling:
         assert res.iloc[1] == 100.0
 
     def test_agriculture_registry_has_correct_scale_factors(self):
-        from predator.markets_history import ASSET_REGISTRY
+        from conviction.markets_history import ASSET_REGISTRY
         registry_by_key = {a["key"]: a for a in ASSET_REGISTRY}
 
         # Sugar, Cotton, Coffee: fallback_scale converts yfinance fallback series

@@ -1,7 +1,7 @@
 """
-Predator Protocol — scoring engine.
+Conviction Labs — scoring engine.
 
-The algorithm is the documented Predator Protocol v1 from the etf-data README.
+The algorithm is the documented Conviction Labs scoring model from the etf-data README.
 Sanitizer mirrors the ArchiveToDatabase_Production VBA sub.
 
 Scoring modes:
@@ -9,7 +9,7 @@ Scoring modes:
                  (+ flat NEW bonus for Scout/Quant entrants).
     conviction — §24 conviction-weighted: C_i = Wovr(OW_i) × Grank(RP_i),
                  Single_i = points_i × C_i, Final = Σ_i Single_i.
-    apex       — §30 Predator v3. Per-holding scoring identical to conviction;
+    apex       — §30 Conviction v3. Per-holding scoring identical to conviction;
                  the per-ticker raw mass B = Σ Single_i is then shaped by three
                  multipliers:
 
@@ -307,7 +307,7 @@ class ConvictionConfig:
 
 @dataclass(frozen=True)
 class ApexConfig:
-    """§30 apex-mode parameters (Predator v3)."""
+    """§30 apex-mode parameters (Conviction v3)."""
     conc_floor: float = 0.60        # minimum concentration multiplier (single-fund bets stay visible)
     conc_target_neff: float = 3.0   # effective-ETF count at which concentration penalty fully releases
     breadth_alpha: float = 0.35     # max uplift from full strategy-tier dispersal

@@ -1,4 +1,4 @@
-# 📈 Predator Protocol
+# 📈 Conviction Labs
 
 > **Automated ETF Holdings Intelligence Platform** — tracks daily holdings across 30 Smart-Beta ETFs, detects early institutional accumulation signals, and delivers a full-stack analytical dashboard with 150+ years of cross-asset market history.
 
@@ -24,7 +24,7 @@
 
 ## System Overview
 
-Predator Protocol is a fully automated financial intelligence system built around a single thesis: **institutional conviction is detectable before it becomes consensus**. Smart-Beta ETFs — momentum, quality, value, spinoff — are run by systematic strategies that rebalance on rules. When multiple independent strategies simultaneously accumulate the same name, that convergence is a signal.
+Conviction Labs is a fully automated financial intelligence system built around a single thesis: **institutional conviction is detectable before it becomes consensus**. Smart-Beta ETFs — momentum, quality, value, spinoff — are run by systematic strategies that rebalance on rules. When multiple independent strategies simultaneously accumulate the same name, that convergence is a signal.
 
 The system operates as five tightly integrated components:
 
@@ -54,7 +54,7 @@ The system operates as five tightly integrated components:
 ┌──────────────────────────▼──────────────────────────────────────────┐
 │  GitHub Actions — Build Site                                        │
 │                                                                     │
-│  predator/build.py                                                  │
+│  conviction/build.py                                                │
 │  ├── Sanitizer (blocked tickers, name patterns, ticker renames)     │
 │  ├── Scoring (tier weights × rank mult × new bonus)                 │
 │  ├── Temporal analytics (streaks, percentiles, deltas 1/7/14/30/60/90d) │
@@ -63,7 +63,7 @@ The system operates as five tightly integrated components:
 │  ├── Flow aggregation (sector + country, Unknown excluded)          │
 │  └── ETF overlap matrix (30×30 Jaccard)                             │
 │                                                                     │
-│  predator/markets_history + ingest_markets_xl.py + vol_history.py   │
+│  conviction/markets_history + ingest_markets_xl.py + vol_history.py │
 │  └── docs/data/market_returns.json (25 assets, gold from 1833)      │
 │                                                                     │
 │  Output: docs/data/*.json → GitHub Pages                            │
@@ -116,7 +116,7 @@ Issuer website
 3. `scripts/migrate_to_parquet.py` folds the new rows into the Parquet store (mandatory, fail-loud — past-year partitions are immutable, current-year is append-only).
 4. The local CSV is wiped so `git add data/` never stages it.
 
-The committed daily scrape is now a ~1-line manifest refresh + small Parquet partition delta, down from a multi-megabyte CSV blob. `predator/build.py` reads the Parquet store directly (Parquet-first `fetch_history`), so the build never depends on the transient CSV.
+The committed daily scrape is now a ~1-line manifest refresh + small Parquet partition delta, down from a multi-megabyte CSV blob. `conviction/build.py` reads the Parquet store directly (Parquet-first `fetch_history`), so the build never depends on the transient CSV.
 
 Idempotency is enforced on the composite key `(ETF_Ticker, ticker, Holdings_As_Of)` — reruns within the same UTC day are safe.
 
@@ -340,7 +340,7 @@ A standalone data pipeline and 9-tab analytical dashboard providing cross-asset 
 
 ### Data Pipelines
 
-#### `predator/markets_history.py`
+#### `conviction/markets_history.py`
 
 Fetches monthly end-of-period (EOP) close data from FRED (primary) and yfinance (fallback for international indices). Supports incremental updates (trailing 3 months) and full refresh. Writes `docs/data/market_returns.json`.
 
@@ -355,7 +355,7 @@ Asset registry covers 50+ series across:
 - **Rates**: 3M T-Bill, 2Y/10Y/30Y Treasury, Fed Funds, Moody's BAA/AAA, 10Y–2Y Spread
 - **Auxiliary**: US CPI (for real-return adjustment), USD/INR (for currency lens)
 
-#### `predator/ingest_markets_xl.py`
+#### `conviction/ingest_markets_xl.py`
 
 Reads `data/Mega_Markets_Historical.xlsx` (and optionally `Markets_1_.xlsx` when present) and merges its deep historical data into the `market_returns.json` payload in the canonical shape. Excel data takes priority for overlapping months, extending history back to:
 
@@ -367,7 +367,7 @@ Reads `data/Mega_Markets_Historical.xlsx` (and optionally `Markets_1_.xlsx` when
 | BSE Sensex | 1979 |
 | NASDAQ | 1971 |
 
-#### `predator/vol_history.py`
+#### `conviction/vol_history.py`
 
 Fetches daily close for 7 CBOE volatility indices from FRED. Writes `docs/data/vol_history.json`.
 
@@ -464,20 +464,20 @@ Steps:
 
 #### `build_site.yml` — Site Build & Deploy
 ```
-Trigger: workflow_run (after scraper), push to main (predator/**, docs/**, scraper.py, tests/**...), workflow_dispatch
+Trigger: workflow_run (after scraper), push to main (conviction/**, docs/**, scraper.py, tests/**...), workflow_dispatch
 Runner:  ubuntu-latest
 Steps:
   1. Install: pandas, pyyaml, pyarrow, pytest, hypothesis, yfinance, openpyxl, fredapi, python-dotenv
      (No selenium/curl_cffi/pdfplumber — scraper-only, not needed for build)
   2. pytest tests/ -v  (325 tests)
-  3. predator.build  → docs/data/*.json
-  4. predator.fetch_prices  → Portfolio Lab prices (yfinance adjusted-close)
-  5. predator.fetch_stock_details  → descriptions + 2-year price history
+  3. conviction.build  → docs/data/*.json
+  4. conviction.fetch_prices  → Portfolio Lab prices (yfinance adjusted-close)
+  5. conviction.fetch_stock_details  → descriptions + 2-year price history
   6. Persist stock-detail coverage  → commit-back coverage state to main
-  7. predator.ingest_markets_xl  → 1/2: Markets Excel deep-history seed (backfill only)
-  8. predator.markets_history  → 2/2: Live FRED + yfinance merge (current months, fx, cpi, rates)
+  7. conviction.ingest_markets_xl  → 1/2: Markets Excel deep-history seed (backfill only)
+  8. conviction.markets_history  → 2/2: Live FRED + yfinance merge (current months, fx, cpi, rates)
   9. markets.fetch_yf + markets.fetch_fred + markets.build  → docs/data/markets.json + sim_underlyings.json
-  10. predator.vol_history --full-refresh  → docs/data/vol_history.json
+  10. conviction.vol_history --full-refresh  → docs/data/vol_history.json
   11. Verify required outputs exist
   12. Upload Pages artifact → Deploy to GitHub Pages
 ```
@@ -549,19 +549,19 @@ python -m pytest tests/ -v
 # Build site artifacts (leaderboard, holdings, changelog, flow, overlap)
 # Note: --source data/all_history.csv is ignored when the Parquet store is
 # populated (Parquet-first fetch_history). The path is retained for compat.
-python -m predator.build --source data/all_history.csv --output docs/data --config config.yaml
+python -m conviction.build --source data/all_history.csv --output docs/data --config config.yaml
 
 # Fetch market returns (FRED + yfinance) — requires FRED_API_KEY in .env
-python -m predator.markets_history --full-refresh
+python -m conviction.markets_history --full-refresh
 
 # Preview fetch plan without writing
-python -m predator.markets_history --dry-run
+python -m conviction.markets_history --dry-run
 
 # Seed deep history from data/Mega_Markets_Historical.xlsx (run first before markets_history)
-python -m predator.ingest_markets_xl
+python -m conviction.ingest_markets_xl
 
 # Fetch CBOE vol indices — requires FRED_API_KEY
-python -m predator.vol_history --full-refresh
+python -m conviction.vol_history --full-refresh
 
 # Run the scraper locally (requires Chrome + ChromeDriver)
 python scraper.py
@@ -617,7 +617,7 @@ etf-data/
 │       ├── markets.json          # Daily price log
 │       └── metadata.json         # Build info + config snapshot
 │
-├── predator/
+├── conviction/
 │   ├── build.py                  # Main build pipeline
 │   ├── scoring.py                # Score formula + sanitizer
 │   ├── history.py                # Temporal analytics
@@ -676,4 +676,4 @@ Per-ETF scraper routing: URL, `scraper_type` (invesco_api, pacer_csv, selenium_a
 
 ---
 
-*Predator Protocol — built to find institutional conviction before it becomes consensus.*
+*Conviction Labs — built to find institutional conviction before it becomes consensus.*

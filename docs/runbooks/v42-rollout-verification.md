@@ -5,7 +5,7 @@
 After deploying the v42 integration to `main`, run the daily scraper manually
 to verify the bridge wires through end-to-end before relying on the scheduled
 cron. Re-run on any deploy that touches `scraper.py`, `config.yaml`,
-`config.json`, `predator/`, or `.github/workflows/daily_scrape.yml`.
+`config.json`, `conviction/`, or `.github/workflows/daily_scrape.yml`.
 
 ## How to trigger
 
@@ -63,7 +63,7 @@ GitHub Pages output). All six MUST pass before declaring the rollout healthy.
 - [ ] All 8 V42_ETFS members are present:
   `VLUE, AVSC, GRIN, JHMM, JHEM, JHSC, MFEM, JOET`.
 - **Expected:** `len(metadata.etfs) == 29`; `set(V42_ETFS) ⊆ set(metadata.etfs)`.
-- **If wrong:** `predator.build` did not see the v42 rows. Confirm
+- **If wrong:** `conviction.build` did not see the v42 rows. Confirm
   `data/all_history.csv` contains rows for the missing ETFs and that the
   build_site workflow ran after the scrape workflow.
 

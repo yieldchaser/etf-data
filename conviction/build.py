@@ -14,9 +14,9 @@ Outputs (in docs/data/):
     leaderboard.parquet      — columnar dump for DuckDB-WASM time travel
 
 Usage:
-    python -m predator.build
-    python -m predator.build --source path/to/all_history.csv
-    python -m predator.build --output docs/data --config config.yaml
+    python -m conviction.build
+    python -m conviction.build --source path/to/all_history.csv
+    python -m conviction.build --output docs/data --config config.yaml
 """
 from __future__ import annotations
 import argparse
@@ -92,11 +92,11 @@ DEFAULT_SOURCE = str(_REPO_ROOT / "data" / "all_history.csv")
 # Fallback: pull live from GitHub if local file is missing (for first-time / local dev runs).
 FALLBACK_SOURCE = "https://raw.githubusercontent.com/yieldchaser/etf-data/main/data/all_history.csv"
 # Partitioned Parquet store (Tier 2). Tests / advanced callers can override
-# the location via the PREDATOR_PARQUET_STORE env var (e.g. point at an empty
+# the location via the CONVICTION_PARQUET_STORE / PREDATOR_PARQUET_STORE env var (e.g. point at an empty
 # directory to force the CSV path) without monkeypatching this module.
 _DEFAULT_PARQUET_STORE = Path(__file__).resolve().parent.parent / "data" / "history_parquet"
-PARQUET_STORE = Path(os.environ["PREDATOR_PARQUET_STORE"]) \
-    if os.environ.get("PREDATOR_PARQUET_STORE") else _DEFAULT_PARQUET_STORE
+_parquet_env = os.environ.get("CONVICTION_PARQUET_STORE") or os.environ.get("PREDATOR_PARQUET_STORE")
+PARQUET_STORE = Path(_parquet_env) if _parquet_env else _DEFAULT_PARQUET_STORE
 
 
 def _read_parquet_store(store: Path, lookback_days: int = 180) -> pd.DataFrame | None:
@@ -1101,7 +1101,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
             # the verdict block below names it explicitly so the dashboard chip
             # tooltip can surface which assets are blocking LIVE_MERGE_HEALTHY.
             try:
-                from predator.markets_history import ASSET_REGISTRY as _MR_REGISTRY
+                from conviction.markets_history import ASSET_REGISTRY as _MR_REGISTRY
                 live_eligible_keys: set[str] = {
                     spec["key"]
                     for spec in _MR_REGISTRY
@@ -1257,7 +1257,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(description="Build Predator Protocol site artifacts")
+    p = argparse.ArgumentParser(description="Build Conviction Labs site artifacts")
     p.add_argument("--source", default=DEFAULT_SOURCE)
     p.add_argument("--output", default="docs/data")
     p.add_argument("--config", default="config.yaml")

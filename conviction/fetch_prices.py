@@ -1,5 +1,5 @@
 """
-Predator Protocol — Portfolio Lab Price Data Builder
+Conviction Labs — Portfolio Lab Price Data Builder
 =====================================================
 Fetches monthly adjusted-close (total-return, dividends reinvested) for the
 backtestable universe and writes docs/data/prices.json.
@@ -24,10 +24,10 @@ Output shape:
 }
 
 Usage:
-    python -m predator.fetch_prices                    # incremental update
-    python -m predator.fetch_prices --full-refresh     # fetch full history
-    python -m predator.fetch_prices --dry-run          # print plan, no write
-    python -m predator.fetch_prices --tickers SPY,QQQ  # specific tickers only
+    python -m conviction.fetch_prices                    # incremental update
+    python -m conviction.fetch_prices --full-refresh     # fetch full history
+    python -m conviction.fetch_prices --dry-run          # print plan, no write
+    python -m conviction.fetch_prices --tickers SPY,QQQ  # specific tickers only
 """
 from __future__ import annotations
 
@@ -345,7 +345,7 @@ def fetch_prices(
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        prog="predator.fetch_prices",
+        prog="conviction.fetch_prices",
         description="Fetch monthly adjusted-close for Portfolio Lab backtester",
     )
     parser.add_argument("--full-refresh", action="store_true",
@@ -361,7 +361,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
 
     print("═" * 60)
-    print("  Predator Protocol — Portfolio Lab Price Data Builder")
+    print("  Conviction Labs — Portfolio Lab Price Data Builder")
     print("═" * 60)
 
     tickers_filter = None

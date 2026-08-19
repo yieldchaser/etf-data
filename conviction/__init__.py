@@ -1,4 +1,4 @@
-"""Predator Protocol — cross-ETF conviction scanner.
+"""Conviction Labs — cross-ETF conviction scanner.
 
 Lives inside yieldchaser/etf-data alongside the scraper.
 """

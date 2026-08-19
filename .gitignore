@@ -92,7 +92,7 @@ data/markets/
 # merge=lfs -text`, so future Excel blobs are routed through LFS automatically.
 # Maintainer one-time history rewrite (already performed): see
 # .kiro/specs/bounded-data-zero-loss/design.md → "Part C.1 — Git LFS migration procedure".
-# Clones without `git lfs install` will get a pointer file; predator/ingest_markets_xl.py
+# Clones without `git lfs install` will get a pointer file; conviction/ingest_markets_xl.py
 # detects this and raises a clear LFS-specific error.
 # AI Agent & IDE Files (Ground Rule 7 - Local Only)
 .agents/
@@ -118,9 +118,10 @@ data/skills/
 
 # Scratch & Local Raw Downloads
 scratch/
+.freebuff/
 investigation.md
 new_tags_analysis.md
-etf_holdings_20260621.xlsx
+etf_holdings_*.xlsx
 
 # Ignore local agent loop files
 docs/data/details/

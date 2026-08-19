@@ -19,7 +19,7 @@ import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
-from predator.markets_history import ASSET_REGISTRY, fetch_all
+from conviction.markets_history import ASSET_REGISTRY, fetch_all
 
 
 # ─── Strategies ──────────────────────────────────────────────────────────────
@@ -82,12 +82,12 @@ def test_per_series_exception_isolation(failing_spec: dict, exc: Exception) -> N
     mock_fred_client = MagicMock()
 
     with (
-        patch("predator.markets_history._get_fred_client", return_value=mock_fred_client),
-        patch("predator.markets_history._fetch_fred_series", side_effect=mock_fred_fetch),
-        patch("predator.markets_history._fetch_yfinance_series", side_effect=mock_yf_fetch),
-        patch("predator.markets_history._write_cache"),
-        patch("predator.markets_history._read_cache", return_value=None),
-        patch("predator.markets_history.time.sleep"),
+        patch("conviction.markets_history._get_fred_client", return_value=mock_fred_client),
+        patch("conviction.markets_history._fetch_fred_series", side_effect=mock_fred_fetch),
+        patch("conviction.markets_history._fetch_yfinance_series", side_effect=mock_yf_fetch),
+        patch("conviction.markets_history._write_cache"),
+        patch("conviction.markets_history._read_cache", return_value=None),
+        patch("conviction.markets_history.time.sleep"),
     ):
         # This must not raise — the per-series try/except must absorb the exception
         result = fetch_all(full_refresh=True)

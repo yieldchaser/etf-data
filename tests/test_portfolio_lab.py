@@ -293,7 +293,7 @@ class TestFetchPrices:
         import importlib
         spec = importlib.util.spec_from_file_location(
             "fetch_prices",
-            REPO_ROOT / "predator" / "fetch_prices.py"
+            REPO_ROOT / "conviction" / "fetch_prices.py"
         )
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
@@ -306,7 +306,7 @@ class TestFetchPrices:
         import importlib
         spec = importlib.util.spec_from_file_location(
             "fetch_prices",
-            REPO_ROOT / "predator" / "fetch_prices.py"
+            REPO_ROOT / "conviction" / "fetch_prices.py"
         )
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
@@ -318,7 +318,7 @@ class TestFetchPrices:
         import importlib
         spec = importlib.util.spec_from_file_location(
             "fetch_prices",
-            REPO_ROOT / "predator" / "fetch_prices.py"
+            REPO_ROOT / "conviction" / "fetch_prices.py"
         )
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)

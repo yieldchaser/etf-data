@@ -1,5 +1,5 @@
 """
-Predator Protocol — Stock Details Builder (Self-Healing Coverage Engine)
+Conviction Labs — Stock Details Builder (Self-Healing Coverage Engine)
 ========================================================================
 Fetches per-ticker price history + company description, writing each to
 docs/data/details/{TICKER}.json
@@ -780,7 +780,7 @@ def build_details(
     refresh_descriptions: bool = False,
 ) -> None:
     print("\n" + "═" * 62)
-    print("  Predator Protocol — Stock Details (Self-Healing Coverage)")
+    print("  Conviction Labs — Stock Details (Self-Healing Coverage)")
     print("═" * 62)
 
     DETAILS_DIR.mkdir(parents=True, exist_ok=True)
@@ -788,7 +788,7 @@ def build_details(
 
     lb_map     = _load_leaderboard_tickers()
     if not lb_map:
-        print("  No tickers found — run predator.build first.")
+        print("  No tickers found — run conviction.build first.")
         return
 
     lb_ranks   = _load_leaderboard_ranks()
@@ -1043,7 +1043,7 @@ def build_details(
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    p = argparse.ArgumentParser(prog="predator.fetch_stock_details")
+    p = argparse.ArgumentParser(prog="conviction.fetch_stock_details")
     p.add_argument("--batch-size",   type=int, default=BATCH_SIZE_DEFAULT)
     p.add_argument("--refresh-size", type=int, default=100)
     p.add_argument("--fill-pending", action="store_true")

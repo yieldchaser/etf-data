@@ -112,7 +112,7 @@ def test_external_steps_have_continue_on_error():
 def test_build_step_no_continue_on_error():
     """Reqs 7.4, 7.5 — The 'Build site artifacts' step must NOT carry continue-on-error.
 
-    Step name: 'Build site artifacts (predator)'
+    Step name: 'Build site artifacts (conviction)'
     """
     step = _find_step(_build_steps(), "Build site artifacts")
     assert step is not None, "Could not find the 'Build site artifacts' step"

@@ -40,8 +40,8 @@ class TestFix1A:
 
     def test_streaks_and_deltas_two_snapshots(self):
         """streaks_and_deltas must not crash on a 2-snapshot fixture."""
-        from predator import history as hist
-        from predator.scoring import Config, compute_leaderboard
+        from conviction import history as hist
+        from conviction.scoring import Config, compute_leaderboard
         from pathlib import Path
 
         cfg = Config.from_yaml(REPO_ROOT / "config.yaml")
@@ -91,7 +91,7 @@ class TestFix1B:
 
     def test_velocity_with_missing_leaderboard_rank_in_old_snapshot(self):
         """Feed a history where one older snapshot lacks leaderboard_rank — must not raise."""
-        from predator.scoring import Config, compute_leaderboard
+        from conviction.scoring import Config, compute_leaderboard
         from pathlib import Path
 
         cfg = Config.from_yaml(REPO_ROOT / "config.yaml")
@@ -142,9 +142,9 @@ class TestFix1C:
 
     def test_metadata_degrades_gracefully_when_file_missing(self, tmp_path):
         """When ticker_metadata.csv is missing, leaderboard gets Unknown columns."""
-        from predator.scoring import Config, compute_leaderboard
+        from conviction.scoring import Config, compute_leaderboard
         from pathlib import Path
-        import predator.build as build_mod
+        import conviction.build as build_mod
 
         cfg = Config.from_yaml(REPO_ROOT / "config.yaml")
         df = _h([
@@ -165,7 +165,7 @@ class TestFix1C:
     def test_metadata_path_is_absolute(self):
         """The path used in _attach_metadata must be absolute (not relative)."""
         import inspect
-        import predator.build as build_mod
+        import conviction.build as build_mod
         src = inspect.getsource(build_mod.build)
         # The fix uses Path(__file__).resolve().parent.parent / "data" / "ticker_metadata.csv"
         assert "Path(__file__).resolve()" in src or "__file__" in src, (
@@ -180,7 +180,7 @@ class TestFix1D:
 
     def test_asof_includes_fx_section(self):
         """When FX data is newer than assets, asof should reflect FX date."""
-        from predator.ingest_markets_xl import build_output, _load_existing, EVENTS
+        from conviction.ingest_markets_xl import build_output, _load_existing, EVENTS
 
         # Build a minimal existing JSON with old asset data but newer FX
         existing = {
@@ -202,8 +202,8 @@ class TestFix1D:
 
     def test_markets_history_asof_includes_rates(self):
         """markets_history.build_output asof includes rates section."""
-        from predator.markets_history import build_output as mh_build_output
-        import predator.markets_history as mh
+        from conviction.markets_history import build_output as mh_build_output
+        import conviction.markets_history as mh
 
         # Patch OUTPUT_PATH to a non-existent path so it starts fresh
         orig = mh.OUTPUT_PATH
@@ -232,7 +232,7 @@ class TestFix1E:
 
     def test_atomic_write_preserves_original_on_failure(self, tmp_path):
         """If write raises, original file must be intact."""
-        from predator.build import _write_json_atomic
+        from conviction.build import _write_json_atomic
 
         original_content = '{"original": true}'
         target = tmp_path / "test.json"
@@ -247,7 +247,7 @@ class TestFix1E:
 
     def test_atomic_write_creates_file_if_not_exists(self, tmp_path):
         """Atomic write creates the file if it doesn't exist."""
-        from predator.build import _write_json_atomic
+        from conviction.build import _write_json_atomic
 
         target = tmp_path / "new.json"
         assert not target.exists()
@@ -257,15 +257,15 @@ class TestFix1E:
 
     def test_atomic_write_available_in_all_modules(self):
         """All JSON-writing modules must have _write_json_atomic."""
-        import predator.build
-        import predator.markets_history
-        import predator.ingest_markets_xl
-        import predator.vol_history
-        import predator.fetch_prices
+        import conviction.build
+        import conviction.markets_history
+        import conviction.ingest_markets_xl
+        import conviction.vol_history
+        import conviction.fetch_prices
 
-        for mod in [predator.build, predator.markets_history,
-                    predator.ingest_markets_xl, predator.vol_history,
-                    predator.fetch_prices]:
+        for mod in [conviction.build, conviction.markets_history,
+                    conviction.ingest_markets_xl, conviction.vol_history,
+                    conviction.fetch_prices]:
             assert hasattr(mod, "_write_json_atomic"), (
                 f"{mod.__name__} missing _write_json_atomic"
             )
@@ -285,8 +285,8 @@ class TestFix1F:
         exercised — without this monkeypatch, a locally-bootstrapped parquet
         archive would mask the missing-CSV case.
         """
-        from predator import build as _build
-        from predator.build import fetch_history
+        from conviction import build as _build
+        from conviction.build import fetch_history
 
         monkeypatch.setenv("CI", "true")
         monkeypatch.setattr(_build, "PARQUET_STORE", tmp_path / "no_parquet")
@@ -297,8 +297,8 @@ class TestFix1F:
 
     def test_non_ci_falls_back_gracefully(self, tmp_path, monkeypatch):
         """When CI is not set and source is missing, it falls back (no raise)."""
-        from predator import build as _build
-        from predator.build import fetch_history, FALLBACK_SOURCE
+        from conviction import build as _build
+        from conviction.build import fetch_history, FALLBACK_SOURCE
 
         monkeypatch.delenv("CI", raising=False)
         monkeypatch.setattr(_build, "PARQUET_STORE", tmp_path / "no_parquet")
@@ -322,13 +322,13 @@ class TestFix1G:
 
     def test_public_aliases_importable(self):
         """load_existing and merge_monthly must be importable from ingest_markets_xl."""
-        from predator.ingest_markets_xl import load_existing, merge_monthly
+        from conviction.ingest_markets_xl import load_existing, merge_monthly
         assert callable(load_existing)
         assert callable(merge_monthly)
 
     def test_public_aliases_same_as_private(self):
         """Public aliases must be the same functions as private ones."""
-        from predator.ingest_markets_xl import (
+        from conviction.ingest_markets_xl import (
             load_existing, merge_monthly,
             _load_existing, _merge_monthly,
         )
@@ -338,7 +338,7 @@ class TestFix1G:
     def test_markets_history_uses_public_imports(self):
         """markets_history.py must import public names, not private ones."""
         import inspect
-        import predator.markets_history as mh
+        import conviction.markets_history as mh
         src = inspect.getsource(mh.build_output)
         assert "load_existing" in src or "_load_xl_existing" in src
         # Must NOT import the private names directly
@@ -352,8 +352,8 @@ class TestFix1H:
 
     def test_fx_section_populated_from_results(self):
         """When FX series are in results, fx_out must be populated."""
-        from predator.markets_history import build_output as mh_build_output
-        import predator.markets_history as mh
+        from conviction.markets_history import build_output as mh_build_output
+        import conviction.markets_history as mh
 
         # Patch OUTPUT_PATH to non-existent so it starts fresh
         orig = mh.OUTPUT_PATH
@@ -377,8 +377,8 @@ class TestFix1H:
 
     def test_fx_inversion_applied(self):
         """FX series with invert=True must have values inverted."""
-        from predator.markets_history import build_output as mh_build_output
-        import predator.markets_history as mh
+        from conviction.markets_history import build_output as mh_build_output
+        import conviction.markets_history as mh
 
         orig = mh.OUTPUT_PATH
         mh.OUTPUT_PATH = Path("/nonexistent/market_returns.json")
@@ -443,7 +443,7 @@ class TestFix2:
 
     def test_parquet_store_read_function(self, tmp_path):
         """_read_parquet_store reads from partitioned store correctly."""
-        from predator.build import _read_parquet_store
+        from conviction.build import _read_parquet_store
 
         # Create a minimal partitioned store
         store = tmp_path / "history_parquet"
@@ -463,7 +463,7 @@ class TestFix2:
 
     def test_parquet_store_returns_none_when_empty(self, tmp_path):
         """_read_parquet_store returns None when store doesn't exist."""
-        from predator.build import _read_parquet_store
+        from conviction.build import _read_parquet_store
 
         result = _read_parquet_store(tmp_path / "nonexistent_store")
         assert result is None
@@ -484,7 +484,7 @@ class TestFix4ZeroWeight:
 
     def test_zero_weight_rows_excluded_from_etf_count(self):
         """A ticker with weight=0 in one ETF must not count that ETF."""
-        from predator.scoring import Config, compute_leaderboard
+        from conviction.scoring import Config, compute_leaderboard
 
         cfg = Config.from_yaml(REPO_ROOT / "config.yaml")
         df = _h([
@@ -562,7 +562,7 @@ class TestFix4AssetsArg:
 
     def test_assets_arg_accepted(self):
         """--assets argument must be accepted without error."""
-        from predator.ingest_markets_xl import parse_args
+        from conviction.ingest_markets_xl import parse_args
         args = parse_args(["--assets", "sp500,gold", "--dry-run"])
         assert args.assets == "sp500,gold"
         assert args.dry_run is True
@@ -570,7 +570,7 @@ class TestFix4AssetsArg:
     def test_ingest_mega_xl_shim_forwards_series_to_assets(self):
         """ingest_mega_xl shim must forward --series to --assets."""
         import inspect
-        import predator.ingest_mega_xl as shim
+        import conviction.ingest_mega_xl as shim
         src = inspect.getsource(shim.main)
         assert "assets" in src.lower(), (
             "ingest_mega_xl.main() must forward --series to --assets"
@@ -609,11 +609,11 @@ class TestFix4MarketsHtmlCommand:
     def test_markets_html_uses_module_command(self):
         html = REPO_ROOT / "docs" / "markets.html"
         content = html.read_text(encoding="utf-8")
-        assert "python -m predator.markets_history" in content, (
-            "markets.html should use 'python -m predator.markets_history'"
+        assert "python -m conviction.markets_history" in content, (
+            "markets.html should use 'python -m conviction.markets_history'"
         )
-        assert "python predator/markets_history.py" not in content, (
-            "markets.html should not use old 'python predator/markets_history.py'"
+        assert "python conviction/markets_history.py" not in content, (
+            "markets.html should not use old 'python conviction/markets_history.py'"
         )
 
 

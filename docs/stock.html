@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Predator Protocol · Stock Detail</title>
+  <title>Conviction Labs · Stock Detail</title>
   <meta name="description" content="Per-stock conviction detail: score history, ETF holdings timeline, and rank deltas.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📈%3C/text%3E%3C/svg%3E">
   <meta name="color-scheme" content="dark">
@@ -112,7 +112,7 @@
   <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5 pb-4 border-b" style="border-color: var(--border)">
     <div>
       <div class="flex items-center gap-3 mb-1">
-        <a href="index.html" class="label hover:text-zinc-400 transition" style="text-decoration: none;">← PREDATOR PROTOCOL</a>
+        <a href="index.html" class="label hover:text-zinc-400 transition" style="text-decoration: none;">← CONVICTION LABS</a>
         <span class="label">›</span>
         <span class="label-cyan label" x-text="ticker || 'STOCK DETAIL'"></span>
       </div>
@@ -140,7 +140,7 @@
     <a href="markets.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color: var(--text-2); border-color: var(--border); text-decoration: none;">Markets</a>
     <a href="sim.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color: var(--text-2); border-color: var(--border); text-decoration: none;">Simulator</a>
     <a href="methodology.html" class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase transition" style="color: var(--text-2); border-color: var(--border); text-decoration: none;"
-       title="How Predator Protocol works">How it works</a>
+       title="How Conviction Labs works">How it works</a>
   </nav>
 
   <!-- Recently viewed chip strip (sessionStorage; scoped to this tab) -->
@@ -182,7 +182,7 @@
       </div>
       <!-- 2. Rank -->
       <div class="rounded-lg px-3.5 py-3 border transition-colors duration-200 hover:border-zinc-800" style="background: var(--surface); border-color: var(--border)"
-           x-tooltip="'Global conviction rank inside the Predator Protocol universe (1 = highest conviction)'">
+           x-tooltip="'Global conviction rank inside the Conviction Labs universe (1 = highest conviction)'">
         <div class="label">Rank</div>
         <div class="text-2xl font-medium num font-mono mt-1" style="color: var(--cyan)" x-text="leaderboardRow ? `#${leaderboardRow.leaderboard_rank}` : '—'"></div>
       </div>
@@ -806,7 +806,7 @@
 
   <!-- FOOTER -->
   <footer class="mt-6 pt-4 text-xs flex gap-4 flex-wrap" style="border-top: 1px solid var(--border); color: var(--text-3)">
-    <span>Predator Protocol · yieldchaser/etf-data</span>
+    <span>Conviction Labs · yieldchaser/etf-data</span>
     <a href="index.html" style="color: var(--cyan); text-decoration: none;">← Dashboard</a>
     <a href="markets.html" style="color: var(--text-3); text-decoration: none;">Markets</a>
     <a href="sim.html" style="color: var(--text-3); text-decoration: none;">Simulator</a>
@@ -875,14 +875,14 @@ function stockApp() {
       const params = new URLSearchParams(location.search);
       this.ticker = (params.get('t') || '').toUpperCase().trim();
       if (!this.ticker) { this.loading = false; return; }
-      document.title = `Predator Protocol · ${this.ticker}`;
+      document.title = `Conviction Labs · ${this.ticker}`;
 
       // ── Recently-viewed roster (sessionStorage, scoped to the tab) ────────
       // Push the current ticker to the head, dedupe, cap at 8. Loaded into
       // this.recentlyViewed for the chip strip at the top of the page.
       try {
-        const KEY = 'predator.recentlyViewed';
-        const prior = JSON.parse(sessionStorage.getItem(KEY) || '[]')
+        const KEY = 'conviction.recentlyViewed';
+        const prior = JSON.parse(sessionStorage.getItem('conviction.recentlyViewed') || sessionStorage.getItem('predator.recentlyViewed') || '[]')
           .filter(t => typeof t === 'string' && t && t !== this.ticker);
         const next = [this.ticker, ...prior].slice(0, 8);
         sessionStorage.setItem(KEY, JSON.stringify(next));
@@ -979,7 +979,7 @@ function stockApp() {
 
         // Load stock detail file (price history + description).
         // Reuse the `safeStem` already computed above (line 886) — it sanitises
-        // the ticker to match the file name written by predator.fetch_stock_details
+        // the ticker to match the file name written by conviction.fetch_stock_details
         // (_safe_detail_stem): illegal chars → '_', strip trailing dot/space,
         // guard empty + Windows reserved device names (CON/PRN/AUX/NUL/COM1-9/LPT1-9).
         // Some tickers carry scraper junk like "WALMEX.*" / "PE&amp;OLES*" whose

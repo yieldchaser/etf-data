@@ -9,7 +9,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'predator/**'
+      - 'conviction/**'
       - 'markets/**'
       - 'docs/**'
       - 'data/**'           # rebuild whenever raw data is pushed (scraper or hotfix)
@@ -68,22 +68,22 @@ jobs:
       #      populate fx/cpi/rates. Source labels from this step are PRESERVED
       #      by the Excel ingester — Excel is no longer re-run after this.
       - name: 1/2 — Markets Excel deep-history seed (backfill only)
-        run: python -m predator.ingest_markets_xl --no-fail-on-stale
+        run: python -m conviction.ingest_markets_xl --no-fail-on-stale
         continue-on-error: true
 
       - name: 2/2 — Live FRED + yfinance merge (current months, fx, cpi, rates)
-        run: python -m predator.markets_history --full-refresh
+        run: python -m conviction.markets_history --full-refresh
         continue-on-error: true
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
 
-      - name: Build site artifacts (predator)
-        run: python -m predator.build --source data/all_history.csv --output docs/data --config config.yaml
+      - name: Build site artifacts (conviction)
+        run: python -m conviction.build --source data/all_history.csv --output docs/data --config config.yaml
 
       # ── Portfolio Lab price data (§22.1) ──────────────────────────────
       - name: Fetch Portfolio Lab prices (yfinance adjusted-close)
         id: fetch_prices
-        run: python -m predator.fetch_prices
+        run: python -m conviction.fetch_prices
 
       # ── Stock detail files — per-ticker description + 2-year daily prices ──
       # Writes docs/data/details/{TICKER}.json for lazy-loading in the UI.
@@ -94,7 +94,7 @@ jobs:
         # batch-size 250: with leaderboard-rank prioritisation this resolves the
         # full top-250-by-rank in one run, then keeps growing the long tail
         # ~250/run. continue-on-error: never break the build if yfinance is flaky.
-        run: python -m predator.fetch_stock_details --batch-size 250
+        run: python -m conviction.fetch_stock_details --batch-size 250
         continue-on-error: true
 
       # ── Persist self-healing stock-detail coverage back to main ──────────
@@ -163,7 +163,7 @@ jobs:
 
       # Step 5: Vol history (separate file)
       - name: Fetch vol history (CBOE indices from FRED)
-        run: python -m predator.vol_history --full-refresh
+        run: python -m conviction.vol_history --full-refresh
         continue-on-error: true
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}

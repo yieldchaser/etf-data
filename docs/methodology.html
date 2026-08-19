@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Predator Protocol · How it works</title>
-  <meta name="description" content="How Predator Protocol works: the conviction-detection thesis, the APEX (v3) scoring formula, motion signals, and honest limitations of the system.">
+  <title>Conviction Labs · How it works</title>
+  <meta name="description" content="How Conviction Labs works: the conviction-detection thesis, the APEX (v3) scoring formula, motion signals, and honest limitations of the system.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📈%3C/text%3E%3C/svg%3E">
   <meta name="color-scheme" content="dark">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -48,11 +48,11 @@
   <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6 pb-4 border-b" style="border-color: var(--border)">
     <div>
       <div class="flex items-center gap-3 mb-1">
-        <a href="index.html" class="label hover:text-zinc-400 transition">← PREDATOR PROTOCOL</a>
+        <a href="index.html" class="label hover:text-zinc-400 transition">← CONVICTION LABS</a>
         <span class="label">›</span>
         <span class="label-cyan label">METHODOLOGY</span>
       </div>
-      <h1 class="text-xl font-medium" style="color: var(--text)">How Predator Protocol works</h1>
+      <h1 class="text-xl font-medium" style="color: var(--text)">How Conviction Labs works</h1>
       <div class="text-xs mt-1" style="color: var(--text-3)">A plain-language explanation of the scoring engine, motion signals, and what it does &amp; doesn't measure.</div>
     </div>
     <nav class="top flex flex-wrap gap-1 text-xs">
@@ -80,11 +80,11 @@
 
   <!-- §1 Thesis -->
   <h2 id="thesis">1 · The thesis</h2>
-  <p>Predator Protocol is built around one idea: <strong>institutional conviction is detectable before it becomes consensus.</strong></p>
+  <p>Conviction Labs is built around one idea: <strong>institutional conviction is detectable before it becomes consensus.</strong></p>
   <p>Smart-Beta ETFs — momentum, quality, value, spinoff — are run by systematic strategies that rebalance on rules. Each one is a different epistemology of "what looks attractive right now." When several of these independent strategies <em>simultaneously</em> accumulate the same name, that convergence is meaningful: it means the name appears in multiple distinct lenses at once.</p>
-  <p>Predator scrapes 30 such ETFs daily, normalises their holdings, scores each ticker by how broadly &amp; conviction-weightedly it's held, and surfaces the names where conviction is rising fastest.</p>
+  <p>Conviction Labs scrapes 30 such ETFs daily, normalises their holdings, scores each ticker by how broadly &amp; conviction-weightedly it's held, and surfaces the names where conviction is rising fastest.</p>
   <div class="callout callout-cyan">
-    <strong>What this is NOT:</strong> a factor-decomposition engine. There is no regression against macro/style factors, no factor-of-the-day, no purified residuals. Predator measures <em>institutional accumulation breadth and conviction</em> — that is the entire product.
+    <strong>What this is NOT:</strong> a factor-decomposition engine. There is no regression against macro/style factors, no factor-of-the-day, no purified residuals. Conviction Labs measures <em>institutional accumulation breadth and conviction</em> — that is the entire product.
   </div>
 
   <!-- §2 Universe -->
@@ -223,7 +223,7 @@ APEX Score   = round(APEX Score × g)</pre>
   <p>The Markets page (long-horizon return matrix, periodic table, drawdowns, etc.) is built from a layered data source:</p>
   <ol class="list-decimal pl-5 space-y-1">
     <li><strong>Excel deep-history baseline</strong> — <code>Mega_Markets_Historical.xlsx</code> seeds the JSON with multi-century data (gold from 1833, S&amp;P 500 from 1871, Dow Jones from 1885, etc.). It runs once per build as a backfill seed.</li>
-    <li><strong>Live FRED + yfinance merge</strong> — <code>predator.markets_history</code> extends every series with fresh monthly closes and populates fx (USD/INR via DEXINUS, etc.), CPI (CPIAUCSL), and rates (10Y, 2Y, Fed Funds…). New months overwrite the Excel baseline; live source labels are preserved.</li>
+    <li><strong>Live FRED + yfinance merge</strong> — <code>conviction.markets_history</code> extends every series with fresh monthly closes and populates fx (USD/INR via DEXINUS, etc.), CPI (CPIAUCSL), and rates (10Y, 2Y, Fed Funds…). New months overwrite the Excel baseline; live source labels are preserved.</li>
   </ol>
   <p>The build emits <code>metadata.json</code> with a <code>markets_data_freshness</code> block that an outside reader can verify directly:</p>
   <pre>"markets_data_freshness": {
@@ -249,7 +249,7 @@ APEX Score   = round(APEX Score × g)</pre>
   <!-- §10 Limitations -->
   <h2 id="limits">10 · Honest limitations</h2>
   <ul class="list-disc pl-5 space-y-1">
-    <li><strong>Predator measures detection breadth, not future returns.</strong> A high score means many independent strategies converge on a name; it does not mean the name will outperform. Backtests of HC-entry, BURST-trigger, and Top-N-Velocity strategies are on the <a href="backtest.html">Backtest page</a> — judge for yourself.</li>
+    <li><strong>Conviction Labs measures detection breadth, not future returns.</strong> A high score means many independent strategies converge on a name; it does not mean the name will outperform. Backtests of HC-entry, BURST-trigger, and Top-N-Velocity strategies are on the <a href="backtest.html">Backtest page</a> — judge for yourself.</li>
     <li><strong>The system is one source.</strong> No earnings, no fundamentals, no macro overlay. Use it alongside other tools, not instead of them.</li>
     <li><strong>Daily granularity, not intraday.</strong> Scrapes run 14:00 + 22:00 UTC weekdays. Same-day moves are not captured.</li>
     <li><strong>Some positions are hidden.</strong> Equity-only filtering removes cash, derivatives, money-market, and currency placeholders. You see the equity book, not the full ETF.</li>
@@ -260,7 +260,7 @@ APEX Score   = round(APEX Score × g)</pre>
 
   <div style="height: 5rem;"></div>
   <footer class="text-center text-xs pt-6 border-t" style="border-color: var(--border); color: var(--text-3)">
-    Predator Protocol · open source on <a href="https://github.com/yieldchaser/etf-data" target="_blank" rel="noopener">GitHub</a>
+    Conviction Labs · open source on <a href="https://github.com/yieldchaser/etf-data" target="_blank" rel="noopener">GitHub</a>
   </footer>
 </div>
 </body>

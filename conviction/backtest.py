@@ -1,5 +1,5 @@
 """
-Backtest the Predator Protocol scoring algorithm.
+Backtest the Conviction Labs scoring algorithm.
 
 For each historical leaderboard snapshot date D:
   1. Identify buy signals: HC entrants, BURST triggers, top-N by score, top-N by velocity
@@ -156,7 +156,7 @@ def run_backtest(
             if os.environ.get("CI"):
                 raise FileNotFoundError(
                     f"CI: {history_path} not found and Parquet store is empty. "
-                    f"Run predator.build first to populate the store."
+                    f"Run conviction.build first to populate the store."
                 )
             print(f"  {history_path} not found locally — falling back to {FALLBACK_SOURCE}")
             history_path = FALLBACK_SOURCE
@@ -430,7 +430,7 @@ def run_backtest(
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(description="Backtest Predator Protocol strategies")
+    p = argparse.ArgumentParser(description="Backtest Conviction Labs strategies")
     p.add_argument("--source",  default="data/all_history.csv")
     p.add_argument("--markets", default="data/markets")
     p.add_argument("--output",  default="docs/data/backtest.json")

@@ -6,9 +6,9 @@ into the existing market_returns.json. Excel data takes priority for
 overlapping months (it has longer history).
 
 Usage:
-    python -m predator.ingest_mega_xl                    # process all series
-    python -m predator.ingest_mega_xl --dry-run          # print what would be written
-    python -m predator.ingest_mega_xl --series sp500     # process only sp500
+    python -m conviction.ingest_mega_xl                    # process all series
+    python -m conviction.ingest_mega_xl --dry-run          # print what would be written
+    python -m conviction.ingest_mega_xl --series sp500     # process only sp500
 """
 from __future__ import annotations
 
@@ -236,7 +236,7 @@ def process(
     dry_run: bool = False,
 ) -> dict[str, Any]:
     """
-    DEPRECATED: Use predator.ingest_markets_xl.process() instead.
+    DEPRECATED: Use conviction.ingest_markets_xl.process() instead.
 
     This function writes the old 'close' dict format which is no longer
     consumed by the dashboard. The new §2.3 contract format uses 'monthly'
@@ -249,8 +249,8 @@ def process(
     """
     import warnings
     warnings.warn(
-        "predator.ingest_mega_xl.process() is deprecated. "
-        "Use predator.ingest_markets_xl.process() for the §2.3 contract format.",
+        "conviction.ingest_mega_xl.process() is deprecated. "
+        "Use conviction.ingest_markets_xl.process() for the §2.3 contract format.",
         DeprecationWarning,
         stacklevel=2,
     )
@@ -352,7 +352,7 @@ def process(
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        prog="predator.ingest_mega_xl",
+        prog="conviction.ingest_mega_xl",
         description="Ingest Mega_Markets_Historical.xlsx into market_returns.json",
     )
     parser.add_argument(
@@ -376,11 +376,11 @@ def main(argv: list[str] | None = None) -> int:
     legacy 'close' dict format which is no longer used by the dashboard.
     """
     print("═" * 60)
-    print("  Predator Protocol — Mega Markets Historical Ingest (shim)")
+    print("  Conviction Labs — Mega Markets Historical Ingest (shim)")
     print("  Delegating to ingest_markets_xl for §2.3 contract format")
     print("═" * 60)
 
-    from predator.ingest_markets_xl import main as _new_main
+    from conviction.ingest_markets_xl import main as _new_main
     # Map --dry-run and --series flags if present
     new_argv = []
     if argv:

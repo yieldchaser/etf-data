@@ -1,4 +1,4 @@
-"""Tests for §30 apex-mode scoring (Predator v3) and the §31 velocity overlay.
+"""Tests for §30 apex-mode scoring (Conviction v3) and the §31 velocity overlay.
 
 Run: pytest tests/test_apex_scoring.py -v
 """
@@ -11,13 +11,13 @@ import pytest
 import yaml
 from pathlib import Path
 
-from predator.scoring import (
+from conviction.scoring import (
     ApexConfig,
     Config,
     compute_leaderboard,
     conviction_multiplier,
 )
-from predator.history import accumulation_velocity, predictive_overlay
+from conviction.history import accumulation_velocity, predictive_overlay
 
 
 CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"

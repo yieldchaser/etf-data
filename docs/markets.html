@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Predator Protocol · Markets</title>
+  <title>Conviction Labs · Markets</title>
   <meta name="description" content="Long-horizon returns intelligence: annual return matrix, stat cards, and daily price log.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📈%3C/text%3E%3C/svg%3E">
   <meta name="color-scheme" content="dark">
@@ -99,7 +99,7 @@
   <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5 pb-4 border-b" style="border-color: var(--border)">
     <div>
       <div class="flex items-center gap-3 mb-1">
-        <a href="index.html" class="label hover:text-zinc-400 transition" style="text-decoration: none;">← PREDATOR PROTOCOL</a>
+        <a href="index.html" class="label hover:text-zinc-400 transition" style="text-decoration: none;">← CONVICTION LABS</a>
         <span class="label">›</span>
         <span class="label-cyan label">MARKETS</span>
       </div>
@@ -135,7 +135,7 @@
       <span x-show="returnsData" x-text="`${Object.keys(returnsData?.assets||{}).length} assets`"></span>
       <span x-show="series.length" x-text="`${series.length} price series`"></span>
       <a href="methodology.html" class="label hover:text-zinc-400 transition" style="text-decoration: none;"
-         title="How Predator Protocol works - scoring, motion signals, sanitizer, self-living data, and honest limitations">How it works ↗</a>
+         title="How Conviction Labs works - scoring, motion signals, sanitizer, self-living data, and honest limitations">How it works ↗</a>
     </div>
   </header>
 
@@ -961,7 +961,7 @@
 
     <div x-show="!loadingReturns && !returnsData" class="text-center py-20">
       <div class="text-base mb-2" style="color: var(--amber)">No yield data yet</div>
-      <div class="text-xs" style="color: var(--text-3)">Run: <code>python -m predator.markets_history</code></div>
+      <div class="text-xs" style="color: var(--text-3)">Run: <code>python -m conviction.markets_history</code></div>
     </div>
 
     <div x-show="!loadingReturns && returnsData">
@@ -1083,7 +1083,7 @@
 
     <div x-show="!loadingReturns && !returnsData" class="text-center py-20">
       <div class="text-base mb-2" style="color: var(--amber)">No data yet</div>
-      <div class="text-xs" style="color: var(--text-3)">Run: <code>python -m predator.markets_history</code></div>
+      <div class="text-xs" style="color: var(--text-3)">Run: <code>python -m conviction.markets_history</code></div>
     </div>
 
     <div x-show="!loadingReturns && returnsData">
@@ -1671,14 +1671,14 @@
     <!-- Loading state -->
     <div x-show="loadingVol" class="pulse-load text-center py-20" style="color: var(--text-3)">
       <div class="text-lg mb-2">Loading volatility data…</div>
-      <div class="text-xs">Run: <code>python -m predator.vol_history</code> to generate data/vol_history.json</div>
+      <div class="text-xs">Run: <code>python -m conviction.vol_history</code> to generate data/vol_history.json</div>
     </div>
 
     <!-- No data state -->
     <div x-show="!loadingVol && !hasVolData" class="text-center py-20">
       <div class="text-base mb-2" style="color: var(--amber)">No volatility data yet</div>
       <div class="text-xs mb-4" style="color: var(--text-3)">Run the pipeline to generate <code>data/vol_history.json</code></div>
-      <code class="text-xs px-3 py-2 rounded border inline-block" style="border-color: var(--border-2); background: var(--surface); color: var(--text-2)">python -m predator.vol_history</code>
+      <code class="text-xs px-3 py-2 rounded border inline-block" style="border-color: var(--border-2); background: var(--surface); color: var(--text-2)">python -m conviction.vol_history</code>
     </div>
 
     <!-- Vol content -->
@@ -1927,7 +1927,7 @@
 
   <!-- FOOTER -->
   <footer class="mt-8 pt-4 text-xs flex gap-4 flex-wrap" style="border-top: 1px solid var(--border); color: var(--text-3)">
-    <span>Predator Protocol · yieldchaser/etf-data</span>
+    <span>Conviction Labs · yieldchaser/etf-data</span>
     <a href="index.html" style="color: var(--cyan); text-decoration: none;">← Dashboard</a>
     <a href="sim.html" style="color: var(--text-3); text-decoration: none;">Simulator</a>
   </footer>
@@ -2476,7 +2476,7 @@ function marketsApp() {
 
     // ── §3 FX/CPI honesty - reflect what the JSON actually has, never show dead controls.
     // The pipeline currently leaves fx={} and cpi={} unless DEXINUS / CPIAUCSL are wired up
-    // (see predator/markets_history.py). Until then we simply hide INR/Real instead of
+    // (see conviction/markets_history.py). Until then we simply hide INR/Real instead of
     // pretending they work. Gold/Silver lenses don't need fx - they convert via the gold
     // and silver close series which are populated from Mega_Markets_Historical.xlsx.
     get lensesAvailable() {
@@ -3253,7 +3253,7 @@ function marketsApp() {
       // Build CSV string
       const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
       const lens = (this.activeReal ? 'Real_' : '') + (this.activeCcy !== 'Local' ? this.activeCcy + '_' : '');
-      const filename = `predator_returns_${lens}${new Date().toISOString().slice(0, 10)}.csv`;
+      const filename = `conviction_returns_${lens}${new Date().toISOString().slice(0, 10)}.csv`;
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');

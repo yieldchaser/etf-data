@@ -1,4 +1,4 @@
-# Predator Protocol — scoring & sanitizer configuration.
+# Conviction Labs — scoring & sanitizer configuration.
 # CALIBRATED to match the Excel Power Query (`Master_Leaderboard`) exactly.
 # Source M code transcribed from Equity_Indices_.xlsb Advanced Editor screenshots.
 #
@@ -119,7 +119,7 @@ sanitizer:
     - {pattern: '^A(\d{6})$', replacement: '\1'}   # KRX: A005930 → 005930
 
 # =============================================================================
-# TIERS — Predator Protocol v1, matches the ETF_Config table in the Excel.
+# TIERS — Conviction Labs v1, matches the ETF_Config table in the Excel.
 # =============================================================================
 # =============================================================================
 # ETF UNIVERSE — per-ETF tier and point assignment.
@@ -203,7 +203,7 @@ high_conviction_min_etfs: 4
 #                Backward-compatible; all existing tests pass.
 # 'conviction' : §24 conviction-weighted formula (OW × RP × points).
 #                Fixes the ITUB4 > Samsung structural bias.
-# 'apex'       : §30 Predator v3. Conviction per-holding scoring, then the
+# 'apex'       : §30 Conviction v3. Conviction per-holding scoring, then the
 #                per-ticker raw mass is shaped by concentration (HHI guard),
 #                strategy-breadth entropy, and shrunk universe normalization.
 #                Adds the bounded velocity overlay (apex_score / apex_rank).

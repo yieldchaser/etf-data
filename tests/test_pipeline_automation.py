@@ -55,8 +55,8 @@ class TestContractShape:
 
     def test_ingest_xl_produces_monthly_arrays(self, tmp_path):
         """ingest_markets_xl.process() writes monthly arrays, not close dicts."""
-        from predator.ingest_markets_xl import process, OUTPUT_PATH
-        import predator.ingest_markets_xl as ixl
+        from conviction.ingest_markets_xl import process, OUTPUT_PATH
+        import conviction.ingest_markets_xl as ixl
 
         # Patch output path to tmp
         orig = ixl.OUTPUT_PATH
@@ -91,8 +91,8 @@ class TestContractShape:
 
     def test_no_close_dict_in_output(self, tmp_path):
         """Verify the output JSON never contains the old 'close' dict format."""
-        from predator.ingest_markets_xl import process
-        import predator.ingest_markets_xl as ixl
+        from conviction.ingest_markets_xl import process
+        import conviction.ingest_markets_xl as ixl
 
         orig = ixl.OUTPUT_PATH
         ixl.OUTPUT_PATH = tmp_path / "market_returns.json"
@@ -120,7 +120,7 @@ class TestMergePreservesHistory:
 
     def test_merge_appends_new_months(self, tmp_path):
         """When new months arrive, they are appended to existing history."""
-        from predator.ingest_markets_xl import _merge_monthly, _load_existing, build_output
+        from conviction.ingest_markets_xl import _merge_monthly, _load_existing, build_output
 
         # Existing: gold from 1833 to 2026-05 (deep history from Excel)
         existing_monthly = _make_monthly_list("1833-01", 2318, 18.93, 0.001)
@@ -145,7 +145,7 @@ class TestMergePreservesHistory:
 
     def test_new_data_overwrites_overlapping_months(self):
         """For overlapping months, new data (FRED/yfinance) takes priority over Excel."""
-        from predator.ingest_markets_xl import _merge_monthly
+        from conviction.ingest_markets_xl import _merge_monthly
 
         existing = [["2026-01", 2900.0], ["2026-02", 2950.0], ["2026-03", 3000.0]]
         new = [["2026-02", 2960.0], ["2026-03", 3010.0], ["2026-04", 3050.0]]
@@ -163,8 +163,8 @@ class TestMergePreservesHistory:
 
     def test_markets_history_build_output_preserves_excel_history(self, tmp_path):
         """markets_history.build_output() merges with existing JSON, not overwrites."""
-        from predator.markets_history import build_output, write_output
-        import predator.markets_history as mh
+        from conviction.markets_history import build_output, write_output
+        import conviction.markets_history as mh
 
         # Seed the output file with Excel deep-history
         deep_history = _make_monthly_list("1833-01", 100, 18.93, 0.01)
@@ -245,7 +245,7 @@ class TestNewYearFlowThrough:
 
     def test_freshness_gate_passes_for_current_data(self):
         """Freshness gate passes when data is within cadence."""
-        from predator.ingest_markets_xl import check_freshness
+        from conviction.ingest_markets_xl import check_freshness
 
         # Data dated this month — should pass
         today_ym = date.today().strftime("%Y-%m")
@@ -261,7 +261,7 @@ class TestNewYearFlowThrough:
 
     def test_freshness_gate_fails_for_stale_data(self):
         """Freshness gate correctly identifies data older than cadence."""
-        from predator.ingest_markets_xl import check_freshness
+        from conviction.ingest_markets_xl import check_freshness
 
         # Data from 3 months ago — should be stale (>35 days)
         stale_ym = (date.today() - timedelta(days=100)).strftime("%Y-%m")
@@ -325,7 +325,7 @@ class TestBuildOrder:
 
     def test_ingest_mega_xl_is_shim(self):
         """ingest_mega_xl.main() delegates to ingest_markets_xl (no old format)."""
-        import predator.ingest_mega_xl as old_ingest
+        import conviction.ingest_mega_xl as old_ingest
         import inspect
         src = inspect.getsource(old_ingest.main)
         assert "ingest_markets_xl" in src, (

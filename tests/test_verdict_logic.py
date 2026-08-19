@@ -28,7 +28,7 @@ def compute_self_living_check(
     live_eligible_keys: set[str],
 ) -> dict[str, Any]:
     """
-    Replicate the self_living_check verdict logic from predator/build.py.
+    Replicate the self_living_check verdict logic from conviction/build.py.
 
     This is intentionally a copy — not an import — so that the test is
     independent of build.py's internal structure and can verify the logic
