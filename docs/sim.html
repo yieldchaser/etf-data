@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Conviction Labs · Portfolio Lab</title>
   <meta name="description" content="Portfolio backtester, VAMI analytics, Monte Carlo simulation, Kelly position sizing, and leveraged ETN decay.">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📊%3C/text%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2309090b'/%3E%3Cpath d='M6 22L13 14.5L18 18.5L26 9.5' fill='none' stroke='%2322d3ee' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='26' cy='9.5' r='2.5' fill='%2322d3ee'/%3E%3C/svg%3E">
   <meta name="color-scheme" content="dark">
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
@@ -95,7 +95,7 @@
   <div x-show="!loading && !pricesData"
        class="rounded-lg border px-6 py-8 text-center mb-6"
        style="background: var(--surface); border-color: var(--border)">
-    <div class="text-2xl mb-3">📊</div>
+    <div class="mb-3 flex justify-center"><svg class="w-8 h-8 opacity-80" style="color: var(--cyan)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
     <div class="text-sm font-medium mb-2" style="color: var(--text)">Price data not available</div>
     <div class="text-xs mb-4" style="color: var(--text-3)">
       <code>docs/data/prices.json</code> has not been generated yet.<br>
@@ -179,7 +179,7 @@
        class="mb-5 p-3 rounded-lg border text-xs flex items-start gap-2"
        style="background: rgba(251,191,36,0.08); border-color: rgba(251,191,36,0.3); color: var(--amber)"
        x-cloak>
-    <span class="mt-0.5">⚠️</span>
+    <svg class="w-4 h-4 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
     <span x-text="adjustedStartWarning"></span>
   </div>
 
@@ -303,13 +303,13 @@
                   x-text="leverage.toFixed(2) + 'x'"></span>
           </div>
           <div x-show="Math.abs(netExposure - 100) > 1" class="text-[10px]" style="color: var(--amber)">
-            ⚠ Weights don't sum to 100%
+            Weights don't sum to 100%
           </div>
         </div>
 
         <!-- Warning Banner for Invalid Tickers -->
         <div x-show="invalidTickersWarning" class="mt-3 p-3 rounded border text-xs text-rose-400 bg-rose-500/10 border-rose-500/25 flex items-start gap-2">
-          <span class="mt-0.5">⚠️</span>
+          <svg class="w-4 h-4 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           <span>
             <strong>Warning:</strong> The following tickers are not in the price database and will be ignored in the backtest: 
             <strong class="font-mono text-white" x-text="invalidTickersWarning"></strong>. 

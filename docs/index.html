@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Conviction Labs · Cross-ETF Conviction Scanner</title>
   <meta name="description" content="Cross-ETF conviction scanner. Tracks 30 smart-beta ETFs to detect early institutional accumulation. Live from yieldchaser/etf-data.">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📈%3C/text%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2309090b'/%3E%3Cpath d='M6 22L13 14.5L18 18.5L26 9.5' fill='none' stroke='%2322d3ee' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='26' cy='9.5' r='2.5' fill='%2322d3ee'/%3E%3C/svg%3E">
   <meta name="color-scheme" content="dark">
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
@@ -239,7 +239,7 @@
   <div x-show="immatureEtfCount > 0"
        class="mb-3 px-3 py-2 rounded-lg border text-xs flex items-center gap-2"
        style="background: rgba(251,191,36,0.06); border-color: rgba(251,191,36,0.25); color: var(--amber)">
-    <span>⚠</span>
+    <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
     <span x-text="`${immatureEtfCount} ETF${immatureEtfCount > 1 ? 's' : ''} still building ${meta.etf_maturity_days || 30}-day baselines - velocity/NEW signals partial for these funds.`"></span>
     <span class="ml-auto text-[9px] font-mono" style="color: var(--text-3)"
           x-text="immatureEtfNames.slice(0,5).join(', ') + (immatureEtfNames.length > 5 ? ' +' + (immatureEtfNames.length - 5) + ' more' : '')"></span>
@@ -528,7 +528,7 @@
               <th class="text-left px-2 py-2 hidden xl:table-cell" x-tooltip="{html:'Tiers represented. <b>Scout</b>=spinoffs/IPOs · <b>Quant</b>=factor momentum · <b>Quality</b>=FCF/profit · <b>Trend</b>=momentum · <b>Core</b>=mega-cap'}">Strategies</th>
               <th class="text-center px-3 py-2 hidden md:table-cell" x-tooltip="'Consecutive days the score moved in the same direction (▲ up · ▼ down).'">Streak</th>
               <th class="text-left px-3 py-2 hidden xl:table-cell" x-tooltip="'Today\'s score as a percentile of this ticker\'s own score history in the past 60 days.'">Level</th>
-              <th class="text-left px-3 py-2" x-tooltip="{html:'Priority-ordered signal stack (top 2 shown, +n = hover for full list)<br><b>HC</b> = held by 4+ ETFs · <b>⚡BURST</b> = +40 ranks in 30d · <b>📉CRATER</b> = −40 ranks in 30d · <b>VELO</b> = top velocity · <b>Q+/Q−</b> = Quality ETF added/dropped 30d · <b>STEALTH</b> = weight building quietly · <b>DIV±</b> = conviction divergence · <b>CONC</b> = single-ETF score · <b>SPEC β</b> = Trend without Quality/Scout · <b>NEW</b> = first appearance within 14d'}">Flag</th>
+              <th class="text-left px-3 py-2" x-tooltip="{html:'Priority-ordered signal stack (top 2 shown, +n = hover for full list)<br><b>HC</b> = held by 4+ ETFs · <b>BURST</b> = +40 ranks in 30d · <b>CRATER</b> = −40 ranks in 30d · <b>VELO</b> = top velocity · <b>Q+/Q−</b> = Quality ETF added/dropped 30d · <b>STEALTH</b> = weight building quietly · <b>DIV±</b> = conviction divergence · <b>CONC</b> = single-ETF score · <b>SPEC β</b> = Trend without Quality/Scout · <b>NEW</b> = first appearance within 14d'}">Flag</th>
             </tr>
           </thead>
           <template x-for="row in paged" :key="row.ticker">
@@ -557,7 +557,7 @@
                       x-tooltip="'Forward score = structure × bounded momentum kicker'"
                       x-text="row.apex_score != null ? Math.round(row.apex_score) : '–'"></td>
                   <td class="px-2 py-2 text-right num font-mono font-medium"
-                      x-tooltip="`Score: ${fmt1(row.final_score)}<br>Percentile: ${row.normalized_score != null ? row.normalized_score.toFixed(0) : '-'}/100<br>Concentration: ${row.concentration_score != null ? row.concentration_score : '-'}% from top ETF<br>${row.concentration_score == null ? 'No data' : row.concentration_score < 40 ? '✓ Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : '⚠ Highly concentrated - fragile if top ETF rebalances'}`"
+                      x-tooltip="`Score: ${fmt1(row.final_score)}<br>Percentile: ${row.normalized_score != null ? row.normalized_score.toFixed(0) : '-'}/100<br>Concentration: ${row.concentration_score != null ? row.concentration_score : '-'}% from top ETF<br>${row.concentration_score == null ? 'No data' : row.concentration_score < 40 ? 'Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : 'Highly concentrated - fragile if top ETF rebalances'}`"
                       x-text="fmt1(row.final_score)"></td>
                   <td class="px-2 py-2 text-center num font-mono hidden lg:table-cell" :style="`color: ${flowColor(activeDeltaValue(row))}`" x-text="fmtPct(activeDeltaValue(row))"></td>
                   <td class="px-1 py-2 text-right num font-mono hidden lg:table-cell"
@@ -566,13 +566,13 @@
                     <span x-text="fmtVelocity(row.velocity_score)"></span>
                   </td>
                   <td class="px-1 py-2 text-right num font-mono hidden lg:table-cell"
-                      x-tooltip="row.burst_30d ? `⚡ Burst: +${row.global_rank_peak_30d} ranks peak improvement in 30d` : 'No burst signal'">
-                    <span x-show="row.burst_30d" class="font-mono text-[10px] font-semibold" style="color: #c084fc" x-text="`⚡+${row.global_rank_peak_30d}`"></span>
+                      x-tooltip="row.burst_30d ? `Burst: +${row.global_rank_peak_30d} ranks peak improvement in 30d` : 'No burst signal'">
+                    <span x-show="row.burst_30d" class="font-mono text-[10px] font-semibold" style="color: #c084fc" x-text="`+${row.global_rank_peak_30d}`"></span>
                     <span x-show="!row.burst_30d" class="text-[10px]" style="color: var(--text-3)">–</span>
                   </td>
                   <td class="px-1 py-2 text-right num font-mono hidden lg:table-cell"
-                      x-tooltip="row.crater_30d ? `📉 Crater: -${row.global_rank_drop_30d} ranks peak drop in 30d` : 'No crater signal'">
-                    <span x-show="row.crater_30d" class="font-mono text-[10px] font-semibold" style="color: #f87171" x-text="`📉-${row.global_rank_drop_30d}`"></span>
+                      x-tooltip="row.crater_30d ? `Crater: -${row.global_rank_drop_30d} ranks peak drop in 30d` : 'No crater signal'">
+                    <span x-show="row.crater_30d" class="font-mono text-[10px] font-semibold" style="color: #f87171" x-text="`-${row.global_rank_drop_30d}`"></span>
                     <span x-show="!row.crater_30d" class="text-[10px]" style="color: var(--text-3)">–</span>
                   </td>
                   <td class="px-2 py-2 text-right num font-mono hidden md:table-cell"
@@ -934,7 +934,7 @@
           ▼ <span x-text="watchlistDelta.exited_hc.length"></span> exited HC: <span class="font-mono" x-text="watchlistDelta.exited_hc.join(', ')"></span>
         </span>
         <span x-show="watchlistDelta.new_burst.length" style="color: #c084fc">
-          ⚡ <span x-text="watchlistDelta.new_burst.length"></span> new BURST: <span class="font-mono" x-text="watchlistDelta.new_burst.join(', ')"></span>
+          BURST: <span x-text="watchlistDelta.new_burst.length"></span> new BURST: <span class="font-mono" x-text="watchlistDelta.new_burst.join(', ')"></span>
         </span>
       </div>
       <button @click="snapshotPins()" class="chip border mt-2 px-2 py-0.5" style="border-color: var(--border-2)">mark all as read</button>
@@ -1156,7 +1156,7 @@
                 <th class="text-left px-2 py-2 hidden xl:table-cell" x-tooltip="{html:'Tiers represented. <b>Scout</b>=spinoffs/IPOs · <b>Quant</b>=factor momentum · <b>Quality</b>=FCF/profit · <b>Trend</b>=momentum · <b>Core</b>=mega-cap'}">Strategies</th>
                 <th class="text-center px-3 py-2 hidden md:table-cell" x-tooltip="'Consecutive days the score moved in the same direction (▲ up · ▼ down).'">Streak</th>
                 <th class="text-left px-3 py-2 hidden xl:table-cell" x-tooltip="'Today\'s score as a percentile of this ticker\'s own score history in the past 60 days.'">Level</th>
-                <th class="text-left px-3 py-2" x-tooltip="{html:'Priority-ordered signal stack (top 2 shown, +n = hover for full list)<br><b>HC</b> = held by 4+ ETFs · <b>⚡BURST</b> = +40 ranks in 30d · <b>📉CRATER</b> = −40 ranks in 30d · <b>VELO</b> = top velocity · <b>Q+/Q−</b> = Quality ETF added/dropped 30d · <b>STEALTH</b> = weight building quietly · <b>DIV±</b> = conviction divergence · <b>CONC</b> = single-ETF score · <b>SPEC β</b> = Trend without Quality/Scout · <b>NEW</b> = first appearance within 14d'}">Flag</th>
+                <th class="text-left px-3 py-2" x-tooltip="{html:'Priority-ordered signal stack (top 2 shown, +n = hover for full list)<br><b>HC</b> = held by 4+ ETFs · <b>BURST</b> = +40 ranks in 30d · <b>CRATER</b> = −40 ranks in 30d · <b>VELO</b> = top velocity · <b>Q+/Q−</b> = Quality ETF added/dropped 30d · <b>STEALTH</b> = weight building quietly · <b>DIV±</b> = conviction divergence · <b>CONC</b> = single-ETF score · <b>SPEC β</b> = Trend without Quality/Scout · <b>NEW</b> = first appearance within 14d'}">Flag</th>
               </tr>
             </thead>
             <template x-for="row in paged" :key="row.ticker">
@@ -1185,7 +1185,7 @@
                         x-tooltip="'Forward score = structure × bounded momentum kicker'"
                         x-text="row.apex_score != null ? Math.round(row.apex_score) : '–'"></td>
                     <td class="px-2 py-2 text-right num font-mono font-medium"
-                        x-tooltip="`Score: ${fmt1(row.final_score)}<br>Percentile: ${row.normalized_score != null ? row.normalized_score.toFixed(0) : '-'}/100<br>Concentration: ${row.concentration_score != null ? row.concentration_score : '-'}% from top ETF<br>${row.concentration_score == null ? 'No data' : row.concentration_score < 40 ? '✓ Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : '⚠ Highly concentrated - fragile if top ETF rebalances'}`"
+                        x-tooltip="`Score: ${fmt1(row.final_score)}<br>Percentile: ${row.normalized_score != null ? row.normalized_score.toFixed(0) : '-'}/100<br>Concentration: ${row.concentration_score != null ? row.concentration_score : '-'}% from top ETF<br>${row.concentration_score == null ? 'No data' : row.concentration_score < 40 ? 'Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : 'Highly concentrated - fragile if top ETF rebalances'}`"
                         x-text="fmt1(row.final_score)"></td>
                     <td class="px-2 py-2 text-center num font-mono hidden lg:table-cell" :style="`color: ${flowColor(activeDeltaValue(row))}`" x-text="fmtPct(activeDeltaValue(row))"></td>
                     <td class="px-1 py-2 text-right num font-mono hidden lg:table-cell"
@@ -1194,13 +1194,13 @@
                       <span x-text="fmtVelocity(row.velocity_score)"></span>
                     </td>
                     <td class="px-1 py-2 text-right num font-mono hidden lg:table-cell"
-                        x-tooltip="row.burst_30d ? `⚡ Burst: +${row.global_rank_peak_30d} ranks peak improvement in 30d` : 'No burst signal'">
-                      <span x-show="row.burst_30d" class="font-mono text-[10px] font-semibold" style="color: #c084fc" x-text="`⚡+${row.global_rank_peak_30d}`"></span>
+                        x-tooltip="row.burst_30d ? `Burst: +${row.global_rank_peak_30d} ranks peak improvement in 30d` : 'No burst signal'">
+                      <span x-show="row.burst_30d" class="font-mono text-[10px] font-semibold" style="color: #c084fc" x-text="`+${row.global_rank_peak_30d}`"></span>
                       <span x-show="!row.burst_30d" class="text-[10px]" style="color: var(--text-3)">–</span>
                     </td>
                     <td class="px-1 py-2 text-right num font-mono hidden lg:table-cell"
-                        x-tooltip="row.crater_30d ? `📉 Crater: -${row.global_rank_drop_30d} ranks peak drop in 30d` : 'No crater signal'">
-                      <span x-show="row.crater_30d" class="font-mono text-[10px] font-semibold" style="color: #f87171" x-text="`📉-${row.global_rank_drop_30d}`"></span>
+                        x-tooltip="row.crater_30d ? `Crater: -${row.global_rank_drop_30d} ranks peak drop in 30d` : 'No crater signal'">
+                      <span x-show="row.crater_30d" class="font-mono text-[10px] font-semibold" style="color: #f87171" x-text="`-${row.global_rank_drop_30d}`"></span>
                       <span x-show="!row.crater_30d" class="text-[10px]" style="color: var(--text-3)">–</span>
                     </td>
                     <td class="px-2 py-2 text-right num font-mono hidden md:table-cell"
@@ -2020,19 +2020,19 @@
         <div class="flex items-center gap-1.5 flex-wrap text-[10px] text-zinc-400">
           <span class="bg-white/[0.03] border border-white/[0.04] px-1.5 py-0.5 rounded-full select-none cursor-help"
                 x-tooltip="'Names with the largest conviction score increases over the selected period (min 2 ETFs)'"
-                x-text="`📈 ${dynamicScoreGainers.length} gainers`"></span>
+                x-text="`+${dynamicScoreGainers.length} gainers`"></span>
           <span class="bg-white/[0.03] border border-white/[0.04] px-1.5 py-0.5 rounded-full select-none cursor-help"
                 x-tooltip="'Names with the largest conviction score decreases over the selected period (min 2 ETFs)'"
-                x-text="`📉 ${dynamicScoreLosers.length} losers`"></span>
+                x-text="`-${dynamicScoreLosers.length} losers`"></span>
           <span class="bg-white/[0.03] border border-white/[0.04] px-1.5 py-0.5 rounded-full select-none cursor-help"
                 x-tooltip="'Burst movers - global rank improved by 40+ positions in the last 30 days'"
-                x-text="`⚡ ${activeSignalCounts.burst} bursts`"></span>
+                x-text="`${activeSignalCounts.burst} bursts`"></span>
           <span class="bg-white/[0.03] border border-white/[0.04] px-1.5 py-0.5 rounded-full select-none cursor-help"
                 x-tooltip="'New entrants - first appearance in any mature ETF within the last 14 days'"
-                x-text="`🆕 ${changelog.new_entrants?.length || 0} new`"></span>
+                x-text="`${changelog.new_entrants?.length || 0} new`"></span>
           <span class="bg-white/[0.03] border border-white/[0.04] px-1.5 py-0.5 rounded-full select-none cursor-help"
                 x-tooltip="'High Conviction entries and exits versus the prior trading day'"
-                x-text="`⚖️ ${(changelog.entered_hc?.length || 0) + (changelog.exited_hc?.length || 0)} HC`"></span>
+                x-text="`${(changelog.entered_hc?.length || 0) + (changelog.exited_hc?.length || 0)} HC`"></span>
         </div>
       </div>
       <div class="flex items-center gap-3 shrink-0">
@@ -2054,7 +2054,7 @@
       <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
         <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
           <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <span>📈</span> Biggest Score Gainers
+            <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg> Biggest Score Gainers
             <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">GAINERS</span>
             <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
           </div>
@@ -2108,7 +2108,7 @@
       <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
         <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
           <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <span>📉</span> Biggest Score Losers
+            <svg class="w-3.5 h-3.5 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg> Biggest Score Losers
             <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">LOSERS</span>
             <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
           </div>
@@ -2165,7 +2165,7 @@
       <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
         <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
           <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <span>🚀</span> Biggest Rank Climbers
+            <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg> Biggest Rank Climbers
             <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">CLIMBERS</span>
             <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
           </div>
@@ -2223,7 +2223,7 @@
       <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
         <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
           <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <span>☄️</span> Biggest Rank Fallers
+            <svg class="w-3.5 h-3.5 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg> Biggest Rank Fallers
             <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">FALLERS</span>
             <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
           </div>
@@ -2284,7 +2284,7 @@
       <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
         <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
           <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <span>🎯</span> ETF Adoption (Pickups)
+            <svg class="w-3.5 h-3.5 text-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> ETF Adoption (Pickups)
             <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">ADOPTIONS</span>
             <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
           </div>
@@ -2337,7 +2337,7 @@
       <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
         <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
           <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <span>⚠️</span> ETF Defections (Dropouts)
+            <svg class="w-3.5 h-3.5 text-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> ETF Defections (Dropouts)
             <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">DEFECTIONS</span>
             <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
           </div>
@@ -2393,7 +2393,7 @@
       <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
         <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
           <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <span>⚡</span> Burst Winners
+            <svg class="w-3.5 h-3.5 text-purple-400" viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Burst Winners
             <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">BURST</span>
             <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)">fixed 30d</span>
           </div>
@@ -2418,7 +2418,7 @@
                   <td class="px-3 py-2 font-mono font-medium text-zinc-200">
                     <div class="flex items-center gap-1.5">
                       <span x-text="r.ticker"></span>
-                      <span class="chip text-[8px] px-1 py-0" style="background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.3)">⚡BURST</span>
+                      <span class="chip text-[8px] px-1 py-0" style="background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.3)">BURST</span>
                     </div>
                   </td>
                   <td class="px-2 py-2 text-zinc-400 truncate hidden sm:table-cell max-w-[150px]" x-text="r.company"></td>
@@ -2440,7 +2440,7 @@
       <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
         <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
           <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <span>📉</span> Crater Movers
+            <svg class="w-3.5 h-3.5 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg> Crater Movers
             <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">CRATER</span>
             <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)">fixed 30d</span>
           </div>
@@ -2465,7 +2465,7 @@
                     <div class="flex items-center gap-1.5">
                       <span x-text="r.ticker"></span>
                       <template x-if="r.crater_30d">
-                        <span class="chip text-[8px] px-1 py-0" style="background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.3)">📉CRATER</span>
+                        <span class="chip text-[8px] px-1 py-0" style="background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.3)">CRATER</span>
                       </template>
                       <template x-if="!r.crater_30d && (r.tiers || '').split(' + ').filter(Boolean)[0]">
                         <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
@@ -2493,7 +2493,7 @@
     <div class="rounded-lg border mb-4" style="border-color: var(--border); background: var(--surface);">
       <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
         <div class="label flex items-center gap-1.5 text-cyan-400 font-semibold text-xs tracking-wider uppercase">
-          <span>⚡</span> Top Velocity Movers (Last 30 Days)
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Top Velocity Movers (Last 30 Days)
         </div>
         <div class="text-[10px] text-zinc-500">Highest acceleration of institutional conviction</div>
       </div>
@@ -2518,7 +2518,7 @@
                 <div class="num font-mono text-right shrink-0 ml-2">
                   <div :style="`color: ${velocityColor(r.velocity_score)}`" class="font-bold" x-text="fmtVelocity(r.velocity_score)"></div>
                   <div class="text-[10px] flex items-center justify-end gap-1">
-                    <span x-show="r.burst_30d" class="chip sig-badge text-[8px] px-1 py-0" style="background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.3)">⚡BURST</span>
+                    <span x-show="r.burst_30d" class="chip sig-badge text-[8px] px-1 py-0" style="background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.3)">BURST</span>
                     <span style="color: var(--text-3)" x-text="`${r.etf_count} ETF${r.etf_count===1?'':'s'}`"></span>
                   </div>
                 </div>
@@ -2541,26 +2541,26 @@
         <button @click="reset(); burstOnly = true; activeTab = 'leaderboard'; window.scrollTo({ top: 0, behavior: 'smooth' });"
                 x-tooltip="'Filter leaderboard to show only burst movers (improved rank by 40+ in 30d)'"
                 class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/25 transition cursor-pointer select-none">
-          <span class="font-bold">⚡</span>
+          <span class="font-bold text-[10px] px-1 py-0.5 rounded bg-purple-500/20 text-purple-300 mr-0.5">BURST</span>
           <span x-text="`${activeSignalCounts.burst} Burst`"></span>
         </button>
         <button @click="reset(); stealthAccOnly = true; activeTab = 'leaderboard'; window.scrollTo({ top: 0, behavior: 'smooth' });"
                 x-tooltip="'Filter leaderboard to show only stealth accumulation names'"
                 class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/25 transition cursor-pointer select-none">
-          <span class="font-bold">👤</span>
+          <span class="font-bold text-[10px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-300 mr-0.5">STEALTH</span>
           <span x-text="`${activeSignalCounts.stealth} Stealth Accum`"></span>
         </button>
         <button @click="reset(); qualityAdoptedOnly = true; activeTab = 'leaderboard'; window.scrollTo({ top: 0, behavior: 'smooth' });"
                 x-tooltip="'Filter leaderboard to show only Quality+ names (added by Quality ETF in 30d)'"
                 class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 border border-teal-500/25 transition cursor-pointer select-none">
-          <span class="font-bold">🎯</span>
+          <span class="font-bold text-[10px] px-1 py-0.5 rounded bg-teal-500/20 text-teal-300 mr-0.5">QUAL+</span>
           <span x-text="`${activeSignalCounts.qualityAdopted} Quality Adopted`"></span>
         </button>
         <button @click="reset(); qualityDefectedOnly = true; activeTab = 'leaderboard'; window.scrollTo({ top: 0, behavior: 'smooth' });"
                 x-show="activeSignalCounts.qualityDefected > 0"
                 x-tooltip="'Filter leaderboard to show only Quality- names (dropped by Quality ETF in 30d)'"
                 class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 transition cursor-pointer select-none">
-          <span class="font-bold">⚠️</span>
+          <span class="font-bold text-[10px] px-1 py-0.5 rounded bg-rose-500/20 text-rose-300 mr-0.5">QUAL−</span>
           <span x-text="`${activeSignalCounts.qualityDefected} Defections`"></span>
         </button>
       </div>
@@ -2572,7 +2572,7 @@
       <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
         <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
           <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <span>🆕</span> New Entrants
+            <svg class="w-3.5 h-3.5 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> New Entrants
             <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">NEW</span>
             <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD' : `&le;${changesPeriod}d`"></span>
           </div>
@@ -2618,7 +2618,7 @@
       <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
         <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
           <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <span>❌</span> Dropped from Universe
+            <svg class="w-3.5 h-3.5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Dropped from Universe
             <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-zinc-500/10 text-zinc-300 border border-zinc-500/20">EXITS</span>
             <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD exits' : changesPeriod + 'd exits'"></span>
           </div>
@@ -2669,7 +2669,7 @@
       <div class="rounded-lg border" style="border-color: var(--border); background: var(--surface);">
         <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
           <div class="label flex items-center gap-1.5 text-cyan-400 font-semibold text-xs tracking-wider uppercase">
-            <span>📁</span> Sector Flow Intelligence
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Sector Flow Intelligence
           </div>
           <div class="text-[10px] font-mono text-zinc-500">Net velocity sum · 2+ ETFs only</div>
         </div>
@@ -2682,7 +2682,7 @@
                 <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortSector('net_velocity')" :class="sectorSortClass('net_velocity')">Net Velo</th>
                 <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortSector('avg_velocity')" :class="sectorSortClass('avg_velocity')">Avg Velo</th>
                 <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortSector('names')" :class="sectorSortClass('names')">Names</th>
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortSector('burst_count')" :class="sectorSortClass('burst_count')">⚡ Bursts</th>
+                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortSector('burst_count')" :class="sectorSortClass('burst_count')">Bursts</th>
               </tr>
             </thead>
             <tbody>
@@ -2716,7 +2716,7 @@
       <div class="rounded-lg border" style="border-color: var(--border); background: var(--surface);">
         <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
           <div class="label flex items-center gap-1.5 text-cyan-400 font-semibold text-xs tracking-wider uppercase">
-            <span>🌐</span> Country Flow Intelligence
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Country Flow Intelligence
           </div>
           <div class="text-[10px] font-mono text-zinc-500">Net velocity sum · 2+ ETFs only</div>
         </div>
@@ -2729,7 +2729,7 @@
                 <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortCountry('net_velocity')" :class="countrySortClass('net_velocity')">Net Velo</th>
                 <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortCountry('avg_velocity')" :class="countrySortClass('avg_velocity')">Avg Velo</th>
                 <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortCountry('names')" :class="countrySortClass('names')">Names</th>
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortCountry('burst_count')" :class="countrySortClass('burst_count')">⚡ Bursts</th>
+                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortCountry('burst_count')" :class="countrySortClass('burst_count')">Bursts</th>
               </tr>
             </thead>
             <tbody>
@@ -3979,10 +3979,10 @@ function app() {
         CSD:  { name: 'Invesco S&P Spin-Off ETF', rebalance: 'Monthly', reconstitution: 'Monthly (Rolling)', notes: 'Adds spin-offs as they occur; formal monthly reset.', desc: 'The primary investment objective of the Invesco S&P Spin-Off ETF is to track the investment results, before fees and expenses, of the S&P U.S. Spin-Off Index. The fund generally invests at least 90% of its total assets in U.S. common stocks that comprise the underlying index, which is designed to measure the performance of U.S. companies that have been spun off from a parent corporation within the past four years. This non-diversified fund targets a baseline configuration of 24 structural holdings, allowing it to maintain concentrated exposure to corporate restructuring events. Corporate spinoffs often create an operational transition where the newly independent subsidiary can establish dedicated management incentives, optimize capital allocation, and resolve conglomerate discounts. Because parent companies distribute subsidiary shares directly to their existing shareholder base, initial institutional selling often temporarily depresses the spinoff\'s stock price, creating a potential valuation anomaly that the index is structured to capture.' },
         FPX:  { name: 'First Trust US Equity Opportunities ETF', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: 'IPOX 100 US Index.', desc: 'The First Trust US Equity Opportunities ETF seeks investment results that correspond generally to the price and yield, before fees and expenses, of the IPOX®-100 U.S. Index. The fund normally invests at least 90% of its net assets in the common stocks comprising the index, which represents a market-capitalization-weighted, 10% capped index measuring the performance of the 100 largest and most liquid U.S. initial public offerings (IPOs) during their first 1,000 trading days. The systematic index methodology purchases eligible securities after the close of their sixth trading day and removes them on their 1000th trading day, corresponding to a holding period of roughly four years. This design provides disciplined exposure to newly public firms during their early growth phase, capturing the private-equity-to-public transition while managing concentration risks through a 10% maximum constituent weight applied during quarterly reconstructions.' },
         FPXI: { name: 'First Trust IPOX International Equity ETF', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: 'IPOX 100 Intl Index.', desc: 'The First Trust International Equity Opportunities ETF seeks investment results that correspond generally to the price and yield, before fees and expenses, of the IPOX® International Index. The fund is designed to provide systematic exposure to the capital market activity of non-U.S. domiciled firms trading on global exchanges, tracking their growth and innovation through a semi-passive indexing approach. The fund targets a structure of 50 holdings, utilizing a market-capitalization-weighted index based on the IPOX® Global Composite Index. By applying a 1,000-trading-day inclusion window and a 10% cap per constituent, the methodology captures early-stage public growth outside the United States, offering global equity exposure with minimal overlap with traditional developed and emerging market benchmarks.' },
-        QMOM: { name: 'Alpha Architect US Quant Momentum ETF', rebalance: 'Monthly', reconstitution: 'Monthly', notes: '🚨 Shifted Oct 2023. High monthly turnover.', desc: 'The Alpha Architect US Quantitative Momentum ETF seeks to deliver consistent exposure to the strongest momentum stocks on the U.S. market. The fund targets a concentrated, equal-weighted portfolio of 50 holdings. Similar to IMOM, the index model scores eligible U.S. stocks based on their 12-month momentum (excluding the most recent month) and uses the frog-in-the-pan (FIP) algorithm to select stocks with gradual, trend-following momentum. The portfolio is rebalanced monthly to ensure rapid alignment with shifting momentum trends.' },
-        IMOM: { name: 'Alpha Architect Intl Quant Momentum ETF', rebalance: 'Monthly', reconstitution: 'Monthly', notes: '🚨 Shifted Oct 2023. High monthly turnover.', desc: 'The Alpha Architect International Quantitative Momentum ETF seeks to deliver consistent exposure to the strongest momentum stocks in the developed international marketplace, excluding U.S. and emerging market equities. The fund targets a concentrated portfolio of 50 holdings, using a rules-based quantitative model that ranks international developed stocks by their 12-month momentum score, excluding the most recent month of performance to mitigate short-term mean reversion. The model also applies a proprietary "frog-in-the-pan" (FIP) momentum filter, which seeks to identify stocks with smooth, consistent price trends rather than sharp, erratic moves, on the theory that gradual price adjustments are more likely to persist. The resulting portfolio is equally weighted and rebalanced frequently to maintain consistent exposure to high-conviction momentum names.' },
-        QVAL: { name: 'Alpha Architect US Quant Value ETF', rebalance: 'Monthly', reconstitution: 'Monthly', notes: '🚨 Shifted Oct 2023. High monthly turnover.', desc: 'The Alpha Architect US Quantitative Value ETF targets U.S. stocks with high earnings relative to their total equity and debt. The fund targets a portfolio of 50 holdings, using a systematic model designed to select undervalued, high-quality U.S. companies characterized by strong earnings growth, low leverage, and positive cash flows. The portfolio is equally weighted and rebalanced monthly, aiming to capture the value premium while avoiding sector concentration risks.' },
-        IVAL: { name: 'Alpha Architect Intl Quant Value ETF', rebalance: 'Monthly', reconstitution: 'Monthly', notes: '🚨 Shifted Oct 2023. High monthly turnover.', desc: 'The Alpha Architect International Quantitative Value ETF targets consistent exposure to attractively priced international stocks, on the expectation that undervalued companies will benefit from mean reversion. The fund targets a concentrated portfolio of 50 holdings, using a quantitative value filter based on the ratio of earnings before interest and taxes to total enterprise value. This screen evaluates operating earnings relative to total enterprise value to identify undervalued international developed stocks while maintaining an equal-weighted structure to manage concentration risk.' },
+        QMOM: { name: 'Alpha Architect US Quant Momentum ETF', rebalance: 'Monthly', reconstitution: 'Monthly', notes: 'Shifted Oct 2023. High monthly turnover.', desc: 'The Alpha Architect US Quantitative Momentum ETF seeks to deliver consistent exposure to the strongest momentum stocks on the U.S. market. The fund targets a concentrated, equal-weighted portfolio of 50 holdings. Similar to IMOM, the index model scores eligible U.S. stocks based on their 12-month momentum (excluding the most recent month) and uses the frog-in-the-pan (FIP) algorithm to select stocks with gradual, trend-following momentum. The portfolio is rebalanced monthly to ensure rapid alignment with shifting momentum trends.' },
+        IMOM: { name: 'Alpha Architect Intl Quant Momentum ETF', rebalance: 'Monthly', reconstitution: 'Monthly', notes: 'Shifted Oct 2023. High monthly turnover.', desc: 'The Alpha Architect International Quantitative Momentum ETF seeks to deliver consistent exposure to the strongest momentum stocks in the developed international marketplace, excluding U.S. and emerging market equities. The fund targets a concentrated portfolio of 50 holdings, using a rules-based quantitative model that ranks international developed stocks by their 12-month momentum score, excluding the most recent month of performance to mitigate short-term mean reversion. The model also applies a proprietary "frog-in-the-pan" (FIP) momentum filter, which seeks to identify stocks with smooth, consistent price trends rather than sharp, erratic moves, on the theory that gradual price adjustments are more likely to persist. The resulting portfolio is equally weighted and rebalanced frequently to maintain consistent exposure to high-conviction momentum names.' },
+        QVAL: { name: 'Alpha Architect US Quant Value ETF', rebalance: 'Monthly', reconstitution: 'Monthly', notes: 'Shifted Oct 2023. High monthly turnover.', desc: 'The Alpha Architect US Quantitative Value ETF targets U.S. stocks with high earnings relative to their total equity and debt. The fund targets a portfolio of 50 holdings, using a systematic model designed to select undervalued, high-quality U.S. companies characterized by strong earnings growth, low leverage, and positive cash flows. The portfolio is equally weighted and rebalanced monthly, aiming to capture the value premium while avoiding sector concentration risks.' },
+        IVAL: { name: 'Alpha Architect Intl Quant Value ETF', rebalance: 'Monthly', reconstitution: 'Monthly', notes: 'Shifted Oct 2023. High monthly turnover.', desc: 'The Alpha Architect International Quantitative Value ETF targets consistent exposure to attractively priced international stocks, on the expectation that undervalued companies will benefit from mean reversion. The fund targets a concentrated portfolio of 50 holdings, using a quantitative value filter based on the ratio of earnings before interest and taxes to total enterprise value. This screen evaluates operating earnings relative to total enterprise value to identify undervalued international developed stocks while maintaining an equal-weighted structure to manage concentration risk.' },
         XMMO: { name: 'Invesco S&P MidCap Momentum ETF', rebalance: 'Semi-Annual', reconstitution: 'Semi-Annual', notes: 'March & September.', desc: 'The Invesco S&P MidCap Momentum ETF seeks to track the performance of the S&P MidCap 400 Momentum Index. The fund targets 76 mid-cap U.S. companies, selecting components from the S&P MidCap 400 Index that have the highest momentum scores. The index methodology evaluates the 12-month price performance of eligible stocks, excluding the most recent month, and weights constituents by a combination of their momentum score and market capitalization to capture momentum within the mid-cap segment.' },
         XSMO: { name: 'Invesco S&P SmallCap Momentum ETF', rebalance: 'Semi-Annual', reconstitution: 'Semi-Annual', notes: 'March & September.', desc: 'The Invesco S&P SmallCap Momentum ETF seeks to track the investment results, before fees and expenses, of the S&P SmallCap 600 Momentum Index. The fund targets a cohort of 112 small-cap U.S. companies, selecting constituents from the S&P SmallCap 600® Index that have the highest momentum scores. The index is reconstituted semi-annually and uses a rules-based process to calculate 12-month momentum (excluding the most recent month), allowing the fund to capture price trends within the small-cap universe.' },
         PIE:  { name: 'Invesco DWA Emerging Markets Momentum', rebalance: 'Quarterly', reconstitution: 'Quarterly', notes: 'DWA Technical Leaders.', desc: 'The Invesco Dorsey Wright Emerging Markets Momentum ETF seeks to track the investment results of the Dorsey Wright Emerging Markets Technical Leaders Index. The fund targets a cohort of 100 large-capitalization companies based in emerging market countries. The index selects constituents using point-and-figure relative strength comparisons, rebalancing quarterly to target emerging market equities that display powerful momentum and structural relative strength.' },
@@ -4215,7 +4215,7 @@ function app() {
       let stateStyle = stateMap[r.flag]?.style || 'background: rgba(255,255,255,0.04); color: var(--text-3); border: 1px solid rgba(255,255,255,0.10)';
       let stateTip = stateMap[r.flag]?.tip || 'Neutral status - no major structural anomalies.';
       if (r.burst_30d) {
-        stateLabel = '⚡ BURST';
+        stateLabel = 'BURST';
         stateStyle = 'background: rgba(168,85,247,0.15); color: #c084fc; border: 1px solid rgba(168,85,247,0.35)';
         stateTip = `BURST move - global rank improved by ${r.global_rank_peak_30d ?? 0}+ positions in last 30d.`;
       } else if ((r.velocity_score || 0) >= 25 && (r.etf_count || 0) >= 2) {
@@ -4514,10 +4514,10 @@ function app() {
     // previously surfaced in the Flag column is lost (they land in overflow).
     signalBadges(row) {
       const b = [];
-      if (row.burst_30d) b.push({ k: 'burst', label: '⚡BURST',
+      if (row.burst_30d) b.push({ k: 'burst', label: 'BURST',
         style: 'background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.30)',
         tip: `BURST move - global rank improved by ${row.global_rank_peak_30d ?? 0}+ positions in last 30d. Currently #${row.leaderboard_rank}${row.global_rank_best_30d != null ? ` (best in window: #${row.global_rank_best_30d})` : ''}.` });
-      if (row.crater_30d) b.push({ k: 'crater', label: '📉CRATER',
+      if (row.crater_30d) b.push({ k: 'crater', label: 'CRATER',
         style: 'background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.30)',
         tip: `CRATER signal - global rank dropped by ${row.global_rank_drop_30d ?? 0}+ positions in last 30d. Currently #${row.leaderboard_rank}. Sustained downward rank acceleration.` });
       if ((row.velocity_score || 0) >= 25 && (row.etf_count || 0) >= 2 && !row.burst_30d)
@@ -4567,11 +4567,11 @@ function app() {
       if (row.burst_30d) {
         const peak = row.global_rank_peak_30d ?? 0;
         const sustained = (row.global_rank_delta_30d ?? 0) > 0;
-        return `⚡ Burst regime - +${peak} peak ranks in 30d${sustained ? ', sustained.' : ', momentum cooling.'}`;
+        return `Burst regime - +${peak} peak ranks in 30d${sustained ? ', sustained.' : ', momentum cooling.'}`;
       }
       if (row.crater_30d) {
         const drop = row.global_rank_drop_30d ?? 0;
-        return `📉 Crater regime - rank dropped ${drop}+ positions in 30d. Sustained downward acceleration.`;
+        return `Crater regime - rank dropped ${drop}+ positions in 30d. Sustained downward acceleration.`;
       }
       if (row.quality_adopted_30d) return 'Quality cosign added in last 30 days - institutional validation.';
       if (row.stealth_accumulation) return 'Quiet accumulation: weight building without rank movement.';
@@ -4633,8 +4633,8 @@ function app() {
       const div = row.conviction_divergence;
       risk.push({ k: 'divergence', v: div === 1 ? 'relative strength' : div === -1 ? 'crowding out' : 'aligned',
         c: div === 1 ? 'var(--up)' : div === -1 ? 'var(--down)' : 'var(--text-3)' });
-      if (row.quality_defected_30d) risk.push({ w: true, v: '⚠ Quality fund dropped this name in 30d', c: 'var(--down)' });
-      if (row.crater_30d) risk.push({ w: true, v: `📉 Crater signal: rank dropped ${row.global_rank_drop_30d ?? 0}+ positions in 30d`, c: 'var(--down)' });
+      if (row.quality_defected_30d) risk.push({ w: true, v: 'Quality fund dropped this name in 30d', c: 'var(--down)' });
+      if (row.crater_30d) risk.push({ w: true, v: `Crater signal: rank dropped ${row.global_rank_drop_30d ?? 0}+ positions in 30d`, c: 'var(--down)' });
       if (row.stealth_accumulation) risk.push({ w: true, v: 'Stealth accumulation underway', c: 'var(--amber)' });
 
       return [
@@ -4714,7 +4714,7 @@ function app() {
         + `<div>avg weight flow (7d): ${wf7 >= 0 ? '+' : ''}${wf7.toFixed(1)}%</div>`
         + `<div>ETFs added (30d): ${ed30 >= 0 ? '+' : ''}${ed30}</div>`
         + `<div>score streak: ${sst >= 0 ? '+' : ''}${sst} days</div>`
-        + (row.burst_30d ? '<div style="color: #c084fc; margin-top: 4px">⚡ BURST detected</div>' : '')
+        + (row.burst_30d ? '<div style="color: #c084fc; margin-top: 4px">BURST detected</div>' : '')
         + '</div>';
     },
 

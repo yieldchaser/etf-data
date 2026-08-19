@@ -1,4 +1,4 @@
-# 📈 Conviction Labs
+# Conviction Labs
 
 > **Automated ETF Holdings Intelligence Platform** — tracks daily holdings across 30 Smart-Beta ETFs, detects early institutional accumulation signals, and delivers a full-stack analytical dashboard with 150+ years of cross-asset market history.
 
@@ -391,7 +391,7 @@ Annual returns heatmap for all assets. **Newest year on the left**, oldest on th
 - **Currency lens**: Local / USD / INR / Gold / Silver — all returns recomputed client-side using monthly FX rates from the aux registry
 - **Real returns toggle**: CPI-adjusted using CPIAUCSL (US CPI)
 - **Z-score color mode**: color = how unusual this year was vs the asset's own history
-- **Event annotations**: ⚡ markers on crisis years (1973, 1987, 2008, 2020, 2022...)
+- **Event annotations**: Crisis regime markers on key historical years (1973, 1987, 2008, 2020, 2022...)
 - **CSV export**: downloads current matrix view with active lens applied
 
 #### Asset Detail Panel
