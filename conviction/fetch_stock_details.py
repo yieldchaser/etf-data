@@ -108,6 +108,10 @@ KNOWN_SYMBOL_MAP: dict[str, str] = {
     "3690": "3690.HK", "2020": "2020.HK",
     "INFY": "INFY", "WIT": "WIT", "HDB": "HDB", "IBN": "IBN",
     "ATGL": "ATGL.NS",
+    "STX": "STX", "ALV": "ALV", "FTI": "FTI", "LYB": "LYB",
+    "NXPI": "NXPI", "GTX": "GTX", "ARM": "ARM", "ITC": "ITC.NS",
+    "REP.SM": "REP.MC", "EVO.SS": "EVO.ST", "SAND.SS": "SAND.ST",
+    "TOP.F": "TOP.BK", "TRE.SM": "TRE.MC", "VWS.DC": "VWS.CO",
 }
 
 COUNTRY_SUFFIX: dict[str, str] = {
@@ -518,15 +522,15 @@ def _probe_yf_symbol(ticker: str, company: str, symbol_map: dict) -> str | None:
     def candidate_sort_key(item: tuple[str, str]) -> tuple[int, int, int, int, int]:
         sym, name = item
         sym_base = sym.split(".")[0].replace("-", "")
-        # Priority 1: base ticker matches exactly (0 is better)
-        base_match = 0 if sym_base.upper() == base.upper() else 1
-        # Priority 2: company name matches (0 is better)
+        # Priority 1: company name matches (0 is better)
         matches = 0 if _company_name_matches(company, name) else 1
+        # Priority 2: base ticker matches exactly (0 is better)
+        base_match = 0 if sym_base.upper() == base.upper() else 1
         # Priority 3: local board preferred over NVDR (-R) or Foreign (-F)
         has_r = 1 if "-R." in sym or sym.endswith("-R") else 0
         has_f = 1 if "-F." in sym or sym.endswith("-F") else 0
         dots = sym.count(".")
-        return (base_match, matches, has_r, has_f, dots)
+        return (matches, base_match, has_r, has_f, dots)
 
     # Filter candidates to only include those matching base ticker as a prefix or in the company name
     valid_candidates = []
@@ -538,6 +542,8 @@ def _probe_yf_symbol(ticker: str, company: str, symbol_map: dict) -> str | None:
             valid_candidates.append((sym, name))
     valid_candidates.sort(key=candidate_sort_key)
     
+    cand_name_map = {sym: name for sym, name in valid_candidates}
+
     # Extract just the symbols to test
     symbols_to_test = [sym for sym, name in valid_candidates]
 
@@ -551,6 +557,10 @@ def _probe_yf_symbol(ticker: str, company: str, symbol_map: dict) -> str | None:
         if sym in tested:
             continue
         tested.add(sym)
+        # If candidate name is known from search API, ensure it matches company
+        sym_co_name = cand_name_map.get(sym)
+        if company and sym_co_name and not _company_name_matches(company, sym_co_name):
+            continue
         try:
             df = yf.download(sym, period="5d", progress=False, threads=False)
             if df is not None and not df.empty:
@@ -562,6 +572,15 @@ def _probe_yf_symbol(ticker: str, company: str, symbol_map: dict) -> str | None:
                 if not close.empty:
                     val = float(close.values.flatten()[-1])
                     if val > 0:
+                        # If probed from PROBE_SUFFIXES without pre-checked name, verify info
+                        if not sym_co_name and company:
+                            try:
+                                t_info = yf.Ticker(sym).info
+                                probed_co = t_info.get("longName") or t_info.get("shortName") or ""
+                                if probed_co and not _company_name_matches(company, probed_co):
+                                    continue
+                            except Exception:
+                                pass
                         symbol_map[ticker] = sym
                         print(f"    PROBE HIT: {ticker} → {sym} (price={val:.2f})")
                         return sym
