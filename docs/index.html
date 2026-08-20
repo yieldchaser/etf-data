@@ -2872,13 +2872,7 @@ function app() {
         ]);
         this.leaderboard = lb; this.holdings = hd; this.changelog = chg; this.meta = mt;
         this.flow = flow; this.overlap = overlap; this.scoreHistory = scoreHistory; this.holdingsExits = holdingsExits;
-        // Default sort: APEX forward score (desc) when the backend emits it.
-        // Runs once at load - any header click after this overrides it as usual.
-        if (Array.isArray(lb) && lb.some(r => r && r.apex_score != null)) {
-          this.sortLevels = [{ key: 'apex_score', dir: 'desc' }];
-          this.sortKey = 'apex_score';
-          this.sortDir = 'desc';
-        }
+        // Default sort: leaderboard rank (1..N top to down)
         // Hash routing - open #etf=XYZ jumps to the ETFs tab for that ETF
         const hash = location.hash || '';
         const etfMatch = hash.match(/#etf=([A-Z0-9.\-]+)/i);
