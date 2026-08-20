@@ -126,17 +126,76 @@ COUNTRY_SUFFIX: dict[str, str] = {
     "Sweden": ".ST",
     "Switzerland": ".SW",
     "Netherlands": ".AS",
-    "United Kingdom": ".L",
+    "United Kingdom": ".L", "UK": ".L",
     "Brazil": ".SA",
     "China": ".SS",
     "Mexico": ".MX",
     "Singapore": ".SI",
+    "India": ".NS",
+    "Malaysia": ".KL",
+    "Thailand": ".BK",
+    "Philippines": ".PS",
+    "South Africa": ".JO",
+    "Indonesia": ".JK",
+    "Poland": ".WA",
+    "Turkey": ".IS",
+    "Greece": ".AT",
+    "Italy": ".MI",
+    "Spain": ".MC",
+    "Saudi Arabia": ".SR",
+    "United Arab Emirates": ".AE", "UAE": ".AE",
+    "Qatar": ".QA",
+    "Kuwait": ".KW",
+    "Chile": ".SN",
+    "Norway": ".OL",
+    "Denmark": ".CO",
+    "Belgium": ".BR",
+    "Austria": ".VI",
+    "Portugal": ".LS",
+    "Finland": ".HE",
+    "Ireland": ".IR",
+    "New Zealand": ".NZ",
 }
+
+COUNTRY_NAME_HINTS = [
+    ("SOUTH AFRICA", "South Africa"),
+    ("PHILIPPINES", "Philippines"),
+    ("SAUDI ARABIA", "Saudi Arabia"),
+    ("UNITED ARAB EMIRATES", "United Arab Emirates"),
+    ("SOUTH KOREA", "South Korea"),
+    ("HONG KONG", "Hong Kong"),
+    ("UNITED KINGDOM", "United Kingdom"),
+    ("MALAYSIA", "Malaysia"),
+    ("THAILAND", "Thailand"),
+    ("INDONESIA", "Indonesia"),
+    ("SINGAPORE", "Singapore"),
+    ("AUSTRALIA", "Australia"),
+    ("INDIA", "India"),
+    ("MEXICO", "Mexico"),
+    ("BRAZIL", "Brazil"),
+    ("TAIWAN", "Taiwan"),
+    ("JAPAN", "Japan"),
+    ("KOREA", "South Korea"),
+    ("GERMANY", "Germany"),
+    ("FRANCE", "France"),
+    ("ITALY", "Italy"),
+    ("SPAIN", "Spain"),
+    ("SWEDEN", "Sweden"),
+    ("SWITZERLAND", "Switzerland"),
+    ("POLAND", "Poland"),
+    ("TURKEY", "Turkey"),
+    ("GREECE", "Greece"),
+    ("CHILE", "Chile"),
+    ("NORWAY", "Norway"),
+    ("DENMARK", "Denmark"),
+    ("QATAR", "Qatar"),
+    ("KUWAIT", "Kuwait"),
+]
 
 PROBE_SUFFIXES = [
     ".KS", ".TW", ".T", ".HK", ".SS", ".SZ", ".SA", ".NS", ".AX", ".L", ".DE", ".PA",
     ".MX", ".KL", ".JK", ".BK", ".IS", ".WA", ".SR", ".SN", ".PS", ".TA", ".JO", ".AT",
-    ".AD", ".AE"
+    ".AD", ".AE", ".MI", ".MC", ".CO", ".OL"
 ]
 
 # Exchange-suffix → native trading currency. Used to infer the price currency
@@ -348,15 +407,23 @@ def _save_currency_cache(cache: dict[str, str]) -> None:
     _write_json_atomic(CURRENCY_CACHE_PATH, _dumps(cache, indent=2, sort_keys=True))
 
 
-def _is_us_ticker(ticker: str, country: str) -> bool:
-    if re.fullmatch(r"[A-Z]{1,5}", ticker):
+def _is_us_ticker(ticker: str, country: str, company: str = "") -> bool:
+    if ticker in KNOWN_SYMBOL_MAP and "." not in KNOWN_SYMBOL_MAP[ticker]:
         return True
     if country and country not in ("Unknown", ""):
-        return country == "United States"
+        return country in ("United States", "USA", "US")
+    # If company has a clear foreign country marker, it's not US
+    if company:
+        co_upper = company.upper()
+        for marker, _ in COUNTRY_NAME_HINTS:
+            if marker in co_upper:
+                return False
+    if re.fullmatch(r"[A-Z]{1,5}", ticker):
+        return True
     return False
 
 
-def _resolve_yf_symbol(ticker: str, meta: dict, symbol_map: dict) -> str:
+def _resolve_yf_symbol(ticker: str, meta: dict, symbol_map: dict, company: str = "") -> str:
     if ticker in symbol_map:
         return symbol_map[ticker]
 
@@ -405,50 +472,81 @@ def _resolve_yf_symbol(ticker: str, meta: dict, symbol_map: dict) -> str:
         return f"{base}.{suffix}"
 
     country = (meta.get("country") or "").strip()
-    if _is_us_ticker(ticker, country):
+    if not country or country == "Unknown":
+        co_upper = company.upper() if company else ""
+        for marker, cname in COUNTRY_NAME_HINTS:
+            if marker in co_upper:
+                country = cname
+                break
+
+    if _is_us_ticker(ticker, country, company):
         return ticker
     if country and country in COUNTRY_SUFFIX:
         return ticker + COUNTRY_SUFFIX[country]
+
+    co_upper = company.upper() if company else ""
     if re.fullmatch(r"A?\d{6}", ticker):
-        return ticker.lstrip("A") + ".KS"
+        raw_digits = ticker.lstrip("A")
+        if "CNY" in co_upper or "CHINA" in co_upper:
+            if raw_digits.startswith(("00", "30")):
+                return raw_digits + ".SZ"
+            elif raw_digits.startswith(("60", "68")):
+                return raw_digits + ".SS"
+        return raw_digits + ".KS"
+
     if re.fullmatch(r"\d{4}", ticker):
+        if "SAR" in co_upper or "SAUDI" in co_upper or country == "Saudi Arabia":
+            return ticker + ".SR"
+        if "JPY" in co_upper or "JAPAN" in co_upper or country == "Japan":
+            return ticker + ".T"
+        if "TAIWAN" in co_upper or country == "Taiwan" or "TWD" in co_upper:
+            return ticker + ".TW"
+        if "HONG KONG" in co_upper or country == "Hong Kong" or "HKD" in co_upper or " H " in co_upper or co_upper.endswith(" H") or "CAYMAN" in co_upper:
+            return ticker + ".HK"
         return ticker + ".TW"
+
     if re.fullmatch(r"[A-Z]{4}(3|4|11)", ticker):
-        # Only apply the Brazilian .SA suffix when country is unknown/unset.
-        # If country is known and is NOT Brazil, skip this pattern — it could
-        # false-positive on a coincidental 4-letter+digit ticker from another
-        # exchange (e.g. an Indian or Chinese name that the metadata doesn't map).
-        # Brazil-specific names should already have been caught by COUNTRY_SUFFIX
-        # above; this heuristic is only for tickers with no country metadata.
         if not country or country == "Brazil":
             return ticker + ".SA"
+
     if re.fullmatch(r"\d{1,4}", ticker):
+        if "SAR" in co_upper or "SAUDI" in co_upper or country == "Saudi Arabia":
+            return ticker + ".SR"
         return ticker.zfill(4) + ".HK"
+
     return ticker
 
 
-def _company_name_matches(lb_company: str, yf_company: str) -> bool:
+def _company_name_matches(lb_company: str, yf_company: str, ticker: str = "") -> bool:
     if not lb_company or not yf_company:
         return False
-    # Common stop words in company names
+    # Common stop words, corporate nouns, and country words that should not count as identity overlap
     stop_words = {
         "sa", "plc", "ltd", "inc", "corp", "co", "holdings", "holding", "common", "stock",
         "class", "ord", "ordinary", "bhd", "as", "sab", "de", "cv", "group", "the", "and",
         "of", "in", "sa-registered", "shs", "sponsored", "adr", "foreign", "forgn", "sh",
-        "units", "unit", "trust", "investment", "financial", "bank", "banking", "sae", "ksc"
+        "units", "unit", "trust", "investment", "investments", "financial", "bank", "banking",
+        "sae", "ksc", "company", "companies", "corporation", "limited", "incorporated",
+        "energy", "capital", "management", "fund", "funds", "reit", "technologies", "technology",
+        "philippines", "india", "malaysia", "thailand", "indonesia", "mexico", "brazil",
+        "korea", "taiwan", "japan", "china", "hong", "kong", "singapore", "australia",
+        "germany", "france", "italy", "spain", "sweden", "switzerland", "united", "states",
+        "kingdom", "america", "south", "africa", "saudi", "arabia", "qatar", "kuwait", "poland",
+        "turkey", "greece", "chile", "norway", "denmark"
     }
+    if ticker:
+        stop_words.add(ticker.lower())
     
     def tokenize(name: str) -> set[str]:
         # Split by non-alphanumeric, convert to lower, filter out stop words and short tokens
         tokens = re.split(r"[^A-Za-z0-9]", name.lower())
-        return {t for t in tokens if t and t not in stop_words and len(t) > 1}
+        return {t for t in tokens if t and t not in stop_words and len(t) > 2}
 
     lb_tokens = tokenize(lb_company)
     yf_tokens = tokenize(yf_company)
     
-    # If no significant tokens in either, fallback to basic comparison
     if not lb_tokens or not yf_tokens:
-        return lb_company.lower().strip() == yf_company.lower().strip()
+        return False
         
     # Return True if there is at least one overlapping token
     return bool(lb_tokens & yf_tokens)
@@ -487,7 +585,7 @@ def _probe_yf_symbol(ticker: str, company: str, symbol_map: dict) -> str | None:
             "NET OTHER ASSETS", "OTHER ASSETS", "INDIA", "MEXICO", "INDONESIA", "MALAYSIA",
             "THAILAND", "CHILE", "PORTUGAL", "GEORGIA", "TURKEY", "KOREA", "TAIWAN", "JAPAN",
             "BRAZIL", "SAUDI ARABIA", "SPAIN", "ITALY", "GERMANY", "FRANCE", "UK", "UNITED KINGDOM",
-            "CANADA", "AUSTRALIA", "USA", "UNITED STATES"
+            "CANADA", "AUSTRALIA", "USA", "UNITED STATES", "PHILIPPINES"
         ]
         for suf in suffixes:
             name = re.sub(r'\b' + re.escape(suf) + r'\b', ' ', name)
@@ -523,7 +621,7 @@ def _probe_yf_symbol(ticker: str, company: str, symbol_map: dict) -> str | None:
         sym, name = item
         sym_base = sym.split(".")[0].replace("-", "")
         # Priority 1: company name matches (0 is better)
-        matches = 0 if _company_name_matches(company, name) else 1
+        matches = 0 if _company_name_matches(company, name, ticker) else 1
         # Priority 2: base ticker matches exactly (0 is better)
         base_match = 0 if sym_base.upper() == base.upper() else 1
         # Priority 3: local board preferred over NVDR (-R) or Foreign (-F)
@@ -538,7 +636,7 @@ def _probe_yf_symbol(ticker: str, company: str, symbol_map: dict) -> str | None:
         sym_base = sym.split(".")[0].replace("-", "")
         # If searched by company name, it's fine if the base ticker doesn't match the symbol's base ticker,
         # as long as the company name matches!
-        if base.upper() in sym_base.upper() or base.upper() in name.upper() or _company_name_matches(company, name):
+        if base.upper() in sym_base.upper() or base.upper() in name.upper() or _company_name_matches(company, name, ticker):
             valid_candidates.append((sym, name))
     valid_candidates.sort(key=candidate_sort_key)
     
@@ -559,7 +657,7 @@ def _probe_yf_symbol(ticker: str, company: str, symbol_map: dict) -> str | None:
         tested.add(sym)
         # If candidate name is known from search API, ensure it matches company
         sym_co_name = cand_name_map.get(sym)
-        if company and sym_co_name and not _company_name_matches(company, sym_co_name):
+        if company and sym_co_name and not _company_name_matches(company, sym_co_name, ticker):
             continue
         try:
             df = yf.download(sym, period="5d", progress=False, threads=False)
@@ -577,7 +675,7 @@ def _probe_yf_symbol(ticker: str, company: str, symbol_map: dict) -> str | None:
                             try:
                                 t_info = yf.Ticker(sym).info
                                 probed_co = t_info.get("longName") or t_info.get("shortName") or ""
-                                if probed_co and not _company_name_matches(company, probed_co):
+                                if probed_co and not _company_name_matches(company, probed_co, ticker):
                                     continue
                             except Exception:
                                 pass
@@ -588,7 +686,6 @@ def _probe_yf_symbol(ticker: str, company: str, symbol_map: dict) -> str | None:
             pass
         time.sleep(PROBE_DELAY)
     return None
-
 
 
 def _fetch_price_one(symbol: str) -> list[list] | None:
@@ -625,7 +722,7 @@ def _fetch_price_one(symbol: str) -> list[list] | None:
         return None
 
 
-def _fetch_description_one(symbol: str) -> tuple[str | None, str | None]:
+def _fetch_description_one(symbol: str, company: str = "", ticker: str = "") -> tuple[str | None, str | None]:
     """Fetch real description + trading currency from yfinance.
     Returns (description, currency). NEVER fabricates descriptions."""
     try:
@@ -634,7 +731,14 @@ def _fetch_description_one(symbol: str) -> tuple[str | None, str | None]:
         # .upper() also normalizes London's 'GBp' (pence) to 'GBP' — display
         # currency code only; prices are NOT rescaled.
         currency = (info.get("currency") or info.get("financialCurrency") or "").strip().upper() or None
+        yf_name = (info.get("longName") or info.get("shortName") or "").strip()
         desc = (info.get("longBusinessSummary") or info.get("description") or "").strip()
+
+        # If company name is provided and doesn't match yfinance company name or description
+        if company and yf_name and not _company_name_matches(company, yf_name, ticker):
+            if desc and not _company_name_matches(company, desc[:200], ticker):
+                return None, currency
+
         if len(desc) < 20:
             desc = None
         elif len(desc) > 620:
@@ -936,7 +1040,7 @@ def build_details(
         meta    = metadata.get(ticker, {})
         print(f"\n  [{i}/{len(batch)}] {ticker} ({company[:40]})")
 
-        symbol = _resolve_yf_symbol(ticker, meta, symbol_map)
+        symbol = _resolve_yf_symbol(ticker, meta, symbol_map, company)
         prices = _fetch_price_one(symbol)
 
         if not prices:
@@ -951,7 +1055,7 @@ def build_details(
         needs_desc = not current_desc or _TEMPLATE_DESC_RE.search(current_desc)
         if needs_desc and symbol:
             time.sleep(DESC_DELAY)
-            desc, fetched_currency = _fetch_description_one(symbol)
+            desc, fetched_currency = _fetch_description_one(symbol, company, ticker)
             if desc:
                 desc_cache[ticker] = desc
                 print(f"    Description: {len(desc)} chars")
@@ -962,7 +1066,7 @@ def build_details(
         elif not current_currency and symbol:
             # Have description cached but no currency yet — quick fetch
             time.sleep(DESC_DELAY)
-            _, fetched_currency = _fetch_description_one(symbol)
+            _, fetched_currency = _fetch_description_one(symbol, company, ticker)
             if fetched_currency:
                 currency_cache[ticker] = fetched_currency
             desc = current_desc or None
@@ -996,7 +1100,7 @@ def build_details(
         meta    = metadata.get(ticker, {})
         print(f"\n  [refresh {i}/{len(refresh_batch)}] {ticker} ({company[:40]})")
 
-        symbol = _resolve_yf_symbol(ticker, meta, symbol_map)
+        symbol = _resolve_yf_symbol(ticker, meta, symbol_map, company)
         prices = _fetch_price_one(symbol)
 
         if not prices:
