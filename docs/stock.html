@@ -897,13 +897,31 @@ function stockApp() {
       if (/^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i.test(safeStem)) safeStem += '_';
 
       try {
-        const [lbData, scoreData, hhData, hlData, tickerHist] = await Promise.all([
+        // Phase 1 — small critical-path fetches only (BUG-16: the two
+        // multi-MB aggregate history files used to be fetched eagerly here,
+        // adding ~4.1MB raw / ~525KB gz + ~50ms JSON.parse to EVERY stock
+        // view). They are pure fallbacks for when data/history/{ticker}.json
+        // (~13KB, contains scoreHistory/rankHistory/holdingsHistory) is
+        // missing or incomplete — so they're now fetched lazily in phase 2.
+        const [lbData, hlData, tickerHist] = await Promise.all([
           fetch('data/leaderboard.json', { cache: 'no-store' }).then(r => r.json()),
-          fetch('data/score_history.json', { cache: 'no-store' }).then(r => r.json()).catch(() => ({})),
-          fetch('data/holdings_history.json', { cache: 'no-store' }).then(r => r.json()).catch(() => ({})),
           fetch('data/holdings_latest.json', { cache: 'no-store' }).then(r => r.json()).catch(() => []),
           fetch(`data/history/${safeStem}.json`, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null),
         ]);
+
+        // Phase 2 — lazy fallback fetches (skipped entirely for the ~100% of
+        // tickers whose per-ticker history file is complete).
+        let scoreData = {};
+        let hhData = {};
+        if (!(tickerHist && tickerHist.scoreHistory && tickerHist.rankHistory)
+            || !(tickerHist && tickerHist.holdingsHistory)) {
+          const needScores = !(tickerHist && tickerHist.scoreHistory && tickerHist.rankHistory);
+          const needHH = !(tickerHist && tickerHist.holdingsHistory);
+          [scoreData, hhData] = await Promise.all([
+            needScores ? fetch('data/score_history.json', { cache: 'no-store' }).then(r => r.json()).catch(() => ({})) : {},
+            needHH ? fetch('data/holdings_history.json', { cache: 'no-store' }).then(r => r.json()).catch(() => ({})) : {},
+          ]);
+        }
 
         // Leaderboard row
         this.leaderboardRow = lbData.find(r => r.ticker === this.ticker) || null;
