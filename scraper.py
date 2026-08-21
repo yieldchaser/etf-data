@@ -765,7 +765,11 @@ def run_extended_scrapers():
 def main():
     try:
         with open(CONFIG_FILE, 'r') as f: etfs = json.load(f)
-    except: return
+    except Exception as e:
+        # Fail loud (audit P0: silent-success exits). A missing/corrupt
+        # config previously returned exit 0 — CI green, zero scraping done.
+        print(f"❌ FATAL: could not load {CONFIG_FILE}: {e} — aborting (exit 1)")
+        sys.exit(1)
 
     # Startup invariant: surface ownership collisions between config.json
     # (Primary_ETFs) and V42_ETFS. Warning-only — does not abort (Req 1.3).
@@ -936,6 +940,16 @@ def main():
 
     # --- EXTENDED SCRAPERS (Playwright / PDF / XLS sources) ---
     run_extended_scrapers()
+
+    # --- FAIL-LOUD GATE (audit P0: silent-success exits) ---
+    # Per-ETF failures above stay warning-only (fault isolation by design;
+    # cron redundancy covers transient blips). But if EVERY enabled primary
+    # ETF failed, that is a systemic outage or issuer redesign — previously
+    # this exited 0 and CI stayed green while data silently froze.
+    enabled_count = sum(1 for etf in etfs if etf.get('enabled', True))
+    if enabled_count and len(master_list) == 0:
+        print(f"❌ FATAL: 0/{enabled_count} enabled primary ETFs scraped successfully — failing run (exit 1)")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

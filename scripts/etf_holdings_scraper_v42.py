@@ -1536,6 +1536,14 @@ def run_all():
     print(f"\n\n{'='*60}\nFINAL SUMMARY\n{'='*60}")
     print(pd.DataFrame(summary).to_string(index=False))
 
+    # Fail loud on TOTAL failure (audit P0: silent-success exits). run_all()
+    # used to swallow every exception and exit 0, so an issuer-wide outage
+    # yielded a green run with zero rows. Partial failures remain exit 0 —
+    # fault isolation across funds is by design.
+    if summary and all(s['Rows'] == 0 for s in summary):
+        print("\n❌ FATAL: every extended scraper returned 0 rows — failing run (exit 1)")
+        sys.exit(1)
+
 
 if __name__ == '__main__':
     run_all()
