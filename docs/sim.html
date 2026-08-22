@@ -150,7 +150,7 @@
         <option value="SPY">SPY (S&P 500)</option>
         <option value="QQQ">QQQ (Nasdaq-100)</option>
         <option value="IWM">IWM (Russell 2000)</option>
-        <option value="EWJ">EWJ (Japan)</option>
+        <option value="EWJ">EWJ (Japan · Nikkei ¥, unhedged)</option>
         <option value="GLD">GLD (Gold)</option>
         <option value="TLT">TLT (20Y Treasury)</option>
       </select>
@@ -1305,15 +1305,6 @@ function buildMonthlyReturns(monthly) {
  * @returns {Object} - {months, equity, returns, ...}
  */
 function runBacktestEngine(holdings, tickerReturns, startYm, endYm, rebalance = 'annual', rfMonthly = 0.004) {
-  // Get all months in range
-  const allMonths = new Set();
-  for (const { ticker } of holdings) {
-    const rets = tickerReturns[ticker];
-    if (rets) Object.keys(rets).forEach(m => allMonths.add(m));
-  }
-  const months = [...allMonths].filter(m => m >= startYm && m <= endYm).sort();
-  if (months.length < 2) return null;
-
   // Add synthetic cash asset if weights do not sum to 100% (allows leverage/shorting)
   const adjustedHoldings = [...holdings];
   const totalW = holdings.reduce((s, h) => s + h.weight, 0);
@@ -1323,6 +1314,19 @@ function runBacktestEngine(holdings, tickerReturns, startYm, endYm, rebalance = 
       weight: 1.0 - totalW
     });
   }
+
+  // Intersect months across holdings (within range). A union would silently pad
+  // a leg's missing months with 0% returns, distorting weighted returns and
+  // drifting weights.
+  let months = null;
+  for (const { ticker } of holdings) {
+    const keys = Object.keys(tickerReturns[ticker] || {})
+      .filter(m => m >= startYm && m <= endYm)
+      .sort();
+    months = months === null ? keys : months.filter(m => keys.includes(m));
+    if (months.length < 2) return null;
+  }
+  if (months === null || months.length < 2) return null;
 
   // Target weights
   const targetWeights = {};
@@ -1454,11 +1458,13 @@ function _lineChart(series, opts = {}) {
   const minY = logScale ? Math.min(...allY) : Math.min(...allY, 0);
   const maxY = Math.max(...allY);
   const yRange = maxY - minY || 1;
+  // Flat series: keep the log denominator non-zero (avoids NaN path data)
+  const logMin = Math.log(minY || 1);
+  const logMax = Math.log(maxY) > logMin ? Math.log(maxY) : logMin + 1e-9;
 
   const xS = (ym) => PL + (allX.indexOf(ym) / Math.max(allX.length - 1, 1)) * chartW;
   const yS = (v) => {
     if (logScale && v > 0) {
-      const logMin = Math.log(minY || 1), logMax = Math.log(maxY);
       return PT + chartH - ((Math.log(v) - logMin) / (logMax - logMin)) * chartH;
     }
     return PT + chartH - ((v - minY) / yRange) * chartH;
@@ -1469,7 +1475,7 @@ function _lineChart(series, opts = {}) {
   const nTicks = 5;
   for (let i = 0; i <= nTicks; i++) {
     const v = logScale
-      ? Math.exp(Math.log(minY || 1) + (Math.log(maxY) - Math.log(minY || 1)) * i / nTicks)
+      ? Math.exp(logMin + (logMax - logMin) * i / nTicks)
       : minY + yRange * i / nTicks;
     const y = yS(v);
     ticks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W-PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>`;
@@ -1564,14 +1570,17 @@ function runMonteCarloEngine(returns, horizon, nPaths, method, withdrawal = 0) {
     let val = 10000;
     const path = [val];
     const nMonths = horizon * 12;
+    let blockStart = 0;
 
     for (let t = 0; t < nMonths; t++) {
       let r;
       if (method === 'historical') {
         r = returns[Math.floor(Math.random() * n)];
       } else if (method === 'block') {
-        const start = Math.floor(Math.random() * (n - blockSize));
-        r = returns[start + (t % blockSize)];
+        // New block start every `blockSize` months - consecutive draws stay
+        // within one historical block so within-block autocorrelation survives.
+        if (t % blockSize === 0) blockStart = Math.floor(Math.random() * (n - blockSize + 1));
+        r = returns[blockStart + (t % blockSize)];
       } else {
         // Parametric normal
         const mu = _mean(returns), sigma = _std(returns);
@@ -1654,8 +1663,10 @@ function runEtnEngine(dailyPrices, leverage, borrowCost, ter) {
     if (!prev || !curr) continue;
     const r = curr / prev - 1;
 
-    // ETN: daily compounding with leverage, borrow cost, TER
-    const etnR = L * r - (L > 1 ? (L - 1) * dailyBorrow : 0) - dailyTer;
+    // ETN: daily compounding with leverage, financing on the (|L|-1) borrowed
+    // leg (both long and inverse), TER accrued daily
+    const finLeg = Math.abs(L) > 1 ? (Math.abs(L) - 1) * dailyBorrow : 0;
+    const etnR = L * r - finLeg - dailyTer;
     etn *= (1 + etnR);
 
     // Naive leverage: just multiply return (no daily compounding drag)
@@ -1680,11 +1691,12 @@ function runEtnEngine(dailyPrices, leverage, borrowCost, ter) {
   // Theoretical vol drag = ½(L²-L)σ²
   const volDragTheory = 0.5 * (L * L - L) * annualVol * annualVol;
 
-  // Simulated drag = (naive CAGR - ETN CAGR)
-  const nYears = dailyPrices.length / 252;
-  const etnCagr = nYears > 0 ? Math.pow(etn / 100, 1 / nYears) - 1 : 0;
-  const naiveCagr = nYears > 0 ? Math.pow(naive / 100, 1 / nYears) - 1 : 0;
-  const volDragSimulated = naiveCagr - etnCagr;
+  // Simulated drag in log space: frictionless daily-rebalanced L× growth minus
+  // L × underlying growth. Excludes borrow/TER so it ties out to theory.
+  const nYears = (dailyPrices.length - 1) / 252;
+  const volDragSimulated = nYears > 0
+    ? (L * Math.log(underlying / 100) - Math.log(naive / 100)) / nYears
+    : 0;
 
   return {
     etnSeries, naiveSeries, undSeries,
@@ -1945,7 +1957,7 @@ function labApp() {
       addTicker('SPY', 'S&P 500 ETF proxy (SPY)', marketAssets.sp500?.monthly, 'equity');
       addTicker('QQQ', 'Nasdaq-100 ETF proxy (QQQ)', marketAssets.nasdaq100?.monthly, 'equity');
       addTicker('DIA', 'Dow Jones ETF proxy (DIA)', marketAssets.djia?.monthly, 'equity');
-      addTicker('EWJ', 'Japan ETF proxy (EWJ)', marketAssets.nikkei?.monthly, 'equity');
+      addTicker('EWJ', 'Nikkei 225 proxy · JPY unhedged (EWJ)', marketAssets.nikkei?.monthly, 'equity');
       addTicker('GLD', 'Gold ETF proxy (GLD)', marketAssets.gold?.monthly, 'commodity');
 
       const last = Object.values(tickers)
@@ -2362,12 +2374,14 @@ function labApp() {
       const r = this.backtestResult;
       if (!r) return;
       const rets = r.portfolio.returns;
-      // Bucket into 2% bins from -20% to +20%
+      // Bucket into 2% bins from -20% to +20%; outer bins are open-ended so
+      // tail months (>±20%) are counted rather than silently dropped
       const bins = [];
       for (let lo = -0.20; lo < 0.20; lo += 0.02) {
         const hi = lo + 0.02;
-        const count = rets.filter(r => r >= lo && r < hi).length;
-        bins.push({ label: (lo * 100).toFixed(0) + '%', count });
+        const openLo = lo <= -0.20, openHi = hi >= 0.1999;
+        const count = rets.filter(v => v >= (openLo ? -Infinity : lo) && v < (openHi ? Infinity : hi)).length;
+        bins.push({ label: openLo ? '<-20%' : openHi ? '20%' : (lo * 100).toFixed(0) + '%', count });
       }
       this.returnDistSvg = _barChart(bins, { W: 600, H: 140 });
     },
@@ -2467,6 +2481,7 @@ function labApp() {
 
       const portDd = ddSeries(r.portfolio.equity);
       const benchDd = r.benchmark ? ddSeries(r.benchmark.equity) : null;
+      this._ddSeries = { portDd, benchDd }; // reused by ddHover (avoids per-event peak scans)
 
       const series = [
         { data: months.map((m, i) => [m, portDd[i + 1]]), color: '#22d3ee', label: 'Portfolio', width: 1.5 },
@@ -2653,8 +2668,8 @@ function labApp() {
       if (!r) return;
       const rect = svg.getBoundingClientRect();
       const mouseX = ((e.clientX - rect.left) / rect.width) * 1200;
-      const clampedX = Math.max(60, Math.min(1200 - 20, mouseX));
-      const pct = (clampedX - 60) / (1200 - 60 - 20);
+      const clampedX = Math.max(60, Math.min(1200 - 80, mouseX));
+      const pct = (clampedX - 60) / (1200 - 60 - 80);
       const idx = Math.round(pct * (r.months.length - 1));
       if (idx >= 0 && idx < r.months.length) {
         this.growthHoverInfo = {
@@ -2662,7 +2677,7 @@ function labApp() {
           portfolio: r.portfolio.equity[idx + 1],
           benchmark: r.benchmark?.equity[idx + 1],
         };
-        const W = 1200, PL = 60, PR = 20;
+        const W = 1200, PL = 60, PR = 80;
         const chartW = W - PL - PR;
         const xCoord = PL + (idx / Math.max(r.months.length - 1, 1)) * chartW;
         const line = svg.getElementById('growth-crosshair');
@@ -2694,8 +2709,8 @@ function labApp() {
       if (totalPoints <= 0) return;
 
       const mouseX = ((e.clientX - rect.left) / rect.width) * 1200;
-      const clampedX = Math.max(60, Math.min(1200 - 20, mouseX));
-      const pct = (clampedX - 60) / (1200 - 60 - 20);
+      const clampedX = Math.max(60, Math.min(1200 - 80, mouseX));
+      const pct = (clampedX - 60) / (1200 - 60 - 80);
       const idx = Math.round(pct * (totalPoints - 1));
       if (idx >= 0 && idx < totalPoints) {
         const monthIdx = idx + W;
@@ -2732,7 +2747,7 @@ function labApp() {
           benchmark: bWindow ? fmtVal(bVal) : null,
         };
 
-        const svgW = 1200, PL = 60, PR = 20;
+        const svgW = 1200, PL = 60, PR = 80;
         const chartW = svgW - PL - PR;
         const xCoord = PL + (idx / Math.max(totalPoints - 1, 1)) * chartW;
         const line = svg.getElementById('rolling-crosshair');
@@ -2759,22 +2774,16 @@ function labApp() {
       if (!r) return;
       const rect = svg.getBoundingClientRect();
       const mouseX = ((e.clientX - rect.left) / rect.width) * 1200;
-      const clampedX = Math.max(60, Math.min(1200 - 20, mouseX));
-      const pct = (clampedX - 60) / (1200 - 60 - 20);
+      const clampedX = Math.max(60, Math.min(1200 - 80, mouseX));
+      const pct = (clampedX - 60) / (1200 - 60 - 80);
       const idx = Math.round(pct * (r.months.length - 1));
       if (idx >= 0 && idx < r.months.length) {
-        const portEq = r.portfolio.equity;
-        const portPeak = Math.max(...portEq.slice(0, idx + 2));
-        const portDd = portEq[idx + 1] / portPeak - 1;
-        let benchDd = null;
-        if (r.benchmark) {
-          const benchEq = r.benchmark.equity;
-          const benchPeak = Math.max(...benchEq.slice(0, idx + 2));
-          benchDd = benchEq[idx + 1] / benchPeak - 1;
-        }
+        const cached = this._ddSeries;
+        const portDd = cached?.portDd?.[idx + 1] ?? 0;
+        const benchDd = cached?.benchDd?.[idx + 1] ?? null;
         this.ddHoverInfo = { date: r.months[idx], portfolio: portDd, benchmark: benchDd };
 
-        const W = 1200, PL = 60, PR = 20;
+        const W = 1200, PL = 60, PR = 80;
         const chartW = W - PL - PR;
         const xCoord = PL + (idx / Math.max(r.months.length - 1, 1)) * chartW;
         const line = svg.getElementById('dd-crosshair');
@@ -2801,8 +2810,8 @@ function labApp() {
       if (!r) return;
       const rect = svg.getBoundingClientRect();
       const mouseX = ((e.clientX - rect.left) / rect.width) * 1200;
-      const clampedX = Math.max(60, Math.min(1200 - 20, mouseX));
-      const pct = (clampedX - 60) / (1200 - 60 - 20);
+      const clampedX = Math.max(60, Math.min(1200 - 80, mouseX));
+      const pct = (clampedX - 60) / (1200 - 60 - 80);
       const idx = Math.round(pct * (r.months.length - 1));
       if (idx >= 0 && idx < r.months.length) {
         this.vamiHoverInfo = {
@@ -2810,7 +2819,7 @@ function labApp() {
           portfolio: r.portfolio.equity[idx + 1] / 10,
           benchmark: r.benchmark?.equity[idx + 1] / 10,
         };
-        const W = 1200, PL = 60, PR = 20;
+        const W = 1200, PL = 60, PR = 80;
         const chartW = W - PL - PR;
         const xCoord = PL + (idx / Math.max(r.months.length - 1, 1)) * chartW;
         const line = svg.getElementById('vami-crosshair');
@@ -2903,8 +2912,8 @@ function labApp() {
       if (!mc) return;
       const rect = svg.getBoundingClientRect();
       const mouseX = ((e.clientX - rect.left) / rect.width) * 1200;
-      const clampedX = Math.max(60, Math.min(1200 - 20, mouseX));
-      const pct = (clampedX - 60) / (1200 - 60 - 20);
+      const clampedX = Math.max(60, Math.min(1200 - 80, mouseX));
+      const pct = (clampedX - 60) / (1200 - 60 - 80);
       
       const nSteps = mc.horizon * 12 + 1;
       const idx = Math.round(pct * (nSteps - 1));
@@ -2922,7 +2931,7 @@ function labApp() {
           p95: _fc(mc.bands[4][idx]),
         };
 
-        const W = 1200, PL = 60, PR = 20;
+        const W = 1200, PL = 60, PR = 80;
         const chartW = W - PL - PR;
         const xCoord = PL + (idx / Math.max(nSteps - 1, 1)) * chartW;
         const line = svg.getElementById('mc-crosshair');
@@ -2971,7 +2980,8 @@ function labApp() {
       let grid = '';
       for (let v = -0.10; v <= 0.20; v += 0.05) {
         const y = yS(v);
-        grid += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W-PR}" y2="${y.toFixed(1)}" stroke="${v === 0 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.04)'}" stroke-width="${v === 0 ? 1.5 : 1}"/>`;
+        const isZero = Math.abs(v) < 1e-9; // float-accumulated loop never hits exactly 0
+        grid += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W-PR}" y2="${y.toFixed(1)}" stroke="${isZero ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.04)'}" stroke-width="${isZero ? 1.5 : 1}"/>`;
         grid += `<text x="${PL-4}" y="${(y+3.5).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${(v*100).toFixed(0)}%</text>`;
       }
       // X labels
@@ -3068,17 +3078,28 @@ function labApp() {
         const dailyVol = vol / Math.sqrt(252);
         const prices = [{ d: '2020-01-01', c: 100 }];
         for (let i = 1; i < 252 * 5; i++) {
-          const u1 = Math.random(), u2 = Math.random();
+          const u1 = Math.random() || 2.2e-308, u2 = Math.random();
           const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-          const r = dailyVol * z;
+          const r = Math.max(dailyVol * z, -0.98); // keep price strictly positive
           prices.push({ d: `day-${i}`, c: prices[i - 1].c * (1 + r) });
         }
         this.etnResult = runEtnEngine(prices, this.etn.leverage, this.etn.borrowCost / 100, this.etn.ter / 100);
       } else {
-        const raw = this.simData?.[this.etn.underlying];
+        const sym = this.etn.underlying;
+        const raw = this.simData?.[sym];
         if (!raw) return;
-        const prices = raw.map(p => ({ d: p.d, c: p.c }));
-        this.etnResult = runEtnEngine(prices, this.etn.leverage, this.etn.borrowCost / 100, this.etn.ter / 100);
+        // Memoize deterministic runs keyed on inputs - slider ticks that only
+        // revisit the same inputs skip the engine and price-array clone.
+        const key = `${sym}|${this.etn.leverage}|${this.etn.borrowCost}|${this.etn.ter}`;
+        if (this._etnMemo && this._etnMemo.key === key) {
+          this.etnResult = this._etnMemo.result;
+          return;
+        }
+        if (!this._etnPrices) this._etnPrices = {};
+        if (!this._etnPrices[sym]) this._etnPrices[sym] = raw.map(p => ({ d: p.d, c: p.c }));
+        const result = runEtnEngine(this._etnPrices[sym], this.etn.leverage, this.etn.borrowCost / 100, this.etn.ter / 100);
+        this._etnMemo = { key, result };
+        this.etnResult = result;
       }
       if (this.etnResult) this._buildEtnChart();
     },
@@ -3108,8 +3129,8 @@ function labApp() {
       if (!r) return;
       const rect = svg.getBoundingClientRect();
       const mouseX = ((e.clientX - rect.left) / rect.width) * 1200;
-      const clampedX = Math.max(60, Math.min(1200 - 20, mouseX));
-      const pct = (clampedX - 60) / (1200 - 60 - 20);
+      const clampedX = Math.max(60, Math.min(1200 - 80, mouseX));
+      const pct = (clampedX - 60) / (1200 - 60 - 80);
       
       const nPoints = r.etnSeries.length;
       const idx = Math.round(pct * (nPoints - 1));
@@ -3121,7 +3142,7 @@ function labApp() {
           underlying: r.undSeries[idx].v,
         };
 
-        const W = 1200, PL = 60, PR = 20;
+        const W = 1200, PL = 60, PR = 80;
         const chartW = W - PL - PR;
         const xCoord = PL + (idx / Math.max(nPoints - 1, 1)) * chartW;
         const line = svg.getElementById('etn-crosshair');
