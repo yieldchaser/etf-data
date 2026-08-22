@@ -544,12 +544,12 @@ class TestFix4Requirements:
 
     def test_build_site_yml_uses_requirements_txt(self):
         yml = REPO_ROOT / ".github" / "workflows" / "build_site.yml"
-        content = yml.read_text()
+        content = yml.read_text(encoding="utf-8")
         assert "requirements.txt" in content, "build_site.yml should use requirements.txt"
 
     def test_daily_scrape_yml_uses_requirements_scraper(self):
         yml = REPO_ROOT / ".github" / "workflows" / "daily_scrape.yml"
-        content = yml.read_text()
+        content = yml.read_text(encoding="utf-8")
         assert "requirements-scraper.txt" in content, (
             "daily_scrape.yml should use requirements-scraper.txt"
         )
@@ -584,7 +584,7 @@ class TestFix4CIVerify:
 
     def test_verify_step_checks_required_files(self):
         yml = REPO_ROOT / ".github" / "workflows" / "build_site.yml"
-        content = yml.read_text()
+        content = yml.read_text(encoding="utf-8")
         required_files = [
             "score_history.json",
             "holdings_history.json",
@@ -595,7 +595,7 @@ class TestFix4CIVerify:
 
     def test_verify_step_has_leaderboard_sanity_check(self):
         yml = REPO_ROOT / ".github" / "workflows" / "build_site.yml"
-        content = yml.read_text()
+        content = yml.read_text(encoding="utf-8")
         assert "leaderboard.json" in content
         # Should have a non-zero entry count check
         assert "len(lb)" in content or "len(lb) > 0" in content

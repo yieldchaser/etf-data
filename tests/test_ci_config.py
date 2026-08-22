@@ -13,8 +13,10 @@ from pathlib import Path
 # Load workflow files once at module level
 # ---------------------------------------------------------------------------
 _REPO_ROOT = Path(__file__).parent.parent
-BUILD_YML = yaml.safe_load((_REPO_ROOT / ".github/workflows/build_site.yml").read_text())
-SCRAPE_YML = yaml.safe_load((_REPO_ROOT / ".github/workflows/daily_scrape.yml").read_text())
+# encoding='utf-8': workflow comments now contain non-ASCII (—, ⚠️) and the
+# Windows default (cp1252) chokes on them.
+BUILD_YML = yaml.safe_load((_REPO_ROOT / ".github/workflows/build_site.yml").read_text(encoding="utf-8"))
+SCRAPE_YML = yaml.safe_load((_REPO_ROOT / ".github/workflows/daily_scrape.yml").read_text(encoding="utf-8"))
 
 
 def _build_steps() -> list:
