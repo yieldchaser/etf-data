@@ -195,7 +195,7 @@ jobs:
           test -f docs/data/prices.json
           test -f docs/data/market_returns.json          # Verify market_returns.json has the §2.3 contract shape (monthly arrays, not close dicts)
           python -c "
-          import json, sys
+          import json, sys, datetime, os
           d = json.load(open('docs/data/market_returns.json'))
           assert 'asof' in d, 'missing asof'
           assert 'assets' in d, 'missing assets'
@@ -211,21 +211,20 @@ jobs:
           # FAIL the build instead of passing silently under continue-on-error
           # above. ALLOW_EMPTY_MARKETS=1 is the escape hatch for deliberate
           # cache-only runs.
-          python -c "
-          import os
-          d2 = json.load(open('docs/data/market_returns.json'))
           if os.environ.get('ALLOW_EMPTY_MARKETS') == '1':
               print('ALLOW_EMPTY_MARKETS=1 — skipping rates/cpi/freshness gate')
           else:
-              rates, cpi = d2.get('rates') or {}, d2.get('cpi') or {}
+              rates, cpi = d.get('rates') or {}, d.get('cpi') or {}
               assert rates, 'rates section EMPTY — upstream FRED outage masked; fail build'
               assert cpi, 'cpi section EMPTY — upstream FRED outage masked; fail build'
-              import datetime
-              asof = datetime.date.fromisoformat(d2['asof'])
+              # asof is month-granular (YYYY-MM); fromisoformat pads to the 1st
+              try:
+                  asof = datetime.date.fromisoformat(d['asof'])
+              except ValueError:
+                  asof = datetime.date.fromisoformat(d['asof'] + '-01')
               age = (datetime.date.today() - asof).days
               assert age <= 40, f'market_returns.json {age}d stale (asof={asof})'
               print(f'markets gate OK: rates={len(rates)}, cpi={len(cpi)}, asof age={age}d')
-          "
           "
           # Leaderboard sanity check: valid JSON + non-zero entry count
           python -c "
