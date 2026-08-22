@@ -16,12 +16,14 @@ Rules:
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import math
 import os
 import re
 import sys
 import time
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -65,6 +67,10 @@ BATCH_SIZE_DEFAULT  = 150
 DESC_DELAY          = 0.5
 PROBE_DELAY         = 0.3
 MAX_RETRY           = 5
+DOWNLOAD_RETRIES    = 3     # per-ticker HTTP retry budget (429s, blips)
+COVERAGE_LOCK_PATH  = COVERAGE_STATE_PATH.with_suffix(".lock")
+LOCK_TIMEOUT_SECS   = 120.0 # wait this long for another process' state lock…
+LOCK_STALE_SECS     = 1800.0  # …then take over a lock older than this (crashed holder)
 
 KNOWN_SYMBOL_MAP: dict[str, str] = {
     "BRK.B": "BRK-B", "BRK.A": "BRK-A", "BF.B": "BF-B", "BF.A": "BF-A",
@@ -248,6 +254,66 @@ def infer_currency_from_symbol(symbol: str) -> str | None:
     return SUFFIX_CURRENCY.get(suffix)
 
 
+# Venues that quote in MINOR units (pence/cents/agorot): yfinance returns
+# info['currency'] in these codes AND prices in the same minor unit, so both
+# must be converted together — code to the major ISO currency, prices ÷ divisor
+# — or London names display ~100x-off (SHEL.L at "2750 GBP" instead of £27.50).
+# Match is CASE-SENSITIVE on purpose: 'GBP' means real pounds (divisor 1);
+# 'GBp'/'GBX' mean pence. GBX/ZAC are the uppercase exchange variants.
+SUBUNIT_QUOTE_DIVISOR: dict[str, tuple[str, float]] = {
+    "GBp": ("GBP", 100.0),
+    "GBX": ("GBP", 100.0),
+    "ZAc": ("ZAR", 100.0),
+    "ZAC": ("ZAR", 100.0),
+    "ILA": ("ILS", 100.0),   # Israeli agorot
+}
+
+
+def canonicalise_currency(raw: str | None) -> tuple[str | None, float]:
+    """Normalise a yfinance currency string to (ISO code, price divisor).
+
+    Returns the major-unit code plus the factor its quoted prices must be
+    divided by ('GBp' → ('GBP', 100.0); 'GBP' → ('GBP', 1.0); ''/None →
+    (None, 1.0)). The divisor is applied once, at detail-write time, by
+    _write_detail_file — callers pass raw values straight through.
+    """
+    if not raw:
+        return None, 1.0
+    code = str(raw).strip()
+    if not code:
+        return None, 1.0
+    if code in SUBUNIT_QUOTE_DIVISOR:
+        return SUBUNIT_QUOTE_DIVISOR[code]
+    return code.upper(), 1.0
+
+
+def rescale_prices(
+    prices: list[list] | None, divisor: float,
+) -> list[list]:
+    """Divide [[date, price], ...] by `divisor` (minor→major unit conversion).
+
+    Also drops duplicate dates and non-finite values, keeping the LAST
+    occurrence of any duplicated date. Rounding stays consistent with the
+    rest of the writer (4 decimal places).
+    """
+    if not prices:
+        return []
+    by_date: dict[str, float] = {}
+    for row in prices:
+        d = row[0]
+        v = row[1] if len(row) > 1 else None
+        if d is None or v is None:
+            continue
+        try:
+            fv = float(v)
+        except (TypeError, ValueError):
+            continue
+        if math.isnan(fv) or math.isinf(fv):
+            continue
+        by_date[str(d)] = fv / divisor
+    return [[d, round(v, 4)] for d, v in sorted(by_date.items())]
+
+
 # Currency codes that appear as ETF "holdings" but are not equities.
 # Skip these from the stock-details universe to avoid wasting batch budget.
 KNOWN_CURRENCY_CODES = {
@@ -282,14 +348,27 @@ def _sanitise(obj: Any) -> Any:
 
 def _dumps(obj: Any, **kw) -> str:
     kw.setdefault("cls", _SafeEncoder)
+    # allow_nan=False is the fail-loud backstop: if any NaN/Inf ever slips past
+    # _sanitise (e.g. a non-float numpy scalar), raise here instead of writing
+    # a bare `NaN` token — which is INVALID JSON and poisons every parser.
+    kw.setdefault("allow_nan", False)
     return json.dumps(_sanitise(obj), **kw)
 
 
 def _write_json_atomic(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(text, encoding="utf-8")
-    os.replace(tmp, path)
+    # PID-suffixed tmp name: two processes writing the SAME target must not
+    # interleave through one shared .tmp path (classic lost-update corruptor).
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    try:
+        tmp.write_text(text, encoding="utf-8")
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            tmp.unlink()
+        except OSError:
+            pass
+        raise
 
 
 def _load_leaderboard_tickers() -> dict[str, str]:
@@ -366,6 +445,122 @@ def _save_coverage_state(state: dict) -> None:
     _write_json_atomic(COVERAGE_STATE_PATH, _dumps(state, indent=2, sort_keys=True))
 
 
+@contextmanager
+def _exclusive_lock(
+    path: Path,
+    timeout: float = LOCK_TIMEOUT_SECS,
+    stale_secs: float = LOCK_STALE_SECS,
+    poll: float = 0.25,
+):
+    """Best-effort cross-process lockfile guarding the coverage-state
+    read-modify-write window (O_CREAT|O_EXCL — atomic on POSIX and Windows).
+
+    A holder that crashed leaves the lockfile behind; it is taken over once
+    older than `stale_secs`. If another live process holds the lock past
+    `timeout`, we yield False and the caller proceeds unlocked — availability
+    beats exclusivity here, because the next run's disk-scan re-discovers
+    resolved tickers from the detail FILES themselves, so a rare lost state
+    update self-heals while a blocked build loses a whole coverage batch.
+
+    Yields True when the lock was acquired, False on timeout-proceed.
+    """
+    deadline = time.monotonic() + timeout
+    fd: int | None = None
+    while True:
+        try:
+            fd = os.open(str(path), os.O_CREAT | os.O_EXCL | os.O_RDWR)
+            break
+        except FileExistsError:
+            try:
+                age = time.time() - path.stat().st_mtime
+                if age > stale_secs:
+                    print(f"  WARNING: stale lock {path.name} ({age:.0f}s old) — taking over.")
+                    path.unlink(missing_ok=True)
+                    continue
+            except OSError:
+                pass
+            if time.monotonic() >= deadline:
+                print(f"  WARNING: lock {path.name} held by another process — proceeding unlocked.")
+                break
+            time.sleep(poll)
+        except OSError:
+            # Locking is best-effort; never let lock machinery kill a run.
+            break
+    acquired = fd is not None
+    try:
+        if acquired:
+            try:
+                os.write(fd, f"{os.getpid()} {datetime.now(timezone.utc).isoformat()}".encode())
+            except OSError:
+                pass
+        yield acquired
+    finally:
+        if acquired:
+            try:
+                os.close(fd)
+            finally:
+                path.unlink(missing_ok=True)
+
+
+def _merge_coverage_state(ours: dict, fresh: dict, universe: set[str]) -> dict:
+    """Merge our run's state update into the freshest on-disk state.
+
+    Guards the read-modify-write window against concurrent writers (two local
+    processes, or a workflow_dispatch fired while another build runs): the save
+    re-reads under the exclusive lock and unions rather than clobbers, so the
+    second saver can't erase the first saver's resolved/pending progress.
+
+    Merge rules:
+      resolved   — union (a ticker with a detail file IS resolved; disk truth)
+      pending    — union minus resolved, pruned to the current universe
+      unresolved — per-ticker max attempt count, dropped once resolved,
+                   pruned to the current universe (stale-ticker leak fix)
+      refresh_failures — per-ticker max consecutive count, pruned to universe
+      last_run_utc / coverage_pct — newest timestamp / recomputed from merged
+    """
+    res_set = set(ours.get("resolved") or []) | set(fresh.get("resolved") or [])
+    res_set &= universe
+
+    pending = (
+        set(ours.get("pending") or []) | set(fresh.get("pending") or [])
+    ) - res_set
+    pending &= universe
+
+    unresolved: dict[str, int] = {}
+    for src in (fresh.get("unresolved"), ours.get("unresolved")):
+        for t, c in (src or {}).items():
+            if t in universe and t not in res_set:
+                unresolved[t] = max(unresolved.get(t, 0), int(c))
+
+    refresh_failures: dict[str, int] = {}
+    for src in (fresh.get("refresh_failures"), ours.get("refresh_failures")):
+        for t, c in (src or {}).items():
+            if t in universe:
+                refresh_failures[t] = max(refresh_failures.get(t, 0), int(c))
+
+    stamps = [s for s in (fresh.get("last_run_utc"), ours.get("last_run_utc")) if s]
+    last_run = max(stamps) if stamps else None
+    coverage_pct = round(len(res_set) / len(universe) * 100, 2) if universe else 0.0
+
+    return {
+        "resolved": sorted(res_set),
+        "pending": sorted(pending),
+        "unresolved": unresolved,
+        "refresh_failures": refresh_failures,
+        "last_run_utc": last_run,
+        "coverage_pct": coverage_pct,
+    }
+
+
+def _commit_coverage_state(state: dict, universe: set[str]) -> dict:
+    """Atomically persist `state` merged into whatever is freshest on disk."""
+    with _exclusive_lock(COVERAGE_LOCK_PATH):
+        fresh = _load_coverage_state()
+        merged = _merge_coverage_state(state, fresh, universe)
+        _save_coverage_state(merged)
+    return merged
+
+
 def _load_symbol_map() -> dict[str, str]:
     base = dict(KNOWN_SYMBOL_MAP)
     if SYMBOL_MAP_PATH.exists():
@@ -397,7 +592,17 @@ def _save_desc_cache(cache: dict[str, str]) -> None:
 def _load_currency_cache() -> dict[str, str]:
     if CURRENCY_CACHE_PATH.exists():
         try:
-            return json.loads(CURRENCY_CACHE_PATH.read_text(encoding="utf-8"))
+            raw = json.loads(CURRENCY_CACHE_PATH.read_text(encoding="utf-8"))
+            # Normalise legacy entries to major-unit ISO codes ('GBp' → 'GBP').
+            # The price rescale itself happens at detail-write time via
+            # canonicalise_currency, so a stale minor-unit cache entry can
+            # never re-poison written files — this just keeps the cache honest.
+            out: dict[str, str] = {}
+            for k, v in (raw or {}).items():
+                code, _div = canonicalise_currency(v)
+                if code:
+                    out[k] = code
+            return out
         except Exception as e:
             print(f"  WARNING: Bad currency cache ({e})")
     return {}
@@ -688,13 +893,33 @@ def _probe_yf_symbol(ticker: str, company: str, symbol_map: dict) -> str | None:
     return None
 
 
+def _download_with_retry(symbol: str, *, period: str, interval: str):
+    """yf.download with bounded retry/backoff for transient failures (429
+    rate limits, timeouts, connection blips). Raises the last exception when
+    all attempts fail — per-ticker callers keep their own fault isolation."""
+    import yfinance as yf
+    last_exc: Exception | None = None
+    for attempt in range(DOWNLOAD_RETRIES):
+        try:
+            return yf.download(
+                symbol, period=period, interval=interval,
+                auto_adjust=True,  # pinned: total-return close semantics must not drift with yfinance defaults
+                progress=False, threads=False,
+            )
+        except Exception as e:  # noqa: BLE001 — yfinance raises bare Exception varieties
+            last_exc = e
+            wait = 2.0 * (2 ** attempt)
+            print(f"    download attempt {attempt + 1}/{DOWNLOAD_RETRIES} failed ({str(e)[:90]})"
+                  + (f" — backing off {wait:.0f}s" if attempt < DOWNLOAD_RETRIES - 1 else ""))
+            if attempt < DOWNLOAD_RETRIES - 1:
+                time.sleep(wait)
+    assert last_exc is not None
+    raise last_exc
+
+
 def _fetch_price_one(symbol: str) -> list[list] | None:
     try:
-        import yfinance as yf
-        df = yf.download(
-            symbol, period=PRICE_PERIOD, interval="1d",
-            auto_adjust=True, progress=False, threads=False,
-        )
+        df = _download_with_retry(symbol, period=PRICE_PERIOD, interval="1d")
         if df is None or df.empty:
             return None
         if isinstance(df.columns, pd.MultiIndex):
@@ -710,29 +935,52 @@ def _fetch_price_one(symbol: str) -> list[list] | None:
         close = close.dropna()
         if close.empty:
             return None
-        prices = [
-            [pd.Timestamp(dt).strftime("%Y-%m-%d"), round(float(val), 4)]
-            for dt, val in close.items()
-            if not (isinstance(val, float) and (math.isnan(val) or math.isinf(val)))
-        ]
-        prices.sort(key=lambda x: x[0])
+        # dict-keyed build dedupes repeated dates and drops non-finite values
+        # before they can reach the JSON payload.
+        by_date: dict[str, float] = {}
+        for dt, val in close.items():
+            fv = float(val)
+            if math.isnan(fv) or math.isinf(fv):
+                continue
+            by_date[pd.Timestamp(dt).strftime("%Y-%m-%d")] = fv
+        prices = [[d, round(v, 4)] for d, v in sorted(by_date.items())]
         return prices if prices else None
     except Exception as e:
         print(f"    Price fetch error ({symbol}): {e}")
         return None
 
 
+def _clean_description(text: str | None) -> str:
+    """Strip HTML tags/entities from a yfinance business summary.
+
+    longBusinessSummary intermittently carries markup (&amp;, <b>…</b>) which
+    leaks straight into stock.html's description panel otherwise. Unescape
+    FIRST so entity-encoded tags ('&lt;b&gt;') also flatten, then remove real
+    tags, then collapse whitespace.
+    """
+    if not text:
+        return ""
+    t = html.unescape(text)
+    t = re.sub(r"<[^>]*>", " ", t)
+    t = re.sub(r"\s+", " ", t).strip()
+    return t
+
+
 def _fetch_description_one(symbol: str, company: str = "", ticker: str = "") -> tuple[str | None, str | None]:
     """Fetch real description + trading currency from yfinance.
-    Returns (description, currency). NEVER fabricates descriptions."""
+    Returns (description, canonical_currency). NEVER fabricates descriptions.
+
+    Currency is returned in major-unit ISO form with the minor-unit divisor
+    resolved by canonicalise_currency — 'GBp' arrives as 'GBP' AND the caller
+    rescales that ticker's pence prices ÷100 at write time (_write_detail_file).
+    """
     try:
         import yfinance as yf
-        info = yf.Ticker(symbol).info
-        # .upper() also normalizes London's 'GBp' (pence) to 'GBP' — display
-        # currency code only; prices are NOT rescaled.
-        currency = (info.get("currency") or info.get("financialCurrency") or "").strip().upper() or None
+        info = yf.Ticker(symbol).info or {}
+        currency_raw = (info.get("currency") or info.get("financialCurrency") or "").strip() or None
+        currency, _price_divisor = canonicalise_currency(currency_raw)
         yf_name = (info.get("longName") or info.get("shortName") or "").strip()
-        desc = (info.get("longBusinessSummary") or info.get("description") or "").strip()
+        desc = _clean_description(info.get("longBusinessSummary") or info.get("description") or "")
 
         # If company name is provided and doesn't match yfinance company name or description
         if company and yf_name and not _company_name_matches(company, yf_name, ticker):
@@ -827,6 +1075,27 @@ def _cleanup_stale_detail_files(universe_stems: set[str]) -> int:
 
 
 
+def load_detail_payload(path: Path) -> dict:
+    """Shared reader for details/{TICKER}.json with legacy-currency tolerance.
+
+    Files written by older builds may carry minor-unit quotes under a
+    minor-unit code ('GBp' prices in pence); divide at READ so every
+    in-process consumer sees major units. Files labelled 'GBP' but holding
+    pence from the pre-fix writer are NOT recoverable here (indistinguishable
+    from true pounds without a network call) — they self-correct when the
+    refresh sweep rewrites them; a data audit confirmed zero such files
+    existed at fix time (no .L tickers resolved yet).
+    """
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    if isinstance(data, dict):
+        code, divisor = canonicalise_currency(data.get("currency"))
+        if divisor != 1.0:
+            data["prices"] = rescale_prices(data.get("prices") or [], divisor)
+            if code:
+                data["currency"] = code
+    return data
+
+
 def _write_detail_file(
     ticker: str, company: str,
     desc: str | None, prices: list[list] | None,
@@ -837,10 +1106,16 @@ def _write_detail_file(
     if pending:
         payload: dict = {"ticker": ticker, "company": company, "pending": True, "generated": generated}
     else:
+        # Single currency choke point: canonicalise the code AND rescale the
+        # prices by the same divisor so file contents always match the label.
+        # 'GBp' info → prices ÷100 stored as true GBP pounds; never a 100x-off
+        # "GBP" label over pence values.
+        code, divisor = canonicalise_currency(currency)
         payload = {
             "ticker": ticker, "company": company,
-            "description": desc or "", "prices": prices or [],
-            "currency": currency or "USD",
+            "description": desc or "",
+            "prices": rescale_prices(prices, divisor),
+            "currency": code or "USD",
             "generated": generated,
         }
     _write_json_atomic(DETAILS_DIR / f"{_safe_detail_stem(ticker)}.json", _dumps(payload, separators=(",", ":")))
@@ -852,7 +1127,7 @@ def _write_pending_stubs(pending_tickers: list[str], lb_map: dict[str, str]) -> 
         out_path = DETAILS_DIR / f"{_safe_detail_stem(ticker)}.json"
         if out_path.exists():
             try:
-                existing = json.loads(out_path.read_text(encoding="utf-8"))
+                existing = load_detail_payload(out_path)
                 if not existing.get("pending", False) and existing.get("prices"):
                     continue
             except Exception:
@@ -1163,6 +1438,14 @@ def build_details(
     remaining = math.ceil(len(pending_set) / batch_size) if batch_size > 0 else "?"
     print(f"  Projected runs to full coverage: ~{remaining}")
     print(f"{'═'*62}\n")
+
+    # Fail loud on TOTAL resolve failure (matches scraper.py's convention):
+    # a yfinance-wide outage or symbol-resolution redesign previously exited 0
+    # and CI stayed green while every detail file went stale.
+    if batch and newly_resolved == 0:
+        print("FATAL: 0 of attempted tickers resolved — failing run")
+        return 1
+    return 0
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
