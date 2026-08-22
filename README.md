@@ -258,7 +258,7 @@ Built with Tailwind CSS + Alpine.js. Zero build step — static HTML/JS served d
 | Stock Detail | `/stock.html?t=TICKER` | Per-ticker deep dive |
 | Markets | `/markets.html` | Cross-asset returns intelligence |
 | Backtest | `/backtest.html` | Strategy performance comparison |
-| Simulator | `/sim.html` | Leveraged ETN NAV simulator |
+| Portfolio Lab | `/sim.html` | Leveraged ETN NAV simulator |
 
 ### Dashboard Tabs
 
@@ -669,7 +669,7 @@ etf-data/
 │   ├── markets.html              # Markets Intelligence Platform
 │   ├── stock.html                # Per-ticker deep dive
 │   ├── backtest.html             # Strategy backtest
-│   ├── sim.html                  # Leveraged ETN simulator
+│   ├── sim.html                  # Portfolio Lab (leveraged ETN simulator)
 │   └── data/                     # Pre-built JSON payloads
 │       ├── leaderboard.json      # Main leaderboard (~3.8MB)
 │       ├── holdings_latest.json  # Per-(ETF, ticker) detail
