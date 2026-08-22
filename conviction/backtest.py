@@ -12,7 +12,7 @@ Strategies:
   - hc_entry:       buy each name on the day it first enters HC
   - burst_trigger:  buy each name on the day burst_30d flips True
   - top10_score:    buy top 10 by final_score each Monday
-  - top10_velocity: buy top 10 by velocity_score each Monday
+  - top10_score: buy top 10 by Final Alpha Score each Monday
   - baseline:       equal-weighted SPX (S&P 500) for comparison
 
 Output: docs/data/backtest.json
@@ -287,33 +287,6 @@ def run_backtest(
             })
     print(f"  {len(score_trades)} trades")
 
-    # ── Strategy 4: Top-10 Velocity (weekly rebalance on Mondays) ────────
-    print("Strategy: top10_velocity…")
-    vel_trades: list[dict] = []
-    for d in mondays:
-        lb = historical[d]
-        if "velocity_score" not in lb.columns:
-            continue
-        top10 = lb.nlargest(10, "velocity_score")
-        for _, row in top10.iterrows():
-            ticker = row["ticker"]
-            entry_price = _get_price(price_cache, ticker, d)
-            if entry_price is None:
-                continue
-            exit_date = d + pd.Timedelta(days=hold_days)
-            exit_price = _get_price(price_cache, ticker, exit_date)
-            ret = (exit_price - entry_price) / entry_price if exit_price else None
-            vel_trades.append({
-                "date": d.strftime("%Y-%m-%d"),
-                "ticker": ticker,
-                "entry": round(entry_price, 4),
-                "exit": round(exit_price, 4) if exit_price else None,
-                "exit_date": exit_date.strftime("%Y-%m-%d"),
-                "return_pct": round(ret, 4) if ret is not None else None,
-                "days_held": hold_days,
-            })
-    print(f"  {len(vel_trades)} trades")
-
     # ── Strategy 5: Baseline (SPX buy-and-hold) ───────────────────────────
     print("Strategy: baseline (SPX)…")
     baseline_trades: list[dict] = []
@@ -335,40 +308,9 @@ def run_backtest(
         })
     print(f"  {len(baseline_trades)} trades")
 
-    # ── Scatter: velocity_score vs realized 30d return ────────────────────
-    print("Building velocity scatter…")
-    scatter: list[dict] = []
-    for d in dates_sorted:
-        lb = historical[d]
-        if "velocity_score" not in lb.columns:
-            continue
-        for _, row in lb.iterrows():
-            ticker = row["ticker"]
-            vs = row.get("velocity_score")
-            if vs is None or not math.isfinite(float(vs)):
-                continue
-            entry_price = _get_price(price_cache, ticker, d)
-            if entry_price is None:
-                continue
-            exit_date = d + pd.Timedelta(days=hold_days)
-            exit_price = _get_price(price_cache, ticker, exit_date)
-            if exit_price is None:
-                continue
-            ret = (exit_price - entry_price) / entry_price
-            scatter.append({
-                "velocity_score": round(float(vs), 2),
-                "realized_return_30d": round(ret, 4),
-                "ticker": ticker,
-                "date": d.strftime("%Y-%m-%d"),
-            })
-    # Limit scatter to 2000 points for payload size
-    if len(scatter) > 2000:
-        import random
-        random.shuffle(scatter)
-        scatter = scatter[:2000]
-    print(f"  {len(scatter)} scatter points")
-
     # ── Assemble output ───────────────────────────────────────────────────
+    # top10_velocity strategy and the velocity-vs-return scatter were retired
+    # with the velocity composite (2026-08 signal study: no forward information).
     result = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "hold_days": hold_days,
@@ -401,13 +343,6 @@ def run_backtest(
                 "cumulative_returns": _cumulative_returns(score_trades),
                 "stats": _compute_stats(score_trades, hold_days),
             },
-            "top10_velocity": {
-                "label": "Top-10 Velocity",
-                "description": "Buy top 10 by Velocity Score each Monday",
-                "trades": vel_trades,
-                "cumulative_returns": _cumulative_returns(vel_trades),
-                "stats": _compute_stats(vel_trades, hold_days),
-            },
             "baseline": {
                 "label": "Baseline (SPX)",
                 "description": "Buy S&P 500 each Monday (benchmark)",
@@ -416,7 +351,6 @@ def run_backtest(
                 "stats": _compute_stats(baseline_trades, hold_days),
             },
         },
-        "scatter": scatter,
     }
 
     output_path.parent.mkdir(parents=True, exist_ok=True)

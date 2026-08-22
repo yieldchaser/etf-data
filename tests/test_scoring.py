@@ -379,9 +379,22 @@ class TestHistory:
         assert chg["today"] is not None
 
 
-# ─── Velocity signal ───────────────────────────────────────────────────────────
+# ─── Motion signals ────────────────────────────────────────────────────────────
 class TestVelocity:
-    """Tests for the velocity signal in build.py _attach_velocity."""
+    """Tests for the motion signal components in build.py _attach_motion.
+
+    The velocity_score composite itself was retired (2026-08 signal study:
+    no forward lift); these pin the underlying component columns the UI and
+    Pre-HC / Stealth-Buy filters still use."""
+
+    def test_velocity_score_column_is_retired(self):
+        """velocity_score was retired from the whole stack (2026-08 signal
+        study: components cancel, no forward lift). Guard against accidental
+        reintroduction anywhere in the build/engine layer."""
+        src_root = Path(__file__).resolve().parents[1]
+        for rel in ["conviction/build.py", "conviction/history.py", "conviction/backtest.py"]:
+            src = (src_root / rel).read_text(encoding="utf-8")
+            assert "velocity_score" not in src, f"{rel} still references velocity_score"
 
     def test_velocity_score_aggregates_rank_deltas(self, cfg):
         """A ticker accumulating weight should yield positive weight_flow in compute_rank_deltas,

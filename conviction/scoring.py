@@ -99,20 +99,29 @@ Tier = ETF
 #     corrupting the cached canonical result.
 #   * The fingerprint hashes columns + dtypes + a value hash, so any real
 #     data change is a guaranteed miss.
-#   * The cache is bounded (FIFO, 16 entries) — no unbounded memory growth.
+#   * The cache is bounded (FIFO via pop(next(iter)), 16 entries) — no
+#     unbounded memory growth.
 _SANITIZER_CACHE: dict[tuple[str, str], "pd.DataFrame"] = {}
 _SANITIZER_CACHE_MAX: int = 16
 
 
 def _df_fingerprint(df: pd.DataFrame) -> str:
-    """Content hash of a dataframe: shape + dtypes + aggregate row-hash.
+    """Content hash of a dataframe: shape + dtypes + order-sensitive row hash.
 
-    Includes shape, column dtype signature, and a hash of all row values so
-    that any real data change produces a different key (cache miss).
+    Includes shape, column dtype signature, and an order-sensitive XOR-mixed
+    row hash so that any real data change — including row REORDERING, which a
+    plain additive sum cannot detect — produces a different key (cache miss).
     """
     try:
-        row_hashes = pd.util.hash_pandas_object(df, index=False)
-        val = int(row_hashes.sum()) & 0xFFFFFFFFFFFFFFFF
+        row_hashes = pd.util.hash_pandas_object(df, index=False).values.astype(np.uint64)
+        # Position-WEIGHTED sum: the old plain `sum()` (and any commutative
+        # fold like XOR) is order-INSENSITIVE, while _compute's dedupe keeps
+        # name="first" (order-sensitive) — two different inputs with the same
+        # multiset of rows could alias to one cache entry and return the
+        # wrong frame. Multiplying each hash by its 1-based position makes
+        # any reorder change the fingerprint.
+        weights = np.arange(1, row_hashes.size + 1, dtype=np.uint64)
+        val = int((row_hashes * weights).sum() & np.uint64(0xFFFFFFFFFFFFFFFF)) if row_hashes.size else 0
     except TypeError:
         # Fallback for object-dtype columns hash_pandas_object can't handle
         val = hash(df.astype(str).values.tobytes()) & 0xFFFFFFFFFFFFFFFF
@@ -618,8 +627,12 @@ def compute_leaderboard(
     # the global max. (BUG-11: global cutoff penalized lagging ETFs.)
     etf_cutoff = (etf_last_seen - timedelta(days=cfg.new_lookback_days)).to_dict()
     cutoff_global = df["Holdings_As_Of"].max() - timedelta(days=cfg.new_lookback_days)
+    # `<=` boundary: a pair whose most recent prior appearance falls EXACTLY on
+    # the cutoff date has been held for the full lookback window and must NOT
+    # be flagged NEW (README: "absent from the 14-day lookback window"). The
+    # old strict `<` made seen-exactly-14-days-ago count as brand new.
     hist_mask = [
-        asof < etf_cutoff.get(etf, cutoff_global)
+        asof <= etf_cutoff.get(etf, cutoff_global)
         for etf, asof in zip(df["ETF_Ticker"], df["Holdings_As_Of"])
     ]
     historical_pairs = set(map(tuple, df.loc[hist_mask,
@@ -821,10 +834,13 @@ def compute_leaderboard(
 
     def _flag(row) -> str:
         tier_set = set(row["tiers"].split(" + ")) if row["tiers"] else set()
-        # §25: HC uses conviction breadth in conviction/apex modes, raw count in legacy
-        hc_count = (row["conviction_etf_count"]
-                    if cfg.scoring_mode in ("conviction", "apex") else row["etf_count"])
-        if hc_count >= cfg.high_conviction_min_etfs:
+        # HIGH_CONVICTION = held by ≥ high_conviction_min_etfs DISTINCT ETFs
+        # (raw count, ALL modes). Matches the documented definition everywhere
+        # (README, methodology, tooltips). The previous apex-mode gate used
+        # conviction breadth (C_i ≥ θ in ≥4 ETFs), which fired on ~0.03% of
+        # rows — effectively a dead flag. conviction_etf_count is still
+        # emitted as a diagnostic column.
+        if row["etf_count"] >= cfg.high_conviction_min_etfs:
             return "HIGH_CONVICTION"
         if cfg.scoring_mode == "apex":
             # §30 CONCENTRATED — conviction parked in too few books to be HC,

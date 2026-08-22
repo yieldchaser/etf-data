@@ -99,9 +99,9 @@ class TestSignalHistorySchema:
                 assert "rank" in e, f"{ticker}: missing 'rank'"
 
     def test_optional_keys_are_booleans_as_int(self, raw_fixture, historical_fixture, cfg):
-        """Optional bool fields (n, st, qa, qd, burst) must be stored as 1 (not True)."""
+        """Optional bool fields (n, qa, burst) must be stored as 1 (not True)."""
         result = hist.signal_history(raw_fixture, historical_fixture, cfg)
-        bool_keys = {"n", "st", "qa", "qd", "burst"}
+        bool_keys = {"n", "qa", "burst"}
         for ticker, entries in result.items():
             for e in entries:
                 for k in bool_keys:
@@ -109,31 +109,25 @@ class TestSignalHistorySchema:
                         assert e[k] == 1, f"{ticker}: {k}={e[k]!r} should be 1"
                         assert type(e[k]) is int, f"{ticker}: {k} should be int 1 not bool"
 
-    def test_dv_values_only_plus_minus_one(self, raw_fixture, historical_fixture, cfg):
-        """dv must be +1 or -1 when present."""
+    def test_retired_signals_absent(self, raw_fixture, historical_fixture, cfg):
+        """st / dv / qd / vs were retired (2026-08 signal study) and must
+        never reappear in fresh signal_history output."""
         result = hist.signal_history(raw_fixture, historical_fixture, cfg)
+        retired = {"st", "dv", "qd", "vs"}
         for ticker, entries in result.items():
             for e in entries:
-                if "dv" in e:
-                    assert e["dv"] in (1, -1), f"{ticker}: dv={e['dv']!r}"
+                present = retired & set(e.keys())
+                assert not present, f"{ticker}: retired keys {present} must not be emitted"
 
     def test_omitted_when_false(self, raw_fixture, historical_fixture, cfg):
         """Keys absent when their signal is inactive — never stored as False/0/null."""
         result = hist.signal_history(raw_fixture, historical_fixture, cfg)
-        omit_when_false = {"n", "st", "qa", "qd", "burst"}
+        omit_when_false = {"n", "qa", "burst", "crater"}
         for ticker, entries in result.items():
             for e in entries:
                 for k in omit_when_false:
                     if k in e:
                         assert e[k], f"{ticker}: key '{k}' present but falsy — should be omitted"
-
-    def test_vs_omitted_when_zero(self, raw_fixture, historical_fixture, cfg):
-        """vs must be omitted when it rounds to 0."""
-        result = hist.signal_history(raw_fixture, historical_fixture, cfg)
-        for ticker, entries in result.items():
-            for e in entries:
-                if "vs" in e:
-                    assert e["vs"] != 0, f"{ticker}: vs=0 should be omitted"
 
     def test_entries_sorted_by_date(self, raw_fixture, historical_fixture, cfg):
         """Entries must be in ascending date order."""
@@ -160,7 +154,7 @@ class TestSignalHistoryConsistency:
         last_d = max(historical.keys())
         lb_last = historical[last_d]
 
-        # Today leaderboard has burst_30d only if _attach_velocity was called;
+        # Today leaderboard has burst_30d only if build._attach_motion was called;
         # here we just verify snapshot consistency at the leaderboard level.
         # For this synthetic fixture, the test verifies that the signal_history
         # result for the last date uses the correct date string.
@@ -189,7 +183,7 @@ class TestSignalHistoryConsistency:
 
     def test_no_unknown_keys_in_entries(self, raw_fixture, historical_fixture, cfg):
         """Entries must only contain known keys."""
-        allowed = {"d", "flag", "rank", "n", "st", "dv", "qa", "qd", "vs", "burst"}
+        allowed = {"d", "flag", "rank", "n", "qa", "burst", "crater"}
         result = hist.signal_history(raw_fixture, historical_fixture, cfg)
         for ticker, entries in result.items():
             for e in entries:
