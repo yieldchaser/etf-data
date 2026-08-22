@@ -7,6 +7,14 @@
   <meta name="description" content="Long-horizon returns intelligence: annual return matrix, stat cards, and daily price log.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2309090b'/%3E%3Cpath d='M6 22L13 14.5L18 18.5L26 9.5' fill='none' stroke='%2322d3ee' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='26' cy='9.5' r='2.5' fill='%2322d3ee'/%3E%3C/svg%3E">
   <meta name="color-scheme" content="dark">
+  <link rel="canonical" href="https://yieldchaser.github.io/etf-data/markets.html">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Conviction Labs · Markets">
+  <meta property="og:description" content="Long-horizon returns intelligence: annual return matrix, stat cards, and daily price log.">
+  <meta property="og:url" content="https://yieldchaser.github.io/etf-data/markets.html">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Conviction Labs · Markets">
+  <meta name="twitter:description" content="Long-horizon returns intelligence: annual return matrix, stat cards, and daily price log.">
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
   <style>
@@ -86,9 +94,21 @@
     .cat-divider td { border-top: 2px solid rgba(255,255,255,0.08) !important; }
     /* Stat cards */
     .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+    /* Reduced motion - honour the OS preference: kill the loading pulse and
+       all transitions so nothing animates for vestibular-sensitive users. */
+    @media (prefers-reduced-motion: reduce) {
+      .pulse-load { animation: none; }
+      *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+    }
   </style>
 </head>
 <body>
+
+<noscript>
+  <div style="padding:12px 16px;font-family:ui-sans-serif,system-ui,sans-serif;font-size:13px;background:#111;color:#e4e4e7;border-bottom:1px solid #333">
+    This dashboard requires JavaScript - all returns data is fetched and rendered client-side.
+  </div>
+</noscript>
 
 <!-- Singleton tooltip -->
 <div id="tt"></div>
@@ -129,6 +149,29 @@
                   return '◌ LIVE MERGE FAILED';
                 })()"></span>
         </template>
+        <!-- Data-health strip - surfaces metadata.markets_data_freshness.stale_assets
+             (assets whose latest month lags the asof) so staleness is visible
+             on the page, not just in metadata.json. -->
+        <template x-if="freshness && Array.isArray(freshness.stale_assets)">
+          <div class="flex items-center gap-2 mt-1 flex-wrap text-[10px] font-mono">
+            <span class="label" style="font-size:9px">DATA HEALTH</span>
+            <template x-if="freshness.stale_assets.length === 0">
+              <span style="color: var(--up)">● All assets fresh</span>
+            </template>
+            <template x-if="freshness.stale_assets.length > 0">
+              <span class="flex items-center gap-1.5 flex-wrap">
+                <span class="chip" style="background: rgba(251,191,36,0.10); color: var(--amber); border: 1px solid rgba(251,191,36,0.25)"
+                      x-text="'◐ ' + freshness.stale_assets.length + ' stale'"></span>
+                <template x-for="sa in freshness.stale_assets" :key="sa.asset">
+                  <span style="color: var(--amber); opacity: 0.85"
+                        :title="`${sa.asset} - latest month ${sa.last} (${sa.age_days}d behind asof)`"
+                        x-text="`${sa.asset} (${sa.last} · ${sa.age_days}d)`"></span>
+                </template>
+              </span>
+            </template>
+            <span x-show="freshness.asof" style="color: var(--text-3)" x-text="'· asof ' + freshness.asof"></span>
+          </div>
+        </template>
       </div>
     </div>
     <div class="text-xs flex gap-4 items-center" style="color: var(--text-3)">
@@ -146,19 +189,31 @@
       <button @click="activeTab = 'matrix'"
               :class="activeTab === 'matrix' ? 'tab-active' : ''"
               class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
-              :style="activeTab === 'matrix' ? '' : 'color: var(--text-2); border-color: var(--border)'">
+              :style="activeTab === 'matrix' ? '' : 'color: var(--text-2); border-color: var(--border)'"
+              @mouseenter="showTt($event, 'Return Matrix - annual price returns per asset; click any cell for its monthly breakdown')"
+              @mouseleave="hideTt()"
+              @focus="showTt($event, 'Return Matrix - annual price returns per asset; click any cell for its monthly breakdown')"
+              @blur="hideTt()">
         Return Matrix
       </button>
       <button @click="activeTab = 'pricelog'"
               :class="activeTab === 'pricelog' ? 'tab-active' : ''"
               class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
-              :style="activeTab === 'pricelog' ? '' : 'color: var(--text-2); border-color: var(--border)'">
+              :style="activeTab === 'pricelog' ? '' : 'color: var(--text-2); border-color: var(--border)'"
+              @mouseenter="showTt($event, 'Price Log - daily OHLC history for every tracked ticker')"
+              @mouseleave="hideTt()"
+              @focus="showTt($event, 'Price Log - daily OHLC history for every tracked ticker')"
+              @blur="hideTt()">
         Price Log
       </button>
       <button @click="activeTab = 'yields'"
               :class="activeTab === 'yields' ? 'tab-active' : ''"
               class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
-              :style="activeTab === 'yields' ? '' : 'color: var(--text-2); border-color: var(--border)'">
+              :style="activeTab === 'yields' ? '' : 'color: var(--text-2); border-color: var(--border)'"
+              @mouseenter="showTt($event, 'Yield History - treasury yields and policy rates across decades')"
+              @mouseleave="hideTt()"
+              @focus="showTt($event, 'Yield History - treasury yields and policy rates across decades')"
+              @blur="hideTt()">
         Yield History
       </button>
       <button @click="activeTab = 'periodic'"
@@ -217,7 +272,7 @@
           class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
           :style="activeCcy === ccy ? '' : 'color: var(--text-2); border-color: var(--border)'"
           x-text="ccy"
-          @mouseenter="showTt($event, ccy === 'USD' ? 'Convert all returns to USD using monthly FX rates' : ccy === 'INR' ? 'Convert all returns to INR using monthly USD/INR rates' : ccy === 'Gold' ? 'Price in oz of gold - shows real purchasing power over time' : ccy === 'Silver' ? 'Price in oz of silver - shows real purchasing power over time' : 'Native local currency - no FX adjustment')"
+          @mouseenter="showTt($event, ccy === 'USD' ? 'Convert all returns to USD using monthly FX rates - non-USD natives shown as approximate (≈)' : ccy === 'INR' ? 'Convert all returns to INR using monthly USD/INR rates' : ccy === 'Gold' ? 'Price in oz of gold - shows real purchasing power over time' : ccy === 'Silver' ? 'Price in oz of silver - shows real purchasing power over time' : 'Native local currency - no FX adjustment')"
           @mouseleave="hideTt()">
         </button>
       </template>
@@ -433,6 +488,8 @@
                         <div class="flex flex-col items-center gap-0.5">
                           <div class="text-[8px] font-mono" style="color: var(--text-3)" x-text="mr.month"></div>
                           <div class="text-[9px] font-mono text-center"
+                               :class="mr.partial ? 'matrix-cell-partial' : ''"
+                               :title="mr.partial ? 'Partial month — data ends mid-month' : ''"
                                style="width: 38px; padding: 2px 0; border-radius: 3px;"
                                :style="`background: ${cellColor(mr.ret)}; color: ${cellTextColor(mr.ret)};`"
                                @mouseenter="showMonthTt($event, asset, expandedCell.year, mr, mi)"
@@ -461,8 +518,11 @@
                 <span class="text-sm font-medium" style="color: var(--cyan)" x-text="returnsData.assets[selectedAsset]?.meta?.name || selectedAsset"></span>
                 <span class="chip text-[9px]" :style="categoryChipStyle(returnsData.assets[selectedAsset]?.meta?.category)" x-text="returnsData.assets[selectedAsset]?.meta?.category"></span>
                 <span class="label" style="font-size:9px;" x-text="returnsData.assets[selectedAsset]?.meta?.native_ccy"></span>
-                <!-- Currency lens indicator -->
-                <span x-show="activeCcy !== 'Local'" class="text-[9px] px-1.5 py-0.5 rounded font-mono" style="background: rgba(34,211,238,0.08); color: var(--cyan)" x-text="'Priced in ' + activeCcy"></span>
+                <!-- Currency lens indicator (≈USD when a non-USD-native
+                     asset is shown converted at monthly FX) -->
+                <span x-show="activeCcy !== 'Local'" class="text-[9px] px-1.5 py-0.5 rounded font-mono" style="background: rgba(34,211,238,0.08); color: var(--cyan)"
+                      :title="(activeCcy === 'USD' && returnsData.assets[selectedAsset]?.meta?.native_ccy !== 'USD') ? 'Converted from ' + returnsData.assets[selectedAsset]?.meta?.native_ccy + ' at monthly FX rates - approximate' : ''"
+                      x-text="'Priced in ' + activeCcy + ((activeCcy === 'USD' && returnsData.assets[selectedAsset]?.meta?.native_ccy !== 'USD') ? ' ≈' : '')"></span>
               </div>
               <div class="flex items-center gap-2">
                 <!-- Chart mode tabs -->
@@ -1926,10 +1986,14 @@
 
 
   <!-- FOOTER -->
-  <footer class="mt-8 pt-4 text-xs flex gap-4 flex-wrap" style="border-top: 1px solid var(--border); color: var(--text-3)">
+  <footer class="mt-8 pt-4 text-xs flex gap-4 flex-wrap items-center" style="border-top: 1px solid var(--border); color: var(--text-3)">
     <span>Conviction Labs · yieldchaser/etf-data</span>
-    <a href="index.html" style="color: var(--cyan); text-decoration: none;">← Dashboard</a>
-    <a href="sim.html" style="color: var(--text-3); text-decoration: none;">Simulator</a>
+    <a href="index.html" style="color: var(--cyan); text-decoration: none;">Dashboard</a>
+    <a href="stock.html" style="color: var(--text-3); text-decoration: none;">Stock Finder</a>
+    <a href="sim.html" style="color: var(--text-3); text-decoration: none;">Portfolio Lab</a>
+    <a href="backtest.html" style="color: var(--text-3); text-decoration: none;">Backtest</a>
+    <a href="methodology.html" style="color: var(--text-3); text-decoration: none;">How it works</a>
+    <span class="ml-auto" style="opacity: 0.8">Data for research only · not investment advice</span>
   </footer>
 
 </div><!-- /app -->
@@ -1938,7 +2002,9 @@
 <script>
 // ─── Singleton tooltip engine ────────────────────────────────────────────────
 const tt = document.getElementById('tt');
+let _ttLastEl = null, _ttLastHtml = '', _ttTouchOpen = false;
 function _showTt(el, html) {
+  _ttLastEl = el; _ttLastHtml = html;
   tt.innerHTML = html;
   tt.style.opacity = '1';
   _posTt(el);
@@ -1956,6 +2022,32 @@ function _posTt(el) {
   tt.style.top  = y + 'px';
 }
 function _hideTt() { tt.style.opacity = '0'; }
+
+// Accessibility for the engine: keyboard focus re-shows the tooltip for the
+// element that last showed one (buttons with @focus/@blur re-trigger the
+// Alpine handlers directly); touch gets first-tap-show, tap-elsewhere-hide.
+// Hover behaviour is untouched - this only adds input paths, no new UI.
+document.addEventListener('focusin', (e) => {
+  if (_ttLastEl && (e.target === _ttLastEl || (_ttLastEl.contains && _ttLastEl.contains(e.target)))) {
+    tt.innerHTML = _ttLastHtml;
+    tt.style.opacity = '1';
+    _posTt(e.target);
+  }
+});
+document.addEventListener('focusout', () => { _hideTt(); });
+document.addEventListener('touchstart', (e) => {
+  if (_ttLastEl && (e.target === _ttLastEl || (_ttLastEl.contains && _ttLastEl.contains(e.target)))) {
+    if (!_ttTouchOpen) {
+      _ttTouchOpen = true;
+      tt.innerHTML = _ttLastHtml;
+      tt.style.opacity = '1';
+      _posTt(e.target);
+    }
+  } else {
+    _ttTouchOpen = false;
+    _hideTt();
+  }
+}, { passive: true });
 
 function _showPeriodicTt(el, name, yr, ret) {
   const sign = ret >= 0 ? '+' : '';
@@ -2013,19 +2105,6 @@ const ASSET_COLORS = {
   cocoa:       '#78350f',   // brown-dark
   rice:        '#fef3c7',   // amber-light
   palm_oil:    '#84cc16',   // lime
-  // FX
-  fx_usdinr:   '#f59e0b',
-  fx_usdjpy:   '#ec4899',
-  fx_eurusd:   '#3b82f6',
-  fx_gbpusd:   '#8b5cf6',
-  fx_usdcny:   '#ef4444',
-  fx_usdcad:   '#f97316',
-  fx_usdaud:   '#10b981',
-  fx_usdsgd:   '#06b6d4',
-  fx_usdbrl:   '#84cc16',
-  fx_usdmxn:   '#f43f5e',
-  fx_usdkrw:   '#a855f7',
-  fx_usdchf:   '#64748b',
   // Real Estate
   us_home_prices: '#14b8a6',
   // Rates
@@ -2177,7 +2256,7 @@ function marketsApp() {
       // header chip so the user can see whether the live merge is healthy
       // without opening DevTools. Loaded best-effort; missing → no chip.
       try {
-        const r = await fetch('data/metadata.json', { cache: 'no-store' });
+        const r = await fetch('data/metadata.json');
         if (!r.ok) return;
         const m = await r.json();
         this.freshness = m.markets_data_freshness || null;
@@ -2332,7 +2411,7 @@ function marketsApp() {
 
     async _loadPriceLog() {
       try {
-        const data = await fetch('data/markets.json', { cache: 'no-store' }).then(r => r.json());
+        const data = await fetch('data/markets.json').then(r => r.json());
         this.meta = { generated_at_utc: data.generated_at_utc };
         this.series = data.series || [];
       } catch (e) {
@@ -2348,9 +2427,10 @@ function marketsApp() {
       const bust = this._sessionBust || (this._sessionBust = Date.now());
       for (let attempt = 0; attempt < 2; attempt++) {
         try {
-          const r = await fetch(`data/market_returns.json?v=${bust}`, { cache: 'no-store' });
+          const r = await fetch(`data/market_returns.json?v=${bust}`);
           if (!r.ok) { this.returnsData = null; break; }
           this.returnsData = await r.json();
+          this._partialMonthSet = null; // re-derive partial-month hints
           if (this.returnsData?.asof) {
             this.marketState.asof = this.returnsData.asof;
           }
@@ -2378,7 +2458,7 @@ function marketsApp() {
     async _loadVol() {
       try {
         const bust = Date.now();
-        const r = await fetch(`data/vol_history.json?v=${bust}`, { cache: 'no-store' });
+        const r = await fetch(`data/vol_history.json?v=${bust}`);
         if (!r.ok) { this.volData = null; return; }
         this.volData = await r.json();
       } catch (e) {
@@ -2482,22 +2562,47 @@ function marketsApp() {
     get lensesAvailable() {
       const lenses = ['Local', 'USD'];
       const fx = this.returnsData?.fx || {};
-      const auxFx = this.returnsData?.aux?.usdinr?.values || {};
-      const hasUsdInr = (Array.isArray(fx.USDINR) && fx.USDINR.length > 0) ||
-                       Object.keys(auxFx).length > 0 ||
-                       !!this.returnsData?.assets?.fx_usdinr;
+      const hasUsdInr = Array.isArray(fx.USDINR) && fx.USDINR.length > 0;
       if (hasUsdInr) lenses.push('INR');
       if (this.returnsData?.assets?.gold?.monthly?.length) lenses.push('Gold');
       if (this.returnsData?.assets?.silver?.monthly?.length) lenses.push('Silver');
       return lenses;
     },
 
+    // Normalise cpi.US to a plain {YYYY-MM: index} dict. The backend ships it
+    // either as an object or as [[ym, v], ...] rows; both are accepted here.
+    // Empty while the pipeline's CPI fetch is down - the Real lens stays
+    // disabled (hasCpiData gate) until the backend fix restores it, but the
+    // math below is correct as soon as data lands.
+    _cpiValues() {
+      const raw = this.returnsData?.cpi?.US;
+      if (!raw) return {};
+      if (Array.isArray(raw)) {
+        const d = {};
+        for (const row of raw) {
+          if (Array.isArray(row) && row.length >= 2 && row[1] != null) d[row[0]] = row[1];
+        }
+        return d;
+      }
+      return typeof raw === 'object' ? raw : {};
+    },
+
     get hasCpiData() {
-      const cpi = this.returnsData?.cpi || {};
-      // Accept either the new top-level cpi.US format or legacy aux.us_cpi
-      if (cpi.US && (Array.isArray(cpi.US) ? cpi.US.length : Object.keys(cpi.US).length)) return true;
-      const aux = this.returnsData?.aux?.us_cpi?.values || {};
-      return Object.keys(aux).length > 0;
+      return Object.keys(this._cpiValues()).length > 0;
+    },
+
+    // ── §3.2 Partial-month hint ──────────────────────────────────────────
+    // market_returns.json may carry a top-level `partial_months: [ym, ...]`
+    // array listing months whose data ends mid-month. Tolerated absent -
+    // no hint → no dimming. Lazy Set cache, invalidated on every load.
+    _partialMonthSet: null,
+    isPartialMonth(ym) {
+      if (!ym) return false;
+      if (this._partialMonthSet === null) {
+        const arr = this.returnsData?.partial_months;
+        this._partialMonthSet = new Set(Array.isArray(arr) ? arr : []);
+      }
+      return this._partialMonthSet.has(ym);
     },
 
     _getRateWithFallback(lookup, ym) {
@@ -2515,6 +2620,58 @@ function marketsApp() {
         }
       }
       return null;
+    },
+
+    // ── §3.1 FX resolution - native currency → USD via the top-level `fx` ──
+    // section of market_returns.json (NOT assets.fx_* - those keys do not
+    // exist). Data convention verified against the 2026-07 snapshot: every
+    // pair stores the USD value of ONE unit of the foreign currency, i.e.
+    //   USDJPY 2026-07 = 0.0061 ⇒ ¥1 ≈ $0.0061 ($1 ≈ ¥164)
+    //   EURUSD 2026-07 = 1.1375 ⇒ €1 = $1.14
+    //   USDINR 2026-07 = 0.0104 ⇒ ₹1 ≈ $0.010 ($1 ≈ ₹96)
+    // EXCEPT USDAUD which ships the classic AUD-per-USD quote (1.43 ⇒
+    // A$1 ≈ $0.70) and therefore DIVIDES; USDHKD is expected classic too
+    // (~7.8 ⇒ divide) once the backend ships it.
+    //
+    // Sanity math: Nikkei level ~40,000-65,000 × USDJPY(≈0.006) ≈ /150-165 →
+    // tens of thousands of yen become hundreds/thousands of USD ✓ (never ~100×).
+    // DAX level ~18,000-25,000 × EURUSD(≈1.08-1.14) → ≈×1.1 ✓.
+    _FX_PAIR_TABLE: {
+      JPY: ['USDJPY', 'mul'],
+      EUR: ['EURUSD', 'mul'],
+      GBP: ['GBPUSD', 'mul'],
+      INR: ['USDINR', 'mul'],
+      HKD: ['USDHKD', 'div'],   // pair not yet shipped - falls back until backend adds it
+      AUD: ['USDAUD', 'div'],
+      BRL: ['USDBRL', 'mul'],
+      CNY: ['USDCNY', 'mul'],
+      CAD: ['USDCAD', 'mul'],
+      SGD: ['USDSGD', 'mul'],
+      MXN: ['USDMXN', 'mul'],
+      KRW: ['USDKRW', 'mul'],
+      CHF: ['USDCHF', 'mul'],
+    },
+
+    _fxLookup(pairKey) {
+      const rows = this.returnsData?.fx?.[pairKey];
+      if (!Array.isArray(rows)) return {};
+      const d = {};
+      for (const row of rows) {
+        if (Array.isArray(row) && row.length >= 2 && row[1] != null) d[row[0]] = row[1];
+      }
+      return d;
+    },
+
+    // Resolve a native-currency → USD multiplier for month `ym`.
+    // Returns 1 for USD-native, null when no usable FX path exists
+    // (caller decides whether to fall back to 1 or drop the point).
+    _fxRate(nativeCcy, ym) {
+      if (!nativeCcy || nativeCcy === 'USD') return 1;
+      const entry = this._FX_PAIR_TABLE[nativeCcy];
+      if (!entry) return null;
+      const rate = this._getRateWithFallback(this._fxLookup(entry[0]), ym);
+      if (rate == null || !Number.isFinite(rate) || rate === 0) return null;
+      return entry[1] === 'div' ? 1 / rate : rate;
     },
 
     // Build monthly close series for an asset in the requested currency lens.
@@ -2541,22 +2698,8 @@ function marketsApp() {
       const nativeCcy = asset.meta?.native_ccy || 'USD';
       const targetCcy = this.activeCcy;
 
-      // Helper: get FX series from aux (values dict) or new top-level fx section
-      const aux = this.returnsData?.aux || {};
-      const fxSection = this.returnsData?.fx || {};
-      // USD per 1 INR - from aux.usdinr or fx.USDINR
-      const usdinrRaw = aux.usdinr?.values || {};
-      // Build usdinr lookup from new fx section if available
-      const usdinrFx = {};
-      if (Array.isArray(fxSection.USDINR)) {
-        for (const [ym, val] of fxSection.USDINR) usdinrFx[ym] = val;
-      }
-      const usdinr = Object.keys(usdinrFx).length > 0 ? usdinrFx : usdinrRaw;
-
-      // Also check assets for FX series (fx_usdinr, fx_usdjpy, etc.)
+      // Gold/silver lens denominators come from the gold/silver asset series.
       const fxAssets = this.returnsData?.assets || {};
-
-      // Build gold/silver lookup dicts for lens computation
       const _buildLookup = (assetId) => {
         const a = fxAssets[assetId];
         if (!a) return {};
@@ -2570,20 +2713,6 @@ function marketsApp() {
       const goldLookup   = _buildLookup('gold');
       const silverLookup = _buildLookup('silver');
 
-      // Build FX asset lookups
-      const _buildFxLookup = (assetId) => {
-        const a = fxAssets[assetId];
-        if (!a) return {};
-        if (Array.isArray(a.monthly)) {
-          const d = {};
-          for (const [ym, val] of a.monthly) d[ym] = val;
-          return d;
-        }
-        return a.close || {};
-      };
-      const jpyLookup = _buildFxLookup('fx_usdjpy');
-      const eurLookup = _buildFxLookup('fx_eurusd');
-
       // Build a monthly FX multiplier: native → target
       // multiplier[ym] = how many target units per 1 native unit
       // Returns 1 (not null) for Local/USD when FX data is unavailable —
@@ -2591,29 +2720,19 @@ function marketsApp() {
       const getMultiplier = (ym) => {
         if (targetCcy === 'Local') return 1;
 
-        // native → USD
-        let nativeToUsd = 1;
-        if (nativeCcy === 'USD') {
-          nativeToUsd = 1;
-        } else if (nativeCcy === 'INR') {
-          const rate = this._getRateWithFallback(usdinr, ym);
-          // If no FX data, fall back to treating as USD-equivalent (show local)
-          nativeToUsd = rate !== null ? rate : 1;
-        } else if (nativeCcy === 'JPY') {
-          const fxJpy = this._getRateWithFallback(jpyLookup, ym);
-          nativeToUsd = fxJpy !== null ? fxJpy : 1;
-        } else if (nativeCcy === 'EUR') {
-          const fxEur = this._getRateWithFallback(eurLookup, ym);
-          nativeToUsd = fxEur !== null ? fxEur : 1;
-        }
-        // For other currencies (AUD, BRL, GBP, HKD, CNY), assume USD-native
-        // when no FX data is available - returns local price, not blank
+        // native → USD via the top-level fx section (_FX_PAIR_TABLE).
+        // Sanity: Nikkei ~65,000 × USDJPY(0.0061) ≈ $395 ≈ /164 ✓;
+        // DAX ~25,000 × EURUSD(1.1375) ≈ $28,500 ≈ ×1.14 ✓.
+        let nativeToUsd = this._fxRate(nativeCcy, ym);
+        // No FX path yet (pair missing from fx section, e.g. HKD today) →
+        // treat as USD-native so cells render local values, not blank.
+        if (nativeToUsd === null) nativeToUsd = 1;
 
         if (targetCcy === 'USD') return nativeToUsd;
 
         // USD → INR: need INR per USD = 1 / (USD per INR)
         if (targetCcy === 'INR') {
-          const usdPerInr = this._getRateWithFallback(usdinr, ym);
+          const usdPerInr = this._getRateWithFallback(this._fxLookup('USDINR'), ym);
           // No FX data → return null so INR lens shows · rather than wrong number
           if (usdPerInr === null || usdPerInr === 0) return null;
           const inrPerUsd = 1 / usdPerInr;
@@ -2705,8 +2824,7 @@ function marketsApp() {
       // Apply real-return adjustment (CPI deflation) if requested
       let cpiRet = {};
       if (this.activeReal) {
-        const aux = this.returnsData?.aux || {};
-        const cpiVals = aux.us_cpi?.values || {};
+        const cpiVals = this._cpiValues();
         const cpiMonths = Object.keys(cpiVals).sort();
         for (let i = 1; i < cpiMonths.length; i++) {
           const prev = cpiVals[cpiMonths[i - 1]];
@@ -2947,8 +3065,7 @@ function marketsApp() {
       if (!adjusted.length) return [];
 
       const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      const aux = this.returnsData?.aux || {};
-      const cpiVals = aux.us_cpi?.values || {};
+      const cpiVals = this._cpiValues();
 
       // Build monthly returns from adjusted close
       const monthlyRet = {};
@@ -2973,7 +3090,7 @@ function marketsApp() {
             ret = (1 + ret) / (1 + inf) - 1;
           }
         }
-        result.push({ month: MONTHS[m - 1], ym, ret });
+        result.push({ month: MONTHS[m - 1], ym, ret, partial: this.isPartialMonth(ym) });
       }
       return result;
     },
@@ -3702,7 +3819,14 @@ function marketsApp() {
             const fg = this.cellTextColor(ret);
             const pct = (ret * 100).toFixed(1);
             const sign = ret >= 0 ? '+' : '';
-            html += `<td style="width:${CW}px;height:${RH}px;background:${bg};color:${fg};text-align:center;vertical-align:middle;padding:2px 0;border:1px solid rgba(255,255,255,0.04);cursor:default" title="${yr}-${String(m).padStart(2,'0')}: ${sign}${pct}%">${sign}${pct}%</td>`;
+            // Partial-month hint (top-level partial_months) - same dim
+            // language as partial-year cells: opacity + italic + de-saturate,
+            // plus a trailing · and an explanatory title.
+            const pMonth = this.isPartialMonth(ym);
+            const pStyle = pMonth ? 'opacity:0.40;font-style:italic;filter:saturate(0.3);' : '';
+            const pTitle = pMonth ? ' · Partial month — data ends mid-month' : '';
+            const pGlyph = pMonth ? '·' : '';
+            html += `<td style="width:${CW}px;height:${RH}px;background:${bg};color:${fg};text-align:center;vertical-align:middle;padding:2px 0;border:1px solid rgba(255,255,255,0.04);cursor:default;${pStyle}" title="${yr}-${String(m).padStart(2,'0')}: ${sign}${pct}%${pTitle}">${sign}${pct}%${pGlyph}</td>`;
           }
         }
         // Annual total column
@@ -3824,17 +3948,9 @@ function marketsApp() {
       }
       const nativeCcy = asset.meta?.native_ccy || 'USD';
 
-      // FX lookups (same logic as _getAdjustedClose but parameterised)
-      const aux = this.returnsData?.aux || {};
-      const fxSection = this.returnsData?.fx || {};
+      // FX via the shared fx-section resolver - same source of truth as
+      // _getAdjustedClose (see _FX_PAIR_TABLE note for quote conventions).
       const fxAssets = this.returnsData?.assets || {};
-      const usdinrRaw = aux.usdinr?.values || {};
-      const usdinrFx = {};
-      if (Array.isArray(fxSection.USDINR)) {
-        for (const [ym, val] of fxSection.USDINR) usdinrFx[ym] = val;
-      }
-      const usdinr = Object.keys(usdinrFx).length > 0 ? usdinrFx : usdinrRaw;
-
       const _buildLookup = (id) => {
         const a = fxAssets[id];
         if (!a) return {};
@@ -3842,17 +3958,14 @@ function marketsApp() {
         return a.close || {};
       };
       const goldLookup = _buildLookup('gold');
-      const jpyLookup  = _buildLookup('fx_usdjpy');
-      const eurLookup  = _buildLookup('fx_eurusd');
 
       const getMultiplier = (ym) => {
         if (ccy === 'Local') return 1;
-        let nativeToUsd = 1;
-        if (nativeCcy === 'INR') { const r = this._getRateWithFallback(usdinr, ym); nativeToUsd = r !== null ? r : 1; }
-        else if (nativeCcy === 'JPY') { const r = this._getRateWithFallback(jpyLookup, ym); nativeToUsd = r !== null ? r : 1; }
-        else if (nativeCcy === 'EUR') { const r = this._getRateWithFallback(eurLookup, ym); nativeToUsd = r !== null ? r : 1; }
+        let nativeToUsd = this._fxRate(nativeCcy, ym);
+        // Pair missing from fx section → show local rather than blank
+        if (nativeToUsd === null) nativeToUsd = 1;
         if (ccy === 'USD') return nativeToUsd;
-        if (ccy === 'INR') { const u = this._getRateWithFallback(usdinr, ym); if (!u) return null; return nativeToUsd / u; }
+        if (ccy === 'INR') { const u = this._getRateWithFallback(this._fxLookup('USDINR'), ym); if (!u) return null; return nativeToUsd / u; }
         if (ccy === 'GOLD') { const g = this._getRateWithFallback(goldLookup, ym); if (!g) return null; return nativeToUsd / g; }
         return 1;
       };
@@ -3943,8 +4056,7 @@ function marketsApp() {
           // Real = local + CPI deflation
           adjusted = this._getAdjustedClose(this.selectedAsset);
           // Apply CPI deflation
-          const aux = this.returnsData?.aux || {};
-          const cpiVals = aux.us_cpi?.values || {};
+          const cpiVals = this._cpiValues();
           const cpiMonths = Object.keys(cpiVals).sort();
           const cpiRet = {};
           for (let i = 1; i < cpiMonths.length; i++) {
@@ -4120,6 +4232,20 @@ function marketsApp() {
       if (!v.ok) {
         extremeLine = `\n⚠ fake/corrupt data - boundary anomaly detected`;
       }
+      // ≈USD provenance: when the USD lens is active on a non-USD-native
+      // asset, say so (and honestly flag when the FX pair is missing and the
+      // value is actually still native). Sanity anchors: Nikkei ~65,000 ×
+      // USDJPY(0.0061) ≈ /164 → hundreds of USD; DAX ~25,000 × EURUSD(1.14)
+      // → ≈×1.1.
+      let fxLine = '';
+      if (this.activeCcy === 'USD') {
+        const nat = asset.meta?.native_ccy || 'USD';
+        if (nat !== 'USD') {
+          fxLine = this._fxRate(nat, `${year}-12`) !== null
+            ? `\n≈USD - converted from ${nat} at monthly FX`
+            : `\nnative ${nat} - FX pair missing from fx section, not converted`;
+        }
+      }
       const src = asset.meta?.source || '';
       let zLine = '';
       if (this.colorMode === 'zscore') {
@@ -4129,7 +4255,7 @@ function marketsApp() {
       _showTt(el,
         `${asset.meta?.name}\n${year}  ${sign}${pct}%${zLine}` +
         `\nMonths: ${monthsPresent}/${monthsExpected} · partial: ${partial}` +
-        partialLine + anomalyLine + extremeLine +
+        partialLine + anomalyLine + extremeLine + fxLine +
         `\nSource: ${src}`
       );
     },
@@ -4143,7 +4269,8 @@ function marketsApp() {
       } else {
         const pct = (mr.ret * 100).toFixed(2);
         const sign = mr.ret >= 0 ? '+' : '';
-        _showTt(el, `${asset.meta?.name}\n${label} ${year}  ${sign}${pct}%`);
+        const partialLine = mr.partial ? '\n⚠ Partial month — data ends mid-month' : '';
+        _showTt(el, `${asset.meta?.name}\n${label} ${year}  ${sign}${pct}%${partialLine}`);
       }
     },
 
@@ -5197,7 +5324,7 @@ function marketsApp() {
     get corrAssetList() {
       if (!this.returnsData) return [];
       const assets = this.returnsData.assets || {};
-      const preferred = ['sp500', 'nasdaq', 'gold', 'silver', 'wti_crude', 'copper', 'sensex', 'nikkei', 'dax', 'us_home_prices', 'wheat', 'fx_eurusd'];
+      const preferred = ['sp500', 'nasdaq', 'gold', 'silver', 'wti_crude', 'copper', 'sensex', 'nikkei', 'dax', 'us_home_prices', 'wheat'];
       return preferred.filter(k => assets[k]).map((k, i) => ({
         key: k,
         shortName: assets[k].meta?.name?.split(' ').slice(0, 2).join(' ') || k,
