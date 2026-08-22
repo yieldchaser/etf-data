@@ -24,6 +24,11 @@ sanitizer:
     - $SAR            # Saudi Riyal
     - $TWD            # New Taiwan Dollar
     - $CNY            # Yuan Renminbi
+    - $AED            # UAE Dirham        (2026-08 audit: seen in live data)
+    - $CHF            # Swiss Franc       (2026-08 audit)
+    - $HKD            # Hong Kong Dollar  (2026-08 audit)
+    - $SEK            # Swedish Krona     (2026-08 audit)
+    - $ZAR            # South African Rand (2026-08 audit)
     # Bare currency codes that represent cash/equivalents in holdings
     - EUR
     - JPY
