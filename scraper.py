@@ -607,6 +607,24 @@ def clean_dataframe(df, ticker, h_date=TODAY, weight_unit=None):
     df['ETF_Ticker'] = ticker
     df['Holdings_As_Of'] = h_date
     df['Date_Scraped'] = TODAY
+    # Ingress placeholder filter (audit HIGH: "three placeholder policies in
+    # one repo"). The Invesco-API and bridge paths already drop these; the
+    # heuristic/first_trust paths recorded them for years — 3,541 legacy rows
+    # needed a one-time purge because of it. Mirrors clean_canonical_csv
+    # semantics: no non-positive weights, no $-prefixed currency lines, no
+    # Cash&Other aggregates. Positive-weight bare codes stay (some are real
+    # tickers); scoring-side sanitizer blocklist covers those.
+    before = len(df)
+    w_num = pd.to_numeric(df['weight'], errors='coerce').fillna(0.0)
+    t_str = df['ticker'].astype(str)
+    keep = (w_num > 0) & (~t_str.str.startswith('$')) & (t_str != 'Cash&Other')
+    df = df[keep]
+    if len(df) < before:
+        print(f"      -> dropped {before - len(df)} placeholder row(s) "
+              f"(non-positive weight / cash lines)")
+    if df.empty:
+        print(f"      -> 0 equity rows after placeholder filter")
+        return None
     return df[['ETF_Ticker', 'ticker', 'name', 'weight', 'Holdings_As_Of', 'Date_Scraped']]
 
 def check_if_new_data(ticker, new_date):

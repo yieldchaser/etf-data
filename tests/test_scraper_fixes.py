@@ -47,6 +47,34 @@ class TestWeightUnitDeclaration:
         assert out["weight"].iloc[0] == pytest.approx(0.71)
 
 
+class TestIngressPlaceholderFilter:
+    def _mixed_table(self):
+        return pd.DataFrame({
+            "Ticker": ["AAA", "$KRW", "Cash&Other", "BBB", "CCC"],
+            "Security Name": ["Alpha", "Korean Won hedge", "Cash aggregate",
+                              "Beta Inc", "Gamma Ltd"],
+            "Weighting": ["1.2", "0.4", "0.9", "0.8", "0.3"],
+        })
+
+    def test_drops_placeholders_keeps_equities(self):
+        out = scr.clean_dataframe(self._mixed_table(), "QMOM", "2026-08-22",
+                                  weight_unit="percent")
+        assert sorted(out["ticker"]) == ["AAA", "BBB", "CCC"]
+        assert (out["weight"] > 0).all()
+
+    def test_all_placeholder_table_returns_none(self):
+        """A table of only placeholders must return None (matching the
+        Invesco path's '0 equity rows' semantics), never a valid-looking
+        empty frame that gets recorded as an as-of day."""
+        tbl = pd.DataFrame({
+            "Ticker": ["$JPY", "Cash&Other"],
+            "Security Name": ["Yen", "Cash"],
+            "Weighting": ["0.1", "0.2"],
+        })
+        out = scr.clean_dataframe(tbl, "IMOM", "2026-08-22", weight_unit="percent")
+        assert out is None
+
+
 class TestInvescoDateAndCoverage:
     def _api_payload(self, eff_date, biz_date, reported, n_holdings=5):
         return {
