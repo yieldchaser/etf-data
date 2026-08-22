@@ -168,16 +168,26 @@ class TestFredAgricultureScaling:
     """Verify that FRED agricultural series are correctly scaled by markets_history."""
 
     def test_fred_scaling_applied_correctly(self, monkeypatch):
-        # Mock fred.get_series to return a dummy series
-        class MockFred:
-            def get_series(self, series_id, **kwargs):
-                return pd.Series([100.0, 200.0], index=pd.date_range("2026-01-31", periods=2, freq="ME"))
+        # Mock the FRED JSON REST endpoint (urllib port) with a 2-observation series
+        import io
+        import json as _json
+        from unittest.mock import patch
 
-        mock_fred = MockFred()
+        payload = _json.dumps({
+            "observations": [
+                {"date": "2026-01-31", "value": "100.0"},
+                {"date": "2026-02-28", "value": "200.0"},
+            ]
+        }).encode()
+
+        def _ok(*args, **kwargs):
+            return io.BytesIO(payload)
+
         from conviction.markets_history import _fetch_fred_series
 
         # With scale=0.5, [100.0, 200.0] should become [50.0, 100.0]
-        res = _fetch_fred_series(mock_fred, "DUMMY_SERIES", full_refresh=True, scale=0.5)
+        with patch("conviction.markets_history.urllib.request.urlopen", side_effect=_ok):
+            res = _fetch_fred_series("TESTKEY", "DUMMY_SERIES", full_refresh=True, scale=0.5)
         assert len(res) == 2
         assert res.iloc[0] == 50.0
         assert res.iloc[1] == 100.0

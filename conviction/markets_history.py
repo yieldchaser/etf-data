@@ -19,6 +19,9 @@ import math
 import os
 import sys
 import time
+import urllib.error
+import urllib.parse
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -419,8 +422,17 @@ INCREMENTAL_TRAILING_MONTHS = 6
 
 # ─── FRED Fetcher ────────────────────────────────────────────────────────────
 
+# FRED JSON REST endpoint. Talked to directly via urllib (same proven path as
+# vol_history.py) instead of the fredapi library: under CI's pandas/numpy
+# stack fredapi.get_series raised opaque ValueError(None) for every series,
+# silently gutting the rates/cpi sections of market_returns.json while
+# continue-on-error kept builds green. The JSON REST works with the same key.
+FRED_OBS_BASE = "https://api.stlouisfed.org/fred/series/observations"
+
+
 def _get_fred_client():
-    """Initialise fredapi.Fred with API key from env. Returns None on failure."""
+    """Return the FRED API key from env (or None if unset). Named for symmetry
+    with the previous fredapi-based client — callers treat None as soft-skip."""
     try:
         from dotenv import load_dotenv
         load_dotenv()
@@ -433,18 +445,7 @@ def _get_fred_client():
         print("  Set it in your shell or create a .env file with FRED_API_KEY=your_key")
         return None
 
-    try:
-        from fredapi import Fred
-    except ImportError:
-        print("ERROR: fredapi package not installed. Run: pip install fredapi")
-        return None
-
-    client = Fred(api_key=api_key)
-    try:
-        print("FRED client initialised.")
-    except Exception:
-        pass  # logging failure must never block FRED operations
-    return client
+    return api_key
 
 
 def _fetch_fred_series(
@@ -455,12 +456,17 @@ def _fetch_fred_series(
     scale: float = 1.0,
 ) -> pd.Series:
     """
-    Fetch a FRED series with monthly EOP aggregation.
+    Fetch a FRED series via the JSON REST API (urllib) with monthly EOP
+    aggregation.
 
+    `fred` is the API key string returned by _get_fred_client().
     Uses exponential backoff on 429 (rate limit) errors.
-    On incremental runs, only fetches trailing 3 months and merges.
+    On incremental runs, only fetches from a trailing window and merges.
     """
-    kwargs: dict[str, Any] = {
+    params: dict[str, str] = {
+        "series_id": series_id,
+        "api_key": fred,
+        "file_type": "json",
         "frequency": "m",
         "aggregation_method": "eop",
     }
@@ -473,17 +479,19 @@ def _fetch_fred_series(
         trailing_start = last_date - pd.DateOffset(months=INCREMENTAL_TRAILING_MONTHS)
         year_start = pd.Timestamp(f"{pd.Timestamp.now().year}-01-01")
         start = min(trailing_start, year_start)  # whichever is earlier
-        kwargs["observation_start"] = start.strftime("%Y-%m-%d")
+        params["observation_start"] = start.strftime("%Y-%m-%d")
 
+    url = f"{FRED_OBS_BASE}?{urllib.parse.urlencode(params)}"
     max_retries = 5
+    payload: dict[str, Any] | None = None
     for attempt in range(max_retries + 1):
         try:
-            data = fred.get_series(series_id, **kwargs)
+            req = urllib.request.Request(url, headers={"Accept": "application/json"})
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                payload = json.loads(resp.read())
             break
-        except Exception as e:
-            err_str = str(e)
-            # Rate limit (429) — exponential backoff
-            if "429" in err_str or "Too Many Requests" in err_str:
+        except urllib.error.HTTPError as e:
+            if e.code == 429:
                 if attempt >= max_retries:
                     print(f"    FAILED after {max_retries} retries: {series_id}")
                     return pd.Series(dtype=float)
@@ -491,10 +499,26 @@ def _fetch_fred_series(
                 print(f"    Rate limited on {series_id}, waiting {wait:.1f}s (attempt {attempt + 1})")
                 time.sleep(wait)
             else:
-                print(f"    ERROR fetching {series_id}: {e}")
+                print(f"    ERROR fetching {series_id}: HTTP {e.code} {e.reason}")
                 return pd.Series(dtype=float)
+        except Exception as e:
+            print(f"    ERROR fetching {series_id}: {e}")
+            return pd.Series(dtype=float)
 
-    if data is None or data.empty:
+    observations = (payload or {}).get("observations") or []
+    rows: list[tuple[pd.Timestamp, float]] = []
+    for obs in observations:
+        raw = obs.get("value")
+        if raw in (None, ".", ""):
+            continue  # FRED missing-data marker
+        try:
+            rows.append((pd.Timestamp(obs["date"]), float(raw)))
+        except (KeyError, ValueError, TypeError):
+            continue
+
+    data = pd.Series(dict(rows), dtype=float).sort_index() if rows else pd.Series(dtype=float)
+
+    if data.empty:
         # Log empty-fetch evidence so the L1-vs-L2 root-cause discrimination
         # in CI can confirm "yfinance/FRED returned empty" vs "live fetch
         # never ran". Required by design Fix Implementation #6.
@@ -569,6 +593,15 @@ def _fetch_yfinance_series(
 
     incremental = (not full_refresh) and (existing is not None) and (not existing.empty)
     fetch_period = "2y" if incremental else "max"
+    if incremental:
+        # Gap-aware escalation: a "2y" window cannot bridge a cache that went
+        # stale beyond ~20 months (CI cache loss, long-disabled series). The
+        # old code silently merged a 2y fetch against an older max() and left
+        # a permanent hole in the middle of the series.
+        months_stale = (pd.Timestamp.now().normalize() - existing.index.max().normalize()).days / 30.4
+        if months_stale > 20:
+            print(f"    WARN: cache for {ticker} is {months_stale:.0f} months stale — escalating to full backfill")
+            fetch_period = "max"
 
     close = _download_close(ticker, period=fetch_period)
 
@@ -863,22 +896,39 @@ def sanitize_monthly_series(monthly: list[list[Any]], key: str = "") -> list[lis
         fixed.append([ym, round(float(p), 4) if p is not None else p])
 
     sanitized = [fixed[0]]
+    repairs = 0
     for i in range(1, len(fixed)):
         ym, p = fixed[i]
         prev_ym, prev_p = sanitized[-1]
         if prev_p and prev_p > 0 and p and p > 0:
             ratio = p / prev_p
             if (ratio > 3.0 or ratio < 0.33) and key in unit_scales:
-                rescaled = False
+                # Shock-preserving guard: a candidate factor is only accepted
+                # when BOTH neighbours agree it was a unit error, not a real
+                # move. A genuine >3x commodity jump has next-month prices at
+                # the NEW level; a unit error reverts immediately. Without the
+                # lookahead this loop rescaled real sugar/coffee shocks by 45x.
+                next_p = fixed[i + 1][1] if i + 1 < len(fixed) else None
                 for factor in [1000.0, 1 / 1000.0, 45.359237, 1 / 45.359237, 100.0, 1 / 100.0, 2204.6226, 1 / 2204.6226]:
                     cand_p = p * factor
                     cand_ratio = cand_p / prev_p
-                    if 0.5 <= cand_ratio <= 2.0:
-                        print(f"  UNIT SANITIZER: {key} {ym} rescaled {p} → {cand_p:.4f} (factor {factor})")
-                        p = cand_p
-                        rescaled = True
-                        break
+                    if not (0.5 <= cand_ratio <= 2.0):
+                        continue
+                    if next_p is not None and next_p > 0:
+                        # The following month must sit near the repaired level
+                        # (raw, or raw passed through the same unit scale fn —
+                        # scale_fn already applied above, so `next_p` here is
+                        # the scaled value from `fixed`).
+                        follow_ratio = next_p / cand_p
+                        if not (0.5 <= follow_ratio <= 2.0):
+                            continue
+                    print(f"  UNIT SANITIZER: {key} {ym} rescaled {p} → {cand_p:.4f} (factor {factor})")
+                    p = cand_p
+                    repairs += 1
+                    break
         sanitized.append([ym, p])
+    if repairs:
+        print(f"  UNIT SANITIZER: {key} — {repairs} point(s) rescaled")
     return sanitized
 
 

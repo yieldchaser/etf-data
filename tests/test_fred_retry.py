@@ -8,10 +8,17 @@ Property 6: FRED retry exponential backoff
   attempts before succeeding on the (N+1)th attempt.
 
 Validates: Requirements 6.1, 6.3
+
+2026-08: _fetch_fred_series moved from the fredapi library to the FRED JSON
+REST API via urllib (fredapi raises opaque ValueError(None) under CI's
+pandas/numpy stack). These tests now mock urllib.request.urlopen.
 """
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+import io
+import json
+import urllib.error
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
@@ -25,30 +32,42 @@ from conviction.markets_history import _fetch_fred_series
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _make_valid_series() -> pd.Series:
-    """Return a minimal non-empty Series that _fetch_fred_series would accept."""
-    return pd.Series([1.0, 2.0], index=pd.to_datetime(["2024-01-31", "2024-02-29"]))
+_OK_PAYLOAD = json.dumps({
+    "observations": [
+        {"date": "2024-01-31", "value": "1.0"},
+        {"date": "2024-02-29", "value": "2.0"},
+    ]
+}).encode()
 
 
-def _make_mock_fred(n_failures: int) -> tuple[MagicMock, list[int]]:
+def _make_mock_urlopen(n_failures: int):
     """
-    Build a mock FRED client whose get_series raises Exception("429 Too Many Requests")
-    for the first *n_failures* calls, then returns a valid Series.
+    Build a urlopen side_effect that raises HTTPError(429) for the first
+    *n_failures* calls, then serves a valid FRED observations payload.
 
-    Returns (mock_fred, call_log) where call_log is a mutable list that records
-    each call number so the test can assert on total call count.
+    Returns (side_effect, call_log).
     """
     call_log: list[int] = []
 
-    def _get_series(*args, **kwargs):
+    def _side_effect(*args, **kwargs):
         call_log.append(len(call_log) + 1)
         if len(call_log) <= n_failures:
-            raise Exception("429 Too Many Requests")
-        return _make_valid_series()
+            raise urllib.error.HTTPError(
+                "https://api.stlouisfed.org/fred/series/observations",
+                429, "Too Many Requests", None, None,
+            )
+        return io.BytesIO(_OK_PAYLOAD)
 
-    mock_fred = MagicMock()
-    mock_fred.get_series.side_effect = _get_series
-    return mock_fred, call_log
+    return _side_effect, call_log
+
+
+def _run_fetch(n_failures: int):
+    """Run _fetch_fred_series against a mocked urlopen; returns (result, call_log)."""
+    side_effect, call_log = _make_mock_urlopen(n_failures)
+    with patch("conviction.markets_history.time.sleep"), \
+         patch("conviction.markets_history.urllib.request.urlopen", side_effect=side_effect):
+        result = _fetch_fred_series("TESTKEY", "TEST", full_refresh=True)
+    return result, call_log
 
 
 # ---------------------------------------------------------------------------
@@ -65,15 +84,8 @@ def test_fred_retry_backoff(n_failures: int) -> None:
 
     For N 429 responses (N ≤ 5), _fetch_fred_series must make exactly N+1 total
     attempts before succeeding, and the returned Series must be non-empty.
-
-    The mock raises Exception("429 Too Many Requests") for the first n_failures
-    calls, then returns a valid Series on the (n_failures+1)th call.
-    time.sleep is patched to avoid actual waiting.
     """
-    mock_fred, call_log = _make_mock_fred(n_failures)
-
-    with patch("conviction.markets_history.time.sleep"):
-        result = _fetch_fred_series(mock_fred, "TEST", full_refresh=True)
+    result, call_log = _run_fetch(n_failures)
 
     # Exactly N+1 total attempts: N failures + 1 success
     assert len(call_log) == n_failures + 1, (
@@ -93,15 +105,8 @@ def test_fred_retry_backoff(n_failures: int) -> None:
 # ---------------------------------------------------------------------------
 
 def test_fred_retry_backoff_five_failures() -> None:
-    """
-    Boundary case: 5 consecutive 429s followed by a success on attempt 6.
-    max_retries == 5, so attempt indices 0..4 are the retries; attempt 5 is
-    the final try. With n_failures=5 the 6th call (attempt index 5) succeeds.
-    """
-    mock_fred, call_log = _make_mock_fred(5)
-
-    with patch("conviction.markets_history.time.sleep"):
-        result = _fetch_fred_series(mock_fred, "TEST", full_refresh=True)
+    """5 consecutive 429s followed by a success on attempt 6."""
+    result, call_log = _run_fetch(5)
 
     assert len(call_log) == 6
     assert not result.empty
@@ -112,13 +117,8 @@ def test_fred_retry_backoff_five_failures() -> None:
 # ---------------------------------------------------------------------------
 
 def test_fred_retry_no_failures() -> None:
-    """
-    When the first call succeeds, exactly 1 attempt is made and result is non-empty.
-    """
-    mock_fred, call_log = _make_mock_fred(0)
-
-    with patch("conviction.markets_history.time.sleep"):
-        result = _fetch_fred_series(mock_fred, "TEST", full_refresh=True)
+    """When the first call succeeds, exactly 1 attempt is made and result is non-empty."""
+    result, call_log = _run_fetch(0)
 
     assert len(call_log) == 1
     assert not result.empty
@@ -129,17 +129,10 @@ def test_fred_retry_no_failures() -> None:
 # ---------------------------------------------------------------------------
 
 def test_fred_retry_exhausted() -> None:
-    """
-    When all 6 attempts (initial + 5 retries) return 429, the function gives up
-    and returns an empty Series after exactly 6 total calls.
-    """
-    mock_fred, call_log = _make_mock_fred(6)
-
-    with patch("conviction.markets_history.time.sleep"):
-        result = _fetch_fred_series(mock_fred, "TEST", full_refresh=True)
+    """All 6 attempts return 429 → gives up, empty Series, exactly 6 calls."""
+    result, call_log = _run_fetch(6)
 
     # max_retries=5 means the loop runs for attempt in range(6): 0,1,2,3,4,5
-    # All 6 raise 429; on attempt==5 (== max_retries) it returns empty.
     assert len(call_log) == 6
     assert result.empty
 
@@ -153,14 +146,15 @@ def test_fred_retry_sleep_durations() -> None:
     For 3 consecutive 429s, time.sleep must be called with the correct
     exponential backoff values: min(2^attempt * 0.5, 30) for attempt 0,1,2.
     """
-    mock_fred, _ = _make_mock_fred(3)
+    side_effect, _ = _make_mock_urlopen(3)
     sleep_calls: list[float] = []
 
     def _record_sleep(secs: float) -> None:
         sleep_calls.append(secs)
 
-    with patch("conviction.markets_history.time.sleep", side_effect=_record_sleep):
-        _fetch_fred_series(mock_fred, "TEST", full_refresh=True)
+    with patch("conviction.markets_history.time.sleep", side_effect=_record_sleep), \
+         patch("conviction.markets_history.urllib.request.urlopen", side_effect=side_effect):
+        _fetch_fred_series("TESTKEY", "TEST", full_refresh=True)
 
     # attempt 0 → wait = min(2^0 * 0.5, 30) = 0.5
     # attempt 1 → wait = min(2^1 * 0.5, 30) = 1.0
@@ -169,3 +163,27 @@ def test_fred_retry_sleep_durations() -> None:
     assert sleep_calls == expected, (
         f"Expected sleep durations {expected}, got {sleep_calls}"
     )
+
+
+# ---------------------------------------------------------------------------
+# REST parsing specifics (new with the urllib port)
+# ---------------------------------------------------------------------------
+
+def test_fred_missing_value_marker_dropped() -> None:
+    """FRED marks missing data as '.' — those rows must be dropped, not NaN-poison."""
+    payload = json.dumps({
+        "observations": [
+            {"date": "2024-01-31", "value": "."},
+            {"date": "2024-02-29", "value": "2.0"},
+        ]
+    }).encode()
+
+    def _ok(*args, **kwargs):
+        return io.BytesIO(payload)
+
+    with patch("conviction.markets_history.time.sleep"), \
+         patch("conviction.markets_history.urllib.request.urlopen", side_effect=_ok):
+        result = _fetch_fred_series("TESTKEY", "TEST", full_refresh=True)
+
+    assert len(result) == 1
+    assert result.iloc[0] == 2.0

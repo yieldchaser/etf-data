@@ -370,41 +370,21 @@ class TestVolHistoryNoSysExit:
 
 class TestFredClientLogsSuccess:
     """
-    Req 1.5: WHEN FRED_API_KEY is present and the client is initialised,
-    _get_fred_client() SHALL print "FRED client initialised" to stdout.
+    Req 1.5 (rev 2026-08): WHEN FRED_API_KEY is present, _get_fred_client()
+    SHALL return the API key string (the urllib port replaced the fredapi
+    client object; callers pass it straight into _fetch_fred_series).
     """
 
-    def test_fred_client_logs_success(self, monkeypatch, capsys):
-        """
-        Set FRED_API_KEY in env, patch fredapi.Fred to return a mock object.
-        Assert "FRED client initialised" appears in captured stdout.
-        """
-        import types
-        import sys as _sys
+    def test_fred_client_returns_key(self, monkeypatch, capsys):
         import conviction.markets_history as mh
 
         # Ensure the key is present
         monkeypatch.setenv("FRED_API_KEY", "test-key-12345")
 
-        # Inject a fake fredapi module into sys.modules so the local
-        # `from fredapi import Fred` inside _get_fred_client() picks it up.
-        class MockFred:
-            def __init__(self, api_key):
-                pass
-
-        fake_fredapi = types.ModuleType("fredapi")
-        fake_fredapi.Fred = MockFred
-        monkeypatch.setitem(_sys.modules, "fredapi", fake_fredapi)
-
         client = mh._get_fred_client()
 
-        captured = capsys.readouterr()
-        assert "FRED client initialised" in captured.out, (
-            f"Expected 'FRED client initialised' in stdout, got: {captured.out!r}\n"
-            "Req 1.5: _get_fred_client() must log a confirmation line on success."
-        )
-        assert client is not None, (
-            "Expected _get_fred_client() to return a client object when key is present"
+        assert client == "test-key-12345", (
+            f"Expected _get_fred_client() to return the API key string, got: {client!r}"
         )
 
 
