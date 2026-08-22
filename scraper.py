@@ -449,7 +449,7 @@ def fetch_invesco_api(etf_ticker, etf_cusip):
     except Exception as e:
         print(f"      -> API failed: {e}")
         return None, TODAY
-    holdings_as_of = data.get("effectiveBusinessDate") or data.get("effectiveDate") or TODAY
+    holdings_as_of = data.get("effectiveDate") or data.get("effectiveBusinessDate") or TODAY
     try: holdings_as_of = datetime.strptime(holdings_as_of[:10], "%Y-%m-%d").strftime("%Y-%m-%d")
     except: holdings_as_of = TODAY
     # §28 date bug fix: clamp Holdings_As_Of to ≤ TODAY so future-dated T+1
@@ -474,7 +474,18 @@ def fetch_invesco_api(etf_ticker, etf_cusip):
         print(f"      -> 0 equity rows returned")
         return None, TODAY
     df = pd.DataFrame(rows, columns=["ETF_Ticker", "ticker", "name", "weight", "Holdings_As_Of", "Date_Scraped"])
-    print(f"      -> {len(df)} equity rows | as_of={holdings_as_of}")
+    # Coverage tripwire (audit MEDIUM): a paginated/truncated response would
+    # silently shrink a fund. The API reports what it SHOULD contain; cash and
+    # derivative rows are filtered above so a modest gap is normal — warn only
+    # when equity rows fall below half the reported count.
+    try:
+        reported_total = int(data.get("totalNumberOfHoldings") or 0)
+    except (TypeError, ValueError):
+        reported_total = 0
+    if reported_total and len(df) < reported_total * 0.5:
+        print(f"      -> ⚠️ COVERAGE: {len(df)} equity rows vs {reported_total} reported "
+              f"holdings — response may be truncated")
+    print(f"      -> {len(df)} equity rows | reported={reported_total} | as_of={holdings_as_of}")
     return df, holdings_as_of
 
 def clean_date_string(date_text):
@@ -548,7 +559,17 @@ def find_first_trust_table(dfs):
                 return df_clean
     return None
 
-def clean_dataframe(df, ticker, h_date=TODAY):
+def clean_dataframe(df, ticker, h_date=TODAY, weight_unit=None):
+    """
+    Normalise a raw issuer holdings table into the pipeline schema.
+
+    weight_unit: 'percent'  → weights are always divided by 100;
+                 'fraction' → never divided;
+                 None       → legacy heuristic (divide when max > 1.0).
+    Declaring 'percent' in config.json removes the one-truncated-page-away
+    failure mode where a diversified fund whose max weight ≤ 1.0 would have
+    its percent values silently stored as fractions (0.71 read as 71%).
+    """
     if df is None or df.empty: return None
     df = df.copy() 
     df.columns = [str(c).strip().lower() for c in df.columns]
@@ -569,7 +590,19 @@ def clean_dataframe(df, ticker, h_date=TODAY):
     if 'weight' in df.columns:
         df['weight'] = df['weight'].astype(str).str.replace('%', '', regex=False).str.replace(',', '', regex=False)
         df['weight'] = pd.to_numeric(df['weight'], errors='coerce').fillna(0.0)
-        if df['weight'].max() > 1.0: df['weight'] = df['weight'] / 100.0
+        if weight_unit == 'percent':
+            if df['weight'].max() <= 1.0 and df['weight'].max() > 0:
+                # Already fraction-looking data with an explicit percent
+                # declaration is suspicious — say so rather than guessing.
+                print(f"      -> ⚠️ weight_unit=percent but max weight ≤ 1.0 "
+                      f"({df['weight'].max():.4f}) — dividing anyway per config")
+            df['weight'] = df['weight'] / 100.0
+        elif weight_unit == 'fraction':
+            pass
+        else:
+            # Legacy heuristic fallback for ETFs without an explicit
+            # weight_unit in config.json.
+            if df['weight'].max() > 1.0: df['weight'] = df['weight'] / 100.0
     
     df['ETF_Ticker'] = ticker
     df['Holdings_As_Of'] = h_date
@@ -890,13 +923,13 @@ def main():
                     if len(d) > 20: df = d; break
 
             # --- CLEAN PRIMARY ---
-            clean_df = clean_dataframe(df, ticker, h_date)
+            clean_df = clean_dataframe(df, ticker, h_date, weight_unit=etf.get('weight_unit'))
             
             # --- RUN BACKUP SCRAPER ---
             if 'backup_url' in etf:
                 b_df, b_date = scrape_invesco_backup(driver, etf['backup_url'], ticker)
                 if b_df is not None:
-                    clean_backup = clean_dataframe(b_df, ticker, b_date)
+                    clean_backup = clean_dataframe(b_df, ticker, b_date, weight_unit=etf.get('weight_unit'))
                     if clean_backup is not None:
                         clean_backup['Holdings_As_Of'] = b_date
                         

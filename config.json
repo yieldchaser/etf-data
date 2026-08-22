@@ -1,144 +1,152 @@
 [
-    {
-        "ticker": "FPX",
-        "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FPX",
-        "scraper_type": "first_trust",
-        "enabled": true
-    },
-    {
-        "ticker": "FPXI",
-        "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FPXI",
-        "scraper_type": "first_trust",
-        "enabled": true
-    },
-    {
-        "ticker": "QMOM",
-        "url": "https://funds.alphaarchitect.com/qmom/#fund-holdings",
-        "scraper_type": "selenium_alpha",
-        "enabled": true
-    },
-    {
-        "ticker": "IMOM",
-        "url": "https://funds.alphaarchitect.com/imom/#fund-holdings",
-        "scraper_type": "selenium_alpha",
-        "enabled": true
-    },
-    {
-        "ticker": "IVAL",
-        "url": "https://funds.alphaarchitect.com/ival/#fund-holdings",
-        "scraper_type": "selenium_alpha",
-        "enabled": true
-    },
-    {
-        "ticker": "QVAL",
-        "url": "https://funds.alphaarchitect.com/qval/#fund-holdings",
-        "scraper_type": "selenium_alpha",
-        "enabled": true
-    },
-    {
-        "ticker": "COWZ",
-        "url": "https://www.paceretfs.com/usbank/live/fsb0.pacer.x330.COWZ_Holdings.csv",
-        "scraper_type": "pacer_csv",
-        "enabled": true
-    },
-    {
-        "ticker": "CALF",
-        "url": "https://www.paceretfs.com/usbank/live/fsb0.pacer.x330.CALF_Holdings.csv",
-        "scraper_type": "pacer_csv",
-        "enabled": true
-    },
-    {
-        "ticker": "SPMO",
-        "cusip": "46138E339",
-        "url": "https://companiesmarketcap.com/invesco-sp-500-momentum-etf/holdings/",
-        "scraper_type": "invesco_api",
-        "enabled": true
-    },
-    {
-        "ticker": "CSD",
-        "cusip": "46137V159",
-        "url": "https://stockanalysis.com/etf/csd/holdings/",
-        "scraper_type": "invesco_api",
-        "enabled": true
-    },
-    {
-        "ticker": "XSMO",
-        "cusip": "46137V498",
-        "url": "https://companiesmarketcap.com/invesco-sp-smallcap-momentum-etf/holdings/",
-        "scraper_type": "invesco_api",
-        "enabled": true
-    },
-    {
-        "ticker": "XMMO",
-        "cusip": "46137V464",
-        "url": "https://companiesmarketcap.com/invesco-sp-midcap-momentum-etf/holdings/",
-        "scraper_type": "invesco_api",
-        "enabled": true
-    },
-    {
-        "ticker": "PIE",
-        "cusip": "46138E867",
-        "url": "https://stockanalysis.com/etf/pie/holdings/",
-        "scraper_type": "invesco_api",
-        "enabled": true
-    },
-    {
-        "ticker": "SPHQ",
-        "cusip": "46137V241",
-        "url": "https://companiesmarketcap.com/invesco-sp-500-quality-etf/holdings/",
-        "scraper_type": "invesco_api",
-        "enabled": true
-    },
-    {
-        "ticker": "RPG",
-        "cusip": "46137V266",
-        "url": "https://companiesmarketcap.com/invesco-sp-500-pure-growth-etf/holdings/",
-        "scraper_type": "invesco_api",
-        "enabled": true
-    },
-    {
-        "ticker": "XLG",
-        "cusip": "46137V233",
-        "url": "https://companiesmarketcap.com/invesco-sp-500-top-50-etf/holdings/",
-        "scraper_type": "invesco_api",
-        "enabled": true
-    },
-    {
-        "ticker": "QQQM",
-        "cusip": "46138G649",
-        "url": "https://companiesmarketcap.com/invesco-nasdaq-100-etf/holdings/",
-        "scraper_type": "invesco_api",
-        "enabled": true
-    },
-    {
-        "ticker": "SPHB",
-        "cusip": "46138E370",
-        "url": "https://companiesmarketcap.com/invesco-sp-500-high-beta-etf/holdings/",
-        "scraper_type": "invesco_api",
-        "enabled": true
-    },
-    {
-        "ticker": "EEMO",
-        "cusip": "46138E289",
-        "scraper_type": "invesco_api",
-        "enabled": true
-    },
-    {
-        "ticker": "PDP",
-        "cusip": "46137V837",
-        "scraper_type": "invesco_api",
-        "enabled": true
-    },
-    {
-        "ticker": "DWAS",
-        "cusip": "46138E842",
-        "scraper_type": "invesco_api",
-        "enabled": true
-    },
-    {
-        "ticker": "PIZ",
-        "cusip": "46138E875",
-        "scraper_type": "invesco_api",
-        "enabled": true
-    }
+  {
+    "ticker": "FPX",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FPX",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FPXI",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FPXI",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "QMOM",
+    "url": "https://funds.alphaarchitect.com/qmom/#fund-holdings",
+    "scraper_type": "selenium_alpha",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IMOM",
+    "url": "https://funds.alphaarchitect.com/imom/#fund-holdings",
+    "scraper_type": "selenium_alpha",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IVAL",
+    "url": "https://funds.alphaarchitect.com/ival/#fund-holdings",
+    "scraper_type": "selenium_alpha",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "QVAL",
+    "url": "https://funds.alphaarchitect.com/qval/#fund-holdings",
+    "scraper_type": "selenium_alpha",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "COWZ",
+    "url": "https://www.paceretfs.com/usbank/live/fsb0.pacer.x330.COWZ_Holdings.csv",
+    "scraper_type": "pacer_csv",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "CALF",
+    "url": "https://www.paceretfs.com/usbank/live/fsb0.pacer.x330.CALF_Holdings.csv",
+    "scraper_type": "pacer_csv",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "SPMO",
+    "cusip": "46138E339",
+    "url": "https://companiesmarketcap.com/invesco-sp-500-momentum-etf/holdings/",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "CSD",
+    "cusip": "46137V159",
+    "url": "https://stockanalysis.com/etf/csd/holdings/",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "XSMO",
+    "cusip": "46137V498",
+    "url": "https://companiesmarketcap.com/invesco-sp-smallcap-momentum-etf/holdings/",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "XMMO",
+    "cusip": "46137V464",
+    "url": "https://companiesmarketcap.com/invesco-sp-midcap-momentum-etf/holdings/",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PIE",
+    "cusip": "46138E867",
+    "url": "https://stockanalysis.com/etf/pie/holdings/",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "SPHQ",
+    "cusip": "46137V241",
+    "url": "https://companiesmarketcap.com/invesco-sp-500-quality-etf/holdings/",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "RPG",
+    "cusip": "46137V266",
+    "url": "https://companiesmarketcap.com/invesco-sp-500-pure-growth-etf/holdings/",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "XLG",
+    "cusip": "46137V233",
+    "url": "https://companiesmarketcap.com/invesco-sp-500-top-50-etf/holdings/",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "QQQM",
+    "cusip": "46138G649",
+    "url": "https://companiesmarketcap.com/invesco-nasdaq-100-etf/holdings/",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "SPHB",
+    "cusip": "46138E370",
+    "url": "https://companiesmarketcap.com/invesco-sp-500-high-beta-etf/holdings/",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "EEMO",
+    "cusip": "46138E289",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PDP",
+    "cusip": "46137V837",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "DWAS",
+    "cusip": "46138E842",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PIZ",
+    "cusip": "46138E875",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  }
 ]
