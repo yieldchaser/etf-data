@@ -144,7 +144,15 @@ def _read_parquet_store(store: Path, lookback_days: int = 180) -> pd.DataFrame |
 
 def fetch_history(source: str) -> pd.DataFrame:
     # Try partitioned Parquet store first (Tier 2)
-    parquet_df = _read_parquet_store(PARQUET_STORE)
+    #
+    # YTD score deltas need a pre-Jan-1 baseline row; a fixed 180-day lookback
+    # stops covering Dec-31 once "now" passes ~June 30, nullifying every
+    # ticker's YTD delta for the rest of the year (bug-hunt Critical #2).
+    # Size the window to always span the year-to-date range plus buffer.
+    now = pd.Timestamp.now()
+    days_into_year = (now - pd.Timestamp(year=now.year, month=1, day=1)).days
+    ytd_safe_lookback = max(180, days_into_year + 45)
+    parquet_df = _read_parquet_store(PARQUET_STORE, lookback_days=ytd_safe_lookback)
     if parquet_df is not None and not parquet_df.empty:
         print(f"Loading from partitioned Parquet store: {PARQUET_STORE}")
         print(f"  {len(parquet_df):,} rows · {parquet_df['ETF_Ticker'].nunique()} ETFs · "
