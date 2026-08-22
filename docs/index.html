@@ -7,8 +7,23 @@
   <meta name="description" content="Cross-ETF conviction scanner. Tracks 30 smart-beta ETFs to detect early institutional accumulation. Live from yieldchaser/etf-data.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2309090b'/%3E%3Cpath d='M6 22L13 14.5L18 18.5L26 9.5' fill='none' stroke='%2322d3ee' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='26' cy='9.5' r='2.5' fill='%2322d3ee'/%3E%3C/svg%3E">
   <meta name="color-scheme" content="dark">
+  <link rel="canonical" href="https://yieldchaser.github.io/etf-data/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Conviction Labs — ETF holdings intelligence">
+  <meta property="og:description" content="See institutional conviction before consensus: 30 smart-beta ETFs, one conviction scoreboard.">
+  <meta property="og:url" content="https://yieldchaser.github.io/etf-data/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Conviction Labs — ETF holdings intelligence">
+  <meta name="twitter:description" content="See institutional conviction before consensus: 30 smart-beta ETFs, one conviction scoreboard.">
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+  <noscript>
+    <div style="padding:16px;font-family:system-ui;color:#e4e4e7;background:#000">
+      Conviction Labs needs JavaScript to load and render live ETF holdings data.
+      Enable JavaScript, or browse the raw data on
+      <a href="https://github.com/yieldchaser/etf-data" style="color:#22d3ee">GitHub</a>.
+    </div>
+  </noscript>
   <style>
     :root {
       --bg: #000;
@@ -18,12 +33,17 @@
       --border-2: rgba(255,255,255,0.10);
       --text: #e4e4e7;
       --text-2: #a1a1aa;
-      --text-3: #52525b;
+      --text-3: #71717a;
       --cyan: #22d3ee;
       --up: #34d399;
       --down: #fb7185;
       --amber: #fbbf24;
       --blue: #60a5fa;
+      --burst: #c084fc;
+      --crater: #f87171;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
     }
     html, body { background: var(--bg); color: var(--text); }
     body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Inter", sans-serif; }
@@ -174,7 +194,33 @@
 </head>
 <body>
 
-<div x-data="app()" x-init="load()" x-cloak class="max-w-[1500px] mx-auto px-3 sm:px-5 py-4 sm:py-6">
+  <div x-data="app()" x-init="load()" x-cloak class="max-w-[1500px] mx-auto px-3 sm:px-5 py-4 sm:py-6">
+    <!-- Loading / full-page error state (BUG: first paint was a black screen) -->
+    <div x-show="loading || (error && !leaderboard.length)" class="fixed inset-0 z-50 flex items-center justify-center" style="background: var(--bg)">
+      <div class="text-center max-w-md px-6">
+        <template x-if="!error">
+          <div>
+            <div class="pulse-load font-mono text-sm tracking-widest uppercase" style="color: var(--cyan)">Loading conviction data…</div>
+            <div class="mt-3 h-1 w-48 mx-auto rounded overflow-hidden" style="background: var(--surface-2)">
+              <div class="h-full w-1/3 rounded pulse-load" style="background: var(--cyan)"></div>
+            </div>
+          </div>
+        </template>
+        <template x-if="error && !leaderboard.length">
+          <div>
+            <div class="text-2xl mb-2">⚠</div>
+            <div class="font-semibold text-lg" style="color: var(--down)">Data failed to load</div>
+            <p class="mt-1 text-xs" style="color: var(--text-2)">Check your connection and try again.</p>
+            <button @click="retryLoad()" class="mt-4 px-4 py-2 rounded border text-sm transition hover:border-cyan-500/40"
+                    style="border-color: var(--border-2); color: var(--cyan)">Retry</button>
+            <details class="mt-4 text-left">
+              <summary class="text-[10px] cursor-pointer select-none" style="color: var(--text-3)">Technical details</summary>
+              <pre class="mt-1 text-[10px] whitespace-pre-wrap" style="color: var(--text-3)" x-text="error"></pre>
+            </details>
+          </div>
+        </template>
+      </div>
+    </div>
 
   <!-- ── HEADER ─────────────────────────────────────────────────────────── -->
   <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5 pb-4 border-b" style="border-color: var(--border)">
@@ -240,7 +286,7 @@
        class="mb-3 px-3 py-2 rounded-lg border text-xs flex items-center gap-2"
        style="background: rgba(251,191,36,0.06); border-color: rgba(251,191,36,0.25); color: var(--amber)">
     <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-    <span x-text="`${immatureEtfCount} ETF${immatureEtfCount > 1 ? 's' : ''} still building ${meta.etf_maturity_days || 30}-day baselines - velocity/NEW signals partial for these funds.`"></span>
+    <span x-text="`${immatureEtfCount} ETF${immatureEtfCount > 1 ? 's' : ''} still building ${meta.etf_maturity_days || 30}-day baselines - NEW signals partial for these funds.`"></span>
     <span class="ml-auto text-[9px] font-mono" style="color: var(--text-3)"
           x-text="immatureEtfNames.slice(0,5).join(', ') + (immatureEtfNames.length > 5 ? ' +' + (immatureEtfNames.length - 5) + ' more' : '')"></span>
   </div>
@@ -283,14 +329,8 @@
               :class="newOnly ? 'border-blue-500/40 text-blue-300' : ''"
               class="chip border px-2 py-1 transition hover:border-blue-500/30"
               style="border-color: var(--border-2)"
-              x-tooltip="'Show only NEW entrants - first appearance in any ETF within the last 14 days'"
+              x-tooltip="'Show only NEW entrants - first appearance in any ETF within the last 14 days. Short-horizon signal: strongest within the first week.'"
               x-text="`NEW ${counts.NEW || 0}`"></button>
-      <button @click="velocityOnly = !velocityOnly"
-              :class="velocityOnly ? 'border-cyan-500/40 text-cyan-300' : ''"
-              class="chip border px-2 py-1 transition hover:border-cyan-500/30"
-              style="border-color: var(--border-2)"
-              x-tooltip="'Show only top-velocity names (velocity ≥ 25, held by 2+ ETFs, no burst)'"
-              x-text="`VELO ${counts.VELO || 0}`"></button>
       <button @click="burstOnly = !burstOnly"
               :class="burstOnly ? 'border-purple-500/40 text-purple-300' : ''"
               class="chip border px-2 py-1 transition hover:border-purple-500/30"
@@ -320,38 +360,20 @@
               :class="preHcOnly ? 'border-emerald-400/50 text-emerald-300' : ''"
               class="chip border px-2 py-1 transition hover:border-emerald-400/40"
               style="border-color: var(--border-2)"
-              x-tooltip="'Pre-HC - held by exactly 3 ETFs with rising velocity. One pickup away from HIGH_CONVICTION. Catches names the day before broad consensus.'"
+              x-tooltip="'Pre-HC - held by exactly 3 ETFs with improving per-fund ranks over the last 7 days. One pickup away from HIGH_CONVICTION. Catches names the day before broad consensus.'"
               x-text="`Pre-HC ${counts.PRE_HC || 0}`"></button>
       <button @click="stealthBuyOnly = !stealthBuyOnly"
               :class="stealthBuyOnly ? 'border-fuchsia-400/50 text-fuchsia-300' : ''"
               class="chip border px-2 py-1 transition hover:border-fuchsia-400/40"
               style="border-color: var(--border-2)"
-              x-tooltip="'Stealth Buy - single fund loading position rapidly (>10% weight growth in 7d) before consensus forms. Lonely-buy-before-the-crowd signal.'"
+              x-tooltip="'Stealth Buy - 1-2 funds loading up fast (+10% avg weight in 7d) before ranks catch up. Lonely-buy-before-the-crowd signal.'"
               x-text="`Stealth ${counts.STEALTH_BUY || 0}`"></button>
-      <button @click="stealthAccOnly = !stealthAccOnly"
-              :class="stealthAccOnly ? 'border-amber-400/50 text-amber-300' : ''"
-              class="chip border px-2 py-1 transition hover:border-amber-400/40"
-              style="border-color: var(--border-2)"
-              x-tooltip="'STEALTH - stealth_accumulation flag: weight building without rank movement. Quiet loading before the crowd notices.'"
-              x-text="`STEALTH ${counts.STEALTH_ACC || 0}`"></button>
-      <button @click="divOnly = !divOnly"
-              :class="divOnly ? 'border-teal-400/50 text-teal-300' : ''"
-              class="chip border px-2 py-1 transition hover:border-teal-400/40"
-              style="border-color: var(--border-2)"
-              x-tooltip="'DIV - conviction divergence (either direction): rank behavior inside its own funds diverges from the aggregate.'"
-              x-text="`DIV ${counts.DIV || 0}`"></button>
       <button @click="toggleFlag('CONCENTRATED')"
               :class="flag === 'CONCENTRATED' ? 'border-orange-400/50 text-orange-300' : ''"
               class="chip border px-2 py-1 transition hover:border-orange-400/40"
               style="border-color: var(--border-2)"
               x-tooltip="'CONC - flagged CONCENTRATED: the score rests on a single ETF. Fragile if that fund rebalances.'"
               x-text="`CONC ${counts.CONCENTRATED || 0}`"></button>
-      <button @click="velOverScoreOnly = !velOverScoreOnly"
-              :class="velOverScoreOnly ? 'border-sky-400/50 text-sky-300' : ''"
-              class="chip border px-2 py-1 transition hover:border-sky-400/40"
-              style="border-color: var(--border-2)"
-              x-tooltip="'Vel>Score - top 10% by velocity but score still ranked >100. Loading still in progress; the climb is happening.'"
-              x-text="`Vel>Score ${counts.VEL_OVER_SCORE || 0}`"></button>
       <button @click="quantQualityOnly = !quantQualityOnly"
               :class="quantQualityOnly ? 'border-yellow-400/50 text-yellow-300' : ''"
               class="chip border px-2 py-1 transition hover:border-yellow-400/40"
@@ -400,6 +422,8 @@
 
     <!-- Multi-sort dialog -->
     <div x-show="sortDialog" x-cloak @click.self="sortDialog = false"
+         @keydown.escape.window="sortDialog = false"
+         role="dialog" aria-modal="true" aria-label="Multi-level sort"
          class="fixed inset-0 z-50 flex items-center justify-center"
          style="background: rgba(0,0,0,0.7)">
       <div class="rounded-xl border p-5 w-full max-w-sm text-sm" style="background: var(--surface-2); border-color: var(--border-2)">
@@ -436,7 +460,7 @@
     <!-- ── Extreme Conviction Moves ribbon ─────────────────────────────────
          Surfaces names whose motion metrics are statistically unusual vs the
          rest of the leaderboard right now. Pure presentation: every value is
-         already in leaderboard.json (velocity_score, score_delta_pct,
+          already in leaderboard.json (score_delta_pct,
          avg_weight_flow_7d, global_rank_delta_30d). |z| ≥ 2.0 against the
          leaderboard's own mean/std on each metric; the dominant driver is
          shown as the headline number.
@@ -514,9 +538,9 @@
                   </div>
                 </div>
               </th>
-              <th @click="sort('velocity_score')" :class="sortClass('velocity_score')"
+              <th @click="sort('etf_count_delta_30d')" :class="sortClass('etf_count_delta_30d')"
                   class="text-right px-1 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
-                  x-tooltip="'Velocity - composite rate-of-change signal across all ETFs. High positive = institutional accumulation accelerating.'">Velocity</th>
+                  x-tooltip="'Net ETF positions added or lost over the last 30 days - breadth of conviction flow.'">Δ Funds</th>
               <th @click="sort('burst_score')" :class="sortClass('burst_score')"
                   class="text-right px-1 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
                   x-tooltip="'Burst - 30-day peak rank improvement. Shows rapid upward rank acceleration.'">Burst</th>
@@ -528,7 +552,7 @@
               <th class="text-left px-2 py-2 hidden xl:table-cell" x-tooltip="{html:'Tiers represented. <b>Scout</b>=spinoffs/IPOs · <b>Quant</b>=factor momentum · <b>Quality</b>=FCF/profit · <b>Trend</b>=momentum · <b>Core</b>=mega-cap'}">Strategies</th>
               <th class="text-center px-3 py-2 hidden md:table-cell" x-tooltip="'Consecutive days the score moved in the same direction (▲ up · ▼ down).'">Streak</th>
               <th class="text-left px-3 py-2 hidden xl:table-cell" x-tooltip="'Today\'s score as a percentile of this ticker\'s own score history in the past 60 days.'">Level</th>
-              <th class="text-left px-3 py-2" x-tooltip="{html:'Priority-ordered signal stack (top 2 shown, +n = hover for full list)<br><b>HC</b> = held by 4+ ETFs · <b>BURST</b> = +40 ranks in 30d · <b>CRATER</b> = −40 ranks in 30d · <b>VELO</b> = top velocity · <b>Q+/Q−</b> = Quality ETF added/dropped 30d · <b>STEALTH</b> = weight building quietly · <b>DIV±</b> = conviction divergence · <b>CONC</b> = single-ETF score · <b>SPEC β</b> = Trend without Quality/Scout · <b>NEW</b> = first appearance within 14d'}">Flag</th>
+              <th class="text-left px-3 py-2" x-tooltip="{html:'Priority-ordered signal stack (top 2 shown, +n = hover for full list)<br><b>HC</b> = held by 4+ ETFs · <b>BURST</b> = +40 ranks in 30d · <b>CRATER</b> = −40 ranks in 30d · <b>Q+</b> = Quality ETF added 30d · <b>PRE-HC</b> = 3 ETFs, ranks improving · <b>SBUY</b> = 1-2 funds loading · <b>CONC</b> = concentrated conviction · <b>SPEC β</b> = Trend without Quality/Scout · <b>NEW</b> = first appearance within 14d'}">Flag</th>
             </tr>
           </thead>
           <template x-for="row in paged" :key="row.ticker">
@@ -561,9 +585,9 @@
                       x-text="fmt1(row.final_score)"></td>
                   <td class="px-2 py-2 text-center num font-mono hidden lg:table-cell" :style="`color: ${flowColor(activeDeltaValue(row))}`" x-text="fmtPct(activeDeltaValue(row))"></td>
                   <td class="px-1 py-2 text-right num font-mono hidden lg:table-cell"
-                      :style="`color: ${velocityColor(row.velocity_score)}`"
-                      x-tooltip="velocityTip(row)">
-                    <span x-text="fmtVelocity(row.velocity_score)"></span>
+                      x-tooltip="`Net ETF positions added/lost over 30d: ${(row.etf_count_delta_30d || 0) > 0 ? '+' : ''}${row.etf_count_delta_30d || 0}`">
+                    <span x-text="`${(row.etf_count_delta_30d || 0) > 0 ? '+' : ''}${row.etf_count_delta_30d || 0}`"
+                          :style="`color: ${(row.etf_count_delta_30d || 0) > 0 ? 'var(--up)' : (row.etf_count_delta_30d || 0) < 0 ? 'var(--down)' : 'var(--text-3)'}`"></span>
                   </td>
                   <td class="px-1 py-2 text-right num font-mono hidden lg:table-cell"
                       x-tooltip="row.burst_30d ? `Burst: +${row.global_rank_peak_30d} ranks peak improvement in 30d` : 'No burst signal'">
@@ -898,6 +922,12 @@
                   </td>
                 </tr>
                 </template>
+                <tr x-show="!filtered.length && !loading">
+                  <td colspan="12" class="px-3 py-8 text-center text-sm" style="color: var(--text-2)">
+                    No names match the current filters —
+                    <button @click="reset()" class="underline" style="color: var(--cyan)">clear filters</button>
+                  </td>
+                </tr>
               </tbody>
             </template>
           </table>
@@ -983,8 +1013,8 @@
                 <div class="font-mono num" style="color: var(--text-2)" x-text="card.etfs"></div>
               </div>
               <div>
-                <div style="color: var(--text-3)">Velocity</div>
-                <div class="font-mono num" :style="`color: ${card.velocityColor}`" x-text="card.velocity"></div>
+                <div style="color: var(--text-3)">Δ Funds 30d</div>
+                <div class="font-mono num" :style="`color: ${(card.fundsDelta||0) > 0 ? 'var(--up)' : (card.fundsDelta||0) < 0 ? 'var(--down)' : 'var(--text-2)'}`" x-text="`${(card.fundsDelta||0) > 0 ? '+' : ''}${card.fundsDelta||0}`"></div>
               </div>
               <div>
                 <div style="color: var(--text-3)">Conc</div>
@@ -1018,12 +1048,6 @@
                 style="border-color: var(--border-2)"
                 x-tooltip="'Show only NEW entrants - first appearance in any ETF within the last 14 days'"
                 x-text="`NEW ${counts.NEW || 0}`"></button>
-        <button @click="velocityOnly = !velocityOnly"
-                :class="velocityOnly ? 'border-cyan-500/40 text-cyan-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-cyan-500/30"
-                style="border-color: var(--border-2)"
-                x-tooltip="'Show only top-velocity names (velocity ≥ 25, held by 2+ ETFs, no burst)'"
-                x-text="`VELO ${counts.VELO || 0}`"></button>
         <button @click="burstOnly = !burstOnly"
                 :class="burstOnly ? 'border-purple-500/40 text-purple-300' : ''"
                 class="chip border px-2 py-1 transition hover:border-purple-500/30"
@@ -1053,38 +1077,20 @@
                 :class="preHcOnly ? 'border-emerald-400/50 text-emerald-300' : ''"
                 class="chip border px-2 py-1 transition hover:border-emerald-400/40"
                 style="border-color: var(--border-2)"
-                x-tooltip="'Pre-HC - 3 ETFs with rising velocity, one pickup away from HC'"
+                x-tooltip="'Pre-HC - 3 ETFs with improving per-fund ranks over 7d, one pickup away from HC'"
                 x-text="`Pre-HC ${counts.PRE_HC || 0}`"></button>
         <button @click="stealthBuyOnly = !stealthBuyOnly"
                 :class="stealthBuyOnly ? 'border-fuchsia-400/50 text-fuchsia-300' : ''"
                 class="chip border px-2 py-1 transition hover:border-fuchsia-400/40"
                 style="border-color: var(--border-2)"
-                x-tooltip="'Stealth Buy - single fund loading >10% in 7d before consensus'"
+                x-tooltip="'Stealth Buy - 1-2 funds loading up fast (+10% avg weight in 7d) before ranks catch up'"
                 x-text="`Stealth ${counts.STEALTH_BUY || 0}`"></button>
-        <button @click="stealthAccOnly = !stealthAccOnly"
-                :class="stealthAccOnly ? 'border-amber-400/50 text-amber-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-amber-400/40"
-                style="border-color: var(--border-2)"
-                x-tooltip="'STEALTH - stealth_accumulation flag: weight building without rank movement'"
-                x-text="`STEALTH ${counts.STEALTH_ACC || 0}`"></button>
-        <button @click="divOnly = !divOnly"
-                :class="divOnly ? 'border-teal-400/50 text-teal-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-teal-400/40"
-                style="border-color: var(--border-2)"
-                x-tooltip="'DIV - conviction divergence (either direction) vs the aggregate'"
-                x-text="`DIV ${counts.DIV || 0}`"></button>
         <button @click="toggleFlag('CONCENTRATED')"
                 :class="flag === 'CONCENTRATED' ? 'border-orange-400/50 text-orange-300' : ''"
                 class="chip border px-2 py-1 transition hover:border-orange-400/40"
                 style="border-color: var(--border-2)"
                 x-tooltip="'CONC - flagged CONCENTRATED: score rests on a single ETF'"
                 x-text="`CONC ${counts.CONCENTRATED || 0}`"></button>
-        <button @click="velOverScoreOnly = !velOverScoreOnly"
-                :class="velOverScoreOnly ? 'border-sky-400/50 text-sky-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-sky-400/40"
-                style="border-color: var(--border-2)"
-                x-tooltip="'Vel>Score - top 10% velocity but score rank >100 (loading in progress)'"
-                x-text="`Vel>Score ${counts.VEL_OVER_SCORE || 0}`"></button>
         <button @click="quantQualityOnly = !quantQualityOnly"
                 :class="quantQualityOnly ? 'border-yellow-400/50 text-yellow-300' : ''"
                 class="chip border px-2 py-1 transition hover:border-yellow-400/40"
@@ -1097,7 +1103,9 @@
             <option :value="t" x-text="t" style="background: #000"></option>
           </template>
         </select>
-        <button @click="reset()" class="chip border px-2 py-1 hover:border-zinc-500" style="border-color: var(--border-2); color: var(--text-2)">clear</button>
+      <button @click="reset()" class="chip border px-2 py-1 hover:border-zinc-500" style="border-color: var(--border-2); color: var(--text-2)">clear</button>
+      <a href="methodology.html#signal-flags" class="chip border px-2 py-1 hover:border-cyan-500/30" style="border-color: var(--border-2); color: var(--text-2)"
+         x-tooltip="'What do HC, BURST, CRATER, Q+ and the other signals mean?'">? Legend</a>
         <input x-model.debounce.300ms="q" type="search" placeholder="search ticker or company…"
                class="w-full sm:w-48 bg-transparent border rounded px-2 py-1 text-xs focus:outline-none focus:border-cyan-500/40"
                style="border-color: var(--border-2); color: var(--text)">
@@ -1142,9 +1150,9 @@
                     </div>
                   </div>
                 </th>
-                <th @click="sort('velocity_score')" :class="sortClass('velocity_score')"
+                <th @click="sort('etf_count_delta_30d')" :class="sortClass('etf_count_delta_30d')"
                     class="text-right px-1 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
-                    x-tooltip="'Velocity - composite rate-of-change signal across all ETFs. High positive = institutional accumulation accelerating.'">Velocity</th>
+                    x-tooltip="'Net ETF positions added or lost over the last 30 days - breadth of conviction flow.'">Δ Funds</th>
                 <th @click="sort('burst_score')" :class="sortClass('burst_score')"
                     class="text-right px-1 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell"
                     x-tooltip="'Burst - 30-day peak rank improvement. Shows rapid upward rank acceleration.'">Burst</th>
@@ -1156,7 +1164,7 @@
                 <th class="text-left px-2 py-2 hidden xl:table-cell" x-tooltip="{html:'Tiers represented. <b>Scout</b>=spinoffs/IPOs · <b>Quant</b>=factor momentum · <b>Quality</b>=FCF/profit · <b>Trend</b>=momentum · <b>Core</b>=mega-cap'}">Strategies</th>
                 <th class="text-center px-3 py-2 hidden md:table-cell" x-tooltip="'Consecutive days the score moved in the same direction (▲ up · ▼ down).'">Streak</th>
                 <th class="text-left px-3 py-2 hidden xl:table-cell" x-tooltip="'Today\'s score as a percentile of this ticker\'s own score history in the past 60 days.'">Level</th>
-                <th class="text-left px-3 py-2" x-tooltip="{html:'Priority-ordered signal stack (top 2 shown, +n = hover for full list)<br><b>HC</b> = held by 4+ ETFs · <b>BURST</b> = +40 ranks in 30d · <b>CRATER</b> = −40 ranks in 30d · <b>VELO</b> = top velocity · <b>Q+/Q−</b> = Quality ETF added/dropped 30d · <b>STEALTH</b> = weight building quietly · <b>DIV±</b> = conviction divergence · <b>CONC</b> = single-ETF score · <b>SPEC β</b> = Trend without Quality/Scout · <b>NEW</b> = first appearance within 14d'}">Flag</th>
+                <th class="text-left px-3 py-2" x-tooltip="{html:'Priority-ordered signal stack (top 2 shown, +n = hover for full list)<br><b>HC</b> = held by 4+ ETFs · <b>BURST</b> = +40 ranks in 30d · <b>CRATER</b> = −40 ranks in 30d · <b>Q+</b> = Quality ETF added 30d · <b>PRE-HC</b> = 3 ETFs, ranks improving · <b>SBUY</b> = 1-2 funds loading · <b>CONC</b> = concentrated conviction · <b>SPEC β</b> = Trend without Quality/Scout · <b>NEW</b> = first appearance within 14d'}">Flag</th>
               </tr>
             </thead>
             <template x-for="row in paged" :key="row.ticker">
@@ -1189,9 +1197,9 @@
                         x-text="fmt1(row.final_score)"></td>
                     <td class="px-2 py-2 text-center num font-mono hidden lg:table-cell" :style="`color: ${flowColor(activeDeltaValue(row))}`" x-text="fmtPct(activeDeltaValue(row))"></td>
                     <td class="px-1 py-2 text-right num font-mono hidden lg:table-cell"
-                        :style="`color: ${velocityColor(row.velocity_score)}`"
-                        x-tooltip="velocityTip(row)">
-                      <span x-text="fmtVelocity(row.velocity_score)"></span>
+                        x-tooltip="`Net ETF positions added/lost over 30d: ${(row.etf_count_delta_30d || 0) > 0 ? '+' : ''}${row.etf_count_delta_30d || 0}`">
+                      <span x-text="`${(row.etf_count_delta_30d || 0) > 0 ? '+' : ''}${row.etf_count_delta_30d || 0}`"
+                            :style="`color: ${(row.etf_count_delta_30d || 0) > 0 ? 'var(--up)' : (row.etf_count_delta_30d || 0) < 0 ? 'var(--down)' : 'var(--text-3)'}`"></span>
                     </td>
                     <td class="px-1 py-2 text-right num font-mono hidden lg:table-cell"
                         x-tooltip="row.burst_30d ? `Burst: +${row.global_rank_peak_30d} ranks peak improvement in 30d` : 'No burst signal'">
@@ -1515,6 +1523,13 @@
                     </td>
                   </tr>
                   </template>
+                  <tr x-show="!filtered.length && !loading">
+                    <td colspan="12" class="px-3 py-8 text-center text-sm" style="color: var(--text-2)">
+                      No names match the current filters —
+                      <button @click="reset()" class="underline" style="color: var(--cyan)">clear filters</button>
+                      · or go to the <button @click="activeTab = 'leaderboard'" class="underline" style="color: var(--cyan)">Leaderboard</button>
+                    </td>
+                  </tr>
                 </tbody>
               </template>
             </table>
@@ -2179,7 +2194,7 @@
                 <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('climbers', 'ticker')" :class="changesSortClass('climbers', 'ticker')">Ticker</th>
                 <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 hidden sm:table-cell" @click="sortChangesTable('climbers', 'company')" :class="changesSortClass('climbers', 'company')">Company</th>
                 <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('climbers', 'etf_delta')" :class="changesSortClass('climbers', 'etf_delta')">ETFs added</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('climbers', 'velocity_score')" :class="changesSortClass('climbers', 'velocity_score')">Velocity</th>
+                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('climbers', 'etf_count_delta_30d')" :class="changesSortClass('climbers', 'etf_count_delta_30d')">Δ Funds</th>
                 <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('climbers', 'final_score')" :class="changesSortClass('climbers', 'final_score')">Score</th>
               </tr>
             </thead>
@@ -2207,7 +2222,7 @@
                   <td class="px-2 py-2 text-zinc-400 truncate hidden sm:table-cell max-w-[150px]" x-text="r.company"></td>
                   <td class="px-2 py-2 text-right font-mono font-semibold text-emerald-400"
                       x-text="(r.etf_count_delta_by_period?.[String(changesPeriod)] || 0) ? `+${r.etf_count_delta_by_period?.[String(changesPeriod)]}` : '—'"></td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-300" :style="`color: ${velocityColor(r.velocity_score)}`" x-text="fmtVelocity(r.velocity_score)"></td>
+                  <td class="px-2 py-2 text-right font-mono text-zinc-300" :style="`color: ${(r.etf_count_delta_30d||0) > 0 ? 'var(--up)' : (r.etf_count_delta_30d||0) < 0 ? 'var(--down)' : 'var(--text-3)'}`" x-text="`${(r.etf_count_delta_30d||0) > 0 ? '+' : ''}${r.etf_count_delta_30d||0}`"></td>
                   <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
                 </tr>
               </template>
@@ -2237,7 +2252,7 @@
                 <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('fallers', 'ticker')" :class="changesSortClass('fallers', 'ticker')">Ticker</th>
                 <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 hidden sm:table-cell" @click="sortChangesTable('fallers', 'company')" :class="changesSortClass('fallers', 'company')">Company</th>
                 <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('fallers', 'etf_delta')" :class="changesSortClass('fallers', 'etf_delta')">ETFs lost</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('fallers', 'velocity_score')" :class="changesSortClass('fallers', 'velocity_score')">Velocity</th>
+                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('fallers', 'etf_count_delta_30d')" :class="changesSortClass('fallers', 'etf_count_delta_30d')">Δ Funds</th>
                 <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('fallers', 'final_score')" :class="changesSortClass('fallers', 'final_score')">Score</th>
               </tr>
             </thead>
@@ -2265,7 +2280,7 @@
                   <td class="px-2 py-2 text-zinc-400 truncate hidden sm:table-cell max-w-[150px]" x-text="r.company"></td>
                   <td class="px-2 py-2 text-right font-mono" :style="`color: ${(r.etf_count_delta_by_period?.[String(changesPeriod)] || 0) < 0 ? 'var(--down)' : 'var(--text-3)'}`"
                       x-text="(r.etf_count_delta_by_period?.[String(changesPeriod)] || 0) ? `${r.etf_count_delta_by_period?.[String(changesPeriod)]}` : '—'"></td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-300" :style="`color: ${velocityColor(r.velocity_score)}`" x-text="fmtVelocity(r.velocity_score)"></td>
+                  <td class="px-2 py-2 text-right font-mono text-zinc-300" :style="`color: ${(r.etf_count_delta_30d||0) > 0 ? 'var(--up)' : (r.etf_count_delta_30d||0) < 0 ? 'var(--down)' : 'var(--text-3)'}`" x-text="`${(r.etf_count_delta_30d||0) > 0 ? '+' : ''}${r.etf_count_delta_30d||0}`"></td>
                   <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
                 </tr>
               </template>
@@ -2298,7 +2313,7 @@
                 <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 hidden sm:table-cell" @click="sortChangesTable('pickups', 'company')" :class="changesSortClass('pickups', 'company')">Company</th>
                 <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('pickups', 'etf_delta')" :class="changesSortClass('pickups', 'etf_delta')">ETF Path</th>
                 <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('pickups', 'final_score')" :class="changesSortClass('pickups', 'final_score')">Score</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('pickups', 'velocity_score')" :class="changesSortClass('pickups', 'velocity_score')">Velocity</th>
+                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('pickups', 'etf_count_delta_30d')" :class="changesSortClass('pickups', 'etf_count_delta_30d')">Δ Funds</th>
               </tr>
             </thead>
             <tbody>
@@ -2322,7 +2337,7 @@
                     <span class="text-[10px]" x-text="` (+${r.etf_count_delta_by_period?.[String(changesPeriod)] || 0})`"></span>
                   </td>
                   <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
-                  <td class="px-2 py-2 text-right font-mono" :style="`color: ${velocityColor(r.velocity_score)}`" x-text="fmtVelocity(r.velocity_score)"></td>
+                  <td class="px-2 py-2 text-right font-mono" :style="`color: ${(r.etf_count_delta_30d||0) > 0 ? 'var(--up)' : (r.etf_count_delta_30d||0) < 0 ? 'var(--down)' : 'var(--text-3)'}`" x-text="`${(r.etf_count_delta_30d||0) > 0 ? '+' : ''}${r.etf_count_delta_30d||0}`"></td>
                 </tr>
               </template>
               <tr x-show="etfPickups.length === 0">
@@ -2351,7 +2366,7 @@
                 <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 hidden sm:table-cell" @click="sortChangesTable('dropouts', 'company')" :class="changesSortClass('dropouts', 'company')">Company</th>
                 <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('dropouts', 'etf_delta')" :class="changesSortClass('dropouts', 'etf_delta')">ETF Path</th>
                 <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('dropouts', 'final_score')" :class="changesSortClass('dropouts', 'final_score')">Score</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('dropouts', 'velocity_score')" :class="changesSortClass('dropouts', 'velocity_score')">Velocity</th>
+                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('dropouts', 'etf_count_delta_30d')" :class="changesSortClass('dropouts', 'etf_count_delta_30d')">Δ Funds</th>
               </tr>
             </thead>
             <tbody>
@@ -2375,7 +2390,7 @@
                     <span class="text-[10px]" x-text="` (${r.etf_count_delta_by_period?.[String(changesPeriod)] || 0})`"></span>
                   </td>
                   <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
-                  <td class="px-2 py-2 text-right font-mono" :style="`color: ${velocityColor(r.velocity_score)}`" x-text="fmtVelocity(r.velocity_score)"></td>
+                  <td class="px-2 py-2 text-right font-mono" :style="`color: ${(r.etf_count_delta_30d||0) > 0 ? 'var(--up)' : (r.etf_count_delta_30d||0) < 0 ? 'var(--down)' : 'var(--text-3)'}`" x-text="`${(r.etf_count_delta_30d||0) > 0 ? '+' : ''}${r.etf_count_delta_30d||0}`"></td>
                 </tr>
               </template>
               <tr x-show="etfDropouts.length === 0">
@@ -2407,7 +2422,7 @@
                 <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 hidden sm:table-cell" @click="sortChangesTable('burstWinners', 'company')" :class="changesSortClass('burstWinners', 'company')">Company</th>
                 <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('burstWinners', 'global_rank_peak_30d')" :class="changesSortClass('burstWinners', 'global_rank_peak_30d')">Peak Δ</th>
                 <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('burstWinners', 'global_rank_delta_30d')" :class="changesSortClass('burstWinners', 'global_rank_delta_30d')">Δ30d</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('burstWinners', 'velocity_score')" :class="changesSortClass('burstWinners', 'velocity_score')">Velocity</th>
+                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('burstWinners', 'etf_count_delta_30d')" :class="changesSortClass('burstWinners', 'etf_count_delta_30d')">Δ Funds</th>
                 <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('burstWinners', 'final_score')" :class="changesSortClass('burstWinners', 'final_score')">Score</th>
               </tr>
             </thead>
@@ -2424,7 +2439,7 @@
                   <td class="px-2 py-2 text-zinc-400 truncate hidden sm:table-cell max-w-[150px]" x-text="r.company"></td>
                   <td class="px-2 py-2 text-right font-mono font-bold" style="color: #c084fc;" x-text="`+${r.global_rank_peak_30d || 0}`"></td>
                   <td class="px-2 py-2 text-right font-mono text-emerald-400" x-text="`+${r.global_rank_delta_30d || 0}`"></td>
-                  <td class="px-2 py-2 text-right font-mono" :style="`color: ${velocityColor(r.velocity_score)}`" x-text="fmtVelocity(r.velocity_score)"></td>
+                  <td class="px-2 py-2 text-right font-mono" :style="`color: ${(r.etf_count_delta_30d||0) > 0 ? 'var(--up)' : (r.etf_count_delta_30d||0) < 0 ? 'var(--down)' : 'var(--text-3)'}`" x-text="`${(r.etf_count_delta_30d||0) > 0 ? '+' : ''}${r.etf_count_delta_30d||0}`"></td>
                   <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
                 </tr>
               </template>
@@ -2489,20 +2504,20 @@
       </div>
     </div>
 
-    <!-- Section 4: Top Velocity Movers + Active Signals Dashboard -->
+    <!-- Section 4: Top Accumulation Movers + Active Signals Dashboard -->
     <div class="rounded-lg border mb-4" style="border-color: var(--border); background: var(--surface);">
       <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
         <div class="label flex items-center gap-1.5 text-cyan-400 font-semibold text-xs tracking-wider uppercase">
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Top Velocity Movers (Last 30 Days)
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Top Accumulation Movers (Last 30 Days)
         </div>
-        <div class="text-[10px] text-zinc-500">Highest acceleration of institutional conviction</div>
+        <div class="text-[10px] text-zinc-500">Most ETF positions added over 30 days</div>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-        <template x-for="r in (changelog.top_velocity || [])" :key="r.ticker">
+        <template x-for="r in (changelog.top_accumulation || [])" :key="r.ticker">
           <a :href="`stock.html?t=${r.ticker}`" style="text-decoration: none; color: inherit; display: block;"
              class="border-b border-r last:border-b-0 sm:last:border-r-0 border-white/[0.03]">
             <div class="px-3 py-2.5 text-xs hover:bg-white/5 transition flex flex-col justify-between h-full border-l-2"
-                 :style="`border-left-color: ${velocityColor(r.velocity_score)}; ${isPinned(r.ticker) ? 'background: rgba(34,211,238,0.03);' : ''}`">
+                 :style="`border-left-color: ${(r.etf_count_delta_30d||0) > 0 ? 'var(--up)' : 'var(--down)'}; ${isPinned(r.ticker) ? 'background: rgba(34,211,238,0.03);' : ''}`">
               <div class="flex items-center justify-between">
                 <div class="flex flex-col min-w-0">
                   <div class="flex items-center gap-1.5">
@@ -2516,7 +2531,7 @@
                   <span style="color: var(--text-2)" class="truncate text-[11px]" x-text="r.company"></span>
                 </div>
                 <div class="num font-mono text-right shrink-0 ml-2">
-                  <div :style="`color: ${velocityColor(r.velocity_score)}`" class="font-bold" x-text="fmtVelocity(r.velocity_score)"></div>
+                  <div :style="`color: ${(r.etf_count_delta_30d||0) > 0 ? 'var(--up)' : 'var(--down)'}`" class="font-bold" x-text="`${(r.etf_count_delta_30d||0) > 0 ? '+' : ''}${r.etf_count_delta_30d||0} funds`"></div>
                   <div class="text-[10px] flex items-center justify-end gap-1">
                     <span x-show="r.burst_30d" class="chip sig-badge text-[8px] px-1 py-0" style="background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.3)">BURST</span>
                     <span style="color: var(--text-3)" x-text="`${r.etf_count} ETF${r.etf_count===1?'':'s'}`"></span>
@@ -2532,7 +2547,7 @@
             </div>
           </a>
         </template>
-        <div x-show="!changelog.top_velocity?.length" class="col-span-3 px-3 py-6 text-center text-xs text-zinc-500 italic select-none">No velocity data available.</div>
+        <div x-show="!changelog.top_accumulation?.length" class="col-span-3 px-3 py-6 text-center text-xs text-zinc-500 italic select-none">No accumulation data available.</div>
       </div>
 
       <!-- Active Signal Summary Strip -->
@@ -2544,24 +2559,11 @@
           <span class="font-bold text-[10px] px-1 py-0.5 rounded bg-purple-500/20 text-purple-300 mr-0.5">BURST</span>
           <span x-text="`${activeSignalCounts.burst} Burst`"></span>
         </button>
-        <button @click="reset(); stealthAccOnly = true; activeTab = 'leaderboard'; window.scrollTo({ top: 0, behavior: 'smooth' });"
-                x-tooltip="'Filter leaderboard to show only stealth accumulation names'"
-                class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/25 transition cursor-pointer select-none">
-          <span class="font-bold text-[10px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-300 mr-0.5">STEALTH</span>
-          <span x-text="`${activeSignalCounts.stealth} Stealth Accum`"></span>
-        </button>
         <button @click="reset(); qualityAdoptedOnly = true; activeTab = 'leaderboard'; window.scrollTo({ top: 0, behavior: 'smooth' });"
                 x-tooltip="'Filter leaderboard to show only Quality+ names (added by Quality ETF in 30d)'"
                 class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 border border-teal-500/25 transition cursor-pointer select-none">
           <span class="font-bold text-[10px] px-1 py-0.5 rounded bg-teal-500/20 text-teal-300 mr-0.5">QUAL+</span>
           <span x-text="`${activeSignalCounts.qualityAdopted} Quality Adopted`"></span>
-        </button>
-        <button @click="reset(); qualityDefectedOnly = true; activeTab = 'leaderboard'; window.scrollTo({ top: 0, behavior: 'smooth' });"
-                x-show="activeSignalCounts.qualityDefected > 0"
-                x-tooltip="'Filter leaderboard to show only Quality- names (dropped by Quality ETF in 30d)'"
-                class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 transition cursor-pointer select-none">
-          <span class="font-bold text-[10px] px-1 py-0.5 rounded bg-rose-500/20 text-rose-300 mr-0.5">QUAL−</span>
-          <span x-text="`${activeSignalCounts.qualityDefected} Defections`"></span>
         </button>
       </div>
     </div>
@@ -2671,7 +2673,7 @@
           <div class="label flex items-center gap-1.5 text-cyan-400 font-semibold text-xs tracking-wider uppercase">
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Sector Flow Intelligence
           </div>
-          <div class="text-[10px] font-mono text-zinc-500">Net velocity sum · 2+ ETFs only</div>
+          <div class="text-[10px] font-mono text-zinc-500">Net ETF positions added (30d) · 2+ ETF names</div>
         </div>
         <div class="overflow-x-auto scrollbar">
           <table class="w-full text-left border-collapse">
@@ -2679,8 +2681,8 @@
               <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04] select-none">
                 <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortSector('label')" :class="sectorSortClass('label')">Sector</th>
                 <th class="px-2 py-1.5 font-semibold select-none">Flow</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortSector('net_velocity')" :class="sectorSortClass('net_velocity')">Net Velo</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortSector('avg_velocity')" :class="sectorSortClass('avg_velocity')">Avg Velo</th>
+                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortSector('net_funds_delta')" :class="sectorSortClass('net_funds_delta')">Net ΔFunds</th>
+                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortSector('avg_funds_delta')" :class="sectorSortClass('avg_funds_delta')">Avg ΔFunds</th>
                 <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortSector('names')" :class="sectorSortClass('names')">Names</th>
                 <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortSector('burst_count')" :class="sectorSortClass('burst_count')">Bursts</th>
               </tr>
@@ -2693,13 +2695,13 @@
                   <td class="px-2 py-2">
                     <div class="w-24 h-1.5 rounded bg-white/[0.05] overflow-hidden">
                       <div class="h-full rounded"
-                           :style="`width: ${Math.min(100, Math.abs(r.net_velocity||0) / sectorMax * 100)}%; background: ${(r.net_velocity||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"></div>
+                           :style="`width: ${Math.min(100, Math.abs(r.net_funds_delta||0) / sectorMax * 100)}%; background: ${(r.net_funds_delta||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"></div>
                     </div>
                   </td>
-                  <td class="px-2 py-2 text-right font-mono font-semibold" :style="`color: ${(r.net_velocity||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
-                      x-text="`${(r.net_velocity||0) >= 0 ? '+' : ''}${(r.net_velocity||0).toFixed(0)}`"></td>
-                  <td class="px-2 py-2 text-right font-mono" :style="`color: ${(r.avg_velocity||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
-                      x-text="`${(r.avg_velocity||0) >= 0 ? '+' : ''}${(r.avg_velocity||0).toFixed(1)}`"></td>
+                  <td class="px-2 py-2 text-right font-mono font-semibold" :style="`color: ${(r.net_funds_delta||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
+                      x-text="`${(r.net_funds_delta||0) >= 0 ? '+' : ''}${(r.net_funds_delta||0).toFixed(0)}`"></td>
+                  <td class="px-2 py-2 text-right font-mono" :style="`color: ${(r.avg_funds_delta||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
+                      x-text="`${(r.avg_funds_delta||0) >= 0 ? '+' : ''}${(r.avg_funds_delta||0).toFixed(1)}`"></td>
                   <td class="px-2 py-2 text-right font-mono text-zinc-400" x-text="r.names"></td>
                   <td class="px-3 py-2 text-right font-mono text-purple-400" x-text="r.burst_count || '0'"></td>
                 </tr>
@@ -2718,7 +2720,7 @@
           <div class="label flex items-center gap-1.5 text-cyan-400 font-semibold text-xs tracking-wider uppercase">
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Country Flow Intelligence
           </div>
-          <div class="text-[10px] font-mono text-zinc-500">Net velocity sum · 2+ ETFs only</div>
+          <div class="text-[10px] font-mono text-zinc-500">Net ETF positions added (30d) · 2+ ETF names</div>
         </div>
         <div class="overflow-x-auto scrollbar">
           <table class="w-full text-left border-collapse">
@@ -2726,8 +2728,8 @@
               <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04] select-none">
                 <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortCountry('label')" :class="countrySortClass('label')">Country</th>
                 <th class="px-2 py-1.5 font-semibold select-none">Flow</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortCountry('net_velocity')" :class="countrySortClass('net_velocity')">Net Velo</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortCountry('avg_velocity')" :class="countrySortClass('avg_velocity')">Avg Velo</th>
+                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortCountry('net_funds_delta')" :class="countrySortClass('net_funds_delta')">Net ΔFunds</th>
+                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortCountry('avg_funds_delta')" :class="countrySortClass('avg_funds_delta')">Avg ΔFunds</th>
                 <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortCountry('names')" :class="countrySortClass('names')">Names</th>
                 <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortCountry('burst_count')" :class="countrySortClass('burst_count')">Bursts</th>
               </tr>
@@ -2740,13 +2742,13 @@
                   <td class="px-2 py-2">
                     <div class="w-24 h-1.5 rounded bg-white/[0.05] overflow-hidden">
                       <div class="h-full rounded"
-                           :style="`width: ${Math.min(100, Math.abs(r.net_velocity||0) / countryMax * 100)}%; background: ${(r.net_velocity||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"></div>
+                           :style="`width: ${Math.min(100, Math.abs(r.net_funds_delta||0) / countryMax * 100)}%; background: ${(r.net_funds_delta||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"></div>
                     </div>
                   </td>
-                  <td class="px-2 py-2 text-right font-mono font-semibold" :style="`color: ${(r.net_velocity||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
-                      x-text="`${(r.net_velocity||0) >= 0 ? '+' : ''}${(r.net_velocity||0).toFixed(0)}`"></td>
-                  <td class="px-2 py-2 text-right font-mono" :style="`color: ${(r.avg_velocity||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
-                      x-text="`${(r.avg_velocity||0) >= 0 ? '+' : ''}${(r.avg_velocity||0).toFixed(1)}`"></td>
+                  <td class="px-2 py-2 text-right font-mono font-semibold" :style="`color: ${(r.net_funds_delta||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
+                      x-text="`${(r.net_funds_delta||0) >= 0 ? '+' : ''}${(r.net_funds_delta||0).toFixed(0)}`"></td>
+                  <td class="px-2 py-2 text-right font-mono" :style="`color: ${(r.avg_funds_delta||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
+                      x-text="`${(r.avg_funds_delta||0) >= 0 ? '+' : ''}${(r.avg_funds_delta||0).toFixed(1)}`"></td>
                   <td class="px-2 py-2 text-right font-mono text-zinc-400" x-text="r.names"></td>
                   <td class="px-3 py-2 text-right font-mono text-purple-400" x-text="r.burst_count || '0'"></td>
                 </tr>
@@ -2760,19 +2762,27 @@
       </div>
     </div>
   </section><!-- ── FOOTER ─────────────────────────────────────────────────────────── -->
-  <footer class="mt-6 pt-4 text-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2" style="border-top: 1px solid var(--border); color: var(--text-3)">
-    <div>
-      Data: <a class="hover:underline" style="color: var(--text-2)" href="https://github.com/yieldchaser/etf-data" target="_blank" rel="noopener">yieldchaser/etf-data</a>
-      · Algorithm: <code class="px-1 rounded" style="background: var(--surface); color: var(--text-2)">config.yaml</code>
-      · Scraper: V17.4
+  <footer class="mt-6 pt-4 text-xs flex flex-col gap-2" style="border-top: 1px solid var(--border); color: var(--text-3)">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <div>
+        Data: <a class="hover:underline" style="color: var(--text-2)" href="https://github.com/yieldchaser/etf-data" target="_blank" rel="noopener">yieldchaser/etf-data</a>
+        · <a class="hover:underline" href="methodology.html" style="color: var(--text-2)">How it works</a>
+        · <a class="hover:underline" href="backtest.html" style="color: var(--text-2)">Backtest</a>
+        · <a class="hover:underline" href="markets.html" style="color: var(--text-2)">Markets</a>
+      </div>
+      <div>Click any row for per-ETF breakdown · Sort columns by header click</div>
     </div>
-    <div>Click any row for per-ETF breakdown · Sort columns by header click</div>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-[11px]" x-show="meta.latest_holdings_as_of || meta.generated_at_utc">
+      <span>Data for research only · not investment advice</span>
+      <span x-text="`${meta.latest_holdings_as_of ? 'Holdings as-of ' + meta.latest_holdings_as_of : ''}${meta.latest_holdings_as_of && meta.generated_at_utc ? ' · ' : ''}${meta.generated_at_utc ? 'Built ' + formatBuilt(meta.generated_at_utc) : ''}`"></span>
+    </div>
   </footer>
 
-  <!-- Error toast -->
-  <div x-show="error" x-cloak class="fixed bottom-4 right-4 max-w-md text-sm rounded-lg px-4 py-3" style="background: rgba(251, 113, 133, 0.12); border: 1px solid rgba(251, 113, 133, 0.30); color: var(--down)">
-    <div class="font-medium mb-1">Could not load data</div>
+  <!-- Error toast — only for failures AFTER data is already on screen -->
+  <div x-show="error && leaderboard.length" x-cloak class="fixed bottom-4 right-4 max-w-md text-sm rounded-lg px-4 py-3" style="background: rgba(251, 113, 133, 0.12); border: 1px solid rgba(251, 113, 133, 0.30); color: var(--down)">
+    <div class="font-medium mb-1">Some data failed to load</div>
     <div class="text-xs opacity-90" x-text="error"></div>
+    <button @click="retryLoad()" class="mt-2 text-xs underline hover:opacity-80">Retry</button>
   </div>
 </div>
 
@@ -2784,7 +2794,7 @@ function app() {
     loading: true, error: '',
     activeTab: 'leaderboard',
     overlapHover: '',
-    flag: '', selectedTier: '', selectedSector: '', selectedCountry: '', regionFilter: '', newOnly: false, velocityOnly: false, burstOnly: false, craterOnly: false, q: '', excludeConcentrated: false, qualityAdoptedOnly: false, qualityDefectedOnly: false, preHcOnly: false, stealthBuyOnly: false, velOverScoreOnly: false, quantQualityOnly: false, stealthAccOnly: false, divOnly: false,
+    flag: '', selectedTier: '', selectedSector: '', selectedCountry: '', regionFilter: '', newOnly: false, burstOnly: false, craterOnly: false, q: '', excludeConcentrated: false, qualityAdoptedOnly: false, preHcOnly: false, stealthBuyOnly: false, quantQualityOnly: false,
     sortKey: 'leaderboard_rank', sortDir: 'asc',
     page: 1, pageSize: 50, open: null,
     // Reactive caches for expensive getters (BUG-5): _filteredCacheKey holds
@@ -2828,7 +2838,18 @@ function app() {
     sortLevels: [{ key: 'leaderboard_rank', dir: 'asc' }],
     // Extreme Conviction Moves ribbon - dismiss persists in sessionStorage
     hideExtremes: (() => { try { return (sessionStorage.getItem('conviction.hideExtremes') || sessionStorage.getItem('predator.hideExtremes')) === '1'; } catch { return false; } })(),
-    pins: (() => { try { return JSON.parse(localStorage.getItem('conviction_pins') || localStorage.getItem('predator_pins') || '[]'); } catch { return []; } })(),
+    pins: (() => {
+      // One-time migration from the pre-rebrand storage keys.
+      try {
+        if (!localStorage.getItem('conviction_pins') && localStorage.getItem('predator_pins')) {
+          localStorage.setItem('conviction_pins', localStorage.getItem('predator_pins'));
+        }
+        if (!localStorage.getItem('conviction.hideExtremes') && localStorage.getItem('predator.hideExtremes')) {
+          localStorage.setItem('conviction.hideExtremes', localStorage.getItem('predator.hideExtremes'));
+        }
+      } catch {}
+      try { return JSON.parse(localStorage.getItem('conviction_pins') || '[]'); } catch { return []; }
+    })(),
     sortableCols: [
       { key: 'leaderboard_rank', label: '# (default rank)' },
       { key: 'ticker',           label: 'Ticker' },
@@ -2841,7 +2862,7 @@ function app() {
       { key: 'score_streak',     label: 'Score streak' },
       { key: 'hc_streak',        label: 'HC streak' },
       { key: 'score_percentile',      label: 'Percentile (level)' },
-      { key: 'velocity_score',         label: 'Velocity (composite)' },
+      { key: 'etf_count_delta_30d',    label: 'Δ Funds (30d)' },
       { key: 'global_rank_delta_30d',  label: 'Global rank Δ (30d)' },
       { key: 'global_rank_peak_30d',   label: 'Peak rank improvement (30d)' },
       { key: 'avg_rank_delta_7d',      label: 'Avg per-ETF rank Δ (7d)' },
@@ -2860,15 +2881,15 @@ function app() {
           flow, overlap, scoreHistory, holdingsExits,
         ] = await Promise.all([
           Promise.all([
-            fetch('data/leaderboard.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)),
-            fetch('data/holdings_latest.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)),
-            fetch('data/changelog.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)),
-            fetch('data/metadata.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)),
+            fetch('data/leaderboard.json').then(r => r.ok ? r.json() : Promise.reject(r.status)),
+            fetch('data/holdings_latest.json').then(r => r.ok ? r.json() : Promise.reject(r.status)),
+            fetch('data/changelog.json').then(r => r.ok ? r.json() : Promise.reject(r.status)),
+            fetch('data/metadata.json').then(r => r.ok ? r.json() : Promise.reject(r.status)),
           ]),
-          fetch('data/flow.json', { cache: 'no-store' }).then(r => r.json()).catch(() => ({})),
-          fetch('data/etf_overlap.json', { cache: 'no-store' }).then(r => r.json()).catch(() => ({})),
-          fetch('data/score_history.json', { cache: 'no-store' }).then(r => r.json()).catch(() => ({})),
-          fetch('data/holdings_exits.json', { cache: 'no-store' }).then(r => r.json()).catch(() => ({})),
+          fetch('data/flow.json').then(r => r.json()).catch(() => ({})),
+          fetch('data/etf_overlap.json').then(r => r.json()).catch(() => ({})),
+          fetch('data/score_history.json').then(r => r.json()).catch(() => ({})),
+          fetch('data/holdings_exits.json').then(r => r.json()).catch(() => ({})),
         ]);
         this.leaderboard = lb; this.holdings = hd; this.changelog = chg; this.meta = mt;
         this.flow = flow; this.overlap = overlap; this.scoreHistory = scoreHistory; this.holdingsExits = holdingsExits;
@@ -2885,34 +2906,32 @@ function app() {
           this.snapshotPins();
         }
       } catch (e) {
-        this.error = `${e}. Run \`python -m conviction.build\` then refresh.`;
+        this.error = String(e);
       } finally { this.loading = false; }
     },
+
+    async retryLoad() { this.error = ''; this.loading = true; await this.load(); },
 
     get counts() {
       return {
         HIGH_CONVICTION: this.leaderboard.filter(r => r.flag === 'HIGH_CONVICTION').length,
         SPECULATIVE_BETA: this.leaderboard.filter(r => r.flag === 'SPECULATIVE_BETA').length,
         NEW: this.leaderboard.filter(r => r.any_new).length,
-        VELO: this.leaderboard.filter(r => (r.velocity_score || 0) >= 25 && (r.etf_count || 0) >= 2 && !r.burst_30d).length,
         BURST: this.leaderboard.filter(r => r.burst_30d).length,
         CRATER: this.leaderboard.filter(r => r.crater_30d).length,
         QADD: this.leaderboard.filter(r => r.quality_adopted_30d).length,
         PRE_HC: this.leaderboard.filter(r => this._isPreHc(r)).length,
         STEALTH_BUY: this.leaderboard.filter(r => this._isStealthBuy(r)).length,
-        VEL_OVER_SCORE: this.leaderboard.filter(r => this._isVelOverScore(r)).length,
         QUANT_QUALITY: this.leaderboard.filter(r => this._isQuantQuality(r)).length,
-        STEALTH_ACC: this.leaderboard.filter(r => r.stealth_accumulation).length,
-        DIV: this.leaderboard.filter(r => r.conviction_divergence === 1 || r.conviction_divergence === -1).length,
         CONCENTRATED: this.leaderboard.filter(r => r.flag === 'CONCENTRATED').length,
       };
     },
 
     // ── Predictive filter helpers ─────────────────────────────────────────
-    // Pre-HC: 3 ETFs + rising velocity, one pickup away from HC threshold
+    // Pre-HC: 3 ETFs + improving per-fund ranks, one pickup away from HC threshold
     _isPreHc(r) {
       return (r.etf_count || 0) === 3
-        && (r.velocity_score || 0) > 10
+        && (r.avg_rank_delta_7d || 0) > 0
         && (r.score_streak || 0) >= 2
         && r.flag !== 'HIGH_CONVICTION';
     },
@@ -2920,21 +2939,7 @@ function app() {
     _isStealthBuy(r) {
       return (r.etf_count || 0) <= 2
         && (r.avg_weight_flow_7d || 0) > 0.10
-        && (r.velocity_score || 0) > 0;
-    },
-    // Velocity ahead of Score: high velocity but score still mid-tier (loading in progress)
-    _isVelOverScore(r) {
-      const lb = this.leaderboard;
-      if (!lb || !lb.length) return false;
-      // Memoize the top-10% velocity threshold; invalidate if leaderboard identity changes
-      if (this._velCacheKey !== lb.length + ':' + (lb[0]?.ticker || '')) {
-        const sorted = [...lb].sort((a, b) => (b.velocity_score || 0) - (a.velocity_score || 0));
-        const cutoff = Math.max(1, Math.floor(sorted.length * 0.10));
-        this._velThreshold = sorted[cutoff - 1]?.velocity_score ?? 999;
-        this._velCacheKey = lb.length + ':' + (lb[0]?.ticker || '');
-      }
-      return (r.velocity_score || 0) >= this._velThreshold
-        && (r.leaderboard_rank || 0) > 100;
+        && (r.avg_rank_delta_7d || 0) >= 0;
     },
     // Quant + Quality recent convergence: both forward-looking and backward-looking screens agree
     _isQuantQuality(r) {
@@ -3028,7 +3033,7 @@ function app() {
     },
 
     toggleFlag(f) { this.flag = (this.flag === f) ? '' : f; this.page = 1; },
-    reset() { this.flag = ''; this.newOnly = false; this.velocityOnly = false; this.burstOnly = false; this.craterOnly = false; this.excludeConcentrated = false; this.qualityAdoptedOnly = false; this.qualityDefectedOnly = false; this.preHcOnly = false; this.stealthBuyOnly = false; this.velOverScoreOnly = false; this.quantQualityOnly = false; this.stealthAccOnly = false; this.divOnly = false; this.selectedTier = ''; this.selectedSector = ''; this.selectedCountry = ''; this.regionFilter = ''; this.q = ''; this.page = 1; },
+    reset() { this.flag = ''; this.newOnly = false; this.burstOnly = false; this.craterOnly = false; this.excludeConcentrated = false; this.qualityAdoptedOnly = false; this.preHcOnly = false; this.stealthBuyOnly = false; this.quantQualityOnly = false; this.selectedTier = ''; this.selectedSector = ''; this.selectedCountry = ''; this.regionFilter = ''; this.q = ''; this.page = 1; },
 
     togglePin(t) {
       const i = this.pins.indexOf(t);
@@ -3039,7 +3044,7 @@ function app() {
     isPinned(t) { return this.pins.includes(t); },
 
     get watchlistDelta() {
-      const last = JSON.parse(localStorage.getItem('conviction_pin_snapshot') || localStorage.getItem('predator_pin_snapshot') || '{}');
+      const last = JSON.parse(localStorage.getItem('conviction_pin_snapshot') || '{}');
       const out = { entered_hc: [], exited_hc: [], new_burst: [], no_longer_burst: [], new_crater: [], no_longer_crater: [] };
       for (const t of this.pins) {
         const row = this.leaderboard.find(r => r.ticker === t);
@@ -3256,9 +3261,7 @@ function app() {
       return {
         burst: this.leaderboard.filter(r => r.burst_30d).length,
         crater: this.leaderboard.filter(r => r.crater_30d).length,
-        stealth: this.leaderboard.filter(r => r.stealth_accumulation).length,
         qualityAdopted: this.leaderboard.filter(r => r.quality_adopted_30d).length,
-        qualityDefected: this.leaderboard.filter(r => r.quality_defected_30d).length,
       };
     },
 
@@ -3506,10 +3509,10 @@ function app() {
     },
 
     get sectorMax() {
-      return Math.max(1, ...(this.flow?.by_sector || []).map(r => Math.abs(r.net_velocity || 0)));
+      return Math.max(1, ...(this.flow?.by_sector || []).map(r => Math.abs(r.net_funds_delta || 0)));
     },
     get countryMax() {
-      return Math.max(1, ...(this.flow?.by_country || []).map(r => Math.abs(r.net_velocity || 0)));
+      return Math.max(1, ...(this.flow?.by_country || []).map(r => Math.abs(r.net_funds_delta || 0)));
     },
     get sortedSectors() {
       let list = [...(this.flow?.by_sector || [])];
@@ -3567,7 +3570,7 @@ function app() {
       // Drivers - each row gets a z-score on each, we pick the dominant one.
       // Labels are intentionally Conviction-language; we are NOT a factor model.
       const drivers = [
-        { key: 'velocity_score',        label: 'velocity',         display: v => `velocity ${(v || 0).toFixed(1)}` },
+        { key: 'etf_count_delta_30d',   label: 'funds Δ 30d',      display: v => `${v >= 0 ? '+' : ''}${(v|0)} funds 30d` },
         { key: 'global_rank_delta_30d', label: '30d rank Δ',       display: v => `${v >= 0 ? '+' : ''}${(v|0)} ranks 30d` },
         { key: 'global_rank_peak_30d',  label: '30d peak Δ',       display: v => `+${(v|0)} peak 30d` },
         { key: 'score_delta_pct',       label: 'score Δ%',         display: v => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1)}% score` },
@@ -3633,7 +3636,7 @@ function app() {
         if (row.burst_30d)                  ctxParts.push('BURST');
         if (row.crater_30d)                 ctxParts.push('CRATER');
         if (row.quality_adopted_30d)        ctxParts.push('Quality+');
-        if (row.quality_defected_30d)       ctxParts.push('Quality−');
+        if ((row.etf_count_delta_30d || 0) >= 2) ctxParts.push('+funds');
         ctxParts.push(`${row.etf_count || 0} ETFs`);
 
         scored.push({
@@ -3660,12 +3663,12 @@ function app() {
       // times per render tick. Recompute only when an input actually changes.
       const key = JSON.stringify({
         n: this.leaderboard.length, tab: this.activeTab, pins: this.pins.join(','),
-        flag: this.flag, newOnly: this.newOnly, velocityOnly: this.velocityOnly,
+        flag: this.flag, newOnly: this.newOnly,
         burstOnly: this.burstOnly, craterOnly: this.craterOnly, qualityAdoptedOnly: this.qualityAdoptedOnly,
-        qualityDefectedOnly: this.qualityDefectedOnly, preHcOnly: this.preHcOnly,
-        stealthBuyOnly: this.stealthBuyOnly, velOverScoreOnly: this.velOverScoreOnly,
-        quantQualityOnly: this.quantQualityOnly, stealthAccOnly: this.stealthAccOnly,
-        divOnly: this.divOnly, tier: this.selectedTier, sector: this.selectedSector,
+        preHcOnly: this.preHcOnly,
+        stealthBuyOnly: this.stealthBuyOnly,
+        quantQualityOnly: this.quantQualityOnly,
+        tier: this.selectedTier, sector: this.selectedSector,
         country: this.selectedCountry, region: this.regionFilter,
         excl: this.excludeConcentrated, q: this.q.trim().toLowerCase(),
         sort: this.sortLevels,
@@ -3676,17 +3679,12 @@ function app() {
       if (this.activeTab === 'watchlist') r = r.filter(x => this.pins.includes(x.ticker));
       if (this.flag)         r = r.filter(x => x.flag === this.flag);
       if (this.newOnly)      r = r.filter(x => x.any_new);
-      if (this.velocityOnly) r = r.filter(x => (x.velocity_score || 0) >= 25 && (x.etf_count || 0) >= 2 && !x.burst_30d);
       if (this.burstOnly)    r = r.filter(x => x.burst_30d);
       if (this.craterOnly)   r = r.filter(x => x.crater_30d);
       if (this.qualityAdoptedOnly) r = r.filter(x => x.quality_adopted_30d);
-      if (this.qualityDefectedOnly) r = r.filter(x => x.quality_defected_30d);
       if (this.preHcOnly)        r = r.filter(x => this._isPreHc(x));
       if (this.stealthBuyOnly)   r = r.filter(x => this._isStealthBuy(x));
-      if (this.velOverScoreOnly) r = r.filter(x => this._isVelOverScore(x));
       if (this.quantQualityOnly) r = r.filter(x => this._isQuantQuality(x));
-      if (this.stealthAccOnly)   r = r.filter(x => x.stealth_accumulation);
-      if (this.divOnly)          r = r.filter(x => x.conviction_divergence === 1 || x.conviction_divergence === -1);
       if (tier)              r = r.filter(x => (x.tiers || '').split(' + ').includes(tier));
       if (sector)            r = r.filter(x => x.sector === sector);
       if (country)           r = r.filter(x => x.country === country);
@@ -3872,7 +3870,6 @@ function app() {
         ['tiers',                  'Tiers'],
         ['flag',                   'Flag'],
         ['avg_conviction',         'Avg conviction'],
-        ['velocity_score',         'Velocity'],
         ['burst_value',            'Burst'],
         ['burst_30d',              'Burst (signal)'],
         ['crater_30d',             'Crater (signal)'],
@@ -3894,8 +3891,6 @@ function app() {
         ['m_universe',             'Universe mult'],
         ['tier_entropy',           'Tier entropy'],
         ['momentum_regime',        'Regime'],
-        ['stealth_accumulation',   'Stealth'],
-        ['conviction_divergence',  'Divergence'],
         ['sector',                 'Sector'],
         ['industry',               'Industry'],
         ['country',                'Country'],
@@ -3921,7 +3916,7 @@ function app() {
       const filterTag = [
         this.flag, this.selectedTier, this.selectedSector, this.selectedCountry,
         this.regionFilter && (this.regionFilter === 'US' ? 'US' : 'INTL'),
-        this.newOnly && 'NEW', this.velocityOnly && 'VELO', this.burstOnly && 'BURST', this.craterOnly && 'CRATER',
+        this.newOnly && 'NEW', this.burstOnly && 'BURST', this.craterOnly && 'CRATER',
       ].filter(Boolean).join('-').replace(/[^A-Za-z0-9_-]/g, '');
       const stamp = new Date().toISOString().slice(0, 10);
       const name = `conviction_leaderboard${filterTag ? '_' + filterTag : ''}_${stamp}.csv`;
@@ -4212,10 +4207,10 @@ function app() {
         stateLabel = 'BURST';
         stateStyle = 'background: rgba(168,85,247,0.15); color: #c084fc; border: 1px solid rgba(168,85,247,0.35)';
         stateTip = `BURST move - global rank improved by ${r.global_rank_peak_30d ?? 0}+ positions in last 30d.`;
-      } else if ((r.velocity_score || 0) >= 25 && (r.etf_count || 0) >= 2) {
-        stateLabel = 'VELO';
+      } else if ((r.etf_count_delta_30d || 0) >= 2 && (r.etf_count || 0) >= 2) {
+        stateLabel = 'ACCUM';
         stateStyle = 'background: rgba(34,211,238,0.12); color: var(--cyan); border: 1px solid rgba(34,211,238,0.30)';
-        stateTip = `Top-velocity composite (${(r.velocity_score || 0).toFixed(0)}). Conviction is concentrating.`;
+        stateTip = `Accumulating - ${(r.etf_count_delta_30d || 0)} ETF positions added over 30d. Conviction is broadening.`;
       } else if (r.any_new) {
         stateLabel = 'NEW';
         stateStyle = 'background: rgba(96,165,250,0.10); color: var(--blue); border: 1px solid rgba(96,165,250,0.25)';
@@ -4231,12 +4226,9 @@ function app() {
         deltaColor = v > 0 ? 'var(--up)' : v < 0 ? 'var(--down)' : 'var(--text-3)';
       }
 
-      const v = r.velocity_score;
-      let velocity = '–', velocityColor = 'var(--text-3)';
-      if (v != null && isFinite(v)) {
-        velocity = (v > 0 ? '+' : '') + v.toFixed(1);
-        velocityColor = v >= 15 ? 'var(--up)' : v >= 5 ? '#86efac' : v <= -15 ? 'var(--down)' : v <= -5 ? '#fda4af' : 'var(--text-2)';
-      }
+      const fd = r.etf_count_delta_30d;
+      let fundsDelta = 0;
+      fundsDelta = (fd != null && isFinite(fd)) ? fd : 0;
 
       return {
         ticker: r.ticker,
@@ -4248,7 +4240,7 @@ function app() {
         stateChip: stateStyle,
         stateTip,
         etfs: r.etf_count || 0,
-        velocity, velocityColor,
+        fundsDelta,
         concentration: r.concentration_score || 0,
         sparkSvg: this._buildCompareSpark(r.ticker),
       };
@@ -4503,36 +4495,30 @@ function app() {
     },
 
     // ── Structural anomalies - priority-ordered micro-badge stack ────────
-    // Shared by both table copies. Priority: BURST > VELO > Q+ > STEALTH >
-    // DIV± > Q− > CONC > SPEC β, then legacy NEW / EARLY / CROWD so nothing
+    // Shared by both table copies. Priority: BURST > ACCUM > Q+ > PRE-HC >
+    // SBUY > CONC > SPEC β, then legacy NEW / EARLY / CROWD so nothing
     // previously surfaced in the Flag column is lost (they land in overflow).
     signalBadges(row) {
       const b = [];
       if (row.burst_30d) b.push({ k: 'burst', label: 'BURST',
         style: 'background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.30)',
-        tip: `BURST move - global rank improved by ${row.global_rank_peak_30d ?? 0}+ positions in last 30d. Currently #${row.leaderboard_rank}${row.global_rank_best_30d != null ? ` (best in window: #${row.global_rank_best_30d})` : ''}.` });
+        tip: `BURST move - global rank improved by ${row.global_rank_peak_30d ?? 0}+ positions in last 30d. Currently #${row.leaderboard_rank}${row.global_rank_best_30d != null ? ` (best in window: #${row.global_rank_best_30d})` : ''}. Early signal: strongest as a HIGH_CONVICTION precursor; expect post-peak rank mean-reversion.` });
       if (row.crater_30d) b.push({ k: 'crater', label: 'CRATER',
         style: 'background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.30)',
         tip: `CRATER signal - global rank dropped by ${row.global_rank_drop_30d ?? 0}+ positions in last 30d. Currently #${row.leaderboard_rank}. Sustained downward rank acceleration.` });
-      if ((row.velocity_score || 0) >= 25 && (row.etf_count || 0) >= 2 && !row.burst_30d)
-        b.push({ k: 'velo', label: 'VELO',
+      if ((row.etf_count_delta_30d || 0) >= 2 && !row.burst_30d)
+        b.push({ k: 'accum', label: 'ACCUM',
           style: 'background: rgba(34,211,238,0.10); color: var(--cyan); border: 1px solid rgba(34,211,238,0.25)',
-          tip: `Top-velocity composite (${(row.velocity_score || 0).toFixed(0)}). Conviction is concentrating.` });
+          tip: `Accumulating - ${(row.etf_count_delta_30d || 0)} ETF positions added over 30d. Conviction is broadening.` });
       if (row.quality_adopted_30d) b.push({ k: 'qplus', label: 'Q+',
         style: 'background: rgba(52,211,153,0.10); color: var(--up); border: 1px solid rgba(52,211,153,0.25)',
-        tip: 'Quality+ - a Quality ETF (COWZ/CALF/SPHQ) added this name in the last 30 days.' });
-      if (row.stealth_accumulation) b.push({ k: 'stealth', label: 'STEALTH',
-        style: 'background: rgba(251,191,36,0.10); color: var(--amber); border: 1px solid rgba(251,191,36,0.25)',
-        tip: 'Stealth accumulation - weight building without rank movement. Quiet loading before consensus.' });
-      if (row.conviction_divergence === 1) b.push({ k: 'divp', label: 'DIV+',
-        style: 'background: rgba(20,184,166,0.12); color: #5eead4; border: 1px solid rgba(20,184,166,0.30)',
-        tip: 'Divergence+ - gaining global rank despite falling conviction inside its own funds. Relative strength.' });
-      else if (row.conviction_divergence === -1) b.push({ k: 'divm', label: 'DIV−',
-        style: 'background: rgba(251,113,133,0.10); color: var(--down); border: 1px solid rgba(251,113,133,0.25)',
-        tip: 'Divergence− - losing global rank despite rising conviction inside its own funds. Crowding out.' });
-      if (row.quality_defected_30d) b.push({ k: 'qminus', label: 'Q−',
-        style: 'background: transparent; color: var(--down); border: 1px solid rgba(251,113,133,0.35)',
-        tip: 'Quality− - a Quality ETF dropped this name in the last 30 days.' });
+        tip: 'Quality+ - a Quality-tier ETF added this name in the last 30 days.' });
+      if (this._isPreHc(row)) b.push({ k: 'prehc', label: 'PRE-HC',
+        style: 'background: rgba(52,211,153,0.06); color: #6ee7b7; border: 1px solid rgba(52,211,153,0.20)',
+        tip: 'Pre-HC - held by exactly 3 ETFs with improving per-fund ranks over 7d. One pickup away from HIGH_CONVICTION.' });
+      if (this._isStealthBuy(row)) b.push({ k: 'sbuy', label: 'SBUY',
+        style: 'background: rgba(232,121,249,0.08); color: #f0abfc; border: 1px solid rgba(232,121,249,0.22)',
+        tip: 'Stealth Buy - 1-2 funds loading up fast (+10% avg weight in 7d) before ranks catch up.' });
       if (row.flag === 'CONCENTRATED') b.push({ k: 'conc', label: 'CONC',
         style: 'background: rgba(251,146,60,0.10); color: #fb923c; border: 1px solid rgba(251,146,60,0.30)',
         tip: 'CONCENTRATED - most of this score comes from a single ETF. Fragile if that fund rebalances.' });
@@ -4568,11 +4554,8 @@ function app() {
         return `Crater regime - rank dropped ${drop}+ positions in 30d. Sustained downward acceleration.`;
       }
       if (row.quality_adopted_30d) return 'Quality cosign added in last 30 days - institutional validation.';
-      if (row.stealth_accumulation) return 'Quiet accumulation: weight building without rank movement.';
       if ((row.velocity_z ?? 0) > 1.5) return `Velocity ${row.velocity_z.toFixed(1)}σ above universe - accumulation accelerating.`;
       if (row.flag === 'CONCENTRATED') return 'Single-fund dependency - score rests on one ETF.';
-      if (row.conviction_divergence === 1) return 'Relative strength - gaining global rank despite falling conviction inside its own funds.';
-      if (row.conviction_divergence === -1) return 'Crowding out - losing global rank despite rising conviction inside its own funds.';
       const m = {
         accelerating: 'Momentum accelerating across holders.',
         rising: 'Rising structural support across holders.',
@@ -4602,7 +4585,6 @@ function app() {
       }
 
       // FLOW
-      flow.push({ k: 'velocity', v: this.fmtVelocity(row.velocity_score), c: this.velocityColor(row.velocity_score) });
       flow.push({ k: 'wt flow 7d', v: this.fmtPct(row.avg_weight_flow_7d), c: this.flowColor(row.avg_weight_flow_7d) });
       const fd = row.etf_count_delta_30d ?? 0;
       flow.push({ k: 'funds 30d', v: fd === 0 ? '±0' : `${fd > 0 ? '+' : ''}${fd} fund${Math.abs(fd) === 1 ? '' : 's'}`,
@@ -4624,12 +4606,7 @@ function app() {
       if (row.m_conc == null) risk.push({ k: 'conc penalty', v: '–', c: 'var(--text-3)' });
       else if (row.m_conc < 1) risk.push({ w: true, v: `−${Math.round((1 - row.m_conc) * 100)}% Concentration penalty`, c: 'var(--amber)' });
       else risk.push({ k: 'conc penalty', v: 'none', c: 'var(--text-3)' });
-      const div = row.conviction_divergence;
-      risk.push({ k: 'divergence', v: div === 1 ? 'relative strength' : div === -1 ? 'crowding out' : 'aligned',
-        c: div === 1 ? 'var(--up)' : div === -1 ? 'var(--down)' : 'var(--text-3)' });
-      if (row.quality_defected_30d) risk.push({ w: true, v: 'Quality fund dropped this name in 30d', c: 'var(--down)' });
       if (row.crater_30d) risk.push({ w: true, v: `Crater signal: rank dropped ${row.global_rank_drop_30d ?? 0}+ positions in 30d`, c: 'var(--down)' });
-      if (row.stealth_accumulation) risk.push({ w: true, v: 'Stealth accumulation underway', c: 'var(--amber)' });
 
       return [
         { label: 'Structure', lines: structure },
@@ -4676,39 +4653,17 @@ function app() {
       }
     },
 
-    fmtVelocity(v) {
-      if (v == null || !isFinite(v)) return '–';
-      const n = Number(v);
-      if (Math.abs(n) < 0.5) return '0';
-      return (n > 0 ? '+' : '') + n.toFixed(1);
-    },
-
-    velocityColor(v) {
-      if (v == null || !isFinite(v)) return 'var(--text-3)';
-      const n = Number(v);
-      if (n >= 15) return 'var(--up)';
-      if (n >= 5)  return '#86efac';
-      if (n <= -15) return 'var(--down)';
-      if (n <= -5)  return '#fda4af';
-      return 'var(--text-2)';
-    },
-
-    velocityTip(row) {
+    fundsDeltaTip(row) {
       const rd7  = row.avg_rank_delta_7d ?? 0;
       const wf7  = (row.avg_weight_flow_7d ?? 0) * 100;
       const ed30 = row.etf_count_delta_30d ?? 0;
-      const sst  = row.score_streak ?? 0;
       const grd30 = row.global_rank_delta_30d ?? 0;
-      const grp30 = row.global_rank_peak_30d ?? 0;
       return `<div class="font-mono text-[10px]">`
-        + `<div style="color: var(--cyan)">VELOCITY ${this.fmtVelocity(row.velocity_score)}</div>`
+        + `<div style="color: var(--cyan)">CONVICTION FLOW</div>`
+        + `<div>net ETF positions (30d): ${ed30 >= 0 ? '+' : ''}${ed30}</div>`
         + `<div>global rank Δ (30d): ${grd30 >= 0 ? '+' : ''}${grd30} positions</div>`
-        + `<div>peak improvement (30d): +${grp30} positions</div>`
         + `<div>avg per-ETF rank Δ (7d): ${rd7 >= 0 ? '+' : ''}${rd7.toFixed(1)}</div>`
         + `<div>avg weight flow (7d): ${wf7 >= 0 ? '+' : ''}${wf7.toFixed(1)}%</div>`
-        + `<div>ETFs added (30d): ${ed30 >= 0 ? '+' : ''}${ed30}</div>`
-        + `<div>score streak: ${sst >= 0 ? '+' : ''}${sst} days</div>`
-        + (row.burst_30d ? '<div style="color: #c084fc; margin-top: 4px">BURST detected</div>' : '')
         + '</div>';
     },
 
@@ -4983,8 +4938,20 @@ document.addEventListener('alpine:init', () => {
     };
     el.addEventListener('mouseenter', show);
     el.addEventListener('mouseleave', hide);
+    el.addEventListener('focus', show);
+    el.addEventListener('blur', hide);
+    // Touch: first tap shows the tooltip, tapping elsewhere hides it.
+    el.addEventListener('touchstart', (ev) => {
+      if (window.activeTooltipEl === el) return;
+      ev.preventDefault();
+      show();
+    }, { passive: false });
     el.addEventListener('click', hide);
-    cleanup(() => { el.removeEventListener('mouseenter', show); el.removeEventListener('mouseleave', hide); el.removeEventListener('click', hide); });
+    cleanup(() => {
+      el.removeEventListener('mouseenter', show); el.removeEventListener('mouseleave', hide);
+      el.removeEventListener('focus', show); el.removeEventListener('blur', hide);
+      el.removeEventListener('click', hide);
+    });
   });
 });
 
