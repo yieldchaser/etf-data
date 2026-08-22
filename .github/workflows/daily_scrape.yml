@@ -101,9 +101,17 @@ jobs:
       # re-staged and re-committed, defeating the whole isolation strategy.
       # If migrate failed, this step is skipped and the run fails on the
       # missing `parquet_persist` outcome check, preserving the CSV on disk.
+      # Year-rollover guard: if migrate spilled locked prior-year rows to
+      # all_history_refused.csv (January T-1 dates hitting the immutable
+      # partition), the CSV is KEPT for the retry/fold path — wiping it
+      # would permanently erase those days (audit: fold-loss time bomb).
       - name: Wipe local all_history.csv (post-persist)
         if: steps.parquet_persist.outcome == 'success'
         run: |
+          if [ -s data/all_history_refused.csv ]; then
+            echo "⚠️ Locked prior-year rows pending fold (data/all_history_refused.csv) — keeping all_history.csv so no day is lost."
+            exit 0
+          fi
           rm -f data/all_history.csv
           echo "✓ Wiped local data/all_history.csv — Parquet store is the sole history."
 

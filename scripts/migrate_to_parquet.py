@@ -184,7 +184,10 @@ def migrate(
         return 1
 
     print(f"Reading: {source}")
-    df = pd.read_csv(source)
+    # keep_default_na=False aligns with the bridge's reader convention
+    # (scraper.py:193/362/599): "NA"/"NULL" tickers stay verbatim strings,
+    # keeping composite keys stable and hydrate byte-stability intact.
+    df = pd.read_csv(source, keep_default_na=False, na_values=[])
     print(f"  {len(df):,} rows · {df['ETF_Ticker'].nunique()} ETFs")
 
     df["Holdings_As_Of"] = pd.to_datetime(df["Holdings_As_Of"], errors="coerce")
@@ -210,6 +213,7 @@ def migrate(
 
     total_written = 0
     refusals: list[int] = []
+    refused_frames: list = []
 
     for yr in years:
         yr_int   = int(yr)
@@ -228,6 +232,7 @@ def migrate(
             print(f"  LOCKED  year={yr_int}: past-year partition is contractually immutable. "
                   f"Skipping write (use --allow-historical-rewrite to override).")
             refusals.append(yr_int)
+            refused_frames.append(yr_df)
             continue
         if is_locked and allow_historical_rewrite:
             print(f"  ⚠️  REWRITING year={yr_int}: past-year partition (manifest will be updated). "
@@ -258,6 +263,22 @@ def migrate(
     # Schema bookkeeping & ISO timestamp
     manifest.setdefault("schema_version", 1)
     _write_manifest(dest, manifest)
+
+    if refusals and refused_frames:
+        # Zero-loss guarantee: locked-year rows survive in a committed sidecar.
+        refused_df = pd.concat(refused_frames, ignore_index=True)
+        spill = source.parent / "all_history_refused.csv"
+        if spill.exists():
+            prev = pd.read_csv(spill, keep_default_na=False, na_values=[])
+            refused_df = pd.concat([prev, refused_df], ignore_index=True)
+            if {"ETF_Ticker", "ticker", "Holdings_As_Of"} <= set(refused_df.columns):
+                refused_df = refused_df.drop_duplicates(
+                    subset=["ETF_Ticker", "ticker", "Holdings_As_Of"], keep="last"
+                )
+        refused_df.to_csv(spill, index=False)
+        print(f"\n  ⚠️  {len(refused_df):,} locked-year row(s) spilled to {spill}")
+        print(f"      Fold them with:  python scripts/migrate_to_parquet.py "
+              f"--source {spill} --allow-historical-rewrite")
 
     print(f"\nMigration complete: {total_written:,} rows; "
           f"{len(refusals)} past-year partition(s) skipped (immutable).")

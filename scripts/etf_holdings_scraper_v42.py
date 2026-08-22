@@ -37,12 +37,19 @@ def prev_biz_day(d=None, n=1):
             d -= timedelta(days=1)
     return d
 
+# Module-level holiday cache (audit LOW): _clamp_to_prev_biz_day used to
+# construct a USFederalHolidayCalendar on every call — O(rows) waste when
+# applied per-row over thousands of holdings.
+_HOLIDAYS_CACHE: frozenset | None = None
+
+
 def _clamp_to_prev_biz_day(date_str: str) -> str:
     """
     Clamp a date string to the most recent US business day <= today.
     Rolls back through weekends and US federal holidays so that
     Holdings_As_Of never lands on a Saturday, Sunday, or market holiday.
     """
+    global _HOLIDAYS_CACHE
     try:
         d = pd.Timestamp(date_str).date()
     except Exception:
@@ -50,13 +57,15 @@ def _clamp_to_prev_biz_day(date_str: str) -> str:
     today = date.today()
     if d > today:
         d = today
-    from pandas.tseries.holiday import USFederalHolidayCalendar
-    _holidays = set(
-        USFederalHolidayCalendar()
-        .holidays(start='2020-01-01', end='2035-12-31')
-        .strftime('%Y-%m-%d')
-        .tolist()
-    )
+    if _HOLIDAYS_CACHE is None:
+        from pandas.tseries.holiday import USFederalHolidayCalendar
+        _HOLIDAYS_CACHE = frozenset(
+            USFederalHolidayCalendar()
+            .holidays(start='2020-01-01', end='2035-12-31')
+            .strftime('%Y-%m-%d')
+            .tolist()
+        )
+    _holidays = _HOLIDAYS_CACHE
     while d.weekday() >= 5 or d.strftime('%Y-%m-%d') in _holidays:
         d -= timedelta(days=1)
     return d.strftime('%Y-%m-%d')
@@ -1198,7 +1207,10 @@ def fetch_joet() -> pd.DataFrame:
 
     hrow = next(
         (i for i, row in raw.iterrows()
-         if 'Ticker' in row.values or 'Security Id' in row.values), 1
+         # Containment match (audit LOW): exact 'Ticker' equality silently
+         # defaulted to header row 1 when the issuer renamed the column to
+         # e.g. "Ticker Symbol", producing 0 bridged rows.
+         if any('Ticker' in str(v) or 'Security Id' in str(v) for v in row.values)), 1
     )
     print(f"  JOET: header at row {hrow}")
     df = pd.read_excel(io.BytesIO(r.content), engine='xlrd', skiprows=hrow, header=0)
@@ -1445,7 +1457,9 @@ def fetch_avsc() -> pd.DataFrame:
         if avsc_aod:
             df['as_of_date'] = avsc_aod
         if 'Ticker' in df.columns:
-            df = df[df['Ticker'].notna() & df['Ticker'].str.match(r'^[A-Z]{1,5}$', na=False)]
+            # Allow class-share separators (BRK.B, BF-B) — the old strict
+            # ^[A-Z]{1,5}$ silently dropped them from the DOM fallback path.
+            df = df[df['Ticker'].notna() & df['Ticker'].str.match(r'^[A-Z]{1,5}[.\-]?[A-Z]?$', na=False)]
         print(f"  AVSC: ✅ {len(df)} rows from DOM | as_of_date={avsc_aod}")
         return df
 

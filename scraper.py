@@ -598,11 +598,23 @@ def update_giant_history(new_dfs):
             # remain stable across consecutive bridge invocations.
             existing_data = pd.read_csv(GIANT_HISTORY_FILE, keep_default_na=False, na_values=[])
             combined = pd.concat([existing_data, new_data])
-        except: combined = new_data
+        except Exception as e:
+            # Bug-hunt CRITICAL fix: the old bare `except: combined = new_data`
+            # REPLACED the entire 400k-row history with only today's rows
+            # whenever the read failed (file lock by Excel/AV, or a CSV
+            # truncated by an earlier mid-write crash) — silently, exit 0.
+            # Fail loud and leave the existing file untouched instead.
+            print(f"    ❌ FATAL: could not read {GIANT_HISTORY_FILE}: {e}")
+            print(f"    Refusing to overwrite — existing history preserved. Fix the reader error and re-run.")
+            return
     else:
         combined = new_data
     combined.drop_duplicates(subset=['ETF_Ticker', 'ticker', 'Holdings_As_Of'], keep='last', inplace=True)
-    combined.to_csv(GIANT_HISTORY_FILE, index=False)
+    # Atomic write: a crash mid-to_csv previously left a truncated CSV whose
+    # next read failure triggered the wipe path above.
+    tmp_path = f"{GIANT_HISTORY_FILE}.{os.getpid()}.tmp"
+    combined.to_csv(tmp_path, index=False)
+    os.replace(tmp_path, GIANT_HISTORY_FILE)
     print(f"    ✅ Giant History Saved: {len(combined)} total rows.")
 
 def fetch_pacer_with_proxies(url):
@@ -758,6 +770,19 @@ def run_extended_scrapers():
         print("⚠️  Bridge: 0 valid rows")
         return
 
+    # Step 7b — completeness tripwire (audit HIGH): a single v42 source
+    # failing (JH PDF layout change, site redesign) previously shrank the
+    # canonical output silently — those ETFs froze forever with green CI.
+    # Warn-only: fault isolation stays, but the gap is now visible.
+    try:
+        present = set(cleaned_df["ETF_Ticker"].unique())
+        missing = sorted(V42_ETFS - present)
+        if missing:
+            print(f"    ⚠️ V42 COMPLETENESS: {len(missing)} extended fund(s) MISSING "
+                  f"from canonical output: {', '.join(missing)}")
+    except Exception:
+        pass  # tripwire must never break the bridge
+
     # Step 8 — fan out to all three sinks.
     bridge_write_all_sinks(cleaned_df)
 
@@ -912,7 +937,12 @@ def main():
 
         except Exception as e: print(f"    ❌ Error: {e}")
 
-    driver.quit()
+    # Teardown AFTER the data sinks below had their chance — a raising
+    # driver.quit() used to discard a fully-scraped master_list.
+    try:
+        driver.quit()
+    except Exception as e:
+        print(f"    ⚠️ driver.quit() failed (non-fatal): {e}")
 
     # --- SAVE HISTORY FILES ---
     if master_list:
