@@ -14,6 +14,14 @@ from typing import Iterable
 from .scoring import Config, compute_leaderboard
 
 
+def _nz(v) -> float:
+    """Coerce None/NaN to 0.0. NaN is truthy, so the old `x or 0.0` idiom
+    leaked NaN into velocity_score (serialized as null in flag_history.json
+    for ~30% of entries)."""
+    f = float(v) if v is not None else 0.0
+    return f if np.isfinite(f) else 0.0
+
+
 def snapshot_dates(history: pd.DataFrame, lookback_days: int) -> list[pd.Timestamp]:
     """Distinct Holdings_As_Of values in the last `lookback_days` days, ascending."""
     s = pd.to_datetime(history["Holdings_As_Of"], errors="coerce").dropna()
@@ -795,8 +803,8 @@ def signal_history(
                 entry["st"] = 1
 
             # dv — conviction divergence
-            sdp = float(sdp_series.get(tkr, 0.0) or 0.0) if sdp_series is not None else 0.0
-            grd = float(grd30_series.get(tkr, 0.0) or 0.0) if grd30_series is not None else 0.0
+            sdp = _nz(sdp_series.get(tkr)) if sdp_series is not None else 0.0
+            grd = _nz(grd30_series.get(tkr)) if grd30_series is not None else 0.0
             dv = 0
             if sdp > 0 and grd < 0:
                 dv = -1
@@ -817,8 +825,8 @@ def signal_history(
 
             # vs — velocity_score
             grd30  = grd
-            peak30 = float(peak30_series.get(tkr, 0.0) or 0.0) if peak30_series is not None else 0.0
-            ec_d30 = float(ec_delta_series.get(tkr, 0.0) or 0.0) if ec_delta_series is not None else 0.0
+            peak30 = _nz(peak30_series.get(tkr)) if peak30_series is not None else 0.0
+            ec_d30 = _nz(ec_delta_series.get(tkr)) if ec_delta_series is not None else 0.0
             streak_val = 0
             if tkr in streak_ticker_map and streak_arr is not None and sc_di >= 0:
                 ti_sc = streak_ticker_map[tkr]
