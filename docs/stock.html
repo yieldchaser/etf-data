@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Conviction Labs · Stock Detail</title>
   <meta name="description" content="Per-stock conviction detail: score history, ETF holdings timeline, and rank deltas.">
+  <link rel="canonical" href="https://yieldchaser.github.io/etf-data/stock.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Conviction Labs">
+  <meta property="og:title" content="Conviction Labs · Stock Detail">
+  <meta property="og:description" content="Per-stock conviction detail: score history, ETF holdings timeline, and rank deltas.">
+  <meta property="og:url" content="https://yieldchaser.github.io/etf-data/stock.html">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Conviction Labs · Stock Detail">
+  <meta name="twitter:description" content="Per-stock conviction detail: score history, ETF holdings timeline, and rank deltas.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2309090b'/%3E%3Cpath d='M6 22L13 14.5L18 18.5L26 9.5' fill='none' stroke='%2322d3ee' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='26' cy='9.5' r='2.5' fill='%2322d3ee'/%3E%3C/svg%3E">
   <meta name="color-scheme" content="dark">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -40,6 +49,9 @@
     [x-cloak] { display: none !important; }
     @keyframes pulse-fade { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
     .pulse-load { animation: pulse-fade 1.4s ease-in-out infinite; }
+    @media (prefers-reduced-motion: reduce) {
+      .pulse-load { animation: none; }
+    }
     .tab-active { background: rgba(34, 211, 238, 0.08); color: var(--cyan); border-color: rgba(34, 211, 238, 0.3); }
     /* Singleton tooltip */
     #tt { position: fixed; z-index: 9999; pointer-events: none; opacity: 0;
@@ -106,6 +118,12 @@
 </head>
 <body>
 
+<noscript>
+  <div style="max-width:720px;margin:48px auto;padding:16px 20px;border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#e4e4e7;background:#0a0a0a;font-family:system-ui,sans-serif;font-size:14px">
+    Conviction Labs requires JavaScript to render its data views. Please enable JavaScript to see stock conviction details.
+  </div>
+</noscript>
+
 <div x-data="stockApp()" x-init="load()" x-cloak class="max-w-[1500px] mx-auto px-3 sm:px-5 py-4 sm:py-6">
 
   <!-- HEADER -->
@@ -162,10 +180,26 @@
     <div class="text-xs" x-text="ticker ? `Fetching data for ${ticker}` : 'No ticker specified'"></div>
   </div>
 
-  <!-- NOT FOUND STATE -->
-  <div x-show="!loading && !found && ticker" class="text-center py-20">
+  <!-- LOAD ERROR STATE (network / fetch failure - distinct from unknown ticker) -->
+  <div x-show="!loading && loadError" class="text-center py-20">
+    <div class="text-base mb-2" style="color: var(--down)">Couldn't load data — check connection</div>
+    <div class="text-xs mb-4" style="color: var(--text-3)">The data files could not be fetched. This is usually a network issue.</div>
+    <button @click="retryLoad()"
+            class="text-xs px-3 py-1.5 rounded-md border transition hover:border-cyan-500/40"
+            style="color: var(--cyan); border-color: rgba(34,211,238,0.3); background: transparent;">Retry</button>
+  </div>
+
+  <!-- NOT FOUND STATE (ticker resolved, but not in the tracked universe) -->
+  <div x-show="!loading && !loadError && !found && ticker" class="text-center py-20">
     <div class="text-base mb-2" style="color: var(--down)" x-text="`'${ticker}' not found`"></div>
-    <div class="text-xs mb-4" style="color: var(--text-3)">This ticker may not be in the top 300. Check the leaderboard.</div>
+    <div class="text-xs mb-4" style="color: var(--text-3)">
+      <template x-if="leaderboardRows">
+        <span>Not in the tracked universe of <span class="num font-mono" x-text="leaderboardRows"></span> ETFs. Check the leaderboard.</span>
+      </template>
+      <template x-if="!leaderboardRows">
+        <span>Not in the tracked universe. Check the full tracked universe in the leaderboard.</span>
+      </template>
+    </div>
     <a href="index.html" class="text-xs px-3 py-1.5 rounded-md border transition" style="color: var(--cyan); border-color: rgba(34,211,238,0.3); text-decoration: none;">← Back to Dashboard</a>
   </div>
 
@@ -212,22 +246,7 @@
              :style="`color: ${leaderboardRow?.score_delta_pct > 0 ? 'var(--up)' : (leaderboardRow?.score_delta_pct < 0 ? 'var(--down)' : 'var(--text-2)')}`"
              x-text="leaderboardRow ? (leaderboardRow.score_delta_pct >= 0 ? '+' : '') + (leaderboardRow.score_delta_pct * 100).toFixed(1) + '%' : '—'"></div>
       </div>
-      <!-- 7. Velocity -->
-      <div class="rounded-lg px-3.5 py-3 border transition-colors duration-200 hover:border-zinc-800" style="background: var(--surface); border-color: var(--border)"
-           x-tooltip="'Composite velocity score: institutional accumulation rate-of-change'">
-        <div class="flex items-center justify-between">
-          <div class="label">Velocity</div>
-          <div class="text-[9px] px-1.5 py-0.5 rounded font-mono font-bold leading-none bg-purple-500/10 text-purple-400 border border-purple-500/25 shrink-0"
-               x-show="leaderboardRow?.burst_30d">BURST</div>
-          <div class="text-[9px] px-1.5 py-0.5 rounded font-mono font-bold leading-none shrink-0"
-               style="background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.3)"
-               x-show="leaderboardRow?.crater_30d">CRATER</div>
-        </div>
-        <div class="text-2xl font-medium num font-mono mt-1"
-             :style="`color: ${velocityColor(leaderboardRow?.velocity_score)}`"
-             x-text="fmtVelocity(leaderboardRow?.velocity_score)"></div>
-      </div>
-      <!-- 8. ETFs Added (30d) -->
+      <!-- 7. ETFs Added (30d) -->
       <div class="rounded-lg px-3.5 py-3 border transition-colors duration-200 hover:border-zinc-800" style="background: var(--surface); border-color: var(--border)"
            x-tooltip="'Net change in number of ETFs holding this ticker over the last 30 days'">
         <div class="label">ETFs Added (30d)</div>
@@ -292,7 +311,7 @@
         </template>
 
         <!-- Separator -->
-        <div class="h-3 w-px bg-zinc-800 hidden sm:block mx-0.5" x-show="leaderboardRow?.any_new || leaderboardRow?.burst_30d || leaderboardRow?.crater_30d || (leaderboardRow?.velocity_score || 0) >= 25 || leaderboardRow?.quality_adopted_30d || leaderboardRow?.quality_defected_30d || (leaderboardRow?.tier_breadth || 0) >= 2"></div>
+        <div class="h-3 w-px bg-zinc-800 hidden sm:block mx-0.5" x-show="leaderboardRow?.any_new || leaderboardRow?.burst_30d || leaderboardRow?.crater_30d || leaderboardRow?.quality_adopted_30d || (leaderboardRow?.tier_breadth || 0) >= 2"></div>
 
         <!-- NEW -->
         <span x-show="leaderboardRow?.any_new" class="chip"
@@ -306,18 +325,10 @@
         <span x-show="leaderboardRow?.crater_30d" class="chip"
               x-tooltip="`CRATER signal - global rank dropped by ${leaderboardRow?.global_rank_drop_30d}+ positions in last 30d. Sustained downward rank acceleration.`"
               style="background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.30)">CRATER</span>
-        <!-- VELO -->
-        <span x-show="(leaderboardRow?.velocity_score || 0) >= 25 && !leaderboardRow?.burst_30d" class="chip"
-              x-tooltip="`Top-velocity composite (${(leaderboardRow?.velocity_score || 0).toFixed(0)}). Conviction is concentrating.`"
-              style="background: rgba(34,211,238,0.10); color: var(--cyan); border: 1px solid rgba(34,211,238,0.25)">VELO</span>
         <!-- Quality+ -->
         <span x-show="leaderboardRow?.quality_adopted_30d" class="chip"
               x-tooltip="'Quality+ - A free-cash-flow / quality screen ETF (COWZ/CALF/SPHQ) added this name in the last 30 days. Strong fundamentals confirmation.'"
               style="background: rgba(20,184,166,0.12); color: #5eead4; border: 1px solid rgba(20,184,166,0.30)">Quality+</span>
-        <!-- Quality- -->
-        <span x-show="leaderboardRow?.quality_defected_30d" class="chip"
-              x-tooltip="'Quality− - A quality screen ETF (COWZ/CALF/SPHQ) dropped this name in the last 30 days. Possible fundamentals warning.'"
-              style="background: rgba(251,113,133,0.10); color: #fda4af; border: 1px solid rgba(251,113,133,0.25)">Quality−</span>
         <!-- Tier breadth -->
         <span x-show="(leaderboardRow?.tier_breadth || 0) >= 2" class="chip"
               x-tooltip="`Held by ${leaderboardRow?.tier_breadth} distinct strategy types (Scout/Quant/Quality/Trend/Core)`"
@@ -352,6 +363,15 @@
             <span class="chip" :style="tierChipStyle(t)" x-text="t"></span>
           </template>
         </div>
+
+        <!-- Freshness: holdings as-of date + build timestamp (from metadata.json) -->
+        <template x-if="metaAsOf || metaBuiltUtc">
+          <div class="h-4 w-px bg-zinc-800 mx-1 hidden sm:block"></div>
+        </template>
+        <span x-show="metaAsOf" class="font-mono text-[10px]" style="color: var(--text-3)"
+              x-text="`Holdings as-of ${metaAsOf}`"></span>
+        <span x-show="metaBuiltUtc" class="font-mono text-[10px]" style="color: var(--text-3)"
+              x-text="`Built ${fmtBuilt(metaBuiltUtc)}`"></span>
       </div>
     </div>
 
@@ -541,12 +561,8 @@
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(168,85,247,0.85)"></span> BURST</span>
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(248,113,113,0.85)"></span> CRATER</span>
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(52,211,153,0.85)"></span> HC</span>
-          <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(34,211,238,0.65)"></span> VELO</span>
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(251,191,36,0.7)"></span> SPEC</span>
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(96,165,250,0.75)"></span> NEW</span>
-          <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(251,191,36,0.55)"></span> STEALTH</span>
-          <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(94,234,212,0.75)"></span> DIV+</span>
-          <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(251,113,133,0.7)"></span> DIV−</span>
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(52,211,153,0.6)"></span> QUALITY</span>
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(251,146,60,0.75)"></span> CONC</span>
           <span class="flex items-center gap-1" style="color: var(--text-3)"><span class="inline-block w-6 h-px" style="background: rgba(255,255,255,0.5)"></span> Rank</span>
@@ -578,12 +594,8 @@
           <span x-show="timelineStats.burstDays > 0" style="color: #c084fc" x-text="`BURST · ${timelineStats.burstDays}d`"></span>
           <span x-show="timelineStats.craterDays > 0" style="color: #f87171" x-text="`CRATER · ${timelineStats.craterDays}d`"></span>
           <span x-show="timelineStats.hcDays > 0" style="color: var(--up)" x-text="`HC · ${timelineStats.hcDays}d`"></span>
-          <span x-show="timelineStats.veloDays > 0" style="color: var(--cyan)" x-text="`VELO · ${timelineStats.veloDays}d`"></span>
           <span x-show="timelineStats.specDays > 0" style="color: var(--amber)" x-text="`SPEC · ${timelineStats.specDays}d`"></span>
           <span x-show="timelineStats.newDays > 0" style="color: rgba(96,165,250,0.9)" x-text="`NEW · ${timelineStats.newDays}d`"></span>
-          <span x-show="timelineStats.stealthDays > 0" style="color: var(--amber)" x-text="`STEALTH · ${timelineStats.stealthDays}d`"></span>
-          <span x-show="timelineStats.divPlusDays > 0" style="color: #5eead4" x-text="`DIV+ · ${timelineStats.divPlusDays}d`"></span>
-          <span x-show="timelineStats.divMinusDays > 0" style="color: var(--down)" x-text="`DIV− · ${timelineStats.divMinusDays}d`"></span>
           <span x-show="timelineStats.qualityDays > 0" style="color: var(--up)" x-text="`QUALITY · ${timelineStats.qualityDays}d`"></span>
           <span x-show="timelineStats.concDays > 0" style="color: #fb923c" x-text="`CONC · ${timelineStats.concDays}d`"></span>
           <span x-show="timelineStats.neutralDays > 0" style="color: var(--text-3)" x-text="`Neutral · ${timelineStats.neutralDays}d`"></span>
@@ -602,7 +614,6 @@
             </template>
           </div>
           <div class="text-[10px] mt-0.5 font-mono" style="color: var(--text-2)" x-text="timelineHoverRank"></div>
-          <div x-show="timelineHoverVelocity !== null" class="text-[10px] font-mono" style="color: var(--cyan)" x-text="timelineHoverVelocity"></div>
         </div>
       </div>
     </div>
@@ -644,6 +655,11 @@
           <div x-show="scoreHistory.length >= 2 && ci !== null && ci < scoreHistory.length"
                class="absolute rounded-full pointer-events-none"
                :style="`left: ${cx}px; top: ${sparkY(scoreHistory[ci]?.s ?? 0, scoreHistory)}px; width: 8px; height: 8px; margin-left: -4px; margin-top: -4px; background: var(--cyan); border: 1.5px solid #000; box-sizing: border-box;`"></div>
+          <!-- Min/max y-axis labels (HTML overlay - SVG text would stretch under preserveAspectRatio=none) -->
+          <div x-show="scoreHistMax !== null" class="absolute left-0 top-0 text-[9px] font-mono px-1 rounded-b pointer-events-none"
+               style="color: var(--text-3); background: rgba(0,0,0,0.45)" x-text="'max ' + scoreHistMax?.toFixed(1)"></div>
+          <div x-show="scoreHistMin !== null" class="absolute left-0 bottom-0 text-[9px] font-mono px-1 rounded-t pointer-events-none"
+               style="color: var(--text-3); background: rgba(0,0,0,0.45)" x-text="'min ' + scoreHistMin?.toFixed(1)"></div>
         </div>
         <!-- Crosshair tooltip label -->
         <div x-show="ci !== null && scoreHistory[ci]"
@@ -655,9 +671,9 @@
         </div>
         <!-- X-axis date labels -->
         <div class="flex justify-between text-[10px] font-mono mt-1" style="color: var(--text-3)">
-          <span x-text="scoreHistory[0]?.d?.slice(5) || ''"></span>
+          <span x-text="scoreHistory[0]?.d?.slice(0, 7) || ''"></span>
           <span x-text="scoreHistory[Math.floor(scoreHistory.length/2)]?.d?.slice(5) || ''"></span>
-          <span x-text="scoreHistory[scoreHistory.length-1]?.d?.slice(5) || ''"></span>
+          <span x-text="scoreHistory[scoreHistory.length-1]?.d?.slice(0, 7) || ''"></span>
         </div>
       </div>
     </div>
@@ -805,11 +821,14 @@
   </div><!-- /main content -->
 
   <!-- FOOTER -->
-  <footer class="mt-6 pt-4 text-xs flex gap-4 flex-wrap" style="border-top: 1px solid var(--border); color: var(--text-3)">
+  <footer class="mt-6 pt-4 text-xs flex gap-4 flex-wrap items-center" style="border-top: 1px solid var(--border); color: var(--text-3)">
     <span>Conviction Labs · yieldchaser/etf-data</span>
     <a href="index.html" style="color: var(--cyan); text-decoration: none;">← Dashboard</a>
     <a href="markets.html" style="color: var(--text-3); text-decoration: none;">Markets</a>
     <a href="sim.html" style="color: var(--text-3); text-decoration: none;">Simulator</a>
+    <a href="backtest.html" style="color: var(--text-3); text-decoration: none;">Backtest</a>
+    <a href="methodology.html" style="color: var(--text-3); text-decoration: none;">Methodology</a>
+    <span class="sm:ml-auto">Data for research only · not investment advice</span>
   </footer>
 
 </div><!-- /app -->
@@ -822,6 +841,12 @@ function stockApp() {
     switchQ: '',
     loading: true,
     found: false,
+    loadError: false,      // network/fetch failure (distinct from unknown ticker)
+    leaderboardRows: null, // metadata.leaderboard_rows - universe size for not-found copy
+    metaAsOf: '',          // metadata.latest_holdings_as_of
+    metaBuiltUtc: '',      // metadata.generated_at_utc
+    universeJump: null,    // metadata.universe_expansion.largest_jump {date,funds_before,funds_after}
+    fundCountByDate: [],   // metadata.universe_expansion.fund_count_by_date [{date,funds}]
     scoreHistory: [],      // [{d, s}]
     lbRankSeries: [],      // [{d, rank, total, x, y}] - computed once in load()
     holdingsHistory: {},   // {ETF: [{d, r, w}]}
@@ -904,9 +929,9 @@ function stockApp() {
         // (~13KB, contains scoreHistory/rankHistory/holdingsHistory) is
         // missing or incomplete — so they're now fetched lazily in phase 2.
         const [lbData, hlData, tickerHist] = await Promise.all([
-          fetch('data/leaderboard.json', { cache: 'no-store' }).then(r => r.json()),
-          fetch('data/holdings_latest.json', { cache: 'no-store' }).then(r => r.json()).catch(() => []),
-          fetch(`data/history/${safeStem}.json`, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null),
+          fetch('data/leaderboard.json').then(r => r.json()),
+          fetch('data/holdings_latest.json').then(r => r.json()).catch(() => []),
+          fetch(`data/history/${safeStem}.json`).then(r => r.ok ? r.json() : null).catch(() => null),
         ]);
 
         // Phase 2 — lazy fallback fetches (skipped entirely for the ~100% of
@@ -918,8 +943,8 @@ function stockApp() {
           const needScores = !(tickerHist && tickerHist.scoreHistory && tickerHist.rankHistory);
           const needHH = !(tickerHist && tickerHist.holdingsHistory);
           [scoreData, hhData] = await Promise.all([
-            needScores ? fetch('data/score_history.json', { cache: 'no-store' }).then(r => r.json()).catch(() => ({})) : {},
-            needHH ? fetch('data/holdings_history.json', { cache: 'no-store' }).then(r => r.json()).catch(() => ({})) : {},
+            needScores ? fetch('data/score_history.json').then(r => r.json()).catch(() => ({})) : {},
+            needHH ? fetch('data/holdings_history.json').then(r => r.json()).catch(() => ({})) : {},
           ]);
         }
 
@@ -936,7 +961,7 @@ function stockApp() {
         // Kick off the remaining 3 fetches in parallel (BUG-14: previously
         // sequential — metadata → flag_history → details = 3 round-trips).
         // Each resolves independently; the detail fetch drives stockPending.
-        const metaP = fetch('data/metadata.json', { cache: 'no-store' })
+        const metaP = fetch('data/metadata.json')
           .then(r => r.json())
           .then(meta => {
             // Support new flat etfs[] format AND old tiers[] format
@@ -946,6 +971,12 @@ function stockApp() {
             } else {
               (meta.config_snapshot?.tiers || []).forEach(t => t.etfs.forEach(e => this.tierMap[e] = t.name));
             }
+            // Freshness + universe-expansion context for charts and copy
+            this.leaderboardRows = meta.leaderboard_rows || null;
+            this.metaAsOf = meta.latest_holdings_as_of || '';
+            this.metaBuiltUtc = meta.generated_at_utc || '';
+            this.universeJump = meta.universe_expansion?.largest_jump || null;
+            this.fundCountByDate = meta.universe_expansion?.fund_count_by_date || [];
           })
           .catch(() => {});
 
@@ -1007,7 +1038,7 @@ function stockApp() {
 
         const flagP = (tickerHist && tickerHist.flagHistory)
           ? Promise.resolve(tickerHist.flagHistory)
-          : fetch('data/flag_history.json', { cache: 'no-store' })
+          : fetch('data/flag_history.json')
               .then(r => r.json()).then(d => d[this.ticker] || []).catch(() => []);
         const detailP = fetch(`data/details/${safeStem}.json`)
           .then(r => r.ok ? r.json() : Promise.reject(r.status));
@@ -1033,10 +1064,20 @@ function stockApp() {
 
         this.found = this.leaderboardRow !== null || this.scoreHistory.length > 0 || Object.keys(this.holdingsHistory).length > 0;
       } catch (e) {
+        // Distinguish "data loaded but ticker unknown" from "fetch/network failed"
         console.error('Stock detail load error:', e);
+        this.loadError = true;
       } finally {
         this.loading = false;
       }
+    },
+
+    retryLoad() {
+      this.loadError = false;
+      this.found = false;
+      this.leaderboardRow = null;
+      this.loading = true;
+      this.load();
     },
 
     _stockFilter() {
@@ -1174,6 +1215,14 @@ function stockApp() {
 
     // SVG sparkline helpers
     sparkX(i, n) { return (i / Math.max(1, n - 1)) * 900; },
+    get scoreHistMax() {
+      const vals = this.scoreHistory.map(p => p.s).filter(v => Number.isFinite(v));
+      return vals.length ? Math.max(...vals) : null;
+    },
+    get scoreHistMin() {
+      const vals = this.scoreHistory.map(p => p.s).filter(v => Number.isFinite(v));
+      return vals.length ? Math.min(...vals) : null;
+    },
     sparkY(s, series) {
       if (!series.length) return 60;
       const vals = series.map(x => x.s).filter(v => Number.isFinite(v));
@@ -1286,21 +1335,6 @@ function stockApp() {
 
     // ── Signal Timeline helpers ──────────────────────────────────────────
 
-    // Prefer stored per-day fields; fall back to client-side reconstruction for old data.
-    _isVeloAt(i) {
-      const fh = this.flagHistory || [];
-      const e = fh[i];
-      if (!e) return false;
-      // Prefer stored vs field (new data)
-      if (e.vs != null) return Number(e.vs) >= 25;
-      // Fallback: rank improved by 5+ positions over previous 7 entries (old data)
-      if (i < 7) return false;
-      const cur = e.rank;
-      const prev = fh[i - 7]?.rank;
-      if (!cur || !prev) return false;
-      return (prev - cur) >= 5;
-    },
-
     _isBurstAt(i) {
       const fh = this.flagHistory || [];
       const e = fh[i];
@@ -1319,11 +1353,9 @@ function stockApp() {
     },
 
     timelineTooltip(entry, i) {
-      const isVelo = this._isVeloAt(i);
       const isBurst = this._isBurstAt(i);
       let state = entry.flag || 'Neutral';
       if (isBurst) state = 'BURST';
-      else if (isVelo && state === '') state = 'VELO';
       return `'${entry.d}<br>State: ${state}<br>Rank: #${entry.rank}'`;
     },
 
@@ -1345,14 +1377,11 @@ function stockApp() {
     // Compute which optional lanes are active for this ticker (have ≥1 active day)
     get _activeLaneKeys() {
       const fh = this.flagHistory || [];
-      const keys = new Set(['burst', 'crater', 'hc', 'velo', 'spec']);  // always shown
+      const keys = new Set(['burst', 'crater', 'hc', 'spec']);  // always shown
       for (let i = 0; i < fh.length; i++) {
         const e = fh[i];
         if (e.n) keys.add('newentry');
-        if (e.st) keys.add('stealth');
-        if (e.dv === 1)  keys.add('divplus');
-        if (e.dv === -1) keys.add('divminus');
-        if (e.qa || e.qd) keys.add('quality');
+        if (e.qa) keys.add('quality');
         if (e.flag === 'CONCENTRATED') keys.add('conc');
       }
       return keys;
@@ -1360,32 +1389,27 @@ function stockApp() {
 
     get timelineStats() {
       const fh = this.flagHistory || [];
-      let hcDays = 0, veloDays = 0, burstDays = 0, craterDays = 0, specDays = 0, neutralDays = 0;
-      let newDays = 0, stealthDays = 0, divPlusDays = 0, divMinusDays = 0;
+      let hcDays = 0, burstDays = 0, craterDays = 0, specDays = 0, neutralDays = 0;
+      let newDays = 0;
       let qualityDays = 0, concDays = 0;
       for (let i = 0; i < fh.length; i++) {
         const e = fh[i];
         const isB = this._isBurstAt(i);
         const isCr = !!e.crater;
-        const isV = this._isVeloAt(i);
         const flag = e.flag;
         if (isB) burstDays++;
         if (isCr) craterDays++;
         if (flag === 'HIGH_CONVICTION') hcDays++;
-        if (isV) veloDays++;
         if (flag === 'SPECULATIVE_BETA') specDays++;
         if (e.n) newDays++;
-        if (e.st) stealthDays++;
-        if (e.dv === 1) divPlusDays++;
-        if (e.dv === -1) divMinusDays++;
-        if (e.qa || e.qd) qualityDays++;
+        if (e.qa) qualityDays++;
         if (flag === 'CONCENTRATED') concDays++;
-        const anySignal = isB || isCr || flag === 'HIGH_CONVICTION' || isV || flag === 'SPECULATIVE_BETA'
-          || e.n || e.st || e.dv || e.qa || e.qd || flag === 'CONCENTRATED';
+        const anySignal = isB || isCr || flag === 'HIGH_CONVICTION' || flag === 'SPECULATIVE_BETA'
+          || e.n || e.qa || flag === 'CONCENTRATED';
         if (!anySignal) neutralDays++;
       }
-      return { hcDays, veloDays, burstDays, craterDays, specDays, neutralDays,
-               newDays, stealthDays, divPlusDays, divMinusDays, qualityDays, concDays };
+      return { hcDays, burstDays, craterDays, specDays, neutralDays,
+               newDays, qualityDays, concDays };
     },
 
     // Five evenly-spaced date labels for the timeline x-axis
@@ -1409,14 +1433,9 @@ function stockApp() {
       if (!e) return { label: 'Neutral', color: 'rgba(255,255,255,0.5)' };
       if (this._isBurstAt(i)) return { label: 'BURST', color: '#c084fc' };
       if (e.flag === 'HIGH_CONVICTION') return { label: 'HC', color: 'var(--up)' };
-      if (this._isVeloAt(i)) return { label: 'VELO', color: 'var(--cyan)' };
       if (e.flag === 'SPECULATIVE_BETA') return { label: 'SPEC β', color: 'var(--amber)' };
       if (e.n) return { label: 'NEW', color: 'rgba(96,165,250,0.9)' };
-      if (e.st) return { label: 'STEALTH', color: 'var(--amber)' };
-      if (e.dv === 1) return { label: 'DIV+', color: '#5eead4' };
-      if (e.dv === -1) return { label: 'DIV−', color: 'var(--down)' };
       if (e.qa) return { label: 'Q+', color: 'var(--up)' };
-      if (e.qd) return { label: 'Q−', color: 'var(--down)' };
       if (e.flag === 'CONCENTRATED') return { label: 'CONC', color: '#fb923c' };
       return { label: 'Neutral', color: 'var(--text-3)' };
     },
@@ -1434,14 +1453,9 @@ function stockApp() {
       const map = {
         'BURST':   'background: rgba(168,85,247,0.15); color: #c084fc; border: 1px solid rgba(168,85,247,0.35)',
         'HC':      'background: rgba(52,211,153,0.12); color: var(--up); border: 1px solid rgba(52,211,153,0.30)',
-        'VELO':    'background: rgba(34,211,238,0.10); color: var(--cyan); border: 1px solid rgba(34,211,238,0.25)',
         'SPEC β':  'background: rgba(251,191,36,0.12); color: var(--amber); border: 1px solid rgba(251,191,36,0.30)',
         'NEW':     'background: rgba(96,165,250,0.10); color: rgba(96,165,250,0.9); border: 1px solid rgba(96,165,250,0.25)',
-        'STEALTH': 'background: rgba(251,191,36,0.10); color: var(--amber); border: 1px solid rgba(251,191,36,0.25)',
-        'DIV+':    'background: rgba(20,184,166,0.12); color: #5eead4; border: 1px solid rgba(20,184,166,0.30)',
-        'DIV−':    'background: rgba(251,113,133,0.10); color: var(--down); border: 1px solid rgba(251,113,133,0.25)',
         'Q+':      'background: rgba(52,211,153,0.10); color: var(--up); border: 1px solid rgba(52,211,153,0.25)',
-        'Q−':      'background: rgba(251,113,133,0.10); color: var(--down); border: 1px solid rgba(251,113,133,0.25)',
         'CONC':    'background: rgba(251,146,60,0.10); color: #fb923c; border: 1px solid rgba(251,146,60,0.25)',
         'Neutral': 'background: rgba(255,255,255,0.04); color: var(--text-3); border: 1px solid rgba(255,255,255,0.10)',
       };
@@ -1455,14 +1469,9 @@ function stockApp() {
       const map = {
         'BURST':   `BURST move - global rank improved by ${this.leaderboardRow?.global_rank_peak_30d ?? 0}+ positions in last 30d.`,
         'HC':      `HIGH CONVICTION - held by ${this.leaderboardRow?.etf_count || 0} ETFs · HC streak: ${this.leaderboardRow?.hc_streak || 0} days`,
-        'VELO':    `Top-velocity composite (${(this.leaderboardRow?.velocity_score || 0).toFixed(0)}). Conviction is concentrating.`,
         'SPEC β':  'SPECULATIVE BETA - Trend tier momentum without Quality or Scout backing.',
         'NEW':     'NEW - first appearance in any mature ETF within the last 14 days.',
-        'STEALTH': 'Stealth accumulation - weight building without rank movement. Quiet loading.',
-        'DIV+':    'Divergence+ - gaining global rank despite falling conviction inside its own funds.',
-        'DIV−':    'Divergence− - losing global rank despite rising conviction inside its own funds.',
         'Q+':      'Quality+ - a Quality ETF added this name in the last 30 days.',
-        'Q−':      'Quality− - a Quality ETF dropped this name in the last 30 days.',
         'CONC':    `CONCENTRATED - score concentrated in single ETF (${this.leaderboardRow?.concentration_score || 0}%) · fragile conviction`,
         'Neutral': 'Neutral status - no major structural anomalies.',
       };
@@ -1488,14 +1497,9 @@ function stockApp() {
       if (this._isBurstAt(this.tlci)) sigs.push({ label: 'BURST',   color: '#c084fc' });
       if (e.crater) sigs.push({ label: 'CRATER',  color: '#f87171' });
       if (e.flag === 'HIGH_CONVICTION') sigs.push({ label: 'HC',     color: 'var(--up)' });
-      if (this._isVeloAt(this.tlci))   sigs.push({ label: 'VELO',   color: 'var(--cyan)' });
       if (e.flag === 'SPECULATIVE_BETA') sigs.push({ label: 'SPEC β', color: 'var(--amber)' });
       if (e.n)      sigs.push({ label: 'NEW',     color: 'rgba(96,165,250,0.9)' });
-      if (e.st)     sigs.push({ label: 'STEALTH', color: 'var(--amber)' });
-      if (e.dv === 1)  sigs.push({ label: 'DIV+', color: '#5eead4' });
-      if (e.dv === -1) sigs.push({ label: 'DIV−', color: 'var(--down)' });
       if (e.qa)     sigs.push({ label: 'Q+',      color: 'var(--up)' });
-      if (e.qd)     sigs.push({ label: 'Q−',      color: 'var(--down)' });
       if (e.flag === 'CONCENTRATED') sigs.push({ label: 'CONC', color: '#fb923c' });
       if (!sigs.length) sigs.push({ label: 'Neutral', color: 'var(--text-3)' });
       return sigs;
@@ -1505,14 +1509,6 @@ function stockApp() {
       const e = fh[this.tlci];
       if (!e) return '';
       return e.rank ? `Rank · #${e.rank}` : 'Rank · —';
-    },
-    get timelineHoverVelocity() {
-      const fh = this.flagHistory || [];
-      const e = fh[this.tlci];
-      if (!e || e.vs == null) return null;
-      const v = Number(e.vs);
-      if (!isFinite(v)) return null;
-      return `Velocity · ${v >= 0 ? '+' : ''}${v.toFixed(1)}`;
     },
 
     // Y-axis labels for the rank chart
@@ -1590,15 +1586,11 @@ function stockApp() {
     // All lane definitions (only rendered when active for this ticker)
     _allLaneDefs() {
       return [
-        { key: 'burst',    label: 'BURST',   always: true,  color: 'rgba(168,85,247,', bright: '1)',    dim: '0.55)' },
+        { key: 'burst',    label: 'BURST',   always: true,  color: 'rgba(168,85,247,',  bright: '1)',    dim: '0.55)' },
         { key: 'crater',   label: 'CRATER',  always: true,  color: 'rgba(248,113,113,', bright: '1)',    dim: '0.55)' },
         { key: 'hc',       label: 'HC',      always: true,  color: 'rgba(52,211,153,',  bright: '1)',    dim: '0.55)' },
-        { key: 'velo',     label: 'VELO',    always: true,  color: 'rgba(34,211,238,',  bright: '0.9)', dim: '0.45)' },
         { key: 'spec',     label: 'SPEC',    always: true,  color: 'rgba(251,191,36,',  bright: '0.9)', dim: '0.45)' },
         { key: 'newentry', label: 'NEW',     always: false, color: 'rgba(96,165,250,',  bright: '0.9)', dim: '0.5)'  },
-        { key: 'stealth',  label: 'STLTH',   always: false, color: 'rgba(251,191,36,',  bright: '0.75)', dim: '0.4)' },
-        { key: 'divplus',  label: 'DIV+',    always: false, color: 'rgba(94,234,212,',  bright: '0.9)', dim: '0.5)'  },
-        { key: 'divminus', label: 'DIV-',    always: false, color: 'rgba(251,113,133,',  bright: '0.85)', dim: '0.45)' },
         { key: 'quality',  label: 'QUAL',    always: false, color: 'rgba(52,211,153,',  bright: '0.7)', dim: '0.35)' },
         { key: 'conc',     label: 'CONC',    always: false, color: 'rgba(251,146,60,',  bright: '0.9)', dim: '0.45)' },
       ];
@@ -1640,19 +1632,11 @@ function stockApp() {
         burst:    this._isBurstAt(i),
         crater:   !!e.crater,
         hc:       e.flag === 'HIGH_CONVICTION',
-        velo:     this._isVeloAt(i),
         spec:     e.flag === 'SPECULATIVE_BETA',
         newentry: !!e.n,
-        stealth:  !!e.st,
-        divplus:  e.dv === 1,
-        divminus: e.dv === -1,
-        quality:  !!(e.qa || e.qd),
+        quality:  !!e.qa,
         conc:     e.flag === 'CONCENTRATED',
         rank:     e.rank || 0,
-        vs:       e.vs ?? null,
-        // For quality lane, track qa/qd separately for tick color
-        qa: !!e.qa,
-        qd: !!e.qd,
       }));
 
       // Compute consecutive run length at each index per signal (for intensity)
@@ -1699,23 +1683,13 @@ function stockApp() {
 
           const intense = runs[lane.key] >= 10;
 
-          // Quality lane: qa = green-tinted, qd = rose-tinted (event ticks)
-          let fill;
-          if (lane.key === 'quality') {
-            fill = s.qa
-              ? ('rgba(52,211,153,' + (intense ? '0.7)' : '0.38)'))
-              : ('rgba(251,113,133,' + (intense ? '0.7)' : '0.38)'));
-          } else {
-            fill = lane.color + (intense ? lane.bright : lane.dim);
-          }
+          const fill = lane.color + (intense ? lane.bright : lane.dim);
           bars += `<rect x="${bx.toFixed(2)}" y="${y}" width="${barW.toFixed(2)}" height="${LANE_H}" fill="${fill}" rx="1"/>`;
 
           // Transition marker: tick at the left edge when first day active
           if (runs[lane.key] === 1) {
             const mx = bx.toFixed(2);
-            const tickColor = (lane.key === 'quality')
-              ? (s.qa ? 'rgba(52,211,153,1)' : 'rgba(251,113,133,1)')
-              : (lane.color + '1)');
+            const tickColor = lane.color + '1)';
             markers += `<line x1="${mx}" y1="${y - 1}" x2="${mx}" y2="${y + LANE_H + 1}" stroke="${tickColor}" stroke-width="1.5"/>`;
           }
         }
@@ -1827,6 +1801,39 @@ function stockApp() {
         </g>`;
       }
 
+      // 6. Universe-expansion annotations (from metadata.universe_expansion):
+      //    a dashed marker at the largest single-day universe jump (explains
+      //    structural rank breaks) + dim bands over snapshot gaps where the
+      //    tracked-fund count jumped ≥3 between consecutive snapshots.
+      let gapBands = '', jumpMarker = '';
+      const pts = this.lbRankSeries;
+      const dMin = pts[0]?.d || '', dMax = pts[pts.length - 1]?.d || '';
+      const xAtDate = (d) => {
+        if (d <= pts[0].d) return pts[0].x;
+        if (d >= pts[pts.length - 1].d) return pts[pts.length - 1].x;
+        let lo = 0, hi = pts.length - 1;
+        while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (pts[mid].d <= d) lo = mid; else hi = mid; }
+        const a = pts[lo], b = pts[hi];
+        const t = (b.d === a.d) ? 0 : (d - a.d) / (b.d - a.d);
+        return a.x + t * (b.x - a.x);
+      };
+      for (let i = 1; i < (this.fundCountByDate || []).length; i++) {
+        const prev = this.fundCountByDate[i - 1], cur = this.fundCountByDate[i];
+        const before = Number(prev?.funds) || 0, after = Number(cur?.funds) || 0;
+        if (after - before < 3) continue;
+        if (!prev?.date || !cur?.date || cur.date > dMax || prev.date > dMax || cur.date < dMin) continue;
+        const x1 = xAtDate(prev.date), x2 = xAtDate(cur.date);
+        gapBands += `<g><title>Universe snapshot gap: fund count jumped ${before}&#8594;${after} between ${prev.date} and ${cur.date}</title>` +
+          `<rect x="${Math.min(x1, x2).toFixed(1)}" y="10" width="${Math.max(1, Math.abs(x2 - x1)).toFixed(1)}" height="200" fill="rgba(251,191,36,0.05)"/></g>`;
+      }
+      const j = this.universeJump;
+      if (j && j.date && j.date >= dMin && j.date <= dMax) {
+        const jx = xAtDate(j.date).toFixed(1);
+        jumpMarker = `<g><title>Universe expanded ${j.funds_before}&#8594;${j.funds_after} ETFs on ${j.date}</title>` +
+          `<line x1="${jx}" y1="10" x2="${jx}" y2="210" stroke="rgba(251,191,36,0.55)" stroke-width="1" stroke-dasharray="4 4"/>` +
+          `<text x="${(Number(jx) + 5).toFixed(1)}" y="206" transform="rotate(-90 ${(Number(jx) + 5).toFixed(1)} 206)" text-anchor="start" style="font-family:ui-monospace;font-size:8px;fill:rgba(251,191,36,0.75)">Universe ${j.funds_before}&#8594;${j.funds_after} ETFs</text></g>`;
+      }
+
       return `<svg viewBox="0 0 ${W} ${H}" class="w-full" style="height: 210px">
         <defs>
           <linearGradient id="lbGrad" x1="0" y1="0" x2="0" y2="1">
@@ -1835,9 +1842,11 @@ function stockApp() {
           </linearGradient>
         </defs>
         ${grid}
+        ${gapBands}
         ${area}
         ${line}
         ${bestMarker}
+        ${jumpMarker}
         ${crosshair}
         ${xAxis}
       </svg>`;
@@ -1960,21 +1969,13 @@ function stockApp() {
       return { best };
     },
 
-    // Velocity helpers (mirrored from index.html)
-    fmtVelocity(v) {
-      if (v == null || !isFinite(v)) return '—';
-      const n = Number(v);
-      if (Math.abs(n) < 0.5) return '0';
-      return (n > 0 ? '+' : '') + n.toFixed(1);
-    },
-    velocityColor(v) {
-      if (v == null || !isFinite(v)) return 'var(--text-3)';
-      const n = Number(v);
-      if (n >= 15) return 'var(--up)';
-      if (n >= 5)  return '#86efac';
-      if (n <= -15) return 'var(--down)';
-      if (n <= -5)  return '#fda4af';
-      return 'var(--text-2)';
+    // Formatting helpers
+    fmtBuilt(iso) {
+      if (!iso) return '';
+      const d = new Date(iso);
+      if (isNaN(d)) return iso || '';
+      const pad = n => String(n).padStart(2, '0');
+      return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())} UTC`;
     },
 
     // Formatting

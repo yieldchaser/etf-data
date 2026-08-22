@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Conviction Labs · Backtest</title>
-  <meta name="description" content="Backtest results for Conviction Labs strategies: HC Entry, BURST Trigger, Top-10 Score, Top-10 Velocity vs SPX baseline.">
+  <meta name="description" content="Backtest results for Conviction Labs strategies: HC Entry, BURST Trigger, CRATER Trigger (short), Top-10 Score vs SPX baseline.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2309090b'/%3E%3Cpath d='M6 22L13 14.5L18 18.5L26 9.5' fill='none' stroke='%2322d3ee' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='26' cy='9.5' r='2.5' fill='%2322d3ee'/%3E%3C/svg%3E">
   <meta name="color-scheme" content="dark">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -189,41 +189,14 @@
       </div>
     </div>
 
-    <!-- SCATTER PLOT: velocity_score vs realized return -->
-    <div class="rounded-lg border mb-6" style="background:var(--surface);border-color:var(--border)">
-      <div class="px-3 py-2 flex items-center justify-between" style="border-bottom:1px solid var(--border)">
-        <div class="label-cyan label">Velocity Score vs Realized 30-Day Return</div>
-        <div class="text-xs num font-mono" style="color:var(--text-3)" x-text="`R² = ${r2.toFixed(3)} · ${(data.scatter||[]).length} points`"></div>
-      </div>
-      <div class="p-3">
-        <svg viewBox="0 0 1000 400" class="w-full" style="height:400px">
-          <!-- Grid -->
-          <line x1="60" x2="980" y1="110" y2="110" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
-          <line x1="60" x2="980" y1="200" y2="200" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
-          <line x1="60" x2="980" y1="290" y2="290" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
-          <!-- Zero return line -->
-          <line :x1="60" :x2="980" :y1="scatterZeroY" :y2="scatterZeroY" stroke="rgba(255,255,255,0.15)" stroke-width="1" stroke-dasharray="4 4"/>
-          <!-- Zero velocity line -->
-          <line :x1="scatterZeroX" :x2="scatterZeroX" y1="20" y2="380" stroke="rgba(255,255,255,0.08)" stroke-width="1" stroke-dasharray="4 4"/>
-          <!-- Scatter dots (x-html: SVG namespace can't host <template x-for>) -->
-          <g x-html="scatterDotsSvg"></g>
-          <!-- Regression line -->
-          <line :x1="regLine.x1" :y1="regLine.y1" :x2="regLine.x2" :y2="regLine.y2"
-                stroke="var(--amber)" stroke-width="1.5" stroke-dasharray="6 3"/>
-          <!-- Axis labels -->
-          <text x="520" y="398" text-anchor="middle" style="font-family:ui-monospace;font-size:10px;fill:var(--text-3)">Velocity Score</text>
-          <text x="12" y="200" text-anchor="middle" transform="rotate(-90,12,200)" style="font-family:ui-monospace;font-size:10px;fill:var(--text-3)">30d Return</text>
-          <!-- R² label -->
-          <text x="960" y="40" text-anchor="end" style="font-family:ui-monospace;font-size:11px;fill:var(--amber)" x-text="`R²=${r2.toFixed(3)}`"></text>
-        </svg>
-      </div>
-    </div>
-
   </div><!-- /main content -->
 
-  <footer class="mt-6 pt-4 text-xs flex gap-4 flex-wrap" style="border-top:1px solid var(--border);color:var(--text-3)">
+  <footer class="mt-6 pt-4 text-xs flex gap-4 flex-wrap items-center" style="border-top:1px solid var(--border);color:var(--text-3)">
     <span>Conviction Labs · yieldchaser/etf-data</span>
     <a href="index.html" style="color:var(--cyan);text-decoration:none">← Dashboard</a>
+    <a href="markets.html" style="color:var(--text-3);text-decoration:none">Markets</a>
+    <a href="methodology.html" style="color:var(--text-3);text-decoration:none">Methodology</a>
+    <span class="sm:ml-auto">Simulated results for research only · not investment advice</span>
   </footer>
 </div>
 
@@ -235,7 +208,7 @@ function btApp() {
 
     async load() {
       try {
-        this.data = await fetch('data/backtest.json', { cache: 'no-store' }).then(r => {
+        this.data = await fetch('data/backtest.json').then(r => {
           if (!r.ok) throw new Error(r.status);
           return r.json();
         });
@@ -251,7 +224,6 @@ function btApp() {
         hc_entry:       '#34d399',
         burst_trigger:  '#c084fc',
         top10_score:    '#22d3ee',
-        top10_velocity: '#fbbf24',
         baseline:       '#71717a',
       }[key] || '#a1a1aa';
     },
@@ -325,89 +297,6 @@ function btApp() {
           ? `<path d="${this.chartPath(strat.cumulative_returns)}" stroke="${this.stratColor(key)}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
           : '')
         .join('');
-    },
-
-    // ── Scatter plot ──────────────────────────────────────────────────────
-    get scatterData() {
-      return (this.data.scatter || []).filter(p =>
-        p.velocity_score != null && p.realized_return_30d != null
-      );
-    },
-
-    get scatterBounds() {
-      const pts = this.scatterData;
-      if (!pts.length) return { vMin: -50, vMax: 100, rMin: -0.3, rMax: 0.3 };
-      const vs = pts.map(p => p.velocity_score);
-      const rs = pts.map(p => p.realized_return_30d);
-      const vPad = (Math.max(...vs) - Math.min(...vs)) * 0.05 || 5;
-      const rPad = (Math.max(...rs) - Math.min(...rs)) * 0.05 || 0.02;
-      return {
-        vMin: Math.min(...vs) - vPad, vMax: Math.max(...vs) + vPad,
-        rMin: Math.min(...rs) - rPad, rMax: Math.max(...rs) + rPad,
-      };
-    },
-
-    get scatterPoints() {
-      const { vMin, vMax, rMin, rMax } = this.scatterBounds;
-      const vRange = vMax - vMin || 1, rRange = rMax - rMin || 1;
-      return this.scatterData.map(p => ({
-        x: 60 + ((p.velocity_score - vMin) / vRange) * 920,
-        y: 20 + (1 - (p.realized_return_30d - rMin) / rRange) * 360,
-      }));
-    },
-
-    // SVG markup for scatter dots (x-html for the same SVG-template reason).
-    get scatterDotsSvg() {
-      return this.scatterPoints
-        .map(pt => `<circle cx="${(pt?.x ?? 0).toFixed(1)}" cy="${(pt?.y ?? 0).toFixed(1)}" r="2.5" fill="rgba(34,211,238,0.35)" stroke="none"/>`)
-        .join('');
-    },
-
-    get scatterZeroY() {
-      const { rMin, rMax } = this.scatterBounds;
-      return 20 + (1 - (0 - rMin) / (rMax - rMin)) * 360;
-    },
-
-    get scatterZeroX() {
-      const { vMin, vMax } = this.scatterBounds;
-      return 60 + ((0 - vMin) / (vMax - vMin)) * 920;
-    },
-
-    get r2() {
-      const pts = this.scatterData;
-      if (pts.length < 3) return 0;
-      const xs = pts.map(p => p.velocity_score);
-      const ys = pts.map(p => p.realized_return_30d);
-      const n = xs.length;
-      const mx = xs.reduce((a, b) => a + b, 0) / n;
-      const my = ys.reduce((a, b) => a + b, 0) / n;
-      const ssxy = xs.reduce((s, x, i) => s + (x - mx) * (ys[i] - my), 0);
-      const ssx  = xs.reduce((s, x) => s + (x - mx) ** 2, 0);
-      const ssy  = ys.reduce((s, y) => s + (y - my) ** 2, 0);
-      if (ssx === 0 || ssy === 0) return 0;
-      return (ssxy / Math.sqrt(ssx * ssy)) ** 2;
-    },
-
-    get regLine() {
-      const pts = this.scatterData;
-      if (pts.length < 3) return { x1: 60, y1: 200, x2: 980, y2: 200 };
-      const xs = pts.map(p => p.velocity_score);
-      const ys = pts.map(p => p.realized_return_30d);
-      const n = xs.length;
-      const mx = xs.reduce((a, b) => a + b, 0) / n;
-      const my = ys.reduce((a, b) => a + b, 0) / n;
-      const ssxy = xs.reduce((s, x, i) => s + (x - mx) * (ys[i] - my), 0);
-      const ssx  = xs.reduce((s, x) => s + (x - mx) ** 2, 0);
-      const slope = ssx ? ssxy / ssx : 0;
-      const intercept = my - slope * mx;
-      const { vMin, vMax, rMin, rMax } = this.scatterBounds;
-      const vRange = vMax - vMin || 1, rRange = rMax - rMin || 1;
-      const toX = v => 60 + ((v - vMin) / vRange) * 920;
-      const toY = r => 20 + (1 - (r - rMin) / rRange) * 360;
-      return {
-        x1: toX(vMin), y1: toY(slope * vMin + intercept),
-        x2: toX(vMax), y2: toY(slope * vMax + intercept),
-      };
     },
 
     formatBuilt(iso) {

@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Conviction Labs · Portfolio Lab</title>
   <meta name="description" content="Portfolio backtester, VAMI analytics, Monte Carlo simulation, Kelly position sizing, and leveraged ETN decay.">
+  <link rel="canonical" href="https://yieldchaser.github.io/etf-data/sim.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Conviction Labs">
+  <meta property="og:title" content="Conviction Labs · Portfolio Lab">
+  <meta property="og:description" content="Portfolio backtester, VAMI analytics, Monte Carlo simulation, Kelly position sizing, and leveraged ETN decay.">
+  <meta property="og:url" content="https://yieldchaser.github.io/etf-data/sim.html">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Conviction Labs · Portfolio Lab">
+  <meta name="twitter:description" content="Portfolio backtester, VAMI analytics, Monte Carlo simulation, Kelly position sizing, and leveraged ETN decay.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2309090b'/%3E%3Cpath d='M6 22L13 14.5L18 18.5L26 9.5' fill='none' stroke='%2322d3ee' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='26' cy='9.5' r='2.5' fill='%2322d3ee'/%3E%3C/svg%3E">
   <meta name="color-scheme" content="dark">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -31,6 +40,9 @@
     [x-cloak] { display: none !important; }
     @keyframes pulse-fade { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
     .pulse-load { animation: pulse-fade 1.4s ease-in-out infinite; }
+    @media (prefers-reduced-motion: reduce) {
+      .pulse-load { animation: none; }
+    }
     input[type=range] { accent-color: var(--cyan); }
     input[type=number], input[type=text] {
       background: var(--surface-2); border: 1px solid var(--border-2);
@@ -57,6 +69,11 @@
   </style>
 </head>
 <body>
+<noscript>
+  <div style="max-width:720px;margin:48px auto;padding:16px 20px;border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#e4e4e7;background:#0a0a0a;font-family:system-ui,sans-serif;font-size:14px">
+    Conviction Labs requires JavaScript to run portfolio simulations. Please enable JavaScript to use the Portfolio Lab.
+  </div>
+</noscript>
 <div id="tt"></div>
 
 <!-- Datalist for ticker suggestions -->
@@ -74,10 +91,10 @@
       <div class="flex items-center gap-3 mb-1">
         <a href="index.html" class="label hover:text-zinc-400 transition" style="text-decoration:none">← CONVICTION LABS</a>
         <span class="label">›</span>
-        <span class="label-cyan label">PORTFOLIO LAB</span>
+        <span class="label-cyan label">Portfolio Lab</span>
       </div>
       <div class="flex items-baseline gap-3 mt-1">
-        <h1 class="text-base font-medium" style="color: var(--cyan)">PORTFOLIO LAB</h1>
+        <h1 class="text-base font-medium" style="color: var(--cyan)">Portfolio Lab</h1>
         <span class="label" x-text="loading ? 'Loading…' : (pricesData ? `Prices: ${pricesData.asof}` : 'Price data unavailable')"></span>
       </div>
       <div class="text-xs mt-0.5" style="color: var(--text-3)">
@@ -1858,7 +1875,7 @@ function labApp() {
 
     async _loadPrices() {
       try {
-        const r = await fetch(`data/prices.json?v=${Date.now()}`, { cache: 'no-store' });
+        const r = await fetch(`data/prices.json?v=${Date.now()}`);
         if (r.ok) this.pricesData = await r.json();
       } catch (e) {
         console.warn('prices.json not available:', e);
@@ -1867,14 +1884,14 @@ function labApp() {
 
     async _loadMarketData() {
       try {
-        const r = await fetch(`data/market_returns.json?v=${Date.now()}`, { cache: 'no-store' });
+        const r = await fetch(`data/market_returns.json?v=${Date.now()}`);
         if (r.ok) this.marketData = await r.json();
       } catch (e) { /* optional */ }
     },
 
     async _loadSimData() {
       try {
-        const r = await fetch(`data/sim_underlyings.json?v=${Date.now()}`, { cache: 'no-store' });
+        const r = await fetch(`data/sim_underlyings.json?v=${Date.now()}`);
         if (r.ok) this.simData = await r.json();
       } catch (e) { /* optional */ }
     },
@@ -3127,5 +3144,15 @@ function labApp() {
 }
 </script>
 </div><!-- /x-show="pricesData" -->
+
+<!-- FOOTER -->
+<footer class="mt-6 pt-4 text-xs flex gap-4 flex-wrap items-center max-w-[1400px] mx-auto px-3 sm:px-5" style="border-top:1px solid var(--border);color:var(--text-3)">
+  <span>Conviction Labs · yieldchaser/etf-data</span>
+  <a href="index.html" style="color:var(--cyan);text-decoration:none">← Dashboard</a>
+  <a href="markets.html" style="color:var(--text-3);text-decoration:none">Markets</a>
+  <a href="methodology.html" style="color:var(--text-3);text-decoration:none">Methodology</a>
+  <span x-show="pricesData && pricesData.asof" class="font-mono num" x-text="pricesData ? `Prices through ${pricesData.asof}` : ''"></span>
+  <span class="sm:ml-auto">Simulated results for research only · not investment advice</span>
+</footer>
 </body>
 </html>
