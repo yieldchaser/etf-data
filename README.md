@@ -32,7 +32,7 @@ The system operates as five tightly integrated components:
 |-----------|------|
 | **Data Ingestion** | Scrapes 30 ETF issuers daily, normalises holdings, archives to CSV |
 | **Scoring Engine** | Multi-factor algorithm: tier weights × rank multipliers × new-entrant bonuses |
-| **Live Dashboard** | GitHub Pages SPA — leaderboard, velocity engine, burst detection, structural analytics |
+| **Live Dashboard** | GitHub Pages SPA — leaderboard, motion signals (burst/crater), structural analytics |
 | **Extended Scraper Bridge** | Fault-isolated subprocess for 8 ETFs requiring Playwright/PDF/XLS ingestion |
 | **Markets Intelligence Platform** | 150+ years of cross-asset return data, 9-tab analytical dashboard |
 
@@ -42,9 +42,9 @@ The system operates as five tightly integrated components:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│  GitHub Actions — Daily ETF Scrape (14:00 + 22:00 UTC weekdays)     │
+│  GitHub Actions — Daily ETF Scrape (02:00/14:00/22:00 UTC weekdays) │
 │                                                                     │
-│  scraper.py (21 primary ETFs)                                       │
+│  scraper.py (22 primary ETFs)                                       │
 │  └── scripts/etf_holdings_scraper_v42.py (8 extended ETFs)          │
 │       └── Bridge: clean → dedupe → write                            │
 │                                                                     │
@@ -57,8 +57,8 @@ The system operates as five tightly integrated components:
 │  conviction/build.py                                                │
 │  ├── Sanitizer (blocked tickers, name patterns, ticker renames)     │
 │  ├── Scoring (tier weights × rank mult × new bonus)                 │
-│  ├── Temporal analytics (streaks, percentiles, deltas 1/7/14/30/60/90d) │
-│  ├── Velocity engine (composite score + 4σ burst detection)         │
+│  ├── Temporal analytics (streaks, percentiles, deltas 1/7/14/30/60/90d + YTD) │
+│  ├── Motion signals (rank trajectory, burst/crater, NEW, Pre-HC/Stealth-Buy) │
 │  ├── Structural signals (concentration, tier breadth, quality Δ)    │
 │  ├── Flow aggregation (sector + country, Unknown excluded)          │
 │  └── ETF overlap matrix (30×30 Jaccard)                             │
@@ -92,6 +92,10 @@ The ETF count is derived from `config.yaml::etfs[]` — that file is the source 
 
 International ETFs (FPXI, IMOM, EEMO, PIZ, JHEM, MFEM) carry 60 points instead of their tier default to level the playing field — global names naturally appear in fewer US-focused ETFs.
 
+### Data note — universe expansion (May 2026)
+
+The tracked universe grew in stages: **11 → 16** in February 2026, stable at 16 through mid-May, then **21** (May 18) → **23** (May 21) → **29** (May 22) → **30** by late May. Because absolute ranks are universe-relative, each jump mechanically depresses rank numbers — rank deltas that span late May mix two different universes. Scores are additive per holding and less affected, but breadth-dependent terms shift; the §28 maturity gate suppresses NEW-flag floods from freshly added ETFs. Builds emit `metadata.universe_expansion` (largest jump + per-date fund counts) so charts can annotate the break — full story on the [methodology page](https://yieldchaser.github.io/etf-data/methodology.html#data-notes).
+
 ### Scraper Architecture
 
 - **Selenium + ChromeDriver** — JS-heavy sites (Pacer, First Trust). Lazy-imported so the module can be used without Selenium installed (tests and build CI don't need it).
@@ -123,10 +127,22 @@ Idempotency is enforced on the composite key `(ETF_Ticker, ticker, Holdings_As_O
 ### Schedule
 
 ```
-cron: '0 14,22 * * 1-5'   # 14:00 UTC (10:00 AM ET) + 22:00 UTC (6:00 PM ET), weekdays
+cron: '0 2,14,22 * * 1-5'  # 02:00 + 14:00 + 22:00 UTC weekdays
+cron: '0 14 * * 0,6'       # 14:00 UTC weekends (Invesco T+1 catch-up)
 ```
 
-The 14:00 run targets the primary window after all issuers publish T+1 data. The 22:00 run catches late publishers and serves as a retry.
+The 14:00 run targets the primary window after all issuers publish T+1 data. The 02:00 run catches Invesco's late-evening publish; the 22:00 run catches late publishers and serves as a retry. Weekend runs capture the Friday `effectiveDate` that is structurally missing from weekday scrapes.
+
+### Fail-loud contract
+
+The scraper fails loudly instead of exiting silent-success (audit P0):
+
+- **Missing/corrupt `config.json`** → prints the cause and **exits 1**.
+- **Total primary failure** (0 of N enabled ETFs scraped) → **exits 1**, evaluated *after* `run_extended_scrapers()` so a v42 collection is never skipped by a primary-only outage.
+- **v42 total failure** (every extended fund returns 0 rows) → **exits 1**.
+- **Partial failures stay warnings (exit 0)** — fault isolation across funds is by design, and cron redundancy covers transient blips.
+
+A green build therefore means data actually flowed.
 
 ---
 
@@ -178,7 +194,7 @@ Apex (v3) display ranking multiplies in a conviction-quality term so breadth-fil
 m_conv = clip(avg_conviction, 0.50, 1.25) ^ conv_gamma
 ```
 
-Plus a conviction gate (clip 0.40–1.10) with an escape hatch: the gate is bypassed when the median per-ETF rank is ≤ 10. Raw `final_score` is unchanged — this layer affects display ranking only. Parameters `conv_floor` / `conv_cap` / `conv_gamma` live in `config.yaml`; full math on the methodology page, §3.3–3.4.
+Plus a conviction gate (clip 0.40–1.10) with an escape hatch: the gate is bypassed when the median per-ETF rank is ≤ 10. Raw `final_score` is unchanged — this layer affects display ranking only. Parameters `conv_floor` / `conv_cap` / `conv_gamma` live in `config.yaml`; full math on the methodology page, §3.3–3.4. Since 2026-08 the HIGH_CONVICTION flag itself is **not** derived from this layer: it is a raw distinct-ETF count in all scoring modes (see Output Flags).
 
 ### ETF Overlap Discount & Tier Synergy Scaling (Option 1)
 
@@ -191,8 +207,12 @@ To prevent duplicate holdings within highly correlated ETF strategy clusters (e.
 
 | Flag | Condition | Interpretation |
 |------|-----------|---------------|
-| **HIGH_CONVICTION** | Held by ≥ 4 distinct ETFs | Broad consensus across independent strategies |
+| **HIGH_CONVICTION** | Held by ≥ 4 distinct ETFs (raw count, identical in all scoring modes) | Broad consensus across independent strategies |
+| **CONCENTRATED** | One fund supplies ≥ 85% of score mass, or a lone fund holds it at ≥ 4× equal-weight | Single-fund story — best risk-adjusted flag (0.24× base exit rate) |
 | **SPECULATIVE_BETA** | In Trend tier, absent from Quality + Scout | High-volatility momentum without fundamental support |
+| **NEW** | First appearance within the 14-day lookback; suppressed for ETFs younger than the 30-day maturity baseline | Short-horizon entrant (1.38× accumulation lift ≤ 7d, 0.65× by 30d) |
+
+Per-name signals `BURST` / `CRATER` / Quality+ (`quality_adopted_30d`) and the Pre-HC / Stealth-Buy filter chips are documented under [Analytical Signals](#analytical-signals). The former apex-mode conviction-breadth gate for HC (θ ≥ 0.8) was removed in 2026-08 — it fired on ~0.03% of rows; `conviction_etf_count` remains as a diagnostic column only.
 
 ### Sanitizer
 
@@ -223,12 +243,12 @@ Built with Tailwind CSS + Alpine.js. Zero build step — static HTML/JS served d
 
 #### Leaderboard
 - ~3,950 unique tickers ranked by Final Alpha Score
-- Sortable columns: score, rank, velocity, burst, concentration, tier breadth, ticker, company (3-way click sort toggle: desc → asc → default, with alphabetical columns and rank defaulting to ascending on first click)
+- Sortable columns: score, rank, rank delta, burst, concentration, tier breadth, ticker, company (3-way click sort toggle: desc → asc → default, with alphabetical columns and rank defaulting to ascending on first click)
 - Day-over-day score deltas with honest `—` display when no comparable past data exists
 - HC streaks, percentile-of-own-history progress bars
-- **VELO** and **BURST** badges with micro-breakdown tooltips
-- Filter chips: HC only, BURST, VELO, Quality+, Concentration ≤80%
-- Auto-generated explainer line per row: compresses tier breadth, score delta, burst state, HC streak, quality signals, concentration, stealth, divergence into one scannable sentence
+- **BURST** and **CRATER** badges with micro-breakdown tooltips
+- Filter chips: HC only, BURST, CRATER, Pre-HC, Stealth Buy, Quality+, Concentration ≤80%
+- Auto-generated explainer line per row: compresses tier breadth, score delta, burst state, HC streak, quality signals, concentration, NEW-entrant state into one scannable sentence
 - **Expanded Row Detail Drawer**:
   - **Auto-Explainer Grid**: A frosted glassmorphic card container (`STRUCTURE`, `FLOW`, `RISK`) featuring dynamic left-border colored callout bars (`border-l-2 pl-2 border-current`) matching alert severity.
   - **Metadata Card**: Displays score breakdown, HC streak, best rank, score streak, and total weight separated by vertical dividers (`xl:border-l xl:border-white/[0.04]`).
@@ -245,9 +265,9 @@ Built with Tailwind CSS + Alpine.js. Zero build step — static HTML/JS served d
 
 #### Changes Tab
 - Daily turnover: HC entries/exits, biggest score movers, new discoveries
-- Top 15 velocity movers panel
-- Sector flow: velocity-weighted exposure by GICS sector (Unknown excluded)
-- Country flow: velocity-weighted exposure by domicile (Unknown excluded)
+- Top 15 accumulation movers panel (`top_accumulation` — net ETF positions added over 30d)
+- Sector flow: net ETF positions added/removed over 30d by GICS sector (Unknown excluded)
+- Country flow: net ETF positions added/removed over 30d by domicile (Unknown excluded)
 - Click a sector/country to filter the leaderboard
 - **Interactive Sorting**: All 10 tables, sector flow, and country flow tables support 3-way toggle sorting (descending → ascending → default/clear) with visual indicators.
 - **Dynamic Lookbacks**: Climbers and Fallers tables dynamically respect the selected lookback changesPeriod.
@@ -263,26 +283,44 @@ Built with Tailwind CSS + Alpine.js. Zero build step — static HTML/JS served d
 - **Score History**: sparkline area chart, score accumulation over time
 - **Global Rank History**: inverted Y-axis line chart, O(1) pre-computed lookup
 - **Per-ETF Rank History**: multi-line chart, tier-based coloring, crosshair tooltips
-- **Signal Timeline**: Gantt-style multi-lane chart — per-day signal history now includes all signals (velocity, burst, NEW, stealth, divergence, quality adopt/defect) stored compactly per day in `flag_history.json`, with rank overlay, hover crosshair, duration counters
+- **Signal Timeline**: Gantt-style multi-lane chart — per-day signal history (`flag`, `burst`, `crater`, quality adoption, rank, holder count) stored compactly per day in `flag_history.json`, with rank overlay, hover crosshair, duration counters
 - **Score Decomposition Bar**: stacked bar showing each ETF's contribution, colored by tier
 - **Tier Breadth chip**: how many distinct strategy types co-hold this name (1–5)
-- **Quality+/Quality− chips**: gained/lost a Quality ETF in last 30 days
+- **Quality+ chip**: gained a Quality-tier ETF in last 30 days (set derived from config)
 - **Momentum Gauge**: ↗ accelerating / → stable / ↘ weakening
+- **Lazy-loaded history**: the per-ticker history file loads first; the aggregate `score_history.json` / `holdings_history.json` payloads (~4.1 MB combined) are fetched only as a fallback for tickers whose per-ticker file is incomplete
 
 ### Analytical Signals
 
 | Signal | Definition |
 |--------|-----------|
-| `velocity_score` | `0.5×GlobalRankΔ30d + 0.25×PeakImprovement30d + 1.0×AvgRankΔ7d + 20.0×AvgWeightFlow7d + 5.0×ETFsAdded30d + 1.0×ScoreStreak` |
-| `burst_30d` | Peak rank improvement ≥ 40 positions in 30d, with ≥80% continuous presence AND sustained improvement in ≥8 of last 10 snapshots |
-| `crater_30d` | Peak rank drop ≥ 40 positions in 30d, with ≥80% continuous presence AND sustained deterioration in ≥8 of last 10 snapshots |
-| `conviction_divergence` | Score rising but rank falling (crowded out) or score falling but rank rising (relative strength) |
-| `stealth_accumulation` | Weight growing in 3+ ETFs without rank improvement |
-| `momentum_regime` | accelerating / rising / stable / weakening / declining |
+| `burst_30d` | Peak rank improvement ≥ 40 positions in 30d, with ≥80% continuous presence AND sustained improvement in ≥8 of last 10 snapshots — strongest as an HC-entry precursor (3.3× within 14d) |
+| `crater_30d` | Peak rank drop ≥ 40 positions in 30d, with ≥80% continuous presence AND sustained deterioration in ≥8 of last 10 snapshots — only consistent downside signal (1.28–1.40× exit-rate lift) |
+| `momentum_regime` | accelerating / rising / stable / weakening / declining — classified from `score_streak` direction combined with the mean 7-day per-ETF rank delta (`avg_rank_delta_7d`) |
+| `etf_count_delta_30d` | Net ETF positions added/removed over 30 days; sector/country flow aggregations expose the same measure as `flow.json` keys `net_funds_delta` (sum) and `avg_funds_delta` (mean) |
+| `pre_hc` (chip) | Held by exactly 3 ETFs with improving 7-day per-fund ranks — one pickup away from HIGH_CONVICTION |
+| `stealth_buy` (chip) | Held by 1–2 funds with >10% average weight growth over 7d while ranks haven't started moving yet |
 | `tier_breadth` | Count of distinct strategy tiers (Scout/Quant/Quality/Trend/Core) co-holding this name |
 | `concentration_score` | % of final score from single top ETF (100 = mono-ETF, 25 = perfectly diversified across 4) |
-| `quality_adopted_30d` | Gained a Quality ETF (COWZ/CALF/SPHQ) in last 30 days |
-| `quality_defected_30d` | Lost a Quality ETF in last 30 days |
+| `quality_adopted_30d` | Gained a Quality-tier ETF in last 30 days (Quality set derived from `config.yaml`, not hardcoded) |
+
+### Signal evaluation (2026-08)
+
+A **156-snapshot walk-forward study** on the production Parquet store tracked each signal's exposed cohort forward at 7/14/30-day horizons against base rates (accumulation lift, HC entry/exit lift). Verdicts:
+
+| Signal | Verdict | Evidence |
+|--------|---------|----------|
+| `velocity_score` | **Retired** | Components cancel — top-quintile forward lift ≤ 1.0 at every horizon |
+| `burst_30d` | Kept — repositioned as HC-entry precursor | 3.3× lift on HC-entry within 14d; post-peak forward rank drift −6 vs −2 base (mean reversion — early signal, not chase) |
+| `crater_30d` | Kept | Only consistent downside signal: exit-rate lift 1.28–1.40× |
+| `quality_adopted_30d` | Kept | Reliable fundamentals-lens confirmation |
+| NEW entrant | Kept — short-horizon | Accumulation lift 1.38× within 7d fading to 0.65× by 30d |
+| CONCENTRATED | Promoted | Exit rate 0.24× base (0.58% vs 2.39%); accumulation lift 1.17–1.28× |
+| `stealth_accumulation` | Retired | Only 126 events in 6 months — too rare |
+| `conviction_divergence` | Retired | Exit-lift 0.56× — pointed the wrong direction |
+| `quality_defected_30d` | Retired | Lift flipped sign between evaluation grids |
+
+Retired signals were removed from the engine, payloads, and UI; the full transparency log lives on the [methodology page](https://yieldchaser.github.io/etf-data/methodology.html#retired-signals).
 
 ---
 
@@ -449,27 +487,28 @@ Correlation matrix + Growth of $100 log-scale chart for selected assets.
 
 #### `daily_scrape.yml` — Data Collection
 ```
-Trigger: cron 14:00 + 22:00 UTC weekdays (plus weekend runs), workflow_dispatch
-Runner:  ubuntu-latest
+Trigger: cron 02:00 + 14:00 + 22:00 UTC weekdays, 14:00 UTC weekends, workflow_dispatch
+Runner:  ubuntu-latest   timeout-minutes: 90
+Guards:  concurrency group "daily-scrape" with cancel-in-progress: false (serialized runs)
 Steps:
   1. Install libraries: pandas, selenium, playwright, curl_cffi, pdfplumber, xlrd, pyarrow
   2. Install Chromium (playwright) + xvfb
   3. Hydrate transient all_history.csv from Parquet store (hydrate_csv_from_parquet.py)
-  4. Run scraper: xvfb-run -a python scraper.py
+  4. Run scraper: xvfb-run -a python scraper.py   (fail-loud exits — see Component 1)
   5. Update parquet archive: fold new rows into data/history_parquet/ (migrate_to_parquet.py)
   6. Wipe local transient data/all_history.csv
   7. Commit and push Parquet partition deltas + CHECKSUMS.json (only if data changed)
-  8. Trigger site rebuild (Workflow dispatch)
+  8. Site rebuild fires automatically via build_site.yml push-paths trigger
 ```
 
 #### `build_site.yml` — Site Build & Deploy
 ```
-Trigger: workflow_run (after scraper), push to main (conviction/**, docs/**, scraper.py, tests/**...), workflow_dispatch
-Runner:  ubuntu-latest
+Trigger: workflow_run (after scraper, gated on its success), push to main (conviction/**, docs/**, scraper.py, tests/**...), workflow_dispatch
+Runner:  ubuntu-latest   timeout-minutes: 60 (build) / 20 (deploy)
 Steps:
   1. Install: pandas, pyyaml, pyarrow, pytest, hypothesis, yfinance, openpyxl, fredapi, python-dotenv
      (No selenium/curl_cffi/pdfplumber — scraper-only, not needed for build)
-  2. pytest tests/ -v  (325 tests)
+  2. pytest tests/ -v  (315 tests)
   3. conviction.build  → docs/data/*.json
   4. conviction.fetch_prices  → Portfolio Lab prices (yfinance adjusted-close)
   5. conviction.fetch_stock_details  → descriptions + 2-year price history
@@ -478,22 +517,28 @@ Steps:
   8. conviction.markets_history  → 2/2: Live FRED + yfinance merge (current months, fx, cpi, rates)
   9. markets.fetch_yf + markets.fetch_fred + markets.build  → docs/data/markets.json + sim_underlyings.json
   10. conviction.vol_history --full-refresh  → docs/data/vol_history.json
-  11. Verify required outputs exist
+  11. Verify outputs: required files exist; market_returns.json has the monthly-array contract;
+      leaderboard.json and prices.json are non-empty
   12. Upload Pages artifact → Deploy to GitHub Pages
 ```
 
 ### Key Design Decisions
 
 - **Selenium lazy-import**: `scraper.py` wraps all selenium imports in `try/except ImportError`. The module can be imported without Selenium installed — tests and build CI don't need it, only the runtime scraper does.
-- **Concurrency**: `cancel-in-progress: true` — newer builds cancel older ones, always deploying freshest data.
+- **Serialized scrapes**: the `daily-scrape` concurrency group with `cancel-in-progress: false` orders all triggers (three weekday crons, weekend cron, manual dispatch). Overlapping runs each commit the same binary parquet and `git pull --rebase -X theirs` cannot resolve binary conflicts; a queued run simply waits and re-hydrates from the Parquet store. (Build deploys use the separate `pages` group with `cancel-in-progress: true` — freshest data always wins.)
+- **Single build trigger chain**: the scraper no longer dispatches builds explicitly (`actions:write` removed); every data push trips `build_site.yml` via its push-paths trigger, and workflow_run-triggered builds are gated on the scraper's success and always check out `main`.
+- **LFS checkout**: build checkout runs with `lfs: true` — `data/Mega_Markets_Historical.xlsx` lives in Git LFS, and the default pointer-file download would make the deep-history seed silently ingest a stub.
+- **Timeouts everywhere**: scrape job 90 min (a hung Playwright/yfinance must not burn the 360-min default), site build 60 min, deploy 20 min.
+- **Real verify gate**: the build fails unless every required payload exists, `market_returns.json` has the monthly-array contract shape, and `leaderboard.json` / `prices.json` are non-empty.
 - **workflow_run chaining**: Build triggers off scraper completion, bypassing GitHub's limitation where bot-authored pushes don't trigger other workflows.
-- **continue-on-error**: All market data fetch steps use `continue-on-error: true` — a FRED rate limit or yfinance outage doesn't fail the entire build.
+- **continue-on-error**: All market data fetch steps use `continue-on-error: true` — a FRED rate limit or yfinance outage doesn't fail the entire build. The verify gate above is what keeps a fully-empty payload from ever shipping.
+- **YTD deltas stay computable year-round**: the Parquet fetch lookback is sized to `max(180, days_into_year + 45)` days so the December-31 YTD baseline never falls outside the loaded window (previously a fixed 180-day window shipped `YTD: null` for all tickers after ~June).
 
 ---
 
 ## Testing
 
-**325 tests** across 21 files — property-based (Hypothesis) and deterministic coverage of scoring, sanitization, the v42 bridge contract, Parquet immutability, markets engine, signal history, multi-period universe exits, and CI config.
+**315 tests** across 22 files — property-based (Hypothesis) and deterministic coverage of scoring, sanitization, the v42 bridge contract, Parquet immutability, markets engine, signal history, multi-period universe exits, and CI config.
 
 ```bash
 python -m pytest tests/ -v
@@ -506,7 +551,7 @@ The suite covers the full pipeline end-to-end. Key areas:
 | Area | Test file(s) | Coverage |
 |------|-------------|----------|
 | Scoring & sanitizer | `test_scoring.py`, `test_apex_scoring.py`, `test_apex_gate.py` | Score formula, tier weights, rank multipliers, conviction layer, **sanitizer memoization correctness** |
-| Temporal analytics | `test_scoring.py`, `test_signal_history.py` | Rank deltas (1/7/14/30/60/90d), velocity, burst detection, signal timeline |
+| Temporal analytics | `test_scoring.py`, `test_signal_history.py` | Rank deltas (1/7/14/30/60/90d), burst/crater detection, motion signals, signal timeline schema |
 | v42 bridge contract | `test_bridge.py`, `test_fault_isolation.py` | Property-based (Hypothesis) validation of the bridge pipeline, failure isolation |
 | History isolation | `test_parquet_immutability.py` | SHA-256 manifest integrity, past-year immutability, zero-loss reconstruction, append-only contract |
 | Markets engine | `test_markets_engine.py`, `test_markets_unit_conversion.py`, `test_self_living_merge.py`, `test_unit_gaps.py` | Market returns pipeline, currency conversion, partial-year merge |
@@ -543,7 +588,7 @@ pip install selenium curl_cffi pdfplumber xlrd
 # Reconstruct data/all_history.csv from Parquet store (required for local development/queries)
 python scripts/hydrate_csv_from_parquet.py
 
-# Run all 325 tests
+# Run all 315 tests
 python -m pytest tests/ -v
 
 # Build site artifacts (leaderboard, holdings, changelog, flow, overlap)
@@ -585,7 +630,7 @@ echo "FRED_API_KEY=your_key_here" > .env
 
 ```
 etf-data/
-├── scraper.py                    # Primary scraper (21 ETFs)
+├── scraper.py                    # Primary scraper (22 ETFs)
 ├── config.yaml                   # Scoring config — source of truth for ETF universe
 ├── config.json                   # Per-ETF scraper routing (URL, scraper_type, CUSIP)
 ├── requirements.txt
@@ -607,10 +652,10 @@ etf-data/
 │   └── data/                     # Pre-built JSON payloads
 │       ├── leaderboard.json      # Main leaderboard (~3.8MB)
 │       ├── holdings_latest.json  # Per-(ETF, ticker) detail
-│       ├── changelog.json        # Daily turnover
+│       ├── changelog.json        # Daily turnover + top_accumulation (net ETF positions added 30d)
 │       ├── flag_history.json     # Per-ticker flag/rank history (90d)
 │       ├── score_history.json    # Score sparkline data
-│       ├── flow.json             # Sector + country flow
+│       ├── flow.json             # Sector + country flow (net_funds_delta / avg_funds_delta)
 │       ├── etf_overlap.json      # 30×30 Jaccard matrix
 │       ├── market_returns.json   # Cross-asset monthly close (~940KB)
 │       ├── vol_history.json      # CBOE vol indices
@@ -631,7 +676,7 @@ etf-data/
 │   ├── etf_holdings_scraper_v42.py  # Extended scraper (8 ETFs)
 │   └── hydrate_csv_from_parquet.py # Reconstructs transient CSV from Parquet store
 │
-├── tests/                        # pytest suite (20 files, 316 tests)
+├── tests/                        # pytest suite (22 files, 315 tests)
 │   ├── test_scoring.py           # 44 scoring & sanitizer tests
 │   └── test_bridge.py            # 6 bridge PBT tests
 │

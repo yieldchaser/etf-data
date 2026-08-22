@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Conviction Labs · How it works</title>
   <meta name="description" content="How Conviction Labs works: the conviction-detection thesis, the APEX (v3) scoring formula, motion signals, and honest limitations of the system.">
+  <link rel="canonical" href="https://yieldchaser.github.io/etf-data/methodology.html">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Conviction Labs · How it works">
+  <meta property="og:description" content="The conviction-detection thesis, the APEX (v3) scoring formula, motion signals, and honest limitations of the system.">
+  <meta property="og:url" content="https://yieldchaser.github.io/etf-data/methodology.html">
+  <meta property="og:site_name" content="Conviction Labs">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Conviction Labs · How it works">
+  <meta name="twitter:description" content="The conviction-detection thesis, the APEX (v3) scoring formula, motion signals, and honest limitations of the system.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2309090b'/%3E%3Cpath d='M6 22L13 14.5L18 18.5L26 9.5' fill='none' stroke='%2322d3ee' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='26' cy='9.5' r='2.5' fill='%2322d3ee'/%3E%3C/svg%3E">
   <meta name="color-scheme" content="dark">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -39,9 +48,13 @@
     .toc a:hover { color: var(--cyan); }
     nav.top a { padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-2); transition: color 0.15s, border-color 0.15s; }
     nav.top a:hover { color: var(--cyan); border-color: rgba(34,211,238,0.3); text-decoration: none; }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+    }
   </style>
 </head>
 <body>
+<noscript><div style="background:#fbbf24;color:#000;padding:8px 14px;font-size:12px;font-family:system-ui">JavaScript is disabled — layout is degraded (Tailwind CDN), but all methodology content remains readable.</div></noscript>
 <div class="max-w-[920px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
   <!-- Header -->
@@ -54,10 +67,12 @@
       </div>
       <h1 class="text-xl font-medium" style="color: var(--text)">How Conviction Labs works</h1>
       <div class="text-xs mt-1" style="color: var(--text-3)">A plain-language explanation of the scoring engine, motion signals, and what it does &amp; doesn't measure.</div>
+      <div class="label mt-2" style="color: var(--text-3)">Last updated: 2026-08-22</div>
     </div>
     <nav class="top flex flex-wrap gap-1 text-xs">
       <a href="index.html">Dashboard</a>
       <a href="markets.html">Markets</a>
+      <a href="backtest.html">Backtest</a>
       <a href="sim.html">Simulator</a>
       <a href="https://github.com/yieldchaser/etf-data" target="_blank" rel="noopener">Source ↗</a>
     </nav>
@@ -69,27 +84,30 @@
     <a href="#thesis">1 · The thesis — what this system tries to detect</a>
     <a href="#universe">2 · The ETF universe (5 tiers)</a>
     <a href="#conviction">3 · The Conviction Score &amp; APEX (v3)</a>
-    <a href="#motion">4 · Motion signals (velocity, burst, divergence)</a>
-    <a href="#flags">5 · Flags &amp; chips</a>
+    <a href="#motion">4 · Motion signals (rank trajectory, burst, crater)</a>
+    <a href="#signal-flags">5 · Flags &amp; chips</a>
+    <a href="#retired-signals">&nbsp;&nbsp;5.1 · Retired signals (transparency)</a>
     <a href="#sanitizer">6 · Sanitizer (what's filtered before scoring)</a>
     <a href="#maturity">7 · Maturity gate (§28)</a>
     <a href="#self-living">8 · Self-living data — how the markets dataset stays fresh</a>
     <a href="#archive">9 · The permanent history archive</a>
-    <a href="#limits">10 · Honest limitations</a>
+    <a href="#data-notes">10 · Data notes — universe expansion &amp; pipeline guarantees</a>
+    <a href="#limits">11 · Honest limitations</a>
+    <a href="backtest.html">Backtest page ↗ — strategy performance comparison</a>
   </div>
 
   <!-- §1 Thesis -->
   <h2 id="thesis">1 · The thesis</h2>
   <p>Conviction Labs is built around one idea: <strong>institutional conviction is detectable before it becomes consensus.</strong></p>
   <p>Smart-Beta ETFs — momentum, quality, value, spinoff — are run by systematic strategies that rebalance on rules. Each one is a different epistemology of "what looks attractive right now." When several of these independent strategies <em>simultaneously</em> accumulate the same name, that convergence is meaningful: it means the name appears in multiple distinct lenses at once.</p>
-  <p>Conviction Labs scrapes 30 such ETFs daily, normalises their holdings, scores each ticker by how broadly &amp; conviction-weightedly it's held, and surfaces the names where conviction is rising fastest.</p>
+  <p>Conviction Labs scrapes the configured ETF universe daily — see the live count in the dashboard header — normalises their holdings, scores each ticker by how broadly &amp; conviction-weightedly it's held, and surfaces the names where conviction is rising fastest.</p>
   <div class="callout callout-cyan">
     <strong>What this is NOT:</strong> a factor-decomposition engine. There is no regression against macro/style factors, no factor-of-the-day, no purified residuals. Conviction Labs measures <em>institutional accumulation breadth and conviction</em> — that is the entire product.
   </div>
 
   <!-- §2 Universe -->
   <h2 id="universe">2 · The ETF universe</h2>
-  <p>30 ETFs grouped into 5 tiers. Each tier carries a base point weight. The weights reflect editorial judgement about how informative each strategy type is for early conviction detection.</p>
+  <p>The configured ETF universe — see the live count in the dashboard header — grouped into 5 tiers. Each tier carries a base point weight. The weights reflect editorial judgement about how informative each strategy type is for early conviction detection.</p>
   <table class="tier-table w-full text-sm">
     <thead><tr><th>Tier</th><th>Points</th><th>What it detects</th><th>ETFs</th></tr></thead>
     <tbody>
@@ -158,50 +176,74 @@ APEX Score   = round(APEX Score × g)</pre>
 
   <!-- §4 Motion -->
   <h2 id="motion">4 · Motion signals</h2>
-  <p>Score levels measure where conviction <em>is</em>. Motion signals measure where conviction <em>is going</em>. Three are surfaced on the leaderboard:</p>
-  <h3>4.1 — Velocity score</h3>
-  <pre>velocity = 0.5 × global_rank_Δ_30d
-         + 0.25 × peak_improvement_30d
-         + 1.0  × avg_per_etf_rank_Δ_7d
-         + 20.0 × avg_weight_flow_7d
-         + 5.0  × etfs_added_30d
-         + 1.0  × score_streak</pre>
-  <p>A composite picking up both <strong>steady accumulation</strong> (rising rank, growing weight, more ETFs picking it up) and <strong>burst</strong> moves (peak rank improvement). The coefficients are tuning, not theory; the goal is a sortable scalar that ranks "moving up fast" reliably.</p>
+  <p>Score levels measure where conviction <em>is</em>. Motion signals measure where conviction <em>is going</em>. The hand-tuned velocity composite was retired in the 2026-08 signal study (see <a href="#retired-signals">§5.1 Retired signals</a>); what ships today is the raw rank-trajectory layer plus the empirically evaluated flags below.</p>
 
-  <h3>4.2 — BURST flag</h3>
+  <h3>4.1 — Rank trajectory metrics</h3>
+  <p>Per ticker, computed over trailing windows and consumed directly by the UI and by the Pre-HC / Stealth-Buy filters:</p>
+  <ul class="list-disc pl-5 space-y-1">
+    <li><strong><code>global_rank_delta_30d</code> / <code>global_rank_peak_30d</code></strong> — net and best rank improvement across the 30-day window (positive = improved), with a ≥ 80%-of-window coverage check so one-day blips don't count.</li>
+    <li><strong><code>avg_rank_delta_7d</code> / <code>avg_rank_delta_30d</code></strong> — mean per-ETF rank change across the funds currently holding the name.</li>
+    <li><strong><code>avg_weight_flow_7d</code></strong> — mean per-ETF weight change over the trailing 7 days.</li>
+    <li><strong><code>etf_count_delta_30d</code></strong> — net ETF positions added or removed over 30 days. Sector/country flow aggregations now measure the same thing: the <code>flow.json</code> keys are <code>net_funds_delta</code> (sum) and <code>avg_funds_delta</code> (mean) of per-name ETF-count change.</li>
+  </ul>
+
+  <h3>4.2 — BURST — strongest as an HC-entry precursor</h3>
   <p>A name is flagged BURST when <strong>all three</strong> of these hold for the trailing 30 days:</p>
   <ul class="list-disc pl-5 space-y-1">
     <li>Peak global-rank improvement ≥ 40 positions</li>
-    <li>Continuous presence in ≥ 80% of the daily snapshots in the window (so we're not flagging a one-day blip)</li>
+    <li>Continuous presence in ≥ 80% of the daily snapshots in the window (names with &lt; 15 observations get a pro-rata pass — they can't physically reach 80% of a full window)</li>
     <li>Rank better than the within-window median for ≥ 8 of the last 10 snapshots (so the move is sustained, not a fluke)</li>
   </ul>
+  <div class="callout callout-cyan">
+    <strong>Positioning (2026-08 study):</strong> burst's value is as an <strong>HC-entry precursor</strong> — 3.3× lift on entering HIGH_CONVICTION within 14 days. Documented caveat: after a burst peaks, forward rank drift averages <strong>−6 ranks vs −2 base</strong> (post-peak mean reversion). Treat burst as an <em>early</em> signal, not a chase signal.
+  </div>
 
-  <h3>4.3 — Conviction divergence</h3>
-  <p>Surfaces names where score is rising but rank is falling (being crowded out by faster movers — a "leaking" position) or the inverse (rank rising while score falls — relative-strength-on-cheap).</p>
+  <h3>4.3 — CRATER</h3>
+  <p>The exact polar opposite of BURST: peak drop ≥ 40 positions in 30d, same coverage gate, sustained deterioration in ≥ 8 of the last 10 snapshots. The only consistent <em>downside</em> signal in the study: names in crater exit at <strong>1.28–1.40× the base exit rate</strong>.</p>
 
-  <h3>4.4 — APEX momentum kicker</h3>
-  <p>The kicker described in §3.3 also lives here conceptually: <code>velocity_z</code> (z-scored 10-snapshot score slope) and <code>ignition_z</code> (z-scored acceleration) feed the bounded ±35% adjustment to the Final Score. These are <strong>distinct from the display velocity score in §4.1</strong> — that one is a hand-tuned composite for sorting the leaderboard; velocity_z / ignition_z are statistical OLS-slope measures that actually move the APEX Score.</p>
+  <h3>4.4 — NEW — short-horizon only</h3>
+  <p>First appearance in an ETF within the 14-day lookback (<code>new_lookback_days</code>), suppressed for ETFs younger than the 30-day maturity baseline (§7). The study repositioned it as a <strong>short-horizon</strong> signal: accumulation lift <strong>1.38× within 7 days</strong>, fading to <strong>0.65× by 30 days</strong> — trade it early or not at all.</p>
 
-  <h3>4.5 — Extreme conviction moves (homepage ribbon)</h3>
-  <p>On the leaderboard, the top strip surfaces names whose motion metrics are statistically unusual (|z| ≥ 2) vs the leaderboard's own distribution today. Pure presentation — every value is already in the leaderboard JSON. Quality gate: requires ≥ 3 ETFs holding (so a single-ETF data hiccup can't surface a fake outlier).</p>
+  <h3>4.5 — Pre-HC chip</h3>
+  <p>Held by <strong>exactly 3 ETFs</strong> with <strong>improving 7-day per-fund ranks</strong> — one pickup away from HIGH_CONVICTION. Catches names the day before broad consensus.</p>
+
+  <h3>4.6 — Stealth-Buy chip</h3>
+  <p>Held by <strong>1–2 funds</strong> with <strong>&gt; 10% average weight growth over 7 days</strong> while ranks haven't started moving yet — position building before the rank layer notices.</p>
+
+  <h3>4.7 — CONCENTRATED — promoted</h3>
+  <p>One fund supplies ≥ 85% of the name's score mass (or a lone fund holds it at ≥ 4× equal-weight). Promoted in prominence after the study: the <strong>best risk-adjusted flag</strong> on the board — exit rate <strong>0.24× base</strong> (0.58% vs 2.39%) and accumulation lift <strong>1.17–1.28×</strong>. Single-fund stories are riskier to trust, but they persist.</p>
+
+  <h3>4.8 — HIGH_CONVICTION — raw count, all modes</h3>
+  <p><strong>Held by ≥ 4 distinct ETFs</strong>, applied identically in ALL scoring modes. The former apex-mode conviction-breadth gate (conviction ≥ θ = 0.8 <em>and</em> breadth ≥ 4) fired on ~0.03% of rows — effectively a dead flag — and was removed in 2026-08. <code>conviction_etf_count</code> survives as a diagnostic column only.</p>
+
+  <h3>4.9 — Momentum regime &amp; extreme moves</h3>
+  <p><code>momentum_regime</code> keeps its five labels (accelerating / rising / stable / weakening / declining) but was rebuilt on non-cancelling inputs: the <code>score_streak</code> direction combined with the mean 7-day per-ETF rank delta (<code>avg_rank_delta_7d</code>). The leaderboard's top ribbon still surfaces names whose motion metrics are statistically unusual (|z| ≥ 2) vs today's distribution — pure presentation, gated on ≥ 3 ETFs holding. The APEX momentum kicker (§3.3) is unchanged: <code>velocity_z</code> / <code>ignition_z</code> are statistical OLS-slope measures that move the APEX Score — distinct from the retired display composite that used to live in this section.</p>
 
   <!-- §5 Flags -->
-  <h2 id="flags">5 · Flags &amp; chips</h2>
+  <h2 id="signal-flags">5 · Flags &amp; chips</h2>
+  <p>The leaderboard flag set exactly as shipped:</p>
   <table class="tier-table w-full text-sm">
     <thead><tr><th>Flag</th><th>Condition</th><th>Reading</th></tr></thead>
     <tbody>
-      <tr><td><strong>HIGH_CONVICTION</strong></td><td>≥ 4 ETFs with conviction ≥ 0.8 hold the name</td><td>Broad consensus across independent strategies</td></tr>
+      <tr><td><strong>HIGH_CONVICTION</strong></td><td>Held by ≥ 4 distinct ETFs (raw count — identical in all scoring modes)</td><td>Broad consensus across independent strategies</td></tr>
+      <tr><td><strong>CONCENTRATED</strong></td><td>One fund supplies ≥ 85% of the name's score mass (or a lone fund holds it at ≥ 4× equal-weight)</td><td>Single-fund story — best risk-adjusted flag: 0.24× base exit rate, 1.17–1.28× accumulation lift</td></tr>
       <tr><td><strong>SPECULATIVE_BETA</strong></td><td>Held only by Trend tier; no Quality / Scout</td><td>Momentum without fundamental support</td></tr>
-      <tr><td><strong>BURST</strong></td><td>See §4.2</td><td>A 30-day rank breakout that's actually sustained</td></tr>
-      <tr><td><strong>VELO</strong></td><td>velocity ≥ 25, ≥ 2 ETFs, no BURST</td><td>Steady accumulation without a burst spike</td></tr>
-      <tr><td><strong>Quality+</strong></td><td>Gained a Quality ETF (COWZ / CALF / SPHQ) in last 30d</td><td>Momentum confirmed by a fundamentals lens</td></tr>
-      <tr><td><strong>Quality−</strong></td><td>Lost a Quality ETF in last 30d</td><td>Fundamentals lens dropped the name</td></tr>
-      <tr><td><strong>Pre-HC</strong></td><td>Held by exactly 3 ETFs with rising velocity</td><td>One pickup away from broad consensus</td></tr>
-      <tr><td><strong>Stealth Buy</strong></td><td>Single fund growing position &gt; 10% in 7d before consensus</td><td>Lonely-buy-before-the-crowd</td></tr>
-      <tr><td><strong>CONCENTRATED</strong></td><td>One fund supplies ≥ 85% of the name's score mass (or a lone fund holds it at ≥ 4× equal-weight)</td><td>Single-fund story: conviction is real but undiversified</td></tr>
+      <tr><td><strong>NEW</strong></td><td>First appearance within the 14-day lookback; suppressed for ETFs younger than the 30-day maturity baseline</td><td>Short-horizon entrant — 1.38× accumulation lift within 7d, fading to 0.65× by 30d (§4.4)</td></tr>
+      <tr><td><strong>BURST</strong></td><td>See §4.2</td><td>HC-entry precursor (3.3× within 14d) — early signal, not a chase signal</td></tr>
+      <tr><td><strong>CRATER</strong></td><td>See §4.3</td><td>Only consistent downside signal: 1.28–1.40× exit-rate lift</td></tr>
+      <tr><td><strong>Quality+</strong></td><td>Gained a Quality-tier ETF in last 30d (Quality set derived from config, not hardcoded)</td><td>Momentum confirmed by a fundamentals lens</td></tr>
     </tbody>
   </table>
-  <p class="text-xs mt-2" style="color: var(--text-3)">The leaderboard's micro-badges (Q+, STEALTH, DIV±, CONC) and the regime chip are display-layer signals documented in the dashboard tooltips.</p>
+  <p class="text-xs mt-2" style="color: var(--text-3)">Pre-HC and Stealth-Buy (§4.5–4.6) ship as leaderboard filter chips rather than flags. The momentum-regime chip is documented in §4.9.</p>
+
+  <h3 id="retired-signals">5.1 — Retired signals (transparency)</h3>
+  <p>Removed from the engine, payloads, and UI in <strong>2026-08</strong>, after a 156-snapshot walk-forward study on the real store. We retire signals that don't earn their column:</p>
+  <ul class="list-disc pl-5 space-y-1">
+    <li><strong>velocity_score</strong> — its components cancelled each other: top-quintile forward lift ≤ 1.0 at the 7/14/30-day horizons. The underlying motion columns stay (§4.1); Pre-HC / Stealth-Buy use them directly.</li>
+    <li><strong>stealth_accumulation</strong> — only 126 events in 6 months; too rare to act on. Succeeded by the Stealth-Buy chip (§4.6).</li>
+    <li><strong>conviction_divergence</strong> — exit-lift pointed the <em>wrong</em> direction (0.56×).</li>
+    <li><strong>quality_defected_30d</strong> — lift flipped sign between evaluation grids; unstable. Quality+ adoption remains.</li>
+  </ul>
 
   <!-- §6 Sanitizer -->
   <h2 id="sanitizer">6 · Sanitizer</h2>
@@ -246,15 +288,43 @@ APEX Score   = round(APEX Score × g)</pre>
     <li>To intentionally fix a historical mistake, the operator must run with <code>--allow-historical-rewrite</code>; that flag logs a loud warning and updates the manifest.</li>
   </ul>
 
-  <!-- §10 Limitations -->
-  <h2 id="limits">10 · Honest limitations</h2>
+  <!-- §10 Data notes -->
+  <h2 id="data-notes">10 · Data notes</h2>
+
+  <h3>10.1 — Universe expansion (May 2026)</h3>
+  <p>The tracked universe grew in stages. Absolute ranks are <strong>universe-relative</strong>, so numbers from before and after a jump are not directly comparable:</p>
+  <table class="tier-table w-full text-sm">
+    <thead><tr><th>Date</th><th class="font-mono">Tracked ETFs</th></tr></thead>
+    <tbody>
+      <tr><td>February 2026</td><td class="font-mono">11 → 16</td></tr>
+      <tr><td>Feb – mid-May 2026</td><td class="font-mono">16 (stable)</td></tr>
+      <tr><td>2026-05-18</td><td class="font-mono">21</td></tr>
+      <tr><td>2026-05-21</td><td class="font-mono">23</td></tr>
+      <tr><td>2026-05-22</td><td class="font-mono">29</td></tr>
+      <tr><td>Late May 2026</td><td class="font-mono">30</td></tr>
+    </tbody>
+  </table>
+  <ul class="list-disc pl-5 space-y-1 mt-3">
+    <li><strong>Rank dilution.</strong> Doubling the tracked universe mechanically depresses rank numbers after each jump — a top-10 name in a 16-ETF world can sit at #25 in a 30-ETF world without anything "happening" to it. Rank deltas that span late May therefore mix two universes; treat them as qualitative only.</li>
+    <li><strong>Scores are less affected.</strong> They're additive per holding, so they survive universe growth better — but breadth-dependent terms (tier breadth, HC count, entropy multipliers) still shift at each boundary.</li>
+    <li><strong>The maturity gate (§7) suppresses NEW-flag floods</strong> from freshly added ETFs — onboarding a fund doesn't flag every position it holds as NEW.</li>
+    <li><strong>Charts annotate the break.</strong> Every build emits <code>metadata.universe_expansion</code> (the largest single jump plus per-date fund counts), which the dashboards use to mark the boundary.</li>
+    <li><strong>Guidance:</strong> for pre/post-May comparisons prefer score-level reads across the boundary and interpret rank-level moves with the dilution effect above in mind.</li>
+  </ul>
+
+  <h3>10.2 — Scraper fail-loud guarantees</h3>
+  <p>The scraper exits 1 on a missing or corrupt config and when zero enabled primary ETFs scrape successfully (a systemic outage must never produce a green run). Partial failures stay warnings — fault isolation across funds is by design, and cron redundancy covers transient blips. Consequence: <strong>a green build means data actually flowed</strong>; silence is never success.</p>
+
+  <!-- §11 Limitations -->
+  <h2 id="limits">11 · Honest limitations</h2>
   <ul class="list-disc pl-5 space-y-1">
-    <li><strong>Conviction Labs measures detection breadth, not future returns.</strong> A high score means many independent strategies converge on a name; it does not mean the name will outperform. Backtests of HC-entry, BURST-trigger, and Top-N-Velocity strategies are on the <a href="backtest.html">Backtest page</a> — judge for yourself.</li>
+    <li><strong>Conviction Labs measures detection breadth, not future returns.</strong> A high score means many independent strategies converge on a name; it does not mean the name will outperform. Backtests of HC-entry, BURST-trigger, and CRATER strategies are on the <a href="backtest.html">Backtest page</a> — judge for yourself.</li>
     <li><strong>The system is one source.</strong> No earnings, no fundamentals, no macro overlay. Use it alongside other tools, not instead of them.</li>
-    <li><strong>Daily granularity, not intraday.</strong> Scrapes run 14:00 + 22:00 UTC weekdays. Same-day moves are not captured.</li>
+    <li><strong>Daily granularity, not intraday.</strong> Scrapes run 02:00 / 14:00 / 22:00 UTC weekdays plus a weekend catch-up. Same-day moves are not captured.</li>
     <li><strong>Some positions are hidden.</strong> Equity-only filtering removes cash, derivatives, money-market, and currency placeholders. You see the equity book, not the full ETF.</li>
     <li><strong>Tier weights are editorial.</strong> The 40 / 60 / 30 / 10 / 2 numbers are calibrated by hand. The current values are pinned by regression tests (Samsung &gt; Itaú under the conviction-weighted core that APEX builds on); changes require a measured before/after.</li>
-    <li><strong>APEX multipliers are calibrated to this 30-ETF universe.</strong> For example, the 0.85 concentration-dominance threshold sits above the structural median of 0.81 created by the 60/40/30/10/2 point asymmetry. A different universe needs recalibration.</li>
+    <li><strong>APEX multipliers are calibrated to this configured ETF universe.</strong> For example, the 0.85 concentration-dominance threshold sits above the structural median of 0.81 created by the 60/40/30/10/2 point asymmetry. A different universe needs recalibration.</li>
+    <li><strong>History spans two universes.</strong> The May 2026 expansion (see <a href="#data-notes">§10 Data notes</a>) means rank-level comparisons that cross the late-May boundary mix different universe sizes — the rank numbers were mechanically diluted by the jump.</li>
     <li><strong>Cold-start gaps.</strong> Each ETF has a 30-day maturity ramp during which NEW flags are suppressed. The system started in February 2026; the leaderboard reaches its full signal density once every ETF is past the maturity gate.</li>
   </ul>
 
