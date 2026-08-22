@@ -158,17 +158,66 @@ def test_daily_scrape_has_cron_schedule():
         assert "cron" in entry, f"Schedule entry is missing 'cron' key: {entry}"
 
 
-def test_build_site_has_workflow_run_trigger():
-    """Req 3.8 — build_site.yml must have a workflow_run trigger.
+def test_build_site_single_trigger_chain():
+    """Req 3.8 (rev 2026-08) — build_site.yml must have EXACTLY ONE automated
+    trigger chain: push-to-main with site/data paths. workflow_run was removed
+    (it fired on no-change scrape days and raced the push-path run into the
+    concurrency group, cancelling real builds); the explicit dispatch step in
+    daily_scrape.yml was removed with it. workflow_dispatch stays for manual
+    hotfixes. The coverage commit-back carries [skip ci] so it never re-triggers.
 
-    Note: yaml.safe_load parses the YAML 'on:' key as the Python boolean True,
-    so we look up BUILD_YML[True] rather than BUILD_YML["on"].
+    Note: yaml.safe_load parses the YAML 'on:' key as Python boolean True.
     """
-    # 'on' is a YAML boolean alias — yaml.safe_load maps it to Python True
     on_block = BUILD_YML.get(True) or BUILD_YML.get("on") or {}
-    assert "workflow_run" in on_block, (
-        "build_site.yml is missing a 'workflow_run' trigger; "
-        f"found triggers: {list(on_block.keys())}"
+    assert "workflow_run" not in on_block, (
+        "build_site.yml must NOT use a workflow_run trigger anymore "
+        f"(single push-paths chain policy); found triggers: {list(on_block.keys())}"
+    )
+    push = on_block.get("push")
+    assert isinstance(push, dict) and "paths" in push, (
+        "build_site.yml must trigger on push with a paths filter"
+    )
+    assert "workflow_dispatch" in on_block, "manual dispatch must remain for hotfixes"
+
+
+def _on_block(yml: dict) -> dict:
+    return yml.get(True) or yml.get("on") or {}
+
+
+def test_workflows_serialize_with_concurrency_groups():
+    """2026-08 hardening — both workflows MUST define concurrency groups and
+    MUST NOT cancel in progress: overlapping scrapes die on binary-parquet
+    rebase conflicts, and cancelled builds lose the stock-detail coverage
+    commit-back between commit and push."""
+    for name, yml in (("build_site", BUILD_YML), ("daily_scrape", SCRAPE_YML)):
+        conc = yml.get("concurrency")
+        assert isinstance(conc, dict), f"{name}.yml is missing a concurrency group"
+        assert conc.get("group"), f"{name}.yml concurrency group has no name"
+        assert conc.get("cancel-in-progress") is False, (
+            f"{name}.yml must set cancel-in-progress: false (queue, don't cancel)"
+        )
+    # Distinct groups — a scrape and a build must be able to run concurrently.
+    assert BUILD_YML["concurrency"]["group"] != SCRAPE_YML["concurrency"]["group"]
+
+
+def test_every_job_has_timeout_minutes():
+    """2026-08 hardening — hung fetches must not burn the 360-min default."""
+    for name, yml in (("build_site", BUILD_YML), ("daily_scrape", SCRAPE_YML)):
+        for job_name, job in yml.get("jobs", {}).items():
+            tm = job.get("timeout-minutes")
+            assert isinstance(tm, int) and 0 < tm <= 120, (
+                f"{name}.yml job '{job_name}' missing sane timeout-minutes"
+            )
+
+
+def test_checkout_enables_lfs_for_markets_workbook():
+    """data/Mega_Markets_Historical.xlsx lives in Git LFS; with checkout's
+    default lfs:false CI ingests a pointer file and the deep-history seed
+    fails silently under continue-on-error."""
+    steps = _build_steps()
+    checkout = next(s for s in steps if str(s.get("uses", "")).startswith("actions/checkout"))
+    assert checkout.get("with", {}).get("lfs") is True, (
+        "build_site.yml checkout must set lfs: true"
     )
 
 

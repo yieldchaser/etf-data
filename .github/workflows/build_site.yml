@@ -1,11 +1,20 @@
 name: Build site
 
+# ── Trigger policy: ONE automated chain ─────────────────────────────────
+# The only automated trigger is push-to-main with site/data paths.
+# Two duplicate triggers were REMOVED (they raced each other into the
+# concurrency group and cancelled real builds):
+#   * workflow_run (on "Daily ETF Scrape" completion) — fired on EVERY
+#     scrape, even no-change days that pushed nothing, and raced the
+#     push-path run started by the scraper's own data commit.
+#   * the explicit workflow_dispatch curl/github-script step in
+#     daily_scrape.yml (removed there in the same change) — redundant with
+#     the data/** push path.
+# Loop-safety evidence: the stock-detail coverage commit-back below uses a
+# "[skip ci]" marker in its commit message, so it never re-hits these push
+# paths. The scraper's data commit intentionally carries no marker so it
+# DOES trigger this workflow. workflow_dispatch is kept for manual hotfixes.
 on:
-  workflow_run:
-    workflows: ["Daily ETF Scrape"]
-    types: [completed]
-    branches: [main]
-
   push:
     branches: [main]
     paths:
@@ -23,8 +32,12 @@ on:
   workflow_dispatch:
 
 concurrency:
+  # Queue instead of cancel. With cancel-in-progress: true, a scheduled
+  # build could kill a manual hotfix build, and any cancelled run dying
+  # between the stock-detail coverage `git commit` and `git push HEAD:main`
+  # loses accumulated coverage. Serialized queueing only ever costs minutes.
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: write   # commit-back of accumulated stock-detail coverage
@@ -34,17 +47,18 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: >
-      github.event_name != 'workflow_run' ||
-      github.event.workflow_run.conclusion == 'success'
+    timeout-minutes: 60   # hung FRED/yfinance fetch must not burn the 360-min default
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # Always checkout latest main so workflow_run-triggered builds
-          # read the freshest data commit (head_sha is captured at scrape
-          # *start*, before the Save Data push, so it can point at stale data).
+          # Always build from latest main: push events already land on main,
+          # and manual dispatches must never build a stale ref.
           ref: main
+          # lfs:true is REQUIRED — data/Mega_Markets_Historical.xlsx lives in
+          # Git LFS; with the default lfs:false the deep-history seed ingests
+          # a tiny pointer file and fails silently under continue-on-error.
+          lfs: true
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -193,6 +207,25 @@ jobs:
           assert isinstance(first['monthly'], list), 'monthly must be a list'
           assert isinstance(first['monthly'][0], list), 'monthly entries must be [YYYY-MM, val] pairs'
           print(f'market_returns.json OK: {len(assets)} assets, asof={d[\"asof\"]}')
+          # Freshness + sections gate: a stale or gutted market payload must
+          # FAIL the build instead of passing silently under continue-on-error
+          # above. ALLOW_EMPTY_MARKETS=1 is the escape hatch for deliberate
+          # cache-only runs.
+          python -c "
+          import os
+          d2 = json.load(open('docs/data/market_returns.json'))
+          if os.environ.get('ALLOW_EMPTY_MARKETS') == '1':
+              print('ALLOW_EMPTY_MARKETS=1 — skipping rates/cpi/freshness gate')
+          else:
+              rates, cpi = d2.get('rates') or {}, d2.get('cpi') or {}
+              assert rates, 'rates section EMPTY — upstream FRED outage masked; fail build'
+              assert cpi, 'cpi section EMPTY — upstream FRED outage masked; fail build'
+              import datetime
+              asof = datetime.date.fromisoformat(d2['asof'])
+              age = (datetime.date.today() - asof).days
+              assert age <= 40, f'market_returns.json {age}d stale (asof={asof})'
+              print(f'markets gate OK: rates={len(rates)}, cpi={len(cpi)}, asof age={age}d')
+          "
           "
           # Leaderboard sanity check: valid JSON + non-zero entry count
           python -c "
@@ -221,6 +254,7 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 20   # deploys are fast; a hang here must not block the queue
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

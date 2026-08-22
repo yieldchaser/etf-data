@@ -15,12 +15,27 @@ on:
     - cron: '0 14 * * 0,6'
   workflow_dispatch:      # Manual Run Button
 
+concurrency:
+  # Serialize ALL triggers (three weekday crons, weekend cron, manual
+  # dispatch). Overlapping runs each commit the same binary parquet
+  # (data/history_parquet/year=YYYY/holdings.parquet) and
+  # `git pull --rebase -X theirs` cannot resolve BINARY conflicts — the
+  # rebase halts and the ephemeral runner discards folded rows forever.
+  # MUST stay false: cancelling a run mid-scrape drops that window's rows;
+  # a QUEUED run simply waits and re-hydrates from the parquet store, so
+  # serialization loses nothing.
+  group: daily-scrape
+  cancel-in-progress: false
+
 jobs:
   scrape-and-commit:
     runs-on: ubuntu-latest
+    timeout-minutes: 90   # hung Playwright/yfinance must not burn the 360-min default
     permissions:
       contents: write
-      actions: write    # needed to dispatch build_site workflow
+      # actions:write removed with the build_site dispatch step — the
+      # push-paths trigger in build_site.yml rebuilds the site on every
+      # data commit, so no explicit dispatch is needed.
 
     steps:
       - name: Checkout code
@@ -111,18 +126,9 @@ jobs:
             echo "data_changed=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Trigger site rebuild
-        # Explicitly dispatch the Build Site workflow after new data is pushed.
-        # Belt-and-suspenders alongside the workflow_run trigger in build_site.yml.
-        if: steps.save_data.outputs.data_changed == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'build_site.yml',
-              ref: 'main',
-            });
-            console.log('Build site workflow dispatched.');
+      # NOTE: the former "Trigger site rebuild" dispatch step was REMOVED.
+      # build_site.yml rebuilds via its push-paths trigger (data/**) on the
+      # commit above; the explicit dispatch duplicated that and, together
+      # with build_site's workflow_run trigger, produced three racing builds
+      # of the same data under one concurrency group.
 
