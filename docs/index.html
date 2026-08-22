@@ -3585,9 +3585,10 @@ function app() {
       // hiccup on one ETF can't surface a fake outlier.
       const qualifies = row => {
         if ((row.etf_count || 0) < 3) return false;
-        // Currency / non-equity placeholders that occasionally leak past the
-        // sanitizer (CAD, EUR, USD, GBP …). Real tickers can be 1-2 chars (X, F)
-        // but those are equities; the suspect set is ISO-currency 3-letter codes.
+        // Currency / non-equity placeholders are now dropped at scrape time
+        // too; this ISO-currency guard is belt-and-braces for the ribbon.
+        // Real tickers can be 1-2 chars (X, F) but those are equities; the
+        // suspect set is ISO-currency 3-letter codes.
         const t = (row.ticker || '').toUpperCase();
         const ISO_CCY = new Set(['CAD','EUR','USD','GBP','JPY','KRW','MXN','SAR','TWD','CNY','BRL','NOK','HKD','AUD','SGD','CHF','INR']);
         if (ISO_CCY.has(t)) return false;

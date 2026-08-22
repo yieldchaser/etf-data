@@ -120,6 +120,14 @@ Issuer website
 3. `scripts/migrate_to_parquet.py` folds the new rows into the Parquet store (mandatory, fail-loud — past-year partitions are immutable, current-year is append-only).
 4. The local CSV is wiped so `git add data/` never stages it.
 
+**Year-rollover zero-loss guarantee (2026-08):** around January 1, scrapes carry T−1 as-of dates in the *prior* year, which the immutable-partition guard refuses to write. Those rows are spilled to a committed sidecar (`data/all_history_refused.csv`) and the CSV-wipe step holds off while it is non-empty — no day is ever silently erased. Fold them with:
+
+```
+python scripts/migrate_to_parquet.py --source data/all_history_refused.csv --allow-historical-rewrite
+```
+
+**Ingress placeholder filter (2026-08):** `clean_dataframe` drops non-positive weights, `$`-prefixed currency lines, and `Cash&Other` aggregates at ingestion on every path — matching what the Invesco-API and v42 bridge paths always did. A table that filters to nothing returns no rows rather than recording a fake as-of day. Heuristic-path funds also declare `"weight_unit": "percent"` in `config.json`, replacing the old infer-from-data scale heuristic (one truncated page away from a silent 100× batch error).
+
 The committed daily scrape is now a ~1-line manifest refresh + small Parquet partition delta, down from a multi-megabyte CSV blob. `conviction/build.py` reads the Parquet store directly (Parquet-first `fetch_history`), so the build never depends on the transient CSV.
 
 Idempotency is enforced on the composite key `(ETF_Ticker, ticker, Holdings_As_Of)` — reruns within the same UTC day are safe.
@@ -140,9 +148,21 @@ The scraper fails loudly instead of exiting silent-success (audit P0):
 - **Missing/corrupt `config.json`** → prints the cause and **exits 1**.
 - **Total primary failure** (0 of N enabled ETFs scraped) → **exits 1**, evaluated *after* `run_extended_scrapers()` so a v42 collection is never skipped by a primary-only outage.
 - **v42 total failure** (every extended fund returns 0 rows) → **exits 1**.
+- **Giant-history read failure** → refuses to overwrite and exits non-zero instead of silently replacing 400k+ rows of history with today's rows; writes are atomic (temp + rename).
 - **Partial failures stay warnings (exit 0)** — fault isolation across funds is by design, and cron redundancy covers transient blips.
 
+Additional tripwires (warn-only): the Invesco path logs `equity rows vs reported holdings` on every response (loud warning below 50% — catches truncated/paginated responses), and the bridge warns when any `V42_ETFS` fund is missing from canonical output (a single source failing used to freeze its ETFs silently).
+
 A green build therefore means data actually flowed.
+
+### Stock-detail fetcher contract
+
+`conviction/fetch_stock_details.py` (feeds the per-ticker price/description cards):
+
+- Minor-unit quotes (`GBp`/`GBX`/`ZAc`/`ILA`) are converted at write time — prices stored in major units with an honest ISO currency code, so London names render ~100× correctly.
+- All detail/coverage JSON writes are atomic with a NaN/Inf sanitiser (invalid bare `NaN` tokens cannot reach parsers).
+- `coverage_state.json` updates run under an exclusive lockfile with a three-way merge, so concurrent builds can't lose coverage batches.
+- If **zero** tickers resolve in a run, the step exits non-zero (previously exit 0 with green CI while every detail file went stale).
 
 ---
 
@@ -217,7 +237,8 @@ Per-name signals `BURST` / `CRATER` / Quality+ (`quality_adopted_30d`) and the P
 ### Sanitizer
 
 Before scoring, the pipeline filters:
-- **Blocked tickers**: currency placeholders (`$USD`, `$EUR`, `$JPY`, etc.), money market funds (`AGPXX`, `FGXXX`), cash instruments
+- **Blocked tickers**: currency placeholders (`$USD`, `$EUR`, `$JPY`, `$AED`, `$CHF`, `$HKD`, `$SEK`, `$ZAR`, …), money market funds (`AGPXX`, `FGXXX`), cash instruments
+- **Ingestion-side filtering** (2026-08): non-positive weights, `$`-prefixed currency lines, and `Cash&Other` rows are dropped at scrape time on every path — the sanitizer below is the second layer, not the only one. Legacy rows were purged once via `scripts/cleanup_holdings_rows.py`.
 - **Blocked name patterns**: "Money Market", "Securities Lending"
 - **Ticker normalisation**: `BRK-B → BRK.B`, `BF/B → BF.B`, `GOOG → GOOGL` (dual-class consolidation)
 

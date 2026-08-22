@@ -247,9 +247,10 @@ APEX Score   = round(APEX Score × g)</pre>
 
   <!-- §6 Sanitizer -->
   <h2 id="sanitizer">6 · Sanitizer</h2>
-  <p>Before scoring runs, holdings rows are filtered &amp; normalised:</p>
+  <p>Holdings rows are filtered &amp; normalised at <em>two</em> layers — first at scrape time, then before scoring:</p>
   <ul class="list-disc pl-5 space-y-1">
-    <li><strong>Currency placeholders</strong> blocked — <code>$USD</code>, <code>$BRL</code>, <code>$JPY</code>, etc.</li>
+    <li><strong>Scrape-time exclusion (2026-08)</strong> — rows with non-positive weights, <code>$</code>-prefixed currency lines, and <code>Cash&amp;Other</code> aggregates never enter the store; they are dropped the moment a holdings table is parsed.</li>
+    <li><strong>Currency placeholders</strong> blocked at scoring — <code>$USD</code>, <code>$BRL</code>, <code>$JPY</code>, etc. (belt-and-braces behind the scrape-time filter).</li>
     <li><strong>Money-market funds</strong> blocked by exact name match (<em>Short-Term Investment Trust …</em>) and substring (<em>Money Market</em>, <em>Securities Lending</em>).</li>
     <li><strong>Ticker punctuation standardised</strong> — <code>BRK-B → BRK.B</code>, <code>BF/B → BF.B</code>, whitespace collapsed.</li>
     <li><strong>Dual-class consolidation</strong> — <code>GOOG → GOOGL</code> (otherwise dual-class shares fragment the leaderboard).</li>
