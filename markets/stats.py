@@ -55,9 +55,13 @@ def series_stats(df: pd.DataFrame, value_col: str = "Close") -> dict:
     def _closest_before_days(n_days: int):
         cutoff = today_dt - pd.Timedelta(days=n_days)
         cand = df[df["Date"] <= cutoff]
-        if cand.empty:
+        cand_vals = cand[value_col].dropna()
+        # A window can exist on the calendar yet hold only NaN values
+        # (sparse/late-listed series); fall back to None instead of raising
+        # IndexError, which would drop the entire series from markets.json.
+        if cand_vals.empty:
             return None
-        return float(cand[value_col].dropna().iloc[-1])
+        return float(cand_vals.iloc[-1])
 
     week_pct  = _pct(close_today, _closest_before_days(7))
     month_pct = _pct(close_today, _closest_before_days(30))
@@ -75,8 +79,9 @@ def series_stats(df: pd.DataFrame, value_col: str = "Close") -> dict:
 
     sessions_observed = len(vals)
 
-    # Daily returns
-    rets = vals.pct_change().dropna()
+    # Daily returns. A zero prior close produces ±inf which would poison the
+    # streak/last-20 counters — neutralise it to NaN (same as a missing day).
+    rets = vals.pct_change().replace([float("inf"), float("-inf")], float("nan")).dropna()
 
     # Current streak: walk back from today counting consecutive same-direction days
     def _streak(returns: pd.Series) -> int:
@@ -140,7 +145,11 @@ def log_rows(df: pd.DataFrame, value_col: str = "Close", n: int = 200) -> list[d
     df = df.copy()
     df["Date"] = pd.to_datetime(df["Date"])
     df = df.sort_values("Date").reset_index(drop=True)
-    df["_ret"] = df[value_col].pct_change()
+    df["_ret"] = (
+        df[value_col]
+        .pct_change()
+        .replace([float("inf"), float("-inf")], float("nan"))
+    )
 
     all_vals = df[value_col].dropna().tolist()
     all_vals_sorted = sorted(all_vals)  # for O(log n) bisect percentile

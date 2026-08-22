@@ -62,6 +62,7 @@ import argparse
 import json
 import math
 import os
+import re
 import sys
 from datetime import datetime, timezone, date
 from pathlib import Path
@@ -245,6 +246,73 @@ def _is_lfs_pointer(path: Path) -> bool:
 
 # ─── Excel reader ─────────────────────────────────────────────────────────────
 
+# ─── Excel cell-type coercion ────────────────────────────────────────────────
+# Excel sheets pasted "values-only" (or formatted as General) lose their date
+# number formats: datetime cells become plain serial-day numbers and prices
+# become text with thousands separators. Both silently corrupt the ingest if
+# handed straight to pandas:
+#   * pd.to_datetime(46000) parses 46000 as epoch NANOSECONDS → every row
+#     collapses into a phantom 1970-01 month which then OVERWRITES real
+#     1970-01 history at the merge seam (Excel priority on overlap).
+#   * numeric text ('46000') is coerced to NaT → whole series dropped.
+#   * comparing text closes ('5,123.45' > 0) raises TypeError, killing the
+#     entire sheet read.
+# These helpers are the single normalisation point for both failure modes.
+
+_EXCEL_EPOCH = pd.Timestamp("1899-12-30")           # Excel serial day 0
+_EXCEL_SERIAL_MIN = 1                               # 1900-01-01
+_EXCEL_SERIAL_MAX = 109500                          # ~2099-07
+_COMMAS_BETWEEN_DIGITS = re.compile(r"(?<=\d),(?=\d)")
+_CURRENCY_PREFIX = re.compile(r"^[$£€]\s*")
+
+
+def _coerce_excel_dates(s: pd.Series) -> pd.Series:
+    """Coerce a Date column holding either datetime cells or Excel serials.
+
+    Datetime cells pass through untouched. Numeric cells (or numeric text)
+    are interpreted as Excel serial days from 1899-12-30, restricted to a
+    sane 1900–2099 window; out-of-range numbers become NaT and are dropped.
+    """
+    if pd.api.types.is_datetime64_any_dtype(s):
+        return s
+    if pd.api.types.is_numeric_dtype(s):
+        # Never route plain numerics through pd.to_datetime: they would be
+        # read as epoch NANOSECONDS and silently become 1970-01 phantoms.
+        serial = pd.to_numeric(s, errors="coerce")
+        in_range = serial.between(_EXCEL_SERIAL_MIN, _EXCEL_SERIAL_MAX)
+        return pd.to_datetime(
+            serial.where(in_range), unit="D", origin=_EXCEL_EPOCH, errors="coerce"
+        )
+    parsed = pd.to_datetime(s, errors="coerce")
+    # Raw numeric elements inside an object column are Excel serials too —
+    # left alone, to_datetime reads them as epoch NANOSECONDS (1970 phantoms).
+    numeric_mask = s.map(lambda v: isinstance(v, (int, float)))
+    as_num = pd.to_numeric(s.astype(str).str.strip(), errors="coerce")
+    # Serial reading applies to native numerics and to text cells whose date
+    # parse failed; genuine datetimes are never reinterpreted.
+    serial = as_num.where(parsed.isna() | numeric_mask)
+    in_range = serial.between(_EXCEL_SERIAL_MIN, _EXCEL_SERIAL_MAX)
+    from_serial = pd.to_datetime(
+        serial.where(in_range), unit="D", origin=_EXCEL_EPOCH, errors="coerce"
+    )
+    return from_serial.where(serial.notna()).fillna(parsed)
+
+
+def _coerce_close(s: pd.Series) -> pd.Series:
+    """Coerce a Close column holding either numbers or formatted text.
+
+    Strips thousands separators between digits ("5,123.45" → "5123.45") and
+    currency markers ("$1234.5"); unparseable cells become NaN and are
+    dropped by the existing dropna/>0 filters downstream.
+    """
+    if pd.api.types.is_numeric_dtype(s):
+        return pd.to_numeric(s, errors="coerce").astype(float)
+    txt = s.astype(str).str.strip()
+    txt = txt.str.replace(_COMMAS_BETWEEN_DIGITS, "", regex=True)
+    txt = txt.str.replace(_CURRENCY_PREFIX, "", regex=True)
+    return pd.to_numeric(txt, errors="coerce")
+
+
 def _read_mega_xl(xl_path: Path, asset_filter: set[str] | None = None) -> dict[str, pd.DataFrame]:
     """
     Read Mega_Markets_Historical.xlsx.
@@ -291,7 +359,7 @@ def _read_mega_xl(xl_path: Path, asset_filter: set[str] | None = None) -> dict[s
                     print(f"  WARNING: Could not read sheet '{sheet}': {e}")
     except Exception as e:
         print(f"  ERROR: Could not open workbook: {e}")
-        return
+        return {}
 
     for sheet, df in sheet_dfs.items():
 
@@ -317,7 +385,8 @@ def _read_mega_xl(xl_path: Path, asset_filter: set[str] | None = None) -> dict[s
 
             sub = df[df[name_col] == index_name][[date_col, close_col]].copy()
             sub.columns = ["Date", "Close"]
-            sub["Date"] = pd.to_datetime(sub["Date"], errors="coerce")
+            sub["Date"] = _coerce_excel_dates(sub["Date"])
+            sub["Close"] = _coerce_close(sub["Close"])
             sub = sub.dropna(subset=["Date", "Close"])
             sub = sub[sub["Close"] > 0]
             sub = sub.sort_values("Date")
@@ -673,12 +742,17 @@ def process(
     return output
 
 
-def sync_completed_months_to_excel(xl_path: Path = MEGA_XL, output_data: dict[str, Any] | None = None) -> int:
+def sync_completed_months_to_excel(
+    xl_path: Path = MEGA_XL,
+    output_data: dict[str, Any] | None = None,
+    dry_run: bool = False,
+) -> int:
     """
     Auto-append fully completed calendar months from market_returns.json to Mega_Markets_Historical.xlsx.
 
     For any asset, if a calendar month (e.g. 2026-06) is fully completed (strictly prior to
     current YYYY-MM) and not yet present in the Excel sheet for that asset, append it.
+    With dry_run=True the plan is printed but the workbook is never saved.
     Returns count of new rows appended across all sheets.
     """
     if output_data is None:
@@ -759,8 +833,11 @@ def sync_completed_months_to_excel(xl_path: Path = MEGA_XL, output_data: dict[st
                 print(f"  EXCEL AUTO-APPEND: {sheet_name} | {raw_name} | {ym}-01 = {close_val}")
 
     if added_count > 0:
-        wb.save(xl_path)
-        print(f"✓ Saved {xl_path.name} with {added_count} newly completed month rows appended.")
+        if dry_run:
+            print(f"\n--dry-run: would append {added_count} rows to {xl_path.name} — NOT saved.")
+        else:
+            wb.save(xl_path)
+            print(f"✓ Saved {xl_path.name} with {added_count} newly completed month rows appended.")
     wb.close()
     return added_count
 
@@ -795,7 +872,9 @@ def main(argv: list[str] | None = None) -> int:
     print("═" * 60)
 
     if args.sync_excel:
-        sync_completed_months_to_excel()
+        # --dry-run must win over --sync-excel: a dry run may never write,
+        # not even the Excel backfill side-channel.
+        sync_completed_months_to_excel(dry_run=args.dry_run)
         return 0
 
     # Parse --assets filter if provided
