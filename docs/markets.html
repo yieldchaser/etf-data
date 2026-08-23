@@ -2693,9 +2693,23 @@ function marketsApp() {
       return this._partialMonthSet.has(ym);
     },
 
+    // Sorted-keys memo (WeakMap — lookups are stable cached objects now).
+    // The old code ran Object.keys().sort() on every fallback miss, i.e.
+    // O(n log n) per asset × month → the other half of the lens-switch hang.
+    _sortedKeysCache: new WeakMap(),
+
+    _sortedKeys(lookup) {
+      let keys = this._sortedKeysCache.get(lookup);
+      if (!keys) {
+        keys = Object.keys(lookup).sort();
+        this._sortedKeysCache.set(lookup, keys);
+      }
+      return keys;
+    },
+
     _getRateWithFallback(lookup, ym) {
       if (lookup[ym] !== undefined && lookup[ym] !== null) return lookup[ym];
-      const keys = Object.keys(lookup).sort();
+      const keys = this._sortedKeys(lookup);
       if (!keys.length) return null;
       const lastKey = keys[keys.length - 1];
       if (ym > lastKey) return lookup[lastKey];
@@ -2741,13 +2755,23 @@ function marketsApp() {
       CHF: ['USDCHF', 'mul'],
     },
 
+    _fxLookupCache: {},   // pairKey → {YYYY-MM: rate} dict (built once)
+
     _fxLookup(pairKey) {
+      // PERF (lens-switch hang): this used to rebuild the month dict from
+      // the raw rows array on EVERY call — once per asset × month inside
+      // _getAdjustedClose, i.e. ~110k dict constructions (~300M ops) per
+      // lens switch. Build it once per pair instead.
+      let d = this._fxLookupCache[pairKey];
+      if (d) return d;
       const rows = this.returnsData?.fx?.[pairKey];
-      if (!Array.isArray(rows)) return {};
-      const d = {};
-      for (const row of rows) {
-        if (Array.isArray(row) && row.length >= 2 && row[1] != null) d[row[0]] = row[1];
+      d = {};
+      if (Array.isArray(rows)) {
+        for (const row of rows) {
+          if (Array.isArray(row) && row.length >= 2 && row[1] != null) d[row[0]] = row[1];
+        }
       }
+      this._fxLookupCache[pairKey] = d;
       return d;
     },
 
@@ -2798,8 +2822,7 @@ function marketsApp() {
           return d;
         }
         return a.close || {};
-      };
-      const goldLookup   = _buildLookup('gold');
+      };      const goldLookup   = _buildLookup('gold');
       const silverLookup = _buildLookup('silver');
 
       // Build a monthly FX multiplier: native → target
