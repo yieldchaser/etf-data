@@ -846,7 +846,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     # velocity had no forward lift; ETF accumulation is the cleaner
     # conviction-flow measure).
     if 'etf_count_delta_30d' in leaderboard.columns:
-        top_acc = leaderboard[leaderboard['etf_count'] >= 2].sort_values(
+        top_acc = leaderboard[(leaderboard['etf_count'] >= 2) & (leaderboard['etf_count_delta_30d'] > 0)].sort_values(
             ['etf_count_delta_30d', 'global_rank_delta_30d'], ascending=False).head(15)
         chg['top_accumulation'] = [
             {
