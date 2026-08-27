@@ -117,7 +117,7 @@ def streaks_and_deltas(
         # Score percentile vs ticker's own history (excludes today's value to avoid trivial 100th)
         prior = s.iloc[:-1] if s.index[-1] == today else s
         if len(prior) >= 3 and pd.notna(score_today):
-            score_percentile = (prior < score_today).mean()
+            score_percentile = float(((prior < score_today).sum() + 0.5 * (prior == score_today).sum()) / len(prior))
         else:
             score_percentile = float("nan")
 
@@ -265,8 +265,8 @@ def predictive_overlay(leaderboard: pd.DataFrame, score_pnl: pd.DataFrame,
     out["apex_score"] = (out["final_score"] * kicker * m_conv).clip(lower=0.0).astype("int64")
 
     order = out.sort_values(
-        ["apex_score", "etf_count", "total_weight"],
-        ascending=[False, False, False],
+        ["apex_score", "etf_count", "total_weight", "ticker"],
+        ascending=[False, False, False, True],
     ).index
     out["apex_rank"] = pd.Series(range(1, len(out) + 1), index=order).astype("int64")
     return out
@@ -654,7 +654,7 @@ def signal_history(
         snap_etf_count = snap["etf_count"].tolist() if "etf_count" in snap.columns else [0] * len(snap_tickers)
 
         for j, tkr in enumerate(snap_tickers):
-            flag      = snap_flags[j] if snap_flags[j] else ""
+            flag      = str(snap_flags[j]) if pd.notna(snap_flags[j]) and snap_flags[j] else ""
             rank_val  = int(snap_ranks[j]) if snap_ranks[j] == snap_ranks[j] else 0
             any_new   = bool(snap_any_new[j])
             etf_count = int(snap_etf_count[j]) if snap_etf_count[j] == snap_etf_count[j] else 0

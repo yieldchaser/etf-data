@@ -259,7 +259,7 @@ def _fetch_yfinance_vol(yf_ticker: str, full_refresh: bool = False, existing: pd
         else:
             df = yf.download(yf_ticker, period="max", progress=False, auto_adjust=False)
 
-        if df is None or df.empty:
+        if (df is None or df.empty) and (full_refresh or existing is None or existing.empty):
             for p in ["10y", "5y", "2y"]:
                 try:
                     df = yf.download(yf_ticker, period=p, progress=False, auto_adjust=False)

@@ -251,8 +251,8 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     score_deltas_by_period: dict[int | str, dict] = {}
 
     for n in cfg.history.delta_periods_days:
-        if n == cfg.history.rank_delta_lookback_days and "score_delta_pct" in leaderboard.columns:
-            # Fast path: the primary-period delta was already computed upstream
+        if n == 1 and "score_delta_pct" in leaderboard.columns:
+            # Fast path: the 1-day delta was already computed upstream in streaks_and_deltas
             score_deltas_by_period[n] = leaderboard.set_index("ticker")["score_delta_pct"].to_dict()
         else:
             # Re-compute from historical snapshot if column not present
@@ -268,9 +268,12 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                         prev = ps.get(t)
                         # Preserve None for missing past data (don't fillna(0))
                         # Cap extreme values at ±10 (1000%) to avoid misleading display
-                        if prev and prev != 0:
+                        if prev and prev != 0 and pd.notna(cur):
                             raw_delta = (cur - prev) / abs(prev)
-                            delta[t] = round(max(-10.0, min(10.0, raw_delta)), 4)
+                            if math.isnan(raw_delta) or math.isinf(raw_delta):
+                                delta[t] = None
+                            else:
+                                delta[t] = round(max(-10.0, min(10.0, raw_delta)), 4)
                         else:
                             delta[t] = None
                     score_deltas_by_period[n] = delta
@@ -294,9 +297,12 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                     prev = ps_ytd.get(t)
                     # Preserve None for missing past data
                     # Cap extreme values at ±10 (1000%)
-                    if prev and prev != 0:
+                    if prev and prev != 0 and pd.notna(cur):
                         raw_delta = (cur - prev) / abs(prev)
-                        ytd_delta[t] = round(max(-10.0, min(10.0, raw_delta)), 4)
+                        if math.isnan(raw_delta) or math.isinf(raw_delta):
+                            ytd_delta[t] = None
+                        else:
+                            ytd_delta[t] = round(max(-10.0, min(10.0, raw_delta)), 4)
                     else:
                         ytd_delta[t] = None
                 score_deltas_by_period["YTD"] = ytd_delta
@@ -455,10 +461,12 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
             # ── ETF count at period start (for delta computation) ──────────
             if len(_dates_sorted) >= 2:
                 _target = _today_dt - pd.Timedelta(days=_n)
-                _past   = min(_dates_sorted, key=lambda d: abs((d - _target).total_seconds()))
-                _snap   = historical[_past]
-                if "etf_count" in _snap.columns:
-                    etf_count_past_by_period_map[_n] = _snap.set_index("ticker")["etf_count"]
+                _past_candidates = [d for d in _dates_sorted if d < _today_dt]
+                if _past_candidates:
+                    _past = min(_past_candidates, key=lambda d: abs((d - _target).total_seconds()))
+                    _snap = historical[_past]
+                    if "etf_count" in _snap.columns:
+                        etf_count_past_by_period_map[_n] = _snap.set_index("ticker")["etf_count"]
 
         print(f"  multi-period rank delta: {len(global_rank_delta_by_period_map)} periods computed")
 
@@ -597,8 +605,8 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
 
         # Recompute apex_rank from gated scores
         _order = leaderboard.sort_values(
-            ["apex_score", "etf_count", "total_weight"],
-            ascending=[False, False, False],
+            ["apex_score", "etf_count", "total_weight", "ticker"],
+            ascending=[False, False, False, True],
         ).index
         leaderboard["apex_rank"] = (
             pd.Series(range(1, len(leaderboard) + 1), index=_order).astype("int64")
@@ -1135,7 +1143,8 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                     # asset's last month-of-data is older than this calendar month
                     try:
                         last_ts = pd.Timestamp(last + "-01") + pd.offsets.MonthEnd(0)
-                        age_days = (pd.Timestamp.utcnow().tz_localize(None) - last_ts).days
+                        now_utc = pd.Timestamp.now(datetime.timezone.utc).replace(tzinfo=None)
+                        age_days = (now_utc - last_ts).days
                         if age_days > 60:
                             stale_assets.append({"asset": aid, "last": last, "age_days": int(age_days)})
                     except Exception:

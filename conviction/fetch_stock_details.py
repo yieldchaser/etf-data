@@ -743,9 +743,9 @@ def _company_name_matches(lb_company: str, yf_company: str, ticker: str = "") ->
         stop_words.add(ticker.lower())
     
     def tokenize(name: str) -> set[str]:
-        # Split by non-alphanumeric, convert to lower, filter out stop words and short tokens
+        # Split by non-alphanumeric, convert to lower, filter out stop words and short tokens (allow >= 2 for 3M, HP, BP, GE, JD)
         tokens = re.split(r"[^A-Za-z0-9]", name.lower())
-        return {t for t in tokens if t and t not in stop_words and len(t) > 2}
+        return {t for t in tokens if t and t not in stop_words and len(t) >= 2}
 
     lb_tokens = tokenize(lb_company)
     yf_tokens = tokenize(yf_company)

@@ -92,16 +92,23 @@ def _compute_stats(trades: list[dict], hold_days: int = 30) -> dict:
                 "max_drawdown": None, "sharpe": None}
     wins = sum(1 for r in returns if r > 0)
     avg_r = float(np.mean(returns))
-    std_r = float(np.std(returns)) if len(returns) > 1 else 0.0
+    std_r = float(np.std(returns, ddof=1)) if len(returns) > 1 else 0.0
     # Annualize Sharpe based on hold_days: sqrt(365 / hold_days) so the factor
     # adapts correctly when --hold is changed (was hardcoded sqrt(12) = monthly).
     annualize = math.sqrt(365.0 / max(hold_days, 1))
     sharpe = float(avg_r / std_r * annualize) if std_r > 0 else None
-    # Max drawdown on cumulative equity curve
-    cum = np.cumprod([1 + r for r in returns])
-    peak = np.maximum.accumulate(cum)
-    dd = (cum - peak) / peak
-    max_dd = float(dd.min()) if len(dd) > 0 else None
+    
+    # Portfolio equity curve grouped by exit date (avoids exponential compounding on concurrent trades)
+    df_tr = pd.DataFrame([t for t in trades if t.get("return_pct") is not None and t.get("exit_date") is not None])
+    if not df_tr.empty:
+        period_rets = df_tr.groupby("exit_date")["return_pct"].mean().sort_index()
+        cum = np.cumprod(np.maximum(0.0, 1.0 + period_rets.values))
+        peak = np.maximum.accumulate(cum)
+        dd = np.where(peak > 0, (cum - peak) / peak, 0.0)
+        max_dd = float(dd.min()) if len(dd) > 0 else None
+    else:
+        max_dd = None
+
     return {
         "n_trades": len(returns),
         "win_rate": round(wins / len(returns), 4),
@@ -191,12 +198,12 @@ def run_backtest(
                 continue
             exit_date = d + pd.Timedelta(days=hold_days)
             exit_price = _get_price(price_cache, ticker, exit_date)
-            ret = (exit_price - entry_price) / entry_price if exit_price else None
+            ret = (exit_price - entry_price) / entry_price if exit_price is not None else None
             hc_trades.append({
                 "date": d.strftime("%Y-%m-%d"),
                 "ticker": ticker,
                 "entry": round(entry_price, 4),
-                "exit": round(exit_price, 4) if exit_price else None,
+                "exit": round(exit_price, 4) if exit_price is not None else None,
                 "exit_date": exit_date.strftime("%Y-%m-%d"),
                 "return_pct": round(ret, 4) if ret is not None else None,
                 "days_held": hold_days,
@@ -220,12 +227,12 @@ def run_backtest(
                 continue
             exit_date = d + pd.Timedelta(days=hold_days)
             exit_price = _get_price(price_cache, ticker, exit_date)
-            ret = (exit_price - entry_price) / entry_price if exit_price else None
+            ret = (exit_price - entry_price) / entry_price if exit_price is not None else None
             burst_trades.append({
                 "date": d.strftime("%Y-%m-%d"),
                 "ticker": ticker,
                 "entry": round(entry_price, 4),
-                "exit": round(exit_price, 4) if exit_price else None,
+                "exit": round(exit_price, 4) if exit_price is not None else None,
                 "exit_date": exit_date.strftime("%Y-%m-%d"),
                 "return_pct": round(ret, 4) if ret is not None else None,
                 "days_held": hold_days,
@@ -249,12 +256,12 @@ def run_backtest(
                 continue
             exit_date = d + pd.Timedelta(days=hold_days)
             exit_price = _get_price(price_cache, ticker, exit_date)
-            ret = (entry_price - exit_price) / entry_price if exit_price else None
+            ret = (entry_price - exit_price) / entry_price if exit_price is not None else None
             crater_trades.append({
                 "date": d.strftime("%Y-%m-%d"),
                 "ticker": ticker,
                 "entry": round(entry_price, 4),
-                "exit": round(exit_price, 4) if exit_price else None,
+                "exit": round(exit_price, 4) if exit_price is not None else None,
                 "exit_date": exit_date.strftime("%Y-%m-%d"),
                 "return_pct": round(ret, 4) if ret is not None else None,
                 "days_held": hold_days,
@@ -275,12 +282,12 @@ def run_backtest(
                 continue
             exit_date = d + pd.Timedelta(days=hold_days)
             exit_price = _get_price(price_cache, ticker, exit_date)
-            ret = (exit_price - entry_price) / entry_price if exit_price else None
+            ret = (exit_price - entry_price) / entry_price if exit_price is not None else None
             score_trades.append({
                 "date": d.strftime("%Y-%m-%d"),
                 "ticker": ticker,
                 "entry": round(entry_price, 4),
-                "exit": round(exit_price, 4) if exit_price else None,
+                "exit": round(exit_price, 4) if exit_price is not None else None,
                 "exit_date": exit_date.strftime("%Y-%m-%d"),
                 "return_pct": round(ret, 4) if ret is not None else None,
                 "days_held": hold_days,
@@ -296,12 +303,12 @@ def run_backtest(
             continue
         exit_date = d + pd.Timedelta(days=hold_days)
         exit_price = _get_price(price_cache, "SPX", exit_date)
-        ret = (exit_price - entry_price) / entry_price if exit_price else None
+        ret = (exit_price - entry_price) / entry_price if exit_price is not None else None
         baseline_trades.append({
             "date": d.strftime("%Y-%m-%d"),
             "ticker": "SPX",
             "entry": round(entry_price, 4),
-            "exit": round(exit_price, 4) if exit_price else None,
+            "exit": round(exit_price, 4) if exit_price is not None else None,
             "exit_date": exit_date.strftime("%Y-%m-%d"),
             "return_pct": round(ret, 4) if ret is not None else None,
             "days_held": hold_days,

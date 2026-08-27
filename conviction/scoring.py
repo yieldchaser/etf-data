@@ -860,7 +860,10 @@ def compute_leaderboard(
 
     agg["flag"] = agg.apply(_flag, axis=1)
     agg = agg.drop(columns=["_max_ow"], errors="ignore")
-    agg = agg.sort_values(["final_score", "etf_count", "total_weight"], ascending=False).reset_index(drop=True)
+    agg = agg.sort_values(
+        ["final_score", "etf_count", "total_weight", "ticker"],
+        ascending=[False, False, False, True]
+    ).reset_index(drop=True)
     agg["leaderboard_rank"] = agg.index + 1
 
     # §27 Score normalization — percentile within today's universe (0–100)
@@ -924,7 +927,8 @@ def compute_rank_deltas(
     for etf, dates in snapshot_dates.items():
         target = target_dates[etf]
         dates_le = [d for d in dates if d <= target]
-        chosen[etf] = max(dates_le) if dates_le else min(dates)
+        if dates_le:
+            chosen[etf] = max(dates_le)
     chosen_series = pd.Series(chosen, name="target_date")
     chosen_series.index.name = "ETF_Ticker"
     then_df = _ranked_at(chosen_series)

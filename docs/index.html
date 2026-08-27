@@ -942,7 +942,7 @@
       <!-- Pagination -->
       <div class="px-3 py-2 flex items-center justify-between text-xs" style="border-top: 1px solid var(--border); color: var(--text-3)">
         <div>
-          <span class="num font-mono" x-text="(page-1)*pageSize + 1"></span>–<span class="num font-mono" x-text="Math.min(page*pageSize, filtered.length)"></span>
+          <span class="num font-mono" x-text="filtered.length === 0 ? '0' : (page-1)*pageSize + 1"></span>–<span class="num font-mono" x-text="Math.min(page*pageSize, filtered.length)"></span>
           of <span class="num font-mono" x-text="filtered.length"></span>
         </div>
         <div class="flex gap-1">
@@ -3848,14 +3848,14 @@ function app() {
       list.sort((a, b) => {
         let av, bv;
         if (key === 'score_delta') {
-          av = a.score_deltas_by_period?.[period];
-          bv = b.score_deltas_by_period?.[period];
+          av = a.score_deltas_by_period?.[period] ?? a.score_delta;
+          bv = b.score_deltas_by_period?.[period] ?? b.score_delta;
         } else if (key === 'rank_delta') {
-          av = a.global_rank_delta_by_period?.[period];
-          bv = b.global_rank_delta_by_period?.[period];
+          av = a.global_rank_delta_by_period?.[period] ?? a.rank_delta;
+          bv = b.global_rank_delta_by_period?.[period] ?? b.rank_delta;
         } else if (key === 'etf_delta') {
-          av = a.etf_count_delta_by_period?.[period];
-          bv = b.etf_count_delta_by_period?.[period];
+          av = a.etf_count_delta_by_period?.[period] ?? a.etf_delta;
+          bv = b.etf_count_delta_by_period?.[period] ?? b.etf_delta;
         } else {
           av = a[key];
           bv = b[key];
@@ -4747,7 +4747,10 @@ function detailChartPanel(ticker, _store) {
         return;
       }
       try {
-        const data = await fetch(`data/details/${encodeURIComponent(this.ticker)}.json`)
+        let safeStem = this.ticker.replace(/[^A-Za-z0-9._-]/g, '_').replace(/[. ]+$/, '');
+        if (!safeStem) safeStem = '_';
+        if (/^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i.test(safeStem)) safeStem += '_';
+        const data = await fetch(`data/details/${safeStem}.json`)
           .then(r => r.ok ? r.json() : Promise.reject(r.status));
         cache[this.ticker] = data;
         this._applyData(data);
@@ -4896,6 +4899,7 @@ function detailChartPanel(ticker, _store) {
       const svg = this.$refs.svg;
       if (!svg) return;
       const rect = svg.getBoundingClientRect();
+      if (!rect || !rect.width || rect.width <= 0) return;
       const rx = e.clientX - rect.left;
       const ratio = Math.max(0, Math.min(1, rx / rect.width));
       const idx = Math.round(ratio * (fp.length - 1));

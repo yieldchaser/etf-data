@@ -1161,6 +1161,7 @@ function stockApp() {
       const svg = this.$refs.stockSvg;
       if (!svg) return;
       const rect = svg.getBoundingClientRect();
+      if (!rect || !rect.width || rect.width <= 0) return;
       const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
       const idx = Math.round(ratio * (fp.length-1));
       this.stockHoverIdx = idx;

@@ -190,7 +190,7 @@ ASSET_REGISTRY: list[dict[str, str]] = [
     {
         "key": "copper", "name": "Copper (USD/lb)", "category": "base_metals",
         "native_ccy": "USD", "source_type": "fred", "series_id": "PCOPPUSDM", "fallback_series_id": "HG=F",
-        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 0.00045359237,
+        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 0.00045359237, "fallback_scale": 0.01,
     },
     {
         "key": "aluminum", "name": "Aluminum (USD/mt)", "category": "base_metals",

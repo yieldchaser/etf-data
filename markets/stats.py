@@ -65,11 +65,12 @@ def series_stats(df: pd.DataFrame, value_col: str = "Close") -> dict:
 
     week_pct  = _pct(close_today, _closest_before_days(7))
     month_pct = _pct(close_today, _closest_before_days(30))
+    prior_year_data = df[df["Date"].dt.year < today_dt.year]
+    prior_year_vals = prior_year_data[value_col].dropna()
     ytd_start = df[df["Date"].dt.year == today_dt.year]
-    # Guard: rows may exist for the current year but all be NaN — accessing
-    # .iloc[0] on the dropped series would raise IndexError.
     ytd_vals = ytd_start[value_col].dropna()
-    ytd_pct = _pct(close_today, float(ytd_vals.iloc[0])) if not ytd_vals.empty else None
+    base_val = float(prior_year_vals.iloc[-1]) if not prior_year_vals.empty else (float(ytd_vals.iloc[0]) if not ytd_vals.empty else None)
+    ytd_pct = _pct(close_today, base_val)
 
     # All-time range
     all_time_low  = float(vals.min())
