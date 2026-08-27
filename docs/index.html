@@ -196,14 +196,20 @@
 
   <div x-data="app()" x-init="load()" x-cloak class="max-w-[1500px] mx-auto px-3 sm:px-5 py-4 sm:py-6">
     <!-- Loading / full-page error state (BUG: first paint was a black screen) -->
-    <div x-show="loading || (error && !leaderboard.length)" class="fixed inset-0 z-50 flex items-center justify-center" style="background: var(--bg)">
+    <div x-show="loading || (error && !leaderboard.length)"
+         x-transition:leave="transition ease-out duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 flex items-center justify-center" style="background: var(--bg)">
       <div class="text-center max-w-md px-6">
         <template x-if="!error">
           <div>
-            <div class="pulse-load font-mono text-sm tracking-widest uppercase" style="color: var(--cyan)">Loading conviction data…</div>
-            <div class="mt-3 h-1 w-48 mx-auto rounded overflow-hidden" style="background: var(--surface-2)">
-              <div class="h-full w-1/3 rounded pulse-load" style="background: var(--cyan)"></div>
+            <div class="pulse-load font-mono text-sm tracking-widest uppercase mb-3" style="color: var(--cyan)">Loading conviction data…</div>
+            <div class="h-1.5 w-56 mx-auto rounded-full overflow-hidden" style="background: var(--surface-2)">
+              <div class="h-full rounded-full transition-all duration-200 ease-out"
+                   :style="'width: ' + Math.min(100, Math.max(0, loadProgress)) + '%; background: var(--cyan); box-shadow: 0 0 8px rgba(34,211,238,0.45);'"></div>
             </div>
+            <div class="mt-2 text-[10px] font-mono tracking-wider" style="color: var(--text-3)" x-text="Math.round(loadProgress) + '%'"></div>
           </div>
         </template>
         <template x-if="error && !leaderboard.length">
@@ -2788,7 +2794,7 @@ function app() {
   return {
     leaderboard: [], holdings: [], changelog: {}, meta: {}, flow: {}, overlap: {},
     scoreHistory: {},
-    loading: true, error: '',
+    loading: true, loadProgress: 0, error: '',
     activeTab: 'leaderboard',
     overlapHover: '',
     flag: '', selectedTier: '', selectedSector: '', selectedCountry: '', regionFilter: '', newOnly: false, burstOnly: false, craterOnly: false, q: '', excludeConcentrated: false, qualityAdoptedOnly: false, preHcOnly: false, stealthBuyOnly: false, quantQualityOnly: false,
@@ -2868,26 +2874,43 @@ function app() {
     ],
 
     async load() {
+      this.loadProgress = 0;
+      let completedWeight = 0;
+      const addProgress = (weight) => {
+        completedWeight += weight;
+        this.loadProgress = Math.min(95, Math.max(this.loadProgress, Math.round(completedWeight)));
+      };
+
+      // Soft ticker for continuous smooth motion from 0%
+      const ticker = setInterval(() => {
+        if (this.loadProgress < 90) {
+          this.loadProgress = Math.min(90, this.loadProgress + 1);
+        }
+      }, 35);
+
+      const track = (promise, weight) => promise.then(res => {
+        addProgress(weight);
+        return res;
+      });
+
       try {
-        // All initial fetches run in parallel — the 4 optional data files
-        // (flow/overlap/scoreHistory/holdingsExits) each carry their own
-        // catch fallback so a missing file doesn't break the rest.
-        // (BUG-4: previously these were sequential awaits = 4 round-trips.)
         const [
           [lb, hd, chg, mt],
           flow, overlap, scoreHistory, holdingsExits,
         ] = await Promise.all([
           Promise.all([
-            fetch('data/leaderboard.json').then(r => r.ok ? r.json() : Promise.reject(r.status)),
-            fetch('data/holdings_latest.json').then(r => r.ok ? r.json() : Promise.reject(r.status)),
-            fetch('data/changelog.json').then(r => r.ok ? r.json() : Promise.reject(r.status)),
-            fetch('data/metadata.json').then(r => r.ok ? r.json() : Promise.reject(r.status)),
+            track(fetch('data/leaderboard.json').then(r => r.ok ? r.json() : Promise.reject(r.status)), 30),
+            track(fetch('data/holdings_latest.json').then(r => r.ok ? r.json() : Promise.reject(r.status)), 30),
+            track(fetch('data/changelog.json').then(r => r.ok ? r.json() : Promise.reject(r.status)), 10),
+            track(fetch('data/metadata.json').then(r => r.ok ? r.json() : Promise.reject(r.status)), 10),
           ]),
-          fetch('data/flow.json').then(r => r.json()).catch(() => ({})),
-          fetch('data/etf_overlap.json').then(r => r.json()).catch(() => ({})),
-          fetch('data/score_history.json').then(r => r.json()).catch(() => ({})),
-          fetch('data/holdings_exits.json').then(r => r.json()).catch(() => ({})),
+          track(fetch('data/flow.json').then(r => r.json()).catch(() => ({})), 5),
+          track(fetch('data/etf_overlap.json').then(r => r.json()).catch(() => ({})), 5),
+          track(fetch('data/score_history.json').then(r => r.json()).catch(() => ({})), 5),
+          track(fetch('data/holdings_exits.json').then(r => r.json()).catch(() => ({})), 5),
         ]);
+        clearInterval(ticker);
+        this.loadProgress = 100;
         this.leaderboard = lb; this.holdings = hd; this.changelog = chg; this.meta = mt;
         this.flow = flow; this.overlap = overlap; this.scoreHistory = scoreHistory; this.holdingsExits = holdingsExits;
         // Default sort: leaderboard rank (1..N top to down)
@@ -2902,12 +2925,18 @@ function app() {
         if (!localStorage.getItem('conviction_pin_snapshot') && !localStorage.getItem('predator_pin_snapshot') && this.pins.length) {
           this.snapshotPins();
         }
+        // Brief pause to allow the progress bar to complete all the way to 100% cleanly
+        await new Promise(r => setTimeout(r, 180));
       } catch (e) {
+        clearInterval(ticker);
         this.error = String(e);
-      } finally { this.loading = false; }
+      } finally {
+        clearInterval(ticker);
+        this.loading = false;
+      }
     },
 
-    async retryLoad() { this.error = ''; this.loading = true; await this.load(); },
+    async retryLoad() { this.error = ''; this.loadProgress = 0; this.loading = true; await this.load(); },
 
     get counts() {
       return {
