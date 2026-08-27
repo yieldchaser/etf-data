@@ -1,14 +1,14 @@
 {
-  "generated_at": "2026-08-27T02:32:37+00:00",
+  "generated_at": "2026-08-27T23:28:53+00:00",
   "generated_utc": "2026-08-22T09:28:31+00:00",
   "partitions": {
     "2026": {
       "etfs": 30,
-      "file_size": 2590396,
+      "file_size": 2619038,
       "first_date": "2026-02-12",
-      "last_date": "2026-08-26",
-      "rows": 504328,
-      "sha256": "3fdcbcf86482def510297132b6ee63aa8032cfc1d1b084af89cb389ee82f2be6",
+      "last_date": "2026-08-27",
+      "rows": 510742,
+      "sha256": "7a2c18639c3339ab115eb7fbec7b1718c8c48c45c019a75af440edd9eee61ac3",
       "year": 2026
     }
   },
