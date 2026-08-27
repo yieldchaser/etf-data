@@ -33,9 +33,9 @@ jobs:
     timeout-minutes: 90   # hung Playwright/yfinance must not burn the 360-min default
     permissions:
       contents: write
-      # actions:write removed with the build_site dispatch step — the
-      # push-paths trigger in build_site.yml rebuilds the site on every
-      # data commit, so no explicit dispatch is needed.
+      actions: write    # dispatch build_site after data commit (GITHUB_TOKEN
+                        # pushes do NOT trigger other workflows' push-path
+                        # triggers — explicit dispatch is the only chain)
 
     steps:
       - name: Checkout code
@@ -134,9 +134,21 @@ jobs:
             echo "data_changed=true" >> $GITHUB_OUTPUT
           fi
 
-      # NOTE: the former "Trigger site rebuild" dispatch step was REMOVED.
-      # build_site.yml rebuilds via its push-paths trigger (data/**) on the
-      # commit above; the explicit dispatch duplicated that and, together
-      # with build_site's workflow_run trigger, produced three racing builds
-      # of the same data under one concurrency group.
-
+      # ── Trigger site rebuild ──────────────────────────────────────────
+      # GITHUB_TOKEN pushes do NOT trigger other workflows' push-path
+      # triggers (GitHub anti-loop policy). The old workflow_run trigger
+      # was correctly removed (it raced the push-path trigger), but the
+      # explicit dispatch is the SOLE reliable chain mechanism left.
+      # Only fires when data_changed == 'true', so no-change days are free.
+      - name: Trigger site rebuild
+        if: steps.save_data.outputs.data_changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'build_site.yml',
+              ref: 'main',
+            });
+            console.log('Build site workflow dispatched.');
