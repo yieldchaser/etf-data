@@ -720,6 +720,34 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         print(f"  etf_overlap.json: ERROR — {e}")
 
     # ── leaderboard.json — main payload for the site ──────────────────────────
+    # Backfill missing company names from stock details if still blank
+    empty_co = (
+        leaderboard["company"].isna()
+        | (leaderboard["company"].astype(str).str.strip() == "")
+        | (leaderboard["company"].astype(str).str.strip().str.lower().isin(["none", "nan", "null", "n/a", "undefined"]))
+    )
+    if empty_co.any():
+        details_dir = output_dir / "details"
+        if details_dir.exists():
+            for tkr in leaderboard.loc[empty_co, "ticker"]:
+                f = details_dir / f"{tkr}.json"
+                if f.exists():
+                    try:
+                        d = json.loads(f.read_text(encoding="utf-8"))
+                        c = d.get("company")
+                        if c and str(c).strip() and str(c).strip().lower() not in ("none", "nan", "null", "n/a", "undefined") and str(c).strip() != tkr:
+                            leaderboard.loc[leaderboard["ticker"] == tkr, "company"] = str(c).strip()
+                    except Exception:
+                        pass
+        # Final fallback to ticker so no cell is ever blank
+        still_empty = (
+            leaderboard["company"].isna()
+            | (leaderboard["company"].astype(str).str.strip() == "")
+            | (leaderboard["company"].astype(str).str.strip().str.lower().isin(["none", "nan", "null", "n/a", "undefined"]))
+        )
+        if still_empty.any():
+            leaderboard.loc[still_empty, "company"] = leaderboard.loc[still_empty, "ticker"]
+
     lb_records = leaderboard.to_dict(orient="records")
 
     # Build per-ticker flag history — all signals historized via signal_history()

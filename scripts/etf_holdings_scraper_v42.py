@@ -106,6 +106,9 @@ _COL_MAP: dict[str, str] = {
     'Name': 'name',         'name': 'name',           'Security Name': 'name',
     'Description': 'name',  'NAME': 'name',            'Security': 'name',
     'HoldingName': 'name',  'securityName': 'name',    'holding_name': 'name',
+    'Company': 'name',      'COMPANY': 'name',         'company': 'name',
+    'Holding': 'name',      'Holding Name': 'name',    'Issuer': 'name',
+    'Company Name': 'name', 'Security Description': 'name',
     # ticker
     'Ticker': 'ticker',     'ticker': 'ticker',        'TICKER': 'ticker',
     'Symbol': 'ticker',     'symbol': 'ticker',

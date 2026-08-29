@@ -950,7 +950,8 @@ function stockApp() {
 
         // Leaderboard row
         this.leaderboardRow = lbData.find(r => r.ticker === this.ticker) || null;
-        if (this.leaderboardRow) this.company = this.leaderboardRow.company || '';
+        if (this.leaderboardRow && this.leaderboardRow.company) this.company = this.leaderboardRow.company;
+        if (!this.company) this.company = this.ticker;
 
         // Per-ETF score components for this ticker (decomposition chart)
         this.scoreComponents = (hlData || []).filter(r => r.ticker === this.ticker);
@@ -1050,6 +1051,9 @@ function stockApp() {
         this.flagHistory = flagRes.status === 'fulfilled' ? (Array.isArray(flagRes.value) ? flagRes.value : []) : [];
         if (detailRes.status === 'fulfilled') {
           const detData = detailRes.value;
+          if ((!this.company || this.company === this.ticker) && detData.company) {
+            this.company = detData.company;
+          }
           this.stockPending = detData.pending === true;
           this.stockDescription = detData.description || '';
           this.stockCurrency = detData.currency || 'USD';

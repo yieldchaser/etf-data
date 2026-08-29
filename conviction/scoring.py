@@ -262,13 +262,13 @@ class Sanitizer:
         # 100-line report on every one of the ~9 sanitizer invocations.
         if merged_pairs:
             print(
-                f"[sanitizer] cross-listing collapse: {len(merged_pairs)} unique raw→canonical mappings",
+                f"[sanitizer] cross-listing collapse: {len(merged_pairs)} unique raw->canonical mappings",
                 flush=True,
             )
             for raw, canonical in merged_pairs[:20]:
-                print(f"  {raw}  →  {canonical}", flush=True)
+                print(f"  {raw}  ->  {canonical}", flush=True)
             if len(merged_pairs) > 20:
-                print(f"  … and {len(merged_pairs) - 20} more", flush=True)
+                print(f"  ... and {len(merged_pairs) - 20} more", flush=True)
 
         return out
 
@@ -543,6 +543,15 @@ def compute_etf_overlap_matrix(latest_df: pd.DataFrame) -> dict[str, dict[str, f
     return matrix
 
 
+def _first_valid_name(series: pd.Series) -> str:
+    for val in series:
+        if val is not None and pd.notna(val):
+            s = str(val).strip()
+            if s and s.lower() not in ("none", "nan", "null", "n/a", "undefined", "unknown"):
+                return s
+    return ""
+
+
 def _validate_input(df: pd.DataFrame) -> None:
     missing = set(HOLDINGS_COLUMNS) - set(df.columns)
     if missing:
@@ -689,7 +698,7 @@ def compute_leaderboard(
 
     # Aggregate per ticker
     agg = latest.groupby("ticker").agg(
-        company=("name", "first"),
+        company=("name", _first_valid_name),
         final_score=("score", "sum"),
         etf_count=("ETF_Ticker", "nunique"),
         total_weight=("weight", "sum"),
@@ -699,6 +708,14 @@ def compute_leaderboard(
         best_rank=("rank", "min"),
         avg_conviction=("conviction", "mean"),
     ).reset_index()
+
+    # Backfill missing names from full historical parquet if current latest was blank
+    empty_company = agg["company"].isna() | (agg["company"].str.strip() == "")
+    if empty_company.any() and "name" in df.columns:
+        valid_hist = df[df["name"].notna() & (df["name"].str.strip() != "")]
+        if not valid_hist.empty:
+            hist_name_map = valid_hist.groupby("ticker")["name"].last().to_dict()
+            agg.loc[empty_company, "company"] = agg.loc[empty_company, "ticker"].map(hist_name_map).fillna("")
 
     # Apply ETF Overlap Discount & Tier Synergy Scaling (Option 1)
     cv = cfg.conviction
