@@ -529,7 +529,7 @@ Runner:  ubuntu-latest   timeout-minutes: 60 (build) / 20 (deploy)
 Steps:
   1. Install: pandas, pyyaml, pyarrow, pytest, hypothesis, yfinance, openpyxl, fredapi, python-dotenv
      (No selenium/curl_cffi/pdfplumber — scraper-only, not needed for build)
-  2. pytest tests/ -v  (315 tests)
+  2. pytest tests/ -v  (387 tests)
   3. conviction.build  → docs/data/*.json
   4. conviction.fetch_prices  → Portfolio Lab prices (yfinance adjusted-close)
   5. conviction.fetch_stock_details  → descriptions + 2-year price history
@@ -559,7 +559,7 @@ Steps:
 
 ## Testing
 
-**315 tests** across 22 files — property-based (Hypothesis) and deterministic coverage of scoring, sanitization, the v42 bridge contract, Parquet immutability, markets engine, signal history, multi-period universe exits, and CI config.
+**387 tests** across 28 files — property-based (Hypothesis) and deterministic coverage of scoring, sanitization, the v42 bridge contract, Parquet immutability, markets engine, signal history, multi-period universe exits, short-side screening, and CI config.
 
 ```bash
 python -m pytest tests/ -v
@@ -609,7 +609,7 @@ pip install selenium curl_cffi pdfplumber xlrd
 # Reconstruct data/all_history.csv from Parquet store (required for local development/queries)
 python scripts/hydrate_csv_from_parquet.py
 
-# Run all 315 tests
+# Run all 387 tests
 python -m pytest tests/ -v
 
 # Build site artifacts (leaderboard, holdings, changelog, flow, overlap)
@@ -691,13 +691,14 @@ etf-data/
 │   ├── ingest_markets_xl.py      # Active Excel deep-history backfill ingestion
 │   ├── ingest_mega_xl.py         # Backward-compat shim (delegates to ingest_markets_xl)
 │   ├── vol_history.py            # CBOE vol indices
-│   └── backtest.py               # Strategy backtest engine
+│   ├── backtest.py               # Strategy backtest engine
+│   └── short_screener.py         # Diagnostic: short-side signal classification (mandate vs factor handoff vs consensus exit)
 │
 ├── scripts/
 │   ├── etf_holdings_scraper_v42.py  # Extended scraper (8 ETFs)
 │   └── hydrate_csv_from_parquet.py # Reconstructs transient CSV from Parquet store
 │
-├── tests/                        # pytest suite (22 files, 315 tests)
+├── tests/                        # pytest suite (28 files, 387 tests)
 │   ├── test_scoring.py           # 44 scoring & sanitizer tests
 │   └── test_bridge.py            # 6 bridge PBT tests
 │
