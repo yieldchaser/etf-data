@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-12T17:00:39+00:00",
+  "generated_at": "2026-09-13T17:28:54+00:00",
   "generated_utc": "2026-08-22T09:28:31+00:00",
   "partitions": {
     "2026": {
@@ -8,7 +8,7 @@
       "first_date": "2026-02-12",
       "last_date": "2026-09-11",
       "rows": 578400,
-      "sha256": "4ffb30fb7618bdc96deef0f11a7710e9f2bdda138fc8e74033b693aabd3e710d",
+      "sha256": "bb5143b5acd9fbc51d474d68b2ce076b2be2ee16839f3135cfd3806cac017016",
       "year": 2026
     }
   },
