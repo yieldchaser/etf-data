@@ -43,14 +43,14 @@
   },
   {
     "ticker": "COWZ",
-    "url": "https://www.paceretfs.com/usbank/live/fsb0.pacer.x330.COWZ_Holdings.csv",
+    "url": "https://www.paceretfs.com/products/holdings_download/COWZ",
     "scraper_type": "pacer_csv",
     "enabled": true,
     "weight_unit": "percent"
   },
   {
     "ticker": "CALF",
-    "url": "https://www.paceretfs.com/usbank/live/fsb0.pacer.x330.CALF_Holdings.csv",
+    "url": "https://www.paceretfs.com/products/holdings_download/CALF",
     "scraper_type": "pacer_csv",
     "enabled": true,
     "weight_unit": "percent"
