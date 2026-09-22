@@ -21,8 +21,6 @@ on:
       - 'conviction/**'
       - 'markets/**'
       - 'docs/**'
-      - '!docs/data/flows/**'
-      - '!docs/data/etf_search_index.json'
       - 'data/**'           # rebuild whenever raw data is pushed (scraper or hotfix)
       - 'scraper.py'
       - 'config.yaml'

@@ -18,7 +18,7 @@ concurrency:
 jobs:
   fetch-flows:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     permissions:
       contents: write
 
@@ -39,9 +39,9 @@ jobs:
       - name: Run fund flow scraper
         run: |
           if [ -n "${{ github.event.inputs.tickers }}" ]; then
-            python scripts/fetch_etf_flow.py --tickers "${{ github.event.inputs.tickers }}" --fail-fast
+            python scripts/fetch_etf_flow.py --tickers "${{ github.event.inputs.tickers }}"
           else
-            python scripts/fetch_etf_flow.py --curated --fail-fast
+            python scripts/fetch_etf_flow.py --curated
           fi
           python scripts/build_etf_search_index.py
 
