@@ -2687,7 +2687,15 @@ function marketsApp() {
     series: [],
     returnsData: null,
     volData: null,
-    activeTab: 'matrix',
+    activeTab: (() => {
+      try {
+        const p = new URLSearchParams(window.location.search).get('tab');
+        const valid = ['matrix','pricelog','yields','periodic','drawdown','holdingperiod','seasonality','correlation','volatility','flows'];
+        return (p && valid.includes(p)) ? p : 'matrix';
+      } catch (e) {
+        return 'matrix';
+      }
+    })(),
     expandedCell: null,   // {assetKey, year}
     selected: null,
     activeKind: 'all',
@@ -2756,16 +2764,13 @@ function marketsApp() {
     _secondaryLoadsStarted: false,
 
     async load() {
-      // Critical path first: the returns payload powers the default (matrix)
-      // tab + header, and metadata.json is ~8 KB feeding the freshness chip.
-      // The price log (~360 KB) and vol history (~900 KB) are rendered only
-      // by their own tabs - fetched lazily so the default view never waits
-      // on ~1.3 MB of JSON it does not display.
-      await Promise.all([this._loadReturns(), this._loadFreshness()]);
-      // §4 Deep-link support: ?asset=GOLD&lens=inr restores the exact view
+      // 1. Immediately apply URL deep-links and load secondary tab payloads (flows, vol, pricelog)
       this._applyDeepLink();
-      this._secondaryLoadsStarted = false;
       this._ensureSecondaryLoaded(this.activeTab);
+
+      // 2. Critical path for matrix tab: returns payload + metadata freshness
+      await Promise.all([this._loadReturns(), this._loadFreshness()]);
+      this._applyDeepLink();
     },
 
     _ensureSecondaryLoaded(tab) {
