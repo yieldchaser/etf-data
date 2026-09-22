@@ -10,7 +10,7 @@ import os
 import random
 import sys
 import time
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timezone, timedelta
 from pathlib import Path
 from dateutil.relativedelta import relativedelta
 import numpy as np
@@ -233,11 +233,20 @@ def parse_snapshots(raw_response, ticker: str) -> pd.DataFrame:
     return apply_derived_metrics(df)
 
 
-def fetch_ticker_data(page, ticker: str, key: str, start_year: int = 2016) -> pd.DataFrame:
-    logger.info(f"Fetching {ticker} (Trackinsight key: {key}) from {start_year}...")
+def fetch_ticker_data(page, ticker: str, key: str, start_date: str = None, start_year: int = 2016) -> pd.DataFrame:
     today = date.today()
-    reqs, d = [], date(start_year, 1, 1)
+    if start_date:
+        try:
+            d = datetime.strptime(start_date, "%Y-%m-%d").date()
+            logger.info(f"Fetching incremental delta for {ticker} (key: {key}) from {start_date} to {today}...")
+        except Exception:
+            d = date(start_year, 1, 1)
+            logger.info(f"Fetching full history for {ticker} (key: {key}) from {start_year} to {today}...")
+    else:
+        d = date(start_year, 1, 1)
+        logger.info(f"Fetching full history for {ticker} (key: {key}) from {start_year} to {today}...")
 
+    reqs = []
     while d <= today:
         q_end = min(d + relativedelta(months=3) - relativedelta(days=1), today)
         reqs.append({
@@ -259,17 +268,23 @@ def fetch_ticker_data(page, ticker: str, key: str, start_year: int = 2016) -> pd
 def save_ticker_json(ticker: str, key: str, df: pd.DataFrame):
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     out_file = OUT_DIR / f"{ticker.upper()}.json"
+    old_count = 0
 
-    # Merge with existing file if present
+    # Merge with existing file if present, deduplicating on 'date'
     if out_file.exists():
         try:
             with open(out_file, "r", encoding="utf-8") as f:
                 old = json.load(f)
                 old_df = pd.DataFrame(old.get("data", []))
-                if not old_df.empty and not df.empty:
-                    combined = pd.concat([old_df, df], ignore_index=True)
-                    combined = combined.drop_duplicates(subset=["date"]).sort_values("date").reset_index(drop=True)
-                    df = apply_derived_metrics(combined)
+                if not old_df.empty:
+                    old_count = len(old_df)
+                    if not df.empty:
+                        # Combine old history with new delta, keeping latest data on date collision
+                        combined = pd.concat([old_df, df], ignore_index=True)
+                        combined = combined.drop_duplicates(subset=["date"], keep="last").sort_values("date").reset_index(drop=True)
+                        df = apply_derived_metrics(combined)
+                    else:
+                        df = old_df
         except Exception as e:
             logger.warning(f"Could not merge existing file for {ticker}: {e}")
 
@@ -301,7 +316,8 @@ def save_ticker_json(ticker: str, key: str, df: pd.DataFrame):
     with open(out_file, "w", encoding="utf-8") as f:
         json.dump(payload, f, separators=(",", ":"))
 
-    logger.info(f"Saved {ticker} -> {out_file} ({len(records)} rows)")
+    new_appended = len(records) - old_count
+    logger.info(f"Saved {ticker} -> {out_file} ({len(records)} total rows, appended {new_appended} new rows)")
 
 
 def build_manifest():
@@ -349,7 +365,7 @@ def build_manifest():
     logger.info(f"Saved manifest -> {manifest_file} ({len(manifest_items)} ETFs)")
 
 
-def run(tickers: list[str]):
+def run(tickers: list[str], force: bool = False):
     pw = sync_playwright().start()
     browser = pw.chromium.launch(headless=True, args=["--disable-blink-features=AutomationControlled", "--no-sandbox"])
     context = browser.new_context(
@@ -368,9 +384,11 @@ def run(tickers: list[str]):
         ticker_clean = t.split(":")[-1].upper()
         key = resolve_key(ticker_clean)
         
-        # Check if already present and fresh
+        # Check if already present and determine if full download or incremental delta
         out_file = OUT_DIR / f"{ticker_clean}.json"
+        start_date = None
         start_year = 2016
+
         if out_file.exists():
             try:
                 with open(out_file, "r", encoding="utf-8") as f:
@@ -378,17 +396,30 @@ def run(tickers: list[str]):
                     d = c.get("data", [])
                     if d:
                         last_d = d[-1]["date"]
-                        last_yr = int(last_d.split("-")[0])
-                        start_year = max(2016, last_yr - 1)
-            except Exception:
-                pass
+                        last_dt = datetime.strptime(last_d, "%Y-%m-%d").date()
+                        today = date.today()
+
+                        # If already updated today and not forced, skip
+                        if last_dt >= today and not force:
+                            logger.info(f"[{i+1}/{len(tickers)}] {ticker_clean} is already up-to-date ({last_d}). Skipping.")
+                            continue
+
+                        # Overlap by 5 calendar days to capture any custodian T+1/T+2 restatements
+                        delta_start = max(date(2016, 1, 1), last_dt - timedelta(days=5))
+                        start_date = delta_start.strftime("%Y-%m-%d")
+                        logger.info(f"[{i+1}/{len(tickers)}] {ticker_clean}: Existing history found up to {last_d}. Requesting incremental delta from {start_date}...")
+            except Exception as e:
+                logger.warning(f"Error checking cached file for {ticker_clean}: {e}")
+
+        if not start_date:
+            logger.info(f"[{i+1}/{len(tickers)}] {ticker_clean}: No local cache found. Initiating full historical fetch...")
 
         try:
-            df = fetch_ticker_data(page, ticker_clean, key, start_year=start_year)
+            df = fetch_ticker_data(page, ticker_clean, key, start_date=start_date, start_year=start_year)
             if not df.empty:
                 save_ticker_json(ticker_clean, key, df)
             else:
-                logger.warning(f"No data returned for {ticker_clean} (key: {key})")
+                logger.warning(f"No new data returned for {ticker_clean} (key: {key})")
         except Exception as e:
             logger.error(f"Failed processing {ticker_clean}: {e}")
 
@@ -405,6 +436,8 @@ if __name__ == "__main__":
     parser.add_argument("--ticker", type=str, help="Single ETF ticker (e.g. TQQQ)")
     parser.add_argument("--tickers", type=str, help="Comma-separated tickers (e.g. TQQQ,SOXL,SQQQ)")
     parser.add_argument("--curated", action="store_true", help="Fetch all curated preset ETFs")
+    parser.add_argument("--batch-top", type=int, help="Fetch next N uncached ETFs ranked by AUM from search index (e.g. 50)")
+    parser.add_argument("--force", action="store_true", help="Force re-fetch even if ETF was updated today")
     parser.add_argument("--manifest-only", action="store_true", help="Only rebuild curated_manifest.json")
     args = parser.parse_args()
 
@@ -418,14 +451,30 @@ if __name__ == "__main__":
     elif args.tickers:
         target_tickers = [t.strip().upper() for t in args.tickers.split(",") if t.strip()]
     elif args.curated:
-        # Flatten all presets
         all_curated = set()
         for group in CURATED_PRESETS.values():
             all_curated.update(group)
         target_tickers = sorted(all_curated)
+    elif args.batch_top:
+        # Load search index, find uncached ETFs, sort by AUM descending
+        if not INDEX_PATH.exists():
+            logger.error(f"Index file {INDEX_PATH} not found. Run scripts/build_etf_search_index.py first.")
+            sys.exit(1)
+        with open(INDEX_PATH, "r", encoding="utf-8") as f:
+            idx_data = json.load(f)
+        candidates = []
+        for r in idx_data.get("rows", []):
+            t = r[0].upper()
+            aum = r[4] or 0
+            out_file = OUT_DIR / f"{t}.json"
+            if not out_file.exists():
+                candidates.append((t, aum))
+        candidates.sort(key=lambda x: x[1], reverse=True)
+        target_tickers = [t[0] for t in candidates[:args.batch_top]]
+        logger.info(f"Selected top {len(target_tickers)} uncached ETFs by AUM: {target_tickers}")
     else:
         # Default: target top priorities
         target_tickers = ["TQQQ", "SOXL", "SQQQ", "SPY", "QQQ", "NVDL", "AGQ", "UGL"]
 
     logger.info(f"Target tickers ({len(target_tickers)}): {target_tickers}")
-    run(target_tickers)
+    run(target_tickers, force=args.force)

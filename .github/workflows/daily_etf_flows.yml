@@ -50,5 +50,5 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/data/flows/ docs/data/etf_search_index.json
-          git commit -m "Auto-update: ETF fund flows data 🌊 [skip ci]" || echo "No changes to commit"
+          git commit -m "chore(data): auto-update ETF fund flows dataset [skip ci]" || echo "No changes to commit"
           git push origin main
