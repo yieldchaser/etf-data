@@ -2022,11 +2022,10 @@
     <!-- Top Command Center: Universal ETF Search -->
     <div class="w-full mb-6">
       <div class="relative">
-        <div class="flex items-center gap-3 bg-[#080c14] border rounded-lg px-4 py-3.5 shadow-2xl focus-within:border-cyan-400 transition" style="border-color: rgba(255,255,255,0.12)">
-          <div class="flex items-center gap-2 shrink-0 select-none px-3 py-1.5 rounded bg-cyan-500/10 border border-cyan-400/30 text-cyan-400 font-mono text-xs font-bold">
-            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-            <span>TYPE HERE TO SEARCH ETFS &gt;</span>
-          </div>
+        <div class="flex items-center gap-3 rounded-md px-3.5 py-2.5 transition focus-within:border-cyan-500/40" style="background: var(--surface); border: 1px solid var(--border-2)">
+          <svg class="w-4 h-4 shrink-0" style="color: var(--text-3)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
           <input type="text"
                  x-model="flowSearchQuery"
                  @input="flowSearch()"
@@ -2035,34 +2034,38 @@
                  @keydown.up.prevent="flowSearchUp()"
                  @keydown.enter.prevent="flowSearchEnter()"
                  @keydown.escape="flowSearchOpen = false"
-                 placeholder="Type ETF symbol, fund name, or asset theme (e.g. TQQQ, SOXL, NVDL, MSTU, TMF, SPY, QQQ)..."
-                 class="bg-transparent border-none text-xs sm:text-sm w-full focus:outline-none text-zinc-100 placeholder-zinc-500 font-mono font-medium">
-          <button x-show="flowSearchQuery" @click="flowSearchQuery = ''; flowSearchResults = []; flowSearchOpen = false" class="text-zinc-500 hover:text-zinc-200 text-xs font-mono p-1 transition" title="Clear search">✕</button>
+                 placeholder="Search 15,713 ETFs by symbol, fund name, or sector (e.g. TQQQ, SOXL, NVDL, TMF, SPY)..."
+                 class="bg-transparent border-none text-xs sm:text-sm w-full focus:outline-none font-mono"
+                 style="color: var(--text)">
+          <button x-show="flowSearchQuery"
+                  @click="flowSearchQuery = ''; flowSearchResults = []; flowSearchOpen = false"
+                  class="text-xs font-mono p-1 transition"
+                  style="color: var(--text-3)"
+                  title="Clear search">✕</button>
           <div class="hidden sm:flex items-center gap-2 shrink-0 select-none">
-            <span class="text-[10px] font-mono px-2.5 py-1 rounded border border-white/10 text-emerald-400 bg-emerald-500/10 font-semibold flex items-center gap-1.5">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> 15,713 UNIVERSE
-            </span>
+            <span class="label" style="font-size: 9.5px; color: var(--text-3)">15,713 ETFS</span>
           </div>
         </div>
 
         <!-- Autocomplete Dropdown -->
         <div x-show="flowSearchOpen && flowSearchResults.length"
              @click.away="flowSearchOpen = false"
-             class="absolute left-0 right-0 top-full mt-2 z-50 rounded-xl border shadow-2xl overflow-hidden max-h-96 overflow-y-auto scrollbar"
-             style="background: #080c14; border-color: rgba(255,255,255,0.15);">
-          <div class="px-3.5 py-2 text-[10px] font-mono text-zinc-400 border-b border-white/10 uppercase tracking-wider flex justify-between bg-black/90 sticky top-0 backdrop-blur z-10">
+             class="absolute left-0 right-0 top-full mt-2 z-50 rounded-lg border shadow-2xl overflow-hidden max-h-96 overflow-y-auto scrollbar"
+             style="background: var(--surface-2); border-color: var(--border-2);">
+          <div class="px-3.5 py-2 text-[10px] font-mono text-zinc-400 border-b uppercase tracking-wider flex justify-between bg-black/90 sticky top-0 backdrop-blur z-10" style="border-color: var(--border)">
             <span>Matching ETFs (<span x-text="flowSearchResults.length"></span>) · ↑↓ Navigate · ↵ Select</span>
-            <span class="text-cyan-400 font-semibold">Trackinsight In-Memory Terminal</span>
+            <span style="color: var(--cyan)">Trackinsight In-Memory Terminal</span>
           </div>
           <template x-for="(r, idx) in flowSearchResults" :key="r.k || r.t">
             <div @click="selectFlowTicker(r.t); flowSearchOpen = false; flowSearchQuery = ''"
                  @mouseenter="flowSearchSelectedIndex = idx"
-                 :class="flowSearchSelectedIndex === idx ? 'bg-cyan-500/15 border-l-2 border-cyan-400' : 'hover:bg-white/[0.03] border-l-2 border-transparent'"
-                 class="px-4 py-2.5 border-b border-white/[0.04] cursor-pointer flex items-center justify-between gap-3 transition">
+                 :class="flowSearchSelectedIndex === idx ? 'tab-active' : ''"
+                 class="px-4 py-2 border-b cursor-pointer flex items-center justify-between gap-3 transition"
+                 style="border-color: rgba(255,255,255,0.03)">
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-2 mb-0.5">
                   <span class="font-mono font-bold text-sm tracking-tight" style="color: var(--cyan)" x-text="r.t"></span>
-                  <span x-show="r.cached" class="chip text-[9px] px-1.5 py-0.5 font-mono" style="background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3)">PRE-CACHED</span>
+                  <span x-show="r.cached" class="chip text-[9px] px-1.5 py-0.5 font-mono" style="background: rgba(52,211,153,0.1); color: var(--up); border: 1px solid rgba(52,211,153,0.25)">PRE-CACHED</span>
                   <span x-show="!r.cached" class="chip text-[9px] px-1.5 py-0.5 font-mono" style="background: rgba(255,255,255,0.05); color: var(--text-3); border: 1px solid var(--border)">ON-DEMAND</span>
                   <span x-show="r.c" class="text-[10px] font-mono text-zinc-500" x-text="r.c"></span>
                 </div>
@@ -2078,44 +2081,40 @@
       </div>
 
       <!-- Institutional Grouped Ticker Shortcuts: 3 Above, 3 Down Grid -->
-      <div class="mt-3.5">
-        <div class="flex items-center justify-between mb-2 px-1 text-xs font-mono text-zinc-400">
+      <div class="mt-3">
+        <div class="flex items-center justify-between mb-2 px-0.5 text-xs font-mono">
           <div class="flex items-center gap-2">
-            <span class="text-zinc-500 uppercase text-[10px] tracking-wider font-semibold">CURATED WATCHLIST SUGGESTIONS:</span>
-            <span class="text-[10px] text-zinc-600 hidden sm:inline">· Click any ETF to view full capital flow history</span>
+            <span class="label" style="font-size: 9.5px; color: var(--text-3)">WATCHLIST PRESETS</span>
+            <span class="text-[10px] hidden sm:inline" style="color: var(--text-3)">· Click any ETF to view flow history</span>
           </div>
-          <span class="text-[10px] text-zinc-500 font-mono hidden md:inline">6 SECTORS · 24 CORE BENCHMARKS</span>
+          <span class="label hidden md:inline" style="font-size: 9px; color: var(--text-3)">24 CORE BENCHMARKS</span>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-          <!-- 1. Sector Tech & Semis -->
-          <div class="flex items-center justify-between p-2 rounded-lg bg-[#080c14] border border-white/10 hover:border-cyan-500/30 transition">
-            <div class="flex items-center gap-2">
-              <span class="w-1.5 h-4 rounded-full bg-cyan-400"></span>
-              <span class="text-[10px] uppercase tracking-wider text-cyan-400 font-mono font-bold">TECH &amp; SEMIS</span>
-            </div>
-            <div class="flex items-center gap-1.5 font-mono">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+          <!-- 1. Tech & Semis -->
+          <div class="flex items-center justify-between px-3 py-1.5 rounded-md border" style="background: var(--surface); border-color: var(--border)">
+            <span class="label" style="font-size: 9.5px; color: var(--text-3)">TECH &amp; SEMIS</span>
+            <div class="flex items-center gap-1 font-mono">
               <template x-for="t in ['TECL', 'SOXL', 'FNGU', 'USD']" :key="t">
                 <button @click="selectFlowTicker(t)"
-                        :class="flowTicker === t ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-400 shadow-xs' : 'text-zinc-400 hover:text-white border-transparent hover:border-white/10'"
-                        class="px-2 py-0.5 rounded text-[11px] border transition"
+                        :class="flowTicker === t ? 'tab-active' : ''"
+                        class="px-2 py-0.5 rounded border text-[11px] font-mono transition"
+                        :style="flowTicker === t ? '' : 'color: var(--text-2); border-color: var(--border); background: var(--bg)'"
                         x-text="t">
                 </button>
               </template>
             </div>
           </div>
 
-          <!-- 2. AI & Single-Stock Leverage -->
-          <div class="flex items-center justify-between p-2 rounded-lg bg-[#080c14] border border-white/10 hover:border-rose-500/30 transition">
-            <div class="flex items-center gap-2">
-              <span class="w-1.5 h-4 rounded-full bg-rose-400"></span>
-              <span class="text-[10px] uppercase tracking-wider text-rose-400 font-mono font-bold">AI &amp; CRYPTO</span>
-            </div>
-            <div class="flex items-center gap-1.5 font-mono">
+          <!-- 2. Single-Stock High-Beta -->
+          <div class="flex items-center justify-between px-3 py-1.5 rounded-md border" style="background: var(--surface); border-color: var(--border)">
+            <span class="label" style="font-size: 9.5px; color: var(--text-3)">HIGH-BETA GROWTH</span>
+            <div class="flex items-center gap-1 font-mono">
               <template x-for="t in ['NVDL', 'TSLL', 'MSTU', 'CONL']" :key="t">
                 <button @click="selectFlowTicker(t)"
-                        :class="flowTicker === t ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-400 shadow-xs' : 'text-zinc-400 hover:text-white border-transparent hover:border-white/10'"
-                        class="px-2 py-0.5 rounded text-[11px] border transition"
+                        :class="flowTicker === t ? 'tab-active' : ''"
+                        class="px-2 py-0.5 rounded border text-[11px] font-mono transition"
+                        :style="flowTicker === t ? '' : 'color: var(--text-2); border-color: var(--border); background: var(--bg)'"
                         x-text="t">
                 </button>
               </template>
@@ -2123,16 +2122,14 @@
           </div>
 
           <!-- 3. Energy & Commodities -->
-          <div class="flex items-center justify-between p-2 rounded-lg bg-[#080c14] border border-white/10 hover:border-emerald-500/30 transition">
-            <div class="flex items-center gap-2">
-              <span class="w-1.5 h-4 rounded-full bg-emerald-400"></span>
-              <span class="text-[10px] uppercase tracking-wider text-emerald-400 font-mono font-bold">COMMODITIES</span>
-            </div>
-            <div class="flex items-center gap-1.5 font-mono">
+          <div class="flex items-center justify-between px-3 py-1.5 rounded-md border" style="background: var(--surface); border-color: var(--border)">
+            <span class="label" style="font-size: 9.5px; color: var(--text-3)">COMMODITIES</span>
+            <div class="flex items-center gap-1 font-mono">
               <template x-for="t in ['ERX', 'UCO', 'BOIL', 'AGQ']" :key="t">
                 <button @click="selectFlowTicker(t)"
-                        :class="flowTicker === t ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-400 shadow-xs' : 'text-zinc-400 hover:text-white border-transparent hover:border-white/10'"
-                        class="px-2 py-0.5 rounded text-[11px] border transition"
+                        :class="flowTicker === t ? 'tab-active' : ''"
+                        class="px-2 py-0.5 rounded border text-[11px] font-mono transition"
+                        :style="flowTicker === t ? '' : 'color: var(--text-2); border-color: var(--border); background: var(--bg)'"
                         x-text="t">
                 </button>
               </template>
@@ -2140,16 +2137,14 @@
           </div>
 
           <!-- 4. Treasuries & Bonds -->
-          <div class="flex items-center justify-between p-2 rounded-lg bg-[#080c14] border border-white/10 hover:border-purple-500/30 transition">
-            <div class="flex items-center gap-2">
-              <span class="w-1.5 h-4 rounded-full bg-purple-400"></span>
-              <span class="text-[10px] uppercase tracking-wider text-purple-400 font-mono font-bold">TREASURIES</span>
-            </div>
-            <div class="flex items-center gap-1.5 font-mono">
+          <div class="flex items-center justify-between px-3 py-1.5 rounded-md border" style="background: var(--surface); border-color: var(--border)">
+            <span class="label" style="font-size: 9.5px; color: var(--text-3)">TREASURIES</span>
+            <div class="flex items-center gap-1 font-mono">
               <template x-for="t in ['TMF', 'TMV', 'TBT', 'UBT']" :key="t">
                 <button @click="selectFlowTicker(t)"
-                        :class="flowTicker === t ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-400 shadow-xs' : 'text-zinc-400 hover:text-white border-transparent hover:border-white/10'"
-                        class="px-2 py-0.5 rounded text-[11px] border transition"
+                        :class="flowTicker === t ? 'tab-active' : ''"
+                        class="px-2 py-0.5 rounded border text-[11px] font-mono transition"
+                        :style="flowTicker === t ? '' : 'color: var(--text-2); border-color: var(--border); background: var(--bg)'"
                         x-text="t">
                 </button>
               </template>
@@ -2157,33 +2152,29 @@
           </div>
 
           <!-- 5. Volatility & Benchmarks -->
-          <div class="flex items-center justify-between p-2 rounded-lg bg-[#080c14] border border-white/10 hover:border-amber-500/30 transition">
-            <div class="flex items-center gap-2">
-              <span class="w-1.5 h-4 rounded-full bg-amber-400"></span>
-              <span class="text-[10px] uppercase tracking-wider text-amber-400 font-mono font-bold">VOL &amp; BENCH</span>
-            </div>
-            <div class="flex items-center gap-1.5 font-mono">
+          <div class="flex items-center justify-between px-3 py-1.5 rounded-md border" style="background: var(--surface); border-color: var(--border)">
+            <span class="label" style="font-size: 9.5px; color: var(--text-3)">VOL &amp; BENCHMARKS</span>
+            <div class="flex items-center gap-1 font-mono">
               <template x-for="t in ['TQQQ', 'SQQQ', 'SVIX', 'UVXY']" :key="t">
                 <button @click="selectFlowTicker(t)"
-                        :class="flowTicker === t ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-400 shadow-xs' : 'text-zinc-400 hover:text-white border-transparent hover:border-white/10'"
-                        class="px-2 py-0.5 rounded text-[11px] border transition"
+                        :class="flowTicker === t ? 'tab-active' : ''"
+                        class="px-2 py-0.5 rounded border text-[11px] font-mono transition"
+                        :style="flowTicker === t ? '' : 'color: var(--text-2); border-color: var(--border); background: var(--bg)'"
                         x-text="t">
                 </button>
               </template>
             </div>
           </div>
 
-          <!-- 6. Global & Country -->
-          <div class="flex items-center justify-between p-2 rounded-lg bg-[#080c14] border border-white/10 hover:border-indigo-500/30 transition">
-            <div class="flex items-center gap-2">
-              <span class="w-1.5 h-4 rounded-full bg-indigo-400"></span>
-              <span class="text-[10px] uppercase tracking-wider text-indigo-400 font-mono font-bold">GLOBAL MACRO</span>
-            </div>
-            <div class="flex items-center gap-1.5 font-mono">
+          <!-- 6. Global Macro -->
+          <div class="flex items-center justify-between px-3 py-1.5 rounded-md border" style="background: var(--surface); border-color: var(--border)">
+            <span class="label" style="font-size: 9.5px; color: var(--text-3)">GLOBAL MACRO</span>
+            <div class="flex items-center gap-1 font-mono">
               <template x-for="t in ['YINN', 'YANG', 'KORU', 'BRZU']" :key="t">
                 <button @click="selectFlowTicker(t)"
-                        :class="flowTicker === t ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-400 shadow-xs' : 'text-zinc-400 hover:text-white border-transparent hover:border-white/10'"
-                        class="px-2 py-0.5 rounded text-[11px] border transition"
+                        :class="flowTicker === t ? 'tab-active' : ''"
+                        class="px-2 py-0.5 rounded border text-[11px] font-mono transition"
+                        :style="flowTicker === t ? '' : 'color: var(--text-2); border-color: var(--border); background: var(--bg)'"
                         x-text="t">
                 </button>
               </template>
@@ -2381,7 +2372,7 @@
                @pointerup="_flowChartSliderUp($event, 1)"
                @pointercancel="_flowChartSliderUp($event, 1)">
             <div class="absolute top-1/2 -translate-y-1/2 w-full rounded-full" style="height:5px; background:rgba(255,255,255,0.08)"></div>
-            <div class="absolute top-1/2 -translate-y-1/2 rounded-full cursor-ew-resize hover:brightness-110 shadow-inner" style="height:5px; background:linear-gradient(90deg, #06b6d4, #10b981)"
+            <div class="absolute top-1/2 -translate-y-1/2 rounded-full cursor-ew-resize hover:brightness-110" style="height:4px; background:var(--cyan); opacity:0.85"
                  :style="`left:${_flowSliderStartPct(1)}%; width:${Math.max(0.5, _flowSliderEndPct(1) - _flowSliderStartPct(1))}%`"></div>
             <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
                  style="width:16px; height:16px; background:#080c14; border-color:#22d3ee; margin-left:-8px"
@@ -2499,7 +2490,7 @@
                  @pointercancel="_flowChartSliderUp($event, 1)">
               <div class="absolute top-1/2 -translate-y-1/2 w-full rounded-full" style="height:4px; background:rgba(255,255,255,0.08)"></div>
               <div class="absolute top-1/2 -translate-y-1/2 rounded-full cursor-ew-resize hover:brightness-110 shadow-xs"
-                   style="height:4px; background:linear-gradient(90deg, #06b6d4, #10b981)"
+                   style="height:4px; background:var(--cyan); opacity:0.85"
                    :style="`left:${_flowSliderStartPct(1)}%; width:${Math.max(0.5, _flowSliderEndPct(1) - _flowSliderStartPct(1))}%`"></div>
               <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
                    style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-7px"
@@ -2560,7 +2551,7 @@
                  @pointercancel="_flowChartSliderUp($event, 2)">
               <div class="absolute top-1/2 -translate-y-1/2 w-full rounded-full" style="height:4px; background:rgba(255,255,255,0.08)"></div>
               <div class="absolute top-1/2 -translate-y-1/2 rounded-full cursor-ew-resize hover:brightness-110 shadow-xs"
-                   style="height:4px; background:linear-gradient(90deg, #06b6d4, #10b981)"
+                   style="height:4px; background:var(--cyan); opacity:0.85"
                    :style="`left:${_flowSliderStartPct(2)}%; width:${Math.max(0.5, _flowSliderEndPct(2) - _flowSliderStartPct(2))}%`"></div>
               <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
                    style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-7px"
@@ -2620,7 +2611,7 @@
                  @pointercancel="_flowChartSliderUp($event, 3)">
               <div class="absolute top-1/2 -translate-y-1/2 w-full rounded-full" style="height:4px; background:rgba(255,255,255,0.08)"></div>
               <div class="absolute top-1/2 -translate-y-1/2 rounded-full cursor-ew-resize hover:brightness-110 shadow-xs"
-                   style="height:4px; background:linear-gradient(90deg, #06b6d4, #10b981)"
+                   style="height:4px; background:var(--cyan); opacity:0.85"
                    :style="`left:${_flowSliderStartPct(3)}%; width:${Math.max(0.5, _flowSliderEndPct(3) - _flowSliderStartPct(3))}%`"></div>
               <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
                    style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-7px"
@@ -2680,7 +2671,7 @@
                  @pointercancel="_flowChartSliderUp($event, 4)">
               <div class="absolute top-1/2 -translate-y-1/2 w-full rounded-full" style="height:4px; background:rgba(255,255,255,0.08)"></div>
               <div class="absolute top-1/2 -translate-y-1/2 rounded-full cursor-ew-resize hover:brightness-110 shadow-xs"
-                   style="height:4px; background:linear-gradient(90deg, #06b6d4, #10b981)"
+                   style="height:4px; background:var(--cyan); opacity:0.85"
                    :style="`left:${_flowSliderStartPct(4)}%; width:${Math.max(0.5, _flowSliderEndPct(4) - _flowSliderStartPct(4))}%`"></div>
               <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
                    style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-7px"
@@ -2743,7 +2734,7 @@
                  @pointercancel="_flowChartSliderUp($event, 5)">
               <div class="absolute top-1/2 -translate-y-1/2 w-full rounded-full" style="height:4px; background:rgba(255,255,255,0.08)"></div>
               <div class="absolute top-1/2 -translate-y-1/2 rounded-full cursor-ew-resize hover:brightness-110 shadow-xs"
-                   style="height:4px; background:linear-gradient(90deg, #06b6d4, #10b981)"
+                   style="height:4px; background:var(--cyan); opacity:0.85"
                    :style="`left:${_flowSliderStartPct(5)}%; width:${Math.max(0.5, _flowSliderEndPct(5) - _flowSliderStartPct(5))}%`"></div>
               <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
                    style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-7px"
@@ -2807,7 +2798,7 @@
                  @pointercancel="_flowChartSliderUp($event, 6)">
               <div class="absolute top-1/2 -translate-y-1/2 w-full rounded-full" style="height:4px; background:rgba(255,255,255,0.08)"></div>
               <div class="absolute top-1/2 -translate-y-1/2 rounded-full cursor-ew-resize hover:brightness-110 shadow-xs"
-                   style="height:4px; background:linear-gradient(90deg, #06b6d4, #10b981)"
+                   style="height:4px; background:var(--cyan); opacity:0.85"
                    :style="`left:${_flowSliderStartPct(6)}%; width:${Math.max(0.5, _flowSliderEndPct(6) - _flowSliderStartPct(6))}%`"></div>
               <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
                    style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-7px"
