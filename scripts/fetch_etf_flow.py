@@ -233,7 +233,7 @@ def parse_snapshots(raw_response, ticker: str) -> pd.DataFrame:
     return apply_derived_metrics(df)
 
 
-def fetch_ticker_data(page, ticker: str, key: str, start_date: str = None, start_year: int = 2016) -> pd.DataFrame:
+def fetch_ticker_data(page, ticker: str, key: str, start_date: str = None, start_year: int = 2016, fail_fast: bool = False) -> pd.DataFrame:
     today = date.today()
     if start_date:
         try:
@@ -259,7 +259,11 @@ def fetch_ticker_data(page, ticker: str, key: str, start_date: str = None, start
 
     result = page.evaluate(_FETCH_JS, {"requests": reqs})
     if isinstance(result, dict) and result.get("__error"):
-        logger.warning(f"Error fetching {ticker}: {result}")
+        err_msg = f"HTTP Error fetching {ticker} (key: {key}): status={result.get('status')} {result.get('statusText')}"
+        if fail_fast:
+            logger.error(f"[FAIL-FAST] {err_msg}")
+            raise RuntimeError(err_msg)
+        logger.warning(err_msg)
         return pd.DataFrame()
 
     return parse_snapshots(result, ticker)
@@ -365,7 +369,7 @@ def build_manifest():
     logger.info(f"Saved manifest -> {manifest_file} ({len(manifest_items)} ETFs)")
 
 
-def run(tickers: list[str], force: bool = False):
+def run(tickers: list[str], force: bool = False, fail_fast: bool = False):
     pw = sync_playwright().start()
     browser = pw.chromium.launch(headless=True, args=["--disable-blink-features=AutomationControlled", "--no-sandbox"])
     context = browser.new_context(
@@ -375,10 +379,18 @@ def run(tickers: list[str], force: bool = False):
     page = context.new_page()
     page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
-    # Warm-up session to settle WAF cookies
+    # Warm-up session to settle WAF cookies (fail fast if site is unreachable)
     logger.info("Warming up browser session on Trackinsight...")
-    page.goto("https://www.trackinsight.com/en", wait_until="domcontentloaded", timeout=60000)
-    time.sleep(3)
+    try:
+        page.goto("https://www.trackinsight.com/en", wait_until="domcontentloaded", timeout=20000)
+        time.sleep(2)
+    except Exception as e:
+        logger.error(f"Warm-up navigation failed: {e}")
+        if fail_fast:
+            browser.close()
+            pw.stop()
+            logger.error("[FAIL-FAST] Exiting immediately due to warm-up failure.")
+            sys.exit(1)
 
     for i, t in enumerate(tickers):
         ticker_clean = t.split(":")[-1].upper()
@@ -415,13 +427,23 @@ def run(tickers: list[str], force: bool = False):
             logger.info(f"[{i+1}/{len(tickers)}] {ticker_clean}: No local cache found. Initiating full historical fetch...")
 
         try:
-            df = fetch_ticker_data(page, ticker_clean, key, start_date=start_date, start_year=start_year)
+            df = fetch_ticker_data(page, ticker_clean, key, start_date=start_date, start_year=start_year, fail_fast=fail_fast)
             if not df.empty:
                 save_ticker_json(ticker_clean, key, df)
             else:
-                logger.warning(f"No new data returned for {ticker_clean} (key: {key})")
+                msg = f"No new data returned for {ticker_clean} (key: {key})"
+                if fail_fast:
+                    logger.error(f"[FAIL-FAST] {msg}")
+                    browser.close()
+                    pw.stop()
+                    sys.exit(1)
+                logger.warning(msg)
         except Exception as e:
             logger.error(f"Failed processing {ticker_clean}: {e}")
+            if fail_fast:
+                browser.close()
+                pw.stop()
+                sys.exit(1)
 
         # Polite jitter
         time.sleep(1.5 + random.uniform(0.5, 1.5))
@@ -438,6 +460,7 @@ if __name__ == "__main__":
     parser.add_argument("--curated", action="store_true", help="Fetch all curated preset ETFs")
     parser.add_argument("--batch-top", type=int, help="Fetch next N uncached ETFs ranked by AUM from search index (e.g. 50)")
     parser.add_argument("--force", action="store_true", help="Force re-fetch even if ETF was updated today")
+    parser.add_argument("--fail-fast", action="store_true", help="Exit immediately with error code on any failure")
     parser.add_argument("--manifest-only", action="store_true", help="Only rebuild curated_manifest.json")
     args = parser.parse_args()
 
@@ -477,4 +500,4 @@ if __name__ == "__main__":
         target_tickers = ["TQQQ", "SOXL", "SQQQ", "SPY", "QQQ", "NVDL", "AGQ", "UGL"]
 
     logger.info(f"Target tickers ({len(target_tickers)}): {target_tickers}")
-    run(target_tickers, force=args.force)
+    run(target_tickers, force=args.force, fail_fast=args.fail_fast)
