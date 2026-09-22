@@ -2734,7 +2734,6 @@ function marketsApp() {
     flowTicker: 'TQQQ',
     flowData: null,
     flowManifest: null,
-    flowSearchIndex: null,
     flowLoading: false,
     flowError: '',
     flowSearchQuery: '',
@@ -2756,7 +2755,6 @@ function marketsApp() {
     flowShowTokenConfig: false,
     flowTokenInput: localStorage.getItem('gh_flow_token') || '',
     _flowStarted: false,
-    _flowSearchStarted: false,
 
     // ── Data loading ──────────────────────────────────────────────────────
     _priceLogStarted: false,
@@ -2783,7 +2781,7 @@ function marketsApp() {
         // is idle so switching later feels instant.
         if (this._secondaryLoadsStarted) return;
         this._secondaryLoadsStarted = true;
-        const kick = () => { this._loadPriceLog(); this._loadVol(); this._loadFlows(); };
+        const kick = () => { this._loadPriceLog(); this._loadVol(); };
         if (typeof requestIdleCallback === 'function') requestIdleCallback(kick, { timeout: 4000 });
         else setTimeout(kick, 1500);
         return;
@@ -7013,7 +7011,7 @@ function marketsApp() {
           try {
             const mr = await fetch(`data/flows/curated_manifest.json?v=${bust}`);
             if (mr.ok) {
-              this.flowManifest = await mr.json();
+              this.flowManifest = Object.freeze(await mr.json());
             }
           } catch (me) {
             console.warn('Flow manifest load error:', me);
@@ -7021,7 +7019,7 @@ function marketsApp() {
         }
         // 2. Load active ticker
         await this.selectFlowTicker(this.flowTicker || 'TQQQ');
-        // 3. Eager background load of the search index so searching is instantaneous
+        // 3. Background load of search index into raw non-reactive memory
         this._loadFlowSearchIndex();
       } catch (e) {
         console.warn('Flows initialization error:', e);
@@ -7032,33 +7030,22 @@ function marketsApp() {
     },
 
     async _loadFlowSearchIndex() {
-      if (this.flowSearchIndex || this._flowSearchStarted) return;
-      this._flowSearchStarted = true;
+      if (window._etfSearchIndex || window._etfSearchStarted) return;
+      window._etfSearchStarted = true;
       try {
         const bust = this._sessionBust || (this._sessionBust = Date.now());
         const r = await fetch(`data/etf_search_index.json?v=${bust}`);
         if (r.ok) {
           const raw = await r.json();
-          if (raw && raw.rows && raw.cols) {
-            this.flowSearchIndex = raw.rows.map(row => ({
-              t: row[0],
-              k: row[1],
-              l: row[2],
-              p: row[3],
-              a: row[4],
-              c: row[5],
-              cached: Boolean(row[6])
-            }));
-          } else if (Array.isArray(raw)) {
-            this.flowSearchIndex = raw;
-          }
+          // Store raw tuples in non-reactive memory to prevent Alpine proxy overhead on 15,713 items
+          window._etfSearchIndex = (raw && raw.rows) ? raw.rows : (Array.isArray(raw) ? raw : []);
         }
       } catch (e) {
         console.warn('ETF search index load error:', e);
       }
     },
 
-async selectFlowTicker(ticker) {
+    async selectFlowTicker(ticker) {
       if (!ticker) return;
       ticker = ticker.trim().toUpperCase();
       this.flowTicker = ticker;
@@ -7070,17 +7057,26 @@ async selectFlowTicker(ticker) {
         const bust = this._sessionBust || (this._sessionBust = Date.now());
         const r = await fetch(`data/flows/${ticker}.json?v=${bust}`);
         if (r.ok) {
-          this.flowData = await r.json();
+          // Freeze payload to prevent Alpine from recursively observing 2,675 items
+          this.flowData = Object.freeze(await r.json());
           this.flowSelectedUncached = null;
           this.flowSetRangePreset(this.flowRangePreset || '1y');
         } else {
           // If not found in pre-cached files, check if it exists in search index
-          if (!this.flowSearchIndex) {
+          if (!window._etfSearchIndex) {
             await this._loadFlowSearchIndex();
           }
-          const found = this.flowSearchIndex?.find(e => e.t.toUpperCase() === ticker);
+          const found = (window._etfSearchIndex || []).find(row => (row[0] || '').toUpperCase() === ticker);
           if (found) {
-            this.flowSelectedUncached = found;
+            this.flowSelectedUncached = {
+              t: found[0],
+              k: found[1],
+              l: found[2],
+              p: found[3],
+              a: found[4],
+              c: found[5],
+              cached: Boolean(found[6])
+            };
             this.flowData = null;
           } else {
             this.flowError = `Flow data for "${ticker}" is not pre-cached.`;
@@ -7134,27 +7130,41 @@ async selectFlowTicker(ticker) {
     flowSearch() {
       const q = (this.flowSearchQuery || '').trim().toUpperCase();
 
-      if (!this.flowSearchIndex) {
+      if (!window._etfSearchIndex) {
         this._loadFlowSearchIndex().then(() => this.flowSearch());
         return;
       }
 
+      const rows = window._etfSearchIndex;
+      const n = rows.length;
+
       if (!q) {
-        const cached = this.flowSearchIndex.filter(e => e.cached);
-        this.flowSearchResults = (cached.length ? cached : this.flowSearchIndex).slice(0, 30);
+        const topMatches = [];
+        for (let i = 0; i < n && topMatches.length < 30; i++) {
+          if (rows[i][6]) {
+            topMatches.push({
+              t: rows[i][0],
+              k: rows[i][1],
+              l: rows[i][2],
+              p: rows[i][3],
+              a: rows[i][4],
+              c: rows[i][5],
+              cached: true
+            });
+          }
+        }
+        this.flowSearchResults = topMatches;
         this.flowSearchSelectedIndex = -1;
         this.flowSearchOpen = true;
         return;
       }
 
       const matches = [];
-      const n = this.flowSearchIndex.length;
-
       for (let i = 0; i < n; i++) {
-        const item = this.flowSearchIndex[i];
-        const t = (item.t || '').toUpperCase();
-        const l = (item.l || '').toUpperCase();
-        const p = (item.p || '').toUpperCase();
+        const row = rows[i];
+        const t = (row[0] || '').toUpperCase();
+        const l = (row[2] || '').toUpperCase();
+        const p = (row[3] || '').toUpperCase();
 
         if (t.includes(q) || l.includes(q) || p.includes(q)) {
           let score = 0;
@@ -7163,19 +7173,27 @@ async selectFlowTicker(ticker) {
           else if (t.includes(q)) score += 300;
           if (l.startsWith(q)) score += 200;
           else if (l.includes(q)) score += 100;
-          if (item.cached) score += 300;
-          if (item.a) score += Math.min(150, Math.log10(item.a) * 15);
-          matches.push({ item, score });
+          if (row[6]) score += 300;
+          if (row[4]) score += Math.min(150, Math.log10(row[4]) * 15);
+          matches.push({ row, score });
         }
       }
 
       matches.sort((a, b) => b.score - a.score);
-      this.flowSearchResults = matches.slice(0, 30).map(m => m.item);
+      this.flowSearchResults = matches.slice(0, 30).map(m => ({
+        t: m.row[0],
+        k: m.row[1],
+        l: m.row[2],
+        p: m.row[3],
+        a: m.row[4],
+        c: m.row[5],
+        cached: Boolean(m.row[6])
+      }));
       this.flowSearchSelectedIndex = -1;
       this.flowSearchOpen = true;
     },
 
-    flowSetRangePreset(preset) {
+        flowSetRangePreset(preset) {
       this.flowRangePreset = preset;
       const all = this.flowData?.data || [];
       const total = all.length;
