@@ -94,6 +94,10 @@
     .cat-divider td { border-top: 2px solid rgba(255,255,255,0.08) !important; }
     /* Stat cards */
     .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+    /* Flow Studio Sliders */
+    .flow-slider-track { height: 6px !important; background: rgba(255, 255, 255, 0.12) !important; border-radius: 9999px !important; }
+    .flow-slider-fill { height: 6px !important; background: linear-gradient(90deg, #0284c7 0%, #38bdf8 100%) !important; box-shadow: 0 0 10px rgba(56, 189, 248, 0.45) !important; border-radius: 9999px !important; }
+    .flow-slider-handle { width: 16px !important; height: 16px !important; background: #080c14 !important; border: 2px solid #38bdf8 !important; box-shadow: 0 0 8px rgba(56, 189, 248, 0.7) !important; margin-left: -8px !important; border-radius: 9999px !important; }
     /* Reduced motion - honour the OS preference: kill the loading pulse and
        all transitions so nothing animates for vestibular-sensitive users. */
     @media (prefers-reduced-motion: reduce) {
@@ -2029,7 +2033,8 @@
           <input type="text"
                  x-model.debounce.120ms="flowSearchQuery"
                  @input.debounce.120ms="flowSearch()"
-                 @focus="flowSearchOpen = true; if (!flowSearchResults.length) flowSearch();"
+                 @focus="flowSearchOpen = true; flowSearch();"
+                 @click="flowSearchOpen = true; if (!flowSearchResults.length) flowSearch();"
                  @keydown.down.prevent="flowSearchDown()"
                  @keydown.up.prevent="flowSearchUp()"
                  @keydown.enter.prevent="flowSearchEnter()"
@@ -2038,7 +2043,7 @@
                  class="bg-transparent border-none text-xs sm:text-sm w-full focus:outline-none font-mono"
                  style="color: var(--text)">
           <button x-show="flowSearchQuery"
-                  @click="flowSearchQuery = ''; flowSearchResults = []; flowSearchOpen = false"
+                  @click="flowSearchQuery = ''; flowSearch()"
                   class="text-xs font-mono p-1 transition"
                   style="color: var(--text-3)"
                   title="Clear search">✕</button>
@@ -2053,7 +2058,8 @@
              class="absolute left-0 right-0 top-full mt-2 z-50 rounded-lg border shadow-2xl overflow-hidden max-h-96 overflow-y-auto scrollbar"
              style="background: var(--surface-2); border-color: var(--border-2);">
           <div class="px-3.5 py-2 text-[10px] font-mono text-zinc-400 border-b uppercase tracking-wider flex justify-between bg-black/90 sticky top-0 backdrop-blur z-10" style="border-color: var(--border)">
-            <span>Matching ETFs (<span x-text="flowSearchResults.length"></span>) · ↑↓ Navigate · ↵ Select</span>
+            <span x-show="!flowSearchQuery">All Pre-Cached ETFs (<span x-text="flowSearchResults.length"></span>) · ↑↓ Navigate · ↵ Select</span>
+            <span x-show="flowSearchQuery">Matching ETFs (<span x-text="flowSearchResults.length"></span>) · ↑↓ Navigate · ↵ Select</span>
             <span style="color: var(--cyan)">Trackinsight In-Memory Terminal</span>
           </div>
           <template x-for="(r, idx) in flowSearchResults" :key="r.k || r.t">
@@ -2371,14 +2377,12 @@
                @pointermove="_flowChartSliderMove($event, 1)"
                @pointerup="_flowChartSliderUp($event, 1)"
                @pointercancel="_flowChartSliderUp($event, 1)">
-            <div class="absolute top-1/2 -translate-y-1/2 w-full rounded-full" style="height:5px; background:rgba(255,255,255,0.08)"></div>
-            <div class="absolute top-1/2 -translate-y-1/2 rounded-full cursor-ew-resize hover:brightness-110" style="height:4px; background:var(--cyan); opacity:0.85"
-                 :style="`left:${_flowSliderStartPct(1)}%; width:${Math.max(0.5, _flowSliderEndPct(1) - _flowSliderStartPct(1))}%`"></div>
-            <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
-                 style="width:16px; height:16px; background:#080c14; border-color:#22d3ee; margin-left:-8px"
+            <div class="absolute top-1/2 -translate-y-1/2 w-full flow-slider-track"></div>
+            <div class="absolute top-1/2 -translate-y-1/2 cursor-ew-resize hover:brightness-110 flow-slider-fill"
+                 :style="`left:${_flowSliderStartPct(1)}%; width:${Math.max(0.5, _flowSliderEndPct(1) - _flowSliderStartPct(1))}%;`"></div>
+            <div class="absolute top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125 flow-slider-handle"
                  :style="`left:${_flowSliderStartPct(1)}%`"></div>
-            <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
-                 style="width:16px; height:16px; background:#080c14; border-color:#22d3ee; margin-left:-8px"
+            <div class="absolute top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125 flow-slider-handle"
                  :style="`left:${_flowSliderEndPct(1)}%`"></div>
           </div>
           <span class="text-xs font-mono font-semibold text-cyan-400 min-w-[80px] text-right" x-text="flowGetChartRecords(1).slice(-1)[0]?.date || ''"></span>
@@ -2459,8 +2463,28 @@
             <span class="flex items-center gap-1.5"><span class="w-3.5 h-2 rounded-xs inline-block" style="background: rgba(52,211,153,0.4); border: 1px solid #34d399;"></span> Cumulative Flow</span>
           </div>
         </div>
-        <div class="p-3 overflow-x-auto">
+        <div class="relative p-3 overflow-x-auto"
+             @mousemove="flowHandleChartHover($event, 1)"
+             @mouseleave="flowHandleChartLeave(1)">
           <div x-html="flowPriceChartSvg" style="width: 100%; min-width: 600px;"></div>
+
+          <!-- Interactive Floating HUD Tooltip -->
+          <div x-show="flowChartHoverInfo[1]"
+               x-transition.opacity.duration.100ms
+               class="pointer-events-none absolute z-20 rounded-md border p-2.5 font-mono text-xs select-none backdrop-blur-md"
+               style="background: rgba(9, 13, 22, 0.95); border-color: rgba(56, 189, 248, 0.35); box-shadow: 0 8px 24px rgba(0,0,0,0.8); min-width: 200px;"
+               :style="`left: ${flowChartHoverInfo[1]?.x}px; top: ${flowChartHoverInfo[1]?.y}px;`">
+            <div class="flex items-center justify-between border-b pb-1 mb-1.5" style="border-color: rgba(255,255,255,0.08)">
+              <span class="text-[10px] text-zinc-400 font-semibold" x-text="flowChartHoverInfo[1]?.date"></span>
+              <span class="text-[9px] uppercase tracking-wider text-cyan-400 font-bold">Chart 1</span>
+            </div>
+            <template x-for="item in (flowChartHoverInfo[1]?.items || [])" :key="item.label">
+              <div class="flex items-center justify-between gap-3 text-[11px] leading-tight my-0.5">
+                <span class="text-zinc-400" x-text="item.label"></span>
+                <span class="font-bold text-right" :style="`color: ${item.color}`" x-text="item.val"></span>
+              </div>
+            </template>
+          </div>
         </div>
         <!-- Chart 1 Dedicated Dual Range Slider -->
         <div class="px-4 py-2.5 border-t bg-[#080c14] select-none" style="border-color: rgba(255,255,255,0.06)">
@@ -2483,20 +2507,17 @@
           </div>
           <div class="flex items-center gap-3">
             <span class="text-[11px] font-mono font-semibold text-zinc-400 min-w-[75px]" x-text="flowGetChartRecords(1)[0]?.date || ''"></span>
-            <div class="relative flex-1 select-none cursor-pointer" style="height:22px; touch-action:none"
+            <div class="relative flex-1 select-none cursor-pointer" style="height:24px; touch-action:none"
                  @pointerdown="_flowChartSliderDown($event, 1)"
                  @pointermove="_flowChartSliderMove($event, 1)"
                  @pointerup="_flowChartSliderUp($event, 1)"
                  @pointercancel="_flowChartSliderUp($event, 1)">
-              <div class="absolute top-1/2 -translate-y-1/2 w-full rounded-full" style="height:4px; background:rgba(255,255,255,0.08)"></div>
-              <div class="absolute top-1/2 -translate-y-1/2 rounded-full cursor-ew-resize hover:brightness-110 shadow-xs"
-                   style="height:4px; background:var(--cyan); opacity:0.85"
-                   :style="`left:${_flowSliderStartPct(1)}%; width:${Math.max(0.5, _flowSliderEndPct(1) - _flowSliderStartPct(1))}%`"></div>
-              <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
-                   style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-7px"
+              <div class="absolute top-1/2 -translate-y-1/2 w-full flow-slider-track"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 cursor-ew-resize hover:brightness-110 flow-slider-fill"
+                   :style="`left:${_flowSliderStartPct(1)}%; width:${Math.max(0.5, _flowSliderEndPct(1) - _flowSliderStartPct(1))}%;`"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125 flow-slider-handle"
                    :style="`left:${_flowSliderStartPct(1)}%`"></div>
-              <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
-                   style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-7px"
+              <div class="absolute top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125 flow-slider-handle"
                    :style="`left:${_flowSliderEndPct(1)}%`"></div>
             </div>
             <span class="text-[11px] font-mono font-semibold text-zinc-400 min-w-[75px] text-right" x-text="flowGetChartRecords(1).slice(-1)[0]?.date || ''"></span>
@@ -2520,8 +2541,28 @@
             <span class="flex items-center gap-1.5"><span class="w-3.5 h-0.5 bg-zinc-200 inline-block rounded-full"></span> 20D Trend</span>
           </div>
         </div>
-        <div class="p-3 overflow-x-auto">
+        <div class="relative p-3 overflow-x-auto"
+             @mousemove="flowHandleChartHover($event, 2)"
+             @mouseleave="flowHandleChartLeave(2)">
           <div x-html="flowBarsChartSvg" style="width: 100%; min-width: 600px;"></div>
+
+          <!-- Interactive Floating HUD Tooltip -->
+          <div x-show="flowChartHoverInfo[2]"
+               x-transition.opacity.duration.100ms
+               class="pointer-events-none absolute z-20 rounded-md border p-2.5 font-mono text-xs select-none backdrop-blur-md"
+               style="background: rgba(9, 13, 22, 0.95); border-color: rgba(56, 189, 248, 0.35); box-shadow: 0 8px 24px rgba(0,0,0,0.8); min-width: 200px;"
+               :style="`left: ${flowChartHoverInfo[2]?.x}px; top: ${flowChartHoverInfo[2]?.y}px;`">
+            <div class="flex items-center justify-between border-b pb-1 mb-1.5" style="border-color: rgba(255,255,255,0.08)">
+              <span class="text-[10px] text-zinc-400 font-semibold" x-text="flowChartHoverInfo[2]?.date"></span>
+              <span class="text-[9px] uppercase tracking-wider text-cyan-400 font-bold">Chart 2</span>
+            </div>
+            <template x-for="item in (flowChartHoverInfo[2]?.items || [])" :key="item.label">
+              <div class="flex items-center justify-between gap-3 text-[11px] leading-tight my-0.5">
+                <span class="text-zinc-400" x-text="item.label"></span>
+                <span class="font-bold text-right" :style="`color: ${item.color}`" x-text="item.val"></span>
+              </div>
+            </template>
+          </div>
         </div>
         <!-- Chart 2 Dedicated Dual Range Slider -->
         <div class="px-4 py-2.5 border-t bg-[#080c14] select-none" style="border-color: rgba(255,255,255,0.06)">
@@ -2544,20 +2585,17 @@
           </div>
           <div class="flex items-center gap-3">
             <span class="text-[11px] font-mono font-semibold text-zinc-400 min-w-[75px]" x-text="flowGetChartRecords(2)[0]?.date || ''"></span>
-            <div class="relative flex-1 select-none cursor-pointer" style="height:22px; touch-action:none"
+            <div class="relative flex-1 select-none cursor-pointer" style="height:24px; touch-action:none"
                  @pointerdown="_flowChartSliderDown($event, 2)"
                  @pointermove="_flowChartSliderMove($event, 2)"
                  @pointerup="_flowChartSliderUp($event, 2)"
                  @pointercancel="_flowChartSliderUp($event, 2)">
-              <div class="absolute top-1/2 -translate-y-1/2 w-full rounded-full" style="height:4px; background:rgba(255,255,255,0.08)"></div>
-              <div class="absolute top-1/2 -translate-y-1/2 rounded-full cursor-ew-resize hover:brightness-110 shadow-xs"
-                   style="height:4px; background:var(--cyan); opacity:0.85"
-                   :style="`left:${_flowSliderStartPct(2)}%; width:${Math.max(0.5, _flowSliderEndPct(2) - _flowSliderStartPct(2))}%`"></div>
-              <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
-                   style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-7px"
+              <div class="absolute top-1/2 -translate-y-1/2 w-full flow-slider-track"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 cursor-ew-resize hover:brightness-110 flow-slider-fill"
+                   :style="`left:${_flowSliderStartPct(2)}%; width:${Math.max(0.5, _flowSliderEndPct(2) - _flowSliderStartPct(2))}%;`"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125 flow-slider-handle"
                    :style="`left:${_flowSliderStartPct(2)}%`"></div>
-              <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
-                   style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-8px"
+              <div class="absolute top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125 flow-slider-handle"
                    :style="`left:${_flowSliderEndPct(2)}%`"></div>
             </div>
             <span class="text-[11px] font-mono font-semibold text-zinc-400 min-w-[75px] text-right" x-text="flowGetChartRecords(2).slice(-1)[0]?.date || ''"></span>
@@ -2580,8 +2618,28 @@
             <span class="flex items-center gap-1.5"><span class="w-3.5 h-0.5 bg-purple-400 inline-block rounded-full"></span> 50-Day Momentum</span>
           </div>
         </div>
-        <div class="p-3 overflow-x-auto">
+        <div class="relative p-3 overflow-x-auto"
+             @mousemove="flowHandleChartHover($event, 3)"
+             @mouseleave="flowHandleChartLeave(3)">
           <div x-html="flowMomentumChartSvg" style="width: 100%; min-width: 600px;"></div>
+
+          <!-- Interactive Floating HUD Tooltip -->
+          <div x-show="flowChartHoverInfo[3]"
+               x-transition.opacity.duration.100ms
+               class="pointer-events-none absolute z-20 rounded-md border p-2.5 font-mono text-xs select-none backdrop-blur-md"
+               style="background: rgba(9, 13, 22, 0.95); border-color: rgba(56, 189, 248, 0.35); box-shadow: 0 8px 24px rgba(0,0,0,0.8); min-width: 200px;"
+               :style="`left: ${flowChartHoverInfo[3]?.x}px; top: ${flowChartHoverInfo[3]?.y}px;`">
+            <div class="flex items-center justify-between border-b pb-1 mb-1.5" style="border-color: rgba(255,255,255,0.08)">
+              <span class="text-[10px] text-zinc-400 font-semibold" x-text="flowChartHoverInfo[3]?.date"></span>
+              <span class="text-[9px] uppercase tracking-wider text-cyan-400 font-bold">Chart 3</span>
+            </div>
+            <template x-for="item in (flowChartHoverInfo[3]?.items || [])" :key="item.label">
+              <div class="flex items-center justify-between gap-3 text-[11px] leading-tight my-0.5">
+                <span class="text-zinc-400" x-text="item.label"></span>
+                <span class="font-bold text-right" :style="`color: ${item.color}`" x-text="item.val"></span>
+              </div>
+            </template>
+          </div>
         </div>
         <!-- Chart 3 Dedicated Dual Range Slider -->
         <div class="px-4 py-2.5 border-t bg-[#080c14] select-none" style="border-color: rgba(255,255,255,0.06)">
@@ -2604,20 +2662,17 @@
           </div>
           <div class="flex items-center gap-3">
             <span class="text-[11px] font-mono font-semibold text-zinc-400 min-w-[75px]" x-text="flowGetChartRecords(3)[0]?.date || ''"></span>
-            <div class="relative flex-1 select-none cursor-pointer" style="height:22px; touch-action:none"
+            <div class="relative flex-1 select-none cursor-pointer" style="height:24px; touch-action:none"
                  @pointerdown="_flowChartSliderDown($event, 3)"
                  @pointermove="_flowChartSliderMove($event, 3)"
                  @pointerup="_flowChartSliderUp($event, 3)"
                  @pointercancel="_flowChartSliderUp($event, 3)">
-              <div class="absolute top-1/2 -translate-y-1/2 w-full rounded-full" style="height:4px; background:rgba(255,255,255,0.08)"></div>
-              <div class="absolute top-1/2 -translate-y-1/2 rounded-full cursor-ew-resize hover:brightness-110 shadow-xs"
-                   style="height:4px; background:var(--cyan); opacity:0.85"
-                   :style="`left:${_flowSliderStartPct(3)}%; width:${Math.max(0.5, _flowSliderEndPct(3) - _flowSliderStartPct(3))}%`"></div>
-              <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
-                   style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-7px"
+              <div class="absolute top-1/2 -translate-y-1/2 w-full flow-slider-track"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 cursor-ew-resize hover:brightness-110 flow-slider-fill"
+                   :style="`left:${_flowSliderStartPct(3)}%; width:${Math.max(0.5, _flowSliderEndPct(3) - _flowSliderStartPct(3))}%;`"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125 flow-slider-handle"
                    :style="`left:${_flowSliderStartPct(3)}%`"></div>
-              <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
-                   style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-8px"
+              <div class="absolute top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125 flow-slider-handle"
                    :style="`left:${_flowSliderEndPct(3)}%`"></div>
             </div>
             <span class="text-[11px] font-mono font-semibold text-zinc-400 min-w-[75px] text-right" x-text="flowGetChartRecords(3).slice(-1)[0]?.date || ''"></span>
@@ -2640,8 +2695,28 @@
             <span class="chip text-[9px]" style="border: 1px dashed #fb7185; color: #fb7185">−1.5σ Outflow Spike</span>
           </div>
         </div>
-        <div class="p-3 overflow-x-auto">
+        <div class="relative p-3 overflow-x-auto"
+             @mousemove="flowHandleChartHover($event, 4)"
+             @mouseleave="flowHandleChartLeave(4)">
           <div x-html="flowZScoreChartSvg" style="width: 100%; min-width: 600px;"></div>
+
+          <!-- Interactive Floating HUD Tooltip -->
+          <div x-show="flowChartHoverInfo[4]"
+               x-transition.opacity.duration.100ms
+               class="pointer-events-none absolute z-20 rounded-md border p-2.5 font-mono text-xs select-none backdrop-blur-md"
+               style="background: rgba(9, 13, 22, 0.95); border-color: rgba(56, 189, 248, 0.35); box-shadow: 0 8px 24px rgba(0,0,0,0.8); min-width: 200px;"
+               :style="`left: ${flowChartHoverInfo[4]?.x}px; top: ${flowChartHoverInfo[4]?.y}px;`">
+            <div class="flex items-center justify-between border-b pb-1 mb-1.5" style="border-color: rgba(255,255,255,0.08)">
+              <span class="text-[10px] text-zinc-400 font-semibold" x-text="flowChartHoverInfo[4]?.date"></span>
+              <span class="text-[9px] uppercase tracking-wider text-amber-400 font-bold">Chart 4</span>
+            </div>
+            <template x-for="item in (flowChartHoverInfo[4]?.items || [])" :key="item.label">
+              <div class="flex items-center justify-between gap-3 text-[11px] leading-tight my-0.5">
+                <span class="text-zinc-400" x-text="item.label"></span>
+                <span class="font-bold text-right" :style="`color: ${item.color}`" x-text="item.val"></span>
+              </div>
+            </template>
+          </div>
         </div>
         <!-- Chart 4 Dedicated Dual Range Slider -->
         <div class="px-4 py-2.5 border-t bg-[#080c14] select-none" style="border-color: rgba(255,255,255,0.06)">
@@ -2664,20 +2739,17 @@
           </div>
           <div class="flex items-center gap-3">
             <span class="text-[11px] font-mono font-semibold text-zinc-400 min-w-[75px]" x-text="flowGetChartRecords(4)[0]?.date || ''"></span>
-            <div class="relative flex-1 select-none cursor-pointer" style="height:22px; touch-action:none"
+            <div class="relative flex-1 select-none cursor-pointer" style="height:24px; touch-action:none"
                  @pointerdown="_flowChartSliderDown($event, 4)"
                  @pointermove="_flowChartSliderMove($event, 4)"
                  @pointerup="_flowChartSliderUp($event, 4)"
                  @pointercancel="_flowChartSliderUp($event, 4)">
-              <div class="absolute top-1/2 -translate-y-1/2 w-full rounded-full" style="height:4px; background:rgba(255,255,255,0.08)"></div>
-              <div class="absolute top-1/2 -translate-y-1/2 rounded-full cursor-ew-resize hover:brightness-110 shadow-xs"
-                   style="height:4px; background:var(--cyan); opacity:0.85"
-                   :style="`left:${_flowSliderStartPct(4)}%; width:${Math.max(0.5, _flowSliderEndPct(4) - _flowSliderStartPct(4))}%`"></div>
-              <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
-                   style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-7px"
+              <div class="absolute top-1/2 -translate-y-1/2 w-full flow-slider-track"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 cursor-ew-resize hover:brightness-110 flow-slider-fill"
+                   :style="`left:${_flowSliderStartPct(4)}%; width:${Math.max(0.5, _flowSliderEndPct(4) - _flowSliderStartPct(4))}%;`"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125 flow-slider-handle"
                    :style="`left:${_flowSliderStartPct(4)}%`"></div>
-              <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
-                   style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-8px"
+              <div class="absolute top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125 flow-slider-handle"
                    :style="`left:${_flowSliderEndPct(4)}%`"></div>
             </div>
             <span class="text-[11px] font-mono font-semibold text-zinc-400 min-w-[75px] text-right" x-text="flowGetChartRecords(4).slice(-1)[0]?.date || ''"></span>
@@ -2703,8 +2775,28 @@
             <span class="chip text-[9px]" style="background: rgba(244,63,94,0.15); color: #fb7185; border: 1px solid rgba(244,63,94,0.3)">≤10%ile Liquidation</span>
           </div>
         </div>
-        <div class="p-3 overflow-x-auto">
+        <div class="relative p-3 overflow-x-auto"
+             @mousemove="flowHandleChartHover($event, 5)"
+             @mouseleave="flowHandleChartLeave(5)">
           <div x-html="flowPercentileChartSvg" style="width: 100%; min-width: 600px;"></div>
+
+          <!-- Interactive Floating HUD Tooltip -->
+          <div x-show="flowChartHoverInfo[5]"
+               x-transition.opacity.duration.100ms
+               class="pointer-events-none absolute z-20 rounded-md border p-2.5 font-mono text-xs select-none backdrop-blur-md"
+               style="background: rgba(9, 13, 22, 0.95); border-color: rgba(56, 189, 248, 0.35); box-shadow: 0 8px 24px rgba(0,0,0,0.8); min-width: 210px;"
+               :style="`left: ${flowChartHoverInfo[5]?.x}px; top: ${flowChartHoverInfo[5]?.y}px;`">
+            <div class="flex items-center justify-between border-b pb-1 mb-1.5" style="border-color: rgba(255,255,255,0.08)">
+              <span class="text-[10px] text-zinc-400 font-semibold" x-text="flowChartHoverInfo[5]?.date"></span>
+              <span class="text-[9px] uppercase tracking-wider text-cyan-400 font-bold">Chart 5</span>
+            </div>
+            <template x-for="item in (flowChartHoverInfo[5]?.items || [])" :key="item.label">
+              <div class="flex items-center justify-between gap-3 text-[11px] leading-tight my-0.5">
+                <span class="text-zinc-400" x-text="item.label"></span>
+                <span class="font-bold text-right" :style="`color: ${item.color}`" x-text="item.val"></span>
+              </div>
+            </template>
+          </div>
         </div>
         <!-- Chart 5 Dedicated Dual Range Slider -->
         <div class="px-4 py-2.5 border-t bg-[#080c14] select-none" style="border-color: rgba(255,255,255,0.06)">
@@ -2727,20 +2819,17 @@
           </div>
           <div class="flex items-center gap-3">
             <span class="text-[11px] font-mono font-semibold text-zinc-400 min-w-[75px]" x-text="flowGetChartRecords(5)[0]?.date || ''"></span>
-            <div class="relative flex-1 select-none cursor-pointer" style="height:22px; touch-action:none"
+            <div class="relative flex-1 select-none cursor-pointer" style="height:24px; touch-action:none"
                  @pointerdown="_flowChartSliderDown($event, 5)"
                  @pointermove="_flowChartSliderMove($event, 5)"
                  @pointerup="_flowChartSliderUp($event, 5)"
                  @pointercancel="_flowChartSliderUp($event, 5)">
-              <div class="absolute top-1/2 -translate-y-1/2 w-full rounded-full" style="height:4px; background:rgba(255,255,255,0.08)"></div>
-              <div class="absolute top-1/2 -translate-y-1/2 rounded-full cursor-ew-resize hover:brightness-110 shadow-xs"
-                   style="height:4px; background:var(--cyan); opacity:0.85"
-                   :style="`left:${_flowSliderStartPct(5)}%; width:${Math.max(0.5, _flowSliderEndPct(5) - _flowSliderStartPct(5))}%`"></div>
-              <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
-                   style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-7px"
+              <div class="absolute top-1/2 -translate-y-1/2 w-full flow-slider-track"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 cursor-ew-resize hover:brightness-110 flow-slider-fill"
+                   :style="`left:${_flowSliderStartPct(5)}%; width:${Math.max(0.5, _flowSliderEndPct(5) - _flowSliderStartPct(5))}%;`"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125 flow-slider-handle"
                    :style="`left:${_flowSliderStartPct(5)}%`"></div>
-              <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
-                   style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-8px"
+              <div class="absolute top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125 flow-slider-handle"
                    :style="`left:${_flowSliderEndPct(5)}%`"></div>
             </div>
             <span class="text-[11px] font-mono font-semibold text-zinc-400 min-w-[75px] text-right" x-text="flowGetChartRecords(5).slice(-1)[0]?.date || ''"></span>
@@ -2767,8 +2856,28 @@
             <span class="flex items-center gap-1.5 text-amber-400"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block shadow-xs"></span> Distribution (High+Outflow)</span>
           </div>
         </div>
-        <div class="p-3 overflow-x-auto">
+        <div class="relative p-3 overflow-x-auto"
+             @mousemove="flowHandleChartHover($event, 6)"
+             @mouseleave="flowHandleChartLeave(6)">
           <div x-html="flowDivergenceChartSvg" style="width: 100%; min-width: 600px;"></div>
+
+          <!-- Interactive Floating HUD Tooltip -->
+          <div x-show="flowChartHoverInfo[6]"
+               x-transition.opacity.duration.100ms
+               class="pointer-events-none absolute z-20 rounded-md border p-2.5 font-mono text-xs select-none backdrop-blur-md"
+               style="background: rgba(9, 13, 22, 0.95); border-color: rgba(56, 189, 248, 0.35); box-shadow: 0 8px 24px rgba(0,0,0,0.8); min-width: 220px;"
+               :style="`left: ${flowChartHoverInfo[6]?.x}px; top: ${flowChartHoverInfo[6]?.y}px;`">
+            <div class="flex items-center justify-between border-b pb-1 mb-1.5" style="border-color: rgba(255,255,255,0.08)">
+              <span class="text-[10px] text-zinc-400 font-semibold" x-text="flowChartHoverInfo[6]?.date"></span>
+              <span class="text-[9px] uppercase tracking-wider text-purple-400 font-bold">Chart 6</span>
+            </div>
+            <template x-for="item in (flowChartHoverInfo[6]?.items || [])" :key="item.label">
+              <div class="flex items-center justify-between gap-3 text-[11px] leading-tight my-0.5">
+                <span class="text-zinc-400" x-text="item.label"></span>
+                <span class="font-bold text-right" :style="`color: ${item.color}`" x-text="item.val"></span>
+              </div>
+            </template>
+          </div>
         </div>
         <!-- Chart 6 Dedicated Dual Range Slider -->
         <div class="px-4 py-2.5 border-t bg-[#080c14] select-none" style="border-color: rgba(255,255,255,0.06)">
@@ -2791,20 +2900,17 @@
           </div>
           <div class="flex items-center gap-3">
             <span class="text-[11px] font-mono font-semibold text-zinc-400 min-w-[75px]" x-text="flowGetChartRecords(6)[0]?.date || ''"></span>
-            <div class="relative flex-1 select-none cursor-pointer" style="height:22px; touch-action:none"
+            <div class="relative flex-1 select-none cursor-pointer" style="height:24px; touch-action:none"
                  @pointerdown="_flowChartSliderDown($event, 6)"
                  @pointermove="_flowChartSliderMove($event, 6)"
                  @pointerup="_flowChartSliderUp($event, 6)"
                  @pointercancel="_flowChartSliderUp($event, 6)">
-              <div class="absolute top-1/2 -translate-y-1/2 w-full rounded-full" style="height:4px; background:rgba(255,255,255,0.08)"></div>
-              <div class="absolute top-1/2 -translate-y-1/2 rounded-full cursor-ew-resize hover:brightness-110 shadow-xs"
-                   style="height:4px; background:var(--cyan); opacity:0.85"
-                   :style="`left:${_flowSliderStartPct(6)}%; width:${Math.max(0.5, _flowSliderEndPct(6) - _flowSliderStartPct(6))}%`"></div>
-              <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
-                   style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-7px"
+              <div class="absolute top-1/2 -translate-y-1/2 w-full flow-slider-track"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 cursor-ew-resize hover:brightness-110 flow-slider-fill"
+                   :style="`left:${_flowSliderStartPct(6)}%; width:${Math.max(0.5, _flowSliderEndPct(6) - _flowSliderStartPct(6))}%;`"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125 flow-slider-handle"
                    :style="`left:${_flowSliderStartPct(6)}%`"></div>
-              <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
-                   style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-8px"
+              <div class="absolute top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125 flow-slider-handle"
                    :style="`left:${_flowSliderEndPct(6)}%`"></div>
             </div>
             <span class="text-[11px] font-mono font-semibold text-zinc-400 min-w-[75px] text-right" x-text="flowGetChartRecords(6).slice(-1)[0]?.date || ''"></span>
@@ -3245,6 +3351,7 @@ function marketsApp() {
     _flowSliderDragAnchorStart: 0,
     _flowSliderDragAnchorEnd: 0,
     flowHoverInfo: null,
+    flowChartHoverInfo: { 1: null, 2: null, 3: null, 4: null, 5: null, 6: null },
     flowSelectedUncached: null,
     flowGithubToken: localStorage.getItem('gh_flow_token') || '',
     flowWorkflowRunning: false,
@@ -7541,14 +7648,28 @@ function marketsApp() {
           // Store raw tuples in non-reactive memory to prevent Alpine proxy overhead on 15,713 items
           window._etfSearchIndex = (raw && raw.rows) ? raw.rows : (Array.isArray(raw) ? raw : []);
           window._etfSearchMap = new Map();
+          const cachedList = [];
           for (let i = 0; i < window._etfSearchIndex.length; i++) {
             const row = window._etfSearchIndex[i];
             if (row && row[0]) {
               const sym = String(row[0]).toUpperCase();
               window._etfSearchMap.set(sym, row);
               row._s = `${sym} ${String(row[2] || '').toUpperCase()} ${String(row[3] || '').toUpperCase()}`;
+              if (row[6]) {
+                cachedList.push({
+                  t: row[0],
+                  k: row[1],
+                  l: row[2],
+                  p: row[3],
+                  a: row[4],
+                  c: row[5],
+                  cached: true
+                });
+              }
             }
           }
+          cachedList.sort((a, b) => (b.a || 0) - (a.a || 0));
+          window._preCachedEtfList = cachedList;
         }
       } catch (e) {
         console.warn('ETF search index load error:', e);
@@ -7645,25 +7766,8 @@ function marketsApp() {
         return;
       }
 
-      const rows = window._etfSearchIndex;
-      const n = rows.length;
-
       if (!q) {
-        const topMatches = [];
-        for (let i = 0; i < n && topMatches.length < 30; i++) {
-          if (rows[i][6]) {
-            topMatches.push({
-              t: rows[i][0],
-              k: rows[i][1],
-              l: rows[i][2],
-              p: rows[i][3],
-              a: rows[i][4],
-              c: rows[i][5],
-              cached: true
-            });
-          }
-        }
-        this.flowSearchResults = topMatches;
+        this.flowSearchResults = window._preCachedEtfList || [];
         this.flowSearchSelectedIndex = -1;
         this.flowSearchOpen = true;
         return;
@@ -7907,6 +8011,161 @@ function marketsApp() {
       if (abs >= 1e6) return `${sign}${(abs / 1e6).toFixed(1)}M`;
       if (abs >= 1e3) return `${sign}${(abs / 1e3).toFixed(0)}K`;
       return `${sign}${abs.toFixed(0)}`;
+    },
+
+    flowHandleChartHover(e, chartId = 1) {
+      const container = e.currentTarget;
+      const svg = container.querySelector('svg');
+      if (!svg) return;
+      const rect = svg.getBoundingClientRect();
+      const records = this.flowGetChartRecords(chartId);
+      if (!records || records.length < 2) return;
+
+      const W = 1000, PL = 80, PR = 80;
+      const chartW = W - PL - PR;
+      const relX = e.clientX - rect.left;
+      const relY = e.clientY - rect.top;
+      const svgX = (relX / rect.width) * W;
+      const frac = Math.max(0, Math.min(1, (svgX - PL) / chartW));
+      const n = records.length;
+      const idx = Math.max(0, Math.min(n - 1, Math.round(frac * (n - 1))));
+      const r = records[idx];
+      if (!r) return;
+
+      // Update SVG crosshair
+      const ch = svg.querySelector(`#flow-crosshair-${chartId}`);
+      if (ch) {
+        const xSvg = PL + (idx / Math.max(1, n - 1)) * chartW;
+        ch.setAttribute('x1', xSvg.toFixed(1));
+        ch.setAttribute('x2', xSvg.toFixed(1));
+        ch.setAttribute('opacity', '1');
+      }
+
+      // Clamped tooltip coordinates
+      const tooltipX = Math.max(12, Math.min(rect.width - 240, relX > rect.width * 0.72 ? relX - 235 : relX + 18));
+      const tooltipY = Math.max(12, Math.min(rect.height - 130, relY > rect.height * 0.72 ? relY - 110 : relY + 10));
+
+      const info = {
+        date: r.date,
+        x: tooltipX,
+        y: tooltipY,
+        headerText: '',
+        items: []
+      };
+
+      if (chartId === 1) {
+        // Price vs Cumulative Net Flow
+        let cum = 0;
+        for (let j = 0; j <= idx; j++) cum += (records[j].usd_flow || 0);
+        info.headerText = `${r.date} · Price: $${r.nav ? Number(r.nav).toFixed(2) : '—'} · Cum: ${this.flowFormatMoney(cum)}`;
+        info.items = [
+          { label: 'Share Price / NAV', val: r.nav ? `$${Number(r.nav).toFixed(2)}` : '—', color: '#22d3ee' },
+          { label: 'Cumulative Flow', val: this.flowFormatMoney(cum), color: cum >= 0 ? '#34d399' : '#fb7185' },
+          { label: 'Daily Capital Flow', val: this.flowFormatMoney(r.usd_flow), color: (r.usd_flow || 0) >= 0 ? '#34d399' : '#fb7185' }
+        ];
+      } else if (chartId === 2) {
+        // Daily Net Flow Bars & 20D MA
+        const all = this.flowData?.data || [];
+        const s = Math.max(0, Math.min(this.flowChartRanges[2]?.startIdx || 0, all.length - 1));
+        const globIdx = s + idx;
+        let sum20 = 0, cnt20 = 0;
+        for (let j = Math.max(0, globIdx - 19); j <= globIdx; j++) {
+          sum20 += (all[j].usd_flow || 0);
+          cnt20++;
+        }
+        const ma20 = cnt20 > 0 ? sum20 / cnt20 : 0;
+        info.headerText = `${r.date} · Daily: ${this.flowFormatMoney(r.usd_flow)} · 20D MA: ${this.flowFormatMoney(ma20)}`;
+        info.items = [
+          { label: 'Daily Net Flow', val: this.flowFormatMoney(r.usd_flow), color: (r.usd_flow || 0) >= 0 ? '#34d399' : '#fb7185' },
+          { label: '20-Day Trend MA', val: this.flowFormatMoney(ma20), color: '#f4f4f5' }
+        ];
+      } else if (chartId === 3) {
+        // Multi-Horizon Momentum (20D vs 50D sum)
+        const all = this.flowData?.data || [];
+        const s = Math.max(0, Math.min(this.flowChartRanges[3]?.startIdx || 0, all.length - 1));
+        const globIdx = s + idx;
+        let sum20 = 0;
+        for (let j = Math.max(0, globIdx - 19); j <= globIdx; j++) sum20 += (all[j].usd_flow || 0);
+        let sum50 = 0;
+        for (let j = Math.max(0, globIdx - 49); j <= globIdx; j++) sum50 += (all[j].usd_flow || 0);
+        info.headerText = `${r.date} · 20D: ${this.flowFormatMoney(sum20)} · 50D: ${this.flowFormatMoney(sum50)}`;
+        info.items = [
+          { label: '20-Day Flow Momentum', val: this.flowFormatMoney(sum20), color: '#22d3ee' },
+          { label: '50-Day Flow Momentum', val: this.flowFormatMoney(sum50), color: '#c084fc' },
+          { label: 'Cycle Regime', val: sum20 >= sum50 ? 'BULLISH EXPANSION' : 'BEARISH CONTRACTION', color: sum20 >= sum50 ? '#34d399' : '#fb7185' }
+        ];
+      } else if (chartId === 4) {
+        // Flow Intensity Z-Score
+        const z = r.flow_zscore !== undefined ? Number(r.flow_zscore) : 0;
+        const status = z >= 1.5 ? 'Surge Inflow (+1.5σ)' : (z <= -1.5 ? 'Capitulation Outflow (-1.5σ)' : 'Normal Flow Band');
+        const color = z >= 1.5 ? '#34d399' : (z <= -1.5 ? '#fb7185' : '#94a3b8');
+        info.headerText = `${r.date} · Z-Score: ${z >= 0 ? '+' : ''}${z.toFixed(2)}σ (${status})`;
+        info.items = [
+          { label: 'Flow Z-Score', val: `${z >= 0 ? '+' : ''}${z.toFixed(2)}σ`, color },
+          { label: 'Intensity Band', val: status, color }
+        ];
+      } else if (chartId === 5) {
+        // 10D Percentile Ribbon
+        const all = this.flowData?.data || [];
+        const metrics = getFlow10dMetrics(this.flowTicker, all);
+        let pct = 50, val10d = 0;
+        if (metrics) {
+          const s = Math.max(0, Math.min(this.flowChartRanges[5]?.startIdx || 0, all.length - 1));
+          val10d = metrics.all10d[s + idx] || 0;
+          const sorted = metrics.sorted10d;
+          let low = 0, high = sorted.length;
+          while (low < high) {
+            const mid = (low + high) >>> 1;
+            if (sorted[mid] < val10d) low = mid + 1;
+            else high = mid;
+          }
+          pct = (low / sorted.length) * 100;
+        }
+        const regime = pct >= 90 ? 'Top Decile Inflows (≥90%)' : (pct <= 10 ? 'Bottom Decile Outflows (≤10%)' : 'Neutral Range (10–90%)');
+        const color = pct >= 90 ? '#34d399' : (pct <= 10 ? '#fb7185' : '#22d3ee');
+        info.headerText = `${r.date} · 10D Flow: ${this.flowFormatMoney(val10d)} · Percentile: ${pct.toFixed(1)}%`;
+        info.items = [
+          { label: '10D Rolling Flow', val: this.flowFormatMoney(val10d), color: val10d >= 0 ? '#34d399' : '#fb7185' },
+          { label: 'Historical Percentile', val: `${pct.toFixed(1)}%`, color },
+          { label: 'Percentile Tier', val: regime, color }
+        ];
+      } else if (chartId === 6) {
+        // Price-Flow Divergence Scanner
+        const all = this.flowData?.data || [];
+        const s = Math.max(0, Math.min(this.flowChartRanges[6]?.startIdx || 0, all.length - 1));
+        const globIdx = s + idx;
+        const nav = r.nav || 1.0;
+        let min60 = Infinity, max60 = -Infinity;
+        for (let j = Math.max(0, globIdx - 59); j <= globIdx; j++) {
+          const nv = all[j].nav || nav;
+          if (nv < min60) min60 = nv;
+          if (nv > max60) max60 = nv;
+        }
+        const rng = max60 - min60 > 0 ? max60 - min60 : 1.0;
+        const pricePos = Math.max(0, Math.min(1, (nav - min60) / rng));
+        const z = r.flow_zscore || 0;
+        let sig = 'NEUTRAL';
+        let sigColor = '#94a3b8';
+        if (pricePos <= 0.15 && z >= 1.0) { sig = 'ACCUMULATION AT LOW'; sigColor = '#34d399'; }
+        else if (pricePos <= 0.15 && z <= -1.0) { sig = 'CAPITULATION BOTTOM'; sigColor = '#c084fc'; }
+        else if (pricePos >= 0.85 && z >= 1.0) { sig = 'FOMO TOP TRAP'; sigColor = '#fb7185'; }
+        else if (pricePos >= 0.85 && z <= -1.0) { sig = 'DISTRIBUTION AT HIGH'; sigColor = '#fbbf24'; }
+
+        info.headerText = `${r.date} · Price Pos: ${(pricePos * 100).toFixed(0)}% · Z: ${z >= 0 ? '+' : ''}${z.toFixed(1)}σ · ${sig}`;
+        info.items = [
+          { label: '60D Price Position', val: `${(pricePos * 100).toFixed(1)}%`, color: '#22d3ee' },
+          { label: 'Flow Z-Score', val: `${z >= 0 ? '+' : ''}${z.toFixed(2)}σ`, color: z >= 0 ? '#34d399' : '#fb7185' },
+          { label: 'Divergence Status', val: sig, color: sigColor }
+        ];
+      }
+
+      this.flowChartHoverInfo[chartId] = info;
+    },
+
+    flowHandleChartLeave(chartId = 1) {
+      this.flowChartHoverInfo[chartId] = null;
+      const ch = document.getElementById(`flow-crosshair-${chartId}`);
+      if (ch) ch.setAttribute('opacity', '0');
     },
 
     saveFlowGithubToken() {
@@ -8305,6 +8564,7 @@ function marketsApp() {
           <path d="${cumPathD}" fill="url(#flowGradRed)" clip-path="url(#flowClipBelow)"/>
           <path d="${cumLineD}" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.2"/>
           <path d="${pricePathD}" fill="none" stroke="#22d3ee" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#cyanGlow)"/>
+          <line id="flow-crosshair-1" x1="0" y1="${PT}" x2="0" y2="${PT + chartH}" stroke="#38bdf8" stroke-width="1.2" stroke-dasharray="3,3" opacity="0" pointer-events="none"/>
         </svg>
       `;
     },
@@ -8389,6 +8649,7 @@ function marketsApp() {
           ${xTicks}
           ${bars}
           <path d="${maPath}" fill="none" stroke="#f4f4f5" stroke-width="1.8" opacity="0.95" stroke-linecap="round"/>
+          <line id="flow-crosshair-2" x1="0" y1="${PT}" x2="0" y2="${PT + chartH}" stroke="#38bdf8" stroke-width="1.2" stroke-dasharray="3,3" opacity="0" pointer-events="none"/>
         </svg>
       `;
     },
@@ -8471,6 +8732,7 @@ function marketsApp() {
           ${xTicks}
           <path d="${path50}" fill="none" stroke="#c084fc" stroke-width="1.8" stroke-dasharray="5,3" opacity="0.85"/>
           <path d="${path20}" fill="none" stroke="#22d3ee" stroke-width="2.2" stroke-linecap="round"/>
+          <line id="flow-crosshair-3" x1="0" y1="${PT}" x2="0" y2="${PT + chartH}" stroke="#38bdf8" stroke-width="1.2" stroke-dasharray="3,3" opacity="0" pointer-events="none"/>
         </svg>
       `;
     },
@@ -8531,6 +8793,7 @@ function marketsApp() {
           ${grid}
           ${xTicks}
           ${bars}
+          <line id="flow-crosshair-4" x1="0" y1="${PT}" x2="0" y2="${PT + chartH}" stroke="#38bdf8" stroke-width="1.2" stroke-dasharray="3,3" opacity="0" pointer-events="none"/>
         </svg>
       `;
     },
@@ -8634,6 +8897,7 @@ function marketsApp() {
           <path d="${areaD}" fill="url(#pctGradTop)" clip-path="url(#pctClipTop)"/>
           <path d="${areaD}" fill="url(#pctGradBot)" clip-path="url(#pctClipBot)"/>
           <path d="${pathD}" fill="none" stroke="#22d3ee" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <line id="flow-crosshair-5" x1="0" y1="${PT}" x2="0" y2="${PT + chartH}" stroke="#38bdf8" stroke-width="1.2" stroke-dasharray="3,3" opacity="0" pointer-events="none"/>
         </svg>
       `;
     },
@@ -8732,6 +8996,7 @@ function marketsApp() {
           ${xTicks}
           <path d="${pricePosPath}" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.95"/>
           ${pinsSvg}
+          <line id="flow-crosshair-6" x1="0" y1="${PT}" x2="0" y2="${PT + chartH}" stroke="#38bdf8" stroke-width="1.2" stroke-dasharray="3,3" opacity="0" pointer-events="none"/>
         </svg>
       `;
     },
