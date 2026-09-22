@@ -2397,6 +2397,51 @@
         <div class="p-3 overflow-x-auto">
           <div x-html="flowZScoreChartSvg" style="width: 100%; min-width: 600px;"></div>
         </div>
+      <!-- ─── Chart 5: 10-Day Capital Flow Historical Percentile Ribbon ──── -->
+      <div class="rounded-lg border mb-6 overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+        <div class="p-3.5 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2" style="border-color: var(--border); background: var(--surface-2)">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-xs uppercase tracking-wider" style="color: var(--cyan)">10-DAY CAPITAL FLOW HISTORICAL PERCENTILE</span>
+              <span class="chip text-[9px] font-mono" style="background: rgba(34,211,238,0.1); color: var(--cyan); border: 1px solid rgba(34,211,238,0.25)">RELATIVE REFERENCE</span>
+            </div>
+            <div class="text-[11px] text-zinc-400 mt-0.5">
+              Empirical percentile rank (0% to 100%) of rolling 10-day net capital flow vs full fund history. Solves scale distortion.
+            </div>
+          </div>
+          <div class="flex items-center gap-3 text-[11px] font-mono flex-wrap">
+            <span class="chip text-[9px]" style="background: rgba(52,211,153,0.15); color: var(--up); border: 1px solid rgba(52,211,153,0.3)">≥90%ile Inflow Surge</span>
+            <span class="chip text-[9px]" style="background: rgba(255,255,255,0.05); color: var(--text-3); border: 1px solid var(--border)">10–90%ile Baseline</span>
+            <span class="chip text-[9px]" style="background: rgba(251,113,133,0.15); color: var(--down); border: 1px solid rgba(251,113,133,0.3)">≤10%ile Liquidation</span>
+          </div>
+        </div>
+        <div class="p-3 overflow-x-auto">
+          <div x-html="flowPercentileChartSvg" style="width: 100%; min-width: 600px;"></div>
+        </div>
+      </div>
+
+      <!-- ─── Chart 6: Price-Flow Divergence & Extremes Regime Scanner ─────── -->
+      <div class="rounded-lg border mb-6 overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+        <div class="p-3.5 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2" style="border-color: var(--border); background: var(--surface-2)">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-xs uppercase tracking-wider" style="color: var(--cyan)">PRICE-FLOW DIVERGENCE & EXTREMES SCANNER</span>
+              <span class="chip text-[9px] font-mono" style="background: rgba(192,132,252,0.15); color: #c084fc; border: 1px solid rgba(192,132,252,0.3)">REVERSAL REGIMES</span>
+            </div>
+            <div class="text-[11px] text-zinc-400 mt-0.5">
+              Price position in 60-day range (cyan line) vs Flow Z-Score. Pinpoints institutional accumulation bottoms & retail FOMO tops.
+            </div>
+          </div>
+          <div class="flex items-center gap-2 text-[10px] font-mono flex-wrap">
+            <span class="flex items-center gap-1 text-emerald-400"><span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span> Accumulation (Low+Inflow)</span>
+            <span class="flex items-center gap-1 text-purple-400"><span class="w-2 h-2 rounded-full bg-purple-400 inline-block"></span> Capitulation (Low+Panic)</span>
+            <span class="flex items-center gap-1 text-rose-400"><span class="w-2 h-2 rounded-full bg-rose-400 inline-block"></span> FOMO Trap (High+Inflow)</span>
+            <span class="flex items-center gap-1 text-amber-400"><span class="w-2 h-2 rounded-full bg-amber-400 inline-block"></span> Distribution (High+Outflow)</span>
+          </div>
+        </div>
+        <div class="p-3 overflow-x-auto">
+          <div x-html="flowDivergenceChartSvg" style="width: 100%; min-width: 600px;"></div>
+        </div>
       </div>
 
       <!-- ─── Section 5: Historical Flow Profile Summary Table ─────────────── -->
@@ -2419,6 +2464,23 @@
                 <td class="p-3 text-zinc-300 font-medium">All-Time Cumulative Net Flow</td>
                 <td class="p-3 text-right font-bold" :style="`color: ${flowSummaryKPIs.totalCumFlow >= 0 ? 'var(--up)' : 'var(--down)'}`" x-text="flowFormatMoney(flowSummaryKPIs.totalCumFlow)"></td>
                 <td class="p-3 text-zinc-400">Net total capital absorbed or redeemed since fund inception</td>
+              </tr>
+              <tr>
+                <td class="p-3 text-zinc-300 font-medium">Trailing 10-Day Net Flow</td>
+                <td class="p-3 text-right font-bold" :style="`color: ${flowSummaryKPIs.flow10D >= 0 ? 'var(--up)' : 'var(--down)'}`" x-text="flowFormatMoney(flowSummaryKPIs.flow10D)"></td>
+                <td class="p-3 text-zinc-400">Sum of net creations/redemptions over past 10 trading sessions</td>
+              </tr>
+              <tr>
+                <td class="p-3 text-zinc-300 font-medium">10-Day Flow Historical Percentile</td>
+                <td class="p-3 text-right font-bold" :style="`color: ${flowSummaryKPIs.percentile10D >= 90 ? 'var(--up)' : (flowSummaryKPIs.percentile10D <= 10 ? 'var(--down)' : 'var(--cyan)')}`" x-text="`${flowSummaryKPIs.percentile10D.toFixed(1)}th %ile`"></td>
+                <td class="p-3 text-zinc-400">Rank of current 10-day flow vs all 10-day windows in fund history</td>
+              </tr>
+              <tr>
+                <td class="p-3 text-zinc-300 font-medium">Active Reversal Regime</td>
+                <td class="p-3 text-right font-bold">
+                  <span class="chip text-[10px]" :style="`color: ${flowSummaryKPIs.divergenceColor}; border: 1px solid ${flowSummaryKPIs.divergenceColor}`" x-text="flowSummaryKPIs.divergenceSignal"></span>
+                </td>
+                <td class="p-3 text-zinc-400">Classification based on price position in 60d range and flow Z-score</td>
               </tr>
               <tr>
                 <td class="p-3 text-zinc-300 font-medium">Trailing 30-Day Net Flow</td>
@@ -7438,6 +7500,10 @@ function marketsApp() {
           latestPerf: null,
           latestDate: '',
           totalCumFlow: 0,
+          flow10D: 0,
+          percentile10D: 50,
+          divergenceSignal: 'NEUTRAL',
+          divergenceColor: 'var(--text-3)',
           flow30D: 0,
           flow90D: 0,
           flow1Y: 0,
@@ -7488,15 +7554,76 @@ function marketsApp() {
         }
       }
 
+      let flow10D = 0;
+      for (let i = Math.max(0, n - 10); i < n; i++) {
+        flow10D += (all[i].usd_flow || 0);
+      }
+
+      // Compute rolling 10D flow array for full history if not cached
+      if (!this._flow10dAll || this._flow10dAll.length !== n || this._flow10dTicker !== this.flowTicker) {
+        this._flow10dAll = new Float64Array(n);
+        let s = 0;
+        for (let i = 0; i < n; i++) {
+          s += (all[i].usd_flow || 0);
+          if (i >= 10) s -= (all[i - 10].usd_flow || 0);
+          this._flow10dAll[i] = s;
+        }
+        this._flow10dSorted = Array.from(this._flow10dAll).sort((a, b) => a - b);
+        this._flow10dTicker = this.flowTicker;
+      }
+
+      let percentile10D = 50;
+      if (this._flow10dSorted && this._flow10dSorted.length) {
+        const sorted = this._flow10dSorted;
+        let low = 0, high = sorted.length;
+        while (low < high) {
+          const mid = (low + high) >>> 1;
+          if (sorted[mid] < flow10D) low = mid + 1;
+          else high = mid;
+        }
+        percentile10D = (low / sorted.length) * 100;
+      }
+
+      const zscore = (last && last.flow_zscore !== undefined) ? last.flow_zscore : 0;
+
+      // 60-day price position
+      let min60 = Infinity, max60 = -Infinity;
+      for (let i = Math.max(0, n - 60); i < n; i++) {
+        const nv = all[i].nav || latestNav;
+        if (nv < min60) min60 = nv;
+        if (nv > max60) max60 = nv;
+      }
+      const rng60 = max60 - min60 > 0 ? max60 - min60 : 1;
+      const pricePos = latestNav ? (latestNav - min60) / rng60 : 0.5;
+
+      let divergenceSignal = 'NEUTRAL';
+      let divergenceColor = 'var(--text-3)';
+      if (pricePos <= 0.15 && zscore >= 1.0) {
+        divergenceSignal = 'ACCUMULATION AT LOW';
+        divergenceColor = 'var(--up)';
+      } else if (pricePos <= 0.15 && zscore <= -1.0) {
+        divergenceSignal = 'CAPITULATION BOTTOM';
+        divergenceColor = '#c084fc';
+      } else if (pricePos >= 0.85 && zscore >= 1.0) {
+        divergenceSignal = 'FOMO TOP TRAP';
+        divergenceColor = 'var(--down)';
+      } else if (pricePos >= 0.85 && zscore <= -1.0) {
+        divergenceSignal = 'DISTRIBUTION AT HIGH';
+        divergenceColor = 'var(--amber)';
+      }
+
       const inflowWinRate = n > 0 ? (positiveDays / n) * 100 : 0;
-      const regime = last.regime || (last.flow_zscore >= 1.0 ? 'ACCUMULATION' : (last.flow_zscore <= -1.0 ? 'DISTRIBUTION' : 'NEUTRAL'));
-      const zscore = last.flow_zscore || 0;
+      const regime = last.regime || (zscore >= 1.0 ? 'ACCUMULATION' : (zscore <= -1.0 ? 'DISTRIBUTION' : 'NEUTRAL'));
 
       return {
         latestNav,
         latestPerf,
         latestDate,
         totalCumFlow,
+        flow10D,
+        percentile10D,
+        divergenceSignal,
+        divergenceColor,
         flow30D,
         flow90D,
         flow1Y,
@@ -7850,6 +7977,214 @@ function marketsApp() {
           ${grid}
           ${xTicks}
           ${bars}
+        </svg>
+      `;
+    },
+
+    get flowPercentileChartSvg() {
+      const records = this.flowFilteredRecords;
+      const all = this.flowData?.data || [];
+      const W = 1000, H = 220, PL = 75, PR = 30, PT = 20, PB = 30;
+      if (!records || records.length < 2 || !all.length) {
+        return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};background:#0d1117;border-radius:6px;"><text x="${W/2}" y="${H/2}" fill="#71717a" text-anchor="middle" font-family="ui-monospace" font-size="11">No data</text></svg>`;
+      }
+      const chartW = W - PL - PR;
+      const chartH = H - PT - PB;
+      const n = records.length;
+      const nAll = all.length;
+
+      if (!this._flow10dAll || this._flow10dAll.length !== nAll || this._flow10dTicker !== this.flowTicker) {
+        this._flow10dAll = new Float64Array(nAll);
+        let s = 0;
+        for (let i = 0; i < nAll; i++) {
+          s += (all[i].usd_flow || 0);
+          if (i >= 10) s -= (all[i - 10].usd_flow || 0);
+          this._flow10dAll[i] = s;
+        }
+        this._flow10dSorted = Array.from(this._flow10dAll).sort((a, b) => a - b);
+        this._flow10dTicker = this.flowTicker;
+      }
+
+      const sorted = this._flow10dSorted;
+      const getPercentile = (val) => {
+        let low = 0, high = sorted.length;
+        while (low < high) {
+          const mid = (low + high) >>> 1;
+          if (sorted[mid] < val) low = mid + 1;
+          else high = mid;
+        }
+        return (low / sorted.length) * 100;
+      };
+
+      const sIdx = Math.max(0, Math.min(this.flowStartIdx, nAll - 1));
+      const yScale = (pct) => PT + chartH - (pct / 100) * chartH;
+      const xScale = (i) => PL + (i / (n - 1)) * chartW;
+
+      const y90 = yScale(90);
+      const y50 = yScale(50);
+      const y10 = yScale(10);
+
+      let pathD = '';
+      let areaD = `M ${xScale(0).toFixed(1)} ${y50.toFixed(1)}`;
+      for (let i = 0; i < n; i++) {
+        const globIdx = sIdx + i;
+        const v = this._flow10dAll[globIdx] || 0;
+        const p = getPercentile(v);
+        const x = xScale(i).toFixed(1);
+        const y = yScale(p).toFixed(1);
+        pathD += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
+        areaD += ` L ${x} ${y}`;
+      }
+      areaD += ` L ${xScale(n - 1).toFixed(1)} ${y50.toFixed(1)} Z`;
+
+      const defs = `
+        <defs>
+          <clipPath id="pctClipTop">
+            <rect x="${PL}" y="${PT}" width="${chartW}" height="${Math.max(0, y90 - PT)}" />
+          </clipPath>
+          <clipPath id="pctClipBot">
+            <rect x="${PL}" y="${y10}" width="${chartW}" height="${Math.max(0, PT + chartH - y10)}" />
+          </clipPath>
+          <linearGradient id="pctGradTop" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#34d399" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#34d399" stop-opacity="0.05"/>
+          </linearGradient>
+          <linearGradient id="pctGradBot" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#fb7185" stop-opacity="0.05"/>
+            <stop offset="100%" stop-color="#fb7185" stop-opacity="0.35"/>
+          </linearGradient>
+        </defs>
+      `;
+
+      const grid = `
+        <rect x="${PL}" y="${PT}" width="${chartW}" height="${(y90 - PT).toFixed(1)}" fill="rgba(52,211,153,0.06)" />
+        <rect x="${PL}" y="${y10.toFixed(1)}" width="${chartW}" height="${(PT + chartH - y10).toFixed(1)}" fill="rgba(251,113,133,0.06)" />
+        <line x1="${PL}" y1="${y90.toFixed(1)}" x2="${W - PR}" y2="${y90.toFixed(1)}" stroke="#34d399" stroke-dasharray="3,3" opacity="0.6"/>
+        <text x="${PL - 8}" y="${(y90 + 3.5).toFixed(1)}" text-anchor="end" fill="#34d399" font-family="ui-monospace" font-size="8.5">90th %ile</text>
+        <line x1="${PL}" y1="${y50.toFixed(1)}" x2="${W - PR}" y2="${y50.toFixed(1)}" stroke="#71717a" stroke-dasharray="2,2" opacity="0.7"/>
+        <text x="${PL - 8}" y="${(y50 + 3.5).toFixed(1)}" text-anchor="end" fill="#71717a" font-family="ui-monospace" font-size="8.5">50th %ile</text>
+        <line x1="${PL}" y1="${y10.toFixed(1)}" x2="${W - PR}" y2="${y10.toFixed(1)}" stroke="#fb7185" stroke-dasharray="3,3" opacity="0.6"/>
+        <text x="${PL - 8}" y="${(y10 + 3.5).toFixed(1)}" text-anchor="end" fill="#fb7185" font-family="ui-monospace" font-size="8.5">10th %ile</text>
+      `;
+
+      let xTicks = '';
+      const dateStep = Math.max(1, Math.floor(n / 6));
+      for (let i = 0; i < n; i += dateStep) {
+        const x = xScale(i);
+        const d = records[i].date;
+        xTicks += `<text x="${x.toFixed(1)}" y="${H - 10}" text-anchor="middle" fill="#71717a" font-family="ui-monospace" font-size="8.5">${d}</text>`;
+      }
+      if ((n - 1) % dateStep !== 0) {
+        const lastX = xScale(n - 1);
+        xTicks += `<text x="${lastX.toFixed(1)}" y="${H - 10}" text-anchor="middle" fill="#71717a" font-family="ui-monospace" font-size="8.5">${records[n - 1].date}</text>`;
+      }
+
+      return `
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};display:block;background:#0d1117;border-radius:6px;">
+          ${defs}
+          ${grid}
+          ${xTicks}
+          <path d="${areaD}" fill="url(#pctGradTop)" clip-path="url(#pctClipTop)"/>
+          <path d="${areaD}" fill="url(#pctGradBot)" clip-path="url(#pctClipBot)"/>
+          <path d="${pathD}" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      `;
+    },
+
+    get flowDivergenceChartSvg() {
+      const records = this.flowFilteredRecords;
+      const all = this.flowData?.data || [];
+      const W = 1000, H = 240, PL = 75, PR = 30, PT = 25, PB = 30;
+      if (!records || records.length < 2 || !all.length) {
+        return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};background:#0d1117;border-radius:6px;"><text x="${W/2}" y="${H/2}" fill="#71717a" text-anchor="middle" font-family="ui-monospace" font-size="11">No data</text></svg>`;
+      }
+      const chartW = W - PL - PR;
+      const chartH = H - PT - PB;
+      const n = records.length;
+      const nAll = all.length;
+      const sIdx = Math.max(0, Math.min(this.flowStartIdx, nAll - 1));
+
+      const xScale = (i) => PL + (i / (n - 1)) * chartW;
+      const yScale = (pct) => PT + chartH - pct * chartH;
+
+      let pricePosPath = '';
+      const pins = [];
+
+      for (let i = 0; i < n; i++) {
+        const globIdx = sIdx + i;
+        const r = records[i];
+        const nav = r.nav || 1.0;
+
+        let min60 = Infinity, max60 = -Infinity;
+        const wStart = Math.max(0, globIdx - 59);
+        for (let j = wStart; j <= globIdx; j++) {
+          const nv = all[j].nav || nav;
+          if (nv < min60) min60 = nv;
+          if (nv > max60) max60 = nv;
+        }
+        const rng = max60 - min60 > 0 ? max60 - min60 : 1.0;
+        const pricePos = Math.max(0, Math.min(1, (nav - min60) / rng));
+
+        const x = xScale(i);
+        const y = yScale(pricePos);
+        pricePosPath += (i === 0 ? `M ${x.toFixed(1)} ${y.toFixed(1)}` : ` L ${x.toFixed(1)} ${y.toFixed(1)}`);
+
+        const z = r.flow_zscore || 0;
+        if (pricePos <= 0.15 && z >= 1.0) {
+          pins.push({ x, y, color: '#34d399', label: `${r.date}: Accumulation at Low (Z=+${z.toFixed(1)}σ)` });
+        } else if (pricePos <= 0.15 && z <= -1.0) {
+          pins.push({ x, y, color: '#c084fc', label: `${r.date}: Capitulation at Low (Z=${z.toFixed(1)}σ)` });
+        } else if (pricePos >= 0.85 && z >= 1.0) {
+          pins.push({ x, y, color: '#fb7185', label: `${r.date}: FOMO Trap at High (Z=+${z.toFixed(1)}σ)` });
+        } else if (pricePos >= 0.85 && z <= -1.0) {
+          pins.push({ x, y, color: '#fbbf24', label: `${r.date}: Distribution at High (Z=${z.toFixed(1)}σ)` });
+        }
+      }
+
+      const yHigh = yScale(0.85);
+      const yMid = yScale(0.5);
+      const yLow = yScale(0.15);
+
+      const grid = `
+        <rect x="${PL}" y="${PT}" width="${chartW}" height="${(yHigh - PT).toFixed(1)}" fill="rgba(251,113,133,0.04)" />
+        <rect x="${PL}" y="${yLow.toFixed(1)}" width="${chartW}" height="${(PT + chartH - yLow).toFixed(1)}" fill="rgba(52,211,153,0.04)" />
+        <line x1="${PL}" y1="${yHigh.toFixed(1)}" x2="${W - PR}" y2="${yHigh.toFixed(1)}" stroke="#fb7185" stroke-dasharray="2,2" opacity="0.5"/>
+        <text x="${PL - 8}" y="${(yHigh + 3.5).toFixed(1)}" text-anchor="end" fill="#fb7185" font-family="ui-monospace" font-size="8.5">60D High (85%)</text>
+        <line x1="${PL}" y1="${yMid.toFixed(1)}" x2="${W - PR}" y2="${yMid.toFixed(1)}" stroke="#52525b" stroke-dasharray="2,2" opacity="0.6"/>
+        <text x="${PL - 8}" y="${(yMid + 3.5).toFixed(1)}" text-anchor="end" fill="#71717a" font-family="ui-monospace" font-size="8.5">Mid-Range (50%)</text>
+        <line x1="${PL}" y1="${yLow.toFixed(1)}" x2="${W - PR}" y2="${yLow.toFixed(1)}" stroke="#34d399" stroke-dasharray="2,2" opacity="0.5"/>
+        <text x="${PL - 8}" y="${(yLow + 3.5).toFixed(1)}" text-anchor="end" fill="#34d399" font-family="ui-monospace" font-size="8.5">60D Low (15%)</text>
+      `;
+
+      let pinsSvg = '';
+      for (let p of pins) {
+        pinsSvg += `
+          <g>
+            <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="6" fill="${p.color}" opacity="0.3"/>
+            <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="${p.color}" stroke="#0d1117" stroke-width="1"/>
+            <title>${p.label}</title>
+          </g>
+        `;
+      }
+
+      let xTicks = '';
+      const dateStep = Math.max(1, Math.floor(n / 6));
+      for (let i = 0; i < n; i += dateStep) {
+        const x = xScale(i);
+        const d = records[i].date;
+        xTicks += `<text x="${x.toFixed(1)}" y="${H - 10}" text-anchor="middle" fill="#71717a" font-family="ui-monospace" font-size="8.5">${d}</text>`;
+      }
+      if ((n - 1) % dateStep !== 0) {
+        const lastX = xScale(n - 1);
+        xTicks += `<text x="${lastX.toFixed(1)}" y="${H - 10}" text-anchor="middle" fill="#71717a" font-family="ui-monospace" font-size="8.5">${records[n - 1].date}</text>`;
+      }
+
+      return `
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};display:block;background:#0d1117;border-radius:6px;">
+          ${grid}
+          ${xTicks}
+          <path d="${pricePosPath}" fill="none" stroke="#22d3ee" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+          ${pinsSvg}
         </svg>
       `;
     },
