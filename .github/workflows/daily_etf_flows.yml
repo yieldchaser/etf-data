@@ -1,0 +1,54 @@
+name: Daily ETF Fund Flows Update
+
+on:
+  schedule:
+    # Mon-Fri at 10:30 UTC (morning update after previous day settlement)
+    - cron: '30 10 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      tickers:
+        description: 'Specific tickers to fetch (comma-separated, leave blank for curated universe)'
+        required: false
+        default: ''
+
+concurrency:
+  group: daily-flows
+  cancel-in-progress: false
+
+jobs:
+  fetch-flows:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install pandas numpy python-dateutil playwright
+          python -m playwright install chromium --with-deps
+
+      - name: Run fund flow scraper
+        run: |
+          if [ -n "${{ github.event.inputs.tickers }}" ]; then
+            python scripts/fetch_etf_flow.py --tickers "${{ github.event.inputs.tickers }}"
+          else
+            python scripts/fetch_etf_flow.py --curated
+          fi
+          python scripts/build_etf_search_index.py
+
+      - name: Commit and push updated flow data
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/data/flows/ docs/data/etf_search_index.json
+          git commit -m "Auto-update: ETF fund flows data 🌊 [skip ci]" || echo "No changes to commit"
+          git push origin main

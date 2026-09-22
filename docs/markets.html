@@ -277,6 +277,16 @@
               @blur="hideTt()">
         Volatility
       </button>
+      <button @click="activeTab = 'flows'"
+              :class="activeTab === 'flows' ? 'tab-active' : ''"
+              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+              :style="activeTab === 'flows' ? '' : 'color: var(--text-2); border-color: var(--border)'"
+              @mouseenter="showTt($event, 'Fund Flows Studio - institutional capital flows, accumulation/distribution regimes & macro inflection analysis across 15,000+ ETFs')"
+              @mouseleave="hideTt()"
+              @focus="showTt($event, 'Fund Flows Studio - institutional capital flows, accumulation/distribution regimes & macro inflection analysis across 15,000+ ETFs')"
+              @blur="hideTt()">
+        Fund Flows
+      </button>
     </div>
     <!-- Divider -->
     <div class="w-px h-5 mx-1" style="background: var(--border-2)"></div>
@@ -446,10 +456,10 @@
               <th class="matrix-sticky-corner" style="border-right: 1px solid var(--border-2); border-bottom: 1px solid var(--border-2); height: 18px;"></th>
               <template x-for="yr in matrixYears" :key="yr">
                 <th style="height: 18px; padding: 0; border-bottom: 1px solid var(--border-2);">
-                  <div class="text-center" x-show="matrixEvents[yr]" style="font-size: 7px; color: var(--amber); white-space: nowrap; overflow: hidden; cursor: default;"
+                  <div class="flex items-center justify-center h-full" x-show="matrixEvents[yr]" style="color: var(--amber); cursor: default;"
                        @mouseenter="showTt($event, matrixEvents[yr])"
-                       @mouseleave="hideTt()"
-                       x-text="'⚡'">
+                       @mouseleave="hideTt()">
+                    <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                   </div>
                 </th>
               </template>
@@ -2006,10 +2016,548 @@
   </div><!-- /volatility tab -->
 
 
+  <!-- ═════════════ TAB 10: FUND FLOWS STUDIO ════════════════════════════ -->
+  <div x-show="activeTab === 'flows'" x-cloak>
+
+    <!-- Loading State -->
+    <div x-show="flowLoading && !flowData && !flowSelectedUncached" class="pulse-load text-center py-20" style="color: var(--text-3)">
+      <div class="text-base font-mono uppercase tracking-wider mb-2" style="color: var(--cyan)">Loading institutional fund flow data…</div>
+      <div class="text-xs">Fetching verified daily flow history, Z-scores, and macro inflections</div>
+    </div>
+
+    <!-- Error State -->
+    <div x-show="flowError && !flowData" class="text-center py-16">
+      <div class="text-base mb-2 font-mono" style="color: var(--down)">Failed to load flow data</div>
+      <div class="text-xs mb-4" style="color: var(--text-3)" x-text="flowError"></div>
+      <button @click="selectFlowTicker(flowTicker)" class="chip border px-3 py-1.5 transition" style="border-color: var(--border-2); color: var(--cyan)">Retry</button>
+    </div>
+
+    <!-- Uncached ETF State (picked from 15,715 universe but not yet in local pre-cache) -->
+    <div x-show="!flowLoading && flowSelectedUncached" class="rounded-xl border p-6 max-w-2xl mx-auto my-12 text-center" style="background: var(--surface); border-color: var(--border-2)">
+      <div class="inline-flex items-center gap-2 mb-3">
+        <span class="text-xl font-bold font-mono" style="color: var(--cyan)" x-text="flowSelectedUncached?.t"></span>
+        <span class="chip text-xs" style="background: rgba(251,191,36,0.1); color: var(--amber); border: 1px solid rgba(251,191,36,0.25)">Available via On-Demand Scraper</span>
+      </div>
+      <h3 class="text-base font-medium mb-1" style="color: var(--text)" x-text="flowSelectedUncached?.l || 'ETF Universe Search Match'"></h3>
+      <p class="text-xs mb-4" style="color: var(--text-3)" x-text="`${flowSelectedUncached?.p || ''} · ${flowSelectedUncached?.c || 'USD'} · ${flowSelectedUncached?.a ? 'AUM $' + (flowSelectedUncached.a/1e6).toFixed(1) + 'M' : ''}`"></p>
+      
+      <div class="rounded-lg p-4 mb-4 text-left border text-xs font-mono" style="background: var(--bg); border-color: var(--border)">
+        <div class="text-zinc-400 mb-2 font-semibold">To cache this ETF flow history into the local/live dashboard:</div>
+        <div class="p-2 rounded mb-2 select-all overflow-x-auto" style="background: rgba(0,0,0,0.5); color: var(--cyan)">
+          python scripts/fetch_etf_flow.py --ticker <span x-text="flowSelectedUncached?.t"></span>
+        </div>
+        <div class="text-[11px] text-zinc-500">Or trigger the GitHub Action <span class="text-zinc-400">Daily ETF Fund Flows Update</span> with ticker input <span class="text-zinc-300" x-text="flowSelectedUncached?.t"></span> to auto-commit from the cloud with zero WAF risk.</div>
+      </div>
+      <button @click="selectFlowTicker('TQQQ')" class="chip border px-3 py-1.5 transition" style="border-color: var(--cyan); color: var(--cyan)">
+        ← Return to Curated Live Universe
+      </button>
+    </div>
+
+    <!-- Active Flow Dashboard -->
+    <div x-show="flowData && !flowLoading">
+
+      <!-- ─── Flow Controls & Universal Search ─────────────────────────────── -->
+      <div class="flex flex-col gap-3 mb-5 pb-4 border-b" style="border-color: var(--border)">
+        
+        <!-- Top row: Presets & Search -->
+        <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+          
+          <!-- Curated Presets Panel -->
+          <div class="flex flex-col gap-2 flex-1 min-w-0">
+            <!-- Category Tabs -->
+            <div class="flex items-center gap-1 overflow-x-auto scrollbar pb-1">
+              <span class="label text-[9px] mr-1 shrink-0 uppercase tracking-wider" style="color: var(--text-3)">UNIVERSE PRESETS:</span>
+              <template x-for="cat in flowPresetCategories" :key="cat.id">
+                <button @click="flowActivePresetCategory = cat.id"
+                        :class="flowActivePresetCategory === cat.id ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/40' : 'bg-surface text-zinc-400 border-white/5 hover:border-white/20'"
+                        class="px-2.5 py-1 rounded text-[11px] font-mono border transition flex items-center gap-1.5 shrink-0">
+                  <span class="inline-flex items-center" x-html="flowCategoryIcon(cat.icon)"></span>
+                  <span x-text="cat.label"></span>
+                </button>
+              </template>
+            </div>
+
+            <!-- Ticker Pills for Active Category -->
+            <div class="flex flex-wrap items-center gap-1.5 pl-0 sm:pl-1">
+              <template x-for="t in flowPresetTickers" :key="t">
+                <button @click="selectFlowTicker(t)"
+                        :class="flowTicker === t ? 'tab-active' : ''"
+                        class="px-2.5 py-1 rounded text-xs font-mono font-medium border transition"
+                        :style="flowTicker === t ? '' : 'color: var(--text-2); border-color: var(--border); background: var(--surface)'"
+                        x-text="t">
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <!-- Universal Search Input (15,713 Universe) -->
+          <div class="relative w-full lg:w-96 shrink-0">
+            <!-- Category Filter Pills -->
+            <div class="flex items-center gap-1 mb-1.5 overflow-x-auto scrollbar pb-0.5">
+              <span class="text-[9px] uppercase tracking-wider font-mono text-zinc-500 mr-1 shrink-0">FILTER:</span>
+              <template x-for="cat in [
+                { id: 'all', label: 'All 15K' },
+                { id: 'single_stock', label: 'Single-Stock 2x' },
+                { id: 'bull', label: '3x/2x Bull' },
+                { id: 'bear', label: 'Inverse' },
+                { id: 'macro', label: 'Macro & FX' },
+                { id: 'cached', label: 'Pre-Cached' }
+              ]" :key="cat.id">
+                <button @click="flowSetSearchCategory(cat.id)"
+                        :class="flowSearchCategory === cat.id ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50' : 'bg-black/30 text-zinc-400 border-white/5 hover:border-white/20'"
+                        class="px-2 py-0.5 rounded text-[10px] font-mono border transition shrink-0"
+                        x-text="cat.label">
+                </button>
+              </template>
+            </div>
+
+            <!-- Search Input Box -->
+            <div class="flex items-center gap-1.5 bg-black/40 border rounded-md px-2.5 py-1.5 focus-within:border-cyan-500/60 transition" style="border-color: var(--border-2)">
+              <svg class="w-3.5 h-3.5 text-zinc-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text"
+                     x-model="flowSearchQuery"
+                     @input="flowSearch()"
+                     @focus="flowSearchOpen = true; if (!flowSearchResults.length) flowSearch();"
+                     @keydown.down.prevent="flowSearchDown()"
+                     @keydown.up.prevent="flowSearchUp()"
+                     @keydown.enter.prevent="flowSearchEnter()"
+                     @keydown.escape="flowSearchOpen = false; flowSearchSelectedIndex = -1"
+                     placeholder="Search 15,713 ETFs (e.g. GGLL, MSTU, NVDL)..."
+                     class="bg-transparent border-none text-xs w-full focus:outline-none text-zinc-200 placeholder-zinc-600 font-mono">
+              <button x-show="flowSearchQuery" @click="flowSearchQuery = ''; flowSearchResults = []; flowSearchOpen = false; flowSearchSelectedIndex = -1" class="cursor-pointer text-zinc-500 hover:text-zinc-300 text-xs font-mono p-0.5">✕</button>
+            </div>
+
+            <!-- Autocomplete Dropdown -->
+            <div x-show="flowSearchOpen && flowSearchResults.length"
+                 @click.away="flowSearchOpen = false; flowSearchSelectedIndex = -1"
+                 class="absolute left-0 right-0 top-full mt-1.5 z-50 rounded-lg border shadow-2xl overflow-hidden max-h-80 overflow-y-auto scrollbar"
+                 style="background: #0d1117; border-color: var(--border-2);">
+              <div class="px-2.5 py-1.5 text-[9px] font-mono text-zinc-500 border-b border-white/5 uppercase tracking-wider flex justify-between bg-black/40">
+                <span>Matching ETFs (<span x-text="flowSearchResults.length"></span>) · ↑↓ to navigate · ↵ to select</span>
+                <span class="text-cyan-500/80">Trackinsight 15.7K Universe</span>
+              </div>
+              <template x-for="(r, idx) in flowSearchResults" :key="r.k || r.t">
+                <div @click="selectFlowTicker(r.t); flowSearchOpen = false; flowSearchQuery = ''; flowSearchSelectedIndex = -1"
+                     @mouseenter="flowSearchSelectedIndex = idx"
+                     :class="flowSearchSelectedIndex === idx ? 'bg-cyan-500/20 border-cyan-500/30' : 'hover:bg-cyan-500/10 border-transparent'"
+                     class="px-3 py-2 border-b border-white/[0.03] cursor-pointer flex items-center justify-between gap-2 transition">
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2">
+                      <span class="font-mono font-bold text-xs" style="color: var(--cyan)" x-text="r.t"></span>
+                      <span class="chip text-[9px] scale-90"
+                            :style="r.cached ? 'background: rgba(52,211,153,0.15); color: var(--up); border: 1px solid rgba(52,211,153,0.3)' : 'background: rgba(255,255,255,0.05); color: var(--text-3); border: 1px solid var(--border)'"
+                            x-text="r.cached ? 'PRE-CACHED' : '15K UNIVERSE'"></span>
+                      <span x-show="r.c" class="text-[9px] font-mono text-zinc-500 truncate" x-text="r.c"></span>
+                    </div>
+                    <div class="text-[11px] text-zinc-300 truncate" x-text="r.l"></div>
+                  </div>
+                  <div class="text-right shrink-0 text-[10px] font-mono text-zinc-400">
+                    <div class="text-zinc-500" x-text="r.p"></div>
+                    <div class="font-medium" x-text="r.a ? '$' + (r.a/1e9 >= 1 ? (r.a/1e9).toFixed(1) + 'B' : (r.a/1e6).toFixed(0) + 'M') : ''"></div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom row: Active Ticker Info & Horizon Range Selector -->
+        <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+          
+          <!-- Active Ticker Pill -->
+          <div class="flex items-baseline gap-2.5 flex-wrap">
+            <span class="text-lg font-bold font-mono tracking-tight" style="color: var(--cyan)" x-text="flowData?.ticker"></span>
+            <span class="text-xs text-zinc-400" x-text="flowActiveMeta?.label || (flowData?.key ? 'Key: ' + flowData.key : '')"></span>
+            <span class="chip text-[10px] font-mono" style="background: rgba(34,211,238,0.1); color: var(--cyan); border: 1px solid rgba(34,211,238,0.3)">
+              <span x-text="`${(flowData?.data||[]).length} daily sessions`"></span>
+            </span>
+            <span class="text-[11px] font-mono" style="color: var(--text-3)" x-text="`Span: ${(flowData?.data||[])[0]?.date} → ${(flowData?.data||[]).slice(-1)[0]?.date}`"></span>
+          </div>
+
+          <!-- Time Horizon Buttons -->
+          <div class="flex items-center gap-1">
+            <span class="label text-[10px] mr-1" style="color: var(--text-3)">TIME RANGE:</span>
+            <template x-for="r in ['1M', '3M', '6M', '1Y', '2Y', '5Y', 'ALL']" :key="r">
+              <button @click="flowTimeRange = r"
+                      :class="flowTimeRange === r ? 'tab-active' : ''"
+                      class="px-2.5 py-1 rounded border text-xs font-mono font-medium transition"
+                      :style="flowTimeRange === r ? '' : 'color: var(--text-2); border-color: var(--border)'"
+                      x-text="r">
+              </button>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Flow KPI Summary Strip ───────────────────────────────────────── -->
+      <section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 mb-6">
+        
+        <!-- KPI 1: Current NAV -->
+        <div class="stat-card">
+          <div class="label" style="font-size: 9.5px;">LATEST NAV PRICE</div>
+          <div class="flex items-baseline gap-2 mt-1">
+            <div class="text-xl sm:text-2xl font-semibold num font-mono" style="color: var(--text)"
+                 x-text="flowLastRecord?.nav !== null ? '$' + flowLastRecord.nav.toFixed(2) : '—'"></div>
+            <div class="text-xs num font-mono"
+                 :style="`color: ${(flowLastRecord?.perf_pct||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
+                 x-text="flowLastRecord?.perf_pct !== null ? ((flowLastRecord.perf_pct >= 0 ? '+' : '') + (flowLastRecord.perf_pct * 100).toFixed(2) + '%') : ''"></div>
+          </div>
+          <div class="text-[10px] font-mono mt-0.5" style="color: var(--text-3)" x-text="`As of ${flowLastRecord?.date || '—'}`"></div>
+        </div>
+
+        <!-- KPI 2: 30D Net Flow -->
+        <div class="stat-card">
+          <div class="label" style="font-size: 9.5px;">30D NET FLOW</div>
+          <div class="text-xl sm:text-2xl font-semibold num font-mono mt-1"
+               :style="`color: ${flowMetrics30D.netFlow >= 0 ? 'var(--up)' : 'var(--down)'}`"
+               x-text="flowFormatMoney(flowMetrics30D.netFlow)"></div>
+          <div class="text-[10px] font-mono mt-0.5" style="color: var(--text-3)"
+               x-text="flowMetrics30D.pctAum !== null ? `${flowMetrics30D.pctAum >= 0 ? '+' : ''}${flowMetrics30D.pctAum.toFixed(1)}% of fund AUM` : 'Trailing 30 sessions'"></div>
+        </div>
+
+        <!-- KPI 3: 30D Flow Z-Score -->
+        <div class="stat-card">
+          <div class="label" style="font-size: 9.5px;">FLOW Z-SCORE (30D)</div>
+          <div class="text-xl sm:text-2xl font-semibold num font-mono mt-1"
+               :style="`color: ${flowLastRecord?.flow_zscore >= 1.5 ? 'var(--up)' : (flowLastRecord?.flow_zscore <= -1.5 ? 'var(--down)' : 'var(--text)')}`"
+               x-text="flowLastRecord?.flow_zscore !== null ? (flowLastRecord.flow_zscore >= 0 ? '+' : '') + flowLastRecord.flow_zscore.toFixed(2) + 'σ' : '—'"></div>
+          <div class="text-[10px] font-mono mt-0.5" style="color: var(--text-3)"
+               x-text="Math.abs(flowLastRecord?.flow_zscore||0) >= 1.5 ? 'Statistical anomaly session' : 'Within normal variance'"></div>
+        </div>
+
+        <!-- KPI 4: Regime Badge -->
+        <div class="stat-card">
+          <div class="label" style="font-size: 9.5px;">CURRENT REGIME</div>
+          <div class="mt-1.5">
+            <span class="chip text-xs font-mono font-semibold"
+                  :style="(() => {
+                    const r = flowLastRecord?.regime || 'BALANCED';
+                    if (r === 'ACCUMULATION') return 'background: rgba(52,211,153,0.15); color: var(--up); border: 1px solid rgba(52,211,153,0.3);';
+                    if (r === 'DISTRIBUTION') return 'background: rgba(251,113,133,0.15); color: var(--down); border: 1px solid rgba(251,113,133,0.3);';
+                    return 'background: rgba(255,255,255,0.05); color: var(--text-2); border: 1px solid var(--border);';
+                  })()"
+                  x-text="flowLastRecord?.regime || 'BALANCED'"></span>
+          </div>
+          <div class="text-[10px] font-mono mt-1" style="color: var(--text-3)"
+               x-text="flowLastRecord?.regime === 'ACCUMULATION' ? 'Smart money loading' : (flowLastRecord?.regime === 'DISTRIBUTION' ? 'Net institutional exit' : 'Order balance steady')"></div>
+        </div>
+
+        <!-- KPI 5: Bidirectional Pressure Gauge -->
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <span class="label" style="font-size: 9.5px;">PRESSURE GAUGE</span>
+            <span class="num font-mono text-xs font-semibold"
+                  :style="`color: ${(flowLastRecord?.pressure||0) >= 0 ? 'var(--up)' : 'var(--down)'}`"
+                  x-text="(flowLastRecord?.pressure >= 0 ? '+' : '') + (flowLastRecord?.pressure || 0).toFixed(0)"></span>
+          </div>
+          <div class="mt-2 h-2 rounded-full overflow-hidden relative" style="background: rgba(255,255,255,0.06);">
+            <!-- Center zero marker -->
+            <div class="absolute top-0 bottom-0 left-1/2 w-0.5 z-10 bg-white/30 -translate-x-1/2"></div>
+            <!-- Bidirectional Fill -->
+            <div class="h-full transition-all duration-300 absolute"
+                 :style="(() => {
+                   const p = flowLastRecord?.pressure || 0;
+                   if (p >= 0) {
+                     return `left: 50%; width: ${Math.min(50, p / 2)}%; background: var(--up);`;
+                   } else {
+                     return `right: 50%; width: ${Math.min(50, Math.abs(p) / 2)}%; background: var(--down);`;
+                   }
+                 })()"></div>
+          </div>
+          <div class="flex justify-between text-[9px] font-mono mt-1" style="color: var(--text-3)">
+            <span>−100 Bear</span>
+            <span>0</span>
+            <span>+100 Bull</span>
+          </div>
+        </div>
+
+        <!-- KPI 6: Signal Type -->
+        <div class="stat-card">
+          <div class="label" style="font-size: 9.5px;">MACRO SIGNAL TAG</div>
+          <div class="mt-1.5">
+            <span class="chip text-xs font-mono font-semibold"
+                  :style="flowMacroSignalTag.style"
+                  x-text="flowMacroSignalTag.label"></span>
+          </div>
+          <div class="text-[10px] font-mono mt-1 truncate" style="color: var(--text-3)"
+               x-text="flowMacroSignalTag.sub"></div>
+        </div>
+
+      </section>
+
+      <!-- ─── Chart 1: Price vs Cumulative Net Flow ───────────────────────── -->
+      <div class="rounded-lg border mb-6 overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+        <div class="p-3.5 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2" style="border-color: var(--border); background: var(--surface-2)">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-xs uppercase tracking-wider" style="color: var(--cyan)">PRICE VS CUMULATIVE NET FUND FLOW</span>
+              <span class="chip text-[9px] font-mono" style="background: rgba(34,211,238,0.1); color: var(--cyan); border: 1px solid rgba(34,211,238,0.25)">DUAL AXIS</span>
+            </div>
+            <div class="text-[11px] text-zinc-400 mt-0.5">
+              Split-adjusted NAV price (cyan line) vs Cumulative net capital flow (green = net inflow accumulation / red = net distribution).
+            </div>
+          </div>
+          <div class="flex items-center gap-3 text-[11px] font-mono">
+            <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 bg-cyan-400 inline-block"></span> NAV Price</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-2 rounded-sm inline-block" style="background: rgba(52,211,153,0.35); border: 1px solid var(--up);"></span> Cum. Inflow</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-2 rounded-sm inline-block" style="background: rgba(251,113,133,0.35); border: 1px solid var(--down);"></span> Cum. Outflow</span>
+          </div>
+        </div>
+
+        <!-- SVG Canvas -->
+        <div class="p-2 sm:p-4 overflow-x-auto">
+          <div x-html="flowPriceChartSvg"
+               @mousemove="flowChartHover($event)"
+               @mouseleave="flowChartLeave()"
+               style="width: 100%; min-width: 650px;"></div>
+        </div>
+
+        <!-- Hover Info Bar -->
+        <div class="px-4 py-2 border-t flex items-center justify-between flex-wrap gap-4 text-xs font-mono" style="border-color: var(--border); background: var(--surface-2)">
+          <template x-if="flowHoverInfo">
+            <div class="flex items-center gap-5 flex-wrap">
+              <span style="color: var(--text-3)" x-text="`Date: ${flowHoverInfo.date}`"></span>
+              <span style="color: var(--cyan)" x-text="`Price: $${flowHoverInfo.nav.toFixed(2)} (${flowHoverInfo.perf_pct >= 0 ? '+' : ''}${(flowHoverInfo.perf_pct*100).toFixed(2)}%)`"></span>
+              <span :style="`color: ${flowHoverInfo.cumulative_flow >= 0 ? 'var(--up)' : 'var(--down)'}`"
+                    x-text="`Cum. Flow: ${flowFormatMoney(flowHoverInfo.cumulative_flow)}`"></span>
+              <span :style="`color: ${flowHoverInfo.usd_flow >= 0 ? 'var(--up)' : 'var(--down)'}`"
+                    x-text="`Day Flow: ${flowFormatMoney(flowHoverInfo.usd_flow)}`"></span>
+              <span class="chip text-[9px]"
+                    :style="flowHoverInfo.flow_zscore >= 1.5 ? 'color: var(--up); border: 1px solid rgba(52,211,153,0.3)' : (flowHoverInfo.flow_zscore <= -1.5 ? 'color: var(--down); border: 1px solid rgba(251,113,133,0.3)' : 'color: var(--text-3); border: 1px solid var(--border)')"
+                    x-text="`Z: ${(flowHoverInfo.flow_zscore >= 0 ? '+' : '') + flowHoverInfo.flow_zscore.toFixed(2)}σ`"></span>
+            </div>
+          </template>
+          <template x-if="!flowHoverInfo">
+            <span style="color: var(--text-3)">Hover across the chart to inspect date-by-date price action and cumulative capital accumulation</span>
+          </template>
+          <div class="text-[10px] text-zinc-500 font-mono ml-auto">
+            Drag across canvas to inspect window
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Charts 2 & 3: Daily Flow Bars & 30D Z-Score Oscillator ───────── -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        
+        <!-- Chart 2: Daily Flow Bars -->
+        <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+          <div class="p-3 border-b flex items-center justify-between" style="border-color: var(--border); background: var(--surface-2)">
+            <span class="font-bold text-xs uppercase tracking-wider" style="color: var(--cyan)">DAILY FLOW BARS + 20D MOVING TREND</span>
+            <div class="flex items-center gap-2 text-[10px] font-mono">
+              <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-xs inline-block" style="background: var(--up)"></span> Inflow</span>
+              <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-xs inline-block" style="background: var(--down)"></span> Outflow</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-0.5 bg-zinc-300 inline-block"></span> 20D Trend</span>
+            </div>
+          </div>
+          <div class="p-2 sm:p-3 overflow-x-auto">
+            <div x-html="flowBarsChartSvg"
+                 @mousemove="flowChartHover($event)"
+                 @mouseleave="flowChartLeave()"
+                 style="width: 100%; min-width: 450px;"></div>
+          </div>
+        </div>
+
+        <!-- Chart 3: 30D Flow Z-Score Oscillator -->
+        <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+          <div class="p-3 border-b flex items-center justify-between" style="border-color: var(--border); background: var(--surface-2)">
+            <span class="font-bold text-xs uppercase tracking-wider" style="color: var(--cyan)">FLOW INTENSITY ANOMALIES (30D Z-SCORE)</span>
+            <div class="flex items-center gap-2 text-[10px] font-mono">
+              <span class="chip text-[9px]" style="border: 1px dashed var(--up); color: var(--up)">+1.5σ Accumulation</span>
+              <span class="chip text-[9px]" style="border: 1px dashed var(--down); color: var(--down)">−1.5σ Distribution</span>
+            </div>
+          </div>
+          <div class="p-2 sm:p-3 overflow-x-auto">
+            <div x-html="flowZScoreChartSvg"
+                 @mousemove="flowChartHover($event)"
+                 @mouseleave="flowChartLeave()"
+                 style="width: 100%; min-width: 450px;"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ─── Section 4: Long-Horizon Macro Turning Point Analyzer ────────── -->
+      <div class="rounded-lg border overflow-hidden mb-6" style="background: var(--surface); border-color: var(--border)">
+        
+        <!-- Header -->
+        <div class="p-4 border-b" style="border-color: var(--border); background: var(--surface-2)">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-sm uppercase tracking-wider" style="color: var(--cyan)">MACRO TURNING POINT ANALYZER (20D · 60D · 90D · 120D FORWARD RETURNS)</span>
+              <span class="chip text-[9px] font-mono" style="background: rgba(34,211,238,0.15); color: var(--cyan); border: 1px solid rgba(34,211,238,0.3)">LONG-HORIZON</span>
+            </div>
+            <div class="text-xs font-mono" style="color: var(--text-3)">
+              Troughs: NAV near rolling 60D low + Institutional Inflow Spike (|Z| ≥ 1.5σ)
+            </div>
+          </div>
+          <p class="text-xs text-zinc-400 max-w-4xl">
+            Backtesting macro inflections: Evaluates whether heavy institutional buying at local lows marked genuine intermediate bottoms.
+            Measures forward returns across your target 1-month (20D), 3-month (60D), and 6-month (120D) horizons.
+          </p>
+        </div>
+
+        <!-- Analyzer Summary Scorecards -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 border-b" style="border-color: var(--border); background: rgba(0,0,0,0.2)">
+          <div class="rounded-md border p-3" style="background: var(--surface); border-color: var(--border)">
+            <div class="label" style="font-size:9px;">IDENTIFIED BOTTOM SPIKES</div>
+            <div class="text-2xl font-bold font-mono mt-1" style="color: var(--cyan)" x-text="flowMacroSummary.total"></div>
+            <div class="text-[10px] text-zinc-500 font-mono mt-0.5">Instances at local price low</div>
+          </div>
+          <div class="rounded-md border p-3" style="background: var(--surface); border-color: var(--border)">
+            <div class="label" style="font-size:9px;">20-DAY FORWARD WIN RATE (~1M)</div>
+            <div class="flex items-baseline gap-2 mt-1">
+              <div class="text-2xl font-bold font-mono" :style="`color: ${flowMacroSummary.winRate20D >= 50 ? 'var(--up)' : 'var(--down)'}`"
+                   x-text="`${flowMacroSummary.winRate20D.toFixed(0)}%`"></div>
+              <div class="text-xs font-mono" style="color: var(--text-2)" x-text="`Med: ${flowMacroSummary.median20D >= 0 ? '+' : ''}${flowMacroSummary.median20D.toFixed(1)}%`"></div>
+            </div>
+            <div class="text-[10px] text-zinc-500 font-mono mt-0.5">1-month holding horizon</div>
+          </div>
+          <div class="rounded-md border p-3" style="background: var(--surface); border-color: var(--border)">
+            <div class="label" style="font-size:9px;">60-DAY FORWARD WIN RATE (~3M)</div>
+            <div class="flex items-baseline gap-2 mt-1">
+              <div class="text-2xl font-bold font-mono" :style="`color: ${flowMacroSummary.winRate60D >= 50 ? 'var(--up)' : 'var(--down)'}`"
+                   x-text="`${flowMacroSummary.winRate60D.toFixed(0)}%`"></div>
+              <div class="text-xs font-mono" style="color: var(--text-2)" x-text="`Med: ${flowMacroSummary.median60D >= 0 ? '+' : ''}${flowMacroSummary.median60D.toFixed(1)}%`"></div>
+            </div>
+            <div class="text-[10px] text-zinc-500 font-mono mt-0.5">3-month macro horizon</div>
+          </div>
+          <div class="rounded-md border p-3" style="background: var(--surface); border-color: var(--border)">
+            <div class="label" style="font-size:9px;">120-DAY FORWARD WIN RATE (~6M)</div>
+            <div class="flex items-baseline gap-2 mt-1">
+              <div class="text-2xl font-bold font-mono" :style="`color: ${flowMacroSummary.winRate120D >= 50 ? 'var(--up)' : 'var(--down)'}`"
+                   x-text="`${flowMacroSummary.winRate120D.toFixed(0)}%`"></div>
+              <div class="text-xs font-mono" style="color: var(--text-2)" x-text="`Med: ${flowMacroSummary.median120D >= 0 ? '+' : ''}${flowMacroSummary.median120D.toFixed(1)}%`"></div>
+            </div>
+            <div class="text-[10px] text-zinc-500 font-mono mt-0.5">6-month intermediate trend</div>
+          </div>
+        </div>
+
+        <!-- Verdict Filter Tabs -->
+        <div class="flex items-center gap-1.5 px-4 py-2.5 border-b flex-wrap" style="border-color: var(--border); background: rgba(0,0,0,0.2)">
+          <span class="label text-[9px] mr-1 uppercase tracking-wider" style="color: var(--text-3)">VERDICT FILTER:</span>
+          <template x-for="f in [
+            { id: 'ALL', label: 'All Signals' },
+            { id: 'CONFIRMED BOTTOM', label: 'Confirmed Bottoms' },
+            { id: 'CONSOLIDATION', label: 'Consolidations' },
+            { id: 'FALSE TROUGH', label: 'False Troughs' },
+            { id: 'IN PROGRESS', label: 'In Progress' }
+          ]" :key="f.id">
+            <button @click="flowInflectionFilter = f.id"
+                    :class="flowInflectionFilter === f.id ? 'tab-active' : ''"
+                    class="px-2.5 py-1 rounded text-xs font-mono border transition flex items-center gap-1.5"
+                    :style="flowInflectionFilter === f.id ? '' : 'color: var(--text-2); border-color: var(--border); background: var(--surface)'">
+              <span x-text="f.label"></span>
+              <span class="chip text-[9px] px-1.5 py-0 scale-90 font-bold"
+                    :style="flowInflectionFilter === f.id ? 'background: rgba(34,211,238,0.25); color: var(--cyan);' : 'background: rgba(255,255,255,0.05); color: var(--text-3);'"
+                    x-text="flowInflectionCounts[f.id] || 0"></span>
+            </button>
+          </template>
+        </div>
+
+        <!-- Historical Turning Points Table -->
+        <div class="overflow-x-auto max-h-96 scrollbar">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="text-[9px] uppercase tracking-[0.12em] font-medium text-zinc-500 border-b border-white/[0.04] select-none" style="background: var(--surface-2)">
+                <th @click="flowToggleInflectionSort('date')" class="px-3 py-2 font-semibold cursor-pointer hover:text-cyan-400 transition">
+                  <div class="flex items-center gap-1">
+                    <span>Signal Date</span>
+                    <span x-show="flowInflectionSortKey === 'date'" x-text="flowInflectionSortDir === 'asc' ? '▲' : '▼'" class="text-cyan-400 text-[8px]"></span>
+                  </div>
+                </th>
+                <th @click="flowToggleInflectionSort('nav')" class="px-3 py-2 font-semibold text-right cursor-pointer hover:text-cyan-400 transition">
+                  <div class="flex items-center justify-end gap-1">
+                    <span>Price At Low</span>
+                    <span x-show="flowInflectionSortKey === 'nav'" x-text="flowInflectionSortDir === 'asc' ? '▲' : '▼'" class="text-cyan-400 text-[8px]"></span>
+                  </div>
+                </th>
+                <th @click="flowToggleInflectionSort('usd_flow')" class="px-3 py-2 font-semibold text-right cursor-pointer hover:text-cyan-400 transition">
+                  <div class="flex items-center justify-end gap-1">
+                    <span>Daily Inflow</span>
+                    <span x-show="flowInflectionSortKey === 'usd_flow'" x-text="flowInflectionSortDir === 'asc' ? '▲' : '▼'" class="text-cyan-400 text-[8px]"></span>
+                  </div>
+                </th>
+                <th @click="flowToggleInflectionSort('flow_zscore')" class="px-3 py-2 font-semibold text-right cursor-pointer hover:text-cyan-400 transition">
+                  <div class="flex items-center justify-end gap-1">
+                    <span>Flow Z-Score</span>
+                    <span x-show="flowInflectionSortKey === 'flow_zscore'" x-text="flowInflectionSortDir === 'asc' ? '▲' : '▼'" class="text-cyan-400 text-[8px]"></span>
+                  </div>
+                </th>
+                <th @click="flowToggleInflectionSort('ret20D')" class="px-3 py-2 font-semibold text-right cursor-pointer hover:text-cyan-400 transition">
+                  <div class="flex items-center justify-end gap-1">
+                    <span>+20D Return (~1M)</span>
+                    <span x-show="flowInflectionSortKey === 'ret20D'" x-text="flowInflectionSortDir === 'asc' ? '▲' : '▼'" class="text-cyan-400 text-[8px]"></span>
+                  </div>
+                </th>
+                <th @click="flowToggleInflectionSort('ret60D')" class="px-3 py-2 font-semibold text-right cursor-pointer hover:text-cyan-400 transition">
+                  <div class="flex items-center justify-end gap-1">
+                    <span>+60D Return (~3M)</span>
+                    <span x-show="flowInflectionSortKey === 'ret60D'" x-text="flowInflectionSortDir === 'asc' ? '▲' : '▼'" class="text-cyan-400 text-[8px]"></span>
+                  </div>
+                </th>
+                <th @click="flowToggleInflectionSort('ret120D')" class="px-3 py-2 font-semibold text-right cursor-pointer hover:text-cyan-400 transition">
+                  <div class="flex items-center justify-end gap-1">
+                    <span>+120D Return (~6M)</span>
+                    <span x-show="flowInflectionSortKey === 'ret120D'" x-text="flowInflectionSortDir === 'asc' ? '▲' : '▼'" class="text-cyan-400 text-[8px]"></span>
+                  </div>
+                </th>
+                <th @click="flowToggleInflectionSort('maxDD')" class="px-3 py-2 font-semibold text-right cursor-pointer hover:text-cyan-400 transition">
+                  <div class="flex items-center justify-end gap-1">
+                    <span>Max Drawdown</span>
+                    <span x-show="flowInflectionSortKey === 'maxDD'" x-text="flowInflectionSortDir === 'asc' ? '▲' : '▼'" class="text-cyan-400 text-[8px]"></span>
+                  </div>
+                </th>
+                <th @click="flowToggleInflectionSort('verdict')" class="px-3 py-2 font-semibold text-center cursor-pointer hover:text-cyan-400 transition">
+                  <div class="flex items-center justify-center gap-1">
+                    <span>Macro Verdict</span>
+                    <span x-show="flowInflectionSortKey === 'verdict'" x-text="flowInflectionSortDir === 'asc' ? '▲' : '▼'" class="text-cyan-400 text-[8px]"></span>
+                  </div>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="ev in flowFilteredInflections" :key="ev.date">
+                <tr class="text-xs hover:bg-white/5 transition border-b border-white/[0.03]">
+                  <td class="px-3 py-2 font-mono text-zinc-200" x-text="ev.date"></td>
+                  <td class="px-3 py-2 font-mono text-right text-zinc-300" x-text="'$' + ev.nav.toFixed(2)"></td>
+                  <td class="px-3 py-2 font-mono text-right text-emerald-400" x-text="flowFormatMoney(ev.usd_flow)"></td>
+                  <td class="px-3 py-2 font-mono text-right font-bold text-emerald-400" x-text="'+' + ev.flow_zscore.toFixed(2) + 'σ'"></td>
+                  <td class="px-3 py-2 font-mono text-right"
+                      :style="`color: ${ev.ret20D !== null ? (ev.ret20D >= 0 ? 'var(--up)' : 'var(--down)') : 'var(--text-3)'}`"
+                      x-text="ev.ret20D !== null ? (ev.ret20D >= 0 ? '+' : '') + (ev.ret20D * 100).toFixed(1) + '%' : '—'"></td>
+                  <td class="px-3 py-2 font-mono text-right font-semibold"
+                      :style="`color: ${ev.ret60D !== null ? (ev.ret60D >= 0 ? 'var(--up)' : 'var(--down)') : 'var(--text-3)'}`"
+                      x-text="ev.ret60D !== null ? (ev.ret60D >= 0 ? '+' : '') + (ev.ret60D * 100).toFixed(1) + '%' : '—'"></td>
+                  <td class="px-3 py-2 font-mono text-right"
+                      :style="`color: ${ev.ret120D !== null ? (ev.ret120D >= 0 ? 'var(--up)' : 'var(--down)') : 'var(--text-3)'}`"
+                      x-text="ev.ret120D !== null ? (ev.ret120D >= 0 ? '+' : '') + (ev.ret120D * 100).toFixed(1) + '%' : '—'"></td>
+                  <td class="px-3 py-2 font-mono text-right text-rose-400"
+                      x-text="ev.maxDD !== null ? (ev.maxDD * 100).toFixed(1) + '%' : '—'"></td>
+                  <td class="px-3 py-2 text-center">
+                    <span class="chip text-[9px] font-mono"
+                          :style="ev.verdictStyle"
+                          x-text="ev.verdict"></span>
+                  </td>
+                </tr>
+              </template>
+              <tr x-show="!flowFilteredInflections.length">
+                <td colspan="9" class="px-3 py-8 text-center text-zinc-500 italic font-mono">No historical accumulation spikes match the selected filter.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /flowData -->
+
+  </div><!-- /flows tab -->
+
+
   <!-- FOOTER -->
   <footer class="mt-8 pt-4 text-xs flex gap-4 flex-wrap items-center" style="border-top: 1px solid var(--border); color: var(--text-3)">
     <span>Conviction Labs · yieldchaser/etf-data</span>
     <a href="index.html" style="color: var(--cyan); text-decoration: none;">Dashboard</a>
+    <a href="markets.html?tab=flows" style="color: var(--cyan); text-decoration: none;">Fund Flows</a>
     <a href="stock.html" style="color: var(--text-3); text-decoration: none;">Stock Finder</a>
     <a href="sim.html" style="color: var(--text-3); text-decoration: none;">Portfolio Lab</a>
     <a href="backtest.html" style="color: var(--text-3); text-decoration: none;">Backtest</a>
@@ -2269,6 +2817,28 @@ function marketsApp() {
     // markets header so the operator can verify on the live site without DevTools.
     freshness: null,
 
+    // ── §10 Fund Flows Studio State ───────────────────────────────────────
+    flowTicker: 'TQQQ',
+    flowData: null,
+    flowManifest: null,
+    flowSearchIndex: null,
+    flowLoading: false,
+    flowError: '',
+    flowSearchQuery: '',
+    flowSearchResults: [],
+    flowSearchOpen: false,
+    flowSearchCategory: 'all',
+    flowSearchSelectedIndex: -1,
+    flowActivePresetCategory: 'single_stock_bull',
+    flowTimeRange: '1Y',
+    flowHoverInfo: null,
+    flowSelectedUncached: null,
+    flowInflectionFilter: 'ALL',
+    flowInflectionSortKey: 'date',
+    flowInflectionSortDir: 'desc',
+    _flowStarted: false,
+    _flowSearchStarted: false,
+
     // ── Data loading ──────────────────────────────────────────────────────
     _priceLogStarted: false,
     _volStarted: false,
@@ -2291,18 +2861,20 @@ function marketsApp() {
       if (!tab) return;
       const needPriceLog = tab === 'pricelog';
       const needVol = tab === 'volatility';
-      if (!needPriceLog && !needVol) {
-        // Not a secondary-tab view - warm both payloads when the browser
+      const needFlows = tab === 'flows';
+      if (!needPriceLog && !needVol && !needFlows) {
+        // Not a secondary-tab view - warm payloads when the browser
         // is idle so switching later feels instant.
         if (this._secondaryLoadsStarted) return;
         this._secondaryLoadsStarted = true;
-        const kick = () => { this._loadPriceLog(); this._loadVol(); };
+        const kick = () => { this._loadPriceLog(); this._loadVol(); this._loadFlows(); };
         if (typeof requestIdleCallback === 'function') requestIdleCallback(kick, { timeout: 4000 });
         else setTimeout(kick, 1500);
         return;
       }
       if (needPriceLog) this._loadPriceLog();
       if (needVol) this._loadVol();
+      if (needFlows) this._loadFlows();
     },
 
     async _loadFreshness() {
@@ -2337,8 +2909,12 @@ function marketsApp() {
         if (mapped) this.activeCcy = mapped;
       }
       if (tabParam) {
-        const validTabs = ['matrix','pricelog','yields','periodic','drawdown','holdingperiod','seasonality','correlation','volatility'];
+        const validTabs = ['matrix','pricelog','yields','periodic','drawdown','holdingperiod','seasonality','correlation','volatility','flows'];
         if (validTabs.includes(tabParam)) this.activeTab = tabParam;
+      }
+      const tickerParam = params.get('ticker') || params.get('t');
+      if (tickerParam) {
+        this.flowTicker = tickerParam.toUpperCase();
       }
     },
 
@@ -6506,6 +7082,829 @@ function marketsApp() {
 
       // Centered, aspect-ratio sized SVG. Parent <div> uses flex justify-center.
       return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;height:auto;aspect-ratio:${W}/${H};display:block;margin:0 auto;background:#111;border-radius:6px;">${title}${yTicks}${bars}${yAxis}${xAxis}</svg>`;
+    },
+
+    // ─── §10 FUND FLOWS STUDIO METHODS & COMPUTED PROPERTIES ──────────────
+    async _loadFlows() {
+      if (this._flowStarted && this.flowData) return;
+      this._flowStarted = true;
+      this.flowLoading = true;
+      this.flowError = '';
+      try {
+        const bust = this._sessionBust || (this._sessionBust = Date.now());
+        // 1. Load curated manifest
+        if (!this.flowManifest) {
+          try {
+            const mr = await fetch(`data/flows/curated_manifest.json?v=${bust}`);
+            if (mr.ok) {
+              this.flowManifest = await mr.json();
+            }
+          } catch (me) {
+            console.warn('Flow manifest load error:', me);
+          }
+        }
+        // 2. Load active ticker
+        await this.selectFlowTicker(this.flowTicker || 'TQQQ');
+        // 3. Eager background load of the search index so searching is instantaneous
+        this._loadFlowSearchIndex();
+      } catch (e) {
+        console.warn('Flows initialization error:', e);
+        this.flowError = e.message || 'Error loading flow data';
+      } finally {
+        this.flowLoading = false;
+      }
+    },
+
+    async _loadFlowSearchIndex() {
+      if (this.flowSearchIndex || this._flowSearchStarted) return;
+      this._flowSearchStarted = true;
+      try {
+        const bust = this._sessionBust || (this._sessionBust = Date.now());
+        const r = await fetch(`data/etf_search_index.json?v=${bust}`);
+        if (r.ok) {
+          const raw = await r.json();
+          if (raw && raw.rows && raw.cols) {
+            this.flowSearchIndex = raw.rows.map(row => ({
+              t: row[0],
+              k: row[1],
+              l: row[2],
+              p: row[3],
+              a: row[4],
+              c: row[5],
+              cached: Boolean(row[6])
+            }));
+          } else if (Array.isArray(raw)) {
+            this.flowSearchIndex = raw;
+          }
+        }
+      } catch (e) {
+        console.warn('ETF search index load error:', e);
+      }
+    },
+
+    flowPresetCategories: [
+      { id: 'single_stock_bull', label: 'Single-Stock Bull (2x)', icon: 'bull', tickers: ['NVDL', 'TSLL', 'MSTX', 'MSTU', 'GGLL', 'GOOX', 'MSFU', 'AAPU', 'AMZU', 'CONL'] },
+      { id: 'single_stock_bear', label: 'Single-Stock Inverse', icon: 'bear', tickers: ['TSLQ', 'NVDS'] },
+      { id: 'leveraged_bull', label: 'Index 3x/2x Bull', icon: 'rocket', tickers: ['TQQQ', 'SOXL', 'UPRO', 'SPXL', 'TNA', 'AGQ', 'UGL', 'BOIL'] },
+      { id: 'leveraged_bear', label: 'Index Inverse / Bear', icon: 'shield', tickers: ['SQQQ', 'SOXS', 'SPXU', 'TZA', 'KOLD'] },
+      { id: 'macro_rates_fx', label: 'Macro & FX', icon: 'globe', tickers: ['UUP', 'TLT', 'GLD'] },
+      { id: 'benchmarks', label: 'Core Benchmarks', icon: 'target', tickers: ['SPY', 'QQQ', 'IWM'] }
+    ],
+
+    flowCategoryIcon(icon) {
+      if (icon === 'bull') {
+        return '<svg class="w-3 h-3 text-cyan-400 shrink-0 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>';
+      }
+      if (icon === 'bear') {
+        return '<svg class="w-3 h-3 text-rose-400 shrink-0 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="11 7 6 12 11 17"/><polyline points="18 7 13 12 18 17"/></svg>';
+      }
+      if (icon === 'rocket') {
+        return '<svg class="w-3 h-3 text-emerald-400 shrink-0 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>';
+      }
+      if (icon === 'shield') {
+        return '<svg class="w-3 h-3 text-rose-400 shrink-0 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
+      }
+      if (icon === 'globe') {
+        return '<svg class="w-3 h-3 text-cyan-400 shrink-0 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>';
+      }
+      return '<svg class="w-3 h-3 text-zinc-400 shrink-0 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>';
+    },
+
+    get flowPresetTickers() {
+      const cat = this.flowPresetCategories.find(c => c.id === this.flowActivePresetCategory);
+      return cat ? cat.tickers : (this.flowPresetCategories[0]?.tickers || []);
+    },
+
+    async selectFlowTicker(ticker) {
+      if (!ticker) return;
+      ticker = ticker.trim().toUpperCase();
+      this.flowTicker = ticker;
+      this.flowError = '';
+      this.flowHoverInfo = null;
+      this.flowLoading = true;
+
+      // Auto-switch active preset category tab if ticker belongs to a preset
+      for (const cat of this.flowPresetCategories) {
+        if (cat.tickers.includes(ticker)) {
+          this.flowActivePresetCategory = cat.id;
+          break;
+        }
+      }
+
+      try {
+        const bust = this._sessionBust || (this._sessionBust = Date.now());
+        const r = await fetch(`data/flows/${ticker}.json?v=${bust}`);
+        if (r.ok) {
+          this.flowData = await r.json();
+          this.flowSelectedUncached = null;
+        } else {
+          // If not found in pre-cached files, check if it exists in search index
+          if (!this.flowSearchIndex) {
+            await this._loadFlowSearchIndex();
+          }
+          const found = this.flowSearchIndex?.find(e => e.t.toUpperCase() === ticker);
+          if (found) {
+            this.flowSelectedUncached = found;
+            this.flowData = null;
+          } else {
+            this.flowError = `Flow data for "${ticker}" is not pre-cached.`;
+            this.flowData = null;
+          }
+        }
+      } catch (e) {
+        this.flowError = `Failed to fetch data for ${ticker}: ${e.message}`;
+        this.flowData = null;
+      } finally {
+        this.flowLoading = false;
+      }
+    },
+
+    flowSetSearchCategory(catId) {
+      this.flowSearchCategory = catId;
+      this.flowSearchSelectedIndex = -1;
+      this.flowSearch();
+    },
+
+    flowSearchDown() {
+      if (!this.flowSearchOpen) {
+        this.flowSearchOpen = true;
+        this.flowSearch();
+        return;
+      }
+      if (!this.flowSearchResults.length) return;
+      if (this.flowSearchSelectedIndex < this.flowSearchResults.length - 1) {
+        this.flowSearchSelectedIndex++;
+      } else {
+        this.flowSearchSelectedIndex = 0;
+      }
+    },
+
+    flowSearchUp() {
+      if (!this.flowSearchOpen || !this.flowSearchResults.length) return;
+      if (this.flowSearchSelectedIndex > 0) {
+        this.flowSearchSelectedIndex--;
+      } else {
+        this.flowSearchSelectedIndex = this.flowSearchResults.length - 1;
+      }
+    },
+
+    flowSearchEnter() {
+      if (!this.flowSearchOpen || !this.flowSearchResults.length) return;
+      const target = this.flowSearchSelectedIndex >= 0
+        ? this.flowSearchResults[this.flowSearchSelectedIndex]
+        : this.flowSearchResults[0];
+      if (target && target.t) {
+        this.selectFlowTicker(target.t);
+        this.flowSearchOpen = false;
+        this.flowSearchQuery = '';
+        this.flowSearchSelectedIndex = -1;
+      }
+    },
+
+    flowSearch() {
+      const q = (this.flowSearchQuery || '').trim().toUpperCase();
+      const cat = this.flowSearchCategory || 'all';
+
+      if (!this.flowSearchIndex) {
+        this._loadFlowSearchIndex().then(() => this.flowSearch());
+        return;
+      }
+
+      if (!q && cat === 'all') {
+        this.flowSearchResults = [];
+        this.flowSearchSelectedIndex = -1;
+        return;
+      }
+
+      const singleStockSet = new Set(['NVDL', 'TSLL', 'MSTX', 'MSTU', 'GGLL', 'GOOX', 'MSFU', 'AAPU', 'AMZU', 'CONL', 'TSLQ', 'NVDS']);
+      const bullSet = new Set(['TQQQ', 'SOXL', 'UPRO', 'SPXL', 'TNA', 'AGQ', 'UGL', 'BOIL', 'NVDL', 'TSLL', 'MSTX', 'MSTU', 'GGLL', 'GOOX', 'MSFU', 'AAPU', 'AMZU', 'CONL']);
+      const bearSet = new Set(['SQQQ', 'SOXS', 'SPXU', 'TZA', 'KOLD', 'TSLQ', 'NVDS', 'UVXY', 'SVIX']);
+      const macroSet = new Set(['UUP', 'TLT', 'GLD', 'SLV', 'USO', 'UNG', 'FXE']);
+
+      const matches = [];
+      const n = this.flowSearchIndex.length;
+
+      for (let i = 0; i < n; i++) {
+        const item = this.flowSearchIndex[i];
+        const t = (item.t || '').toUpperCase();
+        const l = (item.l || '').toUpperCase();
+        const p = (item.p || '').toUpperCase();
+        const c = (item.c || '').toUpperCase();
+
+        if (cat === 'cached' && !item.cached) continue;
+        if (cat === 'single_stock') {
+          const isSingle = singleStockSet.has(t) || l.includes('2X LONG') || l.includes('2X INVERSE') || l.includes('1.5X') || l.includes('2X DAILY') || l.includes('DAILY BULL') || l.includes('DAILY BEAR');
+          if (!isSingle) continue;
+        } else if (cat === 'bull') {
+          const isBull = bullSet.has(t) || l.includes('3X') || l.includes('2X') || l.includes('BULL') || l.includes('LEVERAGED');
+          if (!isBull) continue;
+        } else if (cat === 'bear') {
+          const isBear = bearSet.has(t) || l.includes('INVERSE') || l.includes('SHORT') || l.includes('BEAR') || l.includes('-2X') || l.includes('-3X') || l.includes('-1X');
+          if (!isBear) continue;
+        } else if (cat === 'macro') {
+          const isMacro = macroSet.has(t) || c.includes('CURRENCY') || c.includes('COMMODITY') || c.includes('FIXED INCOME') || c.includes('BOND') || l.includes('TREASURY');
+          if (!isMacro) continue;
+        }
+
+        if (!q) {
+          let score = 0;
+          if (item.cached) score += 500;
+          if (item.a) score += Math.min(300, Math.log10(item.a) * 30);
+          matches.push({ item, score });
+        } else if (t.includes(q) || l.includes(q) || p.includes(q)) {
+          let score = 0;
+          if (t === q) score += 2000;
+          else if (t.startsWith(q)) score += 800;
+          else if (t.includes(q)) score += 300;
+          if (l.startsWith(q)) score += 200;
+          else if (l.includes(q)) score += 100;
+          if (item.cached) score += 250;
+          if (item.a) score += Math.min(150, Math.log10(item.a) * 15);
+          matches.push({ item, score });
+        }
+      }
+
+      matches.sort((a, b) => b.score - a.score);
+      this.flowSearchResults = matches.slice(0, 30).map(m => m.item);
+      this.flowSearchSelectedIndex = -1;
+      this.flowSearchOpen = true;
+    },
+
+    flowFormatMoney(val) {
+      if (val === null || val === undefined || isNaN(val)) return '—';
+      const sign = val < 0 ? '−$' : '+$';
+      const abs = Math.abs(val);
+      if (abs >= 1e9) return `${sign}${(abs / 1e9).toFixed(2)}B`;
+      if (abs >= 1e6) return `${sign}${(abs / 1e6).toFixed(1)}M`;
+      if (abs >= 1e3) return `${sign}${(abs / 1e3).toFixed(0)}K`;
+      return `${sign}${abs.toFixed(0)}`;
+    },
+
+    flowChartHover(e) {
+      const records = this.flowActiveRecords;
+      if (!records || !records.length) return;
+      const container = e.currentTarget;
+      const svg = container.querySelector('svg') || container;
+      if (!svg) return;
+      const rect = svg.getBoundingClientRect();
+      const crosshair = svg.querySelector('.flow-crosshair');
+      const W = parseFloat(crosshair?.getAttribute('data-w') || '1000');
+      const PL = parseFloat(crosshair?.getAttribute('data-pl') || '65');
+      const PR = parseFloat(crosshair?.getAttribute('data-pr') || '65');
+      const chartW = W - PL - PR;
+      const scaleX = rect.width / W;
+      const relX = (e.clientX - rect.left) / scaleX;
+      const frac = Math.max(0, Math.min(1, (relX - PL) / chartW));
+      const idx = Math.round(frac * (records.length - 1));
+      const record = records[idx];
+      if (!record) return;
+
+      this.flowHoverInfo = record;
+
+      const crosshairs = document.querySelectorAll('.flow-crosshair');
+      crosshairs.forEach(ch => {
+        const cW = parseFloat(ch.getAttribute('data-w') || '1000');
+        const cPL = parseFloat(ch.getAttribute('data-pl') || '65');
+        const cPR = parseFloat(ch.getAttribute('data-pr') || '65');
+        const cChartW = cW - cPL - cPR;
+        const xPos = cPL + (idx / Math.max(records.length - 1, 1)) * cChartW;
+        ch.setAttribute('x1', xPos.toFixed(1));
+        ch.setAttribute('x2', xPos.toFixed(1));
+        ch.setAttribute('opacity', '1');
+      });
+    },
+
+    flowChartLeave() {
+      this.flowHoverInfo = null;
+      const crosshairs = document.querySelectorAll('.flow-crosshair');
+      crosshairs.forEach(ch => ch.setAttribute('opacity', '0'));
+    },
+
+    get flowActiveMeta() {
+      if (this.flowManifest?.curated_etfs) {
+        const found = this.flowManifest.curated_etfs.find(e => e.ticker === this.flowTicker);
+        if (found) return found;
+      }
+      return {
+        ticker: this.flowTicker,
+        label: this.flowData?.meta?.label || this.flowTicker,
+        category: this.flowData?.meta?.category || 'Curated',
+        aum_usd: this.flowData?.meta?.aum_usd || null,
+        currency: this.flowData?.meta?.currency || 'USD'
+      };
+    },
+
+    get flowActiveRecords() {
+      const all = this.flowData?.data || [];
+      if (!all.length) return [];
+      const countMap = { '1M': 22, '3M': 66, '6M': 130, '1Y': 252, '2Y': 504, '5Y': 1260 };
+      const n = countMap[this.flowTimeRange];
+      if (!n || n >= all.length) return all;
+      return all.slice(-n);
+    },
+
+    get flowLastRecord() {
+      const all = this.flowData?.data || [];
+      return all.length ? all[all.length - 1] : {};
+    },
+
+    get flowMetrics30D() {
+      const all = this.flowData?.data || [];
+      if (!all.length) return { netFlow: 0, pctAum: null, maxInflow: 0, maxOutflow: 0 };
+      const slice30 = all.slice(-30);
+      let netFlow = 0;
+      let maxInflow = 0;
+      let maxOutflow = 0;
+      for (const r of slice30) {
+        const flow = r.usd_flow || 0;
+        netFlow += flow;
+        if (flow > maxInflow) maxInflow = flow;
+        if (flow < maxOutflow) maxOutflow = flow;
+      }
+      const aum = this.flowData?.meta?.aum_usd || this.flowActiveMeta?.aum_usd;
+      let pctAum = null;
+      if (aum && aum > 0) {
+        pctAum = (netFlow / aum) * 100;
+      }
+      return { netFlow, pctAum, maxInflow, maxOutflow };
+    },
+
+    get flowMacroSignalTag() {
+      const all = this.flowData?.data || [];
+      if (!all.length) {
+        return { label: 'NO DATA', sub: 'Awaiting fund flow history', style: 'background: rgba(255,255,255,0.05); color: var(--text-2); border: 1px solid var(--border);' };
+      }
+      const last = all[all.length - 1];
+      const lookback60 = all.slice(-60);
+      const navs60 = lookback60.map(r => r.nav).filter(n => typeof n === 'number' && !isNaN(n));
+      const minNav60 = navs60.length ? Math.min(...navs60) : 0;
+      const maxNav60 = navs60.length ? Math.max(...navs60) : 0;
+      const lastNav = last.nav || 0;
+
+      const last5 = all.slice(-5);
+      const hasRecentInflowSpike = last5.some(r => (r.flow_zscore || 0) >= 1.5);
+      const hasRecentOutflowSpike = last5.some(r => (r.flow_zscore || 0) <= -1.5);
+
+      if (minNav60 > 0 && lastNav <= minNav60 * 1.05 && hasRecentInflowSpike) {
+        return {
+          label: 'MACRO ACCUMULATION',
+          sub: 'Institutional dip loading at local lows',
+          style: 'background: rgba(52,211,153,0.2); color: var(--up); border: 1px solid rgba(52,211,153,0.4);'
+        };
+      }
+      if (maxNav60 > 0 && lastNav >= maxNav60 * 0.95 && hasRecentOutflowSpike) {
+        return {
+          label: 'DISTRIBUTION TOP',
+          sub: 'Institutional exit near local highs',
+          style: 'background: rgba(251,113,133,0.2); color: var(--down); border: 1px solid rgba(251,113,133,0.4);'
+        };
+      }
+      if (last.regime === 'ACCUMULATION') {
+        return {
+          label: 'INFLOW EXPANSION',
+          sub: 'Capital expanding faster than price',
+          style: 'background: rgba(52,211,123,0.12); color: var(--up); border: 1px solid rgba(52,211,153,0.25);'
+        };
+      }
+      if (last.regime === 'DISTRIBUTION') {
+        return {
+          label: 'OUTFLOW EXHAUSTION',
+          sub: 'Sustained institutional redemptions',
+          style: 'background: rgba(251,113,133,0.12); color: var(--down); border: 1px solid rgba(251,113,133,0.25);'
+        };
+      }
+      return {
+        label: 'NEUTRAL EQUILIBRIUM',
+        sub: 'Flow variance within normal bands',
+        style: 'background: rgba(255,255,255,0.05); color: var(--text-2); border: 1px solid var(--border);'
+      };
+    },
+
+    get flowMacroInflections() {
+      const all = this.flowData?.data || [];
+      if (all.length < 60) return [];
+
+      const candidates = [];
+      for (let i = 60; i < all.length; i++) {
+        const r = all[i];
+        if (r.usd_flow <= 0) continue;
+        if ((r.flow_zscore || 0) < 1.5) continue;
+
+        let minNav = Infinity;
+        for (let j = Math.max(0, i - 60); j <= i; j++) {
+          if (all[j].nav < minNav) minNav = all[j].nav;
+        }
+        if (r.nav <= minNav * 1.05) {
+          candidates.push({ idx: i, record: r });
+        }
+      }
+
+      // Deduplicate clusters within 15 trading days
+      const clusters = [];
+      let curCluster = [];
+      for (const cand of candidates) {
+        if (!curCluster.length) {
+          curCluster.push(cand);
+        } else {
+          const prev = curCluster[curCluster.length - 1];
+          if (cand.idx - prev.idx <= 15) {
+            curCluster.push(cand);
+          } else {
+            clusters.push(curCluster);
+            curCluster = [cand];
+          }
+        }
+      }
+      if (curCluster.length) clusters.push(curCluster);
+
+      const events = [];
+      for (const cl of clusters) {
+        let best = cl[0];
+        for (let k = 1; k < cl.length; k++) {
+          if ((cl[k].record.flow_zscore || 0) > (best.record.flow_zscore || 0)) {
+            best = cl[k];
+          }
+        }
+        const i = best.idx;
+        const r = best.record;
+
+        const ret20D = (i + 20 < all.length) ? (all[i + 20].nav - r.nav) / r.nav : null;
+        const ret60D = (i + 60 < all.length) ? (all[i + 60].nav - r.nav) / r.nav : null;
+        const ret120D = (i + 120 < all.length) ? (all[i + 120].nav - r.nav) / r.nav : null;
+
+        let minAfter = r.nav;
+        const endLook = Math.min(all.length - 1, i + 60);
+        for (let j = i; j <= endLook; j++) {
+          if (all[j].nav < minAfter) minAfter = all[j].nav;
+        }
+        const maxDD = (minAfter - r.nav) / r.nav;
+
+        let verdict = 'IN PROGRESS';
+        let verdictStyle = 'background: rgba(34,211,238,0.12); color: var(--cyan); border: 1px solid rgba(34,211,238,0.3);';
+        if (ret60D !== null) {
+          if (ret60D >= 0.10) {
+            verdict = 'CONFIRMED BOTTOM';
+            verdictStyle = 'background: rgba(52,211,153,0.15); color: var(--up); border: 1px solid rgba(52,211,153,0.3);';
+          } else if (ret60D <= -0.10) {
+            verdict = 'FALSE TROUGH';
+            verdictStyle = 'background: rgba(251,113,133,0.15); color: var(--down); border: 1px solid rgba(251,113,133,0.3);';
+          } else {
+            verdict = 'CONSOLIDATION';
+            verdictStyle = 'background: rgba(251,191,36,0.15); color: var(--amber); border: 1px solid rgba(251,191,36,0.3);';
+          }
+        }
+
+        events.push({
+          date: r.date,
+          nav: r.nav,
+          usd_flow: r.usd_flow,
+          flow_zscore: r.flow_zscore,
+          ret20D,
+          ret60D,
+          ret120D,
+          maxDD,
+          verdict,
+          verdictStyle
+        });
+      }
+
+      return events.reverse();
+    },
+
+    flowToggleInflectionSort(key) {
+      if (this.flowInflectionSortKey === key) {
+        this.flowInflectionSortDir = this.flowInflectionSortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        this.flowInflectionSortKey = key;
+        this.flowInflectionSortDir = 'desc';
+      }
+    },
+
+    get flowFilteredInflections() {
+      const all = this.flowMacroInflections || [];
+      const filter = this.flowInflectionFilter || 'ALL';
+      let filtered = all;
+      if (filter !== 'ALL') {
+        filtered = all.filter(e => e.verdict === filter);
+      }
+      const key = this.flowInflectionSortKey || 'date';
+      const dir = this.flowInflectionSortDir === 'asc' ? 1 : -1;
+
+      return [...filtered].sort((a, b) => {
+        let valA = a[key];
+        let valB = b[key];
+        if (valA === null || valA === undefined) return 1;
+        if (valB === null || valB === undefined) return -1;
+        if (typeof valA === 'string') {
+          return valA.localeCompare(valB) * dir;
+        }
+        return (valA - valB) * dir;
+      });
+    },
+
+    get flowInflectionCounts() {
+      const all = this.flowMacroInflections || [];
+      return {
+        ALL: all.length,
+        'CONFIRMED BOTTOM': all.filter(e => e.verdict === 'CONFIRMED BOTTOM').length,
+        'CONSOLIDATION': all.filter(e => e.verdict === 'CONSOLIDATION').length,
+        'FALSE TROUGH': all.filter(e => e.verdict === 'FALSE TROUGH').length,
+        'IN PROGRESS': all.filter(e => e.verdict === 'IN PROGRESS').length
+      };
+    },
+
+    get flowMacroSummary() {
+      const evs = this.flowMacroInflections;
+      if (!evs.length) {
+        return { total: 0, winRate20D: 0, median20D: 0, winRate60D: 0, median60D: 0, winRate120D: 0, median120D: 0 };
+      }
+      const calcStats = (key) => {
+        const valid = evs.filter(e => e[key] !== null).map(e => e[key]);
+        if (!valid.length) return { winRate: 0, median: 0 };
+        const wins = valid.filter(v => v > 0).length;
+        const winRate = (wins / valid.length) * 100;
+        const s = [...valid].sort((a, b) => a - b);
+        const mid = Math.floor(s.length / 2);
+        const med = s.length % 2 !== 0 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+        return { winRate, median: med * 100 };
+      };
+      const s20 = calcStats('ret20D');
+      const s60 = calcStats('ret60D');
+      const s120 = calcStats('ret120D');
+
+      return {
+        total: evs.length,
+        winRate20D: s20.winRate,
+        median20D: s20.median,
+        winRate60D: s60.winRate,
+        median60D: s60.median,
+        winRate120D: s120.winRate,
+        median120D: s120.median
+      };
+    },
+
+    get flowPriceChartSvg() {
+      const records = this.flowActiveRecords;
+      const W = 1000, H = 340, PL = 65, PR = 65, PT = 25, PB = 35;
+      if (!records || records.length < 2) {
+        return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};background:#0e1217;border-radius:6px;"><text x="${W/2}" y="${H/2}" fill="#71717a" text-anchor="middle" font-family="ui-monospace" font-size="12">No flow data for selected range</text></svg>`;
+      }
+      const chartW = W - PL - PR;
+      const chartH = H - PT - PB;
+      const n = records.length;
+
+      let minNav = Infinity, maxNav = -Infinity;
+      let minCum = Infinity, maxCum = -Infinity;
+
+      for (let i = 0; i < n; i++) {
+        const r = records[i];
+        if (r.nav < minNav) minNav = r.nav;
+        if (r.nav > maxNav) maxNav = r.nav;
+        const c = r.cumulative_flow || 0;
+        if (c < minCum) minCum = c;
+        if (c > maxCum) maxCum = c;
+      }
+      if (minNav === maxNav) { minNav *= 0.9; maxNav *= 1.1; }
+      if (minCum === maxCum) { minCum = -1e6; maxCum = 1e6; }
+
+      const navPad = (maxNav - minNav) * 0.06;
+      minNav = Math.max(0.01, minNav - navPad);
+      maxNav += navPad;
+
+      const cumPad = (maxCum - minCum) * 0.08;
+      minCum -= cumPad;
+      maxCum += cumPad;
+
+      const navScale = (v) => PT + chartH - ((v - minNav) / (maxNav - minNav)) * chartH;
+      const cumScale = (v) => PT + chartH - ((v - minCum) / (maxCum - minCum)) * chartH;
+      const xScale = (i) => PL + (i / (n - 1)) * chartW;
+
+      const cumZeroY = Math.max(PT, Math.min(PT + chartH, cumScale(0)));
+
+      let gridLines = '';
+      const numTicks = 5;
+      for (let t = 0; t <= numTicks; t++) {
+        const y = PT + (t / numTicks) * chartH;
+        const navVal = maxNav - (t / numTicks) * (maxNav - minNav);
+        const cumVal = maxCum - (t / numTicks) * (maxCum - minCum);
+
+        gridLines += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="3,3"/>`;
+        gridLines += `<text x="${PL - 8}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" fill="#22d3ee" font-family="ui-monospace" font-size="9.5">$${navVal.toFixed(navVal >= 10 ? 1 : 2)}</text>`;
+        gridLines += `<text x="${W - PR + 8}" y="${(y + 3.5).toFixed(1)}" text-anchor="start" fill="${cumVal >= 0 ? '#34d399' : '#fb7185'}" font-family="ui-monospace" font-size="9.5">${this.flowFormatMoney(cumVal)}</text>`;
+      }
+
+      gridLines += `<line x1="${PL}" y1="${cumZeroY.toFixed(1)}" x2="${W - PR}" y2="${cumZeroY.toFixed(1)}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="2,2"/>`;
+
+      let xTicks = '';
+      const dateStep = Math.max(1, Math.floor(n / 5));
+      for (let i = 0; i < n; i += dateStep) {
+        const x = xScale(i);
+        const d = records[i].date;
+        xTicks += `<text x="${x.toFixed(1)}" y="${H - 12}" text-anchor="middle" fill="#71717a" font-family="ui-monospace" font-size="9">${d}</text>`;
+      }
+
+      const defs = `
+        <defs>
+          <clipPath id="flowClipAbove">
+            <rect x="${PL}" y="${PT}" width="${chartW}" height="${Math.max(0, cumZeroY - PT)}" />
+          </clipPath>
+          <clipPath id="flowClipBelow">
+            <rect x="${PL}" y="${cumZeroY}" width="${chartW}" height="${Math.max(0, PT + chartH - cumZeroY)}" />
+          </clipPath>
+          <linearGradient id="flowGradGreen" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#34d399" stop-opacity="0.30"/>
+            <stop offset="100%" stop-color="#34d399" stop-opacity="0.04"/>
+          </linearGradient>
+          <linearGradient id="flowGradRed" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#fb7185" stop-opacity="0.04"/>
+            <stop offset="100%" stop-color="#fb7185" stop-opacity="0.30"/>
+          </linearGradient>
+        </defs>
+      `;
+
+      let cumPathD = `M ${xScale(0).toFixed(1)} ${cumZeroY.toFixed(1)}`;
+      let cumLineD = '';
+      for (let i = 0; i < n; i++) {
+        const cx = xScale(i).toFixed(1);
+        const cy = cumScale(records[i].cumulative_flow || 0).toFixed(1);
+        cumPathD += ` L ${cx} ${cy}`;
+        cumLineD += (i === 0 ? `M ${cx} ${cy}` : ` L ${cx} ${cy}`);
+      }
+      cumPathD += ` L ${xScale(n - 1).toFixed(1)} ${cumZeroY.toFixed(1)} Z`;
+
+      let pricePathD = '';
+      for (let i = 0; i < n; i++) {
+        const x = xScale(i).toFixed(1);
+        const y = navScale(records[i].nav).toFixed(1);
+        pricePathD += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
+      }
+
+      let markers = '';
+      const inflections = this.flowMacroInflections;
+      if (inflections && inflections.length) {
+        const dateIndexMap = new Map();
+        records.forEach((r, idx) => dateIndexMap.set(r.date, idx));
+
+        for (const ev of inflections) {
+          if (dateIndexMap.has(ev.date)) {
+            const idx = dateIndexMap.get(ev.date);
+            const cx = xScale(idx).toFixed(1);
+            const cy = navScale(records[idx].nav).toFixed(1);
+            markers += `
+              <circle cx="${cx}" cy="${cy}" r="7" fill="none" stroke="#34d399" stroke-width="1.5" opacity="0.5"/>
+              <circle cx="${cx}" cy="${cy}" r="3.5" fill="#34d399" stroke="#000" stroke-width="1"/>
+            `;
+          }
+        }
+      }
+
+      return `
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};display:block;background:#0d1117;border-radius:6px;cursor:crosshair;">
+          ${defs}
+          ${gridLines}
+          ${xTicks}
+          <path d="${cumPathD}" fill="url(#flowGradGreen)" clip-path="url(#flowClipAbove)"/>
+          <path d="${cumPathD}" fill="url(#flowGradRed)" clip-path="url(#flowClipBelow)"/>
+          <path d="${cumLineD}" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.2"/>
+          <path d="${pricePathD}" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          ${markers}
+          <line class="flow-crosshair" data-w="${W}" data-pl="${PL}" data-pr="${PR}" x1="${PL}" y1="${PT}" x2="${PL}" y2="${H - PB}" stroke="#22d3ee" stroke-width="1.2" stroke-dasharray="3,3" opacity="0"/>
+        </svg>
+      `;
+    },
+
+    get flowBarsChartSvg() {
+      const records = this.flowActiveRecords;
+      const W = 500, H = 220, PL = 55, PR = 15, PT = 15, PB = 25;
+      if (!records || records.length < 2) {
+        return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};background:#0e1217;border-radius:6px;"><text x="${W/2}" y="${H/2}" fill="#71717a" text-anchor="middle" font-family="ui-monospace" font-size="11">No data</text></svg>`;
+      }
+      const chartW = W - PL - PR;
+      const chartH = H - PT - PB;
+      const n = records.length;
+
+      let maxAbs = 0;
+      for (let i = 0; i < n; i++) {
+        const a = Math.abs(records[i].usd_flow || 0);
+        if (a > maxAbs) maxAbs = a;
+      }
+      if (maxAbs === 0) maxAbs = 1e6;
+      maxAbs *= 1.1;
+
+      const yScale = (v) => PT + chartH / 2 - (v / maxAbs) * (chartH / 2);
+      const y0 = PT + chartH / 2;
+      const slotW = chartW / n;
+      const barW = Math.max(1, Math.min(6, slotW - 0.5));
+
+      let bars = '';
+      for (let i = 0; i < n; i++) {
+        const v = records[i].usd_flow || 0;
+        const x = PL + i * slotW + (slotW - barW) / 2;
+        const top = v >= 0 ? yScale(v) : y0;
+        const height = Math.max(1, Math.abs(yScale(v) - y0));
+        const color = v >= 0 ? '#34d399' : '#fb7185';
+        bars += `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${barW.toFixed(1)}" height="${height.toFixed(1)}" fill="${color}" opacity="0.8"/>`;
+      }
+
+      let maPath = '';
+      const maWindow = 20;
+      for (let i = 0; i < n; i++) {
+        let sum = 0, count = 0;
+        for (let j = Math.max(0, i - maWindow + 1); j <= i; j++) {
+          sum += (records[j].usd_flow || 0);
+          count++;
+        }
+        const avg = sum / count;
+        const x = PL + i * slotW + slotW / 2;
+        const y = yScale(avg);
+        maPath += (i === 0 ? `M ${x.toFixed(1)} ${y.toFixed(1)}` : ` L ${x.toFixed(1)} ${y.toFixed(1)}`);
+      }
+
+      const topLabel = this.flowFormatMoney(maxAbs);
+      const botLabel = this.flowFormatMoney(-maxAbs);
+
+      const grid = `
+        <line x1="${PL}" y1="${PT}" x2="${W - PR}" y2="${PT}" stroke="rgba(255,255,255,0.05)" stroke-dasharray="2,2"/>
+        <line x1="${PL}" y1="${y0.toFixed(1)}" x2="${W - PR}" y2="${y0.toFixed(1)}" stroke="rgba(255,255,255,0.2)"/>
+        <line x1="${PL}" y1="${(PT + chartH).toFixed(1)}" x2="${W - PR}" y2="${(PT + chartH).toFixed(1)}" stroke="rgba(255,255,255,0.05)" stroke-dasharray="2,2"/>
+        <text x="${PL - 6}" y="${PT + 4}" text-anchor="end" fill="#71717a" font-family="ui-monospace" font-size="8.5">${topLabel}</text>
+        <text x="${PL - 6}" y="${(y0 + 3).toFixed(1)}" text-anchor="end" fill="#52525b" font-family="ui-monospace" font-size="8.5">$0</text>
+        <text x="${PL - 6}" y="${PT + chartH}" text-anchor="end" fill="#71717a" font-family="ui-monospace" font-size="8.5">${botLabel}</text>
+      `;
+
+      let xTicks = '';
+      const dateStep = Math.max(1, Math.floor(n / 4));
+      for (let i = 0; i < n; i += dateStep) {
+        const x = PL + i * slotW + slotW / 2;
+        const d = records[i].date;
+        xTicks += `<text x="${x.toFixed(1)}" y="${H - 8}" text-anchor="middle" fill="#71717a" font-family="ui-monospace" font-size="8">${d}</text>`;
+      }
+
+      return `
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};display:block;background:#0d1117;border-radius:6px;cursor:crosshair;">
+          ${grid}
+          ${xTicks}
+          ${bars}
+          <path d="${maPath}" fill="none" stroke="#f4f4f5" stroke-width="1.5" opacity="0.85"/>
+          <line class="flow-crosshair" data-w="${W}" data-pl="${PL}" data-pr="${PR}" x1="${PL}" y1="${PT}" x2="${PL}" y2="${H - PB}" stroke="#22d3ee" stroke-width="1.2" stroke-dasharray="3,3" opacity="0"/>
+        </svg>
+      `;
+    },
+
+    get flowZScoreChartSvg() {
+      const records = this.flowActiveRecords;
+      const W = 500, H = 220, PL = 40, PR = 15, PT = 15, PB = 25;
+      if (!records || records.length < 2) {
+        return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};background:#0e1217;border-radius:6px;"><text x="${W/2}" y="${H/2}" fill="#71717a" text-anchor="middle" font-family="ui-monospace" font-size="11">No data</text></svg>`;
+      }
+      const chartW = W - PL - PR;
+      const chartH = H - PT - PB;
+      const n = records.length;
+
+      const minZ = -3.5, maxZ = 3.5;
+      const yScale = (z) => PT + chartH - ((z - minZ) / (maxZ - minZ)) * chartH;
+      const y0 = yScale(0);
+      const yUp15 = yScale(1.5);
+      const yDown15 = yScale(-1.5);
+
+      const slotW = chartW / n;
+      const barW = Math.max(1, Math.min(5, slotW - 0.5));
+
+      let bars = '';
+      for (let i = 0; i < n; i++) {
+        const z = Math.max(minZ, Math.min(maxZ, records[i].flow_zscore || 0));
+        const x = PL + i * slotW + (slotW - barW) / 2;
+        const top = z >= 0 ? yScale(z) : y0;
+        const height = Math.max(1, Math.abs(yScale(z) - y0));
+        const color = z >= 1.5 ? '#34d399' : (z <= -1.5 ? '#fb7185' : '#71717a');
+        bars += `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${barW.toFixed(1)}" height="${height.toFixed(1)}" fill="${color}" opacity="${Math.abs(z) >= 1.5 ? '1' : '0.4'}"/>`;
+      }
+
+      const grid = `
+        <line x1="${PL}" y1="${yUp15.toFixed(1)}" x2="${W - PR}" y2="${yUp15.toFixed(1)}" stroke="#34d399" stroke-dasharray="3,3" opacity="0.6"/>
+        <text x="${PL - 6}" y="${(yUp15 + 3).toFixed(1)}" text-anchor="end" fill="#34d399" font-family="ui-monospace" font-size="8.5">+1.5σ</text>
+        <line x1="${PL}" y1="${y0.toFixed(1)}" x2="${W - PR}" y2="${y0.toFixed(1)}" stroke="#52525b" opacity="0.8"/>
+        <text x="${PL - 6}" y="${(y0 + 3).toFixed(1)}" text-anchor="end" fill="#71717a" font-family="ui-monospace" font-size="8.5">0σ</text>
+        <line x1="${PL}" y1="${yDown15.toFixed(1)}" x2="${W - PR}" y2="${yDown15.toFixed(1)}" stroke="#fb7185" stroke-dasharray="3,3" opacity="0.6"/>
+        <text x="${PL - 6}" y="${(yDown15 + 3).toFixed(1)}" text-anchor="end" fill="#fb7185" font-family="ui-monospace" font-size="8.5">−1.5σ</text>
+      `;
+
+      let xTicks = '';
+      const dateStep = Math.max(1, Math.floor(n / 4));
+      for (let i = 0; i < n; i += dateStep) {
+        const x = PL + i * slotW + slotW / 2;
+        const d = records[i].date;
+        xTicks += `<text x="${x.toFixed(1)}" y="${H - 8}" text-anchor="middle" fill="#71717a" font-family="ui-monospace" font-size="8">${d}</text>`;
+      }
+
+      return `
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};display:block;background:#0d1117;border-radius:6px;cursor:crosshair;">
+          ${grid}
+          ${xTicks}
+          ${bars}
+          <line class="flow-crosshair" data-w="${W}" data-pl="${PL}" data-pr="${PR}" x1="${PL}" y1="${PT}" x2="${PL}" y2="${H - PB}" stroke="#22d3ee" stroke-width="1.2" stroke-dasharray="3,3" opacity="0"/>
+        </svg>
+      `;
     },
 
   };

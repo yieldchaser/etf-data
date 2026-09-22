@@ -128,3 +128,8 @@ docs/data/details/
 docs/data/history/
 *.csv
 *.json
+
+# Whitelist Fund Flows data assets
+!docs/data/etf_search_index.json
+!docs/data/flows/
+!docs/data/flows/*.json
