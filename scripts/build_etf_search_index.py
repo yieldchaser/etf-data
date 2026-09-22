@@ -7,7 +7,10 @@ import csv
 import json
 from pathlib import Path
 
-SOURCE_CSV = Path(r"C:\Users\Dell\.gemini\antigravity\brain\b113b1d3-7776-41dd-90f5-bc61d3dff5b5\scratch\trackinsight_all_etfs_rich.csv")
+SOURCE_CSV_CANDIDATES = [
+    Path("data/trackinsight_all_etfs_rich.csv"),
+    Path(r"C:\Users\Dell\.gemini\antigravity\brain\b113b1d3-7776-41dd-90f5-bc61d3dff5b5\scratch\trackinsight_all_etfs_rich.csv")
+]
 OUT_JSON = Path("docs/data/etf_search_index.json")
 FLOWS_DIR = Path("docs/data/flows")
 
@@ -16,14 +19,44 @@ def get_cached_tickers():
         return set()
     return {p.stem.upper() for p in FLOWS_DIR.glob("*.json") if p.stem != "curated_manifest"}
 
+def update_existing_index(cached_set):
+    if not OUT_JSON.exists():
+        print(f"Neither source CSV nor existing index {OUT_JSON} found.")
+        return
+    print(f"Updating cached status in {OUT_JSON} in-place...")
+    with open(OUT_JSON, "r", encoding="utf-8") as f:
+        payload = json.load(f)
+    rows = payload.get("rows", [])
+    updated = 0
+    for r in rows:
+        ticker = (r[0] or "").upper()
+        new_cached = 1 if ticker in cached_set else 0
+        if r[6] != new_cached:
+            r[6] = new_cached
+            updated += 1
+    with open(OUT_JSON, "w", encoding="utf-8") as f:
+        json.dump(payload, f, separators=(",", ":"))
+    print(f"Updated {updated} cached status flags in {OUT_JSON}.")
+
 def build_index():
-    print(f"Reading source ETF universe from {SOURCE_CSV}...")
     cached_set = get_cached_tickers()
+    source_csv = None
+    for c in SOURCE_CSV_CANDIDATES:
+        if c.exists():
+            source_csv = c
+            break
+
+    if not source_csv:
+        print("No source CSV found. Falling back to updating existing search index in-place...")
+        update_existing_index(cached_set)
+        return
+
+    print(f"Reading source ETF universe from {source_csv}...")
     
     rows = []
     seen = set()
 
-    with open(SOURCE_CSV, "r", encoding="utf-8", errors="replace") as f:
+    with open(source_csv, "r", encoding="utf-8", errors="replace") as f:
         reader = csv.DictReader(f)
         for r in reader:
             raw_ticker = (r.get("ticker") or "").strip()

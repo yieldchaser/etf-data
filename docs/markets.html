@@ -2020,12 +2020,13 @@
   <div x-show="activeTab === 'flows'" x-cloak>
 
     <!-- Top Command Center: Universal ETF Search -->
-    <div class="max-w-4xl mx-auto mb-6">
+    <div class="max-w-5xl mx-auto mb-6">
       <div class="relative">
-        <div class="flex items-center gap-3 bg-[#0d1117] border rounded-lg px-4 py-3 shadow-lg focus-within:border-cyan-500/80 transition" style="border-color: var(--border-2)">
-          <svg class="w-5 h-5 text-cyan-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
+        <div class="flex items-center gap-3 bg-[#080c14] border rounded-lg px-4 py-3 shadow-2xl focus-within:border-cyan-400 transition" style="border-color: rgba(255,255,255,0.1)">
+          <div class="flex items-center gap-1.5 shrink-0 text-cyan-400 font-mono text-xs font-bold select-none">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+            <span>FIND &gt;</span>
+          </div>
           <input type="text"
                  x-model="flowSearchQuery"
                  @input="flowSearch()"
@@ -2034,53 +2035,89 @@
                  @keydown.up.prevent="flowSearchUp()"
                  @keydown.enter.prevent="flowSearchEnter()"
                  @keydown.escape="flowSearchOpen = false"
-                 placeholder="Search 15,713 ETFs by symbol or name (e.g. SPY, QQQ, TQQQ, SOXL, MSTU)..."
-                 class="bg-transparent border-none text-sm w-full focus:outline-none text-zinc-100 placeholder-zinc-500 font-mono">
+                 placeholder="Search 15,713 ETFs by symbol or name (e.g. SPY, QQQ, TQQQ, SOXL, MSTU, NVDL)..."
+                 class="bg-transparent border-none text-xs sm:text-sm w-full focus:outline-none text-zinc-100 placeholder-zinc-500 font-mono">
           <button x-show="flowSearchQuery" @click="flowSearchQuery = ''; flowSearchResults = []; flowSearchOpen = false" class="text-zinc-500 hover:text-zinc-300 text-xs font-mono p-1">✕</button>
-          <span class="text-[10px] font-mono px-2 py-0.5 rounded border border-white/10 text-zinc-400 shrink-0">15.7K Universe</span>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded border border-white/10 text-cyan-400 bg-cyan-500/10 shrink-0 font-semibold">15.7K UNIVERSE</span>
         </div>
 
         <!-- Autocomplete Dropdown -->
         <div x-show="flowSearchOpen && flowSearchResults.length"
              @click.away="flowSearchOpen = false"
              class="absolute left-0 right-0 top-full mt-2 z-50 rounded-xl border shadow-2xl overflow-hidden max-h-96 overflow-y-auto scrollbar"
-             style="background: #0d1117; border-color: var(--border-2);">
-          <div class="px-3 py-2 text-[10px] font-mono text-zinc-400 border-b border-white/5 uppercase tracking-wider flex justify-between bg-black/60">
-            <span>Matching ETFs (<span x-text="flowSearchResults.length"></span>) · ↑↓ to navigate · ↵ to select</span>
-            <span class="text-cyan-400">Trackinsight In-Memory Index</span>
+             style="background: #080c14; border-color: rgba(255,255,255,0.12);">
+          <div class="px-3 py-2 text-[10px] font-mono text-zinc-400 border-b border-white/10 uppercase tracking-wider flex justify-between bg-black/80 sticky top-0 backdrop-blur z-10">
+            <span>Matching ETFs (<span x-text="flowSearchResults.length"></span>) · ↑↓ Navigate · ↵ Select</span>
+            <span class="text-cyan-400 font-semibold">Trackinsight In-Memory Terminal</span>
           </div>
           <template x-for="(r, idx) in flowSearchResults" :key="r.k || r.t">
             <div @click="selectFlowTicker(r.t); flowSearchOpen = false; flowSearchQuery = ''"
                  @mouseenter="flowSearchSelectedIndex = idx"
-                 :class="flowSearchSelectedIndex === idx ? 'bg-cyan-500/20' : 'hover:bg-cyan-500/10'"
-                 class="px-4 py-2.5 border-b border-white/[0.03] cursor-pointer flex items-center justify-between gap-3 transition">
+                 :class="flowSearchSelectedIndex === idx ? 'bg-cyan-500/15 border-l-2 border-cyan-400' : 'hover:bg-white/[0.03] border-l-2 border-transparent'"
+                 class="px-4 py-2.5 border-b border-white/[0.04] cursor-pointer flex items-center justify-between gap-3 transition">
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-2 mb-0.5">
-                  <span class="font-mono font-bold text-sm" style="color: var(--cyan)" x-text="r.t"></span>
-                  <span x-show="r.cached" class="chip text-[9px] px-1.5 py-0.5" style="background: rgba(52,211,153,0.15); color: var(--up); border: 1px solid rgba(52,211,153,0.3)">PRE-CACHED</span>
-                  <span x-show="!r.cached" class="chip text-[9px] px-1.5 py-0.5" style="background: rgba(255,255,255,0.05); color: var(--text-3); border: 1px solid var(--border)">ON-DEMAND</span>
+                  <span class="font-mono font-bold text-sm tracking-tight" style="color: var(--cyan)" x-text="r.t"></span>
+                  <span x-show="r.cached" class="chip text-[9px] px-1.5 py-0.5 font-mono" style="background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3)">PRE-CACHED</span>
+                  <span x-show="!r.cached" class="chip text-[9px] px-1.5 py-0.5 font-mono" style="background: rgba(255,255,255,0.05); color: var(--text-3); border: 1px solid var(--border)">ON-DEMAND</span>
                   <span x-show="r.c" class="text-[10px] font-mono text-zinc-500" x-text="r.c"></span>
                 </div>
-                <div class="text-xs text-zinc-300 truncate" x-text="r.l"></div>
+                <div class="text-xs text-zinc-300 truncate font-sans" x-text="r.l"></div>
               </div>
               <div class="text-right shrink-0 text-xs font-mono text-zinc-400">
                 <div class="text-zinc-500 text-[10px]" x-text="r.p"></div>
-                <div class="font-medium" x-text="r.a ? '$' + (r.a/1e9 >= 1 ? (r.a/1e9).toFixed(1) + 'B' : (r.a/1e6).toFixed(0) + 'M') : ''"></div>
+                <div class="font-medium text-white" x-text="r.a ? '$' + (r.a/1e9 >= 1 ? (r.a/1e9).toFixed(1) + 'B' : (r.a/1e6).toFixed(0) + 'M') : ''"></div>
               </div>
             </div>
           </template>
         </div>
       </div>
 
-      <!-- Quick Ticker Shortcuts Bar -->
-      <div class="flex items-center gap-2 mt-2 px-1 text-[11px] font-mono text-zinc-400 flex-wrap">
-        <span class="text-zinc-600 uppercase text-[10px] tracking-wider">Quick Jump:</span>
-        <template x-for="t in ['TECL', 'SOXL', 'TMF', 'TMV', 'ERX', 'UCO', 'AGQ', 'DUST', 'YINN', 'YANG', 'BRZU', 'UVXY', 'SVXY', 'BITX', 'MSTU', 'MSTZ', 'NVDL', 'TSLL', 'PLTU', 'CONL']" :key="t">
-          <button @click="selectFlowTicker(t)"
-                  class="hover:text-cyan-300 hover:underline transition"
-                  :class="flowTicker === t ? 'text-cyan-400 font-bold' : 'text-zinc-400'"
-                  x-text="t"></button>
-        </template>
+      <!-- Institutional Grouped Ticker Shortcuts Bar -->
+      <div class="flex items-center gap-2 mt-3 px-0.5 text-xs font-mono text-zinc-400 flex-wrap">
+        <span class="text-zinc-500 uppercase text-[10px] tracking-wider font-semibold mr-1">WATCHLIST:</span>
+        <!-- Sector Tech -->
+        <div class="inline-flex items-center gap-1 px-2 py-1 rounded bg-[#090d16] border border-white/5">
+          <span class="text-[9px] uppercase tracking-wider text-cyan-400 font-semibold mr-0.5">TECH</span>
+          <template x-for="t in ['TECL', 'SOXL', 'FNGU']" :key="t">
+            <button @click="selectFlowTicker(t)" :class="flowTicker === t ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-500/40 shadow-xs' : 'text-zinc-400 hover:text-white border-transparent'" class="px-1.5 py-0.5 rounded text-[11px] border transition" x-text="t"></button>
+          </template>
+        </div>
+        <!-- Bonds & Treasuries -->
+        <div class="inline-flex items-center gap-1 px-2 py-1 rounded bg-[#090d16] border border-white/5">
+          <span class="text-[9px] uppercase tracking-wider text-purple-400 font-semibold mr-0.5">BONDS</span>
+          <template x-for="t in ['TMF', 'TMV', 'TBT']" :key="t">
+            <button @click="selectFlowTicker(t)" :class="flowTicker === t ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-500/40 shadow-xs' : 'text-zinc-400 hover:text-white border-transparent'" class="px-1.5 py-0.5 rounded text-[11px] border transition" x-text="t"></button>
+          </template>
+        </div>
+        <!-- Commodities & Energy -->
+        <div class="inline-flex items-center gap-1 px-2 py-1 rounded bg-[#090d16] border border-white/5">
+          <span class="text-[9px] uppercase tracking-wider text-emerald-400 font-semibold mr-0.5">COMMODITIES</span>
+          <template x-for="t in ['ERX', 'UCO', 'AGQ', 'BOIL']" :key="t">
+            <button @click="selectFlowTicker(t)" :class="flowTicker === t ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-500/40 shadow-xs' : 'text-zinc-400 hover:text-white border-transparent'" class="px-1.5 py-0.5 rounded text-[11px] border transition" x-text="t"></button>
+          </template>
+        </div>
+        <!-- Single-Stock Leverage -->
+        <div class="inline-flex items-center gap-1 px-2 py-1 rounded bg-[#090d16] border border-white/5">
+          <span class="text-[9px] uppercase tracking-wider text-rose-400 font-semibold mr-0.5">AI/EQUITY</span>
+          <template x-for="t in ['NVDL', 'TSLL', 'MSTU', 'CONL']" :key="t">
+            <button @click="selectFlowTicker(t)" :class="flowTicker === t ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-500/40 shadow-xs' : 'text-zinc-400 hover:text-white border-transparent'" class="px-1.5 py-0.5 rounded text-[11px] border transition" x-text="t"></button>
+          </template>
+        </div>
+        <!-- Volatility & Macro -->
+        <div class="inline-flex items-center gap-1 px-2 py-1 rounded bg-[#090d16] border border-white/5">
+          <span class="text-[9px] uppercase tracking-wider text-amber-400 font-semibold mr-0.5">VOL/FX</span>
+          <template x-for="t in ['SVIX', 'UVXY', 'BITX', 'UUP']" :key="t">
+            <button @click="selectFlowTicker(t)" :class="flowTicker === t ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-500/40 shadow-xs' : 'text-zinc-400 hover:text-white border-transparent'" class="px-1.5 py-0.5 rounded text-[11px] border transition" x-text="t"></button>
+          </template>
+        </div>
+        <!-- Countries -->
+        <div class="inline-flex items-center gap-1 px-2 py-1 rounded bg-[#090d16] border border-white/5">
+          <span class="text-[9px] uppercase tracking-wider text-indigo-400 font-semibold mr-0.5">COUNTRY</span>
+          <template x-for="t in ['YINN', 'YANG', 'BRZU']" :key="t">
+            <button @click="selectFlowTicker(t)" :class="flowTicker === t ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-500/40 shadow-xs' : 'text-zinc-400 hover:text-white border-transparent'" class="px-1.5 py-0.5 rounded text-[11px] border transition" x-text="t"></button>
+          </template>
+        </div>
       </div>
     </div>
 
@@ -2222,103 +2259,120 @@
     <!-- Active Flow Dashboard -->
     <div x-show="flowData && !flowLoading">
       <!-- ETF Header Strip & Range Controls -->
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4 pb-3 border-b" style="border-color: var(--border)">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5 pb-4 border-b" style="border-color: rgba(255,255,255,0.08)">
         <!-- Ticker Info -->
         <div>
           <div class="flex items-center gap-3">
-            <span class="text-2xl font-bold font-mono tracking-tight" style="color: var(--cyan)" x-text="flowData?.ticker"></span>
-            <span class="text-sm text-zinc-300 font-medium" x-text="flowActiveMeta?.label || flowData?.ticker"></span>
-            <span class="chip text-[10px] font-mono" style="background: rgba(34,211,238,0.1); color: var(--cyan); border: 1px solid rgba(34,211,238,0.3)" x-text="`${(flowData?.data||[]).length} Trading Days`"></span>
+            <span class="text-3xl font-extrabold font-mono tracking-tight" style="color: var(--cyan)" x-text="flowData?.ticker"></span>
+            <span class="text-base text-zinc-200 font-medium font-sans" x-text="flowActiveMeta?.label || flowData?.ticker"></span>
+            <span class="chip text-[10px] font-mono font-semibold" style="background: rgba(34,211,238,0.1); color: var(--cyan); border: 1px solid rgba(34,211,238,0.3)" x-text="`${(flowData?.data||[]).length} SESSIONS`"></span>
           </div>
-          <div class="text-xs text-zinc-500 font-mono mt-1" x-text="`${flowActiveMeta?.category || 'ETF'} · Currency: ${flowActiveMeta?.currency || 'USD'} · Data span: ${(flowData?.data||[])[0]?.date} → ${(flowData?.data||[]).slice(-1)[0]?.date}`"></div>
+          <div class="text-xs text-zinc-400 font-mono mt-1 flex items-center gap-2 flex-wrap">
+            <span class="text-zinc-300 font-semibold" x-text="flowActiveMeta?.category || 'Leveraged ETF'"></span>
+            <span class="text-zinc-600">·</span>
+            <span>Currency: <strong class="text-zinc-200" x-text="flowActiveMeta?.currency || 'USD'"></strong></span>
+            <span class="text-zinc-600">·</span>
+            <span>History Span: <span class="text-cyan-400 font-medium" x-text="`${(flowData?.data||[])[0]?.date} → ${(flowData?.data||[]).slice(-1)[0]?.date}`"></span></span>
+          </div>
         </div>
 
-        <!-- Range Presets -->
-        <div class="flex items-center gap-1.5 flex-wrap">
-          <span class="label text-[10px] mr-1" style="color: var(--text-3)">TIME RANGE:</span>
-          <template x-for="p in ['1m', '3m', '6m', '1y', '3y', '5y', 'max']" :key="p">
-            <button @click="flowSetRangePreset(p)"
-                    :class="flowRangePreset === p ? 'tab-active' : ''"
-                    class="px-2.5 py-1 rounded border text-xs font-mono font-medium transition"
-                    :style="flowRangePreset === p ? '' : 'color: var(--text-2); border-color: var(--border)'"
-                    x-text="p.toUpperCase()">
-            </button>
-          </template>
+        <!-- Master Range Presets & Link Toggle -->
+        <div class="flex items-center gap-2 flex-wrap">
+          <button @click="flowToggleSync()"
+                  :class="flowSyncAllCharts ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/40 shadow-xs' : 'text-zinc-400 border-white/10 hover:text-zinc-200'"
+                  class="px-2.5 py-1.5 rounded-lg border text-xs font-mono font-semibold flex items-center gap-1.5 transition"
+                  title="Toggle synchronization across all chart range sliders">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <span x-text="flowSyncAllCharts ? 'CHARTS LINKED' : 'INDEPENDENT'"></span>
+          </button>
+
+          <div class="flex items-center gap-1.5 flex-wrap bg-[#080c14] p-1.5 rounded-lg border border-white/10">
+            <span class="text-[9px] font-mono uppercase tracking-wider text-zinc-500 mr-1 ml-1 font-semibold select-none">MASTER:</span>
+            <template x-for="p in ['1m', '3m', '6m', '1y', '3y', '5y', 'max']" :key="p">
+              <button @click="flowSetRangePreset(p)"
+                      :class="flowRangePreset === p ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-400 shadow-sm' : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:border-white/10'"
+                      class="px-2.5 py-1 rounded border text-xs font-mono font-medium transition"
+                      x-text="p.toUpperCase()">
+              </button>
+            </template>
+          </div>
         </div>
       </div>
 
-      <!-- Dual Range Slider -->
-      <div class="px-4 py-3 mb-6 rounded-lg border" style="background: var(--surface-2); border-color: var(--border)">
-        <div class="flex items-center gap-3">
-          <span class="text-xs font-mono text-zinc-400 min-w-[75px]" x-text="flowFilteredRecords[0]?.date || ''"></span>
-          <div class="relative flex-1 select-none" style="height:28px; touch-action:none"
-               @pointerdown="_flowSliderPointerDown($event)"
-               @pointermove="_flowSliderPointerMove($event)"
-               @pointerup="_flowSliderPointerUp($event)"
-               @pointercancel="_flowSliderPointerUp($event)">
-            <div class="absolute top-1/2 -translate-y-1/2 w-full rounded-full" style="height:4px; background:var(--border-2)"></div>
-            <div class="absolute top-1/2 -translate-y-1/2 rounded-full" style="height:4px; background:var(--cyan)"
-                 :style="`left:${_flowSliderStartPct}%; width:${_flowSliderEndPct - _flowSliderStartPct}%`"></div>
-            <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab shadow"
-                 style="width:16px; height:16px; background:var(--bg); border-color:var(--cyan); margin-left:-8px"
-                 :style="`left:${_flowSliderStartPct}%`"></div>
-            <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab shadow"
-                 style="width:16px; height:16px; background:var(--bg); border-color:var(--cyan); margin-left:-8px"
-                 :style="`left:${_flowSliderEndPct}%`"></div>
+      <!-- Master Dual Range Slider -->
+      <div class="px-5 py-3 mb-6 rounded-lg border bg-[#080c14]" style="border-color: rgba(255,255,255,0.08)">
+        <div class="flex items-center gap-4">
+          <span class="text-xs font-mono font-semibold text-cyan-400 min-w-[80px]" x-text="flowGetChartRecords(1)[0]?.date || ''"></span>
+          <div class="relative flex-1 select-none cursor-pointer" style="height:26px; touch-action:none"
+               @pointerdown="_flowChartSliderDown($event, 1)"
+               @pointermove="_flowChartSliderMove($event, 1)"
+               @pointerup="_flowChartSliderUp($event, 1)"
+               @pointercancel="_flowChartSliderUp($event, 1)">
+            <div class="absolute top-1/2 -translate-y-1/2 w-full rounded-full" style="height:5px; background:rgba(255,255,255,0.08)"></div>
+            <div class="absolute top-1/2 -translate-y-1/2 rounded-full cursor-ew-resize hover:brightness-110 shadow-inner" style="height:5px; background:linear-gradient(90deg, #06b6d4, #10b981)"
+                 :style="`left:${_flowSliderStartPct(1)}%; width:${Math.max(0.5, _flowSliderEndPct(1) - _flowSliderStartPct(1))}%`"></div>
+            <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
+                 style="width:16px; height:16px; background:#080c14; border-color:#22d3ee; margin-left:-8px"
+                 :style="`left:${_flowSliderStartPct(1)}%`"></div>
+            <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
+                 style="width:16px; height:16px; background:#080c14; border-color:#22d3ee; margin-left:-8px"
+                 :style="`left:${_flowSliderEndPct(1)}%`"></div>
           </div>
-          <span class="text-xs font-mono text-zinc-400 min-w-[75px] text-right" x-text="flowFilteredRecords[flowFilteredRecords.length - 1]?.date || ''"></span>
+          <span class="text-xs font-mono font-semibold text-cyan-400 min-w-[80px] text-right" x-text="flowGetChartRecords(1).slice(-1)[0]?.date || ''"></span>
         </div>
-        <div class="text-center text-[10px] font-mono text-zinc-500 mt-1">
-          Showing <span class="text-zinc-300" x-text="flowFilteredRecords.length"></span> sessions · Drag handles to scrub custom historical window
+        <div class="text-center text-[10px] font-mono text-zinc-500 mt-1 flex items-center justify-center gap-2">
+          <span>Master Window: <strong class="text-zinc-200" x-text="`${flowGetChartRecords(1).length} Sessions`"></strong></span>
+          <span class="text-zinc-600">·</span>
+          <span x-text="flowSyncAllCharts ? 'All 6 chart sliders synchronized in lockstep' : 'Charts running in independent scoping mode'"></span>
         </div>
       </div>
 
       <!-- KPI Summary Cards -->
       <section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
         <!-- Card 1: Latest Share Price / NAV -->
-        <div class="stat-card">
-          <div class="label" style="font-size: 9.5px;">LATEST NAV / PRICE</div>
-          <div class="flex items-baseline gap-2 mt-1">
-            <div class="text-2xl font-bold font-mono" style="color: var(--text)" x-text="flowSummaryKPIs.latestNav !== null ? '$' + flowSummaryKPIs.latestNav.toFixed(2) : '—'"></div>
-            <div class="text-xs font-mono" :style="`color: ${flowSummaryKPIs.latestPerf >= 0 ? 'var(--up)' : 'var(--down)'}`" x-text="flowSummaryKPIs.latestPerf !== null ? ((flowSummaryKPIs.latestPerf >= 0 ? '+' : '') + (flowSummaryKPIs.latestPerf * 100).toFixed(2) + '%') : ''"></div>
+        <div class="p-4 rounded-lg border bg-[#090d16] flex flex-col justify-between" style="border-color: rgba(255,255,255,0.08)">
+          <div class="text-[9.5px] font-mono uppercase tracking-wider text-zinc-400 font-semibold">LATEST NAV / PRICE</div>
+          <div class="flex items-baseline gap-2 mt-1.5">
+            <div class="text-2xl font-bold font-mono tracking-tight text-white" x-text="flowSummaryKPIs.latestNav !== null ? '$' + flowSummaryKPIs.latestNav.toFixed(2) : '—'"></div>
+            <div class="text-xs font-mono font-semibold" :style="`color: ${flowSummaryKPIs.latestPerf >= 0 ? '#34d399' : '#fb7185'}`" x-text="flowSummaryKPIs.latestPerf !== null ? ((flowSummaryKPIs.latestPerf >= 0 ? '+' : '') + (flowSummaryKPIs.latestPerf * 100).toFixed(2) + '%') : ''"></div>
           </div>
-          <div class="text-[10px] font-mono text-zinc-500 mt-0.5" x-text="`As of ${flowSummaryKPIs.latestDate || '—'}`"></div>
+          <div class="text-[10px] font-mono text-zinc-500 mt-1" x-text="`As of ${flowSummaryKPIs.latestDate || '—'}`"></div>
         </div>
 
         <!-- Card 2: Cumulative Net Inflow -->
-        <div class="stat-card">
-          <div class="label" style="font-size: 9.5px;">ALL-TIME NET INFLOW</div>
-          <div class="text-2xl font-bold font-mono mt-1" :style="`color: ${flowSummaryKPIs.totalCumFlow >= 0 ? 'var(--up)' : 'var(--down)'}`" x-text="flowFormatMoney(flowSummaryKPIs.totalCumFlow)"></div>
-          <div class="text-[10px] font-mono text-zinc-500 mt-0.5">Net capital absorbed</div>
+        <div class="p-4 rounded-lg border bg-[#090d16] flex flex-col justify-between" style="border-color: rgba(255,255,255,0.08)">
+          <div class="text-[9.5px] font-mono uppercase tracking-wider text-zinc-400 font-semibold">ALL-TIME NET INFLOW</div>
+          <div class="text-2xl font-bold font-mono tracking-tight mt-1.5" :style="`color: ${flowSummaryKPIs.totalCumFlow >= 0 ? '#34d399' : '#fb7185'}`" x-text="flowFormatMoney(flowSummaryKPIs.totalCumFlow)"></div>
+          <div class="text-[10px] font-mono text-zinc-500 mt-1">Total capital absorbed</div>
         </div>
 
         <!-- Card 3: Trailing 30D Flow -->
-        <div class="stat-card">
-          <div class="label" style="font-size: 9.5px;">TRAILING 30D FLOW</div>
-          <div class="text-2xl font-bold font-mono mt-1" :style="`color: ${flowSummaryKPIs.flow30D >= 0 ? 'var(--up)' : 'var(--down)'}`" x-text="flowFormatMoney(flowSummaryKPIs.flow30D)"></div>
-          <div class="text-[10px] font-mono text-zinc-500 mt-0.5">Past 30 trading days</div>
+        <div class="p-4 rounded-lg border bg-[#090d16] flex flex-col justify-between" style="border-color: rgba(255,255,255,0.08)">
+          <div class="text-[9.5px] font-mono uppercase tracking-wider text-zinc-400 font-semibold">TRAILING 30D FLOW</div>
+          <div class="text-2xl font-bold font-mono tracking-tight mt-1.5" :style="`color: ${flowSummaryKPIs.flow30D >= 0 ? '#34d399' : '#fb7185'}`" x-text="flowFormatMoney(flowSummaryKPIs.flow30D)"></div>
+          <div class="text-[10px] font-mono text-zinc-500 mt-1">Past 30 trading days</div>
         </div>
 
         <!-- Card 4: Trailing 1Y Flow -->
-        <div class="stat-card">
-          <div class="label" style="font-size: 9.5px;">TRAILING 1Y FLOW</div>
-          <div class="text-2xl font-bold font-mono mt-1" :style="`color: ${flowSummaryKPIs.flow1Y >= 0 ? 'var(--up)' : 'var(--down)'}`" x-text="flowFormatMoney(flowSummaryKPIs.flow1Y)"></div>
-          <div class="text-[10px] font-mono text-zinc-500 mt-0.5">Past 252 sessions</div>
+        <div class="p-4 rounded-lg border bg-[#090d16] flex flex-col justify-between" style="border-color: rgba(255,255,255,0.08)">
+          <div class="text-[9.5px] font-mono uppercase tracking-wider text-zinc-400 font-semibold">TRAILING 1Y FLOW</div>
+          <div class="text-2xl font-bold font-mono tracking-tight mt-1.5" :style="`color: ${flowSummaryKPIs.flow1Y >= 0 ? '#34d399' : '#fb7185'}`" x-text="flowFormatMoney(flowSummaryKPIs.flow1Y)"></div>
+          <div class="text-[10px] font-mono text-zinc-500 mt-1">Past 252 sessions</div>
         </div>
 
         <!-- Card 5: Inflow Win Rate -->
-        <div class="stat-card">
-          <div class="label" style="font-size: 9.5px;">INFLOW WIN RATE</div>
-          <div class="text-2xl font-bold font-mono mt-1" style="color: var(--cyan)" x-text="`${flowSummaryKPIs.inflowWinRate.toFixed(1)}%`"></div>
-          <div class="text-[10px] font-mono text-zinc-500 mt-0.5">Positive creation days</div>
+        <div class="p-4 rounded-lg border bg-[#090d16] flex flex-col justify-between" style="border-color: rgba(255,255,255,0.08)">
+          <div class="text-[9.5px] font-mono uppercase tracking-wider text-zinc-400 font-semibold">INFLOW WIN RATE</div>
+          <div class="text-2xl font-bold font-mono tracking-tight mt-1.5 text-cyan-400" x-text="`${flowSummaryKPIs.inflowWinRate.toFixed(1)}%`"></div>
+          <div class="text-[10px] font-mono text-zinc-500 mt-1">Positive creation days</div>
         </div>
 
         <!-- Card 6: Flow Regime -->
-        <div class="stat-card">
-          <div class="label" style="font-size: 9.5px;">FLOW REGIME</div>
-          <div class="mt-1.5">
+        <div class="p-4 rounded-lg border bg-[#090d16] flex flex-col justify-between" style="border-color: rgba(255,255,255,0.08)">
+          <div class="text-[9.5px] font-mono uppercase tracking-wider text-zinc-400 font-semibold">FLOW REGIME</div>
+          <div class="mt-2">
             <span class="chip text-xs font-mono font-bold"
-                  :style="flowSummaryKPIs.regime === 'ACCUMULATION' ? 'background: rgba(52,211,153,0.15); color: var(--up); border: 1px solid rgba(52,211,153,0.3)' : (flowSummaryKPIs.regime === 'DISTRIBUTION' ? 'background: rgba(251,113,133,0.15); color: var(--down); border: 1px solid rgba(251,113,133,0.3)' : 'background: rgba(255,255,255,0.05); color: var(--text-2); border: 1px solid var(--border)')"
+                  :style="flowSummaryKPIs.regime === 'ACCUMULATION' ? 'background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3)' : (flowSummaryKPIs.regime === 'DISTRIBUTION' ? 'background: rgba(244,63,94,0.15); color: #fb7185; border: 1px solid rgba(244,63,94,0.3)' : 'background: rgba(255,255,255,0.05); color: var(--text-2); border: 1px solid var(--border)')"
                   x-text="flowSummaryKPIs.regime"></span>
           </div>
           <div class="text-[10px] font-mono text-zinc-500 mt-1" x-text="`Z-Score: ${flowSummaryKPIs.zscore >= 0 ? '+' : ''}${flowSummaryKPIs.zscore.toFixed(2)}σ`"></div>
@@ -2326,191 +2380,476 @@
       </section>
 
       <!-- ─── Chart 1: Price vs Cumulative Net Flow ───────────────────────── -->
-      <div class="rounded-lg border mb-6 overflow-hidden" style="background: var(--surface); border-color: var(--border)">
-        <div class="p-3.5 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2" style="border-color: var(--border); background: var(--surface-2)">
+      <div id="flow-card-1" class="rounded-lg border mb-6 overflow-hidden bg-[#090d14]" style="border-color: rgba(255,255,255,0.08)">
+        <div class="p-3.5 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-[#080c14]" style="border-color: rgba(255,255,255,0.08)">
           <div>
             <div class="flex items-center gap-2">
-              <span class="font-bold text-xs uppercase tracking-wider" style="color: var(--cyan)">PRICE VS CUMULATIVE NET FUND FLOW</span>
+              <span class="font-bold text-xs uppercase tracking-wider font-mono" style="color: var(--cyan)">PRICE VS CUMULATIVE NET FUND FLOW</span>
               <span class="chip text-[9px] font-mono" style="background: rgba(34,211,238,0.1); color: var(--cyan); border: 1px solid rgba(34,211,238,0.25)">DUAL AXIS</span>
             </div>
             <div class="text-[11px] text-zinc-400 mt-0.5">
-              Split-adjusted share price (cyan line, right axis) vs Cumulative net capital flow (shaded area, left axis).
+              Split-adjusted share price (cyan line, left axis) vs Cumulative net capital flow (shaded area, right axis).
             </div>
           </div>
-          <div class="flex items-center gap-3 text-[11px] font-mono">
-            <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 bg-cyan-400 inline-block"></span> Share Price / NAV</span>
-            <span class="flex items-center gap-1.5"><span class="w-3 h-2 rounded-sm inline-block" style="background: rgba(52,211,153,0.35); border: 1px solid var(--up);"></span> Cumulative Flow</span>
+          <div class="flex items-center gap-4 text-[11px] font-mono">
+            <span class="flex items-center gap-1.5"><span class="w-3.5 h-0.5 bg-cyan-400 inline-block rounded-full"></span> Share Price / NAV</span>
+            <span class="flex items-center gap-1.5"><span class="w-3.5 h-2 rounded-xs inline-block" style="background: rgba(52,211,153,0.4); border: 1px solid #34d399;"></span> Cumulative Flow</span>
           </div>
         </div>
         <div class="p-3 overflow-x-auto">
           <div x-html="flowPriceChartSvg" style="width: 100%; min-width: 600px;"></div>
         </div>
+        <!-- Chart 1 Dedicated Dual Range Slider -->
+        <div class="px-4 py-2.5 border-t bg-[#080c14] select-none" style="border-color: rgba(255,255,255,0.06)">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 text-[10px] font-mono text-zinc-400 mb-2">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="text-zinc-500 uppercase tracking-wider text-[9px] font-semibold">RANGE:</span>
+              <template x-for="p in ['1m', '3m', '6m', '1y', '3y', '5y', 'max']" :key="p">
+                <button @click="flowSetChartPreset(1, p)"
+                        :class="flowChartRanges[1]?.preset === p ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-400 shadow-xs' : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:border-white/10'"
+                        class="px-2 py-0.5 rounded border text-[10px] font-mono transition"
+                        x-text="p.toUpperCase()">
+                </button>
+              </template>
+            </div>
+            <div class="flex items-center gap-2">
+              <span>Window: <strong class="text-zinc-200" x-text="`${(flowGetChartRecords(1)||[]).length} Sessions`"></strong></span>
+              <span class="text-zinc-600">·</span>
+              <span class="text-cyan-400 font-semibold" x-text="`${(flowGetChartRecords(1)[0]?.date || '')} → ${(flowGetChartRecords(1).slice(-1)[0]?.date || '')}`"></span>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-[11px] font-mono font-semibold text-zinc-400 min-w-[75px]" x-text="flowGetChartRecords(1)[0]?.date || ''"></span>
+            <div class="relative flex-1 select-none cursor-pointer" style="height:22px; touch-action:none"
+                 @pointerdown="_flowChartSliderDown($event, 1)"
+                 @pointermove="_flowChartSliderMove($event, 1)"
+                 @pointerup="_flowChartSliderUp($event, 1)"
+                 @pointercancel="_flowChartSliderUp($event, 1)">
+              <div class="absolute top-1/2 -translate-y-1/2 w-full rounded-full" style="height:4px; background:rgba(255,255,255,0.08)"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 rounded-full cursor-ew-resize hover:brightness-110 shadow-xs"
+                   style="height:4px; background:linear-gradient(90deg, #06b6d4, #10b981)"
+                   :style="`left:${_flowSliderStartPct(1)}%; width:${Math.max(0.5, _flowSliderEndPct(1) - _flowSliderStartPct(1))}%`"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
+                   style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-7px"
+                   :style="`left:${_flowSliderStartPct(1)}%`"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
+                   style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-7px"
+                   :style="`left:${_flowSliderEndPct(1)}%`"></div>
+            </div>
+            <span class="text-[11px] font-mono font-semibold text-zinc-400 min-w-[75px] text-right" x-text="flowGetChartRecords(1).slice(-1)[0]?.date || ''"></span>
+          </div>
+        </div>
       </div>
 
       <!-- ─── Chart 2: Daily Net Flow Bars ─────────────────────────────────── -->
-      <div class="rounded-lg border mb-6 overflow-hidden" style="background: var(--surface); border-color: var(--border)">
-        <div class="p-3.5 border-b flex items-center justify-between" style="border-color: var(--border); background: var(--surface-2)">
+      <div id="flow-card-2" class="rounded-lg border mb-6 overflow-hidden bg-[#090d14]" style="border-color: rgba(255,255,255,0.08)">
+        <div class="p-3.5 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-[#080c14]" style="border-color: rgba(255,255,255,0.08)">
           <div>
-            <span class="font-bold text-xs uppercase tracking-wider" style="color: var(--cyan)">DAILY NET CAPITAL FLOWS (USD)</span>
-            <span class="text-[11px] text-zinc-400 ml-2">Session creation vs redemption with 20-day moving average trend</span>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-xs uppercase tracking-wider font-mono" style="color: var(--cyan)">DAILY NET CAPITAL FLOWS (USD)</span>
+              <span class="chip text-[9px] font-mono" style="background: rgba(16,185,129,0.1); color: #34d399; border: 1px solid rgba(16,185,129,0.25)">FLOW VELOCITY</span>
+            </div>
+            <div class="text-[11px] text-zinc-400 mt-0.5">Session creation vs redemption volume with 20-day moving average trendline</div>
           </div>
-          <div class="flex items-center gap-3 text-[11px] font-mono">
-            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2 rounded-xs inline-block" style="background: var(--up)"></span> Net Inflow</span>
-            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2 rounded-xs inline-block" style="background: var(--down)"></span> Net Outflow</span>
-            <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 bg-zinc-200 inline-block"></span> 20D Trend</span>
+          <div class="flex items-center gap-4 text-[11px] font-mono">
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-xs inline-block" style="background: #34d399"></span> Net Inflow</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-xs inline-block" style="background: #fb7185"></span> Net Outflow</span>
+            <span class="flex items-center gap-1.5"><span class="w-3.5 h-0.5 bg-zinc-200 inline-block rounded-full"></span> 20D Trend</span>
           </div>
         </div>
         <div class="p-3 overflow-x-auto">
           <div x-html="flowBarsChartSvg" style="width: 100%; min-width: 600px;"></div>
         </div>
+        <!-- Chart 2 Dedicated Dual Range Slider -->
+        <div class="px-4 py-2.5 border-t bg-[#080c14] select-none" style="border-color: rgba(255,255,255,0.06)">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 text-[10px] font-mono text-zinc-400 mb-2">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="text-zinc-500 uppercase tracking-wider text-[9px] font-semibold">RANGE:</span>
+              <template x-for="p in ['1m', '3m', '6m', '1y', '3y', '5y', 'max']" :key="p">
+                <button @click="flowSetChartPreset(2, p)"
+                        :class="flowChartRanges[2]?.preset === p ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-400 shadow-xs' : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:border-white/10'"
+                        class="px-2 py-0.5 rounded border text-[10px] font-mono transition"
+                        x-text="p.toUpperCase()">
+                </button>
+              </template>
+            </div>
+            <div class="flex items-center gap-2">
+              <span>Window: <strong class="text-zinc-200" x-text="`${(flowGetChartRecords(2)||[]).length} Sessions`"></strong></span>
+              <span class="text-zinc-600">·</span>
+              <span class="text-cyan-400 font-semibold" x-text="`${(flowGetChartRecords(2)[0]?.date || '')} → ${(flowGetChartRecords(2).slice(-1)[0]?.date || '')}`"></span>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-[11px] font-mono font-semibold text-zinc-400 min-w-[75px]" x-text="flowGetChartRecords(2)[0]?.date || ''"></span>
+            <div class="relative flex-1 select-none cursor-pointer" style="height:22px; touch-action:none"
+                 @pointerdown="_flowChartSliderDown($event, 2)"
+                 @pointermove="_flowChartSliderMove($event, 2)"
+                 @pointerup="_flowChartSliderUp($event, 2)"
+                 @pointercancel="_flowChartSliderUp($event, 2)">
+              <div class="absolute top-1/2 -translate-y-1/2 w-full rounded-full" style="height:4px; background:rgba(255,255,255,0.08)"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 rounded-full cursor-ew-resize hover:brightness-110 shadow-xs"
+                   style="height:4px; background:linear-gradient(90deg, #06b6d4, #10b981)"
+                   :style="`left:${_flowSliderStartPct(2)}%; width:${Math.max(0.5, _flowSliderEndPct(2) - _flowSliderStartPct(2))}%`"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
+                   style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-7px"
+                   :style="`left:${_flowSliderStartPct(2)}%`"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
+                   style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-8px"
+                   :style="`left:${_flowSliderEndPct(2)}%`"></div>
+            </div>
+            <span class="text-[11px] font-mono font-semibold text-zinc-400 min-w-[75px] text-right" x-text="flowGetChartRecords(2).slice(-1)[0]?.date || ''"></span>
+          </div>
+        </div>
       </div>
 
       <!-- ─── Chart 3: Rolling Flow Momentum (20D vs 50D) ─────────────────── -->
-      <div class="rounded-lg border mb-6 overflow-hidden" style="background: var(--surface); border-color: var(--border)">
-        <div class="p-3.5 border-b flex items-center justify-between" style="border-color: var(--border); background: var(--surface-2)">
+      <div id="flow-card-3" class="rounded-lg border mb-6 overflow-hidden bg-[#090d14]" style="border-color: rgba(255,255,255,0.08)">
+        <div class="p-3.5 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-[#080c14]" style="border-color: rgba(255,255,255,0.08)">
           <div>
-            <span class="font-bold text-xs uppercase tracking-wider" style="color: var(--cyan)">ROLLING NET CAPITAL MOMENTUM</span>
-            <span class="text-[11px] text-zinc-400 ml-2">Intermediate institutional flow cycles: 20-Day (1 Month) vs 50-Day (Quarterly) trailing sums</span>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-xs uppercase tracking-wider font-mono" style="color: var(--cyan)">ROLLING NET CAPITAL MOMENTUM</span>
+              <span class="chip text-[9px] font-mono" style="background: rgba(168,85,247,0.1); color: #c084fc; border: 1px solid rgba(168,85,247,0.25)">FLOW CYCLES</span>
+            </div>
+            <div class="text-[11px] text-zinc-400 mt-0.5">Intermediate institutional cycles: 20-Day (1-Month) vs 50-Day (Quarterly) trailing cumulative net flows</div>
           </div>
-          <div class="flex items-center gap-3 text-[11px] font-mono">
-            <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 bg-cyan-400 inline-block"></span> 20-Day Momentum</span>
-            <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 bg-purple-400 inline-block"></span> 50-Day Momentum</span>
+          <div class="flex items-center gap-4 text-[11px] font-mono">
+            <span class="flex items-center gap-1.5"><span class="w-3.5 h-0.5 bg-cyan-400 inline-block rounded-full"></span> 20-Day Momentum</span>
+            <span class="flex items-center gap-1.5"><span class="w-3.5 h-0.5 bg-purple-400 inline-block rounded-full"></span> 50-Day Momentum</span>
           </div>
         </div>
         <div class="p-3 overflow-x-auto">
           <div x-html="flowMomentumChartSvg" style="width: 100%; min-width: 600px;"></div>
         </div>
+        <!-- Chart 3 Dedicated Dual Range Slider -->
+        <div class="px-4 py-2.5 border-t bg-[#080c14] select-none" style="border-color: rgba(255,255,255,0.06)">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 text-[10px] font-mono text-zinc-400 mb-2">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="text-zinc-500 uppercase tracking-wider text-[9px] font-semibold">RANGE:</span>
+              <template x-for="p in ['1m', '3m', '6m', '1y', '3y', '5y', 'max']" :key="p">
+                <button @click="flowSetChartPreset(3, p)"
+                        :class="flowChartRanges[3]?.preset === p ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-400 shadow-xs' : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:border-white/10'"
+                        class="px-2 py-0.5 rounded border text-[10px] font-mono transition"
+                        x-text="p.toUpperCase()">
+                </button>
+              </template>
+            </div>
+            <div class="flex items-center gap-2">
+              <span>Window: <strong class="text-zinc-200" x-text="`${(flowGetChartRecords(3)||[]).length} Sessions`"></strong></span>
+              <span class="text-zinc-600">·</span>
+              <span class="text-cyan-400 font-semibold" x-text="`${(flowGetChartRecords(3)[0]?.date || '')} → ${(flowGetChartRecords(3).slice(-1)[0]?.date || '')}`"></span>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-[11px] font-mono font-semibold text-zinc-400 min-w-[75px]" x-text="flowGetChartRecords(3)[0]?.date || ''"></span>
+            <div class="relative flex-1 select-none cursor-pointer" style="height:22px; touch-action:none"
+                 @pointerdown="_flowChartSliderDown($event, 3)"
+                 @pointermove="_flowChartSliderMove($event, 3)"
+                 @pointerup="_flowChartSliderUp($event, 3)"
+                 @pointercancel="_flowChartSliderUp($event, 3)">
+              <div class="absolute top-1/2 -translate-y-1/2 w-full rounded-full" style="height:4px; background:rgba(255,255,255,0.08)"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 rounded-full cursor-ew-resize hover:brightness-110 shadow-xs"
+                   style="height:4px; background:linear-gradient(90deg, #06b6d4, #10b981)"
+                   :style="`left:${_flowSliderStartPct(3)}%; width:${Math.max(0.5, _flowSliderEndPct(3) - _flowSliderStartPct(3))}%`"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
+                   style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-7px"
+                   :style="`left:${_flowSliderStartPct(3)}%`"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
+                   style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-8px"
+                   :style="`left:${_flowSliderEndPct(3)}%`"></div>
+            </div>
+            <span class="text-[11px] font-mono font-semibold text-zinc-400 min-w-[75px] text-right" x-text="flowGetChartRecords(3).slice(-1)[0]?.date || ''"></span>
+          </div>
+        </div>
       </div>
 
       <!-- ─── Chart 4: Flow Intensity Z-Score Oscillator ──────────────────── -->
-      <div class="rounded-lg border mb-6 overflow-hidden" style="background: var(--surface); border-color: var(--border)">
-        <div class="p-3.5 border-b flex items-center justify-between" style="border-color: var(--border); background: var(--surface-2)">
+      <div id="flow-card-4" class="rounded-lg border mb-6 overflow-hidden bg-[#090d14]" style="border-color: rgba(255,255,255,0.08)">
+        <div class="p-3.5 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-[#080c14]" style="border-color: rgba(255,255,255,0.08)">
           <div>
-            <span class="font-bold text-xs uppercase tracking-wider" style="color: var(--cyan)">FLOW INTENSITY Z-SCORE OSCILLATOR</span>
-            <span class="text-[11px] text-zinc-400 ml-2">Normalized 30-day standard deviations (|Z| ≥ 1.5σ denotes statistically significant block transactions)</span>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-xs uppercase tracking-wider font-mono" style="color: var(--cyan)">FLOW INTENSITY Z-SCORE OSCILLATOR</span>
+              <span class="chip text-[9px] font-mono" style="background: rgba(245,158,11,0.1); color: #fbbf24; border: 1px solid rgba(245,158,11,0.25)">VOLATILITY OSCILLATOR</span>
+            </div>
+            <div class="text-[11px] text-zinc-400 mt-0.5">Normalized 30-day standard deviations (|Z| ≥ 1.5σ denotes statistically significant institutional block activity)</div>
           </div>
           <div class="flex items-center gap-3 text-[11px] font-mono">
-            <span class="chip text-[9px]" style="border: 1px dashed var(--up); color: var(--up)">+1.5σ Inflow Spike</span>
-            <span class="chip text-[9px]" style="border: 1px dashed var(--down); color: var(--down)">−1.5σ Outflow Spike</span>
+            <span class="chip text-[9px]" style="border: 1px dashed #34d399; color: #34d399">+1.5σ Inflow Spike</span>
+            <span class="chip text-[9px]" style="border: 1px dashed #fb7185; color: #fb7185">−1.5σ Outflow Spike</span>
           </div>
         </div>
         <div class="p-3 overflow-x-auto">
           <div x-html="flowZScoreChartSvg" style="width: 100%; min-width: 600px;"></div>
         </div>
+        <!-- Chart 4 Dedicated Dual Range Slider -->
+        <div class="px-4 py-2.5 border-t bg-[#080c14] select-none" style="border-color: rgba(255,255,255,0.06)">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 text-[10px] font-mono text-zinc-400 mb-2">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="text-zinc-500 uppercase tracking-wider text-[9px] font-semibold">RANGE:</span>
+              <template x-for="p in ['1m', '3m', '6m', '1y', '3y', '5y', 'max']" :key="p">
+                <button @click="flowSetChartPreset(4, p)"
+                        :class="flowChartRanges[4]?.preset === p ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-400 shadow-xs' : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:border-white/10'"
+                        class="px-2 py-0.5 rounded border text-[10px] font-mono transition"
+                        x-text="p.toUpperCase()">
+                </button>
+              </template>
+            </div>
+            <div class="flex items-center gap-2">
+              <span>Window: <strong class="text-zinc-200" x-text="`${(flowGetChartRecords(4)||[]).length} Sessions`"></strong></span>
+              <span class="text-zinc-600">·</span>
+              <span class="text-cyan-400 font-semibold" x-text="`${(flowGetChartRecords(4)[0]?.date || '')} → ${(flowGetChartRecords(4).slice(-1)[0]?.date || '')}`"></span>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-[11px] font-mono font-semibold text-zinc-400 min-w-[75px]" x-text="flowGetChartRecords(4)[0]?.date || ''"></span>
+            <div class="relative flex-1 select-none cursor-pointer" style="height:22px; touch-action:none"
+                 @pointerdown="_flowChartSliderDown($event, 4)"
+                 @pointermove="_flowChartSliderMove($event, 4)"
+                 @pointerup="_flowChartSliderUp($event, 4)"
+                 @pointercancel="_flowChartSliderUp($event, 4)">
+              <div class="absolute top-1/2 -translate-y-1/2 w-full rounded-full" style="height:4px; background:rgba(255,255,255,0.08)"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 rounded-full cursor-ew-resize hover:brightness-110 shadow-xs"
+                   style="height:4px; background:linear-gradient(90deg, #06b6d4, #10b981)"
+                   :style="`left:${_flowSliderStartPct(4)}%; width:${Math.max(0.5, _flowSliderEndPct(4) - _flowSliderStartPct(4))}%`"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
+                   style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-7px"
+                   :style="`left:${_flowSliderStartPct(4)}%`"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
+                   style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-8px"
+                   :style="`left:${_flowSliderEndPct(4)}%`"></div>
+            </div>
+            <span class="text-[11px] font-mono font-semibold text-zinc-400 min-w-[75px] text-right" x-text="flowGetChartRecords(4).slice(-1)[0]?.date || ''"></span>
+          </div>
+        </div>
+      </div>
+
       <!-- ─── Chart 5: 10-Day Capital Flow Historical Percentile Ribbon ──── -->
-      <div class="rounded-lg border mb-6 overflow-hidden" style="background: var(--surface); border-color: var(--border)">
-        <div class="p-3.5 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2" style="border-color: var(--border); background: var(--surface-2)">
+      <div id="flow-card-5" class="rounded-lg border mb-6 overflow-hidden bg-[#090d14]" style="border-color: rgba(255,255,255,0.08)">
+        <div class="p-3.5 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-[#080c14]" style="border-color: rgba(255,255,255,0.08)">
           <div>
             <div class="flex items-center gap-2">
-              <span class="font-bold text-xs uppercase tracking-wider" style="color: var(--cyan)">10-DAY CAPITAL FLOW HISTORICAL PERCENTILE</span>
+              <span class="font-bold text-xs uppercase tracking-wider font-mono" style="color: var(--cyan)">10-DAY CAPITAL FLOW HISTORICAL PERCENTILE</span>
               <span class="chip text-[9px] font-mono" style="background: rgba(34,211,238,0.1); color: var(--cyan); border: 1px solid rgba(34,211,238,0.25)">RELATIVE REFERENCE</span>
             </div>
             <div class="text-[11px] text-zinc-400 mt-0.5">
-              Empirical percentile rank (0% to 100%) of rolling 10-day net capital flow vs full fund history. Solves scale distortion.
+              Empirical percentile rank (0% to 100%) of rolling 10-day net capital flow vs full fund history. Solves scale distortion across large vs small funds.
             </div>
           </div>
           <div class="flex items-center gap-3 text-[11px] font-mono flex-wrap">
-            <span class="chip text-[9px]" style="background: rgba(52,211,153,0.15); color: var(--up); border: 1px solid rgba(52,211,153,0.3)">≥90%ile Inflow Surge</span>
+            <span class="chip text-[9px]" style="background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3)">≥90%ile Inflow Surge</span>
             <span class="chip text-[9px]" style="background: rgba(255,255,255,0.05); color: var(--text-3); border: 1px solid var(--border)">10–90%ile Baseline</span>
-            <span class="chip text-[9px]" style="background: rgba(251,113,133,0.15); color: var(--down); border: 1px solid rgba(251,113,133,0.3)">≤10%ile Liquidation</span>
+            <span class="chip text-[9px]" style="background: rgba(244,63,94,0.15); color: #fb7185; border: 1px solid rgba(244,63,94,0.3)">≤10%ile Liquidation</span>
           </div>
         </div>
         <div class="p-3 overflow-x-auto">
           <div x-html="flowPercentileChartSvg" style="width: 100%; min-width: 600px;"></div>
         </div>
+        <!-- Chart 5 Dedicated Dual Range Slider -->
+        <div class="px-4 py-2.5 border-t bg-[#080c14] select-none" style="border-color: rgba(255,255,255,0.06)">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 text-[10px] font-mono text-zinc-400 mb-2">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="text-zinc-500 uppercase tracking-wider text-[9px] font-semibold">RANGE:</span>
+              <template x-for="p in ['1m', '3m', '6m', '1y', '3y', '5y', 'max']" :key="p">
+                <button @click="flowSetChartPreset(5, p)"
+                        :class="flowChartRanges[5]?.preset === p ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-400 shadow-xs' : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:border-white/10'"
+                        class="px-2 py-0.5 rounded border text-[10px] font-mono transition"
+                        x-text="p.toUpperCase()">
+                </button>
+              </template>
+            </div>
+            <div class="flex items-center gap-2">
+              <span>Window: <strong class="text-zinc-200" x-text="`${(flowGetChartRecords(5)||[]).length} Sessions`"></strong></span>
+              <span class="text-zinc-600">·</span>
+              <span class="text-cyan-400 font-semibold" x-text="`${(flowGetChartRecords(5)[0]?.date || '')} → ${(flowGetChartRecords(5).slice(-1)[0]?.date || '')}`"></span>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-[11px] font-mono font-semibold text-zinc-400 min-w-[75px]" x-text="flowGetChartRecords(5)[0]?.date || ''"></span>
+            <div class="relative flex-1 select-none cursor-pointer" style="height:22px; touch-action:none"
+                 @pointerdown="_flowChartSliderDown($event, 5)"
+                 @pointermove="_flowChartSliderMove($event, 5)"
+                 @pointerup="_flowChartSliderUp($event, 5)"
+                 @pointercancel="_flowChartSliderUp($event, 5)">
+              <div class="absolute top-1/2 -translate-y-1/2 w-full rounded-full" style="height:4px; background:rgba(255,255,255,0.08)"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 rounded-full cursor-ew-resize hover:brightness-110 shadow-xs"
+                   style="height:4px; background:linear-gradient(90deg, #06b6d4, #10b981)"
+                   :style="`left:${_flowSliderStartPct(5)}%; width:${Math.max(0.5, _flowSliderEndPct(5) - _flowSliderStartPct(5))}%`"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
+                   style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-7px"
+                   :style="`left:${_flowSliderStartPct(5)}%`"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
+                   style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-8px"
+                   :style="`left:${_flowSliderEndPct(5)}%`"></div>
+            </div>
+            <span class="text-[11px] font-mono font-semibold text-zinc-400 min-w-[75px] text-right" x-text="flowGetChartRecords(5).slice(-1)[0]?.date || ''"></span>
+          </div>
+        </div>
       </div>
 
       <!-- ─── Chart 6: Price-Flow Divergence & Extremes Regime Scanner ─────── -->
-      <div class="rounded-lg border mb-6 overflow-hidden" style="background: var(--surface); border-color: var(--border)">
-        <div class="p-3.5 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2" style="border-color: var(--border); background: var(--surface-2)">
+      <div id="flow-card-6" class="rounded-lg border mb-6 overflow-hidden bg-[#090d14]" style="border-color: rgba(255,255,255,0.08)">
+        <div class="p-3.5 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-[#080c14]" style="border-color: rgba(255,255,255,0.08)">
           <div>
             <div class="flex items-center gap-2">
-              <span class="font-bold text-xs uppercase tracking-wider" style="color: var(--cyan)">PRICE-FLOW DIVERGENCE & EXTREMES SCANNER</span>
+              <span class="font-bold text-xs uppercase tracking-wider font-mono" style="color: var(--cyan)">PRICE-FLOW DIVERGENCE & EXTREMES SCANNER</span>
               <span class="chip text-[9px] font-mono" style="background: rgba(192,132,252,0.15); color: #c084fc; border: 1px solid rgba(192,132,252,0.3)">REVERSAL REGIMES</span>
             </div>
             <div class="text-[11px] text-zinc-400 mt-0.5">
-              Price position in 60-day range (cyan line) vs Flow Z-Score. Pinpoints institutional accumulation bottoms & retail FOMO tops.
+              Price position within rolling 60-day range (cyan curve) vs Flow Z-Score. Pinpoints institutional accumulation bottoms & retail FOMO tops.
             </div>
           </div>
-          <div class="flex items-center gap-2 text-[10px] font-mono flex-wrap">
-            <span class="flex items-center gap-1 text-emerald-400"><span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span> Accumulation (Low+Inflow)</span>
-            <span class="flex items-center gap-1 text-purple-400"><span class="w-2 h-2 rounded-full bg-purple-400 inline-block"></span> Capitulation (Low+Panic)</span>
-            <span class="flex items-center gap-1 text-rose-400"><span class="w-2 h-2 rounded-full bg-rose-400 inline-block"></span> FOMO Trap (High+Inflow)</span>
-            <span class="flex items-center gap-1 text-amber-400"><span class="w-2 h-2 rounded-full bg-amber-400 inline-block"></span> Distribution (High+Outflow)</span>
+          <div class="flex items-center gap-3 text-[10px] font-mono flex-wrap">
+            <span class="flex items-center gap-1.5 text-emerald-400"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block shadow-xs"></span> Accumulation (Low+Inflow)</span>
+            <span class="flex items-center gap-1.5 text-purple-400"><span class="w-2.5 h-2.5 rounded-full bg-purple-400 inline-block shadow-xs"></span> Capitulation (Low+Panic)</span>
+            <span class="flex items-center gap-1.5 text-rose-400"><span class="w-2.5 h-2.5 rounded-full bg-rose-400 inline-block shadow-xs"></span> FOMO Trap (High+Inflow)</span>
+            <span class="flex items-center gap-1.5 text-amber-400"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block shadow-xs"></span> Distribution (High+Outflow)</span>
           </div>
         </div>
         <div class="p-3 overflow-x-auto">
           <div x-html="flowDivergenceChartSvg" style="width: 100%; min-width: 600px;"></div>
         </div>
+        <!-- Chart 6 Dedicated Dual Range Slider -->
+        <div class="px-4 py-2.5 border-t bg-[#080c14] select-none" style="border-color: rgba(255,255,255,0.06)">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 text-[10px] font-mono text-zinc-400 mb-2">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="text-zinc-500 uppercase tracking-wider text-[9px] font-semibold">RANGE:</span>
+              <template x-for="p in ['1m', '3m', '6m', '1y', '3y', '5y', 'max']" :key="p">
+                <button @click="flowSetChartPreset(6, p)"
+                        :class="flowChartRanges[6]?.preset === p ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-400 shadow-xs' : 'text-zinc-400 hover:text-zinc-200 border-transparent hover:border-white/10'"
+                        class="px-2 py-0.5 rounded border text-[10px] font-mono transition"
+                        x-text="p.toUpperCase()">
+                </button>
+              </template>
+            </div>
+            <div class="flex items-center gap-2">
+              <span>Window: <strong class="text-zinc-200" x-text="`${(flowGetChartRecords(6)||[]).length} Sessions`"></strong></span>
+              <span class="text-zinc-600">·</span>
+              <span class="text-cyan-400 font-semibold" x-text="`${(flowGetChartRecords(6)[0]?.date || '')} → ${(flowGetChartRecords(6).slice(-1)[0]?.date || '')}`"></span>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-[11px] font-mono font-semibold text-zinc-400 min-w-[75px]" x-text="flowGetChartRecords(6)[0]?.date || ''"></span>
+            <div class="relative flex-1 select-none cursor-pointer" style="height:22px; touch-action:none"
+                 @pointerdown="_flowChartSliderDown($event, 6)"
+                 @pointermove="_flowChartSliderMove($event, 6)"
+                 @pointerup="_flowChartSliderUp($event, 6)"
+                 @pointercancel="_flowChartSliderUp($event, 6)">
+              <div class="absolute top-1/2 -translate-y-1/2 w-full rounded-full" style="height:4px; background:rgba(255,255,255,0.08)"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 rounded-full cursor-ew-resize hover:brightness-110 shadow-xs"
+                   style="height:4px; background:linear-gradient(90deg, #06b6d4, #10b981)"
+                   :style="`left:${_flowSliderStartPct(6)}%; width:${Math.max(0.5, _flowSliderEndPct(6) - _flowSliderStartPct(6))}%`"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
+                   style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-7px"
+                   :style="`left:${_flowSliderStartPct(6)}%`"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 rounded-full border-2 cursor-grab active:cursor-grabbing shadow-lg transition-transform hover:scale-125"
+                   style="width:14px; height:14px; background:#080c14; border-color:#22d3ee; margin-left:-8px"
+                   :style="`left:${_flowSliderEndPct(6)}%`"></div>
+            </div>
+            <span class="text-[11px] font-mono font-semibold text-zinc-400 min-w-[75px] text-right" x-text="flowGetChartRecords(6).slice(-1)[0]?.date || ''"></span>
+          </div>
+        </div>
       </div>
 
-      <!-- ─── Section 5: Historical Flow Profile Summary Table ─────────────── -->
-      <div class="rounded-lg border overflow-hidden mb-6" style="background: var(--surface); border-color: var(--border)">
-        <div class="p-3.5 border-b flex items-center justify-between" style="border-color: var(--border); background: var(--surface-2)">
-          <span class="font-bold text-xs uppercase tracking-wider" style="color: var(--cyan)">INSTITUTIONAL CAPITAL FLOW PROFILE</span>
-          <span class="text-[11px] font-mono text-zinc-400" x-text="`Full History: ${(flowData?.data||[]).length} Sessions`"></span>
+      <!-- ─── Section 5: Institutional Capital Flow Profile Summary Table ──── -->
+      <div class="rounded-lg border overflow-hidden mb-6 bg-[#090d14]" style="border-color: rgba(255,255,255,0.08)">
+        <div class="p-3.5 border-b flex items-center justify-between bg-[#080c14]" style="border-color: rgba(255,255,255,0.08)">
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-xs uppercase tracking-wider font-mono" style="color: var(--cyan)">INSTITUTIONAL CAPITAL FLOW MATRIX</span>
+            <span class="chip text-[9px] font-mono" style="background: rgba(255,255,255,0.05); color: var(--text-3); border: 1px solid var(--border)">EMPIRICAL AUDIT</span>
+          </div>
+          <span class="text-[11px] font-mono text-zinc-400 font-semibold" x-text="`Full History: ${(flowData?.data||[]).length} Sessions`"></span>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-xs font-mono text-left">
-            <thead class="border-b text-[10px] text-zinc-400 uppercase tracking-wider bg-black/40" style="border-color: var(--border)">
+            <thead class="border-b text-[10px] text-zinc-400 uppercase tracking-wider bg-black/50" style="border-color: rgba(255,255,255,0.08)">
               <tr>
-                <th class="p-3 font-medium">Metric</th>
-                <th class="p-3 font-medium text-right">Value</th>
-                <th class="p-3 font-medium">Description</th>
+                <th class="py-3 px-4 font-semibold text-zinc-300">Metric</th>
+                <th class="py-3 px-4 font-semibold text-right text-zinc-300">Current Value</th>
+                <th class="py-3 px-4 font-semibold text-center text-zinc-300">Benchmark / Context</th>
+                <th class="py-3 px-4 font-semibold text-zinc-300">Institutional Significance</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-white/5">
-              <tr>
-                <td class="p-3 text-zinc-300 font-medium">All-Time Cumulative Net Flow</td>
-                <td class="p-3 text-right font-bold" :style="`color: ${flowSummaryKPIs.totalCumFlow >= 0 ? 'var(--up)' : 'var(--down)'}`" x-text="flowFormatMoney(flowSummaryKPIs.totalCumFlow)"></td>
-                <td class="p-3 text-zinc-400">Net total capital absorbed or redeemed since fund inception</td>
-              </tr>
-              <tr>
-                <td class="p-3 text-zinc-300 font-medium">Trailing 10-Day Net Flow</td>
-                <td class="p-3 text-right font-bold" :style="`color: ${flowSummaryKPIs.flow10D >= 0 ? 'var(--up)' : 'var(--down)'}`" x-text="flowFormatMoney(flowSummaryKPIs.flow10D)"></td>
-                <td class="p-3 text-zinc-400">Sum of net creations/redemptions over past 10 trading sessions</td>
-              </tr>
-              <tr>
-                <td class="p-3 text-zinc-300 font-medium">10-Day Flow Historical Percentile</td>
-                <td class="p-3 text-right font-bold" :style="`color: ${flowSummaryKPIs.percentile10D >= 90 ? 'var(--up)' : (flowSummaryKPIs.percentile10D <= 10 ? 'var(--down)' : 'var(--cyan)')}`" x-text="`${flowSummaryKPIs.percentile10D.toFixed(1)}th %ile`"></td>
-                <td class="p-3 text-zinc-400">Rank of current 10-day flow vs all 10-day windows in fund history</td>
-              </tr>
-              <tr>
-                <td class="p-3 text-zinc-300 font-medium">Active Reversal Regime</td>
-                <td class="p-3 text-right font-bold">
-                  <span class="chip text-[10px]" :style="`color: ${flowSummaryKPIs.divergenceColor}; border: 1px solid ${flowSummaryKPIs.divergenceColor}`" x-text="flowSummaryKPIs.divergenceSignal"></span>
+            <tbody class="divide-y divide-white/[0.04]">
+              <tr class="hover:bg-white/[0.02] transition">
+                <td class="py-3 px-4 text-zinc-200 font-semibold">All-Time Cumulative Net Flow</td>
+                <td class="py-3 px-4 text-right font-bold text-sm" :style="`color: ${flowSummaryKPIs.totalCumFlow >= 0 ? '#34d399' : '#fb7185'}`" x-text="flowFormatMoney(flowSummaryKPIs.totalCumFlow)"></td>
+                <td class="py-3 px-4 text-center">
+                  <span class="chip text-[9px] px-2 py-0.5" style="background: rgba(255,255,255,0.05); color: var(--text-2); border: 1px solid var(--border)" x-text="`${(flowData?.data||[]).length} Sessions`"></span>
                 </td>
-                <td class="p-3 text-zinc-400">Classification based on price position in 60d range and flow Z-score</td>
+                <td class="py-3 px-4 text-zinc-400 font-sans text-xs">Total net capital absorbed or redeemed since fund inception</td>
               </tr>
-              <tr>
-                <td class="p-3 text-zinc-300 font-medium">Trailing 30-Day Net Flow</td>
-                <td class="p-3 text-right font-bold" :style="`color: ${flowSummaryKPIs.flow30D >= 0 ? 'var(--up)' : 'var(--down)'}`" x-text="flowFormatMoney(flowSummaryKPIs.flow30D)"></td>
-                <td class="p-3 text-zinc-400">Sum of net creations/redemptions over past 30 trading days</td>
+              <tr class="hover:bg-white/[0.02] transition">
+                <td class="py-3 px-4 text-zinc-200 font-semibold">Trailing 10-Day Net Flow</td>
+                <td class="py-3 px-4 text-right font-bold text-sm" :style="`color: ${flowSummaryKPIs.flow10D >= 0 ? '#34d399' : '#fb7185'}`" x-text="flowFormatMoney(flowSummaryKPIs.flow10D)"></td>
+                <td class="py-3 px-4 text-center">
+                  <span class="chip text-[10px] font-bold px-2 py-0.5" :style="`color: ${flowSummaryKPIs.percentile10D >= 90 ? '#34d399' : (flowSummaryKPIs.percentile10D <= 10 ? '#fb7185' : 'var(--cyan)')}; border: 1px solid ${flowSummaryKPIs.percentile10D >= 90 ? 'rgba(52,211,153,0.3)' : (flowSummaryKPIs.percentile10D <= 10 ? 'rgba(251,113,133,0.3)' : 'rgba(34,211,238,0.3)')}`" x-text="`${flowSummaryKPIs.percentile10D.toFixed(1)}th %ile`"></span>
+                </td>
+                <td class="py-3 px-4 text-zinc-400 font-sans text-xs">Short-term institutional velocity and liquidity absorption momentum</td>
               </tr>
-              <tr>
-                <td class="p-3 text-zinc-300 font-medium">Trailing 90-Day Net Flow</td>
-                <td class="p-3 text-right font-bold" :style="`color: ${flowSummaryKPIs.flow90D >= 0 ? 'var(--up)' : 'var(--down)'}`" x-text="flowFormatMoney(flowSummaryKPIs.flow90D)"></td>
-                <td class="p-3 text-zinc-400">Sum of net creations/redemptions over past 90 trading days</td>
+              <tr class="hover:bg-white/[0.02] transition">
+                <td class="py-3 px-4 text-zinc-200 font-semibold">10-Day Flow Historical Percentile</td>
+                <td class="py-3 px-4 text-right font-bold text-sm" :style="`color: ${flowSummaryKPIs.percentile10D >= 90 ? '#34d399' : (flowSummaryKPIs.percentile10D <= 10 ? '#fb7185' : 'var(--cyan)')}`" x-text="`${flowSummaryKPIs.percentile10D.toFixed(1)}%`"></td>
+                <td class="py-3 px-4 text-center">
+                  <span class="chip text-[9px] px-2 py-0.5" :style="flowSummaryKPIs.percentile10D >= 90 ? 'background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3)' : (flowSummaryKPIs.percentile10D <= 10 ? 'background: rgba(244,63,94,0.15); color: #fb7185; border: 1px solid rgba(244,63,94,0.3)' : 'background: rgba(255,255,255,0.05); color: var(--text-2); border: 1px solid var(--border)')" x-text="flowSummaryKPIs.percentile10D >= 90 ? 'SURGE (≥90%ile)' : (flowSummaryKPIs.percentile10D <= 10 ? 'LIQUIDATION (≤10%ile)' : 'BASELINE')"></span>
+                </td>
+                <td class="py-3 px-4 text-zinc-400 font-sans text-xs">Percentile rank of current 10-day flow vs all rolling 10-day windows in fund history</td>
               </tr>
-              <tr>
-                <td class="p-3 text-zinc-300 font-medium">Trailing 1-Year Net Flow</td>
-                <td class="p-3 text-right font-bold" :style="`color: ${flowSummaryKPIs.flow1Y >= 0 ? 'var(--up)' : 'var(--down)'}`" x-text="flowFormatMoney(flowSummaryKPIs.flow1Y)"></td>
-                <td class="p-3 text-zinc-400">Sum of net creations/redemptions over past 252 sessions</td>
+              <tr class="hover:bg-white/[0.02] transition">
+                <td class="py-3 px-4 text-zinc-200 font-semibold">Active Reversal Regime</td>
+                <td class="py-3 px-4 text-right font-bold">
+                  <span class="chip text-[10px] font-bold px-2 py-0.5" :style="`color: ${flowSummaryKPIs.divergenceColor}; border: 1px solid ${flowSummaryKPIs.divergenceColor}`" x-text="flowSummaryKPIs.divergenceSignal"></span>
+                </td>
+                <td class="py-3 px-4 text-center">
+                  <span class="chip text-[9px] px-2 py-0.5" style="background: rgba(255,255,255,0.05); color: var(--text-2); border: 1px solid var(--border)" x-text="`Z: ${flowSummaryKPIs.zscore >= 0 ? '+' : ''}${flowSummaryKPIs.zscore.toFixed(2)}σ`"></span>
+                </td>
+                <td class="py-3 px-4 text-zinc-400 font-sans text-xs">Macro divergence signal derived from price positioning within 60-day range and flow Z-score</td>
               </tr>
-              <tr>
-                <td class="p-3 text-zinc-300 font-medium">Positive Creation Session Rate</td>
-                <td class="p-3 text-right text-cyan-300 font-bold" x-text="`${flowSummaryKPIs.inflowWinRate.toFixed(1)}%`"></td>
-                <td class="p-3 text-zinc-400">Percentage of trading sessions with positive net capital inflows</td>
+              <tr class="hover:bg-white/[0.02] transition">
+                <td class="py-3 px-4 text-zinc-200 font-semibold">Trailing 30-Day Net Flow</td>
+                <td class="py-3 px-4 text-right font-bold text-sm" :style="`color: ${flowSummaryKPIs.flow30D >= 0 ? '#34d399' : '#fb7185'}`" x-text="flowFormatMoney(flowSummaryKPIs.flow30D)"></td>
+                <td class="py-3 px-4 text-center">
+                  <span class="chip text-[9px] px-2 py-0.5" style="background: rgba(255,255,255,0.05); color: var(--text-2); border: 1px solid var(--border)">1-Month Window</span>
+                </td>
+                <td class="py-3 px-4 text-zinc-400 font-sans text-xs">Intermediate capital flow balance across the preceding calendar month</td>
               </tr>
-              <tr>
-                <td class="p-3 text-zinc-300 font-medium">Largest Single-Day Inflow Record</td>
-                <td class="p-3 text-right text-emerald-400 font-bold" x-text="flowFormatMoney(flowSummaryKPIs.maxInflow)"></td>
-                <td class="p-3 text-zinc-400" x-text="`Peak institutional block buying on ${flowSummaryKPIs.maxInflowDate}`"></td>
+              <tr class="hover:bg-white/[0.02] transition">
+                <td class="py-3 px-4 text-zinc-200 font-semibold">Trailing 90-Day Net Flow</td>
+                <td class="py-3 px-4 text-right font-bold text-sm" :style="`color: ${flowSummaryKPIs.flow90D >= 0 ? '#34d399' : '#fb7185'}`" x-text="flowFormatMoney(flowSummaryKPIs.flow90D)"></td>
+                <td class="py-3 px-4 text-center">
+                  <span class="chip text-[9px] px-2 py-0.5" style="background: rgba(255,255,255,0.05); color: var(--text-2); border: 1px solid var(--border)">Quarterly Window</span>
+                </td>
+                <td class="py-3 px-4 text-zinc-400 font-sans text-xs">Quarterly institutional balance sheet cycle and rebalancing trend</td>
               </tr>
-              <tr>
-                <td class="p-3 text-zinc-300 font-medium">Largest Single-Day Outflow Record</td>
-                <td class="p-3 text-right text-rose-400 font-bold" x-text="flowFormatMoney(flowSummaryKPIs.maxOutflow)"></td>
-                <td class="p-3 text-zinc-400" x-text="`Peak institutional liquidation on ${flowSummaryKPIs.maxOutflowDate}`"></td>
+              <tr class="hover:bg-white/[0.02] transition">
+                <td class="py-3 px-4 text-zinc-200 font-semibold">Trailing 1-Year Net Flow</td>
+                <td class="py-3 px-4 text-right font-bold text-sm" :style="`color: ${flowSummaryKPIs.flow1Y >= 0 ? '#34d399' : '#fb7185'}`" x-text="flowFormatMoney(flowSummaryKPIs.flow1Y)"></td>
+                <td class="py-3 px-4 text-center">
+                  <span class="chip text-[9px] px-2 py-0.5" style="background: rgba(255,255,255,0.05); color: var(--text-2); border: 1px solid var(--border)">252 Sessions</span>
+                </td>
+                <td class="py-3 px-4 text-zinc-400 font-sans text-xs">Macro institutional capital trend across the trailing annual cycle</td>
+              </tr>
+              <tr class="hover:bg-white/[0.02] transition">
+                <td class="py-3 px-4 text-zinc-200 font-semibold">Positive Creation Session Rate</td>
+                <td class="py-3 px-4 text-right font-bold text-sm text-cyan-400" x-text="`${flowSummaryKPIs.inflowWinRate.toFixed(1)}%`"></td>
+                <td class="py-3 px-4 text-center">
+                  <span class="chip text-[9px] px-2 py-0.5" style="background: rgba(34,211,238,0.1); color: var(--cyan); border: 1px solid rgba(34,211,238,0.25)">Creation Ratio</span>
+                </td>
+                <td class="py-3 px-4 text-zinc-400 font-sans text-xs">Historical probability of any given trading session closing with net capital expansion</td>
+              </tr>
+              <tr class="hover:bg-white/[0.02] transition">
+                <td class="py-3 px-4 text-zinc-200 font-semibold">Largest Single-Day Inflow Record</td>
+                <td class="py-3 px-4 text-right font-bold text-sm text-emerald-400" x-text="flowFormatMoney(flowSummaryKPIs.maxInflow)"></td>
+                <td class="py-3 px-4 text-center">
+                  <span class="chip text-[9px] px-2 py-0.5 text-emerald-400 border border-emerald-500/30" x-text="flowSummaryKPIs.maxInflowDate"></span>
+                </td>
+                <td class="py-3 px-4 text-zinc-400 font-sans text-xs">Historical record session for single-day primary market block accumulation</td>
+              </tr>
+              <tr class="hover:bg-white/[0.02] transition">
+                <td class="py-3 px-4 text-zinc-200 font-semibold">Largest Single-Day Outflow Record</td>
+                <td class="py-3 px-4 text-right font-bold text-sm text-rose-400" x-text="flowFormatMoney(flowSummaryKPIs.maxOutflow)"></td>
+                <td class="py-3 px-4 text-center">
+                  <span class="chip text-[9px] px-2 py-0.5 text-rose-400 border border-rose-500/30" x-text="flowSummaryKPIs.maxOutflowDate"></span>
+                </td>
+                <td class="py-3 px-4 text-zinc-400 font-sans text-xs">Historical record session for single-day primary market liquidation / redemption</td>
               </tr>
             </tbody>
           </table>
@@ -2805,7 +3144,20 @@ function marketsApp() {
     flowRangePreset: '1y',
     flowStartIdx: 0,
     flowEndIdx: 0,
-    _flowSliderDragging: null,
+    flowChartRanges: {
+      1: { startIdx: 0, endIdx: 0, preset: '1y' },
+      2: { startIdx: 0, endIdx: 0, preset: '1y' },
+      3: { startIdx: 0, endIdx: 0, preset: '1y' },
+      4: { startIdx: 0, endIdx: 0, preset: '1y' },
+      5: { startIdx: 0, endIdx: 0, preset: '1y' },
+      6: { startIdx: 0, endIdx: 0, preset: '1y' },
+    },
+    flowSyncAllCharts: true,
+    _flowSliderDraggingChart: null,
+    _flowSliderDragMode: null,
+    _flowSliderDragAnchorIdx: 0,
+    _flowSliderDragAnchorStart: 0,
+    _flowSliderDragAnchorEnd: 0,
     flowHoverInfo: null,
     flowSelectedUncached: null,
     flowGithubToken: localStorage.getItem('gh_flow_token') || '',
@@ -7263,7 +7615,22 @@ function marketsApp() {
       this.flowSearchOpen = true;
     },
 
-        flowSetRangePreset(preset) {
+    flowToggleSync() {
+      this.flowSyncAllCharts = !this.flowSyncAllCharts;
+      if (this.flowSyncAllCharts) {
+        const r1 = this.flowChartRanges[1];
+        for (let c = 2; c <= 6; c++) {
+          this.flowChartRanges[c].startIdx = r1.startIdx;
+          this.flowChartRanges[c].endIdx = r1.endIdx;
+          this.flowChartRanges[c].preset = r1.preset;
+        }
+        this.flowStartIdx = r1.startIdx;
+        this.flowEndIdx = r1.endIdx;
+        this.flowRangePreset = r1.preset;
+      }
+    },
+
+    flowSetRangePreset(preset) {
       this.flowRangePreset = preset;
       const all = this.flowData?.data || [];
       const total = all.length;
@@ -7276,64 +7643,172 @@ function marketsApp() {
       const count = countMap[preset] || total;
       this.flowEndIdx = total - 1;
       this.flowStartIdx = Math.max(0, total - count);
-    },
 
-    get _flowSliderStartPct() {
-      const total = (this.flowData?.data?.length || 1) - 1;
-      return total > 0 ? (this.flowStartIdx / total) * 100 : 0;
-    },
-
-    get _flowSliderEndPct() {
-      const total = (this.flowData?.data?.length || 1) - 1;
-      return total > 0 ? (this.flowEndIdx / total) * 100 : 100;
-    },
-
-    _flowSliderPointerDown(e) {
-      const total = (this.flowData?.data?.length || 1) - 1;
-      if (total <= 0) return;
-      const rect = e.currentTarget.getBoundingClientRect();
-      const pct = (e.clientX - rect.left) / rect.width;
-      const idx = Math.round(Math.max(0, Math.min(1, pct)) * total);
-
-      const distStart = Math.abs(idx - this.flowStartIdx);
-      const distEnd = Math.abs(idx - this.flowEndIdx);
-      this._flowSliderDragging = distStart <= distEnd ? 'start' : 'end';
-
-      e.currentTarget.setPointerCapture(e.pointerId);
-      this._flowSliderPointerMove(e);
-    },
-
-    _flowSliderPointerMove(e) {
-      if (!this._flowSliderDragging) return;
-      const total = (this.flowData?.data?.length || 1) - 1;
-      if (total <= 0) return;
-      const rect = e.currentTarget.getBoundingClientRect();
-      const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-      const idx = Math.round(pct * total);
-
-      if (this._flowSliderDragging === 'start') {
-        if (idx < this.flowEndIdx) {
-          this.flowStartIdx = idx;
-          this.flowRangePreset = 'custom';
-        }
-      } else {
-        if (idx > this.flowStartIdx) {
-          this.flowEndIdx = idx;
-          this.flowRangePreset = 'custom';
-        }
+      for (let c = 1; c <= 6; c++) {
+        this.flowChartRanges[c].startIdx = this.flowStartIdx;
+        this.flowChartRanges[c].endIdx = this.flowEndIdx;
+        this.flowChartRanges[c].preset = preset;
       }
     },
 
+    flowSetChartPreset(chartId, preset) {
+      const all = this.flowData?.data || [];
+      const total = all.length;
+      if (!total) return;
+
+      const countMap = { '1m': 22, '3m': 66, '6m': 130, '1y': 252, '3y': 756, '5y': 1260, 'max': total };
+      const count = countMap[preset] || total;
+      const endIdx = total - 1;
+      const startIdx = Math.max(0, total - count);
+
+      this._applyChartRange(chartId, startIdx, endIdx, preset);
+    },
+
+    _applyChartRange(chartId, startIdx, endIdx, preset = 'custom') {
+      if (this.flowSyncAllCharts) {
+        for (let c = 1; c <= 6; c++) {
+          this.flowChartRanges[c].startIdx = startIdx;
+          this.flowChartRanges[c].endIdx = endIdx;
+          this.flowChartRanges[c].preset = preset;
+        }
+        this.flowStartIdx = startIdx;
+        this.flowEndIdx = endIdx;
+        this.flowRangePreset = preset;
+      } else {
+        this.flowChartRanges[chartId].startIdx = startIdx;
+        this.flowChartRanges[chartId].endIdx = endIdx;
+        this.flowChartRanges[chartId].preset = preset;
+      }
+    },
+
+    _flowSliderStartPct(chartId = 1) {
+      if (typeof chartId !== 'number') chartId = 1;
+      const all = this.flowData?.data || [];
+      const total = all.length - 1;
+      if (total <= 0) return 0;
+      const s = this.flowChartRanges?.[chartId]?.startIdx ?? this.flowStartIdx ?? 0;
+      return (Math.max(0, Math.min(s, total)) / total) * 100;
+    },
+
+    _flowSliderEndPct(chartId = 1) {
+      if (typeof chartId !== 'number') chartId = 1;
+      const all = this.flowData?.data || [];
+      const total = all.length - 1;
+      if (total <= 0) return 100;
+      const e = this.flowChartRanges?.[chartId]?.endIdx ?? this.flowEndIdx ?? total;
+      return (Math.max(0, Math.min(e, total)) / total) * 100;
+    },
+
+    _flowChartSliderDown(e, chartId = 1) {
+      const all = this.flowData?.data || [];
+      const total = all.length - 1;
+      if (total <= 0) return;
+
+      const rect = e.currentTarget.getBoundingClientRect();
+      const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      const clickIdx = Math.round(pct * total);
+
+      const range = this.flowChartRanges?.[chartId] || { startIdx: 0, endIdx: total };
+      const s = range.startIdx;
+      const end = range.endIdx;
+
+      const distStart = Math.abs(clickIdx - s);
+      const distEnd = Math.abs(clickIdx - end);
+      const handleThreshold = Math.max(2, Math.round(0.04 * total));
+
+      if (distStart <= handleThreshold && distStart <= distEnd) {
+        this._flowSliderDragMode = 'start';
+      } else if (distEnd <= handleThreshold && distEnd < distStart) {
+        this._flowSliderDragMode = 'end';
+      } else if (clickIdx > s && clickIdx < end) {
+        this._flowSliderDragMode = 'bar';
+        this._flowSliderDragAnchorIdx = clickIdx;
+        this._flowSliderDragAnchorStart = s;
+        this._flowSliderDragAnchorEnd = end;
+      } else {
+        this._flowSliderDragMode = distStart <= distEnd ? 'start' : 'end';
+      }
+
+      this._flowSliderDraggingChart = chartId;
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch (err) {}
+
+      this._flowChartSliderMove(e, chartId);
+    },
+
+    _flowChartSliderMove(e, chartId = 1) {
+      if (this._flowSliderDraggingChart !== chartId || !this._flowSliderDragMode) return;
+      const all = this.flowData?.data || [];
+      const total = all.length - 1;
+      if (total <= 0) return;
+
+      const rect = e.currentTarget.getBoundingClientRect();
+      const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      const currentIdx = Math.round(pct * total);
+
+      const range = this.flowChartRanges?.[chartId] || { startIdx: 0, endIdx: total };
+      let newStart = range.startIdx;
+      let newEnd = range.endIdx;
+      const minWindow = Math.min(5, Math.max(2, Math.floor(all.length * 0.005)));
+
+      if (this._flowSliderDragMode === 'start') {
+        newStart = Math.max(0, Math.min(currentIdx, newEnd - minWindow));
+      } else if (this._flowSliderDragMode === 'end') {
+        newEnd = Math.min(total, Math.max(currentIdx, newStart + minWindow));
+      } else if (this._flowSliderDragMode === 'bar') {
+        const delta = currentIdx - this._flowSliderDragAnchorIdx;
+        const span = this._flowSliderDragAnchorEnd - this._flowSliderDragAnchorStart;
+        let s = this._flowSliderDragAnchorStart + delta;
+        let ed = this._flowSliderDragAnchorEnd + delta;
+        if (s < 0) {
+          s = 0;
+          ed = s + span;
+        }
+        if (ed > total) {
+          ed = total;
+          s = ed - span;
+        }
+        newStart = Math.max(0, s);
+        newEnd = Math.min(total, ed);
+      }
+
+      this._applyChartRange(chartId, newStart, newEnd, 'custom');
+    },
+
+    _flowChartSliderUp(e, chartId = 1) {
+      this._flowSliderDraggingChart = null;
+      this._flowSliderDragMode = null;
+      try {
+        if (e && e.currentTarget && e.currentTarget.hasPointerCapture && e.currentTarget.hasPointerCapture(e.pointerId)) {
+          e.currentTarget.releasePointerCapture(e.pointerId);
+        }
+      } catch (err) {}
+    },
+
+    _flowSliderPointerDown(e) {
+      this._flowChartSliderDown(e, 1);
+    },
+
+    _flowSliderPointerMove(e) {
+      this._flowChartSliderMove(e, 1);
+    },
+
     _flowSliderPointerUp(e) {
-      this._flowSliderDragging = null;
+      this._flowChartSliderUp(e, 1);
+    },
+
+    flowGetChartRecords(chartId = 1) {
+      const all = this.flowData?.data || [];
+      if (!all.length) return [];
+      const range = this.flowChartRanges?.[chartId] || { startIdx: 0, endIdx: all.length - 1 };
+      const s = Math.max(0, Math.min(range.startIdx, all.length - 1));
+      const e = Math.max(s, Math.min(range.endIdx, all.length - 1));
+      return all.slice(s, e + 1);
     },
 
     get flowFilteredRecords() {
-      const all = this.flowData?.data || [];
-      if (!all.length) return [];
-      const s = Math.max(0, Math.min(this.flowStartIdx, all.length - 1));
-      const e = Math.max(s, Math.min(this.flowEndIdx, all.length - 1));
-      return all.slice(s, e + 1);
+      return this.flowGetChartRecords(1);
     },
 
     flowFormatMoney(val) {
@@ -7638,10 +8113,10 @@ function marketsApp() {
     },
 
     get flowPriceChartSvg() {
-      const records = this.flowFilteredRecords;
-      const W = 1000, H = 340, PL = 75, PR = 75, PT = 25, PB = 35;
+      const records = this.flowGetChartRecords(1);
+      const W = 1000, H = 340, PL = 80, PR = 80, PT = 24, PB = 32;
       if (!records || records.length < 2) {
-        return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};background:#0d1117;border-radius:6px;"><text x="${W/2}" y="${H/2}" fill="#71717a" text-anchor="middle" font-family="ui-monospace" font-size="12">No flow data for selected range</text></svg>`;
+        return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};background:#080c14;border-radius:6px;"><text x="${W/2}" y="${H/2}" fill="#64748b" text-anchor="middle" font-family="ui-monospace, monospace" font-size="12">No flow data for selected range</text></svg>`;
       }
       const chartW = W - PL - PR;
       const chartH = H - PT - PB;
@@ -7687,23 +8162,23 @@ function marketsApp() {
         const navVal = maxNav - (t / numTicks) * (maxNav - minNav);
         const cumVal = maxCum - (t / numTicks) * (maxCum - minCum);
 
-        gridLines += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="3,3"/>`;
-        gridLines += `<text x="${PL - 8}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" fill="#22d3ee" font-family="ui-monospace" font-size="9.5">$${navVal.toFixed(navVal >= 10 ? 2 : 3)}</text>`;
-        gridLines += `<text x="${W - PR + 8}" y="${(y + 3.5).toFixed(1)}" text-anchor="start" fill="${cumVal >= 0 ? '#34d399' : '#fb7185'}" font-family="ui-monospace" font-size="9.5">${this.flowFormatMoney(cumVal)}</text>`;
+        gridLines += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.06)" stroke-width="1" stroke-dasharray="2,3"/>`;
+        gridLines += `<text x="${PL - 10}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" fill="#22d3ee" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9.5">$${navVal.toFixed(navVal >= 10 ? 2 : 3)}</text>`;
+        gridLines += `<text x="${W - PR + 10}" y="${(y + 3.5).toFixed(1)}" text-anchor="start" fill="${cumVal >= 0 ? '#34d399' : '#fb7185'}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9.5">${this.flowFormatMoney(cumVal)}</text>`;
       }
 
-      gridLines += `<line x1="${PL}" y1="${cumZeroY.toFixed(1)}" x2="${W - PR}" y2="${cumZeroY.toFixed(1)}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="2,2"/>`;
+      gridLines += `<line x1="${PL}" y1="${cumZeroY.toFixed(1)}" x2="${W - PR}" y2="${cumZeroY.toFixed(1)}" stroke="rgba(255,255,255,0.22)" stroke-width="1.2" stroke-dasharray="2,2"/>`;
 
       let xTicks = '';
       const dateStep = Math.max(1, Math.floor(n / 6));
       for (let i = 0; i < n; i += dateStep) {
         const x = xScale(i);
         const d = records[i].date;
-        xTicks += `<text x="${x.toFixed(1)}" y="${H - 12}" text-anchor="middle" fill="#71717a" font-family="ui-monospace" font-size="9">${d}</text>`;
+        xTicks += `<text x="${x.toFixed(1)}" y="${H - 12}" text-anchor="middle" fill="#64748b" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9">${d}</text>`;
       }
       if ((n - 1) % dateStep !== 0) {
         const lastX = xScale(n - 1);
-        xTicks += `<text x="${lastX.toFixed(1)}" y="${H - 12}" text-anchor="middle" fill="#71717a" font-family="ui-monospace" font-size="9">${records[n - 1].date}</text>`;
+        xTicks += `<text x="${lastX.toFixed(1)}" y="${H - 12}" text-anchor="middle" fill="#64748b" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9">${records[n - 1].date}</text>`;
       }
 
       const defs = `
@@ -7715,13 +8190,16 @@ function marketsApp() {
             <rect x="${PL}" y="${cumZeroY}" width="${chartW}" height="${Math.max(0, PT + chartH - cumZeroY)}" />
           </clipPath>
           <linearGradient id="flowGradGreen" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#34d399" stop-opacity="0.30"/>
+            <stop offset="0%" stop-color="#34d399" stop-opacity="0.35"/>
             <stop offset="100%" stop-color="#34d399" stop-opacity="0.04"/>
           </linearGradient>
           <linearGradient id="flowGradRed" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stop-color="#fb7185" stop-opacity="0.04"/>
-            <stop offset="100%" stop-color="#fb7185" stop-opacity="0.30"/>
+            <stop offset="100%" stop-color="#fb7185" stop-opacity="0.35"/>
           </linearGradient>
+          <filter id="cyanGlow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#22d3ee" flood-opacity="0.35"/>
+          </filter>
         </defs>
       `;
 
@@ -7743,23 +8221,23 @@ function marketsApp() {
       }
 
       return `
-        <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};display:block;background:#0d1117;border-radius:6px;">
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};display:block;background:#080c14;border-radius:6px;">
           ${defs}
           ${gridLines}
           ${xTicks}
           <path d="${cumPathD}" fill="url(#flowGradGreen)" clip-path="url(#flowClipAbove)"/>
           <path d="${cumPathD}" fill="url(#flowGradRed)" clip-path="url(#flowClipBelow)"/>
-          <path d="${cumLineD}" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.2"/>
-          <path d="${pricePathD}" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="${cumLineD}" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.2"/>
+          <path d="${pricePathD}" fill="none" stroke="#22d3ee" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#cyanGlow)"/>
         </svg>
       `;
     },
 
     get flowBarsChartSvg() {
-      const records = this.flowFilteredRecords;
-      const W = 1000, H = 240, PL = 75, PR = 30, PT = 20, PB = 30;
+      const records = this.flowGetChartRecords(2);
+      const W = 1000, H = 240, PL = 80, PR = 80, PT = 20, PB = 32;
       if (!records || records.length < 2) {
-        return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};background:#0d1117;border-radius:6px;"><text x="${W/2}" y="${H/2}" fill="#71717a" text-anchor="middle" font-family="ui-monospace" font-size="11">No data</text></svg>`;
+        return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};background:#080c14;border-radius:6px;"><text x="${W/2}" y="${H/2}" fill="#64748b" text-anchor="middle" font-family="ui-monospace, monospace" font-size="11">No data</text></svg>`;
       }
       const chartW = W - PL - PR;
       const chartH = H - PT - PB;
@@ -7789,7 +8267,7 @@ function marketsApp() {
       }
 
       const all = this.flowData?.data || [];
-      const s = Math.max(0, Math.min(this.flowStartIdx, all.length - 1));
+      const s = Math.max(0, Math.min(this.flowChartRanges[2]?.startIdx || 0, all.length - 1));
       let maPath = '';
       const maWindow = 20;
       for (let i = 0; i < n; i++) {
@@ -7809,48 +8287,48 @@ function marketsApp() {
       const botLabel = this.flowFormatMoney(-maxAbs);
 
       const grid = `
-        <line x1="${PL}" y1="${PT}" x2="${W - PR}" y2="${PT}" stroke="rgba(255,255,255,0.05)" stroke-dasharray="2,2"/>
-        <line x1="${PL}" y1="${y0.toFixed(1)}" x2="${W - PR}" y2="${y0.toFixed(1)}" stroke="rgba(255,255,255,0.2)"/>
-        <line x1="${PL}" y1="${(PT + chartH).toFixed(1)}" x2="${W - PR}" y2="${(PT + chartH).toFixed(1)}" stroke="rgba(255,255,255,0.05)" stroke-dasharray="2,2"/>
-        <text x="${PL - 8}" y="${PT + 4}" text-anchor="end" fill="#71717a" font-family="ui-monospace" font-size="8.5">${topLabel}</text>
-        <text x="${PL - 8}" y="${(y0 + 3).toFixed(1)}" text-anchor="end" fill="#52525b" font-family="ui-monospace" font-size="8.5">$0</text>
-        <text x="${PL - 8}" y="${PT + chartH}" text-anchor="end" fill="#71717a" font-family="ui-monospace" font-size="8.5">${botLabel}</text>
+        <line x1="${PL}" y1="${PT}" x2="${W - PR}" y2="${PT}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2,3"/>
+        <line x1="${PL}" y1="${y0.toFixed(1)}" x2="${W - PR}" y2="${y0.toFixed(1)}" stroke="rgba(255,255,255,0.22)"/>
+        <line x1="${PL}" y1="${(PT + chartH).toFixed(1)}" x2="${W - PR}" y2="${(PT + chartH).toFixed(1)}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2,3"/>
+        <text x="${PL - 10}" y="${PT + 4}" text-anchor="end" fill="#64748b" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9">${topLabel}</text>
+        <text x="${PL - 10}" y="${(y0 + 3).toFixed(1)}" text-anchor="end" fill="#94a3b8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9">$0</text>
+        <text x="${PL - 10}" y="${PT + chartH}" text-anchor="end" fill="#64748b" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9">${botLabel}</text>
       `;
 
       let xTicks = '';
       const dateStep = Math.max(1, Math.floor(n / 6));
       for (let i = 0; i < n; i += dateStep) {
-        const x = PL + i * slotW + slotW / 2;
+        const x = PL + (i / (n - 1)) * chartW;
         const d = records[i].date;
-        xTicks += `<text x="${x.toFixed(1)}" y="${H - 10}" text-anchor="middle" fill="#71717a" font-family="ui-monospace" font-size="8.5">${d}</text>`;
+        xTicks += `<text x="${x.toFixed(1)}" y="${H - 12}" text-anchor="middle" fill="#64748b" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9">${d}</text>`;
       }
       if ((n - 1) % dateStep !== 0) {
-        const lastX = PL + (n - 1) * slotW + slotW / 2;
-        xTicks += `<text x="${lastX.toFixed(1)}" y="${H - 10}" text-anchor="middle" fill="#71717a" font-family="ui-monospace" font-size="8.5">${records[n - 1].date}</text>`;
+        const lastX = PL + chartW;
+        xTicks += `<text x="${lastX.toFixed(1)}" y="${H - 12}" text-anchor="middle" fill="#64748b" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9">${records[n - 1].date}</text>`;
       }
 
       return `
-        <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};display:block;background:#0d1117;border-radius:6px;">
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};display:block;background:#080c14;border-radius:6px;">
           ${grid}
           ${xTicks}
           ${bars}
-          <path d="${maPath}" fill="none" stroke="#f4f4f5" stroke-width="1.6" opacity="0.9" stroke-linecap="round"/>
+          <path d="${maPath}" fill="none" stroke="#f4f4f5" stroke-width="1.8" opacity="0.95" stroke-linecap="round"/>
         </svg>
       `;
     },
 
     get flowMomentumChartSvg() {
-      const records = this.flowFilteredRecords;
-      const W = 1000, H = 240, PL = 75, PR = 30, PT = 20, PB = 30;
+      const records = this.flowGetChartRecords(3);
+      const W = 1000, H = 240, PL = 80, PR = 80, PT = 20, PB = 32;
       if (!records || records.length < 2) {
-        return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};background:#0d1117;border-radius:6px;"><text x="${W/2}" y="${H/2}" fill="#71717a" text-anchor="middle" font-family="ui-monospace" font-size="11">No data</text></svg>`;
+        return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};background:#080c14;border-radius:6px;"><text x="${W/2}" y="${H/2}" fill="#64748b" text-anchor="middle" font-family="ui-monospace, monospace" font-size="11">No data</text></svg>`;
       }
       const chartW = W - PL - PR;
       const chartH = H - PT - PB;
       const n = records.length;
 
       const all = this.flowData?.data || [];
-      const s = Math.max(0, Math.min(this.flowStartIdx, all.length - 1));
+      const s = Math.max(0, Math.min(this.flowChartRanges[3]?.startIdx || 0, all.length - 1));
       const m20 = new Array(n);
       const m50 = new Array(n);
       let maxAbs = 0;
@@ -7891,12 +8369,12 @@ function marketsApp() {
       const botLabel = this.flowFormatMoney(-maxAbs);
 
       const grid = `
-        <line x1="${PL}" y1="${PT}" x2="${W - PR}" y2="${PT}" stroke="rgba(255,255,255,0.05)" stroke-dasharray="2,2"/>
-        <line x1="${PL}" y1="${y0.toFixed(1)}" x2="${W - PR}" y2="${y0.toFixed(1)}" stroke="rgba(255,255,255,0.2)"/>
-        <line x1="${PL}" y1="${(PT + chartH).toFixed(1)}" x2="${W - PR}" y2="${(PT + chartH).toFixed(1)}" stroke="rgba(255,255,255,0.05)" stroke-dasharray="2,2"/>
-        <text x="${PL - 8}" y="${PT + 4}" text-anchor="end" fill="#71717a" font-family="ui-monospace" font-size="8.5">${topLabel}</text>
-        <text x="${PL - 8}" y="${(y0 + 3).toFixed(1)}" text-anchor="end" fill="#52525b" font-family="ui-monospace" font-size="8.5">$0</text>
-        <text x="${PL - 8}" y="${PT + chartH}" text-anchor="end" fill="#71717a" font-family="ui-monospace" font-size="8.5">${botLabel}</text>
+        <line x1="${PL}" y1="${PT}" x2="${W - PR}" y2="${PT}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2,3"/>
+        <line x1="${PL}" y1="${y0.toFixed(1)}" x2="${W - PR}" y2="${y0.toFixed(1)}" stroke="rgba(255,255,255,0.22)"/>
+        <line x1="${PL}" y1="${(PT + chartH).toFixed(1)}" x2="${W - PR}" y2="${(PT + chartH).toFixed(1)}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2,3"/>
+        <text x="${PL - 10}" y="${PT + 4}" text-anchor="end" fill="#64748b" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9">${topLabel}</text>
+        <text x="${PL - 10}" y="${(y0 + 3).toFixed(1)}" text-anchor="end" fill="#94a3b8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9">$0</text>
+        <text x="${PL - 10}" y="${PT + chartH}" text-anchor="end" fill="#64748b" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9">${botLabel}</text>
       `;
 
       let xTicks = '';
@@ -7904,28 +8382,28 @@ function marketsApp() {
       for (let i = 0; i < n; i += dateStep) {
         const x = xScale(i);
         const d = records[i].date;
-        xTicks += `<text x="${x.toFixed(1)}" y="${H - 10}" text-anchor="middle" fill="#71717a" font-family="ui-monospace" font-size="8.5">${d}</text>`;
+        xTicks += `<text x="${x.toFixed(1)}" y="${H - 12}" text-anchor="middle" fill="#64748b" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9">${d}</text>`;
       }
       if ((n - 1) % dateStep !== 0) {
         const lastX = xScale(n - 1);
-        xTicks += `<text x="${lastX.toFixed(1)}" y="${H - 10}" text-anchor="middle" fill="#71717a" font-family="ui-monospace" font-size="8.5">${records[n - 1].date}</text>`;
+        xTicks += `<text x="${lastX.toFixed(1)}" y="${H - 12}" text-anchor="middle" fill="#64748b" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9">${records[n - 1].date}</text>`;
       }
 
       return `
-        <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};display:block;background:#0d1117;border-radius:6px;">
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};display:block;background:#080c14;border-radius:6px;">
           ${grid}
           ${xTicks}
-          <path d="${path50}" fill="none" stroke="#c084fc" stroke-width="1.8" stroke-dasharray="4,2" opacity="0.85"/>
+          <path d="${path50}" fill="none" stroke="#c084fc" stroke-width="1.8" stroke-dasharray="5,3" opacity="0.85"/>
           <path d="${path20}" fill="none" stroke="#22d3ee" stroke-width="2.2" stroke-linecap="round"/>
         </svg>
       `;
     },
 
     get flowZScoreChartSvg() {
-      const records = this.flowFilteredRecords;
-      const W = 1000, H = 220, PL = 75, PR = 30, PT = 20, PB = 30;
+      const records = this.flowGetChartRecords(4);
+      const W = 1000, H = 230, PL = 80, PR = 80, PT = 20, PB = 32;
       if (!records || records.length < 2) {
-        return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};background:#0d1117;border-radius:6px;"><text x="${W/2}" y="${H/2}" fill="#71717a" text-anchor="middle" font-family="ui-monospace" font-size="11">No data</text></svg>`;
+        return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};background:#080c14;border-radius:6px;"><text x="${W/2}" y="${H/2}" fill="#64748b" text-anchor="middle" font-family="ui-monospace, monospace" font-size="11">No data</text></svg>`;
       }
       const chartW = W - PL - PR;
       const chartH = H - PT - PB;
@@ -7946,34 +8424,34 @@ function marketsApp() {
         const x = PL + i * slotW + (slotW - barW) / 2;
         const top = z >= 0 ? yScale(z) : y0;
         const height = Math.max(1, Math.abs(yScale(z) - y0));
-        const color = z >= 1.5 ? '#34d399' : (z <= -1.5 ? '#fb7185' : '#71717a');
-        const op = Math.abs(z) >= 1.5 ? '1' : '0.4';
+        const color = z >= 1.5 ? '#34d399' : (z <= -1.5 ? '#fb7185' : '#64748b');
+        const op = Math.abs(z) >= 1.5 ? '1' : '0.45';
         bars += `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${barW.toFixed(1)}" height="${height.toFixed(1)}" fill="${color}" opacity="${op}"/>`;
       }
 
       const grid = `
         <line x1="${PL}" y1="${yUp15.toFixed(1)}" x2="${W - PR}" y2="${yUp15.toFixed(1)}" stroke="#34d399" stroke-dasharray="3,3" opacity="0.6"/>
-        <text x="${PL - 8}" y="${(yUp15 + 3).toFixed(1)}" text-anchor="end" fill="#34d399" font-family="ui-monospace" font-size="8.5">+1.5σ</text>
-        <line x1="${PL}" y1="${y0.toFixed(1)}" x2="${W - PR}" y2="${y0.toFixed(1)}" stroke="#52525b" opacity="0.8"/>
-        <text x="${PL - 8}" y="${(y0 + 3).toFixed(1)}" text-anchor="end" fill="#71717a" font-family="ui-monospace" font-size="8.5">0σ</text>
+        <text x="${PL - 10}" y="${(yUp15 + 3.5).toFixed(1)}" text-anchor="end" fill="#34d399" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9">+1.5σ</text>
+        <line x1="${PL}" y1="${y0.toFixed(1)}" x2="${W - PR}" y2="${y0.toFixed(1)}" stroke="rgba(255,255,255,0.22)"/>
+        <text x="${PL - 10}" y="${(y0 + 3.5).toFixed(1)}" text-anchor="end" fill="#94a3b8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9">0σ</text>
         <line x1="${PL}" y1="${yDown15.toFixed(1)}" x2="${W - PR}" y2="${yDown15.toFixed(1)}" stroke="#fb7185" stroke-dasharray="3,3" opacity="0.6"/>
-        <text x="${PL - 8}" y="${(yDown15 + 3).toFixed(1)}" text-anchor="end" fill="#fb7185" font-family="ui-monospace" font-size="8.5">−1.5σ</text>
+        <text x="${PL - 10}" y="${(yDown15 + 3.5).toFixed(1)}" text-anchor="end" fill="#fb7185" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9">−1.5σ</text>
       `;
 
       let xTicks = '';
       const dateStep = Math.max(1, Math.floor(n / 6));
       for (let i = 0; i < n; i += dateStep) {
-        const x = PL + i * slotW + slotW / 2;
+        const x = PL + (i / (n - 1)) * chartW;
         const d = records[i].date;
-        xTicks += `<text x="${x.toFixed(1)}" y="${H - 10}" text-anchor="middle" fill="#71717a" font-family="ui-monospace" font-size="8.5">${d}</text>`;
+        xTicks += `<text x="${x.toFixed(1)}" y="${H - 12}" text-anchor="middle" fill="#64748b" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9">${d}</text>`;
       }
       if ((n - 1) % dateStep !== 0) {
-        const lastX = PL + (n - 1) * slotW + slotW / 2;
-        xTicks += `<text x="${lastX.toFixed(1)}" y="${H - 10}" text-anchor="middle" fill="#71717a" font-family="ui-monospace" font-size="8.5">${records[n - 1].date}</text>`;
+        const lastX = PL + chartW;
+        xTicks += `<text x="${lastX.toFixed(1)}" y="${H - 12}" text-anchor="middle" fill="#64748b" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9">${records[n - 1].date}</text>`;
       }
 
       return `
-        <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};display:block;background:#0d1117;border-radius:6px;">
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};display:block;background:#080c14;border-radius:6px;">
           ${grid}
           ${xTicks}
           ${bars}
@@ -7982,11 +8460,11 @@ function marketsApp() {
     },
 
     get flowPercentileChartSvg() {
-      const records = this.flowFilteredRecords;
+      const records = this.flowGetChartRecords(5);
       const all = this.flowData?.data || [];
-      const W = 1000, H = 220, PL = 75, PR = 30, PT = 20, PB = 30;
+      const W = 1000, H = 230, PL = 80, PR = 80, PT = 20, PB = 32;
       if (!records || records.length < 2 || !all.length) {
-        return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};background:#0d1117;border-radius:6px;"><text x="${W/2}" y="${H/2}" fill="#71717a" text-anchor="middle" font-family="ui-monospace" font-size="11">No data</text></svg>`;
+        return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};background:#080c14;border-radius:6px;"><text x="${W/2}" y="${H/2}" fill="#64748b" text-anchor="middle" font-family="ui-monospace, monospace" font-size="11">No data</text></svg>`;
       }
       const chartW = W - PL - PR;
       const chartH = H - PT - PB;
@@ -8016,7 +8494,7 @@ function marketsApp() {
         return (low / sorted.length) * 100;
       };
 
-      const sIdx = Math.max(0, Math.min(this.flowStartIdx, nAll - 1));
+      const sIdx = Math.max(0, Math.min(this.flowChartRanges[5]?.startIdx || 0, nAll - 1));
       const yScale = (pct) => PT + chartH - (pct / 100) * chartH;
       const xScale = (i) => PL + (i / (n - 1)) * chartW;
 
@@ -8060,11 +8538,11 @@ function marketsApp() {
         <rect x="${PL}" y="${PT}" width="${chartW}" height="${(y90 - PT).toFixed(1)}" fill="rgba(52,211,153,0.06)" />
         <rect x="${PL}" y="${y10.toFixed(1)}" width="${chartW}" height="${(PT + chartH - y10).toFixed(1)}" fill="rgba(251,113,133,0.06)" />
         <line x1="${PL}" y1="${y90.toFixed(1)}" x2="${W - PR}" y2="${y90.toFixed(1)}" stroke="#34d399" stroke-dasharray="3,3" opacity="0.6"/>
-        <text x="${PL - 8}" y="${(y90 + 3.5).toFixed(1)}" text-anchor="end" fill="#34d399" font-family="ui-monospace" font-size="8.5">90th %ile</text>
-        <line x1="${PL}" y1="${y50.toFixed(1)}" x2="${W - PR}" y2="${y50.toFixed(1)}" stroke="#71717a" stroke-dasharray="2,2" opacity="0.7"/>
-        <text x="${PL - 8}" y="${(y50 + 3.5).toFixed(1)}" text-anchor="end" fill="#71717a" font-family="ui-monospace" font-size="8.5">50th %ile</text>
+        <text x="${PL - 10}" y="${(y90 + 3.5).toFixed(1)}" text-anchor="end" fill="#34d399" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9">90th %ile</text>
+        <line x1="${PL}" y1="${y50.toFixed(1)}" x2="${W - PR}" y2="${y50.toFixed(1)}" stroke="rgba(255,255,255,0.2)" stroke-dasharray="2,2"/>
+        <text x="${PL - 10}" y="${(y50 + 3.5).toFixed(1)}" text-anchor="end" fill="#94a3b8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9">50th %ile</text>
         <line x1="${PL}" y1="${y10.toFixed(1)}" x2="${W - PR}" y2="${y10.toFixed(1)}" stroke="#fb7185" stroke-dasharray="3,3" opacity="0.6"/>
-        <text x="${PL - 8}" y="${(y10 + 3.5).toFixed(1)}" text-anchor="end" fill="#fb7185" font-family="ui-monospace" font-size="8.5">10th %ile</text>
+        <text x="${PL - 10}" y="${(y10 + 3.5).toFixed(1)}" text-anchor="end" fill="#fb7185" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9">10th %ile</text>
       `;
 
       let xTicks = '';
@@ -8072,37 +8550,37 @@ function marketsApp() {
       for (let i = 0; i < n; i += dateStep) {
         const x = xScale(i);
         const d = records[i].date;
-        xTicks += `<text x="${x.toFixed(1)}" y="${H - 10}" text-anchor="middle" fill="#71717a" font-family="ui-monospace" font-size="8.5">${d}</text>`;
+        xTicks += `<text x="${x.toFixed(1)}" y="${H - 12}" text-anchor="middle" fill="#64748b" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9">${d}</text>`;
       }
       if ((n - 1) % dateStep !== 0) {
         const lastX = xScale(n - 1);
-        xTicks += `<text x="${lastX.toFixed(1)}" y="${H - 10}" text-anchor="middle" fill="#71717a" font-family="ui-monospace" font-size="8.5">${records[n - 1].date}</text>`;
+        xTicks += `<text x="${lastX.toFixed(1)}" y="${H - 12}" text-anchor="middle" fill="#64748b" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9">${records[n - 1].date}</text>`;
       }
 
       return `
-        <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};display:block;background:#0d1117;border-radius:6px;">
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};display:block;background:#080c14;border-radius:6px;">
           ${defs}
           ${grid}
           ${xTicks}
           <path d="${areaD}" fill="url(#pctGradTop)" clip-path="url(#pctClipTop)"/>
           <path d="${areaD}" fill="url(#pctGradBot)" clip-path="url(#pctClipBot)"/>
-          <path d="${pathD}" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="${pathD}" fill="none" stroke="#22d3ee" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       `;
     },
 
     get flowDivergenceChartSvg() {
-      const records = this.flowFilteredRecords;
+      const records = this.flowGetChartRecords(6);
       const all = this.flowData?.data || [];
-      const W = 1000, H = 240, PL = 75, PR = 30, PT = 25, PB = 30;
+      const W = 1000, H = 240, PL = 80, PR = 80, PT = 24, PB = 32;
       if (!records || records.length < 2 || !all.length) {
-        return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};background:#0d1117;border-radius:6px;"><text x="${W/2}" y="${H/2}" fill="#71717a" text-anchor="middle" font-family="ui-monospace" font-size="11">No data</text></svg>`;
+        return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};background:#080c14;border-radius:6px;"><text x="${W/2}" y="${H/2}" fill="#64748b" text-anchor="middle" font-family="ui-monospace, monospace" font-size="11">No data</text></svg>`;
       }
       const chartW = W - PL - PR;
       const chartH = H - PT - PB;
       const n = records.length;
       const nAll = all.length;
-      const sIdx = Math.max(0, Math.min(this.flowStartIdx, nAll - 1));
+      const sIdx = Math.max(0, Math.min(this.flowChartRanges[6]?.startIdx || 0, nAll - 1));
 
       const xScale = (i) => PL + (i / (n - 1)) * chartW;
       const yScale = (pct) => PT + chartH - pct * chartH;
@@ -8146,22 +8624,22 @@ function marketsApp() {
       const yLow = yScale(0.15);
 
       const grid = `
-        <rect x="${PL}" y="${PT}" width="${chartW}" height="${(yHigh - PT).toFixed(1)}" fill="rgba(251,113,133,0.04)" />
-        <rect x="${PL}" y="${yLow.toFixed(1)}" width="${chartW}" height="${(PT + chartH - yLow).toFixed(1)}" fill="rgba(52,211,153,0.04)" />
-        <line x1="${PL}" y1="${yHigh.toFixed(1)}" x2="${W - PR}" y2="${yHigh.toFixed(1)}" stroke="#fb7185" stroke-dasharray="2,2" opacity="0.5"/>
-        <text x="${PL - 8}" y="${(yHigh + 3.5).toFixed(1)}" text-anchor="end" fill="#fb7185" font-family="ui-monospace" font-size="8.5">60D High (85%)</text>
-        <line x1="${PL}" y1="${yMid.toFixed(1)}" x2="${W - PR}" y2="${yMid.toFixed(1)}" stroke="#52525b" stroke-dasharray="2,2" opacity="0.6"/>
-        <text x="${PL - 8}" y="${(yMid + 3.5).toFixed(1)}" text-anchor="end" fill="#71717a" font-family="ui-monospace" font-size="8.5">Mid-Range (50%)</text>
-        <line x1="${PL}" y1="${yLow.toFixed(1)}" x2="${W - PR}" y2="${yLow.toFixed(1)}" stroke="#34d399" stroke-dasharray="2,2" opacity="0.5"/>
-        <text x="${PL - 8}" y="${(yLow + 3.5).toFixed(1)}" text-anchor="end" fill="#34d399" font-family="ui-monospace" font-size="8.5">60D Low (15%)</text>
+        <rect x="${PL}" y="${PT}" width="${chartW}" height="${(yHigh - PT).toFixed(1)}" fill="rgba(251,113,133,0.05)" />
+        <rect x="${PL}" y="${yLow.toFixed(1)}" width="${chartW}" height="${(PT + chartH - yLow).toFixed(1)}" fill="rgba(52,211,153,0.05)" />
+        <line x1="${PL}" y1="${yHigh.toFixed(1)}" x2="${W - PR}" y2="${yHigh.toFixed(1)}" stroke="#fb7185" stroke-dasharray="2,2" opacity="0.6"/>
+        <text x="${PL - 10}" y="${(yHigh + 3.5).toFixed(1)}" text-anchor="end" fill="#fb7185" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9">60D High (85%)</text>
+        <line x1="${PL}" y1="${yMid.toFixed(1)}" x2="${W - PR}" y2="${yMid.toFixed(1)}" stroke="rgba(255,255,255,0.2)" stroke-dasharray="2,2"/>
+        <text x="${PL - 10}" y="${(yMid + 3.5).toFixed(1)}" text-anchor="end" fill="#94a3b8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9">Mid-Range (50%)</text>
+        <line x1="${PL}" y1="${yLow.toFixed(1)}" x2="${W - PR}" y2="${yLow.toFixed(1)}" stroke="#34d399" stroke-dasharray="2,2" opacity="0.6"/>
+        <text x="${PL - 10}" y="${(yLow + 3.5).toFixed(1)}" text-anchor="end" fill="#34d399" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9">60D Low (15%)</text>
       `;
 
       let pinsSvg = '';
       for (let p of pins) {
         pinsSvg += `
           <g>
-            <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="6" fill="${p.color}" opacity="0.3"/>
-            <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="${p.color}" stroke="#0d1117" stroke-width="1"/>
+            <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="7" fill="${p.color}" opacity="0.25"/>
+            <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="${p.color}" stroke="#080c14" stroke-width="1.5"/>
             <title>${p.label}</title>
           </g>
         `;
@@ -8172,18 +8650,18 @@ function marketsApp() {
       for (let i = 0; i < n; i += dateStep) {
         const x = xScale(i);
         const d = records[i].date;
-        xTicks += `<text x="${x.toFixed(1)}" y="${H - 10}" text-anchor="middle" fill="#71717a" font-family="ui-monospace" font-size="8.5">${d}</text>`;
+        xTicks += `<text x="${x.toFixed(1)}" y="${H - 12}" text-anchor="middle" fill="#64748b" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9">${d}</text>`;
       }
       if ((n - 1) % dateStep !== 0) {
         const lastX = xScale(n - 1);
-        xTicks += `<text x="${lastX.toFixed(1)}" y="${H - 10}" text-anchor="middle" fill="#71717a" font-family="ui-monospace" font-size="8.5">${records[n - 1].date}</text>`;
+        xTicks += `<text x="${lastX.toFixed(1)}" y="${H - 12}" text-anchor="middle" fill="#64748b" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9">${records[n - 1].date}</text>`;
       }
 
       return `
-        <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};display:block;background:#0d1117;border-radius:6px;">
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;aspect-ratio:${W}/${H};display:block;background:#080c14;border-radius:6px;">
           ${grid}
           ${xTicks}
-          <path d="${pricePosPath}" fill="none" stroke="#22d3ee" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+          <path d="${pricePosPath}" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.95"/>
           ${pinsSvg}
         </svg>
       `;
