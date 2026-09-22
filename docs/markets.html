@@ -2020,12 +2020,12 @@
   <div x-show="activeTab === 'flows'" x-cloak>
 
     <!-- Top Command Center: Universal ETF Search -->
-    <div class="max-w-5xl mx-auto mb-6">
+    <div class="w-full mb-6">
       <div class="relative">
-        <div class="flex items-center gap-3 bg-[#080c14] border rounded-lg px-4 py-3 shadow-2xl focus-within:border-cyan-400 transition" style="border-color: rgba(255,255,255,0.1)">
-          <div class="flex items-center gap-1.5 shrink-0 text-cyan-400 font-mono text-xs font-bold select-none">
+        <div class="flex items-center gap-3 bg-[#080c14] border rounded-lg px-4 py-3.5 shadow-2xl focus-within:border-cyan-400 transition" style="border-color: rgba(255,255,255,0.12)">
+          <div class="flex items-center gap-2 shrink-0 select-none px-3 py-1.5 rounded bg-cyan-500/10 border border-cyan-400/30 text-cyan-400 font-mono text-xs font-bold">
             <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-            <span>FIND &gt;</span>
+            <span>TYPE HERE TO SEARCH ETFS &gt;</span>
           </div>
           <input type="text"
                  x-model="flowSearchQuery"
@@ -2035,18 +2035,22 @@
                  @keydown.up.prevent="flowSearchUp()"
                  @keydown.enter.prevent="flowSearchEnter()"
                  @keydown.escape="flowSearchOpen = false"
-                 placeholder="Search 15,713 ETFs by symbol or name (e.g. SPY, QQQ, TQQQ, SOXL, MSTU, NVDL)..."
-                 class="bg-transparent border-none text-xs sm:text-sm w-full focus:outline-none text-zinc-100 placeholder-zinc-500 font-mono">
-          <button x-show="flowSearchQuery" @click="flowSearchQuery = ''; flowSearchResults = []; flowSearchOpen = false" class="text-zinc-500 hover:text-zinc-300 text-xs font-mono p-1">✕</button>
-          <span class="text-[10px] font-mono px-2 py-0.5 rounded border border-white/10 text-cyan-400 bg-cyan-500/10 shrink-0 font-semibold">15.7K UNIVERSE</span>
+                 placeholder="Type ETF symbol, fund name, or asset theme (e.g. TQQQ, SOXL, NVDL, MSTU, TMF, SPY, QQQ)..."
+                 class="bg-transparent border-none text-xs sm:text-sm w-full focus:outline-none text-zinc-100 placeholder-zinc-500 font-mono font-medium">
+          <button x-show="flowSearchQuery" @click="flowSearchQuery = ''; flowSearchResults = []; flowSearchOpen = false" class="text-zinc-500 hover:text-zinc-200 text-xs font-mono p-1 transition" title="Clear search">✕</button>
+          <div class="hidden sm:flex items-center gap-2 shrink-0 select-none">
+            <span class="text-[10px] font-mono px-2.5 py-1 rounded border border-white/10 text-emerald-400 bg-emerald-500/10 font-semibold flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> 15,713 UNIVERSE
+            </span>
+          </div>
         </div>
 
         <!-- Autocomplete Dropdown -->
         <div x-show="flowSearchOpen && flowSearchResults.length"
              @click.away="flowSearchOpen = false"
              class="absolute left-0 right-0 top-full mt-2 z-50 rounded-xl border shadow-2xl overflow-hidden max-h-96 overflow-y-auto scrollbar"
-             style="background: #080c14; border-color: rgba(255,255,255,0.12);">
-          <div class="px-3 py-2 text-[10px] font-mono text-zinc-400 border-b border-white/10 uppercase tracking-wider flex justify-between bg-black/80 sticky top-0 backdrop-blur z-10">
+             style="background: #080c14; border-color: rgba(255,255,255,0.15);">
+          <div class="px-3.5 py-2 text-[10px] font-mono text-zinc-400 border-b border-white/10 uppercase tracking-wider flex justify-between bg-black/90 sticky top-0 backdrop-blur z-10">
             <span>Matching ETFs (<span x-text="flowSearchResults.length"></span>) · ↑↓ Navigate · ↵ Select</span>
             <span class="text-cyan-400 font-semibold">Trackinsight In-Memory Terminal</span>
           </div>
@@ -2073,50 +2077,118 @@
         </div>
       </div>
 
-      <!-- Institutional Grouped Ticker Shortcuts Bar -->
-      <div class="flex items-center gap-2 mt-3 px-0.5 text-xs font-mono text-zinc-400 flex-wrap">
-        <span class="text-zinc-500 uppercase text-[10px] tracking-wider font-semibold mr-1">WATCHLIST:</span>
-        <!-- Sector Tech -->
-        <div class="inline-flex items-center gap-1 px-2 py-1 rounded bg-[#090d16] border border-white/5">
-          <span class="text-[9px] uppercase tracking-wider text-cyan-400 font-semibold mr-0.5">TECH</span>
-          <template x-for="t in ['TECL', 'SOXL', 'FNGU']" :key="t">
-            <button @click="selectFlowTicker(t)" :class="flowTicker === t ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-500/40 shadow-xs' : 'text-zinc-400 hover:text-white border-transparent'" class="px-1.5 py-0.5 rounded text-[11px] border transition" x-text="t"></button>
-          </template>
+      <!-- Institutional Grouped Ticker Shortcuts: 3 Above, 3 Down Grid -->
+      <div class="mt-3.5">
+        <div class="flex items-center justify-between mb-2 px-1 text-xs font-mono text-zinc-400">
+          <div class="flex items-center gap-2">
+            <span class="text-zinc-500 uppercase text-[10px] tracking-wider font-semibold">CURATED WATCHLIST SUGGESTIONS:</span>
+            <span class="text-[10px] text-zinc-600 hidden sm:inline">· Click any ETF to view full capital flow history</span>
+          </div>
+          <span class="text-[10px] text-zinc-500 font-mono hidden md:inline">6 SECTORS · 24 CORE BENCHMARKS</span>
         </div>
-        <!-- Bonds & Treasuries -->
-        <div class="inline-flex items-center gap-1 px-2 py-1 rounded bg-[#090d16] border border-white/5">
-          <span class="text-[9px] uppercase tracking-wider text-purple-400 font-semibold mr-0.5">BONDS</span>
-          <template x-for="t in ['TMF', 'TMV', 'TBT']" :key="t">
-            <button @click="selectFlowTicker(t)" :class="flowTicker === t ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-500/40 shadow-xs' : 'text-zinc-400 hover:text-white border-transparent'" class="px-1.5 py-0.5 rounded text-[11px] border transition" x-text="t"></button>
-          </template>
-        </div>
-        <!-- Commodities & Energy -->
-        <div class="inline-flex items-center gap-1 px-2 py-1 rounded bg-[#090d16] border border-white/5">
-          <span class="text-[9px] uppercase tracking-wider text-emerald-400 font-semibold mr-0.5">COMMODITIES</span>
-          <template x-for="t in ['ERX', 'UCO', 'AGQ', 'BOIL']" :key="t">
-            <button @click="selectFlowTicker(t)" :class="flowTicker === t ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-500/40 shadow-xs' : 'text-zinc-400 hover:text-white border-transparent'" class="px-1.5 py-0.5 rounded text-[11px] border transition" x-text="t"></button>
-          </template>
-        </div>
-        <!-- Single-Stock Leverage -->
-        <div class="inline-flex items-center gap-1 px-2 py-1 rounded bg-[#090d16] border border-white/5">
-          <span class="text-[9px] uppercase tracking-wider text-rose-400 font-semibold mr-0.5">AI/EQUITY</span>
-          <template x-for="t in ['NVDL', 'TSLL', 'MSTU', 'CONL']" :key="t">
-            <button @click="selectFlowTicker(t)" :class="flowTicker === t ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-500/40 shadow-xs' : 'text-zinc-400 hover:text-white border-transparent'" class="px-1.5 py-0.5 rounded text-[11px] border transition" x-text="t"></button>
-          </template>
-        </div>
-        <!-- Volatility & Macro -->
-        <div class="inline-flex items-center gap-1 px-2 py-1 rounded bg-[#090d16] border border-white/5">
-          <span class="text-[9px] uppercase tracking-wider text-amber-400 font-semibold mr-0.5">VOL/FX</span>
-          <template x-for="t in ['SVIX', 'UVXY', 'BITX', 'UUP']" :key="t">
-            <button @click="selectFlowTicker(t)" :class="flowTicker === t ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-500/40 shadow-xs' : 'text-zinc-400 hover:text-white border-transparent'" class="px-1.5 py-0.5 rounded text-[11px] border transition" x-text="t"></button>
-          </template>
-        </div>
-        <!-- Countries -->
-        <div class="inline-flex items-center gap-1 px-2 py-1 rounded bg-[#090d16] border border-white/5">
-          <span class="text-[9px] uppercase tracking-wider text-indigo-400 font-semibold mr-0.5">COUNTRY</span>
-          <template x-for="t in ['YINN', 'YANG', 'BRZU']" :key="t">
-            <button @click="selectFlowTicker(t)" :class="flowTicker === t ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-500/40 shadow-xs' : 'text-zinc-400 hover:text-white border-transparent'" class="px-1.5 py-0.5 rounded text-[11px] border transition" x-text="t"></button>
-          </template>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+          <!-- 1. Sector Tech & Semis -->
+          <div class="flex items-center justify-between p-2 rounded-lg bg-[#080c14] border border-white/10 hover:border-cyan-500/30 transition">
+            <div class="flex items-center gap-2">
+              <span class="w-1.5 h-4 rounded-full bg-cyan-400"></span>
+              <span class="text-[10px] uppercase tracking-wider text-cyan-400 font-mono font-bold">TECH &amp; SEMIS</span>
+            </div>
+            <div class="flex items-center gap-1.5 font-mono">
+              <template x-for="t in ['TECL', 'SOXL', 'FNGU', 'USD']" :key="t">
+                <button @click="selectFlowTicker(t)"
+                        :class="flowTicker === t ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-400 shadow-xs' : 'text-zinc-400 hover:text-white border-transparent hover:border-white/10'"
+                        class="px-2 py-0.5 rounded text-[11px] border transition"
+                        x-text="t">
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <!-- 2. AI & Single-Stock Leverage -->
+          <div class="flex items-center justify-between p-2 rounded-lg bg-[#080c14] border border-white/10 hover:border-rose-500/30 transition">
+            <div class="flex items-center gap-2">
+              <span class="w-1.5 h-4 rounded-full bg-rose-400"></span>
+              <span class="text-[10px] uppercase tracking-wider text-rose-400 font-mono font-bold">AI &amp; CRYPTO</span>
+            </div>
+            <div class="flex items-center gap-1.5 font-mono">
+              <template x-for="t in ['NVDL', 'TSLL', 'MSTU', 'CONL']" :key="t">
+                <button @click="selectFlowTicker(t)"
+                        :class="flowTicker === t ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-400 shadow-xs' : 'text-zinc-400 hover:text-white border-transparent hover:border-white/10'"
+                        class="px-2 py-0.5 rounded text-[11px] border transition"
+                        x-text="t">
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <!-- 3. Energy & Commodities -->
+          <div class="flex items-center justify-between p-2 rounded-lg bg-[#080c14] border border-white/10 hover:border-emerald-500/30 transition">
+            <div class="flex items-center gap-2">
+              <span class="w-1.5 h-4 rounded-full bg-emerald-400"></span>
+              <span class="text-[10px] uppercase tracking-wider text-emerald-400 font-mono font-bold">COMMODITIES</span>
+            </div>
+            <div class="flex items-center gap-1.5 font-mono">
+              <template x-for="t in ['ERX', 'UCO', 'BOIL', 'AGQ']" :key="t">
+                <button @click="selectFlowTicker(t)"
+                        :class="flowTicker === t ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-400 shadow-xs' : 'text-zinc-400 hover:text-white border-transparent hover:border-white/10'"
+                        class="px-2 py-0.5 rounded text-[11px] border transition"
+                        x-text="t">
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <!-- 4. Treasuries & Bonds -->
+          <div class="flex items-center justify-between p-2 rounded-lg bg-[#080c14] border border-white/10 hover:border-purple-500/30 transition">
+            <div class="flex items-center gap-2">
+              <span class="w-1.5 h-4 rounded-full bg-purple-400"></span>
+              <span class="text-[10px] uppercase tracking-wider text-purple-400 font-mono font-bold">TREASURIES</span>
+            </div>
+            <div class="flex items-center gap-1.5 font-mono">
+              <template x-for="t in ['TMF', 'TMV', 'TBT', 'UBT']" :key="t">
+                <button @click="selectFlowTicker(t)"
+                        :class="flowTicker === t ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-400 shadow-xs' : 'text-zinc-400 hover:text-white border-transparent hover:border-white/10'"
+                        class="px-2 py-0.5 rounded text-[11px] border transition"
+                        x-text="t">
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <!-- 5. Volatility & Benchmarks -->
+          <div class="flex items-center justify-between p-2 rounded-lg bg-[#080c14] border border-white/10 hover:border-amber-500/30 transition">
+            <div class="flex items-center gap-2">
+              <span class="w-1.5 h-4 rounded-full bg-amber-400"></span>
+              <span class="text-[10px] uppercase tracking-wider text-amber-400 font-mono font-bold">VOL &amp; BENCH</span>
+            </div>
+            <div class="flex items-center gap-1.5 font-mono">
+              <template x-for="t in ['TQQQ', 'SQQQ', 'SVIX', 'UVXY']" :key="t">
+                <button @click="selectFlowTicker(t)"
+                        :class="flowTicker === t ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-400 shadow-xs' : 'text-zinc-400 hover:text-white border-transparent hover:border-white/10'"
+                        class="px-2 py-0.5 rounded text-[11px] border transition"
+                        x-text="t">
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <!-- 6. Global & Country -->
+          <div class="flex items-center justify-between p-2 rounded-lg bg-[#080c14] border border-white/10 hover:border-indigo-500/30 transition">
+            <div class="flex items-center gap-2">
+              <span class="w-1.5 h-4 rounded-full bg-indigo-400"></span>
+              <span class="text-[10px] uppercase tracking-wider text-indigo-400 font-mono font-bold">GLOBAL MACRO</span>
+            </div>
+            <div class="flex items-center gap-1.5 font-mono">
+              <template x-for="t in ['YINN', 'YANG', 'KORU', 'BRZU']" :key="t">
+                <button @click="selectFlowTicker(t)"
+                        :class="flowTicker === t ? 'bg-cyan-500/20 text-cyan-300 font-bold border-cyan-400 shadow-xs' : 'text-zinc-400 hover:text-white border-transparent hover:border-white/10'"
+                        class="px-2 py-0.5 rounded text-[11px] border transition"
+                        x-text="t">
+                </button>
+              </template>
+            </div>
+          </div>
         </div>
       </div>
     </div>
