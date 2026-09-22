@@ -72,6 +72,36 @@ KNOWN_KEYS = {
     "UUP": "UUP",
     "EUO": "EUO",
     "YCS": "YCS",
+    # Leveraged Bonds & Treasuries (Bull & Bear)
+    "TMF": "TMF",
+    "TMV": "TMV",
+    "TBT": "TBT",
+    "TYD": "TYD",
+    "TYO": "TYO",
+    "UBT": "UBT",
+    # Leveraged Country ETFs (China, Korea, Brazil, India, EM, Mexico)
+    "YINN": "YINN",
+    "YANG": "YANG",
+    "KORU": "KORU",
+    "BRZU": "BRZU",
+    "INDL": "INDL",
+    "EDC": "EDC",
+    "EDZ": "EDZ",
+    "MEXX": "MEXX",
+    # Leveraged Metals Bear (Inverse)
+    "DUST": "DUST",
+    "JDST": "JDST",
+    "ZSL": "ZSL",
+    "GLL": "GLL",
+    # Leveraged Currency (Bull & Bear)
+    "UDN": "UDN",
+    "ULE": "ULE",
+    "YCL": "YCL",
+    # High-Volatility / Crypto / Swings
+    "BITX": "BITX",
+    "MSTZ": "BATS:MSTZ",
+    "TECS": "TECS",
+    "FNGD": "FNGD",
     # Single-Stock Leveraged (AI & High Beta)
     "NVDL": "NVDL",
     "NVDU": "XNMS:NVDU",
@@ -107,13 +137,15 @@ KNOWN_KEYS = {
 }
 
 CURATED_PRESETS = {
-    "leveraged_tech_ai": ["TECL", "SOXL", "SOXS", "USD", "FNGU", "BULZ", "ROM", "WEBL"],
-    "single_stock_leveraged": ["NVDL", "NVDU", "TSLL", "TSLQ", "MSTU", "MSTX", "CONL", "PLTU", "PTIR", "METU", "AMUU", "GGLL", "GOOX", "AAPU", "MSFU", "AMZU"],
+    "leveraged_tech_ai": ["TECL", "SOXL", "SOXS", "USD", "FNGU", "BULZ", "ROM", "WEBL", "TECS", "FNGD"],
+    "single_stock_leveraged": ["NVDL", "NVDU", "TSLL", "TSLQ", "MSTU", "MSTX", "MSTZ", "CONL", "PLTU", "PTIR", "METU", "AMUU", "GGLL", "GOOX", "AAPU", "MSFU", "AMZU"],
+    "leveraged_bonds": ["TMF", "TMV", "TBT", "TYD", "TYO", "UBT"],
+    "leveraged_countries": ["YINN", "YANG", "KORU", "BRZU", "INDL", "EDC", "EDZ", "MEXX"],
+    "leveraged_energy_commodities": ["ERX", "GUSH", "UCO", "BOIL", "KOLD", "AGQ", "UGL", "NUGT", "JNUG", "DUST", "JDST", "ZSL", "GLL", "CPER"],
     "leveraged_financials": ["FAS", "DPST", "UYG"],
     "leveraged_biotech_health": ["LABU", "CURE"],
-    "leveraged_energy_commodities": ["ERX", "GUSH", "UCO", "BOIL", "KOLD", "AGQ", "UGL", "NUGT", "JNUG", "CPER"],
     "leveraged_defense_transport": ["DFEN", "TPOR", "DUSL", "NAIL"],
-    "volatility_fx": ["UVXY", "SVIX", "SVXY", "UVIX", "UUP", "EUO", "YCS"],
+    "volatility_fx_crypto": ["BITX", "UVXY", "SVIX", "SVXY", "UVIX", "UUP", "UDN", "EUO", "ULE", "YCS", "YCL"],
     "broad_market_leverage": ["TQQQ", "SQQQ", "UPRO", "SPXU", "TNA", "TZA"]
 }
 

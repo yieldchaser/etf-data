@@ -2074,8 +2074,8 @@
 
       <!-- Quick Ticker Shortcuts Bar -->
       <div class="flex items-center gap-2 mt-2 px-1 text-[11px] font-mono text-zinc-400 flex-wrap">
-        <span class="text-zinc-600 uppercase text-[10px] tracking-wider">Leveraged Sectors & Single-Stock:</span>
-        <template x-for="t in ['TECL', 'SOXL', 'FAS', 'LABU', 'DFEN', 'TPOR', 'ERX', 'UCO', 'AGQ', 'UGL', 'UVXY', 'NVDL', 'TSLL', 'MSTU', 'PLTU', 'CONL']" :key="t">
+        <span class="text-zinc-600 uppercase text-[10px] tracking-wider">Quick Jump:</span>
+        <template x-for="t in ['TECL', 'SOXL', 'TMF', 'TMV', 'ERX', 'UCO', 'AGQ', 'DUST', 'YINN', 'YANG', 'BRZU', 'UVXY', 'SVXY', 'BITX', 'MSTU', 'MSTZ', 'NVDL', 'TSLL', 'PLTU', 'CONL']" :key="t">
           <button @click="selectFlowTicker(t)"
                   class="hover:text-cyan-300 hover:underline transition"
                   :class="flowTicker === t ? 'text-cyan-400 font-bold' : 'text-zinc-400'"
@@ -2762,33 +2762,34 @@ function marketsApp() {
     _secondaryLoadsStarted: false,
 
     async load() {
-      // 1. Immediately apply URL deep-links and load secondary tab payloads (flows, vol, pricelog)
+      // 1. Immediately apply URL deep-links
       this._applyDeepLink();
-      this._ensureSecondaryLoaded(this.activeTab);
 
-      // 2. Critical path for matrix tab: returns payload + metadata freshness
-      await Promise.all([this._loadReturns(), this._loadFreshness()]);
+      // 2. Watch for tab switches to eagerly load appropriate data on-demand
+      this.$watch('activeTab', (tab) => this._ensureTabLoaded(tab));
+
+      // 3. Load ONLY the data required for the active tab (zero cross-tab blocking)
+      await Promise.all([this._ensureTabLoaded(this.activeTab), this._loadFreshness()]);
       this._applyDeepLink();
     },
 
-    _ensureSecondaryLoaded(tab) {
-      if (!tab) return;
-      const needPriceLog = tab === 'pricelog';
-      const needVol = tab === 'volatility';
-      const needFlows = tab === 'flows';
-      if (!needPriceLog && !needVol && !needFlows) {
-        // Not a secondary-tab view - warm payloads when the browser
-        // is idle so switching later feels instant.
-        if (this._secondaryLoadsStarted) return;
-        this._secondaryLoadsStarted = true;
-        const kick = () => { this._loadPriceLog(); this._loadVol(); };
-        if (typeof requestIdleCallback === 'function') requestIdleCallback(kick, { timeout: 4000 });
-        else setTimeout(kick, 1500);
-        return;
+    _ensureTabLoaded(tab) {
+      if (!tab) tab = 'matrix';
+      if (tab === 'flows') {
+        return this._loadFlows();
       }
-      if (needPriceLog) this._loadPriceLog();
-      if (needVol) this._loadVol();
-      if (needFlows) this._loadFlows();
+      if (tab === 'volatility') {
+        return this._loadVol();
+      }
+      if (tab === 'pricelog') {
+        return this._loadPriceLog();
+      }
+      // For matrix, periodic, yields, drawdown, holdingperiod, seasonality, correlation
+      return this._loadReturns();
+    },
+
+    _ensureSecondaryLoaded(tab) {
+      return this._ensureTabLoaded(tab);
     },
 
     async _loadFreshness() {
@@ -2973,7 +2974,7 @@ function marketsApp() {
       try {
         const data = await fetch('data/markets.json').then(r => r.json());
         this.meta = { generated_at_utc: data.generated_at_utc };
-        this.series = data.series || [];
+        this.series = Object.freeze(data.series || []);
       } catch (e) {
         console.warn('Price log load error:', e);
       } finally {
@@ -2989,7 +2990,7 @@ function marketsApp() {
         try {
           const r = await fetch(`data/market_returns.json?v=${bust}`);
           if (!r.ok) { this.returnsData = null; break; }
-          this.returnsData = await r.json();
+          this.returnsData = Object.freeze(await r.json());
           // Fresh payload landed - drop every cache derived from the previous
           // one so a mid-session reload can never show stale numbers.
           this._partialMonthSet = null;
@@ -3036,7 +3037,7 @@ function marketsApp() {
         const bust = this._sessionBust || (this._sessionBust = Date.now());
         const r = await fetch(`data/vol_history.json?v=${bust}`);
         if (!r.ok) { this.volData = null; return; }
-        this.volData = await r.json();
+        this.volData = Object.freeze(await r.json());
         this._volZCache = {};
         this._volSparkCache = {};
       } catch (e) {
@@ -7039,6 +7040,13 @@ function marketsApp() {
           const raw = await r.json();
           // Store raw tuples in non-reactive memory to prevent Alpine proxy overhead on 15,713 items
           window._etfSearchIndex = (raw && raw.rows) ? raw.rows : (Array.isArray(raw) ? raw : []);
+          window._etfSearchMap = new Map();
+          for (let i = 0; i < window._etfSearchIndex.length; i++) {
+            const row = window._etfSearchIndex[i];
+            if (row && row[0]) {
+              window._etfSearchMap.set(row[0].toUpperCase(), row);
+            }
+          }
         }
       } catch (e) {
         console.warn('ETF search index load error:', e);
@@ -7066,7 +7074,7 @@ function marketsApp() {
           if (!window._etfSearchIndex) {
             await this._loadFlowSearchIndex();
           }
-          const found = (window._etfSearchIndex || []).find(row => (row[0] || '').toUpperCase() === ticker);
+          const found = window._etfSearchMap ? window._etfSearchMap.get(ticker) : (window._etfSearchIndex || []).find(row => (row[0] || '').toUpperCase() === ticker);
           if (found) {
             this.flowSelectedUncached = {
               t: found[0],
@@ -7402,18 +7410,16 @@ function marketsApp() {
         if (found) return found;
       }
       // Check search index for friendly company name, provider, AUM
-      if (window._etfSearchIndex) {
-        const row = window._etfSearchIndex.find(r => (r[0] || '').toUpperCase() === t);
-        if (row) {
-          return {
-            ticker: t,
-            label: row[2],
-            provider: row[3],
-            aum_usd: row[4],
-            currency: row[5] || 'USD',
-            category: row[3] || 'Leveraged ETF'
-          };
-        }
+      const row = window._etfSearchMap ? window._etfSearchMap.get(t) : (window._etfSearchIndex ? window._etfSearchIndex.find(r => (r[0] || '').toUpperCase() === t) : null);
+      if (row) {
+        return {
+          ticker: t,
+          label: row[2],
+          provider: row[3],
+          aum_usd: row[4],
+          currency: row[5] || 'USD',
+          category: row[3] || 'Leveraged ETF'
+        };
       }
       return {
         ticker: t,
