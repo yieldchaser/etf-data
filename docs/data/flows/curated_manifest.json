@@ -1,55 +1,78 @@
 {
-  "generated_utc": "2026-09-22T16:30:43.143307+00:00",
-  "total_etfs": 37,
+  "generated_utc": "2026-09-22T19:06:15.131483+00:00",
+  "total_etfs": 69,
   "presets": {
-    "benchmarks": [
-      "SPY",
-      "QQQ",
-      "IWM",
-      "GLD",
-      "SLV"
+    "leveraged_tech_ai": [
+      "TECL",
+      "SOXL",
+      "SOXS",
+      "USD",
+      "FNGU",
+      "BULZ",
+      "ROM",
+      "WEBL"
     ],
-    "single_stock_bull": [
+    "single_stock_leveraged": [
       "NVDL",
+      "NVDU",
       "TSLL",
-      "MSTX",
+      "TSLQ",
       "MSTU",
+      "MSTX",
+      "CONL",
+      "PLTU",
+      "PTIR",
+      "METU",
+      "AMUU",
       "GGLL",
       "GOOX",
-      "MSFU",
       "AAPU",
-      "AMZU",
-      "CONL"
+      "MSFU",
+      "AMZU"
     ],
-    "single_stock_bear": [
-      "TSLQ",
-      "NVDS"
+    "leveraged_financials": [
+      "FAS",
+      "DPST",
+      "UYG"
     ],
-    "leveraged_bull": [
-      "TQQQ",
-      "SOXL",
-      "UPRO",
-      "SPXL",
-      "TNA",
+    "leveraged_biotech_health": [
+      "LABU",
+      "CURE"
+    ],
+    "leveraged_energy_commodities": [
+      "ERX",
+      "GUSH",
+      "UCO",
+      "BOIL",
+      "KOLD",
       "AGQ",
       "UGL",
-      "BOIL"
+      "NUGT",
+      "JNUG",
+      "CPER"
     ],
-    "leveraged_bear": [
-      "SQQQ",
-      "SOXS",
-      "SPXU",
-      "TZA",
-      "KOLD",
+    "leveraged_defense_transport": [
+      "DFEN",
+      "TPOR",
+      "DUSL",
+      "NAIL"
+    ],
+    "volatility_fx": [
       "UVXY",
-      "SVIX"
-    ],
-    "macro_rates_fx": [
+      "SVIX",
+      "SVXY",
+      "UVIX",
       "UUP",
-      "FXE",
-      "TLT",
-      "USO",
-      "UNG"
+      "EUO",
+      "YCS"
+    ],
+    "broad_market_leverage": [
+      "TQQQ",
+      "SQQQ",
+      "UPRO",
+      "SPXU",
+      "TNA",
+      "TZA"
     ]
   },
   "etfs": {
@@ -101,6 +124,18 @@
       "start_date": "2016-01-04",
       "records": 2667
     },
+    "AMUU": {
+      "ticker": "AMUU",
+      "key": "AMUU",
+      "asof": "2026-09-21",
+      "nav": 284.97,
+      "flow_30d": -26114000.0,
+      "flow_zscore": -1.958,
+      "regime": "DISTRIBUTION",
+      "pressure": -61.0,
+      "start_date": "2025-02-13",
+      "records": 406
+    },
     "AMZU": {
       "ticker": "AMZU",
       "key": "XNMS:AMZU",
@@ -137,6 +172,18 @@
       "start_date": "2016-01-04",
       "records": 2642
     },
+    "BULZ": {
+      "ticker": "BULZ",
+      "key": "BULZ",
+      "asof": "2026-09-18",
+      "nav": 41.72,
+      "flow_30d": 0.0,
+      "flow_zscore": 0.0,
+      "regime": "BALANCED",
+      "pressure": 0.0,
+      "start_date": "2021-08-24",
+      "records": 1270
+    },
     "BWET": {
       "ticker": "BWET",
       "key": "BWET",
@@ -160,6 +207,114 @@
       "pressure": -41.1,
       "start_date": "2022-08-09",
       "records": 1032
+    },
+    "CPER": {
+      "ticker": "CPER",
+      "key": "ARCX:CPER",
+      "asof": "2026-09-21",
+      "nav": 40.54,
+      "flow_30d": -15622000.0,
+      "flow_zscore": 0.135,
+      "regime": "BALANCED",
+      "pressure": -6.6,
+      "start_date": "2016-01-04",
+      "records": 2689
+    },
+    "CURE": {
+      "ticker": "CURE",
+      "key": "ARCX:CURE",
+      "asof": "2026-09-21",
+      "nav": 131.14,
+      "flow_30d": -21036000.0,
+      "flow_zscore": 0.216,
+      "regime": "BALANCED",
+      "pressure": -4.6,
+      "start_date": "2016-01-04",
+      "records": 2668
+    },
+    "DFEN": {
+      "ticker": "DFEN",
+      "key": "ARCX:DFEN",
+      "asof": "2026-09-21",
+      "nav": 53.86,
+      "flow_30d": 52266000.0,
+      "flow_zscore": -1.411,
+      "regime": "BALANCED",
+      "pressure": -27.3,
+      "start_date": "2017-05-03",
+      "records": 2332
+    },
+    "DPST": {
+      "ticker": "DPST",
+      "key": "DPST",
+      "asof": "2026-09-21",
+      "nav": 122.93,
+      "flow_30d": 4630000.0,
+      "flow_zscore": 1.175,
+      "regime": "BALANCED",
+      "pressure": 21.4,
+      "start_date": "2016-01-04",
+      "records": 2667
+    },
+    "DUSL": {
+      "ticker": "DUSL",
+      "key": "DUSL",
+      "asof": "2026-09-21",
+      "nav": 78.4,
+      "flow_30d": 22000.0,
+      "flow_zscore": -0.001,
+      "regime": "BALANCED",
+      "pressure": 10.0,
+      "start_date": "2017-05-03",
+      "records": 2340
+    },
+    "ERX": {
+      "ticker": "ERX",
+      "key": "ERX",
+      "asof": "2026-09-21",
+      "nav": 103.84,
+      "flow_30d": -10097000.0,
+      "flow_zscore": 0.123,
+      "regime": "BALANCED",
+      "pressure": -6.9,
+      "start_date": "2016-01-04",
+      "records": 2670
+    },
+    "EUO": {
+      "ticker": "EUO",
+      "key": "EUO",
+      "asof": "2026-09-21",
+      "nav": 30.79,
+      "flow_30d": 0.0,
+      "flow_zscore": 0.0,
+      "regime": "BALANCED",
+      "pressure": 0.0,
+      "start_date": "2016-01-04",
+      "records": 2668
+    },
+    "FAS": {
+      "ticker": "FAS",
+      "key": "FAS",
+      "asof": "2026-09-21",
+      "nav": 162.9,
+      "flow_30d": -101115000.0,
+      "flow_zscore": 0.866,
+      "regime": "BALANCED",
+      "pressure": 33.6,
+      "start_date": "2016-01-04",
+      "records": 2667
+    },
+    "FNGU": {
+      "ticker": "FNGU",
+      "key": "FNGU",
+      "asof": "2026-09-18",
+      "nav": 33.06,
+      "flow_30d": 0.0,
+      "flow_zscore": 0.0,
+      "regime": "BALANCED",
+      "pressure": 0.0,
+      "start_date": "2025-02-20",
+      "records": 398
     },
     "GGLL": {
       "ticker": "GGLL",
@@ -197,6 +352,18 @@
       "start_date": "2024-01-11",
       "records": 671
     },
+    "GUSH": {
+      "ticker": "GUSH",
+      "key": "GUSH",
+      "asof": "2026-09-21",
+      "nav": 43.14,
+      "flow_30d": -51496000.0,
+      "flow_zscore": 1.166,
+      "regime": "BALANCED",
+      "pressure": 23.1,
+      "start_date": "2016-01-04",
+      "records": 2674
+    },
     "HND": {
       "ticker": "HND",
       "key": "HND",
@@ -233,6 +400,18 @@
       "start_date": "2016-01-04",
       "records": 2693
     },
+    "JNUG": {
+      "ticker": "JNUG",
+      "key": "JNUG",
+      "asof": "2026-09-21",
+      "nav": 174.97,
+      "flow_30d": -89301000.0,
+      "flow_zscore": 0.378,
+      "regime": "BALANCED",
+      "pressure": 9.5,
+      "start_date": "2016-01-04",
+      "records": 2672
+    },
     "KOLD": {
       "ticker": "KOLD",
       "key": "KOLD",
@@ -244,6 +423,30 @@
       "pressure": 10.8138,
       "start_date": "2016-01-04",
       "records": 2640
+    },
+    "LABU": {
+      "ticker": "LABU",
+      "key": "LABU",
+      "asof": "2026-09-21",
+      "nav": 270.07,
+      "flow_30d": -12505000.0,
+      "flow_zscore": 1.827,
+      "regime": "ACCUMULATION",
+      "pressure": 57.7,
+      "start_date": "2016-01-04",
+      "records": 2672
+    },
+    "METU": {
+      "ticker": "METU",
+      "key": "XNMS:METU",
+      "asof": "2026-09-21",
+      "nav": 32.45,
+      "flow_30d": -170846000.0,
+      "flow_zscore": -3.161,
+      "regime": "DISTRIBUTION",
+      "pressure": -93.0,
+      "start_date": "2024-06-06",
+      "records": 578
     },
     "MSFU": {
       "ticker": "MSFU",
@@ -281,6 +484,30 @@
       "start_date": "2024-08-16",
       "records": 525
     },
+    "NAIL": {
+      "ticker": "NAIL",
+      "key": "NAIL",
+      "asof": "2026-09-21",
+      "nav": 29.6,
+      "flow_30d": 148864000.0,
+      "flow_zscore": 0.882,
+      "regime": "BALANCED",
+      "pressure": 38.1,
+      "start_date": "2016-01-04",
+      "records": 2667
+    },
+    "NUGT": {
+      "ticker": "NUGT",
+      "key": "ARCX:NUGT",
+      "asof": "2026-09-21",
+      "nav": 172.46,
+      "flow_30d": -133346000.0,
+      "flow_zscore": 0.518,
+      "regime": "BALANCED",
+      "pressure": 3.0,
+      "start_date": "2016-01-04",
+      "records": 2667
+    },
     "NVDL": {
       "ticker": "NVDL",
       "key": "NVDL",
@@ -305,6 +532,42 @@
       "start_date": "2022-07-15",
       "records": 1050
     },
+    "NVDU": {
+      "ticker": "NVDU",
+      "key": "XNMS:NVDU",
+      "asof": "2026-09-21",
+      "nav": 145.52,
+      "flow_30d": -65430000.0,
+      "flow_zscore": 0.418,
+      "regime": "BALANCED",
+      "pressure": 20.5,
+      "start_date": "2023-09-14",
+      "records": 761
+    },
+    "PLTU": {
+      "ticker": "PLTU",
+      "key": "XNMS:PLTU",
+      "asof": "2026-09-21",
+      "nav": 54.37,
+      "flow_30d": -119305000.0,
+      "flow_zscore": 0.227,
+      "regime": "BALANCED",
+      "pressure": -6.3,
+      "start_date": "2024-12-12",
+      "records": 447
+    },
+    "PTIR": {
+      "ticker": "PTIR",
+      "key": "PTIR",
+      "asof": "2026-09-18",
+      "nav": 19.08,
+      "flow_30d": -92018000.0,
+      "flow_zscore": 0.502,
+      "regime": "BALANCED",
+      "pressure": 2.6,
+      "start_date": "2024-09-04",
+      "records": 512
+    },
     "QQQ": {
       "ticker": "QQQ",
       "key": "QQQ",
@@ -316,6 +579,18 @@
       "pressure": -25.4,
       "start_date": "2016-01-04",
       "records": 2683
+    },
+    "ROM": {
+      "ticker": "ROM",
+      "key": "ROM",
+      "asof": "2026-09-21",
+      "nav": 157.93,
+      "flow_30d": -1144000.0,
+      "flow_zscore": 0.043,
+      "regime": "BALANCED",
+      "pressure": 1.1,
+      "start_date": "2016-01-04",
+      "records": 2666
     },
     "SOXL": {
       "ticker": "SOXL",
@@ -389,6 +664,42 @@
       "start_date": "2016-01-04",
       "records": 2691
     },
+    "SVIX": {
+      "ticker": "SVIX",
+      "key": "SVIX",
+      "asof": "2026-09-21",
+      "nav": 28.59,
+      "flow_30d": -47815000.0,
+      "flow_zscore": 0.465,
+      "regime": "BALANCED",
+      "pressure": 1.6,
+      "start_date": "2022-03-30",
+      "records": 1120
+    },
+    "SVXY": {
+      "ticker": "SVXY",
+      "key": "SVXY",
+      "asof": "2026-09-21",
+      "nav": 63.59,
+      "flow_30d": 12138000.0,
+      "flow_zscore": -0.161,
+      "regime": "BALANCED",
+      "pressure": -14.0,
+      "start_date": "2016-01-04",
+      "records": 2670
+    },
+    "TECL": {
+      "ticker": "TECL",
+      "key": "TECL",
+      "asof": "2026-09-21",
+      "nav": 229.79,
+      "flow_30d": -170426000.0,
+      "flow_zscore": 0.258,
+      "regime": "BALANCED",
+      "pressure": -3.6,
+      "start_date": "2016-01-04",
+      "records": 2670
+    },
     "TLT": {
       "ticker": "TLT",
       "key": "TLT",
@@ -412,6 +723,18 @@
       "pressure": 23.6,
       "start_date": "2016-01-04",
       "records": 2673
+    },
+    "TPOR": {
+      "ticker": "TPOR",
+      "key": "TPOR",
+      "asof": "2026-09-21",
+      "nav": 31.86,
+      "flow_30d": -2086000.0,
+      "flow_zscore": 0.183,
+      "regime": "BALANCED",
+      "pressure": 4.6,
+      "start_date": "2017-05-03",
+      "records": 2330
     },
     "TQQQ": {
       "ticker": "TQQQ",
@@ -461,6 +784,18 @@
       "start_date": "2016-01-04",
       "records": 2674
     },
+    "UCO": {
+      "ticker": "UCO",
+      "key": "ARCX:UCO",
+      "asof": "2026-09-21",
+      "nav": 51.88,
+      "flow_30d": -103017000.0,
+      "flow_zscore": 0.4,
+      "regime": "BALANCED",
+      "pressure": 0.0,
+      "start_date": "2016-01-04",
+      "records": 2665
+    },
     "UGL": {
       "ticker": "UGL",
       "key": "UGL",
@@ -485,6 +820,18 @@
       "start_date": "2016-01-04",
       "records": 2672
     },
+    "USD": {
+      "ticker": "USD",
+      "key": "ARCX:USD",
+      "asof": "2026-09-21",
+      "nav": 94.83,
+      "flow_30d": -43529000.0,
+      "flow_zscore": 0.239,
+      "regime": "BALANCED",
+      "pressure": -4.0,
+      "start_date": "2016-01-04",
+      "records": 2667
+    },
     "UUP": {
       "ticker": "UUP",
       "key": "UUP",
@@ -496,6 +843,66 @@
       "pressure": 10.3,
       "start_date": "2016-01-04",
       "records": 2704
+    },
+    "UVIX": {
+      "ticker": "UVIX",
+      "key": "UVIX",
+      "asof": "2026-09-21",
+      "nav": 37.3,
+      "flow_30d": 23547000.0,
+      "flow_zscore": -0.154,
+      "regime": "BALANCED",
+      "pressure": 6.2,
+      "start_date": "2022-03-30",
+      "records": 1119
+    },
+    "UVXY": {
+      "ticker": "UVXY",
+      "key": "BATS:UVXY",
+      "asof": "2026-09-21",
+      "nav": 17.39,
+      "flow_30d": 54504000.0,
+      "flow_zscore": -0.372,
+      "regime": "BALANCED",
+      "pressure": -19.3,
+      "start_date": "2016-01-04",
+      "records": 2670
+    },
+    "UYG": {
+      "ticker": "UYG",
+      "key": "UYG",
+      "asof": "2026-09-21",
+      "nav": 92.03,
+      "flow_30d": -22222000.0,
+      "flow_zscore": 0.502,
+      "regime": "BALANCED",
+      "pressure": 12.6,
+      "start_date": "2016-01-04",
+      "records": 2671
+    },
+    "WEBL": {
+      "ticker": "WEBL",
+      "key": "WEBL",
+      "asof": "2026-09-21",
+      "nav": 30.95,
+      "flow_30d": -13244000.0,
+      "flow_zscore": -1.413,
+      "regime": "BALANCED",
+      "pressure": -47.3,
+      "start_date": "2019-11-07",
+      "records": 1698
+    },
+    "YCS": {
+      "ticker": "YCS",
+      "key": "YCS",
+      "asof": "2026-09-21",
+      "nav": 53.79,
+      "flow_30d": -2740000.0,
+      "flow_zscore": 0.183,
+      "regime": "BALANCED",
+      "pressure": 4.6,
+      "start_date": "2016-01-04",
+      "records": 2672
     }
   }
 }

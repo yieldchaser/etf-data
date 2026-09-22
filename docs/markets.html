@@ -2074,8 +2074,8 @@
 
       <!-- Quick Ticker Shortcuts Bar -->
       <div class="flex items-center gap-2 mt-2 px-1 text-[11px] font-mono text-zinc-400 flex-wrap">
-        <span class="text-zinc-600 uppercase text-[10px] tracking-wider">Quick Jump:</span>
-        <template x-for="t in ['SPY', 'QQQ', 'TQQQ', 'SOXL', 'SQQQ', 'GLD', 'TLT', 'NVDL', 'TSLL', 'MSTU']" :key="t">
+        <span class="text-zinc-600 uppercase text-[10px] tracking-wider">Leveraged Sectors & Single-Stock:</span>
+        <template x-for="t in ['TECL', 'SOXL', 'FAS', 'LABU', 'DFEN', 'TPOR', 'ERX', 'UCO', 'AGQ', 'UGL', 'UVXY', 'NVDL', 'TSLL', 'MSTU', 'PLTU', 'CONL']" :key="t">
           <button @click="selectFlowTicker(t)"
                   class="hover:text-cyan-300 hover:underline transition"
                   :class="flowTicker === t ? 'text-cyan-400 font-bold' : 'text-zinc-400'"
@@ -7393,14 +7393,32 @@ function marketsApp() {
     },
 
     get flowActiveMeta() {
+      const t = (this.flowTicker || '').toUpperCase();
+      if (this.flowManifest?.etfs && this.flowManifest.etfs[t]) {
+        return this.flowManifest.etfs[t];
+      }
       if (this.flowManifest?.curated_etfs) {
-        const found = this.flowManifest.curated_etfs.find(e => e.ticker === this.flowTicker);
+        const found = this.flowManifest.curated_etfs.find(e => (e.ticker || '').toUpperCase() === t);
         if (found) return found;
       }
+      // Check search index for friendly company name, provider, AUM
+      if (window._etfSearchIndex) {
+        const row = window._etfSearchIndex.find(r => (r[0] || '').toUpperCase() === t);
+        if (row) {
+          return {
+            ticker: t,
+            label: row[2],
+            provider: row[3],
+            aum_usd: row[4],
+            currency: row[5] || 'USD',
+            category: row[3] || 'Leveraged ETF'
+          };
+        }
+      }
       return {
-        ticker: this.flowTicker,
-        label: this.flowData?.meta?.label || this.flowTicker,
-        category: this.flowData?.meta?.category || 'Curated',
+        ticker: t,
+        label: this.flowData?.meta?.label || t,
+        category: this.flowData?.meta?.category || 'Leveraged ETF',
         aum_usd: this.flowData?.meta?.aum_usd || null,
         currency: this.flowData?.meta?.currency || 'USD'
       };
