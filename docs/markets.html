@@ -2030,7 +2030,18 @@
           <svg class="w-4 h-4 shrink-0" style="color: var(--text-3)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
           </svg>
-          <input type="text"
+          <input type="search"
+                 name="etf_search_query"
+                 id="flow-etf-search-input"
+                 autocomplete="off"
+                 autocorrect="off"
+                 autocapitalize="off"
+                 spellcheck="false"
+                 data-lpignore="true"
+                 data-form-type="other"
+                 data-1p-ignore="true"
+                 data-bwignore="true"
+                 x-init="$nextTick(() => { flowSearchQuery = ''; })"
                  x-model.debounce.120ms="flowSearchQuery"
                  @input.debounce.120ms="flowSearch()"
                  @focus="flowSearchOpen = true; flowSearch();"
@@ -2298,19 +2309,31 @@
             <div class="text-[11px] text-zinc-400 mb-2 font-mono">
               Provide a GitHub Personal Access Token (classic with <code class="text-cyan-400">repo</code> scope or fine-grained with Actions write) to trigger workflow dispatch directly from your browser. Saved safely in local storage only:
             </div>
-            <div class="flex items-center gap-2 mb-2">
-              <input type="password"
-                     x-model="flowTokenInput"
-                     placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-                     class="bg-black/50 border rounded px-2.5 py-1.5 text-xs font-mono text-zinc-200 flex-1 focus:outline-none focus:border-cyan-500/60"
-                     style="border-color: var(--border-2)">
-              <button @click="saveFlowGithubToken()" class="chip border px-3 py-1.5 text-xs font-mono transition" style="border-color: var(--cyan); color: var(--cyan)">
-                Save
-              </button>
-              <button x-show="flowGithubToken" @click="clearFlowGithubToken()" class="chip border px-2.5 py-1.5 text-xs font-mono text-zinc-500 hover:text-zinc-300 transition" style="border-color: var(--border-2)">
-                Clear
-              </button>
-            </div>
+            <form autocomplete="off" onsubmit="return false" class="mb-2">
+              <!-- Decoy inputs to prevent browser password managers from associating with search inputs -->
+              <input type="text" name="prevent_autofill_user" style="display:none" tabindex="-1" autocomplete="username">
+              <input type="password" name="prevent_autofill_pwd" style="display:none" tabindex="-1" autocomplete="current-password">
+
+              <div class="flex items-center gap-2">
+                <input type="password"
+                       name="github_pat_token"
+                       autocomplete="new-password"
+                       data-lpignore="true"
+                       data-form-type="other"
+                       data-1p-ignore="true"
+                       data-bwignore="true"
+                       x-model="flowTokenInput"
+                       placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                       class="bg-black/50 border rounded px-2.5 py-1.5 text-xs font-mono text-zinc-200 flex-1 focus:outline-none focus:border-cyan-500/60"
+                       style="border-color: var(--border-2)">
+                <button type="button" @click="saveFlowGithubToken()" class="chip border px-3 py-1.5 text-xs font-mono transition" style="border-color: var(--cyan); color: var(--cyan)">
+                  Save
+                </button>
+                <button type="button" x-show="flowGithubToken" @click="clearFlowGithubToken()" class="chip border px-2.5 py-1.5 text-xs font-mono text-zinc-500 hover:text-zinc-300 transition" style="border-color: var(--border-2)">
+                  Clear
+                </button>
+              </div>
+            </form>
           </div>
         </div>
 
@@ -7622,6 +7645,8 @@ function marketsApp() {
       if (this.flowData) return;
       this.flowLoading = true;
       this.flowError = '';
+      this.flowSearchQuery = '';
+      this.flowSearchOpen = false;
 
       this._flowPromise = (async () => {
         try {
