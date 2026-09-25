@@ -1,0 +1,186 @@
+.flow-runtime-fallback {
+  width: min(100% - 2rem, 980px);
+  margin: 2rem auto;
+  padding: 1.25rem;
+  border: 1px solid #526477;
+  border-radius: 12px;
+  color: #e8edf3;
+  background: #0d121a;
+  font: 1rem/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.flow-runtime-fallback,
+.flow-runtime-fallback__inner,
+.flow-runtime-fallback__controls,
+.flow-runtime-fallback__controls label,
+.flow-runtime-fallback__summary,
+.flow-runtime-fallback details,
+.flow-runtime-fallback__table-wrap {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.flow-runtime-fallback__inner {
+  display: grid;
+  gap: 1rem;
+}
+
+.flow-runtime-fallback__eyebrow,
+.flow-runtime-fallback__label {
+  color: #aebdcd;
+  font-size: 0.875rem;
+  font-weight: 650;
+}
+
+.flow-runtime-fallback h1,
+.flow-runtime-fallback h2,
+.flow-runtime-fallback p {
+  margin: 0;
+}
+
+.flow-runtime-fallback h1 {
+  font-size: 1.5rem;
+}
+
+.flow-runtime-fallback__status {
+  min-height: 1.5em;
+  color: #d4dee8;
+}
+
+.flow-runtime-fallback__controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.flow-runtime-fallback__controls label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.flow-runtime-fallback select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-height: 42px;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #526477;
+  border-radius: 7px;
+  color: #e8edf3;
+  background: #111923;
+  font: inherit;
+}
+
+.flow-runtime-fallback__summary {
+  padding: 0.85rem 1rem;
+  border: 1px solid #334455;
+  border-radius: 8px;
+  color: #dce7f0;
+  background: #101923;
+  overflow-wrap: anywhere;
+}
+
+.flow-runtime-fallback__table-wrap {
+  max-height: 30rem;
+  overflow-x: auto;
+  overflow-y: auto;
+  border: 1px solid #334455;
+  border-radius: 8px;
+}
+
+.flow-runtime-fallback table {
+  width: max-content;
+  min-width: 32rem;
+  max-width: none;
+  border-collapse: collapse;
+  color: #c9d5e0;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.flow-runtime-fallback th,
+.flow-runtime-fallback td {
+  padding: 0.6rem 0.7rem;
+  border-bottom: 1px solid #2b3947;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.flow-runtime-fallback th {
+  position: sticky;
+  top: 0;
+  color: #e8edf3;
+  background: #17212c;
+}
+
+.flow-runtime-fallback th:first-child,
+.flow-runtime-fallback td:first-child {
+  text-align: left;
+}
+
+.flow-runtime-fallback select:focus-visible,
+.flow-runtime-fallback a:focus-visible,
+.flow-runtime-fallback button:focus-visible {
+  outline: 2px solid #8bc7e3;
+  outline-offset: 3px;
+}
+
+html[data-runtime-fallback="ready"] #markets-app {
+  width: 100%;
+  min-width: 0;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+html[data-runtime-fallback="ready"] #markets-app > *,
+html[data-runtime-fallback="ready"] #markets-app header,
+html[data-runtime-fallback="ready"] #markets-app > div {
+  min-width: 0;
+  max-width: 100%;
+}
+
+html[data-runtime-fallback="ready"] #markets-app button {
+  min-height: 36px;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid #526477;
+  border-radius: 5px;
+  color: #dbe6ef;
+  background: #111923;
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+html[data-runtime-fallback="ready"] #markets-app button.tab-active,
+html[data-runtime-fallback="ready"] #markets-app .flow-chart-tab[aria-selected="true"] {
+  color: #bde8fa;
+  border-color: #8bc7e3;
+  background: #1a2b36;
+}
+
+html[data-runtime-fallback="ready"] #markets-app .flow-chart-tab:focus-visible {
+  outline: 2px solid #8bc7e3;
+  outline-offset: 3px;
+}
+
+@media (max-width: 640px) {
+.flow-runtime-fallback,
+.flow-runtime-fallback *,
+.flow-runtime-fallback *::before,
+.flow-runtime-fallback *::after {
+  box-sizing: border-box;
+}
+
+.flow-runtime-fallback {
+    width: min(100% - 1rem, 980px);
+    padding: 1rem;
+  }
+
+  .flow-runtime-fallback__controls {
+    grid-template-columns: 1fr;
+  }
+}

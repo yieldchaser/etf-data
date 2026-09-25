@@ -133,3 +133,14 @@ docs/data/history/
 !docs/data/etf_search_index.json
 !docs/data/flows/
 !docs/data/flows/*.json
+
+# Whitelist the authoritative local flow SOURCE dataset (data/flows/).
+# The repo-wide *.csv / *.json rules above must never apply here: the 117
+# individual CSVs, the aggregate CSV, the summary JSON and the workbook are
+# committed on purpose so a fresh clone can rebuild docs/data/flows artifacts
+# in CI (see .github/workflows/build_site.yml and
+# scripts/build_local_flow_artifacts.py). Regression coverage:
+# tests/test_local_flow_artifacts.py::test_authoritative_flow_sources_are_not_git_ignored
+!data/flows/
+!data/flows/**
+!data/flows/**/*

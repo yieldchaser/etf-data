@@ -96,3 +96,41 @@ class TestTotalFailureExit:
 
         rc = main(["--dry-run"])
         assert rc == 0
+
+
+def test_dry_run_does_not_delete_stale_detail_files(tmp_path, monkeypatch):
+    import conviction.fetch_stock_details as details
+
+    stale = tmp_path / "STALE.json"
+    stale.write_text('{"ticker":"STALE","prices":[["2026-01-01",1]]}', encoding="utf-8")
+    monkeypatch.setattr(details, "DETAILS_DIR", tmp_path)
+    monkeypatch.setattr(details, "_load_leaderboard_tickers", lambda: {"AAPL": "Apple"})
+    monkeypatch.setattr(details, "_load_leaderboard_ranks", lambda: {})
+    monkeypatch.setattr(details, "_load_ticker_metadata", lambda: {})
+    monkeypatch.setattr(details, "_load_coverage_state", lambda: {"resolved": [], "pending": [], "unresolved": {}})
+    monkeypatch.setattr(details, "_load_symbol_map", lambda: {})
+    monkeypatch.setattr(details, "_load_desc_cache", lambda: {})
+    monkeypatch.setattr(details, "_load_currency_cache", lambda: {})
+
+    details.build_details(tickers_filter=["AAPL"], dry_run=True)
+
+    assert stale.exists()
+    assert not (tmp_path / "AAPL.json").exists()
+
+
+def test_dry_run_creates_no_details_directory(tmp_path, monkeypatch):
+    import conviction.fetch_stock_details as details
+
+    details_dir = tmp_path / "details"
+    monkeypatch.setattr(details, "DETAILS_DIR", details_dir)
+    monkeypatch.setattr(details, "_load_leaderboard_tickers", lambda: {"AAPL": "Apple"})
+    monkeypatch.setattr(details, "_load_leaderboard_ranks", lambda: {})
+    monkeypatch.setattr(details, "_load_ticker_metadata", lambda: {})
+    monkeypatch.setattr(details, "_load_coverage_state", lambda: {"resolved": [], "pending": [], "unresolved": {}})
+    monkeypatch.setattr(details, "_load_symbol_map", lambda: {})
+    monkeypatch.setattr(details, "_load_desc_cache", lambda: {})
+    monkeypatch.setattr(details, "_load_currency_cache", lambda: {})
+
+    details.build_details(tickers_filter=["AAPL"], dry_run=True)
+
+    assert not details_dir.exists()

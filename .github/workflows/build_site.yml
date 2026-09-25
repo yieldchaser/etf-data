@@ -1,19 +1,10 @@
 name: Build site
 
-# ── Trigger policy: ONE automated chain ─────────────────────────────────
-# The only automated trigger is push-to-main with site/data paths.
-# Two duplicate triggers were REMOVED (they raced each other into the
-# concurrency group and cancelled real builds):
-#   * workflow_run (on "Daily ETF Scrape" completion) — fired on EVERY
-#     scrape, even no-change days that pushed nothing, and raced the
-#     push-path run started by the scraper's own data commit.
-#   * the explicit workflow_dispatch curl/github-script step in
-#     daily_scrape.yml (removed there in the same change) — redundant with
-#     the data/** push path.
-# Loop-safety evidence: the stock-detail coverage commit-back below uses a
-# "[skip ci]" marker in its commit message, so it never re-hits these push
-# paths. The scraper's data commit intentionally carries no marker so it
-# DOES trigger this workflow. workflow_dispatch is kept for manual hotfixes.
+# Trigger policy:
+#   * filtered pushes to main for site/data changes
+#   * manual workflow_dispatch for hotfixes
+# External ETF flow ingestion is intentionally disabled; the build validates and
+# regenerates the checked-in local flow artifacts before upload.
 on:
   push:
     branches: [main]
@@ -23,6 +14,8 @@ on:
       - 'docs/**'
       - 'data/**'           # rebuild whenever raw data is pushed (scraper or hotfix)
       - 'scraper.py'
+      - 'scripts/build_local_flow_artifacts.py'
+      - 'FUND_FLOW_ETFS.md'
       - 'config.yaml'
       - 'config.json'
       - '.github/workflows/build_site.yml'
@@ -30,6 +23,13 @@ on:
       - 'tests/**'
 
   workflow_dispatch:
+
+  # Reusable entry point retained for callers; FRED key stays optional so the
+  # build still works when a caller has no secret to pass.
+  workflow_call:
+    secrets:
+      FRED_API_KEY:
+        required: false
 
 concurrency:
   # Queue instead of cancel. With cancel-in-progress: true, a scheduled
@@ -124,8 +124,7 @@ jobs:
       #     docs/**, so an un-guarded commit here would re-trigger build_site
       #     in an infinite loop.
       #   * Checkout is a detached HEAD (specific SHA), so push HEAD:main.
-      #   * pull --rebase -X theirs keeps our generated files on conflict,
-      #     mirroring the proven daily_scrape commit pattern.
+      #   * Rebase conflicts abort safely; no remote-overwrite strategy is used.
       # No `if:` guard — fetch_stock_details runs under continue-on-error, so a
       # flaky-yfinance exit sets its `outcome` to 'failure' even when it still
       # wrote ~150 valid detail files. Gating on outcome=='success' would skip
@@ -144,7 +143,6 @@ jobs:
       # The four untracked files are covered by .gitignore (*.csv / *.json)
       # and cannot be re-staged by this git add (explicit path list, not docs/**).
       - name: Persist stock-detail coverage (accumulate across runs)
-        continue-on-error: true   # a push race must never fail the deploy
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -153,8 +151,25 @@ jobs:
             echo "No stock-detail coverage changes to commit."
           else
             git commit -m "Auto-update: stock-detail coverage 📊 [skip ci]"
-            git pull --rebase --autostash -X theirs origin main
-            git push origin HEAD:main
+            pushed=false
+            for attempt in 1 2 3; do
+              if git pull --rebase --autostash origin main; then
+                if git push origin HEAD:main; then
+                  pushed=true
+                  break
+                fi
+              else
+                git rebase --abort >/dev/null 2>&1 || true
+                echo "Stock-detail rebase conflict; refusing remote-overwrite resolution." >&2
+                exit 1
+              fi
+              echo "Stock-detail push attempt $attempt failed; retrying" >&2
+              sleep $((attempt * 10))
+            done
+            if [ "$pushed" != true ]; then
+              echo "Could not push stock-detail coverage after three attempts" >&2
+              exit 1
+            fi
             echo "Committed accumulated stock-detail coverage."
           fi
 
@@ -243,6 +258,26 @@ jobs:
           assert len(p['tickers']) > 0, 'prices.json has no tickers'
           assert p.get('asof'), 'prices.json missing asof'
           print(f'prices.json OK: {len(p[\"tickers\"])} tickers, asof={p[\"asof\"]}')
+          "
+
+      - name: Build local ETF flow artifacts
+        run: python scripts/build_local_flow_artifacts.py --output-dir docs/data/flows
+
+      - name: Verify complete local ETF flow artifacts
+        run: |
+          python scripts/build_local_flow_artifacts.py --verify-output --output-dir docs/data/flows
+          python -c "
+          import json
+          catalog = json.load(open('docs/data/flows/catalog.json'))
+          manifest = json.load(open('docs/data/flows/manifest.json'))
+          assert catalog['counts']['instruments'] == 117, catalog['counts']
+          assert catalog['counts']['featured'] == 24, catalog['counts']
+          assert 'watch_tier' not in catalog, 'catalog must not export a watch tier'
+          assert manifest['counts']['instruments'] == 117, manifest['counts']
+          assert manifest['complete'] is True and manifest['status'] == 'complete', manifest['status']
+          assert manifest['source']['network_fetch'] is False, manifest['source']
+          assert catalog['source']['network_fetch'] is False, catalog['source']
+          print('local ETF flow artifacts OK: 117 instruments, 24 featured, no watch tier, no network fetch')
           "
 
       - name: Upload Pages artifact

@@ -19,8 +19,8 @@ concurrency:
   # Serialize ALL triggers (three weekday crons, weekend cron, manual
   # dispatch). Overlapping runs each commit the same binary parquet
   # (data/history_parquet/year=YYYY/holdings.parquet) and
-  # `git pull --rebase -X theirs` cannot resolve BINARY conflicts — the
-  # rebase halts and the ephemeral runner discards folded rows forever.
+  # Binary conflicts cannot be resolved safely by the runner; the rebase
+  # halts and the ephemeral runner discards folded rows forever.
   # MUST stay false: cancelling a run mid-scrape drops that window's rows;
   # a QUEUED run simply waits and re-hydrates from the parquet store, so
   # serialization loses nothing.
@@ -129,7 +129,11 @@ jobs:
           else
             git commit -m "Auto-update: Daily Holdings Data 📈"
             # Pull --rebase to incorporate any commits pushed to main while the scraper ran
-            git pull --rebase --autostash -X theirs origin main
+            if ! git pull --rebase --autostash origin main; then
+              git rebase --abort || true
+              echo "::error::git rebase conflicted; refusing to overwrite verified data"
+              exit 1
+            fi
             git push origin main
             echo "data_changed=true" >> $GITHUB_OUTPUT
           fi

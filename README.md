@@ -34,7 +34,7 @@ The system operates as five tightly integrated components:
 | **Scoring Engine** | Multi-factor algorithm: tier weights × rank multipliers × new-entrant bonuses |
 | **Live Dashboard** | GitHub Pages SPA — leaderboard, motion signals (burst/crater), structural analytics |
 | **Extended Scraper Bridge** | Fault-isolated subprocess for 8 ETFs requiring Playwright/PDF/XLS ingestion |
-| **Markets Intelligence Platform** | 150+ years of cross-asset return data, 9-tab analytical dashboard |
+| **Markets Intelligence Platform** | 150+ years of cross-asset return data, 10-tab analytical dashboard |
 
 ---
 
@@ -64,7 +64,7 @@ The system operates as five tightly integrated components:
 │  └── ETF overlap matrix (30×30 Jaccard)                             │
 │                                                                     │
 │  conviction/markets_history + ingest_markets_xl.py + vol_history.py │
-│  └── docs/data/market_returns.json (25 assets, gold from 1833)      │
+│  └── docs/data/market_returns.json (35 assets; count = len(assets))         │
 │                                                                     │
 │  Output: docs/data/*.json → GitHub Pages                            │
 └─────────────────────────────────────────────────────────────────────┘
@@ -76,7 +76,7 @@ The system operates as five tightly integrated components:
 
 ### What it does
 
-`scraper.py` runs twice daily on GitHub Actions and scrapes official ETF issuer websites for current holdings. Each run produces a dated snapshot and appends to the master history file.
+`scraper.py` runs on the scheduled GitHub Actions cron (three weekday windows and one weekend window) and scrapes official ETF issuer websites for current holdings. Each run produces a dated snapshot and appends to the durable Parquet history store.
 
 ### ETF Universe (30 ETFs)
 
@@ -395,7 +395,7 @@ If `etf_holdings_YYYYMMDD.csv` already exists when the Bridge starts (partial-ru
 
 ## Component 5 — Markets Intelligence Platform
 
-A standalone data pipeline and 9-tab analytical dashboard providing cross-asset return analytics with deep historical coverage.
+A standalone data pipeline and 10-tab analytical dashboard providing cross-asset return analytics with deep historical coverage.
 
 ### Data Pipelines
 
@@ -403,16 +403,14 @@ A standalone data pipeline and 9-tab analytical dashboard providing cross-asset 
 
 Fetches monthly end-of-period (EOP) close data from FRED (primary) and yfinance (fallback for international indices). Supports incremental updates (trailing 3 months) and full refresh. Writes `docs/data/market_returns.json`.
 
-Asset registry covers 50+ series across:
-- **Equities**: S&P 500, DJIA, NASDAQ, NASDAQ-100, Nikkei 225, BSE Sensex, DAX, FTSE 100, Hang Seng, ASX 200, Bovespa, Shanghai Composite, Wilshire 5000
+The source registry covers 50+ candidate series; the checked-in `docs/data/market_returns.json` currently contains 35 assets, derived from its `assets` map and assembled by `conviction/markets_history.py` from Excel, FRED, and yfinance sources. The current output covers:
+- **Equities**: S&P 500, DJIA, NASDAQ, NASDAQ-100, MSCI Emerging Markets, Nikkei 225, BSE Sensex, DAX, FTSE 100, Hang Seng, ASX 200, Bovespa, Shanghai Composite
 - **Precious Metals**: Gold, Silver, Platinum, Palladium
-- **Energy**: WTI Crude, Brent Crude, Natural Gas, Coal
+- **Energy**: WTI Crude, Brent Crude, Natural Gas
 - **Base Metals**: Copper, Aluminum, Nickel, Zinc, Iron Ore, Tin, Lead
-- **Agriculture**: Wheat, Corn, Soybeans, Cotton, Sugar, Coffee, Cocoa, Rice, Palm Oil
-- **FX Rates**: USD/INR, USD/JPY, EUR/USD, GBP/USD, USD/CNY, USD/CAD, USD/AUD, USD/SGD, USD/BRL, USD/MXN, USD/KRW, USD/CHF
-- **Real Estate**: US Home Prices (Case-Shiller)
-- **Rates**: 3M T-Bill, 2Y/10Y/30Y Treasury, Fed Funds, Moody's BAA/AAA, 10Y–2Y Spread
-- **Auxiliary**: US CPI (for real-return adjustment), USD/INR (for currency lens)
+- **Agriculture**: Wheat, Corn, Soybeans, Cotton, Sugar, Coffee, Cocoa, Rice
+
+FX, rates, real-estate, and auxiliary series remain in companion metadata/auxiliary payloads and are not counted in `market_returns.json["assets"]`.
 
 #### `conviction/ingest_markets_xl.py`
 
@@ -440,7 +438,7 @@ Fetches daily close for 7 CBOE volatility indices from FRED. Writes `docs/data/v
 | VXD (DJIA VIX) | VXDCLS | 2005+ |
 | VXEEM (EM VIX) | VXEEMCLS | 2011+ |
 
-### Markets Dashboard (`/markets.html`) — 9 Tabs
+### Markets Dashboard (`/markets.html`) — 10 Tabs
 
 #### Return Matrix
 Annual returns heatmap for all assets. **Newest year on the left**, oldest on the right.
@@ -500,6 +498,52 @@ Correlation matrix + Growth of $100 log-scale chart for selected assets.
 3. Historical line chart with lookback filter
 4. Cross-asset bar chart (current vs 1Y avg)
 
+#### Fund Flows
+- Searches the generated 117-instrument local catalog by default; explicit filters expose the 24-name featured subset.
+- Loads one selected static ticker file at a time, normalizes v1 and v2 payloads, and caches data by ticker and source revision.
+- Uses one shared native range control, daily ETF estimated net-flow bars, a complete 20-observation rolling mean, selected-window cumulative source-reported aggregate net flow, complete-window/tie-aware percentile, and a clearly labeled prior-only z-score.
+- Provides an optional two-axis price-and-flow view, an accessible selected-window data table, status definitions, and catalog alternative metadata.
+- Keeps legacy, stale, pending, empty, unavailable, loading, and error states explicit; missing observations are never rendered as zero.
+- Keeps ticker, range, and optional price state in the URL and responds to browser history navigation. The browser cannot start a source refresh.
+- Uses optional CDN enhancement with a local static-data fallback; the fallback removes `x-cloak`, loads the local catalog/history files, and exposes an accessible table when enhancement is unavailable.
+
+---
+
+## ETF Flow Data Runbook
+
+### Source and catalog
+
+The authoritative flow dataset is the local, read-only collection under `data/flows/`: **117 leveraged and inverse instruments, 170,392 daily rows from 2016-01-04 through 2026-09-23**, with zero duplicate ticker-dates and zero missing required values. `scripts/build_local_flow_artifacts.py` validates those sources and deterministically regenerates every published artifact under `docs/data/flows/` (117 per-ticker JSON files, `catalog.json`, `manifest.json`); it refuses any output directory inside `data/flows/`.
+
+`docs/data/flows/catalog.json` is the generated UI catalog (schema 1, `local-authoritative-117-v1`, 117 instruments of which 24 are featured) and `docs/data/flows/manifest.json` is the coverage manifest (schema 2, status `complete`, 117 files, 170,392 rows). Both are marked `network_fetch: false`. The Markets Fund Flows interface reads only these static files; the runtime fallback enforces the same 117/24 cardinality before rendering, and the browser cannot start a source refresh.
+
+Trackinsight remains recorded as the historical provider in the metadata (`source_provider: Trackinsight`, `source_mode: historical_local`), but no runtime path performs a Trackinsight or other network request. External ingestion is disabled: `scripts/fetch_etf_flow.py` exits with code 2 in every mode unless the explicit `--unsafe-external-fetch` manual opt-in is passed, and `daily_etf_flows.yml` has no schedule — its only job prints the local-only policy and exits 1.
+
+### Validation and rebuild
+
+```bash
+# Validate every local source (offline, no network access)
+python scripts/build_local_flow_artifacts.py --validate-only
+
+# Verify the checked-in docs artifacts against a fresh validation
+python scripts/build_local_flow_artifacts.py --verify-output --output-dir docs/data/flows
+
+# Rebuild artifacts (use a scratch output dir; build_site.yml runs the real one in CI)
+python scripts/build_local_flow_artifacts.py --output-dir /tmp/flows-out
+```
+
+Validation enforces the 117-instrument universe, the 170,392-row total, required columns per individual file, aggregate and workbook agreement, and identity with `FUND_FLOW_ETFS.md`. The CI gate in `build_site.yml` runs `--verify-output` plus explicit 117-instrument / 24-featured / no-watch-tier / no-network-fetch assertions before any artifact upload.
+
+### Legacy external ingestion (disabled)
+
+`scripts/fetch_etf_flow.py` still contains the legacy Trackinsight scraper plus its retry, pacing, budget, manifest, and checkpoint-planning machinery (all covered by tests), but every mode is gated behind `--unsafe-external-fetch` and returns exit 2 without it. Legacy budget and request semantics: explicit ticker/endpoint/source-window/runtime budgets (defaults 3 tickers, 3 endpoint calls, 100 source windows, 900 seconds), calendar-quarter windows, one canonical fund per POST with `windows_per_request` 1–4 (default 3), 5–9 second pacing from response completion, 403/405/challenge as immediate hard stops, capped `Retry-After` handling, atomic per-ticker merges, and deterministic SHA-256 `content_sha256` manifest validation. Do not run the opt-in commands in CI:
+
+```bash
+python scripts/fetch_etf_flow.py --unsafe-external-fetch --dry-run --mode resume
+```
+
+The browser does not use the broad identity index, and the committed identity index exists only for the offline `--validate-keys` diagnostic. The UI normalizes v1 and v2 ticker payloads without changing null, zero, or available-history semantics.
+
 ---
 
 ## CI/CD Pipeline
@@ -519,17 +563,27 @@ Steps:
   5. Update parquet archive: fold new rows into data/history_parquet/ (migrate_to_parquet.py)
   6. Wipe local transient data/all_history.csv
   7. Commit and push Parquet partition deltas + CHECKSUMS.json (only if data changed)
-  8. Site rebuild fires automatically via build_site.yml push-paths trigger
+  8. If data changed, explicitly dispatch `build_site.yml`; no-change runs do not dispatch
+```
+
+#### `daily_etf_flows.yml` — Disabled Flow Workflow
+```
+Trigger: workflow_dispatch only, with a required `acknowledgement` input; no schedule and no cron.
+Runner: one `disabled` job (ubuntu-latest, 5 minutes) that prints the local-only policy and exits 1.
+Policy: no network request, no git push, no build call — external ingestion is disabled and the
+        authoritative data is the read-only local dataset under data/flows/.
 ```
 
 #### `build_site.yml` — Site Build & Deploy
 ```
-Trigger: workflow_run (after scraper, gated on its success), push to main (conviction/**, docs/**, scraper.py, tests/**...), workflow_dispatch
+Trigger: push to `main` on the declared site/data paths, manual `workflow_dispatch`, and reusable
+         `workflow_call` (declared for external callers; the disabled flow workflow does not invoke it);
+         no scraper-completion chaining trigger is used.
 Runner:  ubuntu-latest   timeout-minutes: 60 (build) / 20 (deploy)
 Steps:
   1. Install: pandas, pyyaml, pyarrow, pytest, hypothesis, yfinance, openpyxl, fredapi, python-dotenv
      (No selenium/curl_cffi/pdfplumber — scraper-only, not needed for build)
-  2. pytest tests/ -v  (387 tests)
+  2. pytest tests/ -v
   3. conviction.build  → docs/data/*.json
   4. conviction.fetch_prices  → Portfolio Lab prices (yfinance adjusted-close)
   5. conviction.fetch_stock_details  → descriptions + 2-year price history
@@ -540,18 +594,20 @@ Steps:
   10. conviction.vol_history --full-refresh  → docs/data/vol_history.json
   11. Verify outputs: required files exist; market_returns.json has the monthly-array contract;
       leaderboard.json and prices.json are non-empty
-  12. Upload Pages artifact → Deploy to GitHub Pages
+  12. Build local ETF flow artifacts → docs/data/flows/ (117 ticker files, catalog.json, manifest.json)
+  13. Verify complete local ETF flow artifacts: --verify-output plus 117-instrument, 24-featured,
+      no-watch-tier, and network_fetch=false assertions
+  14. Upload Pages artifact → Deploy to GitHub Pages
 ```
 
 ### Key Design Decisions
 
 - **Selenium lazy-import**: `scraper.py` wraps all selenium imports in `try/except ImportError`. The module can be imported without Selenium installed — tests and build CI don't need it, only the runtime scraper does.
-- **Serialized scrapes**: the `daily-scrape` concurrency group with `cancel-in-progress: false` orders all triggers (three weekday crons, weekend cron, manual dispatch). Overlapping runs each commit the same binary parquet and `git pull --rebase -X theirs` cannot resolve binary conflicts; a queued run simply waits and re-hydrates from the Parquet store. (Build deploys use the separate `pages` group with `cancel-in-progress: true` — freshest data always wins.)
-- **Single build trigger chain**: the scraper no longer dispatches builds explicitly (`actions:write` removed); every data push trips `build_site.yml` via its push-paths trigger, and workflow_run-triggered builds are gated on the scraper's success and always check out `main`.
+- **Serialized scrapes**: `daily-scrape` uses `cancel-in-progress: false` for its scheduled and manual runs. A queued run rehydrates from the immutable Parquet store, then uses normal rebase semantics; a conflict aborts and requires a safe rerun. `build_site.yml` uses its own queued `pages` group with `cancel-in-progress: false`.
+- **Build trigger paths**: the scraper explicitly dispatches `build_site.yml` after a data-changing run; the build workflow also supports its filtered `main` push, manual dispatch, and a reusable `workflow_call` for external callers. No completion-chaining trigger is used.
 - **LFS checkout**: build checkout runs with `lfs: true` — `data/Mega_Markets_Historical.xlsx` lives in Git LFS, and the default pointer-file download would make the deep-history seed silently ingest a stub.
 - **Timeouts everywhere**: scrape job 90 min (a hung Playwright/yfinance must not burn the 360-min default), site build 60 min, deploy 20 min.
 - **Real verify gate**: the build fails unless every required payload exists, `market_returns.json` has the monthly-array contract shape, and `leaderboard.json` / `prices.json` are non-empty.
-- **workflow_run chaining**: Build triggers off scraper completion, bypassing GitHub's limitation where bot-authored pushes don't trigger other workflows.
 - **continue-on-error**: All market data fetch steps use `continue-on-error: true` — a FRED rate limit or yfinance outage doesn't fail the entire build. The verify gate above is what keeps a fully-empty payload from ever shipping.
 - **YTD deltas stay computable year-round**: the Parquet fetch lookback is sized to `max(180, days_into_year + 45)` days so the December-31 YTD baseline never falls outside the loaded window (previously a fixed 180-day window shipped `YTD: null` for all tickers after ~June).
 
@@ -559,7 +615,7 @@ Steps:
 
 ## Testing
 
-**387 tests** across 28 files — property-based (Hypothesis) and deterministic coverage of scoring, sanitization, the v42 bridge contract, Parquet immutability, markets engine, signal history, multi-period universe exits, short-side screening, and CI config.
+The pytest suite provides property-based (Hypothesis) and deterministic coverage of scoring, sanitization, the v42 bridge contract, Parquet immutability, markets engine, signal history, multi-period universe exits, short-side screening, CI configuration, flow ingestion gating, local flow artifact integrity, and Fund Flows UI contracts. The current collection contains 483 tests across 35 test files (482 passing, 1 manifest-gated skip).
 
 ```bash
 python -m pytest tests/ -v
@@ -577,8 +633,11 @@ The suite covers the full pipeline end-to-end. Key areas:
 | History isolation | `test_parquet_immutability.py` | SHA-256 manifest integrity, past-year immutability, zero-loss reconstruction, append-only contract |
 | Markets engine | `test_markets_engine.py`, `test_markets_unit_conversion.py`, `test_self_living_merge.py`, `test_unit_gaps.py` | Market returns pipeline, currency conversion, partial-year merge |
 | CI config | `test_ci_config.py`, `test_pipeline_automation.py` | Workflow structure invariants (e.g. `continue-on-error` policy) |
+| ETF flow catalog | `test_etf_flow_catalog.py` | Local 117-instrument leveraged/inverse dataset contract for the disabled ingestion pipeline (no synthetic primary catalog, no watch tier), Trackinsight parser validation, retry/pacing, transactional merge, resumable checkpoint planning/diagnostics, rebase conflict handling, disabled-workflow and external-ingestion gating safety |
+| Local flow artifacts | `test_local_flow_artifacts.py` | 117-instrument/170,392-row local dataset validation, per-file schema and SHA-256 spot-checks, catalog/manifest determinism, temp-dir builds that never touch `data/flows/`, output-path safety, UI/workflow cardinality sync, the `data/flows/` git-ignore regression guard, and the no-legacy-YAML scan |
+| Fund Flows UI | `test_flow_ui.py`, `test_flow_ui_metrics.py` | Local catalog integrity (117/24), parent/child history reconciliation, shared native range, accessibility, dual-axis percentile output, v1/v2 normalization, neutral zero/null handling, prior-only z-score, and cumulative-window behavior |
 
-The sanitizer tests in `test_scoring.py` (44 tests) exercise `cfg.sanitizer.apply()` with distinct synthetic inputs, validating blocked tickers, name patterns, ticker normalization (BRK-B → BRK.B), GOOG → GOOGL dedup, and KRX cross-listing collapse — and prove the build-time memoization cache returns byte-identical results via deep copies.
+The sanitizer tests in `test_scoring.py` (46 tests) exercise `cfg.sanitizer.apply()` with distinct synthetic inputs, validating blocked tickers, name patterns, ticker normalization (BRK-B → BRK.B), GOOG → GOOGL dedup, and KRX cross-listing collapse — and prove the build-time memoization cache returns byte-identical results via deep copies.
 
 | Test | Properties Covered |
 |------|-------------------|
@@ -609,7 +668,7 @@ pip install selenium curl_cffi pdfplumber xlrd
 # Reconstruct data/all_history.csv from Parquet store (required for local development/queries)
 python scripts/hydrate_csv_from_parquet.py
 
-# Run all 387 tests
+# Run all 483 tests
 python -m pytest tests/ -v
 
 # Build site artifacts (leaderboard, holdings, changelog, flow, overlap)
@@ -662,11 +721,14 @@ etf-data/
 │   ├── history_parquet/          # Append-only Parquet store (sole durable source of truth)
 │   ├── latest/                   # Current snapshot per ETF
 │   ├── history/                  # Dated daily snapshots (gitignored)
+│   ├── flows/                    # Authoritative local flow dataset (117 instruments, read-only)
 │   └── ticker_metadata.csv       # Sector/industry/country/market_cap per ticker
 │
 ├── docs/                         # GitHub Pages root
 │   ├── index.html                # Main dashboard
 │   ├── markets.html              # Markets Intelligence Platform
+│   ├── flow-ui.js                # Curated Fund Flows state, metrics, and SVG charts
+│   ├── flow-ui.css               # Scoped Fund Flows research interface
 │   ├── stock.html                # Per-ticker deep dive
 │   ├── backtest.html             # Strategy backtest
 │   ├── sim.html                  # Portfolio Lab (leveraged ETN simulator)
@@ -677,6 +739,9 @@ etf-data/
 │       ├── flag_history.json     # Per-ticker flag/rank history (90d)
 │       ├── score_history.json    # Score sparkline data
 │       ├── flow.json             # Sector + country flow (net_funds_delta / avg_funds_delta)
+│       ├── flows/                # Local flow export (117 ticker files + catalog.json + manifest.json)
+│       │   ├── catalog.json      # Generated static UI catalog (117 instruments, 24 featured)
+│       │   └── manifest.json     # Complete local flow coverage manifest (schema 2)
 │       ├── etf_overlap.json      # 30×30 Jaccard matrix
 │       ├── market_returns.json   # Cross-asset monthly close (~940KB)
 │       ├── vol_history.json      # CBOE vol indices
@@ -698,13 +763,14 @@ etf-data/
 │   ├── etf_holdings_scraper_v42.py  # Extended scraper (8 ETFs)
 │   └── hydrate_csv_from_parquet.py # Reconstructs transient CSV from Parquet store
 │
-├── tests/                        # pytest suite (28 files, 387 tests)
-│   ├── test_scoring.py           # 44 scoring & sanitizer tests
+├── tests/                        # pytest suite (35 files, 483 tests)
+│   ├── test_scoring.py           # 46 scoring & sanitizer tests
 │   └── test_bridge.py            # 6 bridge PBT tests
 │
 └── .github/workflows/
-    ├── daily_scrape.yml          # Data collection (14:00 + 22:00 UTC)
-    └── build_site.yml            # Site build + deploy
+     ├── daily_scrape.yml          # Scheduled/manual holdings scrape
+     ├── daily_etf_flows.yml       # Disabled flow workflow (dispatch-only, exits 1, no network)
+     └── build_site.yml            # Site build + deploy, including workflow_call
 ```
 
 ---

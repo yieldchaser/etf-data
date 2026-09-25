@@ -160,26 +160,19 @@ def test_daily_scrape_has_cron_schedule():
         assert "cron" in entry, f"Schedule entry is missing 'cron' key: {entry}"
 
 
-def test_build_site_single_trigger_chain():
-    """Req 3.8 (rev 2026-08) — build_site.yml must have EXACTLY ONE automated
-    trigger chain: push-to-main with site/data paths. workflow_run was removed
-    (it fired on no-change scrape days and raced the push-path run into the
-    concurrency group, cancelling real builds); the explicit dispatch step in
-    daily_scrape.yml was removed with it. workflow_dispatch stays for manual
-    hotfixes. The coverage commit-back carries [skip ci] so it never re-triggers.
-
-    Note: yaml.safe_load parses the YAML 'on:' key as Python boolean True.
-    """
+def test_build_site_trigger_and_reusable_contract():
+    """Build supports push/manual triggers and the flow promotion workflow_call."""
     on_block = BUILD_YML.get(True) or BUILD_YML.get("on") or {}
     assert "workflow_run" not in on_block, (
-        "build_site.yml must NOT use a workflow_run trigger anymore "
-        f"(single push-paths chain policy); found triggers: {list(on_block.keys())}"
+        "build_site.yml must not use obsolete workflow_run chaining; "
+        f"found triggers: {list(on_block.keys())}"
     )
     push = on_block.get("push")
     assert isinstance(push, dict) and "paths" in push, (
         "build_site.yml must trigger on push with a paths filter"
     )
     assert "workflow_dispatch" in on_block, "manual dispatch must remain for hotfixes"
+    assert "workflow_call" in on_block, "flow promotion needs a reusable workflow_call trigger"
 
 
 def _on_block(yml: dict) -> dict:

@@ -1181,8 +1181,9 @@ def build_details(
     print("  Conviction Labs — Stock Details (Self-Healing Coverage)")
     print("═" * 62)
 
-    DETAILS_DIR.mkdir(parents=True, exist_ok=True)
-    _cleanup_unsafe_detail_files()
+    if not dry_run:
+        DETAILS_DIR.mkdir(parents=True, exist_ok=True)
+        _cleanup_unsafe_detail_files()
 
     lb_map     = _load_leaderboard_tickers()
     if not lb_map:
@@ -1202,7 +1203,8 @@ def build_details(
     if currency_tickers:
         print(f"  Filtered {len(currency_tickers)} currency codes: {', '.join(sorted(currency_tickers)[:10])}…")
         total_universe -= currency_tickers
-    _cleanup_stale_detail_files({_safe_detail_stem(t) for t in total_universe})
+    if not dry_run:
+        _cleanup_stale_detail_files({_safe_detail_stem(t) for t in total_universe})
     # Discover resolved tickers by scanning all files in the details directory.
     # This recovers any tickers that were successfully processed in previous runs or interrupted runs.
     resolved       = set()

@@ -1,54 +1,29 @@
-name: Daily ETF Fund Flows Update
+name: ETF fund flows ingestion (disabled)
 
 on:
-  schedule:
-    # Mon-Fri at 10:30 UTC (morning update after previous day settlement)
-    - cron: '30 10 * * 1-5'
   workflow_dispatch:
     inputs:
-      tickers:
-        description: 'Specific tickers to fetch (comma-separated, leave blank for curated universe)'
-        required: false
-        default: ''
+      acknowledgement:
+        description: "This workflow is disabled and will not ingest external flow data"
+        required: true
+        default: "External ingestion disabled"
+        type: string
+
+permissions:
+  contents: read
 
 concurrency:
   group: daily-flows
   cancel-in-progress: false
 
 jobs:
-  fetch-flows:
+  disabled:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    permissions:
-      contents: write
-
+    timeout-minutes: 5
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install dependencies
+      - name: Report local-only policy
         run: |
-          pip install pandas numpy python-dateutil playwright
-          python -m playwright install chromium --with-deps
-
-      - name: Run fund flow scraper
-        run: |
-          if [ -n "${{ github.event.inputs.tickers }}" ]; then
-            python scripts/fetch_etf_flow.py --tickers "${{ github.event.inputs.tickers }}"
-          else
-            python scripts/fetch_etf_flow.py --curated
-          fi
-          python scripts/build_etf_search_index.py
-
-      - name: Commit and push updated flow data
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/data/flows/ docs/data/etf_search_index.json
-          git commit -m "chore(data): auto-update ETF fund flows dataset [skip ci]" || echo "No changes to commit"
-          git push origin main
+          echo "External ETF flow ingestion is intentionally disabled."
+          echo "The authoritative data is under data/flows and is rebuilt with scripts/build_local_flow_artifacts.py."
+          echo "No Trackinsight or other network request is made by this workflow."
+          exit 1
