@@ -2200,9 +2200,9 @@
             </div>
             <div class="flow-range-pair">
               <label class="flow-support" for="flow-range-start">Start observation</label>
-              <input id="flow-range-start" class="flow-range" type="range" min="0" :max="Math.max(0, flowData.records.length - 1)" step="1" :value="flowStartIndex" :aria-valuetext="flowRangeStartDate" @input="flowSetStartIndex($event.target.value)">
+              <input id="flow-range-start" class="flow-range" type="range" min="0" :max="flowMaxRecordIndex" step="1" :value="flowStartIndex" :aria-valuetext="flowRangeStartDate" @input="flowSetStartIndex($event.target.value)">
               <label class="flow-support" for="flow-range-end">End observation</label>
-              <input id="flow-range-end" class="flow-range" type="range" min="0" :max="Math.max(0, flowData.records.length - 1)" step="1" :value="flowEndIndex" :aria-valuetext="flowRangeEndDate" @input="flowSetEndIndex($event.target.value)">
+              <input id="flow-range-end" class="flow-range" type="range" min="0" :max="flowMaxRecordIndex" step="1" :value="flowEndIndex" :aria-valuetext="flowRangeEndDate" @input="flowSetEndIndex($event.target.value)">
             </div>
             <div class="flow-range-labels"><span x-text="flowRangeStartDate"></span><span x-text="flowRangeEndDate"></span></div>
           </fieldset>
@@ -2306,7 +2306,7 @@
               </section>
             </div>
 
-            <section id="flow-chart-panel-price" class="flow-chart-block" x-show="flowChartTab === 'price' && (flowPriceEnabled || flowData.records.some(record => record.nav !== null))" role="tabpanel" tabindex="0" :aria-labelledby="`flow-chart-tab-price`" aria-label="Price and flow analysis">
+            <section id="flow-chart-panel-price" class="flow-chart-block" x-show="flowChartTab === 'price' && (flowPriceEnabled || (flowData?.records || []).some(record => record.nav !== null))" role="tabpanel" tabindex="0" :aria-labelledby="`flow-chart-tab-price`" aria-label="Price and flow analysis">
               <div class="flow-chart-heading">
                 <div>
                   <p class="flow-chart-kicker">Optional view</p>

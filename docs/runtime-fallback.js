@@ -255,7 +255,13 @@
     bindTabs();
     var state = queryState();
     applyTab(state.tab);
+    // Mark the page as running in degraded mode BEFORE anything else.
+    // This is the ONLY path allowed to set it: when Alpine never booted,
+    // runtime-fallback.css needs a hook to style the static shell. It must
+    // stay off on a normal Alpine visit, or the Markets-wide overrides
+    // (tab buttons, #markets-app width/padding) restyle every tab.
     root.setAttribute('data-runtime-fallback', 'ready');
+    document.body.classList.add('flow-runtime-fallback-active');
     document.querySelectorAll('[x-cloak]').forEach(function (node) {
       node.removeAttribute('x-cloak');
     });
@@ -267,7 +273,10 @@
   }
 
   function alpineReady() {
-    root.setAttribute('data-runtime-fallback', 'ready');
+    // Alpine owns the page: drop any degraded-mode markers so the
+    // fallback skin can never reach a normally-rendered visit.
+    root.removeAttribute('data-runtime-fallback');
+    if (document.body) document.body.classList.remove('flow-runtime-fallback-active');
     panel.hidden = true;
   }
 

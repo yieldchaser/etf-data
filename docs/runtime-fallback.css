@@ -128,7 +128,7 @@
   outline-offset: 3px;
 }
 
-html[data-runtime-fallback="ready"] #markets-app {
+body.flow-runtime-fallback-active #markets-app {
   width: 100%;
   min-width: 0;
   max-width: 1600px;
@@ -137,14 +137,14 @@ html[data-runtime-fallback="ready"] #markets-app {
   box-sizing: border-box;
 }
 
-html[data-runtime-fallback="ready"] #markets-app > *,
-html[data-runtime-fallback="ready"] #markets-app header,
-html[data-runtime-fallback="ready"] #markets-app > div {
+body.flow-runtime-fallback-active #markets-app > *,
+body.flow-runtime-fallback-active #markets-app header,
+body.flow-runtime-fallback-active #markets-app > div {
   min-width: 0;
   max-width: 100%;
 }
 
-html[data-runtime-fallback="ready"] #markets-app button {
+body.flow-runtime-fallback-active #markets-app button {
   min-height: 36px;
   padding: 0.4rem 0.65rem;
   border: 1px solid #526477;
@@ -155,14 +155,14 @@ html[data-runtime-fallback="ready"] #markets-app button {
   font-size: 0.875rem;
 }
 
-html[data-runtime-fallback="ready"] #markets-app button.tab-active,
-html[data-runtime-fallback="ready"] #markets-app .flow-chart-tab[aria-selected="true"] {
+body.flow-runtime-fallback-active #markets-app button.tab-active,
+body.flow-runtime-fallback-active #markets-app .flow-chart-tab[aria-selected="true"] {
   color: #bde8fa;
   border-color: #8bc7e3;
   background: #1a2b36;
 }
 
-html[data-runtime-fallback="ready"] #markets-app .flow-chart-tab:focus-visible {
+body.flow-runtime-fallback-active #markets-app .flow-chart-tab:focus-visible {
   outline: 2px solid #8bc7e3;
   outline-offset: 3px;
 }

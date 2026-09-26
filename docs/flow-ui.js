@@ -628,6 +628,16 @@
         return Math.max(0, this.flowEndIndex - this.flowStartIndex + 1);
       },
 
+      // Highest valid record index. The range inputs bind :max to this:
+      // `Math.max(0, flowData.records.length - 1)` threw
+      // "Cannot read properties of null (reading 'records')" on every
+      // render while flowData was still null (ticker switch / reload),
+      // because the sliders sit outside the x-show guard that hides the
+      // rest of the flow panel. Optional chaining keeps them inert.
+      get flowMaxRecordIndex() {
+        return Math.max(0, (this.flowData?.records?.length || 0) - 1);
+      },
+
       get flowRangeStartDate() {
         return this.flowData?.records?.[this.flowStartIndex]?.date || '';
       },
