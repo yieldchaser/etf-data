@@ -1989,7 +1989,7 @@ function stockApp() {
       if (val >= 1e12) return '$' + (val / 1e12).toFixed(2) + ' T';
       if (val >= 1e9) return '$' + (val / 1e9).toFixed(1) + ' B';
       if (val >= 1e6) return '$' + (val / 1e6).toFixed(1) + ' M';
-      return '$' + val.toLocaleString();
+      return '$' + val.toLocaleString('en-US');
     },
     fmtWeight(n) { if (n == null || !isFinite(n)) return '—'; return (Number(n) * 100).toFixed(2) + '%'; },
     fmtFlow(n) { if (n == null || !isFinite(n)) return '—'; const v = Number(n) * 100; if (Math.abs(v) > 9999) return '—'; return (v >= 0 ? '+' : '') + v.toFixed(1) + '%'; },

@@ -618,6 +618,24 @@ def clean_dataframe(df, ticker, h_date=TODAY, weight_unit=None):
     w_num = pd.to_numeric(df['weight'], errors='coerce').fillna(0.0)
     t_str = df['ticker'].astype(str)
     keep = (w_num > 0) & (~t_str.str.startswith('$')) & (t_str != 'Cash&Other')
+
+    # Money-market sweep rows (2026-09 audit): issuers that publish a
+    # MoneyMarketFlag column mark cash instruments with 'Y'. Pacer ships
+    # USBFS03 ("U.S. Bank Money Market Deposit Account") this way, and it
+    # was ingested as a holding for months — invisible in the UI because the
+    # build-time sanitizer drops it by name, so 293 poisoned rows sat in the
+    # durable parquet store (2026-02-13 .. 2026-09-25). Drop flagged rows at
+    # ingress on every path. Keyed off the issuer's own flag rather than a
+    # USBFS03 blocklist entry: sweep tickers get renamed, the flag does not.
+    flag_col = next((c for c in df.columns
+                     if 'moneymarketflag' in re.sub(r'[^a-z]', '', str(c).lower())), None)
+    if flag_col is not None:
+        flagged = df[flag_col].astype(str).str.strip().str.upper().eq('Y')
+        if flagged.any():
+            print(f"      -> dropped {int(flagged.sum())} money-market flag(s) "
+                  f"({flag_col})")
+        keep &= ~flagged
+
     df = df[keep]
     if len(df) < before:
         print(f"      -> dropped {before - len(df)} placeholder row(s) "

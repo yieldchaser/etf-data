@@ -238,7 +238,7 @@
       <div class="text-xs flex flex-wrap items-center gap-x-4 gap-y-1" style="color: var(--text-2)">
         <span><span class="num font-mono" x-text="meta.etfs?.length || 30"></span> smart-beta ETFs</span>
         <span>·</span>
-        <span><span class="num font-mono" x-text="(meta.source_rows_raw || 0).toLocaleString()"></span> holdings rows</span>
+        <span><span class="num font-mono" x-text="(meta.source_rows_raw || 0).toLocaleString('en-US')"></span> holdings rows</span>
         <span>·</span>
         <span><span class="num font-mono" x-text="meta.snapshot_dates_in_window?.length || 0"></span> daily snapshots</span>
       </div>
@@ -4263,7 +4263,7 @@ function app() {
         ticker: r.ticker,
         company: r.company || '',
         rank: r.leaderboard_rank,
-        score: (r.final_score || 0).toLocaleString(),
+        score: (r.final_score || 0).toLocaleString('en-US'),
         deltaText, deltaColor,
         state: stateLabel,
         stateChip: stateStyle,
@@ -4650,7 +4650,7 @@ function app() {
       if (val >= 1e12) return '$' + (val / 1e12).toFixed(2) + ' T';
       if (val >= 1e9) return '$' + (val / 1e9).toFixed(1) + ' B';
       if (val >= 1e6) return '$' + (val / 1e6).toFixed(1) + ' M';
-      return '$' + val.toLocaleString();
+      return '$' + val.toLocaleString('en-US');
     },
     fmt1(n) { return (n == null || !isFinite(n)) ? '–' : Number(n).toFixed(1); },
     fmtPct(n) {

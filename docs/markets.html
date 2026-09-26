@@ -2160,7 +2160,7 @@
                  <span x-text="flowSelectedInstrument ? `${titleCaseCategory(flowSelectedInstrument.category)}${flowSelectedInstrument.leverage ? ` · ${flowSelectedInstrument.leverage}` : ''}` : 'Not in catalog'"></span>
                 <span x-text="flowSelectedInstrument?.issuer || 'Issuer unavailable'"></span>
                  <span x-text="flowData?.sourceLabel || 'Local dataset · Trackinsight-reported historical fields'"></span>
-                <span x-text="flowData ? `${flowData.count.toLocaleString()} available source observations` : 'Available source history unavailable'"></span>
+                <span x-text="flowData ? `${flowData.count.toLocaleString('en-US')} available source observations` : 'Available source history unavailable'"></span>
                 <span x-text="flowData?.sourceAsOf ? `Source as of ${flowData.sourceAsOf}` : 'Source date unavailable'"></span>
               </div>
             </div>
@@ -2191,7 +2191,7 @@
                 <h3>Selected window</h3>
                 <p class="flow-support">One native range control sets the start and end for every chart and table.</p>
               </div>
-              <span class="flow-support" x-text="`${flowRangeCount.toLocaleString()} sessions · ${flowRangeStartDate || '—'} to ${flowRangeEndDate || '—'}`"></span>
+              <span class="flow-support" x-text="`${flowRangeCount.toLocaleString('en-US')} sessions · ${flowRangeStartDate || '—'} to ${flowRangeEndDate || '—'}`"></span>
             </div>
             <div class="flow-presets" aria-label="Range presets">
               <template x-for="preset in flowRangePresets" :key="preset.key">
@@ -4885,7 +4885,7 @@ function marketsApp() {
         { label: 'ATL Date',   value: st.all_time_low_date || '—',             color: 'var(--text-3)' },
         { label: '%-ile ATH', value: st.percentile_all_time != null ? Math.round(st.percentile_all_time * 100) + '%' : '—', color: 'var(--amber)' },
         { label: '20d Up',    value: st.last_20_up != null ? `${st.last_20_up}/${(st.last_20_up || 0) + (st.last_20_down || 0)}` : '—', color: 'var(--text-2)' },
-        { label: 'History',   value: st.sessions_observed != null ? Number(st.sessions_observed).toLocaleString() + ' d' : '—', color: 'var(--text-3)' },
+        { label: 'History',   value: st.sessions_observed != null ? Number(st.sessions_observed).toLocaleString('en-US') + ' d' : '—', color: 'var(--text-3)' },
       ];
     },
 
