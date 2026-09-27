@@ -191,3 +191,64 @@ def test_cumulative_is_window_scoped_not_global():
     # The window key must include both indices or the cache never invalidates.
     assert "${this.flowStartIndex}:${this.flowEndIndex}" in js
 
+
+# ── Flow chart tooltip must follow the pointer ─────────────────────────
+# The tooltip used to be a static block in normal flow BELOW each chart, so
+# the readout never appeared where the pointer actually is. It must be a
+# fixed-position element positioned from the pointer coordinates, matching
+# the page's existing #tt cursor-tooltip convention.
+
+def test_flow_tooltip_is_fixed_positioned_not_in_flow():
+    css = (ROOT / "docs" / "flow-ui.css").read_text(encoding="utf-8")
+    m = re.search(r"\.flow-research \.flow-chart-tooltip\s*\{(.*?)\n\}", css, re.S)
+    assert m, "flow-chart-tooltip rule not found"
+    body = m.group(1)
+    assert "position: fixed" in body, (
+        "tooltip must be position:fixed to follow the pointer")
+    assert "pointer-events: none" in body, (
+        "tooltip must not intercept the pointer")
+    assert "z-index" in body, "tooltip must stack above the chart"
+
+
+def test_flow_tooltip_is_outside_the_chart_block_in_dom():
+    """It cannot follow the cursor while sitting inside normal flow."""
+    html = MARKETS_HTML.read_text(encoding="utf-8")
+    assert 'class="flow-chart-tooltip"' in html
+    # exactly one shared tooltip element, not one per chart panel
+    assert html.count('class="flow-chart-tooltip"') == 1, (
+        "expected a single shared tooltip element")
+
+
+def test_pointer_handler_records_cursor_coordinates():
+    js = (ROOT / "docs" / "flow-ui.js").read_text(encoding="utf-8")
+    m = re.search(r"flowChartPointerMove\(event\)\s*\{(.*?)\n      \}", js, re.S)
+    assert m, "flowChartPointerMove not found"
+    body = m.group(1)
+    assert "clientX" in body and "clientY" in body, (
+        "pointer handler must capture clientX/clientY")
+    assert "x:" in body and "y:" in body, (
+        "pointer handler must store x/y for positioning")
+
+
+def test_tooltip_style_binding_sets_fixed_coordinates():
+    html = MARKETS_HTML.read_text(encoding="utf-8")
+    assert ":style=\"flowChartTooltipStyle\"" in html, (
+        "tooltip must be positioned via a style binding")
+
+
+def test_tooltip_style_accessor_clamps_to_viewport():
+    js = (ROOT / "docs" / "flow-ui.js").read_text(encoding="utf-8")
+    assert "get flowChartTooltipStyle()" in js
+    m = re.search(r"get flowChartTooltipStyle\(\)\s*\{(.*?)\n      \}", js, re.S)
+    assert m, "flowChartTooltipStyle accessor not found"
+    body = m.group(1)
+    # `position: fixed` itself lives in the CSS class (single source of
+    # truth); the binding supplies the left/top coordinates.
+    assert "left:" in body and "top:" in body, (
+        "binding must set left/top coordinates")
+    # must keep the box on screen
+    assert "innerWidth" in body and "innerHeight" in body
+    # must hide rather than strand a stale box at 0,0
+    assert "display: none" in body
+
+

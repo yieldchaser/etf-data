@@ -2322,7 +2322,11 @@
               <div class="flow-chart" x-show="flowPriceEnabled" tabindex="0" @mousemove="flowChartPointerMove($event)" @mouseleave="flowChartPointerLeave()" @focus="flowChartFocus()" @blur="flowChartPointerLeave()" x-html="flowPriceChartSvg"></div>
             </section>
           </div>
-          <div class="flow-chart-tooltip" x-show="flowChartTooltip.visible" role="status" aria-live="polite" x-text="flowChartTooltipText"></div>
+          <!-- Cursor-following readout. Fixed-positioned from the pointer
+               coordinates (see flowChartTooltipStyle); it deliberately sits
+               outside normal flow so it renders at the pointer instead of
+               under the chart. -->
+          <div class="flow-chart-tooltip" :style="flowChartTooltipStyle" x-show="flowChartTooltip.visible" role="status" aria-live="polite" x-text="flowChartTooltipText"></div>
 
           <details x-show="flowData && flowSelectedRows.length">
             <summary>Accessible data table for the selected window</summary>

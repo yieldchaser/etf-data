@@ -1005,9 +1005,15 @@
           const rect = svg?.getBoundingClientRect?.();
           if (rect?.width) index = Math.round((event.clientX - rect.left) / rect.width * (rows.length - 1));
         }
+        // Track the pointer itself so the readout can follow the cursor
+        // instead of sitting under the chart.
+        const pointerX = Number.isFinite(event?.clientX) ? event.clientX : null;
+        const pointerY = Number.isFinite(event?.clientY) ? event.clientY : null;
         this.flowChartTooltip = {
           visible: true,
-          index: Math.max(0, Math.min(rows.length - 1, index))
+          index: Math.max(0, Math.min(rows.length - 1, index)),
+          x: pointerX,
+          y: pointerY
         };
       },
 
@@ -1017,7 +1023,44 @@
 
       flowChartFocus() {
         if (!this.flowSelectedRows.length) return;
-        this.flowChartTooltip = { visible: true, index: this.flowSelectedRows.length - 1 };
+        // Keyboard focus has no pointer; anchor the readout to the chart's
+        // right edge instead of dropping it at 0,0.
+        const el = this.$refs?.flowChartHost;
+        let x = null;
+        let y = null;
+        const rect = el?.getBoundingClientRect?.();
+        if (rect?.width) {
+          x = rect.right - 16;
+          y = rect.top + 16;
+        }
+        this.flowChartTooltip = {
+          visible: true,
+          index: this.flowSelectedRows.length - 1,
+          x,
+          y
+        };
+      },
+
+      // Fixed-position coordinates for the cursor-following readout.
+      // Offsets the box up-left of the pointer and clamps it inside the
+      // viewport, mirroring _posTt() in markets.html.
+      get flowChartTooltipStyle() {
+        if (!this.flowChartTooltip.visible) return 'display: none;';
+        const offsetX = 18;
+        const offsetY = 18;
+        const width = typeof window === 'undefined' ? 320 : window.innerWidth;
+        const height = typeof window === 'undefined' ? 800 : window.innerHeight;
+        const boxWidth = 320;
+        const boxHeight = 56;
+        let x = Number.isFinite(this.flowChartTooltip.x) ? this.flowChartTooltip.x : width / 2;
+        let y = Number.isFinite(this.flowChartTooltip.y) ? this.flowChartTooltip.y : height / 2;
+        let left = x + offsetX;
+        let top = y + offsetY;
+        if (left + boxWidth > width - 8) left = x - boxWidth - offsetX;
+        if (top + boxHeight > height - 8) top = y - boxHeight - offsetX;
+        if (left < 8) left = 8;
+        if (top < 8) top = 8;
+        return `left: ${Math.round(left)}px; top: ${Math.round(top)}px;`;
       },
 
       get flowChartTooltipText() {

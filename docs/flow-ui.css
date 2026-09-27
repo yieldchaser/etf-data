@@ -546,7 +546,17 @@
   font-size: 0.8125rem;
 }
 
+/* Cursor-following readout. Fixed-positioned from the pointer coords via the
+   flowChartTooltipStyle binding, matching the page's existing #tt convention
+   (markets.html _posTt). It is NOT a block under the chart any more: the
+   value has to appear where the pointer is, not below the plot. */
 .flow-research .flow-chart-tooltip {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 60;
+  pointer-events: none;
+  max-width: 30rem;
   min-height: 1.5em;
   padding: 0.55rem 0.75rem;
   border: 1px solid var(--flow-line-strong);
@@ -555,6 +565,9 @@
   background: #101923;
   font-size: 0.8125rem;
   font-variant-numeric: tabular-nums;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+  white-space: pre-line;
+  transition: opacity 0.12s ease;
 }
 
 .flow-research .flow-chart-block {
