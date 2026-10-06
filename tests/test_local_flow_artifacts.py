@@ -16,7 +16,7 @@ SOURCE_DIR = ROOT / "data" / "flows"
 CATALOG_JSON = DOCS_OUT / "catalog.json"
 MANIFEST_JSON = DOCS_OUT / "manifest.json"
 
-EXPECTED_COUNTS = {"featured": 24, "instruments": 117, "rows": 170392}
+EXPECTED_COUNTS = {"featured": 24, "instruments": 117, "rows": 171311}
 
 
 @pytest.fixture(autouse=True)
@@ -38,20 +38,20 @@ def test_validate_local_dataset_reports_exact_universe(report):
     assert report["status"] == "ok"
     assert report["expected"] == {
         "universe_count": 117,
-        "total_rows": 170392,
+        "total_rows": 171311,
         "featured_count": 24,
     }
     actual = report["actual"]
     assert actual["catalog_rows"] == 117
     assert actual["individual_files"] == 117
-    assert actual["individual_rows"] == 170392
-    assert actual["aggregate_rows"] == 170392
+    assert actual["individual_rows"] == 171311
+    assert actual["aggregate_rows"] == 171311
     assert actual["workbook_catalog_rows"] == 117
     assert actual["workbook_latest_rows"] == 117
     assert actual["unique_tickers"] == 117
     assert actual["featured_tickers"] == 24
     assert actual["earliest_date"] == "2016-01-04"
-    assert actual["latest_date"] == "2026-09-23"
+    assert actual["latest_date"] == "2026-10-05"
     assert actual["duplicate_ticker_dates"] == 0
     assert actual["missing_required_values"] == 0
     assert actual["metadata_discrepancy_count"] == 1
@@ -59,7 +59,7 @@ def test_validate_local_dataset_reports_exact_universe(report):
         "WTIU.underlying raw label differs from summary label"
     ]
     assert report["individual"]["file_count"] == 117
-    assert report["individual"]["total_rows"] == 170392
+    assert report["individual"]["total_rows"] == 171311
     assert len(report["featured_tickers"]) == 24
     assert len(set(report["featured_tickers"])) == 24
     assert set(report["featured_tickers"]) <= set(report["summary"])
@@ -78,13 +78,13 @@ def test_individual_files_expose_required_columns_and_clean_dates(report):
         assert dates == sorted(dates)
         assert len(dates) == len(set(dates))
         assert dates[0] >= "2016-01-04"
-        assert dates[-1] <= "2026-09-23"
+        assert dates[-1] <= "2026-10-05"
         assert all(row["ticker"] == ticker for row in info["data"])
         assert info["missing_required_values"] == 0
         assert info["duplicate_dates"] == 0
         assert info["relative_path"] == f"data/flows/individual/{ticker}_flows.csv"
-    assert sum(info["row_count"] for info in files.values()) == 170392
-    assert report["aggregate"]["row_count"] == 170392
+    assert sum(info["row_count"] for info in files.values()) == 171311
+    assert report["aggregate"]["row_count"] == 171311
     assert report["aggregate"]["unique_ticker_count"] == 117
     assert set(build.FEATURED_TICKERS) <= set(files)
     for ticker in ("TQQQ", "NVDL", sorted(files)[0]):
@@ -102,7 +102,7 @@ def test_docs_catalog_and_manifest_are_deterministic_projections(report):
     assert "watch_tier" not in catalog
     assert catalog["content_sha256"] == build._payload_hash(catalog)
     manifest = json.loads(MANIFEST_JSON.read_text(encoding="utf-8"))
-    assert manifest["counts"] == {"featured": 24, "files": 117, "instruments": 117, "rows": 170392}
+    assert manifest["counts"] == {"featured": 24, "files": 117, "instruments": 117, "rows": 171311}
     assert manifest["content_sha256"] == build._payload_hash(manifest)
 
 
@@ -144,8 +144,8 @@ def test_build_local_artifacts_writes_only_into_temp_output(tmp_path):
     )
     assert result["status"] == "ok"
     assert result["ticker_artifacts"] == 117
-    assert result["row_count"] == 170392
-    assert result["source_asof"] == "2026-09-23"
+    assert result["row_count"] == 171311
+    assert result["source_asof"] == "2026-10-05"
     assert Path(result["catalog"]) == output / "catalog.json"
     assert Path(result["manifest"]) == output / "manifest.json"
     names = {path.name for path in output.iterdir()}
