@@ -548,6 +548,36 @@
     return { width, height, padding, chartWidth, chartHeight, xScale, dateTicks };
   }
 
+  function chartCrosshairOverlay(frame, rows, hoverIndex, targetY, yLabel) {
+    if (hoverIndex === null || hoverIndex === undefined || hoverIndex < 0 || hoverIndex >= rows.length) return '';
+    const row = rows[hoverIndex];
+    if (!row) return '';
+    const x = frame.xScale(hoverIndex);
+    const top = frame.padding.top;
+    const bottom = frame.height - frame.padding.bottom;
+    const dateStr = escapeHtml(row.date || '');
+    let out = `<g class="flow-crosshair-group" pointer-events="none">`;
+    out += `<line x1="${x.toFixed(1)}" y1="${top.toFixed(1)}" x2="${x.toFixed(1)}" y2="${bottom.toFixed(1)}" stroke="#22d3ee" stroke-width="1.3" stroke-dasharray="3 3" opacity="0.9"/>`;
+    const numY = finiteNumber(targetY);
+    if (numY !== null) {
+      out += `<circle cx="${x.toFixed(1)}" cy="${numY.toFixed(1)}" r="7" fill="none" stroke="#22d3ee" stroke-width="1.2" opacity="0.55"/>`;
+      out += `<circle cx="${x.toFixed(1)}" cy="${numY.toFixed(1)}" r="4.5" fill="#22d3ee" stroke="#050505" stroke-width="2"/>`;
+      if (yLabel) {
+        const textW = Math.max(48, String(yLabel).length * 7 + 10);
+        const tagX = frame.padding.left - textW - 4;
+        out += `<rect x="${tagX.toFixed(1)}" y="${(numY - 9).toFixed(1)}" width="${textW}" height="18" rx="3" fill="#090d16" stroke="#22d3ee" stroke-width="1"/>`;
+        out += `<text x="${(tagX + textW - 5).toFixed(1)}" y="${(numY + 4).toFixed(1)}" text-anchor="end" fill="#22d3ee" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10" font-weight="600">${escapeHtml(yLabel)}</text>`;
+      }
+    }
+    const tagW = 76;
+    const tagLeft = Math.max(4, Math.min(frame.width - tagW - 4, x - tagW / 2));
+    const tagY = bottom + 3;
+    out += `<rect x="${tagLeft.toFixed(1)}" y="${tagY.toFixed(1)}" width="${tagW}" height="19" rx="3" fill="#090d16" stroke="#22d3ee" stroke-width="1.2"/>`;
+    out += `<text x="${(tagLeft + tagW / 2).toFixed(1)}" y="${(tagY + 13).toFixed(1)}" text-anchor="middle" fill="#22d3ee" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10.5" font-weight="700">${dateStr}</text>`;
+    out += `</g>`;
+    return out;
+  }
+
   function flowResearchApp() {
     return {
       flowCatalog: null,
@@ -566,6 +596,11 @@
       flowTierFilter: 'all',
       flowCategoryFilter: 'all',
       flowStatusFilter: 'all',
+      flowActiveCategoryTab: 'all',
+      flowUniverseDrawerOpen: false,
+      flowAlphaSignalsData: null,
+      flowAlphaFilter: 'all',
+      flowHoverIndex: null,
       flowViewMode: 'studio',
       flowShowOutliers: true,
       flowScannerSort: 'abs_z',
@@ -616,6 +651,94 @@
       get flowCategories() {
         const values = new Set(this.flowPrimaryInstruments.map(item => item.category));
         return Array.from(values).sort();
+      },
+
+      get flowCategoryTabs() {
+        const counts = {};
+        for (const item of this.flowPrimaryInstruments) {
+          counts[item.category] = (counts[item.category] || 0) + 1;
+        }
+        return [
+          { key: 'all', label: 'All (145)', count: this.flowPrimaryInstruments.length, title: 'All 145 Leveraged & Inverse ETFs' },
+          { key: 'featured', label: 'Featured (24)', count: this.flowFeaturedInstruments.length, title: '24 Featured Anchor ETFs' },
+          { key: 'ai_semis', label: 'AI & Semis 2X (48)', raw: '4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech', count: counts['4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech'] || 48 },
+          { key: 'mega_crypto', label: 'Mega & Crypto 2X (29)', raw: '5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer', count: counts['5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer'] || 29 },
+          { key: 'tech_3x', label: 'Tech & Semis 3X (16)', raw: '2. Technology, Semiconductor & Thematic (Bull)', count: counts['2. Technology, Semiconductor & Thematic (Bull)'] || 16 },
+          { key: 'sectors_3x', label: 'Sectors 3X (12)', raw: '3. Sector Specific Leveraged (Bull)', count: counts['3. Sector Specific Leveraged (Bull)'] || 12 },
+          { key: 'shorts', label: 'Shorts & Hedges (10)', raw: '9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only)', count: counts['9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only)'] || 10 },
+          { key: 'commodities', label: 'Commodities & Vol (9)', raw: '6. Commodities, Energy & Volatility (Bull)', count: counts['6. Commodities, Energy & Volatility (Bull)'] || 9 },
+          { key: 'broad_index', label: 'Broad Index (8)', raw: '1. Broad Market Equity Index (Bull)', count: counts['1. Broad Market Equity Index (Bull)'] || 8 },
+          { key: 'rates_fixed', label: 'Rates & Crypto (8)', raw: '7. Fixed Income, Currencies & Crypto (Bull)', count: counts['7. Fixed Income, Currencies & Crypto (Bull)'] || 8 },
+          { key: 'intl', label: 'International (5)', raw: '8. International / Country (Bull)', count: counts['8. International / Country (Bull)'] || 5 }
+        ];
+      },
+
+      get flowActiveCategoryInstruments() {
+        const key = this.flowActiveCategoryTab;
+        if (key === 'featured') return this.flowFeaturedInstruments;
+        if (key === 'all') return this.flowPrimaryInstruments;
+        const tab = this.flowCategoryTabs.find(t => t.key === key);
+        if (!tab || !tab.raw) return this.flowPrimaryInstruments;
+        return this.flowPrimaryInstruments.filter(item => item.category === tab.raw);
+      },
+
+      get flowGroupedUniverse() {
+        const groups = [];
+        for (const tab of this.flowCategoryTabs) {
+          if (tab.key === 'all' || tab.key === 'featured') continue;
+          const items = this.flowPrimaryInstruments.filter(item => item.category === tab.raw);
+          if (!items.length) continue;
+          const totalAum = items.reduce((sum, item) => sum + (finiteNumber(item.aum_m) || 0), 0);
+          groups.push({
+            key: tab.key,
+            label: tab.label,
+            fullName: tab.raw,
+            count: items.length,
+            totalAumM: totalAum,
+            items: items.slice().sort((a, b) => a.ticker.localeCompare(b.ticker))
+          });
+        }
+        return groups;
+      },
+
+      get flowActiveHoverRow() {
+        const rows = this.flowSelectedRows;
+        if (!rows.length) return null;
+        if (this.flowHoverIndex !== null && rows[this.flowHoverIndex]) {
+          return rows[this.flowHoverIndex];
+        }
+        return rows[rows.length - 1];
+      },
+
+      get flowIsHovering() {
+        return this.flowHoverIndex !== null;
+      },
+
+      get flowAlphaActiveSignals() {
+        return Array.isArray(this.flowAlphaSignalsData?.active_signals) ? this.flowAlphaSignalsData.active_signals : [];
+      },
+
+      get flowAlphaTopBasket() {
+        return Array.isArray(this.flowAlphaSignalsData?.top5_conviction_basket) ? this.flowAlphaSignalsData.top5_conviction_basket : [];
+      },
+
+      get flowAlphaBullBearPairs() {
+        return Array.isArray(this.flowAlphaSignalsData?.bull_bear_ecosystems) ? this.flowAlphaSignalsData.bull_bear_ecosystems : [];
+      },
+
+      get flowAlphaCategoryRotations() {
+        return Array.isArray(this.flowAlphaSignalsData?.category_rotations_top10) ? this.flowAlphaSignalsData.category_rotations_top10 : [];
+      },
+
+      get flowAlphaFilteredSignals() {
+        const filter = this.flowAlphaFilter;
+        const signals = this.flowAlphaActiveSignals;
+        if (filter === 'all') return signals;
+        if (filter === 'slingshot') return signals.filter(s => String(s.live_signal || '').includes('SLINGSHOT'));
+        if (filter === 'ignition') return signals.filter(s => String(s.live_signal || '').includes('IGNITION'));
+        if (filter === 'trap') return signals.filter(s => String(s.live_signal || '').includes('TRAP') || String(s.live_signal || '').includes('DEAD_CAT'));
+        if (filter === 'squeeze') return signals.filter(s => String(s.live_signal || '').includes('SQUEEZE'));
+        return signals;
       },
 
       get flowUniversePulse() {
@@ -954,22 +1077,33 @@
         const query = this.flowSearchQuery.trim().toUpperCase();
         const results = [];
         for (const item of this.flowAllEntries) {
-          if (this.flowTierFilter === 'primary' && item.tier !== 'primary') continue;
           if (this.flowTierFilter === 'featured' && !item.featured) continue;
           if (this.flowCategoryFilter !== 'all' && item.category !== this.flowCategoryFilter) continue;
           const state = this.flowStatusForTicker(item.ticker);
           if (this.flowStatusFilter !== 'all' && state !== this.flowStatusFilter) continue;
           if (query) {
-            const haystack = [item.ticker, item.fund_name, item.underlying, item.underlying_name, item.issuer, item.trackinsight_key, item.leverage]
+            const haystack = [
+              item.ticker,
+              item.fund_name,
+              item.underlying,
+              item.underlying_name,
+              item.issuer,
+              item.category,
+              item.trackinsight_key,
+              item.leverage,
+              item.archetype_label,
+              item.live_signal_label
+            ]
               .filter(Boolean)
               .join(' ')
               .toUpperCase();
             if (!haystack.includes(query)) continue;
           }
           let score = item.featured ? 100 : 0;
-          if (item.ticker === query) score += 1000;
-          else if (item.ticker.startsWith(query)) score += 400;
-          if ((item.fund_name || '').toUpperCase().startsWith(query)) score += 100;
+          if (item.ticker === query) score += 2000;
+          else if (item.ticker.startsWith(query)) score += 800;
+          else if ((item.underlying || '').toUpperCase().startsWith(query)) score += 300;
+          else if ((item.fund_name || '').toUpperCase().startsWith(query)) score += 200;
           results.push({ item, state, score });
         }
         results.sort((left, right) => right.score - left.score || left.item.ticker.localeCompare(right.item.ticker));
@@ -1116,7 +1250,14 @@
           return `<line x1="${frame.padding.left}" y1="${y.toFixed(1)}" x2="${width - frame.padding.right}" y2="${y.toFixed(1)}" stroke="${isZero ? COLORS.axis : COLORS.grid}" stroke-width="1"${dash}/>${label}`;
         }).join('');
         const description = `Daily ETF estimated net flow in US dollars for ${rows.length} selected sessions. Positive and negative bars diverge from a neutral zero line. A line shows the complete 20-observation rolling mean; incomplete windows are gaps.`;
-        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-daily-title flow-daily-desc"><title id="flow-daily-title">Daily ETF estimated net flow</title><desc id="flow-daily-desc">${escapeHtml(description)}</desc>${grid}${bars}<path d="${linePath(meanPoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>${frame.dateTicks}</svg>`;
+        let overlay = '';
+        if (this.flowHoverIndex !== null && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
+          const hRow = rows[this.flowHoverIndex];
+          const hFlow = finiteNumber(hRow.flow);
+          const hY = hFlow !== null ? yScale(hFlow) : zeroY;
+          overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, axisNumber(hFlow));
+        }
+        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-daily-title flow-daily-desc"><title id="flow-daily-title">Daily ETF estimated net flow</title><desc id="flow-daily-desc">${escapeHtml(description)}</desc>${grid}${bars}<path d="${linePath(meanPoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>${overlay}${frame.dateTicks}</svg>`;
       },
 
       get flowCumulativeChartSvg() {
@@ -1145,7 +1286,14 @@
         const lastColor = (last.selectedCumulative || 0) >= 0 ? COLORS.cyan : COLORS.negative;
         const lastPoint = lastY === null ? '' : `<circle cx="${frame.xScale(rows.length - 1).toFixed(1)}" cy="${lastY.toFixed(1)}" r="3.5" fill="${lastColor}"/>`;
         const description = `Selected-window cumulative source-reported aggregate net flow, summed from a zero baseline before ${rows[0].date}. Missing daily values carry the prior cumulative value and are not converted to zero.`;
-        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-cumulative-title flow-cumulative-desc"><title id="flow-cumulative-title">Selected-window cumulative source-reported aggregate net flow</title><desc id="flow-cumulative-desc">${escapeHtml(description)}</desc><defs><linearGradient id="flow-cum-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${COLORS.cyan}" stop-opacity="0.22"/><stop offset="100%" stop-color="${COLORS.cyan}" stop-opacity="0.0"/></linearGradient></defs>${grid}${area ? `<path d="${area}" fill="url(#flow-cum-grad)"/>` : ''}<path d="${linePath(linePoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>${lastPoint}${frame.dateTicks}</svg>`;
+        let overlay = '';
+        if (this.flowHoverIndex !== null && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
+          const hRow = rows[this.flowHoverIndex];
+          const hVal = finiteNumber(hRow.selectedCumulative);
+          const hY = hVal !== null ? yScale(hVal) : zeroY;
+          overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, axisNumber(hVal));
+        }
+        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-cumulative-title flow-cumulative-desc"><title id="flow-cumulative-title">Selected-window cumulative source-reported aggregate net flow</title><desc id="flow-cumulative-desc">${escapeHtml(description)}</desc><defs><linearGradient id="flow-cum-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${COLORS.cyan}" stop-opacity="0.22"/><stop offset="100%" stop-color="${COLORS.cyan}" stop-opacity="0.0"/></linearGradient></defs>${grid}${area ? `<path d="${area}" fill="url(#flow-cum-grad)"/>` : ''}<path d="${linePath(linePoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>${lastPoint}${overlay}${frame.dateTicks}</svg>`;
       },
 
       get flowPercentileChartSvg() {
@@ -1184,7 +1332,14 @@
           return `<line x1="${frame.padding.left}" y1="${y.toFixed(1)}" x2="${width - frame.padding.right}" y2="${y.toFixed(1)}" stroke="${COLORS.grid}" stroke-width="1"/><text x="${width - frame.padding.right + 7}" y="${(y + 4).toFixed(1)}" text-anchor="start" fill="${COLORS.subtle}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11">${value}%</text>`;
         }).join('');
         const description = 'The left axis shows complete trailing 10-observation source-reported aggregate net flow in US dollars. The right axis shows the tie-aware empirical percentile of that flow against all complete 10-observation windows in available source history. Missing values remain gaps.';
-        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-percentile-title flow-percentile-desc"><title id="flow-percentile-title">Ten-observation flow percentile</title><desc id="flow-percentile-desc">${escapeHtml(description)}</desc>${leftAxis}${rightAxis}${bars}<path d="${linePath(percentilePoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>${frame.dateTicks}</svg>`;
+        let overlay = '';
+        if (this.flowHoverIndex !== null && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
+          const hRow = rows[this.flowHoverIndex];
+          const hPct = finiteNumber(hRow.percentile10);
+          const hY = hPct !== null ? yPercentile(hPct) : null;
+          overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, hPct !== null ? `${hPct.toFixed(0)}%` : null);
+        }
+        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-percentile-title flow-percentile-desc"><title id="flow-percentile-title">Ten-observation flow percentile</title><desc id="flow-percentile-desc">${escapeHtml(description)}</desc>${leftAxis}${rightAxis}${bars}<path d="${linePath(percentilePoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>${overlay}${frame.dateTicks}</svg>`;
       },
 
       get flowIntensityChartSvg() {
@@ -1220,7 +1375,14 @@
           return `<line x1="${frame.padding.left}" y1="${y.toFixed(1)}" x2="${width - frame.padding.right}" y2="${y.toFixed(1)}" stroke="${stroke}" stroke-width="1"${dash}/><text x="${frame.padding.left - 6}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11">${value > 0 ? '+' : ''}${value.toFixed(1)}</text>`;
         }).join('');
         const description = 'Prior-only z-score for daily ETF estimated net flow. Each value uses the preceding 30 available sessions and excludes the current observation from its mean and standard deviation. Missing values remain gaps.';
-        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-intensity-title flow-intensity-desc"><title id="flow-intensity-title">Prior-only daily flow z-score</title><desc id="flow-intensity-desc">${escapeHtml(description)}</desc>${grid}${bars}${frame.dateTicks}</svg>`;
+        let overlay = '';
+        if (this.flowHoverIndex !== null && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
+          const hRow = rows[this.flowHoverIndex];
+          const hZ = finiteNumber(hRow.priorOnlyZScore);
+          const hY = hZ !== null ? yScale(hZ) : zeroY;
+          overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, hZ !== null ? `${hZ >= 0 ? '+' : ''}${hZ.toFixed(2)}σ` : null);
+        }
+        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-intensity-title flow-intensity-desc"><title id="flow-intensity-title">Prior-only daily flow z-score</title><desc id="flow-intensity-desc">${escapeHtml(description)}</desc>${grid}${bars}${overlay}${frame.dateTicks}</svg>`;
       },
 
       get flowPriceChartSvg() {
@@ -1264,7 +1426,14 @@
           return `<text x="${width - frame.padding.right + 7}" y="${(y + 4).toFixed(1)}" text-anchor="start" fill="${COLORS.muted}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11">${escapeHtml(axisNumber(value))}</text>`;
         }).join('');
         const description = 'Source-reported NAV or share price on the left axis and daily net flow on the right axis. Each series uses an independent scale and missing observations are not connected.';
-        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-price-title flow-price-desc"><title id="flow-price-title">Price and daily ETF estimated net flow</title><desc id="flow-price-desc">${escapeHtml(description)}</desc>${leftTicks}${rightTicks}${bars}<path d="${linePath(pricePoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>${frame.dateTicks}</svg>`;
+        let overlay = '';
+        if (this.flowHoverIndex !== null && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
+          const hRow = rows[this.flowHoverIndex];
+          const hPrice = finiteNumber(hRow.nav);
+          const hY = hPrice !== null ? yPrice(hPrice) : null;
+          overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, formatPrice(hPrice));
+        }
+        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-price-title flow-price-desc"><title id="flow-price-title">Price and daily ETF estimated net flow</title><desc id="flow-price-desc">${escapeHtml(description)}</desc>${leftTicks}${rightTicks}${bars}<path d="${linePath(pricePoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>${overlay}${frame.dateTicks}</svg>`;
       },
 
       get flowMultiHorizonImpulseChartSvg() {
@@ -1341,9 +1510,15 @@
             }
             return payload;
           });
-        const [catalogResult, manifestResult] = await Promise.allSettled([catalogPromise, manifestPromise]);
+        const alphaPromise = fetch('data/flows/alpha_signals.json')
+          .then(async response => response.ok ? response.json() : null)
+          .catch(() => null);
+        const [catalogResult, manifestResult, alphaResult] = await Promise.allSettled([catalogPromise, manifestPromise, alphaPromise]);
         this.flowBootstrapControllers = [];
         if (this.flowDestroyed) return;
+        if (alphaResult.status === 'fulfilled' && alphaResult.value) {
+          this.flowAlphaSignalsData = alphaResult.value;
+        }
         if (catalogResult.status === 'fulfilled' && catalogResult.value && Array.isArray(catalogResult.value.instruments)) {
           this.flowCatalog = catalogResult.value;
           this._flowEntryMap = Object.fromEntries(this.flowAllEntries.map(item => [item.ticker, item]));
@@ -1419,57 +1594,33 @@
           const target = event.currentTarget;
           const svg = target?.querySelector?.('svg') || target;
           const rect = svg?.getBoundingClientRect?.();
-          if (rect?.width) index = Math.round((event.clientX - rect.left) / rect.width * (rows.length - 1));
+          if (rect?.width) index = Math.round(((event.clientX - rect.left) / rect.width) * (rows.length - 1));
         }
-        const pointerX = Number.isFinite(event?.clientX) ? event.clientX : null;
-        const pointerY = Number.isFinite(event?.clientY) ? event.clientY : null;
+        const clamped = Math.max(0, Math.min(rows.length - 1, index));
+        this.flowHoverIndex = clamped;
         this.flowChartTooltip = {
           visible: true,
-          index: Math.max(0, Math.min(rows.length - 1, index)),
-          x: pointerX,
-          y: pointerY
+          index: clamped
         };
       },
 
       flowChartPointerLeave() {
+        this.flowHoverIndex = null;
         this.flowChartTooltip = { ...this.flowChartTooltip, visible: false };
       },
 
       flowChartFocus() {
         if (!this.flowSelectedRows.length) return;
-        const el = this.$refs?.flowChartHost;
-        let x = null;
-        let y = null;
-        const rect = el?.getBoundingClientRect?.();
-        if (rect?.width) {
-          x = rect.right - 16;
-          y = rect.top + 16;
-        }
+        const clamped = this.flowSelectedRows.length - 1;
+        this.flowHoverIndex = clamped;
         this.flowChartTooltip = {
           visible: true,
-          index: this.flowSelectedRows.length - 1,
-          x,
-          y
+          index: clamped
         };
       },
 
       get flowChartTooltipStyle() {
-        if (!this.flowChartTooltip.visible) return 'display: none;';
-        const offsetX = 18;
-        const offsetY = 18;
-        const width = typeof window === 'undefined' ? 320 : window.innerWidth;
-        const height = typeof window === 'undefined' ? 800 : window.innerHeight;
-        const boxWidth = 320;
-        const boxHeight = 56;
-        let x = Number.isFinite(this.flowChartTooltip.x) ? this.flowChartTooltip.x : width / 2;
-        let y = Number.isFinite(this.flowChartTooltip.y) ? this.flowChartTooltip.y : height / 2;
-        let left = x + offsetX;
-        let top = y + offsetY;
-        if (left + boxWidth > width - 8) left = x - boxWidth - offsetX;
-        if (top + boxHeight > height - 8) top = y - boxHeight - offsetX;
-        if (left < 8) left = 8;
-        if (top < 8) top = 8;
-        return `left: ${Math.round(left)}px; top: ${Math.round(top)}px;`;
+        return 'display: none;';
       },
 
       get flowChartTooltipText() {

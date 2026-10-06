@@ -1091,3 +1091,278 @@
     max-width: 100%;
   }
 }
+
+/* ── Steady Inspection HUD Bar (replaces drifting floating cursor tooltip) ── */
+.flow-research .flow-chart-hud {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid rgba(34, 211, 238, 0.28);
+  border-radius: 6px;
+  background: #06090e;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 0.5rem;
+}
+
+.flow-research .flow-hud-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  background: rgba(34, 211, 238, 0.12);
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  color: var(--flow-cyan);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.flow-research .flow-hud-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1.15rem;
+}
+
+.flow-research .flow-hud-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  color: var(--flow-muted);
+}
+
+.flow-research .flow-hud-item strong {
+  font-weight: 600;
+  color: var(--flow-text);
+}
+
+.flow-research .flow-hud-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.6875rem;
+  color: var(--flow-subtle);
+}
+
+/* ── Category Navigation Tabs & 145 Grid ── */
+.flow-research .flow-category-bar {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--flow-line);
+  border-radius: 6px;
+  background: var(--flow-panel);
+}
+
+.flow-research .flow-category-tabs-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+}
+
+.flow-research .flow-category-pills {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.flow-research .flow-category-pill {
+  appearance: none;
+  border: 1px solid var(--flow-line);
+  border-radius: 4px;
+  padding: 0.3rem 0.55rem;
+  background: #09090b;
+  color: var(--flow-muted);
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.flow-research .flow-category-pill:hover,
+.flow-research .flow-category-pill[aria-pressed="true"] {
+  color: var(--flow-cyan);
+  border-color: rgba(34, 211, 238, 0.45);
+  background: rgba(34, 211, 238, 0.1);
+}
+
+.flow-research .flow-ticker-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 0.35rem 0;
+}
+
+.flow-research .flow-ticker-chip {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--flow-line);
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  background: #08080a;
+  color: var(--flow-text);
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.flow-research .flow-ticker-chip:hover,
+.flow-research .flow-ticker-chip[data-active="true"] {
+  border-color: var(--flow-cyan);
+  background: rgba(34, 211, 238, 0.12);
+  color: #ffffff;
+}
+
+.flow-research .flow-flow-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.flow-research .flow-flow-dot.positive {
+  background: var(--flow-positive);
+}
+
+.flow-research .flow-flow-dot.negative {
+  background: var(--flow-negative);
+}
+
+.flow-research .flow-flow-dot.neutral {
+  background: var(--flow-neutral);
+}
+
+/* ── 145 Universe Drawer ── */
+.flow-research .flow-universe-drawer {
+  padding: 0.85rem;
+  border: 1px solid rgba(34, 211, 238, 0.25);
+  border-radius: 6px;
+  background: #05070a;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.flow-research .flow-drawer-category-group {
+  display: grid;
+  gap: 0.45rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 0.65rem;
+}
+
+.flow-research .flow-drawer-category-group:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.flow-research .flow-drawer-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.flow-research .flow-drawer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 0.35rem;
+}
+
+.flow-research .flow-drawer-etf-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--flow-line);
+  border-radius: 4px;
+  background: #09090b;
+  color: var(--flow-text);
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  text-align: left;
+}
+
+.flow-research .flow-drawer-etf-card:hover,
+.flow-research .flow-drawer-etf-card[data-active="true"] {
+  border-color: var(--flow-cyan);
+  background: rgba(34, 211, 238, 0.1);
+}
+
+/* ── Studio Alpha Intelligence Strip ── */
+.flow-research .flow-alpha-intel-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid rgba(34, 211, 238, 0.22);
+  border-radius: 6px;
+  background: #07090e;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+}
+
+.flow-research .flow-alpha-hops {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* ── Quant Alpha Blotter ── */
+.flow-research .flow-conviction-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+.flow-research .flow-conviction-card {
+  padding: 0.75rem;
+  border: 1px solid rgba(34, 211, 238, 0.28);
+  border-radius: 6px;
+  background: #070a0e;
+  display: grid;
+  gap: 0.45rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  text-align: left;
+}
+
+.flow-research .flow-conviction-card:hover {
+  border-color: var(--flow-cyan);
+  background: #090e15;
+}
+
+.flow-research .flow-pairs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.65rem;
+}
+
+.flow-research .flow-pair-card {
+  padding: 0.75rem;
+  border: 1px solid var(--flow-line);
+  border-radius: 6px;
+  background: #09090c;
+  display: grid;
+  gap: 0.45rem;
+}
