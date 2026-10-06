@@ -201,9 +201,10 @@ def test_ui_and_workflows_agree_on_145_local_cardinality():
     assert "['featured'] == 24" in build_site
     assert "'watch_tier' not in catalog" in build_site
     daily = (ROOT / ".github" / "workflows" / "daily_etf_flows.yml").read_text(encoding="utf-8")
-    assert "schedule:" not in daily
-    assert "workflow_dispatch" in daily
-    assert "exit 1" in daily
+    assert "schedule:" in daily
+    assert "workflow_dispatch:" in daily
+    assert "scripts/update_daily_flows.py" in daily
+    assert "scripts/build_local_flow_artifacts.py --verify-output" in daily
 
 
 def test_no_test_ui_workflow_or_readme_path_reads_legacy_yaml():

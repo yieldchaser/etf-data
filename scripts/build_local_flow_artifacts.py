@@ -764,7 +764,20 @@ def _instrument_entry(ticker: str, report: dict[str, Any]) -> dict[str, Any]:
     info = report["files"][ticker]
     summary = report["summary"][ticker]
     last = info["latest"]
+    rows = info["data"]
     leverage_text, leverage_value = _normalise_leverage(summary["leverage"], f"catalog {ticker}")
+    flow_5d = round(sum(float(r["usd_flow"]) for r in rows[-5:]), 2)
+    flow_20d = round(sum(float(r["usd_flow"]) for r in rows[-20:]), 2)
+    flow_60d = round(sum(float(r["usd_flow"]) for r in rows[-60:]), 2)
+    latest_year = str(last["date"])[:4]
+    flow_ytd = round(sum(float(r["usd_flow"]) for r in rows if str(r["date"]).startswith(latest_year)), 2)
+    ref_20 = rows[-20] if len(rows) >= 20 else rows[0]
+    nav_return_20d_pct = (
+        round((float(last["nav"]) / float(ref_20["nav"]) - 1.0) * 100.0, 2)
+        if float(ref_20["nav"]) > 0
+        else 0.0
+    )
+    sparkline_20d = [round(float(r["usd_flow"]) / 1_000_000.0, 2) for r in rows[-20:]]
     return {
         "ticker": ticker,
         "trackinsight_key": summary["trackinsight_key"],
@@ -782,6 +795,12 @@ def _instrument_entry(ticker: str, report: dict[str, Any]) -> dict[str, Any]:
         "rows_count": info["row_count"],
         "latest_nav": last["nav"],
         "latest_flow": last["usd_flow"],
+        "flow_5d": flow_5d,
+        "flow_20d": flow_20d,
+        "flow_60d": flow_60d,
+        "flow_ytd": flow_ytd,
+        "nav_return_20d_pct": nav_return_20d_pct,
+        "sparkline_20d": sparkline_20d,
         "latest_cumulative_flow": last["cumulative_flow"],
         "flow_zscore": last["flow_zscore"],
         "regime": last["regime"],

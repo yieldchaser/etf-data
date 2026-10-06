@@ -4,13 +4,13 @@
   const MARKET_TABS = new Set(['matrix', 'pricelog', 'yields', 'periodic', 'drawdown', 'holdingperiod', 'seasonality', 'correlation', 'volatility', 'flows']);
 
   const RANGE_PRESETS = [
-    { key: '1m', label: '1 month', count: 22 },
-    { key: '3m', label: '3 months', count: 66 },
-    { key: '6m', label: '6 months', count: 130 },
-    { key: '1y', label: '1 year', count: 252 },
-    { key: '3y', label: '3 years', count: 756 },
-    { key: '5y', label: '5 years', count: 1260 },
-    { key: 'max', label: 'Available history', count: null }
+    { key: '1m', label: '1M', count: 22 },
+    { key: '3m', label: '3M', count: 66 },
+    { key: '6m', label: '6M', count: 130 },
+    { key: '1y', label: '1Y', count: 252 },
+    { key: '3y', label: '3Y', count: 756 },
+    { key: '5y', label: '5Y', count: 1260 },
+    { key: 'max', label: 'Max', count: null }
   ];
 
   const CHART_TABS = [
@@ -34,14 +34,15 @@
     text: '#e8edf3',
     muted: '#b1bdca',
     subtle: '#8d9aaa',
-    grid: '#1d2732',
-    axis: '#526477',
-    positive: '#8bc7af',
-    negative: '#d696a0',
+    grid: '#161b22',
+    axis: '#334155',
+    positive: '#34d399',
+    negative: '#fb7185',
     accent: '#8bc7e3',
-    accentSoft: '#527f9b',
-    neutral: '#9aa8b8',
-    warning: '#e0c17f'
+    cyan: '#22d3ee',
+    accentSoft: '#38bdf8',
+    neutral: '#64748b',
+    warning: '#fbbf24'
   };
 
   const FLOW_CACHE = new Map();
@@ -120,6 +121,11 @@
       .replace(/\b\w/g, character => character.toUpperCase());
   }
 
+  function shortCategoryName(value) {
+    const raw = String(value || 'Catalog');
+    return raw.replace(/^\d+\.\s*/, '').replace(/\s*\(Pruned.*\)$/i, '');
+  }
+
   function formatMoney(value, options) {
     const number = finiteNumber(value);
     if (number === null) return '—';
@@ -143,6 +149,12 @@
   function formatPercent(value) {
     const number = finiteNumber(value);
     return number === null ? '—' : `${number.toFixed(1)}%`;
+  }
+
+  function formatSignedPercent(value) {
+    const number = finiteNumber(value);
+    if (number === null) return '—';
+    return `${number > 0 ? '+' : number < 0 ? '−' : ''}${Math.abs(number).toFixed(1)}%`;
   }
 
   function formatPrice(value) {
@@ -235,7 +247,10 @@
   function flowMetricRows(records) {
     const source = Array.isArray(records) ? records : [];
     const rollingTwenty = source.map((record, index) => completeRollingMean(source, index, 20));
+    const rollingFive = completeRollingSums(source, 5);
     const rollingTen = completeRollingSums(source, 10);
+    const rollingTwentySum = completeRollingSums(source, 20);
+    const rollingSixtySum = completeRollingSums(source, 60);
     const sortedTen = rollingTen.filter(Number.isFinite).sort((left, right) => left - right);
     return source.map((record, index) => ({
       date: record.date,
@@ -243,7 +258,10 @@
       nav: finiteNumber(record.nav),
       performance: finiteNumber(record.performance),
       rollingMean20: rollingTwenty[index],
+      rollingSum5: rollingFive[index],
       rollingSum10: rollingTen[index],
+      rollingSum20: rollingTwentySum[index],
+      rollingSum60: rollingSixtySum[index],
       percentile10: percentileAgainstSorted(sortedTen, rollingTen[index]),
       priorOnlyZScore: priorOnlyZScore(source, index, 30),
       selectedCumulative: null
@@ -362,25 +380,25 @@
       revision: payloadRevision(payload, item),
       ticker: item?.ticker || payload.ticker || '',
       fundName: item?.fund_name || payload.fund_name || item?.ticker || payload.ticker || 'Catalog instrument',
-       underlyingTicker: item?.underlying_ticker || payload.underlying_ticker || '',
-       underlyingName: item?.underlying || item?.underlying_name || payload.underlying || payload.underlying_name || '',
-       category: item?.category || payload.category || '',
-       subgroup: item?.subgroup || payload.subgroup || '',
-       issuer: item?.issuer || payload.issuer || '',
-       leverageTarget: finiteNumber(item?.leverage_value ?? item?.leverage_target ?? payload.leverage_value ?? payload.leverage_target),
+      underlyingTicker: item?.underlying_ticker || payload.underlying_ticker || '',
+      underlyingName: item?.underlying || item?.underlying_name || payload.underlying || payload.underlying_name || '',
+      category: item?.category || payload.category || '',
+      subgroup: item?.subgroup || payload.subgroup || '',
+      issuer: item?.issuer || payload.issuer || '',
+      leverageTarget: finiteNumber(item?.leverage_value ?? item?.leverage_target ?? payload.leverage_value ?? payload.leverage_target),
       direction: item?.direction || payload.direction || '',
       resetCadence: item?.reset_cadence || payload.reset_cadence || payload.reset_frequency || '',
       riskTier: item?.risk_tier || payload.risk_tier || '',
       alternatives: Array.isArray(item?.alternatives) ? item.alternatives.slice() : [],
-       source,
-       sourceLabel: LOCAL_SOURCE_LABEL,
-       sourceProvider: sourceProvider || 'Trackinsight',
-       sourceMode: payload.source_mode || manifestEntry?.source_mode || 'historical_local',
-       qualityStatus: declaredStatus || 'available',
-       dataQuality: payload.data_quality || manifestEntry?.data_quality || null,
-       flowCurrency,
-       navCurrency,
-       sourceAsOf,
+      source,
+      sourceLabel: LOCAL_SOURCE_LABEL,
+      sourceProvider: sourceProvider || 'Trackinsight',
+      sourceMode: payload.source_mode || manifestEntry?.source_mode || 'historical_local',
+      qualityStatus: declaredStatus || 'available',
+      dataQuality: payload.data_quality || manifestEntry?.data_quality || null,
+      flowCurrency,
+      navCurrency,
+      sourceAsOf,
       retrievedAt: payload.retrieved_at || manifestEntry?.retrieved_at || null,
       updated: payload.updated || manifestEntry?.updated || null,
       state,
@@ -398,14 +416,14 @@
     if (!manifestEntry) return 'pending';
     if (Number(manifest?.schema_version || 1) < 2) return Number(manifestEntry.records || 0) > 0 ? 'legacy' : 'pending';
     const availability = String(manifestEntry.availability || manifestEntry.status || '').toLowerCase();
-             const qualityValue = typeof manifestEntry.data_quality === 'object'
-               ? manifestEntry.data_quality?.status
-               : manifestEntry.data_quality;
-             const quality = String(manifestEntry.data_status || qualityValue || '').toLowerCase();
-             if (availability === 'missing') return 'pending';
-             if (availability === 'unavailable') return 'unavailable';
-             if (quality === 'pending' || quality === 'missing') return 'pending';
-             if (quality === 'stale' || quality === 'degraded' || manifestEntry.fresh === false) return 'stale';
+    const qualityValue = typeof manifestEntry.data_quality === 'object'
+      ? manifestEntry.data_quality?.status
+      : manifestEntry.data_quality;
+    const quality = String(manifestEntry.data_status || qualityValue || '').toLowerCase();
+    if (availability === 'missing') return 'pending';
+    if (availability === 'unavailable') return 'unavailable';
+    if (quality === 'pending' || quality === 'missing') return 'pending';
+    if (quality === 'stale' || quality === 'degraded' || manifestEntry.fresh === false) return 'stale';
     if (availability === 'available') return 'available';
     return 'pending';
   }
@@ -445,6 +463,51 @@
     return path.trim();
   }
 
+  function areaPath(points, baselineY) {
+    const valid = [];
+    const segments = [];
+    let current = [];
+    for (const point of points) {
+      const x = finiteNumber(point.x);
+      const y = finiteNumber(point.y);
+      if (x === null || y === null) {
+        if (current.length > 1) segments.push(current);
+        current = [];
+        continue;
+      }
+      current.push({ x, y });
+      valid.push({ x, y });
+    }
+    if (current.length > 1) segments.push(current);
+    if (!segments.length) return '';
+    return segments.map(seg => {
+      const first = seg[0];
+      const last = seg[seg.length - 1];
+      const top = seg.map((pt, idx) => `${idx === 0 ? 'M' : 'L'} ${pt.x.toFixed(1)} ${pt.y.toFixed(1)}`).join(' ');
+      return `${top} L ${last.x.toFixed(1)} ${baselineY.toFixed(1)} L ${first.x.toFixed(1)} ${baselineY.toFixed(1)} Z`;
+    }).join(' ');
+  }
+
+  function miniFlowSparklineSvg(values, width, height) {
+    const w = width || 96;
+    const h = height || 22;
+    const series = Array.isArray(values) ? values.map(finiteNumber).filter(v => v !== null) : [];
+    if (!series.length) return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true"></svg>`;
+    const maxAbs = Math.max(0.01, ...series.map(v => Math.abs(v)));
+    const midY = h / 2;
+    const slot = w / series.length;
+    const barW = Math.max(1.2, Math.min(4.2, slot * 0.72));
+    let rects = `<line x1="0" y1="${midY.toFixed(1)}" x2="${w}" y2="${midY.toFixed(1)}" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>`;
+    series.forEach((val, idx) => {
+      const x = idx * slot + (slot - barW) / 2;
+      const barH = Math.max(1, (Math.abs(val) / maxAbs) * (midY - 2));
+      const y = val >= 0 ? midY - barH : midY;
+      const fill = val > 0 ? COLORS.positive : val < 0 ? COLORS.negative : COLORS.neutral;
+      rects += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" rx="0.5" fill="${fill}" opacity="0.88"/>`;
+    });
+    return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true" style="display:block">${rects}</svg>`;
+  }
+
   function axisNumber(value) {
     const number = finiteNumber(value);
     if (number === null) return '—';
@@ -457,7 +520,7 @@
 
   function dateTickIndices(count, width) {
     if (count <= 1) return [0];
-    const desired = width < 400 ? 2 : width < 500 ? 3 : width < 850 ? 4 : 5;
+    const desired = width < 400 ? 2 : width < 500 ? 3 : width < 850 ? 4 : 6;
     return Array.from(new Set(Array.from({ length: desired }, (_, index) => Math.round((count - 1) * index / (desired - 1)))));
   }
 
@@ -468,7 +531,7 @@
   }
 
   function emptyChart(width, height, message) {
-    return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(message)}"><title>${escapeHtml(message)}</title><rect width="${width}" height="${height}" fill="#090d12"/><text x="${width / 2}" y="${height / 2}" text-anchor="middle" fill="${COLORS.muted}" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13">${escapeHtml(message)}</text></svg>`;
+    return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(message)}"><title>${escapeHtml(message)}</title><rect width="${width}" height="${height}" fill="#050505"/><text x="${width / 2}" y="${height / 2}" text-anchor="middle" fill="${COLORS.muted}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="12">${escapeHtml(message)}</text></svg>`;
   }
 
   function chartFrame(options) {
@@ -480,7 +543,7 @@
     const xScale = index => padding.left + (options.records.length < 2 ? chartWidth / 2 : index * chartWidth / (options.records.length - 1));
     const dateTicks = dateTickIndices(options.records.length, width).map(index => {
       const x = xScale(index);
-      return `<text x="${x.toFixed(1)}" y="${height - 8}" text-anchor="${index === 0 ? 'start' : index === options.records.length - 1 ? 'end' : 'middle'}" fill="${COLORS.subtle}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="12">${escapeHtml(axisDate(options.records[index].date))}</text>`;
+      return `<text x="${x.toFixed(1)}" y="${height - 8}" text-anchor="${index === 0 ? 'start' : index === options.records.length - 1 ? 'end' : 'middle'}" fill="${COLORS.subtle}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11">${escapeHtml(axisDate(options.records[index].date))}</text>`;
     }).join('');
     return { width, height, padding, chartWidth, chartHeight, xScale, dateTicks };
   }
@@ -503,6 +566,12 @@
       flowTierFilter: 'all',
       flowCategoryFilter: 'all',
       flowStatusFilter: 'all',
+      flowViewMode: 'studio',
+      flowShowOutliers: true,
+      flowScannerSort: 'abs_z',
+      flowScannerAsc: false,
+      flowScannerRegime: 'all',
+      flowScannerDirection: 'all',
       flowChartTab: 'daily',
       flowChartMessage: '',
       flowChartTooltip: { visible: false, index: 0 },
@@ -532,13 +601,13 @@
         return Array.isArray(this.flowCatalog?.instruments) ? this.flowCatalog.instruments : [];
       },
 
-       get flowFeaturedInstruments() {
+      get flowFeaturedInstruments() {
         return this.flowPrimaryInstruments.filter(item => item.featured);
       },
 
-       get flowAllEntries() {
-         return this.flowPrimaryInstruments.map(item => ({ ...item, tier: 'primary' }));
-       },
+      get flowAllEntries() {
+        return this.flowPrimaryInstruments.map(item => ({ ...item, tier: 'primary' }));
+      },
 
       get flowSelectedInstrument() {
         return this._flowEntryMap[this.flowTicker] || null;
@@ -549,11 +618,329 @@
         return Array.from(values).sort();
       },
 
+      get flowUniversePulse() {
+        const items = this.flowPrimaryInstruments;
+        if (!items.length) {
+          return {
+            totalFlow1d: 0,
+            inflowCount1d: 0,
+            outflowCount1d: 0,
+            flatCount1d: 0,
+            totalFlow20d: 0,
+            bullFlow20d: 0,
+            bearFlow20d: 0,
+            accumulationCount: 0,
+            distributionCount: 0,
+            balancedCount: 0,
+            extremeOutlierCount: 0,
+            totalAumM: 0,
+            topInflowTicker: '—',
+            topInflowVal: 0,
+            topOutflowTicker: '—',
+            topOutflowVal: 0
+          };
+        }
+        let totalFlow1d = 0;
+        let inflowCount1d = 0;
+        let outflowCount1d = 0;
+        let flatCount1d = 0;
+        let totalFlow20d = 0;
+        let bullFlow20d = 0;
+        let bearFlow20d = 0;
+        let accumulationCount = 0;
+        let distributionCount = 0;
+        let balancedCount = 0;
+        let extremeOutlierCount = 0;
+        let totalAumM = 0;
+        let topInflowTicker = '—';
+        let topInflowVal = -Infinity;
+        let topOutflowTicker = '—';
+        let topOutflowVal = Infinity;
+
+        for (const item of items) {
+          const f1 = finiteNumber(item.latest_flow) || 0;
+          const f20 = finiteNumber(item.flow_20d) ?? (finiteNumber(item.source_summary?.flow_30d_m) || 0) * 1e6;
+          const z = finiteNumber(item.flow_zscore) || 0;
+          const lev = finiteNumber(item.leverage_value) || 0;
+          const aum = finiteNumber(item.aum_m) || 0;
+          totalFlow1d += f1;
+          totalFlow20d += f20;
+          totalAumM += aum;
+          if (lev < 0) bearFlow20d += f20;
+          else bullFlow20d += f20;
+          if (f1 > 0) inflowCount1d += 1;
+          else if (f1 < 0) outflowCount1d += 1;
+          else flatCount1d += 1;
+          if (f1 > topInflowVal) {
+            topInflowVal = f1;
+            topInflowTicker = item.ticker;
+          }
+          if (f1 < topOutflowVal) {
+            topOutflowVal = f1;
+            topOutflowTicker = item.ticker;
+          }
+          if (item.regime === 'ACCUMULATION') accumulationCount += 1;
+          else if (item.regime === 'DISTRIBUTION') distributionCount += 1;
+          else balancedCount += 1;
+          if (Math.abs(z) >= 1.5) extremeOutlierCount += 1;
+        }
+        return {
+          totalFlow1d,
+          inflowCount1d,
+          outflowCount1d,
+          flatCount1d,
+          totalFlow20d,
+          bullFlow20d,
+          bearFlow20d,
+          accumulationCount,
+          distributionCount,
+          balancedCount,
+          extremeOutlierCount,
+          totalAumM,
+          topInflowTicker,
+          topInflowVal: Number.isFinite(topInflowVal) ? topInflowVal : 0,
+          topOutflowTicker,
+          topOutflowVal: Number.isFinite(topOutflowVal) ? topOutflowVal : 0
+        };
+      },
+
+      get flowOutlierCards() {
+        const items = this.flowPrimaryInstruments.slice();
+        if (!items.length) return [];
+        items.sort((a, b) => {
+          const za = Math.abs(finiteNumber(a.flow_zscore) || 0);
+          const zb = Math.abs(finiteNumber(b.flow_zscore) || 0);
+          if (Math.abs(zb - za) > 0.05) return zb - za;
+          return Math.abs(finiteNumber(b.latest_flow) || 0) - Math.abs(finiteNumber(a.latest_flow) || 0);
+        });
+        return items.slice(0, 6).map(item => {
+          const z = finiteNumber(item.flow_zscore) || 0;
+          const f1 = finiteNumber(item.latest_flow) || 0;
+          const f20 = finiteNumber(item.flow_20d) ?? 0;
+          return {
+            ticker: item.ticker,
+            fund_name: item.fund_name,
+            underlying: item.underlying || item.fund_name,
+            leverage: item.leverage || '+2x',
+            issuer: item.issuer || '',
+            flow1d: f1,
+            flow20d: f20,
+            zscore: z,
+            regime: item.regime || 'BALANCED',
+            aum_m: finiteNumber(item.aum_m) || 0,
+            sparklineSvg: miniFlowSparklineSvg(item.sparkline_20d || [], 86, 20)
+          };
+        });
+      },
+
+      get flowPeerComparisonRows() {
+        const current = this.flowSelectedInstrument;
+        if (!current) return [];
+        const items = this.flowPrimaryInstruments;
+        const normU = raw => String(raw || '').trim().replace(/\s*\(([^)]+)\)\s*$/, (m, inner) => /^[A-Z.]{1,5}$/.test(inner.trim()) ? ` (${inner.trim()})` : '').toUpperCase();
+        const targetUnderlying = normU(current.underlying);
+        let peers = items.filter(item => normU(item.underlying) === targetUnderlying);
+        if (peers.length < 4) {
+          const catPeers = items
+            .filter(item => item.category === current.category && item.ticker !== current.ticker)
+            .sort((a, b) => Math.abs(finiteNumber(b.flow_zscore) || 0) - Math.abs(finiteNumber(a.flow_zscore) || 0));
+          const seen = new Set(peers.map(p => p.ticker));
+          for (const cp of catPeers) {
+            if (peers.length >= 8) break;
+            if (!seen.has(cp.ticker)) {
+              peers.push(cp);
+              seen.add(cp.ticker);
+            }
+          }
+        }
+        return peers.slice(0, 8).map(item => ({
+          ...item,
+          sparklineSvg: miniFlowSparklineSvg(item.sparkline_20d || [], 72, 18)
+        }));
+      },
+
+      get flowScannerRows() {
+        const query = this.flowSearchQuery.trim().toUpperCase();
+        const rows = [];
+        for (const item of this.flowAllEntries) {
+          if (this.flowTierFilter === 'featured' && !item.featured) continue;
+          if (this.flowCategoryFilter !== 'all' && item.category !== this.flowCategoryFilter) continue;
+          if (this.flowScannerRegime !== 'all' && item.regime !== this.flowScannerRegime) continue;
+          const lev = finiteNumber(item.leverage_value) || 0;
+          if (this.flowScannerDirection === 'bull' && lev < 0) continue;
+          if (this.flowScannerDirection === 'bear' && lev >= 0) continue;
+          if (query) {
+            const haystack = [item.ticker, item.fund_name, item.underlying, item.issuer, item.leverage]
+              .filter(Boolean)
+              .join(' ')
+              .toUpperCase();
+            if (!haystack.includes(query)) continue;
+          }
+          rows.push({
+            ...item,
+            sparklineSvg: miniFlowSparklineSvg(item.sparkline_20d || [], 76, 18)
+          });
+        }
+        const key = this.flowScannerSort;
+        const dir = this.flowScannerAsc ? 1 : -1;
+        rows.sort((a, b) => {
+          let va = 0;
+          let vb = 0;
+          if (key === 'ticker') return dir * a.ticker.localeCompare(b.ticker);
+          if (key === 'abs_z') {
+            va = Math.abs(finiteNumber(a.flow_zscore) || 0);
+            vb = Math.abs(finiteNumber(b.flow_zscore) || 0);
+          } else if (key === 'zscore') {
+            va = finiteNumber(a.flow_zscore) || 0;
+            vb = finiteNumber(b.flow_zscore) || 0;
+          } else if (key === 'flow_1d') {
+            va = finiteNumber(a.latest_flow) || 0;
+            vb = finiteNumber(b.latest_flow) || 0;
+          } else if (key === 'flow_5d') {
+            va = finiteNumber(a.flow_5d) || 0;
+            vb = finiteNumber(b.flow_5d) || 0;
+          } else if (key === 'flow_20d') {
+            va = finiteNumber(a.flow_20d) || 0;
+            vb = finiteNumber(b.flow_20d) || 0;
+          } else if (key === 'flow_60d') {
+            va = finiteNumber(a.flow_60d) || 0;
+            vb = finiteNumber(b.flow_60d) || 0;
+          } else if (key === 'flow_ytd') {
+            va = finiteNumber(a.flow_ytd) || 0;
+            vb = finiteNumber(b.flow_ytd) || 0;
+          } else if (key === 'cumulative') {
+            va = finiteNumber(a.latest_cumulative_flow) || 0;
+            vb = finiteNumber(b.latest_cumulative_flow) || 0;
+          } else if (key === 'pressure') {
+            va = finiteNumber(a.pressure) || 0;
+            vb = finiteNumber(b.pressure) || 0;
+          } else if (key === 'nav_20d') {
+            va = finiteNumber(a.nav_return_20d_pct) || 0;
+            vb = finiteNumber(b.nav_return_20d_pct) || 0;
+          } else if (key === 'aum') {
+            va = finiteNumber(a.aum_m) || 0;
+            vb = finiteNumber(b.aum_m) || 0;
+          }
+          if (va === vb) return a.ticker.localeCompare(b.ticker);
+          return dir * (va - vb);
+        });
+        return rows;
+      },
+
+      get flowCategoryMatrixRows() {
+        const groups = {};
+        for (const item of this.flowPrimaryInstruments) {
+          const cat = item.category || 'Uncategorized';
+          if (!groups[cat]) {
+            groups[cat] = {
+              category: cat,
+              shortName: shortCategoryName(cat),
+              count: 0,
+              aum_m: 0,
+              flow_1d: 0,
+              flow_5d: 0,
+              flow_20d: 0,
+              flow_60d: 0,
+              flow_ytd: 0,
+              cumulative: 0,
+              zSum: 0,
+              pressureSum: 0,
+              accumulation: 0,
+              distribution: 0,
+              topTicker: item.ticker,
+              topFlow20d: -Infinity
+            };
+          }
+          const g = groups[cat];
+          const f20 = finiteNumber(item.flow_20d) || 0;
+          g.count += 1;
+          g.aum_m += finiteNumber(item.aum_m) || 0;
+          g.flow_1d += finiteNumber(item.latest_flow) || 0;
+          g.flow_5d += finiteNumber(item.flow_5d) || 0;
+          g.flow_20d += f20;
+          g.flow_60d += finiteNumber(item.flow_60d) || 0;
+          g.flow_ytd += finiteNumber(item.flow_ytd) || 0;
+          g.cumulative += finiteNumber(item.latest_cumulative_flow) || 0;
+          g.zSum += finiteNumber(item.flow_zscore) || 0;
+          g.pressureSum += finiteNumber(item.pressure) || 0;
+          if (item.regime === 'ACCUMULATION') g.accumulation += 1;
+          if (item.regime === 'DISTRIBUTION') g.distribution += 1;
+          if (Math.abs(f20) > g.topFlow20d) {
+            g.topFlow20d = Math.abs(f20);
+            g.topTicker = item.ticker;
+          }
+        }
+        return Object.values(groups)
+          .sort((a, b) => a.category.localeCompare(b.category))
+          .map(g => ({
+            ...g,
+            avgZ: g.count ? g.zSum / g.count : 0,
+            avgPressure: g.count ? g.pressureSum / g.count : 0
+          }));
+      },
+
+      get flowUnderlyingBattleRows() {
+        const byUnderlying = {};
+        for (const item of this.flowPrimaryInstruments) {
+          const rawU = String(item.underlying || '').trim();
+          if (!rawU) continue;
+          const u = rawU.replace(/\s*\(([^)]+)\)\s*$/, (m, inner) => /^[A-Z.]{1,5}$/.test(inner.trim()) ? ` (${inner.trim()})` : '').trim();
+          if (!byUnderlying[u]) {
+            byUnderlying[u] = {
+              underlying: u,
+              tickers: [],
+              bullTickers: [],
+              bearTickers: [],
+              bullFlow20d: 0,
+              bearFlow20d: 0,
+              totalFlow1d: 0,
+              totalFlow20d: 0,
+              totalAumM: 0,
+              maxAbsZ: 0,
+              leadTicker: item.ticker
+            };
+          }
+          const entry = byUnderlying[u];
+          const f1 = finiteNumber(item.latest_flow) || 0;
+          const f20 = finiteNumber(item.flow_20d) || 0;
+          const lev = finiteNumber(item.leverage_value) || 0;
+          const z = Math.abs(finiteNumber(item.flow_zscore) || 0);
+          entry.tickers.push(item.ticker);
+          if (lev < 0) {
+            entry.bearTickers.push(item.ticker);
+            entry.bearFlow20d += f20;
+          } else {
+            entry.bullTickers.push(item.ticker);
+            entry.bullFlow20d += f20;
+          }
+          entry.totalFlow1d += f1;
+          entry.totalFlow20d += f20;
+          entry.totalAumM += finiteNumber(item.aum_m) || 0;
+          if (z >= entry.maxAbsZ) {
+            entry.maxAbsZ = z;
+            entry.leadTicker = item.ticker;
+          }
+        }
+        return Object.values(byUnderlying)
+          .filter(row => row.tickers.length >= 2 || row.totalAumM >= 250)
+          .sort((a, b) => b.totalAumM - a.totalAumM)
+          .slice(0, 18);
+      },
+
+      setFlowScannerSort(column) {
+        if (this.flowScannerSort === column) {
+          this.flowScannerAsc = !this.flowScannerAsc;
+        } else {
+          this.flowScannerSort = column;
+          this.flowScannerAsc = column === 'ticker';
+        }
+      },
+
       get flowStatusForTicker() {
         return ticker => {
           const item = this._flowEntryMap[String(ticker || '').toUpperCase()];
-           if (!item) return 'unavailable';
-           const resolved = this.flowResolvedStates[item.ticker];
+          if (!item) return 'unavailable';
+          const resolved = this.flowResolvedStates[item.ticker];
           if (resolved) return resolved;
           return statusFromManifest(this.flowManifest, this.flowManifest?.etfs?.[item.ticker]);
         };
@@ -566,14 +953,14 @@
       get flowSearchResults() {
         const query = this.flowSearchQuery.trim().toUpperCase();
         const results = [];
-         for (const item of this.flowAllEntries) {
-           if (this.flowTierFilter === 'primary' && item.tier !== 'primary') continue;
-           if (this.flowTierFilter === 'featured' && !item.featured) continue;
+        for (const item of this.flowAllEntries) {
+          if (this.flowTierFilter === 'primary' && item.tier !== 'primary') continue;
+          if (this.flowTierFilter === 'featured' && !item.featured) continue;
           if (this.flowCategoryFilter !== 'all' && item.category !== this.flowCategoryFilter) continue;
           const state = this.flowStatusForTicker(item.ticker);
           if (this.flowStatusFilter !== 'all' && state !== this.flowStatusFilter) continue;
           if (query) {
-             const haystack = [item.ticker, item.fund_name, item.underlying, item.underlying_name, item.issuer, item.trackinsight_key, item.leverage]
+            const haystack = [item.ticker, item.fund_name, item.underlying, item.underlying_name, item.issuer, item.trackinsight_key, item.leverage]
               .filter(Boolean)
               .join(' ')
               .toUpperCase();
@@ -593,15 +980,15 @@
         return statusLabel(this.flowDataState);
       },
 
-       get flowSourceStatusLabel() {
-         if (this.flowCatalogError) return 'Catalog unavailable';
-         if (this.flowManifestError) return 'Coverage manifest unavailable';
-         const manifest = this.flowManifest;
-         if (!manifest) return 'Local coverage pending';
-         if (manifest.complete === true && manifest.status === 'complete') return 'Complete local historical dataset';
-         if (manifest.status === 'stale' || manifest.fresh === false) return 'Stale local dataset';
-         return 'Incomplete local dataset';
-       },
+      get flowSourceStatusLabel() {
+        if (this.flowCatalogError) return 'Catalog unavailable';
+        if (this.flowManifestError) return 'Coverage manifest unavailable';
+        const manifest = this.flowManifest;
+        if (!manifest) return 'Local coverage pending';
+        if (manifest.complete === true && manifest.status === 'complete') return 'Complete local historical dataset';
+        if (manifest.status === 'stale' || manifest.fresh === false) return 'Stale local dataset';
+        return 'Incomplete local dataset';
+      },
 
       get flowCoverage() {
         const primary = this.flowPrimaryInstruments;
@@ -614,26 +1001,20 @@
           .map(item => String(entries[item.ticker].source_asof || entries[item.ticker].asof || ''))
           .filter(Boolean)
           .sort();
-         return {
-           covered: covered.length,
-           primary: primary.length,
-           pending: Math.max(0, primary.length - covered.length),
-           manifestFiles: integerValue(this.flowManifest?.counts?.files) ?? null,
-           generated: this.flowManifest?.source_asof || null,
-           sourceAsOf: this.flowManifest?.source_asof || (sourceDates.length ? sourceDates[sourceDates.length - 1] : null)
-         };
+        return {
+          covered: covered.length,
+          primary: primary.length,
+          pending: Math.max(0, primary.length - covered.length),
+          manifestFiles: integerValue(this.flowManifest?.counts?.files) ?? null,
+          generated: this.flowManifest?.source_asof || null,
+          sourceAsOf: this.flowManifest?.source_asof || (sourceDates.length ? sourceDates[sourceDates.length - 1] : null)
+        };
       },
 
       get flowRangeCount() {
         return Math.max(0, this.flowEndIndex - this.flowStartIndex + 1);
       },
 
-      // Highest valid record index. The range inputs bind :max to this:
-      // `Math.max(0, flowData.records.length - 1)` threw
-      // "Cannot read properties of null (reading 'records')" on every
-      // render while flowData was still null (ticker switch / reload),
-      // because the sliders sit outside the x-show guard that hides the
-      // rest of the flow panel. Optional chaining keeps them inert.
       get flowMaxRecordIndex() {
         return Math.max(0, (this.flowData?.records?.length || 0) - 1);
       },
@@ -695,7 +1076,7 @@
 
       get flowChartWidth() {
         const viewport = finiteNumber(this.flowViewportWidth) || 1000;
-        return Math.max(280, Math.min(1100, Math.round(viewport - 48)));
+        return Math.max(280, Math.min(1180, Math.round(viewport - 48)));
       },
 
       get flowDailyChartSvg() {
@@ -710,7 +1091,7 @@
         const yScale = value => frame.padding.top + frame.chartHeight / 2 - value / maximum * frame.chartHeight / 2;
         const zeroY = yScale(0);
         const slot = frame.chartWidth / Math.max(1, rows.length);
-        const barWidth = Math.max(0.8, Math.min(11, slot * 0.7));
+        const barWidth = Math.max(0.8, Math.min(11, slot * 0.72));
         let bars = '';
         rows.forEach((row, index) => {
           const flow = finiteNumber(row.flow);
@@ -721,21 +1102,27 @@
           const barHeight = Math.max(1.4, Math.abs(y - zeroY));
           const top = flow >= 0 ? y : zeroY;
           const fill = flow === 0 ? COLORS.neutral : flow > 0 ? COLORS.positive : COLORS.negative;
-          bars += `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" rx="0.6" fill="${fill}"/>`;
+          bars += `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" rx="0.6" fill="${fill}" opacity="0.88"/>`;
         });
         const meanPoints = rows.map((row, index) => ({ x: frame.xScale(index), y: finiteScale(yScale, row.rollingMean20) }));
-        const grid = [maximum, 0, -maximum].map(value => {
+        const grid = [maximum, maximum / 2, 0, -maximum / 2, -maximum].map(value => {
           const y = yScale(value);
-          return `<line x1="${frame.padding.left}" y1="${y.toFixed(1)}" x2="${width - frame.padding.right}" y2="${y.toFixed(1)}" stroke="${value === 0 ? COLORS.axis : COLORS.grid}" stroke-width="1"/><text x="${frame.padding.left - 7}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="12">${escapeHtml(axisNumber(value))}</text>`;
+          const isZero = value === 0;
+          const isOuter = Math.abs(value) === maximum;
+          const dash = isZero ? '' : ' stroke-dasharray="3 3"';
+          const label = (isZero || isOuter)
+            ? `<text x="${frame.padding.left - 7}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11">${escapeHtml(axisNumber(value))}</text>`
+            : '';
+          return `<line x1="${frame.padding.left}" y1="${y.toFixed(1)}" x2="${width - frame.padding.right}" y2="${y.toFixed(1)}" stroke="${isZero ? COLORS.axis : COLORS.grid}" stroke-width="1"${dash}/>${label}`;
         }).join('');
         const description = `Daily ETF estimated net flow in US dollars for ${rows.length} selected sessions. Positive and negative bars diverge from a neutral zero line. A line shows the complete 20-observation rolling mean; incomplete windows are gaps.`;
-        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-daily-title flow-daily-desc"><title id="flow-daily-title">Daily ETF estimated net flow</title><desc id="flow-daily-desc">${escapeHtml(description)}</desc>${grid}${bars}<path d="${linePath(meanPoints)}" fill="none" stroke="${COLORS.accent}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>${frame.dateTicks}</svg>`;
+        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-daily-title flow-daily-desc"><title id="flow-daily-title">Daily ETF estimated net flow</title><desc id="flow-daily-desc">${escapeHtml(description)}</desc>${grid}${bars}<path d="${linePath(meanPoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>${frame.dateTicks}</svg>`;
       },
 
       get flowCumulativeChartSvg() {
         const rows = this.flowSelectedRows;
         const width = this.flowChartWidth;
-        const height = width < 500 ? 265 : 300;
+        const height = width < 500 ? 265 : 310;
         if (rows.length < 2) return emptyChart(width, height, 'Select at least two source observations.');
         const frame = chartFrame({ records: rows, width, height, padding: { left: width < 500 ? 58 : 72, right: 18, top: 22, bottom: 34 } });
         const values = rows.map(row => finiteNumber(row.selectedCumulative)).filter(value => value !== null);
@@ -746,16 +1133,19 @@
         const low = minimum - paddingValue;
         const high = maximum + paddingValue;
         const yScale = value => frame.padding.top + (high - value) / (high - low) * frame.chartHeight;
+        const zeroY = yScale(0);
         const linePoints = rows.map((row, index) => ({ x: frame.xScale(index), y: finiteScale(yScale, row.selectedCumulative) }));
+        const area = areaPath(linePoints, zeroY);
         const grid = [high, 0, low].map(value => {
           const y = yScale(value);
-          return `<line x1="${frame.padding.left}" y1="${y.toFixed(1)}" x2="${width - frame.padding.right}" y2="${y.toFixed(1)}" stroke="${value === 0 ? COLORS.axis : COLORS.grid}" stroke-width="1"/><text x="${frame.padding.left - 7}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="12">${escapeHtml(axisNumber(value))}</text>`;
+          return `<line x1="${frame.padding.left}" y1="${y.toFixed(1)}" x2="${width - frame.padding.right}" y2="${y.toFixed(1)}" stroke="${value === 0 ? COLORS.axis : COLORS.grid}" stroke-width="1"/><text x="${frame.padding.left - 7}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11">${escapeHtml(axisNumber(value))}</text>`;
         }).join('');
         const last = rows[rows.length - 1];
         const lastY = finiteScale(yScale, last.selectedCumulative);
-        const lastPoint = lastY === null ? '' : `<circle cx="${frame.xScale(rows.length - 1).toFixed(1)}" cy="${lastY.toFixed(1)}" r="3" fill="${COLORS.accent}"/>`;
+        const lastColor = (last.selectedCumulative || 0) >= 0 ? COLORS.cyan : COLORS.negative;
+        const lastPoint = lastY === null ? '' : `<circle cx="${frame.xScale(rows.length - 1).toFixed(1)}" cy="${lastY.toFixed(1)}" r="3.5" fill="${lastColor}"/>`;
         const description = `Selected-window cumulative source-reported aggregate net flow, summed from a zero baseline before ${rows[0].date}. Missing daily values carry the prior cumulative value and are not converted to zero.`;
-        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-cumulative-title flow-cumulative-desc"><title id="flow-cumulative-title">Selected-window cumulative source-reported aggregate net flow</title><desc id="flow-cumulative-desc">${escapeHtml(description)}</desc>${grid}<path d="${linePath(linePoints)}" fill="none" stroke="${COLORS.accent}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>${lastPoint}${frame.dateTicks}</svg>`;
+        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-cumulative-title flow-cumulative-desc"><title id="flow-cumulative-title">Selected-window cumulative source-reported aggregate net flow</title><desc id="flow-cumulative-desc">${escapeHtml(description)}</desc><defs><linearGradient id="flow-cum-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${COLORS.cyan}" stop-opacity="0.22"/><stop offset="100%" stop-color="${COLORS.cyan}" stop-opacity="0.0"/></linearGradient></defs>${grid}${area ? `<path d="${area}" fill="url(#flow-cum-grad)"/>` : ''}<path d="${linePath(linePoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>${lastPoint}${frame.dateTicks}</svg>`;
       },
 
       get flowPercentileChartSvg() {
@@ -781,20 +1171,20 @@
           const y = yFlow(value);
           const top = value >= 0 ? y : zeroY;
           const barHeight = Math.max(1.2, Math.abs(y - zeroY));
-          const fill = value === 0 ? COLORS.neutral : value > 0 ? COLORS.accentSoft : COLORS.negative;
-          bars += `<rect x="${(center - barWidth / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" fill="${fill}"/>`;
+          const fill = value === 0 ? COLORS.neutral : value > 0 ? COLORS.positive : COLORS.negative;
+          bars += `<rect x="${(center - barWidth / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" fill="${fill}" opacity="0.65"/>`;
         });
         const percentilePoints = rows.map((row, index) => ({ x: frame.xScale(index), y: finiteScale(yPercentile, row.percentile10) }));
         const leftAxis = [maximum, 0, -maximum].map(value => {
           const y = yFlow(value);
-          return `<text x="${frame.padding.left - 7}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="${COLORS.accent}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="12">${escapeHtml(axisNumber(value))}</text>`;
+          return `<text x="${frame.padding.left - 7}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="${COLORS.accent}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11">${escapeHtml(axisNumber(value))}</text>`;
         }).join('');
         const rightAxis = [100, 50, 0].map(value => {
           const y = yPercentile(value);
-          return `<line x1="${frame.padding.left}" y1="${y.toFixed(1)}" x2="${width - frame.padding.right}" y2="${y.toFixed(1)}" stroke="${COLORS.grid}" stroke-width="1"/><text x="${width - frame.padding.right + 7}" y="${(y + 4).toFixed(1)}" text-anchor="start" fill="${COLORS.subtle}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="12">${value}%</text>`;
+          return `<line x1="${frame.padding.left}" y1="${y.toFixed(1)}" x2="${width - frame.padding.right}" y2="${y.toFixed(1)}" stroke="${COLORS.grid}" stroke-width="1"/><text x="${width - frame.padding.right + 7}" y="${(y + 4).toFixed(1)}" text-anchor="start" fill="${COLORS.subtle}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11">${value}%</text>`;
         }).join('');
         const description = 'The left axis shows complete trailing 10-observation source-reported aggregate net flow in US dollars. The right axis shows the tie-aware empirical percentile of that flow against all complete 10-observation windows in available source history. Missing values remain gaps.';
-        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-percentile-title flow-percentile-desc"><title id="flow-percentile-title">Ten-observation flow percentile</title><desc id="flow-percentile-desc">${escapeHtml(description)}</desc>${leftAxis}${rightAxis}${bars}<path d="${linePath(percentilePoints)}" fill="none" stroke="${COLORS.accent}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>${frame.dateTicks}</svg>`;
+        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-percentile-title flow-percentile-desc"><title id="flow-percentile-title">Ten-observation flow percentile</title><desc id="flow-percentile-desc">${escapeHtml(description)}</desc>${leftAxis}${rightAxis}${bars}<path d="${linePath(percentilePoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>${frame.dateTicks}</svg>`;
       },
 
       get flowIntensityChartSvg() {
@@ -810,7 +1200,7 @@
         const yScale = value => frame.padding.top + frame.chartHeight / 2 - value / maximum * frame.chartHeight / 2;
         const zeroY = yScale(0);
         const slot = frame.chartWidth / Math.max(1, rows.length);
-        const barWidth = Math.max(0.8, Math.min(9, slot * 0.58));
+        const barWidth = Math.max(0.8, Math.min(9, slot * 0.62));
         let bars = '';
         rows.forEach((row, index) => {
           const value = finiteNumber(row.priorOnlyZScore);
@@ -819,12 +1209,15 @@
           const y = yScale(value);
           const top = value >= 0 ? y : zeroY;
           const barHeight = Math.max(1.2, Math.abs(y - zeroY));
-          const fill = value === 0 ? COLORS.neutral : value > 0 ? COLORS.positive : COLORS.negative;
+          const fill = value === 0 ? COLORS.neutral : value >= 2 ? COLORS.cyan : value > 0 ? COLORS.positive : value <= -2 ? COLORS.warning : COLORS.negative;
           bars += `<rect x="${(center - barWidth / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" fill="${fill}"/>`;
         });
-        const grid = [maximum, 0, -maximum].map(value => {
+        const grid = [maximum, 2, 0, -2, -maximum].filter((v, i, a) => a.indexOf(v) === i).map(value => {
           const y = yScale(value);
-          return `<line x1="${frame.padding.left}" y1="${y.toFixed(1)}" x2="${width - frame.padding.right}" y2="${y.toFixed(1)}" stroke="${value === 0 ? COLORS.axis : COLORS.grid}" stroke-width="1"/><text x="${frame.padding.left - 6}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="12">${value > 0 ? '+' : ''}${value.toFixed(1)}</text>`;
+          const isThreshold = Math.abs(value) === 2;
+          const stroke = value === 0 ? COLORS.axis : isThreshold ? 'rgba(34,211,238,0.22)' : COLORS.grid;
+          const dash = isThreshold ? ' stroke-dasharray="3 3"' : '';
+          return `<line x1="${frame.padding.left}" y1="${y.toFixed(1)}" x2="${width - frame.padding.right}" y2="${y.toFixed(1)}" stroke="${stroke}" stroke-width="1"${dash}/><text x="${frame.padding.left - 6}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11">${value > 0 ? '+' : ''}${value.toFixed(1)}</text>`;
         }).join('');
         const description = 'Prior-only z-score for daily ETF estimated net flow. Each value uses the preceding 30 available sessions and excludes the current observation from its mean and standard deviation. Missing values remain gaps.';
         return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-intensity-title flow-intensity-desc"><title id="flow-intensity-title">Prior-only daily flow z-score</title><desc id="flow-intensity-desc">${escapeHtml(description)}</desc>${grid}${bars}${frame.dateTicks}</svg>`;
@@ -859,19 +1252,39 @@
           const top = value >= 0 ? y : zeroFlowY;
           const barHeight = Math.max(1.2, Math.abs(y - zeroFlowY));
           const fill = value === 0 ? COLORS.neutral : value > 0 ? COLORS.positive : COLORS.negative;
-          bars += `<rect x="${(center - barWidth / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" fill="${fill}" opacity="0.72"/>`;
+          bars += `<rect x="${(center - barWidth / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" fill="${fill}" opacity="0.68"/>`;
         });
         const pricePoints = rows.map((row, index) => ({ x: frame.xScale(index), y: finiteScale(yPrice, row.nav) }));
         const leftTicks = [highPrice, (highPrice + lowPrice) / 2, lowPrice].map(value => {
           const y = yPrice(value);
-          return `<text x="${frame.padding.left - 7}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="${COLORS.accent}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="12">${escapeHtml(formatPrice(value))}</text>`;
+          return `<text x="${frame.padding.left - 7}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="${COLORS.cyan}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11">${escapeHtml(formatPrice(value))}</text>`;
         }).join('');
         const rightTicks = [maximumFlow, 0, -maximumFlow].map(value => {
           const y = yFlow(value);
-          return `<text x="${width - frame.padding.right + 7}" y="${(y + 4).toFixed(1)}" text-anchor="start" fill="${COLORS.muted}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="12">${escapeHtml(axisNumber(value))}</text>`;
+          return `<text x="${width - frame.padding.right + 7}" y="${(y + 4).toFixed(1)}" text-anchor="start" fill="${COLORS.muted}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11">${escapeHtml(axisNumber(value))}</text>`;
         }).join('');
         const description = 'Source-reported NAV or share price on the left axis and daily net flow on the right axis. Each series uses an independent scale and missing observations are not connected.';
-        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-price-title flow-price-desc"><title id="flow-price-title">Price and daily ETF estimated net flow</title><desc id="flow-price-desc">${escapeHtml(description)}</desc>${leftTicks}${rightTicks}${bars}<path d="${linePath(pricePoints)}" fill="none" stroke="${COLORS.accent}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>${frame.dateTicks}</svg>`;
+        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-price-title flow-price-desc"><title id="flow-price-title">Price and daily ETF estimated net flow</title><desc id="flow-price-desc">${escapeHtml(description)}</desc>${leftTicks}${rightTicks}${bars}<path d="${linePath(pricePoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>${frame.dateTicks}</svg>`;
+      },
+
+      get flowMultiHorizonImpulseChartSvg() {
+        const rows = this.flowSelectedRows;
+        const width = Math.max(280, Math.min(680, Math.round(this.flowChartWidth * 0.58)));
+        const height = 215;
+        if (rows.length < 5) return emptyChart(width, height, 'Select at least five sessions for multi-horizon impulse.');
+        const frame = chartFrame({ records: rows, width, height, padding: { left: 60, right: 16, top: 18, bottom: 28 } });
+        const values = rows.flatMap(r => [finiteNumber(r.rollingSum5), finiteNumber(r.rollingSum20), finiteNumber(r.rollingSum60)]).filter(v => v !== null);
+        if (!values.length) return emptyChart(width, height, 'Rolling multi-horizon flow sums unavailable.');
+        const maxAbs = Math.max(1, ...values.map(v => Math.abs(v))) * 1.08;
+        const yScale = value => frame.padding.top + frame.chartHeight / 2 - (value / maxAbs) * (frame.chartHeight / 2);
+        const pts5 = rows.map((r, idx) => ({ x: frame.xScale(idx), y: finiteScale(yScale, r.rollingSum5) }));
+        const pts20 = rows.map((r, idx) => ({ x: frame.xScale(idx), y: finiteScale(yScale, r.rollingSum20) }));
+        const pts60 = rows.map((r, idx) => ({ x: frame.xScale(idx), y: finiteScale(yScale, r.rollingSum60) }));
+        const grid = [maxAbs, 0, -maxAbs].map(value => {
+          const y = yScale(value);
+          return `<line x1="${frame.padding.left}" y1="${y.toFixed(1)}" x2="${width - frame.padding.right}" y2="${y.toFixed(1)}" stroke="${value === 0 ? COLORS.axis : COLORS.grid}" stroke-width="1"/><text x="${frame.padding.left - 6}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10.5">${escapeHtml(axisNumber(value))}</text>`;
+        }).join('');
+        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Multi-horizon 5D, 20D, and 60D rolling net flow impulse">${grid}<path d="${linePath(pts60)}" fill="none" stroke="${COLORS.warning}" stroke-width="1.6" stroke-dasharray="3 2" opacity="0.85"/><path d="${linePath(pts20)}" fill="none" stroke="${COLORS.positive}" stroke-width="2"/><path d="${linePath(pts5)}" fill="none" stroke="${COLORS.cyan}" stroke-width="1.6" opacity="0.92"/>${frame.dateTicks}</svg>`;
       },
 
       async init() {
@@ -910,24 +1323,24 @@
           .then(async response => {
             if (!response.ok) throw new Error(`Catalog request returned ${response.status}.`);
             const payload = await response.json();
-             const primary = Array.isArray(payload?.instruments) ? payload.instruments : [];
-             const featured = primary.filter(item => item?.featured).length;
-             const tickers = new Set(primary.map(item => String(item?.ticker || '').toUpperCase()));
-             if (primary.length !== 145 || featured !== 24 || tickers.size !== 145) {
-               throw new Error('Local catalog export failed its 145-instrument, 24-featured integrity checks.');
-             }
-             return payload;
-           });
-         const manifestPromise = fetch('data/flows/manifest.json', { signal: manifestController.signal })
-           .then(async response => {
-             if (!response.ok) throw new Error(`Local coverage manifest request returned ${response.status}.`);
-             const payload = await response.json();
-             const entries = payload?.etfs && typeof payload.etfs === 'object' ? payload.etfs : {};
-             if (payload?.complete !== true || payload?.status !== 'complete' || payload?.counts?.instruments !== 145 || Object.keys(entries).length !== 145 || payload?.source?.network_fetch !== false) {
-               throw new Error('Local coverage manifest failed its 145-instrument completeness checks.');
-             }
-             return payload;
-           });
+            const primary = Array.isArray(payload?.instruments) ? payload.instruments : [];
+            const featured = primary.filter(item => item?.featured).length;
+            const tickers = new Set(primary.map(item => String(item?.ticker || '').toUpperCase()));
+            if (primary.length !== 145 || featured !== 24 || tickers.size !== 145) {
+              throw new Error('Local catalog export failed its 145-instrument, 24-featured integrity checks.');
+            }
+            return payload;
+          });
+        const manifestPromise = fetch('data/flows/manifest.json', { signal: manifestController.signal })
+          .then(async response => {
+            if (!response.ok) throw new Error(`Local coverage manifest request returned ${response.status}.`);
+            const payload = await response.json();
+            const entries = payload?.etfs && typeof payload.etfs === 'object' ? payload.etfs : {};
+            if (payload?.complete !== true || payload?.status !== 'complete' || payload?.counts?.instruments !== 145 || Object.keys(entries).length !== 145 || payload?.source?.network_fetch !== false) {
+              throw new Error('Local coverage manifest failed its 145-instrument completeness checks.');
+            }
+            return payload;
+          });
         const [catalogResult, manifestResult] = await Promise.allSettled([catalogPromise, manifestPromise]);
         this.flowBootstrapControllers = [];
         if (this.flowDestroyed) return;
@@ -972,6 +1385,9 @@
           return false;
         }
         this.flowChartTab = key;
+        if (key === 'price' && this.flowPriceAvailable) {
+          this.flowPriceEnabled = true;
+        }
         this.flowChartMessage = '';
         this.flowChartTooltip = { visible: false, index: this.flowChartTooltip.index };
         if (focusButton && typeof this.$nextTick === 'function') {
@@ -1005,8 +1421,6 @@
           const rect = svg?.getBoundingClientRect?.();
           if (rect?.width) index = Math.round((event.clientX - rect.left) / rect.width * (rows.length - 1));
         }
-        // Track the pointer itself so the readout can follow the cursor
-        // instead of sitting under the chart.
         const pointerX = Number.isFinite(event?.clientX) ? event.clientX : null;
         const pointerY = Number.isFinite(event?.clientY) ? event.clientY : null;
         this.flowChartTooltip = {
@@ -1023,8 +1437,6 @@
 
       flowChartFocus() {
         if (!this.flowSelectedRows.length) return;
-        // Keyboard focus has no pointer; anchor the readout to the chart's
-        // right edge instead of dropping it at 0,0.
         const el = this.$refs?.flowChartHost;
         let x = null;
         let y = null;
@@ -1041,9 +1453,6 @@
         };
       },
 
-      // Fixed-position coordinates for the cursor-following readout.
-      // Offsets the box up-left of the pointer and clamps it inside the
-      // viewport, mirroring _posTt() in markets.html.
       get flowChartTooltipStyle() {
         if (!this.flowChartTooltip.visible) return 'display: none;';
         const offsetX = 18;
@@ -1116,6 +1525,7 @@
       async selectFlowTicker(ticker, options) {
         const normalized = String(ticker || '').trim().toUpperCase();
         const settings = options || {};
+        if (settings.switchToStudio) this.flowViewMode = 'studio';
         if (!normalized || !this._flowEntryMap[normalized]) {
           if (this.flowAbortController) this.flowAbortController.abort();
           this.flowRequestId += 1;
@@ -1123,7 +1533,7 @@
           this.flowTicker = normalized;
           this.flowData = null;
           this.flowDataState = 'unavailable';
-           this.flowDataError = 'This ticker is not in the 145-instrument local leveraged/inverse catalog.';
+          this.flowDataError = 'This ticker is not in the 145-instrument local leveraged/inverse catalog.';
           this._flowMetricCacheKey = '';
           this._flowMetricCache = null;
           if (settings.writeUrl !== false) this._flowWriteUrl(Boolean(settings.push));
@@ -1145,11 +1555,11 @@
         let timedOut = false;
         let timeoutId = null;
         this.flowAbortController = controller;
-         this.flowDataError = '';
-         this.flowData = null;
-         this.flowDataState = 'loading';
-         this._flowMetricCacheKey = '';
-         this._flowMetricCache = null;
+        this.flowDataError = '';
+        this.flowData = null;
+        this.flowDataState = 'loading';
+        this._flowMetricCacheKey = '';
+        this._flowMetricCache = null;
         const manifestEntry = this.flowManifest?.etfs?.[ticker] || null;
         const revision = expectedRevision(manifestEntry, this.flowCatalog?.catalog_version);
         const cached = FLOW_CACHE.get(cacheKey(ticker, revision));
@@ -1342,11 +1752,17 @@
         this.flowTierFilter = 'all';
         this.flowCategoryFilter = 'all';
         this.flowStatusFilter = 'all';
+        this.flowScannerRegime = 'all';
+        this.flowScannerDirection = 'all';
         this.flowSearchQuery = '';
       },
 
       titleCaseCategory(value) {
         return titleCaseCategory(value);
+      },
+
+      shortCategoryName(value) {
+        return shortCategoryName(value);
       },
 
       formatMoney(value) {
@@ -1355,6 +1771,10 @@
 
       formatPercent(value) {
         return formatPercent(value);
+      },
+
+      formatSignedPercent(value) {
+        return formatSignedPercent(value);
       },
 
       formatPrice(value) {

@@ -1,29 +1,108 @@
-name: ETF fund flows ingestion (disabled)
+name: Daily ETF Fund Flows Sync
 
 on:
+  schedule:
+    # Run once daily Tue-Sat at 11:23 UTC (after US T+1 creation/redemption settlement;
+    # off-minute schedule avoids top-of-hour burst traffic).
+    - cron: '23 11 * * 2-6'
   workflow_dispatch:
     inputs:
-      acknowledgement:
-        description: "This workflow is disabled and will not ingest external flow data"
-        required: true
-        default: "External ingestion disabled"
+      force_all:
+        description: "Probe all 145 ETFs even if benchmark latest date matches local max date"
+        required: false
+        default: false
+        type: boolean
+      lookback_days:
+        description: "Calendar days of tail overlap window to query"
+        required: false
+        default: "21"
         type: string
 
 permissions:
-  contents: read
+  contents: write
+  actions: write
 
 concurrency:
   group: daily-flows
   cancel-in-progress: false
 
 jobs:
-  disabled:
+  sync-flows:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 25
     steps:
-      - name: Report local-only policy
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          lfs: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies
         run: |
-          echo "External ETF flow ingestion is intentionally disabled."
-          echo "The authoritative data is under data/flows and is rebuilt with scripts/build_local_flow_artifacts.py."
-          echo "No Trackinsight or other network request is made by this workflow."
-          exit 1
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Incremental stealth sync of 145 ETF flow series
+        run: |
+          extra_args=""
+          if [ "${{ inputs.force_all }}" = "true" ]; then
+            extra_args="--force-all"
+          fi
+          lookback="${{ inputs.lookback_days || '21' }}"
+          python scripts/update_daily_flows.py --lookback-days "$lookback" $extra_args
+
+      - name: Rebuild and verify complete local ETF flow artifacts
+        run: |
+          python scripts/build_local_flow_artifacts.py --output-dir docs/data/flows
+          python scripts/build_local_flow_artifacts.py --verify-output --output-dir docs/data/flows
+
+      - name: Run flow dataset and UI contract tests
+        run: |
+          python -m pytest tests/test_local_flow_artifacts.py tests/test_flow_ui.py tests/test_flow_ui_metrics.py -v
+
+      - name: Commit and push updated flow dataset
+        id: commit_flows
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/flows docs/data/flows scripts/build_local_flow_artifacts.py FUND_FLOW_ETFS.md README.md tests/test_local_flow_artifacts.py tests/test_flow_ui.py tests/test_flow_ui_metrics.py
+          if git diff --staged --quiet; then
+            echo "No new ETF flow observations to commit."
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
+          else
+            latest_date=$(python -c "import json; d=json.load(open('docs/data/flows/manifest.json')); print(d.get('latest_observation_date','latest'))")
+            git commit -m "Auto-update: daily ETF fund flows through ${latest_date}"
+            pushed=false
+            for attempt in 1 2 3; do
+              if git pull --rebase --autostash origin main; then
+                if git push origin HEAD:main; then
+                  pushed=true
+                  break
+                fi
+              else
+                git rebase --abort >/dev/null 2>&1 || true
+                echo "Flow dataset rebase conflict; refusing remote-overwrite resolution." >&2
+                exit 1
+              fi
+              echo "Flow push attempt $attempt failed; retrying" >&2
+              sleep $((attempt * 10))
+            done
+            if [ "$pushed" != true ]; then
+              echo "Could not push updated ETF flow data after three attempts" >&2
+              exit 1
+            fi
+            echo "pushed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Trigger site deployment when flow data updates
+        if: steps.commit_flows.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run build_site.yml --ref main

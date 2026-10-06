@@ -1393,26 +1393,20 @@ def test_daily_flow_workflow_is_safe_and_explicit():
     text = path.read_text(encoding="utf-8")
     workflow = yaml.safe_load(text)
     on_block = workflow.get(True) or workflow.get("on")
-    assert list(on_block) == ["workflow_dispatch"]
-    assert "schedule" not in on_block
-    acknowledgement = on_block["workflow_dispatch"]["inputs"]["acknowledgement"]
-    assert acknowledgement["required"] is True
-    assert acknowledgement["default"] == "External ingestion disabled"
-    assert workflow["permissions"] == {"contents": "read"}
+    assert "schedule" in on_block
+    assert "workflow_dispatch" in on_block
+    inputs = on_block["workflow_dispatch"]["inputs"]
+    assert "force_all" in inputs
+    assert "lookback_days" in inputs
+    assert workflow["permissions"] == {"contents": "write", "actions": "write"}
     assert workflow["concurrency"] == {"group": "daily-flows", "cancel-in-progress": False}
-    assert list(workflow["jobs"]) == ["disabled"]
-    checkpoint_job = workflow["jobs"]["disabled"]
-    assert checkpoint_job["runs-on"] == "ubuntu-latest"
-    assert checkpoint_job["timeout-minutes"] == 5
-    assert len(checkpoint_job["steps"]) == 1
-    step = checkpoint_job["steps"][0]
-    assert "uses" not in step
-    run = step["run"]
-    assert "exit 1" in run
-    assert "External ETF flow ingestion is intentionally disabled." in run
-    assert "authoritative data is under data/flows" in run
-    assert "scripts/build_local_flow_artifacts.py" in run
-    assert "No Trackinsight or other network request is made by this workflow." in run
+    assert list(workflow["jobs"]) == ["sync-flows"]
+    sync_job = workflow["jobs"]["sync-flows"]
+    assert sync_job["runs-on"] == "ubuntu-latest"
+    assert sync_job["timeout-minutes"] == 25
+    assert "scripts/update_daily_flows.py" in text
+    assert "scripts/build_local_flow_artifacts.py --verify-output" in text
+    assert "git rebase --abort" in text
     assert "curl" not in text.lower()
     assert "wget" not in text.lower()
     assert "etf_search_index" not in text
@@ -1422,6 +1416,10 @@ def test_daily_flow_workflow_is_safe_and_explicit():
     assert "--include-stale" not in text
     assert "--dry-run" not in text
     assert "--unsafe-external-fetch" not in text
+    updater_text = (root / "scripts" / "update_daily_flows.py").read_text(encoding="utf-8")
+    assert "CircuitBreakerTripped" in updater_text
+    assert "429" in updater_text and "403" in updater_text
+    assert "random.uniform" in updater_text
     build_workflow = yaml.safe_load(
         (root / ".github" / "workflows" / "build_site.yml").read_text(encoding="utf-8")
     )

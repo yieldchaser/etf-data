@@ -2023,117 +2023,190 @@
     <div id="flow-live-status" class="flow-visually-hidden" role="status" aria-live="polite" aria-atomic="true" x-text="flowAnnouncement()"></div>
 
     <div class="flow-shell">
+      <!-- Sub-panel mode bar + compact inline status strip -->
       <header class="flow-header">
-        <div>
-          <p class="flow-eyebrow">Curated source analysis</p>
-          <h2>ETF estimated net flows</h2>
-           <p class="flow-support">A focused research view of the 145-instrument local leveraged and inverse universe. The 24 featured instruments are an explicit subset; all history is read from local static artifacts.</p>
+        <div class="flow-header-title-wrap">
+          <div style="display:flex;flex-wrap:wrap;gap:0.35rem;align-items:center">
+            <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'studio' ? 'true' : 'false'" @click="flowViewMode = 'studio'">Instrument studio</button>
+            <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'scanner' ? 'true' : 'false'" @click="flowViewMode = 'scanner'" x-text="`Cross-ETF leaderboard (${flowCatalog ? flowCatalog.counts.instruments : 145})`"></button>
+            <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'matrix' ? 'true' : 'false'" @click="flowViewMode = 'matrix'">Category &amp; regime matrix</button>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:0.45rem">
+            <h2>ETF estimated net flows</h2>
+            <p class="flow-support">A focused research view of the 145-instrument local leveraged and inverse universe. The 24 featured instruments are an explicit subset; all history is read from local static artifacts.</p>
+          </div>
         </div>
         <div class="flow-status-grid" aria-label="Catalog and source status">
           <div class="flow-status-cell">
-            <div class="flow-eyebrow">Catalog</div>
-             <div class="flow-status-value" x-text="flowCatalog ? `${flowCatalog.counts.instruments} local instruments` : flowCatalogError ? 'Unavailable' : 'Loading'"></div>
+            <span class="flow-eyebrow">Catalog</span>
+            <span class="flow-status-value flow-cyan" x-text="flowCatalog ? `${flowCatalog.counts.instruments} local instruments` : flowCatalogError ? 'Unavailable' : 'Loading'"></span>
           </div>
+          <span class="flow-eyebrow">·</span>
           <div class="flow-status-cell">
-            <div class="flow-eyebrow">Source status</div>
-            <div class="flow-status-value" x-text="flowSourceStatusLabel"></div>
+            <span class="flow-eyebrow">Status</span>
+            <span class="flow-status-value flow-positive" x-text="flowSourceStatusLabel"></span>
           </div>
+          <span class="flow-eyebrow">·</span>
           <div class="flow-status-cell">
-             <div class="flow-eyebrow">Local manifest coverage</div>
-            <div class="flow-status-value" x-text="flowManifest ? `${flowCoverage.covered} of ${flowCoverage.primary} · ${flowCoverage.pending} pending` : flowManifestError ? 'Unavailable' : 'Loading'"></div>
+            <span class="flow-eyebrow">Coverage</span>
+            <span class="flow-status-value" x-text="flowManifest ? `${flowCoverage.covered} of ${flowCoverage.primary} · ${flowCoverage.pending} pending` : flowManifestError ? 'Unavailable' : 'Loading'"></span>
           </div>
+          <span class="flow-eyebrow">·</span>
           <div class="flow-status-cell">
-            <div class="flow-eyebrow">Latest source date</div>
-            <div class="flow-status-value" x-text="flowCoverage.sourceAsOf || 'Not reported'"></div>
+            <span class="flow-eyebrow">As of</span>
+            <span class="flow-status-value" x-text="flowCoverage.sourceAsOf || 'Not reported'"></span>
           </div>
         </div>
       </header>
 
-      <div class="flow-catalog" x-show="!flowInitialLoading && flowCatalog">
-        <div class="flow-search-wrap">
-          <label class="flow-field-label" for="flow-catalog-search">Search the curated catalog</label>
-          <input id="flow-catalog-search"
-                 class="flow-input"
-                 type="search"
-                 role="combobox"
-                 aria-autocomplete="list"
-                 aria-controls="flow-catalog-results"
-                 :aria-expanded="flowSearchOpen ? 'true' : 'false'"
-                 :aria-activedescendant="flowSearchOpen && flowSearchActiveIndex >= 0 ? `flow-result-${flowSearchActiveIndex}` : ''"
-                 autocomplete="off"
-                 spellcheck="false"
-                 placeholder="Ticker, fund, issuer, or underlying"
-                 x-model="flowSearchQuery"
-                 @focus="flowSearch()"
-                 @input="flowSearch()"
-                 @keydown.down.prevent="flowSearchDown()"
-                 @keydown.up.prevent="flowSearchUp()"
-                 @keydown.enter.prevent="flowSearchEnter()"
-                 @keydown.escape="flowCloseResults()">
-          <button class="flow-clear" type="button" x-show="flowSearchQuery" @click="clearFlowSearch()" aria-label="Clear catalog search">×</button>
-          <div id="flow-catalog-results" class="flow-results" role="listbox" aria-label="Curated catalog results" x-show="flowSearchOpen" @click.outside="flowCloseResults()">
-            <div class="flow-results-header" x-text="`${flowSearchResults.length} catalog matches · use arrow keys and Enter`"></div>
-            <template x-for="(result, index) in flowSearchResults" :key="result.item.ticker">
-              <div class="flow-result"
-                   role="option"
-                   tabindex="-1"
-                   :id="`flow-result-${index}`"
-                   :aria-selected="index === flowSearchActiveIndex ? 'true' : 'false'"
-                   @mouseenter="flowSearchActiveIndex = index"
-                   @mousedown.prevent
-                   @click="chooseFlowResult(result)">
-                <span class="flow-result-symbol" x-text="result.item.ticker"></span>
-                <span class="flow-result-name" x-text="result.item.fund_name"></span>
-                 <span class="flow-badge" :data-state="result.state" x-text="flowStatusLabelForTicker(result.item.ticker)"></span>
+      <!-- 5 Universe Pulse Stat Cards (matches Conviction Labs Leaderboard top cards) -->
+      <div class="flow-pulse-grid" x-show="!flowInitialLoading && flowCatalog">
+        <div class="flow-pulse-card">
+          <div class="flow-kpi-label">Universe 1D net flow</div>
+          <div class="flow-pulse-value" :class="flowUniversePulse.totalFlow1d > 0 ? 'flow-positive' : flowUniversePulse.totalFlow1d < 0 ? 'flow-negative' : ''" x-text="formatMoney(flowUniversePulse.totalFlow1d)"></div>
+          <div class="flow-pulse-sub" x-text="`${flowUniversePulse.inflowCount1d} inflow · ${flowUniversePulse.outflowCount1d} outflow · ${flowUniversePulse.flatCount1d} flat`"></div>
+        </div>
+        <div class="flow-pulse-card">
+          <div class="flow-kpi-label">Trailing 20D net flow</div>
+          <div class="flow-pulse-value" :class="flowUniversePulse.totalFlow20d > 0 ? 'flow-positive' : flowUniversePulse.totalFlow20d < 0 ? 'flow-negative' : ''" x-text="formatMoney(flowUniversePulse.totalFlow20d)"></div>
+          <div class="flow-pulse-sub" x-text="`Bull ${formatMoney(flowUniversePulse.bullFlow20d)} · Bear ${formatMoney(flowUniversePulse.bearFlow20d)}`"></div>
+        </div>
+        <div class="flow-pulse-card">
+          <div class="flow-kpi-label">Accumulation regime</div>
+          <div class="flow-pulse-value flow-positive" x-text="flowUniversePulse.accumulationCount"></div>
+          <div class="flow-pulse-sub" x-text="`Top 1D inflow: ${flowUniversePulse.topInflowTicker} (${formatMoney(flowUniversePulse.topInflowVal)})`"></div>
+        </div>
+        <div class="flow-pulse-card">
+          <div class="flow-kpi-label">Distribution regime</div>
+          <div class="flow-pulse-value flow-negative" x-text="flowUniversePulse.distributionCount"></div>
+          <div class="flow-pulse-sub" x-text="`Top 1D outflow: ${flowUniversePulse.topOutflowTicker} (${formatMoney(flowUniversePulse.topOutflowVal)})`"></div>
+        </div>
+        <div class="flow-pulse-card">
+          <div class="flow-kpi-label">Extreme z-score outliers</div>
+          <div class="flow-pulse-value flow-cyan" x-text="flowUniversePulse.extremeOutlierCount"></div>
+          <div class="flow-pulse-sub" x-text="`|z| ≥ 1.5 vs prior 30D · $${(flowUniversePulse.totalAumM / 1000).toFixed(1)}B AUM`"></div>
+        </div>
+      </div>
+
+      <!-- Extreme Flow Moves Strip (matches EXTREME CONVICTION MOVES on index.html) -->
+      <div class="flow-outliers-box" x-show="!flowInitialLoading && flowCatalog && flowOutlierCards.length">
+        <div class="flow-outliers-header">
+          <div class="flow-outliers-title">
+            <span class="flow-chart-kicker">Extreme flow moves</span>
+            <span class="flow-eyebrow">|z| ≥ 1.5 vs prior 30 sessions — latest session outliers across 145 funds</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.65rem">
+            <span class="flow-eyebrow" x-text="`showing 6 of ${flowUniversePulse.extremeOutlierCount} outliers`"></span>
+            <button class="flow-chip" type="button" @click="flowShowOutliers = !flowShowOutliers" x-text="flowShowOutliers ? 'Hide' : 'Show'"></button>
+          </div>
+        </div>
+        <div class="flow-outliers-grid" x-show="flowShowOutliers">
+          <template x-for="card in flowOutlierCards" :key="card.ticker">
+            <button class="flow-outlier-card" type="button" :data-active="flowTicker === card.ticker ? 'true' : 'false'" @click="selectFlowTicker(card.ticker, { writeUrl: true, push: true, switchToStudio: true })">
+              <div class="flow-outlier-top">
+                <span class="flow-outlier-ticker" x-text="card.ticker"></span>
+                <span class="flow-outlier-flow" :class="card.flow1d > 0 ? 'flow-positive' : card.flow1d < 0 ? 'flow-negative' : ''" x-text="`${card.flow1d > 0 ? '▲ ' : card.flow1d < 0 ? '▼ ' : ''}${formatMoney(card.flow1d)} 1D`"></span>
               </div>
-            </template>
-            <div class="flow-empty" x-show="!flowSearchResults.length && flowSearchQuery">No curated catalog rows match this search.</div>
-            <div class="flow-empty" x-show="!flowSearchResults.length && !flowSearchQuery">No catalog rows match the active filters. <button class="flow-button" type="button" @click="flowResetFilters()">Reset filters</button></div>
-          </div>
+              <div class="flow-outlier-name" x-text="`${card.underlying} · ${card.leverage}`"></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:0.35rem;margin:0.1rem 0">
+                <span class="flow-badge" :data-state="card.regime" x-text="card.regime"></span>
+                <span x-html="card.sparklineSvg"></span>
+              </div>
+              <div class="flow-outlier-meta">
+                <span :class="card.zscore >= 1.5 ? 'flow-cyan' : card.zscore <= -1.5 ? 'flow-amber' : ''" x-text="`|z|=${Math.abs(card.zscore).toFixed(2)}`"></span>
+                <span x-text="`20D ${formatMoney(card.flow20d)} · $${card.aum_m.toFixed(0)}M`"></span>
+              </div>
+            </button>
+          </template>
         </div>
+      </div>
 
-        <div class="flow-filters" aria-label="Catalog filters">
-          <label>
-            <span class="flow-field-label">Catalog tier</span>
-             <select class="flow-select" x-model="flowTierFilter">
-               <option value="all">145 local instruments</option>
-               <option value="featured">24 featured instruments</option>
-               <option value="primary">All 145 instruments</option>
-             </select>
-          </label>
-          <label>
-            <span class="flow-field-label">Instrument group</span>
-            <select class="flow-select" x-model="flowCategoryFilter">
-              <option value="all">All groups</option>
-              <template x-for="category in flowCategories" :key="category">
-                <option :value="category" x-text="titleCaseCategory(category)"></option>
+      <!-- Compact Terminal Command Bar (Search + Filters + 24 Featured Chips) -->
+      <div class="flow-catalog" x-show="!flowInitialLoading && flowCatalog">
+        <div class="flow-command-row">
+          <div class="flow-search-wrap">
+            <label class="flow-field-label" for="flow-catalog-search">Search the curated catalog</label>
+            <input id="flow-catalog-search"
+                   class="flow-input"
+                   type="search"
+                   role="combobox"
+                   aria-autocomplete="list"
+                   aria-controls="flow-catalog-results"
+                   :aria-expanded="flowSearchOpen ? 'true' : 'false'"
+                   :aria-activedescendant="flowSearchOpen && flowSearchActiveIndex >= 0 ? `flow-result-${flowSearchActiveIndex}` : ''"
+                   autocomplete="off"
+                   spellcheck="false"
+                   placeholder="Search ticker, fund, issuer, or underlying..."
+                   x-model="flowSearchQuery"
+                   @focus="flowSearch()"
+                   @input="flowSearch()"
+                   @keydown.down.prevent="flowSearchDown()"
+                   @keydown.up.prevent="flowSearchUp()"
+                   @keydown.enter.prevent="flowSearchEnter()"
+                   @keydown.escape="flowCloseResults()">
+            <button class="flow-clear" type="button" x-show="flowSearchQuery" @click="clearFlowSearch()" aria-label="Clear catalog search">×</button>
+            <div id="flow-catalog-results" class="flow-results" role="listbox" aria-label="Curated catalog results" x-show="flowSearchOpen" @click.outside="flowCloseResults()">
+              <div class="flow-results-header" x-text="`${flowSearchResults.length} catalog matches · use arrow keys and Enter`"></div>
+              <template x-for="(result, index) in flowSearchResults" :key="result.item.ticker">
+                <div class="flow-result"
+                     role="option"
+                     tabindex="-1"
+                     :id="`flow-result-${index}`"
+                     :aria-selected="index === flowSearchActiveIndex ? 'true' : 'false'"
+                     @mouseenter="flowSearchActiveIndex = index"
+                     @mousedown.prevent
+                     @click="chooseFlowResult(result)">
+                  <span class="flow-result-symbol" x-text="result.item.ticker"></span>
+                  <span class="flow-result-name" x-text="`${result.item.fund_name} (${result.item.leverage || ''})`"></span>
+                  <span class="flow-badge" :data-state="result.state" x-text="flowStatusLabelForTicker(result.item.ticker)"></span>
+                </div>
               </template>
-            </select>
-          </label>
-          <label>
-            <span class="flow-field-label">History status</span>
-            <select class="flow-select" x-model="flowStatusFilter">
-              <option value="all">All statuses</option>
-              <option value="available">Available</option>
-              <option value="legacy">Legacy</option>
-              <option value="stale">Stale</option>
-              <option value="pending">Pending</option>
-              <option value="unavailable">Unavailable</option>
-            </select>
-          </label>
+              <div class="flow-empty" x-show="!flowSearchResults.length && flowSearchQuery">No curated catalog rows match this search.</div>
+              <div class="flow-empty" x-show="!flowSearchResults.length && !flowSearchQuery">No catalog rows match the active filters. <button class="flow-button" type="button" @click="flowResetFilters()">Reset filters</button></div>
+            </div>
+          </div>
+
+          <div class="flow-filters" aria-label="Catalog filters">
+            <label>
+              <span class="flow-field-label">Catalog tier</span>
+              <select class="flow-select" x-model="flowTierFilter">
+                <option value="all">145 local instruments</option>
+                <option value="featured">24 featured instruments</option>
+                <option value="primary">All 145 instruments</option>
+              </select>
+            </label>
+            <label>
+              <span class="flow-field-label">Instrument group</span>
+              <select class="flow-select" x-model="flowCategoryFilter">
+                <option value="all">All groups</option>
+                <template x-for="category in flowCategories" :key="category">
+                  <option :value="category" x-text="titleCaseCategory(category)"></option>
+                </template>
+              </select>
+            </label>
+            <label>
+              <span class="flow-field-label">History status</span>
+              <select class="flow-select" x-model="flowStatusFilter">
+                <option value="all">All statuses</option>
+                <option value="available">Available</option>
+                <option value="legacy">Legacy</option>
+                <option value="stale">Stale</option>
+                <option value="pending">Pending</option>
+                <option value="unavailable">Unavailable</option>
+              </select>
+            </label>
+          </div>
         </div>
 
-        <div>
-          <div class="flow-chart-heading">
-            <div>
-              <h3>Featured instruments</h3>
-               <p class="flow-support">An explicit 24-name subset drawn from the 145 local leveraged and inverse instruments.</p>
-            </div>
-            <span class="flow-support" x-text="`${flowFeaturedInstruments.length} featured`"></span>
+        <div class="flow-featured-bar">
+          <div style="display:flex;align-items:center;gap:0.45rem;margin-right:0.25rem">
+            <h3 class="flow-eyebrow" style="color:var(--flow-cyan)">Featured instruments</h3>
+            <span class="flow-visually-hidden">An explicit 24-name subset drawn from the 145 local leveraged and inverse instruments.</span>
+            <span class="flow-eyebrow" x-text="`(${flowFeaturedInstruments.length} featured)`"></span>
           </div>
-          <div class="flow-featured" style="margin-top:0.65rem">
+          <div class="flow-featured">
             <template x-for="item in flowFeaturedInstruments" :key="item.ticker">
-              <button class="flow-chip" type="button" :aria-pressed="flowTicker === item.ticker ? 'true' : 'false'" @click="selectFlowTicker(item.ticker, { writeUrl: true, push: true })" x-text="item.ticker"></button>
+              <button class="flow-chip" type="button" :aria-pressed="flowTicker === item.ticker ? 'true' : 'false'" @click="selectFlowTicker(item.ticker, { writeUrl: true, push: true, switchToStudio: true })" x-text="item.ticker"></button>
             </template>
           </div>
         </div>
@@ -2152,237 +2225,471 @@
 
       <template x-if="!flowInitialLoading && flowCatalog && !flowCatalogError">
         <div class="flow-main">
-          <div class="flow-instrument">
-            <div>
-              <div class="flow-instrument-symbol" x-text="flowTicker || '—'"></div>
-              <h3 class="flow-instrument-name" x-text="flowSelectedInstrument?.fund_name || 'Select a catalog instrument'"></h3>
-              <div class="flow-instrument-meta">
-                 <span x-text="flowSelectedInstrument ? `${titleCaseCategory(flowSelectedInstrument.category)}${flowSelectedInstrument.leverage ? ` · ${flowSelectedInstrument.leverage}` : ''}` : 'Not in catalog'"></span>
-                <span x-text="flowSelectedInstrument?.issuer || 'Issuer unavailable'"></span>
-                 <span x-text="flowData?.sourceLabel || 'Local dataset · Trackinsight-reported historical fields'"></span>
-                <span x-text="flowData ? `${flowData.count.toLocaleString('en-US')} available source observations` : 'Available source history unavailable'"></span>
-                <span x-text="flowData?.sourceAsOf ? `Source as of ${flowData.sourceAsOf}` : 'Source date unavailable'"></span>
-              </div>
-            </div>
-            <span class="flow-badge" :data-state="flowDataState" x-text="flowSelectedStateLabel"></span>
-          </div>
 
-          <div class="flow-state" x-show="flowDataState === 'loading' && !flowData" role="status">
-            <h3>Loading source history</h3>
-            <p x-text="`Loading ${flowTicker} from its checked-in static file.`"></p>
-          </div>
-
-          <div class="flow-state" x-show="!flowData && flowDataState !== 'loading'" role="status">
-            <h3 x-text="flowSelectedStateLabel"></h3>
-            <p x-text="flowDataError || 'No analytics are shown because source history is not available.'"></p>
-            <p>Pending, stale, legacy, unavailable, and empty states do not substitute zero for missing observations.</p>
-            <button class="flow-button flow-button-primary" type="button" x-show="flowDataState === 'error' && flowSelectedInstrument?.tier === 'primary'" @click="retryFlowData()">Retry static file</button>
-          </div>
-
-          <div class="flow-state" x-show="flowData && flowDataState === 'empty'" role="status">
-            <h3>Empty source history</h3>
-            <p>The static file contains no usable observations, so charts and KPIs remain unavailable.</p>
-          </div>
-
-          <fieldset class="flow-range-panel" x-show="flowData && flowData.records.length > 1">
-            <legend class="flow-visually-hidden">Selected source history window</legend>
-            <div class="flow-range-heading">
+          <!-- ─── VIEW 2: CROSS-ETF LEADERBOARD (145 INSTRUMENTS) ─── -->
+          <div class="flow-panel-card" x-show="flowViewMode === 'scanner'">
+            <div class="flow-chart-heading">
               <div>
-                <h3>Selected window</h3>
-                <p class="flow-support">One native range control sets the start and end for every chart and table.</p>
+                <p class="flow-chart-kicker">Cross-ETF Flow Scanner</p>
+                <h3>145-Instrument Multi-Horizon Net Flow Leaderboard</h3>
+                <p class="flow-chart-description">Click any column header to sort or click any ETF row to open its full historical studio. All figures are source-reported aggregate net flows.</p>
               </div>
-              <span class="flow-support" x-text="`${flowRangeCount.toLocaleString('en-US')} sessions · ${flowRangeStartDate || '—'} to ${flowRangeEndDate || '—'}`"></span>
-            </div>
-            <div class="flow-presets" aria-label="Range presets">
-              <template x-for="preset in flowRangePresets" :key="preset.key">
-                <button class="flow-chip" type="button" :aria-pressed="flowRangePreset === preset.key ? 'true' : 'false'" @click="flowSetRangePreset(preset.key)" x-text="preset.label"></button>
-              </template>
-            </div>
-            <div class="flow-range-pair">
-              <label class="flow-support" for="flow-range-start">Start observation</label>
-              <input id="flow-range-start" class="flow-range" type="range" min="0" :max="flowMaxRecordIndex" step="1" :value="flowStartIndex" :aria-valuetext="flowRangeStartDate" @input="flowSetStartIndex($event.target.value)">
-              <label class="flow-support" for="flow-range-end">End observation</label>
-              <input id="flow-range-end" class="flow-range" type="range" min="0" :max="flowMaxRecordIndex" step="1" :value="flowEndIndex" :aria-valuetext="flowRangeEndDate" @input="flowSetEndIndex($event.target.value)">
-            </div>
-            <div class="flow-range-labels"><span x-text="flowRangeStartDate"></span><span x-text="flowRangeEndDate"></span></div>
-          </fieldset>
-
-          <div class="flow-kpis" x-show="flowData && flowData.records.length">
-            <div class="flow-kpi">
-              <div class="flow-kpi-label">Latest session</div>
-              <div class="flow-kpi-value" x-text="formatMoney(flowKpis.latest)"></div>
-              <div class="flow-kpi-note" x-text="flowKpis.latestDate || 'No source date'"></div>
-            </div>
-            <div class="flow-kpi">
-              <div class="flow-kpi-label">Trailing 20 sessions</div>
-              <div class="flow-kpi-value" x-text="formatMoney(flowKpis.trailingTwenty)"></div>
-              <div class="flow-kpi-note">Complete 20-session window</div>
-            </div>
-            <div class="flow-kpi">
-              <div class="flow-kpi-label">Selected-window cumulative</div>
-              <div class="flow-kpi-value" x-text="formatMoney(flowKpis.cumulative)"></div>
-              <div class="flow-kpi-note">Source-reported aggregate net flow</div>
-            </div>
-            <div class="flow-kpi">
-              <div class="flow-kpi-label">Trailing 10-session percentile</div>
-              <div class="flow-kpi-value" x-text="formatPercent(flowKpis.percentile)"></div>
-              <div class="flow-kpi-note">Complete windows, ties at midpoint</div>
-            </div>
-            <div class="flow-kpi">
-              <div class="flow-kpi-label">Prior-only z-score</div>
-              <div class="flow-kpi-value" x-text="flowKpis.zScore === null ? '—' : `${flowKpis.zScore >= 0 ? '+' : ''}${flowKpis.zScore.toFixed(2)}`"></div>
-              <div class="flow-kpi-note" x-text="flowKpis.coverage"></div>
-            </div>
-          </div>
-
-          <div class="flow-analysis" x-show="flowData && flowData.records.length > 1">
-            <div class="flow-chart-tabs" role="tablist" aria-label="Fund Flows analysis views">
-              <template x-for="(tab, index) in flowChartTabs" :key="tab.key">
-                <button
-                  class="flow-chart-tab"
-                  type="button"
-                  role="tab"
-                  :id="`flow-chart-tab-${tab.key}`"
-                  :aria-controls="`flow-chart-panel-${tab.key}`"
-                  :aria-selected="flowChartTab === tab.key ? 'true' : 'false'"
-                  :tabindex="tab.key === 'price' && !flowPriceAvailable ? '0' : (flowChartTab === tab.key ? '0' : '-1')"
-                  :aria-disabled="tab.key === 'price' && !flowPriceAvailable ? 'true' : 'false'"
-                  @click="flowSetChartTab(tab.key, true)"
-                  @keydown="flowChartTabKeydown($event, index)"
-                  x-text="tab.label">
-                </button>
-              </template>
-            </div>
-            <p class="flow-chart-message" x-show="flowChartMessage" role="status" aria-live="polite" x-text="flowChartMessage"></p>
-            <section id="flow-chart-panel-daily" class="flow-chart-block" x-show="flowChartTab === 'daily'" role="tabpanel" tabindex="0" :aria-labelledby="`flow-chart-tab-daily`" aria-label="Daily flow analysis">
-              <div class="flow-chart-heading">
-                <div>
-                  <p class="flow-chart-kicker">Primary analysis</p>
-                  <h3 id="flow-daily-heading">Daily ETF estimated net flow</h3>
-                  <p class="flow-chart-description">Daily bars use a neutral zero line. Missing values are shown as neutral gaps, and the line is a complete 20-observation rolling mean.</p>
-                </div>
-                <div class="flow-legend" aria-label="Daily chart legend">
-                  <span class="flow-legend-item"><span class="flow-swatch" style="background:#5ca58b"></span>Positive flow</span>
-                  <span class="flow-legend-item"><span class="flow-swatch" style="background:#c47b86"></span>Negative flow</span>
-                  <span class="flow-legend-item"><span class="flow-swatch" style="background:#6aa9c9"></span>20-observation mean</span>
-                  <span class="flow-legend-item"><span class="flow-swatch" style="background:#687585"></span>Missing (gap)</span>
-                </div>
+              <div style="display:flex;flex-wrap:wrap;gap:0.35rem;align-items:center">
+                <button class="flow-chip" type="button" :aria-pressed="flowScannerRegime === 'all' ? 'true' : 'false'" @click="flowScannerRegime = 'all'">All regimes</button>
+                <button class="flow-chip" type="button" :aria-pressed="flowScannerRegime === 'ACCUMULATION' ? 'true' : 'false'" @click="flowScannerRegime = 'ACCUMULATION'">Accumulation</button>
+                <button class="flow-chip" type="button" :aria-pressed="flowScannerRegime === 'BALANCED' ? 'true' : 'false'" @click="flowScannerRegime = 'BALANCED'">Balanced</button>
+                <button class="flow-chip" type="button" :aria-pressed="flowScannerRegime === 'DISTRIBUTION' ? 'true' : 'false'" @click="flowScannerRegime = 'DISTRIBUTION'">Distribution</button>
+                <button class="flow-chip" type="button" :aria-pressed="flowScannerDirection === 'bull' ? 'true' : 'false'" @click="flowScannerDirection = flowScannerDirection === 'bull' ? 'all' : 'bull'">Bull only</button>
+                <button class="flow-chip" type="button" :aria-pressed="flowScannerDirection === 'bear' ? 'true' : 'false'" @click="flowScannerDirection = flowScannerDirection === 'bear' ? 'all' : 'bear'">Bear only</button>
               </div>
-              <div class="flow-chart" tabindex="0" @mousemove="flowChartPointerMove($event)" @mouseleave="flowChartPointerLeave()" @focus="flowChartFocus()" @blur="flowChartPointerLeave()" x-html="flowDailyChartSvg"></div>
-            </section>
-
-            <section id="flow-chart-panel-cumulative" class="flow-chart-block" x-show="flowChartTab === 'cumulative'" role="tabpanel" tabindex="0" :aria-labelledby="`flow-chart-tab-cumulative`" aria-label="Cumulative flow analysis">
-              <div class="flow-chart-heading">
-                <div>
-                  <p class="flow-chart-kicker">Companion view</p>
-                  <h3 id="flow-cumulative-heading">Selected-window cumulative source-reported aggregate net flow</h3>
-                  <p class="flow-chart-description" x-text="`Starts from a zero baseline before ${flowRangeStartDate || 'the first selected session'}; it does not reset between chart ranges.`"></p>
-                </div>
-              </div>
-              <div class="flow-chart" tabindex="0" @mousemove="flowChartPointerMove($event)" @mouseleave="flowChartPointerLeave()" @focus="flowChartFocus()" @blur="flowChartPointerLeave()" x-html="flowCumulativeChartSvg"></div>
-            </section>
-
-            <div class="flow-secondary-grid">
-              <section id="flow-chart-panel-percentile" class="flow-chart-block" x-show="flowChartTab === 'percentile'" role="tabpanel" tabindex="0" :aria-labelledby="`flow-chart-tab-percentile`" aria-label="Flow percentile analysis">
-                <div class="flow-chart-heading">
-                  <div>
-                    <p class="flow-chart-kicker">Secondary view</p>
-                    <h3 id="flow-percentile-heading">10-session flow and historical percentile</h3>
-                    <p class="flow-chart-description">Bars use the left dollar axis. The percentile line uses the right axis and only complete windows from available source history.</p>
-                  </div>
-                </div>
-                <div class="flow-chart" tabindex="0" @mousemove="flowChartPointerMove($event)" @mouseleave="flowChartPointerLeave()" @focus="flowChartFocus()" @blur="flowChartPointerLeave()" x-html="flowPercentileChartSvg"></div>
-              </section>
-
-              <section id="flow-chart-panel-intensity" class="flow-chart-block" x-show="flowChartTab === 'intensity'" role="tabpanel" tabindex="0" :aria-labelledby="`flow-chart-tab-intensity`" aria-label="Prior-only z-score analysis">
-                <div class="flow-chart-heading">
-                  <div>
-                    <p class="flow-chart-kicker">Secondary view</p>
-                    <h3 id="flow-intensity-heading">Prior-only daily flow z-score</h3>
-                    <p class="flow-chart-description">The current session is excluded from its baseline mean and standard deviation.</p>
-                  </div>
-                </div>
-                <div class="flow-chart" tabindex="0" @mousemove="flowChartPointerMove($event)" @mouseleave="flowChartPointerLeave()" @focus="flowChartFocus()" @blur="flowChartPointerLeave()" x-html="flowIntensityChartSvg"></div>
-              </section>
             </div>
-
-            <section id="flow-chart-panel-price" class="flow-chart-block" x-show="flowChartTab === 'price' && (flowPriceEnabled || (flowData?.records || []).some(record => record.nav !== null))" role="tabpanel" tabindex="0" :aria-labelledby="`flow-chart-tab-price`" aria-label="Price and flow analysis">
-              <div class="flow-chart-heading">
-                <div>
-                  <p class="flow-chart-kicker">Optional view</p>
-                  <h3 id="flow-price-heading">Price and daily ETF estimated net flow</h3>
-                  <p class="flow-chart-description">The left axis is source-reported NAV or share price. The right axis is daily net flow. The axes are independent.</p>
-                </div>
-                <label class="flow-checkbox">
-                  <input type="checkbox" :checked="flowPriceEnabled" :disabled="!flowPriceAvailable" @change="flowSetPriceEnabled($event.target.checked)">
-                  Show price and flow
-                </label>
-              </div>
-              <p class="flow-support" x-show="!flowPriceAvailable">Price and flow are not both available for the selected window.</p>
-              <div class="flow-chart" x-show="flowPriceEnabled" tabindex="0" @mousemove="flowChartPointerMove($event)" @mouseleave="flowChartPointerLeave()" @focus="flowChartFocus()" @blur="flowChartPointerLeave()" x-html="flowPriceChartSvg"></div>
-            </section>
-          </div>
-          <!-- Cursor-following readout. Fixed-positioned from the pointer
-               coordinates (see flowChartTooltipStyle); it deliberately sits
-               outside normal flow so it renders at the pointer instead of
-               under the chart. -->
-          <div class="flow-chart-tooltip" :style="flowChartTooltipStyle" x-show="flowChartTooltip.visible" role="status" aria-live="polite" x-text="flowChartTooltipText"></div>
-
-          <details x-show="flowData && flowSelectedRows.length">
-            <summary>Accessible data table for the selected window</summary>
-            <div class="flow-details-body">
-              <div class="flow-table-wrap" tabindex="0" aria-label="Scrollable selected-window flow data table">
-                <table class="flow-table">
-                  <caption class="flow-visually-hidden" x-text="`${flowTicker} selected-window source-reported aggregate net flow observations`"></caption>
-                  <thead>
-                    <tr>
-                      <th scope="col">Date</th>
-                      <th scope="col">Daily net flow</th>
-                      <th scope="col">20-session mean</th>
-                      <th scope="col">Selected-window cumulative</th>
-                      <th scope="col">10-session sum</th>
-                      <th scope="col">10-session percentile</th>
-                      <th scope="col">Prior-only z-score</th>
-                      <th scope="col">NAV or price</th>
+            <div class="flow-scanner-wrap">
+              <table class="flow-table">
+                <thead>
+                  <tr>
+                    <th scope="col" style="cursor:pointer" @click="setFlowScannerSort('ticker')">Ticker</th>
+                    <th scope="col" style="text-align:left">Underlying / Fund</th>
+                    <th scope="col">Lev</th>
+                    <th scope="col" style="cursor:pointer" @click="setFlowScannerSort('flow_1d')">1D Flow</th>
+                    <th scope="col" style="cursor:pointer" @click="setFlowScannerSort('flow_5d')">5D Flow</th>
+                    <th scope="col" style="cursor:pointer" @click="setFlowScannerSort('flow_20d')">20D Flow</th>
+                    <th scope="col" style="cursor:pointer" @click="setFlowScannerSort('flow_60d')">60D Flow</th>
+                    <th scope="col" style="cursor:pointer" @click="setFlowScannerSort('flow_ytd')">YTD Flow</th>
+                    <th scope="col" style="cursor:pointer" @click="setFlowScannerSort('cumulative')">Cumulative</th>
+                    <th scope="col" style="cursor:pointer" @click="setFlowScannerSort('abs_z')">Z-Score</th>
+                    <th scope="col" style="cursor:pointer" @click="setFlowScannerSort('pressure')">Pressure</th>
+                    <th scope="col">20D Pulse</th>
+                    <th scope="col" style="cursor:pointer" @click="setFlowScannerSort('nav_20d')">20D NAV</th>
+                    <th scope="col" style="cursor:pointer" @click="setFlowScannerSort('aum')">AUM</th>
+                    <th scope="col">Regime</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template x-for="item in flowScannerRows" :key="item.ticker">
+                    <tr style="cursor:pointer" @click="selectFlowTicker(item.ticker, { writeUrl: true, push: true, switchToStudio: true })">
+                      <td><span class="flow-result-symbol" x-text="item.ticker"></span></td>
+                      <td style="text-align:left">
+                        <div style="color:var(--flow-text);font-weight:500" x-text="item.underlying || item.fund_name"></div>
+                        <div style="color:var(--flow-subtle);font-size:0.6875rem" x-text="`${shortCategoryName(item.category)} · ${item.issuer}`"></div>
+                      </td>
+                      <td>
+                        <span class="flow-badge" :data-state="(item.leverage_value || 0) < 0 ? 'DISTRIBUTION' : 'ACCUMULATION'" x-text="item.leverage"></span>
+                      </td>
+                      <td :class="item.latest_flow > 0 ? 'flow-positive' : item.latest_flow < 0 ? 'flow-negative' : ''" x-text="formatMoney(item.latest_flow)"></td>
+                      <td :class="item.flow_5d > 0 ? 'flow-positive' : item.flow_5d < 0 ? 'flow-negative' : ''" x-text="formatMoney(item.flow_5d)"></td>
+                      <td :class="item.flow_20d > 0 ? 'flow-positive' : item.flow_20d < 0 ? 'flow-negative' : ''" x-text="formatMoney(item.flow_20d)"></td>
+                      <td :class="item.flow_60d > 0 ? 'flow-positive' : item.flow_60d < 0 ? 'flow-negative' : ''" x-text="formatMoney(item.flow_60d)"></td>
+                      <td :class="item.flow_ytd > 0 ? 'flow-positive' : item.flow_ytd < 0 ? 'flow-negative' : ''" x-text="formatMoney(item.flow_ytd)"></td>
+                      <td :class="item.latest_cumulative_flow > 0 ? 'flow-positive' : item.latest_cumulative_flow < 0 ? 'flow-negative' : ''" x-text="formatMoney(item.latest_cumulative_flow)"></td>
+                      <td :class="item.flow_zscore >= 1.5 ? 'flow-cyan' : item.flow_zscore <= -1.5 ? 'flow-amber' : ''" x-text="item.flow_zscore !== null ? `${item.flow_zscore >= 0 ? '+' : ''}${item.flow_zscore.toFixed(2)}σ` : '—'"></td>
+                      <td :class="item.pressure > 0 ? 'flow-positive' : item.pressure < 0 ? 'flow-negative' : ''" x-text="item.pressure !== null ? `${item.pressure >= 0 ? '+' : ''}${item.pressure.toFixed(1)}` : '—'"></td>
+                      <td><div x-html="item.sparklineSvg"></div></td>
+                      <td :class="item.nav_return_20d_pct > 0 ? 'flow-positive' : item.nav_return_20d_pct < 0 ? 'flow-negative' : ''" x-text="formatSignedPercent(item.nav_return_20d_pct)"></td>
+                      <td x-text="`$${(item.aum_m || 0).toFixed(1)}M`"></td>
+                      <td><span class="flow-badge" :data-state="item.regime" x-text="item.regime"></span></td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    <template x-for="row in flowSelectedRows" :key="row.date">
-                      <tr>
-                        <td x-text="row.date"></td>
-                        <td :class="row.flow > 0 ? 'flow-positive' : row.flow < 0 ? 'flow-negative' : ''" x-text="formatMoney(row.flow)"></td>
-                        <td x-text="formatMoney(row.rollingMean20)"></td>
-                        <td x-text="formatMoney(row.selectedCumulative)"></td>
-                        <td x-text="formatMoney(row.rollingSum10)"></td>
-                        <td x-text="formatPercent(row.percentile10)"></td>
-                        <td x-text="row.priorOnlyZScore === null ? '—' : row.priorOnlyZScore.toFixed(2)"></td>
-                        <td x-text="formatPrice(row.nav)"></td>
-                      </tr>
-                    </template>
-                  </tbody>
-                </table>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ─── VIEW 3: CATEGORY & SHARED-UNDERLYING FLOW MATRIX ─── -->
+          <div class="flow-panel-card" x-show="flowViewMode === 'matrix'">
+            <div class="flow-chart-heading">
+              <div>
+                <p class="flow-chart-kicker">Category Flow Aggregation</p>
+                <h3>9-Category Multi-Horizon Net Flow Matrix</h3>
+                <p class="flow-chart-description">Aggregate net flow across all 9 categories at 1D, 5D, 20D, 60D, YTD, and full-history horizons.</p>
               </div>
             </div>
-          </details>
-
-          <details>
-            <summary>Alternative ticker metadata</summary>
-            <div class="flow-details-body">
-              <p x-show="flowSelectedInstrument?.alternatives?.length">Catalog alternatives: <span class="flow-result-symbol" x-text="flowSelectedInstrument?.alternatives?.join(', ')"></span>. Alternative rows are metadata and do not replace the canonical history.</p>
-              <p x-show="!flowSelectedInstrument?.alternatives?.length">No alternative ticker is listed for this catalog row.</p>
+            <div class="flow-table-wrap">
+              <table class="flow-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Category</th>
+                    <th scope="col">Funds</th>
+                    <th scope="col">Total AUM</th>
+                    <th scope="col">1D Net Flow</th>
+                    <th scope="col">5D Net Flow</th>
+                    <th scope="col">20D Net Flow</th>
+                    <th scope="col">60D Net Flow</th>
+                    <th scope="col">YTD Net Flow</th>
+                    <th scope="col">Cumulative Flow</th>
+                    <th scope="col">Avg Z</th>
+                    <th scope="col">Breadth (Acc/Dist)</th>
+                    <th scope="col">Lead 20D Ticker</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template x-for="cat in flowCategoryMatrixRows" :key="cat.category">
+                    <tr>
+                      <td style="color:var(--flow-text);font-weight:600" x-text="cat.shortName"></td>
+                      <td x-text="cat.count"></td>
+                      <td x-text="`$${(cat.aum_m / 1000).toFixed(2)}B`"></td>
+                      <td :class="cat.flow_1d > 0 ? 'flow-positive' : cat.flow_1d < 0 ? 'flow-negative' : ''" x-text="formatMoney(cat.flow_1d)"></td>
+                      <td :class="cat.flow_5d > 0 ? 'flow-positive' : cat.flow_5d < 0 ? 'flow-negative' : ''" x-text="formatMoney(cat.flow_5d)"></td>
+                      <td :class="cat.flow_20d > 0 ? 'flow-positive' : cat.flow_20d < 0 ? 'flow-negative' : ''" x-text="formatMoney(cat.flow_20d)"></td>
+                      <td :class="cat.flow_60d > 0 ? 'flow-positive' : cat.flow_60d < 0 ? 'flow-negative' : ''" x-text="formatMoney(cat.flow_60d)"></td>
+                      <td :class="cat.flow_ytd > 0 ? 'flow-positive' : cat.flow_ytd < 0 ? 'flow-negative' : ''" x-text="formatMoney(cat.flow_ytd)"></td>
+                      <td :class="cat.cumulative > 0 ? 'flow-positive' : cat.cumulative < 0 ? 'flow-negative' : ''" x-text="formatMoney(cat.cumulative)"></td>
+                      <td :class="cat.avgZ > 0 ? 'flow-cyan' : cat.avgZ < 0 ? 'flow-amber' : ''" x-text="`${cat.avgZ >= 0 ? '+' : ''}${cat.avgZ.toFixed(2)}σ`"></td>
+                      <td x-text="`${cat.accumulation} acc / ${cat.distribution} dist`"></td>
+                      <td>
+                        <button class="flow-chip" type="button" @click="selectFlowTicker(cat.topTicker, { writeUrl: true, push: true, switchToStudio: true })" x-text="cat.topTicker"></button>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
             </div>
-          </details>
 
-          <details open>
-            <summary>Methodology and status definitions</summary>
-            <div class="flow-details-body">
-              <p>ETF estimated net flow is the source-reported aggregate net flow series stored for the selected fund. The interface does not infer or label investor categories.</p>
-              <p>The selected-window cumulative view begins at a zero baseline before the first selected session and sums available daily values. Missing daily values are not converted to zero.</p>
-              <p>The trailing 10-session percentile uses complete windows only. Ties receive the midpoint of their rank positions. The prior-only z-score uses up to 30 preceding numeric sessions and excludes the current session from its baseline.</p>
-               <p>Pending means the local static file is unavailable. Stale means the local source date exceeds the current seven-day display policy. Unavailable means the local artifact cannot be loaded or its identity does not match the catalog. Empty means the file has no usable observations. No missing observation is converted to zero.</p>
-               <p>The source is the local authoritative dataset. Historical fields are reported by Trackinsight in the stored CSV/XLSX sources; the browser does not perform a live fetch or trigger external ingestion.</p>
+            <div class="flow-chart-heading" style="margin-top:0.75rem">
+              <div>
+                <p class="flow-chart-kicker">Bull vs. Bear Ecosystem Positioning</p>
+                <h3>Shared-Underlying &amp; Benchmark Flow Tug-of-War (20-Session Window)</h3>
+                <p class="flow-chart-description">Compares 20-session aggregate net flow into leveraged bull vs. inverse bear ETFs tracking the same underlying or index.</p>
+              </div>
             </div>
-          </details>
+            <div class="flow-table-wrap">
+              <table class="flow-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Underlying / Ecosystem</th>
+                    <th scope="col" style="text-align:left">Tracked ETFs</th>
+                    <th scope="col">Total AUM</th>
+                    <th scope="col">1D Net Flow</th>
+                    <th scope="col">20D Bull Flow</th>
+                    <th scope="col">20D Bear Flow</th>
+                    <th scope="col">20D Combined Flow</th>
+                    <th scope="col">Peak |z|</th>
+                    <th scope="col">Lead Ticker</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template x-for="row in flowUnderlyingBattleRows" :key="row.underlying">
+                    <tr>
+                      <td style="color:var(--flow-text);font-weight:600" x-text="row.underlying"></td>
+                      <td style="text-align:left">
+                        <div style="display:flex;flex-wrap:wrap;gap:0.25rem">
+                          <template x-for="tk in row.tickers" :key="tk">
+                            <button class="flow-chip" type="button" :aria-pressed="flowTicker === tk ? 'true' : 'false'" @click="selectFlowTicker(tk, { writeUrl: true, push: true, switchToStudio: true })" x-text="tk"></button>
+                          </template>
+                        </div>
+                      </td>
+                      <td x-text="`$${row.totalAumM.toFixed(0)}M`"></td>
+                      <td :class="row.totalFlow1d > 0 ? 'flow-positive' : row.totalFlow1d < 0 ? 'flow-negative' : ''" x-text="formatMoney(row.totalFlow1d)"></td>
+                      <td :class="row.bullFlow20d > 0 ? 'flow-positive' : row.bullFlow20d < 0 ? 'flow-negative' : ''" x-text="formatMoney(row.bullFlow20d)"></td>
+                      <td :class="row.bearFlow20d > 0 ? 'flow-positive' : row.bearFlow20d < 0 ? 'flow-negative' : ''" x-text="formatMoney(row.bearFlow20d)"></td>
+                      <td :class="row.totalFlow20d > 0 ? 'flow-positive' : row.totalFlow20d < 0 ? 'flow-negative' : ''" x-text="formatMoney(row.totalFlow20d)"></td>
+                      <td class="flow-cyan" x-text="`${row.maxAbsZ.toFixed(2)}σ`"></td>
+                      <td>
+                        <button class="flow-chip" type="button" @click="selectFlowTicker(row.leadTicker, { writeUrl: true, push: true, switchToStudio: true })" x-text="row.leadTicker"></button>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ─── VIEW 1: INSTRUMENT STUDIO (DEFAULT) ─── -->
+          <div x-show="flowViewMode === 'studio'" style="display:grid;gap:0.85rem">
+            <div class="flow-instrument">
+              <div>
+                <div class="flow-instrument-top">
+                  <div class="flow-instrument-symbol" x-text="flowTicker || '—'"></div>
+                  <span class="flow-badge" x-show="flowSelectedInstrument?.leverage" :data-state="(flowSelectedInstrument?.leverage_value || 0) < 0 ? 'DISTRIBUTION' : 'ACCUMULATION'" x-text="flowSelectedInstrument?.leverage"></span>
+                  <h3 class="flow-instrument-name" x-text="flowSelectedInstrument?.fund_name || 'Select a catalog instrument'"></h3>
+                </div>
+                <div class="flow-instrument-meta">
+                  <span x-text="flowSelectedInstrument ? `${titleCaseCategory(flowSelectedInstrument.category)}${flowSelectedInstrument.leverage ? ` · ${flowSelectedInstrument.leverage}` : ''}` : 'Not in catalog'"></span>
+                  <span x-text="flowSelectedInstrument?.underlying ? `Underlying: ${flowSelectedInstrument.underlying}` : ''"></span>
+                  <span x-text="flowSelectedInstrument?.issuer || 'Issuer unavailable'"></span>
+                  <span x-text="flowSelectedInstrument?.aum_m ? `AUM $${flowSelectedInstrument.aum_m.toFixed(1)}M · TER ${flowSelectedInstrument.ter || '—'}` : ''"></span>
+                  <span x-text="flowData?.sourceLabel || 'Local dataset · Trackinsight-reported historical fields'"></span>
+                  <span x-text="flowData ? `${flowData.count.toLocaleString('en-US')} available source observations` : 'Available source history unavailable'"></span>
+                  <span x-text="flowData?.sourceAsOf ? `Source as of ${flowData.sourceAsOf}` : 'Source date unavailable'"></span>
+                </div>
+              </div>
+              <div class="flow-instrument-right">
+                <span class="flow-badge" x-show="flowSelectedInstrument?.regime" :data-state="flowSelectedInstrument?.regime" x-text="flowSelectedInstrument?.regime"></span>
+                <span class="flow-badge" :data-state="flowDataState" x-text="flowSelectedStateLabel"></span>
+              </div>
+            </div>
+
+            <div class="flow-state" x-show="flowDataState === 'loading' && !flowData" role="status">
+              <h3>Loading source history</h3>
+              <p x-text="`Loading ${flowTicker} from its checked-in static file.`"></p>
+            </div>
+
+            <div class="flow-state" x-show="!flowData && flowDataState !== 'loading'" role="status">
+              <h3 x-text="flowSelectedStateLabel"></h3>
+              <p x-text="flowDataError || 'No analytics are shown because source history is not available.'"></p>
+              <p>Pending, stale, legacy, unavailable, and empty states do not substitute zero for missing observations.</p>
+              <button class="flow-button flow-button-primary" type="button" x-show="flowDataState === 'error' && flowSelectedInstrument?.tier === 'primary'" @click="retryFlowData()">Retry static file</button>
+            </div>
+
+            <div class="flow-state" x-show="flowData && flowDataState === 'empty'" role="status">
+              <h3>Empty source history</h3>
+              <p>The static file contains no usable observations, so charts and KPIs remain unavailable.</p>
+            </div>
+
+            <fieldset class="flow-range-panel" x-show="flowData && flowData.records.length > 1">
+              <legend class="flow-visually-hidden">Selected source history window</legend>
+              <div class="flow-range-heading">
+                <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:0.55rem">
+                  <h3 class="flow-eyebrow" style="color:var(--flow-cyan)">Selected window</h3>
+                  <span class="flow-support" x-text="`${flowRangeCount.toLocaleString('en-US')} sessions · ${flowRangeStartDate || '—'} → ${flowRangeEndDate || '—'}`"></span>
+                </div>
+                <div class="flow-presets" aria-label="Range presets">
+                  <template x-for="preset in flowRangePresets" :key="preset.key">
+                    <button class="flow-chip" type="button" :aria-pressed="flowRangePreset === preset.key ? 'true' : 'false'" @click="flowSetRangePreset(preset.key)" x-text="preset.label"></button>
+                  </template>
+                </div>
+              </div>
+              <div class="flow-range-pair">
+                <div>
+                  <label class="flow-visually-hidden" for="flow-range-start">Start observation</label>
+                  <input id="flow-range-start" class="flow-range" type="range" min="0" :max="flowMaxRecordIndex" step="1" :value="flowStartIndex" :aria-valuetext="flowRangeStartDate" @input="flowSetStartIndex($event.target.value)">
+                </div>
+                <div>
+                  <label class="flow-visually-hidden" for="flow-range-end">End observation</label>
+                  <input id="flow-range-end" class="flow-range" type="range" min="0" :max="flowMaxRecordIndex" step="1" :value="flowEndIndex" :aria-valuetext="flowRangeEndDate" @input="flowSetEndIndex($event.target.value)">
+                </div>
+              </div>
+              <div class="flow-range-labels"><span x-text="`Start: ${flowRangeStartDate}`"></span><span x-text="`End: ${flowRangeEndDate}`"></span></div>
+            </fieldset>
+
+            <div class="flow-kpis" x-show="flowData && flowData.records.length">
+              <div class="flow-kpi">
+                <div class="flow-kpi-label">Latest session</div>
+                <div class="flow-kpi-value" :class="flowKpis.latest > 0 ? 'flow-positive' : flowKpis.latest < 0 ? 'flow-negative' : ''" x-text="formatMoney(flowKpis.latest)"></div>
+                <div class="flow-kpi-note" x-text="`${flowKpis.latestDate || 'No source date'} · 5D ${formatMoney(flowSelectedInstrument?.flow_5d)}`"></div>
+              </div>
+              <div class="flow-kpi">
+                <div class="flow-kpi-label">Trailing 20 sessions</div>
+                <div class="flow-kpi-value" :class="flowKpis.trailingTwenty > 0 ? 'flow-positive' : flowKpis.trailingTwenty < 0 ? 'flow-negative' : ''" x-text="formatMoney(flowKpis.trailingTwenty)"></div>
+                <div class="flow-kpi-note" x-text="`Complete 20-session window · 60D ${formatMoney(flowSelectedInstrument?.flow_60d)}`"></div>
+              </div>
+              <div class="flow-kpi">
+                <div class="flow-kpi-label">Selected-window cumulative</div>
+                <div class="flow-kpi-value" :class="flowKpis.cumulative > 0 ? 'flow-positive' : flowKpis.cumulative < 0 ? 'flow-negative' : ''" x-text="formatMoney(flowKpis.cumulative)"></div>
+                <div class="flow-kpi-note">Source-reported aggregate net flow</div>
+              </div>
+              <div class="flow-kpi">
+                <div class="flow-kpi-label">Trailing 10-session percentile</div>
+                <div class="flow-kpi-value flow-cyan" x-text="formatPercent(flowKpis.percentile)"></div>
+                <div class="flow-kpi-note">Complete windows, ties at midpoint</div>
+              </div>
+              <div class="flow-kpi">
+                <div class="flow-kpi-label">Prior-only z-score</div>
+                <div class="flow-kpi-value" :class="flowKpis.zScore >= 1.5 ? 'flow-cyan' : flowKpis.zScore <= -1.5 ? 'flow-amber' : ''" x-text="flowKpis.zScore === null ? '—' : `${flowKpis.zScore >= 0 ? '+' : ''}${flowKpis.zScore.toFixed(2)}`"></div>
+                <div class="flow-kpi-note" x-text="flowKpis.coverage"></div>
+              </div>
+            </div>
+
+            <div class="flow-analysis" x-show="flowData && flowData.records.length > 1">
+              <div class="flow-chart-tabs" role="tablist" aria-label="Fund Flows analysis views">
+                <template x-for="(tab, index) in flowChartTabs" :key="tab.key">
+                  <button
+                    class="flow-chart-tab"
+                    type="button"
+                    role="tab"
+                    :id="`flow-chart-tab-${tab.key}`"
+                    :aria-controls="`flow-chart-panel-${tab.key}`"
+                    :aria-selected="flowChartTab === tab.key ? 'true' : 'false'"
+                    :tabindex="tab.key === 'price' && !flowPriceAvailable ? '0' : (flowChartTab === tab.key ? '0' : '-1')"
+                    :aria-disabled="tab.key === 'price' && !flowPriceAvailable ? 'true' : 'false'"
+                    @click="flowSetChartTab(tab.key, true)"
+                    @keydown="flowChartTabKeydown($event, index)"
+                    x-text="tab.label">
+                  </button>
+                </template>
+              </div>
+              <p class="flow-chart-message" x-show="flowChartMessage" role="status" aria-live="polite" x-text="flowChartMessage"></p>
+              <section id="flow-chart-panel-daily" class="flow-chart-block" x-show="flowChartTab === 'daily'" role="tabpanel" tabindex="0" :aria-labelledby="`flow-chart-tab-daily`" aria-label="Daily flow analysis">
+                <div class="flow-chart-heading">
+                  <div>
+                    <p class="flow-chart-kicker">Primary analysis</p>
+                    <h3 id="flow-daily-heading">Daily ETF estimated net flow</h3>
+                    <p class="flow-chart-description">Daily bars use a neutral zero line. Missing values are shown as neutral gaps, and the line is a complete 20-observation rolling mean.</p>
+                  </div>
+                  <div class="flow-legend" aria-label="Daily chart legend">
+                    <span class="flow-legend-item"><span class="flow-swatch" style="background:#34d399"></span>Positive flow</span>
+                    <span class="flow-legend-item"><span class="flow-swatch" style="background:#fb7185"></span>Negative flow</span>
+                    <span class="flow-legend-item"><span class="flow-swatch" style="background:#22d3ee"></span>20-observation mean</span>
+                    <span class="flow-legend-item"><span class="flow-swatch" style="background:#64748b"></span>Missing (gap)</span>
+                  </div>
+                </div>
+                <div class="flow-chart" tabindex="0" @mousemove="flowChartPointerMove($event)" @mouseleave="flowChartPointerLeave()" @focus="flowChartFocus()" @blur="flowChartPointerLeave()" x-html="flowDailyChartSvg"></div>
+              </section>
+
+              <section id="flow-chart-panel-cumulative" class="flow-chart-block" x-show="flowChartTab === 'cumulative'" role="tabpanel" tabindex="0" :aria-labelledby="`flow-chart-tab-cumulative`" aria-label="Cumulative flow analysis">
+                <div class="flow-chart-heading">
+                  <div>
+                    <p class="flow-chart-kicker">Companion view</p>
+                    <h3 id="flow-cumulative-heading">Selected-window cumulative source-reported aggregate net flow</h3>
+                    <p class="flow-chart-description" x-text="`Starts from a zero baseline before ${flowRangeStartDate || 'the first selected session'}; it does not reset between chart ranges.`"></p>
+                  </div>
+                </div>
+                <div class="flow-chart" tabindex="0" @mousemove="flowChartPointerMove($event)" @mouseleave="flowChartPointerLeave()" @focus="flowChartFocus()" @blur="flowChartPointerLeave()" x-html="flowCumulativeChartSvg"></div>
+              </section>
+
+              <div class="flow-secondary-grid">
+                <section id="flow-chart-panel-percentile" class="flow-chart-block" x-show="flowChartTab === 'percentile'" role="tabpanel" tabindex="0" :aria-labelledby="`flow-chart-tab-percentile`" aria-label="Flow percentile analysis">
+                  <div class="flow-chart-heading">
+                    <div>
+                      <p class="flow-chart-kicker">Secondary view</p>
+                      <h3 id="flow-percentile-heading">10-session flow and historical percentile</h3>
+                      <p class="flow-chart-description">Bars use the left dollar axis. The percentile line uses the right axis and only complete windows from available source history.</p>
+                    </div>
+                  </div>
+                  <div class="flow-chart" tabindex="0" @mousemove="flowChartPointerMove($event)" @mouseleave="flowChartPointerLeave()" @focus="flowChartFocus()" @blur="flowChartPointerLeave()" x-html="flowPercentileChartSvg"></div>
+                </section>
+
+                <section id="flow-chart-panel-intensity" class="flow-chart-block" x-show="flowChartTab === 'intensity'" role="tabpanel" tabindex="0" :aria-labelledby="`flow-chart-tab-intensity`" aria-label="Prior-only z-score analysis">
+                  <div class="flow-chart-heading">
+                    <div>
+                      <p class="flow-chart-kicker">Secondary view</p>
+                      <h3 id="flow-intensity-heading">Prior-only daily flow z-score</h3>
+                      <p class="flow-chart-description">The current session is excluded from its baseline mean and standard deviation.</p>
+                    </div>
+                  </div>
+                  <div class="flow-chart" tabindex="0" @mousemove="flowChartPointerMove($event)" @mouseleave="flowChartPointerLeave()" @focus="flowChartFocus()" @blur="flowChartPointerLeave()" x-html="flowIntensityChartSvg"></div>
+                </section>
+              </div>
+
+              <section id="flow-chart-panel-price" class="flow-chart-block" x-show="flowChartTab === 'price' && (flowPriceEnabled || (flowData?.records || []).some(record => record.nav !== null))" role="tabpanel" tabindex="0" :aria-labelledby="`flow-chart-tab-price`" aria-label="Price and flow analysis">
+                <div class="flow-chart-heading">
+                  <div>
+                    <p class="flow-chart-kicker">Optional view</p>
+                    <h3 id="flow-price-heading">Price and daily ETF estimated net flow</h3>
+                    <p class="flow-chart-description">The left axis is source-reported NAV or share price. The right axis is daily net flow. The axes are independent.</p>
+                  </div>
+                  <label class="flow-checkbox">
+                    <input type="checkbox" :checked="flowPriceEnabled" :disabled="!flowPriceAvailable" @change="flowSetPriceEnabled($event.target.checked)">
+                    Show price and flow
+                  </label>
+                </div>
+                <p class="flow-support" x-show="!flowPriceAvailable">Price and flow are not both available for the selected window.</p>
+                <div class="flow-chart" x-show="flowPriceEnabled" tabindex="0" @mousemove="flowChartPointerMove($event)" @mouseleave="flowChartPointerLeave()" @focus="flowChartFocus()" @blur="flowChartPointerLeave()" x-html="flowPriceChartSvg"></div>
+              </section>
+
+              <!-- ─── NEW COMPANION ROW: MULTI-HORIZON IMPULSE CHART + PEER COMPARISON ─── -->
+              <div class="flow-companion-grid">
+                <div class="flow-chart-block">
+                  <div class="flow-chart-heading">
+                    <div>
+                      <p class="flow-chart-kicker">Multi-horizon impulse</p>
+                      <h3>Rolling 5D / 20D / 60D net flow regime</h3>
+                      <p class="flow-chart-description">Compares short-term (5-session), medium-term (20-session), and structural (60-session) complete rolling flow sums across the selected window.</p>
+                    </div>
+                    <div class="flow-legend">
+                      <span class="flow-legend-item"><span class="flow-swatch" style="background:#22d3ee"></span>5D sum</span>
+                      <span class="flow-legend-item"><span class="flow-swatch" style="background:#34d399"></span>20D sum</span>
+                      <span class="flow-legend-item"><span class="flow-swatch" style="background:#fbbf24"></span>60D sum</span>
+                    </div>
+                  </div>
+                  <div class="flow-impulse-chart" x-html="flowMultiHorizonImpulseChartSvg"></div>
+                </div>
+
+                <div class="flow-chart-block">
+                  <div class="flow-chart-heading">
+                    <div>
+                      <p class="flow-chart-kicker">Ecosystem peers</p>
+                      <h3 x-text="`${flowSelectedInstrument?.underlying || 'Category'} peer flow comparison`"></h3>
+                      <p class="flow-chart-description">Click any peer instrument to switch the studio to its historical series.</p>
+                    </div>
+                  </div>
+                  <div class="flow-table-wrap" style="max-height:225px">
+                    <table class="flow-table">
+                      <thead>
+                        <tr>
+                          <th scope="col">Ticker</th>
+                          <th scope="col">Lev</th>
+                          <th scope="col">1D Flow</th>
+                          <th scope="col">20D Flow</th>
+                          <th scope="col">Z-Score</th>
+                          <th scope="col">20D Pulse</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <template x-for="peer in flowPeerComparisonRows" :key="peer.ticker">
+                          <tr style="cursor:pointer" :style="peer.ticker === flowTicker ? 'background:rgba(34,211,238,0.08)' : ''" @click="selectFlowTicker(peer.ticker, { writeUrl: true, push: true })">
+                            <td><span class="flow-result-symbol" x-text="peer.ticker"></span></td>
+                            <td x-text="peer.leverage"></td>
+                            <td :class="peer.latest_flow > 0 ? 'flow-positive' : peer.latest_flow < 0 ? 'flow-negative' : ''" x-text="formatMoney(peer.latest_flow)"></td>
+                            <td :class="peer.flow_20d > 0 ? 'flow-positive' : peer.flow_20d < 0 ? 'flow-negative' : ''" x-text="formatMoney(peer.flow_20d)"></td>
+                            <td :class="peer.flow_zscore >= 1.5 ? 'flow-cyan' : peer.flow_zscore <= -1.5 ? 'flow-amber' : ''" x-text="peer.flow_zscore !== null ? `${peer.flow_zscore >= 0 ? '+' : ''}${peer.flow_zscore.toFixed(2)}σ` : '—'"></td>
+                            <td><div x-html="peer.sparklineSvg"></div></td>
+                          </tr>
+                        </template>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="flow-chart-tooltip" :style="flowChartTooltipStyle" x-show="flowChartTooltip.visible" role="status" aria-live="polite" x-text="flowChartTooltipText"></div>
+
+            <details x-show="flowData && flowSelectedRows.length">
+              <summary>Accessible data table for the selected window</summary>
+              <div class="flow-details-body">
+                <div class="flow-table-wrap" tabindex="0" aria-label="Scrollable selected-window flow data table">
+                  <table class="flow-table">
+                    <caption class="flow-visually-hidden" x-text="`${flowTicker} selected-window source-reported aggregate net flow observations`"></caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Date</th>
+                        <th scope="col">Daily net flow</th>
+                        <th scope="col">20-session mean</th>
+                        <th scope="col">Selected-window cumulative</th>
+                        <th scope="col">10-session sum</th>
+                        <th scope="col">10-session percentile</th>
+                        <th scope="col">Prior-only z-score</th>
+                        <th scope="col">NAV or price</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <template x-for="row in flowSelectedRows" :key="row.date">
+                        <tr>
+                          <td x-text="row.date"></td>
+                          <td :class="row.flow > 0 ? 'flow-positive' : row.flow < 0 ? 'flow-negative' : ''" x-text="formatMoney(row.flow)"></td>
+                          <td x-text="formatMoney(row.rollingMean20)"></td>
+                          <td x-text="formatMoney(row.selectedCumulative)"></td>
+                          <td x-text="formatMoney(row.rollingSum10)"></td>
+                          <td x-text="formatPercent(row.percentile10)"></td>
+                          <td x-text="row.priorOnlyZScore === null ? '—' : row.priorOnlyZScore.toFixed(2)"></td>
+                          <td x-text="formatPrice(row.nav)"></td>
+                        </tr>
+                      </template>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </details>
+
+            <details>
+              <summary>Alternative ticker metadata</summary>
+              <div class="flow-details-body">
+                <p x-show="flowSelectedInstrument?.alternatives?.length">Catalog alternatives: <span class="flow-result-symbol" x-text="flowSelectedInstrument?.alternatives?.join(', ')"></span>. Alternative rows are metadata and do not replace the canonical history.</p>
+                <p x-show="!flowSelectedInstrument?.alternatives?.length">No alternative ticker is listed for this catalog row.</p>
+              </div>
+            </details>
+
+            <details>
+              <summary>Methodology and status definitions</summary>
+              <div class="flow-details-body">
+                <p>ETF estimated net flow is the source-reported aggregate net flow series stored for the selected fund. The interface does not infer or label investor categories.</p>
+                <p>The selected-window cumulative view begins at a zero baseline before the first selected session and sums available daily values. Missing daily values are not converted to zero.</p>
+                <p>The trailing 10-session percentile uses complete windows only. Ties receive the midpoint of their rank positions. The prior-only z-score uses up to 30 preceding numeric sessions and excludes the current session from its baseline.</p>
+                <p>Pending means the local static file is unavailable. Stale means the local source date exceeds the current seven-day display policy. Unavailable means the local artifact cannot be loaded or its identity does not match the catalog. Empty means the file has no usable observations. No missing observation is converted to zero.</p>
+                <p>The source is the local authoritative dataset. Historical fields are reported by Trackinsight in the stored CSV/XLSX sources; the browser does not perform a live fetch or trigger external ingestion.</p>
+              </div>
+            </details>
+          </div>
         </div>
       </template>
     </div>
