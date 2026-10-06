@@ -283,9 +283,9 @@
               :class="activeTab === 'flows' ? 'tab-active' : ''"
               class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
               :style="activeTab === 'flows' ? '' : 'color: var(--text-2); border-color: var(--border)'"
-               @mouseenter="showTt($event, 'ETF estimated net flows - local 117-instrument leveraged and inverse universe')"
+               @mouseenter="showTt($event, 'ETF estimated net flows - local 145-instrument leveraged and inverse universe')"
               @mouseleave="hideTt()"
-               @focus="showTt($event, 'ETF estimated net flows - local 117-instrument leveraged and inverse universe')"
+               @focus="showTt($event, 'ETF estimated net flows - local 145-instrument leveraged and inverse universe')"
               @blur="hideTt()">
         Fund Flows
       </button>
@@ -2027,7 +2027,7 @@
         <div>
           <p class="flow-eyebrow">Curated source analysis</p>
           <h2>ETF estimated net flows</h2>
-           <p class="flow-support">A focused research view of the 117-instrument local leveraged and inverse universe. The 24 featured instruments are an explicit subset; all history is read from local static artifacts.</p>
+           <p class="flow-support">A focused research view of the 145-instrument local leveraged and inverse universe. The 24 featured instruments are an explicit subset; all history is read from local static artifacts.</p>
         </div>
         <div class="flow-status-grid" aria-label="Catalog and source status">
           <div class="flow-status-cell">
@@ -2096,9 +2096,9 @@
           <label>
             <span class="flow-field-label">Catalog tier</span>
              <select class="flow-select" x-model="flowTierFilter">
-               <option value="all">117 local instruments</option>
+               <option value="all">145 local instruments</option>
                <option value="featured">24 featured instruments</option>
-               <option value="primary">All 117 instruments</option>
+               <option value="primary">All 145 instruments</option>
              </select>
           </label>
           <label>
@@ -2127,7 +2127,7 @@
           <div class="flow-chart-heading">
             <div>
               <h3>Featured instruments</h3>
-               <p class="flow-support">An explicit 24-name subset drawn from the 117 local leveraged and inverse instruments.</p>
+               <p class="flow-support">An explicit 24-name subset drawn from the 145 local leveraged and inverse instruments.</p>
             </div>
             <span class="flow-support" x-text="`${flowFeaturedInstruments.length} featured`"></span>
           </div>

@@ -21,8 +21,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SOURCE_DIR = REPO_ROOT / "data" / "flows"
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "docs" / "data" / "flows"
 DEFAULT_UNIVERSE_DOC = REPO_ROOT / "FUND_FLOW_ETFS.md"
-EXPECTED_UNIVERSE_COUNT = 117
-EXPECTED_TOTAL_ROWS = 171311
+EXPECTED_UNIVERSE_COUNT = 145
+EXPECTED_TOTAL_ROWS = 177374
 EXPECTED_WORKBOOK_DATE_ROWS = 2710
 ARTIFACT_SCHEMA_VERSION = 1
 DATA_SCHEMA_VERSION = 2
@@ -333,8 +333,8 @@ def _parse_markdown_tickers(path: Path) -> set[str]:
     except OSError as exc:
         raise _error(f"could not read universe document {path}: {exc}") from exc
     tickers = set(re.findall(r"^\|\s*\*\*([A-Z0-9]+)\*\*\s*\|", text, re.MULTILINE))
-    if "Total Instruments:** 117" not in text:
-        raise _error(f"universe document does not declare the authoritative 117-instrument universe: {path}")
+    if "Total Instruments:** 145" not in text:
+        raise _error(f"universe document does not declare the authoritative 145-instrument universe: {path}")
     return tickers
 
 

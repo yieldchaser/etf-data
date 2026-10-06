@@ -1,12 +1,12 @@
 # Curated Leveraged & Tactical ETF Universe — Fund Flow Tracking
 
-**Total Instruments:** 117 Curated Leveraged ETFs across 9 professional categories.
+**Total Instruments:** 145 Curated Leveraged ETFs across 9 professional categories.
 
 > **Selection Thesis & Architecture:**
-> 1. **Aggressively Long-Biased (107 Bull vs 10 Tactical Short Anchors)**: Recognizes the multi-decade structural upward drift of US equity markets. Pruned out dozens of low-conviction/decaying inverse ETFs.
-> 2. **Comprehensive AI, Semiconductor & Tech Hardware Coverage**: Full coverage of the AI hardware supply chain from foundries and capital equipment to optical networking (**LITX** Lumentum, **COHX** Coherent, **LRCU** Lam Research, **ASMG** ASML, **ARMG** ARM, **ONX** ON Semi, **NVDL/NVDX** NVIDIA, **SMCX** Super Micro, **DLLL** Dell).
+> 1. **Aggressively Long-Biased (135 Bull vs 10 Tactical Short Anchors)**: Recognizes the multi-decade structural upward drift of US equity markets. Pruned out dozens of low-conviction/decaying inverse ETFs.
+> 2. **Comprehensive AI, Semiconductor & Tech Hardware Coverage**: Full coverage of the AI hardware supply chain from foundries, memory/storage, and capital equipment to optical networking and power semiconductors (**SNXX** SanDisk, **WDCX** Western Digital, **STXX** Seagate, **LITX** Lumentum, **COHX** Coherent, **AAOX** Applied Opto, **AXTX** AXT, **CRDU** Credo, **LABX** Astera Labs, **LRCU** Lam Research, **ASMG** ASML, **ARMG** ARM, **ONX** ON Semi, **NVTX** Navitas, **MPWX** Monolithic Power, **NVDL/NVDX** NVIDIA, **SMCX** Super Micro, **DLLL** Dell, **NEBX** Nebius, **CWVX** CoreWeave, **APLX** Applied Digital).
 > 3. **Selective Hedging Anchors Only (10 ETFs)**: Retained only the highest-liquidity benchmark shorts for tracking institutional panic hedging and capitulation bottoms (SQQQ, SPXS, TZA, SOXS, SCO, TMV, YANG, NVD, TSLZ, MSTZ).
-> 4. **Historical Local Source**: The 117 rows below are the authoritative local leveraged/inverse universe. Historical flow, NAV, and derived fields are Trackinsight-reported values already stored in the local dataset; this document does not assert a live fetch or current API status.
+> 4. **Historical Local Source**: The 145 rows below are the authoritative local leveraged/inverse universe. Historical flow, NAV, and derived fields are Trackinsight-reported values already stored in the local dataset; this document does not assert a live fetch or current API status.
 
 ---
 
@@ -17,8 +17,8 @@
 | 1 | 1. Broad Market Equity Index (Bull) | 8 | Bull (+2x / +3x) | NASDAQ-100, S&P 500... |
 | 2 | 2. Technology, Semiconductor & Thematic (Bull) | 16 | Bull (+2x / +3x) | Semiconductors, Technology Select, U.S. Technology... |
 | 3 | 3. Sector Specific Leveraged (Bull) | 12 | Bull (+2x / +3x) | Big Banks, Financials Select, Regional Banking, U.S. Financials... |
-| 4 | 4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech | 27 | Bull (+2x / +3x) | Coherent Corp, Lumentum Holdings, NVIDIA... |
-| 5 | 5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer | 22 | Bull (+2x / +3x) | Apple, Tesla... |
+| 4 | 4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech | 48 | Bull (+2x / +3x) | SanDisk, Credo, Astera Labs, Coherent Corp, Lumentum Holdings, NVIDIA... |
+| 5 | 5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer | 29 | Bull (+2x / +3x) | Apple, Tesla, AST SpaceMobile, Bloom Energy... |
 | 6 | 6. Commodities, Energy & Volatility (Bull) | 9 | Bull (+2x / +3x) | Crude Oil, Gold, Gold Miners... |
 | 7 | 7. Fixed Income, Currencies & Crypto (Bull) | 8 | Bull (+2x / +3x) | 20+ Year Treasury, 7-10 Year Treasury, EUR/USD... |
 | 8 | 8. International / Country (Bull) | 5 | Bull (+2x / +3x) | Brazil, China 50, India, South Korea... |
@@ -28,7 +28,7 @@
 
 ## Featured 24
 
-The Fund Flows interface uses this explicit, deterministic 24-instrument subset drawn only from the 117 local leveraged/inverse rows above:
+The Fund Flows interface uses this explicit, deterministic 24-instrument subset drawn only from the 145 local leveraged/inverse rows above:
 
 `TQQQ`, `QLD`, `UPRO`, `SPXL`, `SOXL`, `TECL`, `USD`, `DFEN`, `FAS`, `ERX`, `CURE`, `NVDL`, `NVDX`, `LITX`, `COHX`, `PTIR`, `TSLL`, `MSTU`, `CONL`, `UGL`, `NUGT`, `TMF`, `YINN`, `SQQQ`
 
@@ -87,7 +87,7 @@ There is no long-only catalog, watch tier, or missing-underlying watchlist in th
 | **DRN** | `DRN` | +3x | Direxion Daily Real Estate Bull 3x Shares ETF | Direxion | MSCI US REIT | $38.3M | 0.98% |
 | **URE** | `URE` | +2x | ProShares Ultra Real Estate ETF | ProShares | U.S. Real Estate | $51.4M | 1.10% |
 
-## 4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech (27)
+## 4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech (48)
 
 | Ticker | Trackinsight Key | Leverage | Fund Name | Issuer | Underlying | AUM ($M) | TER |
 |---|---|---|---|---|---|---|---|
@@ -118,8 +118,29 @@ There is no long-only catalog, watch tier, or missing-underlying watchlist in th
 | **NOWL** | `NOWL` | +2x | GraniteShares 2x Long NOW Daily ETF | GraniteShares | ServiceNow (NOW) | $195.0M | 1.51% |
 | **ORCX** | `ORCX` | +2x | Defiance Daily Target 2X Long ORCL ETF | Defiance ETFs | Oracle (ORCL) | $247.1M | 1.31% |
 | **APPX** | `APPX` | +2x | Tradr 2X Long APP Daily ETF | AXS Investments | AppLovin (APP) | $68.8M | 1.30% |
+| **SNXX** | `SNXX` | +2x | Tradr 2X Long SNDK Daily ETF | AXS Investments | SanDisk (SNDK) | $1,972.5M | 1.49% |
+| **WDCX** | `WDCX` | +2x | Tradr 2X Long WDC Daily ETF | AXS Investments | Western Digital (WDC) | $99.2M | 1.49% |
+| **STXX** | `STXX` | +2x | Tradr 2X Long STX Daily ETF | AXS Investments | Seagate Technology (STX) | $13.9M | 1.49% |
+| **AAOX** | `AAOX` | +2x | Tradr 2X Long AAOI Daily ETF | AXS Investments | Applied Optoelectronics (AAOI) | $248.1M | 1.49% |
+| **AXTX** | `AXTX` | +2x | Tradr 2X Long AXTI Daily ETF | AXS Investments | AXT Inc (AXTI) | $180.2M | 1.49% |
+| **CRDU** | `CRDU` | +2x | Tradr 2X Long CRDO Daily ETF | AXS Investments | Credo Technology (CRDO) | $144.9M | 1.30% |
+| **LABX** | `LABX` | +2x | Tradr 2X Long ALAB Daily ETF | AXS Investments | Astera Labs (ALAB) | $89.5M | 1.30% |
+| **CSEX** | `CSEX` | +2x | Tradr 2X Long CLS Daily ETF | AXS Investments | Celestica (CLS) | $16.6M | 1.30% |
+| **CIEX** | `CIEX` | +2x | Tradr 2X Long CIEN Daily ETF | AXS Investments | Ciena (CIEN) | $1.1M | 1.30% |
+| **NVTX** | `NVTX` | +2x | Tradr 2X Long NVTS Daily ETF | AXS Investments | Navitas Semiconductor (NVTS) | $33.4M | 1.30% |
+| **MPWX** | `MPWX` | +2x | Tradr 2X Long MPWR Daily ETF | AXS Investments | Monolithic Power Systems (MPWR) | $2.4M | 1.30% |
+| **RMBX** | `RMBX` | +2x | Tradr 2X Long RMBS Daily ETF | AXS Investments | Rambus (RMBS) | $0.8M | 1.30% |
+| **SITX** | `SITX` | +2x | Tradr 2X Long SITM Daily ETF | AXS Investments | SiTime (SITM) | $1.2M | 1.30% |
+| **TTMX** | `TTMX` | +2x | Tradr 2X Long TTMI Daily ETF | AXS Investments | TTM Technologies (TTMI) | $2.1M | 1.30% |
+| **TSEU** | `TSEU` | +2x | Tradr 2X Long TSEM Daily ETF | AXS Investments | Tower Semiconductor (TSEM) | $1.0M | 1.30% |
+| **NEBX** | `NEBX` | +2x | Tradr 2X Long NBIS Daily ETF | AXS Investments | Nebius Group (NBIS) | $181.9M | 1.30% |
+| **CWVX** | `CWVX` | +2x | Tradr 2X Long CRWV Daily ETF | AXS Investments | CoreWeave (CRWV) | $97.9M | 1.30% |
+| **APLX** | `APLX` | +2x | Tradr 2X Long APLD Daily ETF | AXS Investments | Applied Digital (APLD) | $64.1M | 1.30% |
+| **QBTX** | `QBTX` | +2x | Tradr 2X Long QBTS Daily ETF | AXS Investments | D-Wave Quantum (QBTS) | $74.7M | 1.30% |
+| **RGTU** | `RGTU` | +2x | Tradr 2X Long RGTI Daily ETF | AXS Investments | Rigetti Computing (RGTI) | $9.8M | 1.30% |
+| **TEMT** | `TEMT` | +2x | Tradr 2X Long TEM Daily ETF | AXS Investments | Tempus AI (TEM) | $46.4M | 1.30% |
 
-## 5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer (22)
+## 5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer (29)
 
 | Ticker | Trackinsight Key | Leverage | Fund Name | Issuer | Underlying | AUM ($M) | TER |
 |---|---|---|---|---|---|---|---|
@@ -145,6 +166,13 @@ There is no long-only catalog, watch tier, or missing-underlying watchlist in th
 | **BABX** | `BABX` | +2x | GraniteShares 2x Long BABA Daily ETF | GraniteShares | Alibaba (BABA) | $123.0M | 1.20% |
 | **LULG** | `LULG` | +2x | Leverage Shares 2X Long LULU Daily ETF | Leverage Shares | Lululemon (LULU) | $13.0M | 0.75% |
 | **COTG** | `COTG` | +2x | Leverage Shares 2X Long COST Daily ETF | Leverage Shares | Costco (COST) | $10.6M | 0.77% |
+| **ASTX** | `BATS:ASTX` | +2x | Tradr 2X Long ASTS Daily ETF | AXS Investments | AST SpaceMobile (ASTS) | $258.8M | 1.30% |
+| **BEX** | `BEX` | +2x | Tradr 2X Long BE Daily ETF | AXS Investments | Bloom Energy (BE) | $218.2M | 1.30% |
+| **IREX** | `IREX` | +2x | Tradr 2X Long IREN Daily ETF | AXS Investments | IREN (IREN) | $65.2M | 1.30% |
+| **WULX** | `WULX` | +2x | Tradr 2X Long WULF Daily ETF | AXS Investments | TeraWulf (WULF) | $24.1M | 1.30% |
+| **SMU** | `SMU` | +2x | Tradr 2X Long SMR Daily ETF | AXS Investments | NuScale Power (SMR) | $59.3M | 1.30% |
+| **GEVX** | `GEVX` | +2x | Tradr 2X Long GEV Daily ETF | AXS Investments | GE Vernova (GEV) | $36.8M | 1.30% |
+| **UPSX** | `UPSX` | +2x | Tradr 2X Long UPST Daily ETF | AXS Investments | Upstart Holdings (UPST) | $17.9M | 1.30% |
 
 ## 6. Commodities, Energy & Volatility (Bull) (9)
 
@@ -200,4 +228,4 @@ There is no long-only catalog, watch tier, or missing-underlying watchlist in th
 
 ## Local source and validation
 
-The authoritative source files are `data/flows/curated_catalog_summary.json`, `data/flows/individual/{TICKER}_flows.csv`, `data/flows/all_leveraged_etf_flows.csv`, and `data/flows/Leveraged_ETF_Flows_Master.xlsx`. The validated local universe contains 117 instruments and 171,311 data rows from 2016-01-04 through 2026-10-05. Static UI artifacts are rebuilt from those local files only; external scraping is intentionally disabled.
+The authoritative source files are `data/flows/curated_catalog_summary.json`, `data/flows/individual/{TICKER}_flows.csv`, `data/flows/all_leveraged_etf_flows.csv`, and `data/flows/Leveraged_ETF_Flows_Master.xlsx`. The validated local universe contains 145 instruments and 177,374 data rows from 2016-01-04 through 2026-10-05. Static UI artifacts are rebuilt from those local files only; external scraping is intentionally disabled.

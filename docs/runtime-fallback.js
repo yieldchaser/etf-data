@@ -224,11 +224,11 @@
     ]).then(function (results) {
       catalog = results[0];
       manifest = results[1];
-       if (!catalog || !Array.isArray(catalog.instruments) || catalog.instruments.length !== 117) throw new Error('Local catalog integrity check failed.');
-       if (!manifest || manifest.complete !== true || manifest.status !== 'complete' || !manifest.etfs || Object.keys(manifest.etfs).length !== 117) throw new Error('Local manifest integrity check failed.');
+       if (!catalog || !Array.isArray(catalog.instruments) || catalog.instruments.length !== 145) throw new Error('Local catalog integrity check failed.');
+       if (!manifest || manifest.complete !== true || manifest.status !== 'complete' || !manifest.etfs || Object.keys(manifest.etfs).length !== 145) throw new Error('Local manifest integrity check failed.');
        if (catalog.source && catalog.source.network_fetch !== false) throw new Error('Local catalog is not marked as non-networked.');
        var uniqueTickers = new Set(catalog.instruments.map(function (item) { return item.ticker; }));
-       if (uniqueTickers.size !== 117 || catalog.instruments.filter(function (item) { return item.featured; }).length !== 24) throw new Error('Local catalog cardinality check failed.');
+       if (uniqueTickers.size !== 145 || catalog.instruments.filter(function (item) { return item.featured; }).length !== 24) throw new Error('Local catalog cardinality check failed.');
        itemMap = Object.fromEntries(catalog.instruments.map(function (item) { return [item.ticker, item]; }));
       tickerSelect.replaceChildren();
       tickerSelect.disabled = false;
@@ -240,7 +240,7 @@
         option.setAttribute('aria-label', item.ticker + ' ' + item.fund_name);
         tickerSelect.appendChild(option);
       });
-       setStatus('117-instrument local catalog loaded · local manifest: ' + (manifest.status || 'unknown') + '.');
+       setStatus('145-instrument local catalog loaded · local manifest: ' + (manifest.status || 'unknown') + '.');
        var ticker = state && state.ticker && itemMap[state.ticker] ? state.ticker : 'TQQQ';
       return loadTicker(ticker, false, state && state.range);
     }).catch(function (error) {

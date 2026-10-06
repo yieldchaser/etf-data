@@ -913,8 +913,8 @@
              const primary = Array.isArray(payload?.instruments) ? payload.instruments : [];
              const featured = primary.filter(item => item?.featured).length;
              const tickers = new Set(primary.map(item => String(item?.ticker || '').toUpperCase()));
-             if (primary.length !== 117 || featured !== 24 || tickers.size !== 117) {
-               throw new Error('Local catalog export failed its 117-instrument, 24-featured integrity checks.');
+             if (primary.length !== 145 || featured !== 24 || tickers.size !== 145) {
+               throw new Error('Local catalog export failed its 145-instrument, 24-featured integrity checks.');
              }
              return payload;
            });
@@ -923,8 +923,8 @@
              if (!response.ok) throw new Error(`Local coverage manifest request returned ${response.status}.`);
              const payload = await response.json();
              const entries = payload?.etfs && typeof payload.etfs === 'object' ? payload.etfs : {};
-             if (payload?.complete !== true || payload?.status !== 'complete' || payload?.counts?.instruments !== 117 || Object.keys(entries).length !== 117 || payload?.source?.network_fetch !== false) {
-               throw new Error('Local coverage manifest failed its 117-instrument completeness checks.');
+             if (payload?.complete !== true || payload?.status !== 'complete' || payload?.counts?.instruments !== 145 || Object.keys(entries).length !== 145 || payload?.source?.network_fetch !== false) {
+               throw new Error('Local coverage manifest failed its 145-instrument completeness checks.');
              }
              return payload;
            });
@@ -1123,7 +1123,7 @@
           this.flowTicker = normalized;
           this.flowData = null;
           this.flowDataState = 'unavailable';
-           this.flowDataError = 'This ticker is not in the 117-instrument local leveraged/inverse catalog.';
+           this.flowDataError = 'This ticker is not in the 145-instrument local leveraged/inverse catalog.';
           this._flowMetricCacheKey = '';
           this._flowMetricCache = null;
           if (settings.writeUrl !== false) this._flowWriteUrl(Boolean(settings.push));

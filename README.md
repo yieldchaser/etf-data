@@ -499,7 +499,7 @@ Correlation matrix + Growth of $100 log-scale chart for selected assets.
 4. Cross-asset bar chart (current vs 1Y avg)
 
 #### Fund Flows
-- Searches the generated 117-instrument local catalog by default; explicit filters expose the 24-name featured subset.
+- Searches the generated 145-instrument local catalog by default; explicit filters expose the 24-name featured subset.
 - Loads one selected static ticker file at a time, normalizes v1 and v2 payloads, and caches data by ticker and source revision.
 - Uses one shared native range control, daily ETF estimated net-flow bars, a complete 20-observation rolling mean, selected-window cumulative source-reported aggregate net flow, complete-window/tie-aware percentile, and a clearly labeled prior-only z-score.
 - Provides an optional two-axis price-and-flow view, an accessible selected-window data table, status definitions, and catalog alternative metadata.
@@ -513,9 +513,9 @@ Correlation matrix + Growth of $100 log-scale chart for selected assets.
 
 ### Source and catalog
 
-The authoritative flow dataset is the local, read-only collection under `data/flows/`: **117 leveraged and inverse instruments, 171,311 daily rows from 2016-01-04 through 2026-10-05**, with zero duplicate ticker-dates and zero missing required values. `scripts/build_local_flow_artifacts.py` validates those sources and deterministically regenerates every published artifact under `docs/data/flows/` (117 per-ticker JSON files, `catalog.json`, `manifest.json`); it refuses any output directory inside `data/flows/`.
+The authoritative flow dataset is the local, read-only collection under `data/flows/`: **145 leveraged and inverse instruments, 177,374 daily rows from 2016-01-04 through 2026-10-05**, with zero duplicate ticker-dates and zero missing required values. `scripts/build_local_flow_artifacts.py` validates those sources and deterministically regenerates every published artifact under `docs/data/flows/` (145 per-ticker JSON files, `catalog.json`, `manifest.json`); it refuses any output directory inside `data/flows/`.
 
-`docs/data/flows/catalog.json` is the generated UI catalog (schema 1, `local-authoritative-117-v1`, 117 instruments of which 24 are featured) and `docs/data/flows/manifest.json` is the coverage manifest (schema 2, status `complete`, 117 files, 171,311 rows). Both are marked `network_fetch: false`. The Markets Fund Flows interface reads only these static files; the runtime fallback enforces the same 117/24 cardinality before rendering, and the browser cannot start a source refresh.
+`docs/data/flows/catalog.json` is the generated UI catalog (schema 1, `local-authoritative-117-v1`, 145 instruments of which 24 are featured) and `docs/data/flows/manifest.json` is the coverage manifest (schema 2, status `complete`, 145 files, 177,374 rows). Both are marked `network_fetch: false`. The Markets Fund Flows interface reads only these static files; the runtime fallback enforces the same 145/24 cardinality before rendering, and the browser cannot start a source refresh.
 
 Trackinsight remains recorded as the historical provider in the metadata (`source_provider: Trackinsight`, `source_mode: historical_local`), but no runtime path performs a Trackinsight or other network request. External ingestion is disabled: `scripts/fetch_etf_flow.py` exits with code 2 in every mode unless the explicit `--unsafe-external-fetch` manual opt-in is passed, and `daily_etf_flows.yml` has no schedule — its only job prints the local-only policy and exits 1.
 
@@ -532,7 +532,7 @@ python scripts/build_local_flow_artifacts.py --verify-output --output-dir docs/d
 python scripts/build_local_flow_artifacts.py --output-dir /tmp/flows-out
 ```
 
-Validation enforces the 117-instrument universe, the 171,311-row total, required columns per individual file, aggregate and workbook agreement, and identity with `FUND_FLOW_ETFS.md`. The CI gate in `build_site.yml` runs `--verify-output` plus explicit 117-instrument / 24-featured / no-watch-tier / no-network-fetch assertions before any artifact upload.
+Validation enforces the 145-instrument universe, the 177,374-row total, required columns per individual file, aggregate and workbook agreement, and identity with `FUND_FLOW_ETFS.md`. The CI gate in `build_site.yml` runs `--verify-output` plus explicit 145-instrument / 24-featured / no-watch-tier / no-network-fetch assertions before any artifact upload.
 
 ### Legacy external ingestion (disabled)
 
@@ -594,8 +594,8 @@ Steps:
   10. conviction.vol_history --full-refresh  → docs/data/vol_history.json
   11. Verify outputs: required files exist; market_returns.json has the monthly-array contract;
       leaderboard.json and prices.json are non-empty
-  12. Build local ETF flow artifacts → docs/data/flows/ (117 ticker files, catalog.json, manifest.json)
-  13. Verify complete local ETF flow artifacts: --verify-output plus 117-instrument, 24-featured,
+  12. Build local ETF flow artifacts → docs/data/flows/ (145 ticker files, catalog.json, manifest.json)
+  13. Verify complete local ETF flow artifacts: --verify-output plus 145-instrument, 24-featured,
       no-watch-tier, and network_fetch=false assertions
   14. Upload Pages artifact → Deploy to GitHub Pages
 ```
@@ -633,9 +633,9 @@ The suite covers the full pipeline end-to-end. Key areas:
 | History isolation | `test_parquet_immutability.py` | SHA-256 manifest integrity, past-year immutability, zero-loss reconstruction, append-only contract |
 | Markets engine | `test_markets_engine.py`, `test_markets_unit_conversion.py`, `test_self_living_merge.py`, `test_unit_gaps.py` | Market returns pipeline, currency conversion, partial-year merge |
 | CI config | `test_ci_config.py`, `test_pipeline_automation.py` | Workflow structure invariants (e.g. `continue-on-error` policy) |
-| ETF flow catalog | `test_etf_flow_catalog.py` | Local 117-instrument leveraged/inverse dataset contract for the disabled ingestion pipeline (no synthetic primary catalog, no watch tier), Trackinsight parser validation, retry/pacing, transactional merge, resumable checkpoint planning/diagnostics, rebase conflict handling, disabled-workflow and external-ingestion gating safety |
-| Local flow artifacts | `test_local_flow_artifacts.py` | 117-instrument/171,311-row local dataset validation, per-file schema and SHA-256 spot-checks, catalog/manifest determinism, temp-dir builds that never touch `data/flows/`, output-path safety, UI/workflow cardinality sync, the `data/flows/` git-ignore regression guard, and the no-legacy-YAML scan |
-| Fund Flows UI | `test_flow_ui.py`, `test_flow_ui_metrics.py` | Local catalog integrity (117/24), parent/child history reconciliation, shared native range, accessibility, dual-axis percentile output, v1/v2 normalization, neutral zero/null handling, prior-only z-score, and cumulative-window behavior |
+| ETF flow catalog | `test_etf_flow_catalog.py` | Local 145-instrument leveraged/inverse dataset contract for the disabled ingestion pipeline (no synthetic primary catalog, no watch tier), Trackinsight parser validation, retry/pacing, transactional merge, resumable checkpoint planning/diagnostics, rebase conflict handling, disabled-workflow and external-ingestion gating safety |
+| Local flow artifacts | `test_local_flow_artifacts.py` | 145-instrument/177,374-row local dataset validation, per-file schema and SHA-256 spot-checks, catalog/manifest determinism, temp-dir builds that never touch `data/flows/`, output-path safety, UI/workflow cardinality sync, the `data/flows/` git-ignore regression guard, and the no-legacy-YAML scan |
+| Fund Flows UI | `test_flow_ui.py`, `test_flow_ui_metrics.py` | Local catalog integrity (145/24), parent/child history reconciliation, shared native range, accessibility, dual-axis percentile output, v1/v2 normalization, neutral zero/null handling, prior-only z-score, and cumulative-window behavior |
 
 The sanitizer tests in `test_scoring.py` (46 tests) exercise `cfg.sanitizer.apply()` with distinct synthetic inputs, validating blocked tickers, name patterns, ticker normalization (BRK-B → BRK.B), GOOG → GOOGL dedup, and KRX cross-listing collapse — and prove the build-time memoization cache returns byte-identical results via deep copies.
 
@@ -721,7 +721,7 @@ etf-data/
 │   ├── history_parquet/          # Append-only Parquet store (sole durable source of truth)
 │   ├── latest/                   # Current snapshot per ETF
 │   ├── history/                  # Dated daily snapshots (gitignored)
-│   ├── flows/                    # Authoritative local flow dataset (117 instruments, read-only)
+│   ├── flows/                    # Authoritative local flow dataset (145 instruments, read-only)
 │   └── ticker_metadata.csv       # Sector/industry/country/market_cap per ticker
 │
 ├── docs/                         # GitHub Pages root
@@ -739,8 +739,8 @@ etf-data/
 │       ├── flag_history.json     # Per-ticker flag/rank history (90d)
 │       ├── score_history.json    # Score sparkline data
 │       ├── flow.json             # Sector + country flow (net_funds_delta / avg_funds_delta)
-│       ├── flows/                # Local flow export (117 ticker files + catalog.json + manifest.json)
-│       │   ├── catalog.json      # Generated static UI catalog (117 instruments, 24 featured)
+│       ├── flows/                # Local flow export (145 ticker files + catalog.json + manifest.json)
+│       │   ├── catalog.json      # Generated static UI catalog (145 instruments, 24 featured)
 │       │   └── manifest.json     # Complete local flow coverage manifest (schema 2)
 │       ├── etf_overlap.json      # 30×30 Jaccard matrix
 │       ├── market_returns.json   # Cross-asset monthly close (~940KB)

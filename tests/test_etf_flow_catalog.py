@@ -1534,14 +1534,14 @@ def test_build_site_gates_complete_flow_data_before_upload():
     gate = steps[gate_index]
     run = gate["run"]
     assert "--verify-output --output-dir docs/data/flows" in run
-    assert "['instruments'] == 117" in run
+    assert "['instruments'] == 145" in run
     assert "['featured'] == 24" in run
     assert "'watch_tier' not in catalog" in run
-    assert "manifest['counts']['instruments'] == 117" in run
+    assert "manifest['counts']['instruments'] == 145" in run
     assert "manifest['complete'] is True and manifest['status'] == 'complete'" in run
     assert "manifest['source']['network_fetch'] is False" in run
     assert "catalog['source']['network_fetch'] is False" in run
-    assert "117 instruments, 24 featured, no watch tier, no network fetch" in run
+    assert "145 instruments, 24 featured, no watch tier, no network fetch" in run
     assert gate.get("continue-on-error") is not True
     assert "-X theirs" not in text
     stock_step = next(step for step in steps if "Persist stock-detail coverage" in step.get("name", ""))
