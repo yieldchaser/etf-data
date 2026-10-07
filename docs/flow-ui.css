@@ -164,6 +164,22 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Market Pulse & Outlier Overview Collapsible Bar */
+.flow-research .flow-overview-drawer {
+  margin-bottom: 0.75rem;
+}
+
+.flow-research .flow-overview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--flow-line);
+  border-radius: 8px;
+  background: var(--flow-panel);
+}
+
 /* Universe Pulse Stat Cards (matches index.html top 5 KPI cards) */
 .flow-research .flow-pulse-grid {
   display: grid;

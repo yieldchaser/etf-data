@@ -2062,65 +2062,78 @@
         </div>
       </header>
 
-      <!-- 5 Universe Pulse Stat Cards (matches Conviction Labs Leaderboard top cards) -->
-      <div class="flow-pulse-grid" x-show="!flowInitialLoading && flowCatalog">
-        <div class="flow-pulse-card">
-          <div class="flow-kpi-label">Universe 1D net flow</div>
-          <div class="flow-pulse-value" :class="flowUniversePulse.totalFlow1d > 0 ? 'flow-positive' : flowUniversePulse.totalFlow1d < 0 ? 'flow-negative' : ''" x-text="formatMoney(flowUniversePulse.totalFlow1d)"></div>
-          <div class="flow-pulse-sub" x-text="`${flowUniversePulse.inflowCount1d} inflow · ${flowUniversePulse.outflowCount1d} outflow · ${flowUniversePulse.flatCount1d} flat`"></div>
+      <!-- Market Pulse & Outlier Overview (Collapsible Drawer, default collapsed for clean studio focus) -->
+      <div class="flow-overview-drawer" x-show="!flowInitialLoading && flowCatalog">
+        <div class="flow-overview-bar">
+          <div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap">
+            <span class="flow-chart-kicker" style="font-size:0.75rem">Market pulse &amp; outliers</span>
+            <span class="flow-eyebrow" x-text="`${formatMoney(flowUniversePulse.totalFlow1d)} 1D · ${flowUniversePulse.accumulationCount} accumulation · ${flowUniversePulse.distributionCount} distribution · ${flowUniversePulse.extremeOutlierCount} outliers`"></span>
+          </div>
+          <button class="flow-chip" type="button" @click="flowShowMarketPulse = !flowShowMarketPulse" :aria-expanded="flowShowMarketPulse ? 'true' : 'false'" x-text="flowShowMarketPulse ? 'Hide telemetry ▴' : 'Show telemetry (5 KPIs · 6 outliers) ▾'"></button>
         </div>
-        <div class="flow-pulse-card">
-          <div class="flow-kpi-label">Trailing 20D net flow</div>
-          <div class="flow-pulse-value" :class="flowUniversePulse.totalFlow20d > 0 ? 'flow-positive' : flowUniversePulse.totalFlow20d < 0 ? 'flow-negative' : ''" x-text="formatMoney(flowUniversePulse.totalFlow20d)"></div>
-          <div class="flow-pulse-sub" x-text="`Bull ${formatMoney(flowUniversePulse.bullFlow20d)} · Bear ${formatMoney(flowUniversePulse.bearFlow20d)}`"></div>
-        </div>
-        <div class="flow-pulse-card">
-          <div class="flow-kpi-label">Accumulation regime</div>
-          <div class="flow-pulse-value flow-positive" x-text="flowUniversePulse.accumulationCount"></div>
-          <div class="flow-pulse-sub" x-text="`Top 1D inflow: ${flowUniversePulse.topInflowTicker} (${formatMoney(flowUniversePulse.topInflowVal)})`"></div>
-        </div>
-        <div class="flow-pulse-card">
-          <div class="flow-kpi-label">Distribution regime</div>
-          <div class="flow-pulse-value flow-negative" x-text="flowUniversePulse.distributionCount"></div>
-          <div class="flow-pulse-sub" x-text="`Top 1D outflow: ${flowUniversePulse.topOutflowTicker} (${formatMoney(flowUniversePulse.topOutflowVal)})`"></div>
-        </div>
-        <div class="flow-pulse-card">
-          <div class="flow-kpi-label">Extreme z-score outliers</div>
-          <div class="flow-pulse-value flow-cyan" x-text="flowUniversePulse.extremeOutlierCount"></div>
-          <div class="flow-pulse-sub" x-text="`|z| ≥ 1.5 vs prior 30D · $${(flowUniversePulse.totalAumM / 1000).toFixed(1)}B AUM`"></div>
-        </div>
-      </div>
 
-      <!-- Extreme Flow Moves Strip (matches EXTREME CONVICTION MOVES on index.html) -->
-      <div class="flow-outliers-box" x-show="!flowInitialLoading && flowCatalog && flowOutlierCards.length">
-        <div class="flow-outliers-header">
-          <div class="flow-outliers-title">
-            <span class="flow-chart-kicker">Extreme flow moves</span>
-            <span class="flow-eyebrow">|z| ≥ 1.5 vs prior 30 sessions — latest session outliers across 145 funds</span>
+        <div x-show="flowShowMarketPulse" style="margin-top:0.65rem;display:grid;gap:0.65rem">
+          <!-- 5 Universe Pulse Stat Cards (matches Conviction Labs Leaderboard top cards) -->
+          <div class="flow-pulse-grid">
+            <div class="flow-pulse-card">
+              <div class="flow-kpi-label">Universe 1D net flow</div>
+              <div class="flow-pulse-value" :class="flowUniversePulse.totalFlow1d > 0 ? 'flow-positive' : flowUniversePulse.totalFlow1d < 0 ? 'flow-negative' : ''" x-text="formatMoney(flowUniversePulse.totalFlow1d)"></div>
+              <div class="flow-pulse-sub" x-text="`${flowUniversePulse.inflowCount1d} inflow · ${flowUniversePulse.outflowCount1d} outflow · ${flowUniversePulse.flatCount1d} flat`"></div>
+            </div>
+            <div class="flow-pulse-card">
+              <div class="flow-kpi-label">Trailing 20D net flow</div>
+              <div class="flow-pulse-value" :class="flowUniversePulse.totalFlow20d > 0 ? 'flow-positive' : flowUniversePulse.totalFlow20d < 0 ? 'flow-negative' : ''" x-text="formatMoney(flowUniversePulse.totalFlow20d)"></div>
+              <div class="flow-pulse-sub" x-text="`Bull ${formatMoney(flowUniversePulse.bullFlow20d)} · Bear ${formatMoney(flowUniversePulse.bearFlow20d)}`"></div>
+            </div>
+            <div class="flow-pulse-card">
+              <div class="flow-kpi-label">Accumulation regime</div>
+              <div class="flow-pulse-value flow-positive" x-text="flowUniversePulse.accumulationCount"></div>
+              <div class="flow-pulse-sub" x-text="`Top 1D inflow: ${flowUniversePulse.topInflowTicker} (${formatMoney(flowUniversePulse.topInflowVal)})`"></div>
+            </div>
+            <div class="flow-pulse-card">
+              <div class="flow-kpi-label">Distribution regime</div>
+              <div class="flow-pulse-value flow-negative" x-text="flowUniversePulse.distributionCount"></div>
+              <div class="flow-pulse-sub" x-text="`Top 1D outflow: ${flowUniversePulse.topOutflowTicker} (${formatMoney(flowUniversePulse.topOutflowVal)})`"></div>
+            </div>
+            <div class="flow-pulse-card">
+              <div class="flow-kpi-label">Extreme z-score outliers</div>
+              <div class="flow-pulse-value flow-cyan" x-text="flowUniversePulse.extremeOutlierCount"></div>
+              <div class="flow-pulse-sub" x-text="`|z| ≥ 1.5 vs prior 30D · $${(flowUniversePulse.totalAumM / 1000).toFixed(1)}B AUM`"></div>
+            </div>
           </div>
-          <div style="display:flex;align-items:center;gap:0.65rem">
-            <span class="flow-eyebrow" x-text="`showing 6 of ${flowUniversePulse.extremeOutlierCount} outliers`"></span>
-            <button class="flow-chip" type="button" @click="flowShowOutliers = !flowShowOutliers" x-text="flowShowOutliers ? 'Hide' : 'Show'"></button>
+
+          <!-- Extreme Flow Moves Strip (matches EXTREME CONVICTION MOVES on index.html) -->
+          <div class="flow-outliers-box" x-show="flowOutlierCards.length">
+            <div class="flow-outliers-header">
+              <div class="flow-outliers-title">
+                <span class="flow-chart-kicker">Extreme flow moves</span>
+                <span class="flow-eyebrow">|z| ≥ 1.5 vs prior 30 sessions — latest session outliers across 145 funds</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:0.65rem">
+                <span class="flow-eyebrow" x-text="`showing 6 of ${flowUniversePulse.extremeOutlierCount} outliers`"></span>
+                <button class="flow-chip" type="button" @click="flowShowOutliers = !flowShowOutliers" x-text="flowShowOutliers ? 'Hide' : 'Show'"></button>
+              </div>
+            </div>
+            <div class="flow-outliers-grid" x-show="flowShowOutliers">
+              <template x-for="card in flowOutlierCards" :key="card.ticker">
+                <button class="flow-outlier-card" type="button" :data-active="flowTicker === card.ticker ? 'true' : 'false'" @click="selectFlowTicker(card.ticker, { writeUrl: true, push: true, switchToStudio: true })">
+                  <div class="flow-outlier-top">
+                    <span class="flow-outlier-ticker" x-text="card.ticker"></span>
+                    <span class="flow-outlier-flow" :class="card.flow1d > 0 ? 'flow-positive' : card.flow1d < 0 ? 'flow-negative' : ''" x-text="`${card.flow1d > 0 ? '▲ ' : card.flow1d < 0 ? '▼ ' : ''}${formatMoney(card.flow1d)} 1D`"></span>
+                  </div>
+                  <div class="flow-outlier-name" x-text="`${card.underlying} · ${card.leverage}`"></div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:0.35rem;margin:0.1rem 0">
+                    <span class="flow-badge" :data-state="card.regime" x-text="card.regime"></span>
+                    <span x-html="card.sparklineSvg"></span>
+                  </div>
+                  <div class="flow-outlier-meta">
+                    <span :class="card.zscore >= 1.5 ? 'flow-cyan' : card.zscore <= -1.5 ? 'flow-amber' : ''" x-text="`|z|=${Math.abs(card.zscore).toFixed(2)}`"></span>
+                    <span x-text="`20D ${formatMoney(card.flow20d)} · $${card.aum_m.toFixed(0)}M`"></span>
+                  </div>
+                </button>
+              </template>
+            </div>
           </div>
-        </div>
-        <div class="flow-outliers-grid" x-show="flowShowOutliers">
-          <template x-for="card in flowOutlierCards" :key="card.ticker">
-            <button class="flow-outlier-card" type="button" :data-active="flowTicker === card.ticker ? 'true' : 'false'" @click="selectFlowTicker(card.ticker, { writeUrl: true, push: true, switchToStudio: true })">
-              <div class="flow-outlier-top">
-                <span class="flow-outlier-ticker" x-text="card.ticker"></span>
-                <span class="flow-outlier-flow" :class="card.flow1d > 0 ? 'flow-positive' : card.flow1d < 0 ? 'flow-negative' : ''" x-text="`${card.flow1d > 0 ? '▲ ' : card.flow1d < 0 ? '▼ ' : ''}${formatMoney(card.flow1d)} 1D`"></span>
-              </div>
-              <div class="flow-outlier-name" x-text="`${card.underlying} · ${card.leverage}`"></div>
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:0.35rem;margin:0.1rem 0">
-                <span class="flow-badge" :data-state="card.regime" x-text="card.regime"></span>
-                <span x-html="card.sparklineSvg"></span>
-              </div>
-              <div class="flow-outlier-meta">
-                <span :class="card.zscore >= 1.5 ? 'flow-cyan' : card.zscore <= -1.5 ? 'flow-amber' : ''" x-text="`|z|=${Math.abs(card.zscore).toFixed(2)}`"></span>
-                <span x-text="`20D ${formatMoney(card.flow20d)} · $${card.aum_m.toFixed(0)}M`"></span>
-              </div>
-            </button>
-          </template>
         </div>
       </div>
 

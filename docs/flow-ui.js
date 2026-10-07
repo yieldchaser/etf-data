@@ -602,6 +602,7 @@
       flowAlphaFilter: 'all',
       flowHoverIndex: null,
       flowViewMode: 'studio',
+      flowShowMarketPulse: false,
       flowShowOutliers: true,
       flowScannerSort: 'abs_z',
       flowScannerAsc: false,
