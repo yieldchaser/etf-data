@@ -79,6 +79,12 @@
   ],
   "BULZ": [
     {
+      "ticker": "BULZ",
+      "split_date": "2022-10-31",
+      "split_ratio": "1:10",
+      "factor": 0.1
+    },
+    {
       "split_date": "2026-02-24",
       "split_ratio": "10:1",
       "factor": 10.0,
@@ -179,6 +185,16 @@
       "actual_ratio": 10.5445
     },
     {
+      "split_date": "2021-10-22",
+      "split_ratio": "5:1",
+      "factor": 5.0,
+      "prev_date": "2021-10-21",
+      "curr_date": "2021-10-22",
+      "prev_nav": 2688.6,
+      "curr_nav": 555.3,
+      "actual_ratio": 0.2065
+    },
+    {
       "split_date": "2023-06-05",
       "split_ratio": "1:10",
       "factor": 0.1,
@@ -211,6 +227,18 @@
       "prev_nav": 12.19,
       "curr_nav": 48.41,
       "actual_ratio": 3.9713
+    }
+  ],
+  "ERX": [
+    {
+      "split_date": "2020-03-24",
+      "split_ratio": "1:10",
+      "factor": 0.1,
+      "prev_date": "2020-03-23",
+      "curr_date": "2020-03-24",
+      "prev_nav": 0.57,
+      "curr_nav": 8.52,
+      "actual_ratio": 14.9474
     }
   ],
   "ETHU": [
@@ -575,6 +603,18 @@
       "actual_ratio": 5.2813
     }
   ],
+  "NVD": [
+    {
+      "split_date": "2024-11-04",
+      "split_ratio": "1:25",
+      "factor": 0.04,
+      "prev_date": "2024-11-01",
+      "curr_date": "2024-11-04",
+      "prev_nav": 1.35,
+      "curr_nav": 33.33,
+      "actual_ratio": 24.6889
+    }
+  ],
   "NVDL": [
     {
       "split_date": "2024-03-13",
@@ -607,18 +647,6 @@
       "prev_nav": 180.07,
       "curr_nav": 17.42,
       "actual_ratio": 0.0967
-    }
-  ],
-  "NVD": [
-    {
-      "split_date": "2024-11-04",
-      "split_ratio": "1:25",
-      "factor": 0.04,
-      "prev_date": "2024-11-01",
-      "curr_date": "2024-11-04",
-      "prev_nav": 1.35,
-      "curr_nav": 33.33,
-      "actual_ratio": 24.6889
     }
   ],
   "ORCX": [
@@ -777,6 +805,24 @@
   ],
   "SCO": [
     {
+      "ticker": "SCO",
+      "split_date": "2017-01-12",
+      "split_ratio": "2:1",
+      "factor": 2.0
+    },
+    {
+      "ticker": "SCO",
+      "split_date": "2021-05-26",
+      "split_ratio": "1:4",
+      "factor": 0.25
+    },
+    {
+      "ticker": "SCO",
+      "split_date": "2022-05-26",
+      "split_ratio": "1:5",
+      "factor": 0.2
+    },
+    {
       "split_date": "2026-05-28",
       "split_ratio": "1:4",
       "factor": 0.25,
@@ -800,6 +846,16 @@
     }
   ],
   "SMCX": [
+    {
+      "split_date": "2024-11-18",
+      "split_ratio": "1:20",
+      "factor": 0.05,
+      "prev_date": "2024-11-15",
+      "curr_date": "2024-11-18",
+      "prev_nav": 1.94,
+      "curr_nav": 51.18,
+      "actual_ratio": 26.3814
+    },
     {
       "split_date": "2026-03-19",
       "split_ratio": "1:2",
@@ -1331,6 +1387,16 @@
       "actual_ratio": 2.0594
     },
     {
+      "split_date": "2020-04-21",
+      "split_ratio": "1:25",
+      "factor": 0.04,
+      "prev_date": "2020-04-20",
+      "curr_date": "2020-04-21",
+      "prev_nav": 0.3025,
+      "curr_nav": 3.2075,
+      "actual_ratio": 10.6033
+    },
+    {
       "split_date": "2022-05-26",
       "split_ratio": "4:1",
       "factor": 4.0,
@@ -1351,6 +1417,16 @@
       "prev_nav": 125.47,
       "curr_nav": 62.66,
       "actual_ratio": 0.4994
+    },
+    {
+      "split_date": "2021-05-24",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "prev_date": "2021-05-21",
+      "curr_date": "2021-05-24",
+      "prev_nav": 71.24,
+      "curr_nav": 36.22,
+      "actual_ratio": 0.5084
     },
     {
       "split_date": "2025-11-20",

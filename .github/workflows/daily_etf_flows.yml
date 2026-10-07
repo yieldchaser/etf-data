@@ -58,6 +58,10 @@ jobs:
           lookback="${{ inputs.lookback_days || '21' }}"
           python scripts/update_daily_flows.py --lookback-days "$lookback" $extra_args
 
+      - name: Sync corporate actions and split adjustments from Yahoo Finance
+        run: |
+          python scripts/sync_splits_from_yahoo.py
+
       - name: Rebuild and verify complete local ETF flow artifacts
         run: |
           python scripts/build_local_flow_artifacts.py --output-dir docs/data/flows
@@ -72,7 +76,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/flows docs/data/flows scripts/build_local_flow_artifacts.py FUND_FLOW_ETFS.md README.md tests/test_local_flow_artifacts.py tests/test_flow_ui.py tests/test_flow_ui_metrics.py
+          git add data/flows docs/data/flows scripts/build_local_flow_artifacts.py scripts/sync_splits_from_yahoo.py scripts/apply_split_adjustments.py FUND_FLOW_ETFS.md README.md tests/test_local_flow_artifacts.py tests/test_flow_ui.py tests/test_flow_ui_metrics.py
           if git diff --staged --quiet; then
             echo "No new ETF flow observations to commit."
             echo "pushed=false" >> "$GITHUB_OUTPUT"
