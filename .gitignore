@@ -131,6 +131,7 @@ docs/data/history/
 
 # Whitelist Fund Flows data assets
 !docs/data/etf_search_index.json
+!docs/data/alpha_signals.json
 !docs/data/flows/
 !docs/data/flows/*.json
 

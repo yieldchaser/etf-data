@@ -1510,20 +1510,38 @@
             }
             return payload;
           });
-        const alphaPromise = fetch('data/flows/alpha_signals.json')
+        const alphaPromise = fetch('data/alpha_signals.json')
           .then(async response => response.ok ? response.json() : null)
           .catch(() => null);
         const [catalogResult, manifestResult, alphaResult] = await Promise.allSettled([catalogPromise, manifestPromise, alphaPromise]);
         this.flowBootstrapControllers = [];
         if (this.flowDestroyed) return;
-        if (alphaResult.status === 'fulfilled' && alphaResult.value) {
-          this.flowAlphaSignalsData = alphaResult.value;
-        }
         if (catalogResult.status === 'fulfilled' && catalogResult.value && Array.isArray(catalogResult.value.instruments)) {
           this.flowCatalog = catalogResult.value;
           this._flowEntryMap = Object.fromEntries(this.flowAllEntries.map(item => [item.ticker, item]));
         } else {
           this.flowCatalogError = catalogResult.status === 'rejected' ? String(catalogResult.reason?.message || catalogResult.reason) : 'The curated catalog is empty.';
+        }
+        if (alphaResult.status === 'fulfilled' && alphaResult.value) {
+          this.flowAlphaSignalsData = alphaResult.value;
+          if (Array.isArray(alphaResult.value.active_signals) && this.flowCatalog?.instruments) {
+            const enrichmentMap = new Map(alphaResult.value.active_signals.map(s => [s.ticker, s]));
+            for (const inst of this.flowCatalog.instruments) {
+              const enrichment = enrichmentMap.get(inst.ticker);
+              if (enrichment) {
+                inst.archetype = enrichment.archetype;
+                inst.archetype_label = enrichment.archetype_label;
+                inst.live_signal = enrichment.live_signal;
+                inst.live_signal_label = enrichment.live_signal_label;
+                inst.paired_bear = enrichment.paired_bear;
+                inst.paired_bull = enrichment.paired_bull;
+                inst.smart_twin = enrichment.smart_twin;
+                inst.conviction = enrichment.conviction;
+                inst.dd_from_60d_high_pct = enrichment.dd_from_60d_high_pct;
+                inst.rally_from_60d_low_pct = enrichment.rally_from_60d_low_pct;
+              }
+            }
+          }
         }
         if (manifestResult.status === 'fulfilled' && manifestResult.value && typeof manifestResult.value === 'object') {
           this.flowManifest = manifestResult.value;
@@ -1590,17 +1608,21 @@
         const rows = this.flowSelectedRows;
         if (!rows.length) return;
         let index = rows.length - 1;
-        if (event?.type === 'mousemove' && Number.isFinite(event.clientX)) {
+        const clientX = Number.isFinite(event?.clientX) ? event.clientX : null;
+        const clientY = Number.isFinite(event?.clientY) ? event.clientY : null;
+        if (event?.type === 'mousemove' && clientX !== null) {
           const target = event.currentTarget;
           const svg = target?.querySelector?.('svg') || target;
           const rect = svg?.getBoundingClientRect?.();
-          if (rect?.width) index = Math.round(((event.clientX - rect.left) / rect.width) * (rows.length - 1));
+          if (rect?.width) index = Math.round(((clientX - rect.left) / rect.width) * (rows.length - 1));
         }
         const clamped = Math.max(0, Math.min(rows.length - 1, index));
         this.flowHoverIndex = clamped;
         this.flowChartTooltip = {
           visible: true,
-          index: clamped
+          index: clamped,
+          x: clientX,
+          y: clientY
         };
       },
 
@@ -1620,7 +1642,24 @@
       },
 
       get flowChartTooltipStyle() {
-        return 'display: none;';
+        if (!this.flowChartTooltip || !this.flowChartTooltip.visible) {
+          return 'display: none;';
+        }
+        const offsetX = 16;
+        const offsetY = 16;
+        const boxWidth = 320;
+        const boxHeight = 60;
+        const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
+        const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 768;
+        let left = (this.flowChartTooltip.x || 0) + offsetX;
+        let top = (this.flowChartTooltip.y || 0) + offsetY;
+        if (left + boxWidth > viewportWidth - 8) {
+          left = Math.max(8, (this.flowChartTooltip.x || 0) - boxWidth - offsetX);
+        }
+        if (top + boxHeight > viewportHeight - 8) {
+          top = Math.max(8, (this.flowChartTooltip.y || 0) - boxHeight - offsetY);
+        }
+        return `left: ${Math.round(left)}px; top: ${Math.round(top)}px;`;
       },
 
       get flowChartTooltipText() {
