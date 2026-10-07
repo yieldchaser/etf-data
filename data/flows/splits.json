@@ -1,0 +1,1638 @@
+{
+  "APLX": [
+    {
+      "split_date": "2026-03-10",
+      "split_ratio": "3:1",
+      "factor": 3.0,
+      "prev_date": "2026-03-09",
+      "curr_date": "2026-03-10",
+      "prev_nav": 46.12,
+      "curr_nav": 15.79,
+      "actual_ratio": 0.3424
+    }
+  ],
+  "APPX": [
+    {
+      "split_date": "2025-10-21",
+      "split_ratio": "3:1",
+      "factor": 3.0,
+      "prev_date": "2025-10-20",
+      "curr_date": "2025-10-21",
+      "prev_nav": 87.34,
+      "curr_nav": 27.73,
+      "actual_ratio": 0.3175
+    },
+    {
+      "split_date": "2026-03-10",
+      "split_ratio": "1:3",
+      "factor": 0.3333333333333333,
+      "prev_date": "2026-03-09",
+      "curr_date": "2026-03-10",
+      "prev_nav": 16.04,
+      "curr_nav": 40.68,
+      "actual_ratio": 2.5362
+    }
+  ],
+  "AXTX": [
+    {
+      "split_date": "2026-09-22",
+      "split_ratio": "1:4",
+      "factor": 0.25,
+      "prev_date": "2026-09-21",
+      "curr_date": "2026-09-22",
+      "prev_nav": 9.41,
+      "curr_nav": 35.62,
+      "actual_ratio": 3.7853
+    }
+  ],
+  "BRZU": [
+    {
+      "split_date": "2016-03-24",
+      "split_ratio": "1:4",
+      "factor": 0.25,
+      "prev_date": "2016-03-23",
+      "curr_date": "2016-03-24",
+      "prev_nav": 18.16,
+      "curr_nav": 72.72,
+      "actual_ratio": 4.0044
+    },
+    {
+      "split_date": "2016-08-25",
+      "split_ratio": "4:1",
+      "factor": 4.0,
+      "prev_date": "2016-08-24",
+      "curr_date": "2016-08-25",
+      "prev_nav": 140.55,
+      "curr_nav": 34.44,
+      "actual_ratio": 0.245
+    },
+    {
+      "split_date": "2020-04-23",
+      "split_ratio": "1:35",
+      "factor": 0.02857142857142857,
+      "prev_date": "2020-04-22",
+      "curr_date": "2020-04-23",
+      "prev_nav": 1.68,
+      "curr_nav": 54.39,
+      "actual_ratio": 32.375
+    }
+  ],
+  "BULZ": [
+    {
+      "split_date": "2026-02-24",
+      "split_ratio": "10:1",
+      "factor": 10.0,
+      "prev_date": "2026-02-23",
+      "curr_date": "2026-02-24",
+      "prev_nav": 190.9,
+      "curr_nav": 20.17,
+      "actual_ratio": 0.1057
+    }
+  ],
+  "CRDU": [
+    {
+      "split_date": "2026-03-10",
+      "split_ratio": "1:3",
+      "factor": 0.3333333333333333,
+      "prev_date": "2026-03-09",
+      "curr_date": "2026-03-10",
+      "prev_nav": 8.13,
+      "curr_nav": 22.82,
+      "actual_ratio": 2.8069
+    },
+    {
+      "split_date": "2026-07-21",
+      "split_ratio": "4:1",
+      "factor": 4.0,
+      "prev_date": "2026-07-20",
+      "curr_date": "2026-07-21",
+      "prev_nav": 54.86,
+      "curr_nav": 15.23,
+      "actual_ratio": 0.2776
+    }
+  ],
+  "CWVX": [
+    {
+      "split_date": "2025-12-02",
+      "split_ratio": "1:5",
+      "factor": 0.2,
+      "prev_date": "2025-12-01",
+      "curr_date": "2025-12-02",
+      "prev_nav": 5.65,
+      "curr_nav": 27.5,
+      "actual_ratio": 4.8673
+    }
+  ],
+  "DIG": [
+    {
+      "split_date": "2020-04-21",
+      "split_ratio": "1:10",
+      "factor": 0.1,
+      "prev_date": "2020-04-20",
+      "curr_date": "2020-04-21",
+      "prev_nav": 5.97,
+      "curr_nav": 57.75,
+      "actual_ratio": 9.6734
+    },
+    {
+      "split_date": "2021-05-25",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "prev_date": "2021-05-24",
+      "curr_date": "2021-05-25",
+      "prev_nav": 136.02,
+      "curr_nav": 65.28,
+      "actual_ratio": 0.4799
+    },
+    {
+      "split_date": "2022-05-27",
+      "split_ratio": "4:1",
+      "factor": 4.0,
+      "prev_date": "2022-05-26",
+      "curr_date": "2022-05-27",
+      "prev_nav": 174.11,
+      "curr_nav": 45.16,
+      "actual_ratio": 0.2594
+    }
+  ],
+  "DLLL": [
+    {
+      "split_date": "2026-06-26",
+      "split_ratio": "8:1",
+      "factor": 8.0,
+      "prev_date": "2026-06-25",
+      "curr_date": "2026-06-26",
+      "prev_nav": 180.83,
+      "curr_nav": 21.5,
+      "actual_ratio": 0.1189
+    }
+  ],
+  "DPST": [
+    {
+      "split_date": "2020-04-23",
+      "split_ratio": "1:10",
+      "factor": 0.1,
+      "prev_date": "2020-04-22",
+      "curr_date": "2020-04-23",
+      "prev_nav": 4.94,
+      "curr_nav": 52.09,
+      "actual_ratio": 10.5445
+    },
+    {
+      "split_date": "2023-06-05",
+      "split_ratio": "1:10",
+      "factor": 0.1,
+      "prev_date": "2023-06-02",
+      "curr_date": "2023-06-05",
+      "prev_nav": 6.06,
+      "curr_nav": 55.84,
+      "actual_ratio": 9.2145
+    }
+  ],
+  "DRN": [
+    {
+      "split_date": "2016-08-25",
+      "split_ratio": "4:1",
+      "factor": 4.0,
+      "prev_date": "2016-08-24",
+      "curr_date": "2016-08-25",
+      "prev_nav": 102.72,
+      "curr_nav": 26.04,
+      "actual_ratio": 0.2535
+    }
+  ],
+  "EDC": [
+    {
+      "split_date": "2016-03-24",
+      "split_ratio": "1:4",
+      "factor": 0.25,
+      "prev_date": "2016-03-23",
+      "curr_date": "2016-03-24",
+      "prev_nav": 12.19,
+      "curr_nav": 48.41,
+      "actual_ratio": 3.9713
+    }
+  ],
+  "ETHU": [
+    {
+      "split_date": "2025-04-09",
+      "split_ratio": "1:20",
+      "factor": 0.05,
+      "prev_date": "2025-04-08",
+      "curr_date": "2025-04-14",
+      "prev_nav": 1.12,
+      "curr_nav": 27.44,
+      "actual_ratio": 24.5
+    }
+  ],
+  "FBL": [
+    {
+      "split_date": "2024-03-13",
+      "split_ratio": "5:1",
+      "factor": 5.0,
+      "prev_date": "2024-03-12",
+      "curr_date": "2024-03-13",
+      "prev_nav": 139.81,
+      "curr_nav": 27.49,
+      "actual_ratio": 0.1966
+    }
+  ],
+  "GEVX": [
+    {
+      "split_date": "2026-06-03",
+      "split_ratio": "3:1",
+      "factor": 3.0,
+      "prev_date": "2026-06-02",
+      "curr_date": "2026-06-03",
+      "prev_nav": 60.78,
+      "curr_nav": 19.82,
+      "actual_ratio": 0.3261
+    }
+  ],
+  "HIBL": [
+    {
+      "split_date": "2020-04-23",
+      "split_ratio": "1:10",
+      "factor": 0.1,
+      "prev_date": "2020-04-22",
+      "curr_date": "2020-04-23",
+      "prev_nav": 5.65,
+      "curr_nav": 57.67,
+      "actual_ratio": 10.2071
+    },
+    {
+      "split_date": "2021-03-02",
+      "split_ratio": "7:1",
+      "factor": 7.0,
+      "prev_date": "2021-03-01",
+      "curr_date": "2021-03-02",
+      "prev_nav": 382.21,
+      "curr_nav": 53.69,
+      "actual_ratio": 0.1405
+    }
+  ],
+  "INDL": [
+    {
+      "split_date": "2016-03-24",
+      "split_ratio": "1:4",
+      "factor": 0.25,
+      "prev_date": "2016-03-23",
+      "curr_date": "2016-03-24",
+      "prev_nav": 11.57,
+      "curr_nav": 46.1,
+      "actual_ratio": 3.9844
+    }
+  ],
+  "INTW": [
+    {
+      "split_date": "2026-06-26",
+      "split_ratio": "8:1",
+      "factor": 8.0,
+      "prev_date": "2026-06-25",
+      "curr_date": "2026-06-26",
+      "prev_nav": 370.09,
+      "curr_nav": 43.04,
+      "actual_ratio": 0.1163
+    }
+  ],
+  "IREX": [
+    {
+      "split_date": "2026-03-10",
+      "split_ratio": "1:3",
+      "factor": 0.3333333333333333,
+      "prev_date": "2026-03-09",
+      "curr_date": "2026-03-10",
+      "prev_nav": 7.95,
+      "curr_nav": 22.96,
+      "actual_ratio": 2.8881
+    }
+  ],
+  "JNUG": [
+    {
+      "split_date": "2016-08-25",
+      "split_ratio": "10:1",
+      "factor": 10.0,
+      "prev_date": "2016-08-24",
+      "curr_date": "2016-08-25",
+      "prev_nav": 189.59,
+      "curr_nav": 20.92,
+      "actual_ratio": 0.1103
+    },
+    {
+      "split_date": "2017-05-01",
+      "split_ratio": "1:4",
+      "factor": 0.25,
+      "prev_date": "2017-04-28",
+      "curr_date": "2017-05-01",
+      "prev_nav": 4.53,
+      "curr_nav": 16.59,
+      "actual_ratio": 3.6623
+    },
+    {
+      "split_date": "2019-06-28",
+      "split_ratio": "1:5",
+      "factor": 0.2,
+      "prev_date": "2019-06-27",
+      "curr_date": "2019-06-28",
+      "prev_nav": 11.76,
+      "curr_nav": 60.27,
+      "actual_ratio": 5.125
+    },
+    {
+      "split_date": "2020-04-23",
+      "split_ratio": "1:10",
+      "factor": 0.1,
+      "prev_date": "2020-04-22",
+      "curr_date": "2020-04-23",
+      "prev_nav": 7.56,
+      "curr_nav": 79.71,
+      "actual_ratio": 10.5437
+    }
+  ],
+  "KORU": [
+    {
+      "split_date": "2025-02-10",
+      "split_ratio": "1:10",
+      "factor": 0.1,
+      "prev_date": "2025-02-07",
+      "curr_date": "2025-02-10",
+      "prev_nav": 4.02,
+      "curr_nav": 42.38,
+      "actual_ratio": 10.5423
+    },
+    {
+      "split_date": "2026-07-15",
+      "split_ratio": "20:1",
+      "factor": 20.0,
+      "prev_date": "2026-07-14",
+      "curr_date": "2026-07-15",
+      "prev_nav": 480.51,
+      "curr_nav": 21.82,
+      "actual_ratio": 0.0454
+    }
+  ],
+  "LABU": [
+    {
+      "split_date": "2016-03-24",
+      "split_ratio": "1:4",
+      "factor": 0.25,
+      "prev_date": "2016-03-23",
+      "curr_date": "2016-03-24",
+      "prev_nav": 6.16,
+      "curr_nav": 24.99,
+      "actual_ratio": 4.0568
+    },
+    {
+      "split_date": "2023-12-04",
+      "split_ratio": "1:20",
+      "factor": 0.05,
+      "prev_date": "2023-12-01",
+      "curr_date": "2023-12-04",
+      "prev_nav": 4.21,
+      "curr_nav": 88.58,
+      "actual_ratio": 21.0404
+    }
+  ],
+  "LABX": [
+    {
+      "split_date": "2026-03-10",
+      "split_ratio": "1:3",
+      "factor": 0.3333333333333333,
+      "prev_date": "2026-03-09",
+      "curr_date": "2026-03-10",
+      "prev_nav": 6.58,
+      "curr_nav": 17.84,
+      "actual_ratio": 2.7112
+    },
+    {
+      "split_date": "2026-07-21",
+      "split_ratio": "6:1",
+      "factor": 6.0,
+      "prev_date": "2026-07-20",
+      "curr_date": "2026-07-21",
+      "prev_nav": 83.21,
+      "curr_nav": 14.82,
+      "actual_ratio": 0.1781
+    }
+  ],
+  "LITX": [
+    {
+      "split_date": "2026-03-10",
+      "split_ratio": "3:1",
+      "factor": 3.0,
+      "prev_date": "2026-03-09",
+      "curr_date": "2026-03-10",
+      "prev_nav": 79.42,
+      "curr_nav": 29.04,
+      "actual_ratio": 0.3657
+    }
+  ],
+  "LRCU": [
+    {
+      "split_date": "2026-03-10",
+      "split_ratio": "3:1",
+      "factor": 3.0,
+      "prev_date": "2026-03-09",
+      "curr_date": "2026-03-10",
+      "prev_nav": 93.93,
+      "curr_nav": 32.52,
+      "actual_ratio": 0.3462
+    }
+  ],
+  "MSOX": [
+    {
+      "split_date": "2024-11-26",
+      "split_ratio": "1:20",
+      "factor": 0.05,
+      "prev_date": "2024-11-25",
+      "curr_date": "2024-11-26",
+      "prev_nav": 0.68,
+      "curr_nav": 13.86,
+      "actual_ratio": 20.3824
+    }
+  ],
+  "MSTU": [
+    {
+      "split_date": "2024-12-16",
+      "split_ratio": "10:1",
+      "factor": 10.0,
+      "prev_date": "2024-12-13",
+      "curr_date": "2024-12-16",
+      "prev_nav": 164.19,
+      "curr_nav": 16.36,
+      "actual_ratio": 0.0996
+    },
+    {
+      "split_date": "2025-12-03",
+      "split_ratio": "1:10",
+      "factor": 0.1,
+      "prev_date": "2025-12-02",
+      "curr_date": "2025-12-03",
+      "prev_nav": 1.25,
+      "curr_nav": 13.49,
+      "actual_ratio": 10.792
+    },
+    {
+      "split_date": "2026-08-24",
+      "split_ratio": "1:10",
+      "factor": 0.1,
+      "prev_date": "2026-08-21",
+      "curr_date": "2026-08-24",
+      "prev_nav": 2.73,
+      "curr_nav": 28.82,
+      "actual_ratio": 10.5568
+    }
+  ],
+  "MSTX": [
+    {
+      "split_date": "2026-03-19",
+      "split_ratio": "1:10",
+      "factor": 0.1,
+      "prev_date": "2026-03-18",
+      "curr_date": "2026-03-19",
+      "prev_nav": 2.53,
+      "curr_nav": 24.42,
+      "actual_ratio": 9.6522
+    }
+  ],
+  "MSTZ": [
+    {
+      "split_date": "2024-12-16",
+      "split_ratio": "1:20",
+      "factor": 0.05,
+      "prev_date": "2024-12-13",
+      "curr_date": "2024-12-16",
+      "prev_nav": 0.84,
+      "curr_nav": 16.69,
+      "actual_ratio": 19.869
+    }
+  ],
+  "MULL": [
+    {
+      "split_date": "2026-06-26",
+      "split_ratio": "25:1",
+      "factor": 25.0,
+      "prev_date": "2026-06-25",
+      "curr_date": "2026-06-26",
+      "prev_nav": 1027.82,
+      "curr_nav": 35.55,
+      "actual_ratio": 0.0346
+    }
+  ],
+  "MVLL": [
+    {
+      "split_date": "2026-06-26",
+      "split_ratio": "3:1",
+      "factor": 3.0,
+      "prev_date": "2026-06-25",
+      "curr_date": "2026-06-26",
+      "prev_nav": 155.63,
+      "curr_nav": 46.42,
+      "actual_ratio": 0.2983
+    }
+  ],
+  "NEBX": [
+    {
+      "split_date": "2026-06-03",
+      "split_ratio": "3:1",
+      "factor": 3.0,
+      "prev_date": "2026-06-02",
+      "curr_date": "2026-06-03",
+      "prev_nav": 169.3,
+      "curr_nav": 52.56,
+      "actual_ratio": 0.3105
+    }
+  ],
+  "NUGT": [
+    {
+      "split_date": "2016-08-25",
+      "split_ratio": "5:1",
+      "factor": 5.0,
+      "prev_date": "2016-08-24",
+      "curr_date": "2016-08-25",
+      "prev_nav": 106.8,
+      "curr_nav": 22.16,
+      "actual_ratio": 0.2075
+    },
+    {
+      "split_date": "2017-05-01",
+      "split_ratio": "1:4",
+      "factor": 0.25,
+      "prev_date": "2017-04-28",
+      "curr_date": "2017-05-01",
+      "prev_nav": 8.17,
+      "curr_nav": 30.22,
+      "actual_ratio": 3.6989
+    },
+    {
+      "split_date": "2020-04-23",
+      "split_ratio": "1:5",
+      "factor": 0.2,
+      "prev_date": "2020-04-22",
+      "curr_date": "2020-04-23",
+      "prev_nav": 12.76,
+      "curr_nav": 67.39,
+      "actual_ratio": 5.2813
+    }
+  ],
+  "NVDL": [
+    {
+      "split_date": "2024-03-13",
+      "split_ratio": "6:1",
+      "factor": 6.0,
+      "prev_date": "2024-03-12",
+      "curr_date": "2024-03-13",
+      "prev_nav": 261.17,
+      "curr_nav": 42.55,
+      "actual_ratio": 0.1629
+    },
+    {
+      "split_date": "2026-06-26",
+      "split_ratio": "3:1",
+      "factor": 3.0,
+      "prev_date": "2026-06-25",
+      "curr_date": "2026-06-26",
+      "prev_nav": 86.14,
+      "curr_nav": 27.74,
+      "actual_ratio": 0.322
+    }
+  ],
+  "NVDX": [
+    {
+      "split_date": "2024-07-16",
+      "split_ratio": "10:1",
+      "factor": 10.0,
+      "prev_date": "2024-07-15",
+      "curr_date": "2024-07-16",
+      "prev_nav": 180.07,
+      "curr_nav": 17.42,
+      "actual_ratio": 0.0967
+    }
+  ],
+  "NVD": [
+    {
+      "split_date": "2024-11-04",
+      "split_ratio": "1:25",
+      "factor": 0.04,
+      "prev_date": "2024-11-01",
+      "curr_date": "2024-11-04",
+      "prev_nav": 1.35,
+      "curr_nav": 33.33,
+      "actual_ratio": 24.6889
+    }
+  ],
+  "ORCX": [
+    {
+      "split_date": "2026-03-20",
+      "split_ratio": "1:3",
+      "factor": 0.3333333333333333,
+      "prev_date": "2026-03-19",
+      "curr_date": "2026-03-20",
+      "prev_nav": 10.09,
+      "curr_nav": 27.97,
+      "actual_ratio": 2.7721
+    }
+  ],
+  "PTIR": [
+    {
+      "split_date": "2025-07-09",
+      "split_ratio": "15:1",
+      "factor": 15.0,
+      "prev_date": "2025-07-08",
+      "curr_date": "2025-07-09",
+      "prev_nav": 304.48,
+      "curr_nav": 21.29,
+      "actual_ratio": 0.0699
+    }
+  ],
+  "QBTX": [
+    {
+      "split_date": "2025-10-21",
+      "split_ratio": "3:1",
+      "factor": 3.0,
+      "prev_date": "2025-10-20",
+      "curr_date": "2025-10-21",
+      "prev_nav": 270.84,
+      "curr_nav": 78.49,
+      "actual_ratio": 0.2898
+    },
+    {
+      "split_date": "2026-09-22",
+      "split_ratio": "1:4",
+      "factor": 0.25,
+      "prev_date": "2026-09-21",
+      "curr_date": "2026-09-22",
+      "prev_nav": 6.54,
+      "curr_nav": 25.74,
+      "actual_ratio": 3.9358
+    }
+  ],
+  "QLD": [
+    {
+      "split_date": "2017-07-17",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "prev_date": "2017-07-14",
+      "curr_date": "2017-07-17",
+      "prev_nav": 123.02,
+      "curr_nav": 61.54,
+      "actual_ratio": 0.5002
+    },
+    {
+      "split_date": "2020-08-18",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "prev_date": "2020-08-17",
+      "curr_date": "2020-08-18",
+      "prev_nav": 181.55,
+      "curr_nav": 92.55,
+      "actual_ratio": 0.5098
+    },
+    {
+      "split_date": "2021-05-25",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "prev_date": "2021-05-24",
+      "curr_date": "2021-05-25",
+      "prev_nav": 126.41,
+      "curr_nav": 63.35,
+      "actual_ratio": 0.5011
+    },
+    {
+      "split_date": "2025-11-20",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "prev_date": "2025-11-19",
+      "curr_date": "2025-11-20",
+      "prev_nav": 135.18,
+      "curr_nav": 64.38,
+      "actual_ratio": 0.4763
+    }
+  ],
+  "RGTU": [
+    {
+      "split_date": "2025-10-21",
+      "split_ratio": "3:1",
+      "factor": 3.0,
+      "prev_date": "2025-10-20",
+      "curr_date": "2025-10-21",
+      "prev_nav": 258.72,
+      "curr_nav": 72.99,
+      "actual_ratio": 0.2821
+    },
+    {
+      "split_date": "2026-03-10",
+      "split_ratio": "1:3",
+      "factor": 0.3333333333333333,
+      "prev_date": "2026-03-09",
+      "curr_date": "2026-03-10",
+      "prev_nav": 7.87,
+      "curr_nav": 21.96,
+      "actual_ratio": 2.7903
+    }
+  ],
+  "RKLX": [
+    {
+      "split_date": "2025-12-09",
+      "split_ratio": "3:1",
+      "factor": 3.0,
+      "prev_date": "2025-12-08",
+      "curr_date": "2025-12-09",
+      "prev_nav": 82.19,
+      "curr_nav": 29.36,
+      "actual_ratio": 0.3572
+    }
+  ],
+  "ROM": [
+    {
+      "split_date": "2017-07-17",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "prev_date": "2017-07-14",
+      "curr_date": "2017-07-17",
+      "prev_nav": 142.06,
+      "curr_nav": 71.06,
+      "actual_ratio": 0.5002
+    },
+    {
+      "split_date": "2020-08-18",
+      "split_ratio": "4:1",
+      "factor": 4.0,
+      "prev_date": "2020-08-17",
+      "curr_date": "2020-08-18",
+      "prev_nav": 223.41,
+      "curr_nav": 56.68,
+      "actual_ratio": 0.2537
+    },
+    {
+      "split_date": "2022-01-13",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "prev_date": "2022-01-12",
+      "curr_date": "2022-01-13",
+      "prev_nav": 118.36,
+      "curr_nav": 55.68,
+      "actual_ratio": 0.4704
+    }
+  ],
+  "SCO": [
+    {
+      "split_date": "2026-05-28",
+      "split_ratio": "1:4",
+      "factor": 0.25,
+      "prev_date": "2026-05-27",
+      "curr_date": "2026-05-28",
+      "prev_nav": 6.95,
+      "curr_nav": 26.97,
+      "actual_ratio": 3.8806
+    }
+  ],
+  "SHNY": [
+    {
+      "split_date": "2026-02-24",
+      "split_ratio": "10:1",
+      "factor": 10.0,
+      "prev_date": "2026-02-23",
+      "curr_date": "2026-02-24",
+      "prev_nav": 206.57,
+      "curr_nav": 19.79,
+      "actual_ratio": 0.0958
+    }
+  ],
+  "SMCX": [
+    {
+      "split_date": "2026-03-19",
+      "split_ratio": "1:2",
+      "factor": 0.5,
+      "prev_date": "2026-03-18",
+      "curr_date": "2026-03-19",
+      "prev_nav": 10.57,
+      "curr_nav": 21.73,
+      "actual_ratio": 2.0558
+    }
+  ],
+  "SMU": [
+    {
+      "split_date": "2025-12-02",
+      "split_ratio": "1:5",
+      "factor": 0.2,
+      "prev_date": "2025-12-01",
+      "curr_date": "2025-12-02",
+      "prev_nav": 3.68,
+      "curr_nav": 20.06,
+      "actual_ratio": 5.4511
+    },
+    {
+      "split_date": "2026-03-10",
+      "split_ratio": "1:3",
+      "factor": 0.3333333333333333,
+      "prev_date": "2026-03-09",
+      "curr_date": "2026-03-10",
+      "prev_nav": 6.02,
+      "curr_nav": 17.67,
+      "actual_ratio": 2.9352
+    },
+    {
+      "split_date": "2026-09-22",
+      "split_ratio": "1:4",
+      "factor": 0.25,
+      "prev_date": "2026-09-21",
+      "curr_date": "2026-09-22",
+      "prev_nav": 5.01,
+      "curr_nav": 20.5,
+      "actual_ratio": 4.0918
+    }
+  ],
+  "SNXX": [
+    {
+      "split_date": "2026-06-03",
+      "split_ratio": "8:1",
+      "factor": 8.0,
+      "prev_date": "2026-06-02",
+      "curr_date": "2026-06-03",
+      "prev_nav": 225.96,
+      "curr_nav": 32.02,
+      "actual_ratio": 0.1417
+    }
+  ],
+  "SOXL": [
+    {
+      "split_date": "2021-03-02",
+      "split_ratio": "15:1",
+      "factor": 15.0,
+      "prev_date": "2021-03-01",
+      "curr_date": "2021-03-02",
+      "prev_nav": 636.92,
+      "curr_nav": 38.51,
+      "actual_ratio": 0.0605
+    }
+  ],
+  "SOXS": [
+    {
+      "split_date": "2017-05-01",
+      "split_ratio": "1:5",
+      "factor": 0.2,
+      "prev_date": "2017-04-28",
+      "curr_date": "2017-05-01",
+      "prev_nav": 7.5,
+      "curr_nav": 36.38,
+      "actual_ratio": 4.8507
+    },
+    {
+      "split_date": "2019-06-28",
+      "split_ratio": "1:10",
+      "factor": 0.1,
+      "prev_date": "2019-06-27",
+      "curr_date": "2019-06-28",
+      "prev_nav": 5.16,
+      "curr_nav": 51.38,
+      "actual_ratio": 9.9574
+    },
+    {
+      "split_date": "2020-08-28",
+      "split_ratio": "1:12",
+      "factor": 0.08333333333333333,
+      "prev_date": "2020-08-27",
+      "curr_date": "2020-08-28",
+      "prev_nav": 3.63,
+      "curr_nav": 40.98,
+      "actual_ratio": 11.2893
+    },
+    {
+      "split_date": "2022-03-28",
+      "split_ratio": "1:10",
+      "factor": 0.1,
+      "prev_date": "2022-03-25",
+      "curr_date": "2022-03-28",
+      "prev_nav": 3.5,
+      "curr_nav": 34.29,
+      "actual_ratio": 9.7971
+    },
+    {
+      "split_date": "2024-04-15",
+      "split_ratio": "1:10",
+      "factor": 0.1,
+      "prev_date": "2024-04-12",
+      "curr_date": "2024-04-15",
+      "prev_nav": 3.53,
+      "curr_nav": 36.67,
+      "actual_ratio": 10.3881
+    },
+    {
+      "split_date": "2026-03-05",
+      "split_ratio": "1:20",
+      "factor": 0.05,
+      "prev_date": "2026-03-04",
+      "curr_date": "2026-03-05",
+      "prev_nav": 1.94,
+      "curr_nav": 40.06,
+      "actual_ratio": 20.6495
+    },
+    {
+      "split_date": "2026-07-15",
+      "split_ratio": "1:10",
+      "factor": 0.1,
+      "prev_date": "2026-07-14",
+      "curr_date": "2026-07-15",
+      "prev_nav": 4.3,
+      "curr_nav": 45.95,
+      "actual_ratio": 10.686
+    }
+  ],
+  "SPXL": [
+    {
+      "split_date": "2017-05-01",
+      "split_ratio": "4:1",
+      "factor": 4.0,
+      "prev_date": "2017-04-28",
+      "curr_date": "2017-05-01",
+      "prev_nav": 129.77,
+      "curr_nav": 32.62,
+      "actual_ratio": 0.2514
+    }
+  ],
+  "SPXS": [
+    {
+      "split_date": "2017-05-01",
+      "split_ratio": "1:5",
+      "factor": 0.2,
+      "prev_date": "2017-04-28",
+      "curr_date": "2017-05-01",
+      "prev_nav": 8.78,
+      "curr_nav": 43.68,
+      "actual_ratio": 4.9749
+    },
+    {
+      "split_date": "2021-01-11",
+      "split_ratio": "1:10",
+      "factor": 0.1,
+      "prev_date": "2021-01-07",
+      "curr_date": "2021-01-11",
+      "prev_nav": 3.75,
+      "curr_nav": 37.55,
+      "actual_ratio": 10.0133
+    },
+    {
+      "split_date": "2025-09-29",
+      "split_ratio": "1:10",
+      "factor": 0.1,
+      "prev_date": "2025-09-26",
+      "curr_date": "2025-09-29",
+      "prev_nav": 3.87,
+      "curr_nav": 38.43,
+      "actual_ratio": 9.9302
+    }
+  ],
+  "SQQQ": [
+    {
+      "split_date": "2017-01-12",
+      "split_ratio": "1:4",
+      "factor": 0.25,
+      "prev_date": "2017-01-11",
+      "curr_date": "2017-01-12",
+      "prev_nav": 11.67,
+      "curr_nav": 46.91,
+      "actual_ratio": 4.0197
+    },
+    {
+      "split_date": "2019-05-24",
+      "split_ratio": "1:4",
+      "factor": 0.25,
+      "prev_date": "2019-05-23",
+      "curr_date": "2019-05-24",
+      "prev_nav": 10.32,
+      "curr_nav": 41.43,
+      "actual_ratio": 4.0145
+    },
+    {
+      "split_date": "2020-08-18",
+      "split_ratio": "1:5",
+      "factor": 0.2,
+      "prev_date": "2020-08-17",
+      "curr_date": "2020-08-18",
+      "prev_nav": 5.29,
+      "curr_nav": 25.65,
+      "actual_ratio": 4.8488
+    },
+    {
+      "split_date": "2022-01-13",
+      "split_ratio": "1:5",
+      "factor": 0.2,
+      "prev_date": "2022-01-12",
+      "curr_date": "2022-01-13",
+      "prev_nav": 6.34,
+      "curr_nav": 34.21,
+      "actual_ratio": 5.3959
+    },
+    {
+      "split_date": "2024-11-07",
+      "split_ratio": "1:5",
+      "factor": 0.2,
+      "prev_date": "2024-11-05",
+      "curr_date": "2024-11-07",
+      "prev_nav": 7.23,
+      "curr_nav": 31.68,
+      "actual_ratio": 4.3817
+    },
+    {
+      "split_date": "2025-11-20",
+      "split_ratio": "1:5",
+      "factor": 0.2,
+      "prev_date": "2025-11-19",
+      "curr_date": "2025-11-20",
+      "prev_nav": 15.12,
+      "curr_nav": 81.0,
+      "actual_ratio": 5.3571
+    }
+  ],
+  "SSO": [
+    {
+      "split_date": "2020-08-18",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "prev_date": "2020-08-17",
+      "curr_date": "2020-08-18",
+      "prev_nav": 149.39,
+      "curr_nav": 75.05,
+      "actual_ratio": 0.5024
+    },
+    {
+      "split_date": "2022-01-13",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "prev_date": "2022-01-12",
+      "curr_date": "2022-01-13",
+      "prev_nav": 143.85,
+      "curr_nav": 69.89,
+      "actual_ratio": 0.4859
+    },
+    {
+      "split_date": "2025-11-20",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "prev_date": "2025-11-19",
+      "curr_date": "2025-11-20",
+      "prev_nav": 109.81,
+      "curr_nav": 53.21,
+      "actual_ratio": 0.4846
+    }
+  ],
+  "SVXY": [
+    {
+      "split_date": "2017-07-17",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "prev_date": "2017-07-14",
+      "curr_date": "2017-07-17",
+      "prev_nav": 172.11,
+      "curr_nav": 86.92,
+      "actual_ratio": 0.505
+    },
+    {
+      "split_date": "2018-09-18",
+      "split_ratio": "1:4",
+      "factor": 0.25,
+      "prev_date": "2018-09-17",
+      "curr_date": "2018-09-18",
+      "prev_nav": 14.3,
+      "curr_nav": 57.84,
+      "actual_ratio": 4.0448
+    },
+    {
+      "split_date": "2024-04-11",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "prev_date": "2024-04-10",
+      "curr_date": "2024-04-11",
+      "prev_nav": 109.3,
+      "curr_nav": 55.1,
+      "actual_ratio": 0.5041
+    }
+  ],
+  "TARK": [
+    {
+      "split_date": "2022-12-01",
+      "split_ratio": "1:5",
+      "factor": 0.2,
+      "prev_date": "2022-11-30",
+      "curr_date": "2022-12-01",
+      "prev_nav": 12.38,
+      "curr_nav": 63.27,
+      "actual_ratio": 5.1107
+    },
+    {
+      "split_date": "2024-11-27",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "prev_date": "2024-11-26",
+      "curr_date": "2024-11-27",
+      "prev_nav": 87.7,
+      "curr_nav": 45.33,
+      "actual_ratio": 0.5169
+    }
+  ],
+  "TECL": [
+    {
+      "split_date": "2021-03-02",
+      "split_ratio": "10:1",
+      "factor": 10.0,
+      "prev_date": "2021-03-01",
+      "curr_date": "2021-03-02",
+      "prev_nav": 439.83,
+      "curr_nav": 41.84,
+      "actual_ratio": 0.0951
+    }
+  ],
+  "TEMT": [
+    {
+      "split_date": "2026-03-10",
+      "split_ratio": "1:3",
+      "factor": 0.3333333333333333,
+      "prev_date": "2026-03-09",
+      "curr_date": "2026-03-10",
+      "prev_nav": 8.19,
+      "curr_nav": 23.21,
+      "actual_ratio": 2.8339
+    }
+  ],
+  "TMF": [
+    {
+      "split_date": "2016-08-25",
+      "split_ratio": "4:1",
+      "factor": 4.0,
+      "prev_date": "2016-08-24",
+      "curr_date": "2016-08-25",
+      "prev_nav": 116.05,
+      "curr_nav": 28.68,
+      "actual_ratio": 0.2471
+    },
+    {
+      "split_date": "2023-12-04",
+      "split_ratio": "1:10",
+      "factor": 0.1,
+      "prev_date": "2023-12-01",
+      "curr_date": "2023-12-04",
+      "prev_nav": 5.44,
+      "curr_nav": 53.76,
+      "actual_ratio": 9.8824
+    }
+  ],
+  "TMV": [
+    {
+      "split_date": "2020-04-23",
+      "split_ratio": "1:10",
+      "factor": 0.1,
+      "prev_date": "2020-04-22",
+      "curr_date": "2020-04-23",
+      "prev_nav": 4.84,
+      "curr_nav": 47.62,
+      "actual_ratio": 9.8388
+    },
+    {
+      "split_date": "2023-08-28",
+      "split_ratio": "4:1",
+      "factor": 4.0,
+      "prev_date": "2023-08-25",
+      "curr_date": "2023-08-28",
+      "prev_nav": 144.2,
+      "curr_nav": 35.96,
+      "actual_ratio": 0.2494
+    }
+  ],
+  "TNA": [
+    {
+      "split_date": "2017-05-01",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "prev_date": "2017-04-28",
+      "curr_date": "2017-05-01",
+      "prev_nav": 108.93,
+      "curr_nav": 55.27,
+      "actual_ratio": 0.5074
+    }
+  ],
+  "TQQQ": [
+    {
+      "split_date": "2017-01-12",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "prev_date": "2017-01-11",
+      "curr_date": "2017-01-12",
+      "prev_nav": 141.78,
+      "curr_nav": 70.52,
+      "actual_ratio": 0.4974
+    },
+    {
+      "split_date": "2018-05-24",
+      "split_ratio": "3:1",
+      "factor": 3.0,
+      "prev_date": "2018-05-23",
+      "curr_date": "2018-05-24",
+      "prev_nav": 166.49,
+      "curr_nav": 55.37,
+      "actual_ratio": 0.3326
+    },
+    {
+      "split_date": "2021-01-21",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "prev_date": "2021-01-20",
+      "curr_date": "2021-01-21",
+      "prev_nav": 198.2,
+      "curr_nav": 101.51,
+      "actual_ratio": 0.5122
+    },
+    {
+      "split_date": "2022-01-13",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "prev_date": "2022-01-12",
+      "curr_date": "2022-01-13",
+      "prev_nav": 152.65,
+      "curr_nav": 70.42,
+      "actual_ratio": 0.4613
+    },
+    {
+      "split_date": "2025-11-20",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "prev_date": "2025-11-19",
+      "curr_date": "2025-11-20",
+      "prev_nav": 99.97,
+      "curr_nav": 46.43,
+      "actual_ratio": 0.4644
+    }
+  ],
+  "TSLZ": [
+    {
+      "split_date": "2025-10-29",
+      "split_ratio": "1:20",
+      "factor": 0.05,
+      "prev_date": "2025-10-28",
+      "curr_date": "2025-10-29",
+      "prev_nav": 0.63,
+      "curr_nav": 12.57,
+      "actual_ratio": 19.9524
+    }
+  ],
+  "TZA": [
+    {
+      "split_date": "2019-06-28",
+      "split_ratio": "1:5",
+      "factor": 0.2,
+      "prev_date": "2019-06-27",
+      "curr_date": "2019-06-28",
+      "prev_nav": 9.44,
+      "curr_nav": 45.37,
+      "actual_ratio": 4.8061
+    },
+    {
+      "split_date": "2021-03-02",
+      "split_ratio": "1:8",
+      "factor": 0.125,
+      "prev_date": "2021-02-26",
+      "curr_date": "2021-03-02",
+      "prev_nav": 4.67,
+      "curr_nav": 35.54,
+      "actual_ratio": 7.6103
+    },
+    {
+      "split_date": "2026-07-15",
+      "split_ratio": "1:10",
+      "factor": 0.1,
+      "prev_date": "2026-07-14",
+      "curr_date": "2026-07-15",
+      "prev_nav": 4.04,
+      "curr_nav": 39.94,
+      "actual_ratio": 9.8861
+    }
+  ],
+  "UBT": [
+    {
+      "split_date": "2020-08-18",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "prev_date": "2020-08-17",
+      "curr_date": "2020-08-18",
+      "prev_nav": 133.63,
+      "curr_nav": 67.42,
+      "actual_ratio": 0.5045
+    }
+  ],
+  "UCO": [
+    {
+      "split_date": "2017-01-12",
+      "split_ratio": "1:2",
+      "factor": 0.5,
+      "prev_date": "2017-01-11",
+      "curr_date": "2017-01-12",
+      "prev_nav": 10.95,
+      "curr_nav": 22.55,
+      "actual_ratio": 2.0594
+    },
+    {
+      "split_date": "2022-05-26",
+      "split_ratio": "4:1",
+      "factor": 4.0,
+      "prev_date": "2022-05-25",
+      "curr_date": "2022-05-26",
+      "prev_nav": 178.65,
+      "curr_nav": 47.01,
+      "actual_ratio": 0.2631
+    }
+  ],
+  "UDOW": [
+    {
+      "split_date": "2017-07-17",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "prev_date": "2017-07-14",
+      "curr_date": "2017-07-17",
+      "prev_nav": 125.47,
+      "curr_nav": 62.66,
+      "actual_ratio": 0.4994
+    },
+    {
+      "split_date": "2025-11-20",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "prev_date": "2025-11-19",
+      "curr_date": "2025-11-20",
+      "prev_nav": 103.61,
+      "curr_nav": 50.51,
+      "actual_ratio": 0.4875
+    }
+  ],
+  "UGL": [
+    {
+      "split_date": "2025-06-13",
+      "split_ratio": "4:1",
+      "factor": 4.0,
+      "prev_date": "2025-06-12",
+      "curr_date": "2025-06-13",
+      "prev_nav": 145.54,
+      "curr_nav": 37.47,
+      "actual_ratio": 0.2575
+    }
+  ],
+  "UPRO": [
+    {
+      "split_date": "2018-05-24",
+      "split_ratio": "3:1",
+      "factor": 3.0,
+      "prev_date": "2018-05-23",
+      "curr_date": "2018-05-24",
+      "prev_nav": 143.46,
+      "curr_nav": 47.51,
+      "actual_ratio": 0.3312
+    },
+    {
+      "split_date": "2022-01-13",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "prev_date": "2022-01-12",
+      "curr_date": "2022-01-13",
+      "prev_nav": 148.45,
+      "curr_nav": 71.07,
+      "actual_ratio": 0.4787
+    }
+  ],
+  "UPSX": [
+    {
+      "split_date": "2025-12-02",
+      "split_ratio": "1:5",
+      "factor": 0.2,
+      "prev_date": "2025-12-01",
+      "curr_date": "2025-12-02",
+      "prev_nav": 10.51,
+      "curr_nav": 48.84,
+      "actual_ratio": 4.647
+    }
+  ],
+  "URE": [
+    {
+      "split_date": "2017-07-17",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "prev_date": "2017-07-14",
+      "curr_date": "2017-07-17",
+      "prev_nav": 125.85,
+      "curr_nav": 63.39,
+      "actual_ratio": 0.5037
+    }
+  ],
+  "URTY": [
+    {
+      "split_date": "2017-07-17",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "prev_date": "2017-07-14",
+      "curr_date": "2017-07-17",
+      "prev_nav": 134.74,
+      "curr_nav": 67.76,
+      "actual_ratio": 0.5029
+    }
+  ],
+  "USD": [
+    {
+      "split_date": "2017-01-12",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "prev_date": "2017-01-11",
+      "curr_date": "2017-01-12",
+      "prev_nav": 140.54,
+      "curr_nav": 69.28,
+      "actual_ratio": 0.493
+    },
+    {
+      "split_date": "2018-05-24",
+      "split_ratio": "3:1",
+      "factor": 3.0,
+      "prev_date": "2018-05-23",
+      "curr_date": "2018-05-24",
+      "prev_nav": 145.5,
+      "curr_nav": 48.71,
+      "actual_ratio": 0.3348
+    },
+    {
+      "split_date": "2021-05-25",
+      "split_ratio": "4:1",
+      "factor": 4.0,
+      "prev_date": "2021-05-24",
+      "curr_date": "2021-05-25",
+      "prev_nav": 120.28,
+      "curr_nav": 30.21,
+      "actual_ratio": 0.2512
+    },
+    {
+      "split_date": "2024-11-07",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "prev_date": "2024-11-06",
+      "curr_date": "2024-11-07",
+      "prev_nav": 143.53,
+      "curr_nav": 74.89,
+      "actual_ratio": 0.5218
+    },
+    {
+      "split_date": "2025-11-20",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "prev_date": "2025-11-19",
+      "curr_date": "2025-11-20",
+      "prev_nav": 103.26,
+      "curr_nav": 47.85,
+      "actual_ratio": 0.4634
+    }
+  ],
+  "UVXY": [
+    {
+      "split_date": "2016-07-25",
+      "split_ratio": "1:5",
+      "factor": 0.2,
+      "prev_date": "2016-07-22",
+      "curr_date": "2016-07-25",
+      "prev_nav": 6.05,
+      "curr_nav": 30.13,
+      "actual_ratio": 4.9802
+    },
+    {
+      "split_date": "2017-01-12",
+      "split_ratio": "1:5",
+      "factor": 0.2,
+      "prev_date": "2017-01-11",
+      "curr_date": "2017-01-12",
+      "prev_nav": 6.11,
+      "curr_nav": 30.87,
+      "actual_ratio": 5.0524
+    },
+    {
+      "split_date": "2017-07-17",
+      "split_ratio": "1:4",
+      "factor": 0.25,
+      "prev_date": "2017-07-14",
+      "curr_date": "2017-07-17",
+      "prev_nav": 8.36,
+      "curr_nav": 32.74,
+      "actual_ratio": 3.9163
+    },
+    {
+      "split_date": "2018-09-18",
+      "split_ratio": "1:5",
+      "factor": 0.2,
+      "prev_date": "2018-09-17",
+      "curr_date": "2018-09-18",
+      "prev_nav": 8.1,
+      "curr_nav": 39.16,
+      "actual_ratio": 4.8346
+    },
+    {
+      "split_date": "2021-05-26",
+      "split_ratio": "1:10",
+      "factor": 0.1,
+      "prev_date": "2021-05-25",
+      "curr_date": "2021-05-26",
+      "prev_nav": 4.09,
+      "curr_nav": 37.87,
+      "actual_ratio": 9.2592
+    },
+    {
+      "split_date": "2023-06-23",
+      "split_ratio": "1:10",
+      "factor": 0.1,
+      "prev_date": "2023-06-22",
+      "curr_date": "2023-06-23",
+      "prev_nav": 1.99,
+      "curr_nav": 20.28,
+      "actual_ratio": 10.191
+    },
+    {
+      "split_date": "2024-04-11",
+      "split_ratio": "1:5",
+      "factor": 0.2,
+      "prev_date": "2024-04-10",
+      "curr_date": "2024-04-11",
+      "prev_nav": 6.89,
+      "curr_nav": 33.59,
+      "actual_ratio": 4.8752
+    },
+    {
+      "split_date": "2025-11-20",
+      "split_ratio": "1:5",
+      "factor": 0.2,
+      "prev_date": "2025-11-19",
+      "curr_date": "2025-11-20",
+      "prev_nav": 11.85,
+      "curr_nav": 65.95,
+      "actual_ratio": 5.5654
+    }
+  ],
+  "UYG": [
+    {
+      "split_date": "2018-05-24",
+      "split_ratio": "3:1",
+      "factor": 3.0,
+      "prev_date": "2018-05-23",
+      "curr_date": "2018-05-24",
+      "prev_nav": 128.99,
+      "curr_nav": 42.51,
+      "actual_ratio": 0.3296
+    }
+  ],
+  "WDCX": [
+    {
+      "split_date": "2026-06-03",
+      "split_ratio": "3:1",
+      "factor": 3.0,
+      "prev_date": "2026-06-02",
+      "curr_date": "2026-06-03",
+      "prev_nav": 110.03,
+      "curr_nav": 40.71,
+      "actual_ratio": 0.37
+    }
+  ],
+  "YANG": [
+    {
+      "split_date": "2016-03-24",
+      "split_ratio": "4:1",
+      "factor": 4.0,
+      "prev_date": "2016-03-23",
+      "curr_date": "2016-03-24",
+      "prev_nav": 105.22,
+      "curr_nav": 26.85,
+      "actual_ratio": 0.2552
+    },
+    {
+      "split_date": "2018-03-29",
+      "split_ratio": "1:10",
+      "factor": 0.1,
+      "prev_date": "2018-03-28",
+      "curr_date": "2018-03-29",
+      "prev_nav": 5.1,
+      "curr_nav": 49.07,
+      "actual_ratio": 9.6216
+    },
+    {
+      "split_date": "2024-11-04",
+      "split_ratio": "1:20",
+      "factor": 0.05,
+      "prev_date": "2024-11-01",
+      "curr_date": "2024-11-04",
+      "prev_nav": 3.65,
+      "curr_nav": 71.76,
+      "actual_ratio": 19.6603
+    }
+  ],
+  "YINN": [
+    {
+      "split_date": "2022-05-31",
+      "split_ratio": "1:20",
+      "factor": 0.05,
+      "prev_date": "2022-05-27",
+      "curr_date": "2022-05-31",
+      "prev_nav": 3.86,
+      "curr_nav": 84.11,
+      "actual_ratio": 21.7902
+    }
+  ]
+}
