@@ -780,13 +780,14 @@
   font-size: 0.8125rem;
 }
 
-/* Cursor-following readout */
+/* Cursor-following readout - suppressed in favor of unified anchored SVG card */
 .flow-research .flow-chart-tooltip {
   position: fixed;
   left: 0;
   top: 0;
   z-index: 60;
   pointer-events: none;
+  display: none !important;
   max-width: 32rem;
   min-height: 1.5em;
   padding: 0.5rem 0.75rem;
@@ -1095,62 +1096,6 @@
   }
 }
 
-/* ── Steady Inspection HUD Bar (replaces drifting floating cursor tooltip) ── */
-.flow-research .flow-chart-hud {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem 1rem;
-  padding: 0.6rem 0.85rem;
-  border: 1px solid rgba(34, 211, 238, 0.28);
-  border-radius: 6px;
-  background: #06090e;
-  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
-  font-size: 0.75rem;
-  font-variant-numeric: tabular-nums;
-  margin-bottom: 0.5rem;
-}
-
-.flow-research .flow-hud-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.25rem 0.6rem;
-  border-radius: 4px;
-  background: rgba(34, 211, 238, 0.12);
-  border: 1px solid rgba(34, 211, 238, 0.35);
-  color: var(--flow-cyan);
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
-.flow-research .flow-hud-metrics {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.65rem 1.15rem;
-}
-
-.flow-research .flow-hud-item {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.35rem;
-  color: var(--flow-muted);
-}
-
-.flow-research .flow-hud-item strong {
-  font-weight: 600;
-  color: var(--flow-text);
-}
-
-.flow-research .flow-hud-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.6875rem;
-  color: var(--flow-subtle);
-}
 
 /* ── Category Navigation Tabs & 145 Grid ── */
 .flow-research .flow-category-bar {

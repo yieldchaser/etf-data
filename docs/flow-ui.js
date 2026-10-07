@@ -562,22 +562,13 @@
     if (numY !== null) {
       out += `<circle cx="${x.toFixed(1)}" cy="${numY.toFixed(1)}" r="7.5" fill="rgba(34,211,238,0.22)" stroke="#22d3ee" stroke-width="1.2" opacity="0.8"/>`;
       out += `<circle cx="${x.toFixed(1)}" cy="${numY.toFixed(1)}" r="4" fill="#ffffff" stroke="#22d3ee" stroke-width="2"/>`;
-      if (yLabel) {
-        const textW = Math.max(48, String(yLabel).length * 7 + 10);
-        const tagX = frame.padding.left - textW - 4;
-        out += `<rect x="${tagX.toFixed(1)}" y="${(numY - 9).toFixed(1)}" width="${textW}" height="18" rx="3" fill="#090d16" stroke="#22d3ee" stroke-width="1"/>`;
-        out += `<text x="${(tagX + textW - 5).toFixed(1)}" y="${(numY + 4).toFixed(1)}" text-anchor="end" fill="#22d3ee" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10" font-weight="600">${escapeHtml(yLabel)}</text>`;
-      }
     }
-    const tagW = 76;
-    const tagLeft = Math.max(4, Math.min(frame.width - tagW - 4, x - tagW / 2));
-    const tagY = bottom + 3;
-    out += `<rect x="${tagLeft.toFixed(1)}" y="${tagY.toFixed(1)}" width="${tagW}" height="19" rx="3" fill="#090d16" stroke="#22d3ee" stroke-width="1.2"/>`;
-    out += `<text x="${(tagLeft + tagW / 2).toFixed(1)}" y="${(tagY + 13).toFixed(1)}" text-anchor="middle" fill="#22d3ee" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10.5" font-weight="700">${dateStr}</text>`;
+    // Clean marker dot on axis line matching Blue Margin (no redundant date box)
+    out += `<circle cx="${x.toFixed(1)}" cy="${bottom.toFixed(1)}" r="3.5" fill="#22d3ee"/>`;
 
     if (Array.isArray(tooltipItems) && tooltipItems.length) {
-      const cardW = 188;
-      const cardH = 26 + tooltipItems.length * 17;
+      const cardW = 196;
+      const cardH = 26 + tooltipItems.length * 18;
       let cardX = x + 12;
       if (cardX + cardW > frame.width - 6) {
         cardX = x - cardW - 12;
@@ -593,7 +584,7 @@
       out += `<rect x="${cardX.toFixed(1)}" y="${cardY.toFixed(1)}" width="${cardW}" height="${cardH}" rx="5" fill="#0b0f19" stroke="rgba(255,255,255,0.16)" stroke-width="1"/>`;
       out += `<text x="${(cardX + 9).toFixed(1)}" y="${(cardY + 15).toFixed(1)}" fill="#f8fafc" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10.5" font-weight="700">${dateStr}</text>`;
       tooltipItems.forEach((item, i) => {
-        const rowY = cardY + 28 + i * 17;
+        const rowY = cardY + 28 + i * 18;
         out += `<rect x="${(cardX + 9).toFixed(1)}" y="${(rowY - 7.5).toFixed(1)}" width="7.5" height="7.5" rx="1.5" fill="${item.color}"/>`;
         out += `<text x="${(cardX + 21).toFixed(1)}" y="${rowY.toFixed(1)}" fill="#94a3b8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10">${escapeHtml(item.label)}: <tspan fill="${item.valColor || item.color}" font-weight="600">${escapeHtml(item.value)}</tspan></text>`;
       });
@@ -1285,7 +1276,7 @@
           const items = [];
           if (hFlow !== null) {
             items.push({
-              color: hFlow >= 0 ? COLORS.cyan : COLORS.negative,
+              color: hFlow >= 0 ? COLORS.positive : COLORS.negative,
               label: 'Daily Flow',
               value: formatMoney(hFlow)
             });
@@ -1298,15 +1289,31 @@
               value: formatMoney(hMean)
             });
           }
+          const hCum = finiteNumber(hRow.selectedCumulative);
+          if (hCum !== null) {
+            items.push({
+              color: (hCum || 0) >= 0 ? '#38bdf8' : '#fb7185',
+              label: 'Cumulative',
+              value: formatMoney(hCum)
+            });
+          }
+          const hZ = finiteNumber(hRow.priorOnlyZScore);
+          if (hZ !== null) {
+            items.push({
+              color: hZ >= 1.5 ? COLORS.cyan : hZ <= -1.5 ? COLORS.warning : '#94a3b8',
+              label: 'Z-Score',
+              value: `${hZ >= 0 ? '+' : ''}${hZ.toFixed(2)}σ`
+            });
+          }
           const hNav = finiteNumber(hRow.nav);
           if (this.flowPriceEnabled && hNav !== null) {
             items.push({
-              color: COLORS.positive,
+              color: '#a78bfa',
               label: 'NAV / Price',
               value: formatPrice(hNav)
             });
           }
-          overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, axisNumber(hFlow), items);
+          overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, null, items);
         }
         return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-daily-title flow-daily-desc"><title id="flow-daily-title">Daily ETF estimated net flow</title><desc id="flow-daily-desc">${escapeHtml(description)}</desc>${grid}${bars}<path d="${linePath(meanPoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>${overlay}${frame.dateTicks}</svg>`;
       },
@@ -1358,7 +1365,23 @@
               value: formatMoney(hFlow)
             });
           }
-          overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, axisNumber(hVal), items);
+          const hMean = finiteNumber(hRow.rollingMean20);
+          if (hMean !== null) {
+            items.push({
+              color: '#38bdf8',
+              label: '20D Mean',
+              value: formatMoney(hMean)
+            });
+          }
+          const hNav = finiteNumber(hRow.nav);
+          if (this.flowPriceEnabled && hNav !== null) {
+            items.push({
+              color: '#a78bfa',
+              label: 'NAV / Price',
+              value: formatPrice(hNav)
+            });
+          }
+          overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, null, items);
         }
         return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-cumulative-title flow-cumulative-desc"><title id="flow-cumulative-title">Selected-window cumulative source-reported aggregate net flow</title><desc id="flow-cumulative-desc">${escapeHtml(description)}</desc><defs><linearGradient id="flow-cum-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${COLORS.cyan}" stop-opacity="0.22"/><stop offset="100%" stop-color="${COLORS.cyan}" stop-opacity="0.0"/></linearGradient></defs>${grid}${area ? `<path d="${area}" fill="url(#flow-cum-grad)"/>` : ''}<path d="${linePath(linePoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>${lastPoint}${overlay}${frame.dateTicks}</svg>`;
       },
@@ -1420,7 +1443,15 @@
               value: formatMoney(hSum10)
             });
           }
-          overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, hPct !== null ? `${hPct.toFixed(0)}%` : null, items);
+          const hFlow = finiteNumber(hRow.flow);
+          if (hFlow !== null) {
+            items.push({
+              color: hFlow >= 0 ? COLORS.positive : COLORS.negative,
+              label: 'Daily Flow',
+              value: formatMoney(hFlow)
+            });
+          }
+          overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, null, items);
         }
         return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-percentile-title flow-percentile-desc"><title id="flow-percentile-title">Ten-observation flow percentile</title><desc id="flow-percentile-desc">${escapeHtml(description)}</desc>${leftAxis}${rightAxis}${bars}<path d="${linePath(percentilePoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>${overlay}${frame.dateTicks}</svg>`;
       },
@@ -1479,7 +1510,15 @@
               value: formatMoney(hFlow)
             });
           }
-          overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, hZ !== null ? `${hZ >= 0 ? '+' : ''}${hZ.toFixed(2)}σ` : null, items);
+          const hMean = finiteNumber(hRow.rollingMean20);
+          if (hMean !== null) {
+            items.push({
+              color: '#38bdf8',
+              label: '20D Mean',
+              value: formatMoney(hMean)
+            });
+          }
+          overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, null, items);
         }
         return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-intensity-title flow-intensity-desc"><title id="flow-intensity-title">Prior-only daily flow z-score</title><desc id="flow-intensity-desc">${escapeHtml(description)}</desc>${grid}${bars}${overlay}${frame.dateTicks}</svg>`;
       },
@@ -1546,7 +1585,23 @@
               value: formatMoney(hFlow)
             });
           }
-          overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, formatPrice(hPrice), items);
+          const hMean = finiteNumber(hRow.rollingMean20);
+          if (hMean !== null) {
+            items.push({
+              color: '#38bdf8',
+              label: '20D Mean',
+              value: formatMoney(hMean)
+            });
+          }
+          const hCum = finiteNumber(hRow.selectedCumulative);
+          if (hCum !== null) {
+            items.push({
+              color: (hCum || 0) >= 0 ? '#34d399' : '#fb7185',
+              label: 'Cumulative',
+              value: formatMoney(hCum)
+            });
+          }
+          overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, null, items);
         }
         return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-price-title flow-price-desc"><title id="flow-price-title">Price and daily ETF estimated net flow</title><desc id="flow-price-desc">${escapeHtml(description)}</desc>${leftTicks}${rightTicks}${bars}<path d="${linePath(pricePoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>${overlay}${frame.dateTicks}</svg>`;
       },
@@ -1594,10 +1649,6 @@
             dots += `<circle cx="${x.toFixed(1)}" cy="${y60.toFixed(1)}" r="4.5" fill="#fbbf24" stroke="#050505" stroke-width="1.8"/>`;
           }
 
-          const tagW = 76;
-          const tagLeft = Math.max(4, Math.min(width - tagW - 4, x - tagW / 2));
-          const tagY = bottom + 3;
-
           const cardW = 186;
           const cardH = 78;
           let cardX = x + 12;
@@ -1621,8 +1672,7 @@
           overlay = `<g class="flow-crosshair-group" pointer-events="none">`
             + `<line x1="${x.toFixed(1)}" y1="${top.toFixed(1)}" x2="${x.toFixed(1)}" y2="${bottom.toFixed(1)}" stroke="#22d3ee" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.85"/>`
             + dots
-            + `<rect x="${tagLeft.toFixed(1)}" y="${tagY.toFixed(1)}" width="${tagW}" height="19" rx="3" fill="#090d16" stroke="#22d3ee" stroke-width="1.2"/>`
-            + `<text x="${(tagLeft + tagW / 2).toFixed(1)}" y="${(tagY + 13).toFixed(1)}" text-anchor="middle" fill="#22d3ee" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10.5" font-weight="700">${dateStr}</text>`
+            + `<circle cx="${x.toFixed(1)}" cy="${bottom.toFixed(1)}" r="3.5" fill="#22d3ee"/>`
             + card
             + `</g>`;
         }
