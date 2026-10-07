@@ -1453,7 +1453,63 @@
           const y = yScale(value);
           return `<line x1="${frame.padding.left}" y1="${y.toFixed(1)}" x2="${width - frame.padding.right}" y2="${y.toFixed(1)}" stroke="${value === 0 ? COLORS.axis : COLORS.grid}" stroke-width="1"/><text x="${frame.padding.left - 6}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10.5">${escapeHtml(axisNumber(value))}</text>`;
         }).join('');
-        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Multi-horizon 5D, 20D, and 60D rolling net flow impulse">${grid}<path d="${linePath(pts60)}" fill="none" stroke="${COLORS.warning}" stroke-width="1.6" stroke-dasharray="3 2" opacity="0.85"/><path d="${linePath(pts20)}" fill="none" stroke="${COLORS.positive}" stroke-width="2"/><path d="${linePath(pts5)}" fill="none" stroke="${COLORS.cyan}" stroke-width="1.6" opacity="0.92"/>${frame.dateTicks}</svg>`;
+
+        let overlay = '';
+        if (this.flowHoverIndex !== null && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
+          const hRow = rows[this.flowHoverIndex];
+          const x = frame.xScale(this.flowHoverIndex);
+          const top = frame.padding.top;
+          const bottom = frame.height - frame.padding.bottom;
+          const dateStr = escapeHtml(hRow.date || '');
+          const s5 = finiteNumber(hRow.rollingSum5);
+          const s20 = finiteNumber(hRow.rollingSum20);
+          const s60 = finiteNumber(hRow.rollingSum60);
+
+          let dots = '';
+          if (s5 !== null) {
+            const y5 = yScale(s5);
+            dots += `<circle cx="${x.toFixed(1)}" cy="${y5.toFixed(1)}" r="4.5" fill="#22d3ee" stroke="#050505" stroke-width="1.8"/>`;
+          }
+          if (s20 !== null) {
+            const y20 = yScale(s20);
+            dots += `<circle cx="${x.toFixed(1)}" cy="${y20.toFixed(1)}" r="4.5" fill="#34d399" stroke="#050505" stroke-width="1.8"/>`;
+          }
+          if (s60 !== null) {
+            const y60 = yScale(s60);
+            dots += `<circle cx="${x.toFixed(1)}" cy="${y60.toFixed(1)}" r="4.5" fill="#fbbf24" stroke="#050505" stroke-width="1.8"/>`;
+          }
+
+          const tagW = 76;
+          const tagLeft = Math.max(4, Math.min(width - tagW - 4, x - tagW / 2));
+          const tagY = bottom + 3;
+
+          const cardW = 168;
+          const cardH = 68;
+          let cardX = x + 12;
+          if (cardX + cardW > width - 6) {
+            cardX = x - cardW - 12;
+          }
+          if (cardX < 4) cardX = 4;
+          const cardY = top + 2;
+
+          const card = `<g class="flow-impulse-tooltip" opacity="0.96">`
+            + `<rect x="${cardX.toFixed(1)}" y="${cardY.toFixed(1)}" width="${cardW}" height="${cardH}" rx="4" fill="#090d16" stroke="rgba(34,211,238,0.4)" stroke-width="1"/>`
+            + `<text x="${(cardX + 8).toFixed(1)}" y="${(cardY + 14).toFixed(1)}" fill="#94a3b8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9.5" font-weight="600">${dateStr}</text>`
+            + `<text x="${(cardX + 8).toFixed(1)}" y="${(cardY + 29).toFixed(1)}" fill="#22d3ee" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10" font-weight="600">5D sum:  ${escapeHtml(formatMoney(s5))}</text>`
+            + `<text x="${(cardX + 8).toFixed(1)}" y="${(cardY + 44).toFixed(1)}" fill="#34d399" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10" font-weight="600">20D sum: ${escapeHtml(formatMoney(s20))}</text>`
+            + `<text x="${(cardX + 8).toFixed(1)}" y="${(cardY + 59).toFixed(1)}" fill="#fbbf24" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10" font-weight="600">60D sum: ${escapeHtml(formatMoney(s60))}</text>`
+            + `</g>`;
+
+          overlay = `<g class="flow-crosshair-group" pointer-events="none">`
+            + `<line x1="${x.toFixed(1)}" y1="${top.toFixed(1)}" x2="${x.toFixed(1)}" y2="${bottom.toFixed(1)}" stroke="#22d3ee" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.85"/>`
+            + dots
+            + `<rect x="${tagLeft.toFixed(1)}" y="${tagY.toFixed(1)}" width="${tagW}" height="19" rx="3" fill="#090d16" stroke="#22d3ee" stroke-width="1.2"/>`
+            + `<text x="${(tagLeft + tagW / 2).toFixed(1)}" y="${(tagY + 13).toFixed(1)}" text-anchor="middle" fill="#22d3ee" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10.5" font-weight="700">${dateStr}</text>`
+            + card
+            + `</g>`;
+        }
+
+        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Multi-horizon 5D, 20D, and 60D rolling net flow impulse">${grid}<path d="${linePath(pts60)}" fill="none" stroke="${COLORS.warning}" stroke-width="1.6" stroke-dasharray="3 2" opacity="0.85"/><path d="${linePath(pts20)}" fill="none" stroke="${COLORS.positive}" stroke-width="2"/><path d="${linePath(pts5)}" fill="none" stroke="${COLORS.cyan}" stroke-width="1.6" opacity="0.92"/>${overlay}${frame.dateTicks}</svg>`;
       },
 
       async init() {

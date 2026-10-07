@@ -2757,13 +2757,21 @@
                     <span>Daily Net Flow:</span>
                     <strong :class="(flowActiveHoverRow?.flow || 0) > 0 ? 'flow-positive' : (flowActiveHoverRow?.flow || 0) < 0 ? 'flow-negative' : ''" x-text="formatMoney(flowActiveHoverRow?.flow)"></strong>
                   </div>
-                  <div class="flow-hud-item" x-show="flowActiveHoverRow?.nav !== null">
-                    <span>NAV:</span>
-                    <strong class="flow-cyan" x-text="formatPrice(flowActiveHoverRow?.nav)"></strong>
+                  <div class="flow-hud-item" x-show="flowActiveHoverRow?.rollingSum5 !== null">
+                    <span style="color:#22d3ee">5D Sum:</span>
+                    <strong :class="(flowActiveHoverRow?.rollingSum5 || 0) > 0 ? 'flow-positive' : (flowActiveHoverRow?.rollingSum5 || 0) < 0 ? 'flow-negative' : ''" x-text="formatMoney(flowActiveHoverRow?.rollingSum5)"></strong>
                   </div>
                   <div class="flow-hud-item" x-show="flowActiveHoverRow?.rollingMean20 !== null">
                     <span>20D Mean:</span>
                     <strong x-text="formatMoney(flowActiveHoverRow?.rollingMean20)"></strong>
+                  </div>
+                  <div class="flow-hud-item" x-show="flowActiveHoverRow?.rollingSum60 !== null">
+                    <span style="color:#fbbf24">60D Sum:</span>
+                    <strong :class="(flowActiveHoverRow?.rollingSum60 || 0) > 0 ? 'flow-positive' : (flowActiveHoverRow?.rollingSum60 || 0) < 0 ? 'flow-negative' : ''" x-text="formatMoney(flowActiveHoverRow?.rollingSum60)"></strong>
+                  </div>
+                  <div class="flow-hud-item" x-show="flowActiveHoverRow?.nav !== null">
+                    <span>NAV:</span>
+                    <strong class="flow-cyan" x-text="formatPrice(flowActiveHoverRow?.nav)"></strong>
                   </div>
                   <div class="flow-hud-item" x-show="flowActiveHoverRow?.priorOnlyZScore !== null">
                     <span>Z-Score:</span>
@@ -2860,13 +2868,21 @@
                       <h3>Rolling 5D / 20D / 60D net flow regime</h3>
                       <p class="flow-chart-description">Compares short-term (5-session), medium-term (20-session), and structural (60-session) complete rolling flow sums across the selected window.</p>
                     </div>
-                    <div class="flow-legend">
-                      <span class="flow-legend-item"><span class="flow-swatch" style="background:#22d3ee"></span>5D sum</span>
-                      <span class="flow-legend-item"><span class="flow-swatch" style="background:#34d399"></span>20D sum</span>
-                      <span class="flow-legend-item"><span class="flow-swatch" style="background:#fbbf24"></span>60D sum</span>
+                    <div class="flow-legend" style="align-items:flex-end">
+                      <div style="display:flex;gap:0.75rem;align-items:center;margin-bottom:0.25rem" x-show="flowActiveHoverRow">
+                        <span class="flow-support" style="color:#ffffff;font-weight:600" x-text="flowActiveHoverRow?.date || ''"></span>
+                        <span class="flow-legend-item" style="color:#22d3ee;font-weight:600" x-text="`5D ${formatMoney(flowActiveHoverRow?.rollingSum5)}`"></span>
+                        <span class="flow-legend-item" style="color:#34d399;font-weight:600" x-text="`20D ${formatMoney(flowActiveHoverRow?.rollingSum20)}`"></span>
+                        <span class="flow-legend-item" style="color:#fbbf24;font-weight:600" x-text="`60D ${formatMoney(flowActiveHoverRow?.rollingSum60)}`"></span>
+                      </div>
+                      <div style="display:flex;gap:0.75rem;align-items:center">
+                        <span class="flow-legend-item"><span class="flow-swatch" style="background:#22d3ee"></span>5D sum</span>
+                        <span class="flow-legend-item"><span class="flow-swatch" style="background:#34d399"></span>20D sum</span>
+                        <span class="flow-legend-item"><span class="flow-swatch" style="background:#fbbf24"></span>60D sum</span>
+                      </div>
                     </div>
                   </div>
-                  <div class="flow-impulse-chart" x-html="flowMultiHorizonImpulseChartSvg"></div>
+                  <div class="flow-impulse-chart" tabindex="0" @mousemove="flowChartPointerMove($event)" @mouseleave="flowChartPointerLeave()" @focus="flowChartFocus()" @blur="flowChartPointerLeave()" x-html="flowMultiHorizonImpulseChartSvg"></div>
                 </div>
 
                 <div class="flow-chart-block">
