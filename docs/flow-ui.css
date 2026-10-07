@@ -648,12 +648,15 @@
   color: var(--flow-text);
 }
 
-/* Compact Window Range Control */
+/* Compact Window Range Control (Sleek 1-line horizon toolbar, no sliders) */
 .flow-research .flow-range-panel {
-  display: grid;
-  gap: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
   margin: 0;
-  padding: 0.7rem 0.9rem;
+  padding: 0.55rem 0.85rem;
   border: 1px solid var(--flow-line);
   border-radius: 8px;
   background: var(--flow-panel);
@@ -665,6 +668,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem 1rem;
+  width: 100%;
 }
 
 .flow-research .flow-presets {
@@ -673,30 +677,13 @@
   gap: 0.3rem;
 }
 
-.flow-research .flow-range-pair {
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.65rem;
-  align-items: center;
-}
-
-.flow-research .flow-range {
-  width: 100%;
-  height: 18px;
-  margin: 0;
-  accent-color: var(--flow-cyan);
-  cursor: pointer;
-}
-
+.flow-research .flow-range-pair,
 .flow-research .flow-range-labels {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  color: var(--flow-subtle);
-  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
-  font-size: 0.6875rem;
-  font-variant-numeric: tabular-nums;
+  display: none !important;
+}
+
+.flow-research .flow-chart-tooltip-box {
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.55));
 }
 
 /* 5-Card Terminal KPI Strip */

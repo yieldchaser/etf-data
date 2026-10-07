@@ -548,7 +548,7 @@
     return { width, height, padding, chartWidth, chartHeight, xScale, dateTicks };
   }
 
-  function chartCrosshairOverlay(frame, rows, hoverIndex, targetY, yLabel) {
+  function chartCrosshairOverlay(frame, rows, hoverIndex, targetY, yLabel, tooltipItems) {
     if (hoverIndex === null || hoverIndex === undefined || hoverIndex < 0 || hoverIndex >= rows.length) return '';
     const row = rows[hoverIndex];
     if (!row) return '';
@@ -557,11 +557,11 @@
     const bottom = frame.height - frame.padding.bottom;
     const dateStr = escapeHtml(row.date || '');
     let out = `<g class="flow-crosshair-group" pointer-events="none">`;
-    out += `<line x1="${x.toFixed(1)}" y1="${top.toFixed(1)}" x2="${x.toFixed(1)}" y2="${bottom.toFixed(1)}" stroke="#22d3ee" stroke-width="1.3" stroke-dasharray="3 3" opacity="0.9"/>`;
+    out += `<line x1="${x.toFixed(1)}" y1="${top.toFixed(1)}" x2="${x.toFixed(1)}" y2="${bottom.toFixed(1)}" stroke="#22d3ee" stroke-width="1.3" stroke-dasharray="3 3" opacity="0.85"/>`;
     const numY = finiteNumber(targetY);
     if (numY !== null) {
-      out += `<circle cx="${x.toFixed(1)}" cy="${numY.toFixed(1)}" r="7" fill="none" stroke="#22d3ee" stroke-width="1.2" opacity="0.55"/>`;
-      out += `<circle cx="${x.toFixed(1)}" cy="${numY.toFixed(1)}" r="4.5" fill="#22d3ee" stroke="#050505" stroke-width="2"/>`;
+      out += `<circle cx="${x.toFixed(1)}" cy="${numY.toFixed(1)}" r="7.5" fill="rgba(34,211,238,0.22)" stroke="#22d3ee" stroke-width="1.2" opacity="0.8"/>`;
+      out += `<circle cx="${x.toFixed(1)}" cy="${numY.toFixed(1)}" r="4" fill="#ffffff" stroke="#22d3ee" stroke-width="2"/>`;
       if (yLabel) {
         const textW = Math.max(48, String(yLabel).length * 7 + 10);
         const tagX = frame.padding.left - textW - 4;
@@ -574,6 +574,32 @@
     const tagY = bottom + 3;
     out += `<rect x="${tagLeft.toFixed(1)}" y="${tagY.toFixed(1)}" width="${tagW}" height="19" rx="3" fill="#090d16" stroke="#22d3ee" stroke-width="1.2"/>`;
     out += `<text x="${(tagLeft + tagW / 2).toFixed(1)}" y="${(tagY + 13).toFixed(1)}" text-anchor="middle" fill="#22d3ee" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10.5" font-weight="700">${dateStr}</text>`;
+
+    if (Array.isArray(tooltipItems) && tooltipItems.length) {
+      const cardW = 188;
+      const cardH = 26 + tooltipItems.length * 17;
+      let cardX = x + 12;
+      if (cardX + cardW > frame.width - 6) {
+        cardX = x - cardW - 12;
+      }
+      if (cardX < 4) cardX = 4;
+      let cardY = numY !== null ? numY - cardH / 2 : top + 6;
+      const minCardY = top + 2;
+      const maxCardY = bottom - cardH - 2;
+      if (cardY < minCardY) cardY = minCardY;
+      if (cardY > maxCardY) cardY = maxCardY;
+
+      out += `<g class="flow-chart-tooltip-box" opacity="0.98">`;
+      out += `<rect x="${cardX.toFixed(1)}" y="${cardY.toFixed(1)}" width="${cardW}" height="${cardH}" rx="5" fill="#0b0f19" stroke="rgba(255,255,255,0.16)" stroke-width="1"/>`;
+      out += `<text x="${(cardX + 9).toFixed(1)}" y="${(cardY + 15).toFixed(1)}" fill="#f8fafc" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10.5" font-weight="700">${dateStr}</text>`;
+      tooltipItems.forEach((item, i) => {
+        const rowY = cardY + 28 + i * 17;
+        out += `<rect x="${(cardX + 9).toFixed(1)}" y="${(rowY - 7.5).toFixed(1)}" width="7.5" height="7.5" rx="1.5" fill="${item.color}"/>`;
+        out += `<text x="${(cardX + 21).toFixed(1)}" y="${rowY.toFixed(1)}" fill="#94a3b8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10">${escapeHtml(item.label)}: <tspan fill="${item.valColor || item.color}" font-weight="600">${escapeHtml(item.value)}</tspan></text>`;
+      });
+      out += `</g>`;
+    }
+
     out += `</g>`;
     return out;
   }
@@ -1256,7 +1282,31 @@
           const hRow = rows[this.flowHoverIndex];
           const hFlow = finiteNumber(hRow.flow);
           const hY = hFlow !== null ? yScale(hFlow) : zeroY;
-          overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, axisNumber(hFlow));
+          const items = [];
+          if (hFlow !== null) {
+            items.push({
+              color: hFlow >= 0 ? COLORS.cyan : COLORS.negative,
+              label: 'Daily Flow',
+              value: formatMoney(hFlow)
+            });
+          }
+          const hMean = finiteNumber(hRow.rollingMean20);
+          if (hMean !== null) {
+            items.push({
+              color: COLORS.cyan,
+              label: '20D Mean',
+              value: formatMoney(hMean)
+            });
+          }
+          const hNav = finiteNumber(hRow.nav);
+          if (this.flowPriceEnabled && hNav !== null) {
+            items.push({
+              color: COLORS.positive,
+              label: 'NAV / Price',
+              value: formatPrice(hNav)
+            });
+          }
+          overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, axisNumber(hFlow), items);
         }
         return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-daily-title flow-daily-desc"><title id="flow-daily-title">Daily ETF estimated net flow</title><desc id="flow-daily-desc">${escapeHtml(description)}</desc>${grid}${bars}<path d="${linePath(meanPoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>${overlay}${frame.dateTicks}</svg>`;
       },
@@ -1292,7 +1342,23 @@
           const hRow = rows[this.flowHoverIndex];
           const hVal = finiteNumber(hRow.selectedCumulative);
           const hY = hVal !== null ? yScale(hVal) : zeroY;
-          overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, axisNumber(hVal));
+          const items = [];
+          if (hVal !== null) {
+            items.push({
+              color: hVal >= 0 ? COLORS.cyan : COLORS.negative,
+              label: 'Cumulative',
+              value: formatMoney(hVal)
+            });
+          }
+          const hFlow = finiteNumber(hRow.flow);
+          if (hFlow !== null) {
+            items.push({
+              color: hFlow >= 0 ? COLORS.positive : COLORS.negative,
+              label: 'Daily Flow',
+              value: formatMoney(hFlow)
+            });
+          }
+          overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, axisNumber(hVal), items);
         }
         return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-cumulative-title flow-cumulative-desc"><title id="flow-cumulative-title">Selected-window cumulative source-reported aggregate net flow</title><desc id="flow-cumulative-desc">${escapeHtml(description)}</desc><defs><linearGradient id="flow-cum-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${COLORS.cyan}" stop-opacity="0.22"/><stop offset="100%" stop-color="${COLORS.cyan}" stop-opacity="0.0"/></linearGradient></defs>${grid}${area ? `<path d="${area}" fill="url(#flow-cum-grad)"/>` : ''}<path d="${linePath(linePoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>${lastPoint}${overlay}${frame.dateTicks}</svg>`;
       },
@@ -1338,7 +1404,23 @@
           const hRow = rows[this.flowHoverIndex];
           const hPct = finiteNumber(hRow.percentile10);
           const hY = hPct !== null ? yPercentile(hPct) : null;
-          overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, hPct !== null ? `${hPct.toFixed(0)}%` : null);
+          const items = [];
+          if (hPct !== null) {
+            items.push({
+              color: COLORS.cyan,
+              label: '10D Percentile',
+              value: `${hPct.toFixed(0)}%`
+            });
+          }
+          const hSum10 = finiteNumber(hRow.rollingSum10);
+          if (hSum10 !== null) {
+            items.push({
+              color: (hSum10 || 0) >= 0 ? COLORS.positive : COLORS.negative,
+              label: '10D Flow Sum',
+              value: formatMoney(hSum10)
+            });
+          }
+          overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, hPct !== null ? `${hPct.toFixed(0)}%` : null, items);
         }
         return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-percentile-title flow-percentile-desc"><title id="flow-percentile-title">Ten-observation flow percentile</title><desc id="flow-percentile-desc">${escapeHtml(description)}</desc>${leftAxis}${rightAxis}${bars}<path d="${linePath(percentilePoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>${overlay}${frame.dateTicks}</svg>`;
       },
@@ -1381,7 +1463,23 @@
           const hRow = rows[this.flowHoverIndex];
           const hZ = finiteNumber(hRow.priorOnlyZScore);
           const hY = hZ !== null ? yScale(hZ) : zeroY;
-          overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, hZ !== null ? `${hZ >= 0 ? '+' : ''}${hZ.toFixed(2)}σ` : null);
+          const items = [];
+          if (hZ !== null) {
+            items.push({
+              color: hZ >= 1.5 ? COLORS.cyan : hZ <= -1.5 ? COLORS.warning : '#94a3b8',
+              label: 'Flow Z-Score',
+              value: `${hZ >= 0 ? '+' : ''}${hZ.toFixed(2)}σ`
+            });
+          }
+          const hFlow = finiteNumber(hRow.flow);
+          if (hFlow !== null) {
+            items.push({
+              color: hFlow >= 0 ? COLORS.positive : COLORS.negative,
+              label: 'Daily Flow',
+              value: formatMoney(hFlow)
+            });
+          }
+          overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, hZ !== null ? `${hZ >= 0 ? '+' : ''}${hZ.toFixed(2)}σ` : null, items);
         }
         return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-intensity-title flow-intensity-desc"><title id="flow-intensity-title">Prior-only daily flow z-score</title><desc id="flow-intensity-desc">${escapeHtml(description)}</desc>${grid}${bars}${overlay}${frame.dateTicks}</svg>`;
       },
@@ -1432,7 +1530,23 @@
           const hRow = rows[this.flowHoverIndex];
           const hPrice = finiteNumber(hRow.nav);
           const hY = hPrice !== null ? yPrice(hPrice) : null;
-          overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, formatPrice(hPrice));
+          const items = [];
+          if (hPrice !== null) {
+            items.push({
+              color: COLORS.cyan,
+              label: 'NAV / Price',
+              value: formatPrice(hPrice)
+            });
+          }
+          const hFlow = finiteNumber(hRow.flow);
+          if (hFlow !== null) {
+            items.push({
+              color: (hFlow || 0) >= 0 ? COLORS.positive : COLORS.negative,
+              label: 'Daily Flow',
+              value: formatMoney(hFlow)
+            });
+          }
+          overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, formatPrice(hPrice), items);
         }
         return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-price-title flow-price-desc"><title id="flow-price-title">Price and daily ETF estimated net flow</title><desc id="flow-price-desc">${escapeHtml(description)}</desc>${leftTicks}${rightTicks}${bars}<path d="${linePath(pricePoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>${overlay}${frame.dateTicks}</svg>`;
       },
@@ -1484,8 +1598,8 @@
           const tagLeft = Math.max(4, Math.min(width - tagW - 4, x - tagW / 2));
           const tagY = bottom + 3;
 
-          const cardW = 168;
-          const cardH = 68;
+          const cardW = 186;
+          const cardH = 78;
           let cardX = x + 12;
           if (cardX + cardW > width - 6) {
             cardX = x - cardW - 12;
@@ -1493,12 +1607,15 @@
           if (cardX < 4) cardX = 4;
           const cardY = top + 2;
 
-          const card = `<g class="flow-impulse-tooltip" opacity="0.96">`
-            + `<rect x="${cardX.toFixed(1)}" y="${cardY.toFixed(1)}" width="${cardW}" height="${cardH}" rx="4" fill="#090d16" stroke="rgba(34,211,238,0.4)" stroke-width="1"/>`
-            + `<text x="${(cardX + 8).toFixed(1)}" y="${(cardY + 14).toFixed(1)}" fill="#94a3b8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9.5" font-weight="600">${dateStr}</text>`
-            + `<text x="${(cardX + 8).toFixed(1)}" y="${(cardY + 29).toFixed(1)}" fill="#22d3ee" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10" font-weight="600">5D sum:  ${escapeHtml(formatMoney(s5))}</text>`
-            + `<text x="${(cardX + 8).toFixed(1)}" y="${(cardY + 44).toFixed(1)}" fill="#34d399" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10" font-weight="600">20D sum: ${escapeHtml(formatMoney(s20))}</text>`
-            + `<text x="${(cardX + 8).toFixed(1)}" y="${(cardY + 59).toFixed(1)}" fill="#fbbf24" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10" font-weight="600">60D sum: ${escapeHtml(formatMoney(s60))}</text>`
+          const card = `<g class="flow-chart-tooltip-box" opacity="0.98">`
+            + `<rect x="${cardX.toFixed(1)}" y="${cardY.toFixed(1)}" width="${cardW}" height="${cardH}" rx="5" fill="#0b0f19" stroke="rgba(255,255,255,0.16)" stroke-width="1"/>`
+            + `<text x="${(cardX + 9).toFixed(1)}" y="${(cardY + 15).toFixed(1)}" fill="#f8fafc" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10.5" font-weight="700">${dateStr}</text>`
+            + `<rect x="${(cardX + 9).toFixed(1)}" y="${(cardY + 28 - 7.5).toFixed(1)}" width="7.5" height="7.5" rx="1.5" fill="#22d3ee"/>`
+            + `<text x="${(cardX + 21).toFixed(1)}" y="${(cardY + 28).toFixed(1)}" fill="#94a3b8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10">5D Impulse: <tspan fill="#22d3ee" font-weight="600">${escapeHtml(formatMoney(s5))}</tspan></text>`
+            + `<rect x="${(cardX + 9).toFixed(1)}" y="${(cardY + 45 - 7.5).toFixed(1)}" width="7.5" height="7.5" rx="1.5" fill="#34d399"/>`
+            + `<text x="${(cardX + 21).toFixed(1)}" y="${(cardY + 45).toFixed(1)}" fill="#94a3b8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10">20D Impulse: <tspan fill="#34d399" font-weight="600">${escapeHtml(formatMoney(s20))}</tspan></text>`
+            + `<rect x="${(cardX + 9).toFixed(1)}" y="${(cardY + 62 - 7.5).toFixed(1)}" width="7.5" height="7.5" rx="1.5" fill="#fbbf24"/>`
+            + `<text x="${(cardX + 21).toFixed(1)}" y="${(cardY + 62).toFixed(1)}" fill="#94a3b8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10">60D Impulse: <tspan fill="#fbbf24" font-weight="600">${escapeHtml(formatMoney(s60))}</tspan></text>`
             + `</g>`;
 
           overlay = `<g class="flow-crosshair-group" pointer-events="none">`
