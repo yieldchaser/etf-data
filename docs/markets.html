@@ -35,9 +35,16 @@
     .chip { display: inline-flex; align-items: center; padding: 1px 6px; border-radius: 4px; font-size: 10.5px; font-weight: 500; line-height: 1.5; white-space: nowrap; letter-spacing: 0.02em; }
     .tab-active { background: rgba(34,211,238,0.08); color: var(--cyan); border-color: rgba(34,211,238,0.3); }
     .row-hover:hover { background: rgba(34,211,238,0.025); }
-    .scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
+    /* Dark scrollbars matching leaderboard styling across entire page */
+    *::-webkit-scrollbar,
+    .scrollbar::-webkit-scrollbar { height: 7px; width: 7px; }
+    *::-webkit-scrollbar-thumb,
     .scrollbar::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+    *::-webkit-scrollbar-thumb:hover,
+    .scrollbar::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+    *::-webkit-scrollbar-track,
     .scrollbar::-webkit-scrollbar-track { background: transparent; }
+    *, .scrollbar { scrollbar-width: thin; scrollbar-color: #27272a transparent; }
     [x-cloak] { display: none !important; }
     @keyframes pulse-fade { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
     .pulse-load { animation: pulse-fade 1.4s ease-in-out infinite; }
@@ -2846,7 +2853,7 @@
                       <p class="flow-chart-description">Click any peer instrument to switch the studio to its historical series.</p>
                     </div>
                   </div>
-                  <div class="flow-table-wrap" style="max-height:225px">
+                  <div class="flow-table-wrap flow-peer-table-wrap scrollbar">
                     <table class="flow-table">
                       <thead>
                         <tr>

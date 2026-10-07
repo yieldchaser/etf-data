@@ -23,6 +23,35 @@
   box-sizing: border-box;
 }
 
+/* ── Dark Scrollbars Matching Leaderboard Styling ── */
+.flow-research *::-webkit-scrollbar,
+.flow-research::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+.flow-research *::-webkit-scrollbar-track,
+.flow-research::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.flow-research *::-webkit-scrollbar-thumb,
+.flow-research::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 4px;
+}
+
+.flow-research *::-webkit-scrollbar-thumb:hover,
+.flow-research::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}
+
+.flow-research,
+.flow-research * {
+  scrollbar-width: thin;
+  scrollbar-color: #27272a transparent;
+}
+
 .flow-research,
 .flow-research .flow-shell,
 .flow-research .flow-main,
@@ -1148,9 +1177,14 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem;
-  max-height: 180px;
-  overflow-y: auto;
+  max-height: none;
+  overflow: visible;
   padding: 0.35rem 0;
+}
+
+.flow-research .flow-peer-table-wrap {
+  max-height: none;
+  overflow-y: visible;
 }
 
 .flow-research .flow-ticker-chip {

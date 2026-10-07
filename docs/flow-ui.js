@@ -618,6 +618,7 @@
       flowAlphaSignalsData: null,
       flowAlphaFilter: 'all',
       flowHoverIndex: null,
+      flowHoverChart: null,
       flowViewMode: 'studio',
       flowShowMarketPulse: false,
       flowShowOutliers: true,
@@ -1269,7 +1270,7 @@
         }).join('');
         const description = `Daily ETF estimated net flow in US dollars for ${rows.length} selected sessions. Positive and negative bars diverge from a neutral zero line. A line shows the complete 20-observation rolling mean; incomplete windows are gaps.`;
         let overlay = '';
-        if (this.flowHoverIndex !== null && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
+        if (this.flowHoverIndex !== null && this.flowHoverChart !== 'impulse' && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
           const hRow = rows[this.flowHoverIndex];
           const hFlow = finiteNumber(hRow.flow);
           const hY = hFlow !== null ? yScale(hFlow) : zeroY;
@@ -1345,7 +1346,7 @@
         const lastPoint = lastY === null ? '' : `<circle cx="${frame.xScale(rows.length - 1).toFixed(1)}" cy="${lastY.toFixed(1)}" r="3.5" fill="${lastColor}"/>`;
         const description = `Selected-window cumulative source-reported aggregate net flow, summed from a zero baseline before ${rows[0].date}. Missing daily values carry the prior cumulative value and are not converted to zero.`;
         let overlay = '';
-        if (this.flowHoverIndex !== null && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
+        if (this.flowHoverIndex !== null && this.flowHoverChart !== 'impulse' && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
           const hRow = rows[this.flowHoverIndex];
           const hVal = finiteNumber(hRow.selectedCumulative);
           const hY = hVal !== null ? yScale(hVal) : zeroY;
@@ -1423,7 +1424,7 @@
         }).join('');
         const description = 'The left axis shows complete trailing 10-observation source-reported aggregate net flow in US dollars. The right axis shows the tie-aware empirical percentile of that flow against all complete 10-observation windows in available source history. Missing values remain gaps.';
         let overlay = '';
-        if (this.flowHoverIndex !== null && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
+        if (this.flowHoverIndex !== null && this.flowHoverChart !== 'impulse' && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
           const hRow = rows[this.flowHoverIndex];
           const hPct = finiteNumber(hRow.percentile10);
           const hY = hPct !== null ? yPercentile(hPct) : null;
@@ -1490,7 +1491,7 @@
         }).join('');
         const description = 'Prior-only z-score for daily ETF estimated net flow. Each value uses the preceding 30 available sessions and excludes the current observation from its mean and standard deviation. Missing values remain gaps.';
         let overlay = '';
-        if (this.flowHoverIndex !== null && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
+        if (this.flowHoverIndex !== null && this.flowHoverChart !== 'impulse' && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
           const hRow = rows[this.flowHoverIndex];
           const hZ = finiteNumber(hRow.priorOnlyZScore);
           const hY = hZ !== null ? yScale(hZ) : zeroY;
@@ -1565,7 +1566,7 @@
         }).join('');
         const description = 'Source-reported NAV or share price on the left axis and daily net flow on the right axis. Each series uses an independent scale and missing observations are not connected.';
         let overlay = '';
-        if (this.flowHoverIndex !== null && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
+        if (this.flowHoverIndex !== null && this.flowHoverChart !== 'impulse' && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
           const hRow = rows[this.flowHoverIndex];
           const hPrice = finiteNumber(hRow.nav);
           const hY = hPrice !== null ? yPrice(hPrice) : null;
@@ -1625,7 +1626,7 @@
         }).join('');
 
         let overlay = '';
-        if (this.flowHoverIndex !== null && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
+        if (this.flowHoverIndex !== null && this.flowHoverChart === 'impulse' && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
           const hRow = rows[this.flowHoverIndex];
           const x = frame.xScale(this.flowHoverIndex);
           const top = frame.padding.top;
@@ -1834,8 +1835,10 @@
         let index = rows.length - 1;
         const clientX = Number.isFinite(event?.clientX) ? event.clientX : null;
         const clientY = Number.isFinite(event?.clientY) ? event.clientY : null;
+        const target = event?.currentTarget;
+        const isImpulse = Boolean(target?.classList?.contains('flow-impulse-chart') || target?.closest?.('.flow-impulse-chart'));
+        this.flowHoverChart = isImpulse ? 'impulse' : 'main';
         if (event?.type === 'mousemove' && clientX !== null) {
-          const target = event.currentTarget;
           const svg = target?.querySelector?.('svg') || target;
           const rect = svg?.getBoundingClientRect?.();
           if (rect?.width) index = Math.round(((clientX - rect.left) / rect.width) * (rows.length - 1));
@@ -1852,11 +1855,15 @@
 
       flowChartPointerLeave() {
         this.flowHoverIndex = null;
+        this.flowHoverChart = null;
         this.flowChartTooltip = { ...this.flowChartTooltip, visible: false };
       },
 
-      flowChartFocus() {
+      flowChartFocus(event) {
         if (!this.flowSelectedRows.length) return;
+        const target = event?.currentTarget;
+        const isImpulse = Boolean(target?.classList?.contains('flow-impulse-chart') || target?.closest?.('.flow-impulse-chart'));
+        this.flowHoverChart = isImpulse ? 'impulse' : 'main';
         const clamped = this.flowSelectedRows.length - 1;
         this.flowHoverIndex = clamped;
         this.flowChartTooltip = {
