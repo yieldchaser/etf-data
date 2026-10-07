@@ -513,9 +513,9 @@ Correlation matrix + Growth of $100 log-scale chart for selected assets.
 
 ### Source and catalog
 
-The authoritative flow dataset is the local, read-only collection under `data/flows/`: **145 leveraged and inverse instruments, 177,374 daily rows from 2016-01-04 through 2026-10-05**, with zero duplicate ticker-dates and zero missing required values. `scripts/build_local_flow_artifacts.py` validates those sources and deterministically regenerates every published artifact under `docs/data/flows/` (145 per-ticker JSON files, `catalog.json`, `manifest.json`); it refuses any output directory inside `data/flows/`.
+The authoritative flow dataset is the local, read-only collection under `data/flows/`: **145 leveraged and inverse instruments, 177,552 daily rows from 2016-01-04 through 2026-10-06**, with zero duplicate ticker-dates and zero missing required values. `scripts/build_local_flow_artifacts.py` validates those sources and deterministically regenerates every published artifact under `docs/data/flows/` (145 per-ticker JSON files, `catalog.json`, `manifest.json`); it refuses any output directory inside `data/flows/`.
 
-`docs/data/flows/catalog.json` is the generated UI catalog (schema 1, `local-authoritative-117-v1`, 145 instruments of which 24 are featured) and `docs/data/flows/manifest.json` is the coverage manifest (schema 2, status `complete`, 145 files, 177,374 rows). Both are marked `network_fetch: false`. The Markets Fund Flows interface reads only these static files; the runtime fallback enforces the same 145/24 cardinality before rendering, and the browser cannot start a source refresh.
+`docs/data/flows/catalog.json` is the generated UI catalog (schema 1, `local-authoritative-117-v1`, 145 instruments of which 24 are featured) and `docs/data/flows/manifest.json` is the coverage manifest (schema 2, status `complete`, 145 files, 177,552 rows). Both are marked `network_fetch: false`. The Markets Fund Flows interface reads only these static files; the runtime fallback enforces the same 145/24 cardinality before rendering, and the browser cannot start a source refresh.
 
 Trackinsight remains recorded as the historical provider in the metadata (`source_provider: Trackinsight`, `source_mode: historical_local`), but no runtime path performs a Trackinsight or other network request. External ingestion is disabled: `scripts/fetch_etf_flow.py` exits with code 2 in every mode unless the explicit `--unsafe-external-fetch` manual opt-in is passed, and `daily_etf_flows.yml` has no schedule — its only job prints the local-only policy and exits 1.
 
@@ -532,7 +532,7 @@ python scripts/build_local_flow_artifacts.py --verify-output --output-dir docs/d
 python scripts/build_local_flow_artifacts.py --output-dir /tmp/flows-out
 ```
 
-Validation enforces the 145-instrument universe, the 177,374-row total, required columns per individual file, aggregate and workbook agreement, and identity with `FUND_FLOW_ETFS.md`. The CI gate in `build_site.yml` runs `--verify-output` plus explicit 145-instrument / 24-featured / no-watch-tier / no-network-fetch assertions before any artifact upload.
+Validation enforces the 145-instrument universe, the 177,552-row total, required columns per individual file, aggregate and workbook agreement, and identity with `FUND_FLOW_ETFS.md`. The CI gate in `build_site.yml` runs `--verify-output` plus explicit 145-instrument / 24-featured / no-watch-tier / no-network-fetch assertions before any artifact upload.
 
 ### Legacy external ingestion (disabled)
 
@@ -634,7 +634,7 @@ The suite covers the full pipeline end-to-end. Key areas:
 | Markets engine | `test_markets_engine.py`, `test_markets_unit_conversion.py`, `test_self_living_merge.py`, `test_unit_gaps.py` | Market returns pipeline, currency conversion, partial-year merge |
 | CI config | `test_ci_config.py`, `test_pipeline_automation.py` | Workflow structure invariants (e.g. `continue-on-error` policy) |
 | ETF flow catalog | `test_etf_flow_catalog.py` | Local 145-instrument leveraged/inverse dataset contract for the disabled ingestion pipeline (no synthetic primary catalog, no watch tier), Trackinsight parser validation, retry/pacing, transactional merge, resumable checkpoint planning/diagnostics, rebase conflict handling, disabled-workflow and external-ingestion gating safety |
-| Local flow artifacts | `test_local_flow_artifacts.py` | 145-instrument/177,374-row local dataset validation, per-file schema and SHA-256 spot-checks, catalog/manifest determinism, temp-dir builds that never touch `data/flows/`, output-path safety, UI/workflow cardinality sync, the `data/flows/` git-ignore regression guard, and the no-legacy-YAML scan |
+| Local flow artifacts | `test_local_flow_artifacts.py` | 145-instrument/177,552-row local dataset validation, per-file schema and SHA-256 spot-checks, catalog/manifest determinism, temp-dir builds that never touch `data/flows/`, output-path safety, UI/workflow cardinality sync, the `data/flows/` git-ignore regression guard, and the no-legacy-YAML scan |
 | Fund Flows UI | `test_flow_ui.py`, `test_flow_ui_metrics.py` | Local catalog integrity (145/24), parent/child history reconciliation, shared native range, accessibility, dual-axis percentile output, v1/v2 normalization, neutral zero/null handling, prior-only z-score, and cumulative-window behavior |
 
 The sanitizer tests in `test_scoring.py` (46 tests) exercise `cfg.sanitizer.apply()` with distinct synthetic inputs, validating blocked tickers, name patterns, ticker normalization (BRK-B → BRK.B), GOOG → GOOGL dedup, and KRX cross-listing collapse — and prove the build-time memoization cache returns byte-identical results via deep copies.
