@@ -206,10 +206,10 @@
           <div>
             <div class="pulse-load font-mono text-sm tracking-widest uppercase mb-3" style="color: var(--cyan)">Loading conviction data…</div>
             <div class="h-1.5 w-72 sm:w-80 max-w-full mx-auto rounded-full overflow-hidden" style="background: var(--surface-2); border: 1px solid rgba(255,255,255,0.06);">
-              <div class="h-full rounded-full transition-all duration-200 ease-out"
-                   :style="'width: ' + Math.min(100, Math.max(0, loadProgress)) + '%; background: var(--cyan); box-shadow: 0 0 8px rgba(34,211,238,0.45);'"></div>
+              <div class="h-full rounded-full"
+                   :style="'width: ' + Math.min(100, Math.max(0, displayProgress)).toFixed(1) + '%; background: var(--cyan); box-shadow: 0 0 8px rgba(34,211,238,0.45);'"></div>
             </div>
-            <div class="mt-2 text-[10px] font-mono tracking-wider" style="color: var(--text-3)" x-text="Math.round(loadProgress) + '%'"></div>
+            <div class="mt-2 text-[10px] font-mono tracking-wider" style="color: var(--text-3)" x-text="Math.round(displayProgress) + '%'"></div>
           </div>
         </template>
         <template x-if="error && !leaderboard.length">
@@ -2796,7 +2796,7 @@ function app() {
   return {
     leaderboard: [], holdings: [], changelog: {}, meta: {}, flow: {}, overlap: {},
     scoreHistory: {},
-    loading: true, loadProgress: 0, error: '',
+    loading: true, loadProgress: 0, displayProgress: 0, targetProgress: 0, error: '',
     activeTab: 'leaderboard',
     overlapHover: '',
     flag: '', selectedTier: '', selectedSector: '', selectedCountry: '', regionFilter: '', newOnly: false, burstOnly: false, craterOnly: false, q: '', excludeConcentrated: false, qualityAdoptedOnly: false, preHcOnly: false, stealthBuyOnly: false, quantQualityOnly: false,
@@ -2877,21 +2877,37 @@ function app() {
 
     async load() {
       this.loadProgress = 0;
-      let completedWeight = 0;
-      const addProgress = (weight) => {
-        completedWeight += weight;
-        this.loadProgress = Math.min(95, Math.max(this.loadProgress, Math.round(completedWeight)));
+      this.displayProgress = 0;
+      this.targetProgress = 0;
+
+      let rafId = null;
+      const animateProgress = () => {
+        if (!this.loading && this.displayProgress >= 99.5) {
+          this.displayProgress = 100;
+          this.loadProgress = 100;
+          return;
+        }
+        if (this.displayProgress < this.targetProgress) {
+          const delta = (this.targetProgress - this.displayProgress) * 0.14;
+          this.displayProgress = Math.min(this.targetProgress, this.displayProgress + Math.max(0.35, delta));
+        } else if (this.targetProgress < 90) {
+          // Continuous smooth creeping pace while waiting on network fetches
+          this.targetProgress = Math.min(90, this.targetProgress + 0.08);
+          this.displayProgress = Math.min(this.targetProgress, this.displayProgress + 0.08);
+        }
+        this.loadProgress = Math.round(this.displayProgress);
+        if (this.loading || this.displayProgress < 100) {
+          rafId = requestAnimationFrame(animateProgress);
+        }
+      };
+      rafId = requestAnimationFrame(animateProgress);
+
+      const addTarget = (weight) => {
+        this.targetProgress = Math.min(95, this.targetProgress + weight);
       };
 
-      // Soft ticker for continuous smooth motion from 0%
-      const ticker = setInterval(() => {
-        if (this.loadProgress < 90) {
-          this.loadProgress = Math.min(90, this.loadProgress + 1);
-        }
-      }, 35);
-
       const track = (promise, weight) => promise.then(res => {
-        addProgress(weight);
+        addTarget(weight);
         return res;
       });
 
@@ -2901,18 +2917,32 @@ function app() {
           flow, overlap, scoreHistory, holdingsExits,
         ] = await Promise.all([
           Promise.all([
-            track(fetch('data/leaderboard.json').then(r => r.ok ? r.json() : Promise.reject(r.status)), 30),
+            track(fetch('data/leaderboard.json').then(r => r.ok ? r.json() : Promise.reject(r.status)), 35),
             track(fetch('data/holdings_latest.json').then(r => r.ok ? r.json() : Promise.reject(r.status)), 30),
-            track(fetch('data/changelog.json').then(r => r.ok ? r.json() : Promise.reject(r.status)), 10),
-            track(fetch('data/metadata.json').then(r => r.ok ? r.json() : Promise.reject(r.status)), 10),
+            track(fetch('data/changelog.json').then(r => r.ok ? r.json() : Promise.reject(r.status)), 8),
+            track(fetch('data/metadata.json').then(r => r.ok ? r.json() : Promise.reject(r.status)), 7),
           ]),
           track(fetch('data/flow.json').then(r => r.json()).catch(() => ({})), 5),
           track(fetch('data/etf_overlap.json').then(r => r.json()).catch(() => ({})), 5),
           track(fetch('data/score_history.json').then(r => r.json()).catch(() => ({})), 5),
           track(fetch('data/holdings_exits.json').then(r => r.json()).catch(() => ({})), 5),
         ]);
-        clearInterval(ticker);
-        this.loadProgress = 100;
+
+        this.targetProgress = 100;
+        // Wait until displayProgress glides all the way to 100% so the visual bar and number are full
+        await new Promise(resolve => {
+          const checkDone = () => {
+            if (this.displayProgress >= 99.5) {
+              this.displayProgress = 100;
+              this.loadProgress = 100;
+              resolve();
+            } else {
+              requestAnimationFrame(checkDone);
+            }
+          };
+          checkDone();
+        });
+
         this.leaderboard = lb; this.holdings = hd; this.changelog = chg; this.meta = mt;
         this.flow = flow; this.overlap = overlap; this.scoreHistory = scoreHistory; this.holdingsExits = holdingsExits;
         // Default sort: leaderboard rank (1..N top to down)
@@ -2927,18 +2957,27 @@ function app() {
         if (!localStorage.getItem('conviction_pin_snapshot') && !localStorage.getItem('predator_pin_snapshot') && this.pins.length) {
           this.snapshotPins();
         }
-        // Brief pause to allow the progress bar to complete all the way to 100% cleanly
-        await new Promise(r => setTimeout(r, 180));
+        // Brief pause to display the full 100% state cleanly before fading out
+        await new Promise(r => setTimeout(r, 160));
       } catch (e) {
-        clearInterval(ticker);
+        if (rafId) cancelAnimationFrame(rafId);
         this.error = String(e);
       } finally {
-        clearInterval(ticker);
+        if (rafId) cancelAnimationFrame(rafId);
+        this.displayProgress = 100;
+        this.loadProgress = 100;
         this.loading = false;
       }
     },
 
-    async retryLoad() { this.error = ''; this.loadProgress = 0; this.loading = true; await this.load(); },
+    async retryLoad() {
+      this.error = '';
+      this.loadProgress = 0;
+      this.displayProgress = 0;
+      this.targetProgress = 0;
+      this.loading = true;
+      await this.load();
+    },
 
     get counts() {
       return {

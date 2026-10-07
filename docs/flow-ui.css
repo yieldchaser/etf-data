@@ -1327,7 +1327,16 @@
   gap: 0.35rem;
 }
 
-/* ── Quant Alpha Blotter ── */
+.flow-research .flow-btn-icon {
+  width: 0.825rem;
+  height: 0.825rem;
+  display: inline-block;
+  vertical-align: -0.125em;
+  margin-right: 0.35rem;
+  flex-shrink: 0;
+}
+
+/* ── Systematic Strategy Signals ── */
 .flow-research .flow-conviction-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

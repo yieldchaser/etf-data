@@ -2030,7 +2030,9 @@
             <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'studio' ? 'true' : 'false'" @click="flowViewMode = 'studio'">Instrument studio</button>
             <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'scanner' ? 'true' : 'false'" @click="flowViewMode = 'scanner'" x-text="`Cross-ETF leaderboard (${flowCatalog ? flowCatalog.counts.instruments : 145})`"></button>
             <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'matrix' ? 'true' : 'false'" @click="flowViewMode = 'matrix'">Category &amp; regime matrix</button>
-            <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'alpha' ? 'true' : 'false'" @click="flowViewMode = 'alpha'">⚡ Quant Alpha Blotter</button>
+            <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'alpha' ? 'true' : 'false'" @click="flowViewMode = 'alpha'">
+              <svg class="flow-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Strategy signals
+            </button>
           </div>
           <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:0.45rem">
             <h2>ETF estimated net flows</h2>
@@ -2214,7 +2216,10 @@
             </div>
             <div style="display:flex;align-items:center;gap:0.4rem">
               <span class="flow-eyebrow" x-text="`${flowActiveCategoryInstruments.length} instruments`"></span>
-              <button class="flow-chip" type="button" @click="flowUniverseDrawerOpen = !flowUniverseDrawerOpen" x-text="flowUniverseDrawerOpen ? 'Close Universe' : '⊞ Grouped 145 Universe'"></button>
+              <button class="flow-chip" type="button" @click="flowUniverseDrawerOpen = !flowUniverseDrawerOpen">
+                <svg class="flow-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                <span x-text="flowUniverseDrawerOpen ? 'Close Universe' : 'Grouped 145 Universe'"></span>
+              </button>
             </div>
           </div>
 
@@ -2448,20 +2453,20 @@
             </div>
           </div>
 
-          <!-- ─── VIEW 4: QUANT ALPHA BLOTTER (26 SIGNALS, TOP-5 BASKET, 10 ECOSYSTEMS) ─── -->
+          <!-- ─── VIEW 4: STRATEGY SIGNALS (26 SIGNALS, TOP-5 BASKET, 10 ECOSYSTEMS) ─── -->
           <div class="flow-panel-card" x-show="flowViewMode === 'alpha'">
             <div class="flow-chart-heading">
               <div>
                 <p class="flow-chart-kicker">Multi-Factor Quantitative Systematic Engine</p>
-                <h3>Systematic Alpha Blotter &amp; Conviction Basket</h3>
-                <p class="flow-chart-description">Live strategy triggers across all 145 leveraged and inverse ETFs. Derived from split-adjusted historical flow event-studies, empirical z-score shocks, and bull/bear flow transfers.</p>
+                <h3>Systematic Strategy Signals &amp; Conviction Basket</h3>
+                <p class="flow-chart-description">Active quantitative strategy signals across all 145 leveraged and inverse ETFs. Derived from split-adjusted historical flow event-studies, empirical z-score shocks, and bull/bear flow transfers.</p>
               </div>
               <div style="display:flex;flex-wrap:wrap;gap:0.35rem;align-items:center">
                 <button class="flow-chip" type="button" :aria-pressed="flowAlphaFilter === 'all' ? 'true' : 'false'" @click="flowAlphaFilter = 'all'">All Active Signals (<span x-text="flowAlphaActiveSignals.length"></span>)</button>
-                <button class="flow-chip" type="button" :aria-pressed="flowAlphaFilter === 'ignition' ? 'true' : 'false'" @click="flowAlphaFilter = 'ignition'">Momentum Ignition</button>
-                <button class="flow-chip" type="button" :aria-pressed="flowAlphaFilter === 'slingshot' ? 'true' : 'false'" @click="flowAlphaFilter = 'slingshot'">Washout Slingshot</button>
-                <button class="flow-chip" type="button" :aria-pressed="flowAlphaFilter === 'squeeze' ? 'true' : 'false'" @click="flowAlphaFilter = 'squeeze'">Squeeze</button>
-                <button class="flow-chip" type="button" :aria-pressed="flowAlphaFilter === 'trap' ? 'true' : 'false'" @click="flowAlphaFilter = 'trap'">Traps &amp; Fades</button>
+                <button class="flow-chip" type="button" :aria-pressed="flowAlphaFilter === 'ignition' ? 'true' : 'false'" @click="flowAlphaFilter = 'ignition'">Breakout Momentum</button>
+                <button class="flow-chip" type="button" :aria-pressed="flowAlphaFilter === 'slingshot' ? 'true' : 'false'" @click="flowAlphaFilter = 'slingshot'">Washout Rebound</button>
+                <button class="flow-chip" type="button" :aria-pressed="flowAlphaFilter === 'squeeze' ? 'true' : 'false'" @click="flowAlphaFilter = 'squeeze'">Inverse Squeeze</button>
+                <button class="flow-chip" type="button" :aria-pressed="flowAlphaFilter === 'trap' ? 'true' : 'false'" @click="flowAlphaFilter = 'trap'">Exhaustion Pullback</button>
               </div>
             </div>
 
@@ -2499,7 +2504,7 @@
 
             <!-- Active Strategy Signals Table -->
             <div style="margin:1rem 0">
-              <h4 style="color:var(--flow-text);margin-bottom:0.45rem">Live Alpha Signal Blotter (<span x-text="flowAlphaFilteredSignals.length"></span> Triggered Setups)</h4>
+              <h4 style="color:var(--flow-text);margin-bottom:0.45rem">Active Strategy Signals (<span x-text="flowAlphaFilteredSignals.length"></span> Triggered Setups)</h4>
               <div class="flow-table-wrap">
                 <table class="flow-table">
                   <thead>
@@ -2537,9 +2542,9 @@
               </div>
             </div>
 
-            <!-- Bull vs Bear Ecosystem Tug-of-War Section -->
+            <!-- Bull vs Bear Ecosystem Pairs Section -->
             <div style="margin:1rem 0">
-              <h4 style="color:var(--flow-text);margin-bottom:0.45rem">Bull vs. Bear Ecosystem Tug-of-War (10 Matched Pairs)</h4>
+              <h4 style="color:var(--flow-text);margin-bottom:0.45rem">Bull vs. Bear Ecosystem Pairs (10 Matched Sets)</h4>
               <p class="flow-chart-description" style="margin-bottom:0.65rem">Tracks dynamic liquidity rotation between paired Leveraged Bull and Inverse Bear instruments. Q1 signals liquidity rotation from Bear to Bull; Q2 signals rotation from Bull to Bear.</p>
               <div class="flow-pairs-grid">
                 <template x-for="eco in flowAlphaBullBearPairs" :key="eco.ecosystem">
@@ -2622,13 +2627,22 @@
               <div class="flow-alpha-hops" x-show="flowSelectedInstrument?.paired_bear || flowSelectedInstrument?.paired_bull || flowSelectedInstrument?.smart_twin">
                 <span class="flow-eyebrow">Ecosystem Hops:</span>
                 <template x-if="flowSelectedInstrument?.paired_bear">
-                  <button class="flow-chip" type="button" @click="selectFlowTicker(flowSelectedInstrument.paired_bear, { writeUrl: true, push: true })" x-text="`⚖️ Paired Bear: ${flowSelectedInstrument.paired_bear}`"></button>
+                  <button class="flow-chip" type="button" @click="selectFlowTicker(flowSelectedInstrument.paired_bear, { writeUrl: true, push: true })">
+                    <svg class="flow-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M16 16l4-4-4-4M8 8l-4 4 4 4"/></svg>
+                    <span x-text="`Paired Bear: ${flowSelectedInstrument.paired_bear}`"></span>
+                  </button>
                 </template>
                 <template x-if="flowSelectedInstrument?.paired_bull">
-                  <button class="flow-chip" type="button" @click="selectFlowTicker(flowSelectedInstrument.paired_bull, { writeUrl: true, push: true })" x-text="`⚖️ Paired Bull: ${flowSelectedInstrument.paired_bull}`"></button>
+                  <button class="flow-chip" type="button" @click="selectFlowTicker(flowSelectedInstrument.paired_bull, { writeUrl: true, push: true })">
+                    <svg class="flow-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M16 16l4-4-4-4M8 8l-4 4 4 4"/></svg>
+                    <span x-text="`Paired Bull: ${flowSelectedInstrument.paired_bull}`"></span>
+                  </button>
                 </template>
                 <template x-if="flowSelectedInstrument?.smart_twin">
-                  <button class="flow-chip" type="button" @click="selectFlowTicker(flowSelectedInstrument.smart_twin, { writeUrl: true, push: true })" x-text="`🔄 Smart Twin: ${flowSelectedInstrument.smart_twin}`"></button>
+                  <button class="flow-chip" type="button" @click="selectFlowTicker(flowSelectedInstrument.smart_twin, { writeUrl: true, push: true })">
+                    <svg class="flow-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                    <span x-text="`Paired Twin: ${flowSelectedInstrument.smart_twin}`"></span>
+                  </button>
                 </template>
               </div>
             </div>
@@ -2727,7 +2741,15 @@
               <!-- Steady Inspection HUD Bar (Docked point-in-time readout, does not float away) -->
               <div class="flow-chart-hud" x-show="flowActiveHoverRow" aria-live="polite">
                 <div class="flow-hud-badge">
-                  <span x-text="flowIsHovering ? '📍 MARKED SESSION' : '🔒 LATEST SESSION'"></span>
+                  <span style="display:inline-flex;align-items:center;gap:0.3rem">
+                    <template x-if="flowIsHovering">
+                      <svg class="flow-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true" style="margin-right:0.15rem"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="3" x2="12" y2="7"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="3" y1="12" x2="7" y2="12"/><line x1="17" y1="12" x2="21" y2="12"/></svg>
+                    </template>
+                    <template x-if="!flowIsHovering">
+                      <svg class="flow-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="margin-right:0.15rem"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    </template>
+                    <span x-text="flowIsHovering ? 'INSPECTED SESSION' : 'LATEST SESSION'"></span>
+                  </span>
                   <span style="color:#ffffff" x-text="flowActiveHoverRow?.date || '—'"></span>
                 </div>
                 <div class="flow-hud-metrics">
