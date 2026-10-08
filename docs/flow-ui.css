@@ -974,6 +974,12 @@
   max-height: 680px;
 }
 
+@media (min-width: 1100px) {
+  .flow-research .flow-scanner-wrap .flow-table {
+    width: 100%;
+  }
+}
+
 .flow-research .flow-table {
   width: max-content;
   min-width: 100%;

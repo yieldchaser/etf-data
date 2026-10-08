@@ -2780,10 +2780,10 @@
       "flow_alpha_score": 5.55,
       "strategy_triggered": "S4 Rank #1 (TOP-3 & TOP-5 CORE CONVICTION) \u2014 Score=+5.55",
       "action": "LONG AMDL (20% Weight in Top-5 Weekly Basket; 33.3% if Top-3)",
-      "hist_expected_5d_pct": 1.88,
+      "hist_expected_5d_pct": 0.39,
       "hist_expected_10d_pct": 3.8,
-      "hist_expected_20d_pct": 7.9,
-      "hist_win_rate_pct": 56.4
+      "hist_expected_20d_pct": 2.38,
+      "hist_win_rate_pct": 42.7
     },
     {
       "date": "2026-10-02",
@@ -2806,10 +2806,10 @@
       "flow_alpha_score": 3.78,
       "strategy_triggered": "S4 Rank #2 (TOP-3 & TOP-5 CORE CONVICTION) \u2014 Score=+3.78",
       "action": "LONG CIEX (20% Weight in Top-5 Weekly Basket; 33.3% if Top-3)",
-      "hist_expected_5d_pct": 1.88,
+      "hist_expected_5d_pct": 10.49,
       "hist_expected_10d_pct": 3.8,
-      "hist_expected_20d_pct": 7.9,
-      "hist_win_rate_pct": 56.4
+      "hist_expected_20d_pct": -6.33,
+      "hist_win_rate_pct": 60.0
     },
     {
       "date": "2026-10-02",
@@ -2832,10 +2832,10 @@
       "flow_alpha_score": 2.58,
       "strategy_triggered": "S4 Rank #3 (TOP-3 & TOP-5 CORE CONVICTION) \u2014 Score=+2.58",
       "action": "LONG GEVX (20% Weight in Top-5 Weekly Basket; 33.3% if Top-3)",
-      "hist_expected_5d_pct": 1.88,
+      "hist_expected_5d_pct": 0.14,
       "hist_expected_10d_pct": 3.8,
-      "hist_expected_20d_pct": 7.9,
-      "hist_win_rate_pct": 56.4
+      "hist_expected_20d_pct": 3.81,
+      "hist_win_rate_pct": 53.1
     },
     {
       "date": "2026-10-02",
@@ -2858,10 +2858,10 @@
       "flow_alpha_score": 2.05,
       "strategy_triggered": "S4 Rank #4 (TOP-5 CORE CONVICTION) \u2014 Score=+2.05",
       "action": "LONG INTW (20% Weight in Top-5 Weekly Basket; 33.3% if Top-3)",
-      "hist_expected_5d_pct": 1.88,
+      "hist_expected_5d_pct": 9.68,
       "hist_expected_10d_pct": 3.8,
-      "hist_expected_20d_pct": 7.9,
-      "hist_win_rate_pct": 56.4
+      "hist_expected_20d_pct": 43.97,
+      "hist_win_rate_pct": 50.0
     },
     {
       "date": "2026-10-05",
@@ -2884,10 +2884,10 @@
       "flow_alpha_score": 1.66,
       "strategy_triggered": "S4 Rank #5 (TOP-5 CORE CONVICTION) \u2014 Score=+1.66",
       "action": "LONG SSO (20% Weight in Top-5 Weekly Basket; 33.3% if Top-3)",
-      "hist_expected_5d_pct": 1.88,
+      "hist_expected_5d_pct": 0.71,
       "hist_expected_10d_pct": 3.8,
-      "hist_expected_20d_pct": 7.9,
-      "hist_win_rate_pct": 56.4
+      "hist_expected_20d_pct": 1.11,
+      "hist_win_rate_pct": 64.2
     },
     {
       "date": "2026-10-05",
@@ -2910,10 +2910,10 @@
       "flow_alpha_score": 1.4,
       "strategy_triggered": "S4 Rank #6 (TOP-10 RESERVE) \u2014 Score=+1.40",
       "action": "LONG QLD (20% Weight in Top-5 Weekly Basket; 33.3% if Top-3)",
-      "hist_expected_5d_pct": 1.88,
+      "hist_expected_5d_pct": 0.87,
       "hist_expected_10d_pct": 3.8,
-      "hist_expected_20d_pct": 7.9,
-      "hist_win_rate_pct": 56.4
+      "hist_expected_20d_pct": 2.27,
+      "hist_win_rate_pct": 59.5
     },
     {
       "date": "2026-10-02",
@@ -2936,10 +2936,10 @@
       "flow_alpha_score": 1.33,
       "strategy_triggered": "S4 Rank #7 (TOP-10 RESERVE) \u2014 Score=+1.33",
       "action": "LONG WDCX (20% Weight in Top-5 Weekly Basket; 33.3% if Top-3)",
-      "hist_expected_5d_pct": 1.88,
+      "hist_expected_5d_pct": 4.94,
       "hist_expected_10d_pct": 3.8,
-      "hist_expected_20d_pct": 7.9,
-      "hist_win_rate_pct": 56.4
+      "hist_expected_20d_pct": 10.64,
+      "hist_win_rate_pct": 60.0
     },
     {
       "date": "2026-10-02",
@@ -2962,10 +2962,10 @@
       "flow_alpha_score": 1.2,
       "strategy_triggered": "S4 Rank #8 (TOP-10 RESERVE) \u2014 Score=+1.20",
       "action": "LONG AXTX (20% Weight in Top-5 Weekly Basket; 33.3% if Top-3)",
-      "hist_expected_5d_pct": 1.88,
+      "hist_expected_5d_pct": 6.75,
       "hist_expected_10d_pct": 3.8,
-      "hist_expected_20d_pct": 7.9,
-      "hist_win_rate_pct": 56.4
+      "hist_expected_20d_pct": -5.61,
+      "hist_win_rate_pct": 42.9
     },
     {
       "date": "2026-10-02",
@@ -2988,10 +2988,10 @@
       "flow_alpha_score": 1.08,
       "strategy_triggered": "S4 Rank #9 (TOP-10 RESERVE) \u2014 Score=+1.08",
       "action": "LONG CRDU (20% Weight in Top-5 Weekly Basket; 33.3% if Top-3)",
-      "hist_expected_5d_pct": 1.88,
+      "hist_expected_5d_pct": 5.45,
       "hist_expected_10d_pct": 3.8,
-      "hist_expected_20d_pct": 7.9,
-      "hist_win_rate_pct": 56.4
+      "hist_expected_20d_pct": 8.38,
+      "hist_win_rate_pct": 54.5
     },
     {
       "date": "2026-10-02",
@@ -3014,10 +3014,10 @@
       "flow_alpha_score": 1.08,
       "strategy_triggered": "S4 Rank #10 (TOP-10 RESERVE) \u2014 Score=+1.08",
       "action": "LONG RMBX (20% Weight in Top-5 Weekly Basket; 33.3% if Top-3)",
-      "hist_expected_5d_pct": 1.88,
+      "hist_expected_5d_pct": -1.43,
       "hist_expected_10d_pct": 3.8,
-      "hist_expected_20d_pct": 7.9,
-      "hist_win_rate_pct": 56.4
+      "hist_expected_20d_pct": 14.84,
+      "hist_win_rate_pct": 42.9
     }
   ],
   "bull_bear_ecosystems": [
@@ -3311,8 +3311,7 @@
         "UBT"
       ],
       "bear_tickers": [
-        "TMV",
-        "TYD"
+        "TMV"
       ],
       "overlapping_days": 2678,
       "base_5d_pct": -0.21,
@@ -3949,7 +3948,7 @@
     }
   ],
   "breadth_regimes": {
-    "Broad Bull Capitulation (pct_distrib_z15 >= 10%)": {
+    "Broad Bull Outflow Washout (pct_distrib_z15 >= 10%)": {
       "n_days": 389,
       "tqqq_fwd_5d_mean": 1.36,
       "tqqq_fwd_5d_win_rate": 63.7,
@@ -3984,5 +3983,12 @@
       "tqqq_fwd_20d_mean": 4.32,
       "eq_wt_bull_fwd_5d_mean": 0.37
     }
+  },
+  "basket_backtest_summary": {
+    "cagr_pct": 72.8,
+    "sharpe": 2.84,
+    "win_rate_pct": 56.4,
+    "expected_5d_pct": 1.88,
+    "expected_20d_pct": 7.9
   }
 }

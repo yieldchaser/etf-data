@@ -2221,7 +2221,7 @@
           </div>
         </div>
 
-        <div class="flow-category-bar">
+        <div class="flow-category-bar" x-show="flowViewMode === 'studio'">
           <div class="flow-category-tabs-wrap">
             <div class="flow-category-pills" role="tablist" aria-label="145 ETF Categories">
               <template x-for="tab in flowCategoryTabs" :key="tab.key">
@@ -2471,6 +2471,46 @@
                 </tbody>
               </table>
             </div>
+
+            <!-- Bull vs Bear Ecosystem Pairs Section -->
+            <div style="margin:1rem 0">
+              <h4 style="color:var(--flow-text);margin-bottom:0.45rem">Bull vs. Bear Ecosystem Pairs (10 Matched Sets)</h4>
+              <p class="flow-chart-description" style="margin-bottom:0.65rem">Tracks dynamic liquidity rotation between paired Leveraged Bull and Inverse Bear instruments. Q1 signals liquidity rotation from Bear to Bull; Q2 signals rotation from Bull to Bear.</p>
+              <div class="flow-pairs-grid">
+                <template x-for="eco in flowAlphaBullBearPairs" :key="eco.ecosystem">
+                  <div class="flow-pair-card">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;flex-wrap:wrap">
+                      <strong style="color:var(--flow-cyan);font-size:0.8125rem" x-text="eco.ecosystem"></strong>
+                      <span class="flow-eyebrow" x-text="`${eco.overlapping_days} paired sessions`"></span>
+                    </div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;flex-wrap:wrap;font-size:0.75rem">
+                      <div style="display:flex;align-items:center;gap:0.25rem">
+                        <span class="flow-eyebrow">Bull:</span>
+                        <template x-for="tk in eco.bull_tickers" :key="tk">
+                          <button class="flow-chip" type="button" @click="selectFlowTicker(tk, { writeUrl: true, push: true, switchToStudio: true })" x-text="tk"></button>
+                        </template>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:0.25rem">
+                        <span class="flow-eyebrow">Bear:</span>
+                        <template x-for="tk in eco.bear_tickers" :key="tk">
+                          <button class="flow-chip" type="button" @click="selectFlowTicker(tk, { writeUrl: true, push: true, switchToStudio: true })" x-text="tk"></button>
+                        </template>
+                      </div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.35rem;font-size:0.6875rem;border-top:1px solid rgba(255,255,255,0.06);padding-top:0.35rem">
+                      <div>
+                        <span class="flow-eyebrow">Q1 (Bull In / Bear Out):</span>
+                        <div class="flow-positive" x-text="`+${eco.Q1_bull_in_bear_out?.fwd5_pct?.toFixed(2)}% (Win ${eco.Q1_bull_in_bear_out?.win5_pct?.toFixed(1)}%)`"></div>
+                      </div>
+                      <div>
+                        <span class="flow-eyebrow">Q2 (Bull Out / Bear In):</span>
+                        <div class="flow-cyan" x-text="`+${eco.Q2_bull_out_bear_in?.fwd5_pct?.toFixed(2)}% (Win ${eco.Q2_bull_out_bear_in?.win5_pct?.toFixed(1)}%)`"></div>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </div>
           </div>
 
           <!-- ─── VIEW 4: STRATEGY SIGNALS (26 SIGNALS, TOP-5 BASKET, 10 ECOSYSTEMS) ─── -->
@@ -2494,7 +2534,7 @@
             <div style="margin:0.85rem 0">
               <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:0.45rem">
                 <h4 style="color:var(--flow-cyan);text-transform:uppercase;letter-spacing:0.04em">Top Conviction Multi-Factor Basket (Systematic High-Alpha Selection)</h4>
-                <span class="flow-eyebrow">Backtest: 72.8% CAGR · 2.84 Sharpe · 71.4% Win Rate</span>
+                <span class="flow-eyebrow">Model Backtest: 72.8% CAGR · 2.84 Sharpe · 56.4% Win Rate · +1.88% 5D Avg</span>
               </div>
               <div class="flow-conviction-grid">
                 <template x-for="item in flowAlphaTopBasket" :key="item.ticker">
@@ -2509,8 +2549,12 @@
                       <strong class="flow-cyan" x-text="`+${(item.flow_alpha_score || 0).toFixed(2)}`"></strong>
                     </div>
                     <div style="display:flex;align-items:baseline;justify-content:space-between;font-size:0.72rem">
+                      <span class="flow-eyebrow">Flow Z-Score:</span>
+                      <strong class="flow-cyan" x-text="`${(item.flow_zscore || 0) >= 0 ? '+' : ''}${(item.flow_zscore || 0).toFixed(2)}σ`"></strong>
+                    </div>
+                    <div style="display:flex;align-items:baseline;justify-content:space-between;font-size:0.72rem">
                       <span class="flow-eyebrow">Hist 5D Return:</span>
-                      <strong class="flow-positive" x-text="`+${(item.hist_expected_5d_pct || 0).toFixed(1)}%`"></strong>
+                      <strong :class="(item.hist_expected_5d_pct || 0) >= 0 ? 'flow-positive' : 'flow-negative'" x-text="`${(item.hist_expected_5d_pct || 0) >= 0 ? '+' : ''}${(item.hist_expected_5d_pct || 0).toFixed(2)}%`"></strong>
                     </div>
                     <div style="display:flex;align-items:baseline;justify-content:space-between;font-size:0.72rem">
                       <span class="flow-eyebrow">Win Rate:</span>
@@ -2559,46 +2603,6 @@
                     </template>
                   </tbody>
                 </table>
-              </div>
-            </div>
-
-            <!-- Bull vs Bear Ecosystem Pairs Section -->
-            <div style="margin:1rem 0">
-              <h4 style="color:var(--flow-text);margin-bottom:0.45rem">Bull vs. Bear Ecosystem Pairs (10 Matched Sets)</h4>
-              <p class="flow-chart-description" style="margin-bottom:0.65rem">Tracks dynamic liquidity rotation between paired Leveraged Bull and Inverse Bear instruments. Q1 signals liquidity rotation from Bear to Bull; Q2 signals rotation from Bull to Bear.</p>
-              <div class="flow-pairs-grid">
-                <template x-for="eco in flowAlphaBullBearPairs" :key="eco.ecosystem">
-                  <div class="flow-pair-card">
-                    <div style="display:flex;align-items:center;justify-content:space-between">
-                      <strong style="color:var(--flow-cyan);font-size:0.8125rem" x-text="eco.ecosystem"></strong>
-                      <span class="flow-eyebrow" x-text="`${eco.overlapping_days} paired sessions`"></span>
-                    </div>
-                    <div style="display:flex;align-items:center;justify-content:space-between;font-size:0.75rem">
-                      <div style="display:flex;align-items:center;gap:0.25rem">
-                        <span class="flow-eyebrow">Bull:</span>
-                        <template x-for="tk in eco.bull_tickers" :key="tk">
-                          <button class="flow-chip" type="button" @click="selectFlowTicker(tk, { writeUrl: true, push: true, switchToStudio: true })" x-text="tk"></button>
-                        </template>
-                      </div>
-                      <div style="display:flex;align-items:center;gap:0.25rem">
-                        <span class="flow-eyebrow">Bear:</span>
-                        <template x-for="tk in eco.bear_tickers" :key="tk">
-                          <button class="flow-chip" type="button" @click="selectFlowTicker(tk, { writeUrl: true, push: true, switchToStudio: true })" x-text="tk"></button>
-                        </template>
-                      </div>
-                    </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.35rem;font-size:0.6875rem;border-top:1px solid rgba(255,255,255,0.06);padding-top:0.35rem">
-                      <div>
-                        <span class="flow-eyebrow">Q1 (Bull In / Bear Out):</span>
-                        <div class="flow-positive" x-text="`+${eco.Q1_bull_in_bear_out?.fwd5_pct?.toFixed(2)}% (Win ${eco.Q1_bull_in_bear_out?.win5_pct?.toFixed(1)}%)`"></div>
-                      </div>
-                      <div>
-                        <span class="flow-eyebrow">Q2 (Bull Out / Bear In):</span>
-                        <div class="flow-cyan" x-text="`+${eco.Q2_bull_out_bear_in?.fwd5_pct?.toFixed(2)}% (Win ${eco.Q2_bull_out_bear_in?.win5_pct?.toFixed(1)}%)`"></div>
-                      </div>
-                    </div>
-                  </div>
-                </template>
               </div>
             </div>
           </div>
@@ -2824,7 +2828,7 @@
                   </label>
                 </div>
                 <p class="flow-support" x-show="!flowPriceAvailable">Price and flow are not both available for the selected window.</p>
-                <div class="flow-chart" x-show="flowPriceEnabled" tabindex="0" @mousemove="flowChartPointerMove($event)" @mouseleave="flowChartPointerLeave()" @focus="flowChartFocus()" @blur="flowChartPointerLeave()" x-html="flowPriceChartSvg"></div>
+                <div class="flow-chart" data-chart="price" x-show="flowPriceEnabled" tabindex="0" @mousemove="flowChartPointerMove($event)" @mouseleave="flowChartPointerLeave()" @focus="flowChartFocus()" @blur="flowChartPointerLeave()" x-html="flowPriceChartSvg"></div>
               </section>
 
               <!-- ─── NEW COMPANION ROW: MULTI-HORIZON IMPULSE CHART + PEER COMPARISON ─── -->

@@ -565,32 +565,6 @@
     }
     // Clean marker dot on axis line matching Blue Margin (no redundant date box)
     out += `<circle cx="${x.toFixed(1)}" cy="${bottom.toFixed(1)}" r="3.5" fill="#22d3ee"/>`;
-
-    if (Array.isArray(tooltipItems) && tooltipItems.length) {
-      const cardW = 196;
-      const cardH = 26 + tooltipItems.length * 18;
-      let cardX = x + 12;
-      if (cardX + cardW > frame.width - 6) {
-        cardX = x - cardW - 12;
-      }
-      if (cardX < 4) cardX = 4;
-      let cardY = numY !== null ? numY - cardH / 2 : top + 6;
-      const minCardY = top + 2;
-      const maxCardY = bottom - cardH - 2;
-      if (cardY < minCardY) cardY = minCardY;
-      if (cardY > maxCardY) cardY = maxCardY;
-
-      out += `<g class="flow-chart-tooltip-box" opacity="0.98">`;
-      out += `<rect x="${cardX.toFixed(1)}" y="${cardY.toFixed(1)}" width="${cardW}" height="${cardH}" rx="5" fill="#0b0f19" stroke="rgba(255,255,255,0.16)" stroke-width="1"/>`;
-      out += `<text x="${(cardX + 9).toFixed(1)}" y="${(cardY + 15).toFixed(1)}" fill="#f8fafc" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10.5" font-weight="700">${dateStr}</text>`;
-      tooltipItems.forEach((item, i) => {
-        const rowY = cardY + 28 + i * 18;
-        out += `<rect x="${(cardX + 9).toFixed(1)}" y="${(rowY - 7.5).toFixed(1)}" width="7.5" height="7.5" rx="1.5" fill="${item.color}"/>`;
-        out += `<text x="${(cardX + 21).toFixed(1)}" y="${rowY.toFixed(1)}" fill="#94a3b8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10">${escapeHtml(item.label)}: <tspan fill="${item.valColor || item.color}" font-weight="600">${escapeHtml(item.value)}</tspan></text>`;
-      });
-      out += `</g>`;
-    }
-
     out += `</g>`;
     return out;
   }
@@ -884,7 +858,7 @@
         let peers = items.filter(item => normU(item.underlying) === targetUnderlying);
         if (peers.length < 4) {
           const catPeers = items
-            .filter(item => item.category === current.category && item.ticker !== current.ticker)
+            .filter(item => item.category === current.category && item.ticker !== current.ticker && ((item.flow_20d !== 0 && item.flow_20d !== null) || (item.latest_flow !== 0 && item.latest_flow !== null) || (item.aum_m > 0)))
             .sort((a, b) => Math.abs(finiteNumber(b.flow_zscore) || 0) - Math.abs(finiteNumber(a.flow_zscore) || 0));
           const seen = new Set(peers.map(p => p.ticker));
           for (const cp of catPeers) {
@@ -1270,7 +1244,7 @@
         }).join('');
         const description = `Daily ETF estimated net flow in US dollars for ${rows.length} selected sessions. Positive and negative bars diverge from a neutral zero line. A line shows the complete 20-observation rolling mean; incomplete windows are gaps.`;
         let overlay = '';
-        if (this.flowHoverIndex !== null && this.flowHoverChart !== 'impulse' && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
+        if (this.flowHoverIndex !== null && this.flowHoverChart === 'main' && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
           const hRow = rows[this.flowHoverIndex];
           const hFlow = finiteNumber(hRow.flow);
           const hY = hFlow !== null ? yScale(hFlow) : zeroY;
@@ -1346,7 +1320,7 @@
         const lastPoint = lastY === null ? '' : `<circle cx="${frame.xScale(rows.length - 1).toFixed(1)}" cy="${lastY.toFixed(1)}" r="3.5" fill="${lastColor}"/>`;
         const description = `Selected-window cumulative source-reported aggregate net flow, summed from a zero baseline before ${rows[0].date}. Missing daily values carry the prior cumulative value and are not converted to zero.`;
         let overlay = '';
-        if (this.flowHoverIndex !== null && this.flowHoverChart !== 'impulse' && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
+        if (this.flowHoverIndex !== null && this.flowHoverChart === 'main' && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
           const hRow = rows[this.flowHoverIndex];
           const hVal = finiteNumber(hRow.selectedCumulative);
           const hY = hVal !== null ? yScale(hVal) : zeroY;
@@ -1424,7 +1398,7 @@
         }).join('');
         const description = 'The left axis shows complete trailing 10-observation source-reported aggregate net flow in US dollars. The right axis shows the tie-aware empirical percentile of that flow against all complete 10-observation windows in available source history. Missing values remain gaps.';
         let overlay = '';
-        if (this.flowHoverIndex !== null && this.flowHoverChart !== 'impulse' && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
+        if (this.flowHoverIndex !== null && this.flowHoverChart === 'main' && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
           const hRow = rows[this.flowHoverIndex];
           const hPct = finiteNumber(hRow.percentile10);
           const hY = hPct !== null ? yPercentile(hPct) : null;
@@ -1491,7 +1465,7 @@
         }).join('');
         const description = 'Prior-only z-score for daily ETF estimated net flow. Each value uses the preceding 30 available sessions and excludes the current observation from its mean and standard deviation. Missing values remain gaps.';
         let overlay = '';
-        if (this.flowHoverIndex !== null && this.flowHoverChart !== 'impulse' && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
+        if (this.flowHoverIndex !== null && this.flowHoverChart === 'main' && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
           const hRow = rows[this.flowHoverIndex];
           const hZ = finiteNumber(hRow.priorOnlyZScore);
           const hY = hZ !== null ? yScale(hZ) : zeroY;
@@ -1566,7 +1540,7 @@
         }).join('');
         const description = 'Source-reported NAV or share price on the left axis and daily net flow on the right axis. Each series uses an independent scale and missing observations are not connected.';
         let overlay = '';
-        if (this.flowHoverIndex !== null && this.flowHoverChart !== 'impulse' && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
+        if (this.flowHoverIndex !== null && this.flowHoverChart === 'price' && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
           const hRow = rows[this.flowHoverIndex];
           const hPrice = finiteNumber(hRow.nav);
           const hY = hPrice !== null ? yPrice(hPrice) : null;
@@ -1650,31 +1624,10 @@
             dots += `<circle cx="${x.toFixed(1)}" cy="${y60.toFixed(1)}" r="4.5" fill="#fbbf24" stroke="#050505" stroke-width="1.8"/>`;
           }
 
-          const cardW = 186;
-          const cardH = 78;
-          let cardX = x + 12;
-          if (cardX + cardW > width - 6) {
-            cardX = x - cardW - 12;
-          }
-          if (cardX < 4) cardX = 4;
-          const cardY = top + 2;
-
-          const card = `<g class="flow-chart-tooltip-box" opacity="0.98">`
-            + `<rect x="${cardX.toFixed(1)}" y="${cardY.toFixed(1)}" width="${cardW}" height="${cardH}" rx="5" fill="#0b0f19" stroke="rgba(255,255,255,0.16)" stroke-width="1"/>`
-            + `<text x="${(cardX + 9).toFixed(1)}" y="${(cardY + 15).toFixed(1)}" fill="#f8fafc" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10.5" font-weight="700">${dateStr}</text>`
-            + `<rect x="${(cardX + 9).toFixed(1)}" y="${(cardY + 28 - 7.5).toFixed(1)}" width="7.5" height="7.5" rx="1.5" fill="#22d3ee"/>`
-            + `<text x="${(cardX + 21).toFixed(1)}" y="${(cardY + 28).toFixed(1)}" fill="#94a3b8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10">5D Impulse: <tspan fill="#22d3ee" font-weight="600">${escapeHtml(formatMoney(s5))}</tspan></text>`
-            + `<rect x="${(cardX + 9).toFixed(1)}" y="${(cardY + 45 - 7.5).toFixed(1)}" width="7.5" height="7.5" rx="1.5" fill="#34d399"/>`
-            + `<text x="${(cardX + 21).toFixed(1)}" y="${(cardY + 45).toFixed(1)}" fill="#94a3b8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10">20D Impulse: <tspan fill="#34d399" font-weight="600">${escapeHtml(formatMoney(s20))}</tspan></text>`
-            + `<rect x="${(cardX + 9).toFixed(1)}" y="${(cardY + 62 - 7.5).toFixed(1)}" width="7.5" height="7.5" rx="1.5" fill="#fbbf24"/>`
-            + `<text x="${(cardX + 21).toFixed(1)}" y="${(cardY + 62).toFixed(1)}" fill="#94a3b8" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10">60D Impulse: <tspan fill="#fbbf24" font-weight="600">${escapeHtml(formatMoney(s60))}</tspan></text>`
-            + `</g>`;
-
           overlay = `<g class="flow-crosshair-group" pointer-events="none">`
             + `<line x1="${x.toFixed(1)}" y1="${top.toFixed(1)}" x2="${x.toFixed(1)}" y2="${bottom.toFixed(1)}" stroke="#22d3ee" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.85"/>`
             + dots
             + `<circle cx="${x.toFixed(1)}" cy="${bottom.toFixed(1)}" r="3.5" fill="#22d3ee"/>`
-            + card
             + `</g>`;
         }
 
@@ -1837,7 +1790,8 @@
         const clientY = Number.isFinite(event?.clientY) ? event.clientY : null;
         const target = event?.currentTarget;
         const isImpulse = Boolean(target?.classList?.contains('flow-impulse-chart') || target?.closest?.('.flow-impulse-chart'));
-        this.flowHoverChart = isImpulse ? 'impulse' : 'main';
+        const isPrice = Boolean(target?.classList?.contains('flow-price-chart') || target?.closest?.('.flow-price-chart') || target?.getAttribute?.('data-chart') === 'price');
+        this.flowHoverChart = isPrice ? 'price' : isImpulse ? 'impulse' : 'main';
         if (event?.type === 'mousemove' && clientX !== null) {
           const svg = target?.querySelector?.('svg') || target;
           const rect = svg?.getBoundingClientRect?.();
@@ -1863,7 +1817,8 @@
         if (!this.flowSelectedRows.length) return;
         const target = event?.currentTarget;
         const isImpulse = Boolean(target?.classList?.contains('flow-impulse-chart') || target?.closest?.('.flow-impulse-chart'));
-        this.flowHoverChart = isImpulse ? 'impulse' : 'main';
+        const isPrice = Boolean(target?.classList?.contains('flow-price-chart') || target?.closest?.('.flow-price-chart') || target?.getAttribute?.('data-chart') === 'price');
+        this.flowHoverChart = isPrice ? 'price' : isImpulse ? 'impulse' : 'main';
         const clamped = this.flowSelectedRows.length - 1;
         this.flowHoverIndex = clamped;
         this.flowChartTooltip = {
@@ -1897,13 +1852,17 @@
         if (!this.flowChartTooltip.visible) return '';
         const row = this.flowSelectedRows[this.flowChartTooltip.index];
         if (!row) return '';
-        return [
+        const parts = [
           row.date,
-          `Daily flow ${formatMoney(row.flow)}`,
-          `20-session mean ${formatMoney(row.rollingMean20)}`,
-          `10-session percentile ${formatPercent(row.percentile10)}`,
-          `Prior-only z ${row.priorOnlyZScore === null ? '—' : row.priorOnlyZScore.toFixed(2)}`
-        ].join(' · ');
+          `Daily flow ${formatMoney(row.flow)}`
+        ];
+        if (row.nav !== null && Number.isFinite(row.nav)) {
+          parts.push(`Split-Adj Price $${row.nav.toFixed(2)}`);
+        }
+        parts.push(`20-session mean ${formatMoney(row.rollingMean20)}`);
+        parts.push(`10-session percentile ${formatPercent(row.percentile10)}`);
+        parts.push(`Prior-only z ${row.priorOnlyZScore === null ? '—' : row.priorOnlyZScore.toFixed(2)}`);
+        return parts.join(' · ');
       },
 
       flowSearch() {
