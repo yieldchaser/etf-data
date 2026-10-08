@@ -2025,7 +2025,7 @@
   </div><!-- /volatility tab -->
 
 
-  <template x-if="activeTab === 'flows'">
+  <div x-show="activeTab === 'flows'">
   <section class="flow-research" x-data="flowResearchApp()" @resize.window="flowViewportWidth = window.innerWidth" x-cloak>
     <div id="flow-live-status" class="flow-visually-hidden" role="status" aria-live="polite" aria-atomic="true" x-text="flowAnnouncement()"></div>
 
@@ -3127,7 +3127,7 @@
 
 
 
-  </template>
+  </div><!-- /flows tab -->
 
   <!-- FOOTER -->
   <footer class="mt-8 pt-4 text-xs flex gap-4 flex-wrap items-center" style="border-top: 1px solid var(--border); color: var(--text-3)">

@@ -816,18 +816,20 @@
   top: 0;
   z-index: 100;
   pointer-events: none;
-  max-width: 36rem;
+  min-width: 250px;
+  max-width: 380px;
   min-height: 1.5em;
-  padding: 0.55rem 0.85rem;
-  border: 1px solid rgba(34, 211, 238, 0.45);
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--flow-line-strong);
   border-radius: 6px;
   color: var(--flow-text);
-  background: rgba(11, 15, 23, 0.95);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75);
+  background: rgba(10, 10, 10, 0.96);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.85);
   font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
   font-size: 0.75rem;
+  line-height: 1.5;
   font-variant-numeric: tabular-nums;
   white-space: pre-line;
   transition: opacity 0.08s ease;
@@ -881,7 +883,7 @@
   border: 1px solid var(--flow-line);
   border-radius: 6px;
   background: #050505;
-  cursor: crosshair;
+  cursor: default;
 }
 
 .flow-research .flow-impulse-chart {

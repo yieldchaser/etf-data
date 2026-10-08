@@ -559,16 +559,12 @@
     const x = frame.xScale(hoverIndex);
     const top = frame.padding.top;
     const bottom = frame.height - frame.padding.bottom;
-    const dateStr = escapeHtml(row.date || '');
     let out = `<g class="flow-crosshair-group" pointer-events="none">`;
-    out += `<line x1="${x.toFixed(1)}" y1="${top.toFixed(1)}" x2="${x.toFixed(1)}" y2="${bottom.toFixed(1)}" stroke="#22d3ee" stroke-width="1.3" stroke-dasharray="3 3" opacity="0.85"/>`;
+    out += `<line x1="${x.toFixed(1)}" y1="${top.toFixed(1)}" x2="${x.toFixed(1)}" y2="${bottom.toFixed(1)}" stroke="rgba(255,255,255,0.14)" stroke-width="1" stroke-dasharray="3 3"/>`;
     const numY = finiteNumber(targetY);
     if (numY !== null) {
-      out += `<circle cx="${x.toFixed(1)}" cy="${numY.toFixed(1)}" r="7.5" fill="rgba(34,211,238,0.22)" stroke="#22d3ee" stroke-width="1.2" opacity="0.8"/>`;
-      out += `<circle cx="${x.toFixed(1)}" cy="${numY.toFixed(1)}" r="4" fill="#ffffff" stroke="#22d3ee" stroke-width="2"/>`;
+      out += `<circle cx="${x.toFixed(1)}" cy="${numY.toFixed(1)}" r="5" fill="#22d3ee" stroke="#ffffff" stroke-width="2"/>`;
     }
-    // Clean marker dot on axis line matching Blue Margin (no redundant date box)
-    out += `<circle cx="${x.toFixed(1)}" cy="${bottom.toFixed(1)}" r="3.5" fill="#22d3ee"/>`;
     out += `</g>`;
     return out;
   }
@@ -1663,7 +1659,7 @@
           }
           overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, null, items);
         }
-        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-daily-title flow-daily-desc"><title id="flow-daily-title">Daily ETF estimated net flow</title><desc id="flow-daily-desc">${escapeHtml(description)}</desc>${grid}${bars}<path d="${linePath(meanPoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>${overlay}${frame.dateTicks}</svg>`;
+        return `<svg viewBox="0 0 ${width} ${height}" data-pad-left="${frame.padding.left}" data-pad-right="${frame.padding.right}" data-chart-width="${width}" role="img" aria-labelledby="flow-daily-title flow-daily-desc"><title id="flow-daily-title">Daily ETF estimated net flow</title><desc id="flow-daily-desc">${escapeHtml(description)}</desc>${grid}${bars}<path d="${linePath(meanPoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>${overlay}${frame.dateTicks}</svg>`;
       },
 
       get flowCumulativeChartSvg() {
@@ -1731,7 +1727,7 @@
           }
           overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, null, items);
         }
-        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-cumulative-title flow-cumulative-desc"><title id="flow-cumulative-title">Selected-window cumulative source-reported aggregate net flow</title><desc id="flow-cumulative-desc">${escapeHtml(description)}</desc><defs><linearGradient id="flow-cum-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${COLORS.cyan}" stop-opacity="0.22"/><stop offset="100%" stop-color="${COLORS.cyan}" stop-opacity="0.0"/></linearGradient></defs>${grid}${area ? `<path d="${area}" fill="url(#flow-cum-grad)"/>` : ''}<path d="${linePath(linePoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>${lastPoint}${overlay}${frame.dateTicks}</svg>`;
+        return `<svg viewBox="0 0 ${width} ${height}" data-pad-left="${frame.padding.left}" data-pad-right="${frame.padding.right}" data-chart-width="${width}" role="img" aria-labelledby="flow-cumulative-title flow-cumulative-desc"><title id="flow-cumulative-title">Selected-window cumulative source-reported aggregate net flow</title><desc id="flow-cumulative-desc">${escapeHtml(description)}</desc><defs><linearGradient id="flow-cum-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${COLORS.cyan}" stop-opacity="0.22"/><stop offset="100%" stop-color="${COLORS.cyan}" stop-opacity="0.0"/></linearGradient></defs>${grid}${area ? `<path d="${area}" fill="url(#flow-cum-grad)"/>` : ''}<path d="${linePath(linePoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>${lastPoint}${overlay}${frame.dateTicks}</svg>`;
       },
 
       get flowPercentileChartSvg() {
@@ -1801,7 +1797,7 @@
           }
           overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, null, items);
         }
-        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-percentile-title flow-percentile-desc"><title id="flow-percentile-title">Ten-observation flow percentile</title><desc id="flow-percentile-desc">${escapeHtml(description)}</desc>${leftAxis}${rightAxis}${bars}<path d="${linePath(percentilePoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>${overlay}${frame.dateTicks}</svg>`;
+        return `<svg viewBox="0 0 ${width} ${height}" data-pad-left="${frame.padding.left}" data-pad-right="${frame.padding.right}" data-chart-width="${width}" role="img" aria-labelledby="flow-percentile-title flow-percentile-desc"><title id="flow-percentile-title">Ten-observation flow percentile</title><desc id="flow-percentile-desc">${escapeHtml(description)}</desc>${leftAxis}${rightAxis}${bars}<path d="${linePath(percentilePoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>${overlay}${frame.dateTicks}</svg>`;
       },
 
       get flowIntensityChartSvg() {
@@ -1868,7 +1864,7 @@
           }
           overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, null, items);
         }
-        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-intensity-title flow-intensity-desc"><title id="flow-intensity-title">Prior-only daily flow z-score</title><desc id="flow-intensity-desc">${escapeHtml(description)}</desc>${grid}${bars}${overlay}${frame.dateTicks}</svg>`;
+        return `<svg viewBox="0 0 ${width} ${height}" data-pad-left="${frame.padding.left}" data-pad-right="${frame.padding.right}" data-chart-width="${width}" role="img" aria-labelledby="flow-intensity-title flow-intensity-desc"><title id="flow-intensity-title">Prior-only daily flow z-score</title><desc id="flow-intensity-desc">${escapeHtml(description)}</desc>${grid}${bars}${overlay}${frame.dateTicks}</svg>`;
       },
 
       get flowPriceChartSvg() {
@@ -2040,14 +2036,13 @@
           const fY = hFlow !== null ? yFlow(hFlow) : null;
 
           overlay = `<g class="flow-crosshair-group" pointer-events="none">
-            <line x1="${x.toFixed(1)}" y1="${padTop}" x2="${x.toFixed(1)}" y2="${padTop + totalChartH}" stroke="#22d3ee" stroke-width="1.3" stroke-dasharray="3 3" opacity="0.9"/>
-            ${pY !== null ? `<circle cx="${x.toFixed(1)}" cy="${pY.toFixed(1)}" r="5.5" fill="rgba(34,211,238,0.3)" stroke="#22d3ee" stroke-width="2"/>` : ''}
-            ${fY !== null ? `<circle cx="${x.toFixed(1)}" cy="${fY.toFixed(1)}" r="4.5" fill="${(hFlow || 0) >= 0 ? '#34d399' : '#fb7185'}" stroke="#05070a" stroke-width="1.5"/>` : ''}
-            <circle cx="${x.toFixed(1)}" cy="${(padTop + totalChartH).toFixed(1)}" r="3" fill="#22d3ee"/>
+            <line x1="${x.toFixed(1)}" y1="${padTop}" x2="${x.toFixed(1)}" y2="${padTop + totalChartH}" stroke="rgba(255,255,255,0.14)" stroke-width="1" stroke-dasharray="3 3"/>
+            ${pY !== null ? `<circle cx="${x.toFixed(1)}" cy="${pY.toFixed(1)}" r="5" fill="#22d3ee" stroke="#ffffff" stroke-width="2"/>` : ''}
+            ${fY !== null ? `<circle cx="${x.toFixed(1)}" cy="${fY.toFixed(1)}" r="4" fill="${(hFlow || 0) >= 0 ? '#34d399' : '#fb7185'}" stroke="#ffffff" stroke-width="1.8"/>` : ''}
           </g>`;
         }
 
-        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-price-title flow-price-desc">
+        return `<svg viewBox="0 0 ${width} ${height}" data-pad-left="${padLeft}" data-pad-right="${padRight}" data-chart-width="${width}" role="img" aria-labelledby="flow-price-title flow-price-desc">
           <title id="flow-price-title">Dual-Engine Workbench: Price and Daily ETF Net Flow</title>
           <desc id="flow-price-desc">${escapeHtml(description)}</desc>
           ${regimeBands}
@@ -2096,25 +2091,24 @@
           let dots = '';
           if (s5 !== null) {
             const y5 = yScale(s5);
-            dots += `<circle cx="${x.toFixed(1)}" cy="${y5.toFixed(1)}" r="4.5" fill="#22d3ee" stroke="#050505" stroke-width="1.8"/>`;
+            dots += `<circle cx="${x.toFixed(1)}" cy="${y5.toFixed(1)}" r="4.5" fill="#22d3ee" stroke="#ffffff" stroke-width="1.8"/>`;
           }
           if (s20 !== null) {
             const y20 = yScale(s20);
-            dots += `<circle cx="${x.toFixed(1)}" cy="${y20.toFixed(1)}" r="4.5" fill="#34d399" stroke="#050505" stroke-width="1.8"/>`;
+            dots += `<circle cx="${x.toFixed(1)}" cy="${y20.toFixed(1)}" r="4.5" fill="#34d399" stroke="#ffffff" stroke-width="1.8"/>`;
           }
           if (s60 !== null) {
             const y60 = yScale(s60);
-            dots += `<circle cx="${x.toFixed(1)}" cy="${y60.toFixed(1)}" r="4.5" fill="#fbbf24" stroke="#050505" stroke-width="1.8"/>`;
+            dots += `<circle cx="${x.toFixed(1)}" cy="${y60.toFixed(1)}" r="4.5" fill="#fbbf24" stroke="#ffffff" stroke-width="1.8"/>`;
           }
 
           overlay = `<g class="flow-crosshair-group" pointer-events="none">`
-            + `<line x1="${x.toFixed(1)}" y1="${top.toFixed(1)}" x2="${x.toFixed(1)}" y2="${bottom.toFixed(1)}" stroke="#22d3ee" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.85"/>`
+            + `<line x1="${x.toFixed(1)}" y1="${top.toFixed(1)}" x2="${x.toFixed(1)}" y2="${bottom.toFixed(1)}" stroke="rgba(255,255,255,0.14)" stroke-width="1" stroke-dasharray="3 3"/>`
             + dots
-            + `<circle cx="${x.toFixed(1)}" cy="${bottom.toFixed(1)}" r="3.5" fill="#22d3ee"/>`
             + `</g>`;
         }
 
-        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Multi-horizon 5D, 20D, and 60D rolling net flow impulse">${grid}<path d="${linePath(pts60)}" fill="none" stroke="${COLORS.warning}" stroke-width="1.6" stroke-dasharray="3 2" opacity="0.85"/><path d="${linePath(pts20)}" fill="none" stroke="${COLORS.positive}" stroke-width="2"/><path d="${linePath(pts5)}" fill="none" stroke="${COLORS.cyan}" stroke-width="1.6" opacity="0.92"/>${overlay}${frame.dateTicks}</svg>`;
+        return `<svg viewBox="0 0 ${width} ${height}" data-pad-left="${frame.padding.left}" data-pad-right="${frame.padding.right}" data-chart-width="${width}" role="img" aria-label="Multi-horizon 5D, 20D, and 60D rolling net flow impulse">${grid}<path d="${linePath(pts60)}" fill="none" stroke="${COLORS.warning}" stroke-width="1.6" stroke-dasharray="3 2" opacity="0.85"/><path d="${linePath(pts20)}" fill="none" stroke="${COLORS.positive}" stroke-width="2"/><path d="${linePath(pts5)}" fill="none" stroke="${COLORS.cyan}" stroke-width="1.6" opacity="0.92"/>${overlay}${frame.dateTicks}</svg>`;
       },
 
       async init() {
@@ -2278,7 +2272,24 @@
         if (event?.type === 'mousemove' && clientX !== null) {
           const svg = target?.querySelector?.('svg') || target;
           const rect = svg?.getBoundingClientRect?.();
-          if (rect?.width) index = Math.round(((clientX - rect.left) / rect.width) * (rows.length - 1));
+          if (rect?.width && rows.length > 1) {
+            const rawPadLeft = svg?.getAttribute?.('data-pad-left');
+            const rawPadRight = svg?.getAttribute?.('data-pad-right');
+            const rawChartW = svg?.getAttribute?.('data-chart-width');
+            if (rawPadLeft !== null && rawPadLeft !== undefined && rawChartW) {
+              const svgW = Number(rawChartW) || 1;
+              const padL = Number(rawPadLeft) || 0;
+              const padR = Number(rawPadRight) || 0;
+              const screenPadL = (padL / svgW) * rect.width;
+              const screenPadR = (padR / svgW) * rect.width;
+              const screenChartW = rect.width - screenPadL - screenPadR;
+              const relX = clientX - rect.left;
+              const frac = Math.max(0, Math.min(1, (relX - screenPadL) / (screenChartW || 1)));
+              index = Math.round(frac * (rows.length - 1));
+            } else {
+              index = Math.round(((clientX - rect.left) / rect.width) * (rows.length - 1));
+            }
+          }
         }
         const clamped = Math.max(0, Math.min(rows.length - 1, index));
         this.flowHoverIndex = clamped;
@@ -2317,7 +2328,7 @@
         const offsetX = 16;
         const offsetY = 16;
         const boxWidth = 320;
-        const boxHeight = 60;
+        const boxHeight = 85;
         const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
         const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 768;
         let left = (this.flowChartTooltip.x || 0) + offsetX;
@@ -2335,17 +2346,12 @@
         if (!this.flowChartTooltip.visible) return '';
         const row = this.flowSelectedRows[this.flowChartTooltip.index];
         if (!row) return '';
-        const parts = [
-          row.date,
-          `Daily flow ${formatMoney(row.flow)}`
-        ];
-        if (row.nav !== null && Number.isFinite(row.nav)) {
-          parts.push(`Split-Adj Price $${row.nav.toFixed(2)}`);
-        }
-        parts.push(`20-session mean ${formatMoney(row.rollingMean20)}`);
-        parts.push(`10-session percentile ${formatPercent(row.percentile10)}`);
-        parts.push(`Prior-only z ${row.priorOnlyZScore === null ? '—' : row.priorOnlyZScore.toFixed(2)}`);
-        return parts.join(' · ');
+        const line1 = row.date || '';
+        const pricePart = (row.nav !== null && Number.isFinite(row.nav)) ? `Price $${row.nav.toFixed(2)}  ·  ` : '';
+        const line2 = `${pricePart}Daily flow ${formatMoney(row.flow)}`;
+        const zStr = row.priorOnlyZScore === null ? '—' : `${row.priorOnlyZScore >= 0 ? '+' : ''}${row.priorOnlyZScore.toFixed(2)}σ`;
+        const line3 = `20D Mean ${formatMoney(row.rollingMean20)}  ·  10D %ile ${formatPercent(row.percentile10)}  ·  Z ${zStr}`;
+        return `${line1}\n${line2}\n${line3}`;
       },
 
       flowSearch() {
