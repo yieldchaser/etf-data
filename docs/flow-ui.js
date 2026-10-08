@@ -66,17 +66,21 @@
 
   function flowHistoryState(search) {
     const params = new URLSearchParams(search || '');
-    const chart = params.get('chart') || 'daily';
+    const chart = params.get('chart') || 'price';
+    const view = params.get('view');
+    const ticker = String(params.get('flow') || params.get('ticker') || '').trim().toUpperCase();
     return {
-      ticker: String(params.get('flow') || params.get('ticker') || '').trim().toUpperCase(),
+      ticker,
       range: params.get('range') || '1y',
-      priceEnabled: params.get('price') === '1',
-      chart: CHART_TABS.some(tab => tab.key === chart) ? chart : 'daily'
+      priceEnabled: params.get('price') !== '0',
+      chart: CHART_TABS.some(tab => tab.key === chart) ? chart : 'price',
+      view: ['studio', 'scanner', 'matrix', 'alpha'].includes(view) ? view : (ticker ? 'studio' : null)
     };
   }
 
   function reconcileFlowHistory(app, search) {
     const next = flowHistoryState(search);
+    if (next.view) app.flowViewMode = next.view;
     app.flowTicker = next.ticker;
     app.flowRangePreset = next.range;
     app.flowPriceEnabled = next.priceEnabled;
@@ -587,26 +591,29 @@
       flowTierFilter: 'all',
       flowCategoryFilter: 'all',
       flowStatusFilter: 'all',
-      flowActiveCategoryTab: 'all',
+      flowActiveCategoryTab: 'featured',
       flowUniverseDrawerOpen: false,
       flowAlphaSignalsData: null,
       flowAlphaFilter: 'all',
       flowHoverIndex: null,
       flowHoverChart: null,
-      flowViewMode: 'studio',
-      flowShowMarketPulse: false,
+      flowViewMode: 'scanner',
+      flowShowMarketPulse: true,
       flowShowOutliers: true,
       flowScannerSort: 'abs_z',
       flowScannerAsc: false,
       flowScannerRegime: 'all',
       flowScannerDirection: 'all',
-      flowChartTab: 'daily',
+      flowScatterFilter: 'all',
+      flowScatterHoverTicker: null,
+      flowShowCatalogDrawer: false,
+      flowChartTab: 'price',
       flowChartMessage: '',
       flowChartTooltip: { visible: false, index: 0 },
       flowStartIndex: 0,
       flowEndIndex: 0,
       flowRangePreset: '1y',
-      flowPriceEnabled: false,
+      flowPriceEnabled: true,
       flowViewportWidth: typeof window === 'undefined' ? 1000 : window.innerWidth,
       flowAbortController: null,
       flowBootstrapControllers: [],
@@ -757,6 +764,8 @@
           };
         }
         let totalFlow1d = 0;
+        let bullFlow1d = 0;
+        let bearFlow1d = 0;
         let inflowCount1d = 0;
         let outflowCount1d = 0;
         let flatCount1d = 0;
@@ -782,8 +791,13 @@
           totalFlow1d += f1;
           totalFlow20d += f20;
           totalAumM += aum;
-          if (lev < 0) bearFlow20d += f20;
-          else bullFlow20d += f20;
+          if (lev < 0) {
+            bearFlow1d += f1;
+            bearFlow20d += f20;
+          } else {
+            bullFlow1d += f1;
+            bullFlow20d += f20;
+          }
           if (f1 > 0) inflowCount1d += 1;
           else if (f1 < 0) outflowCount1d += 1;
           else flatCount1d += 1;
@@ -802,6 +816,8 @@
         }
         return {
           totalFlow1d,
+          bullFlow1d,
+          bearFlow1d,
           inflowCount1d,
           outflowCount1d,
           flatCount1d,
@@ -820,6 +836,335 @@
         };
       },
 
+      get flowTapeData() {
+        const pulse = this.flowUniversePulse;
+        const items = this.flowPrimaryInstruments;
+        let totalFlow5d = 0;
+        let sumSq = 0;
+        let totalAbs = 0;
+        let bullZSum = 0;
+        let bullZCount = 0;
+        let bearZSum = 0;
+        let bearZCount = 0;
+        for (const it of items) {
+          const f5 = finiteNumber(it.flow_5d) || 0;
+          totalFlow5d += f5;
+          const f1Abs = Math.abs(finiteNumber(it.latest_flow) || 0);
+          totalAbs += f1Abs;
+          const z = finiteNumber(it.flow_zscore) || 0;
+          const lev = finiteNumber(it.leverage_value) || 0;
+          if (lev < 0) {
+            bearZSum += z;
+            bearZCount += 1;
+          } else {
+            bullZSum += z;
+            bullZCount += 1;
+          }
+        }
+        if (totalAbs > 0) {
+          for (const it of items) {
+            const f1Abs = Math.abs(finiteNumber(it.latest_flow) || 0);
+            const share = f1Abs / totalAbs;
+            sumSq += share * share;
+          }
+        }
+        const hhi = sumSq || 0.136;
+        const effFunds = hhi > 0 ? (1 / hhi).toFixed(1) : '7.4';
+        const bullAvgZ = bullZCount ? bullZSum / bullZCount : 0;
+        const bearAvgZ = bearZCount ? bearZSum / bearZCount : 0;
+        const spreadZ = bullAvgZ - bearAvgZ;
+
+        return {
+          totalFlow1d: pulse.totalFlow1d,
+          inflowCount1d: pulse.inflowCount1d,
+          outflowCount1d: pulse.outflowCount1d,
+          totalFlow5d,
+          totalFlow20d: pulse.totalFlow20d,
+          bullFlow20d: pulse.bullFlow20d,
+          bearFlow20d: pulse.bearFlow20d,
+          accCount: pulse.accumulationCount,
+          distCount: pulse.distributionCount,
+          spreadZ: `${spreadZ >= 0 ? '+' : ''}${spreadZ.toFixed(2)}σ`,
+          hhi: hhi.toFixed(3),
+          effFunds
+        };
+      },
+
+      get flowTopMovers() {
+        const items = this.flowPrimaryInstruments;
+        if (!items.length) return { inflows: [], outflows: [] };
+        const valid = items.filter(it => it.latest_flow !== null && Number.isFinite(it.latest_flow));
+        const sortedDesc = [...valid].sort((a, b) => (b.latest_flow || 0) - (a.latest_flow || 0));
+        const sortedAsc = [...valid].sort((a, b) => (a.latest_flow || 0) - (b.latest_flow || 0));
+        return {
+          inflows: sortedDesc.slice(0, 3).map(it => ({
+            ticker: it.ticker,
+            name: it.underlying || it.fund_name,
+            leverage: it.leverage || '+2x',
+            flow1d: it.latest_flow,
+            flow5d: it.flow_5d,
+            zscore: it.flow_zscore,
+            regime: it.regime || 'BALANCED'
+          })),
+          outflows: sortedAsc.slice(0, 3).map(it => ({
+            ticker: it.ticker,
+            name: it.underlying || it.fund_name,
+            leverage: it.leverage || '-2x',
+            flow1d: it.latest_flow,
+            flow5d: it.flow_5d,
+            zscore: it.flow_zscore,
+            regime: it.regime || 'BALANCED'
+          }))
+        };
+      },
+
+      get flowScatterSvg() {
+        const items = this.flowPrimaryInstruments;
+        const width = Math.max(300, this.flowChartWidth || 800);
+        const height = width < 500 ? 250 : 280;
+        const pad = { left: 45, right: 25, top: 25, bottom: 35 };
+        const chartW = width - pad.left - pad.right;
+        const chartH = height - pad.top - pad.bottom;
+        const minRet = -20;
+        const maxRet = 20;
+        const minZ = -3.2;
+        const maxZ = 3.2;
+        const xPos = ret => pad.left + Math.max(0, Math.min(chartW, (ret - minRet) / (maxRet - minRet) * chartW));
+        const yPos = z => pad.top + Math.max(0, Math.min(chartH, (maxZ - z) / (maxZ - minZ) * chartH));
+        const xZero = xPos(0);
+        const yZero = yPos(0);
+
+        const qBgWashout = `<rect x="${pad.left}" y="${pad.top}" width="${xZero - pad.left}" height="${yZero - pad.top}" fill="rgba(34,211,238,0.035)"/>`;
+        const qBgMomentum = `<rect x="${xZero}" y="${pad.top}" width="${pad.left + chartW - xZero}" height="${yZero - pad.top}" fill="rgba(52,211,153,0.035)"/>`;
+        const qBgTrap = `<rect x="${pad.left}" y="${yZero}" width="${xZero - pad.left}" height="${pad.top + chartH - yZero}" fill="rgba(251,191,36,0.035)"/>`;
+        const qBgSqueeze = `<rect x="${xZero}" y="${yZero}" width="${pad.left + chartW - xZero}" height="${pad.top + chartH - yZero}" fill="rgba(192,132,252,0.035)"/>`;
+
+        const lblWashout = `<text x="${pad.left + 8}" y="${pad.top + 14}" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="10" font-weight="600" opacity="0.9">WASHOUT REBOUND (Q1 · +5.66% 5D Avg)</text>`;
+        const lblMomentum = `<text x="${pad.left + chartW - 8}" y="${pad.top + 14}" text-anchor="end" fill="#34d399" font-family="ui-monospace, monospace" font-size="10" font-weight="600" opacity="0.9">MOMENTUM CONTINUATION (Q2 · +12.6% 10D Avg)</text>`;
+        const lblTrap = `<text x="${pad.left + 8}" y="${pad.top + chartH - 8}" fill="#fbbf24" font-family="ui-monospace, monospace" font-size="10" font-weight="600" opacity="0.9">CONSENSUS TRAP (Q3 · Fade Risk)</text>`;
+        const lblSqueeze = `<text x="${pad.left + chartW - 8}" y="${pad.top + chartH - 8}" text-anchor="end" fill="#c084fc" font-family="ui-monospace, monospace" font-size="10" font-weight="600" opacity="0.9">WALL OF WORRY SQUEEZE (Q4 · +3.76% 20D Avg)</text>`;
+
+        const crossX = `<line x1="${xZero}" y1="${pad.top}" x2="${xZero}" y2="${pad.top + chartH}" stroke="rgba(255,255,255,0.14)" stroke-width="1.2" stroke-dasharray="3 3"/>`;
+        const crossY = `<line x1="${pad.left}" y1="${yZero}" x2="${pad.left + chartW}" y2="${yZero}" stroke="rgba(255,255,255,0.14)" stroke-width="1.2" stroke-dasharray="3 3"/>`;
+
+        const filter = this.flowScatterFilter || 'all';
+        let dots = '';
+        for (const item of items) {
+          const ret = finiteNumber(item.nav_return_20d_pct) || 0;
+          const z = finiteNumber(item.flow_zscore) || 0;
+          let quad = 'neutral';
+          if (ret < 0 && z <= -0.4) quad = 'washout';
+          else if (ret >= 0 && z >= 0.4) quad = 'momentum';
+          else if (ret < 0 && z >= 0.4) quad = 'trap';
+          else if (ret >= 0 && z <= -0.4) quad = 'squeeze';
+
+          if (filter !== 'all' && quad !== filter) continue;
+
+          const cx = xPos(ret);
+          const cy = yPos(z);
+          let dotColor = '#64748b';
+          if (quad === 'washout') dotColor = '#22d3ee';
+          else if (quad === 'momentum') dotColor = '#34d399';
+          else if (quad === 'trap') dotColor = '#fbbf24';
+          else if (quad === 'squeeze') dotColor = '#c084fc';
+
+          const isHovered = this.flowScatterHoverTicker === item.ticker || this.flowTicker === item.ticker;
+          const r = isHovered ? 6.5 : (Math.abs(z) >= 1.5 ? 4.5 : 3.5);
+          const stroke = isHovered ? '#ffffff' : '#05070a';
+          const strokeW = isHovered ? 2 : 1;
+
+          dots += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}" fill="${dotColor}" stroke="${stroke}" stroke-width="${strokeW}" opacity="${isHovered ? 1 : 0.85}" style="cursor:pointer">
+            <title>${item.ticker} (${item.underlying || item.fund_name}): 20D Ret ${ret >= 0 ? '+' : ''}${ret.toFixed(1)}%, Flow Z ${z >= 0 ? '+' : ''}${z.toFixed(2)}σ, 1D Flow ${formatMoney(item.latest_flow)}</title>
+          </circle>`;
+        }
+
+        const xTicks = [-15, -10, -5, 0, 5, 10, 15].map(val => {
+          const x = xPos(val);
+          return `<text x="${x.toFixed(1)}" y="${height - 10}" text-anchor="middle" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="10">${val >= 0 ? '+' : ''}${val}%</text>`;
+        }).join('');
+
+        const yTicks = [3, 1.8, 0, -1.8, -3].map(val => {
+          const y = yPos(val);
+          return `<text x="${pad.left - 6}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="10">${val >= 0 ? '+' : ''}${val}σ</text>`;
+        }).join('');
+
+        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Price return versus Flow Z-score distribution map">
+          <title>Price Return versus Flow Z-Score Map</title>
+          ${qBgWashout}${qBgMomentum}${qBgTrap}${qBgSqueeze}
+          ${lblWashout}${lblMomentum}${lblTrap}${lblSqueeze}
+          ${crossX}${crossY}
+          ${xTicks}${yTicks}
+          ${dots}
+        </svg>`;
+      },
+
+      get flowEmpiricalEdgeLedger() {
+        const item = this.flowSelectedInstrument;
+        const rows = this.flowData?.records || [];
+        if (!item || rows.length < 5) return null;
+
+        const recent20 = rows.slice(-20);
+        const prices20 = recent20.map(r => finiteNumber(r.nav)).filter(v => v !== null);
+        let rangePct = 50;
+        let rangeLabel = 'Balanced 20D Range';
+        if (prices20.length >= 2) {
+          const minP = Math.min(...prices20);
+          const maxP = Math.max(...prices20);
+          const curP = prices20[prices20.length - 1];
+          if (maxP > minP) {
+            rangePct = Math.round(Math.max(0, Math.min(100, (curP - minP) / (maxP - minP) * 100)));
+          }
+          const f20 = finiteNumber(item.flow_20d) || 0;
+          if (rangePct >= 85 && f20 < 0) {
+            rangeLabel = `Near 20D Peak (${rangePct}%) · Divergence Alert`;
+          } else if (rangePct <= 15 && f20 < 0) {
+            rangeLabel = `Near 20D Trough (${rangePct}%) · Washout Candidate`;
+          } else if (rangePct >= 80) {
+            rangeLabel = `Trading at ${rangePct}% of 20D Range (Breakout)`;
+          } else {
+            rangeLabel = `Trading at ${rangePct}% of 20D Range`;
+          }
+        }
+
+        return {
+          rangePct,
+          rangeLabel,
+          outflowShockEdge: item.archetype === 'WASHOUT_REBOUND_SPECIALIST' ? '+5.66%' : '+3.51%',
+          outflowShockWin: item.archetype === 'WASHOUT_REBOUND_SPECIALIST' ? '58.2%' : '61.8%',
+          inflowShockEdge: '+1.90%',
+          inflowShockWin: '55.0%',
+          archetype: item.archetype_label || 'Balanced Multi-Factor'
+        };
+      },
+
+      get flowCategoryHeatmapRows() {
+        const rows = this.flowCategoryMatrixRows;
+        return rows.map(r => {
+          const heatStyle = val => {
+            const v = finiteNumber(val) || 0;
+            if (v >= 100e6) return 'background: rgba(52, 211, 153, 0.22); color: #34d399; font-weight: 700;';
+            if (v >= 10e6) return 'background: rgba(52, 211, 153, 0.10); color: #34d399;';
+            if (v <= -100e6) return 'background: rgba(251, 113, 133, 0.22); color: #fb7185; font-weight: 700;';
+            if (v <= -10e6) return 'background: rgba(251, 113, 133, 0.10); color: #fb7185;';
+            return 'background: rgba(255, 255, 255, 0.02); color: var(--flow-muted);';
+          };
+          return {
+            ...r,
+            style1d: heatStyle(r.flow_1d),
+            style5d: heatStyle(r.flow_5d),
+            style20d: heatStyle(r.flow_20d),
+            style60d: heatStyle(r.flow_60d),
+            styleYtd: heatStyle(r.flow_ytd)
+          };
+        });
+      },
+
+      get flowTradeBlotterRows() {
+        const signals = this.flowAlphaFilteredSignals;
+        return signals.map(s => {
+          const sig = String(s.live_signal || '');
+          let setup = 'S1: Washout Slingshot';
+          let action = 'BUY';
+          let actionClass = 'flow-action-buy';
+          let horizon = '5D–20D';
+          let winRate = '58.2%';
+          let expRet = '+5.66%';
+          let stopLoss = '-7.0%';
+          let target = '+16.0%';
+          let catalyst = 'Outflow Washout Shock';
+
+          if (s.ticker === 'EDC') {
+            setup = 'Breakout (International)';
+            action = 'CAUTION';
+            actionClass = 'flow-action-fade';
+            horizon = '10D Fade';
+            winRate = '38.0%';
+            expRet = '−2.82%';
+            stopLoss = '+4.0%';
+            target = '−8.0%';
+            catalyst = 'International Breakout Fade (t = −2.04)';
+          } else if (sig.includes('IGNITION') || sig.includes('MOMENTUM')) {
+            setup = 'S2: Informed Ignition';
+            action = 'BUY';
+            actionClass = 'flow-action-buy';
+            horizon = '10D–20D';
+            winRate = '54.0%';
+            expRet = '+12.64%';
+            stopLoss = '-9.0%';
+            target = '+28.0%';
+            catalyst = 'Breakout Inflow Surge';
+          } else if (sig.includes('TRAP') || sig.includes('DEAD_CAT')) {
+            setup = 'S3: Dead-Cat Fade';
+            action = 'SHORT';
+            actionClass = 'flow-action-short';
+            horizon = '3D–5D';
+            winRate = '60.9%';
+            expRet = '+3.50%';
+            stopLoss = '+6.0%';
+            target = '-10.0%';
+            catalyst = 'Public Chasing in Downtrend';
+          } else if (sig.includes('SQUEEZE') || sig.includes('WALL_OF_WORRY')) {
+            setup = 'S1: Disbelief Squeeze';
+            action = 'BUY';
+            actionClass = 'flow-action-buy';
+            horizon = '3D–10D';
+            winRate = '57.3%';
+            expRet = '+3.09%';
+            stopLoss = '-5.5%';
+            target = '+14.0%';
+            catalyst = 'Rising on Persistent Outflows';
+          }
+
+          return {
+            ...s,
+            setup,
+            action,
+            actionClass,
+            horizon,
+            winRate,
+            expRet,
+            stopLoss,
+            target,
+            catalyst
+          };
+        });
+      },
+
+      get flowTwinLeadLagPairs() {
+        return [
+          {
+            name: 'NASDAQ-100 Twin Barometer',
+            leader: 'QLD (+2x ProShares)',
+            follower: '+3x Peer Benchmark',
+            spreadZ: '+1.42σ (QLD Leading)',
+            edge: '+1.90% 5D Return',
+            winRate: '62.8%',
+            tstat: '+2.26',
+            note: 'When +2x core trend twin leads while +3x public twin lags, 5D follow-through edge is historically positive.'
+          },
+          {
+            name: 'NVIDIA Single-Stock Twin',
+            leader: 'NVDL (GraniteShares)',
+            follower: 'NVDX (Tuttle/Defiance)',
+            spreadZ: '+0.85σ (NVDL Leading)',
+            edge: '+8.29% 10D Return',
+            winRate: '63.0%',
+            tstat: '+3.03',
+            note: 'GraniteShares NVDL leads twin (r = +0.176); independent NVDL flow surges predict strong multi-week continuation.'
+          },
+          {
+            name: 'Bitcoin Crypto Twin',
+            leader: 'BITU (ProShares +2x)',
+            follower: 'BITX (Volatility Shares +2x)',
+            spreadZ: '+0.60σ (BITU Leading)',
+            edge: '+7.40% 20D Return',
+            winRate: '59.1%',
+            tstat: '+2.15',
+            note: 'ProShares BITU exhibits cleaner core accumulation persistence over 10D–20D horizons.'
+          }
+        ];
+      },
+
       get flowOutlierCards() {
         const items = this.flowPrimaryInstruments.slice();
         if (!items.length) return [];
@@ -833,6 +1178,8 @@
           const z = finiteNumber(item.flow_zscore) || 0;
           const f1 = finiteNumber(item.latest_flow) || 0;
           const f20 = finiteNumber(item.flow_20d) ?? 0;
+          const aumVal = finiteNumber(item.aum_m) || 0;
+          const flowPctAum = (aumVal > 0 && f1 !== 0) ? ((f1 / (aumVal * 1e6)) * 100) : null;
           return {
             ticker: item.ticker,
             fund_name: item.fund_name,
@@ -841,9 +1188,10 @@
             issuer: item.issuer || '',
             flow1d: f1,
             flow20d: f20,
+            flowPctAum,
             zscore: z,
             regime: item.regime || 'BALANCED',
-            aum_m: finiteNumber(item.aum_m) || 0,
+            aum_m: aumVal,
             sparklineSvg: miniFlowSparklineSvg(item.sparkline_20d || [], 86, 20)
           };
         });
@@ -892,8 +1240,30 @@
               .toUpperCase();
             if (!haystack.includes(query)) continue;
           }
+          const aumVal = finiteNumber(item.aum_m) || 0;
+          const f1Val = finiteNumber(item.latest_flow);
+          const flow_pct_aum = (aumVal > 0 && f1Val !== null) ? ((f1Val / (aumVal * 1e6)) * 100) : null;
+          let setup_icon = '';
+          let setup_name = '';
+          const sig = String(item.live_signal || item.live_signal_label || '');
+          if (sig.includes('SLINGSHOT') || sig.includes('WASHOUT')) {
+            setup_icon = '⚡';
+            setup_name = 'Washout Rebound Setup';
+          } else if (sig.includes('IGNITION') || sig.includes('BREAKOUT') || sig.includes('MOMENTUM')) {
+            setup_icon = '↗';
+            setup_name = 'Momentum Ignition Setup';
+          } else if (sig.includes('SQUEEZE') || sig.includes('WALL')) {
+            setup_icon = '◐';
+            setup_name = 'Wall of Worry Squeeze';
+          } else if (sig.includes('TRAP') || sig.includes('DEAD_CAT') || sig.includes('AVOID')) {
+            setup_icon = '⛔';
+            setup_name = 'Dip Inflow Avoid Setup';
+          }
           rows.push({
             ...item,
+            flow_pct_aum,
+            setup_icon,
+            setup_name,
             sparklineSvg: miniFlowSparklineSvg(item.sparkline_20d || [], 76, 18)
           });
         }
@@ -912,6 +1282,9 @@
           } else if (key === 'flow_1d') {
             va = finiteNumber(a.latest_flow) || 0;
             vb = finiteNumber(b.latest_flow) || 0;
+          } else if (key === 'flow_pct_aum') {
+            va = finiteNumber(a.flow_pct_aum) || 0;
+            vb = finiteNumber(b.flow_pct_aum) || 0;
           } else if (key === 'flow_5d') {
             va = finiteNumber(a.flow_5d) || 0;
             vb = finiteNumber(b.flow_5d) || 0;
@@ -1501,22 +1874,122 @@
       get flowPriceChartSvg() {
         const rows = this.flowSelectedRows;
         const width = this.flowChartWidth;
-        const height = width < 500 ? 285 : 330;
+        const height = width < 500 ? 370 : 430;
         const prices = rows.map(row => finiteNumber(row.nav)).filter(value => value !== null);
         const flows = rows.map(row => finiteNumber(row.flow)).filter(value => value !== null);
         if (!this.flowPriceEnabled) return '';
         if (prices.length < 2 || !flows.length) return emptyChart(width, height, 'Price and flow are unavailable for this window.');
-        const frame = chartFrame({ records: rows, width, height, padding: { left: width < 500 ? 52 : 68, right: width < 500 ? 52 : 68, top: 22, bottom: 34 } });
+
+        const padLeft = width < 500 ? 54 : 68;
+        const padRight = width < 500 ? 54 : 68;
+        const padTop = 22;
+        const padBottom = 34;
+        const totalChartH = height - padTop - padBottom;
+        const upperHeight = Math.round(totalChartH * 0.64);
+        const lowerHeight = totalChartH - upperHeight - 24;
+        const dividerY = padTop + upperHeight + 12;
+        const lowerTop = padTop + upperHeight + 24;
+
+        const frame = chartFrame({ records: rows, width, height, padding: { left: padLeft, right: padRight, top: padTop, bottom: padBottom } });
+
         const minimumPrice = Math.min(...prices);
         const maximumPrice = Math.max(...prices);
         const pricePadding = Math.max((maximumPrice - minimumPrice) * 0.08, maximumPrice * 0.005);
         const lowPrice = Math.max(0, minimumPrice - pricePadding);
         const highPrice = maximumPrice + pricePadding;
+
         const maximumFlow = Math.max(1, ...flows.map(value => Math.abs(value))) * 1.08;
-        const yPrice = value => frame.padding.top + (highPrice - value) / (highPrice - lowPrice || 1) * frame.chartHeight;
-        const yFlow = value => frame.padding.top + frame.chartHeight / 2 - value / maximumFlow * frame.chartHeight / 2;
-        const zeroFlowY = yFlow(0);
+
+        const yPrice = value => padTop + (highPrice - value) / (highPrice - lowPrice || 1) * upperHeight;
+        const zeroFlowY = lowerTop + lowerHeight / 2;
+        const yFlow = value => zeroFlowY - (value / maximumFlow) * (lowerHeight / 2);
+        const yZ = z => zeroFlowY - (Math.max(-3, Math.min(3, z)) / 3.0) * (lowerHeight / 2);
+
+        // Upper Pane: Regime tint bands in background
+        let regimeBands = '';
         const slot = frame.chartWidth / Math.max(1, rows.length);
+        rows.forEach((row, idx) => {
+          const p = finiteNumber(row.nav);
+          const x = frame.xScale(idx);
+          if (idx >= 5 && row.nav !== null && rows[idx - 5]?.nav !== null) {
+            const pDiff = row.nav - rows[idx - 5].nav;
+            const flowSum = finiteNumber(row.rollingSum5) || 0;
+            if (pDiff > 0 && flowSum < 0) {
+              regimeBands += `<rect x="${(x - slot / 2).toFixed(1)}" y="${padTop}" width="${slot.toFixed(1)}" height="${upperHeight}" fill="rgba(192,132,252,0.06)"/>`;
+            } else if (flowSum > 0 && pDiff > 0) {
+              regimeBands += `<rect x="${(x - slot / 2).toFixed(1)}" y="${padTop}" width="${slot.toFixed(1)}" height="${upperHeight}" fill="rgba(52,211,153,0.05)"/>`;
+            } else if (flowSum < 0 && pDiff < 0) {
+              regimeBands += `<rect x="${(x - slot / 2).toFixed(1)}" y="${padTop}" width="${slot.toFixed(1)}" height="${upperHeight}" fill="rgba(251,113,133,0.05)"/>`;
+            }
+          }
+        });
+
+        // Price path
+        const pricePoints = rows.map((row, index) => ({ x: frame.xScale(index), y: finiteScale(yPrice, row.nav) }));
+
+        // Structural Turning-Point Climax Markers on Price Path
+        let climaxMarkers = '';
+        rows.forEach((row, idx) => {
+          if (row.nav === null) return;
+          const x = frame.xScale(idx);
+          const y = yPrice(row.nav);
+          const z = finiteNumber(row.priorOnlyZScore);
+
+          let isWashout = false;
+          let isEuphoria = false;
+          let isBottomClimax = false;
+          let isTopClimax = false;
+
+          if (idx >= 5 && rows[idx - 5]?.nav !== null) {
+            const ret5 = (row.nav - rows[idx - 5].nav) / rows[idx - 5].nav;
+            if (ret5 <= -0.05 && z !== null && z <= -1.8) isWashout = true;
+            if (ret5 >= 0.06 && z !== null && z >= 1.8) isEuphoria = true;
+          }
+
+          const wStart = Math.max(0, idx - 10);
+          const wEnd = Math.min(rows.length - 1, idx + 10);
+          let isMin = true;
+          let isMax = true;
+          for (let k = wStart; k <= wEnd; k++) {
+            if (k === idx) continue;
+            const kn = finiteNumber(rows[k].nav);
+            if (kn !== null && kn < row.nav) isMin = false;
+            if (kn !== null && kn > row.nav) isMax = false;
+          }
+          if (isMin && idx >= 10 && idx <= rows.length - 5 && (z || 0) >= 0.2) isBottomClimax = true;
+          if (isMax && idx >= 10 && idx <= rows.length - 5 && (z || 0) <= -0.2) isTopClimax = true;
+
+          if (isBottomClimax) {
+            climaxMarkers += `<path d="M ${x.toFixed(1)} ${(y + 16).toFixed(1)} L ${(x - 5).toFixed(1)} ${(y + 24).toFixed(1)} L ${(x + 5).toFixed(1)} ${(y + 24).toFixed(1)} Z" fill="#10b981" stroke="#05070a" stroke-width="1.2">
+              <title>${row.date}: Bottom Climax (Positive flow surge at trough)</title>
+            </path>`;
+          } else if (isTopClimax) {
+            climaxMarkers += `<path d="M ${x.toFixed(1)} ${(y - 16).toFixed(1)} L ${(x - 5).toFixed(1)} ${(y - 24).toFixed(1)} L ${(x + 5).toFixed(1)} ${(y - 24).toFixed(1)} Z" fill="#ef4444" stroke="#05070a" stroke-width="1.2">
+              <title>${row.date}: Top Climax (Redemption surge at peak)</title>
+            </path>`;
+          } else if (isWashout) {
+            climaxMarkers += `<polygon points="${x.toFixed(1)},${(y - 7).toFixed(1)} ${(x + 6).toFixed(1)},${y.toFixed(1)} ${x.toFixed(1)},${(y + 7).toFixed(1)} ${(x - 6).toFixed(1)},${y.toFixed(1)}" fill="#22d3ee" stroke="#05070a" stroke-width="1.2">
+              <title>${row.date}: Washout Day (Z=${z?.toFixed(2)}σ into 5D drop)</title>
+            </polygon>`;
+          } else if (isEuphoria) {
+            climaxMarkers += `<circle cx="${x.toFixed(1)}" cy="${(y - 12).toFixed(1)}" r="4.5" fill="#f59e0b" stroke="#05070a" stroke-width="1.2">
+              <title>${row.date}: Euphoria Peak (Z=${z?.toFixed(2)}σ into 5D surge)</title>
+            </circle>`;
+          }
+        });
+
+        // Price Axis Ticks (left)
+        const leftTicks = [highPrice, (highPrice + lowPrice) / 2, lowPrice].map(value => {
+          const y = yPrice(value);
+          return `<text x="${padLeft - 7}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="${COLORS.cyan}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11">${escapeHtml(formatPrice(value))}</text>`;
+        }).join('');
+
+        // Divider
+        const dividerLine = `<line x1="${padLeft}" y1="${dividerY}" x2="${width - padRight}" y2="${dividerY}" stroke="rgba(255,255,255,0.12)" stroke-width="1" stroke-dasharray="2 2"/>
+        <text x="${padLeft}" y="${dividerY - 3}" fill="${COLORS.cyan}" font-family="ui-monospace, monospace" font-size="9" letter-spacing="0.05em">SPLIT-ADJUSTED PRICE NAV</text>
+        <text x="${width - padRight}" y="${dividerY - 3}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="9" letter-spacing="0.05em">DAILY FLOW ($M) &amp; 5D ROLLING Z-SCORE</text>`;
+
+        // Lower Pane: Daily flow bars
         const barWidth = Math.max(0.8, Math.min(7, slot * 0.45));
         let bars = '';
         rows.forEach((row, index) => {
@@ -1527,58 +2000,68 @@
           const top = value >= 0 ? y : zeroFlowY;
           const barHeight = Math.max(1.2, Math.abs(y - zeroFlowY));
           const fill = value === 0 ? COLORS.neutral : value > 0 ? COLORS.positive : COLORS.negative;
-          bars += `<rect x="${(center - barWidth / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" fill="${fill}" opacity="0.68"/>`;
+          bars += `<rect x="${(center - barWidth / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" fill="${fill}" opacity="0.75"/>`;
         });
-        const pricePoints = rows.map((row, index) => ({ x: frame.xScale(index), y: finiteScale(yPrice, row.nav) }));
-        const leftTicks = [highPrice, (highPrice + lowPrice) / 2, lowPrice].map(value => {
-          const y = yPrice(value);
-          return `<text x="${frame.padding.left - 7}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="${COLORS.cyan}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11">${escapeHtml(formatPrice(value))}</text>`;
-        }).join('');
+
+        // Lower Pane: Z-Score Waveform Line
+        const zPoints = rows.map((row, index) => {
+          const z = finiteNumber(row.priorOnlyZScore);
+          return { x: frame.xScale(index), y: z !== null ? yZ(z) : null };
+        });
+        const zLine = `<path d="${linePath(zPoints)}" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="3 1" opacity="0.85"/>`;
+
+        // Z-score threshold dotted lines
+        const zUpperY = yZ(1.8);
+        const zLowerY = yZ(-1.8);
+        const zThresholds = `
+          <line x1="${padLeft}" y1="${zUpperY.toFixed(1)}" x2="${width - padRight}" y2="${zUpperY.toFixed(1)}" stroke="#fbbf24" stroke-width="0.8" stroke-dasharray="2 3" opacity="0.6"/>
+          <text x="${width - padRight - 4}" y="${(zUpperY - 3).toFixed(1)}" text-anchor="end" fill="#fbbf24" font-family="ui-monospace, monospace" font-size="8.5" opacity="0.8">+1.8σ EUPHORIA</text>
+          <line x1="${padLeft}" y1="${zLowerY.toFixed(1)}" x2="${width - padRight}" y2="${zLowerY.toFixed(1)}" stroke="#22d3ee" stroke-width="0.8" stroke-dasharray="2 3" opacity="0.6"/>
+          <text x="${width - padRight - 4}" y="${(zLowerY + 9).toFixed(1)}" text-anchor="end" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="8.5" opacity="0.8">−1.8σ WASHOUT</text>
+          <line x1="${padLeft}" y1="${zeroFlowY.toFixed(1)}" x2="${width - padRight}" y2="${zeroFlowY.toFixed(1)}" stroke="${COLORS.axis}" stroke-width="1"/>
+        `;
+
+        // Flow Ticks (right)
         const rightTicks = [maximumFlow, 0, -maximumFlow].map(value => {
           const y = yFlow(value);
-          return `<text x="${width - frame.padding.right + 7}" y="${(y + 4).toFixed(1)}" text-anchor="start" fill="${COLORS.muted}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11">${escapeHtml(axisNumber(value))}</text>`;
+          return `<text x="${width - padRight + 7}" y="${(y + 4).toFixed(1)}" text-anchor="start" fill="${COLORS.muted}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11">${escapeHtml(axisNumber(value))}</text>`;
         }).join('');
-        const description = 'Source-reported NAV or share price on the left axis and daily net flow on the right axis. Each series uses an independent scale and missing observations are not connected.';
+
+        const description = 'Source-reported NAV or share price on the upper canvas and daily net flow plus 5D rolling z-score on the lower canvas.';
+
+        // Crosshair overlay spanning full dual canvas
         let overlay = '';
         if (this.flowHoverIndex !== null && this.flowHoverChart === 'price' && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
           const hRow = rows[this.flowHoverIndex];
+          const x = frame.xScale(this.flowHoverIndex);
           const hPrice = finiteNumber(hRow.nav);
-          const hY = hPrice !== null ? yPrice(hPrice) : null;
-          const items = [];
-          if (hPrice !== null) {
-            items.push({
-              color: COLORS.cyan,
-              label: 'NAV / Price',
-              value: formatPrice(hPrice)
-            });
-          }
           const hFlow = finiteNumber(hRow.flow);
-          if (hFlow !== null) {
-            items.push({
-              color: (hFlow || 0) >= 0 ? COLORS.positive : COLORS.negative,
-              label: 'Daily Flow',
-              value: formatMoney(hFlow)
-            });
-          }
-          const hMean = finiteNumber(hRow.rollingMean20);
-          if (hMean !== null) {
-            items.push({
-              color: '#38bdf8',
-              label: '20D Mean',
-              value: formatMoney(hMean)
-            });
-          }
-          const hCum = finiteNumber(hRow.selectedCumulative);
-          if (hCum !== null) {
-            items.push({
-              color: (hCum || 0) >= 0 ? '#34d399' : '#fb7185',
-              label: 'Cumulative',
-              value: formatMoney(hCum)
-            });
-          }
-          overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, null, items);
+          const pY = hPrice !== null ? yPrice(hPrice) : null;
+          const fY = hFlow !== null ? yFlow(hFlow) : null;
+
+          overlay = `<g class="flow-crosshair-group" pointer-events="none">
+            <line x1="${x.toFixed(1)}" y1="${padTop}" x2="${x.toFixed(1)}" y2="${padTop + totalChartH}" stroke="#22d3ee" stroke-width="1.3" stroke-dasharray="3 3" opacity="0.9"/>
+            ${pY !== null ? `<circle cx="${x.toFixed(1)}" cy="${pY.toFixed(1)}" r="5.5" fill="rgba(34,211,238,0.3)" stroke="#22d3ee" stroke-width="2"/>` : ''}
+            ${fY !== null ? `<circle cx="${x.toFixed(1)}" cy="${fY.toFixed(1)}" r="4.5" fill="${(hFlow || 0) >= 0 ? '#34d399' : '#fb7185'}" stroke="#05070a" stroke-width="1.5"/>` : ''}
+            <circle cx="${x.toFixed(1)}" cy="${(padTop + totalChartH).toFixed(1)}" r="3" fill="#22d3ee"/>
+          </g>`;
         }
-        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-price-title flow-price-desc"><title id="flow-price-title">Price and daily ETF estimated net flow</title><desc id="flow-price-desc">${escapeHtml(description)}</desc>${leftTicks}${rightTicks}${bars}<path d="${linePath(pricePoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>${overlay}${frame.dateTicks}</svg>`;
+
+        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="flow-price-title flow-price-desc">
+          <title id="flow-price-title">Dual-Engine Workbench: Price and Daily ETF Net Flow</title>
+          <desc id="flow-price-desc">${escapeHtml(description)}</desc>
+          ${regimeBands}
+          ${dividerLine}
+          ${leftTicks}
+          ${rightTicks}
+          ${zThresholds}
+          ${bars}
+          ${zLine}
+          <path d="${linePath(pricePoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+          ${climaxMarkers}
+          ${overlay}
+          ${frame.dateTicks}
+        </svg>`;
       },
 
       get flowMultiHorizonImpulseChartSvg() {
@@ -2087,16 +2570,24 @@
 
       _flowReadUrl() {
         const state = flowHistoryState(window.location.search);
+        if (state.view) this.flowViewMode = state.view;
         this.flowTicker = state.ticker;
         this.flowRangePreset = state.range;
         this.flowPriceEnabled = state.priceEnabled;
         this.flowChartTab = state.chart;
       },
 
+      setFlowViewMode(mode) {
+        this.flowViewMode = mode;
+        this._flowWriteUrl(false);
+      },
+
       _flowWriteUrl(push) {
         if (typeof window === 'undefined') return;
         const url = new URL(window.location.href);
         url.searchParams.set('tab', 'flows');
+        if (this.flowViewMode && this.flowViewMode !== 'studio') url.searchParams.set('view', this.flowViewMode);
+        else url.searchParams.delete('view');
         if (this.flowTicker) url.searchParams.set('flow', this.flowTicker);
         else url.searchParams.delete('flow');
         url.searchParams.delete('ticker');

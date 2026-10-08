@@ -212,7 +212,7 @@
 /* Universe Pulse Stat Cards (matches index.html top 5 KPI cards) */
 .flow-research .flow-pulse-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.65rem;
 }
 
@@ -809,26 +809,28 @@
   font-size: 0.8125rem;
 }
 
-/* Cursor-following readout - suppressed in favor of unified anchored SVG card */
+/* Unified Floating Cursor Tooltip */
 .flow-research .flow-chart-tooltip {
   position: fixed;
   left: 0;
   top: 0;
-  z-index: 60;
+  z-index: 100;
   pointer-events: none;
-  display: none !important;
-  max-width: 32rem;
+  max-width: 36rem;
   min-height: 1.5em;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid rgba(34, 211, 238, 0.35);
+  padding: 0.55rem 0.85rem;
+  border: 1px solid rgba(34, 211, 238, 0.45);
   border-radius: 6px;
   color: var(--flow-text);
-  background: #09090b;
+  background: rgba(11, 15, 23, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75);
   font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
   white-space: pre-line;
-  transition: opacity 0.12s ease;
+  transition: opacity 0.08s ease;
 }
 
 .flow-research .flow-chart-block {
@@ -1362,4 +1364,231 @@
   background: #09090c;
   display: grid;
   gap: 0.45rem;
+}
+
+/* ── Tier 1: Global Sticky Flow Tape ── */
+.flow-research .flow-tape {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem 1rem;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid var(--flow-line);
+  border-radius: 8px;
+  background: #080b11;
+  margin-bottom: 0.75rem;
+}
+
+.flow-research .flow-tape-items {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+}
+
+.flow-research .flow-tape-cell {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+}
+
+.flow-research .flow-tape-label {
+  color: var(--flow-subtle);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.flow-research .flow-tape-val {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.flow-research .flow-tape-outliers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* ── Top Movers Ribbon ── */
+.flow-research .flow-top-movers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+.flow-research .flow-top-mover-card {
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--flow-line);
+  border-radius: 6px;
+  background: #090c12;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  text-align: left;
+}
+
+.flow-research .flow-top-mover-card:hover {
+  border-color: rgba(34, 211, 238, 0.4);
+  background: #0d121c;
+}
+
+/* ── Price × Flow 4-Quadrant Distribution Map ── */
+.flow-research .flow-scatter-container {
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--flow-line);
+  border-radius: 8px;
+  background: #090c12;
+  margin-bottom: 0.85rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.flow-research .flow-scatter-svg-wrap {
+  width: 100%;
+  min-height: 250px;
+  border: 1px solid var(--flow-line);
+  border-radius: 6px;
+  background: #05070a;
+  position: relative;
+}
+
+.flow-research .flow-scatter-svg-wrap svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* ── Empirical Flow Shock Edge & Proximity Ledger ── */
+.flow-research .flow-ledger-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+}
+
+.flow-research .flow-ledger-card {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--flow-line);
+  border-radius: 6px;
+  background: #080b11;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.flow-research .flow-range-meter {
+  height: 8px;
+  border-radius: 4px;
+  background: #181d27;
+  position: relative;
+  overflow: hidden;
+  margin: 0.35rem 0;
+}
+
+.flow-research .flow-range-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(to right, #34d399, #22d3ee, #fbbf24, #fb7185);
+}
+
+.flow-research .flow-range-pin {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 4px;
+  background: #ffffff;
+  border-radius: 2px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+}
+
+/* ── Multi-Horizon Category Heatmap ── */
+.flow-research .flow-heat-cell {
+  padding: 0.4rem 0.55rem;
+  border-radius: 4px;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  transition: background 0.15s ease;
+}
+
+.flow-research .flow-heat-cell:hover {
+  filter: brightness(1.25);
+}
+
+/* ── Live Quantitative Action Blotter ── */
+.flow-research .flow-action-badge {
+  display: inline-block;
+  padding: 0.18rem 0.45rem;
+  border-radius: 4px;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.flow-research .flow-action-buy {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.16);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.flow-research .flow-action-short {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.16);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.flow-research .flow-action-hold {
+  color: #22d3ee;
+  background: rgba(34, 211, 238, 0.16);
+  border: 1px solid rgba(34, 211, 238, 0.4);
+}
+
+.flow-research .flow-action-fade {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.16);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+}
+
+/* ── Lead-Lag Twins & Macro Rotation Channels ── */
+.flow-research .flow-rotations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.65rem;
+}
+
+.flow-research .flow-rotation-card {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--flow-line);
+  border-radius: 6px;
+  background: #080b11;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.flow-research .flow-twins-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.65rem;
+}
+
+.flow-research .flow-twin-card {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--flow-line);
+  border-radius: 6px;
+  background: #080b11;
+  display: grid;
+  gap: 0.35rem;
 }
