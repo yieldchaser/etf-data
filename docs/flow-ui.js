@@ -934,18 +934,18 @@
         const xZero = xPos(0);
         const yZero = yPos(0);
 
-        const qBgWashout = `<rect x="${pad.left}" y="${pad.top}" width="${xZero - pad.left}" height="${yZero - pad.top}" fill="rgba(34,211,238,0.035)"/>`;
-        const qBgMomentum = `<rect x="${xZero}" y="${pad.top}" width="${pad.left + chartW - xZero}" height="${yZero - pad.top}" fill="rgba(52,211,153,0.035)"/>`;
-        const qBgTrap = `<rect x="${pad.left}" y="${yZero}" width="${xZero - pad.left}" height="${pad.top + chartH - yZero}" fill="rgba(251,191,36,0.035)"/>`;
-        const qBgSqueeze = `<rect x="${xZero}" y="${yZero}" width="${pad.left + chartW - xZero}" height="${pad.top + chartH - yZero}" fill="rgba(192,132,252,0.035)"/>`;
+        const qBgWashout = `<rect x="${pad.left}" y="${yZero}" width="${xZero - pad.left}" height="${pad.top + chartH - yZero}" fill="rgba(255,255,255,0.012)"/>`;
+        const qBgMomentum = `<rect x="${xZero}" y="${pad.top}" width="${pad.left + chartW - xZero}" height="${yZero - pad.top}" fill="rgba(255,255,255,0.018)"/>`;
+        const qBgTrap = `<rect x="${pad.left}" y="${pad.top}" width="${xZero - pad.left}" height="${yZero - pad.top}" fill="rgba(255,255,255,0.008)"/>`;
+        const qBgSqueeze = `<rect x="${xZero}" y="${yZero}" width="${pad.left + chartW - xZero}" height="${pad.top + chartH - yZero}" fill="rgba(255,255,255,0.012)"/>`;
 
-        const lblWashout = `<text x="${pad.left + 8}" y="${pad.top + 14}" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="10" font-weight="600" opacity="0.9">WASHOUT REBOUND (Q1 · +5.66% 5D Avg)</text>`;
-        const lblMomentum = `<text x="${pad.left + chartW - 8}" y="${pad.top + 14}" text-anchor="end" fill="#34d399" font-family="ui-monospace, monospace" font-size="10" font-weight="600" opacity="0.9">MOMENTUM CONTINUATION (Q2 · +12.6% 10D Avg)</text>`;
-        const lblTrap = `<text x="${pad.left + 8}" y="${pad.top + chartH - 8}" fill="#fbbf24" font-family="ui-monospace, monospace" font-size="10" font-weight="600" opacity="0.9">CONSENSUS TRAP (Q3 · Fade Risk)</text>`;
-        const lblSqueeze = `<text x="${pad.left + chartW - 8}" y="${pad.top + chartH - 8}" text-anchor="end" fill="#c084fc" font-family="ui-monospace, monospace" font-size="10" font-weight="600" opacity="0.9">WALL OF WORRY SQUEEZE (Q4 · +3.76% 20D Avg)</text>`;
+        const lblTrap = `<text x="${pad.left + 8}" y="${pad.top + 14}" fill="#71717a" font-family="ui-monospace, monospace" font-size="9" font-weight="500" letter-spacing="0.05em">CONSENSUS TRAP (Q3 · Fade Risk)</text>`;
+        const lblMomentum = `<text x="${pad.left + chartW - 8}" y="${pad.top + 14}" text-anchor="end" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9" font-weight="500" letter-spacing="0.05em">MOMENTUM CONTINUATION (Q2 · +12.6% 10D)</text>`;
+        const lblWashout = `<text x="${pad.left + 8}" y="${pad.top + chartH - 8}" fill="#34d399" font-family="ui-monospace, monospace" font-size="9" font-weight="500" letter-spacing="0.05em">WASHOUT REBOUND (Q1 · +5.66% 5D)</text>`;
+        const lblSqueeze = `<text x="${pad.left + chartW - 8}" y="${pad.top + chartH - 8}" text-anchor="end" fill="#71717a" font-family="ui-monospace, monospace" font-size="9" font-weight="500" letter-spacing="0.05em">WALL OF WORRY SQUEEZE (Q4 · +3.76% 20D)</text>`;
 
-        const crossX = `<line x1="${xZero}" y1="${pad.top}" x2="${xZero}" y2="${pad.top + chartH}" stroke="rgba(255,255,255,0.14)" stroke-width="1.2" stroke-dasharray="3 3"/>`;
-        const crossY = `<line x1="${pad.left}" y1="${yZero}" x2="${pad.left + chartW}" y2="${yZero}" stroke="rgba(255,255,255,0.14)" stroke-width="1.2" stroke-dasharray="3 3"/>`;
+        const crossX = `<line x1="${xZero}" y1="${pad.top}" x2="${xZero}" y2="${pad.top + chartH}" stroke="rgba(255,255,255,0.10)" stroke-width="1" stroke-dasharray="2 2"/>`;
+        const crossY = `<line x1="${pad.left}" y1="${yZero}" x2="${pad.left + chartW}" y2="${yZero}" stroke="rgba(255,255,255,0.10)" stroke-width="1" stroke-dasharray="2 2"/>`;
 
         const filter = this.flowScatterFilter || 'all';
         let dots = '';
@@ -962,18 +962,18 @@
 
           const cx = xPos(ret);
           const cy = yPos(z);
-          let dotColor = '#64748b';
-          if (quad === 'washout') dotColor = '#22d3ee';
-          else if (quad === 'momentum') dotColor = '#34d399';
-          else if (quad === 'trap') dotColor = '#fbbf24';
-          else if (quad === 'squeeze') dotColor = '#c084fc';
+          let dotColor = '#52525b';
+          if (quad === 'washout') dotColor = '#34d399';
+          else if (quad === 'momentum') dotColor = '#22d3ee';
+          else if (quad === 'trap') dotColor = '#fb7185';
+          else if (quad === 'squeeze') dotColor = '#94a3b8';
 
           const isHovered = this.flowScatterHoverTicker === item.ticker || this.flowTicker === item.ticker;
-          const r = isHovered ? 6.5 : (Math.abs(z) >= 1.5 ? 4.5 : 3.5);
+          const r = isHovered ? 6 : (Math.abs(z) >= 1.5 ? 4 : 3);
           const stroke = isHovered ? '#ffffff' : '#05070a';
           const strokeW = isHovered ? 2 : 1;
 
-          dots += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}" fill="${dotColor}" stroke="${stroke}" stroke-width="${strokeW}" opacity="${isHovered ? 1 : 0.85}" style="cursor:pointer">
+          dots += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}" fill="${dotColor}" stroke="${stroke}" stroke-width="${strokeW}" opacity="${isHovered ? 1 : 0.7}" style="cursor:pointer">
             <title>${item.ticker} (${item.underlying || item.fund_name}): 20D Ret ${ret >= 0 ? '+' : ''}${ret.toFixed(1)}%, Flow Z ${z >= 0 ? '+' : ''}${z.toFixed(2)}σ, 1D Flow ${formatMoney(item.latest_flow)}</title>
           </circle>`;
         }

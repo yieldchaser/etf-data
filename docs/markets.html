@@ -2069,64 +2069,22 @@
         </div>
       </header>
 
-      <!-- ─── TIER 1: GLOBAL FLOW TAPE (Glanceable Alpha Strip) ─── -->
-      <div class="flow-tape" x-show="!flowInitialLoading && flowCatalog">
-        <div class="flow-tape-items">
-          <div class="flow-tape-cell">
-            <span class="flow-tape-label">1D Net Flow:</span>
-            <span class="flow-tape-val" :class="flowTapeData.totalFlow1d > 0 ? 'flow-positive' : flowTapeData.totalFlow1d < 0 ? 'flow-negative' : ''" x-text="formatMoney(flowTapeData.totalFlow1d)"></span>
-            <span class="flow-eyebrow" x-text="`(${flowTapeData.inflowCount1d}↑ ${flowTapeData.outflowCount1d}↓)`"></span>
-          </div>
-          <span class="flow-eyebrow">·</span>
-          <div class="flow-tape-cell">
-            <span class="flow-tape-label">5D Breadth:</span>
-            <span class="flow-tape-val" :class="flowTapeData.totalFlow5d > 0 ? 'flow-positive' : flowTapeData.totalFlow5d < 0 ? 'flow-negative' : ''" x-text="formatMoney(flowTapeData.totalFlow5d)"></span>
-          </div>
-          <span class="flow-eyebrow">·</span>
-          <div class="flow-tape-cell">
-            <span class="flow-tape-label">20D Flow:</span>
-            <span class="flow-tape-val" :class="flowTapeData.totalFlow20d > 0 ? 'flow-positive' : flowTapeData.totalFlow20d < 0 ? 'flow-negative' : ''" x-text="formatMoney(flowTapeData.totalFlow20d)"></span>
-          </div>
-          <span class="flow-eyebrow">·</span>
-          <div class="flow-tape-cell">
-            <span class="flow-tape-label">Regime:</span>
-            <span class="flow-tape-val flow-positive" x-text="`${flowTapeData.accCount} Acc`"></span>
-            <span class="flow-eyebrow">/</span>
-            <span class="flow-tape-val flow-negative" x-text="`${flowTapeData.distCount} Dist`"></span>
-          </div>
-          <span class="flow-eyebrow">·</span>
-          <div class="flow-tape-cell">
-            <span class="flow-tape-label">Spread:</span>
-            <span class="flow-tape-val flow-cyan" x-text="flowTapeData.spreadZ"></span>
-          </div>
-          <span class="flow-eyebrow">·</span>
-          <div class="flow-tape-cell">
-            <span class="flow-tape-label">HHI Concentration:</span>
-            <span class="flow-tape-val" x-text="`${flowTapeData.hhi} (${flowTapeData.effFunds} eff funds)`"></span>
-          </div>
-        </div>
-
-        <div style="display:flex;align-items:center;gap:0.4rem">
-          <button class="flow-chip" type="button" @click="flowShowMarketPulse = !flowShowMarketPulse" :aria-expanded="flowShowMarketPulse ? 'true' : 'false'" x-text="flowShowMarketPulse ? 'Hide Telemetry ▴' : 'Telemetry (5 KPIs · 6 outliers) ▾'"></button>
-        </div>
-      </div>
-
-      <!-- Collapsible Full Telemetry Panel (When expanded) -->
-      <div class="flow-overview-drawer" x-show="!flowInitialLoading && flowCatalog && flowShowMarketPulse">
+      <!-- ─── TIER 1: MARKET PULSE & EXTREME OUTLIERS (Scoped to Scanner Overview) ─── -->
+      <div class="flow-overview-drawer" x-show="!flowInitialLoading && flowCatalog && flowViewMode === 'scanner' && flowShowMarketPulse">
         <div style="margin-top:0.35rem;display:grid;gap:0.65rem">
-          <!-- 5 Universe Pulse Stat Cards (matches Conviction Labs Leaderboard top cards) -->
+          <!-- 4 Universe Pulse Stat Cards (Clean styling matching Volatility tab) -->
           <div class="flow-pulse-grid">
             <div class="flow-pulse-card">
               <div class="flow-kpi-label">Bull vs Bear · 1D</div>
-              <div class="flow-pulse-value" :class="flowUniversePulse.totalFlow1d > 0 ? 'flow-positive' : flowUniversePulse.totalFlow1d < 0 ? 'flow-negative' : ''">
-                <span style="font-size:0.95rem" x-text="`Bull ${formatMoney(flowUniversePulse.bullFlow1d)} · Bear ${formatMoney(flowUniversePulse.bearFlow1d)}`"></span>
+              <div class="flow-pulse-value">
+                <span style="font-size:0.95rem;color:var(--flow-text)" x-text="`Bull ${formatMoney(flowUniversePulse.bullFlow1d)} · Bear ${formatMoney(flowUniversePulse.bearFlow1d)}`"></span>
               </div>
               <div class="flow-pulse-sub" x-text="`Net ${formatMoney(flowUniversePulse.totalFlow1d)} (${flowUniversePulse.inflowCount1d} in · ${flowUniversePulse.outflowCount1d} out · ${flowUniversePulse.flatCount1d} flat)`"></div>
             </div>
             <div class="flow-pulse-card">
               <div class="flow-kpi-label">Trailing 20 sessions</div>
-              <div class="flow-pulse-value" :class="flowUniversePulse.totalFlow20d > 0 ? 'flow-positive' : flowUniversePulse.totalFlow20d < 0 ? 'flow-negative' : ''">
-                <span style="font-size:0.95rem" x-text="`Bull ${formatMoney(flowUniversePulse.bullFlow20d)} · Bear ${formatMoney(flowUniversePulse.bearFlow20d)}`"></span>
+              <div class="flow-pulse-value">
+                <span style="font-size:0.95rem;color:var(--flow-text)" x-text="`Bull ${formatMoney(flowUniversePulse.bullFlow20d)} · Bear ${formatMoney(flowUniversePulse.bearFlow20d)}`"></span>
               </div>
               <div class="flow-pulse-sub" x-text="`Net ${formatMoney(flowUniversePulse.totalFlow20d)} across universe`"></div>
             </div>
@@ -2138,10 +2096,10 @@
               </div>
               <div class="flow-pulse-sub" x-text="`▲ ${flowUniversePulse.accumulationCount} in · ▼ ${flowUniversePulse.distributionCount} out · top ${flowUniversePulse.topInflowTicker} (${formatMoney(flowUniversePulse.topInflowVal)})`"></div>
             </div>
-            <div class="flow-pulse-card" style="border-left: 3px solid #fbbf24">
-              <div class="flow-kpi-label" style="color:#fbbf24">Macro Rotation Regime</div>
-              <div class="flow-pulse-value" style="font-size:0.875rem;color:var(--flow-text)">Index → Single-Stock 2X</div>
-              <div class="flow-pulse-sub" style="color:#fbbf24">Froth watch: broad outflows + single-stock inflows</div>
+            <div class="flow-pulse-card">
+              <div class="flow-kpi-label">Macro Rotation Regime</div>
+              <div class="flow-pulse-value" style="font-size:0.95rem;color:var(--flow-text)">Index → Single-Stock 2X</div>
+              <div class="flow-pulse-sub">Froth watch: broad outflows + single-stock inflows</div>
             </div>
           </div>
 
@@ -2287,8 +2245,7 @@
                       type="button"
                       :data-active="flowTicker === item.ticker ? 'true' : 'false'"
                       @click="selectFlowTicker(item.ticker, { writeUrl: true, push: true, switchToStudio: true })">
-                <span class="flow-flow-dot" :class="(item.latest_flow || 0) > 0 ? 'positive' : (item.latest_flow || 0) < 0 ? 'negative' : 'neutral'"></span>
-                <span x-text="item.ticker"></span>
+                <span class="font-mono font-medium" x-text="item.ticker"></span>
                 <span style="font-size:0.65rem;color:var(--flow-subtle)" x-text="item.leverage"></span>
               </button>
             </template>
@@ -2314,7 +2271,6 @@
                               :data-active="flowTicker === item.ticker ? 'true' : 'false'"
                               @click="selectFlowTicker(item.ticker, { writeUrl: true, push: true, switchToStudio: true }); flowUniverseDrawerOpen = false">
                         <div style="display:flex;align-items:center;gap:0.35rem">
-                          <span class="flow-flow-dot" :class="(item.latest_flow || 0) > 0 ? 'positive' : (item.latest_flow || 0) < 0 ? 'negative' : 'neutral'"></span>
                           <strong x-text="item.ticker"></strong>
                           <span style="color:var(--flow-subtle);font-size:0.65rem" x-text="item.leverage"></span>
                         </div>
@@ -2347,9 +2303,9 @@
           <div class="flow-panel-card" x-show="flowViewMode === 'scanner'">
             <!-- Top Movers Ribbon (Biggest Inflows & Outflows) -->
             <div class="flow-top-movers-grid" x-show="flowTopMovers.inflows.length || flowTopMovers.outflows.length">
-              <div class="flow-top-mover-card" style="border-left: 3px solid #34d399">
+              <div class="flow-top-mover-card">
                 <div style="display:grid;gap:0.25rem">
-                  <span class="flow-eyebrow" style="color:#34d399">Top 1D Net Inflow Leaders</span>
+                  <span class="flow-eyebrow">Top 1D Net Inflow Leaders ▲</span>
                   <div style="display:flex;flex-wrap:wrap;gap:0.4rem;align-items:center">
                     <template x-for="item in flowTopMovers.inflows" :key="item.ticker">
                       <button class="flow-chip" type="button" @click="selectFlowTicker(item.ticker, { writeUrl: true, push: true, switchToStudio: true })">
@@ -2361,9 +2317,9 @@
                   </div>
                 </div>
               </div>
-              <div class="flow-top-mover-card" style="border-left: 3px solid #fb7185">
+              <div class="flow-top-mover-card">
                 <div style="display:grid;gap:0.25rem">
-                  <span class="flow-eyebrow" style="color:#fb7185">Top 1D Net Outflow Leaders</span>
+                  <span class="flow-eyebrow">Top 1D Net Outflow Leaders ▼</span>
                   <div style="display:flex;flex-wrap:wrap;gap:0.4rem;align-items:center">
                     <template x-for="item in flowTopMovers.outflows" :key="item.ticker">
                       <button class="flow-chip" type="button" @click="selectFlowTicker(item.ticker, { writeUrl: true, push: true, switchToStudio: true })">
@@ -2527,30 +2483,30 @@
                 <span class="flow-eyebrow">Cross-Category Liquidity Substitution Patterns</span>
               </div>
               <div class="flow-rotations-grid">
-                <div class="flow-rotation-card" style="border-left:3px solid #34d399">
+                <div class="flow-rotation-card">
                   <div style="display:flex;align-items:center;justify-content:space-between">
                     <strong style="color:var(--flow-text);font-size:0.75rem">Tactical Shorts → Single-Stock AI</strong>
                     <span class="flow-badge" data-state="ACCUMULATION">+15.31% 10D</span>
                   </div>
                   <div class="flow-support" style="font-size:0.6875rem">Outflows from Inverse Shorts into Single-Stock Tech (t = +7.40) forecast robust multi-week tech momentum continuation.</div>
                 </div>
-                <div class="flow-rotation-card" style="border-left:3px solid #22d3ee">
+                <div class="flow-rotation-card">
                   <div style="display:flex;align-items:center;justify-content:space-between">
                     <strong style="color:var(--flow-text);font-size:0.75rem">Broad Index Bull → Tactical Shorts</strong>
                     <span class="flow-badge" data-state="BALANCED">Equity Squeeze</span>
                   </div>
                   <div class="flow-support" style="font-size:0.6875rem">Money rotating into benchmark shorts while equity climbs triggers sharp short-covering squeeze (+3.84% benchmark excess).</div>
                 </div>
-                <div class="flow-rotation-card" style="border-left:3px solid #fbbf24">
+                <div class="flow-rotation-card">
                   <div style="display:flex;align-items:center;justify-content:space-between">
-                    <strong style="color:var(--flow-text);font-size:0.75rem">⚠️ Volatility + Rates Surge</strong>
+                    <strong style="color:var(--flow-text);font-size:0.75rem">Volatility + Rates Surge</strong>
                     <span class="flow-badge" data-state="DISTRIBUTION">-1.97% 5D Risk</span>
                   </div>
                   <div class="flow-support" style="font-size:0.6875rem">Concurrent 5D flow surge in UVXY and TMV (Z ≥ +0.75) precedes broad tech beta drawdowns by 1 to 5 trading sessions.</div>
                 </div>
-                <div class="flow-rotation-card" style="border-left:3px solid #fb7185">
+                <div class="flow-rotation-card">
                   <div style="display:flex;align-items:center;justify-content:space-between">
-                    <strong style="color:var(--flow-text);font-size:0.75rem">⚠️ Collateral Liquidity Drain</strong>
+                    <strong style="color:var(--flow-text);font-size:0.75rem">Collateral Liquidity Drain</strong>
                     <span class="flow-badge" data-state="DISTRIBUTION">-4.24% Drawdown</span>
                   </div>
                   <div class="flow-support" style="font-size:0.6875rem">Simultaneous redemptions from leveraged gold/silver (UGL/AGQ Z ≤ -0.75) signal systemic liquidity contraction.</div>
@@ -2746,6 +2702,7 @@
                       <th scope="col" style="text-align:left">Triggered Strategy</th>
                       <th scope="col">Action</th>
                       <th scope="col">Horizon</th>
+                      <th scope="col">Flow Z</th>
                       <th scope="col">Win Rate</th>
                       <th scope="col">Expected Return</th>
                       <th scope="col">Stop-Loss</th>
@@ -2757,12 +2714,19 @@
                   <tbody>
                     <template x-for="row in flowTradeBlotterRows" :key="row.ticker">
                       <tr style="cursor:pointer" @click="selectFlowTicker(row.ticker, { writeUrl: true, push: true, switchToStudio: true })">
-                        <td><span class="flow-result-symbol" x-text="row.ticker"></span></td>
+                        <td>
+                          <div style="display:flex;align-items:center;gap:0.35rem">
+                            <span class="flow-result-symbol" x-text="row.ticker"></span>
+                            <span class="flow-badge" :data-state="(row.leverage_value || 0) < 0 ? 'DISTRIBUTION' : 'ACCUMULATION'" x-text="row.leverage"></span>
+                          </div>
+                          <div style="color:var(--flow-subtle);font-size:0.6875rem;text-align:left" x-text="row.underlying"></div>
+                        </td>
                         <td style="text-align:left;color:var(--flow-text);font-weight:600" x-text="row.setup"></td>
                         <td>
                           <span class="flow-action-badge" :class="row.actionClass" x-text="row.action"></span>
                         </td>
                         <td x-text="row.horizon"></td>
+                        <td :class="row.flow_zscore >= 1.5 ? 'flow-cyan' : row.flow_zscore <= -1.5 ? 'flow-amber' : ''" x-text="row.flow_zscore !== null ? `${row.flow_zscore >= 0 ? '+' : ''}${row.flow_zscore.toFixed(2)}σ` : '—'"></td>
                         <td class="flow-positive" x-text="row.winRate"></td>
                         <td class="flow-cyan" x-text="row.expRet"></td>
                         <td class="flow-negative" x-text="row.stopLoss"></td>
@@ -2771,46 +2735,6 @@
                         <td>
                           <button class="flow-chip" type="button" @click.stop="selectFlowTicker(row.ticker, { writeUrl: true, push: true, switchToStudio: true })">Inspect Studio →</button>
                         </td>
-                      </tr>
-                    </template>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <!-- Active Strategy Signals Table -->
-            <div style="margin:1rem 0">
-              <h4 style="color:var(--flow-text);margin-bottom:0.45rem">Active Strategy Signals (<span x-text="flowAlphaFilteredSignals.length"></span> Triggered Setups)</h4>
-              <div class="flow-table-wrap">
-                <table class="flow-table">
-                  <thead>
-                    <tr>
-                      <th scope="col">Ticker</th>
-                      <th scope="col" style="text-align:left">Underlying &amp; Category</th>
-                      <th scope="col">Lev</th>
-                      <th scope="col">Z-Score</th>
-                      <th scope="col">5D Flow</th>
-                      <th scope="col">Signal Type</th>
-                      <th scope="col">Archetype</th>
-                      <th scope="col">Drawdown</th>
-                      <th scope="col">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <template x-for="item in flowAlphaFilteredSignals" :key="item.ticker">
-                      <tr style="cursor:pointer" @click="selectFlowTicker(item.ticker, { writeUrl: true, push: true, switchToStudio: true })">
-                        <td><span class="flow-result-symbol" x-text="item.ticker"></span></td>
-                        <td style="text-align:left">
-                          <div style="color:var(--flow-text);font-weight:500" x-text="item.underlying"></div>
-                          <div style="color:var(--flow-subtle);font-size:0.6875rem" x-text="shortCategoryName(item.category)"></div>
-                        </td>
-                        <td><span class="flow-badge" :data-state="(item.leverage_value || 0) < 0 ? 'DISTRIBUTION' : 'ACCUMULATION'" x-text="item.leverage"></span></td>
-                        <td :class="item.flow_zscore >= 1.5 ? 'flow-cyan' : item.flow_zscore <= -1.5 ? 'flow-amber' : ''" x-text="item.flow_zscore !== null ? `${item.flow_zscore >= 0 ? '+' : ''}${item.flow_zscore.toFixed(2)}σ` : '—'"></td>
-                        <td :class="item.flow_5d > 0 ? 'flow-positive' : item.flow_5d < 0 ? 'flow-negative' : ''" x-text="formatMoney(item.flow_5d)"></td>
-                        <td><span class="flow-badge" :data-state="item.live_signal?.includes('BUY') ? 'ACCUMULATION' : 'DISTRIBUTION'" x-text="item.live_signal_label"></span></td>
-                        <td><span class="flow-badge" data-state="BALANCED" x-text="item.archetype_label"></span></td>
-                        <td :class="(item.dd_from_60d_high_pct || 0) < -25 ? 'flow-amber' : ''" x-text="`${(item.dd_from_60d_high_pct || 0).toFixed(1)}%`"></td>
-                        <td><button class="flow-chip" type="button" @click.stop="selectFlowTicker(item.ticker, { writeUrl: true, push: true, switchToStudio: true })">Inspect Studio →</button></td>
                       </tr>
                     </template>
                   </tbody>
@@ -2956,9 +2880,9 @@
 
             <!-- Empirical Flow Shock Edge & Proximity Ledger -->
             <div class="flow-ledger-grid" x-show="flowEmpiricalEdgeLedger">
-              <div class="flow-ledger-card" style="border-left: 3px solid #22d3ee">
+              <div class="flow-ledger-card">
                 <div style="display:flex;align-items:center;justify-content:space-between">
-                  <span class="flow-eyebrow" style="color:#22d3ee">20D Price Range Position</span>
+                  <span class="flow-eyebrow">20D Price Range Position</span>
                   <strong class="flow-cyan" x-text="`${flowEmpiricalEdgeLedger?.rangePct}%`"></strong>
                 </div>
                 <div class="flow-range-meter">
@@ -2968,9 +2892,9 @@
                 <div class="flow-support" style="font-size:0.6875rem" x-text="flowEmpiricalEdgeLedger?.rangeLabel"></div>
               </div>
 
-              <div class="flow-ledger-card" style="border-left: 3px solid #34d399">
+              <div class="flow-ledger-card">
                 <div style="display:flex;align-items:center;justify-content:space-between">
-                  <span class="flow-eyebrow" style="color:#34d399">Empirical Washout Shock Edge</span>
+                  <span class="flow-eyebrow">Empirical Washout Shock Edge</span>
                   <span class="flow-badge" data-state="ACCUMULATION" x-text="flowEmpiricalEdgeLedger?.outflowShockEdge"></span>
                 </div>
                 <div style="font-size:0.75rem;color:var(--flow-text)">
@@ -2979,9 +2903,9 @@
                 <div class="flow-support" style="font-size:0.6875rem">Post-washout redemption climax historical forward edge.</div>
               </div>
 
-              <div class="flow-ledger-card" style="border-left: 3px solid #a78bfa">
+              <div class="flow-ledger-card">
                 <div style="display:flex;align-items:center;justify-content:space-between">
-                  <span class="flow-eyebrow" style="color:#a78bfa">Post-Trough 5D Velocity Cone</span>
+                  <span class="flow-eyebrow">Post-Trough 5D Velocity Cone</span>
                   <span class="flow-badge" data-state="BALANCED">Monster vs Fizzle</span>
                 </div>
                 <div style="font-size:0.75rem;color:var(--flow-text)">

@@ -1219,25 +1219,6 @@
   color: #ffffff;
 }
 
-.flow-research .flow-flow-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.flow-research .flow-flow-dot.positive {
-  background: var(--flow-positive);
-}
-
-.flow-research .flow-flow-dot.negative {
-  background: var(--flow-negative);
-}
-
-.flow-research .flow-flow-dot.neutral {
-  background: var(--flow-neutral);
-}
-
 /* ── 145 Universe Drawer ── */
 .flow-research .flow-universe-drawer {
   padding: 0.85rem;
@@ -1426,7 +1407,7 @@
   padding: 0.65rem 0.85rem;
   border: 1px solid var(--flow-line);
   border-radius: 6px;
-  background: #090c12;
+  background: var(--flow-panel);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1437,8 +1418,8 @@
 }
 
 .flow-research .flow-top-mover-card:hover {
-  border-color: rgba(34, 211, 238, 0.4);
-  background: #0d121c;
+  border-color: rgba(34, 211, 238, 0.35);
+  background: rgba(34, 211, 238, 0.02);
 }
 
 /* ── Price × Flow 4-Quadrant Distribution Map ── */
@@ -1446,7 +1427,7 @@
   padding: 0.85rem 1rem;
   border: 1px solid var(--flow-line);
   border-radius: 8px;
-  background: #090c12;
+  background: var(--flow-panel);
   margin-bottom: 0.85rem;
   display: grid;
   gap: 0.65rem;
@@ -1457,7 +1438,7 @@
   min-height: 250px;
   border: 1px solid var(--flow-line);
   border-radius: 6px;
-  background: #05070a;
+  background: #000000;
   position: relative;
 }
 
@@ -1479,9 +1460,14 @@
   padding: 0.75rem 0.9rem;
   border: 1px solid var(--flow-line);
   border-radius: 6px;
-  background: #080b11;
+  background: var(--flow-panel);
   display: grid;
   gap: 0.35rem;
+  transition: border-color 0.15s ease;
+}
+
+.flow-research .flow-ledger-card:hover {
+  border-color: rgba(34, 211, 238, 0.35);
 }
 
 .flow-research .flow-range-meter {
@@ -1496,7 +1482,7 @@
 .flow-research .flow-range-fill {
   height: 100%;
   border-radius: 4px;
-  background: linear-gradient(to right, #34d399, #22d3ee, #fbbf24, #fb7185);
+  background: linear-gradient(to right, rgba(34, 211, 238, 0.25), #22d3ee);
 }
 
 .flow-research .flow-range-pin {
@@ -1506,7 +1492,6 @@
   width: 4px;
   background: #ffffff;
   border-radius: 2px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
 }
 
 /* ── Multi-Horizon Category Heatmap ── */
@@ -1537,27 +1522,27 @@
 }
 
 .flow-research .flow-action-buy {
-  color: #10b981;
-  background: rgba(16, 185, 129, 0.16);
-  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: var(--flow-positive);
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.25);
 }
 
 .flow-research .flow-action-short {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.16);
-  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: var(--flow-negative);
+  background: rgba(251, 113, 133, 0.12);
+  border: 1px solid rgba(251, 113, 133, 0.25);
 }
 
 .flow-research .flow-action-hold {
-  color: #22d3ee;
-  background: rgba(34, 211, 238, 0.16);
-  border: 1px solid rgba(34, 211, 238, 0.4);
+  color: var(--flow-cyan);
+  background: rgba(34, 211, 238, 0.12);
+  border: 1px solid rgba(34, 211, 238, 0.25);
 }
 
 .flow-research .flow-action-fade {
-  color: #fbbf24;
-  background: rgba(251, 191, 36, 0.16);
-  border: 1px solid rgba(251, 191, 36, 0.4);
+  color: var(--flow-warning);
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.25);
 }
 
 /* ── Lead-Lag Twins & Macro Rotation Channels ── */
@@ -1572,9 +1557,14 @@
   padding: 0.75rem 0.9rem;
   border: 1px solid var(--flow-line);
   border-radius: 6px;
-  background: #080b11;
+  background: var(--flow-panel);
   display: grid;
   gap: 0.35rem;
+  transition: border-color 0.15s ease;
+}
+
+.flow-research .flow-rotation-card:hover {
+  border-color: rgba(34, 211, 238, 0.35);
 }
 
 .flow-research .flow-twins-grid {
@@ -1588,7 +1578,12 @@
   padding: 0.75rem 0.9rem;
   border: 1px solid var(--flow-line);
   border-radius: 6px;
-  background: #080b11;
+  background: var(--flow-panel);
   display: grid;
   gap: 0.35rem;
+  transition: border-color 0.15s ease;
+}
+
+.flow-research .flow-twin-card:hover {
+  border-color: rgba(34, 211, 238, 0.35);
 }
