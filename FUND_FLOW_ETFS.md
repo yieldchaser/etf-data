@@ -228,4 +228,4 @@ There is no long-only catalog, watch tier, or missing-underlying watchlist in th
 
 ## Local source and validation
 
-The authoritative source files are `data/flows/curated_catalog_summary.json`, `data/flows/individual/{TICKER}_flows.csv`, `data/flows/all_leveraged_etf_flows.csv`, and `data/flows/Leveraged_ETF_Flows_Master.xlsx`. The validated local universe contains 145 instruments and 177,552 data rows from 2016-01-04 through 2026-10-06. Static UI artifacts are rebuilt from those local files only; external scraping is intentionally disabled.
+The authoritative source files are `data/flows/curated_catalog_summary.json`, `data/flows/individual/{TICKER}_flows.csv`, `data/flows/all_leveraged_etf_flows.csv`, and `data/flows/Leveraged_ETF_Flows_Master.xlsx`. The validated local universe contains 145 instruments and 177,699 data rows from 2016-01-04 through 2026-10-07. Static UI artifacts are rebuilt from those local files only; external scraping is intentionally disabled.
