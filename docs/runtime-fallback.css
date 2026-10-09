@@ -1,4 +1,5 @@
 .flow-runtime-fallback {
+  display: none;
   width: min(100% - 2rem, 980px);
   margin: 2rem auto;
   padding: 1.25rem;
@@ -7,6 +8,14 @@
   color: #e8edf3;
   background: #0d121a;
   font: 1rem/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+body.flow-runtime-fallback-active .flow-runtime-fallback:not([hidden]) {
+  display: block;
+}
+
+.flow-runtime-fallback[hidden] {
+  display: none !important;
 }
 
 .flow-runtime-fallback,

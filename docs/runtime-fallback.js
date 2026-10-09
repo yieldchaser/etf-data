@@ -295,10 +295,14 @@
     if (alpineInitialized()) {
       window.clearInterval(alpinePoll);
       alpineReady();
-    } else if (alpinePollAttempts >= 40) {
+    } else if (alpinePollAttempts >= 16) {
       window.clearInterval(alpinePoll);
+      if (!alpineInitialized()) {
+        initialize();
+      }
     }
   }, 250);
-  if (alpineInitialized()) alpineReady();
-  else initialize();
+  if (alpineInitialized()) {
+    alpineReady();
+  }
 })(window, document);
