@@ -147,8 +147,16 @@
     const absolute = Math.abs(number);
     const prefix = number < 0 ? '−$' : '$';
     if (absolute >= 1e12) return `${sign === '−' ? '' : sign}${prefix}${(absolute / 1e12).toFixed(2)}T`;
-    if (absolute >= 1e9) return `${sign === '−' ? '' : sign}${prefix}${(absolute / 1e9).toFixed(2)}B`;
-    if (absolute >= 1e6) return `${sign === '−' ? '' : sign}${prefix}${(absolute / 1e6).toFixed(1)}M`;
+    if (absolute >= 1e9) {
+      const b = absolute / 1e9;
+      const formattedB = (b >= 10 && b % 1 === 0) ? b.toFixed(0) : b.toFixed(2);
+      return `${sign === '−' ? '' : sign}${prefix}${formattedB}B`;
+    }
+    if (absolute >= 1e6) {
+      const m = absolute / 1e6;
+      const formattedM = (m >= 100 && m % 1 === 0) ? m.toFixed(0) : m.toFixed(1);
+      return `${sign === '−' ? '' : sign}${prefix}${formattedM}M`;
+    }
     if (absolute >= 1e3) return `${sign === '−' ? '' : sign}${prefix}${(absolute / 1e3).toFixed(0)}K`;
     return `${sign === '−' ? '' : sign}${prefix}${absolute.toFixed(0)}`;
   }
@@ -525,23 +533,24 @@
   }
 
   function miniFlowSparklineSvg(values, width, height) {
-    const w = width || 96;
+    const w = width || 88;
     const h = height || 22;
     const series = Array.isArray(values) ? values.map(finiteNumber).filter(v => v !== null) : [];
     if (!series.length) return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true"></svg>`;
     const maxAbs = Math.max(0.01, ...series.map(v => Math.abs(v)));
     const midY = h / 2;
     const slot = w / series.length;
-    const barW = Math.max(1.2, Math.min(4.2, slot * 0.72));
-    let rects = `<line x1="0" y1="${midY.toFixed(1)}" x2="${w}" y2="${midY.toFixed(1)}" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>`;
+    const barW = Math.max(1.8, Math.min(4.2, slot * 0.76));
+    let rects = `<line x1="0" y1="${midY.toFixed(1)}" x2="${w}" y2="${midY.toFixed(1)}" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>`;
     series.forEach((val, idx) => {
       const x = idx * slot + (slot - barW) / 2;
-      const barH = Math.max(1, (Math.abs(val) / maxAbs) * (midY - 2));
+      const barH = Math.max(1.2, (Math.abs(val) / maxAbs) * (midY - 2));
       const y = val >= 0 ? midY - barH : midY;
       const fill = val > 0 ? COLORS.positive : val < 0 ? COLORS.negative : COLORS.neutral;
-      rects += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" rx="0.5" fill="${fill}" opacity="0.88"/>`;
+      rects += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" rx="0.5" fill="${fill}" opacity="0.92"/>`;
     });
-    return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true" style="display:block">${rects}</svg>`;
+    const peakStr = maxAbs >= 1e9 ? `$${(maxAbs / 1e9).toFixed(2)}B` : maxAbs >= 1e6 ? `$${(maxAbs / 1e6).toFixed(1)}M` : maxAbs >= 1e3 ? `$${(maxAbs / 1e3).toFixed(0)}K` : `$${maxAbs.toFixed(0)}`;
+    return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="20D net flow pulse" style="display:block;margin:0 auto"><title>20D daily flow pulse (peak ±${peakStr})</title>${rects}</svg>`;
   }
 
   function axisNumber(value) {
@@ -560,9 +569,27 @@
     return Array.from(new Set(Array.from({ length: desired }, (_, index) => Math.round((count - 1) * index / (desired - 1)))));
   }
 
-  function axisDate(value) {
+  function axisDate(value, spanDays) {
     if (!value) return '—';
-    const [year, month] = String(value).slice(0, 7).split('-');
+    const s = String(value);
+    const parts = s.split('-');
+    if (parts.length < 3) return s.slice(0, 7);
+    const [year, month, day] = parts;
+    const mNum = parseInt(month, 10);
+    const dNum = parseInt(day, 10);
+    const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const mStr = MONTHS[mNum - 1] || month;
+
+    if (spanDays !== undefined && spanDays !== null) {
+      if (spanDays <= 120) {
+        return `${mStr} ${dNum}`;
+      }
+      if (spanDays <= 450) {
+        return `${mStr} '${year.slice(2)}`;
+      }
+      return `${year}-${month}`;
+    }
+
     return `${year}-${month}`;
   }
 
@@ -577,9 +604,29 @@
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
     const xScale = index => padding.left + (options.records.length < 2 ? chartWidth / 2 : index * chartWidth / (options.records.length - 1));
-    const dateTicks = dateTickIndices(options.records.length, width).map(index => {
+
+    const recs = options.records || [];
+    let spanDays = 365;
+    if (recs.length > 1 && recs[0]?.date && recs[recs.length - 1]?.date) {
+      const d1 = new Date(recs[0].date);
+      const d2 = new Date(recs[recs.length - 1].date);
+      spanDays = Math.max(1, Math.round((d2 - d1) / 86400000));
+    }
+
+    const indices = dateTickIndices(recs.length, width);
+    const usedLabels = new Set();
+    const dateTicks = indices.map(index => {
       const x = xScale(index);
-      return `<text x="${x.toFixed(1)}" y="${height - 8}" text-anchor="${index === 0 ? 'start' : index === options.records.length - 1 ? 'end' : 'middle'}" fill="${COLORS.subtle}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11">${escapeHtml(axisDate(options.records[index].date))}</text>`;
+      let label = axisDate(recs[index]?.date, spanDays);
+      if (usedLabels.has(label)) {
+        const d = String(recs[index]?.date || '').split('-');
+        if (d.length >= 3) {
+          const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          label = `${MONTHS[parseInt(d[1], 10) - 1] || d[1]} ${parseInt(d[2], 10)}`;
+        }
+      }
+      usedLabels.add(label);
+      return `<text x="${x.toFixed(1)}" y="${height - 8}" text-anchor="${index === 0 ? 'start' : index === recs.length - 1 ? 'end' : 'middle'}" fill="${COLORS.subtle}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="11">${escapeHtml(label)}</text>`;
     }).join('');
     return { width, height, padding, chartWidth, chartHeight, xScale, dateTicks };
   }
@@ -1436,30 +1483,56 @@
         });
       },
 
+      get flowPeerTitle() {
+        const current = this.flowSelectedInstrument;
+        if (!current) return 'Peer Flow Comparison';
+        const cleanU = String(current.underlying || '').replace(/\s*\([^)]*\)\s*$/, '').trim() || current.ticker;
+        return `${cleanU} & Category Peers`;
+      },
+
+      get flowPeerSubtitle() {
+        const current = this.flowSelectedInstrument;
+        if (!current) return 'Click any peer instrument to switch the studio to its historical series.';
+        const cleanU = String(current.underlying || '').replace(/\s*\([^)]*\)\s*$/, '').trim() || current.ticker;
+        return `Direct ${cleanU} pairs and top tactical category instruments ranked by flow momentum.`;
+      },
+
       get flowPeerComparisonRows() {
         const current = this.flowSelectedInstrument;
         if (!current) return [];
         const items = this.flowPrimaryInstruments;
-        const normU = raw => String(raw || '').trim().replace(/\s*\(([^)]+)\)\s*$/, (m, inner) => /^[A-Z.]{1,5}$/.test(inner.trim()) ? ` (${inner.trim()})` : '').toUpperCase();
+        const normU = raw => String(raw || '').trim().replace(/\s*\([^)]*\)\s*$/, '').trim().toUpperCase();
         const targetUnderlying = normU(current.underlying);
-        let peers = items.filter(item => normU(item.underlying) === targetUnderlying);
-        if (peers.length < 4) {
-          const catPeers = items
-            .filter(item => item.category === current.category && item.ticker !== current.ticker && ((item.flow_20d !== 0 && item.flow_20d !== null) || (item.latest_flow !== 0 && item.latest_flow !== null) || (item.aum_m > 0)))
-            .sort((a, b) => Math.abs(finiteNumber(b.flow_zscore) || 0) - Math.abs(finiteNumber(a.flow_zscore) || 0));
-          const seen = new Set(peers.map(p => p.ticker));
-          for (const cp of catPeers) {
-            if (peers.length >= 8) break;
-            if (!seen.has(cp.ticker)) {
-              peers.push(cp);
-              seen.add(cp.ticker);
-            }
-          }
+
+        // 1. Direct peers sharing the underlying target (e.g. MSTR, TSLA, Semis, etc.)
+        let directPeers = items.filter(item => normU(item.underlying) === targetUnderlying);
+        directPeers.sort((a, b) => {
+          if (a.ticker === current.ticker) return -1;
+          if (b.ticker === current.ticker) return 1;
+          return (finiteNumber(b.aum_m) || 0) - (finiteNumber(a.aum_m) || 0);
+        });
+
+        // 2. Complement with category peers if fewer than 8
+        let categoryPeers = [];
+        if (directPeers.length < 8) {
+          const directTickers = new Set(directPeers.map(p => p.ticker));
+          categoryPeers = items
+            .filter(item => item.category === current.category && !directTickers.has(item.ticker) && ((item.flow_20d !== 0 && item.flow_20d !== null) || (item.latest_flow !== 0 && item.latest_flow !== null) || (item.aum_m > 0)))
+            .sort((a, b) => Math.abs(finiteNumber(b.flow_zscore) || 0) - Math.abs(finiteNumber(a.flow_zscore) || 0))
+            .slice(0, 8 - directPeers.length);
         }
-        return peers.slice(0, 8).map(item => ({
-          ...item,
-          sparklineSvg: miniFlowSparklineSvg(item.sparkline_20d || [], 72, 18)
-        }));
+
+        const combined = [...directPeers, ...categoryPeers];
+        return combined.slice(0, 8).map(item => {
+          const isDirect = normU(item.underlying) === targetUnderlying;
+          const cleanUnderlying = String(item.underlying || '').replace(/\s*\([^)]*\)\s*$/, '').trim() || item.ticker;
+          return {
+            ...item,
+            isDirect,
+            cleanUnderlying,
+            sparklineSvg: miniFlowSparklineSvg(item.sparkline_20d || [], 88, 22)
+          };
+        });
       },
 
       get flowScannerRows() {
@@ -2753,22 +2826,135 @@
         return this._flowWorkbenchBaseSvg.replace('<!-- MEASURE_BAND -->', '');
       },
 
+      get flowImpulseStats() {
+        const rows = this.flowSelectedRows;
+        if (!rows.length) return { sum20: null, sum60: null, spread: null };
+        const last = rows[rows.length - 1];
+        const s20 = finiteNumber(last?.rollingSum20);
+        const s60 = finiteNumber(last?.rollingSum60);
+        const spread = (s20 !== null && s60 !== null) ? s20 - s60 : null;
+        return { sum20: s20, sum60: s60, spread };
+      },
+
+      get flowImpulseRegimeBadge() {
+        const { sum20, sum60 } = this.flowImpulseStats;
+        if (sum20 === null || sum60 === null) return { state: 'BALANCED', label: 'NEUTRAL' };
+        if (sum20 > 0 && sum60 > 0) {
+          if (sum20 >= sum60) return { state: 'ACCUMULATION', label: 'ACCELERATING INFLOW' };
+          return { state: 'ACCUMULATION', label: 'SUSTAINED INFLOW (DECELERATING)' };
+        }
+        if (sum20 < 0 && sum60 < 0) {
+          if (sum20 <= sum60) return { state: 'DISTRIBUTION', label: 'ACCELERATING OUTFLOW' };
+          return { state: 'DISTRIBUTION', label: 'SUSTAINED OUTFLOW (MODERATING)' };
+        }
+        if (sum20 > 0 && sum60 <= 0) {
+          return { state: 'ACCUMULATION', label: 'TACTICAL INFLOW REBOUND' };
+        }
+        return { state: 'DISTRIBUTION', label: 'TACTICAL DISTRIBUTION' };
+      },
+
       get flowMultiHorizonImpulseChartSvg() {
         const rows = this.flowSelectedRows;
         const width = Math.max(280, Math.min(680, Math.round(this.flowChartWidth * 0.58)));
         const height = 215;
         if (rows.length < 5) return emptyChart(width, height, 'Select at least five sessions for multi-horizon impulse.');
-        const frame = chartFrame({ records: rows, width, height, padding: { left: 60, right: 16, top: 18, bottom: 28 } });
+        const frame = chartFrame({ records: rows, width, height, padding: { left: 60, right: 24, top: 20, bottom: 28 } });
         const values = rows.flatMap(r => [finiteNumber(r.rollingSum20), finiteNumber(r.rollingSum60)]).filter(v => v !== null);
         if (!values.length) return emptyChart(width, height, 'Rolling multi-horizon flow sums unavailable.');
-        const maxAbs = Math.max(1, ...values.map(v => Math.abs(v))) * 1.08;
-        const yScale = value => frame.padding.top + frame.chartHeight / 2 - (value / maxAbs) * (frame.chartHeight / 2);
+
+        const minVal = Math.min(...values);
+        const maxVal = Math.max(...values);
+        let yMin = Math.min(0, minVal);
+        let yMax = Math.max(0, maxVal);
+        if (yMax === 0 && yMin === 0) {
+          yMax = 1; yMin = -1;
+        } else if (yMin === 0) {
+          yMin = -Math.max(1e5, yMax * 0.08);
+          yMax = yMax * 1.06;
+        } else if (yMax === 0) {
+          yMax = Math.max(1e5, Math.abs(yMin) * 0.08);
+          yMin = yMin * 1.06;
+        } else {
+          const rng = yMax - yMin;
+          yMax += rng * 0.06;
+          yMin -= rng * 0.06;
+        }
+
+        const yScale = value => frame.padding.top + frame.chartHeight - ((value - yMin) / (yMax - yMin)) * frame.chartHeight;
         const pts20 = rows.map((r, idx) => ({ x: frame.xScale(idx), y: finiteScale(yScale, r.rollingSum20) }));
         const pts60 = rows.map((r, idx) => ({ x: frame.xScale(idx), y: finiteScale(yScale, r.rollingSum60) }));
-        const grid = [maxAbs, 0, -maxAbs].map(value => {
-          const y = yScale(value);
-          return `<line x1="${frame.padding.left}" y1="${y.toFixed(1)}" x2="${width - frame.padding.right}" y2="${y.toFixed(1)}" stroke="${value === 0 ? COLORS.axis : COLORS.grid}" stroke-width="1"/><text x="${frame.padding.left - 6}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10.5">${escapeHtml(axisNumber(value))}</text>`;
-        }).join('');
+
+        // Grid lines: zero baseline, top, bottom (if negative flows exist)
+        const yZero = yScale(0);
+        let grid = `<line x1="${frame.padding.left}" y1="${yZero.toFixed(1)}" x2="${width - frame.padding.right}" y2="${yZero.toFixed(1)}" stroke="rgba(255,255,255,0.22)" stroke-width="1.2"/>`;
+        grid += `<text x="${frame.padding.left - 6}" y="${(yZero + 3.5).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10">$0</text>`;
+
+        const yTop = yScale(yMax);
+        grid += `<line x1="${frame.padding.left}" y1="${yTop.toFixed(1)}" x2="${width - frame.padding.right}" y2="${yTop.toFixed(1)}" stroke="${COLORS.grid}" stroke-width="0.8"/>`;
+        grid += `<text x="${frame.padding.left - 6}" y="${(yTop + 3.5).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10">${escapeHtml(axisNumber(yMax))}</text>`;
+
+        if (minVal < 0) {
+          const yBot = yScale(yMin);
+          grid += `<line x1="${frame.padding.left}" y1="${yBot.toFixed(1)}" x2="${width - frame.padding.right}" y2="${yBot.toFixed(1)}" stroke="${COLORS.grid}" stroke-width="0.8"/>`;
+          grid += `<text x="${frame.padding.left - 6}" y="${(yBot + 3.5).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10">${escapeHtml(axisNumber(yMin))}</text>`;
+        } else if (yMax > 2e6) {
+          const midVal = yMax / 2;
+          const yMid = yScale(midVal);
+          grid += `<line x1="${frame.padding.left}" y1="${yMid.toFixed(1)}" x2="${width - frame.padding.right}" y2="${yMid.toFixed(1)}" stroke="${COLORS.grid}" stroke-width="0.6" stroke-dasharray="2 3"/>`;
+          grid += `<text x="${frame.padding.left - 6}" y="${(yMid + 3.5).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9.5">${escapeHtml(axisNumber(midVal))}</text>`;
+        }
+
+        // Momentum spread ribbon between 20D and 60D
+        const validPairs = [];
+        for (let i = 0; i < rows.length; i++) {
+          if (pts20[i].y !== null && pts60[i].y !== null) {
+            validPairs.push({ x: pts20[i].x, y20: pts20[i].y, y60: pts60[i].y });
+          }
+        }
+        let ribbonSvg = '';
+        if (validPairs.length > 1) {
+          const topPts = validPairs.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y20.toFixed(1)}`).join(' ');
+          const bottomPts = validPairs.slice().reverse().map(p => `L ${p.x.toFixed(1)} ${p.y60.toFixed(1)}`).join(' ');
+          ribbonSvg = `<defs>
+            <linearGradient id="impulse-spread-ribbon" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#34d399" stop-opacity="0.18"/>
+              <stop offset="100%" stop-color="#fbbf24" stop-opacity="0.08"/>
+            </linearGradient>
+          </defs>
+          <path d="${topPts} ${bottomPts} Z" fill="url(#impulse-spread-ribbon)"/>`;
+        }
+
+        // Crossover detection
+        let crossoverSvg = '';
+        for (let i = 1; i < rows.length; i++) {
+          const r0_20 = finiteNumber(rows[i - 1].rollingSum20);
+          const r0_60 = finiteNumber(rows[i - 1].rollingSum60);
+          const r1_20 = finiteNumber(rows[i].rollingSum20);
+          const r1_60 = finiteNumber(rows[i].rollingSum60);
+          if (r0_20 !== null && r0_60 !== null && r1_20 !== null && r1_60 !== null) {
+            const spread0 = r0_20 - r0_60;
+            const spread1 = r1_20 - r1_60;
+            if (spread0 * spread1 < 0) {
+              const crossX = frame.xScale(i);
+              const isBull = spread1 > 0;
+              const col = isBull ? '#34d399' : '#fbbf24';
+              crossoverSvg += `<line x1="${crossX.toFixed(1)}" y1="${frame.padding.top}" x2="${crossX.toFixed(1)}" y2="${(frame.height - frame.padding.bottom).toFixed(1)}" stroke="${col}" stroke-width="0.8" stroke-dasharray="2 3" opacity="0.45"/>`;
+            }
+          }
+        }
+
+        // End indicators
+        let endBadges = '';
+        const lastIdx = rows.length - 1;
+        if (lastIdx >= 0) {
+          const endX = frame.xScale(lastIdx);
+          if (pts20[lastIdx]?.y !== null) {
+            endBadges += `<circle cx="${endX.toFixed(1)}" cy="${pts20[lastIdx].y.toFixed(1)}" r="3.5" fill="#34d399" stroke="#090d16" stroke-width="1.2"/>`;
+          }
+          if (pts60[lastIdx]?.y !== null) {
+            endBadges += `<circle cx="${endX.toFixed(1)}" cy="${pts60[lastIdx].y.toFixed(1)}" r="3.5" fill="#fbbf24" stroke="#090d16" stroke-width="1.2"/>`;
+          }
+        }
 
         let overlay = '';
         if (this.flowHoverIndex !== null && this.flowHoverChart === 'impulse' && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
@@ -2792,7 +2978,7 @@
           }
         }
 
-        return `<svg viewBox="0 0 ${width} ${height}" data-pad-left="${frame.padding.left}" data-pad-right="${frame.padding.right}" data-chart-width="${width}" role="img" aria-label="Multi-horizon 20D and 60D rolling net flow impulse">${grid}<path d="${linePath(pts60)}" fill="none" stroke="${COLORS.warning}" stroke-width="1.6" stroke-dasharray="3 2" opacity="0.85"/><path d="${linePath(pts20)}" fill="none" stroke="${COLORS.positive}" stroke-width="2"/>${overlay}${frame.dateTicks}</svg>`;
+        return `<svg viewBox="0 0 ${width} ${height}" data-pad-left="${frame.padding.left}" data-pad-right="${frame.padding.right}" data-chart-width="${width}" role="img" aria-label="Multi-horizon 20D and 60D rolling net flow impulse">${ribbonSvg}${grid}${crossoverSvg}<path d="${linePath(pts60)}" fill="none" stroke="${COLORS.warning}" stroke-width="1.8" stroke-dasharray="3 2" opacity="0.9"/><path d="${linePath(pts20)}" fill="none" stroke="${COLORS.positive}" stroke-width="2.2"/>${endBadges}${overlay}${frame.dateTicks}</svg>`;
       },
 
       async init() {
@@ -3051,6 +3237,16 @@
         if (!this.flowChartTooltip.visible) return '';
         const row = this.flowSelectedRows[this.flowChartTooltip.index];
         if (!row) return '';
+        if (this.flowHoverChart === 'impulse') {
+          const s20 = finiteNumber(row.rollingSum20);
+          const s60 = finiteNumber(row.rollingSum60);
+          const spread = (s20 !== null && s60 !== null) ? s20 - s60 : null;
+          const spreadStr = spread !== null ? `${spread >= 0 ? '+' : ''}${formatMoney(spread)}` : '—';
+          const line1 = `${this.flowTicker || 'ETF'} · ${row.date || ''}`;
+          const line2 = `20D Sum: ${formatMoney(s20)}  ·  60D Sum: ${formatMoney(s60)}`;
+          const line3 = `Flow Spread (20D − 60D): ${spreadStr} (${spread !== null && spread >= 0 ? 'Accelerating' : 'Decelerating'})`;
+          return `${line1}\n${line2}\n${line3}`;
+        }
         const line1 = row.date || '';
         const pricePart = (row.nav !== null && Number.isFinite(row.nav)) ? `Price $${row.nav.toFixed(2)}  ·  ` : '';
         const line2 = `${pricePart}Daily flow ${formatMoney(row.flow)}`;

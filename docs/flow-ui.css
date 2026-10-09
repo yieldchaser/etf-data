@@ -1430,7 +1430,34 @@
 
 .flow-research .flow-peer-table-wrap {
   max-height: none;
+  overflow-x: auto;
   overflow-y: visible;
+}
+
+.flow-research .flow-peer-table-wrap .flow-table th {
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  padding: 0.4rem 0.5rem;
+  color: var(--flow-subtle);
+}
+
+.flow-research .flow-peer-table-wrap .flow-table td {
+  padding: 0.42rem 0.5rem;
+  font-size: 0.75rem;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+
+.flow-research .flow-peer-table-wrap .flow-table tr {
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.flow-research .flow-peer-table-wrap .flow-table tr:hover {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.flow-research .flow-peer-table-wrap .flow-table tr:focus-visible {
+  outline: 2px solid var(--flow-cyan);
+  outline-offset: -2px;
 }
 
 .flow-research .flow-ticker-chip {
