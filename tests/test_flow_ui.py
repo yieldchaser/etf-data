@@ -235,22 +235,15 @@ def test_local_runtime_fallback_is_available_without_cdn():
 def test_flow_chart_tabs_tooltips_and_accessible_table_are_interactive():
     markup = active_flow_markup()
     javascript = FLOW_JS.read_text(encoding="utf-8")
-    assert markup.count('role="tab"') == 1
-    assert 'role="tablist"' in markup
-    assert markup.count('role="tabpanel"') == 6
-    assert "@keydown=\"flowChartTabKeydown($event, index)\"" in markup
-    assert ':aria-disabled="tab.key' in markup
-    assert ':disabled="tab.key' not in markup
-    assert "flow-chart-message" in markup
-    assert "flowSetChartTab(tab.key, true)" in markup
+    assert markup.count('role="tabpanel"') == 1
+    assert "flow-chart-panel-workbench" in markup
     assert "flowChartPointerMove($event)" in markup
-    assert "flowChartFocus()" in markup
+    assert "flowChartFocus(" in markup
     assert 'class="flow-chart-tooltip"' in markup
     assert 'role="status"' in markup
     assert "Accessible data table for the selected window" in markup
     assert "flowChartTooltipText" in javascript
     assert "flowChartTabKeydown" in javascript
-    assert markup.count('class="flow-chart"') == 5
 
 
 def test_main_tabs_and_flow_handlers_use_safe_history_transitions():

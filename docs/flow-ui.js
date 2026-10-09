@@ -705,14 +705,18 @@
       flowMeasureResult: null,
       _flowWorkbenchBaseKey: '',
       _flowWorkbenchBaseSvg: '',
+      _flowWorkbenchScales: null,
       _flowUrlTimer: null,
       _rangeRaf: null,
+      _pendingStartIndex: undefined,
+      _pendingEndIndex: undefined,
       flowChartTab: 'workbench',
       flowChartMessage: '',
       flowChartTooltip: { visible: false, index: 0 },
       flowStartIndex: 0,
       flowEndIndex: 0,
       flowActiveThumb: 'end',
+      flowHoverThumb: null,
       flowRangePreset: '1y',
       flowPriceEnabled: true,
       flowViewportWidth: typeof window === 'undefined' ? 1000 : window.innerWidth,
@@ -1457,6 +1461,9 @@
           rangeBadge,
           rangeState,
           rangeDesc,
+          minP: prices20.length >= 2 ? minP : null,
+          maxP: prices20.length >= 2 ? maxP : null,
+          curP: prices20.length >= 2 ? curP : null,
           shockBadge,
           shockBadgeState,
           shockStatLine,
@@ -2933,12 +2940,16 @@
             t3Grid += `<line x1="${padLeft}" y1="${yPos15.toFixed(1)}" x2="${width - padRight}" y2="${yPos15.toFixed(1)}" stroke="rgba(34,211,238,0.32)" stroke-width="1" stroke-dasharray="3 3"/>`;
             t3Grid += `<line x1="${padLeft}" y1="${yNeg15.toFixed(1)}" x2="${width - padRight}" y2="${yNeg15.toFixed(1)}" stroke="rgba(245,158,11,0.32)" stroke-width="1" stroke-dasharray="3 3"/>`;
 
-            t3Grid += `<text x="${padLeft - 8}" y="${(yPos15 + 3).toFixed(1)}" text-anchor="end" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9">+1.5σ</text>`;
             t3Grid += `<text x="${padLeft - 8}" y="${(zeroZY + 3).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="9">0σ</text>`;
-            t3Grid += `<text x="${padLeft - 8}" y="${(yNeg15 + 3).toFixed(1)}" text-anchor="end" fill="#f59e0b" font-family="ui-monospace, monospace" font-size="9">−1.5σ</text>`;
+            if (zeroZY - yPos15 >= 14) {
+              t3Grid += `<text x="${padLeft - 8}" y="${(yPos15 + 3).toFixed(1)}" text-anchor="end" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9">+1.5σ</text>`;
+            }
+            if (yNeg15 - zeroZY >= 14) {
+              t3Grid += `<text x="${padLeft - 8}" y="${(yNeg15 + 3).toFixed(1)}" text-anchor="end" fill="#f59e0b" font-family="ui-monospace, monospace" font-size="9">−1.5σ</text>`;
+            }
 
-            t3Grid += `<text x="${width - padRight + 8}" y="${(yPos15 + 3).toFixed(1)}" text-anchor="start" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9" font-weight="600" letter-spacing="0.04em">ACCUMULATION (+1.5σ)</text>`;
-            t3Grid += `<text x="${width - padRight + 8}" y="${(yNeg15 + 3).toFixed(1)}" text-anchor="start" fill="#f59e0b" font-family="ui-monospace, monospace" font-size="9" font-weight="600" letter-spacing="0.04em">DISTRIBUTION (−1.5σ)</text>`;
+            t3Grid += `<text x="${width - padRight + 8}" y="${(t3Top + 10).toFixed(1)}" text-anchor="start" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9" font-weight="600" letter-spacing="0.04em">ACCUMULATION (+1.5σ)</text>`;
+            t3Grid += `<text x="${width - padRight + 8}" y="${(t3Top + tier3H - 4).toFixed(1)}" text-anchor="start" fill="#f59e0b" font-family="ui-monospace, monospace" font-size="9" font-weight="600" letter-spacing="0.04em">DISTRIBUTION (−1.5σ)</text>`;
 
             const smoothZ = [];
             for (let i = 0; i < rows.length; i++) {
@@ -2974,6 +2985,27 @@
             return `<text x="${x.toFixed(1)}" y="${(totalH - 8).toFixed(1)}" text-anchor="${anchor}" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="10">${escapeHtml(axisDate(rows[idx].date))}</text>`;
           }).join('');
 
+          this._flowWorkbenchScales = {
+            xScale,
+            yPrice: (showPrice && prices.length) ? yPrice : null,
+            yCum: (showCum && cumValues.length) ? yCum : null,
+            yDaily: showDaily ? yDaily : null,
+            yZ: hasTier3 ? yZ : null,
+            smoothZ: hasTier3 ? smoothZ : null,
+            padTop,
+            runningY,
+            totalH,
+            hasTier1,
+            hasTier2,
+            hasTier3,
+            showPrice,
+            showCum,
+            showDaily,
+            showZ,
+            isPctAum,
+            aumTotal
+          };
+
           this._flowWorkbenchBaseKey = baseKey;
           this._flowWorkbenchBaseSvg = `<svg viewBox="0 0 ${width} ${totalH}" data-pad-left="${padLeft}" data-pad-right="${padRight}" data-chart-width="${width}" role="img" aria-label="Synchronized Flow Studio" style="width:100%;height:auto;display:block">
             <title>Synchronized Flow Studio</title>
@@ -2981,9 +3013,12 @@
             ${tier2Svg}
             ${tier3Svg}
             ${dateTicksSvg}
+            <!-- HOVER_OVERLAY -->
             <!-- MEASURE_BAND -->
           </svg>`;
         }
+
+        let svgResult = this._flowWorkbenchBaseSvg;
 
         if (this.flowMeasureActive && this.flowMeasureStartIdx !== null && this.flowMeasureCurrentIdx !== null) {
           const m1 = Math.min(this.flowMeasureStartIdx, this.flowMeasureCurrentIdx);
@@ -2997,10 +3032,53 @@
             <line x1="${bandX.toFixed(1)}" y1="${padTop}" x2="${bandX.toFixed(1)}" y2="${runningY}" stroke="#22d3ee" stroke-width="1.5"/>
             <line x1="${(bandX + bandW).toFixed(1)}" y1="${padTop}" x2="${(bandX + bandW).toFixed(1)}" y2="${runningY}" stroke="#22d3ee" stroke-width="1.5"/>
           </g>`;
-          return this._flowWorkbenchBaseSvg.replace('<!-- MEASURE_BAND -->', measureSvg);
+          svgResult = svgResult.replace('<!-- MEASURE_BAND -->', measureSvg);
+        } else {
+          svgResult = svgResult.replace('<!-- MEASURE_BAND -->', '');
         }
 
-        return this._flowWorkbenchBaseSvg.replace('<!-- MEASURE_BAND -->', '');
+        let hoverOverlay = '';
+        if (this.flowHoverIndex !== null && !this.flowMeasureActive && this._flowWorkbenchScales && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
+          const sc = this._flowWorkbenchScales;
+          const hIdx = this.flowHoverIndex;
+          const hRow = rows[hIdx];
+          const hX = sc.xScale(hIdx);
+          let hDots = '';
+
+          // Vertical tracking guide line
+          hDots += `<line x1="${hX.toFixed(1)}" y1="${sc.padTop}" x2="${hX.toFixed(1)}" y2="${sc.runningY}" stroke="rgba(255,255,255,0.22)" stroke-width="1" stroke-dasharray="2 2" pointer-events="none"/>`;
+
+          if (sc.hasTier1) {
+            if (sc.showPrice && hRow?.nav !== null && sc.yPrice) {
+              const yp = sc.yPrice(hRow.nav);
+              hDots += `<circle cx="${hX.toFixed(1)}" cy="${yp.toFixed(1)}" r="4.5" fill="#c084fc" stroke="#ffffff" stroke-width="1.8" pointer-events="none"/>`;
+            }
+            if (sc.showCum && hRow?.selectedCumulative !== null && sc.yCum) {
+              const cVal = sc.isPctAum ? (hRow.selectedCumulative / sc.aumTotal) * 100 : hRow.selectedCumulative;
+              const yc = sc.yCum(cVal);
+              hDots += `<circle cx="${hX.toFixed(1)}" cy="${yc.toFixed(1)}" r="4.5" fill="#34d399" stroke="#ffffff" stroke-width="1.8" pointer-events="none"/>`;
+            }
+          }
+
+          if (sc.hasTier2 && sc.showDaily && hRow?.flow !== null && sc.yDaily) {
+            const fVal = sc.isPctAum ? (hRow.flow / sc.aumTotal) * 100 : hRow.flow;
+            const yf = sc.yDaily(fVal);
+            hDots += `<circle cx="${hX.toFixed(1)}" cy="${yf.toFixed(1)}" r="4" fill="${fVal >= 0 ? '#34d399' : '#fb7185'}" stroke="#ffffff" stroke-width="1.6" pointer-events="none"/>`;
+          }
+
+          if (sc.hasTier3 && sc.showZ && sc.smoothZ && sc.smoothZ[hIdx] !== null && sc.yZ) {
+            const yz = sc.yZ(sc.smoothZ[hIdx]);
+            hDots += `<circle cx="${hX.toFixed(1)}" cy="${yz.toFixed(1)}" r="4" fill="#e879f9" stroke="#ffffff" stroke-width="1.6" pointer-events="none"/>`;
+          }
+
+          // Date tag pill at bottom
+          hDots += `<rect x="${(hX - 34).toFixed(1)}" y="${(sc.totalH - 22).toFixed(1)}" width="68" height="15" rx="3" fill="#090d16" stroke="rgba(255,255,255,0.35)" stroke-width="1" pointer-events="none"/>`;
+          hDots += `<text x="${hX.toFixed(1)}" y="${(sc.totalH - 11).toFixed(1)}" text-anchor="middle" fill="#ffffff" font-family="ui-monospace, monospace" font-size="9" font-weight="600" pointer-events="none">${escapeHtml(axisDate(hRow.date))}</text>`;
+
+          hoverOverlay = `<g class="flow-hover-points" pointer-events="none">${hDots}</g>`;
+        }
+
+        return svgResult.replace('<!-- HOVER_OVERLAY -->', hoverOverlay);
       },
 
       get flowImpulseStats() {
@@ -3018,23 +3096,25 @@
         if (sum20 === null || sum60 === null) return { state: 'BALANCED', label: 'NEUTRAL' };
         if (sum20 > 0 && sum60 > 0) {
           if (sum20 >= sum60) return { state: 'ACCUMULATION', label: 'ACCELERATING INFLOW' };
-          return { state: 'ACCUMULATION', label: 'SUSTAINED INFLOW (DECELERATING)' };
+          return { state: 'ACCUMULATION', label: 'SUSTAINED POSITIVE FLOW' };
         }
         if (sum20 < 0 && sum60 < 0) {
           if (sum20 <= sum60) return { state: 'DISTRIBUTION', label: 'ACCELERATING OUTFLOW' };
-          return { state: 'DISTRIBUTION', label: 'SUSTAINED OUTFLOW (MODERATING)' };
+          return { state: 'DISTRIBUTION', label: 'SUSTAINED OUTFLOW' };
         }
         if (sum20 > 0 && sum60 <= 0) {
-          return { state: 'ACCUMULATION', label: 'TACTICAL INFLOW REBOUND' };
+          return { state: 'ACCUMULATION', label: 'INFLOW ROTATION' };
         }
-        return { state: 'DISTRIBUTION', label: 'TACTICAL DISTRIBUTION' };
+        return { state: 'DISTRIBUTION', label: 'OUTFLOW ROTATION' };
       },
 
       get flowMultiHorizonImpulseChartSvg() {
-        const rows = this.flowSelectedRows;
+        const allRows = this.flowSelectedRows;
+        // Clamp to available rows so new/short-history ETFs start right at the left edge with zero dead void
+        const rows = allRows.filter(r => r.rollingSum20 !== null || r.rollingSum60 !== null);
         const width = Math.max(280, Math.min(680, Math.round(this.flowChartWidth * 0.58)));
         const height = 215;
-        if (rows.length < 5) return emptyChart(width, height, 'Select at least five sessions for multi-horizon impulse.');
+        if (rows.length < 5) return emptyChart(width, height, 'Rolling multi-horizon flow sums unavailable for this window.');
         const frame = chartFrame({ records: rows, width, height, padding: { left: 60, right: 24, top: 20, bottom: 28 } });
         const values = rows.flatMap(r => [finiteNumber(r.rollingSum20), finiteNumber(r.rollingSum60)]).filter(v => v !== null);
         if (!values.length) return emptyChart(width, height, 'Rolling multi-horizon flow sums unavailable.');
@@ -3061,9 +3141,9 @@
         const pts20 = rows.map((r, idx) => ({ x: frame.xScale(idx), y: finiteScale(yScale, r.rollingSum20) }));
         const pts60 = rows.map((r, idx) => ({ x: frame.xScale(idx), y: finiteScale(yScale, r.rollingSum60) }));
 
-        // Grid lines: zero baseline, top, bottom (if negative flows exist)
+        // Grid lines: zero baseline, top, bottom
         const yZero = yScale(0);
-        let grid = `<line x1="${frame.padding.left}" y1="${yZero.toFixed(1)}" x2="${width - frame.padding.right}" y2="${yZero.toFixed(1)}" stroke="rgba(255,255,255,0.22)" stroke-width="1.2"/>`;
+        let grid = `<line x1="${frame.padding.left}" y1="${yZero.toFixed(1)}" x2="${width - frame.padding.right}" y2="${yZero.toFixed(1)}" stroke="rgba(255,255,255,0.24)" stroke-width="1.2"/>`;
         grid += `<text x="${frame.padding.left - 6}" y="${(yZero + 3.5).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10">$0</text>`;
 
         const yTop = yScale(yMax);
@@ -3081,7 +3161,7 @@
           grid += `<text x="${frame.padding.left - 6}" y="${(yMid + 3.5).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9.5">${escapeHtml(axisNumber(midVal))}</text>`;
         }
 
-        // Momentum spread ribbon between 20D and 60D
+        // Clean subtle spread ribbon between 20D and 60D
         const validPairs = [];
         for (let i = 0; i < rows.length; i++) {
           if (pts20[i].y !== null && pts60[i].y !== null) {
@@ -3094,30 +3174,11 @@
           const bottomPts = validPairs.slice().reverse().map(p => `L ${p.x.toFixed(1)} ${p.y60.toFixed(1)}`).join(' ');
           ribbonSvg = `<defs>
             <linearGradient id="impulse-spread-ribbon" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#34d399" stop-opacity="0.18"/>
-              <stop offset="100%" stop-color="#fbbf24" stop-opacity="0.08"/>
+              <stop offset="0%" stop-color="#34d399" stop-opacity="0.10"/>
+              <stop offset="100%" stop-color="#fbbf24" stop-opacity="0.04"/>
             </linearGradient>
           </defs>
           <path d="${topPts} ${bottomPts} Z" fill="url(#impulse-spread-ribbon)"/>`;
-        }
-
-        // Crossover detection
-        let crossoverSvg = '';
-        for (let i = 1; i < rows.length; i++) {
-          const r0_20 = finiteNumber(rows[i - 1].rollingSum20);
-          const r0_60 = finiteNumber(rows[i - 1].rollingSum60);
-          const r1_20 = finiteNumber(rows[i].rollingSum20);
-          const r1_60 = finiteNumber(rows[i].rollingSum60);
-          if (r0_20 !== null && r0_60 !== null && r1_20 !== null && r1_60 !== null) {
-            const spread0 = r0_20 - r0_60;
-            const spread1 = r1_20 - r1_60;
-            if (spread0 * spread1 < 0) {
-              const crossX = frame.xScale(i);
-              const isBull = spread1 > 0;
-              const col = isBull ? '#34d399' : '#fbbf24';
-              crossoverSvg += `<line x1="${crossX.toFixed(1)}" y1="${frame.padding.top}" x2="${crossX.toFixed(1)}" y2="${(frame.height - frame.padding.bottom).toFixed(1)}" stroke="${col}" stroke-width="0.8" stroke-dasharray="2 3" opacity="0.45"/>`;
-            }
-          }
         }
 
         // End indicators
@@ -3141,6 +3202,7 @@
           const s60 = finiteNumber(hRow.rollingSum60);
 
           let dots = '';
+          dots += `<line x1="${x.toFixed(1)}" y1="${frame.padding.top}" x2="${x.toFixed(1)}" y2="${(frame.height - frame.padding.bottom).toFixed(1)}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="2 2" pointer-events="none"/>`;
           if (s20 !== null) {
             const y20 = yScale(s20);
             dots += `<circle cx="${x.toFixed(1)}" cy="${y20.toFixed(1)}" r="4.5" fill="#34d399" stroke="#ffffff" stroke-width="1.8"/>`;
@@ -3151,11 +3213,11 @@
           }
 
           if (dots) {
-            overlay = `<g class="flow-crosshair-group" pointer-events="none">${dots}</g>`;
+            overlay = `<g class="flow-hover-points" pointer-events="none">${dots}</g>`;
           }
         }
 
-        return `<svg viewBox="0 0 ${width} ${height}" data-pad-left="${frame.padding.left}" data-pad-right="${frame.padding.right}" data-chart-width="${width}" role="img" aria-label="Multi-horizon 20D and 60D rolling net flow impulse">${ribbonSvg}${grid}${crossoverSvg}<path d="${linePath(pts60)}" fill="none" stroke="${COLORS.warning}" stroke-width="1.8" stroke-dasharray="3 2" opacity="0.9"/><path d="${linePath(pts20)}" fill="none" stroke="${COLORS.positive}" stroke-width="2.2"/>${endBadges}${overlay}${frame.dateTicks}</svg>`;
+        return `<svg viewBox="0 0 ${width} ${height}" data-pad-left="${frame.padding.left}" data-pad-right="${frame.padding.right}" data-chart-width="${width}" role="img" aria-label="Multi-horizon 20D and 60D rolling net flow impulse">${ribbonSvg}${grid}<path d="${linePath(pts60)}" fill="none" stroke="${COLORS.warning}" stroke-width="1.8" stroke-dasharray="3 2" opacity="0.9"/><path d="${linePath(pts20)}" fill="none" stroke="${COLORS.positive}" stroke-width="2.2"/>${endBadges}${overlay}${frame.dateTicks}</svg>`;
       },
 
       async init() {
@@ -3650,11 +3712,20 @@
         const minimumWindow = count > 1 ? 2 : 1;
         const next = Math.max(0, Math.min(Math.trunc(Number(value) || 0), this.flowEndIndex - minimumWindow + 1));
         if (next === this.flowStartIndex) return;
-        this.flowStartIndex = next;
-        this.flowRangePreset = 'custom';
-        this.flowEnsureChartTab();
-        this._syncRangeInputs();
-        this._flowScheduleUrlWrite();
+        this._pendingStartIndex = next;
+        if (this._rangeRaf) return;
+        const schedule = typeof requestAnimationFrame !== 'undefined' ? requestAnimationFrame : setTimeout;
+        this._rangeRaf = schedule(() => {
+          this._rangeRaf = null;
+          const pending = this._pendingStartIndex;
+          this._pendingStartIndex = undefined;
+          if (pending === undefined || pending === this.flowStartIndex) return;
+          this.flowStartIndex = pending;
+          this.flowRangePreset = 'custom';
+          this.flowEnsureChartTab();
+          this._syncRangeInputs();
+          this._flowScheduleUrlWrite();
+        }, 16);
       },
 
       flowSetEndIndex(value) {
@@ -3663,11 +3734,20 @@
         const minimumWindow = count > 1 ? 2 : 1;
         const next = Math.min(count - 1, Math.max(Math.trunc(Number(value) || 0), this.flowStartIndex + minimumWindow - 1));
         if (next === this.flowEndIndex) return;
-        this.flowEndIndex = next;
-        this.flowRangePreset = 'custom';
-        this.flowEnsureChartTab();
-        this._syncRangeInputs();
-        this._flowScheduleUrlWrite();
+        this._pendingEndIndex = next;
+        if (this._rangeRaf) return;
+        const schedule = typeof requestAnimationFrame !== 'undefined' ? requestAnimationFrame : setTimeout;
+        this._rangeRaf = schedule(() => {
+          this._rangeRaf = null;
+          const pending = this._pendingEndIndex;
+          this._pendingEndIndex = undefined;
+          if (pending === undefined || pending === this.flowEndIndex) return;
+          this.flowEndIndex = pending;
+          this.flowRangePreset = 'custom';
+          this.flowEnsureChartTab();
+          this._syncRangeInputs();
+          this._flowScheduleUrlWrite();
+        }, 16);
       },
 
       _syncRangeInputs() {
@@ -3698,6 +3778,26 @@
       },
 
       _flowFinishRangeDrag() {
+        if (this._rangeRaf) {
+          if (typeof cancelAnimationFrame !== 'undefined') cancelAnimationFrame(this._rangeRaf);
+          else clearTimeout(this._rangeRaf);
+          this._rangeRaf = null;
+        }
+        let updated = false;
+        if (this._pendingStartIndex !== undefined && this._pendingStartIndex !== this.flowStartIndex) {
+          this.flowStartIndex = this._pendingStartIndex;
+          this._pendingStartIndex = undefined;
+          updated = true;
+        }
+        if (this._pendingEndIndex !== undefined && this._pendingEndIndex !== this.flowEndIndex) {
+          this.flowEndIndex = this._pendingEndIndex;
+          this._pendingEndIndex = undefined;
+          updated = true;
+        }
+        if (updated) {
+          this.flowRangePreset = 'custom';
+          this.flowEnsureChartTab();
+        }
         if (this._flowUrlTimer) {
           clearTimeout(this._flowUrlTimer);
           this._flowUrlTimer = null;

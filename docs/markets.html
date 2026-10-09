@@ -2970,35 +2970,40 @@
               <div class="flow-kpi">
                 <div class="flow-kpi-label">Trailing 20 sessions</div>
                 <div class="flow-kpi-value" :class="flowKpis.trailingTwenty > 0 ? 'flow-positive' : flowKpis.trailingTwenty < 0 ? 'flow-negative' : ''" x-text="formatMoney(flowKpis.trailingTwenty)"></div>
-                <div class="flow-kpi-note" x-text="`Complete 20-session window · 60D ${formatMoney(flowSelectedInstrument?.flow_60d)}`"></div>
+                <div class="flow-kpi-note" x-text="`20-session sum · 60D ${formatMoney(flowSelectedInstrument?.flow_60d)}`"></div>
               </div>
               <div class="flow-kpi">
                 <div class="flow-kpi-label">Selected-window cumulative</div>
                 <div class="flow-kpi-value" :class="flowKpis.cumulative > 0 ? 'flow-positive' : flowKpis.cumulative < 0 ? 'flow-negative' : ''" x-text="formatMoney(flowKpis.cumulative)"></div>
-                <div class="flow-kpi-note">Source-reported aggregate net flow</div>
+                <div class="flow-kpi-note" title="Source-reported aggregate net flow">Aggregate net flow over window</div>
               </div>
               <div class="flow-kpi">
                 <div class="flow-kpi-label">10D flow percentile</div>
                 <div class="flow-kpi-value flow-cyan" x-text="formatPercent(flowKpis.percentile)"></div>
-                <div class="flow-kpi-note">Complete windows, ties at midpoint</div>
+                <div class="flow-kpi-note">10D window empirical midrank</div>
               </div>
               <div class="flow-kpi">
                 <div class="flow-kpi-label">1D flow z-score</div>
                 <div class="flow-kpi-value" :class="flowKpis.zScore >= 1.5 ? 'flow-cyan' : flowKpis.zScore <= -1.5 ? 'flow-amber' : ''" x-text="flowKpis.zScore === null ? '—' : `${flowKpis.zScore >= 0 ? '+' : ''}${flowKpis.zScore.toFixed(2)}σ`"></div>
-                <div class="flow-kpi-note" x-text="flowKpis.coverage"></div>
+                <div class="flow-kpi-note" x-text="flowKpis.coverage || 'Prior 30 sessions'"></div>
               </div>
             </div>
 
             <!-- Empirical Flow Shock Edge & Proximity Ledger -->
             <div class="flow-ledger-grid" x-show="flowEmpiricalEdgeLedger">
               <div class="flow-ledger-card">
-                <div style="display:flex;align-items:center;justify-content:space-between">
-                  <span class="flow-eyebrow">20D Price Range Position</span>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.3rem">
+                  <span class="flow-eyebrow">20D Price Envelope Position</span>
                   <span class="flow-badge" :data-state="flowEmpiricalEdgeLedger?.rangeState" x-text="flowEmpiricalEdgeLedger?.rangeBadge"></span>
                 </div>
-                <div class="flow-range-meter">
-                  <div class="flow-range-fill" :style="`width: ${flowEmpiricalEdgeLedger?.rangePct}%;`"></div>
-                  <div class="flow-range-pin" :style="`left: calc(${flowEmpiricalEdgeLedger?.rangePct}% - 2px);`"></div>
+                <div style="display:flex;align-items:baseline;justify-content:space-between;font-family:ui-monospace, monospace;font-size:0.75rem;margin-bottom:0.25rem">
+                  <span style="color:var(--flow-subtle)" x-text="flowEmpiricalEdgeLedger?.minP !== null ? `Low $${flowEmpiricalEdgeLedger.minP.toFixed(2)}` : 'Low —'"></span>
+                  <span style="font-weight:700;color:var(--flow-text)" x-text="flowEmpiricalEdgeLedger?.curP !== null ? `$${flowEmpiricalEdgeLedger.curP.toFixed(2)} (${flowEmpiricalEdgeLedger.rangePct}%)` : '—'"></span>
+                  <span style="color:var(--flow-subtle)" x-text="flowEmpiricalEdgeLedger?.maxP !== null ? `High $${flowEmpiricalEdgeLedger.maxP.toFixed(2)}` : 'High —'"></span>
+                </div>
+                <div class="flow-range-meter" style="position:relative;height:7px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:visible;margin:0.25rem 0 0.35rem">
+                  <div class="flow-range-fill" :style="`width: ${flowEmpiricalEdgeLedger?.rangePct}%; height:100%; border-radius:4px; background:linear-gradient(90deg, #38bdf8, #22d3ee);`"></div>
+                  <div class="flow-range-pin" :style="`position:absolute; top:-3px; left:calc(${flowEmpiricalEdgeLedger?.rangePct}% - 4px); width:8px; height:13px; background:#ffffff; border-radius:2px; box-shadow:0 0 6px rgba(34,211,238,0.8);`"></div>
                 </div>
                 <div class="flow-support" style="font-size:0.6875rem" x-text="flowEmpiricalEdgeLedger?.rangeDesc"></div>
               </div>
@@ -3023,52 +3028,8 @@
             </div>
 
             <div class="flow-analysis" x-show="flowData && flowData.records.length > 1">
-              <fieldset class="flow-range-panel" x-show="flowData && flowData.records.length > 1">
-                <legend class="flow-visually-hidden">Selected source history window</legend>
-                <div class="flow-range-heading">
-                  <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:0.55rem">
-                    <h3 class="flow-eyebrow" style="color:var(--flow-cyan)">Selected window</h3>
-                    <span class="flow-support" x-text="`${flowRangeCount.toLocaleString('en-US')} sessions · ${flowRangeStartDate || '—'} → ${flowRangeEndDate || '—'}`"></span>
-                  </div>
-                  <div class="flow-presets" aria-label="Range presets">
-                    <template x-for="preset in flowRangePresets" :key="preset.key">
-                      <button class="flow-chip" type="button" :aria-pressed="flowRangePreset === preset.key ? 'true' : 'false'" @click="flowSetRangePreset(preset.key)" x-text="preset.label"></button>
-                    </template>
-                  </div>
-                </div>
-                <div class="flow-brush-slider-wrap">
-                  <div class="flow-brush-slider-track"></div>
-                  <div class="flow-brush-slider-highlight" :style="`left: calc(9px + ${(flowStartIndex / (flowMaxRecordIndex || 1)).toFixed(4)} * (100% - 18px)); width: calc(${((flowEndIndex - flowStartIndex) / (flowMaxRecordIndex || 1)).toFixed(4)} * (100% - 18px));`"></div>
-                  <div class="flow-brush-inputs">
-                    <label class="flow-visually-hidden" for="flow-range-start">Start observation</label>
-                    <input id="flow-range-start" class="flow-range" type="range" min="0" :max="flowMaxRecordIndex" step="1" :value="flowStartIndex" :style="flowActiveThumb === 'start' ? 'z-index: 6;' : (flowStartIndex > (flowMaxRecordIndex / 2) ? 'z-index: 5;' : 'z-index: 3;')" :aria-valuetext="flowRangeStartDate" @pointerdown="flowActiveThumb = 'start'" @pointerup="flowActiveThumb = null; _flowFinishRangeDrag()" @pointercancel="flowActiveThumb = null; _flowFinishRangeDrag()" @change="_flowFinishRangeDrag()" @input="flowActiveThumb = 'start'; flowSetStartIndex($event.target.value)">
-                    <label class="flow-visually-hidden" for="flow-range-end">End observation</label>
-                    <input id="flow-range-end" class="flow-range" type="range" min="0" :max="flowMaxRecordIndex" step="1" :value="flowEndIndex" :style="flowActiveThumb === 'end' ? 'z-index: 6;' : (flowStartIndex > (flowMaxRecordIndex / 2) ? 'z-index: 3;' : 'z-index: 4;')" :aria-valuetext="flowRangeEndDate" @pointerdown="flowActiveThumb = 'end'" @pointerup="flowActiveThumb = null; _flowFinishRangeDrag()" @pointercancel="flowActiveThumb = null; _flowFinishRangeDrag()" @change="_flowFinishRangeDrag()" @input="flowActiveThumb = 'end'; flowSetEndIndex($event.target.value)">
-                  </div>
-                </div>
-              </fieldset>
-
-              <div class="flow-chart-tabs" role="tablist" aria-label="Fund Flows analysis views">
-                <template x-for="(tab, index) in flowChartTabs" :key="tab.key">
-                  <button
-                    class="flow-chart-tab"
-                    type="button"
-                    role="tab"
-                    :id="`flow-chart-tab-${tab.key}`"
-                    :aria-controls="`flow-chart-panel-${tab.key}`"
-                    :aria-selected="flowChartTab === tab.key ? 'true' : 'false'"
-                    :tabindex="tab.key === 'price' && !flowPriceAvailable ? '0' : (flowChartTab === tab.key ? '0' : '-1')"
-                    :aria-disabled="tab.key === 'price' && !flowPriceAvailable ? 'true' : 'false'"
-                    @click="flowSetChartTab(tab.key, true)"
-                    @keydown="flowChartTabKeydown($event, index)"
-                    x-text="tab.label">
-                  </button>
-                </template>
-              </div>
-              <p class="flow-chart-message" x-show="flowChartMessage" role="status" aria-live="polite" x-text="flowChartMessage"></p>
-
-
-              <section id="flow-chart-panel-workbench" class="flow-chart-block" x-show="flowChartTab === 'workbench'" role="tabpanel" tabindex="0" :aria-labelledby="`flow-chart-tab-workbench`" aria-label="Synchronized Flow Studio">
+              <!-- PRIMARY INTERACTIVE WORKBENCH STUDIO -->
+              <section id="flow-chart-panel-workbench" class="flow-chart-block" role="tabpanel" tabindex="0" :aria-labelledby="`flow-chart-tab-workbench`" aria-label="Synchronized Flow Studio">
                 <div class="flow-workbench-header">
                   <div class="flow-workbench-title-col">
                     <p class="flow-chart-kicker">Interactive Studio</p>
@@ -3163,78 +3124,40 @@
                        @mousemove="flowChartMeasureMove($event)"
                        @mouseup="flowChartMeasureEnd()"
                        @mouseleave="flowChartPointerLeave()"
+                       @focus="flowChartFocus($event)"
+                       @blur="flowChartPointerLeave()"
                        x-html="flowWorkbenchSvg">
                   </div>
                 </div>
               </section>
 
-              <section id="flow-chart-panel-daily" class="flow-chart-block" x-show="flowChartTab === 'daily'" role="tabpanel" tabindex="0" :aria-labelledby="`flow-chart-tab-daily`" aria-label="Daily flow analysis">
-                <div class="flow-chart-heading">
-                  <div>
-                    <p class="flow-chart-kicker">Primary analysis</p>
-                    <h3 id="flow-daily-heading">Daily ETF estimated net flow</h3>
-                    <p class="flow-chart-description">Daily bars use a neutral zero line. Missing values are shown as neutral gaps, and the line is a complete 20-observation rolling mean.</p>
+              <!-- DUAL-HANDLE RANGE SCRUBBER LOCATED DIRECTLY BELOW THE CHART -->
+              <fieldset class="flow-range-panel" x-show="flowData && flowData.records.length > 1">
+                <legend class="flow-visually-hidden">Selected source history window</legend>
+                <div class="flow-range-heading">
+                  <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:0.55rem">
+                    <h3 class="flow-eyebrow" style="color:var(--flow-cyan)">Selected window</h3>
+                    <span class="flow-support" x-text="`${flowRangeCount.toLocaleString('en-US')} sessions · ${flowRangeStartDate || '—'} → ${flowRangeEndDate || '—'}`"></span>
                   </div>
-                  <div class="flow-legend" aria-label="Daily chart legend">
-                    <span class="flow-legend-item"><span class="flow-swatch" style="background:#34d399"></span>Positive flow</span>
-                    <span class="flow-legend-item"><span class="flow-swatch" style="background:#fb7185"></span>Negative flow</span>
-                    <span class="flow-legend-item"><span class="flow-swatch" style="background:#22d3ee"></span>20-observation mean</span>
-                    <span class="flow-legend-item"><span class="flow-swatch" style="background:#64748b"></span>Missing (gap)</span>
-                  </div>
-                </div>
-                <div class="flow-chart" tabindex="0" @mousemove="flowChartPointerMove($event)" @mouseleave="flowChartPointerLeave()" @focus="flowChartFocus()" @blur="flowChartPointerLeave()" x-html="flowDailyChartSvg"></div>
-              </section>
-
-              <section id="flow-chart-panel-cumulative" class="flow-chart-block" x-show="flowChartTab === 'cumulative'" role="tabpanel" tabindex="0" :aria-labelledby="`flow-chart-tab-cumulative`" aria-label="Cumulative flow analysis">
-                <div class="flow-chart-heading">
-                  <div>
-                    <p class="flow-chart-kicker">Companion view</p>
-                    <h3 id="flow-cumulative-heading">Selected-window cumulative source-reported aggregate net flow</h3>
-                    <p class="flow-chart-description" x-text="`Starts from a zero baseline before ${flowRangeStartDate || 'the first selected session'}; it does not reset between chart ranges.`"></p>
+                  <div class="flow-presets" aria-label="Range presets">
+                    <template x-for="preset in flowRangePresets" :key="preset.key">
+                      <button class="flow-chip" type="button" :aria-pressed="flowRangePreset === preset.key ? 'true' : 'false'" @click="flowSetRangePreset(preset.key)" x-text="preset.label"></button>
+                    </template>
                   </div>
                 </div>
-                <div class="flow-chart" tabindex="0" @mousemove="flowChartPointerMove($event)" @mouseleave="flowChartPointerLeave()" @focus="flowChartFocus()" @blur="flowChartPointerLeave()" x-html="flowCumulativeChartSvg"></div>
-              </section>
-
-              <div class="flow-secondary-grid">
-                <section id="flow-chart-panel-percentile" class="flow-chart-block" x-show="flowChartTab === 'percentile'" role="tabpanel" tabindex="0" :aria-labelledby="`flow-chart-tab-percentile`" aria-label="Flow percentile analysis">
-                  <div class="flow-chart-heading">
-                    <div>
-                      <p class="flow-chart-kicker">Secondary view</p>
-                      <h3 id="flow-percentile-heading">10-session flow and historical percentile</h3>
-                      <p class="flow-chart-description">Bars use the left dollar axis. The percentile line uses the right axis and only complete windows from available source history.</p>
-                    </div>
+                <div class="flow-brush-slider-wrap"
+                     @pointermove="if (!flowActiveThumb) { const r = $el.getBoundingClientRect(); const f = ($event.clientX - r.left) / r.width; const sF = (flowStartIndex / (flowMaxRecordIndex || 1)); const eF = (flowEndIndex / (flowMaxRecordIndex || 1)); flowHoverThumb = Math.abs(f - sF) < Math.abs(f - eF) ? 'start' : 'end'; }"
+                     @pointerleave="flowHoverThumb = null">
+                  <div class="flow-brush-slider-track"></div>
+                  <div class="flow-brush-slider-highlight" :style="`left: calc(9px + ${(flowStartIndex / (flowMaxRecordIndex || 1)).toFixed(4)} * (100% - 18px)); width: calc(${((flowEndIndex - flowStartIndex) / (flowMaxRecordIndex || 1)).toFixed(4)} * (100% - 18px));`"></div>
+                  <div class="flow-brush-inputs">
+                    <label class="flow-visually-hidden" for="flow-range-start">Start observation</label>
+                    <input id="flow-range-start" class="flow-range" type="range" min="0" :max="flowMaxRecordIndex" step="1" :value="flowStartIndex" :style="flowActiveThumb === 'start' || (flowHoverThumb === 'start' && !flowActiveThumb) ? 'z-index: 6;' : (flowActiveThumb === 'end' || (flowHoverThumb === 'end' && !flowActiveThumb) ? 'z-index: 3;' : (flowStartIndex > (flowMaxRecordIndex / 2) ? 'z-index: 5;' : 'z-index: 3;'))" :aria-valuetext="flowRangeStartDate" @pointerdown="flowActiveThumb = 'start'" @pointerup="flowActiveThumb = null; _flowFinishRangeDrag()" @pointercancel="flowActiveThumb = null; _flowFinishRangeDrag()" @change="_flowFinishRangeDrag()" @input="flowActiveThumb = 'start'; flowSetStartIndex($event.target.value)">
+                    <label class="flow-visually-hidden" for="flow-range-end">End observation</label>
+                    <input id="flow-range-end" class="flow-range" type="range" min="0" :max="flowMaxRecordIndex" step="1" :value="flowEndIndex" :style="flowActiveThumb === 'end' || (flowHoverThumb === 'end' && !flowActiveThumb) ? 'z-index: 6;' : (flowActiveThumb === 'start' || (flowHoverThumb === 'start' && !flowActiveThumb) ? 'z-index: 3;' : (flowStartIndex > (flowMaxRecordIndex / 2) ? 'z-index: 3;' : 'z-index: 4;'))" :aria-valuetext="flowRangeEndDate" @pointerdown="flowActiveThumb = 'end'" @pointerup="flowActiveThumb = null; _flowFinishRangeDrag()" @pointercancel="flowActiveThumb = null; _flowFinishRangeDrag()" @change="_flowFinishRangeDrag()" @input="flowActiveThumb = 'end'; flowSetEndIndex($event.target.value)">
                   </div>
-                  <div class="flow-chart" tabindex="0" @mousemove="flowChartPointerMove($event)" @mouseleave="flowChartPointerLeave()" @focus="flowChartFocus()" @blur="flowChartPointerLeave()" x-html="flowPercentileChartSvg"></div>
-                </section>
-
-                <section id="flow-chart-panel-intensity" class="flow-chart-block" x-show="flowChartTab === 'intensity'" role="tabpanel" tabindex="0" :aria-labelledby="`flow-chart-tab-intensity`" aria-label="Prior-only z-score analysis">
-                  <div class="flow-chart-heading">
-                    <div>
-                      <p class="flow-chart-kicker">Secondary view</p>
-                      <h3 id="flow-intensity-heading">Prior-only daily flow z-score</h3>
-                      <p class="flow-chart-description">The current session is excluded from its baseline mean and standard deviation.</p>
-                    </div>
-                  </div>
-                  <div class="flow-chart" tabindex="0" @mousemove="flowChartPointerMove($event)" @mouseleave="flowChartPointerLeave()" @focus="flowChartFocus()" @blur="flowChartPointerLeave()" x-html="flowIntensityChartSvg"></div>
-                </section>
-              </div>
-
-              <section id="flow-chart-panel-price" class="flow-chart-block" x-show="flowChartTab === 'price' && (flowPriceEnabled || (flowData?.records || []).some(record => record.nav !== null))" role="tabpanel" tabindex="0" :aria-labelledby="`flow-chart-tab-price`" aria-label="Price and flow analysis">
-                <div class="flow-chart-heading">
-                  <div>
-                    <p class="flow-chart-kicker">Optional view</p>
-                    <h3 id="flow-price-heading">Price and daily ETF estimated net flow</h3>
-                    <p class="flow-chart-description">The left axis is source-reported NAV or share price. The right axis is daily net flow. The axes are independent.</p>
-                  </div>
-                  <label class="flow-checkbox">
-                    <input type="checkbox" :checked="flowPriceEnabled" :disabled="!flowPriceAvailable" @change="flowSetPriceEnabled($event.target.checked)">
-                    Show price and flow
-                  </label>
                 </div>
-                <p class="flow-support" x-show="!flowPriceAvailable">Price and flow are not both available for the selected window.</p>
-                <div class="flow-chart" data-chart="price" x-show="flowPriceEnabled" tabindex="0" @mousemove="flowChartPointerMove($event)" @mouseleave="flowChartPointerLeave()" @focus="flowChartFocus()" @blur="flowChartPointerLeave()" x-html="flowPriceChartSvg"></div>
-              </section>
+              </fieldset>
 
               <!-- ─── COMPANION ROW: MULTI-HORIZON IMPULSE CHART + PEER COMPARISON ─── -->
               <div class="flow-companion-grid">
@@ -3284,7 +3207,7 @@
                       <tbody>
                         <template x-for="peer in flowPeerComparisonRows" :key="peer.ticker">
                           <tr style="cursor:pointer"
-                              :style="peer.ticker === flowTicker ? 'background:rgba(34,211,238,0.1);border-left:3px solid var(--flow-cyan)' : 'border-left:3px solid transparent'"
+                              :style="peer.ticker === flowTicker ? 'background:rgba(34,211,238,0.08)' : ''"
                               tabindex="0"
                               role="button"
                               :aria-selected="peer.ticker === flowTicker ? 'true' : 'false'"
