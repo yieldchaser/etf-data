@@ -3073,12 +3073,57 @@
                     <button class="flow-chip" :class="flowWorkbenchZScoreEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchZScoreEnabled = !flowWorkbenchZScoreEnabled" title="Toggle Prior Z-Score Waveform">
                       <span style="color:#e879f9">~</span> Z-Score
                     </button>
+                    <button class="flow-chip" :class="flowWorkbenchShocksEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchShocksEnabled = !flowWorkbenchShocksEnabled" title="Toggle extreme climax flow shock markers (|Z| ≥ 2.5σ)">
+                      <span style="color:#fbbf24">●</span> Shocks
+                    </button>
                     <button class="flow-chip" type="button" @click="flowScaleMode = flowScaleMode === 'usd' ? 'pct_aum' : 'usd'" title="Switch between Dollar Flow ($) and Flow as % of AUM" style="font-weight:600;border-color:rgba(34,211,238,0.4)">
                       <span x-text="flowScaleMode === 'usd' ? '$ USD' : '% AUM'"></span>
                     </button>
                     <button class="flow-chip" :class="flowMeasureActive ? 'flow-chip-active' : ''" type="button" @click="flowMeasureActive = !flowMeasureActive; if (!flowMeasureActive) flowResetMeasurement()" title="Drag across chart canvas to calculate window performance and flow stats">
                       ⇥ Drag to Measure
                     </button>
+                    <div class="flow-studio-presets" aria-label="Studio range presets">
+                      <template x-for="preset in flowRangePresets" :key="preset.key">
+                        <button class="flow-chip flow-chip-preset" type="button" :class="flowRangePreset === preset.key ? 'flow-chip-active' : ''" @click="flowSetRangePreset(preset.key)" x-text="preset.label"></button>
+                      </template>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flow-studio-summary-bar" x-show="flowWorkbenchSummary">
+                  <div class="flow-studio-stat">
+                    <span class="flow-studio-stat-label">WINDOW RETURN</span>
+                    <span class="flow-studio-stat-val" :class="(flowWorkbenchSummary?.navRetPct ?? 0) >= 0 ? 'flow-positive' : 'flow-negative'" x-text="flowWorkbenchSummary?.navRetPct !== null ? `${flowWorkbenchSummary.navRetPct >= 0 ? '+' : ''}${flowWorkbenchSummary.navRetPct.toFixed(2)}%` : '—'"></span>
+                  </div>
+                  <div class="flow-studio-stat-divider"></div>
+                  <div class="flow-studio-stat">
+                    <span class="flow-studio-stat-label">NET FLOW</span>
+                    <span class="flow-studio-stat-val" :class="(flowWorkbenchSummary?.netFlow ?? 0) >= 0 ? 'flow-positive' : 'flow-negative'" x-text="formatMoney(flowWorkbenchSummary?.netFlow)"></span>
+                  </div>
+                  <div class="flow-studio-stat-divider" x-show="flowWorkbenchSummary?.flowPctAum !== null"></div>
+                  <div class="flow-studio-stat" x-show="flowWorkbenchSummary?.flowPctAum !== null">
+                    <span class="flow-studio-stat-label">% OF AUM</span>
+                    <span class="flow-studio-stat-val" :class="(flowWorkbenchSummary?.flowPctAum ?? 0) >= 0 ? 'flow-positive' : 'flow-negative'" x-text="`${(flowWorkbenchSummary?.flowPctAum ?? 0) >= 0 ? '+' : ''}${flowWorkbenchSummary?.flowPctAum?.toFixed(2)}%`"></span>
+                  </div>
+                  <div class="flow-studio-stat-divider"></div>
+                  <div class="flow-studio-stat">
+                    <span class="flow-studio-stat-label">20D FLOW MEAN</span>
+                    <span class="flow-studio-stat-val" :class="(flowWorkbenchSummary?.mean20 ?? 0) >= 0 ? 'flow-positive' : 'flow-negative'" x-text="formatMoney(flowWorkbenchSummary?.mean20)"></span>
+                  </div>
+                  <div class="flow-studio-stat-divider"></div>
+                  <div class="flow-studio-stat">
+                    <span class="flow-studio-stat-label">FLOW MOMENTUM</span>
+                    <span class="flow-studio-stat-val" :class="(flowWorkbenchSummary?.latestZ ?? 0) >= 0 ? 'flow-positive' : 'flow-negative'" x-text="flowWorkbenchSummary?.latestZ !== null ? `${flowWorkbenchSummary.latestZ >= 0 ? '+' : ''}${flowWorkbenchSummary.latestZ.toFixed(2)}σ` : '—'"></span>
+                  </div>
+                  <div class="flow-studio-stat-divider"></div>
+                  <div class="flow-studio-stat">
+                    <span class="flow-studio-stat-label">LATEST NAV</span>
+                    <span class="flow-studio-stat-val" style="color:#c084fc" x-text="flowWorkbenchSummary?.lastPrice !== null ? `$${flowWorkbenchSummary.lastPrice.toFixed(2)}` : '—'"></span>
+                  </div>
+                  <div class="flow-studio-stat-divider"></div>
+                  <div class="flow-studio-stat" style="color:var(--flow-muted)">
+                    <span class="flow-studio-stat-label">HORIZON</span>
+                    <span class="flow-studio-stat-val" style="color:var(--flow-muted)" x-text="`${flowWorkbenchSummary?.count || 0} bars (${flowWorkbenchSummary?.startDate || ''} → ${flowWorkbenchSummary?.endDate || ''})`"></span>
                   </div>
                 </div>
 

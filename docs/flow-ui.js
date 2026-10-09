@@ -634,12 +634,15 @@
       flowWorkbenchDailyEnabled: true,
       flowWorkbenchVolumeEnabled: true,
       flowWorkbenchZScoreEnabled: true,
+      flowWorkbenchShocksEnabled: false,
       flowScaleMode: 'usd',
       flowMeasureActive: false,
       flowMeasureDragging: false,
       flowMeasureStartIdx: null,
       flowMeasureCurrentIdx: null,
       flowMeasureResult: null,
+      _flowWorkbenchBaseKey: '',
+      _flowWorkbenchBaseSvg: '',
       flowChartTab: 'workbench',
       flowChartMessage: '',
       flowChartTooltip: { visible: false, index: 0 },
@@ -2405,6 +2408,34 @@
         };
       },
 
+      get flowWorkbenchSummary() {
+        const rows = this.flowSelectedRows;
+        if (!rows.length) return null;
+        const first = rows[0];
+        const last = rows[rows.length - 1];
+        const p1 = finiteNumber(first.nav);
+        const p2 = finiteNumber(last.nav);
+        const navRetPct = (p1 !== null && p2 !== null && p1 > 0) ? ((p2 - p1) / p1) * 100 : null;
+        const netFlow = finiteNumber(last.selectedCumulative) || 0;
+        const aum = (finiteNumber(this.flowSelectedInstrument?.aum_m) || 0) * 1e6;
+        const flowPctAum = aum > 0 ? (netFlow / aum) * 100 : null;
+        const mean20 = finiteNumber(last.rollingMean20);
+        const latestZ = finiteNumber(last.priorOnlyZScore);
+        const curFlow = finiteNumber(last.flow);
+        return {
+          count: rows.length,
+          startDate: first.date,
+          endDate: last.date,
+          navRetPct,
+          netFlow,
+          flowPctAum,
+          mean20,
+          latestZ,
+          curFlow,
+          lastPrice: p2
+        };
+      },
+
       get flowWorkbenchSvg() {
         const rows = this.flowSelectedRows;
         const width = this.flowChartWidth;
@@ -2412,8 +2443,8 @@
 
         const padLeft = width < 500 ? 54 : 68;
         const padRight = width < 500 ? 54 : 68;
-        const padTop = 26;
-        const padBottom = 32;
+        const padTop = 24;
+        const padBottom = 30;
         const chartW = width - padLeft - padRight;
 
         const showPrice = this.flowWorkbenchPriceEnabled && this.flowPriceAvailable;
@@ -2421,6 +2452,7 @@
         const showDaily = this.flowWorkbenchDailyEnabled;
         const showVol = this.flowWorkbenchVolumeEnabled;
         const showZ = this.flowWorkbenchZScoreEnabled;
+        const showShocks = this.flowWorkbenchShocksEnabled;
 
         const hasTier1 = showPrice || showCum;
         const hasTier2 = showDaily || showVol;
@@ -2452,210 +2484,266 @@
         const aumTotal = (finiteNumber(this.flowSelectedInstrument?.aum_m) || 0) * 1e6;
         const isPctAum = this.flowScaleMode === 'pct_aum' && aumTotal > 0;
 
-        // --- TIER 1: Cumulative Flow Area + Price NAV Overlay ---
-        let tier1Svg = '';
-        if (hasTier1) {
-          const cumValues = rows.map(r => {
-            const c = finiteNumber(r.selectedCumulative);
-            if (c === null) return null;
-            return isPctAum ? (c / aumTotal) * 100 : c;
-          }).filter(v => v !== null);
+        const baseKey = `${this.flowTicker}:${this.flowStartIndex}:${this.flowEndIndex}:${this.flowScaleMode}:${showPrice}:${showCum}:${showDaily}:${showVol}:${showZ}:${showShocks}:${width}`;
 
-          const minCum = cumValues.length ? Math.min(0, ...cumValues) : 0;
-          const maxCum = cumValues.length ? Math.max(0, ...cumValues) : 0;
-          const cumPad = Math.max(isPctAum ? 0.5 : 1e6, (maxCum - minCum) * 0.08);
-          const cumLow = minCum - cumPad;
-          const cumHigh = maxCum + cumPad;
-          const yCum = val => t1Top + (cumHigh - val) / (cumHigh - cumLow || 1) * tier1H;
-          const zeroCumY = yCum(0);
-
-          const prices = rows.map(r => finiteNumber(r.nav)).filter(v => v !== null);
-          const minP = prices.length ? Math.min(...prices) : 0;
-          const maxP = prices.length ? Math.max(...prices) : 100;
-          const pPad = Math.max((maxP - minP) * 0.08, maxP * 0.01);
-          const pLow = Math.max(0, minP - pPad);
-          const pHigh = maxP + pPad;
-          const yPrice = val => t1Top + (pHigh - val) / (pHigh - pLow || 1) * tier1H;
-
-          let t1Grid = '';
-          [cumHigh, 0, cumLow].forEach(v => {
-            const y = yCum(v);
-            const isZero = Math.abs(v) < 1e-6;
-            const lbl = isPctAum ? `${v >= 0 ? '+' : ''}${v.toFixed(1)}%` : axisNumber(v);
-            t1Grid += `<line x1="${padLeft}" y1="${y.toFixed(1)}" x2="${width - padRight}" y2="${y.toFixed(1)}" stroke="${isZero ? 'rgba(255,255,255,0.22)' : COLORS.grid}" stroke-width="1"${isZero ? '' : ' stroke-dasharray="3 3"'} /><text x="${padLeft - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="${COLORS.cyan}" font-family="ui-monospace, monospace" font-size="10">${escapeHtml(lbl)}</text>`;
-          });
-
-          if (showPrice) {
-            [pHigh, (pHigh + pLow) / 2, pLow].forEach(v => {
-              const y = yPrice(v);
-              t1Grid += `<text x="${width - padRight + 8}" y="${(y + 4).toFixed(1)}" text-anchor="start" fill="#c084fc" font-family="ui-monospace, monospace" font-size="10">$${v.toFixed(2)}</text>`;
-            });
-          }
-
-          let cumPaths = '';
-          if (showCum && cumValues.length) {
-            const cumPoints = rows.map((r, i) => {
+        if (this._flowWorkbenchBaseKey !== baseKey || !this._flowWorkbenchBaseSvg) {
+          // --- TIER 1: Cumulative Flow Area + Price NAV Overlay ---
+          let tier1Svg = '';
+          if (hasTier1) {
+            const cumValues = rows.map(r => {
               const c = finiteNumber(r.selectedCumulative);
-              const val = c === null ? null : (isPctAum ? (c / aumTotal) * 100 : c);
-              return { x: xScale(i), y: finiteScale(yCum, val) };
-            });
+              if (c === null) return null;
+              return isPctAum ? (c / aumTotal) * 100 : c;
+            }).filter(v => v !== null);
 
-            const posPoints = cumPoints.map(p => ({ x: p.x, y: p.y !== null ? Math.min(p.y, zeroCumY) : zeroCumY }));
-            const negPoints = cumPoints.map(p => ({ x: p.x, y: p.y !== null ? Math.max(p.y, zeroCumY) : zeroCumY }));
+            const minCum = cumValues.length ? Math.min(0, ...cumValues) : 0;
+            const maxCum = cumValues.length ? Math.max(0, ...cumValues) : 0;
+            const cumPad = Math.max(isPctAum ? 0.5 : 1e6, (maxCum - minCum) * 0.08);
+            const cumLow = minCum - cumPad;
+            const cumHigh = maxCum + cumPad;
+            const yCum = val => t1Top + (cumHigh - val) / (cumHigh - cumLow || 1) * tier1H;
+            const zeroCumY = yCum(0);
 
-            const posArea = areaPath(posPoints, zeroCumY);
-            const negArea = areaPath(negPoints, zeroCumY);
+            const prices = rows.map(r => finiteNumber(r.nav)).filter(v => v !== null);
+            const minP = prices.length ? Math.min(...prices) : 0;
+            const maxP = prices.length ? Math.max(...prices) : 100;
+            const pPad = Math.max((maxP - minP) * 0.08, maxP * 0.01);
+            const pLow = Math.max(0, minP - pPad);
+            const pHigh = maxP + pPad;
+            const yPrice = val => t1Top + (pHigh - val) / (pHigh - pLow || 1) * tier1H;
 
-            cumPaths += `<defs>
-              <linearGradient id="wb-cum-pos" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#34d399" stop-opacity="0.22"/><stop offset="100%" stop-color="#34d399" stop-opacity="0.0"/></linearGradient>
-              <linearGradient id="wb-cum-neg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fb7185" stop-opacity="0.0"/><stop offset="100%" stop-color="#fb7185" stop-opacity="0.22"/></linearGradient>
-            </defs>`;
-            if (posArea) cumPaths += `<path d="${posArea}" fill="url(#wb-cum-pos)"/>`;
-            if (negArea) cumPaths += `<path d="${negArea}" fill="url(#wb-cum-neg)"/>`;
-            cumPaths += `<path d="${linePath(cumPoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`;
-          }
-
-          let pricePathSvg = '';
-          if (showPrice && prices.length) {
-            const pricePoints = rows.map((r, i) => ({ x: xScale(i), y: finiteScale(yPrice, r.nav) }));
-            pricePathSvg += `<path d="${linePath(pricePoints)}" fill="none" stroke="#c084fc" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round"/>`;
-
-            let maxPIdx = 0, minPIdx = 0;
-            rows.forEach((r, i) => {
-              if (r.nav !== null) {
-                if (r.nav > (rows[maxPIdx]?.nav ?? -Infinity)) maxPIdx = i;
-                if (r.nav < (rows[minPIdx]?.nav ?? Infinity)) minPIdx = i;
+            let t1Grid = '';
+            if (showCum) {
+              [cumHigh, 0, cumLow].forEach(v => {
+                const y = yCum(v);
+                const isZero = Math.abs(v) < 1e-6;
+                const lbl = isPctAum ? `${v >= 0 ? '+' : ''}${v.toFixed(1)}%` : axisNumber(v);
+                t1Grid += `<line x1="${padLeft}" y1="${y.toFixed(1)}" x2="${width - padRight}" y2="${y.toFixed(1)}" stroke="${isZero ? 'rgba(34,211,238,0.28)' : COLORS.grid}" stroke-width="${isZero ? 1.2 : 1}"${isZero ? '' : ' stroke-dasharray="3 3"'} /><text x="${padLeft - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="${COLORS.cyan}" font-family="ui-monospace, monospace" font-size="10">${escapeHtml(lbl)}</text>`;
+              });
+              if (showPrice) {
+                [pHigh, (pHigh + pLow) / 2, pLow].forEach(v => {
+                  const y = yPrice(v);
+                  t1Grid += `<text x="${width - padRight + 8}" y="${(y + 4).toFixed(1)}" text-anchor="start" fill="#c084fc" font-family="ui-monospace, monospace" font-size="10">$${v.toFixed(2)}</text>`;
+                });
               }
-            });
-            if (rows[maxPIdx]?.nav !== null) {
-              const xHigh = xScale(maxPIdx);
-              const yHigh = yPrice(rows[maxPIdx].nav);
-              pricePathSvg += `<circle cx="${xHigh.toFixed(1)}" cy="${yHigh.toFixed(1)}" r="3" fill="#22d3ee" stroke="#fff" stroke-width="1.5"/><text x="${xHigh.toFixed(1)}" y="${(yHigh - 7).toFixed(1)}" text-anchor="middle" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9" font-weight="600">HIGH $${rows[maxPIdx].nav.toFixed(2)}</text>`;
+            } else if (showPrice) {
+              [pHigh, (pHigh + pLow) / 2, pLow].forEach(v => {
+                const y = yPrice(v);
+                t1Grid += `<line x1="${padLeft}" y1="${y.toFixed(1)}" x2="${width - padRight}" y2="${y.toFixed(1)}" stroke="${COLORS.grid}" stroke-width="1" stroke-dasharray="3 3"/><text x="${padLeft - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="#c084fc" font-family="ui-monospace, monospace" font-size="10">$${v.toFixed(2)}</text><text x="${width - padRight + 8}" y="${(y + 4).toFixed(1)}" text-anchor="start" fill="#c084fc" font-family="ui-monospace, monospace" font-size="10">$${v.toFixed(2)}</text>`;
+              });
             }
-            if (rows[minPIdx]?.nav !== null && minPIdx !== maxPIdx) {
-              const xLow = xScale(minPIdx);
-              const yLow = yPrice(rows[minPIdx].nav);
-              pricePathSvg += `<circle cx="${xLow.toFixed(1)}" cy="${yLow.toFixed(1)}" r="3" fill="#fb7185" stroke="#fff" stroke-width="1.5"/><text x="${xLow.toFixed(1)}" y="${(yLow + 13).toFixed(1)}" text-anchor="middle" fill="#fb7185" font-family="ui-monospace, monospace" font-size="9" font-weight="600">LOW $${rows[minPIdx].nav.toFixed(2)}</text>`;
+
+            let cumPaths = '';
+            if (showCum && cumValues.length) {
+              const cumPoints = rows.map((r, i) => {
+                const c = finiteNumber(r.selectedCumulative);
+                const val = c === null ? null : (isPctAum ? (c / aumTotal) * 100 : c);
+                return { x: xScale(i), y: finiteScale(yCum, val) };
+              });
+
+              const posPoints = cumPoints.map(p => ({ x: p.x, y: p.y !== null ? Math.min(p.y, zeroCumY) : zeroCumY }));
+              const negPoints = cumPoints.map(p => ({ x: p.x, y: p.y !== null ? Math.max(p.y, zeroCumY) : zeroCumY }));
+
+              const posArea = areaPath(posPoints, zeroCumY);
+              const negArea = areaPath(negPoints, zeroCumY);
+
+              cumPaths += `<defs>
+                <linearGradient id="wb-cum-pos" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#34d399" stop-opacity="0.22"/><stop offset="100%" stop-color="#34d399" stop-opacity="0.0"/></linearGradient>
+                <linearGradient id="wb-cum-neg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fb7185" stop-opacity="0.0"/><stop offset="100%" stop-color="#fb7185" stop-opacity="0.22"/></linearGradient>
+              </defs>`;
+              if (posArea) cumPaths += `<path d="${posArea}" fill="url(#wb-cum-pos)"/>`;
+              if (negArea) cumPaths += `<path d="${negArea}" fill="url(#wb-cum-neg)"/>`;
+              cumPaths += `<path d="${linePath(cumPoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`;
             }
 
-            rows.forEach((r, i) => {
-              const z = finiteNumber(r.priorOnlyZScore);
-              const p = finiteNumber(r.nav);
-              if (p !== null && z !== null && Math.abs(z) >= 2.0) {
-                const x = xScale(i);
-                const y = yPrice(p);
-                const isBuy = z >= 2.0;
-                const dotColor = isBuy ? '#34d399' : '#fb7185';
-                pricePathSvg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4.5" fill="${dotColor}" stroke="#090d16" stroke-width="1.5" opacity="0.95"><title>${isBuy ? 'Climax Inflow' : 'Climax Redemption'} (${r.date}): Z=${z.toFixed(2)}σ</title></circle>`;
+            let pricePathSvg = '';
+            if (showPrice && prices.length) {
+              const pricePoints = rows.map((r, i) => ({ x: xScale(i), y: finiteScale(yPrice, r.nav) }));
+              pricePathSvg += `<path d="${linePath(pricePoints)}" fill="none" stroke="#c084fc" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round"/>`;
+
+              let maxPIdx = 0, minPIdx = 0;
+              rows.forEach((r, i) => {
+                if (r.nav !== null) {
+                  if (r.nav > (rows[maxPIdx]?.nav ?? -Infinity)) maxPIdx = i;
+                  if (r.nav < (rows[minPIdx]?.nav ?? Infinity)) minPIdx = i;
+                }
+              });
+              if (rows[maxPIdx]?.nav !== null) {
+                const xHigh = xScale(maxPIdx);
+                const yHigh = yPrice(rows[maxPIdx].nav);
+                const anchor = (xHigh > padLeft + chartW - 75) ? 'end' : (xHigh < padLeft + 75 ? 'start' : 'middle');
+                const tx = anchor === 'end' ? xHigh - 8 : (anchor === 'start' ? xHigh + 8 : xHigh);
+                const ty = (yHigh < t1Top + 24) ? yHigh + 15 : yHigh - 7;
+                pricePathSvg += `<circle cx="${xHigh.toFixed(1)}" cy="${yHigh.toFixed(1)}" r="3.5" fill="#22d3ee" stroke="#090d16" stroke-width="1.5"/><rect x="${(anchor === 'end' ? tx - 72 : (anchor === 'start' ? tx - 4 : tx - 36)).toFixed(1)}" y="${(ty - 10).toFixed(1)}" width="76" height="15" rx="3" fill="rgba(8,12,18,0.88)" stroke="#22d3ee" stroke-width="0.8"/><text x="${tx.toFixed(1)}" y="${(ty + 1).toFixed(1)}" text-anchor="${anchor}" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9" font-weight="700">HIGH $${rows[maxPIdx].nav.toFixed(2)}</text>`;
               }
-            });
-          }
-
-          tier1Svg = `<g class="flow-tier-1">${t1Grid}${cumPaths}${pricePathSvg}</g>`;
-        }
-
-        // --- TIER 2: Daily Net Flow Bars + Volume Overlay ---
-        let tier2Svg = '';
-        if (hasTier2) {
-          const dailyFlows = rows.map(r => {
-            const f = finiteNumber(r.flow);
-            if (f === null) return null;
-            return isPctAum ? (f / aumTotal) * 100 : f;
-          }).filter(v => v !== null);
-
-          const maxDaily = Math.max(isPctAum ? 0.2 : 1e5, ...dailyFlows.map(v => Math.abs(v))) * 1.1;
-          const yDaily = val => t2Top + tier2H / 2 - (val / maxDaily) * (tier2H / 2);
-          const zeroDailyY = yDaily(0);
-
-          const volumes = rows.map(r => finiteNumber(r.volume) || (r.nav ? Math.round(Math.abs(r.flow || 0) / r.nav) : 0));
-          const maxVol = Math.max(100, ...volumes) * 1.15;
-          const yVol = val => t2Bottom - (val / maxVol) * tier2H;
-
-          let t2Grid = `<line x1="${padLeft}" y1="${(t2Top - 8).toFixed(1)}" x2="${width - padRight}" y2="${(t2Top - 8).toFixed(1)}" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>`;
-          t2Grid += `<line x1="${padLeft}" y1="${zeroDailyY.toFixed(1)}" x2="${width - padRight}" y2="${zeroDailyY.toFixed(1)}" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>`;
-
-          t2Grid += `<text x="${padLeft - 8}" y="${(zeroDailyY + 3).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="10">${isPctAum ? '0.0%' : '$0'}</text>`;
-          t2Grid += `<text x="${padLeft - 8}" y="${(t2Top + 10).toFixed(1)}" text-anchor="end" fill="#34d399" font-family="ui-monospace, monospace" font-size="9">${isPctAum ? `+${maxDaily.toFixed(1)}%` : axisNumber(maxDaily)}</text>`;
-          t2Grid += `<text x="${padLeft - 8}" y="${(t2Bottom - 3).toFixed(1)}" text-anchor="end" fill="#fb7185" font-family="ui-monospace, monospace" font-size="9">${isPctAum ? `−${maxDaily.toFixed(1)}%` : axisNumber(-maxDaily)}</text>`;
-
-          if (showVol) {
-            t2Grid += `<text x="${width - padRight + 8}" y="${(t2Top + 10).toFixed(1)}" text-anchor="start" fill="#94a3b8" font-family="ui-monospace, monospace" font-size="9">${axisNumber(maxVol)} shs</text>`;
-          }
-
-          let volBarsSvg = '';
-          const barW = Math.max(0.8, Math.min(10, slot * 0.72));
-          if (showVol) {
-            rows.forEach((r, i) => {
-              const v = finiteNumber(r.volume) || (r.nav ? Math.round(Math.abs(r.flow || 0) / r.nav) : 0);
-              if (v > 0) {
-                const x = xScale(i) - barW / 2;
-                const h = Math.max(1, (v / maxVol) * tier2H);
-                volBarsSvg += `<rect x="${x.toFixed(1)}" y="${(t2Bottom - h).toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="rgba(148,163,184,0.15)" rx="0.5"/>`;
+              if (rows[minPIdx]?.nav !== null && minPIdx !== maxPIdx) {
+                const xLow = xScale(minPIdx);
+                const yLow = yPrice(rows[minPIdx].nav);
+                const anchor = (xLow > padLeft + chartW - 75) ? 'end' : (xLow < padLeft + 75 ? 'start' : 'middle');
+                const tx = anchor === 'end' ? xLow - 8 : (anchor === 'start' ? xLow + 8 : xLow);
+                const ty = (yLow > t1Bottom - 20) ? yLow - 9 : yLow + 14;
+                pricePathSvg += `<circle cx="${xLow.toFixed(1)}" cy="${yLow.toFixed(1)}" r="3.5" fill="#fb7185" stroke="#090d16" stroke-width="1.5"/><rect x="${(anchor === 'end' ? tx - 70 : (anchor === 'start' ? tx - 4 : tx - 35)).toFixed(1)}" y="${(ty - 10).toFixed(1)}" width="74" height="15" rx="3" fill="rgba(8,12,18,0.88)" stroke="#fb7185" stroke-width="0.8"/><text x="${tx.toFixed(1)}" y="${(ty + 1).toFixed(1)}" text-anchor="${anchor}" fill="#fb7185" font-family="ui-monospace, monospace" font-size="9" font-weight="700">LOW $${rows[minPIdx].nav.toFixed(2)}</text>`;
               }
-            });
-            const volMaPoints = rows.map((r, i) => ({ x: xScale(i), y: finiteScale(yVol, r.rollingVolume20) }));
-            volBarsSvg += `<path d="${linePath(volMaPoints)}" fill="none" stroke="#64748b" stroke-width="1.3" stroke-dasharray="2 2"/>`;
+
+              if (showShocks) {
+                const shockCandidates = rows.map((r, i) => ({
+                  row: r,
+                  idx: i,
+                  z: finiteNumber(r.priorOnlyZScore) || 0,
+                  p: finiteNumber(r.nav)
+                })).filter(c => c.p !== null && Math.abs(c.z) >= 2.5);
+                shockCandidates.sort((a, b) => Math.abs(b.z) - Math.abs(a.z));
+                const topShocks = shockCandidates.slice(0, 8);
+                topShocks.forEach(c => {
+                  const x = xScale(c.idx);
+                  const y = yPrice(c.p);
+                  const isBuy = c.z >= 2.5;
+                  const dotColor = isBuy ? '#34d399' : '#fb7185';
+                  pricePathSvg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4.2" fill="${dotColor}" stroke="#090d16" stroke-width="1.5"><title>${isBuy ? 'Climax Inflow Surge' : 'Climax Redemption Washout'} (${c.row.date}): Z=${c.z.toFixed(2)}σ · NAV $${c.p.toFixed(2)}</title></circle>`;
+                });
+              }
+            }
+
+            tier1Svg = `<g class="flow-tier-1">${t1Grid}${cumPaths}${pricePathSvg}</g>`;
           }
 
-          let dailyBarsSvg = '';
-          if (showDaily) {
-            rows.forEach((r, i) => {
+          // --- TIER 2: Daily Net Flow Bars + Volume Overlay ---
+          let tier2Svg = '';
+          if (hasTier2) {
+            const dailyFlows = rows.map(r => {
               const f = finiteNumber(r.flow);
-              if (f === null) return;
-              const val = isPctAum ? (f / aumTotal) * 100 : f;
-              const x = xScale(i) - barW / 2;
-              const y = yDaily(val);
-              const top = val >= 0 ? y : zeroDailyY;
-              const h = Math.max(1.2, Math.abs(y - zeroDailyY));
-              const fill = val === 0 ? COLORS.neutral : val > 0 ? COLORS.positive : COLORS.negative;
-              dailyBarsSvg += `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${fill}" opacity="0.9" rx="0.6"/>`;
-            });
-            const meanPoints = rows.map((r, i) => {
-              const m = finiteNumber(r.rollingMean20);
-              const val = m === null ? null : (isPctAum ? (m / aumTotal) * 100 : m);
-              return { x: xScale(i), y: finiteScale(yDaily, val) };
-            });
-            dailyBarsSvg += `<path d="${linePath(meanPoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="1.8" stroke-linejoin="round"/>`;
+              if (f === null) return null;
+              return isPctAum ? (f / aumTotal) * 100 : f;
+            }).filter(v => v !== null);
+
+            const maxDaily = Math.max(isPctAum ? 0.2 : 1e5, ...dailyFlows.map(v => Math.abs(v))) * 1.08;
+            const yDaily = val => t2Top + tier2H / 2 - (val / (maxDaily || 1)) * (tier2H / 2);
+            const zeroDailyY = yDaily(0);
+
+            const volumes = rows.map(r => finiteNumber(r.volume) || (r.nav ? Math.round(Math.abs(r.flow || 0) / r.nav) : 0));
+            const maxVol = Math.max(100, ...volumes) * 1.15;
+
+            let t2Grid = `<line x1="${padLeft}" y1="${(t2Top - 8).toFixed(1)}" x2="${width - padRight}" y2="${(t2Top - 8).toFixed(1)}" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>`;
+            t2Grid += `<line x1="${padLeft}" y1="${zeroDailyY.toFixed(1)}" x2="${width - padRight}" y2="${zeroDailyY.toFixed(1)}" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>`;
+
+            t2Grid += `<text x="${padLeft - 8}" y="${(zeroDailyY + 3).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="10">${isPctAum ? '0.0%' : '$0'}</text>`;
+            t2Grid += `<text x="${padLeft - 8}" y="${(t2Top + 10).toFixed(1)}" text-anchor="end" fill="#34d399" font-family="ui-monospace, monospace" font-size="9">${isPctAum ? `+${maxDaily.toFixed(1)}%` : axisNumber(maxDaily)}</text>`;
+            t2Grid += `<text x="${padLeft - 8}" y="${(t2Bottom - 3).toFixed(1)}" text-anchor="end" fill="#fb7185" font-family="ui-monospace, monospace" font-size="9">${isPctAum ? `−${maxDaily.toFixed(1)}%` : axisNumber(-maxDaily)}</text>`;
+
+            let volBarsSvg = '';
+            const barW = Math.max(0.8, Math.min(10, slot * 0.72));
+            if (showVol) {
+              const volH = showDaily ? (tier2H * 0.42) : (tier2H - 10);
+              const yVol = val => t2Bottom - (val / (maxVol || 1)) * volH;
+              t2Grid += `<text x="${width - padRight + 8}" y="${(t2Bottom - volH + 6).toFixed(1)}" text-anchor="start" fill="#94a3b8" font-family="ui-monospace, monospace" font-size="9">${axisNumber(maxVol)} shs</text>`;
+              rows.forEach((r, i) => {
+                const v = finiteNumber(r.volume) || (r.nav ? Math.round(Math.abs(r.flow || 0) / r.nav) : 0);
+                if (v > 0) {
+                  const x = xScale(i) - barW / 2;
+                  const h = Math.max(1, (v / (maxVol || 1)) * volH);
+                  volBarsSvg += `<rect x="${x.toFixed(1)}" y="${(t2Bottom - h).toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="rgba(148,163,184,0.16)" rx="0.5"/>`;
+                }
+              });
+              const volMaPoints = rows.map((r, i) => ({ x: xScale(i), y: finiteScale(yVol, r.rollingVolume20) }));
+              volBarsSvg += `<path d="${linePath(volMaPoints)}" fill="none" stroke="#64748b" stroke-width="1.2" stroke-dasharray="2 2" opacity="0.75"/>`;
+            }
+
+            let dailyBarsSvg = '';
+            if (showDaily) {
+              rows.forEach((r, i) => {
+                const f = finiteNumber(r.flow);
+                if (f === null) return;
+                const val = isPctAum ? (f / aumTotal) * 100 : f;
+                const x = xScale(i) - barW / 2;
+                const y = yDaily(val);
+                const top = val >= 0 ? y : zeroDailyY;
+                const h = Math.max(1.8, Math.abs(y - zeroDailyY));
+                const fill = val === 0 ? COLORS.neutral : val > 0 ? COLORS.positive : COLORS.negative;
+                dailyBarsSvg += `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${fill}" opacity="0.9" rx="0.6"/>`;
+              });
+              const meanPoints = rows.map((r, i) => {
+                const m = finiteNumber(r.rollingMean20);
+                const val = m === null ? null : (isPctAum ? (m / aumTotal) * 100 : m);
+                return { x: xScale(i), y: finiteScale(yDaily, val) };
+              });
+              dailyBarsSvg += `<path d="${linePath(meanPoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2.0" stroke-linejoin="round"/>`;
+            }
+
+            tier2Svg = `<g class="flow-tier-2">${t2Grid}${volBarsSvg}${dailyBarsSvg}</g>`;
           }
 
-          tier2Svg = `<g class="flow-tier-2">${t2Grid}${volBarsSvg}${dailyBarsSvg}</g>`;
+          // --- TIER 3: Normalized Flow Z-Score Oscillator ---
+          let tier3Svg = '';
+          if (hasTier3) {
+            const zeroZY = t3Top + tier3H / 2;
+            const yZ = z => zeroZY - (Math.max(-3, Math.min(3, z)) / 3.0) * (tier3H / 2);
+            const yPos15 = yZ(1.5);
+            const yNeg15 = yZ(-1.5);
+
+            let t3Grid = `<line x1="${padLeft}" y1="${(t3Top - 8).toFixed(1)}" x2="${width - padRight}" y2="${(t3Top - 8).toFixed(1)}" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>`;
+            t3Grid += `<rect x="${padLeft}" y="${yPos15.toFixed(1)}" width="${chartW}" height="${(zeroZY - yPos15).toFixed(1)}" fill="rgba(34,211,238,0.04)"/>`;
+            t3Grid += `<rect x="${padLeft}" y="${zeroZY.toFixed(1)}" width="${chartW}" height="${(yNeg15 - zeroZY).toFixed(1)}" fill="rgba(251,113,133,0.04)"/>`;
+            t3Grid += `<line x1="${padLeft}" y1="${zeroZY.toFixed(1)}" x2="${width - padRight}" y2="${zeroZY.toFixed(1)}" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>`;
+            t3Grid += `<line x1="${padLeft}" y1="${yPos15.toFixed(1)}" x2="${width - padRight}" y2="${yPos15.toFixed(1)}" stroke="rgba(34,211,238,0.32)" stroke-width="1" stroke-dasharray="3 3"/>`;
+            t3Grid += `<line x1="${padLeft}" y1="${yNeg15.toFixed(1)}" x2="${width - padRight}" y2="${yNeg15.toFixed(1)}" stroke="rgba(245,158,11,0.32)" stroke-width="1" stroke-dasharray="3 3"/>`;
+
+            t3Grid += `<text x="${padLeft - 8}" y="${(yPos15 + 3).toFixed(1)}" text-anchor="end" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9">+1.5σ</text>`;
+            t3Grid += `<text x="${padLeft - 8}" y="${(zeroZY + 3).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="9">0σ</text>`;
+            t3Grid += `<text x="${padLeft - 8}" y="${(yNeg15 + 3).toFixed(1)}" text-anchor="end" fill="#f59e0b" font-family="ui-monospace, monospace" font-size="9">−1.5σ</text>`;
+
+            t3Grid += `<text x="${width - padRight + 8}" y="${(yPos15 + 3).toFixed(1)}" text-anchor="start" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="8.5">ACCUMULATION</text>`;
+            t3Grid += `<text x="${width - padRight + 8}" y="${(yNeg15 + 3).toFixed(1)}" text-anchor="start" fill="#f59e0b" font-family="ui-monospace, monospace" font-size="8.5">DISTRIBUTION</text>`;
+
+            const smoothZ = [];
+            for (let i = 0; i < rows.length; i++) {
+              let sum = 0, cnt = 0;
+              for (let j = Math.max(0, i - 4); j <= i; j++) {
+                const val = finiteNumber(rows[j].priorOnlyZScore);
+                if (val !== null) { sum += val; cnt++; }
+              }
+              smoothZ.push(cnt ? sum / cnt : null);
+            }
+
+            const smoothPoints = rows.map((r, i) => ({ x: xScale(i), y: finiteScale(yZ, smoothZ[i]) }));
+            const posZArea = areaPath(smoothPoints.map(p => ({ x: p.x, y: p.y !== null ? Math.min(p.y, zeroZY) : zeroZY })), zeroZY);
+            const negZArea = areaPath(smoothPoints.map(p => ({ x: p.x, y: p.y !== null ? Math.max(p.y, zeroZY) : zeroZY })), zeroZY);
+
+            let zPaths = `<defs>
+              <linearGradient id="wb-z-pos" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#22d3ee" stop-opacity="0.22"/><stop offset="100%" stop-color="#22d3ee" stop-opacity="0.0"/></linearGradient>
+              <linearGradient id="wb-z-neg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fb7185" stop-opacity="0.0"/><stop offset="100%" stop-color="#fb7185" stop-opacity="0.22"/></linearGradient>
+            </defs>`;
+            if (posZArea) zPaths += `<path d="${posZArea}" fill="url(#wb-z-pos)"/>`;
+            if (negZArea) zPaths += `<path d="${negZArea}" fill="url(#wb-z-neg)"/>`;
+
+            if (rows.length > 60) {
+              const rawZPoints = rows.map((r, i) => ({ x: xScale(i), y: finiteScale(yZ, r.priorOnlyZScore) }));
+              zPaths += `<path d="${linePath(rawZPoints)}" fill="none" stroke="rgba(250,204,21,0.28)" stroke-width="0.9"/>`;
+            }
+
+            zPaths += `<path d="${linePath(smoothPoints)}" fill="none" stroke="#facc15" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round"/>`;
+
+            tier3Svg = `<g class="flow-tier-3">${t3Grid}${zPaths}</g>`;
+          }
+
+          // --- Date Ticks at Bottom ---
+          const tickIndices = dateTickIndices(rows.length, width);
+          const dateTicksSvg = tickIndices.map(idx => {
+            const x = xScale(idx);
+            const anchor = idx === 0 ? 'start' : (idx === rows.length - 1 ? 'end' : 'middle');
+            return `<text x="${x.toFixed(1)}" y="${(totalH - 8).toFixed(1)}" text-anchor="${anchor}" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="10">${escapeHtml(axisDate(rows[idx].date))}</text>`;
+          }).join('');
+
+          this._flowWorkbenchBaseKey = baseKey;
+          this._flowWorkbenchBaseSvg = `<svg viewBox="0 0 ${width} ${totalH}" data-pad-left="${padLeft}" data-pad-right="${padRight}" data-chart-width="${width}" role="img" aria-label="Synchronized Flow Studio" style="width:100%;height:auto;display:block">
+            <title>Synchronized Flow Studio</title>
+            ${tier1Svg}
+            ${tier2Svg}
+            ${tier3Svg}
+            ${dateTicksSvg}
+            <!-- MEASURE_BAND -->
+          </svg>`;
         }
 
-        // --- TIER 3: Normalized Flow Z-Score Oscillator ---
-        let tier3Svg = '';
-        if (hasTier3) {
-          const zeroZY = t3Top + tier3H / 2;
-          const yZ = z => zeroZY - (Math.max(-3, Math.min(3, z)) / 3.0) * (tier3H / 2);
-          const yPos15 = yZ(1.5);
-          const yNeg15 = yZ(-1.5);
-
-          let t3Grid = `<line x1="${padLeft}" y1="${(t3Top - 8).toFixed(1)}" x2="${width - padRight}" y2="${(t3Top - 8).toFixed(1)}" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>`;
-          t3Grid += `<rect x="${padLeft}" y="${t3Top}" width="${chartW}" height="${(yPos15 - t3Top).toFixed(1)}" fill="rgba(34,211,238,0.05)"/>`;
-          t3Grid += `<rect x="${padLeft}" y="${yNeg15.toFixed(1)}" width="${chartW}" height="${(t3Bottom - yNeg15).toFixed(1)}" fill="rgba(245,158,11,0.05)"/>`;
-          t3Grid += `<line x1="${padLeft}" y1="${zeroZY.toFixed(1)}" x2="${width - padRight}" y2="${zeroZY.toFixed(1)}" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>`;
-          t3Grid += `<line x1="${padLeft}" y1="${yPos15.toFixed(1)}" x2="${width - padRight}" y2="${yPos15.toFixed(1)}" stroke="rgba(34,211,238,0.3)" stroke-width="1" stroke-dasharray="3 3"/>`;
-          t3Grid += `<line x1="${padLeft}" y1="${yNeg15.toFixed(1)}" x2="${width - padRight}" y2="${yNeg15.toFixed(1)}" stroke="rgba(245,158,11,0.3)" stroke-width="1" stroke-dasharray="3 3"/>`;
-
-          t3Grid += `<text x="${padLeft - 8}" y="${(yPos15 + 3).toFixed(1)}" text-anchor="end" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9">+1.5σ</text>`;
-          t3Grid += `<text x="${padLeft - 8}" y="${(zeroZY + 3).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="9">0σ</text>`;
-          t3Grid += `<text x="${padLeft - 8}" y="${(yNeg15 + 3).toFixed(1)}" text-anchor="end" fill="#f59e0b" font-family="ui-monospace, monospace" font-size="9">−1.5σ</text>`;
-
-          const zPoints = rows.map((r, i) => ({ x: xScale(i), y: finiteScale(yZ, r.priorOnlyZScore) }));
-          const zPath = `<path d="${linePath(zPoints)}" fill="none" stroke="#facc15" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>`;
-
-          tier3Svg = `<g class="flow-tier-3">${t3Grid}${zPath}</g>`;
-        }
-
-        // --- Date Ticks at Bottom ---
-        const tickIndices = dateTickIndices(rows.length, width);
-        const dateTicksSvg = tickIndices.map(idx => {
-          const x = xScale(idx);
-          const anchor = idx === 0 ? 'start' : (idx === rows.length - 1 ? 'end' : 'middle');
-          return `<text x="${x.toFixed(1)}" y="${(totalH - 8).toFixed(1)}" text-anchor="${anchor}" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="10">${escapeHtml(axisDate(rows[idx].date))}</text>`;
-        }).join('');
-
-        // --- Drag-to-Measure Band Overlay ---
-        let measureSvg = '';
         if (this.flowMeasureActive && this.flowMeasureStartIdx !== null && this.flowMeasureCurrentIdx !== null) {
           const m1 = Math.min(this.flowMeasureStartIdx, this.flowMeasureCurrentIdx);
           const m2 = Math.max(this.flowMeasureStartIdx, this.flowMeasureCurrentIdx);
@@ -2663,25 +2751,15 @@
           const x2 = xScale(m2);
           const bandW = Math.max(2, Math.abs(x2 - x1));
           const bandX = Math.min(x1, x2);
-          measureSvg = `<g class="flow-measure-band" pointer-events="none">
-            <rect x="${bandX.toFixed(1)}" y="${padTop}" width="${bandW.toFixed(1)}" height="${(runningY - padTop).toFixed(1)}" fill="rgba(34,211,238,0.12)" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="3 3"/>
+          const measureSvg = `<g class="flow-measure-band" pointer-events="none">
+            <rect x="${bandX.toFixed(1)}" y="${padTop}" width="${bandW.toFixed(1)}" height="${(runningY - padTop).toFixed(1)}" fill="rgba(34,211,238,0.14)" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="3 3"/>
             <line x1="${bandX.toFixed(1)}" y1="${padTop}" x2="${bandX.toFixed(1)}" y2="${runningY}" stroke="#22d3ee" stroke-width="1.5"/>
             <line x1="${(bandX + bandW).toFixed(1)}" y1="${padTop}" x2="${(bandX + bandW).toFixed(1)}" y2="${runningY}" stroke="#22d3ee" stroke-width="1.5"/>
           </g>`;
+          return this._flowWorkbenchBaseSvg.replace('<!-- MEASURE_BAND -->', measureSvg);
         }
 
-        // --- Focus indicator (No vertical crosshair line) ---
-        const crosshairSvg = '';
-
-        return `<svg viewBox="0 0 ${width} ${totalH}" data-pad-left="${padLeft}" data-pad-right="${padRight}" data-chart-width="${width}" role="img" aria-label="Multi-Mega Flow and Price Workbench" style="width:100%;height:auto;display:block">
-          <title>Multi-Mega Flow & Price Workbench</title>
-          ${tier1Svg}
-          ${tier2Svg}
-          ${tier3Svg}
-          ${dateTicksSvg}
-          ${measureSvg}
-          ${crosshairSvg}
-        </svg>`;
+        return this._flowWorkbenchBaseSvg.replace('<!-- MEASURE_BAND -->', '');
       },
 
       get flowMultiHorizonImpulseChartSvg() {
@@ -2758,6 +2836,8 @@
         this.flowSearchActiveIndex = -1;
         this._flowMetricCacheKey = '';
         this._flowMetricCache = null;
+        this._flowWorkbenchBaseKey = '';
+        this._flowWorkbenchBaseSvg = '';
       },
 
       async _flowBootstrap() {

@@ -844,6 +844,57 @@
   color: var(--flow-cyan);
 }
 
+.flow-research .flow-studio-presets {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+.flow-research .flow-chip-preset {
+  padding: 0.15rem 0.45rem;
+  font-size: 0.65rem;
+  min-height: 22px;
+}
+
+.flow-research .flow-studio-summary-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+  padding: 0.55rem 0.95rem;
+  background: rgba(15, 23, 42, 0.45);
+  border-bottom: 1px solid var(--flow-line);
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+}
+
+.flow-research .flow-studio-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.flow-research .flow-studio-stat-label {
+  color: var(--flow-subtle);
+  font-size: 0.625rem;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.flow-research .flow-studio-stat-val {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--flow-text);
+}
+
+.flow-research .flow-studio-stat-divider {
+  width: 1px;
+  height: 12px;
+  background: var(--flow-line);
+}
+
 .flow-research .flow-measure-hud {
   position: absolute;
   top: 14px;
@@ -870,6 +921,7 @@
   width: 100%;
   cursor: default;
   user-select: none;
+  contain: paint;
 }
 
 .flow-research .flow-workbench-chart.flow-measuring {
