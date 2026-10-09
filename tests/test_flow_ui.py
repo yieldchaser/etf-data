@@ -293,3 +293,40 @@ def test_search_and_percentile_ui_expose_complete_primary_scope_and_both_axes():
     assert "else if (!item.featured" not in javascript
     assert "left axis shows complete trailing 10-observation" in javascript
     assert "right axis shows the tie-aware empirical percentile" in javascript
+
+
+def test_flow_ui_node_runtime_bootstrap_succeeds():
+    import shutil
+    import subprocess
+    import pytest
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("Node.js not available in current environment")
+    script = """
+    const fs = require('fs');
+    const path = require('path');
+    const ROOT = process.argv[1];
+    global.window = { location: { search: '?tab=flows' }, addEventListener: () => {}, removeEventListener: () => {}, innerWidth: 1024, innerHeight: 768, history: { pushState: () => {}, replaceState: () => {} }, dispatchEvent: () => {} };
+    global.document = { getElementById: () => null };
+    global.fetch = async (url) => {
+      const clean = url.split('?')[0];
+      const p = path.join(ROOT, 'docs', clean);
+      if (fs.existsSync(p)) return { ok: true, status: 200, json: async () => JSON.parse(fs.readFileSync(p, 'utf8')) };
+      return { ok: false, status: 404 };
+    };
+    const api = require(path.join(ROOT, 'docs', 'flow-ui.js'));
+    const app = api.flowResearchApp();
+    (async () => {
+      await app._flowBootstrap();
+      if (app.flowInitialLoading !== false) throw new Error('flowInitialLoading must be false after bootstrap');
+      if (app.flowCatalogError) throw new Error('flowCatalogError: ' + app.flowCatalogError);
+      if (!app.flowCatalog || app.flowCatalog.instruments.length !== 150) throw new Error('catalog invalid');
+      const counts = app.flowScatterCounts;
+      if (!counts || counts.all !== 150) throw new Error('scatter counts invalid');
+      const anomalies = app.flowActiveCycleAnomalies;
+      if (!anomalies || typeof anomalies.totalAnomalies !== 'number') throw new Error('anomalies invalid');
+    })().catch(e => { console.error(e); process.exit(1); });
+    """
+    res = subprocess.run([node, "-e", script, str(ROOT)], capture_output=True, text=True)
+    assert res.returncode == 0, f"Node execution failed: {res.stderr}"
+

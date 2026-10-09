@@ -2724,73 +2724,81 @@
         this.flowInitialLoading = true;
         this.flowCatalogError = '';
         this.flowManifestError = '';
-        const catalogController = new AbortController();
-        const manifestController = new AbortController();
-        this.flowBootstrapControllers.push(catalogController, manifestController);
-        const catalogPromise = fetch('data/flows/catalog.json', { signal: catalogController.signal })
-          .then(async response => {
-            if (!response.ok) throw new Error(`Catalog request returned ${response.status}.`);
-            const payload = await response.json();
-            const primary = Array.isArray(payload?.instruments) ? payload.instruments : [];
-            const featured = primary.filter(item => item?.featured).length;
-            const tickers = new Set(primary.map(item => String(item?.ticker || '').toUpperCase()));
-            if (primary.length !== 150 || featured !== 24 || tickers.size !== 150) {
-              throw new Error('Local catalog export failed its 150-instrument, 24-featured integrity checks.');
-            }
-            return payload;
-          });
-        const manifestPromise = fetch('data/flows/manifest.json', { signal: manifestController.signal })
-          .then(async response => {
-            if (!response.ok) throw new Error(`Local coverage manifest request returned ${response.status}.`);
-            const payload = await response.json();
-            const entries = payload?.etfs && typeof payload.etfs === 'object' ? payload.etfs : {};
-            if (payload?.complete !== true || payload?.status !== 'complete' || payload?.counts?.instruments !== 150 || Object.keys(entries).length !== 150 || payload?.source?.network_fetch !== false) {
-              throw new Error('Local coverage manifest failed its 150-instrument completeness checks.');
-            }
-            return payload;
-          });
-        const volumePromise = fetch('data/flows/volume.json')
-          .then(async response => response.ok ? response.json() : null)
-          .catch(() => null);
-        const [catalogResult, manifestResult, alphaResult, volumeResult] = await Promise.allSettled([catalogPromise, manifestPromise, alphaPromise, volumePromise]);
-        this.flowBootstrapControllers = [];
-        if (this.flowDestroyed) return;
-        if (volumeResult.status === 'fulfilled' && volumeResult.value) {
-          this.flowVolumeCache = volumeResult.value;
-        }
-        if (catalogResult.status === 'fulfilled' && catalogResult.value && Array.isArray(catalogResult.value.instruments)) {
-          this.flowCatalog = catalogResult.value;
-          this._flowEntryMap = Object.fromEntries(this.flowAllEntries.map(item => [item.ticker, item]));
-        } else {
-          this.flowCatalogError = catalogResult.status === 'rejected' ? String(catalogResult.reason?.message || catalogResult.reason) : 'The curated catalog is empty.';
-        }
-        if (alphaResult.status === 'fulfilled' && alphaResult.value) {
-          this.flowAlphaSignalsData = alphaResult.value;
-          if (Array.isArray(alphaResult.value.active_signals) && this.flowCatalog?.instruments) {
-            const enrichmentMap = new Map(alphaResult.value.active_signals.map(s => [s.ticker, s]));
-            for (const inst of this.flowCatalog.instruments) {
-              const enrichment = enrichmentMap.get(inst.ticker);
-              if (enrichment) {
-                inst.archetype = enrichment.archetype;
-                inst.archetype_label = enrichment.archetype_label;
-                inst.live_signal = enrichment.live_signal;
-                inst.live_signal_label = enrichment.live_signal_label;
-                inst.paired_bear = enrichment.paired_bear;
-                inst.paired_bull = enrichment.paired_bull;
-                inst.smart_twin = enrichment.smart_twin;
-                inst.conviction = enrichment.conviction;
-                inst.dd_from_60d_high_pct = enrichment.dd_from_60d_high_pct;
-                inst.rally_from_60d_low_pct = enrichment.rally_from_60d_low_pct;
+        try {
+          const catalogController = new AbortController();
+          const manifestController = new AbortController();
+          this.flowBootstrapControllers.push(catalogController, manifestController);
+          const catalogPromise = fetch('data/flows/catalog.json', { signal: catalogController.signal })
+            .then(async response => {
+              if (!response.ok) throw new Error(`Catalog request returned ${response.status}.`);
+              const payload = await response.json();
+              const primary = Array.isArray(payload?.instruments) ? payload.instruments : [];
+              const featured = primary.filter(item => item?.featured).length;
+              const tickers = new Set(primary.map(item => String(item?.ticker || '').toUpperCase()));
+              if (primary.length !== 150 || featured !== 24 || tickers.size !== 150) {
+                throw new Error('Local catalog export failed its 150-instrument, 24-featured integrity checks.');
+              }
+              return payload;
+            });
+          const manifestPromise = fetch('data/flows/manifest.json', { signal: manifestController.signal })
+            .then(async response => {
+              if (!response.ok) throw new Error(`Local coverage manifest request returned ${response.status}.`);
+              const payload = await response.json();
+              const entries = payload?.etfs && typeof payload.etfs === 'object' ? payload.etfs : {};
+              if (payload?.complete !== true || payload?.status !== 'complete' || payload?.counts?.instruments !== 150 || Object.keys(entries).length !== 150 || payload?.source?.network_fetch !== false) {
+                throw new Error('Local coverage manifest failed its 150-instrument completeness checks.');
+              }
+              return payload;
+            });
+          const alphaPromise = fetch('data/alpha_signals.json')
+            .then(async response => response.ok ? response.json() : null)
+            .catch(() => null);
+          const volumePromise = fetch('data/flows/volume.json')
+            .then(async response => response.ok ? response.json() : null)
+            .catch(() => null);
+          const [catalogResult, manifestResult, alphaResult, volumeResult] = await Promise.allSettled([catalogPromise, manifestPromise, alphaPromise, volumePromise]);
+          this.flowBootstrapControllers = [];
+          if (this.flowDestroyed) return;
+          if (volumeResult.status === 'fulfilled' && volumeResult.value) {
+            this.flowVolumeCache = volumeResult.value;
+          }
+          if (catalogResult.status === 'fulfilled' && catalogResult.value && Array.isArray(catalogResult.value.instruments)) {
+            this.flowCatalog = catalogResult.value;
+            this._flowEntryMap = Object.fromEntries(this.flowAllEntries.map(item => [item.ticker, item]));
+          } else {
+            this.flowCatalogError = catalogResult.status === 'rejected' ? String(catalogResult.reason?.message || catalogResult.reason) : 'The curated catalog is empty.';
+          }
+          if (alphaResult.status === 'fulfilled' && alphaResult.value) {
+            this.flowAlphaSignalsData = alphaResult.value;
+            if (Array.isArray(alphaResult.value.active_signals) && this.flowCatalog?.instruments) {
+              const enrichmentMap = new Map(alphaResult.value.active_signals.map(s => [s.ticker, s]));
+              for (const inst of this.flowCatalog.instruments) {
+                const enrichment = enrichmentMap.get(inst.ticker);
+                if (enrichment) {
+                  inst.archetype = enrichment.archetype;
+                  inst.archetype_label = enrichment.archetype_label;
+                  inst.live_signal = enrichment.live_signal;
+                  inst.live_signal_label = enrichment.live_signal_label;
+                  inst.paired_bear = enrichment.paired_bear;
+                  inst.paired_bull = enrichment.paired_bull;
+                  inst.smart_twin = enrichment.smart_twin;
+                  inst.conviction = enrichment.conviction;
+                  inst.dd_from_60d_high_pct = enrichment.dd_from_60d_high_pct;
+                  inst.rally_from_60d_low_pct = enrichment.rally_from_60d_low_pct;
+                }
               }
             }
           }
+          if (manifestResult.status === 'fulfilled' && manifestResult.value && typeof manifestResult.value === 'object') {
+            this.flowManifest = manifestResult.value;
+          } else {
+            this.flowManifestError = manifestResult.status === 'rejected' ? String(manifestResult.reason?.message || manifestResult.reason) : 'The coverage manifest is empty.';
+          }
+        } catch (error) {
+          this.flowCatalogError = String(error?.message || error || 'Catalog bootstrap failed.');
+        } finally {
+          this.flowInitialLoading = false;
         }
-        if (manifestResult.status === 'fulfilled' && manifestResult.value && typeof manifestResult.value === 'object') {
-          this.flowManifest = manifestResult.value;
-        } else {
-          this.flowManifestError = manifestResult.status === 'rejected' ? String(manifestResult.reason?.message || manifestResult.reason) : 'The coverage manifest is empty.';
-        }
-        this.flowInitialLoading = false;
         if (this.flowCatalogError) return;
         const requested = this.flowTicker;
         const initialTicker = this._flowEntryMap[requested] ? requested : (this.flowFeaturedInstruments[0]?.ticker || this.flowPrimaryInstruments[0]?.ticker || '');
