@@ -563,6 +563,21 @@
     return `${number < 0 ? '−' : ''}$${absolute.toFixed(0)}`;
   }
 
+  function formatShareVolume(value) {
+    const number = finiteNumber(value);
+    if (number === null) return '—';
+    const absolute = Math.abs(number);
+    if (absolute >= 1e9) return `${(absolute / 1e9).toFixed(1)}B shs`;
+    if (absolute >= 1e6) return `${(absolute / 1e6).toFixed(1)}M shs`;
+    if (absolute >= 1e3) return `${(absolute / 1e3).toFixed(0)}k shs`;
+    return `${absolute.toLocaleString('en-US')} shs`;
+  }
+
+  function cleanCategoryName(value) {
+    if (!value) return '';
+    return String(value).replace(/^\d+\.\s*/, '').trim();
+  }
+
   function dateTickIndices(count, width) {
     if (count <= 1) return [0];
     const desired = width < 400 ? 2 : width < 500 ? 3 : width < 850 ? 4 : 6;
@@ -711,7 +726,17 @@
       _flowMetricCache: null,
 
       get flowRangePresets() {
-        return RANGE_PRESETS;
+        const total = this.flowData?.records?.length || 0;
+        if (total < 2) return RANGE_PRESETS;
+        const filtered = RANGE_PRESETS.filter(p => {
+          if (p.key === 'max') return true;
+          return p.count && p.count < total * 0.90;
+        });
+        return filtered.length ? filtered : RANGE_PRESETS.filter(p => p.key === 'max');
+      },
+
+      get flowDisplayCategory() {
+        return cleanCategoryName(this.flowSelectedInstrument?.category);
       },
 
       get flowChartTabs() {
@@ -1289,37 +1314,116 @@
         const rows = this.flowData?.records || [];
         if (!item || rows.length < 5) return null;
 
+        // --- 1. 20D Price Range & Flow Alignment ---
         const recent20 = rows.slice(-20);
         const prices20 = recent20.map(r => finiteNumber(r.nav)).filter(v => v !== null);
         let rangePct = 50;
-        let rangeLabel = 'Balanced 20D Range';
+        let minP = 0, maxP = 0, curP = 0;
+        let rangeState = 'BALANCED';
+        let rangeBadge = 'RANGE BALANCED';
+        let rangeDesc = 'Trading midway through 20-session high/low envelope.';
+
         if (prices20.length >= 2) {
-          const minP = Math.min(...prices20);
-          const maxP = Math.max(...prices20);
-          const curP = prices20[prices20.length - 1];
+          minP = Math.min(...prices20);
+          maxP = Math.max(...prices20);
+          curP = prices20[prices20.length - 1];
           if (maxP > minP) {
             rangePct = Math.round(Math.max(0, Math.min(100, (curP - minP) / (maxP - minP) * 100)));
           }
           const f20 = finiteNumber(item.flow_20d) || 0;
-          if (rangePct >= 85 && f20 < 0) {
-            rangeLabel = `Near 20D Peak (${rangePct}%) · Divergence Alert`;
-          } else if (rangePct <= 15 && f20 < 0) {
-            rangeLabel = `Near 20D Trough (${rangePct}%) · Washout Candidate`;
-          } else if (rangePct >= 80) {
-            rangeLabel = `Trading at ${rangePct}% of 20D Range (Breakout)`;
+          if (rangePct >= 80 && f20 < 0) {
+            rangeState = 'DISTRIBUTION';
+            rangeBadge = 'DIVERGENCE ACTIVE';
+            rangeDesc = `Trading at ${rangePct}% of 20D range ($${minP.toFixed(2)} → $${maxP.toFixed(2)}) while 20D net flow is negative (${formatMoney(f20)}).`;
+          } else if (rangePct <= 20 && f20 > 0) {
+            rangeState = 'ACCUMULATION';
+            rangeBadge = 'ACCUMULATION AT LOWS';
+            rangeDesc = `Near 20D trough (${rangePct}%) with positive capital absorption (${formatMoney(f20)}).`;
+          } else if (rangePct >= 80 && f20 > 0) {
+            rangeState = 'ACCUMULATION';
+            rangeBadge = 'MOMENTUM CONFIRMED';
+            rangeDesc = `Trading near 20D high (${rangePct}%) backed by concurrent net inflows (${formatMoney(f20)}).`;
+          } else if (rangePct <= 20 && f20 < 0) {
+            rangeState = 'DISTRIBUTION';
+            rangeBadge = 'PRESSURE AT LOWS';
+            rangeDesc = `Trading near 20D low (${rangePct}%) alongside persistent capital outflows (${formatMoney(f20)}).`;
           } else {
-            rangeLabel = `Trading at ${rangePct}% of 20D Range`;
+            rangeState = 'BALANCED';
+            rangeBadge = 'RANGE BALANCED';
+            rangeDesc = `Trading at ${rangePct}% of 20D range ($${minP.toFixed(2)} → $${maxP.toFixed(2)}). 20D net flow: ${formatMoney(f20)}.`;
           }
         }
 
+        // --- 2. Empirical Extreme Flow Shocks (|Z| >= 2.0σ) ---
+        const shockIndices = [];
+        for (let i = 0; i < rows.length; i++) {
+          const z = finiteNumber(rows[i].priorOnlyZScore);
+          if (z !== null && Math.abs(z) >= 2.0) {
+            shockIndices.push(i);
+          }
+        }
+        const totalShocks = shockIndices.length;
+        const latestZ = finiteNumber(rows[rows.length - 1]?.priorOnlyZScore) || 0;
+        const isShockActiveToday = Math.abs(latestZ) >= 2.0;
+        const shockBadge = isShockActiveToday ? 'SHOCK ACTIVE TODAY' : 'INACTIVE TODAY';
+        const shockBadgeState = isShockActiveToday ? (latestZ >= 2.0 ? 'ACCUMULATION' : 'DISTRIBUTION') : 'BALANCED';
+
+        let shockStatLine = '';
+        let shockSubtext = '';
+        if (totalShocks < 5) {
+          shockStatLine = `Sample size too small (n = ${totalShocks} in ${rows.length} sessions)`;
+          shockSubtext = `Insufficient historical shocks (|Z| ≥ 2.0σ) for statistical edge calculation. Current: ${latestZ >= 0 ? '+' : ''}${latestZ.toFixed(2)}σ.`;
+        } else {
+          let fwdGains = 0;
+          let evaluated = 0;
+          let sumRet = 0;
+          shockIndices.forEach(idx => {
+            if (idx + 5 < rows.length && rows[idx].nav && rows[idx + 5].nav) {
+              const r = (rows[idx + 5].nav - rows[idx].nav) / rows[idx].nav * 100;
+              sumRet += r;
+              evaluated += 1;
+              if (r > 0) fwdGains += 1;
+            }
+          });
+          const winRate = evaluated > 0 ? (fwdGains / evaluated * 100).toFixed(1) : '—';
+          const avgRet = evaluated > 0 ? (sumRet / evaluated).toFixed(2) : '—';
+          shockStatLine = `Historical Win Rate: ${winRate}% (n = ${evaluated} shocks)`;
+          shockSubtext = `Empirical 5-day forward return following extreme shocks averaged ${avgRet > 0 ? '+' : ''}${avgRet}%. Current: ${latestZ >= 0 ? '+' : ''}${latestZ.toFixed(2)}σ.`;
+        }
+
+        // --- 3. 5D Velocity & Thrust ---
+        let ret5d = null;
+        if (rows.length >= 6) {
+          const pNow = finiteNumber(rows[rows.length - 1].nav);
+          const p5Ago = finiteNumber(rows[rows.length - 6].nav);
+          if (pNow !== null && p5Ago !== null && p5Ago > 0) {
+            ret5d = (pNow - p5Ago) / p5Ago * 100;
+          }
+        }
+        const flow5d = finiteNumber(item.flow_5d) || 0;
+        const isThrustActive = ret5d !== null && Math.abs(ret5d) >= 10.0;
+        const thrustBadge = isThrustActive ? (ret5d > 0 ? 'ACCELERATION ACTIVE' : 'BREAKDOWN ACTIVE') : 'NORMAL VELOCITY';
+        const thrustBadgeState = isThrustActive ? (ret5d > 0 ? 'ACCUMULATION' : 'DISTRIBUTION') : 'BALANCED';
+        const thrustStatLine = ret5d !== null ? `5D Move: ${ret5d >= 0 ? '+' : ''}${ret5d.toFixed(2)}% · 5D Flow: ${formatMoney(flow5d)}` : 'Insufficient 5D history';
+        const thrustSubtext = isThrustActive
+          ? `Extreme short-term velocity (|5D Move| ≥ 10%) with concurrent flow direction.`
+          : `Measures 5-session directional price velocity against directional net flow backing.`;
+
         return {
           rangePct,
-          rangeLabel,
-          outflowShockEdge: item.archetype === 'WASHOUT_REBOUND_SPECIALIST' ? '+5.66%' : '+3.51%',
-          outflowShockWin: item.archetype === 'WASHOUT_REBOUND_SPECIALIST' ? '58.2%' : '61.8%',
-          inflowShockEdge: '+1.90%',
-          inflowShockWin: '55.0%',
-          archetype: item.archetype_label || 'Balanced Multi-Factor'
+          rangeBadge,
+          rangeState,
+          rangeDesc,
+          shockBadge,
+          shockBadgeState,
+          shockStatLine,
+          shockSubtext,
+          thrustBadge,
+          thrustBadgeState,
+          thrustStatLine,
+          thrustSubtext,
+          isShockActiveToday,
+          isThrustActive
         };
       },
 
@@ -2589,22 +2693,34 @@
 
             let t1Grid = '';
             if (showCum) {
-              [cumHigh, 0, cumLow].forEach(v => {
+              const candidateTicks = [cumHigh, 0];
+              if (cumLow < 0 && Math.abs(yCum(0) - yCum(cumLow)) >= 22) {
+                candidateTicks.push(cumLow);
+              }
+              candidateTicks.sort((a, b) => b - a);
+              const renderedY = [];
+              candidateTicks.forEach(v => {
                 const y = yCum(v);
+                if (renderedY.some(ry => Math.abs(ry - y) < 20)) return;
+                renderedY.push(y);
                 const isZero = Math.abs(v) < 1e-6;
-                const lbl = isPctAum ? `${v >= 0 ? '+' : ''}${v.toFixed(1)}%` : axisNumber(v);
-                t1Grid += `<line x1="${padLeft}" y1="${y.toFixed(1)}" x2="${width - padRight}" y2="${y.toFixed(1)}" stroke="${isZero ? 'rgba(34,211,238,0.28)' : COLORS.grid}" stroke-width="${isZero ? 1.2 : 1}"${isZero ? '' : ' stroke-dasharray="3 3"'} /><text x="${padLeft - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="${COLORS.cyan}" font-family="ui-monospace, monospace" font-size="10">${escapeHtml(lbl)}</text>`;
+                const lbl = isPctAum ? `${v >= 0 ? '+' : ''}${v.toFixed(1)}%` : (isZero ? '$0' : axisNumber(v));
+                t1Grid += `<line x1="${padLeft}" y1="${y.toFixed(1)}" x2="${width - padRight}" y2="${y.toFixed(1)}" stroke="${isZero ? 'rgba(34,211,238,0.28)' : COLORS.grid}" stroke-width="${isZero ? 1.2 : 1}"${isZero ? '' : ' stroke-dasharray="3 3"'} /><text x="${padLeft - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="${isZero ? COLORS.text : COLORS.cyan}" font-family="ui-monospace, monospace" font-size="10">${escapeHtml(lbl)}</text>`;
               });
-              if (showPrice) {
-                [pHigh, (pHigh + pLow) / 2, pLow].forEach(v => {
+              if (showPrice && prices.length) {
+                const pMid = (maxP + minP) / 2;
+                [maxP, pMid, minP].forEach(v => {
                   const y = yPrice(v);
-                  t1Grid += `<text x="${width - padRight + 8}" y="${(y + 4).toFixed(1)}" text-anchor="start" fill="#c084fc" font-family="ui-monospace, monospace" font-size="10">$${v.toFixed(2)}</text>`;
+                  const pStr = v >= 50 ? `$${Math.round(v)}` : `$${v.toFixed(2)}`;
+                  t1Grid += `<text x="${width - padRight + 8}" y="${(y + 4).toFixed(1)}" text-anchor="start" fill="#c084fc" font-family="ui-monospace, monospace" font-size="10">${pStr}</text>`;
                 });
               }
             } else if (showPrice) {
-              [pHigh, (pHigh + pLow) / 2, pLow].forEach(v => {
+              const pMid = (maxP + minP) / 2;
+              [maxP, pMid, minP].forEach(v => {
                 const y = yPrice(v);
-                t1Grid += `<line x1="${padLeft}" y1="${y.toFixed(1)}" x2="${width - padRight}" y2="${y.toFixed(1)}" stroke="${COLORS.grid}" stroke-width="1" stroke-dasharray="3 3"/><text x="${padLeft - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="#c084fc" font-family="ui-monospace, monospace" font-size="10">$${v.toFixed(2)}</text><text x="${width - padRight + 8}" y="${(y + 4).toFixed(1)}" text-anchor="start" fill="#c084fc" font-family="ui-monospace, monospace" font-size="10">$${v.toFixed(2)}</text>`;
+                const pStr = v >= 50 ? `$${Math.round(v)}` : `$${v.toFixed(2)}`;
+                t1Grid += `<line x1="${padLeft}" y1="${y.toFixed(1)}" x2="${width - padRight}" y2="${y.toFixed(1)}" stroke="${COLORS.grid}" stroke-width="1" stroke-dasharray="3 3"/><text x="${padLeft - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="#c084fc" font-family="ui-monospace, monospace" font-size="10">${pStr}</text><text x="${width - padRight + 8}" y="${(y + 4).toFixed(1)}" text-anchor="start" fill="#c084fc" font-family="ui-monospace, monospace" font-size="10">${pStr}</text>`;
               });
             }
 
@@ -2648,16 +2764,16 @@
                 const yHigh = yPrice(rows[maxPIdx].nav);
                 const anchor = (xHigh > padLeft + chartW - 75) ? 'end' : (xHigh < padLeft + 75 ? 'start' : 'middle');
                 const tx = anchor === 'end' ? xHigh - 8 : (anchor === 'start' ? xHigh + 8 : xHigh);
-                const ty = (yHigh < t1Top + 24) ? yHigh + 15 : yHigh - 7;
-                pricePathSvg += `<circle cx="${xHigh.toFixed(1)}" cy="${yHigh.toFixed(1)}" r="3.5" fill="#22d3ee" stroke="#090d16" stroke-width="1.5"/><rect x="${(anchor === 'end' ? tx - 72 : (anchor === 'start' ? tx - 4 : tx - 36)).toFixed(1)}" y="${(ty - 10).toFixed(1)}" width="76" height="15" rx="3" fill="rgba(8,12,18,0.88)" stroke="#22d3ee" stroke-width="0.8"/><text x="${tx.toFixed(1)}" y="${(ty + 1).toFixed(1)}" text-anchor="${anchor}" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9" font-weight="700">HIGH $${rows[maxPIdx].nav.toFixed(2)}</text>`;
+                const ty = (yHigh < t1Top + 28) ? yHigh + 18 : yHigh - 14;
+                pricePathSvg += `<circle cx="${xHigh.toFixed(1)}" cy="${yHigh.toFixed(1)}" r="3.5" fill="#c084fc" stroke="#090d16" stroke-width="1.5"/><rect x="${(anchor === 'end' ? tx - 72 : (anchor === 'start' ? tx - 4 : tx - 36)).toFixed(1)}" y="${(ty - 10).toFixed(1)}" width="76" height="15" rx="3" fill="rgba(8,12,18,0.92)" stroke="#c084fc" stroke-width="1"/><text x="${tx.toFixed(1)}" y="${(ty + 1).toFixed(1)}" text-anchor="${anchor}" fill="#c084fc" font-family="ui-monospace, monospace" font-size="9" font-weight="700">HIGH $${rows[maxPIdx].nav.toFixed(2)}</text>`;
               }
               if (rows[minPIdx]?.nav !== null && minPIdx !== maxPIdx) {
                 const xLow = xScale(minPIdx);
                 const yLow = yPrice(rows[minPIdx].nav);
                 const anchor = (xLow > padLeft + chartW - 75) ? 'end' : (xLow < padLeft + 75 ? 'start' : 'middle');
                 const tx = anchor === 'end' ? xLow - 8 : (anchor === 'start' ? xLow + 8 : xLow);
-                const ty = (yLow > t1Bottom - 20) ? yLow - 9 : yLow + 14;
-                pricePathSvg += `<circle cx="${xLow.toFixed(1)}" cy="${yLow.toFixed(1)}" r="3.5" fill="#fb7185" stroke="#090d16" stroke-width="1.5"/><rect x="${(anchor === 'end' ? tx - 70 : (anchor === 'start' ? tx - 4 : tx - 35)).toFixed(1)}" y="${(ty - 10).toFixed(1)}" width="74" height="15" rx="3" fill="rgba(8,12,18,0.88)" stroke="#fb7185" stroke-width="0.8"/><text x="${tx.toFixed(1)}" y="${(ty + 1).toFixed(1)}" text-anchor="${anchor}" fill="#fb7185" font-family="ui-monospace, monospace" font-size="9" font-weight="700">LOW $${rows[minPIdx].nav.toFixed(2)}</text>`;
+                const ty = (yLow > t1Bottom - 26) ? yLow - 14 : yLow + 18;
+                pricePathSvg += `<circle cx="${xLow.toFixed(1)}" cy="${yLow.toFixed(1)}" r="3.5" fill="#c084fc" stroke="#090d16" stroke-width="1.5"/><rect x="${(anchor === 'end' ? tx - 70 : (anchor === 'start' ? tx - 4 : tx - 35)).toFixed(1)}" y="${(ty - 10).toFixed(1)}" width="74" height="15" rx="3" fill="rgba(8,12,18,0.92)" stroke="#c084fc" stroke-width="1"/><text x="${tx.toFixed(1)}" y="${(ty + 1).toFixed(1)}" text-anchor="${anchor}" fill="#c084fc" font-family="ui-monospace, monospace" font-size="9" font-weight="700">LOW $${rows[minPIdx].nav.toFixed(2)}</text>`;
               }
 
               if (showShocks) {
@@ -2708,19 +2824,19 @@
             let volBarsSvg = '';
             const barW = Math.max(0.8, Math.min(10, slot * 0.72));
             if (showVol) {
-              const volH = showDaily ? (tier2H * 0.42) : (tier2H - 10);
+              const volH = showDaily ? (tier2H * 0.38) : (tier2H - 10);
               const yVol = val => t2Bottom - (val / (maxVol || 1)) * volH;
-              t2Grid += `<text x="${width - padRight + 8}" y="${(t2Bottom - volH + 6).toFixed(1)}" text-anchor="start" fill="#94a3b8" font-family="ui-monospace, monospace" font-size="9">${axisNumber(maxVol)} shs</text>`;
+              t2Grid += `<text x="${width - padRight + 8}" y="${(t2Bottom - volH + 6).toFixed(1)}" text-anchor="start" fill="#94a3b8" font-family="ui-monospace, monospace" font-size="9">${formatShareVolume(maxVol)}</text>`;
               rows.forEach((r, i) => {
                 const v = finiteNumber(r.volume) || (r.nav ? Math.round(Math.abs(r.flow || 0) / r.nav) : 0);
                 if (v > 0) {
                   const x = xScale(i) - barW / 2;
                   const h = Math.max(1, (v / (maxVol || 1)) * volH);
-                  volBarsSvg += `<rect x="${x.toFixed(1)}" y="${(t2Bottom - h).toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="rgba(148,163,184,0.16)" rx="0.5"/>`;
+                  volBarsSvg += `<rect x="${x.toFixed(1)}" y="${(t2Bottom - h).toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="rgba(148,163,184,0.14)" rx="0.5"/>`;
                 }
               });
               const volMaPoints = rows.map((r, i) => ({ x: xScale(i), y: finiteScale(yVol, r.rollingVolume20) }));
-              volBarsSvg += `<path d="${linePath(volMaPoints)}" fill="none" stroke="#64748b" stroke-width="1.2" stroke-dasharray="2 2" opacity="0.75"/>`;
+              volBarsSvg += `<path d="${linePath(volMaPoints)}" fill="none" stroke="#64748b" stroke-width="1.2" stroke-dasharray="2 2" opacity="0.6"/>`;
             }
 
             let dailyBarsSvg = '';
@@ -2744,8 +2860,12 @@
           // --- TIER 3: Normalized Flow Z-Score Oscillator ---
           let tier3Svg = '';
           if (hasTier3) {
+            const zValues = rows.map(r => finiteNumber(r.priorOnlyZScore)).filter(v => v !== null);
+            const maxAbsZ = zValues.length ? Math.max(...zValues.map(v => Math.abs(v))) : 1.5;
+            const zBound = Math.max(3.0, Math.ceil(maxAbsZ * 1.15));
+
             const zeroZY = t3Top + tier3H / 2;
-            const yZ = z => zeroZY - (Math.max(-3, Math.min(3, z)) / 3.0) * (tier3H / 2);
+            const yZ = z => zeroZY - (Math.max(-zBound, Math.min(zBound, z)) / zBound) * (tier3H / 2);
             const yPos15 = yZ(1.5);
             const yNeg15 = yZ(-1.5);
 
@@ -2760,8 +2880,8 @@
             t3Grid += `<text x="${padLeft - 8}" y="${(zeroZY + 3).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="9">0σ</text>`;
             t3Grid += `<text x="${padLeft - 8}" y="${(yNeg15 + 3).toFixed(1)}" text-anchor="end" fill="#f59e0b" font-family="ui-monospace, monospace" font-size="9">−1.5σ</text>`;
 
-            t3Grid += `<text x="${width - padRight + 8}" y="${(yPos15 + 3).toFixed(1)}" text-anchor="start" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="8.5">ACCUMULATION</text>`;
-            t3Grid += `<text x="${width - padRight + 8}" y="${(yNeg15 + 3).toFixed(1)}" text-anchor="start" fill="#f59e0b" font-family="ui-monospace, monospace" font-size="8.5">DISTRIBUTION</text>`;
+            t3Grid += `<text x="${width - padRight + 8}" y="${(yPos15 + 3).toFixed(1)}" text-anchor="start" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9" font-weight="600" letter-spacing="0.04em">ACCUMULATION (+1.5σ)</text>`;
+            t3Grid += `<text x="${width - padRight + 8}" y="${(yNeg15 + 3).toFixed(1)}" text-anchor="start" fill="#f59e0b" font-family="ui-monospace, monospace" font-size="9" font-weight="600" letter-spacing="0.04em">DISTRIBUTION (−1.5σ)</text>`;
 
             const smoothZ = [];
             for (let i = 0; i < rows.length; i++) {
@@ -2784,7 +2904,7 @@
             if (posZArea) zPaths += `<path d="${posZArea}" fill="url(#wb-z-pos)"/>`;
             if (negZArea) zPaths += `<path d="${negZArea}" fill="url(#wb-z-neg)"/>`;
 
-            zPaths += `<path d="${linePath(smoothPoints)}" fill="none" stroke="#facc15" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round"/>`;
+            zPaths += `<path d="${linePath(smoothPoints)}" fill="none" stroke="#e879f9" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round"/>`;
 
             tier3Svg = `<g class="flow-tier-3">${t3Grid}${zPaths}</g>`;
           }
@@ -3060,6 +3180,22 @@
           }
           if (catalogResult.status === 'fulfilled' && catalogResult.value && Array.isArray(catalogResult.value.instruments)) {
             this.flowCatalog = catalogResult.value;
+            const CANONICAL_OVERRIDES = {
+              SMST: {
+                fund_name: 'Defiance Daily Target 2X Short MSTR ETF',
+                issuer: 'Defiance ETFs',
+                leverage: '-2x',
+                leverage_value: -2.0,
+                direction: 'inverse',
+                category: '9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only)',
+                paired_bull: 'MSTU'
+              }
+            };
+            for (const inst of this.flowCatalog.instruments) {
+              if (CANONICAL_OVERRIDES[inst.ticker]) {
+                Object.assign(inst, CANONICAL_OVERRIDES[inst.ticker]);
+              }
+            }
             this._flowEntryMap = Object.fromEntries(this.flowAllEntries.map(item => [item.ticker, item]));
           } else {
             this.flowCatalogError = catalogResult.status === 'rejected' ? String(catalogResult.reason?.message || catalogResult.reason) : 'The curated catalog is empty.';

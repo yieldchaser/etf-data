@@ -2864,27 +2864,31 @@
                   <h3 class="flow-instrument-name" x-text="flowSelectedInstrument?.fund_name || 'Select a catalog instrument'"></h3>
                 </div>
                 <div class="flow-instrument-meta">
-                  <span x-text="flowSelectedInstrument ? `${titleCaseCategory(flowSelectedInstrument.category)}${flowSelectedInstrument.leverage ? ` · ${flowSelectedInstrument.leverage}` : ''}` : 'Not in catalog'"></span>
+                  <span x-text="flowDisplayCategory || 'Not in catalog'"></span>
                   <span x-text="flowSelectedInstrument?.underlying ? `Underlying: ${flowSelectedInstrument.underlying}` : ''"></span>
                   <span x-text="flowSelectedInstrument?.issuer || 'Issuer unavailable'"></span>
                   <span x-text="flowSelectedInstrument?.aum_m ? `AUM $${flowSelectedInstrument.aum_m.toFixed(1)}M · TER ${flowSelectedInstrument.ter || '—'}` : ''"></span>
-                  <span x-text="flowData?.sourceLabel || 'Local dataset · Trackinsight-reported historical fields'"></span>
+                </div>
+                <div class="flow-support" style="margin-top:0.35rem;font-size:0.6875rem;opacity:0.75" x-show="flowData">
                   <span x-text="flowData ? `${flowData.count.toLocaleString('en-US')} available source observations` : 'Available source history unavailable'"></span>
+                  <span>·</span>
                   <span x-text="flowData?.sourceAsOf ? `Source as of ${flowData.sourceAsOf}` : 'Source date unavailable'"></span>
+                  <span>·</span>
+                  <span x-text="flowData?.sourceLabel || 'Local dataset · Trackinsight-reported historical fields'"></span>
                 </div>
               </div>
               <div class="flow-instrument-right">
                 <span class="flow-badge" x-show="flowSelectedInstrument?.regime" :data-state="flowSelectedInstrument?.regime" x-text="flowSelectedInstrument?.regime"></span>
-                <span class="flow-badge" :data-state="flowDataState" x-text="flowSelectedStateLabel"></span>
+                <span class="flow-badge" x-show="flowDataState !== 'ready'" :data-state="flowDataState" x-text="flowSelectedStateLabel"></span>
               </div>
             </div>
 
-            <!-- Alpha Intelligence Strip (Archetype, Live Strategy Trigger & Quick Hop Twins/Pairs) -->
-            <div class="flow-alpha-intel-strip" x-show="flowSelectedInstrument">
+            <!-- Alpha Intelligence Strip (Live Strategy Trigger & Quick Hop Twins/Pairs) -->
+            <div class="flow-alpha-intel-strip" x-show="flowSelectedInstrument && ((flowSelectedInstrument?.live_signal && flowSelectedInstrument?.live_signal !== 'NEUTRAL') || flowSelectedInstrument?.paired_bear || flowSelectedInstrument?.paired_bull || flowSelectedInstrument?.smart_twin)">
               <div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.65rem">
-                <div style="display:inline-flex;align-items:center;gap:0.35rem">
+                <div style="display:inline-flex;align-items:center;gap:0.35rem" x-show="flowSelectedInstrument?.archetype && flowSelectedInstrument?.archetype !== 'BALANCED'">
                   <span class="flow-eyebrow">Archetype:</span>
-                  <span class="flow-badge" :data-state="flowSelectedInstrument?.archetype === 'WASHOUT_REBOUND_SPECIALIST' ? 'ACCUMULATION' : 'BALANCED'" x-text="flowSelectedInstrument?.archetype_label || 'Balanced'"></span>
+                  <span class="flow-badge" :data-state="flowSelectedInstrument?.archetype === 'WASHOUT_REBOUND_SPECIALIST' ? 'ACCUMULATION' : 'BALANCED'" x-text="flowSelectedInstrument?.archetype_label"></span>
                 </div>
                 <div style="display:inline-flex;align-items:center;gap:0.35rem" x-show="flowSelectedInstrument?.live_signal && flowSelectedInstrument?.live_signal !== 'NEUTRAL'">
                   <span class="flow-eyebrow">Signal:</span>
@@ -2952,13 +2956,13 @@
                 <div class="flow-kpi-note">Source-reported aggregate net flow</div>
               </div>
               <div class="flow-kpi">
-                <div class="flow-kpi-label">Trailing 10-session percentile</div>
+                <div class="flow-kpi-label">10D flow percentile</div>
                 <div class="flow-kpi-value flow-cyan" x-text="formatPercent(flowKpis.percentile)"></div>
                 <div class="flow-kpi-note">Complete windows, ties at midpoint</div>
               </div>
               <div class="flow-kpi">
-                <div class="flow-kpi-label">Prior-only z-score</div>
-                <div class="flow-kpi-value" :class="flowKpis.zScore >= 1.5 ? 'flow-cyan' : flowKpis.zScore <= -1.5 ? 'flow-amber' : ''" x-text="flowKpis.zScore === null ? '—' : `${flowKpis.zScore >= 0 ? '+' : ''}${flowKpis.zScore.toFixed(2)}`"></div>
+                <div class="flow-kpi-label">1D flow z-score</div>
+                <div class="flow-kpi-value" :class="flowKpis.zScore >= 1.5 ? 'flow-cyan' : flowKpis.zScore <= -1.5 ? 'flow-amber' : ''" x-text="flowKpis.zScore === null ? '—' : `${flowKpis.zScore >= 0 ? '+' : ''}${flowKpis.zScore.toFixed(2)}σ`"></div>
                 <div class="flow-kpi-note" x-text="flowKpis.coverage"></div>
               </div>
             </div>
@@ -2968,35 +2972,31 @@
               <div class="flow-ledger-card">
                 <div style="display:flex;align-items:center;justify-content:space-between">
                   <span class="flow-eyebrow">20D Price Range Position</span>
-                  <strong class="flow-cyan" x-text="`${flowEmpiricalEdgeLedger?.rangePct}%`"></strong>
+                  <span class="flow-badge" :data-state="flowEmpiricalEdgeLedger?.rangeState" x-text="flowEmpiricalEdgeLedger?.rangeBadge"></span>
                 </div>
                 <div class="flow-range-meter">
                   <div class="flow-range-fill" :style="`width: ${flowEmpiricalEdgeLedger?.rangePct}%;`"></div>
                   <div class="flow-range-pin" :style="`left: calc(${flowEmpiricalEdgeLedger?.rangePct}% - 2px);`"></div>
                 </div>
-                <div class="flow-support" style="font-size:0.6875rem" x-text="flowEmpiricalEdgeLedger?.rangeLabel"></div>
+                <div class="flow-support" style="font-size:0.6875rem" x-text="flowEmpiricalEdgeLedger?.rangeDesc"></div>
               </div>
 
               <div class="flow-ledger-card">
                 <div style="display:flex;align-items:center;justify-content:space-between">
-                  <span class="flow-eyebrow">Empirical Washout Shock Edge</span>
-                  <span class="flow-badge" data-state="ACCUMULATION" x-text="flowEmpiricalEdgeLedger?.outflowShockEdge"></span>
+                  <span class="flow-eyebrow">Historical Flow Shock Edge</span>
+                  <span class="flow-badge" :data-state="flowEmpiricalEdgeLedger?.shockBadgeState" x-text="flowEmpiricalEdgeLedger?.shockBadge"></span>
                 </div>
-                <div style="font-size:0.75rem;color:var(--flow-text)">
-                  Win Rate: <strong class="flow-positive" x-text="flowEmpiricalEdgeLedger?.outflowShockWin"></strong> (5D–20D Rebound)
-                </div>
-                <div class="flow-support" style="font-size:0.6875rem">Post-washout redemption climax historical forward edge.</div>
+                <div style="font-size:0.75rem;color:var(--flow-text);font-weight:600" x-text="flowEmpiricalEdgeLedger?.shockStatLine"></div>
+                <div class="flow-support" style="font-size:0.6875rem" x-text="flowEmpiricalEdgeLedger?.shockSubtext"></div>
               </div>
 
               <div class="flow-ledger-card">
                 <div style="display:flex;align-items:center;justify-content:space-between">
-                  <span class="flow-eyebrow">Post-Trough 5D Velocity Cone</span>
-                  <span class="flow-badge" data-state="BALANCED">Monster vs Fizzle</span>
+                  <span class="flow-eyebrow">5D Price Velocity &amp; Flow Thrust</span>
+                  <span class="flow-badge" :data-state="flowEmpiricalEdgeLedger?.thrustBadgeState" x-text="flowEmpiricalEdgeLedger?.thrustBadge"></span>
                 </div>
-                <div style="font-size:0.75rem;color:var(--flow-text)">
-                  Monster Odds: <strong class="flow-cyan">17.6% (3.2x)</strong> · Fizzle Risk: <span class="flow-amber">27.4%</span>
-                </div>
-                <div class="flow-support" style="font-size:0.6875rem">5D Thrust ≥ 12% with flow Z ≤ 0 separates +100% runs from +15% traps.</div>
+                <div style="font-size:0.75rem;color:var(--flow-text);font-weight:600" x-text="flowEmpiricalEdgeLedger?.thrustStatLine"></div>
+                <div class="flow-support" style="font-size:0.6875rem" x-text="flowEmpiricalEdgeLedger?.thrustSubtext"></div>
               </div>
             </div>
 
@@ -3023,10 +3023,6 @@
                     <label class="flow-visually-hidden" for="flow-range-end">End observation</label>
                     <input id="flow-range-end" class="flow-range" type="range" min="0" :max="flowMaxRecordIndex" step="1" :value="flowEndIndex" :style="flowActiveThumb === 'end' ? 'z-index: 6;' : (flowStartIndex > (flowMaxRecordIndex / 2) ? 'z-index: 3;' : 'z-index: 4;')" :aria-valuetext="flowRangeEndDate" @pointerdown="flowActiveThumb = 'end'" @pointerup="flowActiveThumb = null; _flowFinishRangeDrag()" @pointercancel="flowActiveThumb = null; _flowFinishRangeDrag()" @change="_flowFinishRangeDrag()" @input="flowActiveThumb = 'end'; flowSetEndIndex($event.target.value)">
                   </div>
-                </div>
-                <div class="flow-range-labels">
-                  <span>Start: <strong style="color:var(--flow-text)" x-text="flowRangeStartDate || '—'"></strong></span>
-                  <span>End: <strong style="color:var(--flow-text)" x-text="flowRangeEndDate || '—'"></strong></span>
                 </div>
               </fieldset>
 
@@ -3055,30 +3051,36 @@
                   <div class="flow-workbench-title-col">
                     <p class="flow-chart-kicker">Interactive Studio</p>
                     <h3 style="margin:0;font-size:1.05rem;color:var(--flow-text)">Synchronized Flow, Price &amp; Volume Studio</h3>
-                    <p class="flow-chart-description" style="margin:0">Synchronized multi-tier layout: Cumulative Flow &amp; NAV (Tier 1), Daily Net Flow &amp; Volume with 20D MA (Tier 2), Prior-only Flow Z-Score (Tier 3).</p>
+                    <p class="flow-chart-description" style="margin:0">Synchronized multi-pane view of cumulative trend, daily volume-backed flows, and normalized momentum.</p>
                   </div>
                   <div class="flow-workbench-toolbar">
-                    <button class="flow-chip" :class="flowWorkbenchPriceEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchPriceEnabled = !flowWorkbenchPriceEnabled" title="Toggle NAV / Price Line">
-                      <span style="color:#c084fc">●</span> Price
-                    </button>
-                    <button class="flow-chip" :class="flowWorkbenchCumEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchCumEnabled = !flowWorkbenchCumEnabled" title="Toggle Cumulative Flow Area">
-                      <span style="color:#34d399">▲</span> Cum Flow
-                    </button>
-                    <button class="flow-chip" :class="flowWorkbenchDailyEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchDailyEnabled = !flowWorkbenchDailyEnabled" title="Toggle Daily Flow Bars">
-                      <span style="color:#22d3ee">▮</span> Daily Flow
-                    </button>
-                    <button class="flow-chip" :class="flowWorkbenchVolumeEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchVolumeEnabled = !flowWorkbenchVolumeEnabled" title="Toggle Trading Volume Overlay">
-                      <span style="color:#94a3b8">▮</span> Volume
-                    </button>
-                    <button class="flow-chip" :class="flowWorkbenchZScoreEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchZScoreEnabled = !flowWorkbenchZScoreEnabled" title="Toggle Prior Z-Score Waveform">
-                      <span style="color:#e879f9">~</span> Z-Score
-                    </button>
-                    <button class="flow-chip" :class="flowWorkbenchShocksEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchShocksEnabled = !flowWorkbenchShocksEnabled" title="Toggle extreme climax flow shock markers (|Z| ≥ 2.5σ)">
-                      <span style="color:#fbbf24">●</span> Shocks
-                    </button>
-                    <button class="flow-chip" type="button" @click="flowScaleMode = flowScaleMode === 'usd' ? 'pct_aum' : 'usd'" title="Switch between Dollar Flow ($) and Flow as % of AUM" style="font-weight:600;border-color:rgba(34,211,238,0.4)">
-                      <span x-text="flowScaleMode === 'usd' ? '$ USD' : '% AUM'"></span>
-                    </button>
+                    <div style="display:inline-flex;align-items:center;gap:0.3rem">
+                      <button class="flow-chip" :class="flowWorkbenchPriceEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchPriceEnabled = !flowWorkbenchPriceEnabled" title="Toggle NAV Line">
+                        <span style="color:#c084fc">●</span> NAV
+                      </button>
+                      <button class="flow-chip" :class="flowWorkbenchCumEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchCumEnabled = !flowWorkbenchCumEnabled" title="Toggle Cumulative Flow Area">
+                        <span style="color:#34d399">▲</span> Cum Flow
+                      </button>
+                      <button class="flow-chip" :class="flowWorkbenchDailyEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchDailyEnabled = !flowWorkbenchDailyEnabled" title="Toggle Daily Flow Bars">
+                        <span style="color:#22d3ee">▮</span> Daily Flow
+                      </button>
+                      <button class="flow-chip" :class="flowWorkbenchVolumeEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchVolumeEnabled = !flowWorkbenchVolumeEnabled" title="Toggle Trading Volume Overlay">
+                        <span style="color:#94a3b8">▮</span> Volume
+                      </button>
+                      <button class="flow-chip" :class="flowWorkbenchZScoreEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchZScoreEnabled = !flowWorkbenchZScoreEnabled" title="Toggle 1D Flow Z-Score Oscillator">
+                        <span style="color:#e879f9">~</span> 1D Flow Z
+                      </button>
+                    </div>
+                    <div style="width:1px;height:16px;background:var(--flow-line);margin:0 0.15rem"></div>
+                    <div style="display:inline-flex;align-items:center;gap:0.3rem">
+                      <button class="flow-chip" :class="flowWorkbenchShocksEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchShocksEnabled = !flowWorkbenchShocksEnabled" title="Toggle extreme climax flow shock markers (|Z| ≥ 2.5σ)">
+                        <span style="color:#fbbf24">●</span> Shocks
+                      </button>
+                      <button class="flow-chip" type="button" @click="flowScaleMode = flowScaleMode === 'usd' ? 'pct_aum' : 'usd'" title="Switch between Dollar Flow ($) and Net Flow as % of AUM" style="font-weight:600;border-color:rgba(34,211,238,0.4)">
+                        <span x-text="flowScaleMode === 'usd' ? '$ USD' : '% AUM'"></span>
+                      </button>
+                    </div>
+                    <div style="width:1px;height:16px;background:var(--flow-line);margin:0 0.15rem"></div>
                     <button class="flow-chip" :class="flowMeasureActive ? 'flow-chip-active' : ''" type="button" @click="flowMeasureActive = !flowMeasureActive; if (!flowMeasureActive) flowResetMeasurement()" title="Drag across chart canvas to calculate window performance and flow stats">
                       ⇥ Drag to Measure
                     </button>
@@ -3096,8 +3098,8 @@
                     <span class="flow-studio-stat-val" :class="(flowWorkbenchSummary?.netFlow ?? 0) >= 0 ? 'flow-positive' : 'flow-negative'" x-text="formatMoney(flowWorkbenchSummary?.netFlow)"></span>
                   </div>
                   <div class="flow-studio-stat-divider" x-show="flowWorkbenchSummary?.flowPctAum !== null"></div>
-                  <div class="flow-studio-stat" x-show="flowWorkbenchSummary?.flowPctAum !== null">
-                    <span class="flow-studio-stat-label">% OF AUM</span>
+                  <div class="flow-studio-stat" x-show="flowWorkbenchSummary?.flowPctAum !== null" title="Selected window cumulative net flow relative to latest AUM">
+                    <span class="flow-studio-stat-label">NET FLOW / AUM</span>
                     <span class="flow-studio-stat-val" :class="(flowWorkbenchSummary?.flowPctAum ?? 0) >= 0 ? 'flow-positive' : 'flow-negative'" x-text="`${(flowWorkbenchSummary?.flowPctAum ?? 0) >= 0 ? '+' : ''}${flowWorkbenchSummary?.flowPctAum?.toFixed(2)}%`"></span>
                   </div>
                   <div class="flow-studio-stat-divider"></div>
@@ -3107,18 +3109,13 @@
                   </div>
                   <div class="flow-studio-stat-divider"></div>
                   <div class="flow-studio-stat">
-                    <span class="flow-studio-stat-label">FLOW MOMENTUM</span>
+                    <span class="flow-studio-stat-label">1D FLOW Z</span>
                     <span class="flow-studio-stat-val" :class="(flowWorkbenchSummary?.latestZ ?? 0) >= 0 ? 'flow-positive' : 'flow-negative'" x-text="flowWorkbenchSummary?.latestZ !== null ? `${flowWorkbenchSummary.latestZ >= 0 ? '+' : ''}${flowWorkbenchSummary.latestZ.toFixed(2)}σ` : '—'"></span>
                   </div>
                   <div class="flow-studio-stat-divider"></div>
                   <div class="flow-studio-stat">
                     <span class="flow-studio-stat-label">LATEST NAV</span>
                     <span class="flow-studio-stat-val" style="color:#c084fc" x-text="flowWorkbenchSummary?.lastPrice !== null ? `$${flowWorkbenchSummary.lastPrice.toFixed(2)}` : '—'"></span>
-                  </div>
-                  <div class="flow-studio-stat-divider"></div>
-                  <div class="flow-studio-stat" style="color:var(--flow-muted)">
-                    <span class="flow-studio-stat-label">HORIZON</span>
-                    <span class="flow-studio-stat-val" style="color:var(--flow-muted)" x-text="`${flowWorkbenchSummary?.count || 0} bars (${flowWorkbenchSummary?.startDate || ''} → ${flowWorkbenchSummary?.endDate || ''})`"></span>
                   </div>
                 </div>
 
