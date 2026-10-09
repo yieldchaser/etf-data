@@ -14,7 +14,7 @@
   ];
 
   const CHART_TABS = [
-    { key: 'workbench', label: 'Multi-Mega Workbench' },
+    { key: 'workbench', label: 'Workbench' },
     { key: 'daily', label: 'Daily flow' },
     { key: 'cumulative', label: 'Cumulative' },
     { key: 'percentile', label: 'Percentile' },
@@ -127,8 +127,16 @@
   }
 
   function shortCategoryName(value) {
-    const raw = String(value || 'Catalog');
-    return raw.replace(/^\d+\.\s*/, '').replace(/\s*\(Pruned.*\)$/i, '');
+    const raw = String(value || 'Catalog').replace(/^\d+\.\s*/, '').replace(/\s*\(Pruned.*\)$/i, '');
+    return raw
+      .replace('Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech', 'AI & Semis Single-Stock (Bull)')
+      .replace('Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer', 'Mega-Cap & Crypto (Bull)')
+      .replace('Technology, Semiconductor & Thematic (Bull)', 'Tech & Thematic (Bull)')
+      .replace('Broad Market Equity Index (Bull)', 'Broad Market Index (Bull)')
+      .replace('Sector Specific Leveraged (Bull)', 'Sector Specific (Bull)')
+      .replace('Commodities, Energy & Volatility (Bull)', 'Commodities & Vol (Bull)')
+      .replace('Fixed Income, Currencies & Crypto (Bull)', 'Fixed Income & Bonds (Bull)')
+      .replace('Selective Benchmark Hedging / Tactical Shorts', 'Tactical Benchmark Shorts');
   }
 
   function formatMoney(value, options) {
@@ -746,7 +754,14 @@
       },
 
       get flowAlphaTopBasket() {
-        return Array.isArray(this.flowAlphaSignalsData?.top5_conviction_basket) ? this.flowAlphaSignalsData.top5_conviction_basket : [];
+        const basket = Array.isArray(this.flowAlphaSignalsData?.top5_conviction_basket) ? this.flowAlphaSignalsData.top5_conviction_basket : [];
+        return basket.map(item => ({
+          ...item,
+          nav_return_5d_pct: item.nav_return_5d_pct ?? item.ret_5d_pct ?? null,
+          nav_return_20d_pct: item.nav_return_20d_pct ?? item.ret_20d_pct ?? null,
+          ret_5d_pct: item.ret_5d_pct ?? item.nav_return_5d_pct ?? null,
+          ret_20d_pct: item.ret_20d_pct ?? item.nav_return_20d_pct ?? null
+        }));
       },
 
       get flowAlphaBullBearPairs() {
@@ -1074,10 +1089,30 @@
         const qBgSqueeze = `<rect x="${xZero.toFixed(1)}" y="${yZero.toFixed(1)}" width="${(pad.left + chartW - xZero).toFixed(1)}" height="${(pad.top + chartH - yZero).toFixed(1)}" fill="rgba(167,139,250,0.025)" stroke="rgba(167,139,250,0.08)" stroke-width="0.5"/>`;
 
         // Quadrant Headers & Live Dynamic Counters
-        const lblTrap = `<text x="${pad.left + 10}" y="${pad.top + 16}" fill="#fb923c" font-family="ui-monospace, monospace" font-size="10" font-weight="700" letter-spacing="0.04em">Q3 DIP ACCUMULATION / TRAP (${counts.trap})</text><text x="${pad.left + 10}" y="${pad.top + 28}" fill="#71717a" font-family="ui-sans-serif, sans-serif" font-size="8.5">Inflow at Lows · Buy-the-Dip vs Falling Knife</text>`;
-        const lblMomentum = `<text x="${(pad.left + chartW - 10).toFixed(1)}" y="${pad.top + 16}" text-anchor="end" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="10" font-weight="700" letter-spacing="0.04em">Q2 MOMENTUM CONTINUATION (${counts.momentum})</text><text x="${(pad.left + chartW - 10).toFixed(1)}" y="${pad.top + 28}" text-anchor="end" fill="#71717a" font-family="ui-sans-serif, sans-serif" font-size="8.5">Inflow at Highs · Trend Continuation</text>`;
-        const lblWashout = `<text x="${pad.left + 10}" y="${(pad.top + chartH - 22).toFixed(1)}" fill="#34d399" font-family="ui-monospace, monospace" font-size="10" font-weight="700" letter-spacing="0.04em">Q1 WASHOUT REBOUND (${counts.washout})</text><text x="${pad.left + 10}" y="${(pad.top + chartH - 10).toFixed(1)}" fill="#71717a" font-family="ui-sans-serif, sans-serif" font-size="8.5">Outflow at Lows · Washout Rebound</text>`;
-        const lblSqueeze = `<text x="${(pad.left + chartW - 10).toFixed(1)}" y="${(pad.top + chartH - 22).toFixed(1)}" text-anchor="end" fill="#a78bfa" font-family="ui-monospace, monospace" font-size="10" font-weight="700" letter-spacing="0.04em">Q4 WALL OF WORRY SQUEEZE (${counts.squeeze})</text><text x="${(pad.left + chartW - 10).toFixed(1)}" y="${(pad.top + chartH - 10).toFixed(1)}" text-anchor="end" fill="#71717a" font-family="ui-sans-serif, sans-serif" font-size="8.5">Outflow into Rallies · Short Squeeze</text>`;
+        const lblTrap = `
+          <g pointer-events="none">
+            <rect x="${pad.left + 6}" y="${pad.top + 6}" width="215" height="28" rx="4" fill="rgba(8,12,18,0.85)" stroke="rgba(251,146,60,0.3)" stroke-width="0.8"/>
+            <text x="${pad.left + 12}" y="${pad.top + 18}" fill="#fb923c" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.04em">Q3 DIP ACCUMULATION (${counts.trap})</text>
+            <text x="${pad.left + 12}" y="${pad.top + 28}" fill="#94a3b8" font-family="ui-sans-serif, sans-serif" font-size="8">Inflow at Lows · Buy-the-Dip</text>
+          </g>`;
+        const lblMomentum = `
+          <g pointer-events="none">
+            <rect x="${(pad.left + chartW - 225).toFixed(1)}" y="${pad.top + 6}" width="218" height="28" rx="4" fill="rgba(8,12,18,0.85)" stroke="rgba(34,211,238,0.3)" stroke-width="0.8"/>
+            <text x="${(pad.left + chartW - 12).toFixed(1)}" y="${pad.top + 18}" text-anchor="end" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.04em">Q2 MOMENTUM CONTINUATION (${counts.momentum})</text>
+            <text x="${(pad.left + chartW - 12).toFixed(1)}" y="${pad.top + 28}" text-anchor="end" fill="#94a3b8" font-family="ui-sans-serif, sans-serif" font-size="8">Inflow at Highs · Trend Continuation</text>
+          </g>`;
+        const lblWashout = `
+          <g pointer-events="none">
+            <rect x="${pad.left + 6}" y="${(pad.top + chartH - 34).toFixed(1)}" width="210" height="28" rx="4" fill="rgba(8,12,18,0.85)" stroke="rgba(52,211,153,0.3)" stroke-width="0.8"/>
+            <text x="${pad.left + 12}" y="${(pad.top + chartH - 22).toFixed(1)}" fill="#34d399" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.04em">Q1 WASHOUT REBOUND (${counts.washout})</text>
+            <text x="${pad.left + 12}" y="${(pad.top + chartH - 12).toFixed(1)}" fill="#94a3b8" font-family="ui-sans-serif, sans-serif" font-size="8">Outflow at Lows · Washout Rebound</text>
+          </g>`;
+        const lblSqueeze = `
+          <g pointer-events="none">
+            <rect x="${(pad.left + chartW - 225).toFixed(1)}" y="${(pad.top + chartH - 34).toFixed(1)}" width="218" height="28" rx="4" fill="rgba(8,12,18,0.85)" stroke="rgba(167,139,250,0.3)" stroke-width="0.8"/>
+            <text x="${(pad.left + chartW - 12).toFixed(1)}" y="${(pad.top + chartH - 22).toFixed(1)}" text-anchor="end" fill="#a78bfa" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.04em">Q4 WALL OF WORRY SQUEEZE (${counts.squeeze})</text>
+            <text x="${(pad.left + chartW - 12).toFixed(1)}" y="${(pad.top + chartH - 12).toFixed(1)}" text-anchor="end" fill="#94a3b8" font-family="ui-sans-serif, sans-serif" font-size="8">Outflow into Rallies · Short Squeeze</text>
+          </g>`;
 
         // Axes and Zero Crosshairs
         const crossX = `<line x1="${xZero.toFixed(1)}" y1="${pad.top}" x2="${xZero.toFixed(1)}" y2="${(pad.top + chartH).toFixed(1)}" stroke="rgba(255,255,255,0.22)" stroke-width="1.2" stroke-dasharray="3 3"/>`;
@@ -1135,14 +1170,27 @@
           </circle>`;
 
           if (matchesFilter && labeledTickers.has(item.ticker) && !isSelected) {
-            const lx = cx > xZero ? cx + 6 : cx - 6;
-            const anchor = cx > xZero ? 'start' : 'end';
-            labels += `<text x="${lx.toFixed(1)}" y="${(cy + 3.2).toFixed(1)}" text-anchor="${anchor}" fill="${dotColor}" font-family="ui-monospace, monospace" font-size="9" font-weight="700" pointer-events="none" opacity="0.9">${item.ticker}</text>`;
+            let lx = cx > xZero ? cx + 6 : cx - 6;
+            let anchor = cx > xZero ? 'start' : 'end';
+            let ly = cy + 3.2;
+            if (cx > pad.left + chartW - 55) {
+              lx = cx - 6;
+              anchor = 'end';
+            } else if (cx < pad.left + 55) {
+              lx = cx + 6;
+              anchor = 'start';
+            }
+            if (cy < pad.top + 38) {
+              ly = cy + 12;
+            } else if (cy > pad.top + chartH - 38) {
+              ly = cy - 6;
+            }
+            labels += `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${anchor}" fill="${dotColor}" font-family="ui-monospace, monospace" font-size="9" font-weight="700" pointer-events="none" opacity="0.9">${item.ticker}</text>`;
           }
 
           if (isSelected) {
-            const lx = cx > xZero ? cx + 11 : cx - 11;
-            const anchor = cx > xZero ? 'start' : 'end';
+            const anchor = (cx > pad.left + chartW - 90) ? 'end' : (cx > xZero ? 'start' : 'end');
+            const lx = anchor === 'start' ? cx + 11 : cx - 11;
             activeOverlay = `<g pointer-events="none">
               <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="10" fill="none" stroke="#22d3ee" stroke-width="2.2" stroke-dasharray="3 2" opacity="0.95"/>
               <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="4.2" fill="#ffffff" stroke="#090d16" stroke-width="1.2"/>
