@@ -643,6 +643,8 @@
       flowMeasureResult: null,
       _flowWorkbenchBaseKey: '',
       _flowWorkbenchBaseSvg: '',
+      _flowUrlTimer: null,
+      _rangeRaf: null,
       flowChartTab: 'workbench',
       flowChartMessage: '',
       flowChartTooltip: { visible: false, index: 0 },
@@ -2661,12 +2663,6 @@
                 const fill = val === 0 ? COLORS.neutral : val > 0 ? COLORS.positive : COLORS.negative;
                 dailyBarsSvg += `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${fill}" opacity="0.9" rx="0.6"/>`;
               });
-              const meanPoints = rows.map((r, i) => {
-                const m = finiteNumber(r.rollingMean20);
-                const val = m === null ? null : (isPctAum ? (m / aumTotal) * 100 : m);
-                return { x: xScale(i), y: finiteScale(yDaily, val) };
-              });
-              dailyBarsSvg += `<path d="${linePath(meanPoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2.0" stroke-linejoin="round"/>`;
             }
 
             tier2Svg = `<g class="flow-tier-2">${t2Grid}${volBarsSvg}${dailyBarsSvg}</g>`;
@@ -2714,11 +2710,6 @@
             </defs>`;
             if (posZArea) zPaths += `<path d="${posZArea}" fill="url(#wb-z-pos)"/>`;
             if (negZArea) zPaths += `<path d="${negZArea}" fill="url(#wb-z-neg)"/>`;
-
-            if (rows.length > 60) {
-              const rawZPoints = rows.map((r, i) => ({ x: xScale(i), y: finiteScale(yZ, r.priorOnlyZScore) }));
-              zPaths += `<path d="${linePath(rawZPoints)}" fill="none" stroke="rgba(250,204,21,0.28)" stroke-width="0.9"/>`;
-            }
 
             zPaths += `<path d="${linePath(smoothPoints)}" fill="none" stroke="#facc15" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round"/>`;
 
@@ -2768,11 +2759,10 @@
         const height = 215;
         if (rows.length < 5) return emptyChart(width, height, 'Select at least five sessions for multi-horizon impulse.');
         const frame = chartFrame({ records: rows, width, height, padding: { left: 60, right: 16, top: 18, bottom: 28 } });
-        const values = rows.flatMap(r => [finiteNumber(r.rollingSum5), finiteNumber(r.rollingSum20), finiteNumber(r.rollingSum60)]).filter(v => v !== null);
+        const values = rows.flatMap(r => [finiteNumber(r.rollingSum20), finiteNumber(r.rollingSum60)]).filter(v => v !== null);
         if (!values.length) return emptyChart(width, height, 'Rolling multi-horizon flow sums unavailable.');
         const maxAbs = Math.max(1, ...values.map(v => Math.abs(v))) * 1.08;
         const yScale = value => frame.padding.top + frame.chartHeight / 2 - (value / maxAbs) * (frame.chartHeight / 2);
-        const pts5 = rows.map((r, idx) => ({ x: frame.xScale(idx), y: finiteScale(yScale, r.rollingSum5) }));
         const pts20 = rows.map((r, idx) => ({ x: frame.xScale(idx), y: finiteScale(yScale, r.rollingSum20) }));
         const pts60 = rows.map((r, idx) => ({ x: frame.xScale(idx), y: finiteScale(yScale, r.rollingSum60) }));
         const grid = [maxAbs, 0, -maxAbs].map(value => {
@@ -2784,18 +2774,10 @@
         if (this.flowHoverIndex !== null && this.flowHoverChart === 'impulse' && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
           const hRow = rows[this.flowHoverIndex];
           const x = frame.xScale(this.flowHoverIndex);
-          const top = frame.padding.top;
-          const bottom = frame.height - frame.padding.bottom;
-          const dateStr = escapeHtml(hRow.date || '');
-          const s5 = finiteNumber(hRow.rollingSum5);
           const s20 = finiteNumber(hRow.rollingSum20);
           const s60 = finiteNumber(hRow.rollingSum60);
 
           let dots = '';
-          if (s5 !== null) {
-            const y5 = yScale(s5);
-            dots += `<circle cx="${x.toFixed(1)}" cy="${y5.toFixed(1)}" r="4.5" fill="#22d3ee" stroke="#ffffff" stroke-width="1.8"/>`;
-          }
           if (s20 !== null) {
             const y20 = yScale(s20);
             dots += `<circle cx="${x.toFixed(1)}" cy="${y20.toFixed(1)}" r="4.5" fill="#34d399" stroke="#ffffff" stroke-width="1.8"/>`;
@@ -2810,7 +2792,7 @@
           }
         }
 
-        return `<svg viewBox="0 0 ${width} ${height}" data-pad-left="${frame.padding.left}" data-pad-right="${frame.padding.right}" data-chart-width="${width}" role="img" aria-label="Multi-horizon 5D, 20D, and 60D rolling net flow impulse">${grid}<path d="${linePath(pts60)}" fill="none" stroke="${COLORS.warning}" stroke-width="1.6" stroke-dasharray="3 2" opacity="0.85"/><path d="${linePath(pts20)}" fill="none" stroke="${COLORS.positive}" stroke-width="2"/><path d="${linePath(pts5)}" fill="none" stroke="${COLORS.cyan}" stroke-width="1.6" opacity="0.92"/>${overlay}${frame.dateTicks}</svg>`;
+        return `<svg viewBox="0 0 ${width} ${height}" data-pad-left="${frame.padding.left}" data-pad-right="${frame.padding.right}" data-chart-width="${width}" role="img" aria-label="Multi-horizon 20D and 60D rolling net flow impulse">${grid}<path d="${linePath(pts60)}" fill="none" stroke="${COLORS.warning}" stroke-width="1.6" stroke-dasharray="3 2" opacity="0.85"/><path d="${linePath(pts20)}" fill="none" stroke="${COLORS.positive}" stroke-width="2"/>${overlay}${frame.dateTicks}</svg>`;
       },
 
       async init() {
@@ -2838,6 +2820,14 @@
         this._flowMetricCache = null;
         this._flowWorkbenchBaseKey = '';
         this._flowWorkbenchBaseSvg = '';
+        if (this._flowUrlTimer) {
+          clearTimeout(this._flowUrlTimer);
+          this._flowUrlTimer = null;
+        }
+        if (this._rangeRaf) {
+          cancelAnimationFrame(this._rangeRaf);
+          this._rangeRaf = null;
+        }
       },
 
       async _flowBootstrap() {
@@ -3270,11 +3260,12 @@
         if (!count) return;
         const minimumWindow = count > 1 ? 2 : 1;
         const next = Math.max(0, Math.min(Math.trunc(Number(value) || 0), this.flowEndIndex - minimumWindow + 1));
+        if (next === this.flowStartIndex) return;
         this.flowStartIndex = next;
         this.flowRangePreset = 'custom';
         this.flowEnsureChartTab();
         this._syncRangeInputs();
-        this._flowWriteUrl(false);
+        this._flowScheduleUrlWrite();
       },
 
       flowSetEndIndex(value) {
@@ -3282,11 +3273,12 @@
         if (!count) return;
         const minimumWindow = count > 1 ? 2 : 1;
         const next = Math.min(count - 1, Math.max(Math.trunc(Number(value) || 0), this.flowStartIndex + minimumWindow - 1));
+        if (next === this.flowEndIndex) return;
         this.flowEndIndex = next;
         this.flowRangePreset = 'custom';
         this.flowEnsureChartTab();
         this._syncRangeInputs();
-        this._flowWriteUrl(false);
+        this._flowScheduleUrlWrite();
       },
 
       _syncRangeInputs() {
@@ -3296,12 +3288,33 @@
         const max = this.flowMaxRecordIndex;
         if (startInput) {
           startInput.max = String(max);
-          startInput.value = String(this.flowStartIndex);
+          if (this.flowActiveThumb !== 'start' && String(startInput.value) !== String(this.flowStartIndex)) {
+            startInput.value = String(this.flowStartIndex);
+          }
         }
         if (endInput) {
           endInput.max = String(max);
-          endInput.value = String(this.flowEndIndex);
+          if (this.flowActiveThumb !== 'end' && String(endInput.value) !== String(this.flowEndIndex)) {
+            endInput.value = String(this.flowEndIndex);
+          }
         }
+      },
+
+      _flowScheduleUrlWrite() {
+        if (this._flowUrlTimer) clearTimeout(this._flowUrlTimer);
+        this._flowUrlTimer = setTimeout(() => {
+          this._flowUrlTimer = null;
+          this._flowWriteUrl(false);
+        }, 150);
+      },
+
+      _flowFinishRangeDrag() {
+        if (this._flowUrlTimer) {
+          clearTimeout(this._flowUrlTimer);
+          this._flowUrlTimer = null;
+        }
+        this._flowWriteUrl(false);
+        this._syncRangeInputs();
       },
 
       flowSetPriceEnabled(value) {

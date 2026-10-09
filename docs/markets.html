@@ -2935,35 +2935,6 @@
               <p>The static file contains no usable observations, so charts and KPIs remain unavailable.</p>
             </div>
 
-            <fieldset class="flow-range-panel" x-show="flowData && flowData.records.length > 1">
-              <legend class="flow-visually-hidden">Selected source history window</legend>
-              <div class="flow-range-heading">
-                <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:0.55rem">
-                  <h3 class="flow-eyebrow" style="color:var(--flow-cyan)">Selected window</h3>
-                  <span class="flow-support" x-text="`${flowRangeCount.toLocaleString('en-US')} sessions · ${flowRangeStartDate || '—'} → ${flowRangeEndDate || '—'}`"></span>
-                </div>
-                <div class="flow-presets" aria-label="Range presets">
-                  <template x-for="preset in flowRangePresets" :key="preset.key">
-                    <button class="flow-chip" type="button" :aria-pressed="flowRangePreset === preset.key ? 'true' : 'false'" @click="flowSetRangePreset(preset.key)" x-text="preset.label"></button>
-                  </template>
-                </div>
-              </div>
-              <div class="flow-brush-slider-wrap">
-                <div class="flow-brush-slider-track"></div>
-                <div class="flow-brush-slider-highlight" :style="`left: calc(9px + ${(flowStartIndex / (flowMaxRecordIndex || 1)).toFixed(4)} * (100% - 18px)); width: calc(${((flowEndIndex - flowStartIndex) / (flowMaxRecordIndex || 1)).toFixed(4)} * (100% - 18px));`"></div>
-                <div class="flow-brush-inputs">
-                  <label class="flow-visually-hidden" for="flow-range-start">Start observation</label>
-                  <input id="flow-range-start" class="flow-range" type="range" min="0" :max="flowMaxRecordIndex" step="1" :value="flowStartIndex" :style="flowActiveThumb === 'start' ? 'z-index: 6;' : (flowStartIndex > (flowMaxRecordIndex / 2) ? 'z-index: 5;' : 'z-index: 3;')" :aria-valuetext="flowRangeStartDate" @pointerdown="flowActiveThumb = 'start'" @input="flowActiveThumb = 'start'; flowSetStartIndex($event.target.value)">
-                  <label class="flow-visually-hidden" for="flow-range-end">End observation</label>
-                  <input id="flow-range-end" class="flow-range" type="range" min="0" :max="flowMaxRecordIndex" step="1" :value="flowEndIndex" :style="flowActiveThumb === 'end' ? 'z-index: 6;' : (flowStartIndex > (flowMaxRecordIndex / 2) ? 'z-index: 3;' : 'z-index: 4;')" :aria-valuetext="flowRangeEndDate" @pointerdown="flowActiveThumb = 'end'" @input="flowActiveThumb = 'end'; flowSetEndIndex($event.target.value)">
-                </div>
-              </div>
-              <div class="flow-range-labels">
-                <span>Start: <strong style="color:var(--flow-text)" x-text="flowRangeStartDate || '—'"></strong></span>
-                <span>End: <strong style="color:var(--flow-text)" x-text="flowRangeEndDate || '—'"></strong></span>
-              </div>
-            </fieldset>
-
             <div class="flow-kpis" x-show="flowData && flowData.records.length">
               <div class="flow-kpi">
                 <div class="flow-kpi-label">Latest session</div>
@@ -3030,6 +3001,35 @@
             </div>
 
             <div class="flow-analysis" x-show="flowData && flowData.records.length > 1">
+              <fieldset class="flow-range-panel" x-show="flowData && flowData.records.length > 1">
+                <legend class="flow-visually-hidden">Selected source history window</legend>
+                <div class="flow-range-heading">
+                  <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:0.55rem">
+                    <h3 class="flow-eyebrow" style="color:var(--flow-cyan)">Selected window</h3>
+                    <span class="flow-support" x-text="`${flowRangeCount.toLocaleString('en-US')} sessions · ${flowRangeStartDate || '—'} → ${flowRangeEndDate || '—'}`"></span>
+                  </div>
+                  <div class="flow-presets" aria-label="Range presets">
+                    <template x-for="preset in flowRangePresets" :key="preset.key">
+                      <button class="flow-chip" type="button" :aria-pressed="flowRangePreset === preset.key ? 'true' : 'false'" @click="flowSetRangePreset(preset.key)" x-text="preset.label"></button>
+                    </template>
+                  </div>
+                </div>
+                <div class="flow-brush-slider-wrap">
+                  <div class="flow-brush-slider-track"></div>
+                  <div class="flow-brush-slider-highlight" :style="`left: calc(9px + ${(flowStartIndex / (flowMaxRecordIndex || 1)).toFixed(4)} * (100% - 18px)); width: calc(${((flowEndIndex - flowStartIndex) / (flowMaxRecordIndex || 1)).toFixed(4)} * (100% - 18px));`"></div>
+                  <div class="flow-brush-inputs">
+                    <label class="flow-visually-hidden" for="flow-range-start">Start observation</label>
+                    <input id="flow-range-start" class="flow-range" type="range" min="0" :max="flowMaxRecordIndex" step="1" :value="flowStartIndex" :style="flowActiveThumb === 'start' ? 'z-index: 6;' : (flowStartIndex > (flowMaxRecordIndex / 2) ? 'z-index: 5;' : 'z-index: 3;')" :aria-valuetext="flowRangeStartDate" @pointerdown="flowActiveThumb = 'start'" @pointerup="flowActiveThumb = null; _flowFinishRangeDrag()" @pointercancel="flowActiveThumb = null; _flowFinishRangeDrag()" @change="_flowFinishRangeDrag()" @input="flowActiveThumb = 'start'; flowSetStartIndex($event.target.value)">
+                    <label class="flow-visually-hidden" for="flow-range-end">End observation</label>
+                    <input id="flow-range-end" class="flow-range" type="range" min="0" :max="flowMaxRecordIndex" step="1" :value="flowEndIndex" :style="flowActiveThumb === 'end' ? 'z-index: 6;' : (flowStartIndex > (flowMaxRecordIndex / 2) ? 'z-index: 3;' : 'z-index: 4;')" :aria-valuetext="flowRangeEndDate" @pointerdown="flowActiveThumb = 'end'" @pointerup="flowActiveThumb = null; _flowFinishRangeDrag()" @pointercancel="flowActiveThumb = null; _flowFinishRangeDrag()" @change="_flowFinishRangeDrag()" @input="flowActiveThumb = 'end'; flowSetEndIndex($event.target.value)">
+                  </div>
+                </div>
+                <div class="flow-range-labels">
+                  <span>Start: <strong style="color:var(--flow-text)" x-text="flowRangeStartDate || '—'"></strong></span>
+                  <span>End: <strong style="color:var(--flow-text)" x-text="flowRangeEndDate || '—'"></strong></span>
+                </div>
+              </fieldset>
+
               <div class="flow-chart-tabs" role="tablist" aria-label="Fund Flows analysis views">
                 <template x-for="(tab, index) in flowChartTabs" :key="tab.key">
                   <button
@@ -3082,11 +3082,6 @@
                     <button class="flow-chip" :class="flowMeasureActive ? 'flow-chip-active' : ''" type="button" @click="flowMeasureActive = !flowMeasureActive; if (!flowMeasureActive) flowResetMeasurement()" title="Drag across chart canvas to calculate window performance and flow stats">
                       ⇥ Drag to Measure
                     </button>
-                    <div class="flow-studio-presets" aria-label="Studio range presets">
-                      <template x-for="preset in flowRangePresets" :key="preset.key">
-                        <button class="flow-chip flow-chip-preset" type="button" :class="flowRangePreset === preset.key ? 'flow-chip-active' : ''" @click="flowSetRangePreset(preset.key)" x-text="preset.label"></button>
-                      </template>
-                    </div>
                   </div>
                 </div>
 
@@ -3228,11 +3223,10 @@
                   <div class="flow-chart-heading">
                     <div>
                       <p class="flow-chart-kicker">Multi-horizon impulse</p>
-                      <h3>Rolling 5D / 20D / 60D net flow regime</h3>
-                      <p class="flow-chart-description">Compares short-term (5-session), medium-term (20-session), and structural (60-session) complete rolling flow sums across the selected window.</p>
+                      <h3>Rolling 20D / 60D net flow regime</h3>
+                      <p class="flow-chart-description">Compares medium-term (20-session) and structural (60-session) complete rolling flow sums across the selected window.</p>
                     </div>
                     <div class="flow-legend">
-                      <span class="flow-legend-item"><span class="flow-swatch" style="background:#22d3ee"></span>5D sum</span>
                       <span class="flow-legend-item"><span class="flow-swatch" style="background:#34d399"></span>20D sum</span>
                       <span class="flow-legend-item"><span class="flow-swatch" style="background:#fbbf24"></span>60D sum</span>
                     </div>
