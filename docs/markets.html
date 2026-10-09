@@ -2951,15 +2951,18 @@
               </div>
               <div class="flow-brush-slider-wrap">
                 <div class="flow-brush-slider-track"></div>
-                <div class="flow-brush-slider-highlight" :style="`left: ${(flowStartIndex / (flowMaxRecordIndex || 1) * 100).toFixed(2)}%; width: ${((flowEndIndex - flowStartIndex) / (flowMaxRecordIndex || 1) * 100).toFixed(2)}%`"></div>
+                <div class="flow-brush-slider-highlight" :style="`left: calc(9px + ${(flowStartIndex / (flowMaxRecordIndex || 1)).toFixed(4)} * (100% - 18px)); width: calc(${((flowEndIndex - flowStartIndex) / (flowMaxRecordIndex || 1)).toFixed(4)} * (100% - 18px));`"></div>
                 <div class="flow-brush-inputs">
                   <label class="flow-visually-hidden" for="flow-range-start">Start observation</label>
-                  <input id="flow-range-start" class="flow-range" type="range" min="0" :max="flowMaxRecordIndex" step="1" :value="flowStartIndex" :aria-valuetext="flowRangeStartDate" @input="flowSetStartIndex($event.target.value)">
+                  <input id="flow-range-start" class="flow-range" type="range" min="0" :max="flowMaxRecordIndex" step="1" :value="flowStartIndex" :style="flowActiveThumb === 'start' ? 'z-index: 6;' : (flowStartIndex > (flowMaxRecordIndex / 2) ? 'z-index: 5;' : 'z-index: 3;')" :aria-valuetext="flowRangeStartDate" @pointerdown="flowActiveThumb = 'start'" @input="flowActiveThumb = 'start'; flowSetStartIndex($event.target.value)">
                   <label class="flow-visually-hidden" for="flow-range-end">End observation</label>
-                  <input id="flow-range-end" class="flow-range" type="range" min="0" :max="flowMaxRecordIndex" step="1" :value="flowEndIndex" :aria-valuetext="flowRangeEndDate" @input="flowSetEndIndex($event.target.value)">
+                  <input id="flow-range-end" class="flow-range" type="range" min="0" :max="flowMaxRecordIndex" step="1" :value="flowEndIndex" :style="flowActiveThumb === 'end' ? 'z-index: 6;' : (flowStartIndex > (flowMaxRecordIndex / 2) ? 'z-index: 3;' : 'z-index: 4;')" :aria-valuetext="flowRangeEndDate" @pointerdown="flowActiveThumb = 'end'" @input="flowActiveThumb = 'end'; flowSetEndIndex($event.target.value)">
                 </div>
               </div>
-              <div class="flow-range-labels"><span x-text="`Start: ${flowRangeStartDate}`"></span><span x-text="`End: ${flowRangeEndDate}`"></span></div>
+              <div class="flow-range-labels">
+                <span>Start: <strong style="color:var(--flow-text)" x-text="flowRangeStartDate || '—'"></strong></span>
+                <span>End: <strong style="color:var(--flow-text)" x-text="flowRangeEndDate || '—'"></strong></span>
+              </div>
             </fieldset>
 
             <div class="flow-kpis" x-show="flowData && flowData.records.length">
@@ -3081,21 +3084,22 @@
                 </div>
 
                 <div style="position:relative;width:100%">
-                  <div class="flow-measure-hud" x-show="flowMeasureResult">
+                  <div class="flow-measure-hud" x-show="flowMeasureActive && flowMeasureResult">
                     <span style="color:var(--flow-cyan);font-weight:700">MEASUREMENT:</span>
-                    <span x-text="`${flowMeasureResult?.startDate} → ${flowMeasureResult?.endDate} (${flowMeasureResult?.count} bars)`"></span>
+                    <span x-text="`${flowMeasureResult?.startDate} → ${flowMeasureResult?.endDate} (${flowMeasureResult?.count || flowMeasureResult?.sessions || 0} bars)`"></span>
                     <span>|</span>
-                    <span>ΔNAV: <strong :class="flowMeasureResult?.priceReturnPct >= 0 ? 'flow-positive' : 'flow-negative'" x-text="`${flowMeasureResult?.priceReturnPct >= 0 ? '+' : ''}${flowMeasureResult?.priceReturnPct?.toFixed(2)}%`"></strong></span>
+                    <span>ΔNAV: <strong :class="(flowMeasureResult?.priceReturnPct ?? flowMeasureResult?.pricePct ?? 0) >= 0 ? 'flow-positive' : 'flow-negative'" x-text="(flowMeasureResult?.priceReturnPct ?? flowMeasureResult?.pricePct) !== null && (flowMeasureResult?.priceReturnPct ?? flowMeasureResult?.pricePct) !== undefined ? `${(flowMeasureResult?.priceReturnPct ?? flowMeasureResult?.pricePct) >= 0 ? '+' : ''}${(flowMeasureResult?.priceReturnPct ?? flowMeasureResult?.pricePct).toFixed(2)}%` : '—'"></strong></span>
                     <span>|</span>
-                    <span>Net Flow: <strong :class="flowMeasureResult?.cumFlow >= 0 ? 'flow-positive' : 'flow-negative'" x-text="formatMoney(flowMeasureResult?.cumFlow)"></strong></span>
+                    <span>Net Flow: <strong :class="(flowMeasureResult?.cumFlow ?? flowMeasureResult?.netFlow ?? 0) >= 0 ? 'flow-positive' : 'flow-negative'" x-text="formatMoney(flowMeasureResult?.cumFlow ?? flowMeasureResult?.netFlow)"></strong></span>
                     <span>|</span>
-                    <span>Dollar Vol: <strong style="color:#94a3b8" x-text="formatMoney(flowMeasureResult?.totalDollarVol)"></strong></span>
+                    <span>Dollar Vol: <strong style="color:#94a3b8" x-text="formatMoney(flowMeasureResult?.totalDollarVol ?? flowMeasureResult?.totDollarVol)"></strong></span>
                     <span>|</span>
-                    <span>Conviction: <strong class="flow-cyan" x-text="`${(flowMeasureResult?.convictionRatio || 0).toFixed(1)}%`"></strong></span>
+                    <span>Conviction: <strong class="flow-cyan" x-text="`${((flowMeasureResult?.convictionRatio ?? flowMeasureResult?.convictionPenetration) || 0).toFixed(1)}%`"></strong></span>
                     <button class="flow-chip" type="button" @click="flowResetMeasurement()" style="margin-left:0.5rem;padding:2px 6px;font-size:0.65rem">✕ Clear</button>
                   </div>
 
                   <div class="flow-workbench-chart"
+                       :class="flowMeasureActive ? 'flow-measuring' : ''"
                        tabindex="0"
                        @mousedown="flowChartMeasureStart($event)"
                        @mousemove="flowChartMeasureMove($event)"

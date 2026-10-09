@@ -581,16 +581,9 @@
     const row = rows[hoverIndex];
     if (!row) return '';
     const x = frame.xScale(hoverIndex);
-    const top = frame.padding.top;
-    const bottom = frame.height - frame.padding.bottom;
-    let out = `<g class="flow-crosshair-group" pointer-events="none">`;
-    out += `<line x1="${x.toFixed(1)}" y1="${top.toFixed(1)}" x2="${x.toFixed(1)}" y2="${bottom.toFixed(1)}" stroke="rgba(255,255,255,0.14)" stroke-width="1" stroke-dasharray="3 3"/>`;
     const numY = finiteNumber(targetY);
-    if (numY !== null) {
-      out += `<circle cx="${x.toFixed(1)}" cy="${numY.toFixed(1)}" r="5" fill="#22d3ee" stroke="#ffffff" stroke-width="2"/>`;
-    }
-    out += `</g>`;
-    return out;
+    if (numY === null) return '';
+    return `<g class="flow-crosshair-group" pointer-events="none"><circle cx="${x.toFixed(1)}" cy="${numY.toFixed(1)}" r="5" fill="#22d3ee" stroke="#ffffff" stroke-width="2"/></g>`;
   }
 
   function flowResearchApp() {
@@ -644,6 +637,7 @@
       flowChartTooltip: { visible: false, index: 0 },
       flowStartIndex: 0,
       flowEndIndex: 0,
+      flowActiveThumb: 'end',
       flowRangePreset: '1y',
       flowPriceEnabled: true,
       flowViewportWidth: typeof window === 'undefined' ? 1000 : window.innerWidth,
@@ -2234,7 +2228,6 @@
           const fY = hFlow !== null ? yFlow(hFlow) : null;
 
           overlay = `<g class="flow-crosshair-group" pointer-events="none">
-            <line x1="${x.toFixed(1)}" y1="${padTop}" x2="${x.toFixed(1)}" y2="${padTop + totalChartH}" stroke="rgba(255,255,255,0.14)" stroke-width="1" stroke-dasharray="3 3"/>
             ${pY !== null ? `<circle cx="${x.toFixed(1)}" cy="${pY.toFixed(1)}" r="5" fill="#22d3ee" stroke="#ffffff" stroke-width="2"/>` : ''}
             ${fY !== null ? `<circle cx="${x.toFixed(1)}" cy="${fY.toFixed(1)}" r="4" fill="${(hFlow || 0) >= 0 ? '#34d399' : '#fb7185'}" stroke="#ffffff" stroke-width="1.8"/>` : ''}
           </g>`;
@@ -2258,6 +2251,7 @@
       },
 
       flowChartMeasureStart(event) {
+        if (!this.flowMeasureActive) return;
         const svg = event.currentTarget.closest('svg') || event.currentTarget;
         const rect = svg.getBoundingClientRect();
         const clientX = event.clientX;
@@ -2272,12 +2266,11 @@
         this.flowMeasureDragging = true;
         this.flowMeasureStartIdx = idx;
         this.flowMeasureCurrentIdx = idx;
-        this.flowMeasureActive = true;
         this._flowComputeMeasurement();
       },
 
       flowChartMeasureMove(event) {
-        if (this.flowMeasureDragging) {
+        if (this.flowMeasureActive && this.flowMeasureDragging) {
           const svg = event.currentTarget.closest('svg') || event.currentTarget;
           const rect = svg.getBoundingClientRect();
           const clientX = event.clientX;
@@ -2339,22 +2332,28 @@
           totVol += v;
           if (r.nav) totDollarVol += v * r.nav;
         });
-        const penetration = (totDollarVol > 0) ? (Math.abs(netFlow) / totDollarVol) * 100 : null;
+        const penetration = (totDollarVol > 0) ? (Math.abs(netFlow) / totDollarVol) * 100 : 0;
         this.flowMeasureResult = {
           i1,
           i2,
           sessions,
+          count: sessions,
           startDate: r1.date,
           endDate: r2.date,
           p1,
           p2,
           priceDiff: pDiff,
           pricePct: pPct,
+          priceReturnPct: pPct,
           netFlow,
+          cumFlow: netFlow,
           flowPctAum,
           totVolume: totVol,
+          totalVolume: totVol,
           totDollarVol,
-          convictionPenetration: penetration
+          totalDollarVol: totDollarVol,
+          convictionPenetration: penetration,
+          convictionRatio: penetration
         };
       },
 
@@ -2623,14 +2622,8 @@
           </g>`;
         }
 
-        // --- Synchronized Crosshair Overlay ---
-        let crosshairSvg = '';
-        if (this.flowHoverIndex !== null && this.flowHoverChart === 'workbench' && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
-          const hX = xScale(this.flowHoverIndex);
-          crosshairSvg = `<g class="flow-crosshair" pointer-events="none">
-            <line x1="${hX.toFixed(1)}" y1="${padTop}" x2="${hX.toFixed(1)}" y2="${runningY}" stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="3 3"/>
-          </g>`;
-        }
+        // --- Focus indicator (No vertical crosshair line) ---
+        const crosshairSvg = '';
 
         return `<svg viewBox="0 0 ${width} ${totalH}" data-pad-left="${padLeft}" data-pad-right="${padRight}" data-chart-width="${width}" role="img" aria-label="Multi-Mega Flow and Price Workbench" style="width:100%;height:auto;display:block">
           <title>Multi-Mega Flow & Price Workbench</title>
@@ -2686,10 +2679,9 @@
             dots += `<circle cx="${x.toFixed(1)}" cy="${y60.toFixed(1)}" r="4.5" fill="#fbbf24" stroke="#ffffff" stroke-width="1.8"/>`;
           }
 
-          overlay = `<g class="flow-crosshair-group" pointer-events="none">`
-            + `<line x1="${x.toFixed(1)}" y1="${top.toFixed(1)}" x2="${x.toFixed(1)}" y2="${bottom.toFixed(1)}" stroke="rgba(255,255,255,0.14)" stroke-width="1" stroke-dasharray="3 3"/>`
-            + dots
-            + `</g>`;
+          if (dots) {
+            overlay = `<g class="flow-crosshair-group" pointer-events="none">${dots}</g>`;
+          }
         }
 
         return `<svg viewBox="0 0 ${width} ${height}" data-pad-left="${frame.padding.left}" data-pad-right="${frame.padding.right}" data-chart-width="${width}" role="img" aria-label="Multi-horizon 5D, 20D, and 60D rolling net flow impulse">${grid}<path d="${linePath(pts60)}" fill="none" stroke="${COLORS.warning}" stroke-width="1.6" stroke-dasharray="3 2" opacity="0.85"/><path d="${linePath(pts20)}" fill="none" stroke="${COLORS.positive}" stroke-width="2"/><path d="${linePath(pts5)}" fill="none" stroke="${COLORS.cyan}" stroke-width="1.6" opacity="0.92"/>${overlay}${frame.dateTicks}</svg>`;
@@ -3070,6 +3062,7 @@
           this.flowDataState = normalized.state;
           this.flowResolvedStates = { ...this.flowResolvedStates, [ticker]: normalized.state };
           this._flowApplyUrlRange();
+          if (typeof window !== 'undefined') setTimeout(() => this._syncRangeInputs(), 0);
           this.flowPriceEnabled = this.flowPriceEnabled && this.flowPriceAvailable;
           const chartChanged = this.flowEnsureChartTab();
           if (writeUrl || chartChanged) this._flowWriteUrl(push);
@@ -3095,6 +3088,7 @@
         this.flowEndIndex = Math.max(0, count - 1);
         this.flowStartIndex = 0;
         this.flowRangePreset = 'max';
+        this._syncRangeInputs();
       },
 
       _flowApplyUrlRange() {
@@ -3102,6 +3096,7 @@
         if (!records.length) {
           this.flowStartIndex = 0;
           this.flowEndIndex = 0;
+          this._syncRangeInputs();
           return;
         }
         const params = new URLSearchParams(window.location.search);
@@ -3120,6 +3115,7 @@
             this.flowStartIndex = startIndex;
             this.flowEndIndex = endIndex;
             this.flowRangePreset = 'custom';
+            this._syncRangeInputs();
             return;
           }
         }
@@ -3137,6 +3133,7 @@
         this.flowEndIndex = count - 1;
         this.flowRangePreset = preset;
         this.flowEnsureChartTab();
+        this._syncRangeInputs();
         if (writeUrl !== false) this._flowWriteUrl(false);
       },
 
@@ -3148,6 +3145,7 @@
         this.flowStartIndex = next;
         this.flowRangePreset = 'custom';
         this.flowEnsureChartTab();
+        this._syncRangeInputs();
         this._flowWriteUrl(false);
       },
 
@@ -3159,7 +3157,23 @@
         this.flowEndIndex = next;
         this.flowRangePreset = 'custom';
         this.flowEnsureChartTab();
+        this._syncRangeInputs();
         this._flowWriteUrl(false);
+      },
+
+      _syncRangeInputs() {
+        if (typeof document === 'undefined') return;
+        const startInput = document.getElementById('flow-range-start');
+        const endInput = document.getElementById('flow-range-end');
+        const max = this.flowMaxRecordIndex;
+        if (startInput) {
+          startInput.max = String(max);
+          startInput.value = String(this.flowStartIndex);
+        }
+        if (endInput) {
+          endInput.max = String(max);
+          endInput.value = String(this.flowEndIndex);
+        }
       },
 
       flowSetPriceEnabled(value) {
