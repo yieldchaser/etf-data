@@ -2043,7 +2043,7 @@
           </div>
           <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:0.45rem">
             <h2>ETF estimated net flows</h2>
-            <p class="flow-support">A focused research view of the 150-instrument local leveraged and inverse universe. The 24 featured instruments are an explicit subset; all history is read from local static artifacts.</p>
+            <p class="flow-support">A focused research view of the <span x-text="`${flowCatalog ? flowCatalog.counts.instruments : 150}-instrument`">150-instrument</span> local leveraged and inverse universe. The <span x-text="`${flowCatalog ? flowCatalog.counts.featured : 24} featured instruments`">24 featured instruments</span> are an explicit subset; all history is read from local static artifacts.</p>
           </div>
         </div>
         <div class="flow-status-grid" aria-label="Catalog and source status">
@@ -2233,7 +2233,7 @@
               <span class="flow-eyebrow" x-text="`${flowActiveCategoryInstruments.length} instruments`"></span>
               <button class="flow-chip" type="button" @click="flowUniverseDrawerOpen = !flowUniverseDrawerOpen">
                 <svg class="flow-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                <span x-text="flowUniverseDrawerOpen ? 'Close Universe' : 'Grouped 150 Universe'"></span>
+                <span x-text="flowUniverseDrawerOpen ? 'Close Universe' : `Grouped ${flowCatalog ? flowCatalog.counts.instruments : 150} Universe`"></span>
               </button>
             </div>
           </div>
@@ -2254,7 +2254,7 @@
           <!-- Collapsible 150 Universe Grouped Drawer -->
           <div class="flow-universe-drawer" x-show="flowUniverseDrawerOpen" x-transition>
             <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:0.4rem;border-bottom:1px solid rgba(34,211,238,0.2)">
-              <h3 style="color:var(--flow-cyan);font-size:0.8125rem">Full 150-Instrument Leveraged &amp; Inverse Universe (Grouped by Category)</h3>
+              <h3 style="color:var(--flow-cyan);font-size:0.8125rem">Full <span x-text="`${flowCatalog ? flowCatalog.counts.instruments : 150}-Instrument`">150-Instrument</span> Leveraged &amp; Inverse Universe (Grouped by Category)</h3>
               <button class="flow-chip" type="button" @click="flowUniverseDrawerOpen = false">Close [×]</button>
             </div>
             <div style="display:grid;gap:0.85rem">
@@ -2337,24 +2337,136 @@
             <div class="flow-scatter-container">
               <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:0.5rem">
                 <div>
-                  <h4 style="color:var(--flow-cyan);font-size:0.8125rem;text-transform:uppercase;letter-spacing:0.04em">Price Return × Flow Z-Score Distribution Map (150 ETFs)</h4>
-                  <p class="flow-chart-description" style="font-size:0.6875rem">Hover points for ticker details. Click quadrant chips to filter: Q1 Washout Rebound, Q2 Momentum Continuation, Q3 Consensus Trap, Q4 Wall of Worry Squeeze.</p>
+                  <h4 style="color:var(--flow-cyan);font-size:0.8125rem;text-transform:uppercase;letter-spacing:0.04em">Price Return × Flow Z-Score Distribution Map (<span x-text="`${flowScatterCounts.all} ETFs`">150 ETFs</span>)</h4>
+                  <p class="flow-chart-description" style="font-size:0.6875rem">Hover points for ticker details or click any dot to switch into Studio. Click quadrant chips to filter: Q1 Washout Rebound, Q2 Momentum Continuation, Q3 Dip Accumulation / Trap, Q4 Wall of Worry Squeeze.</p>
                 </div>
                 <div style="display:flex;flex-wrap:wrap;gap:0.25rem;align-items:center">
-                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'all' ? 'true' : 'false'" @click="flowScatterFilter = 'all'">All</button>
-                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'washout' ? 'true' : 'false'" @click="flowScatterFilter = 'washout'">Q1 Washout</button>
-                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'momentum' ? 'true' : 'false'" @click="flowScatterFilter = 'momentum'">Q2 Momentum</button>
-                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'trap' ? 'true' : 'false'" @click="flowScatterFilter = 'trap'">Q3 Trap</button>
-                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'squeeze' ? 'true' : 'false'" @click="flowScatterFilter = 'squeeze'">Q4 Squeeze</button>
+                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'all' ? 'true' : 'false'" @click="flowScatterFilter = 'all'">All (<span x-text="flowScatterCounts.all">150</span>)</button>
+                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'washout' ? 'true' : 'false'" @click="flowScatterFilter = 'washout'">Q1 Washout (<span x-text="flowScatterCounts.washout">11</span>)</button>
+                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'momentum' ? 'true' : 'false'" @click="flowScatterFilter = 'momentum'">Q2 Momentum (<span x-text="flowScatterCounts.momentum">17</span>)</button>
+                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'trap' ? 'true' : 'false'" @click="flowScatterFilter = 'trap'">Q3 Trap (<span x-text="flowScatterCounts.trap">18</span>)</button>
+                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'squeeze' ? 'true' : 'false'" @click="flowScatterFilter = 'squeeze'">Q4 Squeeze (<span x-text="flowScatterCounts.squeeze">16</span>)</button>
                 </div>
               </div>
-              <div class="flow-scatter-svg-wrap" x-html="flowScatterSvg"></div>
+              <div class="flow-scatter-svg-wrap"
+                   @click="flowHandleScatterClick($event)"
+                   @mousemove="flowHandleScatterMouseMove($event)"
+                   @mouseleave="flowScatterHoverTicker = null"
+                   x-html="flowScatterSvg"></div>
+
+              <!-- Active Market Regime & Trough/Peak Anomalies Scanner -->
+              <div style="margin-top:0.6rem;padding-top:0.65rem;border-top:1px solid var(--flow-line)">
+                <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:0.5rem;margin-bottom:0.5rem">
+                  <div style="display:flex;align-items:center;gap:0.5rem">
+                    <span class="flow-eyebrow" style="color:var(--flow-cyan)">● Active Trough &amp; Peak Scanner</span>
+                    <span class="flow-support" style="font-size:0.6875rem">(Automated ongoing classification across <span x-text="flowPrimaryInstruments.length">150</span> instruments)</span>
+                  </div>
+                  <span class="flow-eyebrow" x-text="`${flowActiveCycleAnomalies.totalAnomalies} Active Regimes Flagged`"></span>
+                </div>
+                <div class="flow-anomaly-grid">
+                  <!-- Col 1: Dip Accumulators -->
+                  <div class="flow-anomaly-col">
+                    <div style="display:flex;align-items:center;justify-content:space-between">
+                      <span style="color:#fb923c;font-size:0.6875rem;font-weight:700;font-family:ui-monospace, monospace;letter-spacing:0.04em">DIP ACCUMULATION</span>
+                      <span class="flow-badge" style="color:#fb923c;border-color:rgba(251,146,60,0.3);background:rgba(251,146,60,0.1);font-size:0.625rem;padding:0 0.35rem" x-text="flowActiveCycleAnomalies.dipAccum.length"></span>
+                    </div>
+                    <p style="font-size:0.6875rem;color:var(--flow-subtle);margin:0;line-height:1.2">Inflows into 20D Trough (Ret ≤ -5%, Z ≥ +0.8σ)</p>
+                    <div style="display:grid;gap:0.3rem;margin-top:0.25rem">
+                      <template x-for="item in flowActiveCycleAnomalies.dipAccum" :key="item.ticker">
+                        <button class="flow-anomaly-item" type="button" @click="selectFlowTicker(item.ticker, { writeUrl: true, push: true, switchToStudio: true })">
+                          <div style="display:flex;align-items:center;gap:0.35rem">
+                            <strong style="color:var(--flow-text);font-size:0.75rem" x-text="item.ticker"></strong>
+                            <span style="color:var(--flow-subtle);font-size:0.6875rem" x-text="`${item.ret20.toFixed(1)}%`"></span>
+                          </div>
+                          <div style="display:flex;align-items:center;gap:0.35rem">
+                            <span class="flow-positive" style="font-size:0.6875rem" x-text="formatMoney(item.flow1d)"></span>
+                            <span style="color:#fb923c;font-size:0.6875rem;font-weight:600" x-text="`+${item.z.toFixed(1)}σ`"></span>
+                          </div>
+                        </button>
+                      </template>
+                      <div x-show="flowActiveCycleAnomalies.dipAccum.length === 0" style="color:var(--flow-subtle);font-size:0.6875rem;padding:0.4rem 0;text-align:center">No current candidates</div>
+                    </div>
+                  </div>
+
+                  <!-- Col 2: Exhaustion Washout Lows -->
+                  <div class="flow-anomaly-col">
+                    <div style="display:flex;align-items:center;justify-content:space-between">
+                      <span style="color:#34d399;font-size:0.6875rem;font-weight:700;font-family:ui-monospace, monospace;letter-spacing:0.04em">WASHOUT AT LOWS</span>
+                      <span class="flow-badge" style="color:#34d399;border-color:rgba(52,211,153,0.3);background:rgba(52,211,153,0.1);font-size:0.625rem;padding:0 0.35rem" x-text="flowActiveCycleAnomalies.exhaustionLow.length"></span>
+                    </div>
+                    <p style="font-size:0.6875rem;color:var(--flow-subtle);margin:0;line-height:1.2">Outflows into 20D Trough (Ret ≤ -5%, Z ≤ -0.8σ)</p>
+                    <div style="display:grid;gap:0.3rem;margin-top:0.25rem">
+                      <template x-for="item in flowActiveCycleAnomalies.exhaustionLow" :key="item.ticker">
+                        <button class="flow-anomaly-item" type="button" @click="selectFlowTicker(item.ticker, { writeUrl: true, push: true, switchToStudio: true })">
+                          <div style="display:flex;align-items:center;gap:0.35rem">
+                            <strong style="color:var(--flow-text);font-size:0.75rem" x-text="item.ticker"></strong>
+                            <span style="color:var(--flow-subtle);font-size:0.6875rem" x-text="`${item.ret20.toFixed(1)}%`"></span>
+                          </div>
+                          <div style="display:flex;align-items:center;gap:0.35rem">
+                            <span class="flow-negative" style="font-size:0.6875rem" x-text="formatMoney(item.flow1d)"></span>
+                            <span style="color:#34d399;font-size:0.6875rem;font-weight:600" x-text="`${item.z.toFixed(1)}σ`"></span>
+                          </div>
+                        </button>
+                      </template>
+                      <div x-show="flowActiveCycleAnomalies.exhaustionLow.length === 0" style="color:var(--flow-subtle);font-size:0.6875rem;padding:0.4rem 0;text-align:center">No current candidates</div>
+                    </div>
+                  </div>
+
+                  <!-- Col 3: Climax Inflow Tops -->
+                  <div class="flow-anomaly-col">
+                    <div style="display:flex;align-items:center;justify-content:space-between">
+                      <span style="color:#22d3ee;font-size:0.6875rem;font-weight:700;font-family:ui-monospace, monospace;letter-spacing:0.04em">CLIMAX INFLOW TOPS</span>
+                      <span class="flow-badge" style="color:#22d3ee;border-color:rgba(34,211,238,0.3);background:rgba(34,211,238,0.1);font-size:0.625rem;padding:0 0.35rem" x-text="flowActiveCycleAnomalies.climaxInflowTop.length"></span>
+                    </div>
+                    <p style="font-size:0.6875rem;color:var(--flow-subtle);margin:0;line-height:1.2">Inflows into Extended Peak (Ret ≥ +10%, Z ≥ +1.0σ)</p>
+                    <div style="display:grid;gap:0.3rem;margin-top:0.25rem">
+                      <template x-for="item in flowActiveCycleAnomalies.climaxInflowTop" :key="item.ticker">
+                        <button class="flow-anomaly-item" type="button" @click="selectFlowTicker(item.ticker, { writeUrl: true, push: true, switchToStudio: true })">
+                          <div style="display:flex;align-items:center;gap:0.35rem">
+                            <strong style="color:var(--flow-text);font-size:0.75rem" x-text="item.ticker"></strong>
+                            <span style="color:var(--flow-subtle);font-size:0.6875rem" x-text="`+${item.ret20.toFixed(1)}%`"></span>
+                          </div>
+                          <div style="display:flex;align-items:center;gap:0.35rem">
+                            <span class="flow-positive" style="font-size:0.6875rem" x-text="formatMoney(item.flow1d)"></span>
+                            <span style="color:#22d3ee;font-size:0.6875rem;font-weight:600" x-text="`+${item.z.toFixed(1)}σ`"></span>
+                          </div>
+                        </button>
+                      </template>
+                      <div x-show="flowActiveCycleAnomalies.climaxInflowTop.length === 0" style="color:var(--flow-subtle);font-size:0.6875rem;padding:0.4rem 0;text-align:center">No current candidates</div>
+                    </div>
+                  </div>
+
+                  <!-- Col 4: Distribution Tops -->
+                  <div class="flow-anomaly-col">
+                    <div style="display:flex;align-items:center;justify-content:space-between">
+                      <span style="color:#fb7185;font-size:0.6875rem;font-weight:700;font-family:ui-monospace, monospace;letter-spacing:0.04em">DISTRIBUTION TOPS</span>
+                      <span class="flow-badge" style="color:#fb7185;border-color:rgba(251,113,133,0.3);background:rgba(251,113,133,0.1);font-size:0.625rem;padding:0 0.35rem" x-text="flowActiveCycleAnomalies.distributionTop.length"></span>
+                    </div>
+                    <p style="font-size:0.6875rem;color:var(--flow-subtle);margin:0;line-height:1.2">Outflows at Rally Highs (Ret ≥ +10%, Z ≤ -0.8σ)</p>
+                    <div style="display:grid;gap:0.3rem;margin-top:0.25rem">
+                      <template x-for="item in flowActiveCycleAnomalies.distributionTop" :key="item.ticker">
+                        <button class="flow-anomaly-item" type="button" @click="selectFlowTicker(item.ticker, { writeUrl: true, push: true, switchToStudio: true })">
+                          <div style="display:flex;align-items:center;gap:0.35rem">
+                            <strong style="color:var(--flow-text);font-size:0.75rem" x-text="item.ticker"></strong>
+                            <span style="color:var(--flow-subtle);font-size:0.6875rem" x-text="`+${item.ret20.toFixed(1)}%`"></span>
+                          </div>
+                          <div style="display:flex;align-items:center;gap:0.35rem">
+                            <span class="flow-negative" style="font-size:0.6875rem" x-text="formatMoney(item.flow1d)"></span>
+                            <span style="color:#fb7185;font-size:0.6875rem;font-weight:600" x-text="`${item.z.toFixed(1)}σ`"></span>
+                          </div>
+                        </button>
+                      </template>
+                      <div x-show="flowActiveCycleAnomalies.distributionTop.length === 0" style="color:var(--flow-subtle);font-size:0.6875rem;padding:0.4rem 0;text-align:center">No current candidates</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div class="flow-chart-heading">
               <div>
                 <p class="flow-chart-kicker">Cross-ETF Flow Scanner</p>
-                <h3>150-Instrument Multi-Horizon Net Flow Leaderboard</h3>
+                <h3><span x-text="`${flowCatalog ? flowCatalog.counts.instruments : 150}-Instrument`">150-Instrument</span> Multi-Horizon Net Flow Leaderboard</h3>
                 <p class="flow-chart-description">Click any column header to sort or click any ETF row to open its full historical studio. All figures are source-reported aggregate net flows.</p>
               </div>
               <div style="display:flex;flex-wrap:wrap;gap:0.35rem;align-items:center">
@@ -2633,7 +2745,7 @@
               <div>
                 <p class="flow-chart-kicker">Multi-Factor Quantitative Systematic Engine</p>
                 <h3>Systematic Strategy Signals &amp; Conviction Basket</h3>
-                <p class="flow-chart-description">Active quantitative strategy signals across all 150 leveraged and inverse ETFs. Derived from split-adjusted historical flow event-studies, empirical z-score shocks, and bull/bear flow transfers.</p>
+                <p class="flow-chart-description">Active quantitative strategy signals across all <span x-text="flowCatalog ? flowCatalog.counts.instruments : 150">150</span> leveraged and inverse ETFs. Derived from split-adjusted historical flow event-studies, empirical z-score shocks, and bull/bear flow transfers.</p>
               </div>
               <div>
                 <span class="flow-eyebrow" style="color:var(--flow-cyan)">Rebalanced Fri 2026-10-02 · Weekly 5-Day Hold · Next: 2026-10-09</span>

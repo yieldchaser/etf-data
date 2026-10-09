@@ -951,37 +951,164 @@
         };
       },
 
+      get flowScatterCounts() {
+        const items = this.flowPrimaryInstruments;
+        let washout = 0, momentum = 0, trap = 0, squeeze = 0, neutral = 0;
+        for (const item of items) {
+          const ret = finiteNumber(item.nav_return_20d_pct) || 0;
+          const z = finiteNumber(item.flow_zscore) || 0;
+          if (ret < 0 && z <= -0.4) washout += 1;
+          else if (ret >= 0 && z >= 0.4) momentum += 1;
+          else if (ret < 0 && z >= 0.4) trap += 1;
+          else if (ret >= 0 && z <= -0.4) squeeze += 1;
+          else neutral += 1;
+        }
+        return {
+          all: items.length,
+          washout,
+          momentum,
+          trap,
+          squeeze,
+          neutral
+        };
+      },
+
+      get flowActiveCycleAnomalies() {
+        const items = this.flowPrimaryInstruments;
+        const dipAccum = [];
+        const exhaustionLow = [];
+        const climaxInflowTop = [];
+        const distributionTop = [];
+
+        for (const it of items) {
+          const ret20 = finiteNumber(it.nav_return_20d_pct) || 0;
+          const z = finiteNumber(it.flow_zscore) || 0;
+          const f1 = finiteNumber(it.latest_flow) || 0;
+          const f20 = finiteNumber(it.flow_20d) || 0;
+          const aum = finiteNumber(it.aum_m) || 0;
+          const name = it.underlying || it.fund_name || it.ticker;
+          const entry = {
+            ticker: it.ticker,
+            name,
+            category: it.category,
+            leverage: it.leverage,
+            ret20,
+            z,
+            flow1d: f1,
+            flow20d: f20,
+            aum
+          };
+
+          if (ret20 <= -5.0 && z >= 0.8) {
+            dipAccum.push(entry);
+          } else if (ret20 <= -5.0 && z <= -0.8) {
+            exhaustionLow.push(entry);
+          } else if (ret20 >= 10.0 && z >= 1.0) {
+            climaxInflowTop.push(entry);
+          } else if (ret20 >= 10.0 && z <= -0.8) {
+            distributionTop.push(entry);
+          }
+        }
+
+        dipAccum.sort((a, b) => b.z - a.z);
+        exhaustionLow.sort((a, b) => a.z - b.z);
+        climaxInflowTop.sort((a, b) => b.z - a.z);
+        distributionTop.sort((a, b) => a.z - b.z);
+
+        return {
+          dipAccum: dipAccum.slice(0, 8),
+          exhaustionLow: exhaustionLow.slice(0, 8),
+          climaxInflowTop: climaxInflowTop.slice(0, 8),
+          distributionTop: distributionTop.slice(0, 8),
+          totalAnomalies: dipAccum.length + exhaustionLow.length + climaxInflowTop.length + distributionTop.length
+        };
+      },
+
+      flowHandleScatterClick(event) {
+        const circle = event.target.closest('[data-ticker]');
+        if (circle) {
+          const ticker = circle.getAttribute('data-ticker');
+          if (ticker) {
+            this.selectFlowTicker(ticker, { writeUrl: true, push: true, switchToStudio: true });
+          }
+        }
+      },
+
+      flowHandleScatterMouseMove(event) {
+        const circle = event.target.closest('[data-ticker]');
+        if (circle) {
+          const ticker = circle.getAttribute('data-ticker');
+          if (this.flowScatterHoverTicker !== ticker) {
+            this.flowScatterHoverTicker = ticker;
+          }
+        } else if (this.flowScatterHoverTicker !== null) {
+          this.flowScatterHoverTicker = null;
+        }
+      },
+
       get flowScatterSvg() {
         const items = this.flowPrimaryInstruments;
         const width = Math.max(300, this.flowChartWidth || 800);
-        const height = width < 500 ? 250 : 280;
-        const pad = { left: 45, right: 25, top: 25, bottom: 35 };
+        const height = width < 500 ? 300 : 360;
+        const pad = { left: 52, right: 32, top: 32, bottom: 42 };
         const chartW = width - pad.left - pad.right;
         const chartH = height - pad.top - pad.bottom;
-        const minRet = -20;
-        const maxRet = 20;
-        const minZ = -3.2;
-        const maxZ = 3.2;
-        const xPos = ret => pad.left + Math.max(0, Math.min(chartW, (ret - minRet) / (maxRet - minRet) * chartW));
-        const yPos = z => pad.top + Math.max(0, Math.min(chartH, (maxZ - z) / (maxZ - minZ) * chartH));
+
+        // Dynamic, un-clamped domain bounds ensuring all 150 points are positioned accurately
+        const rets = items.map(it => finiteNumber(it.nav_return_20d_pct) || 0);
+        const zs = items.map(it => finiteNumber(it.flow_zscore) || 0);
+        const maxAbsRetRaw = rets.length ? Math.max(30, ...rets.map(Math.abs)) : 30;
+        const maxAbsZRaw = zs.length ? Math.max(3.2, ...zs.map(Math.abs)) : 3.2;
+
+        const maxRet = Math.min(100, Math.ceil((maxAbsRetRaw * 1.05) / 10) * 10);
+        const minRet = -maxRet;
+        const maxZ = Math.min(6.0, Math.ceil((maxAbsZRaw * 1.05) * 2) / 2);
+        const minZ = -maxZ;
+
+        const xPos = ret => pad.left + ((ret - minRet) / (maxRet - minRet)) * chartW;
+        const yPos = z => pad.top + ((maxZ - z) / (maxZ - minZ)) * chartH;
         const xZero = xPos(0);
         const yZero = yPos(0);
 
-        const qBgWashout = `<rect x="${pad.left}" y="${yZero}" width="${xZero - pad.left}" height="${pad.top + chartH - yZero}" fill="rgba(255,255,255,0.012)"/>`;
-        const qBgMomentum = `<rect x="${xZero}" y="${pad.top}" width="${pad.left + chartW - xZero}" height="${yZero - pad.top}" fill="rgba(255,255,255,0.018)"/>`;
-        const qBgTrap = `<rect x="${pad.left}" y="${pad.top}" width="${xZero - pad.left}" height="${yZero - pad.top}" fill="rgba(255,255,255,0.008)"/>`;
-        const qBgSqueeze = `<rect x="${xZero}" y="${yZero}" width="${pad.left + chartW - xZero}" height="${pad.top + chartH - yZero}" fill="rgba(255,255,255,0.012)"/>`;
-
-        const lblTrap = `<text x="${pad.left + 8}" y="${pad.top + 14}" fill="#71717a" font-family="ui-monospace, monospace" font-size="9" font-weight="500" letter-spacing="0.05em">CONSENSUS TRAP (Q3 · Fade Risk)</text>`;
-        const lblMomentum = `<text x="${pad.left + chartW - 8}" y="${pad.top + 14}" text-anchor="end" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9" font-weight="500" letter-spacing="0.05em">MOMENTUM CONTINUATION (Q2 · +12.6% 10D)</text>`;
-        const lblWashout = `<text x="${pad.left + 8}" y="${pad.top + chartH - 8}" fill="#34d399" font-family="ui-monospace, monospace" font-size="9" font-weight="500" letter-spacing="0.05em">WASHOUT REBOUND (Q1 · +5.66% 5D)</text>`;
-        const lblSqueeze = `<text x="${pad.left + chartW - 8}" y="${pad.top + chartH - 8}" text-anchor="end" fill="#71717a" font-family="ui-monospace, monospace" font-size="9" font-weight="500" letter-spacing="0.05em">WALL OF WORRY SQUEEZE (Q4 · +3.76% 20D)</text>`;
-
-        const crossX = `<line x1="${xZero}" y1="${pad.top}" x2="${xZero}" y2="${pad.top + chartH}" stroke="rgba(255,255,255,0.10)" stroke-width="1" stroke-dasharray="2 2"/>`;
-        const crossY = `<line x1="${pad.left}" y1="${yZero}" x2="${pad.left + chartW}" y2="${yZero}" stroke="rgba(255,255,255,0.10)" stroke-width="1" stroke-dasharray="2 2"/>`;
-
+        const counts = this.flowScatterCounts;
         const filter = this.flowScatterFilter || 'all';
+
+        // Quadrant Background Fills & Outlines
+        const qBgWashout = `<rect x="${pad.left}" y="${yZero.toFixed(1)}" width="${(xZero - pad.left).toFixed(1)}" height="${(pad.top + chartH - yZero).toFixed(1)}" fill="rgba(52,211,153,0.03)" stroke="rgba(52,211,153,0.08)" stroke-width="0.5"/>`;
+        const qBgMomentum = `<rect x="${xZero.toFixed(1)}" y="${pad.top}" width="${(pad.left + chartW - xZero).toFixed(1)}" height="${(yZero - pad.top).toFixed(1)}" fill="rgba(34,211,238,0.03)" stroke="rgba(34,211,238,0.08)" stroke-width="0.5"/>`;
+        const qBgTrap = `<rect x="${pad.left}" y="${pad.top}" width="${(xZero - pad.left).toFixed(1)}" height="${(yZero - pad.top).toFixed(1)}" fill="rgba(251,146,60,0.025)" stroke="rgba(251,146,60,0.08)" stroke-width="0.5"/>`;
+        const qBgSqueeze = `<rect x="${xZero.toFixed(1)}" y="${yZero.toFixed(1)}" width="${(pad.left + chartW - xZero).toFixed(1)}" height="${(pad.top + chartH - yZero).toFixed(1)}" fill="rgba(167,139,250,0.025)" stroke="rgba(167,139,250,0.08)" stroke-width="0.5"/>`;
+
+        // Quadrant Headers & Live Dynamic Counters
+        const lblTrap = `<text x="${pad.left + 10}" y="${pad.top + 16}" fill="#fb923c" font-family="ui-monospace, monospace" font-size="10" font-weight="700" letter-spacing="0.04em">Q3 DIP ACCUMULATION / TRAP (${counts.trap})</text><text x="${pad.left + 10}" y="${pad.top + 28}" fill="#71717a" font-family="ui-sans-serif, sans-serif" font-size="8.5">Inflow at Lows · Buy-the-Dip vs Falling Knife</text>`;
+        const lblMomentum = `<text x="${(pad.left + chartW - 10).toFixed(1)}" y="${pad.top + 16}" text-anchor="end" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="10" font-weight="700" letter-spacing="0.04em">Q2 MOMENTUM CONTINUATION (${counts.momentum})</text><text x="${(pad.left + chartW - 10).toFixed(1)}" y="${pad.top + 28}" text-anchor="end" fill="#71717a" font-family="ui-sans-serif, sans-serif" font-size="8.5">Inflow at Highs · Trend Continuation</text>`;
+        const lblWashout = `<text x="${pad.left + 10}" y="${(pad.top + chartH - 22).toFixed(1)}" fill="#34d399" font-family="ui-monospace, monospace" font-size="10" font-weight="700" letter-spacing="0.04em">Q1 WASHOUT REBOUND (${counts.washout})</text><text x="${pad.left + 10}" y="${(pad.top + chartH - 10).toFixed(1)}" fill="#71717a" font-family="ui-sans-serif, sans-serif" font-size="8.5">Outflow at Lows · Washout Rebound</text>`;
+        const lblSqueeze = `<text x="${(pad.left + chartW - 10).toFixed(1)}" y="${(pad.top + chartH - 22).toFixed(1)}" text-anchor="end" fill="#a78bfa" font-family="ui-monospace, monospace" font-size="10" font-weight="700" letter-spacing="0.04em">Q4 WALL OF WORRY SQUEEZE (${counts.squeeze})</text><text x="${(pad.left + chartW - 10).toFixed(1)}" y="${(pad.top + chartH - 10).toFixed(1)}" text-anchor="end" fill="#71717a" font-family="ui-sans-serif, sans-serif" font-size="8.5">Outflow into Rallies · Short Squeeze</text>`;
+
+        // Axes and Zero Crosshairs
+        const crossX = `<line x1="${xZero.toFixed(1)}" y1="${pad.top}" x2="${xZero.toFixed(1)}" y2="${(pad.top + chartH).toFixed(1)}" stroke="rgba(255,255,255,0.22)" stroke-width="1.2" stroke-dasharray="3 3"/>`;
+        const crossY = `<line x1="${pad.left}" y1="${yZero.toFixed(1)}" x2="${(pad.left + chartW).toFixed(1)}" y2="${yZero.toFixed(1)}" stroke="rgba(255,255,255,0.22)" stroke-width="1.2" stroke-dasharray="3 3"/>`;
+
+        // ±1.5σ Reference Lines
+        const yPos15 = yPos(1.5);
+        const yNeg15 = yPos(-1.5);
+        const zRefLines = `<line x1="${pad.left}" y1="${yPos15.toFixed(1)}" x2="${(pad.left + chartW).toFixed(1)}" y2="${yPos15.toFixed(1)}" stroke="rgba(34,211,238,0.2)" stroke-width="1" stroke-dasharray="2 4"/><line x1="${pad.left}" y1="${yNeg15.toFixed(1)}" x2="${(pad.left + chartW).toFixed(1)}" y2="${yNeg15.toFixed(1)}" stroke="rgba(245,158,11,0.2)" stroke-width="1" stroke-dasharray="2 4"/>`;
+
+        // Select top prominent outlier tickers to show sleek labels directly on chart
+        const outlierScores = items.map(it => {
+          const ret = finiteNumber(it.nav_return_20d_pct) || 0;
+          const z = finiteNumber(it.flow_zscore) || 0;
+          const aum = finiteNumber(it.aum_m) || 0;
+          return { item: it, ret, z, score: Math.abs(z) * 1.5 + Math.abs(ret) / 10 + (aum > 1000 ? 2 : 0) };
+        });
+        outlierScores.sort((a, b) => b.score - a.score);
+        const labeledTickers = new Set(outlierScores.slice(0, 16).map(o => o.item.ticker));
+        if (this.flowTicker) labeledTickers.add(this.flowTicker);
+
         let dots = '';
+        let labels = '';
+        let activeOverlay = '';
+
         for (const item of items) {
           const ret = finiteNumber(item.nav_return_20d_pct) || 0;
           const z = finiteNumber(item.flow_zscore) || 0;
@@ -991,43 +1118,75 @@
           else if (ret < 0 && z >= 0.4) quad = 'trap';
           else if (ret >= 0 && z <= -0.4) quad = 'squeeze';
 
-          if (filter !== 'all' && quad !== filter) continue;
+          const matchesFilter = filter === 'all' || quad === filter;
+          const isSelected = this.flowTicker === item.ticker;
+          const isHovered = this.flowScatterHoverTicker === item.ticker;
 
           const cx = xPos(ret);
           const cy = yPos(z);
-          let dotColor = '#52525b';
+
+          let dotColor = '#64748b';
           if (quad === 'washout') dotColor = '#34d399';
           else if (quad === 'momentum') dotColor = '#22d3ee';
-          else if (quad === 'trap') dotColor = '#fb7185';
-          else if (quad === 'squeeze') dotColor = '#94a3b8';
+          else if (quad === 'trap') dotColor = '#fb923c';
+          else if (quad === 'squeeze') dotColor = '#a78bfa';
 
-          const isHovered = this.flowScatterHoverTicker === item.ticker || this.flowTicker === item.ticker;
-          const r = isHovered ? 6 : (Math.abs(z) >= 1.5 ? 4 : 3);
-          const stroke = isHovered ? '#ffffff' : '#05070a';
-          const strokeW = isHovered ? 2 : 1;
+          const r = isSelected ? 6.5 : (isHovered ? 6.0 : (Math.abs(z) >= 1.5 ? 4.6 : 3.4));
+          const opacity = isSelected ? 1.0 : (isHovered ? 1.0 : (matchesFilter ? 0.88 : 0.18));
+          const stroke = isSelected ? '#ffffff' : (isHovered ? '#ffffff' : '#090d16');
+          const strokeW = isSelected ? 2.2 : (isHovered ? 2.0 : 1.0);
 
-          dots += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}" fill="${dotColor}" stroke="${stroke}" stroke-width="${strokeW}" opacity="${isHovered ? 1 : 0.7}" style="cursor:pointer">
-            <title>${item.ticker} (${item.underlying || item.fund_name}): 20D Ret ${ret >= 0 ? '+' : ''}${ret.toFixed(1)}%, Flow Z ${z >= 0 ? '+' : ''}${z.toFixed(2)}σ, 1D Flow ${formatMoney(item.latest_flow)}</title>
+          dots += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}" fill="${dotColor}" stroke="${stroke}" stroke-width="${strokeW}" opacity="${opacity}" style="cursor:pointer;transition:r 0.15s,opacity 0.15s" data-ticker="${item.ticker}" role="button" tabindex="0" aria-label="${item.ticker} ${ret >= 0 ? '+' : ''}${ret.toFixed(1)}% ${z.toFixed(2)} sigma">
+            <title>${item.ticker} (${item.underlying || item.fund_name}): 20D Ret ${ret >= 0 ? '+' : ''}${ret.toFixed(1)}%, Flow Z ${z >= 0 ? '+' : ''}${z.toFixed(2)}σ, 1D Flow ${formatMoney(item.latest_flow)} · Click to Open Studio</title>
           </circle>`;
+
+          if (matchesFilter && labeledTickers.has(item.ticker) && !isSelected) {
+            const lx = cx > xZero ? cx + 6 : cx - 6;
+            const anchor = cx > xZero ? 'start' : 'end';
+            labels += `<text x="${lx.toFixed(1)}" y="${(cy + 3.2).toFixed(1)}" text-anchor="${anchor}" fill="${dotColor}" font-family="ui-monospace, monospace" font-size="9" font-weight="700" pointer-events="none" opacity="0.9">${item.ticker}</text>`;
+          }
+
+          if (isSelected) {
+            const lx = cx > xZero ? cx + 11 : cx - 11;
+            const anchor = cx > xZero ? 'start' : 'end';
+            activeOverlay = `<g pointer-events="none">
+              <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="10" fill="none" stroke="#22d3ee" stroke-width="2.2" stroke-dasharray="3 2" opacity="0.95"/>
+              <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="4.2" fill="#ffffff" stroke="#090d16" stroke-width="1.2"/>
+              <rect x="${(anchor === 'start' ? lx - 2 : lx - item.ticker.length * 6.5 - 54).toFixed(1)}" y="${(cy - 10).toFixed(1)}" width="${item.ticker.length * 6.5 + 56}" height="18" rx="4" fill="#090d16" stroke="#22d3ee" stroke-width="1.2" opacity="0.95"/>
+              <text x="${(anchor === 'start' ? lx + 3 : lx - 3).toFixed(1)}" y="${(cy + 2.5).toFixed(1)}" text-anchor="${anchor}" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9.5" font-weight="700">${item.ticker} · ACTIVE</text>
+            </g>`;
+          }
         }
 
-        const xTicks = [-15, -10, -5, 0, 5, 10, 15].map(val => {
+        // Dynamic X-Ticks
+        const xStep = maxRet <= 30 ? 10 : (maxRet <= 60 ? 15 : 20);
+        const xTickVals = [];
+        for (let v = -maxRet; v <= maxRet; v += xStep) {
+          xTickVals.push(v);
+        }
+        const xTicks = xTickVals.map(val => {
           const x = xPos(val);
-          return `<text x="${x.toFixed(1)}" y="${height - 10}" text-anchor="middle" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="10">${val >= 0 ? '+' : ''}${val}%</text>`;
+          return `<text x="${x.toFixed(1)}" y="${height - 12}" text-anchor="middle" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="10">${val >= 0 ? '+' : ''}${val}%</text>`;
         }).join('');
 
-        const yTicks = [3, 1.8, 0, -1.8, -3].map(val => {
+        // Dynamic Y-Ticks
+        const yTickVals = [maxZ, maxZ / 2, 0, -maxZ / 2, -maxZ];
+        const yTicks = yTickVals.map(val => {
           const y = yPos(val);
-          return `<text x="${pad.left - 6}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="10">${val >= 0 ? '+' : ''}${val}σ</text>`;
+          return `<text x="${pad.left - 8}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="10">${val >= 0 ? '+' : ''}${val.toFixed(1)}σ</text>`;
         }).join('');
 
-        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Price return versus Flow Z-score distribution map">
+        const axisLabels = `<text x="${(pad.left + chartW / 2).toFixed(1)}" y="${height - 0}" text-anchor="middle" fill="${COLORS.muted}" font-family="ui-sans-serif, sans-serif" font-size="9.5" font-weight="600" letter-spacing="0.04em">20-SESSION NAV PRICE RETURN (%)</text><text transform="rotate(-90)" x="${-(pad.top + chartH / 2).toFixed(1)}" y="${pad.left - 38}" text-anchor="middle" fill="${COLORS.muted}" font-family="ui-sans-serif, sans-serif" font-size="9.5" font-weight="600" letter-spacing="0.04em">DAILY FLOW Z-SCORE (σ)</text>`;
+
+        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Price return versus Flow Z-score distribution map" style="width:100%;height:auto;display:block">
           <title>Price Return versus Flow Z-Score Map</title>
           ${qBgWashout}${qBgMomentum}${qBgTrap}${qBgSqueeze}
           ${lblWashout}${lblMomentum}${lblTrap}${lblSqueeze}
-          ${crossX}${crossY}
-          ${xTicks}${yTicks}
+          ${zRefLines}${crossX}${crossY}
+          ${xTicks}${yTicks}${axisLabels}
           ${dots}
+          ${labels}
+          ${activeOverlay}
         </svg>`;
       },
 

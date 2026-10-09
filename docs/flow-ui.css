@@ -1619,6 +1619,54 @@
   height: auto;
 }
 
+/* Active Market Regime & Trough/Peak Anomalies Grid */
+.flow-research .flow-anomaly-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 1024px) {
+  .flow-research .flow-anomaly-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .flow-research .flow-anomaly-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.flow-research .flow-anomaly-col {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--flow-line);
+  border-radius: 6px;
+  background: #050505;
+}
+
+.flow-research .flow-anomaly-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--flow-line);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+
+.flow-research .flow-anomaly-item:hover {
+  border-color: var(--flow-line-strong);
+  background: rgba(255, 255, 255, 0.06);
+}
+
 /* ── Empirical Flow Shock Edge & Proximity Ledger ── */
 .flow-research .flow-ledger-grid {
   display: grid;
