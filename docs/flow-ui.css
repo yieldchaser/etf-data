@@ -156,7 +156,6 @@
 .flow-research .flow-support,
 .flow-research .flow-chart-description,
 .flow-research .flow-instrument-meta,
-.flow-research .flow-badge,
 .flow-research .flow-result-name {
   overflow-wrap: anywhere;
 }
@@ -357,6 +356,18 @@
   font-weight: 600;
   letter-spacing: 0.03em;
   text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.flow-research .flow-no-case {
+  text-transform: none !important;
+}
+
+.flow-research .flow-ticker-tag {
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  font-weight: 700;
+  color: var(--flow-cyan);
+  letter-spacing: 0.02em;
 }
 
 .flow-research .flow-badge[data-state="available"],
@@ -1226,6 +1237,13 @@
   .flow-research .flow-scanner-wrap .flow-table {
     width: 100%;
   }
+}
+
+.flow-research .flow-scanner-wrap .flow-table th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: #080d16;
 }
 
 .flow-research .flow-scanner-wrap .flow-table th,

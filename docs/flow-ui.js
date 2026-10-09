@@ -894,6 +894,8 @@
         let accumulationCount = 0;
         let distributionCount = 0;
         let balancedCount = 0;
+        let shockInflows = 0;
+        let shockOutflows = 0;
         let extremeOutlierCount = 0;
         let totalAumM = 0;
         let topInflowTicker = '—';
@@ -931,22 +933,39 @@
           if (item.regime === 'ACCUMULATION') accumulationCount += 1;
           else if (item.regime === 'DISTRIBUTION') distributionCount += 1;
           else balancedCount += 1;
-          if (Math.abs(z) >= 1.5) extremeOutlierCount += 1;
+
+          // Material flow shock: |Z| >= 1.8 AND (|flow| >= $500K or % AUM >= 1.0%)
+          const pctAum = aum > 0 ? (Math.abs(f1) / (aum * 1e6)) * 100 : 0;
+          const isMaterial = Math.abs(f1) >= 500000 || pctAum >= 1.0;
+          if (Math.abs(z) >= 1.8 && isMaterial) {
+            extremeOutlierCount += 1;
+            if (f1 > 0) shockInflows += 1;
+            else shockOutflows += 1;
+          }
         }
+        const netSpread1d = bullFlow1d - bearFlow1d;
+        const netSpread20d = bullFlow20d - bearFlow20d;
+        const macroRegimeLabel = distributionCount > accumulationCount ? '20D De-Risking Bias' : '20D Accumulation Expansion';
+
         return {
           totalFlow1d,
           bullFlow1d,
           bearFlow1d,
+          netSpread1d,
           inflowCount1d,
           outflowCount1d,
           flatCount1d,
           totalFlow20d,
           bullFlow20d,
           bearFlow20d,
+          netSpread20d,
           accumulationCount,
           distributionCount,
           balancedCount,
+          shockInflows,
+          shockOutflows,
           extremeOutlierCount,
+          macroRegimeLabel,
           totalAumM,
           topInflowTicker,
           topInflowVal: Number.isFinite(topInflowVal) ? topInflowVal : 0,
@@ -1039,22 +1058,24 @@
 
       get flowScatterCounts() {
         const items = this.flowPrimaryInstruments;
-        let washout = 0, momentum = 0, trap = 0, squeeze = 0, neutral = 0;
+        let washout = 0, momentum = 0, dipAccum = 0, distribution = 0, neutral = 0;
         for (const item of items) {
           const ret = finiteNumber(item.nav_return_20d_pct) || 0;
           const z = finiteNumber(item.flow_zscore) || 0;
           if (ret < 0 && z <= -0.4) washout += 1;
           else if (ret >= 0 && z >= 0.4) momentum += 1;
-          else if (ret < 0 && z >= 0.4) trap += 1;
-          else if (ret >= 0 && z <= -0.4) squeeze += 1;
+          else if (ret < 0 && z >= 0.4) dipAccum += 1;
+          else if (ret >= 0 && z <= -0.4) distribution += 1;
           else neutral += 1;
         }
         return {
           all: items.length,
           washout,
           momentum,
-          trap,
-          squeeze,
+          dipAccum,
+          trap: dipAccum,
+          distribution,
+          squeeze: distribution,
           neutral
         };
       },
@@ -1085,13 +1106,15 @@
             aum
           };
 
-          if (ret20 <= -5.0 && z >= 0.8) {
+          // Materiality floor: require |1D Flow| >= $50K to exclude micro-noise ($6K-$8K)
+          const isMaterial = Math.abs(f1) >= 50000;
+          if (ret20 <= -5.0 && z >= 0.8 && isMaterial) {
             dipAccum.push(entry);
-          } else if (ret20 <= -5.0 && z <= -0.8) {
+          } else if (ret20 <= -5.0 && z <= -0.8 && isMaterial) {
             exhaustionLow.push(entry);
-          } else if (ret20 >= 10.0 && z >= 1.0) {
+          } else if (ret20 >= 10.0 && z >= 1.0 && isMaterial) {
             climaxInflowTop.push(entry);
-          } else if (ret20 >= 10.0 && z <= -0.8) {
+          } else if (ret20 >= 10.0 && z <= -0.8 && isMaterial) {
             distributionTop.push(entry);
           }
         }
@@ -1101,12 +1124,22 @@
         climaxInflowTop.sort((a, b) => b.z - a.z);
         distributionTop.sort((a, b) => a.z - b.z);
 
+        const slicedDip = dipAccum.slice(0, 8);
+        const slicedExhaust = exhaustionLow.slice(0, 8);
+        const slicedClimax = climaxInflowTop.slice(0, 8);
+        const slicedDist = distributionTop.slice(0, 8);
+        const totalAnomalies = slicedDip.length + slicedExhaust.length + slicedClimax.length + slicedDist.length;
+
         return {
-          dipAccum: dipAccum.slice(0, 8),
-          exhaustionLow: exhaustionLow.slice(0, 8),
-          climaxInflowTop: climaxInflowTop.slice(0, 8),
-          distributionTop: distributionTop.slice(0, 8),
-          totalAnomalies: dipAccum.length + exhaustionLow.length + climaxInflowTop.length + distributionTop.length
+          dipAccum: slicedDip,
+          totalDipAccum: dipAccum.length,
+          exhaustionLow: slicedExhaust,
+          totalExhaustionLow: exhaustionLow.length,
+          climaxInflowTop: slicedClimax,
+          totalClimaxInflowTop: climaxInflowTop.length,
+          distributionTop: slicedDist,
+          totalDistributionTop: distributionTop.length,
+          totalAnomalies
         };
       },
 
@@ -1135,8 +1168,8 @@
       get flowScatterSvg() {
         const items = this.flowPrimaryInstruments;
         const width = Math.max(300, this.flowChartWidth || 800);
-        const height = width < 500 ? 300 : 360;
-        const pad = { left: 52, right: 32, top: 32, bottom: 42 };
+        const height = width < 500 ? 320 : 380;
+        const pad = { left: 52, right: 32, top: 32, bottom: 48 };
         const chartW = width - pad.left - pad.right;
         const chartH = height - pad.top - pad.bottom;
 
@@ -1148,7 +1181,7 @@
 
         const maxRet = Math.min(100, Math.ceil((maxAbsRetRaw * 1.05) / 10) * 10);
         const minRet = -maxRet;
-        const maxZ = Math.min(6.0, Math.ceil((maxAbsZRaw * 1.05) * 2) / 2);
+        const maxZ = Math.min(6.0, Math.max(4.0, Math.ceil((maxAbsZRaw * 1.05) / 2) * 2));
         const minZ = -maxZ;
 
         const xPos = ret => pad.left + ((ret - minRet) / (maxRet - minRet)) * chartW;
@@ -1160,45 +1193,41 @@
         const filter = this.flowScatterFilter || 'all';
 
         // Quadrant Background Fills & Outlines
-        const qBgWashout = `<rect x="${pad.left}" y="${yZero.toFixed(1)}" width="${(xZero - pad.left).toFixed(1)}" height="${(pad.top + chartH - yZero).toFixed(1)}" fill="rgba(52,211,153,0.03)" stroke="rgba(52,211,153,0.08)" stroke-width="0.5"/>`;
-        const qBgMomentum = `<rect x="${xZero.toFixed(1)}" y="${pad.top}" width="${(pad.left + chartW - xZero).toFixed(1)}" height="${(yZero - pad.top).toFixed(1)}" fill="rgba(34,211,238,0.03)" stroke="rgba(34,211,238,0.08)" stroke-width="0.5"/>`;
-        const qBgTrap = `<rect x="${pad.left}" y="${pad.top}" width="${(xZero - pad.left).toFixed(1)}" height="${(yZero - pad.top).toFixed(1)}" fill="rgba(251,146,60,0.025)" stroke="rgba(251,146,60,0.08)" stroke-width="0.5"/>`;
-        const qBgSqueeze = `<rect x="${xZero.toFixed(1)}" y="${yZero.toFixed(1)}" width="${(pad.left + chartW - xZero).toFixed(1)}" height="${(pad.top + chartH - yZero).toFixed(1)}" fill="rgba(167,139,250,0.025)" stroke="rgba(167,139,250,0.08)" stroke-width="0.5"/>`;
+        const qBgWashout = `<rect x="${pad.left}" y="${yZero.toFixed(1)}" width="${(xZero - pad.left).toFixed(1)}" height="${(pad.top + chartH - yZero).toFixed(1)}" fill="rgba(52,211,153,0.025)" stroke="rgba(52,211,153,0.06)" stroke-width="0.5"/>`;
+        const qBgMomentum = `<rect x="${xZero.toFixed(1)}" y="${pad.top}" width="${(pad.left + chartW - xZero).toFixed(1)}" height="${(yZero - pad.top).toFixed(1)}" fill="rgba(34,211,238,0.025)" stroke="rgba(34,211,238,0.06)" stroke-width="0.5"/>`;
+        const qBgTrap = `<rect x="${pad.left}" y="${pad.top}" width="${(xZero - pad.left).toFixed(1)}" height="${(yZero - pad.top).toFixed(1)}" fill="rgba(251,146,60,0.02)" stroke="rgba(251,146,60,0.06)" stroke-width="0.5"/>`;
+        const qBgSqueeze = `<rect x="${xZero.toFixed(1)}" y="${yZero.toFixed(1)}" width="${(pad.left + chartW - xZero).toFixed(1)}" height="${(pad.top + chartH - yZero).toFixed(1)}" fill="rgba(167,139,250,0.02)" stroke="rgba(167,139,250,0.06)" stroke-width="0.5"/>`;
 
-        // Quadrant Headers & Live Dynamic Counters
+        // Compact Quadrant Headers hugging the center crosshair so corners remain unobstructed for outliers (e.g. LABX)
         const lblTrap = `
           <g pointer-events="none">
-            <rect x="${pad.left + 6}" y="${pad.top + 6}" width="215" height="28" rx="4" fill="rgba(8,12,18,0.85)" stroke="rgba(251,146,60,0.3)" stroke-width="0.8"/>
-            <text x="${pad.left + 12}" y="${pad.top + 18}" fill="#fb923c" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.04em">Q3 DIP ACCUMULATION (${counts.trap})</text>
-            <text x="${pad.left + 12}" y="${pad.top + 28}" fill="#94a3b8" font-family="ui-sans-serif, sans-serif" font-size="8">Inflow at Lows · Buy-the-Dip</text>
+            <rect x="${(xZero - 170).toFixed(1)}" y="${pad.top + 6}" width="162" height="22" rx="3" fill="rgba(8,12,18,0.72)" stroke="rgba(251,146,60,0.3)" stroke-width="0.8"/>
+            <text x="${(xZero - 8).toFixed(1)}" y="${pad.top + 20}" text-anchor="end" fill="#fb923c" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.03em">DIP ACCUMULATION (${counts.dipAccum})</text>
           </g>`;
         const lblMomentum = `
           <g pointer-events="none">
-            <rect x="${(pad.left + chartW - 225).toFixed(1)}" y="${pad.top + 6}" width="218" height="28" rx="4" fill="rgba(8,12,18,0.85)" stroke="rgba(34,211,238,0.3)" stroke-width="0.8"/>
-            <text x="${(pad.left + chartW - 12).toFixed(1)}" y="${pad.top + 18}" text-anchor="end" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.04em">Q2 MOMENTUM CONTINUATION (${counts.momentum})</text>
-            <text x="${(pad.left + chartW - 12).toFixed(1)}" y="${pad.top + 28}" text-anchor="end" fill="#94a3b8" font-family="ui-sans-serif, sans-serif" font-size="8">Inflow at Highs · Trend Continuation</text>
+            <rect x="${(xZero + 8).toFixed(1)}" y="${pad.top + 6}" width="162" height="22" rx="3" fill="rgba(8,12,18,0.72)" stroke="rgba(34,211,238,0.3)" stroke-width="0.8"/>
+            <text x="${(xZero + 16).toFixed(1)}" y="${pad.top + 20}" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.03em">MOMENTUM INFLOWS (${counts.momentum})</text>
           </g>`;
         const lblWashout = `
           <g pointer-events="none">
-            <rect x="${pad.left + 6}" y="${(pad.top + chartH - 34).toFixed(1)}" width="210" height="28" rx="4" fill="rgba(8,12,18,0.85)" stroke="rgba(52,211,153,0.3)" stroke-width="0.8"/>
-            <text x="${pad.left + 12}" y="${(pad.top + chartH - 22).toFixed(1)}" fill="#34d399" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.04em">Q1 WASHOUT REBOUND (${counts.washout})</text>
-            <text x="${pad.left + 12}" y="${(pad.top + chartH - 12).toFixed(1)}" fill="#94a3b8" font-family="ui-sans-serif, sans-serif" font-size="8">Outflow at Lows · Washout Rebound</text>
+            <rect x="${(xZero - 170).toFixed(1)}" y="${(pad.top + chartH - 28).toFixed(1)}" width="162" height="22" rx="3" fill="rgba(8,12,18,0.72)" stroke="rgba(52,211,153,0.3)" stroke-width="0.8"/>
+            <text x="${(xZero - 8).toFixed(1)}" y="${(pad.top + chartH - 14).toFixed(1)}" text-anchor="end" fill="#34d399" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.03em">WASHOUT AT LOWS (${counts.washout})</text>
           </g>`;
         const lblSqueeze = `
           <g pointer-events="none">
-            <rect x="${(pad.left + chartW - 225).toFixed(1)}" y="${(pad.top + chartH - 34).toFixed(1)}" width="218" height="28" rx="4" fill="rgba(8,12,18,0.85)" stroke="rgba(167,139,250,0.3)" stroke-width="0.8"/>
-            <text x="${(pad.left + chartW - 12).toFixed(1)}" y="${(pad.top + chartH - 22).toFixed(1)}" text-anchor="end" fill="#a78bfa" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.04em">Q4 WALL OF WORRY SQUEEZE (${counts.squeeze})</text>
-            <text x="${(pad.left + chartW - 12).toFixed(1)}" y="${(pad.top + chartH - 12).toFixed(1)}" text-anchor="end" fill="#94a3b8" font-family="ui-sans-serif, sans-serif" font-size="8">Outflow into Rallies · Short Squeeze</text>
+            <rect x="${(xZero + 8).toFixed(1)}" y="${(pad.top + chartH - 28).toFixed(1)}" width="172" height="22" rx="3" fill="rgba(8,12,18,0.72)" stroke="rgba(167,139,250,0.3)" stroke-width="0.8"/>
+            <text x="${(xZero + 16).toFixed(1)}" y="${(pad.top + chartH - 14).toFixed(1)}" fill="#a78bfa" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.03em">DISTRIBUTION AT HIGHS (${counts.distribution})</text>
           </g>`;
 
         // Axes and Zero Crosshairs
         const crossX = `<line x1="${xZero.toFixed(1)}" y1="${pad.top}" x2="${xZero.toFixed(1)}" y2="${(pad.top + chartH).toFixed(1)}" stroke="rgba(255,255,255,0.22)" stroke-width="1.2" stroke-dasharray="3 3"/>`;
         const crossY = `<line x1="${pad.left}" y1="${yZero.toFixed(1)}" x2="${(pad.left + chartW).toFixed(1)}" y2="${yZero.toFixed(1)}" stroke="rgba(255,255,255,0.22)" stroke-width="1.2" stroke-dasharray="3 3"/>`;
 
-        // ±1.5σ Reference Lines
-        const yPos15 = yPos(1.5);
-        const yNeg15 = yPos(-1.5);
-        const zRefLines = `<line x1="${pad.left}" y1="${yPos15.toFixed(1)}" x2="${(pad.left + chartW).toFixed(1)}" y2="${yPos15.toFixed(1)}" stroke="rgba(34,211,238,0.2)" stroke-width="1" stroke-dasharray="2 4"/><line x1="${pad.left}" y1="${yNeg15.toFixed(1)}" x2="${(pad.left + chartW).toFixed(1)}" y2="${yNeg15.toFixed(1)}" stroke="rgba(245,158,11,0.2)" stroke-width="1" stroke-dasharray="2 4"/>`;
+        // ±1.8σ Reference Lines (Material shock threshold)
+        const yPos18 = yPos(1.8);
+        const yNeg18 = yPos(-1.8);
+        const zRefLines = `<line x1="${pad.left}" y1="${yPos18.toFixed(1)}" x2="${(pad.left + chartW).toFixed(1)}" y2="${yPos18.toFixed(1)}" stroke="rgba(34,211,238,0.2)" stroke-width="1" stroke-dasharray="2 4"/><line x1="${pad.left}" y1="${yNeg18.toFixed(1)}" x2="${(pad.left + chartW).toFixed(1)}" y2="${yNeg18.toFixed(1)}" stroke="rgba(245,158,11,0.2)" stroke-width="1" stroke-dasharray="2 4"/>`;
 
         // Select top prominent outlier tickers to show sleek labels directly on chart
         const outlierScores = items.map(it => {
@@ -1209,11 +1238,10 @@
         });
         outlierScores.sort((a, b) => b.score - a.score);
         const labeledTickers = new Set(outlierScores.slice(0, 16).map(o => o.item.ticker));
-        if (this.flowTicker) labeledTickers.add(this.flowTicker);
 
         let dots = '';
-        let labels = '';
         let activeOverlay = '';
+        const rawLabels = [];
 
         for (const item of items) {
           const ret = finiteNumber(item.nav_return_20d_pct) || 0;
@@ -1224,8 +1252,9 @@
           else if (ret < 0 && z >= 0.4) quad = 'trap';
           else if (ret >= 0 && z <= -0.4) quad = 'squeeze';
 
-          const matchesFilter = filter === 'all' || quad === filter;
-          const isSelected = this.flowTicker === item.ticker;
+          const matchesFilter = filter === 'all' || quad === filter || (filter === 'dipAccum' && quad === 'trap') || (filter === 'distribution' && quad === 'squeeze');
+          // In scanner view, only highlight if explicitly hovered or active in scanner
+          const isSelected = (this.flowViewMode !== 'scanner' || this.flowScatterActiveTicker === item.ticker) && this.flowTicker === item.ticker;
           const isHovered = this.flowScatterHoverTicker === item.ticker;
 
           const cx = xPos(ret);
@@ -1237,8 +1266,8 @@
           else if (quad === 'trap') dotColor = '#fb923c';
           else if (quad === 'squeeze') dotColor = '#a78bfa';
 
-          const r = isSelected ? 6.5 : (isHovered ? 6.0 : (Math.abs(z) >= 1.5 ? 4.6 : 3.4));
-          const opacity = isSelected ? 1.0 : (isHovered ? 1.0 : (matchesFilter ? 0.88 : 0.18));
+          const r = isSelected ? 6.5 : (isHovered ? 6.0 : (Math.abs(z) >= 1.8 ? 4.8 : 3.4));
+          const opacity = isSelected ? 1.0 : (isHovered ? 1.0 : (matchesFilter ? 0.88 : 0.16));
           const stroke = isSelected ? '#ffffff' : (isHovered ? '#ffffff' : '#090d16');
           const strokeW = isSelected ? 2.2 : (isHovered ? 2.0 : 1.0);
 
@@ -1257,12 +1286,12 @@
               lx = cx + 6;
               anchor = 'start';
             }
-            if (cy < pad.top + 38) {
+            if (cy < pad.top + 28) {
               ly = cy + 12;
-            } else if (cy > pad.top + chartH - 38) {
+            } else if (cy > pad.top + chartH - 24) {
               ly = cy - 6;
             }
-            labels += `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${anchor}" fill="${dotColor}" font-family="ui-monospace, monospace" font-size="9" font-weight="700" pointer-events="none" opacity="0.9">${item.ticker}</text>`;
+            rawLabels.push({ ticker: item.ticker, cx, cy, lx, ly, anchor, color: dotColor });
           }
 
           if (isSelected) {
@@ -1277,6 +1306,19 @@
           }
         }
 
+        // Collision avoidance for nearby labels
+        rawLabels.sort((a, b) => a.ly - b.ly);
+        for (let i = 1; i < rawLabels.length; i++) {
+          const prev = rawLabels[i - 1];
+          const curr = rawLabels[i];
+          if (Math.abs(curr.lx - prev.lx) < 40 && curr.ly - prev.ly < 11) {
+            curr.ly = prev.ly + 11;
+          }
+        }
+        const labels = rawLabels.map(lbl =>
+          `<text x="${lbl.lx.toFixed(1)}" y="${lbl.ly.toFixed(1)}" text-anchor="${lbl.anchor}" fill="${lbl.color}" font-family="ui-monospace, monospace" font-size="9" font-weight="700" pointer-events="none" opacity="0.9">${lbl.ticker}</text>`
+        ).join('');
+
         // Dynamic X-Ticks
         const xStep = maxRet <= 30 ? 10 : (maxRet <= 60 ? 15 : 20);
         const xTickVals = [];
@@ -1285,17 +1327,18 @@
         }
         const xTicks = xTickVals.map(val => {
           const x = xPos(val);
-          return `<text x="${x.toFixed(1)}" y="${height - 12}" text-anchor="middle" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="10">${val >= 0 ? '+' : ''}${val}%</text>`;
+          return `<text x="${x.toFixed(1)}" y="${height - 24}" text-anchor="middle" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="10">${val >= 0 ? '+' : ''}${val}%</text>`;
         }).join('');
 
-        // Dynamic Y-Ticks
+        // Dynamic Rounded Y-Ticks (Clean even sigmas: +4.0σ, +2.0σ, 0σ, -2.0σ, -4.0σ)
         const yTickVals = [maxZ, maxZ / 2, 0, -maxZ / 2, -maxZ];
         const yTicks = yTickVals.map(val => {
           const y = yPos(val);
-          return `<text x="${pad.left - 8}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="10">${val >= 0 ? '+' : ''}${val.toFixed(1)}σ</text>`;
+          const formatted = val === 0 ? '0σ' : (val > 0 ? `+${val.toFixed(1)}σ` : `${val.toFixed(1)}σ`);
+          return `<text x="${pad.left - 8}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="10">${formatted}</text>`;
         }).join('');
 
-        const axisLabels = `<text x="${(pad.left + chartW / 2).toFixed(1)}" y="${height - 0}" text-anchor="middle" fill="${COLORS.muted}" font-family="ui-sans-serif, sans-serif" font-size="9.5" font-weight="600" letter-spacing="0.04em">20-SESSION NAV PRICE RETURN (%)</text><text transform="rotate(-90)" x="${-(pad.top + chartH / 2).toFixed(1)}" y="${pad.left - 38}" text-anchor="middle" fill="${COLORS.muted}" font-family="ui-sans-serif, sans-serif" font-size="9.5" font-weight="600" letter-spacing="0.04em">DAILY FLOW Z-SCORE (σ)</text>`;
+        const axisLabels = `<text x="${(pad.left + chartW / 2).toFixed(1)}" y="${height - 6}" text-anchor="middle" fill="${COLORS.muted}" font-family="ui-sans-serif, sans-serif" font-size="9.5" font-weight="600" letter-spacing="0.04em">20-SESSION NAV PRICE RETURN (%)</text><text transform="rotate(-90)" x="${-(pad.top + chartH / 2).toFixed(1)}" y="${pad.left - 38}" text-anchor="middle" fill="${COLORS.muted}" font-family="ui-sans-serif, sans-serif" font-size="9.5" font-weight="600" letter-spacing="0.04em">DAILY FLOW Z-SCORE (σ)</text>`;
 
         return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Price return versus Flow Z-score distribution map" style="width:100%;height:auto;display:block">
           <title>Price Return versus Flow Z-Score Map</title>
@@ -1558,13 +1601,25 @@
       get flowOutlierCards() {
         const items = this.flowPrimaryInstruments.slice();
         if (!items.length) return [];
-        items.sort((a, b) => {
+        // Materiality filter: require (|Z| >= 1.5 AND |flow| >= $500K) OR |Z| >= 2.5 to eliminate micro-noise like CHAU ($7K)
+        const candidates = items.filter(it => {
+          const z = Math.abs(finiteNumber(it.flow_zscore) || 0);
+          const f1 = Math.abs(finiteNumber(it.latest_flow) || 0);
+          const aum = finiteNumber(it.aum_m) || 0;
+          const pctAum = aum > 0 ? (f1 / (aum * 1e6)) * 100 : 0;
+          return (z >= 1.5 && (f1 >= 500000 || pctAum >= 1.0)) || z >= 2.5;
+        });
+        const pool = candidates.length >= 6 ? candidates : items;
+        pool.sort((a, b) => {
           const za = Math.abs(finiteNumber(a.flow_zscore) || 0);
           const zb = Math.abs(finiteNumber(b.flow_zscore) || 0);
-          if (Math.abs(zb - za) > 0.05) return zb - za;
-          return Math.abs(finiteNumber(b.latest_flow) || 0) - Math.abs(finiteNumber(a.latest_flow) || 0);
+          const fa = Math.abs(finiteNumber(a.latest_flow) || 0);
+          const fb = Math.abs(finiteNumber(b.latest_flow) || 0);
+          const scoreA = za * 1.5 + Math.log10(Math.max(1000, fa));
+          const scoreB = zb * 1.5 + Math.log10(Math.max(1000, fb));
+          return scoreB - scoreA;
         });
-        return items.slice(0, 6).map(item => {
+        return pool.slice(0, 6).map(item => {
           const z = finiteNumber(item.flow_zscore) || 0;
           const f1 = finiteNumber(item.latest_flow) || 0;
           const f20 = finiteNumber(item.flow_20d) ?? 0;
@@ -1574,12 +1629,14 @@
             ticker: item.ticker,
             fund_name: item.fund_name,
             underlying: item.underlying || item.fund_name,
-            leverage: item.leverage || '+2x',
+            leverage: String(item.leverage || '+2x').toLowerCase(),
             issuer: item.issuer || '',
             flow1d: f1,
             flow20d: f20,
             flowPctAum,
             zscore: z,
+            shockType: f1 > 0 ? 'INFLOW SHOCK' : 'OUTFLOW SHOCK',
+            badgeState: f1 > 0 ? 'ACCUMULATION' : 'DISTRIBUTION',
             regime: item.regime || 'BALANCED',
             aum_m: aumVal,
             sparklineSvg: miniFlowSparklineSvg(item.sparkline_20d || [], 86, 20)
