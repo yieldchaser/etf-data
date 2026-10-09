@@ -290,9 +290,9 @@
               :class="activeTab === 'flows' ? 'tab-active' : ''"
               class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
               :style="activeTab === 'flows' ? '' : 'color: var(--text-2); border-color: var(--border)'"
-               @mouseenter="showTt($event, 'ETF estimated net flows - local 145-instrument leveraged and inverse universe')"
+               @mouseenter="showTt($event, 'ETF estimated net flows - local 150-instrument leveraged and inverse universe')"
               @mouseleave="hideTt()"
-               @focus="showTt($event, 'ETF estimated net flows - local 145-instrument leveraged and inverse universe')"
+               @focus="showTt($event, 'ETF estimated net flows - local 150-instrument leveraged and inverse universe')"
               @blur="hideTt()">
         Fund Flows
       </button>
@@ -2034,7 +2034,7 @@
       <header class="flow-header">
         <div class="flow-header-title-wrap">
           <div style="display:flex;flex-wrap:wrap;gap:0.35rem;align-items:center">
-            <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'scanner' ? 'true' : 'false'" @click="setFlowViewMode('scanner')" x-text="`Cross-ETF leaderboard (${flowCatalog ? flowCatalog.counts.instruments : 145})`"></button>
+            <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'scanner' ? 'true' : 'false'" @click="setFlowViewMode('scanner')" x-text="`Cross-ETF leaderboard (${flowCatalog ? flowCatalog.counts.instruments : 150})`"></button>
             <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'studio' ? 'true' : 'false'" @click="setFlowViewMode('studio')">Instrument studio</button>
             <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'matrix' ? 'true' : 'false'" @click="setFlowViewMode('matrix')">Category &amp; regime matrix</button>
             <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'alpha' ? 'true' : 'false'" @click="setFlowViewMode('alpha')">
@@ -2043,7 +2043,7 @@
           </div>
           <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:0.45rem">
             <h2>ETF estimated net flows</h2>
-            <p class="flow-support">A focused research view of the 145-instrument local leveraged and inverse universe. The 24 featured instruments are an explicit subset; all history is read from local static artifacts.</p>
+            <p class="flow-support">A focused research view of the 150-instrument local leveraged and inverse universe. The 24 featured instruments are an explicit subset; all history is read from local static artifacts.</p>
           </div>
         </div>
         <div class="flow-status-grid" aria-label="Catalog and source status">
@@ -2092,7 +2092,7 @@
               <div class="flow-kpi-label">Extreme outliers</div>
               <div class="flow-pulse-value flow-cyan" style="display:flex;align-items:baseline;justify-content:space-between">
                 <span x-text="`${flowUniversePulse.extremeOutlierCount} (|z| ≥ 1.5)`"></span>
-                <button class="flow-chip" type="button" @click="flowScannerSort = 'abs_z'; setFlowViewMode('scanner')" style="font-size:0.6875rem;padding:2px 8px;color:var(--flow-cyan)">View all 14 →</button>
+                <button class="flow-chip" type="button" @click="flowScannerSort = 'abs_z'; setFlowViewMode('scanner')" style="font-size:0.6875rem;padding:2px 8px;color:var(--flow-cyan)" x-text="`View all ${flowUniversePulse.extremeOutlierCount} →`"></button>
               </div>
               <div class="flow-pulse-sub" x-text="`▲ ${flowUniversePulse.accumulationCount} in · ▼ ${flowUniversePulse.distributionCount} out · top ${flowUniversePulse.topInflowTicker} (${formatMoney(flowUniversePulse.topInflowVal)})`"></div>
             </div>
@@ -2108,11 +2108,11 @@
             <div class="flow-outliers-header">
               <div class="flow-outliers-title">
                 <span class="flow-chart-kicker">Extreme flow moves</span>
-                <span class="flow-eyebrow">|z| ≥ 1.5 vs prior 30 sessions — latest session outliers across 145 funds</span>
+                <span class="flow-eyebrow" x-text="`|z| ≥ 1.5 vs prior 30 sessions — latest session outliers across ${flowCatalog?.instruments?.length || 150} funds`">|z| ≥ 1.5 vs prior 30 sessions — latest session outliers across 150 funds</span>
               </div>
               <div style="display:flex;align-items:center;gap:0.65rem">
                 <span class="flow-eyebrow" x-text="`showing 6 of ${flowUniversePulse.extremeOutlierCount} outliers`"></span>
-                <button class="flow-chip" type="button" @click="flowScannerSort = 'abs_z'; setFlowViewMode('scanner')" style="color:var(--flow-cyan);border-color:rgba(34,211,238,0.3)">View all 14 →</button>
+                <button class="flow-chip" type="button" @click="flowScannerSort = 'abs_z'; setFlowViewMode('scanner')" style="color:var(--flow-cyan);border-color:rgba(34,211,238,0.3)" x-text="`View all ${flowUniversePulse.extremeOutlierCount} →`"></button>
                 <button class="flow-chip" type="button" @click="flowShowOutliers = !flowShowOutliers" x-text="flowShowOutliers ? 'Hide' : 'Show'"></button>
               </div>
             </div>
@@ -2188,9 +2188,9 @@
             <label>
               <span class="flow-field-label">Catalog tier</span>
               <select class="flow-select" x-model="flowTierFilter">
-                <option value="all">145 local instruments</option>
+                <option value="all">150 local instruments</option>
                 <option value="featured">24 featured instruments</option>
-                <option value="primary">All 145 instruments</option>
+                <option value="primary">All 150 instruments</option>
               </select>
             </label>
             <label>
@@ -2218,7 +2218,7 @@
 
         <div class="flow-category-bar" x-show="flowViewMode === 'studio'">
           <div class="flow-category-tabs-wrap">
-            <div class="flow-category-pills" role="tablist" aria-label="145 ETF Categories">
+            <div class="flow-category-pills" role="tablist" aria-label="150 ETF Categories">
               <template x-for="tab in flowCategoryTabs" :key="tab.key">
                 <button class="flow-category-pill"
                         type="button"
@@ -2233,7 +2233,7 @@
               <span class="flow-eyebrow" x-text="`${flowActiveCategoryInstruments.length} instruments`"></span>
               <button class="flow-chip" type="button" @click="flowUniverseDrawerOpen = !flowUniverseDrawerOpen">
                 <svg class="flow-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                <span x-text="flowUniverseDrawerOpen ? 'Close Universe' : 'Grouped 145 Universe'"></span>
+                <span x-text="flowUniverseDrawerOpen ? 'Close Universe' : 'Grouped 150 Universe'"></span>
               </button>
             </div>
           </div>
@@ -2251,10 +2251,10 @@
             </template>
           </div>
 
-          <!-- Collapsible 145 Universe Grouped Drawer -->
+          <!-- Collapsible 150 Universe Grouped Drawer -->
           <div class="flow-universe-drawer" x-show="flowUniverseDrawerOpen" x-transition>
             <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:0.4rem;border-bottom:1px solid rgba(34,211,238,0.2)">
-              <h3 style="color:var(--flow-cyan);font-size:0.8125rem">Full 145-Instrument Leveraged &amp; Inverse Universe (Grouped by Category)</h3>
+              <h3 style="color:var(--flow-cyan);font-size:0.8125rem">Full 150-Instrument Leveraged &amp; Inverse Universe (Grouped by Category)</h3>
               <button class="flow-chip" type="button" @click="flowUniverseDrawerOpen = false">Close [×]</button>
             </div>
             <div style="display:grid;gap:0.85rem">
@@ -2299,7 +2299,7 @@
       <template x-if="!flowInitialLoading && flowCatalog && !flowCatalogError">
         <div class="flow-main">
 
-          <!-- ─── VIEW 2: CROSS-ETF LEADERBOARD (145 INSTRUMENTS) ─── -->
+          <!-- ─── VIEW 2: CROSS-ETF LEADERBOARD (150 INSTRUMENTS) ─── -->
           <div class="flow-panel-card" x-show="flowViewMode === 'scanner'">
             <!-- Top Movers Ribbon (Biggest Inflows & Outflows) -->
             <div class="flow-top-movers-grid" x-show="flowTopMovers.inflows.length || flowTopMovers.outflows.length">
@@ -2337,7 +2337,7 @@
             <div class="flow-scatter-container">
               <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:0.5rem">
                 <div>
-                  <h4 style="color:var(--flow-cyan);font-size:0.8125rem;text-transform:uppercase;letter-spacing:0.04em">Price Return × Flow Z-Score Distribution Map (145 ETFs)</h4>
+                  <h4 style="color:var(--flow-cyan);font-size:0.8125rem;text-transform:uppercase;letter-spacing:0.04em">Price Return × Flow Z-Score Distribution Map (150 ETFs)</h4>
                   <p class="flow-chart-description" style="font-size:0.6875rem">Hover points for ticker details. Click quadrant chips to filter: Q1 Washout Rebound, Q2 Momentum Continuation, Q3 Consensus Trap, Q4 Wall of Worry Squeeze.</p>
                 </div>
                 <div style="display:flex;flex-wrap:wrap;gap:0.25rem;align-items:center">
@@ -2354,7 +2354,7 @@
             <div class="flow-chart-heading">
               <div>
                 <p class="flow-chart-kicker">Cross-ETF Flow Scanner</p>
-                <h3>145-Instrument Multi-Horizon Net Flow Leaderboard</h3>
+                <h3>150-Instrument Multi-Horizon Net Flow Leaderboard</h3>
                 <p class="flow-chart-description">Click any column header to sort or click any ETF row to open its full historical studio. All figures are source-reported aggregate net flows.</p>
               </div>
               <div style="display:flex;flex-wrap:wrap;gap:0.35rem;align-items:center">
@@ -2633,7 +2633,7 @@
               <div>
                 <p class="flow-chart-kicker">Multi-Factor Quantitative Systematic Engine</p>
                 <h3>Systematic Strategy Signals &amp; Conviction Basket</h3>
-                <p class="flow-chart-description">Active quantitative strategy signals across all 145 leveraged and inverse ETFs. Derived from split-adjusted historical flow event-studies, empirical z-score shocks, and bull/bear flow transfers.</p>
+                <p class="flow-chart-description">Active quantitative strategy signals across all 150 leveraged and inverse ETFs. Derived from split-adjusted historical flow event-studies, empirical z-score shocks, and bull/bear flow transfers.</p>
               </div>
               <div>
                 <span class="flow-eyebrow" style="color:var(--flow-cyan)">Rebalanced Fri 2026-10-02 · Weekly 5-Day Hold · Next: 2026-10-09</span>
@@ -2837,12 +2837,12 @@
                   </template>
                 </div>
               </div>
-              <div class="flow-range-pair">
-                <div>
+              <div class="flow-brush-slider-wrap">
+                <div class="flow-brush-slider-track"></div>
+                <div class="flow-brush-slider-highlight" :style="`left: ${(flowStartIndex / (flowMaxRecordIndex || 1) * 100).toFixed(2)}%; width: ${((flowEndIndex - flowStartIndex) / (flowMaxRecordIndex || 1) * 100).toFixed(2)}%`"></div>
+                <div class="flow-brush-inputs">
                   <label class="flow-visually-hidden" for="flow-range-start">Start observation</label>
                   <input id="flow-range-start" class="flow-range" type="range" min="0" :max="flowMaxRecordIndex" step="1" :value="flowStartIndex" :aria-valuetext="flowRangeStartDate" @input="flowSetStartIndex($event.target.value)">
-                </div>
-                <div>
                   <label class="flow-visually-hidden" for="flow-range-end">End observation</label>
                   <input id="flow-range-end" class="flow-range" type="range" min="0" :max="flowMaxRecordIndex" step="1" :value="flowEndIndex" :aria-valuetext="flowRangeEndDate" @input="flowSetEndIndex($event.target.value)">
                 </div>
@@ -2935,6 +2935,64 @@
               </div>
               <p class="flow-chart-message" x-show="flowChartMessage" role="status" aria-live="polite" x-text="flowChartMessage"></p>
 
+
+              <section id="flow-chart-panel-workbench" class="flow-chart-block" x-show="flowChartTab === 'workbench'" role="tabpanel" tabindex="0" :aria-labelledby="`flow-chart-tab-workbench`" aria-label="Multi-Mega Workbench">
+                <div class="flow-workbench-header">
+                  <div class="flow-workbench-title-col">
+                    <p class="flow-chart-kicker">Multi-Mega Synchronized Workbench</p>
+                    <h3 style="margin:0;font-size:1.05rem;color:var(--flow-text)">Integrated Cumulative, NAV, Flow, Volume &amp; Waveform Suite</h3>
+                    <p class="flow-chart-description" style="margin:0">Synchronized 3-tier layout: Cumulative Flow &amp; NAV (Tier 1), Daily Flow &amp; Volume with 20D MA (Tier 2), Prior-only Z-Score Waveform (Tier 3).</p>
+                  </div>
+                  <div class="flow-workbench-toolbar">
+                    <button class="flow-chip" :class="flowWorkbenchPriceEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchPriceEnabled = !flowWorkbenchPriceEnabled" title="Toggle NAV / Price Line">
+                      <span style="color:#c084fc">●</span> Price
+                    </button>
+                    <button class="flow-chip" :class="flowWorkbenchCumEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchCumEnabled = !flowWorkbenchCumEnabled" title="Toggle Cumulative Flow Area">
+                      <span style="color:#34d399">▲</span> Cum Flow
+                    </button>
+                    <button class="flow-chip" :class="flowWorkbenchDailyEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchDailyEnabled = !flowWorkbenchDailyEnabled" title="Toggle Daily Flow Bars">
+                      <span style="color:#22d3ee">▮</span> Daily Flow
+                    </button>
+                    <button class="flow-chip" :class="flowWorkbenchVolumeEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchVolumeEnabled = !flowWorkbenchVolumeEnabled" title="Toggle Trading Volume Overlay">
+                      <span style="color:#94a3b8">▮</span> Volume
+                    </button>
+                    <button class="flow-chip" :class="flowWorkbenchZScoreEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchZScoreEnabled = !flowWorkbenchZScoreEnabled" title="Toggle Prior Z-Score Waveform">
+                      <span style="color:#e879f9">~</span> Z-Score
+                    </button>
+                    <button class="flow-chip" type="button" @click="flowScaleMode = flowScaleMode === 'usd' ? 'pct_aum' : 'usd'" title="Switch between Dollar Flow ($) and Flow as % of AUM" style="font-weight:600;border-color:rgba(34,211,238,0.4)">
+                      <span x-text="flowScaleMode === 'usd' ? '$ USD' : '% AUM'"></span>
+                    </button>
+                    <button class="flow-chip" :class="flowMeasureActive ? 'flow-chip-active' : ''" type="button" @click="flowMeasureActive = !flowMeasureActive; if (!flowMeasureActive) flowResetMeasurement()" title="Drag across chart canvas to calculate window performance and flow stats">
+                      ⇥ Drag to Measure
+                    </button>
+                  </div>
+                </div>
+
+                <div style="position:relative;width:100%">
+                  <div class="flow-measure-hud" x-show="flowMeasureResult">
+                    <span style="color:var(--flow-cyan);font-weight:700">MEASUREMENT:</span>
+                    <span x-text="`${flowMeasureResult?.startDate} → ${flowMeasureResult?.endDate} (${flowMeasureResult?.count} bars)`"></span>
+                    <span>|</span>
+                    <span>ΔNAV: <strong :class="flowMeasureResult?.priceReturnPct >= 0 ? 'flow-positive' : 'flow-negative'" x-text="`${flowMeasureResult?.priceReturnPct >= 0 ? '+' : ''}${flowMeasureResult?.priceReturnPct?.toFixed(2)}%`"></strong></span>
+                    <span>|</span>
+                    <span>Net Flow: <strong :class="flowMeasureResult?.cumFlow >= 0 ? 'flow-positive' : 'flow-negative'" x-text="formatMoney(flowMeasureResult?.cumFlow)"></strong></span>
+                    <span>|</span>
+                    <span>Dollar Vol: <strong style="color:#94a3b8" x-text="formatMoney(flowMeasureResult?.totalDollarVol)"></strong></span>
+                    <span>|</span>
+                    <span>Conviction: <strong class="flow-cyan" x-text="`${(flowMeasureResult?.convictionRatio || 0).toFixed(1)}%`"></strong></span>
+                    <button class="flow-chip" type="button" @click="flowResetMeasurement()" style="margin-left:0.5rem;padding:2px 6px;font-size:0.65rem">✕ Clear</button>
+                  </div>
+
+                  <div class="flow-workbench-chart"
+                       tabindex="0"
+                       @mousedown="flowChartMeasureStart($event)"
+                       @mousemove="flowChartMeasureMove($event)"
+                       @mouseup="flowChartMeasureEnd()"
+                       @mouseleave="flowChartPointerLeave()"
+                       x-html="flowWorkbenchSvg">
+                  </div>
+                </div>
+              </section>
 
               <section id="flow-chart-panel-daily" class="flow-chart-block" x-show="flowChartTab === 'daily'" role="tabpanel" tabindex="0" :aria-labelledby="`flow-chart-tab-daily`" aria-label="Daily flow analysis">
                 <div class="flow-chart-heading">

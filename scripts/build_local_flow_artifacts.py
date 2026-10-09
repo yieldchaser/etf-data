@@ -21,9 +21,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SOURCE_DIR = REPO_ROOT / "data" / "flows"
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "docs" / "data" / "flows"
 DEFAULT_UNIVERSE_DOC = REPO_ROOT / "FUND_FLOW_ETFS.md"
-EXPECTED_UNIVERSE_COUNT = 145
-EXPECTED_TOTAL_ROWS = 177699
-EXPECTED_WORKBOOK_DATE_ROWS = 2712
+EXPECTED_UNIVERSE_COUNT = 150
+EXPECTED_TOTAL_ROWS = 191540
+EXPECTED_WORKBOOK_DATE_ROWS = 2711
 ARTIFACT_SCHEMA_VERSION = 1
 DATA_SCHEMA_VERSION = 2
 CATALOG_VERSION = "local-authoritative-117-v1"
@@ -333,8 +333,8 @@ def _parse_markdown_tickers(path: Path) -> set[str]:
     except OSError as exc:
         raise _error(f"could not read universe document {path}: {exc}") from exc
     tickers = set(re.findall(r"^\|\s*\*\*([A-Z0-9]+)\*\*\s*\|", text, re.MULTILINE))
-    if "Total Instruments:** 145" not in text:
-        raise _error(f"universe document does not declare the authoritative 145-instrument universe: {path}")
+    if "Total Instruments:** 150" not in text:
+        raise _error(f"universe document does not declare the authoritative 150-instrument universe: {path}")
     return tickers
 
 
@@ -962,7 +962,7 @@ def _expected_output_names(report: dict[str, Any]) -> set[str]:
 def _verify_generated_output(output_dir: Path, report: dict[str, Any]) -> None:
     if not output_dir.is_dir():
         raise _error(f"generated output directory is missing: {output_dir}")
-    actual_names = {path.name for path in output_dir.iterdir() if path.is_file()}
+    actual_names = {path.name for path in output_dir.iterdir() if path.is_file() and path.name != "volume.json"}
     expected_names = _expected_output_names(report)
     if actual_names != expected_names:
         extra = sorted(actual_names - expected_names)
@@ -1049,6 +1049,8 @@ def build_local_artifacts(
     output.parent.mkdir(parents=True, exist_ok=True)
     staging = Path(tempfile.mkdtemp(prefix=f".{output.name}.staging-", dir=output.parent))
     try:
+        if (output / "volume.json").is_file():
+            shutil.copy2(output / "volume.json", staging / "volume.json")
         _atomic_write_json(staging / "catalog.json", _build_catalog(report))
         for ticker in sorted(report["files"]):
             _atomic_write_json(staging / f"{ticker}.json", _build_ticker_payload(ticker, report))

@@ -14,6 +14,7 @@
   ];
 
   const CHART_TABS = [
+    { key: 'workbench', label: 'Multi-Mega Workbench' },
     { key: 'daily', label: 'Daily flow' },
     { key: 'cumulative', label: 'Cumulative' },
     { key: 'percentile', label: 'Percentile' },
@@ -66,14 +67,14 @@
 
   function flowHistoryState(search) {
     const params = new URLSearchParams(search || '');
-    const chart = params.get('chart') || 'price';
+    const chart = params.get('chart') || 'workbench';
     const view = params.get('view');
     const ticker = String(params.get('flow') || params.get('ticker') || '').trim().toUpperCase();
     return {
       ticker,
       range: params.get('range') || '1y',
       priceEnabled: params.get('price') !== '0',
-      chart: CHART_TABS.some(tab => tab.key === chart) ? chart : 'price',
+      chart: CHART_TABS.some(tab => tab.key === chart) ? chart : 'workbench',
       view: ['studio', 'scanner', 'matrix', 'alpha'].includes(view) ? view : (ticker ? 'studio' : null)
     };
   }
@@ -248,7 +249,7 @@
     return (current - mean) / standardDeviation;
   }
 
-  function flowMetricRows(records) {
+  function flowMetricRows(records, volumeMap) {
     const source = Array.isArray(records) ? records : [];
     const rollingTwenty = source.map((record, index) => completeRollingMean(source, index, 20));
     const rollingFive = completeRollingSums(source, 5);
@@ -256,20 +257,43 @@
     const rollingTwentySum = completeRollingSums(source, 20);
     const rollingSixtySum = completeRollingSums(source, 60);
     const sortedTen = rollingTen.filter(Number.isFinite).sort((left, right) => left - right);
-    return source.map((record, index) => ({
-      date: record.date,
-      flow: finiteNumber(record.flow),
-      nav: finiteNumber(record.nav),
-      performance: finiteNumber(record.performance),
-      rollingMean20: rollingTwenty[index],
-      rollingSum5: rollingFive[index],
-      rollingSum10: rollingTen[index],
-      rollingSum20: rollingTwentySum[index],
-      rollingSum60: rollingSixtySum[index],
-      percentile10: percentileAgainstSorted(sortedTen, rollingTen[index]),
-      priorOnlyZScore: priorOnlyZScore(source, index, 30),
-      selectedCumulative: null
-    }));
+    const volumes = source.map(record => {
+      const v = (volumeMap && volumeMap[record.date]) ?? finiteNumber(record.volume);
+      if (v !== null && v !== undefined && v > 0) return v;
+      if (record.nav && record.flow !== null && record.flow !== undefined) {
+        return Math.round(Math.abs(record.flow) / record.nav);
+      }
+      return null;
+    });
+    const rollingVolTwenty = volumes.map((_, index) => {
+      const slice = volumes.slice(Math.max(0, index - 19), index + 1).filter(v => v !== null);
+      return slice.length ? slice.reduce((a, b) => a + b, 0) / slice.length : null;
+    });
+
+    return source.map((record, index) => {
+      const vol = volumes[index];
+      const dollarVol = (vol && record.nav) ? vol * record.nav : null;
+      const f = finiteNumber(record.flow);
+      const conviction = (f !== null && dollarVol && dollarVol > 0) ? (Math.abs(f) / dollarVol) * 100 : null;
+      return {
+        date: record.date,
+        flow: f,
+        nav: finiteNumber(record.nav),
+        performance: finiteNumber(record.performance),
+        volume: vol,
+        dollarVolume: dollarVol,
+        convictionRatio: conviction,
+        rollingMean20: rollingTwenty[index],
+        rollingVolume20: rollingVolTwenty[index],
+        rollingSum5: rollingFive[index],
+        rollingSum10: rollingTen[index],
+        rollingSum20: rollingTwentySum[index],
+        rollingSum60: rollingSixtySum[index],
+        percentile10: percentileAgainstSorted(sortedTen, rollingTen[index]),
+        priorOnlyZScore: priorOnlyZScore(source, index, 30),
+        selectedCumulative: null
+      };
+    });
   }
 
   function selectWindowMetrics(rows, startIndex, endIndex) {
@@ -293,11 +317,11 @@
     return selectWindowMetrics(flowMetricRows(records), startIndex, endIndex);
   }
 
-  function cachedFlowMetricRows(revision, records) {
-    const key = String(revision || `${records.length}:unknown`);
+  function cachedFlowMetricRows(revision, records, volumeMap) {
+    const key = String(revision || `${records.length}:unknown`) + (volumeMap ? ':vol' : '');
     const cached = FLOW_METRIC_CACHE.get(key);
     if (cached) return cached;
-    const rows = flowMetricRows(records);
+    const rows = flowMetricRows(records, volumeMap);
     FLOW_METRIC_CACHE.set(key, rows);
     if (FLOW_METRIC_CACHE.size > 8) FLOW_METRIC_CACHE.delete(FLOW_METRIC_CACHE.keys().next().value);
     return rows;
@@ -603,7 +627,19 @@
       flowScatterFilter: 'all',
       flowScatterHoverTicker: null,
       flowShowCatalogDrawer: false,
-      flowChartTab: 'price',
+      flowVolumeCache: null,
+      flowWorkbenchPriceEnabled: true,
+      flowWorkbenchCumEnabled: true,
+      flowWorkbenchDailyEnabled: true,
+      flowWorkbenchVolumeEnabled: true,
+      flowWorkbenchZScoreEnabled: true,
+      flowScaleMode: 'usd',
+      flowMeasureActive: false,
+      flowMeasureDragging: false,
+      flowMeasureStartIdx: null,
+      flowMeasureCurrentIdx: null,
+      flowMeasureResult: null,
+      flowChartTab: 'workbench',
       flowChartMessage: '',
       flowChartTooltip: { visible: false, index: 0 },
       flowStartIndex: 0,
@@ -654,18 +690,19 @@
         for (const item of this.flowPrimaryInstruments) {
           counts[item.category] = (counts[item.category] || 0) + 1;
         }
+        const total = this.flowPrimaryInstruments.length || 150;
         return [
-          { key: 'all', label: 'All (145)', count: this.flowPrimaryInstruments.length, title: 'All 145 Leveraged & Inverse ETFs' },
-          { key: 'featured', label: 'Featured (24)', count: this.flowFeaturedInstruments.length, title: '24 Featured Anchor ETFs' },
-          { key: 'ai_semis', label: 'AI & Semis 2X (48)', raw: '4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech', count: counts['4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech'] || 48 },
-          { key: 'mega_crypto', label: 'Mega & Crypto 2X (29)', raw: '5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer', count: counts['5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer'] || 29 },
-          { key: 'tech_3x', label: 'Tech & Semis 3X (16)', raw: '2. Technology, Semiconductor & Thematic (Bull)', count: counts['2. Technology, Semiconductor & Thematic (Bull)'] || 16 },
-          { key: 'sectors_3x', label: 'Sectors 3X (12)', raw: '3. Sector Specific Leveraged (Bull)', count: counts['3. Sector Specific Leveraged (Bull)'] || 12 },
-          { key: 'shorts', label: 'Shorts & Hedges (10)', raw: '9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only)', count: counts['9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only)'] || 10 },
-          { key: 'commodities', label: 'Commodities & Vol (9)', raw: '6. Commodities, Energy & Volatility (Bull)', count: counts['6. Commodities, Energy & Volatility (Bull)'] || 9 },
-          { key: 'broad_index', label: 'Broad Index (8)', raw: '1. Broad Market Equity Index (Bull)', count: counts['1. Broad Market Equity Index (Bull)'] || 8 },
-          { key: 'rates_fixed', label: 'Rates & Crypto (8)', raw: '7. Fixed Income, Currencies & Crypto (Bull)', count: counts['7. Fixed Income, Currencies & Crypto (Bull)'] || 8 },
-          { key: 'intl', label: 'International (5)', raw: '8. International / Country (Bull)', count: counts['8. International / Country (Bull)'] || 5 }
+          { key: 'all', label: `All (${total})`, count: total, title: `All ${total} Leveraged & Inverse ETFs` },
+          { key: 'featured', label: `Featured (${this.flowFeaturedInstruments.length || 24})`, count: this.flowFeaturedInstruments.length, title: '24 Featured Anchor ETFs' },
+          { key: 'ai_semis', label: `AI & Semis 2X (${counts['4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech'] || 46})`, raw: '4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech', count: counts['4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech'] || 46 },
+          { key: 'mega_crypto', label: `Mega & Crypto 2X (${counts['5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer'] || 36})`, raw: '5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer', count: counts['5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer'] || 36 },
+          { key: 'tech_3x', label: `Tech & Semis 3X (${counts['2. Technology, Semiconductor & Thematic (Bull)'] || 15})`, raw: '2. Technology, Semiconductor & Thematic (Bull)', count: counts['2. Technology, Semiconductor & Thematic (Bull)'] || 15 },
+          { key: 'sectors_3x', label: `Sectors 3X (${counts['3. Sector Specific Leveraged (Bull)'] || 9})`, raw: '3. Sector Specific Leveraged (Bull)', count: counts['3. Sector Specific Leveraged (Bull)'] || 9 },
+          { key: 'shorts', label: `Shorts & Hedges (${counts['9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only)'] || 14})`, raw: '9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only)', count: counts['9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only)'] || 14 },
+          { key: 'commodities', label: `Commodities & Vol (${counts['6. Commodities, Energy & Volatility (Bull)'] || 8})`, raw: '6. Commodities, Energy & Volatility (Bull)', count: counts['6. Commodities, Energy & Volatility (Bull)'] || 8 },
+          { key: 'broad_index', label: `Broad Index (${counts['1. Broad Market Equity Index (Bull)'] || 8})`, raw: '1. Broad Market Equity Index (Bull)', count: counts['1. Broad Market Equity Index (Bull)'] || 8 },
+          { key: 'rates_fixed', label: `Rates & Crypto (${counts['7. Fixed Income, Currencies & Crypto (Bull)'] || 9})`, raw: '7. Fixed Income, Currencies & Crypto (Bull)', count: counts['7. Fixed Income, Currencies & Crypto (Bull)'] || 9 },
+          { key: 'intl', label: `International (${counts['8. International / Country (Bull)'] || 5})`, raw: '8. International / Country (Bull)', count: counts['8. International / Country (Bull)'] || 5 }
         ];
       },
 
@@ -1525,9 +1562,11 @@
 
       get flowWindowMetrics() {
         const records = this.flowData?.records || [];
-        const key = `${this.flowData?.revision || 'none'}:${this.flowStartIndex}:${this.flowEndIndex}`;
+        const ticker = this.flowTicker;
+        const volMap = this.flowVolumeCache?.series?.[ticker] || null;
+        const key = `${this.flowData?.revision || 'none'}:${this.flowStartIndex}:${this.flowEndIndex}:${Boolean(volMap)}`;
         if (this._flowMetricCacheKey === key && this._flowMetricCache) return this._flowMetricCache;
-        const rows = cachedFlowMetricRows(this.flowData?.revision || 'none', records);
+        const rows = cachedFlowMetricRows(this.flowData?.revision || 'none', records, volMap);
         const metrics = selectWindowMetrics(rows, this.flowStartIndex, this.flowEndIndex);
         this._flowMetricCacheKey = key;
         this._flowMetricCache = metrics;
@@ -2059,6 +2098,392 @@
         </svg>`;
       },
 
+      flowChartMeasureStart(event) {
+        const svg = event.currentTarget.closest('svg') || event.currentTarget;
+        const rect = svg.getBoundingClientRect();
+        const clientX = event.clientX;
+        const padLeft = finiteNumber(svg.dataset.padLeft) || 68;
+        const padRight = finiteNumber(svg.dataset.padRight) || 68;
+        const chartW = rect.width - padLeft - padRight;
+        const relX = clientX - rect.left - padLeft;
+        const rows = this.flowSelectedRows;
+        if (!rows.length || chartW <= 0) return;
+        const fraction = Math.max(0, Math.min(1, relX / chartW));
+        const idx = Math.round(fraction * (rows.length - 1));
+        this.flowMeasureDragging = true;
+        this.flowMeasureStartIdx = idx;
+        this.flowMeasureCurrentIdx = idx;
+        this.flowMeasureActive = true;
+        this._flowComputeMeasurement();
+      },
+
+      flowChartMeasureMove(event) {
+        if (this.flowMeasureDragging) {
+          const svg = event.currentTarget.closest('svg') || event.currentTarget;
+          const rect = svg.getBoundingClientRect();
+          const clientX = event.clientX;
+          const padLeft = finiteNumber(svg.dataset.padLeft) || 68;
+          const padRight = finiteNumber(svg.dataset.padRight) || 68;
+          const chartW = rect.width - padLeft - padRight;
+          const relX = clientX - rect.left - padLeft;
+          const rows = this.flowSelectedRows;
+          if (!rows.length || chartW <= 0) return;
+          const fraction = Math.max(0, Math.min(1, relX / chartW));
+          const idx = Math.round(fraction * (rows.length - 1));
+          if (idx !== this.flowMeasureCurrentIdx) {
+            this.flowMeasureCurrentIdx = idx;
+            this._flowComputeMeasurement();
+          }
+        } else {
+          this.flowChartPointerMove(event, 'workbench');
+        }
+      },
+
+      flowChartMeasureEnd() {
+        if (this.flowMeasureDragging) {
+          this.flowMeasureDragging = false;
+          if (this.flowMeasureStartIdx === this.flowMeasureCurrentIdx) {
+            this.flowResetMeasurement();
+          }
+        }
+      },
+
+      flowResetMeasurement() {
+        this.flowMeasureActive = false;
+        this.flowMeasureDragging = false;
+        this.flowMeasureStartIdx = null;
+        this.flowMeasureCurrentIdx = null;
+        this.flowMeasureResult = null;
+      },
+
+      _flowComputeMeasurement() {
+        const rows = this.flowSelectedRows;
+        if (this.flowMeasureStartIdx === null || this.flowMeasureCurrentIdx === null || !rows.length) return;
+        const i1 = Math.min(this.flowMeasureStartIdx, this.flowMeasureCurrentIdx);
+        const i2 = Math.max(this.flowMeasureStartIdx, this.flowMeasureCurrentIdx);
+        const r1 = rows[i1];
+        const r2 = rows[i2];
+        if (!r1 || !r2) return;
+        const sessions = i2 - i1 + 1;
+        const slice = rows.slice(i1, i2 + 1);
+        const p1 = finiteNumber(r1.nav);
+        const p2 = finiteNumber(r2.nav);
+        const pDiff = (p1 !== null && p2 !== null) ? p2 - p1 : null;
+        const pPct = (p1 && pDiff !== null) ? (pDiff / p1) * 100 : null;
+        const netFlow = slice.reduce((sum, r) => sum + (finiteNumber(r.flow) || 0), 0);
+        const aumVal = finiteNumber(this.flowSelectedInstrument?.aum_m) || 0;
+        const flowPctAum = (aumVal > 0) ? (netFlow / (aumVal * 1e6)) * 100 : null;
+        let totVol = 0;
+        let totDollarVol = 0;
+        slice.forEach(r => {
+          const v = finiteNumber(r.volume) || (r.nav ? Math.round(Math.abs(r.flow || 0) / r.nav) : 0);
+          totVol += v;
+          if (r.nav) totDollarVol += v * r.nav;
+        });
+        const penetration = (totDollarVol > 0) ? (Math.abs(netFlow) / totDollarVol) * 100 : null;
+        this.flowMeasureResult = {
+          i1,
+          i2,
+          sessions,
+          startDate: r1.date,
+          endDate: r2.date,
+          p1,
+          p2,
+          priceDiff: pDiff,
+          pricePct: pPct,
+          netFlow,
+          flowPctAum,
+          totVolume: totVol,
+          totDollarVol,
+          convictionPenetration: penetration
+        };
+      },
+
+      get flowWorkbenchSvg() {
+        const rows = this.flowSelectedRows;
+        const width = this.flowChartWidth;
+        if (rows.length < 2) return emptyChart(width, 420, 'Select at least two source observations.');
+
+        const padLeft = width < 500 ? 54 : 68;
+        const padRight = width < 500 ? 54 : 68;
+        const padTop = 26;
+        const padBottom = 32;
+        const chartW = width - padLeft - padRight;
+
+        const showPrice = this.flowWorkbenchPriceEnabled && this.flowPriceAvailable;
+        const showCum = this.flowWorkbenchCumEnabled;
+        const showDaily = this.flowWorkbenchDailyEnabled;
+        const showVol = this.flowWorkbenchVolumeEnabled;
+        const showZ = this.flowWorkbenchZScoreEnabled;
+
+        const hasTier1 = showPrice || showCum;
+        const hasTier2 = showDaily || showVol;
+        const hasTier3 = showZ;
+
+        const tier1H = hasTier1 ? (width < 500 ? 210 : 250) : 0;
+        const tier2H = hasTier2 ? (width < 500 ? 110 : 130) : 0;
+        const tier3H = hasTier3 ? (width < 500 ? 70 : 85) : 0;
+
+        const gap = 16;
+        let runningY = padTop;
+        const t1Top = runningY;
+        const t1Bottom = runningY + tier1H;
+        if (hasTier1) runningY = t1Bottom + gap;
+
+        const t2Top = runningY;
+        const t2Bottom = runningY + tier2H;
+        if (hasTier2) runningY = t2Bottom + gap;
+
+        const t3Top = runningY;
+        const t3Bottom = runningY + tier3H;
+        if (hasTier3) runningY = t3Bottom;
+
+        const totalH = runningY + padBottom;
+
+        const xScale = index => padLeft + (rows.length < 2 ? chartW / 2 : index * chartW / (rows.length - 1));
+        const slot = chartW / Math.max(1, rows.length);
+
+        const aumTotal = (finiteNumber(this.flowSelectedInstrument?.aum_m) || 0) * 1e6;
+        const isPctAum = this.flowScaleMode === 'pct_aum' && aumTotal > 0;
+
+        // --- TIER 1: Cumulative Flow Area + Price NAV Overlay ---
+        let tier1Svg = '';
+        if (hasTier1) {
+          const cumValues = rows.map(r => {
+            const c = finiteNumber(r.selectedCumulative);
+            if (c === null) return null;
+            return isPctAum ? (c / aumTotal) * 100 : c;
+          }).filter(v => v !== null);
+
+          const minCum = cumValues.length ? Math.min(0, ...cumValues) : 0;
+          const maxCum = cumValues.length ? Math.max(0, ...cumValues) : 0;
+          const cumPad = Math.max(isPctAum ? 0.5 : 1e6, (maxCum - minCum) * 0.08);
+          const cumLow = minCum - cumPad;
+          const cumHigh = maxCum + cumPad;
+          const yCum = val => t1Top + (cumHigh - val) / (cumHigh - cumLow || 1) * tier1H;
+          const zeroCumY = yCum(0);
+
+          const prices = rows.map(r => finiteNumber(r.nav)).filter(v => v !== null);
+          const minP = prices.length ? Math.min(...prices) : 0;
+          const maxP = prices.length ? Math.max(...prices) : 100;
+          const pPad = Math.max((maxP - minP) * 0.08, maxP * 0.01);
+          const pLow = Math.max(0, minP - pPad);
+          const pHigh = maxP + pPad;
+          const yPrice = val => t1Top + (pHigh - val) / (pHigh - pLow || 1) * tier1H;
+
+          let t1Grid = '';
+          [cumHigh, 0, cumLow].forEach(v => {
+            const y = yCum(v);
+            const isZero = Math.abs(v) < 1e-6;
+            const lbl = isPctAum ? `${v >= 0 ? '+' : ''}${v.toFixed(1)}%` : axisNumber(v);
+            t1Grid += `<line x1="${padLeft}" y1="${y.toFixed(1)}" x2="${width - padRight}" y2="${y.toFixed(1)}" stroke="${isZero ? 'rgba(255,255,255,0.22)' : COLORS.grid}" stroke-width="1"${isZero ? '' : ' stroke-dasharray="3 3"'} /><text x="${padLeft - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="${COLORS.cyan}" font-family="ui-monospace, monospace" font-size="10">${escapeHtml(lbl)}</text>`;
+          });
+
+          if (showPrice) {
+            [pHigh, (pHigh + pLow) / 2, pLow].forEach(v => {
+              const y = yPrice(v);
+              t1Grid += `<text x="${width - padRight + 8}" y="${(y + 4).toFixed(1)}" text-anchor="start" fill="#c084fc" font-family="ui-monospace, monospace" font-size="10">$${v.toFixed(2)}</text>`;
+            });
+          }
+
+          let cumPaths = '';
+          if (showCum && cumValues.length) {
+            const cumPoints = rows.map((r, i) => {
+              const c = finiteNumber(r.selectedCumulative);
+              const val = c === null ? null : (isPctAum ? (c / aumTotal) * 100 : c);
+              return { x: xScale(i), y: finiteScale(yCum, val) };
+            });
+
+            const posPoints = cumPoints.map(p => ({ x: p.x, y: p.y !== null ? Math.min(p.y, zeroCumY) : zeroCumY }));
+            const negPoints = cumPoints.map(p => ({ x: p.x, y: p.y !== null ? Math.max(p.y, zeroCumY) : zeroCumY }));
+
+            const posArea = areaPath(posPoints, zeroCumY);
+            const negArea = areaPath(negPoints, zeroCumY);
+
+            cumPaths += `<defs>
+              <linearGradient id="wb-cum-pos" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#34d399" stop-opacity="0.22"/><stop offset="100%" stop-color="#34d399" stop-opacity="0.0"/></linearGradient>
+              <linearGradient id="wb-cum-neg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fb7185" stop-opacity="0.0"/><stop offset="100%" stop-color="#fb7185" stop-opacity="0.22"/></linearGradient>
+            </defs>`;
+            if (posArea) cumPaths += `<path d="${posArea}" fill="url(#wb-cum-pos)"/>`;
+            if (negArea) cumPaths += `<path d="${negArea}" fill="url(#wb-cum-neg)"/>`;
+            cumPaths += `<path d="${linePath(cumPoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`;
+          }
+
+          let pricePathSvg = '';
+          if (showPrice && prices.length) {
+            const pricePoints = rows.map((r, i) => ({ x: xScale(i), y: finiteScale(yPrice, r.nav) }));
+            pricePathSvg += `<path d="${linePath(pricePoints)}" fill="none" stroke="#c084fc" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round"/>`;
+
+            let maxPIdx = 0, minPIdx = 0;
+            rows.forEach((r, i) => {
+              if (r.nav !== null) {
+                if (r.nav > (rows[maxPIdx]?.nav ?? -Infinity)) maxPIdx = i;
+                if (r.nav < (rows[minPIdx]?.nav ?? Infinity)) minPIdx = i;
+              }
+            });
+            if (rows[maxPIdx]?.nav !== null) {
+              const xHigh = xScale(maxPIdx);
+              const yHigh = yPrice(rows[maxPIdx].nav);
+              pricePathSvg += `<circle cx="${xHigh.toFixed(1)}" cy="${yHigh.toFixed(1)}" r="3" fill="#22d3ee" stroke="#fff" stroke-width="1.5"/><text x="${xHigh.toFixed(1)}" y="${(yHigh - 7).toFixed(1)}" text-anchor="middle" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9" font-weight="600">HIGH $${rows[maxPIdx].nav.toFixed(2)}</text>`;
+            }
+            if (rows[minPIdx]?.nav !== null && minPIdx !== maxPIdx) {
+              const xLow = xScale(minPIdx);
+              const yLow = yPrice(rows[minPIdx].nav);
+              pricePathSvg += `<circle cx="${xLow.toFixed(1)}" cy="${yLow.toFixed(1)}" r="3" fill="#fb7185" stroke="#fff" stroke-width="1.5"/><text x="${xLow.toFixed(1)}" y="${(yLow + 13).toFixed(1)}" text-anchor="middle" fill="#fb7185" font-family="ui-monospace, monospace" font-size="9" font-weight="600">LOW $${rows[minPIdx].nav.toFixed(2)}</text>`;
+            }
+
+            rows.forEach((r, i) => {
+              const z = finiteNumber(r.priorOnlyZScore);
+              const p = finiteNumber(r.nav);
+              if (p !== null && z !== null && Math.abs(z) >= 2.0) {
+                const x = xScale(i);
+                const y = yPrice(p);
+                const isBuy = z >= 2.0;
+                const dotColor = isBuy ? '#34d399' : '#fb7185';
+                pricePathSvg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4.5" fill="${dotColor}" stroke="#090d16" stroke-width="1.5" opacity="0.95"><title>${isBuy ? 'Climax Inflow' : 'Climax Redemption'} (${r.date}): Z=${z.toFixed(2)}σ</title></circle>`;
+              }
+            });
+          }
+
+          tier1Svg = `<g class="flow-tier-1">${t1Grid}${cumPaths}${pricePathSvg}</g>`;
+        }
+
+        // --- TIER 2: Daily Net Flow Bars + Volume Overlay ---
+        let tier2Svg = '';
+        if (hasTier2) {
+          const dailyFlows = rows.map(r => {
+            const f = finiteNumber(r.flow);
+            if (f === null) return null;
+            return isPctAum ? (f / aumTotal) * 100 : f;
+          }).filter(v => v !== null);
+
+          const maxDaily = Math.max(isPctAum ? 0.2 : 1e5, ...dailyFlows.map(v => Math.abs(v))) * 1.1;
+          const yDaily = val => t2Top + tier2H / 2 - (val / maxDaily) * (tier2H / 2);
+          const zeroDailyY = yDaily(0);
+
+          const volumes = rows.map(r => finiteNumber(r.volume) || (r.nav ? Math.round(Math.abs(r.flow || 0) / r.nav) : 0));
+          const maxVol = Math.max(100, ...volumes) * 1.15;
+          const yVol = val => t2Bottom - (val / maxVol) * tier2H;
+
+          let t2Grid = `<line x1="${padLeft}" y1="${(t2Top - 8).toFixed(1)}" x2="${width - padRight}" y2="${(t2Top - 8).toFixed(1)}" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>`;
+          t2Grid += `<line x1="${padLeft}" y1="${zeroDailyY.toFixed(1)}" x2="${width - padRight}" y2="${zeroDailyY.toFixed(1)}" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>`;
+
+          t2Grid += `<text x="${padLeft - 8}" y="${(zeroDailyY + 3).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="10">${isPctAum ? '0.0%' : '$0'}</text>`;
+          t2Grid += `<text x="${padLeft - 8}" y="${(t2Top + 10).toFixed(1)}" text-anchor="end" fill="#34d399" font-family="ui-monospace, monospace" font-size="9">${isPctAum ? `+${maxDaily.toFixed(1)}%` : axisNumber(maxDaily)}</text>`;
+          t2Grid += `<text x="${padLeft - 8}" y="${(t2Bottom - 3).toFixed(1)}" text-anchor="end" fill="#fb7185" font-family="ui-monospace, monospace" font-size="9">${isPctAum ? `−${maxDaily.toFixed(1)}%` : axisNumber(-maxDaily)}</text>`;
+
+          if (showVol) {
+            t2Grid += `<text x="${width - padRight + 8}" y="${(t2Top + 10).toFixed(1)}" text-anchor="start" fill="#94a3b8" font-family="ui-monospace, monospace" font-size="9">${axisNumber(maxVol)} shs</text>`;
+          }
+
+          let volBarsSvg = '';
+          const barW = Math.max(0.8, Math.min(10, slot * 0.72));
+          if (showVol) {
+            rows.forEach((r, i) => {
+              const v = finiteNumber(r.volume) || (r.nav ? Math.round(Math.abs(r.flow || 0) / r.nav) : 0);
+              if (v > 0) {
+                const x = xScale(i) - barW / 2;
+                const h = Math.max(1, (v / maxVol) * tier2H);
+                volBarsSvg += `<rect x="${x.toFixed(1)}" y="${(t2Bottom - h).toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="rgba(148,163,184,0.15)" rx="0.5"/>`;
+              }
+            });
+            const volMaPoints = rows.map((r, i) => ({ x: xScale(i), y: finiteScale(yVol, r.rollingVolume20) }));
+            volBarsSvg += `<path d="${linePath(volMaPoints)}" fill="none" stroke="#64748b" stroke-width="1.3" stroke-dasharray="2 2"/>`;
+          }
+
+          let dailyBarsSvg = '';
+          if (showDaily) {
+            rows.forEach((r, i) => {
+              const f = finiteNumber(r.flow);
+              if (f === null) return;
+              const val = isPctAum ? (f / aumTotal) * 100 : f;
+              const x = xScale(i) - barW / 2;
+              const y = yDaily(val);
+              const top = val >= 0 ? y : zeroDailyY;
+              const h = Math.max(1.2, Math.abs(y - zeroDailyY));
+              const fill = val === 0 ? COLORS.neutral : val > 0 ? COLORS.positive : COLORS.negative;
+              dailyBarsSvg += `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${fill}" opacity="0.9" rx="0.6"/>`;
+            });
+            const meanPoints = rows.map((r, i) => {
+              const m = finiteNumber(r.rollingMean20);
+              const val = m === null ? null : (isPctAum ? (m / aumTotal) * 100 : m);
+              return { x: xScale(i), y: finiteScale(yDaily, val) };
+            });
+            dailyBarsSvg += `<path d="${linePath(meanPoints)}" fill="none" stroke="${COLORS.cyan}" stroke-width="1.8" stroke-linejoin="round"/>`;
+          }
+
+          tier2Svg = `<g class="flow-tier-2">${t2Grid}${volBarsSvg}${dailyBarsSvg}</g>`;
+        }
+
+        // --- TIER 3: Normalized Flow Z-Score Oscillator ---
+        let tier3Svg = '';
+        if (hasTier3) {
+          const zeroZY = t3Top + tier3H / 2;
+          const yZ = z => zeroZY - (Math.max(-3, Math.min(3, z)) / 3.0) * (tier3H / 2);
+          const yPos15 = yZ(1.5);
+          const yNeg15 = yZ(-1.5);
+
+          let t3Grid = `<line x1="${padLeft}" y1="${(t3Top - 8).toFixed(1)}" x2="${width - padRight}" y2="${(t3Top - 8).toFixed(1)}" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>`;
+          t3Grid += `<rect x="${padLeft}" y="${t3Top}" width="${chartW}" height="${(yPos15 - t3Top).toFixed(1)}" fill="rgba(34,211,238,0.05)"/>`;
+          t3Grid += `<rect x="${padLeft}" y="${yNeg15.toFixed(1)}" width="${chartW}" height="${(t3Bottom - yNeg15).toFixed(1)}" fill="rgba(245,158,11,0.05)"/>`;
+          t3Grid += `<line x1="${padLeft}" y1="${zeroZY.toFixed(1)}" x2="${width - padRight}" y2="${zeroZY.toFixed(1)}" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>`;
+          t3Grid += `<line x1="${padLeft}" y1="${yPos15.toFixed(1)}" x2="${width - padRight}" y2="${yPos15.toFixed(1)}" stroke="rgba(34,211,238,0.3)" stroke-width="1" stroke-dasharray="3 3"/>`;
+          t3Grid += `<line x1="${padLeft}" y1="${yNeg15.toFixed(1)}" x2="${width - padRight}" y2="${yNeg15.toFixed(1)}" stroke="rgba(245,158,11,0.3)" stroke-width="1" stroke-dasharray="3 3"/>`;
+
+          t3Grid += `<text x="${padLeft - 8}" y="${(yPos15 + 3).toFixed(1)}" text-anchor="end" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9">+1.5σ</text>`;
+          t3Grid += `<text x="${padLeft - 8}" y="${(zeroZY + 3).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="9">0σ</text>`;
+          t3Grid += `<text x="${padLeft - 8}" y="${(yNeg15 + 3).toFixed(1)}" text-anchor="end" fill="#f59e0b" font-family="ui-monospace, monospace" font-size="9">−1.5σ</text>`;
+
+          const zPoints = rows.map((r, i) => ({ x: xScale(i), y: finiteScale(yZ, r.priorOnlyZScore) }));
+          const zPath = `<path d="${linePath(zPoints)}" fill="none" stroke="#facc15" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>`;
+
+          tier3Svg = `<g class="flow-tier-3">${t3Grid}${zPath}</g>`;
+        }
+
+        // --- Date Ticks at Bottom ---
+        const tickIndices = dateTickIndices(rows.length, width);
+        const dateTicksSvg = tickIndices.map(idx => {
+          const x = xScale(idx);
+          const anchor = idx === 0 ? 'start' : (idx === rows.length - 1 ? 'end' : 'middle');
+          return `<text x="${x.toFixed(1)}" y="${(totalH - 8).toFixed(1)}" text-anchor="${anchor}" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="10">${escapeHtml(axisDate(rows[idx].date))}</text>`;
+        }).join('');
+
+        // --- Drag-to-Measure Band Overlay ---
+        let measureSvg = '';
+        if (this.flowMeasureActive && this.flowMeasureStartIdx !== null && this.flowMeasureCurrentIdx !== null) {
+          const m1 = Math.min(this.flowMeasureStartIdx, this.flowMeasureCurrentIdx);
+          const m2 = Math.max(this.flowMeasureStartIdx, this.flowMeasureCurrentIdx);
+          const x1 = xScale(m1);
+          const x2 = xScale(m2);
+          const bandW = Math.max(2, Math.abs(x2 - x1));
+          const bandX = Math.min(x1, x2);
+          measureSvg = `<g class="flow-measure-band" pointer-events="none">
+            <rect x="${bandX.toFixed(1)}" y="${padTop}" width="${bandW.toFixed(1)}" height="${(runningY - padTop).toFixed(1)}" fill="rgba(34,211,238,0.12)" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="3 3"/>
+            <line x1="${bandX.toFixed(1)}" y1="${padTop}" x2="${bandX.toFixed(1)}" y2="${runningY}" stroke="#22d3ee" stroke-width="1.5"/>
+            <line x1="${(bandX + bandW).toFixed(1)}" y1="${padTop}" x2="${(bandX + bandW).toFixed(1)}" y2="${runningY}" stroke="#22d3ee" stroke-width="1.5"/>
+          </g>`;
+        }
+
+        // --- Synchronized Crosshair Overlay ---
+        let crosshairSvg = '';
+        if (this.flowHoverIndex !== null && this.flowHoverChart === 'workbench' && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
+          const hX = xScale(this.flowHoverIndex);
+          crosshairSvg = `<g class="flow-crosshair" pointer-events="none">
+            <line x1="${hX.toFixed(1)}" y1="${padTop}" x2="${hX.toFixed(1)}" y2="${runningY}" stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="3 3"/>
+          </g>`;
+        }
+
+        return `<svg viewBox="0 0 ${width} ${totalH}" data-pad-left="${padLeft}" data-pad-right="${padRight}" data-chart-width="${width}" role="img" aria-label="Multi-Mega Flow and Price Workbench" style="width:100%;height:auto;display:block">
+          <title>Multi-Mega Flow & Price Workbench</title>
+          ${tier1Svg}
+          ${tier2Svg}
+          ${tier3Svg}
+          ${dateTicksSvg}
+          ${measureSvg}
+          ${crosshairSvg}
+        </svg>`;
+      },
+
       get flowMultiHorizonImpulseChartSvg() {
         const rows = this.flowSelectedRows;
         const width = Math.max(280, Math.min(680, Math.round(this.flowChartWidth * 0.58)));
@@ -2150,8 +2575,8 @@
             const primary = Array.isArray(payload?.instruments) ? payload.instruments : [];
             const featured = primary.filter(item => item?.featured).length;
             const tickers = new Set(primary.map(item => String(item?.ticker || '').toUpperCase()));
-            if (primary.length !== 145 || featured !== 24 || tickers.size !== 145) {
-              throw new Error('Local catalog export failed its 145-instrument, 24-featured integrity checks.');
+            if (primary.length !== 150 || featured !== 24 || tickers.size !== 150) {
+              throw new Error('Local catalog export failed its 150-instrument, 24-featured integrity checks.');
             }
             return payload;
           });
@@ -2160,17 +2585,20 @@
             if (!response.ok) throw new Error(`Local coverage manifest request returned ${response.status}.`);
             const payload = await response.json();
             const entries = payload?.etfs && typeof payload.etfs === 'object' ? payload.etfs : {};
-            if (payload?.complete !== true || payload?.status !== 'complete' || payload?.counts?.instruments !== 145 || Object.keys(entries).length !== 145 || payload?.source?.network_fetch !== false) {
-              throw new Error('Local coverage manifest failed its 145-instrument completeness checks.');
+            if (payload?.complete !== true || payload?.status !== 'complete' || payload?.counts?.instruments !== 150 || Object.keys(entries).length !== 150 || payload?.source?.network_fetch !== false) {
+              throw new Error('Local coverage manifest failed its 150-instrument completeness checks.');
             }
             return payload;
           });
-        const alphaPromise = fetch('data/alpha_signals.json')
+        const volumePromise = fetch('data/flows/volume.json')
           .then(async response => response.ok ? response.json() : null)
           .catch(() => null);
-        const [catalogResult, manifestResult, alphaResult] = await Promise.allSettled([catalogPromise, manifestPromise, alphaPromise]);
+        const [catalogResult, manifestResult, alphaResult, volumeResult] = await Promise.allSettled([catalogPromise, manifestPromise, alphaPromise, volumePromise]);
         this.flowBootstrapControllers = [];
         if (this.flowDestroyed) return;
+        if (volumeResult.status === 'fulfilled' && volumeResult.value) {
+          this.flowVolumeCache = volumeResult.value;
+        }
         if (catalogResult.status === 'fulfilled' && catalogResult.value && Array.isArray(catalogResult.value.instruments)) {
           this.flowCatalog = catalogResult.value;
           this._flowEntryMap = Object.fromEntries(this.flowAllEntries.map(item => [item.ticker, item]));
@@ -2402,7 +2830,7 @@
           this.flowTicker = normalized;
           this.flowData = null;
           this.flowDataState = 'unavailable';
-          this.flowDataError = 'This ticker is not in the 145-instrument local leveraged/inverse catalog.';
+          this.flowDataError = 'This ticker is not in the 150-instrument local leveraged/inverse catalog.';
           this._flowMetricCacheKey = '';
           this._flowMetricCache = null;
           if (settings.writeUrl !== false) this._flowWriteUrl(Boolean(settings.push));

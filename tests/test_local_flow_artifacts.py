@@ -16,7 +16,7 @@ SOURCE_DIR = ROOT / "data" / "flows"
 CATALOG_JSON = DOCS_OUT / "catalog.json"
 MANIFEST_JSON = DOCS_OUT / "manifest.json"
 
-EXPECTED_COUNTS = {"featured": 24, "instruments": 145, "rows": 177699}
+EXPECTED_COUNTS = {"featured": 24, "instruments": 150, "rows": 191540}
 
 
 @pytest.fixture(autouse=True)
@@ -37,29 +37,27 @@ def report():
 def test_validate_local_dataset_reports_exact_universe(report):
     assert report["status"] == "ok"
     assert report["expected"] == {
-        "universe_count": 145,
-        "total_rows": 177699,
+        "universe_count": 150,
+        "total_rows": 191540,
         "featured_count": 24,
     }
     actual = report["actual"]
-    assert actual["catalog_rows"] == 145
-    assert actual["individual_files"] == 145
-    assert actual["individual_rows"] == 177699
-    assert actual["aggregate_rows"] == 177699
-    assert actual["workbook_catalog_rows"] == 145
-    assert actual["workbook_latest_rows"] == 145
-    assert actual["unique_tickers"] == 145
+    assert actual["catalog_rows"] == 150
+    assert actual["individual_files"] == 150
+    assert actual["individual_rows"] == 191540
+    assert actual["aggregate_rows"] == 191540
+    assert actual["workbook_catalog_rows"] == 150
+    assert actual["workbook_latest_rows"] == 150
+    assert actual["unique_tickers"] == 150
     assert actual["featured_tickers"] == 24
     assert actual["earliest_date"] == "2016-01-04"
     assert actual["latest_date"] == "2026-10-07"
     assert actual["duplicate_ticker_dates"] == 0
     assert actual["missing_required_values"] == 0
-    assert actual["metadata_discrepancy_count"] == 1
-    assert actual["metadata_discrepancies"] == [
-        "WTIU.underlying raw label differs from summary label"
-    ]
-    assert report["individual"]["file_count"] == 145
-    assert report["individual"]["total_rows"] == 177699
+    assert actual["metadata_discrepancy_count"] == 0
+    assert actual["metadata_discrepancies"] == []
+    assert report["individual"]["file_count"] == 150
+    assert report["individual"]["total_rows"] == 191540
     assert len(report["featured_tickers"]) == 24
     assert len(set(report["featured_tickers"])) == 24
     assert set(report["featured_tickers"]) <= set(report["summary"])
@@ -68,7 +66,7 @@ def test_validate_local_dataset_reports_exact_universe(report):
 def test_individual_files_expose_required_columns_and_clean_dates(report):
     files = report["files"]
     assert sorted(files) == sorted(report["summary"])
-    assert len(files) == 145
+    assert len(files) == 150
     for ticker, info in files.items():
         assert set(build.REQUIRED_COLUMNS) <= set(info["headers"])
         assert set(info["headers"]) <= set(build.AGGREGATE_COLUMNS)
@@ -83,9 +81,9 @@ def test_individual_files_expose_required_columns_and_clean_dates(report):
         assert info["missing_required_values"] == 0
         assert info["duplicate_dates"] == 0
         assert info["relative_path"] == f"data/flows/individual/{ticker}_flows.csv"
-    assert sum(info["row_count"] for info in files.values()) == 177699
-    assert report["aggregate"]["row_count"] == 177699
-    assert report["aggregate"]["unique_ticker_count"] == 145
+    assert sum(info["row_count"] for info in files.values()) == 191540
+    assert report["aggregate"]["row_count"] == 191540
+    assert report["aggregate"]["unique_ticker_count"] == 150
     assert set(build.FEATURED_TICKERS) <= set(files)
     for ticker in ("TQQQ", "NVDL", sorted(files)[0]):
         info = files[ticker]
@@ -102,7 +100,7 @@ def test_docs_catalog_and_manifest_are_deterministic_projections(report):
     assert "watch_tier" not in catalog
     assert catalog["content_sha256"] == build._payload_hash(catalog)
     manifest = json.loads(MANIFEST_JSON.read_text(encoding="utf-8"))
-    assert manifest["counts"] == {"featured": 24, "files": 145, "instruments": 145, "rows": 177699}
+    assert manifest["counts"] == {"featured": 24, "files": 150, "instruments": 150, "rows": 191540}
     assert manifest["content_sha256"] == build._payload_hash(manifest)
 
 
@@ -143,8 +141,8 @@ def test_build_local_artifacts_writes_only_into_temp_output(tmp_path):
         validate_markdown=False,
     )
     assert result["status"] == "ok"
-    assert result["ticker_artifacts"] == 145
-    assert result["row_count"] == 177699
+    assert result["ticker_artifacts"] == 150
+    assert result["row_count"] == 191540
     assert result["source_asof"] == "2026-10-07"
     assert Path(result["catalog"]) == output / "catalog.json"
     assert Path(result["manifest"]) == output / "manifest.json"
@@ -152,13 +150,13 @@ def test_build_local_artifacts_writes_only_into_temp_output(tmp_path):
     catalog = json.loads((output / "catalog.json").read_text(encoding="utf-8"))
     tickers = {row["ticker"] for row in catalog["instruments"]}
     assert names == {"catalog.json", "manifest.json", *(f"{ticker}.json" for ticker in tickers)}
-    assert len(tickers) == 145
+    assert len(tickers) == 150
     assert catalog["counts"] == EXPECTED_COUNTS
     assert "watch_tier" not in catalog
     manifest = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["complete"] is True
     assert manifest["status"] == "complete"
-    assert manifest["counts"]["instruments"] == 145
+    assert manifest["counts"]["instruments"] == 150
     assert manifest["quality"]["workbook_checked"] is False
     assert not [path for path in tmp_path.iterdir() if path.name != "flows"]
     after = {
@@ -176,28 +174,28 @@ def test_assert_output_is_safe_refuses_writing_into_source(tmp_path):
     build._assert_output_is_safe(SOURCE_DIR, tmp_path)
 
 
-def test_ui_and_workflows_agree_on_145_local_cardinality():
+def test_ui_and_workflows_agree_on_150_local_cardinality():
     flow_js = (ROOT / "docs" / "flow-ui.js").read_text(encoding="utf-8")
     markets = (ROOT / "docs" / "markets.html").read_text(encoding="utf-8")
     fallback = (ROOT / "docs" / "runtime-fallback.js").read_text(encoding="utf-8")
     index = (ROOT / "docs" / "index.html").read_text(encoding="utf-8")
-    assert "primary.length !== 145" in flow_js
+    assert "primary.length !== 150" in flow_js
     assert "featured !== 24" in flow_js
     assert "watchTier" not in flow_js
     assert "etf_search_index" not in flow_js
-    assert '<option value="all">145 local instruments</option>' in markets
+    assert '<option value="all">150 local instruments</option>' in markets
     assert '<option value="featured">24 featured instruments</option>' in markets
-    assert '<option value="primary">All 145 instruments</option>' in markets
+    assert '<option value="primary">All 150 instruments</option>' in markets
     assert '<option value="watch"' not in markets
     assert "watch_tier" not in markets
     assert "data/flows/manifest.json" in fallback
     assert "curated_manifest" not in fallback
-    assert "145 local leveraged and inverse instruments" in index
+    assert "150 local leveraged and inverse instruments" in index
     assert "15,000" not in index and "15K" not in index
     build_site = (ROOT / ".github" / "workflows" / "build_site.yml").read_text(encoding="utf-8")
     assert "--verify-output" in build_site
     assert "workflow_call" in build_site
-    assert "['instruments'] == 145" in build_site
+    assert "['instruments'] == 150" in build_site
     assert "['featured'] == 24" in build_site
     assert "'watch_tier' not in catalog" in build_site
     daily = (ROOT / ".github" / "workflows" / "daily_etf_flows.yml").read_text(encoding="utf-8")

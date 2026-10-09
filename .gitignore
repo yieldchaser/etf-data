@@ -122,6 +122,9 @@ scratch/
 investigation.md
 new_tags_analysis.md
 etf_holdings_*.xlsx
+docs/Photos/
+docs/Photos.zip
+QUANT_FLOW_RESEARCH_MASTER_*.md
 
 # Ignore local agent loop files
 docs/data/details/

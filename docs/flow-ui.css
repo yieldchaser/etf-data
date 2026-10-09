@@ -706,9 +706,178 @@
   gap: 0.3rem;
 }
 
-.flow-research .flow-range-pair,
+/* Dual-Handle Range Slider Brush */
+.flow-research .flow-brush-slider-wrap {
+  position: relative;
+  height: 42px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--flow-line);
+  border-radius: 8px;
+  padding: 0 10px;
+  margin: 0.6rem 0 0.2rem;
+  user-select: none;
+}
+
+.flow-research .flow-brush-slider-track {
+  position: absolute;
+  top: 18px;
+  left: 10px;
+  right: 10px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  z-index: 1;
+}
+
+.flow-research .flow-brush-slider-highlight {
+  position: absolute;
+  top: 18px;
+  height: 6px;
+  background: var(--flow-cyan);
+  border-radius: 3px;
+  z-index: 2;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.flow-research .flow-brush-inputs {
+  position: relative;
+  width: 100%;
+}
+
+.flow-research .flow-brush-inputs input[type="range"] {
+  position: absolute;
+  width: 100%;
+  top: 5px;
+  left: 0;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+  background: none;
+  height: 32px;
+  margin: 0;
+  z-index: 3;
+}
+
+.flow-research .flow-brush-inputs input[type="range"]::-webkit-slider-thumb {
+  pointer-events: auto;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: #ffffff;
+  border: 2px solid var(--flow-cyan);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  cursor: ew-resize;
+  margin-top: -6px;
+  transition: transform 0.1s ease, border-color 0.1s ease;
+}
+
+.flow-research .flow-brush-inputs input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.18);
+  border-color: #38bdf8;
+}
+
+.flow-research .flow-brush-inputs input[type="range"]::-moz-range-thumb {
+  pointer-events: auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: #ffffff;
+  border: 2px solid var(--flow-cyan);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  cursor: ew-resize;
+  transition: transform 0.1s ease, border-color 0.1s ease;
+}
+
+.flow-research .flow-brush-inputs input[type="range"]::-webkit-slider-runnable-track {
+  background: none !important;
+  border: none !important;
+}
+
+.flow-research .flow-brush-inputs input[type="range"]::-moz-range-track {
+  background: none !important;
+  border: none !important;
+}
+
+.flow-research .flow-brush-labels {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 0.6875rem;
+  color: var(--flow-subtle);
+  margin-top: 0.2rem;
+}
+
+/* Multi-Mega Flow Workbench Header & Toolbar */
+.flow-research .flow-workbench-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  padding: 0.75rem 0.95rem;
+  border-bottom: 1px solid var(--flow-line);
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.flow-research .flow-workbench-title-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.flow-research .flow-workbench-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.flow-research .flow-chip.flow-chip-active {
+  background: rgba(34, 211, 238, 0.12);
+  border-color: rgba(34, 211, 238, 0.4);
+  color: var(--flow-cyan);
+}
+
+.flow-research .flow-measure-hud {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(10, 15, 26, 0.94);
+  border: 1px solid var(--flow-cyan);
+  border-radius: 6px;
+  padding: 6px 12px;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-family: ui-monospace, "SF Mono", monospace;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75), 0 2px 8px rgba(34, 211, 238, 0.25);
+  z-index: 40;
+  pointer-events: auto;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.flow-research .flow-workbench-chart {
+  position: relative;
+  width: 100%;
+  cursor: crosshair;
+  user-select: none;
+}
+
 .flow-research .flow-range-labels {
-  display: none !important;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--flow-subtle);
+  font-family: ui-monospace, "SF Mono", monospace;
+  margin-top: 0.35rem;
+  padding: 0 2px;
 }
 
 .flow-research .flow-chart-tooltip-box {

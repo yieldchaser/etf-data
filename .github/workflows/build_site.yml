@@ -270,14 +270,14 @@ jobs:
           import json
           catalog = json.load(open('docs/data/flows/catalog.json'))
           manifest = json.load(open('docs/data/flows/manifest.json'))
-          assert catalog['counts']['instruments'] == 145, catalog['counts']
+          assert catalog['counts']['instruments'] == 150, catalog['counts']
           assert catalog['counts']['featured'] == 24, catalog['counts']
           assert 'watch_tier' not in catalog, 'catalog must not export a watch tier'
-          assert manifest['counts']['instruments'] == 145, manifest['counts']
+          assert manifest['counts']['instruments'] == 150, manifest['counts']
           assert manifest['complete'] is True and manifest['status'] == 'complete', manifest['status']
           assert manifest['source']['network_fetch'] is False, manifest['source']
           assert catalog['source']['network_fetch'] is False, catalog['source']
-          print('local ETF flow artifacts OK: 145 instruments, 24 featured, no watch tier, no network fetch')
+          print('local ETF flow artifacts OK: 150 instruments, 24 featured, no watch tier, no network fetch')
           "
 
       - name: Upload Pages artifact

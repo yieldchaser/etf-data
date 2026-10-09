@@ -78,13 +78,13 @@ def test_search_scopes_cover_all_primary_and_featured_rows_without_watch_tier():
     result = run_metrics(
         "(()=>{const catalog=require('./docs/data/flows/catalog.json');const app=m.flowResearchApp();app.flowCatalog=catalog;app._flowEntryMap=Object.fromEntries(app.flowAllEntries.map(item=>[item.ticker,item]));app.flowResolvedStates=Object.fromEntries(app.flowAllEntries.map(item=>[item.ticker,'pending']));app.flowManifest={schema_version:2,etfs:{}};const primary=app.flowSearchResults.map(result=>result.item);app.flowTierFilter='featured';const featured=app.flowSearchResults.map(result=>result.item);app.flowTierFilter='watch';const watch=app.flowSearchResults.map(result=>result.item);return {defaultCount:primary.length,defaultPrimary:primary.every(item=>item.tier==='primary'),featuredCount:featured.length,featuredPrimary:featured.every(item=>item.tier==='primary'&&item.featured),watchTiers:[...new Set(watch.map(item=>item.tier))],hasWatchTierKey:'watch_tier' in catalog,counts:catalog.counts};})()"
     )
-    assert result["defaultCount"] == 145
+    assert result["defaultCount"] == 150
     assert result["defaultPrimary"] is True
     assert result["featuredCount"] == 24
     assert result["featuredPrimary"] is True
     assert result["watchTiers"] == ["primary"]
     assert result["hasWatchTierKey"] is False
-    assert result["counts"] == {"featured": 24, "instruments": 145, "rows": 177699}
+    assert result["counts"] == {"featured": 24, "instruments": 150, "rows": 191540}
 
 
 def test_history_reconciliation_updates_flow_state_and_clears_missing_selection():
