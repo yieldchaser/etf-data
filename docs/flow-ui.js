@@ -2830,7 +2830,7 @@
 
         const tier1H = hasTier1 ? (width < 500 ? 210 : 250) : 0;
         const tier2H = hasTier2 ? (width < 500 ? 110 : 130) : 0;
-        const tier3H = hasTier3 ? (width < 500 ? 70 : 85) : 0;
+        const tier3H = hasTier3 ? (width < 500 ? 78 : 96) : 0;
 
         const gap = 16;
         let runningY = padTop;
@@ -3055,10 +3055,16 @@
 
           // --- TIER 3: Normalized Flow Z-Score Oscillator ---
           let tier3Svg = '';
+          let rawZ = null;
           if (hasTier3) {
-            const zValues = rows.map(r => finiteNumber(r.priorOnlyZScore)).filter(v => v !== null);
-            const maxAbsZ = zValues.length ? Math.max(...zValues.map(v => Math.abs(v))) : 1.5;
-            const zBound = Math.max(3.0, Math.ceil(maxAbsZ * 1.15));
+            rawZ = rows.map(r => finiteNumber(r.priorOnlyZScore));
+            const zValues = rawZ.filter(v => v !== null);
+            const absZList = zValues.map(v => Math.abs(v)).sort((a, b) => a - b);
+            const p95Idx = absZList.length ? Math.floor(absZList.length * 0.95) : 0;
+            const p95 = absZList.length ? absZList[p95Idx] : 2.0;
+            // Baseline dynamic scale: 3.0σ baseline, expanded up to max 4.0σ if high percentiles warrant.
+            // Capping scale bounds prevents a single 10σ outlier from compressing the entire oscillator into a flat line.
+            const zBound = Math.max(3.0, Math.min(4.0, Math.ceil(Math.max(p95 * 1.25, 2.5) * 2) / 2));
 
             const zeroZY = t3Top + tier3H / 2;
             yZ = z => zeroZY - (Math.max(-zBound, Math.min(zBound, z)) / zBound) * (tier3H / 2);
@@ -3066,36 +3072,60 @@
             const yNeg15 = yZ(-1.5);
 
             let t3Grid = `<line x1="${padLeft}" y1="${(t3Top - 8).toFixed(1)}" x2="${width - padRight}" y2="${(t3Top - 8).toFixed(1)}" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>`;
-            t3Grid += `<rect x="${padLeft}" y="${yPos15.toFixed(1)}" width="${chartW}" height="${(zeroZY - yPos15).toFixed(1)}" fill="rgba(34,211,238,0.04)"/>`;
-            t3Grid += `<rect x="${padLeft}" y="${zeroZY.toFixed(1)}" width="${chartW}" height="${(yNeg15 - zeroZY).toFixed(1)}" fill="rgba(251,113,133,0.04)"/>`;
-            t3Grid += `<line x1="${padLeft}" y1="${zeroZY.toFixed(1)}" x2="${width - padRight}" y2="${zeroZY.toFixed(1)}" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>`;
-            t3Grid += `<line x1="${padLeft}" y1="${yPos15.toFixed(1)}" x2="${width - padRight}" y2="${yPos15.toFixed(1)}" stroke="rgba(34,211,238,0.32)" stroke-width="1" stroke-dasharray="3 3"/>`;
-            t3Grid += `<line x1="${padLeft}" y1="${yNeg15.toFixed(1)}" x2="${width - padRight}" y2="${yNeg15.toFixed(1)}" stroke="rgba(245,158,11,0.32)" stroke-width="1" stroke-dasharray="3 3"/>`;
+            // Accumulation zone tint (> +1.5σ) and Distribution zone tint (< -1.5σ)
+            t3Grid += `<rect x="${padLeft}" y="${t3Top.toFixed(1)}" width="${chartW}" height="${Math.max(0, yPos15 - t3Top).toFixed(1)}" fill="rgba(34,211,238,0.06)"/>`;
+            t3Grid += `<rect x="${padLeft}" y="${yNeg15.toFixed(1)}" width="${chartW}" height="${Math.max(0, t3Bottom - yNeg15).toFixed(1)}" fill="rgba(251,113,133,0.06)"/>`;
+            t3Grid += `<line x1="${padLeft}" y1="${zeroZY.toFixed(1)}" x2="${width - padRight}" y2="${zeroZY.toFixed(1)}" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>`;
+            t3Grid += `<line x1="${padLeft}" y1="${yPos15.toFixed(1)}" x2="${width - padRight}" y2="${yPos15.toFixed(1)}" stroke="rgba(34,211,238,0.42)" stroke-width="1" stroke-dasharray="3 3"/>`;
+            t3Grid += `<line x1="${padLeft}" y1="${yNeg15.toFixed(1)}" x2="${width - padRight}" y2="${yNeg15.toFixed(1)}" stroke="rgba(245,158,11,0.42)" stroke-width="1" stroke-dasharray="3 3"/>`;
 
             t3Grid += `<text x="${padLeft - 8}" y="${(zeroZY + 3).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="9">0σ</text>`;
-            if (zeroZY - yPos15 >= 14) {
+            if (zeroZY - yPos15 >= 12) {
               t3Grid += `<text x="${padLeft - 8}" y="${(yPos15 + 3).toFixed(1)}" text-anchor="end" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9">+1.5σ</text>`;
             }
-            if (yNeg15 - zeroZY >= 14) {
+            if (yNeg15 - zeroZY >= 12) {
               t3Grid += `<text x="${padLeft - 8}" y="${(yNeg15 + 3).toFixed(1)}" text-anchor="end" fill="#f59e0b" font-family="ui-monospace, monospace" font-size="9">−1.5σ</text>`;
             }
 
-            t3Grid += `<text x="${(width - padRight - 8).toFixed(1)}" y="${(yPos15 - 4).toFixed(1)}" text-anchor="end" fill="rgba(34,211,238,0.8)" font-family="ui-monospace, monospace" font-size="8.5" font-weight="600" letter-spacing="0.04em">+1.5σ ACCUMULATION</text>`;
-            t3Grid += `<text x="${(width - padRight - 8).toFixed(1)}" y="${(yNeg15 + 10).toFixed(1)}" text-anchor="end" fill="rgba(245,158,11,0.8)" font-family="ui-monospace, monospace" font-size="8.5" font-weight="600" letter-spacing="0.04em">−1.5σ DISTRIBUTION</text>`;
+            t3Grid += `<text x="${(width - padRight - 8).toFixed(1)}" y="${(yPos15 - 4).toFixed(1)}" text-anchor="end" fill="rgba(34,211,238,0.85)" font-family="ui-monospace, monospace" font-size="8.5" font-weight="600" letter-spacing="0.04em">+1.5σ ACCUMULATION</text>`;
+            t3Grid += `<text x="${(width - padRight - 8).toFixed(1)}" y="${(yNeg15 + 10).toFixed(1)}" text-anchor="end" fill="rgba(245,158,11,0.85)" font-family="ui-monospace, monospace" font-size="8.5" font-weight="600" letter-spacing="0.04em">−1.5σ DISTRIBUTION</text>`;
 
+            // Daily shock impulse stems / micro-bars
+            const barW = Math.max(1.2, Math.min(5.0, slot * 0.42));
+            let shockStemsSvg = '';
+            rows.forEach((r, i) => {
+              const z = rawZ[i];
+              if (z === null) return;
+              const x = xScale(i);
+              const y = yZ(z);
+              const top = z >= 0 ? y : zeroZY;
+              const h = Math.max(1.4, Math.abs(y - zeroZY));
+              const isAcc = z >= 1.5;
+              const isDist = z <= -1.5;
+              const fill = isAcc ? '#22d3ee' : isDist ? '#fb7185' : z > 0 ? 'rgba(34,211,238,0.38)' : z < 0 ? 'rgba(251,113,133,0.38)' : 'rgba(255,255,255,0.2)';
+              shockStemsSvg += `<rect x="${(x - barW / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${fill}" rx="0.5"/>`;
+              if (isAcc || isDist) {
+                const capFill = isAcc ? '#22d3ee' : '#fb7185';
+                shockStemsSvg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${slot > 8 ? 2.2 : 1.6}" fill="${capFill}" stroke="#0b0f19" stroke-width="0.8"/>`;
+              }
+            });
+
+            // 5-session smoothed trend baseline
             smoothZ = [];
             for (let i = 0; i < rows.length; i++) {
               let sum = 0, cnt = 0;
               for (let j = Math.max(0, i - 4); j <= i; j++) {
-                const val = finiteNumber(rows[j].priorOnlyZScore);
+                const val = rawZ[j];
                 if (val !== null) { sum += val; cnt++; }
               }
               smoothZ.push(cnt ? sum / cnt : null);
             }
-
             const smoothPoints = rows.map((r, i) => ({ x: xScale(i), y: finiteScale(yZ, smoothZ[i]) }));
-            const posZArea = areaPath(smoothPoints.map(p => ({ x: p.x, y: p.y !== null ? Math.min(p.y, zeroZY) : zeroZY })), zeroZY);
-            const negZArea = areaPath(smoothPoints.map(p => ({ x: p.x, y: p.y !== null ? Math.max(p.y, zeroZY) : zeroZY })), zeroZY);
+
+            // Raw daily Z-Score waveform points and area paths
+            const rawPoints = rows.map((r, i) => ({ x: xScale(i), y: finiteScale(yZ, rawZ[i]) }));
+            const posZArea = areaPath(rawPoints.map(p => ({ x: p.x, y: p.y !== null ? Math.min(p.y, zeroZY) : zeroZY })), zeroZY);
+            const negZArea = areaPath(rawPoints.map(p => ({ x: p.x, y: p.y !== null ? Math.max(p.y, zeroZY) : zeroZY })), zeroZY);
 
             let zPaths = `<defs>
               <linearGradient id="wb-z-pos" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#22d3ee" stop-opacity="0.22"/><stop offset="100%" stop-color="#22d3ee" stop-opacity="0.0"/></linearGradient>
@@ -3104,9 +3134,13 @@
             if (posZArea) zPaths += `<path d="${posZArea}" fill="url(#wb-z-pos)"/>`;
             if (negZArea) zPaths += `<path d="${negZArea}" fill="url(#wb-z-neg)"/>`;
 
-            zPaths += `<path d="${linePath(smoothPoints)}" fill="none" stroke="#e879f9" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round"/>`;
+            // Daily shock trajectory line (vibrant magenta/purple)
+            zPaths += `<path d="${linePath(rawPoints)}" fill="none" stroke="#e879f9" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>`;
 
-            tier3Svg = `<g class="flow-tier-3">${t3Grid}${zPaths}</g>`;
+            // Subtle 5-day smoothed trend line
+            zPaths += `<path d="${linePath(smoothPoints)}" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.2" stroke-dasharray="3 3"/>`;
+
+            tier3Svg = `<g class="flow-tier-3">${t3Grid}${shockStemsSvg}${zPaths}</g>`;
           }
 
           // --- Date Ticks at Bottom ---
@@ -3124,6 +3158,7 @@
             yDaily: showDaily ? yDaily : null,
             yZ: hasTier3 ? yZ : null,
             smoothZ: hasTier3 ? smoothZ : null,
+            rawZ: hasTier3 ? rawZ : null,
             padTop,
             runningY,
             totalH,
@@ -3197,9 +3232,16 @@
             hDots += `<circle cx="${hX.toFixed(1)}" cy="${yf.toFixed(1)}" r="4" fill="${fVal >= 0 ? '#34d399' : '#fb7185'}" stroke="#ffffff" stroke-width="1.6" pointer-events="none"/>`;
           }
 
-          if (sc.hasTier3 && sc.showZ && sc.smoothZ && sc.smoothZ[hIdx] !== null && sc.yZ) {
-            const yz = sc.yZ(sc.smoothZ[hIdx]);
-            hDots += `<circle cx="${hX.toFixed(1)}" cy="${yz.toFixed(1)}" r="4" fill="#e879f9" stroke="#ffffff" stroke-width="1.6" pointer-events="none"/>`;
+          if (sc.hasTier3 && sc.showZ && sc.rawZ && sc.rawZ[hIdx] !== null && sc.yZ) {
+            const rawVal = sc.rawZ[hIdx];
+            const yz = sc.yZ(rawVal);
+            const zColor = rawVal >= 1.5 ? '#22d3ee' : rawVal <= -1.5 ? '#fb7185' : '#e879f9';
+            hDots += `<circle cx="${hX.toFixed(1)}" cy="${yz.toFixed(1)}" r="7" fill="none" stroke="${zColor}" stroke-width="1.5" opacity="0.38" pointer-events="none"/>`;
+            hDots += `<circle cx="${hX.toFixed(1)}" cy="${yz.toFixed(1)}" r="4.2" fill="${zColor}" stroke="#ffffff" stroke-width="1.8" pointer-events="none"/>`;
+            if (sc.smoothZ && sc.smoothZ[hIdx] !== null) {
+              const ySm = sc.yZ(sc.smoothZ[hIdx]);
+              hDots += `<circle cx="${hX.toFixed(1)}" cy="${ySm.toFixed(1)}" r="2.2" fill="rgba(255,255,255,0.8)" pointer-events="none"/>`;
+            }
           }
 
           // Date tag pill at bottom
@@ -3650,7 +3692,9 @@
         const line1 = row.date || '';
         const pricePart = (row.nav !== null && Number.isFinite(row.nav)) ? `Price $${row.nav.toFixed(2)}  ·  ` : '';
         const line2 = `${pricePart}Daily flow ${formatMoney(row.flow)}`;
-        const zStr = row.priorOnlyZScore === null ? '—' : `${row.priorOnlyZScore >= 0 ? '+' : ''}${row.priorOnlyZScore.toFixed(2)}σ`;
+        const zVal = finiteNumber(row.priorOnlyZScore);
+        const zTag = zVal === null ? '' : zVal >= 1.5 ? ' (Acc)' : zVal <= -1.5 ? ' (Dist)' : '';
+        const zStr = zVal === null ? '—' : `${zVal >= 0 ? '+' : ''}${zVal.toFixed(2)}σ${zTag}`;
         const line3 = `20D Mean ${formatMoney(row.rollingMean20)}  ·  10D %ile ${formatPercent(row.percentile10)}  ·  Z ${zStr}`;
         return `${line1}\n${line2}\n${line3}`;
       },
