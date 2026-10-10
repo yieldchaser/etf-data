@@ -681,6 +681,7 @@
       flowHoverIndex: null,
       flowHoverChart: null,
       flowViewMode: 'scanner',
+      flowBattleMode: 'paired',
       flowShowMarketPulse: true,
       flowShowOutliers: true,
       flowScannerSort: 'abs_z',
@@ -846,7 +847,68 @@
       },
 
       get flowAlphaBullBearPairs() {
-        return Array.isArray(this.flowAlphaSignalsData?.bull_bear_ecosystems) ? this.flowAlphaSignalsData.bull_bear_ecosystems : [];
+        const list = Array.isArray(this.flowAlphaSignalsData?.bull_bear_ecosystems) ? this.flowAlphaSignalsData.bull_bear_ecosystems : [];
+        const map = (this._flowEntryMap && Object.keys(this._flowEntryMap).length)
+          ? this._flowEntryMap
+          : Object.fromEntries((this.flowPrimaryInstruments || []).map(it => [it.ticker, it]));
+        return list.map(eco => {
+          let bull1d = 0, bear1d = 0, bull20d = 0, bear20d = 0, aum = 0;
+          for (const tk of (eco.bull_tickers || [])) {
+            const inst = map[tk];
+            if (inst) {
+              bull1d += finiteNumber(inst.latest_flow) || 0;
+              bull20d += finiteNumber(inst.flow_20d) || 0;
+              aum += finiteNumber(inst.aum_m) || 0;
+            }
+          }
+          for (const tk of (eco.bear_tickers || [])) {
+            const inst = map[tk];
+            if (inst) {
+              bear1d += finiteNumber(inst.latest_flow) || 0;
+              bear20d += finiteNumber(inst.flow_20d) || 0;
+              aum += finiteNumber(inst.aum_m) || 0;
+            }
+          }
+
+          let activeRegimeKey = 'Q4_both_out';
+          let activeCode = 'Q4';
+          let activeLabel = 'Concurrent Outflows';
+          let activeState = 'BALANCED';
+
+          if (bull1d > 0 && bear1d <= 0) {
+            activeRegimeKey = 'Q1_bull_in_bear_out';
+            activeCode = 'Q1';
+            activeLabel = 'Bull Inflow / Bear Outflow';
+            activeState = 'ACCUMULATION';
+          } else if (bull1d <= 0 && bear1d > 0) {
+            activeRegimeKey = 'Q2_bull_out_bear_in';
+            activeCode = 'Q2';
+            activeLabel = 'Bear Hedging / Bull Outflow';
+            activeState = 'DISTRIBUTION';
+          } else if (bull1d > 0 && bear1d > 0) {
+            activeRegimeKey = 'Q3_both_in';
+            activeCode = 'Q3';
+            activeLabel = 'Concurrent Inflows';
+            activeState = 'ACCUMULATION';
+          }
+
+          const activeStats = eco[activeRegimeKey] || null;
+
+          return {
+            ...eco,
+            bull1d,
+            bear1d,
+            bull20d,
+            bear20d,
+            total20d: bull20d + bear20d,
+            aumM: aum,
+            activeCode,
+            activeLabel,
+            activeState,
+            activeRegimeKey,
+            activeStats
+          };
+        });
       },
 
       get flowAlphaCategoryRotations() {
@@ -1479,130 +1541,66 @@
 
       get flowCategoryHeatmapRows() {
         const rows = this.flowCategoryMatrixRows;
-        return rows.map(r => {
-          const heatStyle = val => {
-            const v = finiteNumber(val) || 0;
-            if (v >= 100e6) return 'background: rgba(52, 211, 153, 0.22); color: #34d399; font-weight: 700;';
-            if (v >= 10e6) return 'background: rgba(52, 211, 153, 0.10); color: #34d399;';
-            if (v <= -100e6) return 'background: rgba(251, 113, 133, 0.22); color: #fb7185; font-weight: 700;';
-            if (v <= -10e6) return 'background: rgba(251, 113, 133, 0.10); color: #fb7185;';
-            return 'background: rgba(255, 255, 255, 0.02); color: var(--flow-muted);';
-          };
-          return {
-            ...r,
-            style1d: heatStyle(r.flow_1d),
-            style5d: heatStyle(r.flow_5d),
-            style20d: heatStyle(r.flow_20d),
-            style60d: heatStyle(r.flow_60d),
-            styleYtd: heatStyle(r.flow_ytd)
-          };
-        });
+        if (!rows.length) return [];
+        const max1d = Math.max(1, ...rows.map(r => Math.abs(finiteNumber(r.flow_1d) || 0)));
+        const max5d = Math.max(1, ...rows.map(r => Math.abs(finiteNumber(r.flow_5d) || 0)));
+        const max20d = Math.max(1, ...rows.map(r => Math.abs(finiteNumber(r.flow_20d) || 0)));
+        const max60d = Math.max(1, ...rows.map(r => Math.abs(finiteNumber(r.flow_60d) || 0)));
+        const maxYtd = Math.max(1, ...rows.map(r => Math.abs(finiteNumber(r.flow_ytd) || 0)));
+        const maxCum = Math.max(1, ...rows.map(r => Math.abs(finiteNumber(r.cumulative) || 0)));
+
+        const heatStyle = (val, maxCol) => {
+          const v = finiteNumber(val) || 0;
+          if (Math.abs(v) < 1000) return 'background: transparent; color: #64748b; text-align: right;';
+          const ratio = Math.min(1, Math.abs(v) / (maxCol || 1));
+          const alpha = 0.05 + ratio * 0.22;
+          if (v > 0) {
+            return `background: rgba(52, 211, 153, ${alpha.toFixed(2)}); color: #34d399; font-weight: ${ratio > 0.4 ? '600' : '500'}; text-align: right;`;
+          }
+          return `background: rgba(251, 113, 133, ${alpha.toFixed(2)}); color: #fb7185; font-weight: ${ratio > 0.4 ? '600' : '500'}; text-align: right;`;
+        };
+
+        return rows.map(r => ({
+          ...r,
+          style1d: heatStyle(r.flow_1d, max1d),
+          style5d: heatStyle(r.flow_5d, max5d),
+          style20d: heatStyle(r.flow_20d, max20d),
+          style60d: heatStyle(r.flow_60d, max60d),
+          styleYtd: heatStyle(r.flow_ytd, maxYtd),
+          styleCum: heatStyle(r.cumulative, maxCum)
+        }));
       },
 
-      get flowTradeBlotterRows() {
-        const signals = this.flowAlphaFilteredSignals;
-        return signals.map(s => {
-          const sig = String(s.live_signal || '');
-          let setup = 'S1: Washout Slingshot';
-          let action = 'BUY';
-          let actionClass = 'flow-action-buy';
-          let horizon = '5D–20D';
-          let winRate = '58.2%';
-          let expRet = '+5.66%';
-          let stopLoss = '-7.0%';
-          let target = '+16.0%';
-          let catalyst = 'Outflow Washout Shock';
-
-          if (s.ticker === 'EDC') {
-            setup = 'Breakout (International)';
-            action = 'CAUTION';
-            actionClass = 'flow-action-fade';
-            horizon = '10D Fade';
-            winRate = '38.0%';
-            expRet = '−2.82%';
-            stopLoss = '+4.0%';
-            target = '−8.0%';
-            catalyst = 'International Breakout Fade (t = −2.04)';
-          } else if (sig.includes('IGNITION') || sig.includes('MOMENTUM')) {
-            setup = 'S2: Informed Ignition';
-            action = 'BUY';
-            actionClass = 'flow-action-buy';
-            horizon = '10D–20D';
-            winRate = '54.0%';
-            expRet = '+12.64%';
-            stopLoss = '-9.0%';
-            target = '+28.0%';
-            catalyst = 'Breakout Inflow Surge';
-          } else if (sig.includes('TRAP') || sig.includes('DEAD_CAT')) {
-            setup = 'S3: Dead-Cat Fade';
-            action = 'SHORT';
-            actionClass = 'flow-action-short';
-            horizon = '3D–5D';
-            winRate = '60.9%';
-            expRet = '+3.50%';
-            stopLoss = '+6.0%';
-            target = '-10.0%';
-            catalyst = 'Public Chasing in Downtrend';
-          } else if (sig.includes('SQUEEZE') || sig.includes('WALL_OF_WORRY')) {
-            setup = 'S1: Disbelief Squeeze';
-            action = 'BUY';
-            actionClass = 'flow-action-buy';
-            horizon = '3D–10D';
-            winRate = '57.3%';
-            expRet = '+3.09%';
-            stopLoss = '-5.5%';
-            target = '+14.0%';
-            catalyst = 'Rising on Persistent Outflows';
-          }
-
-          return {
-            ...s,
-            setup,
-            action,
-            actionClass,
-            horizon,
-            winRate,
-            expRet,
-            stopLoss,
-            target,
-            catalyst
-          };
-        });
-      },
-
-      get flowTwinLeadLagPairs() {
-        return [
-          {
-            name: 'NASDAQ-100 Twin Barometer',
-            leader: 'QLD (+2x ProShares)',
-            follower: '+3x Peer Benchmark',
-            spreadZ: '+1.42σ (QLD Leading)',
-            edge: '+1.90% 5D Return',
-            winRate: '62.8%',
-            tstat: '+2.26',
-            note: 'When +2x core trend twin leads while +3x public twin lags, 5D follow-through edge is historically positive.'
-          },
-          {
-            name: 'NVIDIA Single-Stock Twin',
-            leader: 'NVDL (GraniteShares)',
-            follower: 'NVDX (Tuttle/Defiance)',
-            spreadZ: '+0.85σ (NVDL Leading)',
-            edge: '+8.29% 10D Return',
-            winRate: '63.0%',
-            tstat: '+3.03',
-            note: 'GraniteShares NVDL leads twin (r = +0.176); independent NVDL flow surges predict strong multi-week continuation.'
-          },
-          {
-            name: 'Bitcoin Crypto Twin',
-            leader: 'BITU (ProShares +2x)',
-            follower: 'BITX (Volatility Shares +2x)',
-            spreadZ: '+0.60σ (BITU Leading)',
-            edge: '+7.40% 20D Return',
-            winRate: '59.1%',
-            tstat: '+2.15',
-            note: 'ProShares BITU exhibits cleaner core accumulation persistence over 10D–20D horizons.'
-          }
-        ];
+      get flowCategoryUniverseTotals() {
+        const rows = this.flowCategoryMatrixRows;
+        if (!rows.length) return null;
+        let count = 0, aum_m = 0, flow_1d = 0, flow_5d = 0, flow_20d = 0, flow_60d = 0, flow_ytd = 0, cumulative = 0, zSum = 0, accumulation = 0, distribution = 0;
+        for (const r of rows) {
+          count += r.count;
+          aum_m += r.aum_m;
+          flow_1d += r.flow_1d;
+          flow_5d += r.flow_5d;
+          flow_20d += r.flow_20d;
+          flow_60d += r.flow_60d;
+          flow_ytd += r.flow_ytd;
+          cumulative += r.cumulative;
+          zSum += r.zSum;
+          accumulation += r.accumulation;
+          distribution += r.distribution;
+        }
+        return {
+          count,
+          aum_m,
+          flow_1d,
+          flow_5d,
+          flow_20d,
+          flow_60d,
+          flow_ytd,
+          cumulative,
+          avgZ: count ? zSum / count : 0,
+          accumulation,
+          distribution
+        };
       },
 
       get flowOutlierCards() {
@@ -1837,6 +1835,7 @@
           if (Math.abs(f20) > g.topFlow20d) {
             g.topFlow20d = Math.abs(f20);
             g.topTicker = item.ticker;
+            g.topFlow20dVal = f20;
           }
         }
         return Object.values(groups)
@@ -1853,7 +1852,11 @@
         for (const item of this.flowPrimaryInstruments) {
           const rawU = String(item.underlying || '').trim();
           if (!rawU) continue;
-          const u = rawU.replace(/\s*\(([^)]+)\)\s*$/, (m, inner) => /^[A-Z.]{1,5}$/.test(inner.trim()) ? ` (${inner.trim()})` : '').trim();
+          let u = rawU.replace(/\s*\([^)]*\)\s*$/, '').trim();
+          if (u === 'Palantir Technologies') u = 'Palantir';
+          if (u === 'Coinbase Global') u = 'Coinbase';
+          if (u === 'S&P 500 VIX') u = 'Volatility (VIX)';
+
           if (!byUnderlying[u]) {
             byUnderlying[u] = {
               underlying: u,
@@ -1862,6 +1865,8 @@
               bearTickers: [],
               bullFlow20d: 0,
               bearFlow20d: 0,
+              bullFlow1d: 0,
+              bearFlow1d: 0,
               totalFlow1d: 0,
               totalFlow20d: 0,
               totalAumM: 0,
@@ -1878,9 +1883,11 @@
           if (lev < 0) {
             entry.bearTickers.push(item.ticker);
             entry.bearFlow20d += f20;
+            entry.bearFlow1d += f1;
           } else {
             entry.bullTickers.push(item.ticker);
             entry.bullFlow20d += f20;
+            entry.bullFlow1d += f1;
           }
           entry.totalFlow1d += f1;
           entry.totalFlow20d += f20;
@@ -1890,10 +1897,45 @@
             entry.leadTicker = item.ticker;
           }
         }
-        return Object.values(byUnderlying)
-          .filter(row => row.tickers.length >= 2 || row.totalAumM >= 250)
+
+        const mode = this.flowBattleMode || 'paired';
+        const allRows = Object.values(byUnderlying).map(row => {
+          const totalActivity = Math.abs(row.bullFlow20d) + Math.abs(row.bearFlow20d);
+          const bullSharePct = totalActivity > 0 ? Math.round((Math.abs(row.bullFlow20d) / totalActivity) * 100) : 50;
+          const bearSharePct = 100 - bullSharePct;
+          let biasState = 'BALANCED';
+          let biasLabel = 'Contested';
+          if (row.bullFlow20d > 0 && row.bearFlow20d <= 0) {
+            biasState = 'ACCUMULATION';
+            biasLabel = 'Bull Dominant';
+          } else if (row.bullFlow20d <= 0 && row.bearFlow20d > 0) {
+            biasState = 'DISTRIBUTION';
+            biasLabel = 'Bear Hedging';
+          } else if (row.bullFlow20d > 0 && row.bearFlow20d > 0) {
+            biasState = 'ACCUMULATION';
+            biasLabel = 'Concurrent Expansion';
+          } else if (row.bullFlow20d < 0 && row.bearFlow20d < 0) {
+            biasState = 'DISTRIBUTION';
+            biasLabel = 'Concurrent Outflows';
+          }
+          return {
+            ...row,
+            bullSharePct,
+            bearSharePct,
+            biasState,
+            biasLabel
+          };
+        });
+
+        if (mode === 'paired') {
+          return allRows
+            .filter(r => r.bullTickers.length > 0 && r.bearTickers.length > 0)
+            .sort((a, b) => b.totalAumM - a.totalAumM);
+        }
+        return allRows
+          .filter(r => r.tickers.length >= 2 || r.totalAumM >= 250)
           .sort((a, b) => b.totalAumM - a.totalAumM)
-          .slice(0, 18);
+          .slice(0, 20);
       },
 
       setFlowScannerSort(column) {
@@ -3830,6 +3872,10 @@
       setFlowViewMode(mode) {
         this.flowViewMode = mode;
         this._flowWriteUrl(false);
+      },
+
+      setFlowBattleMode(mode) {
+        this.flowBattleMode = mode;
       },
 
       _flowWriteUrl(push) {

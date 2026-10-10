@@ -183,3 +183,38 @@ def test_percentile_chart_labels_dollar_left_axis_and_percentile_right_axes():
     assert ">100%<" in svg
     assert ">50%<" in svg
     assert ">0%<" in svg
+
+
+def test_category_heatmap_relative_scaling_and_universe_totals():
+    result = run_metrics(
+        "(()=>{const app=m.flowResearchApp();const cat=require('./docs/data/flows/catalog.json');app.flowCatalog=cat;const rows=app.flowCategoryHeatmapRows;const totals=app.flowCategoryUniverseTotals;return {rowCount:rows.length,hasStyles:rows.every(r=>r.style1d&&r.style20d&&r.styleCum),totalsCount:totals.count,totalsAum:totals.aum_m>0,totals1d:typeof totals.flow_1d==='number',totals20d:typeof totals.flow_20d==='number'};})()"
+    )
+    assert result["rowCount"] == 9
+    assert result["hasStyles"] is True
+    assert result["totalsCount"] == 150
+    assert result["totalsAum"] is True
+    assert result["totals1d"] is True
+    assert result["totals20d"] is True
+
+
+def test_underlying_battle_rows_normalization_and_paired_filter():
+    result = run_metrics(
+        "(()=>{const app=m.flowResearchApp();const cat=require('./docs/data/flows/catalog.json');app.flowCatalog=cat;app.flowBattleMode='paired';const paired=app.flowUnderlyingBattleRows;const nvda=paired.find(r=>r.underlying==='NVIDIA');const mstr=paired.find(r=>r.underlying==='MicroStrategy');const tsla=paired.find(r=>r.underlying==='Tesla');return {pairedCount:paired.length,nvdaBull:nvda?.bullTickers,nvdaBear:nvda?.bearTickers,mstrBull:mstr?.bullTickers,mstrBear:mstr?.bearTickers,tslaBull:tsla?.bullTickers,tslaBear:tsla?.bearTickers,nvdaBullShare:nvda?.bullSharePct};})()"
+    )
+    assert result["pairedCount"] == 13
+    assert "NVDL" in result["nvdaBull"] and "NVD" in result["nvdaBear"]
+    assert "MSTU" in result["mstrBull"] and "MSTZ" in result["mstrBear"]
+    assert "TSLL" in result["tslaBull"] and ("TSLQ" in result["tslaBear"] or "TSLZ" in result["tslaBear"])
+    assert 0 <= result["nvdaBullShare"] <= 100
+
+
+def test_alpha_bull_bear_pairs_live_regime_enrichment():
+    result = run_metrics(
+        "(()=>{const app=m.flowResearchApp();const cat=require('./docs/data/flows/catalog.json');const alpha=require('./docs/data/alpha_signals.json');app.flowCatalog=cat;app.flowAlphaSignalsData=alpha;const pairs=app.flowAlphaBullBearPairs;return {count:pairs.length,first:pairs[0] ? {eco:pairs[0].ecosystem,activeCode:pairs[0].activeCode,activeLabel:pairs[0].activeLabel,hasStats:!!pairs[0].activeStats,has20d:typeof pairs[0].total20d==='number'} : null};})()"
+    )
+    assert result["count"] == 10
+    assert result["first"]["eco"] == "NASDAQ-100"
+    assert result["first"]["activeCode"] in ["Q1", "Q2", "Q3", "Q4"]
+    assert result["first"]["hasStats"] is True
+    assert result["first"]["has20d"] is True
+

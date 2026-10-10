@@ -2565,152 +2565,142 @@
               <div>
                 <p class="flow-chart-kicker">Multi-Horizon Heatmap</p>
                 <h3>9-Category Net Flow Density Heatmap</h3>
-                <p class="flow-chart-description">Visual multi-horizon color matrix of aggregate net flows across 1D, 5D, 20D, 60D, YTD, and cumulative horizons. Green denotes net accumulation; coral denotes net distribution.</p>
+                <p class="flow-chart-description">Aggregate net flows across 1D, 5D, 20D, 60D, YTD, and cumulative horizons. Cell heat intensity is calibrated to relative flow velocity per horizon. Green denotes net accumulation; coral denotes net distribution.</p>
               </div>
             </div>
             <div class="flow-table-wrap">
               <table class="flow-table">
                 <thead>
                   <tr>
-                    <th scope="col">Category</th>
-                    <th scope="col">Funds</th>
-                    <th scope="col">AUM</th>
-                    <th scope="col">1D</th>
-                    <th scope="col">5D</th>
-                    <th scope="col">20D</th>
-                    <th scope="col">60D</th>
-                    <th scope="col">YTD</th>
-                    <th scope="col">Cum Flow</th>
-                    <th scope="col">Avg Z</th>
-                    <th scope="col">Breadth</th>
-                    <th scope="col">Lead 20D</th>
+                    <th scope="col" style="text-align:left">Category</th>
+                    <th scope="col" style="text-align:right">Funds</th>
+                    <th scope="col" style="text-align:right">AUM</th>
+                    <th scope="col" style="text-align:right">1D Net</th>
+                    <th scope="col" style="text-align:right">5D Net</th>
+                    <th scope="col" style="text-align:right">20D Net</th>
+                    <th scope="col" style="text-align:right">60D Net</th>
+                    <th scope="col" style="text-align:right">YTD Net</th>
+                    <th scope="col" style="text-align:right">Cum Flow</th>
+                    <th scope="col" style="text-align:right">Avg Z</th>
+                    <th scope="col" style="text-align:right">Breadth (Acc / Dist)</th>
+                    <th scope="col" style="text-align:left">20D Flow Leader</th>
                   </tr>
                 </thead>
                 <tbody>
                   <template x-for="cat in flowCategoryHeatmapRows" :key="cat.category">
                     <tr>
-                      <td style="color:var(--flow-text);font-weight:600" x-text="cat.shortName"></td>
-                      <td x-text="cat.count"></td>
-                      <td x-text="`$${(cat.aum_m / 1000).toFixed(1)}B`"></td>
+                      <td style="color:var(--flow-text);font-weight:600;white-space:nowrap" x-text="cat.shortName"></td>
+                      <td style="text-align:right;font-family:ui-monospace,monospace" x-text="cat.count"></td>
+                      <td style="text-align:right;font-family:ui-monospace,monospace" x-text="`$${(cat.aum_m / 1000).toFixed(1)}B`"></td>
                       <td class="flow-heat-cell" :style="cat.style1d" :title="`1D Net Flow: ${formatMoney(cat.flow_1d)}`" x-text="formatMoney(cat.flow_1d)"></td>
                       <td class="flow-heat-cell" :style="cat.style5d" :title="`5D Net Flow: ${formatMoney(cat.flow_5d)}`" x-text="formatMoney(cat.flow_5d)"></td>
                       <td class="flow-heat-cell" :style="cat.style20d" :title="`20D Net Flow: ${formatMoney(cat.flow_20d)}`" x-text="formatMoney(cat.flow_20d)"></td>
                       <td class="flow-heat-cell" :style="cat.style60d" :title="`60D Net Flow: ${formatMoney(cat.flow_60d)}`" x-text="formatMoney(cat.flow_60d)"></td>
                       <td class="flow-heat-cell" :style="cat.styleYtd" :title="`YTD Net Flow: ${formatMoney(cat.flow_ytd)}`" x-text="formatMoney(cat.flow_ytd)"></td>
-                      <td :class="cat.cumulative > 0 ? 'flow-positive' : cat.cumulative < 0 ? 'flow-negative' : ''" x-text="formatMoney(cat.cumulative)"></td>
-                      <td :class="cat.avgZ > 0 ? 'flow-cyan' : cat.avgZ < 0 ? 'flow-amber' : ''" x-text="`${cat.avgZ >= 0 ? '+' : ''}${cat.avgZ.toFixed(2)}σ`"></td>
-                      <td x-text="`${cat.accumulation}A / ${cat.distribution}D`"></td>
-                      <td>
-                        <button class="flow-chip" type="button" @click="selectFlowTicker(cat.topTicker, { writeUrl: true, push: true, switchToStudio: true })" x-text="cat.topTicker"></button>
+                      <td class="flow-heat-cell" :style="cat.styleCum" :title="`Cumulative Net Flow: ${formatMoney(cat.cumulative)}`" x-text="formatMoney(cat.cumulative)"></td>
+                      <td style="text-align:right;font-family:ui-monospace,monospace" :class="cat.avgZ > 0 ? 'flow-cyan' : cat.avgZ < 0 ? 'flow-amber' : ''" x-text="`${cat.avgZ >= 0 ? '+' : ''}${cat.avgZ.toFixed(2)}σ`"></td>
+                      <td style="text-align:right;font-family:ui-monospace,monospace;white-space:nowrap">
+                        <span class="flow-positive font-medium" x-text="`${cat.accumulation} Acc`"></span>
+                        <span style="color:var(--flow-subtle)"> · </span>
+                        <span class="flow-negative font-medium" x-text="`${cat.distribution} Dist`"></span>
+                      </td>
+                      <td style="text-align:left">
+                        <button class="flow-chip" type="button" @click="selectFlowTicker(cat.topTicker, { writeUrl: true, push: true, switchToStudio: true })">
+                          <span x-text="cat.topTicker"></span>
+                          <span :class="cat.topFlow20dVal >= 0 ? 'flow-positive' : 'flow-negative'" style="font-size:0.6875rem;margin-left:0.25rem" x-text="formatMoney(cat.topFlow20dVal)"></span>
+                        </button>
                       </td>
                     </tr>
                   </template>
                 </tbody>
+                <template x-if="flowCategoryUniverseTotals">
+                  <tfoot>
+                    <tr style="border-top:2px solid var(--flow-line);background:rgba(255,255,255,0.03);font-weight:600">
+                      <td style="color:var(--flow-cyan);font-weight:700">Universe Total (9 Categories)</td>
+                      <td style="text-align:right;font-family:ui-monospace,monospace" x-text="flowCategoryUniverseTotals.count"></td>
+                      <td style="text-align:right;font-family:ui-monospace,monospace" x-text="`$${(flowCategoryUniverseTotals.aum_m / 1000).toFixed(1)}B`"></td>
+                      <td style="text-align:right;font-family:ui-monospace,monospace" :class="flowCategoryUniverseTotals.flow_1d > 0 ? 'flow-positive' : flowCategoryUniverseTotals.flow_1d < 0 ? 'flow-negative' : ''" x-text="formatMoney(flowCategoryUniverseTotals.flow_1d)"></td>
+                      <td style="text-align:right;font-family:ui-monospace,monospace" :class="flowCategoryUniverseTotals.flow_5d > 0 ? 'flow-positive' : flowCategoryUniverseTotals.flow_5d < 0 ? 'flow-negative' : ''" x-text="formatMoney(flowCategoryUniverseTotals.flow_5d)"></td>
+                      <td style="text-align:right;font-family:ui-monospace,monospace" :class="flowCategoryUniverseTotals.flow_20d > 0 ? 'flow-positive' : flowCategoryUniverseTotals.flow_20d < 0 ? 'flow-negative' : ''" x-text="formatMoney(flowCategoryUniverseTotals.flow_20d)"></td>
+                      <td style="text-align:right;font-family:ui-monospace,monospace" :class="flowCategoryUniverseTotals.flow_60d > 0 ? 'flow-positive' : flowCategoryUniverseTotals.flow_60d < 0 ? 'flow-negative' : ''" x-text="formatMoney(flowCategoryUniverseTotals.flow_60d)"></td>
+                      <td style="text-align:right;font-family:ui-monospace,monospace" :class="flowCategoryUniverseTotals.flow_ytd > 0 ? 'flow-positive' : flowCategoryUniverseTotals.flow_ytd < 0 ? 'flow-negative' : ''" x-text="formatMoney(flowCategoryUniverseTotals.flow_ytd)"></td>
+                      <td style="text-align:right;font-family:ui-monospace,monospace" :class="flowCategoryUniverseTotals.cumulative > 0 ? 'flow-positive' : flowCategoryUniverseTotals.cumulative < 0 ? 'flow-negative' : ''" x-text="formatMoney(flowCategoryUniverseTotals.cumulative)"></td>
+                      <td style="text-align:right;font-family:ui-monospace,monospace" :class="flowCategoryUniverseTotals.avgZ > 0 ? 'flow-cyan' : flowCategoryUniverseTotals.avgZ < 0 ? 'flow-amber' : ''" x-text="`${flowCategoryUniverseTotals.avgZ >= 0 ? '+' : ''}${flowCategoryUniverseTotals.avgZ.toFixed(2)}σ`"></td>
+                      <td style="text-align:right;font-family:ui-monospace,monospace;white-space:nowrap">
+                        <span class="flow-positive font-medium" x-text="`${flowCategoryUniverseTotals.accumulation} Acc`"></span>
+                        <span style="color:var(--flow-subtle)"> · </span>
+                        <span class="flow-negative font-medium" x-text="`${flowCategoryUniverseTotals.distribution} Dist`"></span>
+                      </td>
+                      <td style="color:var(--flow-subtle);font-size:0.6875rem">150 Tracked Funds</td>
+                    </tr>
+                  </tfoot>
+                </template>
               </table>
             </div>
 
-            <!-- Flow Rotation Channels & Macro Warning Indicators -->
-            <div style="margin:1rem 0">
-              <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:0.45rem">
-                <h4 style="color:var(--flow-cyan);text-transform:uppercase;letter-spacing:0.04em">Flow Rotation Channels &amp; Macro Early Warning Indicators</h4>
-                <span class="flow-eyebrow">Cross-Category Liquidity Substitution Patterns</span>
-              </div>
-              <div class="flow-rotations-grid">
-                <div class="flow-rotation-card">
-                  <div style="display:flex;align-items:center;justify-content:space-between">
-                    <strong style="color:var(--flow-text);font-size:0.75rem">Tactical Shorts → Single-Stock AI</strong>
-                    <span class="flow-badge" data-state="ACCUMULATION">+15.31% 10D</span>
-                  </div>
-                  <div class="flow-support" style="font-size:0.6875rem">Outflows from Inverse Shorts into Single-Stock Tech (t = +7.40) forecast robust multi-week tech momentum continuation.</div>
-                </div>
-                <div class="flow-rotation-card">
-                  <div style="display:flex;align-items:center;justify-content:space-between">
-                    <strong style="color:var(--flow-text);font-size:0.75rem">Broad Index Bull → Tactical Shorts</strong>
-                    <span class="flow-badge" data-state="BALANCED">Equity Squeeze</span>
-                  </div>
-                  <div class="flow-support" style="font-size:0.6875rem">Money rotating into benchmark shorts while equity climbs triggers sharp short-covering squeeze (+3.84% benchmark excess).</div>
-                </div>
-                <div class="flow-rotation-card">
-                  <div style="display:flex;align-items:center;justify-content:space-between">
-                    <strong style="color:var(--flow-text);font-size:0.75rem">Volatility + Rates Surge</strong>
-                    <span class="flow-badge" data-state="DISTRIBUTION">-1.97% 5D Risk</span>
-                  </div>
-                  <div class="flow-support" style="font-size:0.6875rem">Concurrent 5D flow surge in UVXY and TMV (Z ≥ +0.75) precedes broad tech beta drawdowns by 1 to 5 trading sessions.</div>
-                </div>
-                <div class="flow-rotation-card">
-                  <div style="display:flex;align-items:center;justify-content:space-between">
-                    <strong style="color:var(--flow-text);font-size:0.75rem">Collateral Liquidity Drain</strong>
-                    <span class="flow-badge" data-state="DISTRIBUTION">-4.24% Drawdown</span>
-                  </div>
-                  <div class="flow-support" style="font-size:0.6875rem">Simultaneous redemptions from leveraged gold/silver (UGL/AGQ Z ≤ -0.75) signal systemic liquidity contraction.</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Dual-Issuer "Smarter Twin" Lead-Lag Barometer -->
-            <div style="margin:1rem 0">
-              <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:0.45rem">
-                <h4 style="color:var(--flow-cyan);text-transform:uppercase;letter-spacing:0.04em">Dual-Issuer "Smarter Twin" Lead-Lag Barometer</h4>
-                <span class="flow-eyebrow">Core Trend (+2x) vs Public (+3x) Product Flow Discrepancies</span>
-              </div>
-              <div class="flow-twins-grid">
-                <template x-for="twin in flowTwinLeadLagPairs" :key="twin.name">
-                  <div class="flow-twin-card">
-                    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.35rem">
-                      <strong style="color:var(--flow-cyan);font-size:0.78125rem" x-text="twin.name"></strong>
-                      <span class="flow-badge" data-state="ACCUMULATION" x-text="twin.edge"></span>
-                    </div>
-                    <div style="display:grid;gap:0.2rem;font-size:0.71875rem;margin:0.25rem 0">
-                      <div><span class="flow-eyebrow">Leader:</span> <strong style="color:var(--flow-text)" x-text="twin.leader"></strong></div>
-                      <div><span class="flow-eyebrow">Twin:</span> <span style="color:var(--flow-muted)" x-text="twin.follower"></span></div>
-                      <div><span class="flow-eyebrow">Lead Spread:</span> <span class="flow-cyan" x-text="twin.spreadZ"></span> · Win <span class="flow-positive" x-text="twin.winRate"></span> · t = <span class="flow-cyan" x-text="twin.tstat"></span></div>
-                    </div>
-                    <div class="flow-support" style="font-size:0.6875rem" x-text="twin.note"></div>
-                  </div>
-                </template>
-              </div>
-            </div>
-
-            <div class="flow-chart-heading" style="margin-top:0.75rem">
+            <!-- Bull vs Bear Ecosystem Positioning: Tug-of-War Table -->
+            <div class="flow-chart-heading" style="margin-top:1.5rem">
               <div>
-                <p class="flow-chart-kicker">Bull vs. Bear Ecosystem Positioning</p>
-                <h3>Shared-Underlying &amp; Benchmark Flow Tug-of-War (20-Session Window)</h3>
-                <p class="flow-chart-description">Compares 20-session aggregate net flow into leveraged bull vs. inverse bear ETFs tracking the same underlying or index.</p>
+                <p class="flow-chart-kicker">Bull vs. Bear Tug-of-War</p>
+                <h3>Shared-Underlying Flow Positioning &amp; Balance of Power (20D Window)</h3>
+                <p class="flow-chart-description">Aggregate 20-session liquidity balance between paired leveraged bull and inverse bear ETFs tracking the same underlying asset.</p>
+              </div>
+              <div style="display:flex;align-items:center;gap:0.35rem">
+                <button class="flow-button" type="button" :aria-pressed="flowBattleMode === 'paired' ? 'true' : 'false'" @click="setFlowBattleMode('paired')">
+                  Paired Battles (13)
+                </button>
+                <button class="flow-button" type="button" :aria-pressed="flowBattleMode === 'all' ? 'true' : 'false'" @click="setFlowBattleMode('all')">
+                  All Major Underlyings
+                </button>
               </div>
             </div>
             <div class="flow-table-wrap">
               <table class="flow-table">
                 <thead>
                   <tr>
-                    <th scope="col">Underlying / Ecosystem</th>
-                    <th scope="col" style="text-align:left">Tracked ETFs</th>
-                    <th scope="col">Total AUM</th>
-                    <th scope="col">1D Net Flow</th>
-                    <th scope="col">20D Bull Flow</th>
-                    <th scope="col">20D Bear Flow</th>
-                    <th scope="col">20D Combined Flow</th>
-                    <th scope="col">Peak |z|</th>
-                    <th scope="col">Lead Ticker</th>
+                    <th scope="col" style="text-align:left">Underlying</th>
+                    <th scope="col" style="text-align:left">Tracked Bull / Bear ETFs</th>
+                    <th scope="col" style="text-align:right">Total AUM</th>
+                    <th scope="col" style="text-align:right">1D Net</th>
+                    <th scope="col" style="text-align:center">Balance of Power (20D)</th>
+                    <th scope="col" style="text-align:right">20D Bull Flow</th>
+                    <th scope="col" style="text-align:right">20D Bear Flow</th>
+                    <th scope="col" style="text-align:right">20D Net Spread</th>
+                    <th scope="col" style="text-align:right">Peak |z|</th>
+                    <th scope="col" style="text-align:left">Leader</th>
                   </tr>
                 </thead>
                 <tbody>
                   <template x-for="row in flowUnderlyingBattleRows" :key="row.underlying">
                     <tr>
-                      <td style="color:var(--flow-text);font-weight:600" x-text="row.underlying"></td>
+                      <td style="color:var(--flow-text);font-weight:600;white-space:nowrap" x-text="row.underlying"></td>
                       <td style="text-align:left">
-                        <div style="display:flex;flex-wrap:wrap;gap:0.25rem">
-                          <template x-for="tk in row.tickers" :key="tk">
-                            <button class="flow-chip" type="button" :aria-pressed="flowTicker === tk ? 'true' : 'false'" @click="selectFlowTicker(tk, { writeUrl: true, push: true, switchToStudio: true })" x-text="tk"></button>
+                        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.25rem">
+                          <template x-for="tk in row.bullTickers" :key="tk">
+                            <button class="flow-chip" style="color:#34d399;border-color:rgba(52,211,153,0.3)" type="button" :title="`Bull ETF: ${tk}`" @click="selectFlowTicker(tk, { writeUrl: true, push: true, switchToStudio: true })" x-text="tk"></button>
+                          </template>
+                          <span x-show="row.bullTickers.length && row.bearTickers.length" style="color:var(--flow-subtle);font-size:0.6875rem">vs</span>
+                          <template x-for="tk in row.bearTickers" :key="tk">
+                            <button class="flow-chip" style="color:#fb7185;border-color:rgba(251,113,133,0.3)" type="button" :title="`Inverse Bear ETF: ${tk}`" @click="selectFlowTicker(tk, { writeUrl: true, push: true, switchToStudio: true })" x-text="tk"></button>
                           </template>
                         </div>
                       </td>
-                      <td x-text="row.totalAumM >= 1000 ? `$${(row.totalAumM / 1000).toFixed(1)}B` : `$${row.totalAumM.toFixed(0)}M`"></td>
-                      <td :class="row.totalFlow1d > 0 ? 'flow-positive' : row.totalFlow1d < 0 ? 'flow-negative' : ''" x-text="formatMoney(row.totalFlow1d)"></td>
-                      <td :class="row.bullFlow20d > 0 ? 'flow-positive' : row.bullFlow20d < 0 ? 'flow-negative' : ''" x-text="formatMoney(row.bullFlow20d)"></td>
-                      <td :class="row.bearFlow20d > 0 ? 'flow-positive' : row.bearFlow20d < 0 ? 'flow-negative' : ''" x-text="formatMoney(row.bearFlow20d)"></td>
-                      <td :class="row.totalFlow20d > 0 ? 'flow-positive' : row.totalFlow20d < 0 ? 'flow-negative' : ''" x-text="formatMoney(row.totalFlow20d)"></td>
-                      <td class="flow-cyan" x-text="`${row.maxAbsZ.toFixed(2)}σ`"></td>
-                      <td>
+                      <td style="text-align:right;font-family:ui-monospace,monospace" x-text="row.totalAumM >= 1000 ? `$${(row.totalAumM / 1000).toFixed(1)}B` : `$${row.totalAumM.toFixed(0)}M`"></td>
+                      <td style="text-align:right;font-family:ui-monospace,monospace" :class="row.totalFlow1d > 0 ? 'flow-positive' : row.totalFlow1d < 0 ? 'flow-negative' : ''" x-text="formatMoney(row.totalFlow1d)"></td>
+                      <td style="text-align:center">
+                        <div style="display:flex;flex-direction:column;align-items:center;gap:0.15rem">
+                          <div class="flow-tug-bar" :title="`Bull Share: ${row.bullSharePct}% · Bear Share: ${row.bearSharePct}%`">
+                            <div class="flow-tug-bull" :style="`width:${row.bullSharePct}%`"></div>
+                            <div class="flow-tug-bear" :style="`width:${row.bearSharePct}%`"></div>
+                          </div>
+                          <span style="font-size:0.625rem;font-weight:600;letter-spacing:0.04em" :class="row.biasState === 'ACCUMULATION' ? 'flow-positive' : row.biasState === 'DISTRIBUTION' ? 'flow-negative' : 'flow-muted'" x-text="row.biasLabel"></span>
+                        </div>
+                      </td>
+                      <td style="text-align:right;font-family:ui-monospace,monospace" :class="row.bullFlow20d > 0 ? 'flow-positive' : row.bullFlow20d < 0 ? 'flow-negative' : ''" x-text="formatMoney(row.bullFlow20d)"></td>
+                      <td style="text-align:right;font-family:ui-monospace,monospace" :class="row.bearFlow20d > 0 ? 'flow-positive' : row.bearFlow20d < 0 ? 'flow-negative' : ''" x-text="formatMoney(row.bearFlow20d)"></td>
+                      <td style="text-align:right;font-family:ui-monospace,monospace;font-weight:600" :class="row.totalFlow20d > 0 ? 'flow-positive' : row.totalFlow20d < 0 ? 'flow-negative' : ''" x-text="formatMoney(row.totalFlow20d)"></td>
+                      <td style="text-align:right;font-family:ui-monospace,monospace" class="flow-cyan" x-text="`${row.maxAbsZ.toFixed(2)}σ`"></td>
+                      <td style="text-align:left">
                         <button class="flow-chip" type="button" @click="selectFlowTicker(row.leadTicker, { writeUrl: true, push: true, switchToStudio: true })" x-text="row.leadTicker"></button>
                       </td>
                     </tr>
@@ -2720,38 +2710,58 @@
             </div>
 
             <!-- Bull vs Bear Ecosystem Pairs Section -->
-            <div style="margin:1rem 0">
-              <h4 style="color:var(--flow-text);margin-bottom:0.45rem">Bull vs. Bear Ecosystem Pairs (10 Matched Sets)</h4>
-              <p class="flow-chart-description" style="margin-bottom:0.65rem">Tracks dynamic liquidity rotation between paired Leveraged Bull and Inverse Bear instruments. Q1 signals liquidity rotation from Bear to Bull; Q2 signals rotation from Bull to Bear.</p>
+            <div style="margin:1.5rem 0 0.5rem">
+              <div class="flow-chart-heading">
+                <div>
+                  <p class="flow-chart-kicker">Matched Pair Rotation Models</p>
+                  <h4 style="color:var(--flow-text);margin:0">Bull vs. Bear Ecosystem Models (10 Matched Sets)</h4>
+                  <p class="flow-chart-description" style="margin-top:0.25rem">Dynamic liquidity transfers between paired Leveraged Bull and Inverse Bear instruments. Cards automatically highlight today's active flow regime and display empirical 5-day forward return distributions.</p>
+                </div>
+              </div>
               <div class="flow-pairs-grid">
                 <template x-for="eco in flowAlphaBullBearPairs" :key="eco.ecosystem">
-                  <div class="flow-pair-card">
+                  <div class="flow-pair-card" :class="eco.activeState === 'ACCUMULATION' ? 'flow-pair-card-bull' : eco.activeState === 'DISTRIBUTION' ? 'flow-pair-card-bear' : ''">
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;flex-wrap:wrap">
                       <strong style="color:var(--flow-cyan);font-size:0.8125rem" x-text="eco.ecosystem"></strong>
-                      <span class="flow-eyebrow" x-text="`${eco.overlapping_days} paired sessions`"></span>
+                      <span class="flow-badge" :data-state="eco.activeState" style="font-size:0.625rem" x-text="`ACTIVE: ${eco.activeCode}`"></span>
                     </div>
-                    <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;flex-wrap:wrap;font-size:0.75rem">
+                    <div style="display:flex;align-items:baseline;justify-content:space-between;font-size:0.6875rem;color:var(--flow-muted)">
+                      <span x-text="`AUM: $${(eco.aumM / 1000).toFixed(1)}B · ${eco.overlapping_days} paired sessions`"></span>
+                      <span :class="eco.total20d >= 0 ? 'flow-positive' : 'flow-negative'" class="font-mono" x-text="`20D Net: ${formatMoney(eco.total20d)}`"></span>
+                    </div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;flex-wrap:wrap;font-size:0.75rem;padding:0.25rem 0;border-top:1px solid rgba(255,255,255,0.06);border-bottom:1px solid rgba(255,255,255,0.06)">
                       <div style="display:flex;align-items:center;gap:0.25rem">
-                        <span class="flow-eyebrow">Bull:</span>
+                        <span class="flow-eyebrow" style="color:#34d399">Bull:</span>
                         <template x-for="tk in eco.bull_tickers" :key="tk">
                           <button class="flow-chip" type="button" @click="selectFlowTicker(tk, { writeUrl: true, push: true, switchToStudio: true })" x-text="tk"></button>
                         </template>
                       </div>
                       <div style="display:flex;align-items:center;gap:0.25rem">
-                        <span class="flow-eyebrow">Bear:</span>
+                        <span class="flow-eyebrow" style="color:#fb7185">Bear:</span>
                         <template x-for="tk in eco.bear_tickers" :key="tk">
                           <button class="flow-chip" type="button" @click="selectFlowTicker(tk, { writeUrl: true, push: true, switchToStudio: true })" x-text="tk"></button>
                         </template>
                       </div>
                     </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.35rem;font-size:0.6875rem;border-top:1px solid rgba(255,255,255,0.06);padding-top:0.35rem">
-                      <div>
-                        <span class="flow-eyebrow">Q1 (Bull In / Bear Out):</span>
-                        <div class="flow-positive" x-text="`${(eco.Q1_bull_in_bear_out?.fwd5_pct || 0) >= 0 ? '+' : '−'}${Math.abs(eco.Q1_bull_in_bear_out?.fwd5_pct || 0).toFixed(2)}% (Win ${(eco.Q1_bull_in_bear_out?.win5_pct || 0).toFixed(1)}%)`"></div>
+                    <!-- Live Active Regime Banner -->
+                    <div style="background:rgba(255,255,255,0.03);border-radius:4px;padding:0.35rem 0.5rem;font-size:0.6875rem">
+                      <div style="color:var(--flow-muted)">Active Flow Dynamic:</div>
+                      <div style="font-weight:600;display:flex;align-items:center;justify-content:space-between;margin-top:0.1rem">
+                        <span :class="eco.activeState === 'ACCUMULATION' ? 'flow-positive' : eco.activeState === 'DISTRIBUTION' ? 'flow-negative' : 'flow-cyan'" x-text="eco.activeLabel"></span>
+                        <template x-if="eco.activeStats">
+                          <span :class="eco.activeStats.fwd5_pct >= 0 ? 'flow-positive' : 'flow-negative'" class="font-mono" x-text="`${eco.activeStats.fwd5_pct >= 0 ? '+' : '−'}${Math.abs(eco.activeStats.fwd5_pct).toFixed(2)}% 5D Avg`"></span>
+                        </template>
                       </div>
-                      <div>
-                        <span class="flow-eyebrow">Q2 (Bull Out / Bear In):</span>
-                        <div class="flow-cyan" x-text="`${(eco.Q2_bull_out_bear_in?.fwd5_pct || 0) >= 0 ? '+' : '−'}${Math.abs(eco.Q2_bull_out_bear_in?.fwd5_pct || 0).toFixed(2)}% (Win ${(eco.Q2_bull_out_bear_in?.win5_pct || 0).toFixed(1)}%)`"></div>
+                    </div>
+                    <!-- Quadrant Empirical Odds Comparison -->
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.35rem;font-size:0.6875rem">
+                      <div :style="eco.activeCode === 'Q1' ? 'border:1px solid rgba(52,211,153,0.4);background:rgba(52,211,153,0.06);border-radius:4px;padding:0.25rem' : 'padding:0.25rem'">
+                        <div class="flow-eyebrow" style="color:#34d399">Q1 (Bull In / Bear Out)</div>
+                        <div class="flow-positive font-mono" style="font-weight:600" x-text="`${(eco.Q1_bull_in_bear_out?.fwd5_pct || 0) >= 0 ? '+' : '−'}${Math.abs(eco.Q1_bull_in_bear_out?.fwd5_pct || 0).toFixed(2)}% (Win ${(eco.Q1_bull_in_bear_out?.win5_pct || 0).toFixed(1)}%)`"></div>
+                      </div>
+                      <div :style="eco.activeCode === 'Q2' ? 'border:1px solid rgba(251,113,133,0.4);background:rgba(251,113,133,0.06);border-radius:4px;padding:0.25rem' : 'padding:0.25rem'">
+                        <div class="flow-eyebrow" style="color:#fb7185">Q2 (Bear In / Bull Out)</div>
+                        <div class="flow-negative font-mono" style="font-weight:600" x-text="`${(eco.Q2_bull_out_bear_in?.fwd5_pct || 0) >= 0 ? '+' : '−'}${Math.abs(eco.Q2_bull_out_bear_in?.fwd5_pct || 0).toFixed(2)}% (Win ${(eco.Q2_bull_out_bear_in?.win5_pct || 0).toFixed(1)}%)`"></div>
                       </div>
                     </div>
                   </div>
