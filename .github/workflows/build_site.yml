@@ -235,6 +235,8 @@ jobs:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
 
       - name: Verify outputs
+        env:
+          ALLOW_EMPTY_MARKETS: ${{ (steps.scope.outputs.full_build == 'false' || steps.cache_conviction.outputs.cache-hit == 'true') && '1' || '0' }}
         run: |
           test -f docs/data/leaderboard.json
           test -f docs/data/holdings_latest.json
