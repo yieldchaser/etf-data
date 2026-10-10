@@ -239,3 +239,24 @@ def test_flow_trade_blotter_rows_and_conviction_basket():
     assert result["hasSummary"] is True
 
 
+def test_flow_empirical_edge_ledger_metrics_and_meters():
+    result = run_metrics(
+        "(()=>{const app=m.flowResearchApp();const cat=require('./docs/data/flows/catalog.json');app.flowCatalog=cat;const tqqqItem=cat.instruments.find(i=>i.ticker==='TQQQ');app.flowTicker='TQQQ';app._flowEntryMap=Object.fromEntries(cat.instruments.map(i=>[i.ticker,i]));const raw=require('./docs/data/flows/TQQQ.json');app.flowData=m.normalizeFlowPayload(raw,tqqqItem);const ledger=app.flowEmpiricalEdgeLedger;return {hasLedger:!!ledger,shockBadge:ledger.shockBadge,hasShockMeter:ledger.shockMeterSvg.includes('<svg')&&ledger.shockMeterSvg.includes('−1.5σ'),hasThrustMeter:ledger.thrustMeterSvg.includes('<svg')&&ledger.thrustMeterSvg.includes('NAV 5D'),thrustBadge:ledger.thrustBadge,thrustStatLine:ledger.thrustStatLine,hasSparkline:ledger.rangeSparklineSvg.includes('<svg')};})()"
+    )
+    assert result["hasLedger"] is True
+    assert "BASELINE" in result["shockBadge"] or "INFLOW" in result["shockBadge"] or "OUTFLOW" in result["shockBadge"]
+    assert result["hasShockMeter"] is True
+    assert result["hasThrustMeter"] is True
+    assert result["hasSparkline"] is True
+    assert result["thrustBadge"] in [
+        "BULLISH SPONSORSHIP",
+        "BEARISH DIVERGENCE",
+        "DIP ABSORPTION",
+        "LIQUIDATION PRESSURE",
+        "STEALTH ACCUMULATION",
+        "STEALTH DISTRIBUTION",
+        "FLOW EQUILIBRIUM",
+    ]
+
+
+

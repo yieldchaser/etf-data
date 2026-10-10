@@ -3018,20 +3018,22 @@
               </div>
 
               <div class="flow-ledger-card">
-                <div style="display:flex;align-items:center;justify-content:space-between">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.3rem">
                   <span class="flow-eyebrow">Historical Flow Shock Edge</span>
                   <span class="flow-badge" :data-state="flowEmpiricalEdgeLedger?.shockBadgeState" x-text="flowEmpiricalEdgeLedger?.shockBadge"></span>
                 </div>
                 <div style="font-size:0.75rem;color:var(--flow-text);font-weight:600" x-text="flowEmpiricalEdgeLedger?.shockStatLine"></div>
+                <div class="flow-range-channel-graph" style="margin:0.25rem 0 0.35rem" x-html="flowEmpiricalEdgeLedger?.shockMeterSvg"></div>
                 <div class="flow-support" style="font-size:0.6875rem" x-text="flowEmpiricalEdgeLedger?.shockSubtext"></div>
               </div>
 
               <div class="flow-ledger-card">
-                <div style="display:flex;align-items:center;justify-content:space-between">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.3rem">
                   <span class="flow-eyebrow">5D Price Velocity &amp; Flow Thrust</span>
                   <span class="flow-badge" :data-state="flowEmpiricalEdgeLedger?.thrustBadgeState" x-text="flowEmpiricalEdgeLedger?.thrustBadge"></span>
                 </div>
                 <div style="font-size:0.75rem;color:var(--flow-text);font-weight:600" x-text="flowEmpiricalEdgeLedger?.thrustStatLine"></div>
+                <div class="flow-range-channel-graph" style="margin:0.25rem 0 0.35rem" x-html="flowEmpiricalEdgeLedger?.thrustMeterSvg"></div>
                 <div class="flow-support" style="font-size:0.6875rem" x-text="flowEmpiricalEdgeLedger?.thrustSubtext"></div>
               </div>
             </div>
@@ -3159,7 +3161,7 @@
                      @pointermove="if (!flowActiveThumb) { const r = $el.getBoundingClientRect(); const f = ($event.clientX - r.left) / r.width; const sF = (flowStartIndex / (flowMaxRecordIndex || 1)); const eF = (flowEndIndex / (flowMaxRecordIndex || 1)); flowHoverThumb = Math.abs(f - sF) < Math.abs(f - eF) ? 'start' : 'end'; }"
                      @pointerleave="flowHoverThumb = null">
                   <div class="flow-brush-slider-track"></div>
-                  <div class="flow-brush-slider-highlight" :style="`left: calc(9px + ${(flowStartIndex / (flowMaxRecordIndex || 1)).toFixed(4)} * (100% - 18px)); width: calc(${((flowEndIndex - flowStartIndex) / (flowMaxRecordIndex || 1)).toFixed(4)} * (100% - 18px));`"></div>
+                  <div class="flow-brush-slider-highlight" :style="`left: calc(9px + ${(flowStartIndex / (flowMaxRecordIndex || 1)).toFixed(4)} * (100% - 18px)); width: calc(${((flowEndIndex - flowStartIndex) / (flowMaxRecordIndex || 1)).toFixed(4)} * (100% - 18px));`" @pointerdown="flowHighlightPointerDown($event)"></div>
                   <div class="flow-brush-inputs">
                     <label class="flow-visually-hidden" for="flow-range-start">Start observation</label>
                     <input id="flow-range-start" class="flow-range" type="range" min="0" :max="flowMaxRecordIndex" step="1" :value="flowStartIndex" :style="flowActiveThumb === 'start' || (flowHoverThumb === 'start' && !flowActiveThumb) ? 'z-index: 6;' : (flowActiveThumb === 'end' || (flowHoverThumb === 'end' && !flowActiveThumb) ? 'z-index: 3;' : (flowStartIndex > (flowMaxRecordIndex / 2) ? 'z-index: 5;' : 'z-index: 3;'))" :aria-valuetext="flowRangeStartDate" @pointerdown="flowActiveThumb = 'start'" @pointerup="flowActiveThumb = null; _flowFinishRangeDrag()" @pointercancel="flowActiveThumb = null; _flowFinishRangeDrag()" @change="_flowFinishRangeDrag()" @input="flowActiveThumb = 'start'; flowSetStartIndex($event.target.value)">

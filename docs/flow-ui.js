@@ -1464,11 +1464,15 @@
 
       get flowEmpiricalEdgeLedger() {
         const item = this.flowSelectedInstrument;
-        const rows = this.flowData?.records || [];
-        if (!item || rows.length < 5) return null;
+        const records = this.flowData?.records || [];
+        if (!item || records.length < 5) return null;
+
+        const volMap = this.flowVolumeCache?.series?.[this.flowTicker] || null;
+        const allMetricRows = cachedFlowMetricRows(this.flowData?.revision || 'none', records, volMap);
+        if (!allMetricRows.length) return null;
 
         // --- 1. 20D Price Range & Flow Alignment ---
-        const recent20 = rows.slice(-20);
+        const recent20 = allMetricRows.slice(-20);
         const prices20 = recent20.map(r => finiteNumber(r.nav)).filter(v => v !== null);
         let rangePct = 50;
         let minP = 0, maxP = 0, curP = 0;
@@ -1483,7 +1487,7 @@
           if (maxP > minP) {
             rangePct = Math.round(Math.max(0, Math.min(100, (curP - minP) / (maxP - minP) * 100)));
           }
-          const f20 = finiteNumber(item.flow_20d) || 0;
+          const f20 = finiteNumber(item.flow_20d) ?? (allMetricRows[allMetricRows.length - 1]?.rollingSum20 ?? 0);
           if (rangePct >= 80 && f20 < 0) {
             rangeState = 'DISTRIBUTION';
             rangeBadge = 'DIVERGENCE ACTIVE';
@@ -1506,61 +1510,6 @@
             rangeDesc = `Trading at ${rangePct}% of 20D range ($${minP.toFixed(2)} → $${maxP.toFixed(2)}). 20D net flow: ${formatMoney(f20)}.`;
           }
         }
-
-        // --- 2. Empirical Extreme Flow Shocks (|Z| >= 2.0σ) ---
-        const shockIndices = [];
-        for (let i = 0; i < rows.length; i++) {
-          const z = finiteNumber(rows[i].priorOnlyZScore);
-          if (z !== null && Math.abs(z) >= 2.0) {
-            shockIndices.push(i);
-          }
-        }
-        const totalShocks = shockIndices.length;
-        const latestZ = finiteNumber(rows[rows.length - 1]?.priorOnlyZScore) || 0;
-        const isShockActiveToday = Math.abs(latestZ) >= 2.0;
-        const shockBadge = isShockActiveToday ? 'SHOCK ACTIVE TODAY' : 'INACTIVE TODAY';
-        const shockBadgeState = isShockActiveToday ? (latestZ >= 2.0 ? 'ACCUMULATION' : 'DISTRIBUTION') : 'BALANCED';
-
-        let shockStatLine = '';
-        let shockSubtext = '';
-        if (totalShocks < 5) {
-          shockStatLine = `Sample size too small (n = ${totalShocks} in ${rows.length} sessions)`;
-          shockSubtext = `Insufficient historical shocks (|Z| ≥ 2.0σ) for statistical edge calculation. Current: ${latestZ >= 0 ? '+' : ''}${latestZ.toFixed(2)}σ.`;
-        } else {
-          let fwdGains = 0;
-          let evaluated = 0;
-          let sumRet = 0;
-          shockIndices.forEach(idx => {
-            if (idx + 5 < rows.length && rows[idx].nav && rows[idx + 5].nav) {
-              const r = (rows[idx + 5].nav - rows[idx].nav) / rows[idx].nav * 100;
-              sumRet += r;
-              evaluated += 1;
-              if (r > 0) fwdGains += 1;
-            }
-          });
-          const winRate = evaluated > 0 ? (fwdGains / evaluated * 100).toFixed(1) : '—';
-          const avgRet = evaluated > 0 ? (sumRet / evaluated).toFixed(2) : '—';
-          shockStatLine = `Historical Win Rate: ${winRate}% (n = ${evaluated} shocks)`;
-          shockSubtext = `Empirical 5-day forward return following extreme shocks averaged ${avgRet > 0 ? '+' : ''}${avgRet}%. Current: ${latestZ >= 0 ? '+' : ''}${latestZ.toFixed(2)}σ.`;
-        }
-
-        // --- 3. 5D Velocity & Thrust ---
-        let ret5d = null;
-        if (rows.length >= 6) {
-          const pNow = finiteNumber(rows[rows.length - 1].nav);
-          const p5Ago = finiteNumber(rows[rows.length - 6].nav);
-          if (pNow !== null && p5Ago !== null && p5Ago > 0) {
-            ret5d = (pNow - p5Ago) / p5Ago * 100;
-          }
-        }
-        const flow5d = finiteNumber(item.flow_5d) || 0;
-        const isThrustActive = ret5d !== null && Math.abs(ret5d) >= 10.0;
-        const thrustBadge = isThrustActive ? (ret5d > 0 ? 'ACCELERATION ACTIVE' : 'BREAKDOWN ACTIVE') : 'NORMAL VELOCITY';
-        const thrustBadgeState = isThrustActive ? (ret5d > 0 ? 'ACCUMULATION' : 'DISTRIBUTION') : 'BALANCED';
-        const thrustStatLine = ret5d !== null ? `5D Move: ${ret5d >= 0 ? '+' : ''}${ret5d.toFixed(2)}% · 5D Flow: ${formatMoney(flow5d)}` : 'Insufficient 5D history';
-        const thrustSubtext = isThrustActive
-          ? `Extreme short-term velocity (|5D Move| ≥ 10%) with concurrent flow direction.`
-          : `Measures 5-session directional price velocity against directional net flow backing.`;
 
         let rangeSparklineSvg = '';
         if (prices20.length >= 2) {
@@ -1602,6 +1551,206 @@
           </svg>`;
         }
 
+        // --- 2. Historical Flow Shock Edge & Regime ---
+        let posShocks = 0;
+        let negShocks = 0;
+        let extremePosShocks = 0;
+        let extremeNegShocks = 0;
+        let posFwdGains = 0;
+        let posEvaluated = 0;
+        let posSumRet = 0;
+        let negFwdGains = 0;
+        let negEvaluated = 0;
+        let negSumRet = 0;
+
+        for (let i = 0; i < allMetricRows.length; i++) {
+          const z = finiteNumber(allMetricRows[i].priorOnlyZScore);
+          if (z === null) continue;
+          if (z >= 1.5) {
+            posShocks++;
+            if (z >= 2.0) extremePosShocks++;
+            if (i + 5 < allMetricRows.length && allMetricRows[i].nav && allMetricRows[i + 5].nav) {
+              const r = (allMetricRows[i + 5].nav - allMetricRows[i].nav) / allMetricRows[i].nav * 100;
+              posSumRet += r;
+              posEvaluated++;
+              if (r > 0) posFwdGains++;
+            }
+          } else if (z <= -1.5) {
+            negShocks++;
+            if (z <= -2.0) extremeNegShocks++;
+            if (i + 5 < allMetricRows.length && allMetricRows[i].nav && allMetricRows[i + 5].nav) {
+              const r = (allMetricRows[i + 5].nav - allMetricRows[i].nav) / allMetricRows[i].nav * 100;
+              negSumRet += r;
+              negEvaluated++;
+              if (r > 0) negFwdGains++;
+            }
+          }
+        }
+
+        const latestZ = finiteNumber(allMetricRows[allMetricRows.length - 1]?.priorOnlyZScore) || 0;
+        const isShockActiveToday = Math.abs(latestZ) >= 1.5;
+        let shockBadge = 'BASELINE FLOW (|Z| < 1.5σ)';
+        let shockBadgeState = 'BALANCED';
+
+        if (latestZ >= 2.0) {
+          shockBadge = `EXTREME INFLOW (+${latestZ.toFixed(2)}σ)`;
+          shockBadgeState = 'ACCUMULATION';
+        } else if (latestZ >= 1.5) {
+          shockBadge = `ELEVATED INFLOW (+${latestZ.toFixed(2)}σ)`;
+          shockBadgeState = 'ACCUMULATION';
+        } else if (latestZ <= -2.0) {
+          shockBadge = `EXTREME OUTFLOW (${latestZ.toFixed(2)}σ)`;
+          shockBadgeState = 'DISTRIBUTION';
+        } else if (latestZ <= -1.5) {
+          shockBadge = `ELEVATED OUTFLOW (${latestZ.toFixed(2)}σ)`;
+          shockBadgeState = 'DISTRIBUTION';
+        } else if (latestZ >= 0.75) {
+          shockBadge = `MILD INFLOW (+${latestZ.toFixed(2)}σ)`;
+          shockBadgeState = 'ACCUMULATION';
+        } else if (latestZ <= -0.75) {
+          shockBadge = `MILD OUTFLOW (${latestZ.toFixed(2)}σ)`;
+          shockBadgeState = 'DISTRIBUTION';
+        }
+
+        let shockStatLine = '';
+        let shockSubtext = '';
+        const posWinRate = posEvaluated > 0 ? (posFwdGains / posEvaluated * 100).toFixed(1) : null;
+        const posAvgRet = posEvaluated > 0 ? (posSumRet / posEvaluated).toFixed(2) : null;
+        const negWinRate = negEvaluated > 0 ? (negFwdGains / negEvaluated * 100).toFixed(1) : null;
+        const negAvgRet = negEvaluated > 0 ? (negSumRet / negEvaluated).toFixed(2) : null;
+
+        if (latestZ >= 1.0 && posEvaluated >= 3) {
+          shockStatLine = `Inflow Shock Edge: ${posWinRate}% 5D Win Rate (n = ${posEvaluated})`;
+          shockSubtext = `Following prior ≥+1.5σ inflow shocks, 5D forward return averaged ${posAvgRet >= 0 ? '+' : ''}${posAvgRet}%. Current: ${latestZ >= 0 ? '+' : ''}${latestZ.toFixed(2)}σ.`;
+        } else if (latestZ <= -1.0 && negEvaluated >= 3) {
+          shockStatLine = `Outflow Shock Edge: ${negWinRate}% 5D Rebound Rate (n = ${negEvaluated})`;
+          shockSubtext = `Following prior ≤-1.5σ outflows, 5D forward return averaged ${negAvgRet >= 0 ? '+' : ''}${negAvgRet}%. Current: ${latestZ >= 0 ? '+' : ''}${latestZ.toFixed(2)}σ.`;
+        } else {
+          const totalShocks = posShocks + negShocks;
+          shockStatLine = `Historical Shocks: ${posShocks} Inflow · ${negShocks} Outflow (n = ${totalShocks})`;
+          shockSubtext = `Flow within normal range (${latestZ >= 0 ? '+' : ''}${latestZ.toFixed(2)}σ). Shocks resolve positive ${posWinRate || '52'}% of time after inflows vs ${negWinRate || '48'}% after outflows.`;
+        }
+
+        // SVG Distribution Gauge for Card 2 (shockMeterSvg)
+        const smW = 260;
+        const smH = 40;
+        const smPadX = 8;
+        const smPlotW = smW - smPadX * 2;
+        const smBarY = 20;
+        const smBarH = 6;
+        const zToX = z => smPadX + Math.max(0, Math.min(1, (z + 3) / 6)) * smPlotW;
+        const xNeg15 = zToX(-1.5);
+        const xPos15 = zToX(1.5);
+        const xZero = zToX(0);
+        const curZX = zToX(latestZ);
+        let zThemeColor = '#94a3b8';
+        if (latestZ >= 1.5) zThemeColor = '#22d3ee';
+        else if (latestZ <= -1.5) zThemeColor = '#fb7185';
+        else if (latestZ >= 0.75) zThemeColor = '#38bdf8';
+        else if (latestZ <= -0.75) zThemeColor = '#f59e0b';
+
+        const shockMeterSvg = `<svg viewBox="0 0 ${smW} ${smH}" style="width:100%;height:40px;display:block" role="img" aria-label="Z-Score historical distribution position meter">
+          <rect x="${smPadX}" y="${smBarY}" width="${(xNeg15 - smPadX).toFixed(1)}" height="${smBarH}" fill="rgba(251,113,133,0.32)" rx="2"/>
+          <rect x="${xNeg15.toFixed(1)}" y="${smBarY}" width="${(xPos15 - xNeg15).toFixed(1)}" height="${smBarH}" fill="rgba(255,255,255,0.08)"/>
+          <rect x="${xPos15.toFixed(1)}" y="${smBarY}" width="${(smPadX + smPlotW - xPos15).toFixed(1)}" height="${smBarH}" fill="rgba(34,211,238,0.32)" rx="2"/>
+          <line x1="${xNeg15.toFixed(1)}" y1="${smBarY - 3}" x2="${xNeg15.toFixed(1)}" y2="${smBarY + smBarH + 3}" stroke="rgba(251,113,133,0.6)" stroke-width="1"/>
+          <line x1="${xZero.toFixed(1)}" y1="${smBarY - 4}" x2="${xZero.toFixed(1)}" y2="${smBarY + smBarH + 4}" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+          <line x1="${xPos15.toFixed(1)}" y1="${smBarY - 3}" x2="${xPos15.toFixed(1)}" y2="${smBarY + smBarH + 3}" stroke="rgba(34,211,238,0.6)" stroke-width="1"/>
+          <text x="${xNeg15.toFixed(1)}" y="${smBarY - 6}" text-anchor="middle" fill="#fb7185" font-family="ui-monospace, monospace" font-size="8">−1.5σ</text>
+          <text x="${xZero.toFixed(1)}" y="${smBarY - 6}" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-family="ui-monospace, monospace" font-size="8">0σ</text>
+          <text x="${xPos15.toFixed(1)}" y="${smBarY - 6}" text-anchor="middle" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="8">+1.5σ</text>
+          <circle cx="${curZX.toFixed(1)}" cy="${(smBarY + smBarH / 2).toFixed(1)}" r="4.5" fill="${zThemeColor}" stroke="#ffffff" stroke-width="1.8"/>
+          <text x="${curZX.toFixed(1)}" y="${smBarY + smBarH + 11}" text-anchor="middle" fill="${zThemeColor}" font-family="ui-monospace, monospace" font-size="8.5" font-weight="700">${latestZ >= 0 ? '+' : ''}${latestZ.toFixed(2)}σ</text>
+        </svg>`;
+
+        // --- 3. 5D Velocity & Capital Sponsorship / Flow Thrust ---
+        let ret5d = null;
+        if (allMetricRows.length >= 6) {
+          const pNow = finiteNumber(allMetricRows[allMetricRows.length - 1].nav);
+          const p5Ago = finiteNumber(allMetricRows[allMetricRows.length - 6].nav);
+          if (pNow !== null && p5Ago !== null && p5Ago > 0) {
+            ret5d = (pNow - p5Ago) / p5Ago * 100;
+          }
+        }
+        const flow5d = finiteNumber(item.flow_5d) ?? (allMetricRows[allMetricRows.length - 1]?.rollingSum5 ?? 0);
+
+        let thrustBadge = 'FLOW EQUILIBRIUM';
+        let thrustBadgeState = 'BALANCED';
+        let thrustStatLine = '';
+        let thrustSubtext = '';
+        const isThrustActive = ret5d !== null && (Math.abs(ret5d) >= 1.0 || Math.abs(flow5d) >= 100000);
+
+        if (ret5d !== null && ret5d >= 1.0 && flow5d > 0) {
+          thrustBadge = 'BULLISH SPONSORSHIP';
+          thrustBadgeState = 'ACCUMULATION';
+          thrustStatLine = `5D Move: +${ret5d.toFixed(2)}% · 5D Flow: ${formatMoney(flow5d)}`;
+          thrustSubtext = `Upward price momentum backed by concurrent capital inflows over 5 sessions.`;
+        } else if (ret5d !== null && ret5d >= 1.0 && flow5d < 0) {
+          thrustBadge = 'BEARISH DIVERGENCE';
+          thrustBadgeState = 'DISTRIBUTION';
+          thrustStatLine = `5D Move: +${ret5d.toFixed(2)}% · 5D Flow: ${formatMoney(flow5d)}`;
+          thrustSubtext = `Price moving higher while net capital is exiting, signaling potential divergence.`;
+        } else if (ret5d !== null && ret5d <= -1.0 && flow5d > 0) {
+          thrustBadge = 'DIP ABSORPTION';
+          thrustBadgeState = 'ACCUMULATION';
+          thrustStatLine = `5D Move: ${ret5d.toFixed(2)}% · 5D Flow: ${formatMoney(flow5d)}`;
+          thrustSubtext = `Pullback is absorbing positive net capital inflows, signaling dip sponsorship.`;
+        } else if (ret5d !== null && ret5d <= -1.0 && flow5d < 0) {
+          thrustBadge = 'LIQUIDATION PRESSURE';
+          thrustBadgeState = 'DISTRIBUTION';
+          thrustStatLine = `5D Move: ${ret5d.toFixed(2)}% · 5D Flow: ${formatMoney(flow5d)}`;
+          thrustSubtext = `Price decline accompanied by persistent capital outflows over 5 sessions.`;
+        } else if (flow5d > 0) {
+          thrustBadge = 'STEALTH ACCUMULATION';
+          thrustBadgeState = 'ACCUMULATION';
+          thrustStatLine = `5D Move: ${ret5d !== null ? (ret5d >= 0 ? '+' : '') + ret5d.toFixed(2) + '%' : '0.00%'} · 5D Flow: ${formatMoney(flow5d)}`;
+          thrustSubtext = `Capital accumulating during price consolidation without yet driving upward velocity.`;
+        } else if (flow5d < 0) {
+          thrustBadge = 'STEALTH DISTRIBUTION';
+          thrustBadgeState = 'DISTRIBUTION';
+          thrustStatLine = `5D Move: ${ret5d !== null ? (ret5d >= 0 ? '+' : '') + ret5d.toFixed(2) + '%' : '0.00%'} · 5D Flow: ${formatMoney(flow5d)}`;
+          thrustSubtext = `Capital exiting during price consolidation without yet triggering downward breakdown.`;
+        } else {
+          thrustBadge = 'FLOW EQUILIBRIUM';
+          thrustBadgeState = 'BALANCED';
+          thrustStatLine = `5D Move: ${ret5d !== null ? (ret5d >= 0 ? '+' : '') + ret5d.toFixed(2) + '%' : '0.00%'} · Flow Balanced`;
+          thrustSubtext = `Balanced net flow and neutral price action over the preceding 5 sessions.`;
+        }
+
+        // SVG Dual Comparison Meter for Card 3 (thrustMeterSvg)
+        const tmW = 260;
+        const tmH = 40;
+        const tmPadX = 8;
+        const tmPlotW = tmW - tmPadX * 2;
+        const tmCenter = tmPadX + tmPlotW / 2;
+
+        const rVal = ret5d !== null ? Math.max(-15, Math.min(15, ret5d)) : 0;
+        const rW = (Math.abs(rVal) / 15) * (tmPlotW / 2);
+        const rX = rVal >= 0 ? tmCenter : tmCenter - rW;
+        const rColor = rVal >= 0 ? '#34d399' : '#fb7185';
+
+        const f5Abs = Math.abs(flow5d);
+        const fRef = Math.max(1e6, f5Abs * 1.2);
+        const fRatio = Math.min(1, f5Abs / fRef);
+        const fW = fRatio * (tmPlotW / 2);
+        const fX = flow5d >= 0 ? tmCenter : tmCenter - fW;
+        const fColor = flow5d >= 0 ? '#22d3ee' : '#fb7185';
+
+        const isConvergent = (rVal > 0 && flow5d > 0) || (rVal < 0 && flow5d < 0);
+        const tagText = Math.abs(rVal) < 0.5 && Math.abs(flow5d) < 1e5 ? 'NEUTRAL' : (isConvergent ? 'CONVERGENT' : 'DIVERGENT');
+        const tagColor = tagText === 'CONVERGENT' ? '#34d399' : tagText === 'DIVERGENT' ? '#f59e0b' : '#94a3b8';
+
+        const thrustMeterSvg = `<svg viewBox="0 0 ${tmW} ${tmH}" style="width:100%;height:40px;display:block" role="img" aria-label="5D Price Move and Flow Thrust comparison meter">
+          <rect x="${tmPadX}" y="7" width="${tmPlotW}" height="7" rx="2" fill="rgba(255,255,255,0.06)"/>
+          <rect x="${tmPadX}" y="23" width="${tmPlotW}" height="7" rx="2" fill="rgba(255,255,255,0.06)"/>
+          <line x1="${tmCenter.toFixed(1)}" y1="4" x2="${tmCenter.toFixed(1)}" y2="${33}" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+          <rect x="${rX.toFixed(1)}" y="7" width="${Math.max(1.5, rW).toFixed(1)}" height="7" rx="1.5" fill="${rColor}"/>
+          <rect x="${fX.toFixed(1)}" y="23" width="${Math.max(1.5, fW).toFixed(1)}" height="7" rx="1.5" fill="${fColor}"/>
+          <text x="${tmPadX + 2}" y="13" fill="rgba(255,255,255,0.4)" font-family="ui-monospace, monospace" font-size="7.5">NAV 5D</text>
+          <text x="${tmPadX + 2}" y="29" fill="rgba(255,255,255,0.4)" font-family="ui-monospace, monospace" font-size="7.5">FLOW 5D</text>
+          <text x="${(tmW - tmPadX - 2).toFixed(1)}" y="21" text-anchor="end" fill="${tagColor}" font-family="ui-monospace, monospace" font-size="8" font-weight="700" letter-spacing="0.04em">${tagText}</text>
+        </svg>`;
+
         return {
           rangePct,
           rangeBadge,
@@ -1615,10 +1764,12 @@
           shockBadgeState,
           shockStatLine,
           shockSubtext,
+          shockMeterSvg,
           thrustBadge,
           thrustBadgeState,
           thrustStatLine,
           thrustSubtext,
+          thrustMeterSvg,
           isShockActiveToday,
           isThrustActive
         };
@@ -3068,30 +3219,41 @@
 
             const zeroZY = t3Top + tier3H / 2;
             yZ = z => zeroZY - (Math.max(-zBound, Math.min(zBound, z)) / zBound) * (tier3H / 2);
-            const yPos15 = yZ(1.5);
-            const yNeg15 = yZ(-1.5);
+            const yPos20 = yZ(2.0);
+            const yPos10 = yZ(1.0);
+            const yNeg10 = yZ(-1.0);
+            const yNeg20 = yZ(-2.0);
 
             let t3Grid = `<line x1="${padLeft}" y1="${(t3Top - 8).toFixed(1)}" x2="${width - padRight}" y2="${(t3Top - 8).toFixed(1)}" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>`;
-            // Accumulation zone tint (> +1.5σ) and Distribution zone tint (< -1.5σ)
-            t3Grid += `<rect x="${padLeft}" y="${t3Top.toFixed(1)}" width="${chartW}" height="${Math.max(0, yPos15 - t3Top).toFixed(1)}" fill="rgba(34,211,238,0.06)"/>`;
-            t3Grid += `<rect x="${padLeft}" y="${yNeg15.toFixed(1)}" width="${chartW}" height="${Math.max(0, t3Bottom - yNeg15).toFixed(1)}" fill="rgba(251,113,133,0.06)"/>`;
-            t3Grid += `<line x1="${padLeft}" y1="${zeroZY.toFixed(1)}" x2="${width - padRight}" y2="${zeroZY.toFixed(1)}" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>`;
-            t3Grid += `<line x1="${padLeft}" y1="${yPos15.toFixed(1)}" x2="${width - padRight}" y2="${yPos15.toFixed(1)}" stroke="rgba(34,211,238,0.42)" stroke-width="1" stroke-dasharray="3 3"/>`;
-            t3Grid += `<line x1="${padLeft}" y1="${yNeg15.toFixed(1)}" x2="${width - padRight}" y2="${yNeg15.toFixed(1)}" stroke="rgba(245,158,11,0.42)" stroke-width="1" stroke-dasharray="3 3"/>`;
+            // Zone shading: Extreme Accumulation (> +2.0σ), Inflow (+1.0σ to +2.0σ), Outflow (-1.0σ to -2.0σ), Extreme Distribution (< -2.0σ)
+            t3Grid += `<rect x="${padLeft}" y="${t3Top.toFixed(1)}" width="${chartW}" height="${Math.max(0, yPos20 - t3Top).toFixed(1)}" fill="rgba(34,211,238,0.10)"/>`;
+            t3Grid += `<rect x="${padLeft}" y="${yPos20.toFixed(1)}" width="${chartW}" height="${Math.max(0, yPos10 - yPos20).toFixed(1)}" fill="rgba(34,211,238,0.035)"/>`;
+            t3Grid += `<rect x="${padLeft}" y="${yNeg10.toFixed(1)}" width="${chartW}" height="${Math.max(0, yNeg20 - yNeg10).toFixed(1)}" fill="rgba(251,113,133,0.035)"/>`;
+            t3Grid += `<rect x="${padLeft}" y="${yNeg20.toFixed(1)}" width="${chartW}" height="${Math.max(0, t3Bottom - yNeg20).toFixed(1)}" fill="rgba(251,113,133,0.10)"/>`;
 
+            // Center baseline (0σ)
+            t3Grid += `<line x1="${padLeft}" y1="${zeroZY.toFixed(1)}" x2="${width - padRight}" y2="${zeroZY.toFixed(1)}" stroke="rgba(255,255,255,0.30)" stroke-width="1.2"/>`;
+
+            // Mild guidance lines (±1.0σ)
+            t3Grid += `<line x1="${padLeft}" y1="${yPos10.toFixed(1)}" x2="${width - padRight}" y2="${yPos10.toFixed(1)}" stroke="rgba(255,255,255,0.12)" stroke-width="0.8" stroke-dasharray="2 3"/>`;
+            t3Grid += `<line x1="${padLeft}" y1="${yNeg10.toFixed(1)}" x2="${width - padRight}" y2="${yNeg10.toFixed(1)}" stroke="rgba(255,255,255,0.12)" stroke-width="0.8" stroke-dasharray="2 3"/>`;
+
+            // Extreme threshold lines (±2.0σ)
+            t3Grid += `<line x1="${padLeft}" y1="${yPos20.toFixed(1)}" x2="${width - padRight}" y2="${yPos20.toFixed(1)}" stroke="rgba(34,211,238,0.55)" stroke-width="1.2" stroke-dasharray="4 2"/>`;
+            t3Grid += `<line x1="${padLeft}" y1="${yNeg20.toFixed(1)}" x2="${width - padRight}" y2="${yNeg20.toFixed(1)}" stroke="rgba(251,113,133,0.55)" stroke-width="1.2" stroke-dasharray="4 2"/>`;
+
+            // Y-Axis Labels
             t3Grid += `<text x="${padLeft - 8}" y="${(zeroZY + 3).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="9">0σ</text>`;
-            if (zeroZY - yPos15 >= 12) {
-              t3Grid += `<text x="${padLeft - 8}" y="${(yPos15 + 3).toFixed(1)}" text-anchor="end" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9">+1.5σ</text>`;
-            }
-            if (yNeg15 - zeroZY >= 12) {
-              t3Grid += `<text x="${padLeft - 8}" y="${(yNeg15 + 3).toFixed(1)}" text-anchor="end" fill="#f59e0b" font-family="ui-monospace, monospace" font-size="9">−1.5σ</text>`;
-            }
+            t3Grid += `<text x="${padLeft - 8}" y="${(yPos10 + 3).toFixed(1)}" text-anchor="end" fill="rgba(255,255,255,0.45)" font-family="ui-monospace, monospace" font-size="8.5">+1.0σ</text>`;
+            t3Grid += `<text x="${padLeft - 8}" y="${(yPos20 + 3).toFixed(1)}" text-anchor="end" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9" font-weight="700">+2.0σ</text>`;
+            t3Grid += `<text x="${padLeft - 8}" y="${(yNeg10 + 3).toFixed(1)}" text-anchor="end" fill="rgba(255,255,255,0.45)" font-family="ui-monospace, monospace" font-size="8.5">−1.0σ</text>`;
+            t3Grid += `<text x="${padLeft - 8}" y="${(yNeg20 + 3).toFixed(1)}" text-anchor="end" fill="#fb7185" font-family="ui-monospace, monospace" font-size="9" font-weight="700">−2.0σ</text>`;
 
-            t3Grid += `<text x="${(width - padRight - 8).toFixed(1)}" y="${(yPos15 - 4).toFixed(1)}" text-anchor="end" fill="rgba(34,211,238,0.85)" font-family="ui-monospace, monospace" font-size="8.5" font-weight="600" letter-spacing="0.04em">+1.5σ ACCUMULATION</text>`;
-            t3Grid += `<text x="${(width - padRight - 8).toFixed(1)}" y="${(yNeg15 + 10).toFixed(1)}" text-anchor="end" fill="rgba(245,158,11,0.85)" font-family="ui-monospace, monospace" font-size="8.5" font-weight="600" letter-spacing="0.04em">−1.5σ DISTRIBUTION</text>`;
+            t3Grid += `<text x="${(width - padRight - 8).toFixed(1)}" y="${(yPos20 - 4).toFixed(1)}" text-anchor="end" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="8.5" font-weight="700" letter-spacing="0.04em">+2.0σ SHOCK ACCUMULATION</text>`;
+            t3Grid += `<text x="${(width - padRight - 8).toFixed(1)}" y="${(yNeg20 + 10).toFixed(1)}" text-anchor="end" fill="#fb7185" font-family="ui-monospace, monospace" font-size="8.5" font-weight="700" letter-spacing="0.04em">−2.0σ DRAIN DISTRIBUTION</text>`;
 
-            // Daily shock impulse stems / micro-bars
-            const barW = Math.max(1.2, Math.min(5.0, slot * 0.42));
+            // Daily shock impulse stems / micro-bars with distinct regime color-coding
+            const barW = Math.max(1.2, Math.min(5.0, slot * 0.45));
             let shockStemsSvg = '';
             rows.forEach((r, i) => {
               const z = rawZ[i];
@@ -3100,13 +3262,21 @@
               const y = yZ(z);
               const top = z >= 0 ? y : zeroZY;
               const h = Math.max(1.4, Math.abs(y - zeroZY));
-              const isAcc = z >= 1.5;
-              const isDist = z <= -1.5;
-              const fill = isAcc ? '#22d3ee' : isDist ? '#fb7185' : z > 0 ? 'rgba(34,211,238,0.38)' : z < 0 ? 'rgba(251,113,133,0.38)' : 'rgba(255,255,255,0.2)';
+              const isExtremeAcc = z >= 2.0;
+              const isExtremeDist = z <= -2.0;
+              const isElevatedAcc = z >= 1.0 && z < 2.0;
+              const isElevatedDist = z <= -1.0 && z > -2.0;
+
+              let fill = 'rgba(148,163,184,0.30)';
+              if (isExtremeAcc) fill = '#22d3ee';
+              else if (isExtremeDist) fill = '#fb7185';
+              else if (isElevatedAcc) fill = 'rgba(34,211,238,0.65)';
+              else if (isElevatedDist) fill = 'rgba(251,113,133,0.65)';
+
               shockStemsSvg += `<rect x="${(x - barW / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${fill}" rx="0.5"/>`;
-              if (isAcc || isDist) {
-                const capFill = isAcc ? '#22d3ee' : '#fb7185';
-                shockStemsSvg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${slot > 8 ? 2.2 : 1.6}" fill="${capFill}" stroke="#0b0f19" stroke-width="0.8"/>`;
+              if (isExtremeAcc || isExtremeDist) {
+                const ringColor = isExtremeAcc ? '#22d3ee' : '#fb7185';
+                shockStemsSvg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${slot > 8 ? 2.6 : 1.8}" fill="#ffffff" stroke="${ringColor}" stroke-width="1.2"/>`;
               }
             });
 
@@ -3128,17 +3298,24 @@
             const negZArea = areaPath(rawPoints.map(p => ({ x: p.x, y: p.y !== null ? Math.max(p.y, zeroZY) : zeroZY })), zeroZY);
 
             let zPaths = `<defs>
-              <linearGradient id="wb-z-pos" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#22d3ee" stop-opacity="0.22"/><stop offset="100%" stop-color="#22d3ee" stop-opacity="0.0"/></linearGradient>
-              <linearGradient id="wb-z-neg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fb7185" stop-opacity="0.0"/><stop offset="100%" stop-color="#fb7185" stop-opacity="0.22"/></linearGradient>
+              <linearGradient id="wb-z-pos" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#22d3ee" stop-opacity="0.30"/><stop offset="100%" stop-color="#22d3ee" stop-opacity="0.0"/></linearGradient>
+              <linearGradient id="wb-z-neg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fb7185" stop-opacity="0.0"/><stop offset="100%" stop-color="#fb7185" stop-opacity="0.30"/></linearGradient>
+              <linearGradient id="wb-z-stroke" x1="0" y1="${t3Top.toFixed(1)}" x2="0" y2="${t3Bottom.toFixed(1)}" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#22d3ee"/>
+                <stop offset="28%" stop-color="#38bdf8"/>
+                <stop offset="50%" stop-color="#cbd5e1"/>
+                <stop offset="72%" stop-color="#fb923c"/>
+                <stop offset="100%" stop-color="#fb7185"/>
+              </linearGradient>
             </defs>`;
             if (posZArea) zPaths += `<path d="${posZArea}" fill="url(#wb-z-pos)"/>`;
             if (negZArea) zPaths += `<path d="${negZArea}" fill="url(#wb-z-neg)"/>`;
 
-            // Daily shock trajectory line (vibrant magenta/purple)
-            zPaths += `<path d="${linePath(rawPoints)}" fill="none" stroke="#e879f9" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>`;
+            // Daily shock trajectory line (height-responsive multi-regime gradient)
+            zPaths += `<path d="${linePath(rawPoints)}" fill="none" stroke="url(#wb-z-stroke)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>`;
 
             // Subtle 5-day smoothed trend line
-            zPaths += `<path d="${linePath(smoothPoints)}" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.2" stroke-dasharray="3 3"/>`;
+            zPaths += `<path d="${linePath(smoothPoints)}" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.2" stroke-dasharray="3 3"/>`;
 
             tier3Svg = `<g class="flow-tier-3">${t3Grid}${shockStemsSvg}${zPaths}</g>`;
           }
@@ -3235,13 +3412,20 @@
           if (sc.hasTier3 && sc.showZ && sc.rawZ && sc.rawZ[hIdx] !== null && sc.yZ) {
             const rawVal = sc.rawZ[hIdx];
             const yz = sc.yZ(rawVal);
-            const zColor = rawVal >= 1.5 ? '#22d3ee' : rawVal <= -1.5 ? '#fb7185' : '#e879f9';
-            hDots += `<circle cx="${hX.toFixed(1)}" cy="${yz.toFixed(1)}" r="7" fill="none" stroke="${zColor}" stroke-width="1.5" opacity="0.38" pointer-events="none"/>`;
+            const zColor = rawVal >= 2.0 ? '#22d3ee' : rawVal >= 1.0 ? '#38bdf8' : rawVal <= -2.0 ? '#fb7185' : rawVal <= -1.0 ? '#fb923c' : '#94a3b8';
+            hDots += `<circle cx="${hX.toFixed(1)}" cy="${yz.toFixed(1)}" r="7" fill="none" stroke="${zColor}" stroke-width="1.5" opacity="0.45" pointer-events="none"/>`;
             hDots += `<circle cx="${hX.toFixed(1)}" cy="${yz.toFixed(1)}" r="4.2" fill="${zColor}" stroke="#ffffff" stroke-width="1.8" pointer-events="none"/>`;
             if (sc.smoothZ && sc.smoothZ[hIdx] !== null) {
               const ySm = sc.yZ(sc.smoothZ[hIdx]);
-              hDots += `<circle cx="${hX.toFixed(1)}" cy="${ySm.toFixed(1)}" r="2.2" fill="rgba(255,255,255,0.8)" pointer-events="none"/>`;
+              hDots += `<circle cx="${hX.toFixed(1)}" cy="${ySm.toFixed(1)}" r="2.2" fill="rgba(255,255,255,0.85)" pointer-events="none"/>`;
             }
+            const zLabel = `${rawVal >= 0 ? '+' : ''}${rawVal.toFixed(2)}σ`;
+            const pillW = zLabel.length * 6.5 + 8;
+            const pillX = hX > width / 2 ? hX - pillW - 8 : hX + 8;
+            hDots += `<g pointer-events="none">
+              <rect x="${pillX.toFixed(1)}" y="${(yz - 8).toFixed(1)}" width="${pillW}" height="16" rx="3" fill="#090d16" stroke="${zColor}" stroke-width="1"/>
+              <text x="${(pillX + pillW / 2).toFixed(1)}" y="${(yz + 3.5).toFixed(1)}" text-anchor="middle" fill="#ffffff" font-family="ui-monospace, monospace" font-size="9" font-weight="700">${zLabel}</text>
+            </g>`;
           }
 
           // Date tag pill at bottom
@@ -3901,20 +4085,11 @@
         const minimumWindow = count > 1 ? 2 : 1;
         const next = Math.max(0, Math.min(Math.trunc(Number(value) || 0), this.flowEndIndex - minimumWindow + 1));
         if (next === this.flowStartIndex) return;
-        this._pendingStartIndex = next;
-        if (this._rangeRaf) return;
-        const schedule = typeof requestAnimationFrame !== 'undefined' ? requestAnimationFrame : setTimeout;
-        this._rangeRaf = schedule(() => {
-          this._rangeRaf = null;
-          const pending = this._pendingStartIndex;
-          this._pendingStartIndex = undefined;
-          if (pending === undefined || pending === this.flowStartIndex) return;
-          this.flowStartIndex = pending;
-          this.flowRangePreset = 'custom';
-          this.flowEnsureChartTab();
-          this._syncRangeInputs();
-          this._flowScheduleUrlWrite();
-        }, 16);
+        this.flowStartIndex = next;
+        this.flowRangePreset = 'custom';
+        this.flowEnsureChartTab();
+        this._syncRangeInputs();
+        this._flowScheduleUrlWrite();
       },
 
       flowSetEndIndex(value) {
@@ -3923,20 +4098,11 @@
         const minimumWindow = count > 1 ? 2 : 1;
         const next = Math.min(count - 1, Math.max(Math.trunc(Number(value) || 0), this.flowStartIndex + minimumWindow - 1));
         if (next === this.flowEndIndex) return;
-        this._pendingEndIndex = next;
-        if (this._rangeRaf) return;
-        const schedule = typeof requestAnimationFrame !== 'undefined' ? requestAnimationFrame : setTimeout;
-        this._rangeRaf = schedule(() => {
-          this._rangeRaf = null;
-          const pending = this._pendingEndIndex;
-          this._pendingEndIndex = undefined;
-          if (pending === undefined || pending === this.flowEndIndex) return;
-          this.flowEndIndex = pending;
-          this.flowRangePreset = 'custom';
-          this.flowEnsureChartTab();
-          this._syncRangeInputs();
-          this._flowScheduleUrlWrite();
-        }, 16);
+        this.flowEndIndex = next;
+        this.flowRangePreset = 'custom';
+        this.flowEnsureChartTab();
+        this._syncRangeInputs();
+        this._flowScheduleUrlWrite();
       },
 
       _syncRangeInputs() {
@@ -3963,7 +4129,7 @@
         this._flowUrlTimer = setTimeout(() => {
           this._flowUrlTimer = null;
           this._flowWriteUrl(false);
-        }, 150);
+        }, 200);
       },
 
       flowBrushPointerDown(event) {
@@ -3984,27 +4150,73 @@
         this._flowFinishRangeDrag();
       },
 
+      flowHighlightPointerDown(event) {
+        if (!this.flowMaxRecordIndex || event.button !== 0) return;
+        const wrap = event.currentTarget.closest('.flow-brush-slider-wrap');
+        const wrapRect = wrap ? wrap.getBoundingClientRect() : null;
+        if (!wrapRect || !wrapRect.width) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const startClientX = event.clientX;
+        const initialStart = this.flowStartIndex;
+        const initialEnd = this.flowEndIndex;
+        const span = initialEnd - initialStart;
+        const maxIdx = this.flowMaxRecordIndex;
+        const trackW = Math.max(1, wrapRect.width - 18);
+
+        this.flowActiveThumb = 'highlight';
+        const target = event.currentTarget;
+        if (target.setPointerCapture) {
+          try { target.setPointerCapture(event.pointerId); } catch (_) {}
+        }
+
+        const onPointerMove = (e) => {
+          const deltaPx = e.clientX - startClientX;
+          const deltaFrac = deltaPx / trackW;
+          const deltaIdx = Math.round(deltaFrac * maxIdx);
+          let newStart = initialStart + deltaIdx;
+          let newEnd = initialEnd + deltaIdx;
+          if (newStart < 0) {
+            newStart = 0;
+            newEnd = Math.min(maxIdx, span);
+          } else if (newEnd > maxIdx) {
+            newEnd = maxIdx;
+            newStart = Math.max(0, maxIdx - span);
+          }
+          if (newStart !== this.flowStartIndex || newEnd !== this.flowEndIndex) {
+            this.flowStartIndex = newStart;
+            this.flowEndIndex = newEnd;
+            this.flowRangePreset = 'custom';
+            this.flowEnsureChartTab();
+            this._syncRangeInputs();
+            this._flowScheduleUrlWrite();
+          }
+        };
+
+        const onPointerUp = (e) => {
+          this.flowActiveThumb = null;
+          if (target.releasePointerCapture) {
+            try { target.releasePointerCapture(e.pointerId); } catch (_) {}
+          }
+          window.removeEventListener('pointermove', onPointerMove);
+          window.removeEventListener('pointerup', onPointerUp);
+          window.removeEventListener('pointercancel', onPointerUp);
+          this._flowFinishRangeDrag();
+        };
+
+        window.addEventListener('pointermove', onPointerMove);
+        window.addEventListener('pointerup', onPointerUp);
+        window.addEventListener('pointercancel', onPointerUp);
+      },
+
       _flowFinishRangeDrag() {
         if (this._rangeRaf) {
           if (typeof cancelAnimationFrame !== 'undefined') cancelAnimationFrame(this._rangeRaf);
           else clearTimeout(this._rangeRaf);
           this._rangeRaf = null;
         }
-        let updated = false;
-        if (this._pendingStartIndex !== undefined && this._pendingStartIndex !== this.flowStartIndex) {
-          this.flowStartIndex = this._pendingStartIndex;
-          this._pendingStartIndex = undefined;
-          updated = true;
-        }
-        if (this._pendingEndIndex !== undefined && this._pendingEndIndex !== this.flowEndIndex) {
-          this.flowEndIndex = this._pendingEndIndex;
-          this._pendingEndIndex = undefined;
-          updated = true;
-        }
-        if (updated) {
-          this.flowRangePreset = 'custom';
-          this.flowEnsureChartTab();
-        }
+        this.flowRangePreset = 'custom';
+        this.flowEnsureChartTab();
         if (this._flowUrlTimer) {
           clearTimeout(this._flowUrlTimer);
           this._flowUrlTimer = null;

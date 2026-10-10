@@ -750,6 +750,13 @@
   border-radius: 3px;
   z-index: 2;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  cursor: grab;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.flow-research .flow-brush-slider-highlight:active {
+  cursor: grabbing;
 }
 
 .flow-research .flow-brush-inputs {
