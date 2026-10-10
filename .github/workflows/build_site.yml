@@ -32,12 +32,8 @@ on:
         required: false
 
 concurrency:
-  # Queue instead of cancel. With cancel-in-progress: true, a scheduled
-  # build could kill a manual hotfix build, and any cancelled run dying
-  # between the stock-detail coverage `git commit` and `git push HEAD:main`
-  # loses accumulated coverage. Serialized queueing only ever costs minutes.
-  group: pages
-  cancel-in-progress: false
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write   # commit-back of accumulated stock-detail coverage
@@ -55,10 +51,38 @@ jobs:
           # Always build from latest main: push events already land on main,
           # and manual dispatches must never build a stale ref.
           ref: main
+          fetch-depth: 2
           # lfs:true is REQUIRED — data/Mega_Markets_Historical.xlsx lives in
           # Git LFS; with the default lfs:false the deep-history seed ingests
           # a tiny pointer file and fails silently under continue-on-error.
           lfs: true
+
+      - name: Determine change scope
+        id: scope
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ github.event_name }}" = "workflow_call" ]; then
+            echo "full_build=true" >> "$GITHUB_OUTPUT"
+            echo "Trigger is ${{ github.event_name }} -> running full data pipeline."
+            exit 0
+          fi
+
+          if ! git rev-parse HEAD~1 >/dev/null 2>&1; then
+            echo "full_build=true" >> "$GITHUB_OUTPUT"
+            echo "Single commit / no parent -> running full data pipeline."
+            exit 0
+          fi
+
+          CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || true)
+          echo "Files changed in commit:"
+          echo "$CHANGED"
+
+          if echo "$CHANGED" | grep -qE '^(data/|conviction/|markets/|scraper\.py|config\.|requirements\.txt|\.github/workflows/build_site\.yml)'; then
+            echo "full_build=true" >> "$GITHUB_OUTPUT"
+            echo "Data, model, or workflow files modified -> running full data pipeline."
+          else
+            echo "full_build=false" >> "$GITHUB_OUTPUT"
+            echo "Only frontend / docs / UI tests modified -> running fast site build."
+          fi
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -72,8 +96,33 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run tests
+      # ── Fast path vs full test suite ──────────────────────────────────
+      - name: Run flow UI tests
+        if: steps.scope.outputs.full_build == 'false'
+        run: python -m pytest tests/test_flow_ui.py tests/test_flow_ui_metrics.py -v
+
+      - name: Run full test suite
+        if: steps.scope.outputs.full_build == 'true'
         run: python -m pytest tests/ -v
+
+      # ── Restore / Cache conviction artifacts ──────────────────────────
+      # For frontend-only iterations, data/history_parquet and conviction code
+      # are identical. Restoring these artifacts takes ~3 seconds instead of
+      # 4.5 minutes of compute. If the cache misses, conviction.build runs.
+      - name: Cache conviction artifacts
+        id: cache_conviction
+        uses: actions/cache@v4
+        with:
+          path: |
+            docs/data/leaderboard.json
+            docs/data/holdings_latest.json
+            docs/data/changelog.json
+            docs/data/metadata.json
+            docs/data/leaderboard.parquet
+            docs/data/score_history.json
+            docs/data/holdings_history.json
+            docs/data/flag_history.json
+          key: conviction-artifacts-${{ hashFiles('data/history_parquet/**', 'conviction/**', 'config.yaml', 'config.json') }}
 
       # ── Markets data pipeline ─────────────────────────────────────────
       # ORDER (charter v2 Part 2 — self-living merge):
@@ -82,20 +131,24 @@ jobs:
       #      populate fx/cpi/rates. Source labels from this step are PRESERVED
       #      by the Excel ingester — Excel is no longer re-run after this.
       - name: 1/2 — Markets Excel deep-history seed (backfill only)
+        if: steps.scope.outputs.full_build == 'true' || steps.cache_conviction.outputs.cache-hit != 'true'
         run: python -m conviction.ingest_markets_xl --no-fail-on-stale
         continue-on-error: true
 
       - name: 2/2 — Live FRED + yfinance merge (current months, fx, cpi, rates)
+        if: steps.scope.outputs.full_build == 'true' || steps.cache_conviction.outputs.cache-hit != 'true'
         run: python -m conviction.markets_history --full-refresh
         continue-on-error: true
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
 
       - name: Build site artifacts (conviction)
+        if: steps.scope.outputs.full_build == 'true' || steps.cache_conviction.outputs.cache-hit != 'true'
         run: python -m conviction.build --source data/all_history.csv --output docs/data --config config.yaml
 
       # ── Portfolio Lab price data (§22.1) ──────────────────────────────
       - name: Fetch Portfolio Lab prices (yfinance adjusted-close)
+        if: steps.scope.outputs.full_build == 'true' || steps.cache_conviction.outputs.cache-hit != 'true'
         id: fetch_prices
         run: python -m conviction.fetch_prices
 
@@ -104,6 +157,7 @@ jobs:
       # Uses committed data/company_descriptions.json as a description cache
       # so only new tickers need to be queried on each build (rate-limit safe).
       - name: Fetch stock details (descriptions + 2-year price history)
+        if: steps.scope.outputs.full_build == 'true' || steps.cache_conviction.outputs.cache-hit != 'true'
         id: fetch_stock_details
         # batch-size 250: with leaderboard-rank prioritisation this resolves the
         # full top-250-by-rank in one run, then keeps growing the long tail
@@ -118,31 +172,8 @@ jobs:
       # and reprocesses the SAME first batch forever, so the long tail of
       # tickers never gets a detail page (permanent 404s). Commit them so
       # coverage accumulates to full over successive runs.
-      #
-      # IMPORTANT:
-      #   * [skip ci] is mandatory — build_site's own push trigger watches
-      #     docs/**, so an un-guarded commit here would re-trigger build_site
-      #     in an infinite loop.
-      #   * Checkout is a detached HEAD (specific SHA), so push HEAD:main.
-      #   * Rebase conflicts abort safely; no remote-overwrite strategy is used.
-      # No `if:` guard — fetch_stock_details runs under continue-on-error, so a
-      # flaky-yfinance exit sets its `outcome` to 'failure' even when it still
-      # wrote ~150 valid detail files. Gating on outcome=='success' would skip
-      # persistence on every such run. Instead run unconditionally and let the
-      # `git diff --staged --quiet` check below no-op when nothing was written.
-      #
-      # HISTORY-ISOLATION NOTE (2026-06): this step is INTENTIONALLY RETAINED
-      # despite the all_history.csv / leaderboard.json / flag_history.json /
-      # holdings_latest.json untracking migration. Those four heavy artifacts
-      # are deployed purely via the actions/upload-pages-artifact step below
-      # (runner memory → Pages), and are no longer committed. This step commits
-      # a DIFFERENT thing — the small, incremental docs/data/details/*.json
-      # coverage accumulator — which is functionally essential (without it,
-      # ~3,700 tickers get permanent 404 detail pages) and unrelated to the
-      # git-history bloat. Do NOT remove this step as part of history isolation.
-      # The four untracked files are covered by .gitignore (*.csv / *.json)
-      # and cannot be re-staged by this git add (explicit path list, not docs/**).
       - name: Persist stock-detail coverage (accumulate across runs)
+        if: steps.scope.outputs.full_build == 'true' || steps.cache_conviction.outputs.cache-hit != 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -175,23 +206,27 @@ jobs:
 
       # Step 4: Price log (markets.json) — separate from market_returns.json
       - name: Fetch market data (yfinance price log)
+        if: steps.scope.outputs.full_build == 'true' || steps.cache_conviction.outputs.cache-hit != 'true'
         run: |
           mkdir -p data/markets
           python -m markets.fetch_yf --out data/markets
         continue-on-error: true
 
       - name: Fetch FRED data (price log)
+        if: steps.scope.outputs.full_build == 'true' || steps.cache_conviction.outputs.cache-hit != 'true'
         run: python -m markets.fetch_fred --out data/markets
         continue-on-error: true
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
 
       - name: Build markets.json + sim_underlyings.json
+        if: steps.scope.outputs.full_build == 'true' || steps.cache_conviction.outputs.cache-hit != 'true'
         run: python -m markets.build --source data/markets --output docs/data
         continue-on-error: true
 
       # Step 5: Vol history (separate file)
       - name: Fetch vol history (CBOE indices from FRED)
+        if: steps.scope.outputs.full_build == 'true' || steps.cache_conviction.outputs.cache-hit != 'true'
         run: python -m conviction.vol_history --full-refresh
         continue-on-error: true
         env:
