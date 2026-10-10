@@ -32,8 +32,8 @@ on:
         required: false
 
 concurrency:
-  group: pages-${{ github.ref }}
-  cancel-in-progress: true
+  group: pages
+  cancel-in-progress: false
 
 permissions:
   contents: write   # commit-back of accumulated stock-detail coverage
@@ -96,14 +96,16 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # ── Fast path vs full test suite ──────────────────────────────────
-      - name: Run flow UI tests
-        if: steps.scope.outputs.full_build == 'false'
-        run: python -m pytest tests/test_flow_ui.py tests/test_flow_ui_metrics.py -v
-
-      - name: Run full test suite
-        if: steps.scope.outputs.full_build == 'true'
-        run: python -m pytest tests/ -v
+      # ── Tests (contract name: 'Run tests') ────────────────────────────
+      - name: Run tests
+        run: |
+          if [ "${{ steps.scope.outputs.full_build }}" = "false" ]; then
+            echo "Fast path: running flow dataset and UI tests"
+            python -m pytest tests/test_local_flow_artifacts.py tests/test_flow_ui.py tests/test_flow_ui_metrics.py tests/test_ci_config.py -v
+          else
+            echo "Full build: running complete test suite"
+            python -m pytest tests/ -v
+          fi
 
       # ── Restore / Cache conviction artifacts ──────────────────────────
       # For frontend-only iterations, data/history_parquet and conviction code
