@@ -1380,9 +1380,11 @@
           const stroke = isSelected ? '#ffffff' : (isHovered ? '#ffffff' : '#090d16');
           const strokeW = isSelected ? 2.2 : (isHovered ? 2.0 : 1.0);
 
-          dots += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}" fill="${dotColor}" stroke="${stroke}" stroke-width="${strokeW}" opacity="${opacity}" style="cursor:pointer;transition:r 0.15s,opacity 0.15s" data-ticker="${item.ticker}" role="button" tabindex="0" aria-label="${item.ticker} ${ret >= 0 ? '+' : ''}${ret.toFixed(1)}% ${z.toFixed(2)} sigma">
+          dots += `<g data-ticker="${item.ticker}" role="button" tabindex="0" aria-label="${item.ticker} ${ret >= 0 ? '+' : ''}${ret.toFixed(1)}% ${z.toFixed(2)} sigma" style="cursor:pointer">
             <title>${item.ticker} (${item.underlying || item.fund_name}): 20D Ret ${ret >= 0 ? '+' : ''}${ret.toFixed(1)}%, Flow Z ${z >= 0 ? '+' : ''}${z.toFixed(2)}σ, 1D Flow ${formatMoney(item.latest_flow)} · Click to Open Studio</title>
-          </circle>`;
+            <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="12" fill="transparent" stroke="transparent"/>
+            <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}" fill="${dotColor}" stroke="${stroke}" stroke-width="${strokeW}" opacity="${opacity}" style="pointer-events:none;transition:r 0.15s,opacity 0.15s"/>
+          </g>`;
 
           if (matchesFilter && labeledTickers.has(item.ticker) && !isSelected) {
             let lx = cx > xZero ? cx + 6 : cx - 6;
@@ -2083,7 +2085,7 @@
           }));
       },
 
-      get flowUnderlyingBattleRows() {
+      get _flowAllBattleRows() {
         const byUnderlying = {};
         for (const item of this.flowPrimaryInstruments) {
           const rawU = String(item.underlying || '').trim();
@@ -2134,8 +2136,7 @@
           }
         }
 
-        const mode = this.flowBattleMode || 'paired';
-        const allRows = Object.values(byUnderlying).map(row => {
+        return Object.values(byUnderlying).map(row => {
           const totalActivity = Math.abs(row.bullFlow20d) + Math.abs(row.bearFlow20d);
           const bullSharePct = totalActivity > 0 ? Math.round((Math.abs(row.bullFlow20d) / totalActivity) * 100) : 50;
           const bearSharePct = 100 - bullSharePct;
@@ -2162,7 +2163,18 @@
             biasLabel
           };
         });
+      },
 
+      get flowBattleCounts() {
+        const all = this._flowAllBattleRows;
+        const paired = all.filter(r => r.bullTickers.length > 0 && r.bearTickers.length > 0).length;
+        const major = all.filter(r => r.tickers.length >= 2 || r.totalAumM >= 250).length;
+        return { paired, major };
+      },
+
+      get flowUnderlyingBattleRows() {
+        const mode = this.flowBattleMode || 'paired';
+        const allRows = this._flowAllBattleRows;
         if (mode === 'paired') {
           return allRows
             .filter(r => r.bullTickers.length > 0 && r.bearTickers.length > 0)
@@ -2576,6 +2588,9 @@
         const maximum = Math.ceil(extent * 1.05 * 2) / 2;
         const yScale = value => frame.padding.top + frame.chartHeight / 2 - value / maximum * frame.chartHeight / 2;
         const zeroY = yScale(0);
+        const yPos2 = yScale(2);
+        const yNeg2 = yScale(-2);
+        const zoneBg = `<rect x="${frame.padding.left}" y="${frame.padding.top}" width="${frame.chartWidth}" height="${Math.max(0, yPos2 - frame.padding.top).toFixed(1)}" fill="rgba(34,211,238,0.06)"/><rect x="${frame.padding.left}" y="${yNeg2.toFixed(1)}" width="${frame.chartWidth}" height="${Math.max(0, (frame.padding.top + frame.chartHeight) - yNeg2).toFixed(1)}" fill="rgba(251,113,133,0.06)"/>`;
         const slot = frame.chartWidth / Math.max(1, rows.length);
         const barWidth = Math.max(0.8, Math.min(9, slot * 0.62));
         let bars = '';
@@ -2586,7 +2601,7 @@
           const y = yScale(value);
           const top = value >= 0 ? y : zeroY;
           const barHeight = Math.max(1.2, Math.abs(y - zeroY));
-          const fill = value === 0 ? COLORS.neutral : value >= 2 ? COLORS.cyan : value > 0 ? COLORS.positive : value <= -2 ? COLORS.warning : COLORS.negative;
+          const fill = value === 0 ? COLORS.neutral : value >= 2 ? COLORS.cyan : value > 0 ? COLORS.positive : value <= -2 ? '#f43f5e' : COLORS.negative;
           bars += `<rect x="${(center - barWidth / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" fill="${fill}"/>`;
         });
         const grid = [maximum, 2, 0, -2, -maximum].filter((v, i, a) => a.indexOf(v) === i).map(value => {
@@ -2605,7 +2620,7 @@
           const items = [];
           if (hZ !== null) {
             items.push({
-              color: hZ >= 1.5 ? COLORS.cyan : hZ <= -1.5 ? COLORS.warning : '#94a3b8',
+              color: hZ >= 1.5 ? COLORS.cyan : hZ <= -1.5 ? COLORS.negative : '#94a3b8',
               label: 'Flow Z-Score',
               value: `${hZ >= 0 ? '+' : ''}${hZ.toFixed(2)}σ`
             });
@@ -2628,7 +2643,7 @@
           }
           overlay = chartCrosshairOverlay(frame, rows, this.flowHoverIndex, hY, null, items);
         }
-        return `<svg viewBox="0 0 ${width} ${height}" data-pad-left="${frame.padding.left}" data-pad-right="${frame.padding.right}" data-chart-width="${width}" role="img" aria-labelledby="flow-intensity-title flow-intensity-desc"><title id="flow-intensity-title">Prior-only daily flow z-score</title><desc id="flow-intensity-desc">${escapeHtml(description)}</desc>${grid}${bars}${overlay}${frame.dateTicks}</svg>`;
+        return `<svg viewBox="0 0 ${width} ${height}" data-pad-left="${frame.padding.left}" data-pad-right="${frame.padding.right}" data-chart-width="${width}" role="img" aria-labelledby="flow-intensity-title flow-intensity-desc"><title id="flow-intensity-title">Prior-only daily flow z-score</title><desc id="flow-intensity-desc">${escapeHtml(description)}</desc>${zoneBg}${grid}${bars}${overlay}${frame.dateTicks}</svg>`;
       },
 
       get flowPriceChartSvg() {
@@ -2890,8 +2905,10 @@
         if (!r1 || !r2) return;
         const sessions = i2 - i1 + 1;
         const slice = rows.slice(i1, i2 + 1);
-        const p1 = finiteNumber(r1.nav);
-        const p2 = finiteNumber(r2.nav);
+        const firstNavRow = slice.find(r => finiteNumber(r.nav) !== null);
+        const lastNavRow = [...slice].reverse().find(r => finiteNumber(r.nav) !== null);
+        const p1 = firstNavRow ? finiteNumber(firstNavRow.nav) : null;
+        const p2 = lastNavRow ? finiteNumber(lastNavRow.nav) : null;
         const pDiff = (p1 !== null && p2 !== null) ? p2 - p1 : null;
         const pPct = (p1 && pDiff !== null) ? (pDiff / p1) * 100 : null;
         const netFlow = slice.reduce((sum, r) => sum + (finiteNumber(r.flow) || 0), 0);
@@ -2934,8 +2951,10 @@
         if (!rows.length) return null;
         const first = rows[0];
         const last = rows[rows.length - 1];
-        const p1 = finiteNumber(first.nav);
-        const p2 = finiteNumber(last.nav);
+        const firstNavRow = rows.find(r => finiteNumber(r.nav) !== null);
+        const lastNavRow = [...rows].reverse().find(r => finiteNumber(r.nav) !== null);
+        const p1 = firstNavRow ? finiteNumber(firstNavRow.nav) : null;
+        const p2 = lastNavRow ? finiteNumber(lastNavRow.nav) : null;
         const navRetPct = (p1 !== null && p2 !== null && p1 > 0) ? ((p2 - p1) / p1) * 100 : null;
         const netFlow = finiteNumber(last.selectedCumulative) || 0;
         const aum = (finiteNumber(this.flowSelectedInstrument?.aum_m) || 0) * 1e6;
@@ -3475,11 +3494,12 @@
       },
 
       get flowMultiHorizonImpulseChartSvg() {
-        const allRows = this.flowSelectedRows;
-        const rows = allRows.filter(r => r.rollingSum20 !== null);
+        const rows = this.flowSelectedRows;
         const width = Math.max(280, Math.min(680, Math.round(this.flowChartWidth * 0.58)));
         const height = 215;
         if (rows.length < 5) return emptyChart(width, height, 'Rolling multi-horizon flow sums unavailable for this window.');
+        const has20 = rows.some(r => r.rollingSum20 !== null);
+        if (!has20) return emptyChart(width, height, 'Rolling multi-horizon flow sums unavailable for this window.');
         const frame = chartFrame({ records: rows, width, height, padding: { left: 60, right: 24, top: 20, bottom: 28 } });
 
         const has60 = rows.some(r => r.rollingSum60 !== null);
@@ -3548,14 +3568,15 @@
 
         // End markers
         let endBadges = '';
-        const lastIdx = rows.length - 1;
-        if (lastIdx >= 0) {
-          const endX = frame.xScale(lastIdx);
-          if (pts20[lastIdx]?.y !== null) {
-            endBadges += `<circle cx="${endX.toFixed(1)}" cy="${pts20[lastIdx].y.toFixed(1)}" r="3.5" fill="#34d399" stroke="#090d16" stroke-width="1.2"/>`;
-          }
-          if (has60 && pts60[lastIdx]?.y !== null) {
-            endBadges += `<circle cx="${endX.toFixed(1)}" cy="${pts60[lastIdx].y.toFixed(1)}" r="3" fill="#fbbf24" stroke="#090d16" stroke-width="1.2"/>`;
+        let last20Idx = -1;
+        for (let i = rows.length - 1; i >= 0; i--) {
+          if (pts20[i]?.y !== null) { last20Idx = i; break; }
+        }
+        if (last20Idx >= 0) {
+          const endX = frame.xScale(last20Idx);
+          endBadges += `<circle cx="${endX.toFixed(1)}" cy="${pts20[last20Idx].y.toFixed(1)}" r="3.5" fill="#34d399" stroke="#090d16" stroke-width="1.2"/>`;
+          if (has60 && pts60[last20Idx]?.y !== null) {
+            endBadges += `<circle cx="${endX.toFixed(1)}" cy="${pts60[last20Idx].y.toFixed(1)}" r="3" fill="#fbbf24" stroke="#090d16" stroke-width="1.2"/>`;
           }
         }
 
@@ -4135,8 +4156,8 @@
       flowBrushPointerDown(event) {
         if (!this.flowMaxRecordIndex || event.target?.tagName === 'INPUT') return;
         const rect = event.currentTarget.getBoundingClientRect();
-        if (!rect.width) return;
-        const frac = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+        const usableW = Math.max(1, rect.width - 18);
+        const frac = Math.max(0, Math.min(1, (event.clientX - rect.left - 9) / usableW));
         const targetIdx = Math.round(frac * this.flowMaxRecordIndex);
         const sDist = Math.abs(targetIdx - this.flowStartIndex);
         const eDist = Math.abs(targetIdx - this.flowEndIndex);

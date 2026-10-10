@@ -259,4 +259,18 @@ def test_flow_empirical_edge_ledger_metrics_and_meters():
     ]
 
 
+def test_flow_ui_edge_cases_and_chart_synchronization():
+    result = run_metrics(
+        "(()=>{const app=m.flowResearchApp();const cat=require('./docs/data/flows/catalog.json');app.flowCatalog=cat;app._flowEntryMap=Object.fromEntries(cat.instruments.map(i=>[i.ticker,i]));const counts=app.flowBattleCounts;const scatterSvg=app.flowScatterSvg;const tqqqItem=cat.instruments.find(i=>i.ticker==='TQQQ');app.flowTicker='TQQQ';const raw=require('./docs/data/flows/TQQQ.json');app.flowData=m.normalizeFlowPayload(raw,tqqqItem);app.flowStartIndex=0;app.flowEndIndex=app.flowMaxRecordIndex;const impulseSvg=app.flowMultiHorizonImpulseChartSvg;const intensitySvg=app.flowIntensityChartSvg;const summary=app.flowWorkbenchSummary;app.flowMeasureActive=true;app.flowMeasureStartIdx=5;app.flowMeasureCurrentIdx=15;app._flowComputeMeasurement();const measure=app.flowMeasureResult;return {counts,hasScatterHitGroup:scatterSvg.includes('<g data-ticker=')&&scatterSvg.includes('r=\"12\" fill=\"transparent\"'),hasImpulseSvg:impulseSvg.includes('<svg')&&impulseSvg.includes('data-chart-width'),hasZoneBg:intensitySvg.includes('rgba(34,211,238,0.06)'),hasSummaryNav:summary.navRetPct!==null,measureBars:measure.sessions,measureHasNav:measure.priceReturnPct!==null};})()"
+    )
+    assert result["counts"]["paired"] == 13
+    assert result["counts"]["major"] >= 13
+    assert result["hasScatterHitGroup"] is True
+    assert result["hasImpulseSvg"] is True
+    assert result["hasZoneBg"] is True
+    assert result["hasSummaryNav"] is True
+    assert result["measureBars"] == 11
+    assert result["measureHasNav"] is True
+
+
 
