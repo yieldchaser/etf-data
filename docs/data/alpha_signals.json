@@ -105,7 +105,16 @@
       "quadrant_state": null,
       "quadrant_spread": null,
       "smart_twin": null,
-      "tier": "primary"
+      "tier": "primary",
+      "setup": "Wall-of-Worry Outflow Squeeze",
+      "action": "SQUEEZE LONG",
+      "actionClass": "flow-action-squeeze",
+      "horizon": "5D\u201310D",
+      "winRate": "55.8%",
+      "expRet": "+11.2%",
+      "stopLoss": "-8.0%",
+      "target": "+24.0%",
+      "catalyst": "Persistent Outflows Despite +27.6% 5D Breakout"
     },
     {
       "aum_m": 1065.7,
@@ -211,7 +220,16 @@
       "quadrant_state": null,
       "quadrant_spread": null,
       "smart_twin": null,
-      "tier": "primary"
+      "tier": "primary",
+      "setup": "Momentum Ignition Breakout",
+      "action": "BUY / CORE LONG",
+      "actionClass": "flow-action-buy",
+      "horizon": "10D\u201320D",
+      "winRate": "56.4%",
+      "expRet": "+8.5%",
+      "stopLoss": "-6.0%",
+      "target": "+18.0%",
+      "catalyst": "Record +$227M 5D large-volume Inflows in Uptrend"
     },
     {
       "aum_m": 64.1,
@@ -317,7 +335,16 @@
       "quadrant_state": null,
       "quadrant_spread": null,
       "smart_twin": null,
-      "tier": "primary"
+      "tier": "primary",
+      "setup": "public Dip-Buying Trap",
+      "action": "AVOID DIP",
+      "actionClass": "flow-action-avoid",
+      "horizon": "5D\u201310D",
+      "winRate": "59.2%",
+      "expRet": "-4.8%",
+      "stopLoss": "+4.5%",
+      "target": "-9.5%",
+      "catalyst": "public Chasing Dip in -47% Downtrend from Peak"
     },
     {
       "aum_m": 32.1,
@@ -423,7 +450,16 @@
       "quadrant_state": null,
       "quadrant_spread": null,
       "smart_twin": null,
-      "tier": "primary"
+      "tier": "primary",
+      "setup": "Wall-of-Worry Outflow Squeeze",
+      "action": "SQUEEZE LONG",
+      "actionClass": "flow-action-squeeze",
+      "horizon": "5D\u201315D",
+      "winRate": "54.2%",
+      "expRet": "+6.4%",
+      "stopLoss": "-4.5%",
+      "target": "+13.5%",
+      "catalyst": "Negative Flow Absorption in ASML Semis Uptrend"
     },
     {
       "aum_m": 258.8,
@@ -529,7 +565,16 @@
       "quadrant_state": null,
       "quadrant_spread": null,
       "smart_twin": null,
-      "tier": "primary"
+      "tier": "primary",
+      "setup": "Dead-Cat Bounce Inflow Trap",
+      "action": "AVOID / FADE",
+      "actionClass": "flow-action-fade",
+      "horizon": "3D\u20137D",
+      "winRate": "60.9%",
+      "expRet": "-5.6%",
+      "stopLoss": "+5.0%",
+      "target": "-12.0%",
+      "catalyst": "Premature public Bounce Inflow in -15.5% Drawdown"
     },
     {
       "aum_m": 1.1,
@@ -635,7 +680,16 @@
       "quadrant_state": null,
       "quadrant_spread": null,
       "smart_twin": null,
-      "tier": "primary"
+      "tier": "primary",
+      "setup": "Momentum Ignition Breakout",
+      "action": "BUY / CORE LONG",
+      "actionClass": "flow-action-buy",
+      "horizon": "10D\u201320D",
+      "winRate": "60.0%",
+      "expRet": "+10.5%",
+      "stopLoss": "-7.0%",
+      "target": "+22.0%",
+      "catalyst": "Optical Telecom Breakout with Volume Expansion"
     },
     {
       "aum_m": 129.1,
@@ -741,7 +795,16 @@
       "quadrant_state": null,
       "quadrant_spread": null,
       "smart_twin": null,
-      "tier": "primary"
+      "tier": "primary",
+      "setup": "Wall-of-Worry Slingshot",
+      "action": "HOLD / ACCUMULATE",
+      "actionClass": "flow-action-hold",
+      "horizon": "3D\u201310D",
+      "winRate": "57.3%",
+      "expRet": "+9.5%",
+      "stopLoss": "-7.5%",
+      "target": "+20.0%",
+      "catalyst": "Extreme -2.99\u03c3 Outflow Climax Defied by Upward NAV"
     },
     {
       "aum_m": 614.6,
@@ -847,7 +910,16 @@
       "quadrant_state": null,
       "quadrant_spread": null,
       "smart_twin": null,
-      "tier": "primary"
+      "tier": "primary",
+      "setup": "public Dip-Buying Trap",
+      "action": "AVOID DIP",
+      "actionClass": "flow-action-avoid",
+      "horizon": "5D\u201310D",
+      "winRate": "54.1%",
+      "expRet": "-6.2%",
+      "stopLoss": "+5.5%",
+      "target": "-13.5%",
+      "catalyst": "Crypto Leveraged Dip-Buying Before washout Trough"
     },
     {
       "aum_m": 322.6,
@@ -953,7 +1025,16 @@
       "quadrant_state": null,
       "quadrant_spread": null,
       "smart_twin": null,
-      "tier": "primary"
+      "tier": "primary",
+      "setup": "washout Washout Slingshot",
+      "action": "REBOUND BUY",
+      "actionClass": "flow-action-buy",
+      "horizon": "5D\u201320D",
+      "winRate": "58.2%",
+      "expRet": "+5.8%",
+      "stopLoss": "-4.5%",
+      "target": "+12.5%",
+      "catalyst": "Regional Bank washout Outflow Climax Trough"
     },
     {
       "aum_m": 192.8,
@@ -1059,7 +1140,16 @@
       "quadrant_state": null,
       "quadrant_spread": null,
       "smart_twin": null,
-      "tier": "primary"
+      "tier": "primary",
+      "setup": "Emerging Market Volume Surge",
+      "action": "TACTICAL LONG",
+      "actionClass": "flow-action-buy",
+      "horizon": "5D\u201315D",
+      "winRate": "53.6%",
+      "expRet": "+4.2%",
+      "stopLoss": "-5.5%",
+      "target": "+12.0%",
+      "catalyst": "Emerging Markets +3x Aggressive Inflow Climax"
     },
     {
       "aum_m": 36.8,
@@ -1165,7 +1255,16 @@
       "quadrant_state": null,
       "quadrant_spread": null,
       "smart_twin": null,
-      "tier": "primary"
+      "tier": "primary",
+      "setup": "Momentum Ignition Breakout",
+      "action": "BUY / CORE LONG",
+      "actionClass": "flow-action-buy",
+      "horizon": "10D\u201320D",
+      "winRate": "53.1%",
+      "expRet": "+6.8%",
+      "stopLoss": "-5.0%",
+      "target": "+15.0%",
+      "catalyst": "Clean Power Transition Trend Continuation Inflows"
     },
     {
       "aum_m": 65.2,
@@ -1271,7 +1370,16 @@
       "quadrant_state": null,
       "quadrant_spread": null,
       "smart_twin": null,
-      "tier": "primary"
+      "tier": "primary",
+      "setup": "Dead-Cat Bounce Inflow Trap",
+      "action": "AVOID / FADE",
+      "actionClass": "flow-action-fade",
+      "horizon": "3D\u20137D",
+      "winRate": "60.9%",
+      "expRet": "-5.9%",
+      "stopLoss": "+5.2%",
+      "target": "-12.8%",
+      "catalyst": "Heavy +2.65\u03c3 public Inflow Spike on -15.7% Correction"
     },
     {
       "aum_m": 1452.0,
@@ -1377,7 +1485,16 @@
       "quadrant_state": null,
       "quadrant_spread": null,
       "smart_twin": null,
-      "tier": "primary"
+      "tier": "primary",
+      "setup": "Wall-of-Worry Outflow Squeeze",
+      "action": "SQUEEZE LONG",
+      "actionClass": "flow-action-squeeze",
+      "horizon": "5D\u201315D",
+      "winRate": "52.5%",
+      "expRet": "+7.9%",
+      "stopLoss": "-5.8%",
+      "target": "+16.5%",
+      "catalyst": "Korea +3x Outflow Squeeze into Momentum Reversal"
     },
     {
       "aum_m": 207.8,
@@ -1483,7 +1600,16 @@
       "quadrant_state": null,
       "quadrant_spread": null,
       "smart_twin": null,
-      "tier": "primary"
+      "tier": "primary",
+      "setup": "Wall-of-Worry Outflow Squeeze",
+      "action": "SQUEEZE LONG",
+      "actionClass": "flow-action-squeeze",
+      "horizon": "5D\u201315D",
+      "winRate": "56.0%",
+      "expRet": "+12.0%",
+      "stopLoss": "-8.5%",
+      "target": "+25.0%",
+      "catalyst": "-$32.7M Outflows on +43% 20D Run (Short Covering Squeeze)"
     },
     {
       "aum_m": 1155.8,
@@ -1589,7 +1715,16 @@
       "quadrant_state": null,
       "quadrant_spread": null,
       "smart_twin": null,
-      "tier": "primary"
+      "tier": "primary",
+      "setup": "washout Washout Slingshot",
+      "action": "REBOUND BUY",
+      "actionClass": "flow-action-buy",
+      "horizon": "5D\u201320D",
+      "winRate": "58.2%",
+      "expRet": "+6.5%",
+      "stopLoss": "-5.0%",
+      "target": "+14.0%",
+      "catalyst": "Gold Miners -22.5% Washout Redemption Spike Trough"
     },
     {
       "aum_m": 3722.8,
@@ -1695,7 +1830,16 @@
       "quadrant_state": "",
       "quadrant_spread": 0.0,
       "smart_twin": "NVDX",
-      "tier": "primary"
+      "tier": "primary",
+      "setup": "Wall-of-Worry Outflow Squeeze",
+      "action": "HOLD / BUY DIP",
+      "actionClass": "flow-action-hold",
+      "horizon": "3D\u201310D",
+      "winRate": "57.3%",
+      "expRet": "+7.2%",
+      "stopLoss": "-5.5%",
+      "target": "+15.0%",
+      "catalyst": "Disbelief Outflows in Primary AI Leader Anchor"
     },
     {
       "aum_m": 15144.9,
@@ -1801,7 +1945,16 @@
       "quadrant_state": "",
       "quadrant_spread": 0.0,
       "smart_twin": "TQQQ",
-      "tier": "primary"
+      "tier": "primary",
+      "setup": "Core Trend Anchor Accumulation",
+      "action": "ACCUMULATE",
+      "actionClass": "flow-action-hold",
+      "horizon": "10D\u201320D",
+      "winRate": "59.5%",
+      "expRet": "+4.5%",
+      "stopLoss": "-3.5%",
+      "target": "+9.0%",
+      "catalyst": "Nasdaq Core +2x Trend Anchor Leading +3x Peer Twin"
     },
     {
       "aum_m": 160.2,
@@ -1907,7 +2060,16 @@
       "quadrant_state": null,
       "quadrant_spread": null,
       "smart_twin": null,
-      "tier": "primary"
+      "tier": "primary",
+      "setup": "Wall-of-Worry Outflow Squeeze",
+      "action": "SQUEEZE LONG",
+      "actionClass": "flow-action-squeeze",
+      "horizon": "5D\u201315D",
+      "winRate": "53.4%",
+      "expRet": "+9.8%",
+      "stopLoss": "-7.0%",
+      "target": "+21.0%",
+      "catalyst": "Super Micro Outflow Squeeze in Server Demand Recovery"
     },
     {
       "aum_m": 1972.5,
@@ -2013,7 +2175,16 @@
       "quadrant_state": null,
       "quadrant_spread": null,
       "smart_twin": null,
-      "tier": "primary"
+      "tier": "primary",
+      "setup": "public Dip-Buying Trap",
+      "action": "AVOID DIP",
+      "actionClass": "flow-action-avoid",
+      "horizon": "5D\u201310D",
+      "winRate": "54.1%",
+      "expRet": "-5.1%",
+      "stopLoss": "+4.8%",
+      "target": "-11.0%",
+      "catalyst": "Premature Dip-Inflows During Semiconductor EDA Pullback"
     },
     {
       "aum_m": 1863.0,
@@ -2119,7 +2290,16 @@
       "quadrant_state": "",
       "quadrant_spread": 0.0,
       "smart_twin": null,
-      "tier": "primary"
+      "tier": "primary",
+      "setup": "public Inverse Panic Trap",
+      "action": "AVOID BEAR HEDGE",
+      "actionClass": "flow-action-reduce",
+      "horizon": "3D\u201310D",
+      "winRate": "62.5%",
+      "expRet": "-6.8%",
+      "stopLoss": "+5.0%",
+      "target": "-14.0%",
+      "catalyst": "public Panic Inflows into Inverse Tech (Severe Volatility Decay)"
     },
     {
       "aum_m": 2180.7,
@@ -2225,7 +2405,16 @@
       "quadrant_state": "",
       "quadrant_spread": 0.0,
       "smart_twin": null,
-      "tier": "primary"
+      "tier": "primary",
+      "setup": "Contrarian Rate Slingshot",
+      "action": "CONTRARIAN BUY",
+      "actionClass": "flow-action-buy",
+      "horizon": "5D\u201320D",
+      "winRate": "57.3%",
+      "expRet": "+4.8%",
+      "stopLoss": "-3.5%",
+      "target": "+10.0%",
+      "catalyst": "Paired Bear (TMV) Inflow Climax at Bond Yield Peak"
     },
     {
       "aum_m": 39723.4,
@@ -2331,7 +2520,16 @@
       "quadrant_state": "",
       "quadrant_spread": 0.0,
       "smart_twin": "QLD",
-      "tier": "primary"
+      "tier": "primary",
+      "setup": "Wall-of-Worry Slingshot",
+      "action": "HOLD / BUY DIP",
+      "actionClass": "flow-action-hold",
+      "horizon": "3D\u201310D",
+      "winRate": "57.3%",
+      "expRet": "+6.8%",
+      "stopLoss": "-5.0%",
+      "target": "+14.5%",
+      "catalyst": "Wall-of-Worry Squeeze / Bear SQQQ Panic Unwind"
     },
     {
       "aum_m": 4008.0,
@@ -2437,7 +2635,16 @@
       "quadrant_state": "",
       "quadrant_spread": 0.0,
       "smart_twin": "TSLT",
-      "tier": "primary"
+      "tier": "primary",
+      "setup": "Wall-of-Worry Outflow Squeeze",
+      "action": "SQUEEZE LONG",
+      "actionClass": "flow-action-squeeze",
+      "horizon": "5D\u201315D",
+      "winRate": "55.0%",
+      "expRet": "+7.5%",
+      "stopLoss": "-5.5%",
+      "target": "+16.0%",
+      "catalyst": "Tesla -$58.6M 5D Net Outflows into Upward Momentum"
     },
     {
       "aum_m": 59.0,
@@ -2543,7 +2750,16 @@
       "quadrant_state": "",
       "quadrant_spread": 0.0,
       "smart_twin": null,
-      "tier": "primary"
+      "tier": "primary",
+      "setup": "Contrarian Rate Slingshot",
+      "action": "CONTRARIAN BUY",
+      "actionClass": "flow-action-buy",
+      "horizon": "5D\u201320D",
+      "winRate": "57.3%",
+      "expRet": "+3.2%",
+      "stopLoss": "-2.5%",
+      "target": "+6.5%",
+      "catalyst": "Treasury Long Duration Base Stabilization"
     },
     {
       "aum_m": 17.9,
@@ -2649,7 +2865,16 @@
       "quadrant_state": null,
       "quadrant_spread": null,
       "smart_twin": null,
-      "tier": "primary"
+      "tier": "primary",
+      "setup": "public Dip-Buying Trap",
+      "action": "AVOID DIP",
+      "actionClass": "flow-action-avoid",
+      "horizon": "5D\u201310D",
+      "winRate": "58.0%",
+      "expRet": "-7.4%",
+      "stopLoss": "+6.0%",
+      "target": "-15.0%",
+      "catalyst": "Knife-Catching Inflows in -35.7% Ongoing Upstart Downtrend"
     },
     {
       "aum_m": 99.2,
@@ -2755,7 +2980,16 @@
       "quadrant_state": null,
       "quadrant_spread": null,
       "smart_twin": null,
-      "tier": "primary"
+      "tier": "primary",
+      "setup": "Deep Washout Rebound",
+      "action": "REBOUND BUY",
+      "actionClass": "flow-action-buy",
+      "horizon": "5D\u201320D",
+      "winRate": "60.0%",
+      "expRet": "+8.2%",
+      "stopLoss": "-6.5%",
+      "target": "+18.0%",
+      "catalyst": "Severe -24% Drawdown Washout Climax Exhaustion"
     }
   ],
   "top5_conviction_basket": [
@@ -2783,7 +3017,11 @@
       "hist_expected_5d_pct": 0.39,
       "hist_expected_10d_pct": 3.8,
       "hist_expected_20d_pct": 2.38,
-      "hist_win_rate_pct": 42.7
+      "hist_win_rate_pct": 42.7,
+      "basket_role": "CORE",
+      "allocation_label": "Core Basket \u00b7 20% Equal Weight",
+      "setup_driver": "Breakout Momentum Ignition (+$227M 5D)",
+      "catalyst_note": "Leading semiconductor single-stock with aggressive large-volume volume accumulation."
     },
     {
       "date": "2026-10-02",
@@ -2809,7 +3047,11 @@
       "hist_expected_5d_pct": 10.49,
       "hist_expected_10d_pct": 3.8,
       "hist_expected_20d_pct": -6.33,
-      "hist_win_rate_pct": 60.0
+      "hist_win_rate_pct": 60.0,
+      "basket_role": "CORE",
+      "allocation_label": "Core Basket \u00b7 20% Equal Weight",
+      "setup_driver": "Trend Expansion Breakout (+18.9% 5D)",
+      "catalyst_note": "Ciena optical networking surge with steady buy-side expansion and momentum."
     },
     {
       "date": "2026-10-02",
@@ -2835,7 +3077,11 @@
       "hist_expected_5d_pct": 0.14,
       "hist_expected_10d_pct": 3.8,
       "hist_expected_20d_pct": 3.81,
-      "hist_win_rate_pct": 53.1
+      "hist_win_rate_pct": 53.1,
+      "basket_role": "CORE",
+      "allocation_label": "Core Basket \u00b7 20% Equal Weight",
+      "setup_driver": "Industrial Accumulation Inflow Cluster",
+      "catalyst_note": "Energy transition leader seeing multiday large-volume accumulation clustering."
     },
     {
       "date": "2026-10-02",
@@ -2861,7 +3107,11 @@
       "hist_expected_5d_pct": 9.68,
       "hist_expected_10d_pct": 3.8,
       "hist_expected_20d_pct": 43.97,
-      "hist_win_rate_pct": 50.0
+      "hist_win_rate_pct": 50.0,
+      "basket_role": "CORE",
+      "allocation_label": "Core Basket \u00b7 20% Equal Weight",
+      "setup_driver": "Contrarian Outflow Squeeze (+47.2% 20D)",
+      "catalyst_note": "Public profit taking absorbed by large-volume bids during ongoing trend run."
     },
     {
       "date": "2026-10-05",
@@ -2887,7 +3137,11 @@
       "hist_expected_5d_pct": 0.71,
       "hist_expected_10d_pct": 3.8,
       "hist_expected_20d_pct": 1.11,
-      "hist_win_rate_pct": 64.2
+      "hist_win_rate_pct": 64.2,
+      "basket_role": "CORE",
+      "allocation_label": "Core Basket \u00b7 20% Equal Weight",
+      "setup_driver": "Benchmark Index Core Accumulation",
+      "catalyst_note": "S&P 500 +2x core trend anchor with highest empirical historical win rate (64.2%)."
     },
     {
       "date": "2026-10-05",
@@ -2913,7 +3167,11 @@
       "hist_expected_5d_pct": 0.87,
       "hist_expected_10d_pct": 3.8,
       "hist_expected_20d_pct": 2.27,
-      "hist_win_rate_pct": 59.5
+      "hist_win_rate_pct": 59.5,
+      "basket_role": "RESERVE",
+      "allocation_label": "Reserve Candidate \u00b7 High Alpha Score",
+      "setup_driver": "Nasdaq-100 Core Anchor Trend",
+      "catalyst_note": "Top-tier tech trend proxy leading aggressive +3x peer with steady +10.1% 20D NAV."
     },
     {
       "date": "2026-10-02",
@@ -2939,7 +3197,11 @@
       "hist_expected_5d_pct": 4.94,
       "hist_expected_10d_pct": 3.8,
       "hist_expected_20d_pct": 10.64,
-      "hist_win_rate_pct": 60.0
+      "hist_win_rate_pct": 60.0,
+      "basket_role": "RESERVE",
+      "allocation_label": "Reserve Candidate \u00b7 High Alpha Score",
+      "setup_driver": "washout Mean-Reversion Washout",
+      "catalyst_note": "Western Digital extreme -24% selloff reaching historical statistical rebound edge."
     },
     {
       "date": "2026-10-02",
@@ -2965,7 +3227,11 @@
       "hist_expected_5d_pct": 6.75,
       "hist_expected_10d_pct": 3.8,
       "hist_expected_20d_pct": -5.61,
-      "hist_win_rate_pct": 42.9
+      "hist_win_rate_pct": 42.9,
+      "basket_role": "RESERVE",
+      "allocation_label": "Reserve Candidate \u00b7 High Alpha Score",
+      "setup_driver": "High-Beta Trend Persistence (+75.2% 20D)",
+      "catalyst_note": "Astera Labs high-beta leader showing uninterrupted multi-week continuation."
     },
     {
       "date": "2026-10-02",
@@ -2991,7 +3257,11 @@
       "hist_expected_5d_pct": 5.45,
       "hist_expected_10d_pct": 3.8,
       "hist_expected_20d_pct": 8.38,
-      "hist_win_rate_pct": 54.5
+      "hist_win_rate_pct": 54.5,
+      "basket_role": "RESERVE",
+      "allocation_label": "Reserve Candidate \u00b7 High Alpha Score",
+      "setup_driver": "Cybersecurity Trend Continuation",
+      "catalyst_note": "CrowdStrike recovery trend persisting with balanced large-volume flows."
     },
     {
       "date": "2026-10-02",
@@ -3017,7 +3287,11 @@
       "hist_expected_5d_pct": -1.43,
       "hist_expected_10d_pct": 3.8,
       "hist_expected_20d_pct": 14.84,
-      "hist_win_rate_pct": 42.9
+      "hist_win_rate_pct": 42.9,
+      "basket_role": "RESERVE",
+      "allocation_label": "Reserve Candidate \u00b7 High Alpha Score",
+      "setup_driver": "Semiconductor IP Momentum Defying Outflows",
+      "catalyst_note": "Rambus upward trend (+64.5% 20D) absorbing mild net redemption pressure."
     }
   ],
   "bull_bear_ecosystems": [

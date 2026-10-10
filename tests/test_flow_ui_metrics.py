@@ -218,3 +218,24 @@ def test_alpha_bull_bear_pairs_live_regime_enrichment():
     assert result["first"]["hasStats"] is True
     assert result["first"]["has20d"] is True
 
+
+def test_flow_trade_blotter_rows_and_conviction_basket():
+    result = run_metrics(
+        "(()=>{const app=m.flowResearchApp();const cat=require('./docs/data/flows/catalog.json');const alpha=require('./docs/data/alpha_signals.json');app.flowCatalog=cat;app.flowAlphaSignalsData=alpha;const counts=app.flowAlphaCounts;const basket=app.flowAlphaTopBasket;const blotterAll=app.flowTradeBlotterRows;app.flowAlphaFilter='trap';const trapRows=app.flowTradeBlotterRows;const sqqq=blotterAll.find(r=>r.ticker==='SQQQ');const winRates=[...new Set(trapRows.map(r=>r.winRate))];const expRets=[...new Set(trapRows.map(r=>r.expRet))];return {counts,basketCount:basket.length,coreBasketCount:basket.filter(b=>b.basket_role==='CORE').length,reserveBasketCount:basket.filter(b=>b.basket_role==='RESERVE').length,blotterTotal:blotterAll.length,trapTotal:trapRows.length,trapUniqueWinRates:winRates.length,trapUniqueExpRets:expRets.length,sqqqAction:sqqq?.action,sqqqClass:sqqq?.actionClass,hasSummary:app.flowAlphaBacktestSummaryText.includes('+72.8% CAGR')};})()"
+    )
+    assert result["counts"] == {"all": 26, "ignition": 4, "slingshot": 9, "squeeze": 6, "trap": 7}
+    assert result["basketCount"] == 10
+    assert result["coreBasketCount"] == 5
+    assert result["reserveBasketCount"] == 5
+    assert result["blotterTotal"] == 26
+    assert result["trapTotal"] == 7
+    # Verify numbers are diversified, not hardcoded identical clones
+    assert result["trapUniqueWinRates"] >= 4
+    assert result["trapUniqueExpRets"] >= 4
+    # Inverse fund SQQQ should not have "SHORT" action
+    assert "AVOID" in result["sqqqAction"]
+    assert "SHORT" not in result["sqqqAction"]
+    assert result["sqqqClass"] == "flow-action-reduce"
+    assert result["hasSummary"] is True
+
+

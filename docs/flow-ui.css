@@ -1938,6 +1938,52 @@
   border: 1px solid rgba(251, 191, 36, 0.25);
 }
 
+.flow-research .flow-action-avoid {
+  color: #fb923c;
+  background: rgba(251, 146, 60, 0.12);
+  border: 1px solid rgba(251, 146, 60, 0.28);
+}
+
+.flow-research .flow-action-reduce {
+  color: #f472b6;
+  background: rgba(244, 114, 182, 0.12);
+  border: 1px solid rgba(244, 114, 182, 0.28);
+}
+
+.flow-research .flow-action-squeeze {
+  color: #818cf8;
+  background: rgba(129, 140, 248, 0.12);
+  border: 1px solid rgba(129, 140, 248, 0.28);
+}
+
+.flow-research .flow-role-core {
+  display: inline-block;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  font-family: ui-monospace, 'SF Mono', monospace;
+  font-size: 0.625rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.flow-research .flow-role-reserve {
+  display: inline-block;
+  color: #94a3b8;
+  background: rgba(148, 163, 184, 0.10);
+  border: 1px solid rgba(148, 163, 184, 0.20);
+  font-family: ui-monospace, 'SF Mono', monospace;
+  font-size: 0.625rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
 /* ── Lead-Lag Twins & Macro Rotation Channels ── */
 .flow-research .flow-rotations-grid {
   display: grid;
