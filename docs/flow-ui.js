@@ -1405,12 +1405,13 @@
 
           if (isSelected) {
             const anchor = (cx > pad.left + chartW - 90) ? 'end' : (cx > xZero ? 'start' : 'end');
-            const lx = anchor === 'start' ? cx + 11 : cx - 11;
+            const lx = anchor === 'start' ? cx + 10 : cx - 10;
+            const badgeW = item.ticker.length * 7 + 10;
+            const rx = anchor === 'start' ? lx : lx - badgeW;
             activeOverlay = `<g pointer-events="none">
-              <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="10" fill="none" stroke="#22d3ee" stroke-width="2.2" stroke-dasharray="3 2" opacity="0.95"/>
-              <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="4.2" fill="#ffffff" stroke="#090d16" stroke-width="1.2"/>
-              <rect x="${(anchor === 'start' ? lx - 2 : lx - item.ticker.length * 6.5 - 54).toFixed(1)}" y="${(cy - 10).toFixed(1)}" width="${item.ticker.length * 6.5 + 56}" height="18" rx="4" fill="#090d16" stroke="#22d3ee" stroke-width="1.2" opacity="0.95"/>
-              <text x="${(anchor === 'start' ? lx + 3 : lx - 3).toFixed(1)}" y="${(cy + 2.5).toFixed(1)}" text-anchor="${anchor}" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9.5" font-weight="700">${item.ticker} · ACTIVE</text>
+              <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5.5" fill="#ffffff" stroke="#090d16" stroke-width="1.5"/>
+              <rect x="${rx.toFixed(1)}" y="${(cy - 9).toFixed(1)}" width="${badgeW}" height="16" rx="3" fill="#090d16" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+              <text x="${(anchor === 'start' ? rx + 5 : rx + 5).toFixed(1)}" y="${(cy + 2.5).toFixed(1)}" text-anchor="start" fill="#f4f4f5" font-family="ui-monospace, monospace" font-size="9.5" font-weight="600">${item.ticker}</text>
             </g>`;
           }
         }
@@ -1561,11 +1562,52 @@
           ? `Extreme short-term velocity (|5D Move| ≥ 10%) with concurrent flow direction.`
           : `Measures 5-session directional price velocity against directional net flow backing.`;
 
+        let rangeSparklineSvg = '';
+        if (prices20.length >= 2) {
+          const w = 260;
+          const h = 40;
+          const padX = 6;
+          const plotW = w - padX * 2;
+          const plotH = 18;
+          const yTop = 5;
+          const priceSpan = maxP > minP ? maxP - minP : 1;
+          const pts = prices20.map((p, idx) => {
+            const x = padX + (idx / (prices20.length - 1)) * plotW;
+            const y = yTop + plotH - ((p - minP) / priceSpan) * plotH;
+            return `${idx === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
+          }).join(' ');
+
+          const lastX = padX + plotW;
+          const lastY = yTop + plotH - ((curP - minP) / priceSpan) * plotH;
+
+          let themeColor = '#94a3b8';
+          if (rangeBadge === 'MOMENTUM CONFIRMED') themeColor = '#34d399';
+          else if (rangeBadge === 'DIVERGENCE ACTIVE') themeColor = '#f59e0b';
+          else if (rangeBadge === 'ACCUMULATION AT LOWS') themeColor = '#22d3ee';
+          else if (rangeBadge === 'PRESSURE AT LOWS') themeColor = '#fb7185';
+
+          const barY = 30;
+          const barH = 5;
+          const barFillW = Math.max(2, (rangePct / 100) * plotW);
+          const pinX = padX + (rangePct / 100) * plotW;
+
+          rangeSparklineSvg = `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:40px;display:block" role="img" aria-label="20D Price range position channel graph">
+            <line x1="${padX}" y1="${yTop}" x2="${w - padX}" y2="${yTop}" stroke="rgba(255,255,255,0.12)" stroke-width="0.8" stroke-dasharray="2 2"/>
+            <line x1="${padX}" y1="${yTop + plotH}" x2="${w - padX}" y2="${yTop + plotH}" stroke="rgba(255,255,255,0.12)" stroke-width="0.8" stroke-dasharray="2 2"/>
+            <path d="${pts}" fill="none" stroke="rgba(255,255,255,0.38)" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
+            <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="3" fill="#ffffff" stroke="${themeColor}" stroke-width="1.5"/>
+            <rect x="${padX}" y="${barY}" width="${plotW}" height="${barH}" rx="2.5" fill="rgba(255,255,255,0.08)"/>
+            <rect x="${padX}" y="${barY}" width="${barFillW.toFixed(1)}" height="${barH}" rx="2.5" fill="${themeColor}"/>
+            <circle cx="${pinX.toFixed(1)}" cy="${barY + barH / 2}" r="3" fill="#ffffff" stroke="${themeColor}" stroke-width="1"/>
+          </svg>`;
+        }
+
         return {
           rangePct,
           rangeBadge,
           rangeState,
           rangeDesc,
+          rangeSparklineSvg,
           minP: prices20.length >= 2 ? minP : null,
           maxP: prices20.length >= 2 ? maxP : null,
           curP: prices20.length >= 2 ? curP : null,
@@ -3038,8 +3080,8 @@
               t3Grid += `<text x="${padLeft - 8}" y="${(yNeg15 + 3).toFixed(1)}" text-anchor="end" fill="#f59e0b" font-family="ui-monospace, monospace" font-size="9">−1.5σ</text>`;
             }
 
-            t3Grid += `<text x="${width - padRight + 8}" y="${(t3Top + 10).toFixed(1)}" text-anchor="start" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9" font-weight="600" letter-spacing="0.04em">ACCUMULATION (+1.5σ)</text>`;
-            t3Grid += `<text x="${width - padRight + 8}" y="${(t3Top + tier3H - 4).toFixed(1)}" text-anchor="start" fill="#f59e0b" font-family="ui-monospace, monospace" font-size="9" font-weight="600" letter-spacing="0.04em">DISTRIBUTION (−1.5σ)</text>`;
+            t3Grid += `<text x="${(width - padRight - 8).toFixed(1)}" y="${(yPos15 - 4).toFixed(1)}" text-anchor="end" fill="rgba(34,211,238,0.8)" font-family="ui-monospace, monospace" font-size="8.5" font-weight="600" letter-spacing="0.04em">+1.5σ ACCUMULATION</text>`;
+            t3Grid += `<text x="${(width - padRight - 8).toFixed(1)}" y="${(yNeg15 + 10).toFixed(1)}" text-anchor="end" fill="rgba(245,158,11,0.8)" font-family="ui-monospace, monospace" font-size="8.5" font-weight="600" letter-spacing="0.04em">−1.5σ DISTRIBUTION</text>`;
 
             smoothZ = [];
             for (let i = 0; i < rows.length; i++) {
@@ -3135,18 +3177,17 @@
           const hX = sc.xScale(hIdx);
           let hDots = '';
 
-          // Vertical tracking guide line
-          hDots += `<line x1="${hX.toFixed(1)}" y1="${sc.padTop}" x2="${hX.toFixed(1)}" y2="${sc.runningY}" stroke="rgba(255,255,255,0.22)" stroke-width="1" stroke-dasharray="2 2" pointer-events="none"/>`;
-
           if (sc.hasTier1) {
             if (sc.showPrice && hRow?.nav !== null && sc.yPrice) {
               const yp = sc.yPrice(hRow.nav);
-              hDots += `<circle cx="${hX.toFixed(1)}" cy="${yp.toFixed(1)}" r="4.5" fill="#c084fc" stroke="#ffffff" stroke-width="1.8" pointer-events="none"/>`;
+              hDots += `<circle cx="${hX.toFixed(1)}" cy="${yp.toFixed(1)}" r="7" fill="none" stroke="rgba(192,132,252,0.35)" stroke-width="1.5" pointer-events="none"/>`;
+              hDots += `<circle cx="${hX.toFixed(1)}" cy="${yp.toFixed(1)}" r="4.2" fill="#c084fc" stroke="#ffffff" stroke-width="1.8" pointer-events="none"/>`;
             }
             if (sc.showCum && hRow?.selectedCumulative !== null && sc.yCum) {
               const cVal = sc.isPctAum ? (hRow.selectedCumulative / sc.aumTotal) * 100 : hRow.selectedCumulative;
               const yc = sc.yCum(cVal);
-              hDots += `<circle cx="${hX.toFixed(1)}" cy="${yc.toFixed(1)}" r="4.5" fill="#34d399" stroke="#ffffff" stroke-width="1.8" pointer-events="none"/>`;
+              hDots += `<circle cx="${hX.toFixed(1)}" cy="${yc.toFixed(1)}" r="7" fill="none" stroke="rgba(52,211,153,0.35)" stroke-width="1.5" pointer-events="none"/>`;
+              hDots += `<circle cx="${hX.toFixed(1)}" cy="${yc.toFixed(1)}" r="4.2" fill="#34d399" stroke="#ffffff" stroke-width="1.8" pointer-events="none"/>`;
             }
           }
 
@@ -3173,41 +3214,57 @@
 
       get flowImpulseStats() {
         const rows = this.flowSelectedRows;
-        if (!rows.length) return { sum20: null, sum60: null, spread: null };
+        if (!rows.length) return { sum20: null, sum60: null, baseline60: null, spread: null };
         const last = rows[rows.length - 1];
         const s20 = finiteNumber(last?.rollingSum20);
         const s60 = finiteNumber(last?.rollingSum60);
-        const spread = (s20 !== null && s60 !== null) ? s20 - s60 : null;
-        return { sum20: s20, sum60: s60, spread };
+        const baseline60 = s60 !== null ? s60 / 3 : null;
+        const spread = (s20 !== null && baseline60 !== null) ? s20 - baseline60 : null;
+        return { sum20: s20, sum60: s60, baseline60, spread };
       },
 
       get flowImpulseRegimeBadge() {
-        const { sum20, sum60 } = this.flowImpulseStats;
-        if (sum20 === null || sum60 === null) return { state: 'BALANCED', label: 'NEUTRAL' };
-        if (sum20 > 0 && sum60 > 0) {
-          if (sum20 >= sum60) return { state: 'ACCUMULATION', label: 'ACCELERATING INFLOW' };
-          return { state: 'ACCUMULATION', label: 'SUSTAINED POSITIVE FLOW' };
+        const { sum20, baseline60 } = this.flowImpulseStats;
+        if (sum20 === null) return { state: 'BALANCED', label: 'NEUTRAL' };
+        if (baseline60 === null) {
+          if (sum20 > 0) return { state: 'ACCUMULATION', label: '20D INFLOW MOMENTUM' };
+          if (sum20 < 0) return { state: 'DISTRIBUTION', label: '20D OUTFLOW PRESSURE' };
+          return { state: 'BALANCED', label: '20D BALANCED' };
         }
-        if (sum20 < 0 && sum60 < 0) {
-          if (sum20 <= sum60) return { state: 'DISTRIBUTION', label: 'ACCELERATING OUTFLOW' };
-          return { state: 'DISTRIBUTION', label: 'SUSTAINED OUTFLOW' };
+        if (sum20 > 0 && baseline60 > 0) {
+          if (sum20 >= baseline60) return { state: 'ACCUMULATION', label: 'INFLOW EXPANDING' };
+          return { state: 'ACCUMULATION', label: 'STEADY INFLOW' };
         }
-        if (sum20 > 0 && sum60 <= 0) {
-          return { state: 'ACCUMULATION', label: 'INFLOW ROTATION' };
+        if (sum20 < 0 && baseline60 < 0) {
+          if (sum20 <= baseline60) return { state: 'DISTRIBUTION', label: 'OUTFLOW EXPANDING' };
+          return { state: 'DISTRIBUTION', label: 'STEADY OUTFLOW' };
         }
-        return { state: 'DISTRIBUTION', label: 'OUTFLOW ROTATION' };
+        if (sum20 > 0 && baseline60 <= 0) {
+          return { state: 'ACCUMULATION', label: 'ROTATION TO INFLOW' };
+        }
+        if (sum20 < 0 && baseline60 >= 0) {
+          return { state: 'DISTRIBUTION', label: 'ROTATION TO OUTFLOW' };
+        }
+        return { state: 'BALANCED', label: 'FLOW BALANCED' };
       },
 
       get flowMultiHorizonImpulseChartSvg() {
         const allRows = this.flowSelectedRows;
-        // Clamp to available rows so new/short-history ETFs start right at the left edge with zero dead void
-        const rows = allRows.filter(r => r.rollingSum20 !== null || r.rollingSum60 !== null);
+        const rows = allRows.filter(r => r.rollingSum20 !== null);
         const width = Math.max(280, Math.min(680, Math.round(this.flowChartWidth * 0.58)));
         const height = 215;
         if (rows.length < 5) return emptyChart(width, height, 'Rolling multi-horizon flow sums unavailable for this window.');
         const frame = chartFrame({ records: rows, width, height, padding: { left: 60, right: 24, top: 20, bottom: 28 } });
-        const values = rows.flatMap(r => [finiteNumber(r.rollingSum20), finiteNumber(r.rollingSum60)]).filter(v => v !== null);
-        if (!values.length) return emptyChart(width, height, 'Rolling multi-horizon flow sums unavailable.');
+
+        const has60 = rows.some(r => r.rollingSum60 !== null);
+        const values = rows.flatMap(r => {
+          const vals = [finiteNumber(r.rollingSum20)];
+          if (has60 && r.rollingSum60 !== null) {
+            vals.push(r.rollingSum60 / 3);
+          }
+          return vals;
+        }).filter(v => v !== null);
+        if (!values.length) return emptyChart(width, height, 'Rolling flow momentum unavailable.');
 
         const minVal = Math.min(...values);
         const maxVal = Math.max(...values);
@@ -3229,7 +3286,7 @@
 
         const yScale = value => frame.padding.top + frame.chartHeight - ((value - yMin) / (yMax - yMin)) * frame.chartHeight;
         const pts20 = rows.map((r, idx) => ({ x: frame.xScale(idx), y: finiteScale(yScale, r.rollingSum20) }));
-        const pts60 = rows.map((r, idx) => ({ x: frame.xScale(idx), y: finiteScale(yScale, r.rollingSum60) }));
+        const pts60 = has60 ? rows.map((r, idx) => ({ x: frame.xScale(idx), y: r.rollingSum60 !== null ? finiteScale(yScale, r.rollingSum60 / 3) : null })) : [];
 
         // Grid lines: zero baseline, top, bottom
         const yZero = yScale(0);
@@ -3244,34 +3301,26 @@
           const yBot = yScale(yMin);
           grid += `<line x1="${frame.padding.left}" y1="${yBot.toFixed(1)}" x2="${width - frame.padding.right}" y2="${yBot.toFixed(1)}" stroke="${COLORS.grid}" stroke-width="0.8"/>`;
           grid += `<text x="${frame.padding.left - 6}" y="${(yBot + 3.5).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="10">${escapeHtml(axisNumber(yMin))}</text>`;
-        } else if (yMax > 2e6) {
-          const midVal = yMax / 2;
-          const yMid = yScale(midVal);
-          grid += `<line x1="${frame.padding.left}" y1="${yMid.toFixed(1)}" x2="${width - frame.padding.right}" y2="${yMid.toFixed(1)}" stroke="${COLORS.grid}" stroke-width="0.6" stroke-dasharray="2 3"/>`;
-          grid += `<text x="${frame.padding.left - 6}" y="${(yMid + 3.5).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, SFMono-Regular, monospace" font-size="9.5">${escapeHtml(axisNumber(midVal))}</text>`;
         }
 
-        // Clean subtle spread ribbon between 20D and 60D
-        const validPairs = [];
-        for (let i = 0; i < rows.length; i++) {
-          if (pts20[i].y !== null && pts60[i].y !== null) {
-            validPairs.push({ x: pts20[i].x, y20: pts20[i].y, y60: pts60[i].y });
-          }
-        }
-        let ribbonSvg = '';
-        if (validPairs.length > 1) {
-          const topPts = validPairs.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y20.toFixed(1)}`).join(' ');
-          const bottomPts = validPairs.slice().reverse().map(p => `L ${p.x.toFixed(1)} ${p.y60.toFixed(1)}`).join(' ');
-          ribbonSvg = `<defs>
-            <linearGradient id="impulse-spread-ribbon" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#34d399" stop-opacity="0.10"/>
-              <stop offset="100%" stop-color="#fbbf24" stop-opacity="0.04"/>
-            </linearGradient>
-          </defs>
-          <path d="${topPts} ${bottomPts} Z" fill="url(#impulse-spread-ribbon)"/>`;
-        }
+        // Clean area fill for 20D pace relative to zero
+        const pos20Area = areaPath(pts20.map(p => ({ x: p.x, y: p.y !== null ? Math.min(p.y, yZero) : yZero })), yZero);
+        const neg20Area = areaPath(pts20.map(p => ({ x: p.x, y: p.y !== null ? Math.max(p.y, yZero) : yZero })), yZero);
+        let areaSvg = `<defs>
+          <linearGradient id="impulse-pos-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#34d399" stop-opacity="0.14"/><stop offset="100%" stop-color="#34d399" stop-opacity="0.0"/></linearGradient>
+          <linearGradient id="impulse-neg-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fb7185" stop-opacity="0.0"/><stop offset="100%" stop-color="#fb7185" stop-opacity="0.14"/></linearGradient>
+        </defs>`;
+        if (pos20Area) areaSvg += `<path d="${pos20Area}" fill="url(#impulse-pos-area)"/>`;
+        if (neg20Area) areaSvg += `<path d="${neg20Area}" fill="url(#impulse-neg-area)"/>`;
 
-        // End indicators
+        // Clean lines: 60D baseline dashed, 20D solid emerald
+        let linesSvg = '';
+        if (has60 && pts60.length) {
+          linesSvg += `<path d="${linePath(pts60)}" fill="none" stroke="#fbbf24" stroke-width="1.6" stroke-dasharray="3 3" opacity="0.85"/>`;
+        }
+        linesSvg += `<path d="${linePath(pts20)}" fill="none" stroke="${COLORS.positive}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`;
+
+        // End markers
         let endBadges = '';
         const lastIdx = rows.length - 1;
         if (lastIdx >= 0) {
@@ -3279,11 +3328,12 @@
           if (pts20[lastIdx]?.y !== null) {
             endBadges += `<circle cx="${endX.toFixed(1)}" cy="${pts20[lastIdx].y.toFixed(1)}" r="3.5" fill="#34d399" stroke="#090d16" stroke-width="1.2"/>`;
           }
-          if (pts60[lastIdx]?.y !== null) {
-            endBadges += `<circle cx="${endX.toFixed(1)}" cy="${pts60[lastIdx].y.toFixed(1)}" r="3.5" fill="#fbbf24" stroke="#090d16" stroke-width="1.2"/>`;
+          if (has60 && pts60[lastIdx]?.y !== null) {
+            endBadges += `<circle cx="${endX.toFixed(1)}" cy="${pts60[lastIdx].y.toFixed(1)}" r="3" fill="#fbbf24" stroke="#090d16" stroke-width="1.2"/>`;
           }
         }
 
+        // Hover overlay: single clean dot on active series point, NO crosshair
         let overlay = '';
         if (this.flowHoverIndex !== null && this.flowHoverChart === 'impulse' && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
           const hRow = rows[this.flowHoverIndex];
@@ -3292,14 +3342,13 @@
           const s60 = finiteNumber(hRow.rollingSum60);
 
           let dots = '';
-          dots += `<line x1="${x.toFixed(1)}" y1="${frame.padding.top}" x2="${x.toFixed(1)}" y2="${(frame.height - frame.padding.bottom).toFixed(1)}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="2 2" pointer-events="none"/>`;
           if (s20 !== null) {
             const y20 = yScale(s20);
             dots += `<circle cx="${x.toFixed(1)}" cy="${y20.toFixed(1)}" r="4.5" fill="#34d399" stroke="#ffffff" stroke-width="1.8"/>`;
           }
-          if (s60 !== null) {
-            const y60 = yScale(s60);
-            dots += `<circle cx="${x.toFixed(1)}" cy="${y60.toFixed(1)}" r="4.5" fill="#fbbf24" stroke="#ffffff" stroke-width="1.8"/>`;
+          if (has60 && s60 !== null) {
+            const y60 = yScale(s60 / 3);
+            dots += `<circle cx="${x.toFixed(1)}" cy="${y60.toFixed(1)}" r="4" fill="#fbbf24" stroke="#ffffff" stroke-width="1.6"/>`;
           }
 
           if (dots) {
@@ -3307,7 +3356,7 @@
           }
         }
 
-        return `<svg viewBox="0 0 ${width} ${height}" data-pad-left="${frame.padding.left}" data-pad-right="${frame.padding.right}" data-chart-width="${width}" role="img" aria-label="Multi-horizon 20D and 60D rolling net flow impulse">${ribbonSvg}${grid}<path d="${linePath(pts60)}" fill="none" stroke="${COLORS.warning}" stroke-width="1.8" stroke-dasharray="3 2" opacity="0.9"/><path d="${linePath(pts20)}" fill="none" stroke="${COLORS.positive}" stroke-width="2.2"/>${endBadges}${overlay}${frame.dateTicks}</svg>`;
+        return `<svg viewBox="0 0 ${width} ${height}" data-pad-left="${frame.padding.left}" data-pad-right="${frame.padding.right}" data-chart-width="${width}" role="img" aria-label="20D and 60D rolling net flow momentum">${areaSvg}${grid}${linesSvg}${endBadges}${overlay}${frame.dateTicks}</svg>`;
       },
 
       async init() {
@@ -3585,11 +3634,17 @@
         if (this.flowHoverChart === 'impulse') {
           const s20 = finiteNumber(row.rollingSum20);
           const s60 = finiteNumber(row.rollingSum60);
-          const spread = (s20 !== null && s60 !== null) ? s20 - s60 : null;
+          const b60 = s60 !== null ? s60 / 3 : null;
+          const spread = (s20 !== null && b60 !== null) ? s20 - b60 : null;
           const spreadStr = spread !== null ? `${spread >= 0 ? '+' : ''}${formatMoney(spread)}` : '—';
           const line1 = `${this.flowTicker || 'ETF'} · ${row.date || ''}`;
-          const line2 = `20D Sum: ${formatMoney(s20)}  ·  60D Sum: ${formatMoney(s60)}`;
-          const line3 = `Flow Spread (20D − 60D): ${spreadStr} (${spread !== null && spread >= 0 ? 'Accelerating' : 'Decelerating'})`;
+          if (b60 !== null) {
+            const line2 = `20D Flow: ${formatMoney(s20)}  ·  60D Baseline: ${formatMoney(b60)}`;
+            const line3 = `Velocity vs Baseline: ${spreadStr} (${spread >= 0 ? 'Expanding' : 'Moderating'})`;
+            return `${line1}\n${line2}\n${line3}`;
+          }
+          const line2 = `20D Flow: ${formatMoney(s20)}`;
+          const line3 = `Tactical 20-session net flow momentum`;
           return `${line1}\n${line2}\n${line3}`;
         }
         const line1 = row.date || '';
@@ -3865,6 +3920,24 @@
           this._flowUrlTimer = null;
           this._flowWriteUrl(false);
         }, 150);
+      },
+
+      flowBrushPointerDown(event) {
+        if (!this.flowMaxRecordIndex || event.target?.tagName === 'INPUT') return;
+        const rect = event.currentTarget.getBoundingClientRect();
+        if (!rect.width) return;
+        const frac = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+        const targetIdx = Math.round(frac * this.flowMaxRecordIndex);
+        const sDist = Math.abs(targetIdx - this.flowStartIndex);
+        const eDist = Math.abs(targetIdx - this.flowEndIndex);
+        if (sDist < eDist) {
+          this.flowActiveThumb = 'start';
+          this.flowSetStartIndex(targetIdx);
+        } else {
+          this.flowActiveThumb = 'end';
+          this.flowSetEndIndex(targetIdx);
+        }
+        this._flowFinishRangeDrag();
       },
 
       _flowFinishRangeDrag() {

@@ -3013,10 +3013,7 @@
                   <span style="font-weight:700;color:var(--flow-text)" x-text="flowEmpiricalEdgeLedger?.curP !== null ? `$${flowEmpiricalEdgeLedger.curP.toFixed(2)} (${flowEmpiricalEdgeLedger.rangePct}%)` : '—'"></span>
                   <span style="color:var(--flow-subtle)" x-text="flowEmpiricalEdgeLedger?.maxP !== null ? `High $${flowEmpiricalEdgeLedger.maxP.toFixed(2)}` : 'High —'"></span>
                 </div>
-                <div class="flow-range-meter" style="position:relative;height:7px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:visible;margin:0.25rem 0 0.35rem">
-                  <div class="flow-range-fill" :style="`width: ${flowEmpiricalEdgeLedger?.rangePct}%; height:100%; border-radius:4px; background:linear-gradient(90deg, #38bdf8, #22d3ee);`"></div>
-                  <div class="flow-range-pin" :style="`position:absolute; top:-3px; left:calc(${flowEmpiricalEdgeLedger?.rangePct}% - 4px); width:8px; height:13px; background:#ffffff; border-radius:2px; box-shadow:0 0 6px rgba(34,211,238,0.8);`"></div>
-                </div>
+                <div class="flow-range-channel-graph" style="margin:0.25rem 0 0.35rem" x-html="flowEmpiricalEdgeLedger?.rangeSparklineSvg"></div>
                 <div class="flow-support" style="font-size:0.6875rem" x-text="flowEmpiricalEdgeLedger?.rangeDesc"></div>
               </div>
 
@@ -3158,6 +3155,7 @@
                   </div>
                 </div>
                 <div class="flow-brush-slider-wrap"
+                     @pointerdown="flowBrushPointerDown($event)"
                      @pointermove="if (!flowActiveThumb) { const r = $el.getBoundingClientRect(); const f = ($event.clientX - r.left) / r.width; const sF = (flowStartIndex / (flowMaxRecordIndex || 1)); const eF = (flowEndIndex / (flowMaxRecordIndex || 1)); flowHoverThumb = Math.abs(f - sF) < Math.abs(f - eF) ? 'start' : 'end'; }"
                      @pointerleave="flowHoverThumb = null">
                   <div class="flow-brush-slider-track"></div>
@@ -3177,18 +3175,18 @@
                   <div class="flow-chart-heading">
                     <div>
                       <div style="display:flex;align-items:center;gap:0.45rem;flex-wrap:wrap">
-                        <p class="flow-chart-kicker" style="margin:0" x-text="`${flowTicker || 'ETF'} · Multi-Horizon Impulse`">Multi-horizon impulse</p>
+                        <p class="flow-chart-kicker" style="margin:0" x-text="`${flowTicker || 'ETF'} · Flow Momentum Pace`">Flow momentum pace</p>
                         <span class="flow-badge" :data-state="flowImpulseRegimeBadge.state" x-text="flowImpulseRegimeBadge.label"></span>
                       </div>
-                      <h3 style="margin-top:0.25rem" x-text="`${flowTicker || 'ETF'} Rolling 20D / 60D Net Flow Regime`">Rolling 20D / 60D net flow regime</h3>
-                      <p class="flow-chart-description">Compares 20-session tactical momentum against 60-session structural positioning to identify flow acceleration, momentum exhaustion, and regime transitions.</p>
+                      <h3 style="margin-top:0.25rem" x-text="`${flowTicker || 'ETF'} 20-Day vs 60-Day Net Flow Velocity`">20-Day vs 60-Day Net Flow Velocity</h3>
+                      <p class="flow-chart-description">Tracks 20-session tactical net flow against the 60-session structural baseline pace to identify capital acceleration and regime shifts.</p>
                     </div>
                     <div class="flow-legend" style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
                       <span class="flow-legend-item" style="font-family:ui-monospace, monospace;font-size:0.75rem">
-                        <span class="flow-swatch" style="background:#34d399"></span>20D: <strong class="flow-positive" x-text="formatMoney(flowImpulseStats.sum20)"></strong>
+                        <span class="flow-swatch" style="background:#34d399"></span>20D Flow: <strong class="flow-positive" x-text="formatMoney(flowImpulseStats.sum20)"></strong>
                       </span>
-                      <span class="flow-legend-item" style="font-family:ui-monospace, monospace;font-size:0.75rem">
-                        <span class="flow-swatch" style="background:#fbbf24"></span>60D: <strong style="color:#fbbf24" x-text="formatMoney(flowImpulseStats.sum60)"></strong>
+                      <span class="flow-legend-item" style="font-family:ui-monospace, monospace;font-size:0.75rem" x-show="flowImpulseStats.baseline60 !== null">
+                        <span class="flow-swatch" style="background:#fbbf24"></span>60D Baseline (20D Pace): <strong style="color:#fbbf24" x-text="formatMoney(flowImpulseStats.baseline60)"></strong>
                       </span>
                     </div>
                   </div>
@@ -3219,7 +3217,7 @@
                       <tbody>
                         <template x-for="peer in flowPeerComparisonRows" :key="peer.ticker">
                           <tr style="cursor:pointer"
-                              :style="peer.ticker === flowTicker ? 'background:rgba(34,211,238,0.08)' : ''"
+                              :style="peer.ticker === flowTicker ? 'background:rgba(255,255,255,0.06)' : ''"
                               tabindex="0"
                               role="button"
                               :aria-selected="peer.ticker === flowTicker ? 'true' : 'false'"

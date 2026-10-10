@@ -645,10 +645,10 @@
 .flow-research .flow-instrument-symbol {
   color: var(--flow-cyan);
   font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
-  font-size: 1.45rem;
+  font-size: 1.15rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 .flow-research .flow-instrument-name {
@@ -728,6 +728,7 @@
   margin: 0.3rem 0 0.1rem;
   user-select: none;
   box-sizing: border-box;
+  cursor: pointer;
 }
 
 .flow-research .flow-brush-slider-track {
@@ -986,10 +987,10 @@
   margin-top: 0.25rem;
   color: var(--flow-text);
   font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
-  font-size: 1.125rem;
+  font-size: 0.95rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 .flow-research .flow-kpi-note {
