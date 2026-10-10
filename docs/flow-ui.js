@@ -2729,6 +2729,9 @@
 
         const baseKey = `${this.flowTicker}:${this.flowStartIndex}:${this.flowEndIndex}:${this.flowScaleMode}:${showPrice}:${showCum}:${showDaily}:${showVol}:${showZ}:${showShocks}:${width}`;
 
+        let yPrice = null, yCum = null, yDaily = null, yZ = null, smoothZ = null;
+        let pricesCount = 0, cumCount = 0;
+
         if (this._flowWorkbenchBaseKey !== baseKey || !this._flowWorkbenchBaseSvg) {
           // --- TIER 1: Cumulative Flow Area + Price NAV Overlay ---
           let tier1Svg = '';
@@ -2738,22 +2741,24 @@
               if (c === null) return null;
               return isPctAum ? (c / aumTotal) * 100 : c;
             }).filter(v => v !== null);
+            cumCount = cumValues.length;
 
             const minCum = cumValues.length ? Math.min(0, ...cumValues) : 0;
             const maxCum = cumValues.length ? Math.max(0, ...cumValues) : 0;
             const cumPad = Math.max(isPctAum ? 0.5 : 1e6, (maxCum - minCum) * 0.08);
             const cumLow = minCum - cumPad;
             const cumHigh = maxCum + cumPad;
-            const yCum = val => t1Top + (cumHigh - val) / (cumHigh - cumLow || 1) * tier1H;
+            yCum = val => t1Top + (cumHigh - val) / (cumHigh - cumLow || 1) * tier1H;
             const zeroCumY = yCum(0);
 
             const prices = rows.map(r => finiteNumber(r.nav)).filter(v => v !== null);
+            pricesCount = prices.length;
             const minP = prices.length ? Math.min(...prices) : 0;
             const maxP = prices.length ? Math.max(...prices) : 100;
             const pPad = Math.max((maxP - minP) * 0.08, maxP * 0.01);
             const pLow = Math.max(0, minP - pPad);
             const pHigh = maxP + pPad;
-            const yPrice = val => t1Top + (pHigh - val) / (pHigh - pLow || 1) * tier1H;
+            yPrice = val => t1Top + (pHigh - val) / (pHigh - pLow || 1) * tier1H;
 
             let t1Grid = '';
             if (showCum) {
@@ -2872,7 +2877,7 @@
             }).filter(v => v !== null);
 
             const maxDaily = Math.max(isPctAum ? 0.2 : 1e5, ...dailyFlows.map(v => Math.abs(v))) * 1.08;
-            const yDaily = val => t2Top + tier2H / 2 - (val / (maxDaily || 1)) * (tier2H / 2);
+            yDaily = val => t2Top + tier2H / 2 - (val / (maxDaily || 1)) * (tier2H / 2);
             const zeroDailyY = yDaily(0);
 
             const volumes = rows.map(r => finiteNumber(r.volume) || (r.nav ? Math.round(Math.abs(r.flow || 0) / r.nav) : 0));
@@ -2929,7 +2934,7 @@
             const zBound = Math.max(3.0, Math.ceil(maxAbsZ * 1.15));
 
             const zeroZY = t3Top + tier3H / 2;
-            const yZ = z => zeroZY - (Math.max(-zBound, Math.min(zBound, z)) / zBound) * (tier3H / 2);
+            yZ = z => zeroZY - (Math.max(-zBound, Math.min(zBound, z)) / zBound) * (tier3H / 2);
             const yPos15 = yZ(1.5);
             const yNeg15 = yZ(-1.5);
 
@@ -2951,7 +2956,7 @@
             t3Grid += `<text x="${width - padRight + 8}" y="${(t3Top + 10).toFixed(1)}" text-anchor="start" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9" font-weight="600" letter-spacing="0.04em">ACCUMULATION (+1.5σ)</text>`;
             t3Grid += `<text x="${width - padRight + 8}" y="${(t3Top + tier3H - 4).toFixed(1)}" text-anchor="start" fill="#f59e0b" font-family="ui-monospace, monospace" font-size="9" font-weight="600" letter-spacing="0.04em">DISTRIBUTION (−1.5σ)</text>`;
 
-            const smoothZ = [];
+            smoothZ = [];
             for (let i = 0; i < rows.length; i++) {
               let sum = 0, cnt = 0;
               for (let j = Math.max(0, i - 4); j <= i; j++) {
@@ -2987,8 +2992,8 @@
 
           this._flowWorkbenchScales = {
             xScale,
-            yPrice: (showPrice && prices.length) ? yPrice : null,
-            yCum: (showCum && cumValues.length) ? yCum : null,
+            yPrice: (showPrice && pricesCount) ? yPrice : null,
+            yCum: (showCum && cumCount) ? yCum : null,
             yDaily: showDaily ? yDaily : null,
             yZ: hasTier3 ? yZ : null,
             smoothZ: hasTier3 ? smoothZ : null,
