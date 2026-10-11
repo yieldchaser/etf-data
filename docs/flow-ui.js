@@ -3462,8 +3462,9 @@
 
             // Legend in top-right of Tier 3
             t3Grid += `<g transform="translate(${(width - padRight - 210).toFixed(1)}, ${(t3Top - 2).toFixed(1)})" font-family="ui-monospace, monospace" font-size="8.5" pointer-events="none">
-              <line x1="0" y1="-3" x2="14" y2="-3" stroke="#34d399" stroke-width="2"/>
-              <text x="18" y="0" fill="#34d399">20D Pace</text>
+              <line x1="0" y1="-3" x2="7" y2="-3" stroke="#34d399" stroke-width="2"/>
+              <line x1="7" y1="-3" x2="14" y2="-3" stroke="#fb7185" stroke-width="2"/>
+              <text x="18" y="0" fill="#cbd5e1">20D Pace</text>
               <line x1="70" y1="-3" x2="84" y2="-3" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="3 2"/>
               <text x="88" y="0" fill="#fbbf24">60D Base</text>
               <rect x="142" y="-7" width="8" height="8" fill="#34d399" opacity="0.6"/>
@@ -3501,9 +3502,21 @@
             const base60Points = rows.map((r, i) => ({ x: xScale(i), y: finiteScale(yVel, base60List[i]) }));
             const base60Path = `<path d="${linePath(base60Points)}" fill="none" stroke="#fbbf24" stroke-width="1.6" stroke-dasharray="3 3" opacity="0.85"/>`;
 
-            // 20D Pace Path (emerald solid)
+            // 20D Pace Path (territory-responsive gradient: emerald > $0, rose < $0)
+            const zeroVelPct = Math.max(0, Math.min(100, ((zeroVelY - t3Top) / (t3Bottom - t3Top)) * 100));
+            const zPctUpper = Math.max(0, zeroVelPct - 0.5).toFixed(1);
+            const zPctLower = Math.min(100, zeroVelPct + 0.5).toFixed(1);
+            const tier3Defs = `<defs>
+              <linearGradient id="wb-vel20-stroke" x1="0" y1="${t3Top.toFixed(1)}" x2="0" y2="${t3Bottom.toFixed(1)}" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#34d399"/>
+                <stop offset="${zPctUpper}%" stop-color="#34d399"/>
+                <stop offset="${zPctLower}%" stop-color="#fb7185"/>
+                <stop offset="100%" stop-color="#fb7185"/>
+              </linearGradient>
+            </defs>`;
+
             const vel20Points = rows.map((r, i) => ({ x: xScale(i), y: finiteScale(yVel, vel20List[i]) }));
-            const vel20Path = `<path d="${linePath(vel20Points)}" fill="none" stroke="#34d399" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round"/>`;
+            const vel20Path = `<path d="${linePath(vel20Points)}" fill="none" stroke="url(#wb-vel20-stroke)" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round"/>`;
 
             // Crossover Inflection Points (filtered with minimum visual spacing to avoid clutter in multi-year views)
             let crossoverSvg = '';
@@ -3534,7 +3547,7 @@
               }
             }
 
-            tier3Svg = `<g class="flow-tier-3">${t3Grid}${accelBarsSvg}${base60Path}${vel20Path}${crossoverSvg}</g>`;
+            tier3Svg = `<g class="flow-tier-3">${tier3Defs}${t3Grid}${accelBarsSvg}${base60Path}${vel20Path}${crossoverSvg}</g>`;
           }
 
           // --- TIER 4: Normalized Flow Z-Score Oscillator ---
@@ -3769,7 +3782,8 @@
             const acc = sc.accelList?.[hIdx];
             if (v20 !== null && v20 !== undefined) {
               const yv = sc.yVel(v20);
-              hDots += `<circle cx="${hX.toFixed(1)}" cy="${yv.toFixed(1)}" r="4.2" fill="#34d399" stroke="#ffffff" stroke-width="1.8" pointer-events="none"/>`;
+              const v20Color = v20 >= 0 ? '#34d399' : '#fb7185';
+              hDots += `<circle cx="${hX.toFixed(1)}" cy="${yv.toFixed(1)}" r="4.2" fill="${v20Color}" stroke="#ffffff" stroke-width="1.8" pointer-events="none"/>`;
             }
             if (b60 !== null && b60 !== undefined) {
               const yb = sc.yVel(b60);
@@ -4270,8 +4284,9 @@
           const b60 = s60 !== null ? s60 / 3 : null;
           const acc = (s20 !== null && b60 !== null) ? s20 - b60 : null;
           if (s20 !== null) {
+            const paceTag = s20 >= 0 ? ' (Inflow)' : ' (Outflow)';
             const accStr = acc !== null ? `  ·  Accel ${formatMoney(acc)}` : '';
-            line3 += `\n20D Pace ${formatMoney(s20)}${accStr}`;
+            line3 += `\n20D Pace ${formatMoney(s20)}${paceTag}${accStr}`;
           }
         }
         return `${line1}\n${line2}\n${line3}`;
