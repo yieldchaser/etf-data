@@ -166,7 +166,7 @@ APEX Score   = round(APEX Score × g)</pre>
   </ul>
   <div class="callout callout-cyan">
     <h3>3.5 — ETF Overlap Discount & Tier Synergy Scaling (Option 1)</h3>
-  <p><strong>Rationale.</strong> When multiple ETFs belong to the same strategy cluster (e.g. <code>JHEM</code>, <code>MFEM</code>, and <code>EEMO</code> sharing up to 35% holding overlap), additive scoring can double-count duplicate institutional conviction. Option 1 mitigates this duplicate bias:</p>
+  <p><strong>Rationale.</strong> When multiple ETFs belong to the same strategy cluster (e.g. <code>JHEM</code>, <code>MFEM</code>, and <code>EEMO</code> sharing up to 35% holding overlap), additive scoring can double-count duplicate allocator conviction. Option 1 mitigates this duplicate bias:</p>
   <ul class="list-disc pl-5 space-y-1">
     <li><strong>Pairwise Jaccard Similarity Matrix:</strong> The engine dynamically computes holding overlap <code>similarity[etf1][etf2]</code> across all active funds.</li>
     <li><strong>Marginal Overlap Discounting:</strong> For a ticker held by multiple ETFs, subsequent ETF score contributions are scaled down by <code>max(0.20, 1.0 − max_similarity × 1.5)</code> relative to preceding higher-conviction ETFs.</li>

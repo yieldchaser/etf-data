@@ -3049,22 +3049,22 @@
                   </div>
                   <div class="flow-workbench-toolbar">
                     <div style="display:inline-flex;align-items:center;gap:0.3rem">
-                      <button class="flow-chip" :class="flowWorkbenchPriceEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchPriceEnabled = !flowWorkbenchPriceEnabled" title="Toggle NAV Line">
+                      <button class="flow-chip" :class="flowWorkbenchPriceEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchPriceEnabled" type="button" @click="flowWorkbenchPriceEnabled = !flowWorkbenchPriceEnabled" title="Toggle NAV Line">
                         <span style="color:#c084fc">●</span> NAV
                       </button>
-                      <button class="flow-chip" :class="flowWorkbenchCumEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchCumEnabled = !flowWorkbenchCumEnabled" title="Toggle Cumulative Flow Area">
+                      <button class="flow-chip" :class="flowWorkbenchCumEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchCumEnabled" type="button" @click="flowWorkbenchCumEnabled = !flowWorkbenchCumEnabled" title="Toggle Cumulative Flow Area">
                         <span style="color:#34d399">▲</span> Cum Flow
                       </button>
-                      <button class="flow-chip" :class="flowWorkbenchDailyEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchDailyEnabled = !flowWorkbenchDailyEnabled" title="Toggle Daily Flow Bars">
+                      <button class="flow-chip" :class="flowWorkbenchDailyEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchDailyEnabled" type="button" @click="flowWorkbenchDailyEnabled = !flowWorkbenchDailyEnabled" title="Toggle Daily Flow Bars">
                         <span style="color:#22d3ee">▮</span> Daily Flow
                       </button>
-                      <button class="flow-chip" :class="flowWorkbenchVolumeEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchVolumeEnabled = !flowWorkbenchVolumeEnabled" title="Toggle Trading Volume Overlay">
+                      <button class="flow-chip" :class="flowWorkbenchVolumeEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchVolumeEnabled" type="button" @click="flowWorkbenchVolumeEnabled = !flowWorkbenchVolumeEnabled" title="Toggle Trading Volume Overlay">
                         <span style="color:#94a3b8">▮</span> Volume
                       </button>
-                      <button class="flow-chip" :class="flowWorkbenchZScoreEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchZScoreEnabled = !flowWorkbenchZScoreEnabled" title="Toggle Flow Z-Score Oscillator">
+                      <button class="flow-chip" :class="flowWorkbenchZScoreEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchZScoreEnabled" type="button" @click="flowWorkbenchZScoreEnabled = !flowWorkbenchZScoreEnabled" title="Toggle Flow Z-Score Oscillator">
                         <span style="color:#e879f9">~</span> Flow Z
                       </button>
-                      <button class="flow-chip" :class="flowWorkbenchVelocityEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchVelocityEnabled = !flowWorkbenchVelocityEnabled" title="Toggle 20D vs 60D Flow Velocity &amp; Acceleration Engine">
+                      <button class="flow-chip" :class="flowWorkbenchVelocityEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchVelocityEnabled" type="button" @click="flowWorkbenchVelocityEnabled = !flowWorkbenchVelocityEnabled" title="Toggle 20D vs 60D Flow Velocity &amp; Acceleration Engine">
                         <span style="color:#f59e0b">⚡</span> Velocity &amp; Accel
                       </button>
                     </div>
@@ -3073,7 +3073,7 @@
                       <button class="flow-chip" type="button" @click="flowCycleZModel()" :title="flowZModelTooltip" style="border-color:rgba(232,121,249,0.35);font-family:ui-monospace, monospace">
                         <span style="color:#e879f9">Model:</span> <span x-text="flowZModelLabel"></span>
                       </button>
-                      <button class="flow-chip" :class="flowWorkbenchShocksEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchShocksEnabled = !flowWorkbenchShocksEnabled" title="Toggle extreme climax flow shock markers (|Z| ≥ 2.5σ)">
+                      <button class="flow-chip" :class="flowWorkbenchShocksEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchShocksEnabled" type="button" @click="flowWorkbenchShocksEnabled = !flowWorkbenchShocksEnabled" title="Toggle extreme climax flow shock markers (|Z| ≥ 2.5σ)">
                         <span style="color:#fbbf24">●</span> Shocks
                       </button>
                       <button class="flow-chip" type="button" @click="flowScaleMode = flowScaleMode === 'usd' ? 'pct_aum' : 'usd'" title="Switch between Dollar Flow ($) and Net Flow as % of AUM" style="font-weight:600;border-color:rgba(34,211,238,0.4)">
@@ -3081,7 +3081,7 @@
                       </button>
                     </div>
                     <div style="width:1px;height:16px;background:var(--flow-line);margin:0 0.15rem"></div>
-                    <button class="flow-chip" :class="flowMeasureActive ? 'flow-chip-active' : ''" type="button" @click="flowMeasureActive = !flowMeasureActive; if (!flowMeasureActive) flowResetMeasurement()" title="Drag across chart canvas to calculate window performance and flow stats">
+                    <button class="flow-chip" :class="flowMeasureActive ? 'flow-chip-active' : ''" :aria-pressed="flowMeasureActive" type="button" @click="flowMeasureActive = !flowMeasureActive; if (!flowMeasureActive) flowResetMeasurement()" title="Drag across chart canvas to calculate window performance and flow stats">
                       ⇥ Drag to Measure
                     </button>
                   </div>
@@ -3193,10 +3193,10 @@
                     <h3 style="margin-top:0.25rem" x-text="flowPeerTitle"></h3>
                     <p class="flow-chart-description" x-text="flowPeerSubtitle"></p>
                   </div>
-                  <div class="flow-legend" style="display:flex;align-items:center;gap:0.45rem;flex-wrap:wrap">
-                    <button class="flow-chip" :class="flowPeerFilter === 'all' ? 'flow-chip-active' : ''" type="button" @click="flowPeerFilter = 'all'">All Peers</button>
-                    <button class="flow-chip" :class="flowPeerFilter === 'direct' ? 'flow-chip-active' : ''" type="button" @click="flowPeerFilter = 'direct'">Direct Underlying</button>
-                    <button class="flow-chip" :class="flowPeerFilter === 'cat' ? 'flow-chip-active' : ''" type="button" @click="flowPeerFilter = 'cat'">Category Peers</button>
+                  <div class="flow-legend" role="radiogroup" aria-label="Peer comparison filter" style="display:flex;align-items:center;gap:0.45rem;flex-wrap:wrap">
+                    <button class="flow-chip" :class="flowPeerFilter === 'all' ? 'flow-chip-active' : ''" role="radio" :aria-checked="flowPeerFilter === 'all'" type="button" @click="flowPeerFilter = 'all'">All Peers</button>
+                    <button class="flow-chip" :class="flowPeerFilter === 'direct' ? 'flow-chip-active' : ''" role="radio" :aria-checked="flowPeerFilter === 'direct'" type="button" @click="flowPeerFilter = 'direct'">Direct Underlying</button>
+                    <button class="flow-chip" :class="flowPeerFilter === 'cat' ? 'flow-chip-active' : ''" role="radio" :aria-checked="flowPeerFilter === 'cat'" type="button" @click="flowPeerFilter = 'cat'">Category Peers</button>
                   </div>
                 </div>
                 <div class="flow-table-wrap flow-peer-table-wrap scrollbar" style="margin-top:0.75rem">
@@ -3254,41 +3254,43 @@
 
             <div class="flow-chart-tooltip" :style="flowChartTooltipStyle" x-show="flowChartTooltip.visible" role="status" aria-live="polite" x-text="flowChartTooltipText"></div>
 
-            <details x-show="flowData && flowSelectedRows.length">
+            <details x-show="flowData && flowSelectedRows.length" @toggle="flowTableOpen = $el.open">
               <summary>Accessible data table for the selected window</summary>
-              <div class="flow-details-body">
-                <div class="flow-table-wrap" tabindex="0" aria-label="Scrollable selected-window flow data table">
-                  <table class="flow-table">
-                    <caption class="flow-visually-hidden" x-text="`${flowTicker} selected-window source-reported aggregate net flow observations`"></caption>
-                    <thead>
-                      <tr>
-                        <th scope="col">Date</th>
-                        <th scope="col">Daily net flow</th>
-                        <th scope="col">20-session mean</th>
-                        <th scope="col">Selected-window cumulative</th>
-                        <th scope="col">10-session sum</th>
-                        <th scope="col">10-session percentile</th>
-                        <th scope="col">Prior-only z-score</th>
-                        <th scope="col">NAV or price</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <template x-for="row in flowSelectedRows" :key="row.date">
+              <template x-if="flowTableOpen">
+                <div class="flow-details-body">
+                  <div class="flow-table-wrap" tabindex="0" aria-label="Scrollable selected-window flow data table">
+                    <table class="flow-table">
+                      <caption class="flow-visually-hidden" x-text="`${flowTicker} selected-window source-reported aggregate net flow observations`"></caption>
+                      <thead>
                         <tr>
-                          <td x-text="row.date"></td>
-                          <td :class="row.flow > 0 ? 'flow-positive' : row.flow < 0 ? 'flow-negative' : ''" x-text="formatMoney(row.flow)"></td>
-                          <td x-text="formatMoney(row.rollingMean20)"></td>
-                          <td x-text="formatMoney(row.selectedCumulative)"></td>
-                          <td x-text="formatMoney(row.rollingSum10)"></td>
-                          <td x-text="formatPercent(row.percentile10)"></td>
-                          <td x-text="row.priorOnlyZScore == null ? '—' : row.priorOnlyZScore.toFixed(2)"></td>
-                          <td x-text="formatPrice(row.nav)"></td>
+                          <th scope="col">Date</th>
+                          <th scope="col">Daily net flow</th>
+                          <th scope="col">20-session mean</th>
+                          <th scope="col">Selected-window cumulative</th>
+                          <th scope="col">10-session sum</th>
+                          <th scope="col">10-session percentile</th>
+                          <th scope="col">Prior-only z-score</th>
+                          <th scope="col">NAV or price</th>
                         </tr>
-                      </template>
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        <template x-for="row in flowSelectedRows" :key="row.date">
+                          <tr>
+                            <td x-text="row.date"></td>
+                            <td :class="row.flow > 0 ? 'flow-positive' : row.flow < 0 ? 'flow-negative' : ''" x-text="formatMoney(row.flow)"></td>
+                            <td x-text="formatMoney(row.rollingMean20)"></td>
+                            <td x-text="formatMoney(row.selectedCumulative)"></td>
+                            <td x-text="formatMoney(row.rollingSum10)"></td>
+                            <td x-text="formatPercent(row.percentile10)"></td>
+                            <td x-text="row.priorOnlyZScore == null ? '—' : row.priorOnlyZScore.toFixed(2)"></td>
+                            <td x-text="formatPrice(row.nav)"></td>
+                          </tr>
+                        </template>
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
+              </template>
             </details>
 
             <details>

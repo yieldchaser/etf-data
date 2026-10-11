@@ -250,46 +250,57 @@
   function priorOnlyZScore(records, index, windowSize) {
     const size = Math.max(5, Math.trunc(windowSize || 30));
     const current = finiteNumber(records[index] && records[index].flow);
+    if (current === null) return null;
     const start = Math.max(0, index - size);
-    if (current === null || index - start < 5) return null;
     const prior = [];
     for (let offset = start; offset < index; offset += 1) {
       const value = finiteNumber(records[offset] && records[offset].flow);
-      if (value === null) return null;
-      prior.push(value);
+      if (value !== null) prior.push(value);
     }
-    const mean = prior.reduce((sum, value) => sum + value, 0) / prior.length;
-    const variance = prior.reduce((sum, value) => sum + ((value - mean) ** 2), 0) / prior.length;
+    if (prior.length < 5) return null;
+    const n = prior.length;
+    const mean = prior.reduce((sum, value) => sum + value, 0) / n;
+    const variance = prior.reduce((sum, value) => sum + ((value - mean) ** 2), 0) / n;
     const standardDeviation = Math.sqrt(variance);
-    if (!Number.isFinite(standardDeviation) || standardDeviation <= 0) return null;
+    if (!Number.isFinite(standardDeviation) || standardDeviation <= 1e-9) return null;
     return (current - mean) / standardDeviation;
+  }
+
+  function _calcMedian(sorted) {
+    const n = sorted.length;
+    if (!n) return null;
+    const mid = Math.floor(n / 2);
+    return (n % 2 !== 0) ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
   }
 
   function robustPriorZScore(records, index, windowSize) {
     const size = Math.max(5, Math.trunc(windowSize || 30));
     const current = finiteNumber(records[index] && records[index].flow);
+    if (current === null) return null;
     const start = Math.max(0, index - size);
-    if (current === null || index - start < 5) return null;
     const prior = [];
     for (let offset = start; offset < index; offset += 1) {
       const value = finiteNumber(records[offset] && records[offset].flow);
-      if (value === null) return null;
-      prior.push(value);
+      if (value !== null) prior.push(value);
     }
+    if (prior.length < 5) return null;
     const sorted = [...prior].sort((a, b) => a - b);
-    const median = sorted[Math.floor(sorted.length / 2)];
+    const median = _calcMedian(sorted);
+    if (median === null) return null;
     const absDevs = prior.map(v => Math.abs(v - median)).sort((a, b) => a - b);
-    const mad = absDevs[Math.floor(absDevs.length / 2)];
-    if (mad > 1e4) {
+    const mad = _calcMedian(absDevs);
+    if (mad !== null && mad > 1e-4) {
       return (0.6745 * (current - median)) / mad;
     }
     const meanDev = absDevs.reduce((a, b) => a + b, 0) / absDevs.length;
-    if (meanDev > 1e4) {
+    if (meanDev > 1e-4) {
       return (0.7979 * (current - median)) / meanDev;
     }
-    const variance = prior.reduce((sum, value) => sum + ((value - median) ** 2), 0) / prior.length;
+    const n = prior.length;
+    const mean = prior.reduce((sum, value) => sum + value, 0) / n;
+    const variance = prior.reduce((sum, value) => sum + ((value - mean) ** 2), 0) / (n - 1);
     const sd = Math.sqrt(variance);
-    return (Number.isFinite(sd) && sd > 0) ? (current - median) / sd : null;
+    return (Number.isFinite(sd) && sd > 1e-4) ? (current - mean) / sd : null;
   }
 
   function volumeAdjustedZScore(records, index, volumes, windowSize) {
@@ -298,10 +309,12 @@
     if (currentFlow === null || index < 5) return null;
     const getIntensity = (i) => {
       const f = finiteNumber(records[i] && records[i].flow);
-      if (f === null) return null;
-      const nav = finiteNumber(records[i] && records[i].nav) || 1;
-      const vol = (volumes && volumes[i]) || (nav ? Math.max(1, Math.round(Math.abs(f) / nav)) : 1);
-      const dVol = Math.max(1e5, vol * nav);
+      const nav = finiteNumber(records[i] && records[i].nav);
+      if (f === null || nav === null || nav <= 0) return null;
+      const vol = (volumes && volumes[i]) || null;
+      if (!vol || vol <= 0) return null;
+      const dVol = vol * nav;
+      if (dVol <= 0) return null;
       return f / dVol;
     };
     const curInt = getIntensity(index);
@@ -313,10 +326,11 @@
       if (val !== null) prior.push(val);
     }
     if (prior.length < 5) return null;
-    const mean = prior.reduce((a, b) => a + b, 0) / prior.length;
-    const variance = prior.reduce((sum, value) => sum + ((value - mean) ** 2), 0) / prior.length;
+    const n = prior.length;
+    const mean = prior.reduce((a, b) => a + b, 0) / n;
+    const variance = prior.reduce((sum, value) => sum + ((value - mean) ** 2), 0) / (n - 1);
     const sd = Math.sqrt(variance);
-    return (Number.isFinite(sd) && sd > 0) ? (curInt - mean) / sd : null;
+    return (Number.isFinite(sd) && sd > 1e-6) ? (curInt - mean) / sd : null;
   }
 
   function momentum5DZScore(records, index, rollingFive, windowSize) {
@@ -331,8 +345,9 @@
       if (val !== null) prior.push(val);
     }
     if (prior.length < 5) return null;
-    const mean = prior.reduce((a, b) => a + b, 0) / prior.length;
-    const variance = prior.reduce((sum, value) => sum + ((value - mean) ** 2), 0) / prior.length;
+    const n = prior.length;
+    const mean = prior.reduce((a, b) => a + b, 0) / n;
+    const variance = prior.reduce((sum, value) => sum + ((value - mean) ** 2), 0) / (n - 1);
     const sd = Math.sqrt(variance);
     return (Number.isFinite(sd) && sd > 0) ? (cur5 - mean) / sd : null;
   }
@@ -482,7 +497,8 @@
     }).sort((left, right) => left.date.localeCompare(right.date));
     const schemaVersion = integerValue(payload.schema_version) || 1;
     const sourceAsOf = String(payload.source_asof || payload.asof || payload.updated || (records.length ? records[records.length - 1].date : '') || '');
-    if (schemaVersion >= 2 && records.length && sourceAsOf !== records[records.length - 1].date) {
+    const sourceDay = sourceAsOf.slice(0, 10);
+    if (schemaVersion >= 2 && records.length && sourceDay < records[records.length - 1].date) {
       throw new Error('Source date does not match the latest flow observation.');
     }
     const declaredStatus = String(payload.data_status || payload.data_quality?.status || '').toLowerCase();
@@ -624,7 +640,8 @@
       const fill = val > 0 ? COLORS.positive : val < 0 ? COLORS.negative : COLORS.neutral;
       rects += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" rx="0.5" fill="${fill}" opacity="0.92"/>`;
     });
-    const peakStr = maxAbs >= 1e9 ? `$${(maxAbs / 1e9).toFixed(2)}B` : maxAbs >= 1e6 ? `$${(maxAbs / 1e6).toFixed(1)}M` : maxAbs >= 1e3 ? `$${(maxAbs / 1e3).toFixed(0)}K` : `$${maxAbs.toFixed(0)}`;
+    const dollarMax = maxAbs < 1e5 ? maxAbs * 1e6 : maxAbs;
+    const peakStr = dollarMax >= 1e9 ? `$${(dollarMax / 1e9).toFixed(2)}B` : dollarMax >= 1e6 ? `$${(dollarMax / 1e6).toFixed(1)}M` : dollarMax >= 1e3 ? `$${(dollarMax / 1e3).toFixed(0)}K` : `$${dollarMax.toFixed(0)}`;
     return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="20D net flow pulse" style="display:block;margin:0 auto"><title>20D daily flow pulse (peak ±${peakStr})</title>${rects}</svg>`;
   }
 
@@ -782,6 +799,7 @@
       flowMeasureStartIdx: null,
       flowMeasureCurrentIdx: null,
       flowMeasureResult: null,
+      flowTableOpen: false,
 
       flowCycleZModel() {
         const models = ['standard', 'robust', 'volume', 'momentum'];
@@ -1230,8 +1248,8 @@
             sumSq += share * share;
           }
         }
-        const hhi = sumSq || 0.136;
-        const effFunds = hhi > 0 ? (1 / hhi).toFixed(1) : '7.4';
+        const hhi = sumSq > 0 ? sumSq : null;
+        const effFunds = hhi !== null ? (1 / hhi).toFixed(1) : '—';
         const bullAvgZ = bullZCount ? bullZSum / bullZCount : 0;
         const bearAvgZ = bearZCount ? bearZSum / bearZCount : 0;
         const spreadZ = bullAvgZ - bearAvgZ;
@@ -1745,7 +1763,11 @@
         } else {
           const totalShocks = posShocks + negShocks;
           shockStatLine = `Historical Shocks: ${posShocks} Inflow · ${negShocks} Outflow (n = ${totalShocks})`;
-          shockSubtext = `Flow within normal range (${latestZ >= 0 ? '+' : ''}${latestZ.toFixed(2)}σ). Shocks resolve positive ${posWinRate || '52'}% of time after inflows vs ${negWinRate || '48'}% after outflows.`;
+          if (posWinRate && negWinRate) {
+            shockSubtext = `Flow within normal range (${latestZ >= 0 ? '+' : ''}${latestZ.toFixed(2)}σ). Shocks resolve positive ${posWinRate}% of time after inflows vs ${negWinRate}% after outflows.`;
+          } else {
+            shockSubtext = `Flow within normal range (${latestZ >= 0 ? '+' : ''}${latestZ.toFixed(2)}σ). Sample baseline tracking ${totalShocks} historical shock events.`;
+          }
         }
 
         // SVG Distribution Gauge for Card 2 (shockMeterSvg)
@@ -1847,7 +1869,8 @@
         const rColor = rVal >= 0 ? '#34d399' : '#fb7185';
 
         const f5Abs = Math.abs(flow5d);
-        const fRef = Math.max(1e6, f5Abs * 1.2);
+        const maxHist5D = Math.max(1e6, ...allMetricRows.slice(-60).map(r => Math.abs(finiteNumber(r.rollingSum5) || 0)));
+        const fRef = Math.max(1e6, maxHist5D);
         const fRatio = Math.min(1, f5Abs / fRef);
         const fW = fRatio * (tmPlotW / 2);
         const fX = flow5d >= 0 ? tmCenter : tmCenter - fW;
@@ -2041,7 +2064,7 @@
         if (this.flowPeerFilter === 'direct') {
           selectedPool = directPeers;
         } else if (this.flowPeerFilter === 'cat') {
-          selectedPool = categoryPeers;
+          selectedPool = [current, ...categoryPeers];
         } else {
           selectedPool = [...directPeers, ...categoryPeers];
         }
@@ -2051,7 +2074,7 @@
           const cleanUnderlying = String(item.underlying || '').replace(/\s*\([^)]*\)\s*$/, '').trim() || item.ticker;
           const aumVal = finiteNumber(item.aum_m) || 0;
           const f1 = finiteNumber(item.latest_flow);
-          const flowPctAum = (aumVal > 0 && f1 !== null && f1 !== 0) ? (f1 / (aumVal * 1e6)) * 100 : null;
+          const flowPctAum = (aumVal > 0 && f1 !== null) ? (f1 / (aumVal * 1e6)) * 100 : null;
           return {
             ...item,
             isDirect,
@@ -2260,8 +2283,10 @@
         }
 
         return Object.values(byUnderlying).map(row => {
-          const totalActivity = Math.abs(row.bullFlow20d) + Math.abs(row.bearFlow20d);
-          const bullSharePct = totalActivity > 0 ? Math.round((Math.abs(row.bullFlow20d) / totalActivity) * 100) : 50;
+          const bullishForce = Math.max(0, row.bullFlow20d) + Math.max(0, -row.bearFlow20d);
+          const bearishForce = Math.max(0, -row.bullFlow20d) + Math.max(0, row.bearFlow20d);
+          const totalForce = bullishForce + bearishForce;
+          const bullSharePct = totalForce > 0 ? Math.round((bullishForce / totalForce) * 100) : 50;
           const bearSharePct = 100 - bullSharePct;
           let biasState = 'BALANCED';
           let biasLabel = 'Contested';
@@ -2458,7 +2483,7 @@
           trailingTwenty: trailingComplete ? trailing.reduce((sum, row) => sum + row.flow, 0) : null,
           cumulative: latest.selectedCumulative,
           percentile: latest.percentile10,
-          zScore: latest.priorOnlyZScore,
+          zScore: this.flowActiveZScore(latest),
           coverage: `${this.flowWindowMetrics.numericSelected} of ${selected.length} sessions with numeric flow`
         };
       },
@@ -2705,7 +2730,7 @@
         const height = width < 500 ? 270 : 310;
         if (rows.length < 2) return emptyChart(width, height, 'Select at least two source observations.');
         const frame = chartFrame({ records: rows, width, height, padding: { left: width < 500 ? 46 : 58, right: 18, top: 22, bottom: 34 } });
-        const values = rows.map(row => finiteNumber(row.priorOnlyZScore)).filter(value => value !== null);
+        const values = rows.map(row => finiteNumber(this.flowActiveZScore(row))).filter(value => value !== null);
         if (!values.length) return emptyChart(width, height, 'A prior-only z-score is unavailable for this window.');
         const extent = Math.max(3, ...values.map(value => Math.abs(value)));
         const maximum = Math.ceil(extent * 1.05 * 2) / 2;
@@ -2718,7 +2743,7 @@
         const barWidth = Math.max(0.8, Math.min(9, slot * 0.62));
         let bars = '';
         rows.forEach((row, index) => {
-          const value = finiteNumber(row.priorOnlyZScore);
+          const value = finiteNumber(this.flowActiveZScore(row));
           if (value === null) return;
           const center = frame.xScale(index);
           const y = yScale(value);
@@ -2738,7 +2763,7 @@
         let overlay = '';
         if (this.flowHoverIndex !== null && this.flowHoverChart === 'main' && this.flowHoverIndex >= 0 && this.flowHoverIndex < rows.length) {
           const hRow = rows[this.flowHoverIndex];
-          const hZ = finiteNumber(hRow.priorOnlyZScore);
+          const hZ = finiteNumber(this.flowActiveZScore(hRow));
           const hY = hZ !== null ? yScale(hZ) : zeroY;
           const items = [];
           if (hZ !== null) {
@@ -3283,7 +3308,7 @@
                 const shockCandidates = rows.map((r, i) => ({
                   row: r,
                   idx: i,
-                  z: finiteNumber(r.priorOnlyZScore) || 0,
+                  z: finiteNumber(this.flowActiveZScore(r)) || 0,
                   p: finiteNumber(r.nav)
                 })).filter(c => c.p !== null && Math.abs(c.z) >= 2.5);
                 shockCandidates.sort((a, b) => Math.abs(b.z) - Math.abs(a.z));
@@ -3330,31 +3355,42 @@
               const volH = showDaily ? (tier2H * 0.38) : (tier2H - 10);
               const yVol = val => t2Bottom - (val / (maxVol || 1)) * volH;
               t2Grid += `<text x="${width - padRight + 8}" y="${(t2Bottom - volH + 6).toFixed(1)}" text-anchor="start" fill="#94a3b8" font-family="ui-monospace, monospace" font-size="9">${formatShareVolume(maxVol)}</text>`;
+              let volPathD = '';
               rows.forEach((r, i) => {
                 const v = finiteNumber(r.volume) || (r.nav ? Math.round(Math.abs(r.flow || 0) / r.nav) : 0);
                 if (v > 0) {
-                  const x = xScale(i) - barW / 2;
+                  const x = xScale(i);
                   const h = Math.max(1, (v / (maxVol || 1)) * volH);
-                  volBarsSvg += `<rect x="${x.toFixed(1)}" y="${(t2Bottom - h).toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="rgba(148,163,184,0.14)" rx="0.5"/>`;
+                  const yTop = t2Bottom - h;
+                  volPathD += `M${x.toFixed(1)} ${t2Bottom.toFixed(1)}V${yTop.toFixed(1)}`;
                 }
               });
+              if (volPathD) {
+                volBarsSvg += `<path d="${volPathD}" stroke="rgba(148,163,184,0.14)" stroke-width="${barW.toFixed(1)}" stroke-linecap="butt"/>`;
+              }
               const volMaPoints = rows.map((r, i) => ({ x: xScale(i), y: finiteScale(yVol, r.rollingVolume20) }));
               volBarsSvg += `<path d="${linePath(volMaPoints)}" fill="none" stroke="#64748b" stroke-width="1.2" stroke-dasharray="2 2" opacity="0.6"/>`;
             }
 
             let dailyBarsSvg = '';
             if (showDaily) {
+              let posD = '', negD = '', neuD = '';
               rows.forEach((r, i) => {
                 const f = finiteNumber(r.flow);
                 if (f === null) return;
                 const val = isPctAum ? (f / aumTotal) * 100 : f;
-                const x = xScale(i) - barW / 2;
+                const x = xScale(i);
                 const y = yDaily(val);
-                const top = val >= 0 ? y : zeroDailyY;
-                const h = Math.max(1.8, Math.abs(y - zeroDailyY));
-                const fill = val === 0 ? COLORS.neutral : val > 0 ? COLORS.positive : COLORS.negative;
-                dailyBarsSvg += `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${fill}" opacity="0.9" rx="0.6"/>`;
+                const yTop = val >= 0 ? y : zeroDailyY;
+                const yBot = val >= 0 ? zeroDailyY : y;
+                const segment = `M${x.toFixed(1)} ${yBot.toFixed(1)}V${yTop.toFixed(1)}`;
+                if (val > 0) posD += segment;
+                else if (val < 0) negD += segment;
+                else neuD += segment;
               });
+              if (posD) dailyBarsSvg += `<path d="${posD}" stroke="${COLORS.positive}" stroke-width="${barW.toFixed(1)}" stroke-linecap="butt" opacity="0.9"/>`;
+              if (negD) dailyBarsSvg += `<path d="${negD}" stroke="${COLORS.negative}" stroke-width="${barW.toFixed(1)}" stroke-linecap="butt" opacity="0.9"/>`;
+              if (neuD) dailyBarsSvg += `<path d="${neuD}" stroke="${COLORS.neutral}" stroke-width="${barW.toFixed(1)}" stroke-linecap="butt" opacity="0.9"/>`;
             }
 
             tier2Svg = `<g class="flow-tier-2">${t2Grid}${volBarsSvg}${dailyBarsSvg}</g>`;
@@ -3410,32 +3446,45 @@
             t3Grid += `<text x="${(width - padRight - 8).toFixed(1)}" y="${(yNeg20 + 10).toFixed(1)}" text-anchor="end" fill="#fb7185" font-family="ui-monospace, monospace" font-size="8.5" font-weight="700" letter-spacing="0.04em">−2.0σ DRAIN DISTRIBUTION</text>`;
 
             // Daily shock impulse stems / micro-bars with distinct regime color-coding
-            const barW = Math.max(1.2, Math.min(5.0, slot * 0.45));
-            let shockStemsSvg = '';
+            const stemW = Math.max(1.2, Math.min(5.0, slot * 0.45));
+            let dExtAcc = '', dExtDist = '', dElevAcc = '', dElevDist = '', dNorm = '';
+            let shockCircles = '';
+            let lastCircleX = -999;
             rows.forEach((r, i) => {
               const z = rawZ[i];
               if (z === null) return;
               const x = xScale(i);
               const y = yZ(z);
-              const top = z >= 0 ? y : zeroZY;
-              const h = Math.max(1.4, Math.abs(y - zeroZY));
-              const isExtremeAcc = z >= 2.0;
-              const isExtremeDist = z <= -2.0;
-              const isElevatedAcc = z >= 1.0 && z < 2.0;
-              const isElevatedDist = z <= -1.0 && z > -2.0;
-
-              let fill = 'rgba(148,163,184,0.30)';
-              if (isExtremeAcc) fill = '#22d3ee';
-              else if (isExtremeDist) fill = '#fb7185';
-              else if (isElevatedAcc) fill = 'rgba(34,211,238,0.65)';
-              else if (isElevatedDist) fill = 'rgba(251,113,133,0.65)';
-
-              shockStemsSvg += `<rect x="${(x - barW / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${fill}" rx="0.5"/>`;
-              if (isExtremeAcc || isExtremeDist) {
-                const ringColor = isExtremeAcc ? '#22d3ee' : '#fb7185';
-                shockStemsSvg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${slot > 8 ? 2.6 : 1.8}" fill="#ffffff" stroke="${ringColor}" stroke-width="1.2"/>`;
+              const yTop = z >= 0 ? y : zeroZY;
+              const yBot = z >= 0 ? zeroZY : y;
+              const seg = `M${x.toFixed(1)} ${yBot.toFixed(1)}V${yTop.toFixed(1)}`;
+              if (z >= 2.0) {
+                dExtAcc += seg;
+                if (x - lastCircleX >= 10 || slot >= 8) {
+                  shockCircles += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${slot > 8 ? 2.6 : 1.8}" fill="#ffffff" stroke="#22d3ee" stroke-width="1.2"/>`;
+                  lastCircleX = x;
+                }
+              } else if (z <= -2.0) {
+                dExtDist += seg;
+                if (x - lastCircleX >= 10 || slot >= 8) {
+                  shockCircles += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${slot > 8 ? 2.6 : 1.8}" fill="#ffffff" stroke="#fb7185" stroke-width="1.2"/>`;
+                  lastCircleX = x;
+                }
+              } else if (z >= 1.0) {
+                dElevAcc += seg;
+              } else if (z <= -1.0) {
+                dElevDist += seg;
+              } else {
+                dNorm += seg;
               }
             });
+            let shockStemsSvg = '';
+            if (dNorm) shockStemsSvg += `<path d="${dNorm}" stroke="rgba(148,163,184,0.30)" stroke-width="${stemW.toFixed(1)}" stroke-linecap="butt"/>`;
+            if (dElevAcc) shockStemsSvg += `<path d="${dElevAcc}" stroke="rgba(34,211,238,0.65)" stroke-width="${stemW.toFixed(1)}" stroke-linecap="butt"/>`;
+            if (dElevDist) shockStemsSvg += `<path d="${dElevDist}" stroke="rgba(251,113,133,0.65)" stroke-width="${stemW.toFixed(1)}" stroke-linecap="butt"/>`;
+            if (dExtAcc) shockStemsSvg += `<path d="${dExtAcc}" stroke="#22d3ee" stroke-width="${stemW.toFixed(1)}" stroke-linecap="butt"/>`;
+            if (dExtDist) shockStemsSvg += `<path d="${dExtDist}" stroke="#fb7185" stroke-width="${stemW.toFixed(1)}" stroke-linecap="butt"/>`;
+            shockStemsSvg += shockCircles;
 
             // 5-session smoothed trend baseline
             smoothZ = [];
@@ -3524,26 +3573,31 @@
             </g>`;
 
             // Acceleration Histogram Bars (MACD-style color coding: expanding vs moderating)
-            let accelBarsSvg = '';
-            const barW = Math.max(1.0, Math.min(6.0, slot * 0.55));
+            const accBarW = Math.max(1.0, Math.min(6.0, slot * 0.55));
+            let dPosExp = '', dPosMod = '', dNegExp = '', dNegMod = '';
             rows.forEach((r, i) => {
               const acc = accelList[i];
               if (acc === null) return;
               const prevAcc = i > 0 ? accelList[i - 1] : acc;
-              const x = xScale(i) - barW / 2;
+              const x = xScale(i);
               const y = yVel(acc);
-              const top = acc >= 0 ? y : zeroVelY;
-              const h = Math.max(1.2, Math.abs(y - zeroVelY));
+              const yTop = acc >= 0 ? y : zeroVelY;
+              const yBot = acc >= 0 ? zeroVelY : y;
+              const seg = `M${x.toFixed(1)} ${yBot.toFixed(1)}V${yTop.toFixed(1)}`;
 
-              // Expanding: vibrant; Moderating: translucent
-              let fill = 'rgba(148,163,184,0.3)';
               if (acc >= 0) {
-                fill = (prevAcc !== null && acc >= prevAcc) ? 'rgba(52,211,153,0.75)' : 'rgba(52,211,153,0.32)';
+                if (prevAcc !== null && acc >= prevAcc) dPosExp += seg;
+                else dPosMod += seg;
               } else {
-                fill = (prevAcc !== null && acc <= prevAcc) ? 'rgba(251,113,133,0.75)' : 'rgba(251,113,133,0.32)';
+                if (prevAcc !== null && acc <= prevAcc) dNegExp += seg;
+                else dNegMod += seg;
               }
-              accelBarsSvg += `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${fill}" rx="0.5"/>`;
             });
+            let accelBarsSvg = '';
+            if (dPosExp) accelBarsSvg += `<path d="${dPosExp}" stroke="rgba(52,211,153,0.75)" stroke-width="${accBarW.toFixed(1)}" stroke-linecap="butt"/>`;
+            if (dPosMod) accelBarsSvg += `<path d="${dPosMod}" stroke="rgba(52,211,153,0.32)" stroke-width="${accBarW.toFixed(1)}" stroke-linecap="butt"/>`;
+            if (dNegExp) accelBarsSvg += `<path d="${dNegExp}" stroke="rgba(251,113,133,0.75)" stroke-width="${accBarW.toFixed(1)}" stroke-linecap="butt"/>`;
+            if (dNegMod) accelBarsSvg += `<path d="${dNegMod}" stroke="rgba(251,113,133,0.32)" stroke-width="${accBarW.toFixed(1)}" stroke-linecap="butt"/>`;
 
             // 60D Baseline Path (amber dashed)
             const base60Points = rows.map((r, i) => ({ x: xScale(i), y: finiteScale(yVel, base60List[i]) }));
@@ -3553,23 +3607,30 @@
             const vel20Points = rows.map((r, i) => ({ x: xScale(i), y: finiteScale(yVel, vel20List[i]) }));
             const vel20Path = `<path d="${linePath(vel20Points)}" fill="none" stroke="#34d399" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round"/>`;
 
-            // Crossover Inflection Points
+            // Crossover Inflection Points (filtered with minimum visual spacing to avoid clutter in multi-year views)
             let crossoverSvg = '';
+            let lastCrossX = -999;
+            const minSpacing = Math.max(14, slot * 2);
             for (let i = 1; i < rows.length; i++) {
               const prevA = accelList[i - 1];
               const currA = accelList[i];
               if (prevA !== null && currA !== null) {
+                const x = xScale(i);
                 if (prevA <= 0 && currA > 0) {
-                  const x = xScale(i);
-                  const y = yVel(vel20List[i]);
-                  if (y !== null) {
-                    crossoverSvg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="#34d399" stroke="#ffffff" stroke-width="1.2"><title>Flow Acceleration Inflection (${rows[i].date}): 20D pace crossed above 60D baseline</title></circle>`;
+                  if (x - lastCrossX >= minSpacing || slot >= 8) {
+                    const y = yVel(vel20List[i]);
+                    if (y !== null) {
+                      crossoverSvg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="#34d399" stroke="#ffffff" stroke-width="1.2"><title>Flow Acceleration Inflection (${rows[i].date}): 20D pace crossed above 60D baseline</title></circle>`;
+                      lastCrossX = x;
+                    }
                   }
                 } else if (prevA >= 0 && currA < 0) {
-                  const x = xScale(i);
-                  const y = yVel(vel20List[i]);
-                  if (y !== null) {
-                    crossoverSvg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="#fb7185" stroke="#ffffff" stroke-width="1.2"><title>Flow Deceleration Inflection (${rows[i].date}): 20D pace crossed below 60D baseline</title></circle>`;
+                  if (x - lastCrossX >= minSpacing || slot >= 8) {
+                    const y = yVel(vel20List[i]);
+                    if (y !== null) {
+                      crossoverSvg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="#fb7185" stroke="#ffffff" stroke-width="1.2"><title>Flow Deceleration Inflection (${rows[i].date}): 20D pace crossed below 60D baseline</title></circle>`;
+                      lastCrossX = x;
+                    }
                   }
                 }
               }
@@ -4475,6 +4536,8 @@
           try { target.setPointerCapture(event.pointerId); } catch (_) {}
         }
 
+        let pendingStart = initialStart;
+        let pendingEnd = initialEnd;
         const onPointerMove = (e) => {
           const deltaPx = e.clientX - startClientX;
           const deltaFrac = deltaPx / trackW;
@@ -4488,13 +4551,21 @@
             newEnd = maxIdx;
             newStart = Math.max(0, maxIdx - span);
           }
-          if (newStart !== this.flowStartIndex || newEnd !== this.flowEndIndex) {
-            this.flowStartIndex = newStart;
-            this.flowEndIndex = newEnd;
-            this.flowRangePreset = 'custom';
-            this.flowEnsureChartTab();
-            this._syncRangeInputs();
-            this._flowScheduleUrlWrite();
+          pendingStart = newStart;
+          pendingEnd = newEnd;
+          if (!this._rangeRaf) {
+            const rafFn = typeof requestAnimationFrame !== 'undefined' ? requestAnimationFrame : (cb) => setTimeout(cb, 16);
+            this._rangeRaf = rafFn(() => {
+              this._rangeRaf = null;
+              if (pendingStart !== this.flowStartIndex || pendingEnd !== this.flowEndIndex) {
+                this.flowStartIndex = pendingStart;
+                this.flowEndIndex = pendingEnd;
+                this.flowRangePreset = 'custom';
+                this.flowEnsureChartTab();
+                this._syncRangeInputs();
+                this._flowScheduleUrlWrite();
+              }
+            });
           }
         };
 
@@ -4506,6 +4577,18 @@
           window.removeEventListener('pointermove', onPointerMove);
           window.removeEventListener('pointerup', onPointerUp);
           window.removeEventListener('pointercancel', onPointerUp);
+          if (this._rangeRaf) {
+            if (typeof cancelAnimationFrame !== 'undefined') cancelAnimationFrame(this._rangeRaf);
+            else clearTimeout(this._rangeRaf);
+            this._rangeRaf = null;
+          }
+          if (pendingStart !== this.flowStartIndex || pendingEnd !== this.flowEndIndex) {
+            this.flowStartIndex = pendingStart;
+            this.flowEndIndex = pendingEnd;
+            this.flowRangePreset = 'custom';
+            this.flowEnsureChartTab();
+            this._syncRangeInputs();
+          }
           this._flowFinishRangeDrag();
         };
 

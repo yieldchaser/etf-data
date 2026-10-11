@@ -72,21 +72,20 @@ twins_map = {
 }
 
 ARCHETYPE_MAP = {
-    "CAPITULATION_BOUNCE_SPECIALIST": ("WASHOUT_REBOUND_SPECIALIST", "Washout Rebounder"),
-    "CAPITULATION_WASHOUT_REBOUNDER": ("WASHOUT_REBOUND_SPECIALIST", "Washout Rebounder"),
+    "WASHOUT_REBOUND_SPECIALIST": ("WASHOUT_REBOUND_SPECIALIST", "Washout Rebounder"),
     "INFORMED_MOMENTUM_CONTINUATION": ("MOMENTUM_CONTINUATION", "Momentum Continuation"),
-    "CONTRARIAN_RETAIL_EXHAUSTION": ("CONTRARIAN_EXHAUSTION", "Contrarian Exhaustion"),
-    "FOMO_SHORT_CANDIDATE": ("OVEREXTENDED_FADE", "Overextended Fade"),
-    "RETAIL_FOMO_TOPPING_TRAP": ("OVEREXTENDED_TOPPING_TRAP", "Overextended Topping Trap"),
+    "CONTRARIAN_EXHAUSTION": ("CONTRARIAN_EXHAUSTION", "Contrarian Exhaustion"),
+    "OVEREXTENDED_FADE": ("OVEREXTENDED_FADE", "Overextended Fade"),
+    "OVEREXTENDED_TOPPING_TRAP": ("OVEREXTENDED_TOPPING_TRAP", "Overextended Topping Trap"),
     "WALL_OF_WORRY_SQUEEZER": ("WALL_OF_WORRY_SQUEEZER", "Wall-of-Worry Squeezer"),
     "BALANCED_REGIME_DEPENDENT": ("BALANCED_REGIME_DEPENDENT", "Balanced / Regime Dependent")
 }
 
 SIGNAL_MAP = {
-    "CAPITULATION_SLINGSHOT_BUY": ("WASHOUT_SLINGSHOT_BUY", "Washout Slingshot BUY"),
+    "WASHOUT_SLINGSHOT_BUY": ("WASHOUT_SLINGSHOT_BUY", "Washout Slingshot BUY"),
     "INFORMED_MOMENTUM_IGNITION_BUY": ("MOMENTUM_IGNITION_BUY", "Momentum Ignition BUY"),
     "WALL_OF_WORRY_SQUEEZE_BUY": ("WALL_OF_WORRY_SQUEEZE_BUY", "Wall-of-Worry SQUEEZE"),
-    "FALLING_KNIFE_RETAIL_TRAP_AVOID": ("FALLING_KNIFE_TRAP_AVOID", "Falling-Knife Trap AVOID"),
+    "FALLING_KNIFE_TRAP_AVOID": ("FALLING_KNIFE_TRAP_AVOID", "Falling-Knife Trap AVOID"),
     "EUPHORIA_BLOWOFF_CAUTION": ("EUPHORIA_BLOWOFF_CAUTION", "Euphoria Blow-Off Top"),
     "DEAD_CAT_SHORT": ("DEAD_CAT_SHORT", "Dead-Cat Inflow SHORT"),
     "NEUTRAL": ("NEUTRAL", "Neutral / Balanced")
@@ -111,7 +110,7 @@ for inst in catalog.get("instruments", []):
     if ticker in pod5_live_s3 and "Dead-Cat" in pod5_live_s3[ticker].get("strategy_signal_and_rationale", ""):
         sig_type = "DEAD_CAT_SHORT"
     elif ticker in pod5_live_s1:
-        sig_type = "CAPITULATION_SLINGSHOT_BUY"
+        sig_type = "WASHOUT_SLINGSHOT_BUY"
     elif ticker in pod5_live_s2:
         sig_type = "INFORMED_MOMENTUM_IGNITION_BUY"
 

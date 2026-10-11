@@ -937,6 +937,18 @@
   gap: 0.75rem;
 }
 
+@media (max-width: 640px) {
+  .flow-research .flow-measure-hud {
+    white-space: normal;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 95%;
+    gap: 0.4rem;
+    padding: 6px 8px;
+    font-size: 0.6875rem;
+  }
+}
+
 .flow-research .flow-workbench-chart {
   position: relative;
   width: 100%;

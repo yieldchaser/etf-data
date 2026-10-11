@@ -302,5 +302,30 @@ def test_flow_peer_radar_filters_and_metrics():
     assert result["firstHasPctAum"] is True
 
 
+def test_workbench_svg_path_optimization_and_advanced_zmodels():
+    result = run_metrics(
+        "(()=>{const app=m.flowResearchApp();const cat=require('./docs/data/flows/catalog.json');app.flowCatalog=cat;const tqqqItem=cat.instruments.find(i=>i.ticker==='TQQQ');app.flowTicker='TQQQ';app._flowEntryMap=Object.fromEntries(cat.instruments.map(i=>[i.ticker,i]));const raw=require('./docs/data/flows/TQQQ.json');app.flowData=m.normalizeFlowPayload(raw,tqqqItem);app.flowStartIndex=0;app.flowEndIndex=app.flowMaxRecordIndex;const svg=app.flowWorkbenchSvg;const rectCount=(svg.match(/<rect /g)||[]).length;const pathCount=(svg.match(/<path /g)||[]).length;const last=app.flowSelectedRows[app.flowSelectedRows.length-1];const robScore=m.robustPriorZScore([{flow:8},{flow:10},{flow:12},{flow:9},{flow:11},{flow:25}],5,30);const zeroVolScore=m.volumeAdjustedZScore([{flow:10,nav:50},{flow:10,nav:50},{flow:10,nav:50},{flow:10,nav:50},{flow:10,nav:50},{flow:20,nav:50}],5,[0,0,0,0,0,0],30);return {rectCount,pathCount,hasTier2Path:svg.includes('flow-tier-2')&&svg.includes('stroke-linecap=\"butt\"'),hasTier3Path:svg.includes('flow-tier-3')&&svg.includes('stroke-linecap=\"butt\"'),hasTier4Path:svg.includes('flow-tier-4')&&svg.includes('stroke-linecap=\"butt\"'),hasTableOpenState:app.flowTableOpen===false,robValid:robScore!==null,zeroVolScore};})()"
+    )
+    # Optimized SVG combines thousands of rects into single stroked path segments
+    assert result["rectCount"] < 200
+    assert result["pathCount"] > 5
+    assert result["hasTier2Path"] is True
+    assert result["hasTier3Path"] is True
+    assert result["hasTier4Path"] is True
+    assert result["hasTableOpenState"] is True
+    assert result["robValid"] is True
+    assert result["zeroVolScore"] is None
+
+
+def test_battle_liquidation_and_peer_radar_zero_flows():
+    result = run_metrics(
+        "(()=>{const app=m.flowResearchApp();const cat=require('./docs/data/flows/catalog.json');app.flowCatalog=cat;app._flowEntryMap=Object.fromEntries(cat.instruments.map(i=>[i.ticker,i]));app.flowTicker='TQQQ';const battleRows=app._flowAllBattleRows;const firstBattle=battleRows[0];return {hasBattleRows:battleRows.length>0,firstBattleFound:!!firstBattle,bullShareValid:firstBattle?firstBattle.bullSharePct>=0&&firstBattle.bullSharePct<=100:false};})()"
+    )
+    assert result["hasBattleRows"] is True
+    assert result["firstBattleFound"] is True
+    assert result["bullShareValid"] is True
+
+
+
 
 
