@@ -409,14 +409,24 @@
 }
 
 .flow-research .flow-command-row {
-  display: grid;
-  grid-template-columns: minmax(220px, 1.35fr) minmax(0, 2fr);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
   gap: 0.65rem;
-  align-items: end;
 }
 
 .flow-research .flow-search-wrap {
   position: relative;
+  flex: 1 1 280px;
+  max-width: 540px;
+}
+
+.flow-research .flow-scope-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding-bottom: 2px;
 }
 
 .flow-research .flow-input,

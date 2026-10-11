@@ -290,9 +290,9 @@
               :class="activeTab === 'flows' ? 'tab-active' : ''"
               class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
               :style="activeTab === 'flows' ? '' : 'color: var(--text-2); border-color: var(--border)'"
-               @mouseenter="showTt($event, 'ETF estimated net flows - local 150-instrument leveraged and inverse universe')"
+               @mouseenter="showTt($event, 'ETF estimated net flows - 160 curated ETFs across 10 categories')"
               @mouseleave="hideTt()"
-               @focus="showTt($event, 'ETF estimated net flows - local 150-instrument leveraged and inverse universe')"
+               @focus="showTt($event, 'ETF estimated net flows - 160 curated ETFs across 10 categories')"
               @blur="hideTt()">
         Fund Flows
       </button>
@@ -2034,7 +2034,7 @@
       <header class="flow-header">
         <div class="flow-header-title-wrap">
           <div style="display:flex;flex-wrap:wrap;gap:0.35rem;align-items:center">
-            <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'scanner' ? 'true' : 'false'" @click="setFlowViewMode('scanner')" x-text="`Cross-ETF leaderboard (${flowCatalog ? flowCatalog.counts.instruments : 150})`"></button>
+            <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'scanner' ? 'true' : 'false'" @click="setFlowViewMode('scanner')" x-text="`Cross-ETF leaderboard (${flowCatalog ? flowCatalog.counts.instruments : 160})`"></button>
             <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'studio' ? 'true' : 'false'" @click="setFlowViewMode('studio')">Instrument studio</button>
             <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'matrix' ? 'true' : 'false'" @click="setFlowViewMode('matrix')">Category &amp; regime matrix</button>
             <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'alpha' ? 'true' : 'false'" @click="setFlowViewMode('alpha')">
@@ -2049,7 +2049,7 @@
         <div class="flow-status-grid" aria-label="Catalog and source status">
           <div class="flow-status-cell">
             <span class="flow-eyebrow">Universe</span>
-            <span class="flow-status-value flow-cyan" x-text="flowCatalog ? `${flowCatalog.counts.instruments} local instruments` : '150 local instruments'"></span>
+            <span class="flow-status-value flow-cyan" x-text="flowCatalog ? `${flowCatalog.counts.instruments} Tracked ETFs` : '160 Tracked ETFs'"></span>
           </div>
           <span class="flow-eyebrow">·</span>
           <div class="flow-status-cell">
@@ -2059,7 +2059,7 @@
           <span class="flow-eyebrow">·</span>
           <div class="flow-status-cell">
             <span class="flow-eyebrow">Coverage</span>
-            <span class="flow-status-value" x-text="flowManifest ? `${flowCoverage.covered} of ${flowCoverage.primary} · ${flowCoverage.pending} pending` : '150 active funds'"></span>
+            <span class="flow-status-value" x-text="flowManifest ? `${flowCoverage.covered} of ${flowCoverage.primary} · ${flowCoverage.pending} pending` : '160 active funds'"></span>
           </div>
           <span class="flow-eyebrow">·</span>
           <div class="flow-status-cell">
@@ -2099,7 +2099,7 @@
             <div class="flow-pulse-card">
               <div class="flow-kpi-label">20D Regime Breadth</div>
               <div class="flow-pulse-value" style="font-size:0.95rem;color:var(--flow-text);font-weight:600" x-text="flowUniversePulse.macroRegimeLabel"></div>
-              <div class="flow-pulse-sub" x-text="`${flowUniversePulse.distributionCount} Distribution · ${flowUniversePulse.balancedCount} Balanced · ${flowUniversePulse.accumulationCount} Accumulation (150 funds)`"></div>
+              <div class="flow-pulse-sub" x-text="`${flowUniversePulse.distributionCount} Distribution · ${flowUniversePulse.balancedCount} Balanced · ${flowUniversePulse.accumulationCount} Accumulation (${flowCatalog ? flowCatalog.counts.instruments : 160} funds)`"></div>
             </div>
           </div>
 
@@ -2108,7 +2108,7 @@
             <div class="flow-outliers-header">
               <div class="flow-outliers-title">
                 <span class="flow-chart-kicker">Extreme flow moves</span>
-                <span class="flow-eyebrow" x-text="`|z| ≥ 1.8σ with material capital flow vs prior 30 sessions across ${flowCatalog?.instruments?.length || 150} funds`">|z| ≥ 1.8σ with material capital flow vs prior 30 sessions across 150 funds</span>
+                <span class="flow-eyebrow" x-text="`|z| ≥ 1.8σ with material capital flow vs prior 30 sessions across ${flowCatalog?.instruments?.length || 160} funds`">|z| ≥ 1.8σ with material capital flow vs prior 30 sessions across 160 funds</span>
               </div>
               <div style="display:flex;align-items:center;gap:0.65rem">
                 <span class="flow-eyebrow" x-text="`showing top 6 conviction shocks`"></span>
@@ -2138,11 +2138,11 @@
         </div>
       </div>
 
-      <!-- Compact Terminal Command Bar (Search + Filters + 24 Featured Chips, Scoped to Studio) -->
+      <!-- Compact Terminal Command Bar (Search + Scope Filter, Scoped to Studio) -->
       <div class="flow-catalog" x-show="!flowInitialLoading && flowCatalog && (flowViewMode === 'studio' || flowShowCatalogDrawer)">
         <div class="flow-command-row">
           <div class="flow-search-wrap">
-            <label class="flow-field-label" for="flow-catalog-search">Search the curated catalog</label>
+            <label class="flow-field-label" for="flow-catalog-search">Find instrument</label>
             <input id="flow-catalog-search"
                    class="flow-input"
                    type="search"
@@ -2161,9 +2161,9 @@
                    @keydown.up.prevent="flowSearchUp()"
                    @keydown.enter.prevent="flowSearchEnter()"
                    @keydown.escape="flowCloseResults()">
-            <button class="flow-clear" type="button" x-show="flowSearchQuery" @click="clearFlowSearch()" aria-label="Clear catalog search">×</button>
-            <div id="flow-catalog-results" class="flow-results" role="listbox" aria-label="Curated catalog results" x-show="flowSearchOpen" @click.outside="flowCloseResults()">
-              <div class="flow-results-header" x-text="`${flowSearchResults.length} catalog matches · use arrow keys and Enter`"></div>
+            <button class="flow-clear" type="button" x-show="flowSearchQuery" @click="clearFlowSearch()" aria-label="Clear search">×</button>
+            <div id="flow-catalog-results" class="flow-results" role="listbox" aria-label="Universe search results" x-show="flowSearchOpen" @click.outside="flowCloseResults()">
+              <div class="flow-results-header" x-text="`${flowSearchResults.length} matches · use arrow keys and Enter`"></div>
               <template x-for="(result, index) in flowSearchResults" :key="result.item.ticker">
                 <div class="flow-result"
                      role="option"
@@ -2178,46 +2178,37 @@
                   <span class="flow-badge" :data-state="result.state" x-text="flowStatusLabelForTicker(result.item.ticker)"></span>
                 </div>
               </template>
-              <div class="flow-empty" x-show="!flowSearchResults.length && flowSearchQuery">No curated catalog rows match this search.</div>
-              <div class="flow-empty" x-show="!flowSearchResults.length && !flowSearchQuery">No catalog rows match the active filters. <button class="flow-button" type="button" @click="flowResetFilters()">Reset filters</button></div>
+              <div class="flow-empty" x-show="!flowSearchResults.length && flowSearchQuery">No instruments match this search.</div>
+              <div class="flow-empty" x-show="!flowSearchResults.length && !flowSearchQuery">No instruments match the active scope. <button class="flow-button" type="button" @click="flowResetFilters()">Reset</button></div>
             </div>
           </div>
 
-          <div class="flow-filters" aria-label="Catalog filters">
-            <label>
-              <span class="flow-field-label">Catalog tier</span>
-              <select class="flow-select" x-model="flowTierFilter">
-                <option value="all">150 local instruments</option>
-                <option value="featured">24 featured instruments</option>
-                <option value="primary">All 150 instruments</option>
-              </select>
-            </label>
-            <label>
-              <span class="flow-field-label">Instrument group</span>
-              <select class="flow-select" x-model="flowCategoryFilter">
-                <option value="all">All groups</option>
-                <template x-for="category in flowCategories" :key="category">
-                  <option :value="category" x-text="titleCaseCategory(category)"></option>
-                </template>
-              </select>
-            </label>
-            <label>
-              <span class="flow-field-label">History status</span>
-              <select class="flow-select" x-model="flowStatusFilter">
-                <option value="all">All statuses</option>
-                <option value="available">Available</option>
-                <option value="legacy">Legacy</option>
-                <option value="stale">Stale</option>
-                <option value="pending">Pending</option>
-                <option value="unavailable">Unavailable</option>
-              </select>
-            </label>
+          <div class="flow-scope-bar" aria-label="Universe scope">
+            <span class="flow-field-label" style="margin-bottom:0">Scope:</span>
+            <div style="display:flex;align-items:center;gap:0.4rem">
+              <button class="flow-chip" type="button"
+                      :aria-pressed="flowTierFilter === 'all' ? 'true' : 'false'"
+                      @click="flowTierFilter = 'all'">
+                <span>All (<span x-text="flowCatalog ? flowCatalog.counts.instruments : 160">160</span>)</span>
+              </button>
+              <button class="flow-chip" type="button"
+                      :aria-pressed="flowTierFilter === 'featured' ? 'true' : 'false'"
+                      @click="flowTierFilter = 'featured'">
+                <span>Featured (24)</span>
+              </button>
+              <button class="flow-chip" type="button"
+                      x-show="flowTierFilter !== 'all' || flowCategoryFilter !== 'all' || flowSearchQuery"
+                      @click="flowResetFilters(); flowSearchQuery = ''"
+                      style="color:var(--flow-amber)">
+                <span>Reset</span>
+              </button>
+            </div>
           </div>
         </div>
 
         <div class="flow-category-bar" x-show="flowViewMode === 'studio'">
           <div class="flow-category-tabs-wrap">
-            <div class="flow-category-pills" role="tablist" aria-label="150 ETF Categories">
+            <div class="flow-category-pills" role="tablist" aria-label="ETF Categories">
               <template x-for="tab in flowCategoryTabs" :key="tab.key">
                 <button class="flow-category-pill"
                         type="button"
@@ -2232,7 +2223,7 @@
               <span class="flow-eyebrow" x-text="`${flowActiveCategoryInstruments.length} instruments`"></span>
               <button class="flow-chip" type="button" @click="flowUniverseDrawerOpen = !flowUniverseDrawerOpen">
                 <svg class="flow-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                <span x-text="flowUniverseDrawerOpen ? 'Close Universe' : `Grouped ${flowCatalog ? flowCatalog.counts.instruments : 150} Universe`"></span>
+                <span x-text="flowUniverseDrawerOpen ? 'Close Universe' : `Grouped ${flowCatalog ? flowCatalog.counts.instruments : 160} Universe`"></span>
               </button>
             </div>
           </div>
@@ -2250,10 +2241,10 @@
             </template>
           </div>
 
-          <!-- Collapsible 150 Universe Grouped Drawer -->
+          <!-- Collapsible Universe Grouped Drawer -->
           <div class="flow-universe-drawer" x-show="flowUniverseDrawerOpen" x-transition>
             <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:0.4rem;border-bottom:1px solid rgba(34,211,238,0.2)">
-              <h3 style="color:var(--flow-cyan);font-size:0.8125rem">Full <span x-text="`${flowCatalog ? flowCatalog.counts.instruments : 150}-Instrument`">150-Instrument</span> Leveraged &amp; Inverse Universe (Grouped by Category)</h3>
+              <h3 style="color:var(--flow-cyan);font-size:0.8125rem">Full <span x-text="`${flowCatalog ? flowCatalog.counts.instruments : 160}-Instrument`">160-Instrument</span> Leveraged &amp; Inverse Universe (Grouped by Category)</h3>
               <button class="flow-chip" type="button" @click="flowUniverseDrawerOpen = false">Close [×]</button>
             </div>
             <div style="display:grid;gap:0.85rem">
@@ -2298,7 +2289,7 @@
       <template x-if="!flowInitialLoading && flowCatalog && !flowCatalogError">
         <div class="flow-main">
 
-          <!-- ─── VIEW 2: CROSS-ETF LEADERBOARD (150 INSTRUMENTS) ─── -->
+          <!-- ─── VIEW 2: CROSS-ETF LEADERBOARD (160 INSTRUMENTS) ─── -->
           <div class="flow-panel-card" x-show="flowViewMode === 'scanner'">
             <!-- Top Movers Ribbon (Biggest Inflows & Outflows) -->
             <div class="flow-top-movers-grid" x-show="flowTopMovers.inflows.length || flowTopMovers.outflows.length">
@@ -2340,10 +2331,10 @@
                     <h4 style="color:var(--flow-cyan);font-size:0.8125rem;text-transform:uppercase;letter-spacing:0.04em;margin:0">Price Return × Flow Z-Score Distribution Map</h4>
                     <span class="flow-eyebrow" x-text="`As of ${flowCoverage.sourceAsOf || 'Latest session'} · ${flowScatterCounts.all} ETFs`"></span>
                   </div>
-                  <p class="flow-chart-description" style="font-size:0.6875rem;margin:0.25rem 0 0 0">20-session NAV return versus 1D flow z-score across 150 funds. Hover points for details, click any dot to open Studio.</p>
+                  <p class="flow-chart-description" style="font-size:0.6875rem;margin:0.25rem 0 0 0">20-session NAV return versus 1D flow z-score across <span x-text="flowCatalog ? flowCatalog.counts.instruments : 160">160</span> funds. Hover points for details, click any dot to open Studio.</p>
                 </div>
                 <div style="display:flex;flex-wrap:wrap;gap:0.25rem;align-items:center">
-                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'all' ? 'true' : 'false'" @click="flowScatterFilter = 'all'">All (<span x-text="flowScatterCounts.all">150</span>)</button>
+                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'all' ? 'true' : 'false'" @click="flowScatterFilter = 'all'">All (<span x-text="flowScatterCounts.all">160</span>)</button>
                   <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'momentum' ? 'true' : 'false'" @click="flowScatterFilter = 'momentum'">Momentum (<span x-text="flowScatterCounts.momentum">17</span>)</button>
                   <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'dipAccum' ? 'true' : 'false'" @click="flowScatterFilter = 'dipAccum'">Dip Accum (<span x-text="flowScatterCounts.dipAccum">18</span>)</button>
                   <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'washout' ? 'true' : 'false'" @click="flowScatterFilter = 'washout'">Washout (<span x-text="flowScatterCounts.washout">11</span>)</button>
@@ -2362,7 +2353,7 @@
                 <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:0.5rem;margin-bottom:0.5rem">
                   <div style="display:flex;align-items:center;gap:0.5rem">
                     <span class="flow-eyebrow" style="color:var(--flow-cyan)">● Active Trough &amp; Peak Scanner</span>
-                    <span class="flow-support" style="font-size:0.6875rem">(Automated ongoing classification across <span x-text="flowPrimaryInstruments.length">150</span> instruments)</span>
+                    <span class="flow-support" style="font-size:0.6875rem">(Automated ongoing classification across <span x-text="flowPrimaryInstruments.length">160</span> instruments)</span>
                   </div>
                   <span class="flow-eyebrow" x-text="`${flowActiveCycleAnomalies.totalAnomalies} Active Regimes Flagged`"></span>
                 </div>
@@ -2485,7 +2476,7 @@
             <div class="flow-chart-heading">
               <div>
                 <p class="flow-chart-kicker">Cross-ETF Flow Scanner</p>
-                <h3><span x-text="`${flowCatalog ? flowCatalog.counts.instruments : 150}-Instrument`">150-Instrument</span> Multi-Horizon Net Flow Leaderboard</h3>
+                <h3><span x-text="`${flowCatalog ? flowCatalog.counts.instruments : 160}-Instrument`">160-Instrument</span> Multi-Horizon Net Flow Leaderboard</h3>
                 <p class="flow-chart-description">Click any column header to sort or click any ETF row to open its full historical studio. All figures are source-reported aggregate net flows.</p>
               </div>
               <div style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center">
@@ -2616,7 +2607,7 @@
                 <template x-if="flowCategoryUniverseTotals">
                   <tfoot>
                     <tr style="border-top:2px solid var(--flow-line);background:rgba(255,255,255,0.03);font-weight:600">
-                      <td style="color:var(--flow-cyan);font-weight:700">Universe Total (9 Categories)</td>
+                      <td style="color:var(--flow-cyan);font-weight:700"><span x-text="`Universe Total (${flowCategorySummaries.length} Categories)`">Universe Total (10 Categories)</span></td>
                       <td style="text-align:right;font-family:ui-monospace,monospace" x-text="flowCategoryUniverseTotals.count"></td>
                       <td style="text-align:right;font-family:ui-monospace,monospace" x-text="`$${(flowCategoryUniverseTotals.aum_m / 1000).toFixed(1)}B`"></td>
                       <td style="text-align:right;font-family:ui-monospace,monospace" :class="flowCategoryUniverseTotals.flow_1d > 0 ? 'flow-positive' : flowCategoryUniverseTotals.flow_1d < 0 ? 'flow-negative' : ''" x-text="formatMoney(flowCategoryUniverseTotals.flow_1d)"></td>
@@ -2631,7 +2622,7 @@
                         <span style="color:var(--flow-subtle)"> · </span>
                         <span class="flow-negative font-medium" x-text="`${flowCategoryUniverseTotals.distribution} Dist`"></span>
                       </td>
-                      <td style="color:var(--flow-subtle);font-size:0.6875rem">150 Tracked Funds</td>
+                      <td style="color:var(--flow-subtle);font-size:0.6875rem"><span x-text="`${flowCatalog ? flowCatalog.counts.instruments : 160} Tracked Funds`">160 Tracked Funds</span></td>
                     </tr>
                   </tfoot>
                 </template>
@@ -2776,7 +2767,7 @@
               <div>
                 <p class="flow-chart-kicker">Multi-Factor Quantitative Systematic Engine</p>
                 <h3>Systematic Strategy Signals &amp; Conviction Basket</h3>
-                <p class="flow-chart-description">Active quantitative strategy signals across all <span x-text="flowCatalog ? flowCatalog.counts.instruments : 150">150</span> leveraged and inverse ETFs. Derived from split-adjusted historical flow event-studies, empirical z-score shocks, and bull/bear flow transfers.</p>
+                <p class="flow-chart-description">Active quantitative strategy signals across all <span x-text="flowCatalog ? flowCatalog.counts.instruments : 160">160</span> leveraged and inverse ETFs. Derived from split-adjusted historical flow event-studies, empirical z-score shocks, and bull/bear flow transfers.</p>
               </div>
               <div>
                 <span class="flow-eyebrow" style="color:var(--flow-cyan)">Rebalanced Fri 2026-10-02 · Weekly 5-Day Hold · Next: 2026-10-09</span>
@@ -2908,7 +2899,7 @@
                   <span>·</span>
                   <span x-text="flowData?.sourceAsOf ? `Source as of ${flowData.sourceAsOf}` : 'Source date unavailable'"></span>
                   <span>·</span>
-                  <span x-text="flowData?.sourceLabel || 'Local dataset · Trackinsight-reported historical fields'"></span>
+                  <span x-text="flowData?.sourceLabel || 'Authoritative Trackinsight historical dataset'"></span>
                 </div>
               </div>
               <div class="flow-instrument-right">
@@ -3308,8 +3299,8 @@
                 <p>ETF estimated net flow is the source-reported aggregate net flow series stored for the selected fund. The interface does not infer or label investor categories.</p>
                 <p>The selected-window cumulative view begins at a zero baseline before the first selected session and sums available daily values. Missing daily values are not converted to zero.</p>
                 <p>The trailing 10-session percentile uses complete windows only. Ties receive the midpoint of their rank positions. The prior-only z-score uses up to 30 preceding numeric sessions and excludes the current session from its baseline.</p>
-                <p>Pending means the local static file is unavailable. Stale means the local source date exceeds the current seven-day display policy. Unavailable means the local artifact cannot be loaded or its identity does not match the catalog. Empty means the file has no usable observations. No missing observation is converted to zero.</p>
-                <p>The source is the local authoritative dataset. Historical fields are reported by Trackinsight in the stored CSV/XLSX sources; the browser does not perform a live fetch or trigger external ingestion.</p>
+                <p>Pending means the static file is unavailable. Stale means the source date exceeds the current seven-day display policy. Unavailable means the artifact cannot be loaded or its identity does not match the catalog. Empty means the file has no usable observations. No missing observation is converted to zero.</p>
+                <p>The source is the authoritative dataset. Historical fields are reported by Trackinsight in the stored CSV/XLSX sources; the browser does not perform a live fetch or trigger external ingestion.</p>
               </div>
             </details>
           </div>

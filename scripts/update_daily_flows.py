@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Stealthy incremental daily updater for the 145-instrument ETF flow dataset.
+"""Stealthy incremental daily updater for the 160-instrument ETF flow dataset.
 
 Design principles for zero-ban, low-footprint operation:
 1. Real Chromium session warmup on Trackinsight + batched POST requests to
    /search-api/snapshot/get_snapshots (10 funds per batch -> at most 15 HTTP
-   requests for the entire 145-ETF universe, or 1 probe request when no new
+   requests for the entire 160-ETF universe, or 1 probe request when no new
    trading session has settled).
 2. Incremental tail-only window (default 21 calendar days) — requests ~15 rows
    per ticker instead of 10-year backfills.
@@ -548,7 +548,7 @@ def update_daily_flows(
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Stealthy incremental daily updater for 145-ETF flow catalog.")
+    parser = argparse.ArgumentParser(description="Stealthy incremental daily updater for 160-ETF flow catalog.")
     parser.add_argument("--lookback-days", type=int, default=21, help="Calendar days of tail overlap to query (default: 21)")
     parser.add_argument("--force-all", action="store_true", help="Query all 145 tickers even if lead probe has not advanced")
     parser.add_argument("--dry-run", action="store_true", help="Check upstream without writing files")

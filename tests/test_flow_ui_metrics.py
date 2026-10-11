@@ -78,13 +78,13 @@ def test_search_scopes_cover_all_primary_and_featured_rows_without_watch_tier():
     result = run_metrics(
         "(()=>{const catalog=require('./docs/data/flows/catalog.json');const app=m.flowResearchApp();app.flowCatalog=catalog;app._flowEntryMap=Object.fromEntries(app.flowAllEntries.map(item=>[item.ticker,item]));app.flowResolvedStates=Object.fromEntries(app.flowAllEntries.map(item=>[item.ticker,'pending']));app.flowManifest={schema_version:2,etfs:{}};const primary=app.flowSearchResults.map(result=>result.item);app.flowTierFilter='featured';const featured=app.flowSearchResults.map(result=>result.item);app.flowTierFilter='watch';const watch=app.flowSearchResults.map(result=>result.item);return {defaultCount:primary.length,defaultPrimary:primary.every(item=>item.tier==='primary'),featuredCount:featured.length,featuredPrimary:featured.every(item=>item.tier==='primary'&&item.featured),watchTiers:[...new Set(watch.map(item=>item.tier))],hasWatchTierKey:'watch_tier' in catalog,counts:catalog.counts};})()"
     )
-    assert result["defaultCount"] == 150
+    assert result["defaultCount"] == 160
     assert result["defaultPrimary"] is True
     assert result["featuredCount"] == 24
     assert result["featuredPrimary"] is True
     assert result["watchTiers"] == ["primary"]
     assert result["hasWatchTierKey"] is False
-    assert result["counts"] == {"featured": 24, "instruments": 150, "rows": 191540}
+    assert result["counts"] == {"featured": 24, "instruments": 160, "rows": 213308}
 
 
 def test_history_reconciliation_updates_flow_state_and_clears_missing_selection():
@@ -189,9 +189,9 @@ def test_category_heatmap_relative_scaling_and_universe_totals():
     result = run_metrics(
         "(()=>{const app=m.flowResearchApp();const cat=require('./docs/data/flows/catalog.json');app.flowCatalog=cat;const rows=app.flowCategoryHeatmapRows;const totals=app.flowCategoryUniverseTotals;return {rowCount:rows.length,hasStyles:rows.every(r=>r.style1d&&r.style20d&&r.styleCum),totalsCount:totals.count,totalsAum:totals.aum_m>0,totals1d:typeof totals.flow_1d==='number',totals20d:typeof totals.flow_20d==='number'};})()"
     )
-    assert result["rowCount"] == 9
+    assert result["rowCount"] == 10
     assert result["hasStyles"] is True
-    assert result["totalsCount"] == 150
+    assert result["totalsCount"] == 160
     assert result["totalsAum"] is True
     assert result["totals1d"] is True
     assert result["totals20d"] is True

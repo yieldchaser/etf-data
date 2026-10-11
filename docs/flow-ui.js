@@ -136,7 +136,8 @@
       .replace('Sector Specific Leveraged (Bull)', 'Sector Specific (Bull)')
       .replace('Commodities, Energy & Volatility (Bull)', 'Commodities & Vol (Bull)')
       .replace('Fixed Income, Currencies & Crypto (Bull)', 'Fixed Income & Bonds (Bull)')
-      .replace('Selective Benchmark Hedging / Tactical Shorts', 'Tactical Benchmark Shorts');
+      .replace('Selective Benchmark Hedging / Tactical Shorts', 'Tactical Benchmark Shorts')
+      .replace('Core Benchmarks, Factor Rotation & High-Beta Anchors', 'Core Anchors & Factors');
   }
 
   function formatMoney(value, options) {
@@ -907,7 +908,7 @@
         for (const item of this.flowPrimaryInstruments) {
           counts[item.category] = (counts[item.category] || 0) + 1;
         }
-        const total = this.flowPrimaryInstruments.length || 150;
+        const total = this.flowPrimaryInstruments.length || 160;
         return [
           { key: 'all', label: `All (${total})`, count: total, title: `All ${total} Leveraged & Inverse ETFs` },
           { key: 'featured', label: `Featured (${this.flowFeaturedInstruments.length || 24})`, count: this.flowFeaturedInstruments.length, title: '24 Featured Anchor ETFs' },
@@ -919,7 +920,8 @@
           { key: 'commodities', label: `Commodities & Vol (${counts['6. Commodities, Energy & Volatility (Bull)'] || 8})`, raw: '6. Commodities, Energy & Volatility (Bull)', count: counts['6. Commodities, Energy & Volatility (Bull)'] || 8 },
           { key: 'broad_index', label: `Broad Index (${counts['1. Broad Market Equity Index (Bull)'] || 8})`, raw: '1. Broad Market Equity Index (Bull)', count: counts['1. Broad Market Equity Index (Bull)'] || 8 },
           { key: 'rates_fixed', label: `Rates & Crypto (${counts['7. Fixed Income, Currencies & Crypto (Bull)'] || 9})`, raw: '7. Fixed Income, Currencies & Crypto (Bull)', count: counts['7. Fixed Income, Currencies & Crypto (Bull)'] || 9 },
-          { key: 'intl', label: `International (${counts['8. International / Country (Bull)'] || 5})`, raw: '8. International / Country (Bull)', count: counts['8. International / Country (Bull)'] || 5 }
+          { key: 'intl', label: `International (${counts['8. International / Country (Bull)'] || 5})`, raw: '8. International / Country (Bull)', count: counts['8. International / Country (Bull)'] || 5 },
+          { key: 'core_anchors', label: `Core Anchors & Factors (${counts['10. Core Benchmarks, Factor Rotation & High-Beta Anchors'] || 10})`, raw: '10. Core Benchmarks, Factor Rotation & High-Beta Anchors', count: counts['10. Core Benchmarks, Factor Rotation & High-Beta Anchors'] || 10 }
         ];
       },
 
@@ -1415,7 +1417,7 @@
         const chartW = width - pad.left - pad.right;
         const chartH = height - pad.top - pad.bottom;
 
-        // Dynamic, un-clamped domain bounds ensuring all 150 points are positioned accurately
+        // Dynamic, un-clamped domain bounds ensuring all 160 points are positioned accurately
         const rets = items.map(it => finiteNumber(it.nav_return_20d_pct) || 0);
         const zs = items.map(it => finiteNumber(it.flow_zscore) || 0);
         const maxAbsRetRaw = rets.length ? Math.max(30, ...rets.map(Math.abs)) : 30;
@@ -2402,10 +2404,10 @@
         if (this.flowCatalogError) return 'Catalog unavailable';
         if (this.flowManifestError) return 'Coverage manifest unavailable';
         const manifest = this.flowManifest;
-        if (!manifest) return 'Local coverage pending';
-        if (manifest.complete === true && manifest.status === 'complete') return 'Complete local historical dataset';
-        if (manifest.status === 'stale' || manifest.fresh === false) return 'Stale local dataset';
-        return 'Incomplete local dataset';
+        if (!manifest) return 'Coverage pending';
+        if (manifest.complete === true && manifest.status === 'complete') return 'Complete historical dataset';
+        if (manifest.status === 'stale' || manifest.fresh === false) return 'Stale dataset';
+        return 'Incomplete dataset';
       },
 
       get flowCoverage() {
@@ -4000,8 +4002,8 @@
               const primary = Array.isArray(payload?.instruments) ? payload.instruments : [];
               const featured = primary.filter(item => item?.featured).length;
               const tickers = new Set(primary.map(item => String(item?.ticker || '').toUpperCase()));
-              if (primary.length !== 150 || featured !== 24 || tickers.size !== 150) {
-                throw new Error('Local catalog export failed its 150-instrument, 24-featured integrity checks.');
+              if (primary.length !== 160 || featured !== 24 || tickers.size !== 160) {
+                throw new Error('Local catalog export failed its 160-instrument, 24-featured integrity checks.');
               }
               return payload;
             });
@@ -4010,8 +4012,8 @@
               if (!response.ok) throw new Error(`Local coverage manifest request returned ${response.status}.`);
               const payload = await response.json();
               const entries = payload?.etfs && typeof payload.etfs === 'object' ? payload.etfs : {};
-              if (payload?.complete !== true || payload?.status !== 'complete' || payload?.counts?.instruments !== 150 || Object.keys(entries).length !== 150 || payload?.source?.network_fetch !== false) {
-                throw new Error('Local coverage manifest failed its 150-instrument completeness checks.');
+              if (payload?.complete !== true || payload?.status !== 'complete' || payload?.counts?.instruments !== 160 || Object.keys(entries).length !== 160 || payload?.source?.network_fetch !== false) {
+                throw new Error('Local coverage manifest failed its 160-instrument completeness checks.');
               }
               return payload;
             });
@@ -4307,7 +4309,7 @@
           this.flowTicker = normalized;
           this.flowData = null;
           this.flowDataState = 'unavailable';
-          this.flowDataError = 'This ticker is not in the 150-instrument local leveraged/inverse catalog.';
+          this.flowDataError = 'This ticker is not in the 160-instrument local catalog.';
           this._flowMetricCacheKey = '';
           this._flowMetricCache = null;
           if (settings.writeUrl !== false) this._flowWriteUrl(Boolean(settings.push));

@@ -1,12 +1,12 @@
 # Curated Leveraged & Tactical ETF Universe — Fund Flow Tracking
 
-**Total Instruments:** 150 Curated Leveraged ETFs across 9 professional categories.
+**Total Instruments:** 160 Curated ETFs across 10 professional categories.
 
 > **Selection Thesis & Architecture:**
 > 1. **Aggressively Long-Biased (136 Bull vs 14 Tactical Short Anchors)**: Recognizes the multi-decade structural upward drift of US equity markets. Pruned out decaying low-conviction inverse ETFs while preserving high-conviction directional leaders.
 > 2. **Comprehensive AI, Semiconductor & Tech Hardware Coverage**: Full coverage of the AI hardware supply chain from foundries, memory/storage, and capital equipment to optical networking and power semiconductors (**PLTU/PTIR** Palantir, **NVDL/NVDX/NVDU** NVIDIA, **MUU** Micron, **AVGX** Broadcom, **RKLX** Rocket Lab, **SOFX** SoFi, **APPX** AppLovin, **METU** Meta, **AMZU** Amazon, **MSFU** Microsoft, **GOOX** Google, **LITX** Lumentum, **COHX** Coherent, **TSLL** Tesla, **MSTU/MSTX/SMST** MicroStrategy, **CONL** Coinbase).
-> 3. **Selective Hedging Anchors Only (14 ETFs)**: Retained only the highest-liquidity benchmark shorts for tracking institutional panic hedging and capitulation bottoms (SQQQ, SPXS, TZA, SOXS, SCO, TMV, YANG, NVD, TSLZ, MSTZ, PLTD, TSLQ, NVDS).
-> 4. **Historical Local Source**: The 150 rows below are the authoritative local leveraged/inverse universe. Historical flow, NAV, and derived fields are Trackinsight-reported values already stored in the local dataset; this document does not assert a live fetch or current API status.
+> 3. **Selective Hedging Anchors Only (14 ETFs)**: Retained only the highest-liquidity benchmark shorts for tracking large-scale panic hedging and extreme market bottoms (SQQQ, SPXS, TZA, SOXS, SCO, TMV, YANG, NVD, TSLZ, MSTZ, PLTD, TSLQ, NVDS).
+> 4. **Historical Local Source**: The 160 rows below are the authoritative local universe. Historical flow, NAV, and derived fields are Trackinsight-reported values already stored in the local dataset; this document does not assert a live fetch or current API status.
 
 ---
 
@@ -23,12 +23,13 @@
 | 7 | 7. Fixed Income, Currencies & Crypto (Bull) | 7 | Bull (+2x / +3x) | Bitcoin, Ether, 20+ Year Treasury, 7-10 Year Treasury... |
 | 8 | 8. International / Country (Bull) | 8 | Bull (+2x / +3x) | Brazil, China 50, India, South Korea, Emerging Markets... |
 | 9 | 9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only) | 14 | Tactical Short | NASDAQ-100, Russell 2000, Semiconductors, Palantir Bear, Tesla Bear, NVIDIA Bear... |
+| 10 | 10. Core Benchmarks, Factor Rotation & High-Beta Anchors | 10 | Core / Factor (1x) | QQQM, SPMO, COWZ, SPHQ, SMH, ARKK, XBI, IBIT, TLT, MAGS... |
 
 ---
 
 ## Featured 24
 
-The Fund Flows interface uses this explicit, deterministic 24-instrument subset drawn only from the 150 local leveraged/inverse rows above:
+The Fund Flows interface uses this explicit, deterministic 24-instrument subset drawn only from the 160 local rows above:
 
 `TQQQ`, `QLD`, `UPRO`, `SPXL`, `SOXL`, `TECL`, `USD`, `DFEN`, `FAS`, `ERX`, `CURE`, `NVDL`, `NVDX`, `LITX`, `COHX`, `PTIR`, `TSLL`, `MSTU`, `CONL`, `UGL`, `NUGT`, `TMF`, `YINN`, `SQQQ`
 
@@ -231,3 +232,18 @@ There is no long-only catalog, watch tier, or missing-underlying watchlist in th
 | **TZA** | `TZA` | -3x | Direxion Daily Small Cap Bear 3x Shares ETF - USD | Direxion | Russell 2000 (Small-Cap Risk-Off) | $249.1M | 0.99% |
 | **YANG** | `YANG` | -3x | Direxion Daily China Bear 3x Shares ETF | Direxion | China 50 (Geopolitical / China Risk) | $103.5M | 1.03% |
 
+
+## 10. Core Benchmarks, Factor Rotation & High-Beta Anchors (10)
+
+| Ticker | Trackinsight Key | Leverage | Fund Name | Issuer | Underlying | AUM ($M) | TER |
+|---|---|---|---|---|---|---|---|
+| **ARKK** | `ARKK` | 1x | ARK Innovation ETF | ARK Invest | Disruptive Innovation Strategy | $9,590.0M | 0.75% |
+| **COWZ** | `BATS:COWZ` | 1x | Pacer US Cash Cows 100 ETF | PACER ETFs | Pacer US Cash Cows 100 Index | $19,240.0M | 0.49% |
+| **IBIT** | `XNMS:IBIT` | 1x | iShares Bitcoin Trust ETF | iShares | Bitcoin (Spot) | $67,910.0M | 0.25% |
+| **MAGS** | `BATS:MAGS` | 1x | Roundhill Magnificent Seven ETF | Roundhill Investments | Magnificent Seven Index | $4,952.9M | 0.29% |
+| **QQQM** | `QQQM` | 1x | Invesco NASDAQ 100 ETF | Invesco | NASDAQ-100 Index | $108,630.0M | 0.15% |
+| **SMH** | `SMH` | 1x | VanEck Semiconductor ETF | VanEck | MVIS US Listed Semiconductor 25 Index | $72,810.0M | 0.35% |
+| **SPHQ** | `SPHQ` | 1x | Invesco S&P 500 Quality ETF | Invesco | S&P 500 Quality Index | $18,820.0M | 0.15% |
+| **SPMO** | `SPMO` | 1x | Invesco S&P 500 Momentum ETF | Invesco | S&P 500 Momentum Index | $23,600.0M | 0.13% |
+| **TLT** | `TLT` | 1x | iShares 20+ Year Treasury Bond ETF | iShares | ICE U.S. Treasury 20+ Year Bond Index | $46,930.0M | 0.15% |
+| **XBI** | `XBI` | 1x | State Street SPDR S&P Biotech ETF | State Street | S&P Biotechnology Select Industry Index | $10,440.0M | 0.35% |

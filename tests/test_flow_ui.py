@@ -24,14 +24,14 @@ def test_exported_catalog_matches_local_dataset_cardinality():
     exported = json.loads(CATALOG_JSON.read_text(encoding="utf-8"))
     assert exported["schema_version"] == 1
     assert exported["catalog_version"] == "local-authoritative-117-v1"
-    assert exported["counts"] == {"featured": 24, "instruments": 150, "rows": 191540}
+    assert exported["counts"] == {"featured": 24, "instruments": 160, "rows": 213308}
     assert "watch_tier" not in exported
     assert exported["source"]["network_fetch"] is False
     assert exported["source"]["name"] == "Local authoritative dataset"
     assert exported["source"]["provider"] == "Trackinsight"
     assert exported["source"]["mode"] == "historical_local"
-    assert len(exported["instruments"]) == 150
-    assert len({row["ticker"] for row in exported["instruments"]}) == 150
+    assert len(exported["instruments"]) == 160
+    assert len({row["ticker"] for row in exported["instruments"]}) == 160
     assert len(exported["featured_tickers"]) == 24
     featured = {row["ticker"] for row in exported["instruments"] if row["featured"]}
     assert featured == set(exported["featured_tickers"])
@@ -39,7 +39,7 @@ def test_exported_catalog_matches_local_dataset_cardinality():
     assert all(row["source_provider"] == "Trackinsight" for row in exported["instruments"])
     assert all(row["source_mode"] == "historical_local" for row in exported["instruments"])
     assert "watch" not in exported["category_counts"]
-    assert sum(row["row_count"] for row in exported["instruments"]) == 191540
+    assert sum(row["row_count"] for row in exported["instruments"]) == 213308
 
 
 def test_manifest_agrees_with_catalog_and_forbids_network_fetch():
@@ -48,9 +48,9 @@ def test_manifest_agrees_with_catalog_and_forbids_network_fetch():
     assert manifest["schema_version"] == 2
     assert manifest["complete"] is True
     assert manifest["status"] == "complete"
-    assert manifest["counts"] == {"featured": 24, "files": 150, "instruments": 150, "rows": 191540}
+    assert manifest["counts"] == {"featured": 24, "files": 160, "instruments": 160, "rows": 213308}
     assert manifest["source"]["network_fetch"] is False
-    assert len(manifest["etfs"]) == 150
+    assert len(manifest["etfs"]) == 160
     assert manifest["counts"]["instruments"] == catalog["counts"]["instruments"]
     assert manifest["counts"]["rows"] == catalog["counts"]["rows"]
     assert manifest["counts"]["featured"] == catalog["counts"]["featured"]
@@ -62,9 +62,9 @@ def test_flow_ui_uses_only_the_generated_catalog():
     javascript = FLOW_JS.read_text(encoding="utf-8")
     source = f"{MARKETS_HTML.read_text(encoding='utf-8')}\n{javascript}"
     assert "data/flows/catalog.json" in source
-    assert "primary.length !== 150" in javascript
+    assert "primary.length !== 160" in javascript
     assert "featured !== 24" in javascript
-    assert "tickers.size !== 150" in javascript
+    assert "tickers.size !== 160" in javascript
     assert "watchTier" not in javascript
     assert "watch_tier" not in source
     assert "etf_search_index" not in source
@@ -201,7 +201,7 @@ def test_active_pages_no_longer_claim_uncurated_15k_flows():
         assert "Institutional capital flows" not in text
     index = (ROOT / "docs" / "index.html").read_text(encoding="utf-8")
     assert "markets.html?tab=flows" in index
-    assert "150 local leveraged and inverse instruments" in index
+    assert "160 curated ETFs" in index
     assert "15,000" not in index
     assert "15K" not in index
 
@@ -277,10 +277,9 @@ def test_search_and_percentile_ui_expose_complete_primary_scope_and_both_axes():
     html = MARKETS_HTML.read_text(encoding="utf-8")
     javascript = FLOW_JS.read_text(encoding="utf-8")
     active = html[html.index('<section class="flow-research"'):html.index("<!-- FOOTER -->")]
-    assert '<option value="all">150 local instruments</option>' in active
-    assert '<option value="featured">24 featured instruments</option>' in active
-    assert '<option value="primary">All 150 instruments</option>' in active
-    assert '<option value="watch"' not in active
+    assert "flowTierFilter === 'all'" in active
+    assert "flowTierFilter === 'featured'" in active
+    assert "Featured (24)" in active
     assert "watch_tier" not in active
     assert "results.slice(0, 24)" not in javascript
     assert "else if (!item.featured" not in javascript
@@ -313,9 +312,9 @@ def test_flow_ui_node_runtime_bootstrap_succeeds():
       await app._flowBootstrap();
       if (app.flowInitialLoading !== false) throw new Error('flowInitialLoading must be false after bootstrap');
       if (app.flowCatalogError) throw new Error('flowCatalogError: ' + app.flowCatalogError);
-      if (!app.flowCatalog || app.flowCatalog.instruments.length !== 150) throw new Error('catalog invalid');
+      if (!app.flowCatalog || app.flowCatalog.instruments.length !== 160) throw new Error('catalog invalid');
       const counts = app.flowScatterCounts;
-      if (!counts || counts.all !== 150) throw new Error('scatter counts invalid');
+      if (!counts || counts.all !== 160) throw new Error('scatter counts invalid');
       const anomalies = app.flowActiveCycleAnomalies;
       if (!anomalies || typeof anomalies.totalAnomalies !== 'number') throw new Error('anomalies invalid');
     })().catch(e => { console.error(e); process.exit(1); });
