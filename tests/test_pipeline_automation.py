@@ -397,3 +397,32 @@ class TestJsonShapeValidation:
         assert asof_date >= cutoff, (
             f"asof={asof} is more than 6 months old — data may be stale"
         )
+
+
+class TestAtomicWrites:
+    def test_atomic_write_preserves_original_on_failure(self, tmp_path):
+        from conviction.build import _write_json_atomic
+        target = tmp_path / "important.json"
+        target.write_text('{"original": true}', encoding="utf-8")
+
+        # Mock os.replace to fail
+        import os
+        orig_replace = os.replace
+        def mock_replace(src, dst):
+            raise OSError("Disk write failed")
+
+        try:
+            os.replace = mock_replace
+            with pytest.raises(OSError):
+                _write_json_atomic(target, '{"corrupted": true}')
+            assert target.read_text(encoding="utf-8") == '{"original": true}'
+        finally:
+            os.replace = orig_replace
+
+    def test_atomic_write_creates_file_if_not_exists(self, tmp_path):
+        from conviction.build import _write_json_atomic
+        target = tmp_path / "new_file.json"
+        _write_json_atomic(target, '{"created": true}')
+        assert target.exists()
+        assert json.loads(target.read_text(encoding="utf-8")) == {"created": True}
+

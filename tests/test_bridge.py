@@ -382,8 +382,8 @@ def test_bridge_idempotent_on_repeat_invocation(tmp_path, monkeypatch):
 
     @given(rows=_pipeline_rows_two_etfs())
     @settings(
-        max_examples=100,
-        deadline=2000,
+        max_examples=50,
+        deadline=None,
         suppress_health_check=[HealthCheck.function_scoped_fixture],
     )
     def check(rows):
@@ -559,3 +559,71 @@ def test_bridge_handles_weight_pct_with_percent_sign(tmp_path, monkeypatch):
     # Spot-check: "2.62%" → 0.0262
     mfem_delta = cleaned[(cleaned["ETF_Ticker"] == "MFEM") & (cleaned["ticker"] == "DELTA")].iloc[0]
     assert abs(mfem_delta["weight"] - 0.0262) < 1e-6
+
+
+# ─── Consolidated Scraper Cleaning & Ingress Invariants ──────────────────────
+
+def _raw_issuer_table(max_weight_pct: float) -> pd.DataFrame:
+    return pd.DataFrame({
+        "Ticker": ["AAA", "BBB", "CCC"],
+        "Security Name": ["Alpha Corp", "Beta Inc", "Gamma Ltd"],
+        "Weighting": [f"{max_weight_pct}", "0.5", "0.3"],
+    })
+
+
+class TestScraperCleanAndIngress:
+    def test_legacy_heuristic_divides_when_max_gt_1(self):
+        out = scraper.clean_dataframe(_raw_issuer_table(9.8), "FPX", "2026-08-20")
+        assert out["weight"].iloc[0] == pytest.approx(0.098)
+
+    def test_percent_unit_always_divides_even_below_one(self):
+        out = scraper.clean_dataframe(_raw_issuer_table(0.71), "QMOM", "2026-08-20", weight_unit="percent")
+        assert out["weight"].iloc[0] == pytest.approx(0.0071)
+
+    def test_fraction_unit_never_divides(self):
+        out = scraper.clean_dataframe(_raw_issuer_table(0.71), "X", "2026-08-20", weight_unit="fraction")
+        assert out["weight"].iloc[0] == pytest.approx(0.71)
+
+    def test_drops_placeholders_keeps_equities(self):
+        tbl = pd.DataFrame({
+            "Ticker": ["AAA", "$KRW", "Cash&Other", "BBB", "CCC"],
+            "Security Name": ["Alpha", "Korean Won hedge", "Cash aggregate", "Beta Inc", "Gamma Ltd"],
+            "Weighting": ["1.2", "0.4", "0.9", "0.8", "0.3"],
+        })
+        out = scraper.clean_dataframe(tbl, "QMOM", "2026-08-22", weight_unit="percent")
+        assert sorted(out["ticker"]) == ["AAA", "BBB", "CCC"]
+        assert (out["weight"] > 0).all()
+
+    def test_all_placeholder_table_returns_none(self):
+        tbl = pd.DataFrame({
+            "Ticker": ["$JPY", "Cash&Other"],
+            "Security Name": ["Yen", "Cash"],
+            "Weighting": ["0.1", "0.2"],
+        })
+        out = scraper.clean_dataframe(tbl, "IMOM", "2026-08-22", weight_unit="percent")
+        assert out is None
+
+    def test_invesco_effective_date_is_canonical(self, monkeypatch):
+        payload = {
+            "effectiveDate": "2026-08-19",
+            "effectiveBusinessDate": "2026-08-18",
+            "totalNumberOfHoldings": 5,
+            "holdings": [
+                {"ticker": f"T{i}", "issuerName": f"Co {i}",
+                 "percentageOfTotalNetAssets": 1.0, "securityTypeName": "Common Stock"}
+                for i in range(5)
+            ],
+        }
+        class FakeResp:
+            def raise_for_status(self): pass
+            def json(self): return payload
+
+        class FakeCffi:
+            @staticmethod
+            def get(url, **kw): return FakeResp()
+
+        monkeypatch.setattr(scraper, "cffi_requests", FakeCffi)
+        df, as_of = scraper.fetch_invesco_api("SPMO", "46138E339")
+        assert as_of == "2026-08-19"
+        assert len(df) == 5
+

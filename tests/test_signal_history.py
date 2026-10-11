@@ -212,3 +212,21 @@ class TestSignalHistoryEdgeCases:
         # May have 1 or more snapshots — just check no exception
         result = hist.signal_history(raw_fixture, historical, cfg2)
         assert isinstance(result, dict)
+
+
+class TestStreaksAndDeltas:
+    def test_streaks_and_deltas_two_snapshots(self, cfg):
+        df = _h([
+            ("FPX", "AAPL", "Apple", 0.10, "2026-01-01", "2026-01-01"),
+            ("FPX", "AAPL", "Apple", 0.12, "2026-01-02", "2026-01-02"),
+        ])
+        historical = hist.historical_leaderboards(df, cfg)
+        score_pnl = hist.score_panel(historical)
+        flag_pnl = hist.flag_panel(historical)
+
+        streaks = hist.streaks_and_deltas(score_pnl, flag_pnl)
+        assert not streaks.empty
+        aapl = streaks[streaks["ticker"] == "AAPL"]
+        assert len(aapl) == 1
+        assert aapl.iloc[0]["score_yesterday"] is not None
+
