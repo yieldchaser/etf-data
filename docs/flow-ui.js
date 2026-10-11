@@ -265,6 +265,78 @@
     return (current - mean) / standardDeviation;
   }
 
+  function robustPriorZScore(records, index, windowSize) {
+    const size = Math.max(5, Math.trunc(windowSize || 30));
+    const current = finiteNumber(records[index] && records[index].flow);
+    const start = Math.max(0, index - size);
+    if (current === null || index - start < 5) return null;
+    const prior = [];
+    for (let offset = start; offset < index; offset += 1) {
+      const value = finiteNumber(records[offset] && records[offset].flow);
+      if (value === null) return null;
+      prior.push(value);
+    }
+    const sorted = [...prior].sort((a, b) => a - b);
+    const median = sorted[Math.floor(sorted.length / 2)];
+    const absDevs = prior.map(v => Math.abs(v - median)).sort((a, b) => a - b);
+    const mad = absDevs[Math.floor(absDevs.length / 2)];
+    if (mad > 1e4) {
+      return (0.6745 * (current - median)) / mad;
+    }
+    const meanDev = absDevs.reduce((a, b) => a + b, 0) / absDevs.length;
+    if (meanDev > 1e4) {
+      return (0.7979 * (current - median)) / meanDev;
+    }
+    const variance = prior.reduce((sum, value) => sum + ((value - median) ** 2), 0) / prior.length;
+    const sd = Math.sqrt(variance);
+    return (Number.isFinite(sd) && sd > 0) ? (current - median) / sd : null;
+  }
+
+  function volumeAdjustedZScore(records, index, volumes, windowSize) {
+    const size = Math.max(5, Math.trunc(windowSize || 30));
+    const currentFlow = finiteNumber(records[index] && records[index].flow);
+    if (currentFlow === null || index < 5) return null;
+    const getIntensity = (i) => {
+      const f = finiteNumber(records[i] && records[i].flow);
+      if (f === null) return null;
+      const nav = finiteNumber(records[i] && records[i].nav) || 1;
+      const vol = (volumes && volumes[i]) || (nav ? Math.max(1, Math.round(Math.abs(f) / nav)) : 1);
+      const dVol = Math.max(1e5, vol * nav);
+      return f / dVol;
+    };
+    const curInt = getIntensity(index);
+    if (curInt === null) return null;
+    const start = Math.max(0, index - size);
+    const prior = [];
+    for (let offset = start; offset < index; offset += 1) {
+      const val = getIntensity(offset);
+      if (val !== null) prior.push(val);
+    }
+    if (prior.length < 5) return null;
+    const mean = prior.reduce((a, b) => a + b, 0) / prior.length;
+    const variance = prior.reduce((sum, value) => sum + ((value - mean) ** 2), 0) / prior.length;
+    const sd = Math.sqrt(variance);
+    return (Number.isFinite(sd) && sd > 0) ? (curInt - mean) / sd : null;
+  }
+
+  function momentum5DZScore(records, index, rollingFive, windowSize) {
+    const size = Math.max(5, Math.trunc(windowSize || 30));
+    const cur5 = finiteNumber(rollingFive && rollingFive[index]);
+    if (cur5 === null || index < 10) return null;
+    const prior = [];
+    const start = Math.max(4, index - size - 4);
+    const end = index - 5;
+    for (let offset = start; offset <= end; offset += 1) {
+      const val = finiteNumber(rollingFive[offset]);
+      if (val !== null) prior.push(val);
+    }
+    if (prior.length < 5) return null;
+    const mean = prior.reduce((a, b) => a + b, 0) / prior.length;
+    const variance = prior.reduce((sum, value) => sum + ((value - mean) ** 2), 0) / prior.length;
+    const sd = Math.sqrt(variance);
+    return (Number.isFinite(sd) && sd > 0) ? (cur5 - mean) / sd : null;
+  }
+
   function flowMetricRows(records, volumeMap) {
     const source = Array.isArray(records) ? records : [];
     const rollingTwenty = source.map((record, index) => completeRollingMean(source, index, 20));
@@ -307,6 +379,9 @@
         rollingSum60: rollingSixtySum[index],
         percentile10: percentileAgainstSorted(sortedTen, rollingTen[index]),
         priorOnlyZScore: priorOnlyZScore(source, index, 30),
+        robustZScore: robustPriorZScore(source, index, 30),
+        volumeZScore: volumeAdjustedZScore(source, index, volumes, 30),
+        momentumZScore5D: momentum5DZScore(source, index, rollingFive, 30),
         selectedCumulative: null
       };
     });
@@ -697,13 +772,53 @@
       flowWorkbenchDailyEnabled: true,
       flowWorkbenchVolumeEnabled: true,
       flowWorkbenchZScoreEnabled: true,
+      flowWorkbenchVelocityEnabled: true,
       flowWorkbenchShocksEnabled: false,
       flowScaleMode: 'usd',
+      flowZModel: 'standard',
+      flowPeerFilter: 'all',
       flowMeasureActive: false,
       flowMeasureDragging: false,
       flowMeasureStartIdx: null,
       flowMeasureCurrentIdx: null,
       flowMeasureResult: null,
+
+      flowCycleZModel() {
+        const models = ['standard', 'robust', 'volume', 'momentum'];
+        const curIdx = models.indexOf(this.flowZModel);
+        this.flowZModel = models[(curIdx + 1) % models.length];
+        this._flowWorkbenchBaseKey = '';
+      },
+
+      get flowZModelLabel() {
+        switch (this.flowZModel) {
+          case 'robust': return 'Robust MAD';
+          case 'volume': return 'Vol-Adjusted';
+          case 'momentum': return '5D Momentum';
+          default: return '30D Std';
+        }
+      },
+
+      get flowZModelTooltip() {
+        switch (this.flowZModel) {
+          case 'robust':
+            return 'Active Model: Robust MAD (Median Absolute Deviation). Outlier-resistant modified Z-Score that prevents giant single-day prints from suppressing subsequent flow shocks. Click to cycle.';
+          case 'volume':
+            return 'Active Model: Turnover-Normalized Volume Z-Score. Measures daily net flow as a fraction of trading dollar volume to reveal market order imbalance urgency. Click to cycle.';
+          case 'momentum':
+            return 'Active Model: 5-Day Cumulative Flow Momentum Z-Score. Identifies persistent multi-day capital accumulation campaigns against prior 30-session distribution. Click to cycle.';
+          default:
+            return 'Active Model: 30D Gaussian Prior-Only Z-Score. Evaluates daily net flow against preceding 30 sessions (excluding current day). Click to cycle.';
+        }
+      },
+
+      flowActiveZScore(row) {
+        if (!row) return null;
+        if (this.flowZModel === 'robust') return finiteNumber(row.robustZScore);
+        if (this.flowZModel === 'volume') return finiteNumber(row.volumeZScore);
+        if (this.flowZModel === 'momentum') return finiteNumber(row.momentumZScore5D);
+        return finiteNumber(row.priorOnlyZScore);
+      },
       _flowWorkbenchBaseKey: '',
       _flowWorkbenchBaseSvg: '',
       _flowWorkbenchScales: null,
@@ -1916,24 +2031,32 @@
           return (finiteNumber(b.aum_m) || 0) - (finiteNumber(a.aum_m) || 0);
         });
 
-        // 2. Complement with category peers if fewer than 8
-        let categoryPeers = [];
-        if (directPeers.length < 8) {
-          const directTickers = new Set(directPeers.map(p => p.ticker));
-          categoryPeers = items
-            .filter(item => item.category === current.category && !directTickers.has(item.ticker) && ((item.flow_20d !== 0 && item.flow_20d !== null) || (item.latest_flow !== 0 && item.latest_flow !== null) || (item.aum_m > 0)))
-            .sort((a, b) => Math.abs(finiteNumber(b.flow_zscore) || 0) - Math.abs(finiteNumber(a.flow_zscore) || 0))
-            .slice(0, 8 - directPeers.length);
+        // 2. Category peers
+        const directTickers = new Set(directPeers.map(p => p.ticker));
+        let categoryPeers = items
+          .filter(item => item.category === current.category && !directTickers.has(item.ticker) && ((item.flow_20d !== 0 && item.flow_20d !== null) || (item.latest_flow !== 0 && item.latest_flow !== null) || (item.aum_m > 0)))
+          .sort((a, b) => Math.abs(finiteNumber(b.flow_zscore) || 0) - Math.abs(finiteNumber(a.flow_zscore) || 0));
+
+        let selectedPool = [];
+        if (this.flowPeerFilter === 'direct') {
+          selectedPool = directPeers;
+        } else if (this.flowPeerFilter === 'cat') {
+          selectedPool = categoryPeers;
+        } else {
+          selectedPool = [...directPeers, ...categoryPeers];
         }
 
-        const combined = [...directPeers, ...categoryPeers];
-        return combined.slice(0, 8).map(item => {
+        return selectedPool.slice(0, 16).map(item => {
           const isDirect = normU(item.underlying) === targetUnderlying;
           const cleanUnderlying = String(item.underlying || '').replace(/\s*\([^)]*\)\s*$/, '').trim() || item.ticker;
+          const aumVal = finiteNumber(item.aum_m) || 0;
+          const f1 = finiteNumber(item.latest_flow);
+          const flowPctAum = (aumVal > 0 && f1 !== null && f1 !== 0) ? (f1 / (aumVal * 1e6)) * 100 : null;
           return {
             ...item,
             isDirect,
             cleanUnderlying,
+            flow_pct_aum: flowPctAum,
             sparklineSvg: miniFlowSparklineSvg(item.sparkline_20d || [], 88, 22)
           };
         });
@@ -2960,7 +3083,11 @@
         const aum = (finiteNumber(this.flowSelectedInstrument?.aum_m) || 0) * 1e6;
         const flowPctAum = aum > 0 ? (netFlow / aum) * 100 : null;
         const mean20 = finiteNumber(last.rollingMean20);
-        const latestZ = finiteNumber(last.priorOnlyZScore);
+        const s20 = finiteNumber(last.rollingSum20);
+        const s60 = finiteNumber(last.rollingSum60);
+        const b60 = s60 !== null ? s60 / 3 : null;
+        const acceleration = (s20 !== null && b60 !== null) ? s20 - b60 : null;
+        const latestZ = this.flowActiveZScore ? this.flowActiveZScore(last) : finiteNumber(last.priorOnlyZScore);
         const curFlow = finiteNumber(last.flow);
         return {
           count: rows.length,
@@ -2970,6 +3097,9 @@
           netFlow,
           flowPctAum,
           mean20,
+          velocity20: s20,
+          baseline60: b60,
+          acceleration,
           latestZ,
           curFlow,
           lastPrice: p2
@@ -2993,14 +3123,17 @@
         const showVol = this.flowWorkbenchVolumeEnabled;
         const showZ = this.flowWorkbenchZScoreEnabled;
         const showShocks = this.flowWorkbenchShocksEnabled;
+        const showVelocity = this.flowWorkbenchVelocityEnabled;
 
         const hasTier1 = showPrice || showCum;
         const hasTier2 = showDaily || showVol;
         const hasTier3 = showZ;
+        const hasTier4 = showVelocity;
 
         const tier1H = hasTier1 ? (width < 500 ? 210 : 250) : 0;
         const tier2H = hasTier2 ? (width < 500 ? 110 : 130) : 0;
         const tier3H = hasTier3 ? (width < 500 ? 78 : 96) : 0;
+        const tier4H = hasTier4 ? (width < 500 ? 95 : 115) : 0;
 
         const gap = 16;
         let runningY = padTop;
@@ -3014,7 +3147,11 @@
 
         const t3Top = runningY;
         const t3Bottom = runningY + tier3H;
-        if (hasTier3) runningY = t3Bottom;
+        if (hasTier3) runningY = t3Bottom + (hasTier4 ? gap : 0);
+
+        const t4Top = runningY;
+        const t4Bottom = runningY + tier4H;
+        if (hasTier4) runningY = t4Bottom;
 
         const totalH = runningY + padBottom;
 
@@ -3024,7 +3161,7 @@
         const aumTotal = (finiteNumber(this.flowSelectedInstrument?.aum_m) || 0) * 1e6;
         const isPctAum = this.flowScaleMode === 'pct_aum' && aumTotal > 0;
 
-        const baseKey = `${this.flowTicker}:${this.flowStartIndex}:${this.flowEndIndex}:${this.flowScaleMode}:${showPrice}:${showCum}:${showDaily}:${showVol}:${showZ}:${showShocks}:${width}`;
+        const baseKey = `${this.flowTicker}:${this.flowStartIndex}:${this.flowEndIndex}:${this.flowScaleMode}:${showPrice}:${showCum}:${showDaily}:${showVol}:${showZ}:${showShocks}:${showVelocity}:${this.flowZModel}:${width}`;
 
         let yPrice = null, yCum = null, yDaily = null, yZ = null, smoothZ = null;
         let pricesCount = 0, cumCount = 0;
@@ -3227,7 +3364,7 @@
           let tier3Svg = '';
           let rawZ = null;
           if (hasTier3) {
-            rawZ = rows.map(r => finiteNumber(r.priorOnlyZScore));
+            rawZ = rows.map(r => this.flowActiveZScore(r));
             const zValues = rawZ.filter(v => v !== null);
             const absZList = zValues.map(v => Math.abs(v)).sort((a, b) => a - b);
             const p95Idx = absZList.length ? Math.floor(absZList.length * 0.95) : 0;
@@ -3261,7 +3398,8 @@
             t3Grid += `<line x1="${padLeft}" y1="${yPos20.toFixed(1)}" x2="${width - padRight}" y2="${yPos20.toFixed(1)}" stroke="rgba(34,211,238,0.55)" stroke-width="1.2" stroke-dasharray="4 2"/>`;
             t3Grid += `<line x1="${padLeft}" y1="${yNeg20.toFixed(1)}" x2="${width - padRight}" y2="${yNeg20.toFixed(1)}" stroke="rgba(251,113,133,0.55)" stroke-width="1.2" stroke-dasharray="4 2"/>`;
 
-            // Y-Axis Labels
+            // Tier 3 Subtitle & Y-Axis Labels
+            t3Grid += `<text x="${padLeft}" y="${(t3Top - 2).toFixed(1)}" text-anchor="start" fill="rgba(255,255,255,0.4)" font-family="ui-monospace, monospace" font-size="8.5" font-weight="700" letter-spacing="0.04em">FLOW Z-SCORE OSCILLATOR · [${this.flowZModelLabel.toUpperCase()}]</text>`;
             t3Grid += `<text x="${padLeft - 8}" y="${(zeroZY + 3).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="9">0σ</text>`;
             t3Grid += `<text x="${padLeft - 8}" y="${(yPos10 + 3).toFixed(1)}" text-anchor="end" fill="rgba(255,255,255,0.45)" font-family="ui-monospace, monospace" font-size="8.5">+1.0σ</text>`;
             t3Grid += `<text x="${padLeft - 8}" y="${(yPos20 + 3).toFixed(1)}" text-anchor="end" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9" font-weight="700">+2.0σ</text>`;
@@ -3339,6 +3477,107 @@
             tier3Svg = `<g class="flow-tier-3">${t3Grid}${shockStemsSvg}${zPaths}</g>`;
           }
 
+          // --- TIER 4: Flow Velocity (20D vs 60D Baseline) & Acceleration Engine ---
+          let tier4Svg = '';
+          let yVel = null;
+          let vel20List = null, base60List = null, accelList = null;
+          if (hasTier4) {
+            vel20List = rows.map(r => {
+              const v = finiteNumber(r.rollingSum20);
+              return (v !== null && isPctAum) ? (v / aumTotal) * 100 : v;
+            });
+            base60List = rows.map(r => {
+              const s60 = finiteNumber(r.rollingSum60);
+              if (s60 === null) return null;
+              const b = s60 / 3;
+              return isPctAum ? (b / aumTotal) * 100 : b;
+            });
+            accelList = rows.map((r, i) => {
+              const v = vel20List[i];
+              const b = base60List[i];
+              return (v !== null && b !== null) ? v - b : null;
+            });
+
+            const allVelVals = [...vel20List, ...base60List, ...accelList].filter(v => v !== null);
+            const maxVelAbs = allVelVals.length ? Math.max(isPctAum ? 0.5 : 1e6, ...allVelVals.map(Math.abs)) * 1.12 : 1;
+
+            yVel = val => t4Top + tier4H / 2 - (val / (maxVelAbs || 1)) * (tier4H / 2);
+            const zeroVelY = yVel(0);
+
+            let t4Grid = `<line x1="${padLeft}" y1="${(t4Top - 8).toFixed(1)}" x2="${width - padRight}" y2="${(t4Top - 8).toFixed(1)}" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>`;
+            t4Grid += `<line x1="${padLeft}" y1="${zeroVelY.toFixed(1)}" x2="${width - padRight}" y2="${zeroVelY.toFixed(1)}" stroke="rgba(255,255,255,0.22)" stroke-width="1.1"/>`;
+
+            // Subtitle & Axis Labels
+            t4Grid += `<text x="${padLeft}" y="${(t4Top - 2).toFixed(1)}" text-anchor="start" fill="rgba(255,255,255,0.4)" font-family="ui-monospace, monospace" font-size="8.5" font-weight="700" letter-spacing="0.04em">FLOW VELOCITY (20D vs 60D BASELINE) &amp; ACCELERATION</text>`;
+            t4Grid += `<text x="${padLeft - 8}" y="${(zeroVelY + 3).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="9">${isPctAum ? '0.0%' : '$0'}</text>`;
+            t4Grid += `<text x="${padLeft - 8}" y="${(t4Top + 10).toFixed(1)}" text-anchor="end" fill="#34d399" font-family="ui-monospace, monospace" font-size="8.5">${isPctAum ? `+${maxVelAbs.toFixed(1)}%` : axisNumber(maxVelAbs)}</text>`;
+            t4Grid += `<text x="${padLeft - 8}" y="${(t4Bottom - 3).toFixed(1)}" text-anchor="end" fill="#fb7185" font-family="ui-monospace, monospace" font-size="8.5">${isPctAum ? `−${maxVelAbs.toFixed(1)}%` : axisNumber(-maxVelAbs)}</text>`;
+
+            // Legend in top-right of Tier 4
+            t4Grid += `<g transform="translate(${(width - padRight - 210).toFixed(1)}, ${(t4Top - 2).toFixed(1)})" font-family="ui-monospace, monospace" font-size="8.5" pointer-events="none">
+              <line x1="0" y1="-3" x2="14" y2="-3" stroke="#34d399" stroke-width="2"/>
+              <text x="18" y="0" fill="#34d399">20D Pace</text>
+              <line x1="70" y1="-3" x2="84" y2="-3" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="3 2"/>
+              <text x="88" y="0" fill="#fbbf24">60D Base</text>
+              <rect x="142" y="-7" width="8" height="8" fill="#34d399" opacity="0.6"/>
+              <text x="154" y="0" fill="#94a3b8">Accel</text>
+            </g>`;
+
+            // Acceleration Histogram Bars (MACD-style color coding: expanding vs moderating)
+            let accelBarsSvg = '';
+            const barW = Math.max(1.0, Math.min(6.0, slot * 0.55));
+            rows.forEach((r, i) => {
+              const acc = accelList[i];
+              if (acc === null) return;
+              const prevAcc = i > 0 ? accelList[i - 1] : acc;
+              const x = xScale(i) - barW / 2;
+              const y = yVel(acc);
+              const top = acc >= 0 ? y : zeroVelY;
+              const h = Math.max(1.2, Math.abs(y - zeroVelY));
+
+              // Expanding: vibrant; Moderating: translucent
+              let fill = 'rgba(148,163,184,0.3)';
+              if (acc >= 0) {
+                fill = (prevAcc !== null && acc >= prevAcc) ? 'rgba(52,211,153,0.75)' : 'rgba(52,211,153,0.32)';
+              } else {
+                fill = (prevAcc !== null && acc <= prevAcc) ? 'rgba(251,113,133,0.75)' : 'rgba(251,113,133,0.32)';
+              }
+              accelBarsSvg += `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${fill}" rx="0.5"/>`;
+            });
+
+            // 60D Baseline Path (amber dashed)
+            const base60Points = rows.map((r, i) => ({ x: xScale(i), y: finiteScale(yVel, base60List[i]) }));
+            const base60Path = `<path d="${linePath(base60Points)}" fill="none" stroke="#fbbf24" stroke-width="1.6" stroke-dasharray="3 3" opacity="0.85"/>`;
+
+            // 20D Pace Path (emerald solid)
+            const vel20Points = rows.map((r, i) => ({ x: xScale(i), y: finiteScale(yVel, vel20List[i]) }));
+            const vel20Path = `<path d="${linePath(vel20Points)}" fill="none" stroke="#34d399" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round"/>`;
+
+            // Crossover Inflection Points
+            let crossoverSvg = '';
+            for (let i = 1; i < rows.length; i++) {
+              const prevA = accelList[i - 1];
+              const currA = accelList[i];
+              if (prevA !== null && currA !== null) {
+                if (prevA <= 0 && currA > 0) {
+                  const x = xScale(i);
+                  const y = yVel(vel20List[i]);
+                  if (y !== null) {
+                    crossoverSvg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="#34d399" stroke="#ffffff" stroke-width="1.2"><title>Flow Acceleration Inflection (${rows[i].date}): 20D pace crossed above 60D baseline</title></circle>`;
+                  }
+                } else if (prevA >= 0 && currA < 0) {
+                  const x = xScale(i);
+                  const y = yVel(vel20List[i]);
+                  if (y !== null) {
+                    crossoverSvg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="#fb7185" stroke="#ffffff" stroke-width="1.2"><title>Flow Deceleration Inflection (${rows[i].date}): 20D pace crossed below 60D baseline</title></circle>`;
+                  }
+                }
+              }
+            }
+
+            tier4Svg = `<g class="flow-tier-4">${t4Grid}${accelBarsSvg}${base60Path}${vel20Path}${crossoverSvg}</g>`;
+          }
+
           // --- Date Ticks at Bottom ---
           const tickIndices = dateTickIndices(rows.length, width);
           const dateTicksSvg = tickIndices.map(idx => {
@@ -3355,16 +3594,22 @@
             yZ: hasTier3 ? yZ : null,
             smoothZ: hasTier3 ? smoothZ : null,
             rawZ: hasTier3 ? rawZ : null,
+            yVel: hasTier4 ? yVel : null,
+            vel20List: hasTier4 ? vel20List : null,
+            base60List: hasTier4 ? base60List : null,
+            accelList: hasTier4 ? accelList : null,
             padTop,
             runningY,
             totalH,
             hasTier1,
             hasTier2,
             hasTier3,
+            hasTier4,
             showPrice,
             showCum,
             showDaily,
             showZ,
+            showVelocity,
             isPctAum,
             aumTotal
           };
@@ -3375,6 +3620,7 @@
             ${tier1Svg}
             ${tier2Svg}
             ${tier3Svg}
+            ${tier4Svg}
             ${dateTicksSvg}
             <!-- HOVER_OVERLAY -->
             <!-- MEASURE_BAND -->
@@ -3445,6 +3691,33 @@
               <rect x="${pillX.toFixed(1)}" y="${(yz - 8).toFixed(1)}" width="${pillW}" height="16" rx="3" fill="#090d16" stroke="${zColor}" stroke-width="1"/>
               <text x="${(pillX + pillW / 2).toFixed(1)}" y="${(yz + 3.5).toFixed(1)}" text-anchor="middle" fill="#ffffff" font-family="ui-monospace, monospace" font-size="9" font-weight="700">${zLabel}</text>
             </g>`;
+          }
+
+          if (sc.hasTier4 && sc.showVelocity && sc.yVel) {
+            const v20 = sc.vel20List?.[hIdx];
+            const b60 = sc.base60List?.[hIdx];
+            const acc = sc.accelList?.[hIdx];
+            if (v20 !== null && v20 !== undefined) {
+              const yv = sc.yVel(v20);
+              hDots += `<circle cx="${hX.toFixed(1)}" cy="${yv.toFixed(1)}" r="4.2" fill="#34d399" stroke="#ffffff" stroke-width="1.8" pointer-events="none"/>`;
+            }
+            if (b60 !== null && b60 !== undefined) {
+              const yb = sc.yVel(b60);
+              hDots += `<circle cx="${hX.toFixed(1)}" cy="${yb.toFixed(1)}" r="3.6" fill="#fbbf24" stroke="#ffffff" stroke-width="1.5" pointer-events="none"/>`;
+            }
+            if (acc !== null && acc !== undefined) {
+              const ya = sc.yVel(acc);
+              const accColor = acc >= 0 ? '#34d399' : '#fb7185';
+              hDots += `<circle cx="${hX.toFixed(1)}" cy="${ya.toFixed(1)}" r="2.8" fill="${accColor}" pointer-events="none"/>`;
+              const accStr = `${acc >= 0 ? '+' : ''}${sc.isPctAum ? `${acc.toFixed(1)}%` : formatMoney(acc)}`;
+              const accLabel = `Accel ${accStr}`;
+              const pillW = accLabel.length * 6.2 + 8;
+              const pillX = hX > width / 2 ? hX - pillW - 8 : hX + 8;
+              hDots += `<g pointer-events="none">
+                <rect x="${pillX.toFixed(1)}" y="${(ya - 8).toFixed(1)}" width="${pillW}" height="16" rx="3" fill="#090d16" stroke="${accColor}" stroke-width="1"/>
+                <text x="${(pillX + pillW / 2).toFixed(1)}" y="${(ya + 3.5).toFixed(1)}" text-anchor="middle" fill="#ffffff" font-family="ui-monospace, monospace" font-size="9" font-weight="700">${accLabel}</text>
+              </g>`;
+            }
           }
 
           // Date tag pill at bottom
@@ -3897,10 +4170,21 @@
         const line1 = row.date || '';
         const pricePart = (row.nav !== null && Number.isFinite(row.nav)) ? `Price $${row.nav.toFixed(2)}  ·  ` : '';
         const line2 = `${pricePart}Daily flow ${formatMoney(row.flow)}`;
-        const zVal = finiteNumber(row.priorOnlyZScore);
+        const zVal = this.flowActiveZScore ? this.flowActiveZScore(row) : finiteNumber(row.priorOnlyZScore);
         const zTag = zVal === null ? '' : zVal >= 1.5 ? ' (Acc)' : zVal <= -1.5 ? ' (Dist)' : '';
-        const zStr = zVal === null ? '—' : `${zVal >= 0 ? '+' : ''}${zVal.toFixed(2)}σ${zTag}`;
-        const line3 = `20D Mean ${formatMoney(row.rollingMean20)}  ·  10D %ile ${formatPercent(row.percentile10)}  ·  Z ${zStr}`;
+        const zModelTag = this.flowZModelLabel ? ` [${this.flowZModelLabel}]` : '';
+        const zStr = zVal === null ? '—' : `${zVal >= 0 ? '+' : ''}${zVal.toFixed(2)}σ${zTag}${zModelTag}`;
+        let line3 = `20D Mean ${formatMoney(row.rollingMean20)}  ·  10D %ile ${formatPercent(row.percentile10)}  ·  Z ${zStr}`;
+        if (this.flowWorkbenchVelocityEnabled) {
+          const s20 = finiteNumber(row.rollingSum20);
+          const s60 = finiteNumber(row.rollingSum60);
+          const b60 = s60 !== null ? s60 / 3 : null;
+          const acc = (s20 !== null && b60 !== null) ? s20 - b60 : null;
+          if (s20 !== null) {
+            const accStr = acc !== null ? `  ·  Accel ${acc >= 0 ? '+' : ''}${formatMoney(acc)}` : '';
+            line3 += `\n20D Pace ${formatMoney(s20)}${accStr}`;
+          }
+        }
         return `${line1}\n${line2}\n${line3}`;
       },
 
@@ -4367,6 +4651,9 @@
     marketHistoryTab,
     normalizeFlowPayload,
     priorOnlyZScore,
+    robustPriorZScore,
+    volumeAdjustedZScore,
+    momentum5DZScore,
     reconcileFlowHistory,
     statusFromManifest,
     statusLabel

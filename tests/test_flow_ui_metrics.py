@@ -273,4 +273,34 @@ def test_flow_ui_edge_cases_and_chart_synchronization():
     assert result["measureHasNav"] is True
 
 
+def test_multi_model_zscores_and_workbench_velocity():
+    result = run_metrics(
+        "(()=>{const app=m.flowResearchApp();const cat=require('./docs/data/flows/catalog.json');app.flowCatalog=cat;const tqqqItem=cat.instruments.find(i=>i.ticker==='TQQQ');app.flowTicker='TQQQ';app._flowEntryMap=Object.fromEntries(cat.instruments.map(i=>[i.ticker,i]));const raw=require('./docs/data/flows/TQQQ.json');app.flowData=m.normalizeFlowPayload(raw,tqqqItem);app.flowStartIndex=0;app.flowEndIndex=app.flowMaxRecordIndex;const rows=app.flowSelectedRows;const lastRow=rows[rows.length-1];const stdZ=lastRow.priorOnlyZScore;const robZ=lastRow.robustZScore;const volZ=lastRow.volumeZScore;const momZ=lastRow.momentumZScore5D;const initialModel=app.flowZModel;app.flowCycleZModel();const nextModel=app.flowZModel;const wbSvg=app.flowWorkbenchSvg;const hasTier4=wbSvg.includes('flow-tier-4');const hasVelocityHeader=wbSvg.includes('FLOW VELOCITY (20D vs 60D BASELINE)');const hasPace=wbSvg.includes('20D Pace');const hasBase=wbSvg.includes('60D Base');const hasAccel=wbSvg.includes('Accel');const summary=app.flowWorkbenchSummary;return {hasStdZ:stdZ!==null,hasRobZ:robZ!==null,hasVolZ:volZ!==null,hasMomZ:momZ!==null,initialModel,nextModel,hasTier4,hasVelocityHeader,hasPace,hasBase,hasAccel,velocity20:summary.velocity20!==null,acceleration:summary.acceleration!==null};})()"
+    )
+    assert result["hasStdZ"] is True
+    assert result["hasRobZ"] is True
+    assert result["hasVolZ"] is True
+    assert result["hasMomZ"] is True
+    assert result["initialModel"] == "standard"
+    assert result["nextModel"] == "robust"
+    assert result["hasTier4"] is True
+    assert result["hasVelocityHeader"] is True
+    assert result["hasPace"] is True
+    assert result["hasBase"] is True
+    assert result["hasAccel"] is True
+    assert result["velocity20"] is True
+    assert result["acceleration"] is True
+
+
+def test_flow_peer_radar_filters_and_metrics():
+    result = run_metrics(
+        "(()=>{const app=m.flowResearchApp();const cat=require('./docs/data/flows/catalog.json');app.flowCatalog=cat;app._flowEntryMap=Object.fromEntries(cat.instruments.map(i=>[i.ticker,i]));app.flowTicker='TQQQ';const allPeers=app.flowPeerComparisonRows;app.flowPeerFilter='direct';const directPeers=app.flowPeerComparisonRows;app.flowPeerFilter='cat';const catPeers=app.flowPeerComparisonRows;return {allCount:allPeers.length,directCount:directPeers.length,catCount:catPeers.length,allHaveSparkline:allPeers.every(p=>p.sparklineSvg.includes('<svg')),firstHasPctAum:allPeers[0]?.flow_pct_aum!==undefined};})()"
+    )
+    assert result["allCount"] > 0
+    assert result["directCount"] > 0
+    assert result["allHaveSparkline"] is True
+    assert result["firstHasPctAum"] is True
+
+
+
 

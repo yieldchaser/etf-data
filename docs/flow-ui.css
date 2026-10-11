@@ -1168,12 +1168,16 @@
   gap: 1rem;
 }
 
+.flow-research .flow-companion-grid,
+.flow-research .flow-peer-radar-block {
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--flow-line);
+}
+
 .flow-research .flow-companion-grid {
   display: grid;
   grid-template-columns: 1.35fr 1fr;
   gap: 0.85rem;
-  padding-top: 0.85rem;
-  border-top: 1px solid var(--flow-line);
 }
 
 .flow-research .flow-panel-card {

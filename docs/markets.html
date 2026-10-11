@@ -3061,12 +3061,18 @@
                       <button class="flow-chip" :class="flowWorkbenchVolumeEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchVolumeEnabled = !flowWorkbenchVolumeEnabled" title="Toggle Trading Volume Overlay">
                         <span style="color:#94a3b8">▮</span> Volume
                       </button>
-                      <button class="flow-chip" :class="flowWorkbenchZScoreEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchZScoreEnabled = !flowWorkbenchZScoreEnabled" title="Toggle 1D Flow Z-Score Oscillator">
-                        <span style="color:#e879f9">~</span> 1D Flow Z
+                      <button class="flow-chip" :class="flowWorkbenchZScoreEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchZScoreEnabled = !flowWorkbenchZScoreEnabled" title="Toggle Flow Z-Score Oscillator">
+                        <span style="color:#e879f9">~</span> Flow Z
+                      </button>
+                      <button class="flow-chip" :class="flowWorkbenchVelocityEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchVelocityEnabled = !flowWorkbenchVelocityEnabled" title="Toggle 20D vs 60D Flow Velocity &amp; Acceleration Engine">
+                        <span style="color:#f59e0b">⚡</span> Velocity &amp; Accel
                       </button>
                     </div>
                     <div style="width:1px;height:16px;background:var(--flow-line);margin:0 0.15rem"></div>
                     <div style="display:inline-flex;align-items:center;gap:0.3rem">
+                      <button class="flow-chip" type="button" @click="flowCycleZModel()" :title="flowZModelTooltip" style="border-color:rgba(232,121,249,0.35);font-family:ui-monospace, monospace">
+                        <span style="color:#e879f9">Model:</span> <span x-text="flowZModelLabel"></span>
+                      </button>
                       <button class="flow-chip" :class="flowWorkbenchShocksEnabled ? 'flow-chip-active' : ''" type="button" @click="flowWorkbenchShocksEnabled = !flowWorkbenchShocksEnabled" title="Toggle extreme climax flow shock markers (|Z| ≥ 2.5σ)">
                         <span style="color:#fbbf24">●</span> Shocks
                       </button>
@@ -3097,13 +3103,18 @@
                     <span class="flow-studio-stat-val" :class="flowWorkbenchSummary?.flowPctAum != null ? (flowWorkbenchSummary.flowPctAum > 0 ? 'flow-positive' : flowWorkbenchSummary.flowPctAum < 0 ? 'flow-negative' : '') : ''" x-text="flowWorkbenchSummary?.flowPctAum != null ? `${flowWorkbenchSummary.flowPctAum >= 0 ? '+' : ''}${flowWorkbenchSummary.flowPctAum.toFixed(2)}%` : '—'"></span>
                   </div>
                   <div class="flow-studio-stat-divider"></div>
-                  <div class="flow-studio-stat">
-                    <span class="flow-studio-stat-label">20D FLOW MEAN</span>
-                    <span class="flow-studio-stat-val" :class="flowWorkbenchSummary?.mean20 != null ? (flowWorkbenchSummary.mean20 > 0 ? 'flow-positive' : flowWorkbenchSummary.mean20 < 0 ? 'flow-negative' : '') : ''" x-text="formatMoney(flowWorkbenchSummary?.mean20)"></span>
+                  <div class="flow-studio-stat" title="20-session rolling net flow velocity">
+                    <span class="flow-studio-stat-label">20D VELOCITY</span>
+                    <span class="flow-studio-stat-val" :class="flowWorkbenchSummary?.velocity20 != null ? (flowWorkbenchSummary.velocity20 > 0 ? 'flow-positive' : flowWorkbenchSummary.velocity20 < 0 ? 'flow-negative' : '') : ''" x-text="formatMoney(flowWorkbenchSummary?.velocity20)"></span>
+                  </div>
+                  <div class="flow-studio-stat-divider" x-show="flowWorkbenchSummary?.acceleration != null"></div>
+                  <div class="flow-studio-stat" x-show="flowWorkbenchSummary?.acceleration != null" title="Flow acceleration: 20D pace minus 60D baseline pace">
+                    <span class="flow-studio-stat-label">ACCELERATION</span>
+                    <span class="flow-studio-stat-val" :class="flowWorkbenchSummary?.acceleration != null ? (flowWorkbenchSummary.acceleration > 0 ? 'flow-positive' : flowWorkbenchSummary.acceleration < 0 ? 'flow-negative' : '') : ''" x-text="flowWorkbenchSummary?.acceleration != null ? `${flowWorkbenchSummary.acceleration >= 0 ? '+' : ''}${formatMoney(flowWorkbenchSummary.acceleration)}` : '—'"></span>
                   </div>
                   <div class="flow-studio-stat-divider"></div>
-                  <div class="flow-studio-stat">
-                    <span class="flow-studio-stat-label">1D FLOW Z</span>
+                  <div class="flow-studio-stat" :title="`Active model: ${flowZModelLabel}`">
+                    <span class="flow-studio-stat-label" x-text="`1D Z (${flowZModelLabel})`"></span>
                     <span class="flow-studio-stat-val" :class="flowWorkbenchSummary?.latestZ != null ? (flowWorkbenchSummary.latestZ >= 0 ? 'flow-positive' : 'flow-negative') : ''" x-text="flowWorkbenchSummary?.latestZ != null ? `${flowWorkbenchSummary.latestZ >= 0 ? '+' : ''}${flowWorkbenchSummary.latestZ.toFixed(2)}σ` : '—'"></span>
                   </div>
                   <div class="flow-studio-stat-divider"></div>
@@ -3132,7 +3143,7 @@
                        :class="flowMeasureActive ? 'flow-measuring' : ''"
                        tabindex="0"
                        @mousedown="flowChartMeasureStart($event)"
-                       @mousemove="flowChartMeasureMove($event)"
+                       @mousemove="flowChartPointerMove($event); flowChartMeasureMove($event)"
                        @mouseup="flowChartMeasureEnd()"
                        @mouseleave="flowChartPointerLeave()"
                        @focus="flowChartFocus($event)"
@@ -3171,83 +3182,72 @@
                 </div>
               </fieldset>
 
-              <!-- ─── COMPANION ROW: MULTI-HORIZON IMPULSE CHART + PEER COMPARISON ─── -->
-              <div class="flow-companion-grid">
-                <div class="flow-chart-block">
-                  <div class="flow-chart-heading">
-                    <div>
-                      <div style="display:flex;align-items:center;gap:0.45rem;flex-wrap:wrap">
-                        <p class="flow-chart-kicker" style="margin:0" x-text="`${flowTicker || 'ETF'} · Flow Momentum Pace`">Flow momentum pace</p>
-                        <span class="flow-badge" :data-state="flowImpulseRegimeBadge.state" x-text="flowImpulseRegimeBadge.label"></span>
-                      </div>
-                      <h3 style="margin-top:0.25rem" x-text="`${flowTicker || 'ETF'} 20-Day vs 60-Day Net Flow Velocity`">20-Day vs 60-Day Net Flow Velocity</h3>
-                      <p class="flow-chart-description">Tracks 20-session tactical net flow against the 60-session structural baseline pace to identify capital acceleration and regime shifts.</p>
+              <!-- ─── EXPANDED FULL-WIDTH PEER FLOW & ECOSYSTEM MATRIX ─── -->
+              <div class="flow-chart-block flow-peer-radar-block" style="margin-top:1.25rem">
+                <div class="flow-chart-heading" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:0.75rem">
+                  <div>
+                    <div style="display:flex;align-items:center;gap:0.45rem;flex-wrap:wrap">
+                      <p class="flow-chart-kicker" style="margin:0" x-text="`${flowTicker || 'ETF'} · Ecosystem &amp; Category Peers`">Ecosystem peers</p>
+                      <span class="flow-badge" data-state="BALANCED" x-text="`${flowPeerComparisonRows.length} PEERS RANKED`"></span>
                     </div>
-                    <div class="flow-legend" style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
-                      <span class="flow-legend-item" style="font-family:ui-monospace, monospace;font-size:0.75rem">
-                        <span class="flow-swatch" :style="`background:${(flowImpulseStats.sum20 || 0) >= 0 ? '#34d399' : '#fb7185'}`"></span>20D Flow: <strong :class="(flowImpulseStats.sum20 || 0) >= 0 ? 'flow-positive' : 'flow-negative'" x-text="formatMoney(flowImpulseStats.sum20)"></strong>
-                      </span>
-                      <span class="flow-legend-item" style="font-family:ui-monospace, monospace;font-size:0.75rem" x-show="flowImpulseStats.baseline60 != null">
-                        <span class="flow-swatch" style="background:#fbbf24"></span>60D Baseline (20D Pace): <strong style="color:#fbbf24" x-text="formatMoney(flowImpulseStats.baseline60)"></strong>
-                      </span>
-                    </div>
+                    <h3 style="margin-top:0.25rem" x-text="flowPeerTitle"></h3>
+                    <p class="flow-chart-description" x-text="flowPeerSubtitle"></p>
                   </div>
-                  <div class="flow-impulse-chart" tabindex="0" @mousemove="flowChartPointerMove($event)" @mouseleave="flowChartPointerLeave()" @focus="flowChartFocus()" @blur="flowChartPointerLeave()" x-html="flowMultiHorizonImpulseChartSvg"></div>
+                  <div class="flow-legend" style="display:flex;align-items:center;gap:0.45rem;flex-wrap:wrap">
+                    <button class="flow-chip" :class="flowPeerFilter === 'all' ? 'flow-chip-active' : ''" type="button" @click="flowPeerFilter = 'all'">All Peers</button>
+                    <button class="flow-chip" :class="flowPeerFilter === 'direct' ? 'flow-chip-active' : ''" type="button" @click="flowPeerFilter = 'direct'">Direct Underlying</button>
+                    <button class="flow-chip" :class="flowPeerFilter === 'cat' ? 'flow-chip-active' : ''" type="button" @click="flowPeerFilter = 'cat'">Category Peers</button>
+                  </div>
                 </div>
-
-                <div class="flow-chart-block">
-                  <div class="flow-chart-heading">
-                    <div>
-                      <p class="flow-chart-kicker" x-text="`${flowTicker || 'ETF'} · Ecosystem &amp; Category Peers`">Ecosystem peers</p>
-                      <h3 x-text="flowPeerTitle"></h3>
-                      <p class="flow-chart-description" x-text="flowPeerSubtitle"></p>
-                    </div>
-                  </div>
-                  <div class="flow-table-wrap flow-peer-table-wrap scrollbar">
-                    <table class="flow-table">
-                      <caption class="flow-visually-hidden" x-text="`${flowTicker} direct and category peer comparison table`"></caption>
-                      <thead>
-                        <tr>
-                          <th scope="col">Ticker</th>
-                          <th scope="col">Exposure</th>
-                          <th scope="col" style="text-align:right">1D Flow</th>
-                          <th scope="col" style="text-align:right">20D Flow</th>
-                          <th scope="col" style="text-align:right" title="Prior-only z-score of latest daily flow vs prior 30 sessions">1D Z</th>
-                          <th scope="col" style="text-align:center" title="Self-scaled 20-session daily net flow pattern">20D Pulse</th>
+                <div class="flow-table-wrap flow-peer-table-wrap scrollbar" style="margin-top:0.75rem">
+                  <table class="flow-table">
+                    <caption class="flow-visually-hidden" x-text="`${flowTicker} direct and category peer comparison table`"></caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Ticker</th>
+                        <th scope="col">Exposure</th>
+                        <th scope="col" style="text-align:right">1D Flow</th>
+                        <th scope="col" style="text-align:right">5D Flow</th>
+                        <th scope="col" style="text-align:right">20D Flow Pace</th>
+                        <th scope="col" style="text-align:right" title="1D Flow relative to current AUM">Flow / AUM</th>
+                        <th scope="col" style="text-align:right" title="Active model flow z-score of latest daily flow vs prior 30 sessions">1D Z</th>
+                        <th scope="col" style="text-align:center" title="Self-scaled 20-session daily net flow pattern">20D Pulse</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <template x-for="peer in flowPeerComparisonRows" :key="peer.ticker">
+                        <tr style="cursor:pointer"
+                            :style="peer.ticker === flowTicker ? 'background:rgba(255,255,255,0.06)' : ''"
+                            tabindex="0"
+                            role="button"
+                            :aria-selected="peer.ticker === flowTicker ? 'true' : 'false'"
+                            :aria-label="`Select ${peer.ticker} (${peer.cleanUnderlying} ${peer.leverage})`"
+                            @click="selectFlowTicker(peer.ticker, { writeUrl: true, push: true })"
+                            @keydown.enter="selectFlowTicker(peer.ticker, { writeUrl: true, push: true })"
+                            @keydown.space.prevent="selectFlowTicker(peer.ticker, { writeUrl: true, push: true })">
+                          <td>
+                            <div style="display:flex;align-items:center;gap:0.35rem">
+                              <span class="flow-result-symbol" :style="peer.ticker === flowTicker ? 'color:var(--flow-cyan);font-weight:700' : ''" x-text="peer.ticker"></span>
+                              <span class="flow-badge" :data-state="peer.isDirect ? 'ACCUMULATION' : 'BALANCED'" style="font-size:0.5625rem;padding:1px 3px" x-text="peer.isDirect ? 'DIRECT' : 'CAT'"></span>
+                            </div>
+                          </td>
+                          <td>
+                            <div style="display:flex;align-items:center;gap:0.45rem;flex-wrap:wrap">
+                              <span style="font-size:0.75rem;color:var(--flow-text);white-space:nowrap;font-weight:600" x-text="peer.cleanUnderlying"></span>
+                              <span class="flow-badge" :data-state="peer.leverage?.startsWith('-') ? 'DISTRIBUTION' : 'ACCUMULATION'" style="font-size:0.625rem;padding:1px 4px;font-family:ui-monospace, monospace" x-text="peer.leverage"></span>
+                              <span style="font-size:0.7rem;color:var(--flow-subtle);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" x-text="peer.fund_name"></span>
+                            </div>
+                          </td>
+                          <td style="text-align:right" :class="peer.latest_flow > 0 ? 'flow-positive' : peer.latest_flow < 0 ? 'flow-negative' : 'flow-subtle'" x-text="formatMoney(peer.latest_flow)"></td>
+                          <td style="text-align:right" :class="peer.flow_5d > 0 ? 'flow-positive' : peer.flow_5d < 0 ? 'flow-negative' : 'flow-subtle'" x-text="formatMoney(peer.flow_5d)"></td>
+                          <td style="text-align:right" :class="peer.flow_20d > 0 ? 'flow-positive' : peer.flow_20d < 0 ? 'flow-negative' : 'flow-subtle'" x-text="formatMoney(peer.flow_20d)"></td>
+                          <td style="text-align:right" :class="peer.flow_pct_aum > 0 ? 'flow-positive' : peer.flow_pct_aum < 0 ? 'flow-negative' : 'flow-subtle'" x-text="peer.flow_pct_aum != null ? `${peer.flow_pct_aum >= 0 ? '+' : ''}${peer.flow_pct_aum.toFixed(2)}%` : '—'"></td>
+                          <td style="text-align:right" :class="peer.flow_zscore >= 1.5 ? 'flow-cyan' : peer.flow_zscore <= -1.5 ? 'flow-amber' : ''" x-text="peer.flow_zscore != null ? `${peer.flow_zscore >= 0 ? '+' : ''}${peer.flow_zscore.toFixed(2)}σ` : '—'"></td>
+                          <td style="text-align:center"><div x-html="peer.sparklineSvg"></div></td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        <template x-for="peer in flowPeerComparisonRows" :key="peer.ticker">
-                          <tr style="cursor:pointer"
-                              :style="peer.ticker === flowTicker ? 'background:rgba(255,255,255,0.06)' : ''"
-                              tabindex="0"
-                              role="button"
-                              :aria-selected="peer.ticker === flowTicker ? 'true' : 'false'"
-                              :aria-label="`Select ${peer.ticker} (${peer.cleanUnderlying} ${peer.leverage})`"
-                              @click="selectFlowTicker(peer.ticker, { writeUrl: true, push: true })"
-                              @keydown.enter="selectFlowTicker(peer.ticker, { writeUrl: true, push: true })"
-                              @keydown.space.prevent="selectFlowTicker(peer.ticker, { writeUrl: true, push: true })">
-                            <td>
-                              <div style="display:flex;align-items:center;gap:0.35rem">
-                                <span class="flow-result-symbol" :style="peer.ticker === flowTicker ? 'color:var(--flow-cyan);font-weight:700' : ''" x-text="peer.ticker"></span>
-                                <span class="flow-badge" :data-state="peer.isDirect ? 'ACCUMULATION' : 'BALANCED'" style="font-size:0.5625rem;padding:1px 3px" x-text="peer.isDirect ? 'DIRECT' : 'CAT'"></span>
-                              </div>
-                            </td>
-                            <td>
-                              <div style="display:flex;align-items:center;gap:0.35rem">
-                                <span style="font-size:0.75rem;color:var(--flow-text);white-space:nowrap" x-text="peer.cleanUnderlying"></span>
-                                <span class="flow-badge" :data-state="peer.leverage?.startsWith('-') ? 'DISTRIBUTION' : 'ACCUMULATION'" style="font-size:0.625rem;padding:1px 4px;font-family:ui-monospace, monospace" x-text="peer.leverage"></span>
-                              </div>
-                            </td>
-                            <td style="text-align:right" :class="peer.latest_flow > 0 ? 'flow-positive' : peer.latest_flow < 0 ? 'flow-negative' : 'flow-subtle'" x-text="formatMoney(peer.latest_flow)"></td>
-                            <td style="text-align:right" :class="peer.flow_20d > 0 ? 'flow-positive' : peer.flow_20d < 0 ? 'flow-negative' : 'flow-subtle'" x-text="formatMoney(peer.flow_20d)"></td>
-                            <td style="text-align:right" :class="peer.flow_zscore >= 1.5 ? 'flow-cyan' : peer.flow_zscore <= -1.5 ? 'flow-amber' : ''" x-text="peer.flow_zscore != null ? `${peer.flow_zscore >= 0 ? '+' : ''}${peer.flow_zscore.toFixed(2)}σ` : '—'"></td>
-                            <td style="text-align:center"><div x-html="peer.sparklineSvg"></div></td>
-                          </tr>
-                        </template>
-                      </tbody>
-                    </table>
-                  </div>
+                      </template>
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
