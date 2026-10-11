@@ -1265,7 +1265,7 @@
           accCount: pulse.accumulationCount,
           distCount: pulse.distributionCount,
           spreadZ: `${spreadZ >= 0 ? '+' : ''}${spreadZ.toFixed(2)}σ`,
-          hhi: hhi.toFixed(3),
+          hhi: hhi !== null ? hhi.toFixed(3) : '—',
           effFunds
         };
       },
@@ -2005,7 +2005,7 @@
           const f1 = finiteNumber(item.latest_flow) || 0;
           const f20 = finiteNumber(item.flow_20d) ?? 0;
           const aumVal = finiteNumber(item.aum_m) || 0;
-          const flowPctAum = (aumVal > 0 && f1 !== 0) ? ((f1 / (aumVal * 1e6)) * 100) : null;
+          const flowPctAum = (aumVal > 0 && f1 !== null) ? ((f1 / (aumVal * 1e6)) * 100) : null;
           return {
             ticker: item.ticker,
             fund_name: item.fund_name,
@@ -3067,12 +3067,16 @@
         const flowPctAum = (aumVal > 0) ? (netFlow / (aumVal * 1e6)) * 100 : null;
         let totVol = 0;
         let totDollarVol = 0;
+        let hasTrueVol = false;
         slice.forEach(r => {
-          const v = finiteNumber(r.volume) || (r.nav ? Math.round(Math.abs(r.flow || 0) / r.nav) : 0);
-          totVol += v;
-          if (r.nav) totDollarVol += v * r.nav;
+          const v = finiteNumber(r.volume);
+          if (v !== null && v > 0) {
+            totVol += v;
+            hasTrueVol = true;
+            if (r.nav) totDollarVol += v * r.nav;
+          }
         });
-        const penetration = (totDollarVol > 0) ? (Math.abs(netFlow) / totDollarVol) * 100 : 0;
+        const penetration = (hasTrueVol && totDollarVol > 0 && netFlow !== null) ? (Math.abs(netFlow) / totDollarVol) * 100 : null;
         this.flowMeasureResult = {
           i1,
           i2,
@@ -3107,9 +3111,9 @@
         const p1 = firstNavRow ? finiteNumber(firstNavRow.nav) : null;
         const p2 = lastNavRow ? finiteNumber(lastNavRow.nav) : null;
         const navRetPct = (p1 !== null && p2 !== null && p1 > 0) ? ((p2 - p1) / p1) * 100 : null;
-        const netFlow = finiteNumber(last.selectedCumulative) || 0;
+        const netFlow = finiteNumber(last.selectedCumulative);
         const aum = (finiteNumber(this.flowSelectedInstrument?.aum_m) || 0) * 1e6;
-        const flowPctAum = aum > 0 ? (netFlow / aum) * 100 : null;
+        const flowPctAum = (aum > 0 && netFlow !== null) ? (netFlow / aum) * 100 : null;
         const mean20 = finiteNumber(last.rollingMean20);
         const s20 = finiteNumber(last.rollingSum20);
         const s60 = finiteNumber(last.rollingSum60);
@@ -3818,11 +3822,11 @@
         }
         if (sum20 > 0 && baseline60 > 0) {
           if (sum20 >= baseline60) return { state: 'ACCUMULATION', label: 'INFLOW EXPANDING' };
-          return { state: 'ACCUMULATION', label: 'STEADY INFLOW' };
+          return { state: 'ACCUMULATION', label: 'INFLOW MODERATING' };
         }
         if (sum20 < 0 && baseline60 < 0) {
           if (sum20 <= baseline60) return { state: 'DISTRIBUTION', label: 'OUTFLOW EXPANDING' };
-          return { state: 'DISTRIBUTION', label: 'STEADY OUTFLOW' };
+          return { state: 'DISTRIBUTION', label: 'OUTFLOW MODERATING' };
         }
         if (sum20 > 0 && baseline60 <= 0) {
           return { state: 'ACCUMULATION', label: 'ROTATION TO INFLOW' };
