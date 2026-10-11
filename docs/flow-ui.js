@@ -29,7 +29,7 @@
     index_leverage: 'Index leverage'
   };
 
-  const LOCAL_SOURCE_LABEL = 'Local dataset · Trackinsight-reported historical fields';
+  const LOCAL_SOURCE_LABEL = 'Historical flow dataset';
 
   const COLORS = {
     text: '#e8edf3',
@@ -471,8 +471,8 @@
     const sourceProvider = payload.source_provider || manifestEntry?.source_provider || item?.source_provider || '';
     const flowCurrency = payload.flow_currency || manifestEntry?.flow_currency || item?.flow_currency || 'USD';
     const navCurrency = payload.nav_currency || manifestEntry?.nav_currency || item?.nav_currency || 'USD';
-    const acceptedSources = new Set(['Local dataset', 'local dataset', 'Trackinsight', LOCAL_SOURCE_LABEL]);
-    if (!acceptedSources.has(source) && sourceProvider !== 'Trackinsight') throw new Error('Unexpected local flow source.');
+    const acceptedSources = new Set(['Local dataset', 'local dataset', 'Trackinsight', 'Historical dataset', 'Historical flow dataset', LOCAL_SOURCE_LABEL]);
+    if (!acceptedSources.has(source) && sourceProvider !== 'Trackinsight' && sourceProvider !== 'Historical' && sourceProvider !== '') throw new Error('Unexpected local flow source.');
     if (flowCurrency !== 'USD' || navCurrency !== 'USD') throw new Error('Flow and NAV currency must be USD.');
     if (!Array.isArray(payload.data)) throw new Error('Flow history data must be an array.');
     if (payload.count !== undefined && integerValue(payload.count) !== payload.data.length) throw new Error('Flow history count does not match its data.');
@@ -528,7 +528,7 @@
       alternatives: Array.isArray(item?.alternatives) ? item.alternatives.slice() : [],
       source,
       sourceLabel: LOCAL_SOURCE_LABEL,
-      sourceProvider: sourceProvider || 'Trackinsight',
+      sourceProvider: sourceProvider || 'Historical',
       sourceMode: payload.source_mode || manifestEntry?.source_mode || 'historical_local',
       qualityStatus: declaredStatus || 'available',
       dataQuality: payload.data_quality || manifestEntry?.data_quality || null,
@@ -1672,19 +1672,27 @@
           else if (rangeBadge === 'ACCUMULATION AT LOWS') themeColor = '#22d3ee';
           else if (rangeBadge === 'PRESSURE AT LOWS') themeColor = '#fb7185';
 
-          const barY = 30;
-          const barH = 5;
+          const barY = 32;
+          const barH = 4;
           const barFillW = Math.max(2, (rangePct / 100) * plotW);
           const pinX = padX + (rangePct / 100) * plotW;
 
           rangeSparklineSvg = `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:40px;display:block" role="img" aria-label="20D Price range position channel graph">
-            <line x1="${padX}" y1="${yTop}" x2="${w - padX}" y2="${yTop}" stroke="rgba(255,255,255,0.12)" stroke-width="0.8" stroke-dasharray="2 2"/>
-            <line x1="${padX}" y1="${yTop + plotH}" x2="${w - padX}" y2="${yTop + plotH}" stroke="rgba(255,255,255,0.12)" stroke-width="0.8" stroke-dasharray="2 2"/>
-            <path d="${pts}" fill="none" stroke="rgba(255,255,255,0.38)" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
-            <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="3" fill="#ffffff" stroke="${themeColor}" stroke-width="1.5"/>
-            <rect x="${padX}" y="${barY}" width="${plotW}" height="${barH}" rx="2.5" fill="rgba(255,255,255,0.08)"/>
-            <rect x="${padX}" y="${barY}" width="${barFillW.toFixed(1)}" height="${barH}" rx="2.5" fill="${themeColor}"/>
-            <circle cx="${pinX.toFixed(1)}" cy="${barY + barH / 2}" r="3" fill="#ffffff" stroke="${themeColor}" stroke-width="1"/>
+            <defs>
+              <linearGradient id="flowRangeGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="${themeColor}" stop-opacity="0.25"/>
+                <stop offset="100%" stop-color="${themeColor}" stop-opacity="0.0"/>
+              </linearGradient>
+            </defs>
+            <line x1="${padX}" y1="${yTop}" x2="${w - padX}" y2="${yTop}" stroke="rgba(255,255,255,0.08)" stroke-width="0.8" stroke-dasharray="2 2"/>
+            <line x1="${padX}" y1="${yTop + plotH}" x2="${w - padX}" y2="${yTop + plotH}" stroke="rgba(255,255,255,0.08)" stroke-width="0.8" stroke-dasharray="2 2"/>
+            <path d="${pts} L ${lastX.toFixed(1)} ${(yTop + plotH).toFixed(1)} L ${padX} ${(yTop + plotH).toFixed(1)} Z" fill="url(#flowRangeGrad)"/>
+            <path d="${pts}" fill="none" stroke="${themeColor}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+            <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="2.5" fill="${themeColor}"/>
+            <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="5" fill="${themeColor}" opacity="0.25"/>
+            <rect x="${padX}" y="${barY}" width="${plotW}" height="${barH}" rx="2" fill="rgba(255,255,255,0.06)"/>
+            <rect x="${padX}" y="${barY}" width="${barFillW.toFixed(1)}" height="${barH}" rx="2" fill="${themeColor}" opacity="0.85"/>
+            <rect x="${(pinX - 1.5).toFixed(1)}" y="${barY - 2}" width="3" height="${barH + 4}" rx="1" fill="#ffffff" stroke="${themeColor}" stroke-width="0.75"/>
           </svg>`;
         }
 
@@ -1777,7 +1785,7 @@
         const smH = 40;
         const smPadX = 8;
         const smPlotW = smW - smPadX * 2;
-        const smBarY = 20;
+        const smBarY = 18;
         const smBarH = 6;
         const zToX = z => smPadX + Math.max(0, Math.min(1, (z + 3) / 6)) * smPlotW;
         const xNeg15 = zToX(-1.5);
@@ -1790,18 +1798,22 @@
         else if (latestZ >= 0.75) zThemeColor = '#38bdf8';
         else if (latestZ <= -0.75) zThemeColor = '#f59e0b';
 
+        const curLabelX = Math.max(smPadX + 16, Math.min(smW - smPadX - 16, curZX));
+
         const shockMeterSvg = `<svg viewBox="0 0 ${smW} ${smH}" style="width:100%;height:40px;display:block" role="img" aria-label="Z-Score historical distribution position meter">
-          <rect x="${smPadX}" y="${smBarY}" width="${(xNeg15 - smPadX).toFixed(1)}" height="${smBarH}" fill="rgba(251,113,133,0.32)" rx="2"/>
-          <rect x="${xNeg15.toFixed(1)}" y="${smBarY}" width="${(xPos15 - xNeg15).toFixed(1)}" height="${smBarH}" fill="rgba(255,255,255,0.08)"/>
-          <rect x="${xPos15.toFixed(1)}" y="${smBarY}" width="${(smPadX + smPlotW - xPos15).toFixed(1)}" height="${smBarH}" fill="rgba(34,211,238,0.32)" rx="2"/>
-          <line x1="${xNeg15.toFixed(1)}" y1="${smBarY - 3}" x2="${xNeg15.toFixed(1)}" y2="${smBarY + smBarH + 3}" stroke="rgba(251,113,133,0.6)" stroke-width="1"/>
-          <line x1="${xZero.toFixed(1)}" y1="${smBarY - 4}" x2="${xZero.toFixed(1)}" y2="${smBarY + smBarH + 4}" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
-          <line x1="${xPos15.toFixed(1)}" y1="${smBarY - 3}" x2="${xPos15.toFixed(1)}" y2="${smBarY + smBarH + 3}" stroke="rgba(34,211,238,0.6)" stroke-width="1"/>
-          <text x="${xNeg15.toFixed(1)}" y="${smBarY - 6}" text-anchor="middle" fill="#fb7185" font-family="ui-monospace, monospace" font-size="8">−1.5σ</text>
-          <text x="${xZero.toFixed(1)}" y="${smBarY - 6}" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-family="ui-monospace, monospace" font-size="8">0σ</text>
-          <text x="${xPos15.toFixed(1)}" y="${smBarY - 6}" text-anchor="middle" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="8">+1.5σ</text>
-          <circle cx="${curZX.toFixed(1)}" cy="${(smBarY + smBarH / 2).toFixed(1)}" r="4.5" fill="${zThemeColor}" stroke="#ffffff" stroke-width="1.8"/>
-          <text x="${curZX.toFixed(1)}" y="${smBarY + smBarH + 11}" text-anchor="middle" fill="${zThemeColor}" font-family="ui-monospace, monospace" font-size="8.5" font-weight="700">${latestZ >= 0 ? '+' : ''}${latestZ.toFixed(2)}σ</text>
+          <rect x="${smPadX}" y="${smBarY}" width="${smPlotW}" height="${smBarH}" rx="3" fill="rgba(255,255,255,0.05)"/>
+          <rect x="${smPadX}" y="${smBarY}" width="${(xNeg15 - smPadX).toFixed(1)}" height="${smBarH}" rx="3" fill="rgba(251,113,133,0.22)"/>
+          <rect x="${xNeg15.toFixed(1)}" y="${smBarY}" width="${(xPos15 - xNeg15).toFixed(1)}" height="${smBarH}" fill="rgba(255,255,255,0.03)"/>
+          <rect x="${xPos15.toFixed(1)}" y="${smBarY}" width="${(smPadX + smPlotW - xPos15).toFixed(1)}" height="${smBarH}" rx="3" fill="rgba(34,211,238,0.22)"/>
+          <line x1="${xNeg15.toFixed(1)}" y1="${smBarY - 2}" x2="${xNeg15.toFixed(1)}" y2="${smBarY + smBarH + 2}" stroke="rgba(251,113,133,0.5)" stroke-width="1"/>
+          <line x1="${xZero.toFixed(1)}" y1="${smBarY - 3}" x2="${xZero.toFixed(1)}" y2="${smBarY + smBarH + 3}" stroke="rgba(255,255,255,0.3)" stroke-width="1.2"/>
+          <line x1="${xPos15.toFixed(1)}" y1="${smBarY - 2}" x2="${xPos15.toFixed(1)}" y2="${smBarY + smBarH + 2}" stroke="rgba(34,211,238,0.5)" stroke-width="1"/>
+          <text x="${xNeg15.toFixed(1)}" y="${smBarY - 5}" text-anchor="middle" fill="#fb7185" font-family="ui-monospace, monospace" font-size="7.5" font-weight="600">−1.5σ</text>
+          <text x="${xZero.toFixed(1)}" y="${smBarY - 5}" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-family="ui-monospace, monospace" font-size="7.5" font-weight="600">0σ</text>
+          <text x="${xPos15.toFixed(1)}" y="${smBarY - 5}" text-anchor="middle" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="7.5" font-weight="600">+1.5σ</text>
+          <circle cx="${curZX.toFixed(1)}" cy="${(smBarY + smBarH / 2).toFixed(1)}" r="3.5" fill="${zThemeColor}"/>
+          <circle cx="${curZX.toFixed(1)}" cy="${(smBarY + smBarH / 2).toFixed(1)}" r="6" fill="${zThemeColor}" opacity="0.25"/>
+          <text x="${curLabelX.toFixed(1)}" y="${smBarY + smBarH + 12}" text-anchor="middle" fill="${zThemeColor}" font-family="ui-monospace, monospace" font-size="8" font-weight="700">${latestZ >= 0 ? '+' : ''}${latestZ.toFixed(2)}σ</text>
         </svg>`;
 
         // --- 3. 5D Velocity & Capital Sponsorship / Flow Thrust ---
@@ -1862,11 +1874,14 @@
         const tmW = 260;
         const tmH = 40;
         const tmPadX = 8;
-        const tmPlotW = tmW - tmPadX * 2;
-        const tmCenter = tmPadX + tmPlotW / 2;
+        const lblW = 44;
+        const tagBoxW = 66;
+        const barStartX = tmPadX + lblW;
+        const barPlotW = tmW - tmPadX * 2 - lblW - tagBoxW;
+        const tmCenter = barStartX + barPlotW / 2;
 
         const rVal = ret5d !== null ? Math.max(-15, Math.min(15, ret5d)) : 0;
-        const rW = (Math.abs(rVal) / 15) * (tmPlotW / 2);
+        const rW = (Math.abs(rVal) / 15) * (barPlotW / 2);
         const rX = rVal >= 0 ? tmCenter : tmCenter - rW;
         const rColor = rVal >= 0 ? '#34d399' : '#fb7185';
 
@@ -1874,7 +1889,7 @@
         const maxHist5D = Math.max(1e6, ...allMetricRows.slice(-60).map(r => Math.abs(finiteNumber(r.rollingSum5) || 0)));
         const fRef = Math.max(1e6, maxHist5D);
         const fRatio = Math.min(1, f5Abs / fRef);
-        const fW = fRatio * (tmPlotW / 2);
+        const fW = fRatio * (barPlotW / 2);
         const fX = flow5d >= 0 ? tmCenter : tmCenter - fW;
         const fColor = flow5d >= 0 ? '#22d3ee' : '#fb7185';
 
@@ -1883,14 +1898,15 @@
         const tagColor = tagText === 'CONVERGENT' ? '#34d399' : tagText === 'DIVERGENT' ? '#f59e0b' : '#94a3b8';
 
         const thrustMeterSvg = `<svg viewBox="0 0 ${tmW} ${tmH}" style="width:100%;height:40px;display:block" role="img" aria-label="5D Price Move and Flow Thrust comparison meter">
-          <rect x="${tmPadX}" y="7" width="${tmPlotW}" height="7" rx="2" fill="rgba(255,255,255,0.06)"/>
-          <rect x="${tmPadX}" y="23" width="${tmPlotW}" height="7" rx="2" fill="rgba(255,255,255,0.06)"/>
-          <line x1="${tmCenter.toFixed(1)}" y1="4" x2="${tmCenter.toFixed(1)}" y2="${33}" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
-          <rect x="${rX.toFixed(1)}" y="7" width="${Math.max(1.5, rW).toFixed(1)}" height="7" rx="1.5" fill="${rColor}"/>
-          <rect x="${fX.toFixed(1)}" y="23" width="${Math.max(1.5, fW).toFixed(1)}" height="7" rx="1.5" fill="${fColor}"/>
-          <text x="${tmPadX + 2}" y="13" fill="rgba(255,255,255,0.4)" font-family="ui-monospace, monospace" font-size="7.5">NAV 5D</text>
-          <text x="${tmPadX + 2}" y="29" fill="rgba(255,255,255,0.4)" font-family="ui-monospace, monospace" font-size="7.5">FLOW 5D</text>
-          <text x="${(tmW - tmPadX - 2).toFixed(1)}" y="21" text-anchor="end" fill="${tagColor}" font-family="ui-monospace, monospace" font-size="8" font-weight="700" letter-spacing="0.04em">${tagText}</text>
+          <text x="${tmPadX}" y="13" fill="#94a3b8" font-family="ui-monospace, monospace" font-size="7.5" font-weight="600">NAV 5D</text>
+          <text x="${tmPadX}" y="29" fill="#94a3b8" font-family="ui-monospace, monospace" font-size="7.5" font-weight="600">FLOW 5D</text>
+          <rect x="${barStartX.toFixed(1)}" y="7" width="${barPlotW.toFixed(1)}" height="6" rx="2" fill="rgba(255,255,255,0.06)"/>
+          <rect x="${barStartX.toFixed(1)}" y="23" width="${barPlotW.toFixed(1)}" height="6" rx="2" fill="rgba(255,255,255,0.06)"/>
+          <line x1="${tmCenter.toFixed(1)}" y1="4" x2="${tmCenter.toFixed(1)}" y2="33" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+          <rect x="${rX.toFixed(1)}" y="7" width="${Math.max(1.5, rW).toFixed(1)}" height="6" rx="1.5" fill="${rColor}"/>
+          <rect x="${fX.toFixed(1)}" y="23" width="${Math.max(1.5, fW).toFixed(1)}" height="6" rx="1.5" fill="${fColor}"/>
+          <rect x="${(tmW - tmPadX - 60).toFixed(1)}" y="12" width="60" height="16" rx="3" fill="${tagColor}18" stroke="${tagColor}40" stroke-width="0.8"/>
+          <text x="${(tmW - tmPadX - 30).toFixed(1)}" y="23" text-anchor="middle" fill="${tagColor}" font-family="ui-monospace, monospace" font-size="7.5" font-weight="700" letter-spacing="0.04em">${tagText}</text>
         </svg>`;
 
         return {
@@ -2111,16 +2127,16 @@
           let setup_name = '';
           const sig = String(item.live_signal || item.live_signal_label || '');
           if (sig.includes('SLINGSHOT') || sig.includes('WASHOUT')) {
-            setup_icon = '⚡';
+            setup_icon = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 6 L3 6 L4.5 2 L6.5 10 L8 6 L11 6" stroke="#f59e0b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
             setup_name = 'Washout Rebound Setup';
           } else if (sig.includes('IGNITION') || sig.includes('BREAKOUT') || sig.includes('MOMENTUM')) {
-            setup_icon = '↗';
+            setup_icon = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 9.5 L9.5 2.5 M9.5 2.5 H4.5 M9.5 2.5 V7.5" stroke="#34d399" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
             setup_name = 'Momentum Ignition Setup';
           } else if (sig.includes('SQUEEZE') || sig.includes('WALL')) {
-            setup_icon = '◐';
+            setup_icon = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="#c084fc" stroke-width="1.4"/><path d="M6 1.5 A4.5 4.5 0 0 1 6 10.5 Z" fill="#c084fc"/></svg>';
             setup_name = 'Wall of Worry Squeeze';
           } else if (sig.includes('TRAP') || sig.includes('DEAD_CAT') || sig.includes('AVOID')) {
-            setup_icon = '⛔';
+            setup_icon = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="#fb7185" stroke-width="1.4"/><line x1="3" y1="9" x2="9" y2="3" stroke="#fb7185" stroke-width="1.4" stroke-linecap="round"/></svg>';
             setup_name = 'Dip Inflow Avoid Setup';
           }
           rows.push({

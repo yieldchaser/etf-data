@@ -188,7 +188,7 @@
       <span x-show="returnsData" x-text="`${Object.keys(returnsData?.assets||{}).length} assets`"></span>
       <span x-show="series.length" x-text="`${series.length} price series`"></span>
       <a href="methodology.html" class="label hover:text-zinc-400 transition" style="text-decoration: none;"
-         title="How Conviction Labs works - scoring, motion signals, sanitizer, self-living data, and honest limitations">How it works ↗</a>
+         title="How Conviction Labs works - scoring, motion signals, methodology, and limitations">How it works ↗</a>
     </div>
   </header>
 
@@ -2276,14 +2276,13 @@
       </div>
 
       <div class="flow-state" x-show="flowInitialLoading" role="status">
-        <h3>Loading curated catalog</h3>
-        <p>Reading the static catalog export and checked-in coverage manifest. No source request is made.</p>
+        <h3>Loading ETF flows</h3>
+        <p>Initializing flow dataset...</p>
       </div>
 
       <div class="flow-state" x-show="!flowInitialLoading && flowCatalogError" role="alert">
-        <h3>Catalog unavailable</h3>
+        <h3>Dataset unavailable</h3>
         <p x-text="flowCatalogError"></p>
-        <p>The flow analysis is closed because instrument identity and history paths cannot be established without the curated export.</p>
       </div>
 
       <template x-if="!flowInitialLoading && flowCatalog && !flowCatalogError">
@@ -2295,7 +2294,7 @@
             <div class="flow-top-movers-grid" x-show="flowTopMovers.inflows.length || flowTopMovers.outflows.length">
               <div class="flow-top-mover-card">
                 <div style="display:grid;gap:0.25rem">
-                  <span class="flow-eyebrow">Top 1D Net Inflow Leaders ▲</span>
+                  <span class="flow-eyebrow">Top 1D Net Inflow Leaders <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="vertical-align:-1px;margin-left:3px"><path d="M5 2 L8 7 L2 7 Z" fill="#34d399"/></svg></span>
                   <div style="display:flex;flex-wrap:wrap;gap:0.4rem;align-items:center">
                     <template x-for="item in flowTopMovers.inflows" :key="item.ticker">
                       <button class="flow-chip" type="button" @click="selectFlowTicker(item.ticker, { writeUrl: true, push: true, switchToStudio: true })">
@@ -2309,7 +2308,7 @@
               </div>
               <div class="flow-top-mover-card">
                 <div style="display:grid;gap:0.25rem">
-                  <span class="flow-eyebrow">Top 1D Net Outflow Leaders ▼</span>
+                  <span class="flow-eyebrow">Top 1D Net Outflow Leaders <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="vertical-align:-1px;margin-left:3px"><path d="M5 8 L2 3 L8 3 Z" fill="#fb7185"/></svg></span>
                   <div style="display:flex;flex-wrap:wrap;gap:0.4rem;align-items:center">
                     <template x-for="item in flowTopMovers.outflows" :key="item.ticker">
                       <button class="flow-chip" type="button" @click="selectFlowTicker(item.ticker, { writeUrl: true, push: true, switchToStudio: true })">
@@ -2352,7 +2351,7 @@
               <div style="margin-top:0.6rem;padding-top:0.65rem;border-top:1px solid var(--flow-line)">
                 <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:0.5rem;margin-bottom:0.5rem">
                   <div style="display:flex;align-items:center;gap:0.5rem">
-                    <span class="flow-eyebrow" style="color:var(--flow-cyan)">● Active Trough &amp; Peak Scanner</span>
+                    <span class="flow-eyebrow" style="color:var(--flow-cyan);display:inline-flex;align-items:center;gap:0.35rem"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><circle cx="4" cy="4" r="3" fill="#22d3ee"/></svg> Active Trough &amp; Peak Scanner</span>
                     <span class="flow-support" style="font-size:0.6875rem">(Automated ongoing classification across <span x-text="flowPrimaryInstruments.length">160</span> instruments)</span>
                   </div>
                   <span class="flow-eyebrow" x-text="`${flowActiveCycleAnomalies.totalAnomalies} Active Regimes Flagged`"></span>
@@ -2539,7 +2538,7 @@
                         <div style="display:inline-flex;align-items:center;gap:0.3rem">
                           <span class="flow-badge" :data-state="item.regime" x-text="item.regime"></span>
                           <template x-if="item.setup_icon">
-                            <span :title="item.setup_name" @click.stop="setFlowViewMode('alpha')" style="cursor:pointer;font-size:0.8rem;line-height:1" x-text="item.setup_icon"></span>
+                            <span :title="item.setup_name" @click.stop="setFlowViewMode('alpha')" style="cursor:pointer;display:inline-flex;align-items:center" x-html="item.setup_icon"></span>
                           </template>
                         </div>
                       </td>
@@ -2895,11 +2894,9 @@
                   <span x-text="flowSelectedInstrument?.aum_m != null ? `AUM $${flowSelectedInstrument.aum_m.toFixed(1)}M · TER ${flowSelectedInstrument.ter || '—'}` : ''"></span>
                 </div>
                 <div class="flow-support" style="margin-top:0.35rem;font-size:0.6875rem;opacity:0.75" x-show="flowData">
-                  <span x-text="flowData ? `${flowData.count.toLocaleString('en-US')} available source observations` : 'Available source history unavailable'"></span>
-                  <span>·</span>
-                  <span x-text="flowData?.sourceAsOf ? `Source as of ${flowData.sourceAsOf}` : 'Source date unavailable'"></span>
-                  <span>·</span>
-                  <span x-text="flowData?.sourceLabel || 'Authoritative Trackinsight historical dataset'"></span>
+                  <span x-text="flowData ? `${flowData.count.toLocaleString('en-US')} available source observations` : ''"></span>
+                  <span x-show="flowData?.sourceAsOf">·</span>
+                  <span x-text="flowData?.sourceAsOf ? `As of ${flowData.sourceAsOf}` : ''"></span>
                 </div>
               </div>
               <div class="flow-instrument-right">
@@ -3041,22 +3038,22 @@
                   <div class="flow-workbench-toolbar">
                     <div style="display:inline-flex;align-items:center;gap:0.3rem">
                       <button class="flow-chip" :class="flowWorkbenchPriceEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchPriceEnabled" type="button" @click="flowWorkbenchPriceEnabled = !flowWorkbenchPriceEnabled" title="Toggle NAV Line">
-                        <span style="color:#c084fc">●</span> NAV
+                        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="vertical-align:-1px;margin-right:4px"><path d="M1.5 8.5 L4.5 4.5 L7.5 7 L10.5 2.5" stroke="#c084fc" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>NAV
                       </button>
                       <button class="flow-chip" :class="flowWorkbenchCumEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchCumEnabled" type="button" @click="flowWorkbenchCumEnabled = !flowWorkbenchCumEnabled" title="Toggle Cumulative Flow Area">
-                        <span style="color:#34d399">▲</span> Cum Flow
+                        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="vertical-align:-1px;margin-right:4px"><path d="M1.5 9.5 C4 9.5 6 3 10.5 2.5" stroke="#34d399" stroke-width="1.6" stroke-linecap="round"/><path d="M1.5 9.5 C4 9.5 6 3 10.5 2.5 L10.5 9.5 Z" fill="rgba(52,211,153,0.2)"/></svg>Cum Flow
                       </button>
                       <button class="flow-chip" :class="flowWorkbenchDailyEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchDailyEnabled" type="button" @click="flowWorkbenchDailyEnabled = !flowWorkbenchDailyEnabled" title="Toggle Daily Flow Bars">
-                        <span style="color:#22d3ee">▮</span> Daily Flow
+                        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="vertical-align:-1px;margin-right:4px"><rect x="1.5" y="4" width="2" height="6" rx="0.5" fill="#22d3ee"/><rect x="5" y="2" width="2" height="8" rx="0.5" fill="#22d3ee"/><rect x="8.5" y="5.5" width="2" height="4.5" rx="0.5" fill="#22d3ee"/></svg>Daily Flow
                       </button>
                       <button class="flow-chip" :class="flowWorkbenchVolumeEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchVolumeEnabled" type="button" @click="flowWorkbenchVolumeEnabled = !flowWorkbenchVolumeEnabled" title="Toggle Trading Volume Overlay">
-                        <span style="color:#94a3b8">▮</span> Volume
+                        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="vertical-align:-1px;margin-right:4px"><rect x="1.5" y="6" width="2" height="4.5" rx="0.5" fill="#94a3b8"/><rect x="5" y="4" width="2" height="6.5" rx="0.5" fill="#94a3b8"/><rect x="8.5" y="2" width="2" height="8.5" rx="0.5" fill="#94a3b8"/></svg>Volume
                       </button>
                       <button class="flow-chip" :class="flowWorkbenchVelocityEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchVelocityEnabled" type="button" @click="flowWorkbenchVelocityEnabled = !flowWorkbenchVelocityEnabled" title="Toggle 20D vs 60D Flow Velocity &amp; Acceleration Engine">
-                        <span style="color:#f59e0b">⚡</span> Velocity &amp; Accel
+                        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="vertical-align:-1px;margin-right:4px"><path d="M1 6 L3 6 L4.5 2 L6.5 10 L8 6 L11 6" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Velocity &amp; Accel
                       </button>
                       <button class="flow-chip" :class="flowWorkbenchZScoreEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchZScoreEnabled" type="button" @click="flowWorkbenchZScoreEnabled = !flowWorkbenchZScoreEnabled" title="Toggle Flow Z-Score Oscillator">
-                        <span style="color:#e879f9">~</span> Flow Z
+                        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="vertical-align:-1px;margin-right:4px"><path d="M1.5 6 Q 3.75 1.5 6 6 T 10.5 6" stroke="#e879f9" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg>Flow Z
                       </button>
                     </div>
                     <div style="width:1px;height:16px;background:var(--flow-line);margin:0 0.15rem"></div>
@@ -3064,17 +3061,13 @@
                       <button class="flow-chip" type="button" @click="flowCycleZModel()" :title="flowZModelTooltip" style="border-color:rgba(232,121,249,0.35);font-family:ui-monospace, monospace">
                         <span style="color:#e879f9">Model:</span> <span x-text="flowZModelLabel"></span>
                       </button>
-                      <button class="flow-chip" :class="flowWorkbenchShocksEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchShocksEnabled" type="button" @click="flowWorkbenchShocksEnabled = !flowWorkbenchShocksEnabled" title="Toggle extreme climax flow shock markers (|Z| ≥ 2.5σ)">
-                        <span style="color:#fbbf24">●</span> Shocks
+                      <button class="flow-chip" :class="flowWorkbenchShocksEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchShocksEnabled" type="button" @click="flowWorkbenchShocksEnabled = !flowWorkbenchShocksEnabled" title="Toggle climax flow shock markers (|Z| ≥ 2.5σ)">
+                        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="vertical-align:-1px;margin-right:4px"><circle cx="6" cy="6" r="4.5" stroke="#fbbf24" stroke-width="1.2" stroke-dasharray="2 1.5"/><circle cx="6" cy="6" r="2" fill="#fbbf24"/></svg>Shocks
                       </button>
                       <button class="flow-chip" type="button" @click="flowScaleMode = flowScaleMode === 'usd' ? 'pct_aum' : 'usd'" title="Switch between Dollar Flow ($) and Net Flow as % of AUM" style="font-weight:600;border-color:rgba(34,211,238,0.4)">
                         <span x-text="flowScaleMode === 'usd' ? '$ USD' : '% AUM'"></span>
                       </button>
                     </div>
-                    <div style="width:1px;height:16px;background:var(--flow-line);margin:0 0.15rem"></div>
-                    <button class="flow-chip" :class="flowMeasureActive ? 'flow-chip-active' : ''" :aria-pressed="flowMeasureActive" type="button" @click="flowMeasureActive = !flowMeasureActive; if (!flowMeasureActive) flowResetMeasurement()" title="Drag across chart canvas to calculate window performance and flow stats">
-                      ⇥ Drag to Measure
-                    </button>
                   </div>
                 </div>
 
@@ -3101,7 +3094,7 @@
                   <div class="flow-studio-stat-divider" x-show="flowWorkbenchSummary?.acceleration != null"></div>
                   <div class="flow-studio-stat" x-show="flowWorkbenchSummary?.acceleration != null" title="Flow acceleration: 20D pace minus 60D baseline pace">
                     <span class="flow-studio-stat-label">ACCELERATION</span>
-                    <span class="flow-studio-stat-val" :class="flowWorkbenchSummary?.acceleration != null ? (flowWorkbenchSummary.acceleration > 0 ? 'flow-positive' : flowWorkbenchSummary.acceleration < 0 ? 'flow-negative' : '') : ''" x-text="flowWorkbenchSummary?.acceleration != null ? `${flowWorkbenchSummary.acceleration >= 0 ? '+' : ''}${formatMoney(flowWorkbenchSummary.acceleration)}` : '—'"></span>
+                    <span class="flow-studio-stat-val" :class="flowWorkbenchSummary?.acceleration != null ? (flowWorkbenchSummary.acceleration > 0 ? 'flow-positive' : flowWorkbenchSummary.acceleration < 0 ? 'flow-negative' : '') : ''" x-text="flowWorkbenchSummary?.acceleration != null ? formatMoney(flowWorkbenchSummary.acceleration) : '—'"></span>
                   </div>
                   <div class="flow-studio-stat-divider"></div>
                   <div class="flow-studio-stat" :title="`Active model: ${flowZModelLabel}`">
@@ -3294,13 +3287,11 @@
             </details>
 
             <details>
-              <summary>Methodology and status definitions</summary>
+              <summary>Calculation methodology</summary>
               <div class="flow-details-body">
-                <p>ETF estimated net flow is the source-reported aggregate net flow series stored for the selected fund. The interface does not infer or label investor categories.</p>
-                <p>The selected-window cumulative view begins at a zero baseline before the first selected session and sums available daily values. Missing daily values are not converted to zero.</p>
-                <p>The trailing 10-session percentile uses complete windows only. Ties receive the midpoint of their rank positions. The prior-only z-score uses up to 30 preceding numeric sessions and excludes the current session from its baseline.</p>
-                <p>Pending means the static file is unavailable. Stale means the source date exceeds the current seven-day display policy. Unavailable means the artifact cannot be loaded or its identity does not match the catalog. Empty means the file has no usable observations. No missing observation is converted to zero.</p>
-                <p>The source is the authoritative dataset. Historical fields are reported by Trackinsight in the stored CSV/XLSX sources; the browser does not perform a live fetch or trigger external ingestion.</p>
+                <p>ETF estimated net flow is the source-reported aggregate net flow series stored for the selected fund.</p>
+                <p>The selected-window cumulative view begins at a zero baseline before the first selected session and sums available daily values.</p>
+                <p>The trailing 10-session percentile uses complete windows only. The prior-only z-score uses up to 30 preceding numeric sessions and excludes the current session from its baseline.</p>
               </div>
             </details>
           </div>
