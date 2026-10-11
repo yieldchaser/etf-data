@@ -806,6 +806,7 @@
         const models = ['standard', 'robust', 'volume', 'momentum'];
         const curIdx = models.indexOf(this.flowZModel);
         this.flowZModel = models[(curIdx + 1) % models.length];
+        this.flowWorkbenchZScoreEnabled = true;
         this._flowWorkbenchBaseKey = '';
       },
 
@@ -905,23 +906,33 @@
 
       get flowCategoryTabs() {
         const counts = {};
+        const catMap = {};
         for (const item of this.flowPrimaryInstruments) {
-          counts[item.category] = (counts[item.category] || 0) + 1;
+          const c = item.category || '';
+          counts[c] = (counts[c] || 0) + 1;
+          const numMatch = c.match(/^(\d+)\./);
+          if (numMatch) {
+            catMap[numMatch[1]] = c;
+          }
         }
+        const getRaw = num => catMap[num] || '';
+        const getCount = num => counts[catMap[num]] || 0;
         const total = this.flowPrimaryInstruments.length || 160;
+        const featuredCount = this.flowFeaturedInstruments.length || 24;
+
         return [
           { key: 'all', label: `All (${total})`, count: total, title: `All ${total} Leveraged & Inverse ETFs` },
-          { key: 'featured', label: `Featured (${this.flowFeaturedInstruments.length || 24})`, count: this.flowFeaturedInstruments.length, title: '24 Featured Anchor ETFs' },
-          { key: 'ai_semis', label: `AI & Semis 2X (${counts['4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech'] || 46})`, raw: '4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech', count: counts['4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech'] || 46 },
-          { key: 'mega_crypto', label: `Mega & Crypto 2X (${counts['5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer'] || 36})`, raw: '5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer', count: counts['5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer'] || 36 },
-          { key: 'tech_3x', label: `Tech & Semis 3X (${counts['2. Technology, Semiconductor & Thematic (Bull)'] || 15})`, raw: '2. Technology, Semiconductor & Thematic (Bull)', count: counts['2. Technology, Semiconductor & Thematic (Bull)'] || 15 },
-          { key: 'sectors_3x', label: `Sectors 3X (${counts['3. Sector Specific Leveraged (Bull)'] || 9})`, raw: '3. Sector Specific Leveraged (Bull)', count: counts['3. Sector Specific Leveraged (Bull)'] || 9 },
-          { key: 'shorts', label: `Shorts & Hedges (${counts['9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only)'] || 14})`, raw: '9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only)', count: counts['9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only)'] || 14 },
-          { key: 'commodities', label: `Commodities & Vol (${counts['6. Commodities, Energy & Volatility (Bull)'] || 8})`, raw: '6. Commodities, Energy & Volatility (Bull)', count: counts['6. Commodities, Energy & Volatility (Bull)'] || 8 },
-          { key: 'broad_index', label: `Broad Index (${counts['1. Broad Market Equity Index (Bull)'] || 8})`, raw: '1. Broad Market Equity Index (Bull)', count: counts['1. Broad Market Equity Index (Bull)'] || 8 },
-          { key: 'rates_fixed', label: `Rates & Crypto (${counts['7. Fixed Income, Currencies & Crypto (Bull)'] || 9})`, raw: '7. Fixed Income, Currencies & Crypto (Bull)', count: counts['7. Fixed Income, Currencies & Crypto (Bull)'] || 9 },
-          { key: 'intl', label: `International (${counts['8. International / Country (Bull)'] || 5})`, raw: '8. International / Country (Bull)', count: counts['8. International / Country (Bull)'] || 5 },
-          { key: 'core_anchors', label: `Core Anchors & Factors (${counts['10. Core Benchmarks, Factor Rotation & High-Beta Anchors'] || 10})`, raw: '10. Core Benchmarks, Factor Rotation & High-Beta Anchors', count: counts['10. Core Benchmarks, Factor Rotation & High-Beta Anchors'] || 10 }
+          { key: 'featured', label: `Featured (${featuredCount})`, count: featuredCount, title: `${featuredCount} Featured Anchor ETFs` },
+          { key: 'ai_semis', label: `AI & Semis 2X (${getCount('4') || 45})`, raw: getRaw('4'), count: getCount('4') || 45 },
+          { key: 'mega_crypto', label: `Mega & Crypto 2X (${getCount('5') || 31})`, raw: getRaw('5'), count: getCount('5') || 31 },
+          { key: 'tech_3x', label: `Tech & Semis 3X (${getCount('2') || 16})`, raw: getRaw('2'), count: getCount('2') || 16 },
+          { key: 'sectors_3x', label: `Sectors 3X (${getCount('3') || 11})`, raw: getRaw('3'), count: getCount('3') || 11 },
+          { key: 'shorts', label: `Shorts & Hedges (${getCount('9') || 14})`, raw: getRaw('9'), count: getCount('9') || 14 },
+          { key: 'commodities', label: `Commodities & Vol (${getCount('6') || 9})`, raw: getRaw('6'), count: getCount('6') || 9 },
+          { key: 'broad_index', label: `Broad Index (${getCount('1') || 9})`, raw: getRaw('1'), count: getCount('1') || 9 },
+          { key: 'rates_fixed', label: `Rates & Crypto (${getCount('7') || 7})`, raw: getRaw('7'), count: getCount('7') || 7 },
+          { key: 'intl', label: `International (${getCount('8') || 8})`, raw: getRaw('8'), count: getCount('8') || 8 },
+          { key: 'core_anchors', label: `Core Anchors & Factors (${getCount('10') || 10})`, raw: getRaw('10'), count: getCount('10') || 10 }
         ];
       },
 
@@ -1652,19 +1663,11 @@
         if (prices20.length >= 2) {
           const w = 260;
           const h = 40;
-          const padX = 6;
+          const padX = 8;
           const plotW = w - padX * 2;
-          const plotH = 18;
-          const yTop = 5;
-          const priceSpan = maxP > minP ? maxP - minP : 1;
-          const pts = prices20.map((p, idx) => {
-            const x = padX + (idx / (prices20.length - 1)) * plotW;
-            const y = yTop + plotH - ((p - minP) / priceSpan) * plotH;
-            return `${idx === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
-          }).join(' ');
-
-          const lastX = padX + plotW;
-          const lastY = yTop + plotH - ((curP - minP) / priceSpan) * plotH;
+          const barY = 18;
+          const barH = 6;
+          const xMid = padX + plotW / 2;
 
           let themeColor = '#94a3b8';
           if (rangeBadge === 'MOMENTUM CONFIRMED') themeColor = '#34d399';
@@ -1672,27 +1675,20 @@
           else if (rangeBadge === 'ACCUMULATION AT LOWS') themeColor = '#22d3ee';
           else if (rangeBadge === 'PRESSURE AT LOWS') themeColor = '#fb7185';
 
-          const barY = 32;
-          const barH = 4;
-          const barFillW = Math.max(2, (rangePct / 100) * plotW);
-          const pinX = padX + (rangePct / 100) * plotW;
+          const curPinX = padX + (Math.max(0, Math.min(100, rangePct)) / 100) * plotW;
+          const fillW = Math.max(2, (Math.max(0, Math.min(100, rangePct)) / 100) * plotW);
+          const curLabelX = Math.max(padX + 24, Math.min(w - padX - 24, curPinX));
 
-          rangeSparklineSvg = `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:40px;display:block" role="img" aria-label="20D Price range position channel graph">
-            <defs>
-              <linearGradient id="flowRangeGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="${themeColor}" stop-opacity="0.25"/>
-                <stop offset="100%" stop-color="${themeColor}" stop-opacity="0.0"/>
-              </linearGradient>
-            </defs>
-            <line x1="${padX}" y1="${yTop}" x2="${w - padX}" y2="${yTop}" stroke="rgba(255,255,255,0.08)" stroke-width="0.8" stroke-dasharray="2 2"/>
-            <line x1="${padX}" y1="${yTop + plotH}" x2="${w - padX}" y2="${yTop + plotH}" stroke="rgba(255,255,255,0.08)" stroke-width="0.8" stroke-dasharray="2 2"/>
-            <path d="${pts} L ${lastX.toFixed(1)} ${(yTop + plotH).toFixed(1)} L ${padX} ${(yTop + plotH).toFixed(1)} Z" fill="url(#flowRangeGrad)"/>
-            <path d="${pts}" fill="none" stroke="${themeColor}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
-            <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="2.5" fill="${themeColor}"/>
-            <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="5" fill="${themeColor}" opacity="0.25"/>
-            <rect x="${padX}" y="${barY}" width="${plotW}" height="${barH}" rx="2" fill="rgba(255,255,255,0.06)"/>
-            <rect x="${padX}" y="${barY}" width="${barFillW.toFixed(1)}" height="${barH}" rx="2" fill="${themeColor}" opacity="0.85"/>
-            <rect x="${(pinX - 1.5).toFixed(1)}" y="${barY - 2}" width="3" height="${barH + 4}" rx="1" fill="#ffffff" stroke="${themeColor}" stroke-width="0.75"/>
+          rangeSparklineSvg = `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:40px;display:block" role="img" aria-label="20D Price range position channel meter">
+            <text x="${padX}" y="${barY - 5}" text-anchor="start" fill="#94a3b8" font-family="ui-monospace, monospace" font-size="7.5" font-weight="600">0% LOW</text>
+            <text x="${xMid.toFixed(1)}" y="${barY - 5}" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-family="ui-monospace, monospace" font-size="7.5" font-weight="600">50% MID</text>
+            <text x="${(w - padX)}" y="${barY - 5}" text-anchor="end" fill="#94a3b8" font-family="ui-monospace, monospace" font-size="7.5" font-weight="600">100% HIGH</text>
+            <rect x="${padX}" y="${barY}" width="${plotW}" height="${barH}" rx="3" fill="rgba(255,255,255,0.05)"/>
+            <rect x="${padX}" y="${barY}" width="${fillW.toFixed(1)}" height="${barH}" rx="3" fill="${themeColor}" opacity="0.45"/>
+            <line x1="${xMid.toFixed(1)}" y1="${barY - 3}" x2="${xMid.toFixed(1)}" y2="${barY + barH + 3}" stroke="rgba(255,255,255,0.3)" stroke-width="1.2"/>
+            <circle cx="${curPinX.toFixed(1)}" cy="${(barY + barH / 2).toFixed(1)}" r="3.5" fill="${themeColor}"/>
+            <circle cx="${curPinX.toFixed(1)}" cy="${(barY + barH / 2).toFixed(1)}" r="6" fill="${themeColor}" opacity="0.25"/>
+            <text x="${curLabelX.toFixed(1)}" y="${barY + barH + 12}" text-anchor="middle" fill="${themeColor}" font-family="ui-monospace, monospace" font-size="8" font-weight="700">${curP != null ? `$${curP.toFixed(2)} (${rangePct}%)` : `${rangePct}%`}</text>
           </svg>`;
         }
 
@@ -1874,39 +1870,37 @@
         const tmW = 260;
         const tmH = 40;
         const tmPadX = 8;
-        const lblW = 44;
-        const tagBoxW = 66;
-        const barStartX = tmPadX + lblW;
-        const barPlotW = tmW - tmPadX * 2 - lblW - tagBoxW;
-        const tmCenter = barStartX + barPlotW / 2;
+        const tmPlotW = tmW - tmPadX * 2;
+        const tmBarY = 18;
+        const tmBarH = 6;
+        const tmCenter = tmPadX + tmPlotW / 2;
 
-        const rVal = ret5d !== null ? Math.max(-15, Math.min(15, ret5d)) : 0;
-        const rW = (Math.abs(rVal) / 15) * (barPlotW / 2);
-        const rX = rVal >= 0 ? tmCenter : tmCenter - rW;
-        const rColor = rVal >= 0 ? '#34d399' : '#fb7185';
-
+        const rVal = ret5d !== null ? Math.max(-10, Math.min(10, ret5d)) : 0;
+        const retRatio = rVal / 10;
         const f5Abs = Math.abs(flow5d);
         const maxHist5D = Math.max(1e6, ...allMetricRows.slice(-60).map(r => Math.abs(finiteNumber(r.rollingSum5) || 0)));
         const fRef = Math.max(1e6, maxHist5D);
-        const fRatio = Math.min(1, f5Abs / fRef);
-        const fW = fRatio * (barPlotW / 2);
-        const fX = flow5d >= 0 ? tmCenter : tmCenter - fW;
-        const fColor = flow5d >= 0 ? '#22d3ee' : '#fb7185';
+        const flowRatio = Math.max(-1, Math.min(1, flow5d / fRef));
+        const combinedThrust = (retRatio * 0.5) + (flowRatio * 0.5);
+        const thrustW = Math.max(2, Math.abs(combinedThrust) * (tmPlotW / 2));
+        const thrustX = combinedThrust >= 0 ? tmCenter : tmCenter - thrustW;
+        const curThrustPinX = tmCenter + combinedThrust * (tmPlotW / 2);
 
         const isConvergent = (rVal > 0 && flow5d > 0) || (rVal < 0 && flow5d < 0);
         const tagText = Math.abs(rVal) < 0.5 && Math.abs(flow5d) < 1e5 ? 'NEUTRAL' : (isConvergent ? 'CONVERGENT' : 'DIVERGENT');
         const tagColor = tagText === 'CONVERGENT' ? '#34d399' : tagText === 'DIVERGENT' ? '#f59e0b' : '#94a3b8';
+        const curThrustLabelX = Math.max(tmPadX + 24, Math.min(tmW - tmPadX - 24, curThrustPinX));
 
         const thrustMeterSvg = `<svg viewBox="0 0 ${tmW} ${tmH}" style="width:100%;height:40px;display:block" role="img" aria-label="5D Price Move and Flow Thrust comparison meter">
-          <text x="${tmPadX}" y="13" fill="#94a3b8" font-family="ui-monospace, monospace" font-size="7.5" font-weight="600">NAV 5D</text>
-          <text x="${tmPadX}" y="29" fill="#94a3b8" font-family="ui-monospace, monospace" font-size="7.5" font-weight="600">FLOW 5D</text>
-          <rect x="${barStartX.toFixed(1)}" y="7" width="${barPlotW.toFixed(1)}" height="6" rx="2" fill="rgba(255,255,255,0.06)"/>
-          <rect x="${barStartX.toFixed(1)}" y="23" width="${barPlotW.toFixed(1)}" height="6" rx="2" fill="rgba(255,255,255,0.06)"/>
-          <line x1="${tmCenter.toFixed(1)}" y1="4" x2="${tmCenter.toFixed(1)}" y2="33" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
-          <rect x="${rX.toFixed(1)}" y="7" width="${Math.max(1.5, rW).toFixed(1)}" height="6" rx="1.5" fill="${rColor}"/>
-          <rect x="${fX.toFixed(1)}" y="23" width="${Math.max(1.5, fW).toFixed(1)}" height="6" rx="1.5" fill="${fColor}"/>
-          <rect x="${(tmW - tmPadX - 60).toFixed(1)}" y="12" width="60" height="16" rx="3" fill="${tagColor}18" stroke="${tagColor}40" stroke-width="0.8"/>
-          <text x="${(tmW - tmPadX - 30).toFixed(1)}" y="23" text-anchor="middle" fill="${tagColor}" font-family="ui-monospace, monospace" font-size="7.5" font-weight="700" letter-spacing="0.04em">${tagText}</text>
+          <text x="${tmPadX}" y="${tmBarY - 5}" text-anchor="start" fill="#94a3b8" font-family="ui-monospace, monospace" font-size="7.5" font-weight="600">NAV 5D: ${ret5d != null ? (ret5d >= 0 ? '+' : '') + ret5d.toFixed(1) + '%' : '—'}</text>
+          <text x="${tmCenter.toFixed(1)}" y="${tmBarY - 5}" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-family="ui-monospace, monospace" font-size="7.5" font-weight="600">0%</text>
+          <text x="${tmW - tmPadX}" y="${tmBarY - 5}" text-anchor="end" fill="#94a3b8" font-family="ui-monospace, monospace" font-size="7.5" font-weight="600">FLOW 5D: ${formatMoney(flow5d)}</text>
+          <rect x="${tmPadX}" y="${tmBarY}" width="${tmPlotW}" height="${tmBarH}" rx="3" fill="rgba(255,255,255,0.05)"/>
+          <line x1="${tmCenter.toFixed(1)}" y1="${tmBarY - 3}" x2="${tmCenter.toFixed(1)}" y2="${tmBarY + tmBarH + 3}" stroke="rgba(255,255,255,0.3)" stroke-width="1.2"/>
+          <rect x="${thrustX.toFixed(1)}" y="${tmBarY}" width="${thrustW.toFixed(1)}" height="${tmBarH}" rx="2" fill="${tagColor}" opacity="0.85"/>
+          <circle cx="${curThrustPinX.toFixed(1)}" cy="${(tmBarY + tmBarH / 2).toFixed(1)}" r="3.5" fill="${tagColor}"/>
+          <circle cx="${curThrustPinX.toFixed(1)}" cy="${(tmBarY + tmBarH / 2).toFixed(1)}" r="6" fill="${tagColor}" opacity="0.25"/>
+          <text x="${curThrustLabelX.toFixed(1)}" y="${tmBarY + tmBarH + 12}" text-anchor="middle" fill="${tagColor}" font-family="ui-monospace, monospace" font-size="8" font-weight="700">${tagText} · ${ret5d != null ? (ret5d >= 0 ? '+' : '') + ret5d.toFixed(2) + '%' : ''}</text>
         </svg>`;
 
         return {

@@ -869,7 +869,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.65rem 1rem;
+  gap: 0.75rem 1rem;
   padding: 0.75rem 0.95rem;
   border-bottom: 1px solid var(--flow-line);
   background: rgba(255, 255, 255, 0.015);
@@ -880,45 +880,66 @@
   flex-direction: column;
   gap: 0.2rem;
   min-width: 0;
-  flex: 0 1 auto;
+  flex: 1 1 auto;
 }
 
 .flow-research .flow-workbench-title-col .flow-chart-description {
-  max-width: 520px;
+  max-width: 480px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .flow-research .flow-workbench-toolbar {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   flex-wrap: nowrap;
-  gap: 0.25rem;
+  gap: 0.35rem;
   flex-shrink: 0;
-  max-width: 100%;
 }
 
 .flow-research .flow-workbench-divider {
   width: 1px;
-  height: 16px;
-  background: var(--flow-line);
-  margin: 0 0.15rem;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.15);
+  margin: 0 0.2rem;
   flex-shrink: 0;
 }
 
 .flow-research .flow-workbench-toolbar .flow-chip {
-  padding: 0.2rem 0.45rem;
-  font-size: 0.675rem;
-  min-height: 24px;
+  height: 28px;
+  line-height: 26px;
+  padding: 0 0.65rem;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  background: #090d16;
+  color: #94a3b8;
   white-space: nowrap;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: all 0.12s ease;
 }
 
-.flow-research .flow-chip.flow-chip-active {
+.flow-research .flow-workbench-toolbar .flow-chip:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: #0e1524;
+  color: #ffffff;
+}
+
+.flow-research .flow-workbench-toolbar .flow-chip.flow-chip-active,
+.flow-research .flow-workbench-toolbar .flow-chip[aria-pressed="true"] {
+  border-color: rgba(34, 211, 238, 0.45);
   background: rgba(34, 211, 238, 0.12);
-  border-color: rgba(34, 211, 238, 0.4);
-  color: var(--flow-cyan);
+  color: #38bdf8;
+  font-weight: 600;
 }
 
 .flow-research .flow-studio-presets {

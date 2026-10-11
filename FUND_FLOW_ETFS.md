@@ -31,7 +31,7 @@
 
 The Fund Flows interface uses this explicit, deterministic 24-instrument subset drawn only from the 160 local rows above:
 
-`TQQQ`, `QLD`, `UPRO`, `SPXL`, `SOXL`, `TECL`, `USD`, `DFEN`, `FAS`, `ERX`, `CURE`, `NVDL`, `NVDX`, `LITX`, `COHX`, `PTIR`, `TSLL`, `MSTU`, `CONL`, `UGL`, `NUGT`, `TMF`, `YINN`, `SQQQ`
+`TQQQ`, `QLD`, `UPRO`, `SPXL`, `SOXL`, `TECL`, `USD`, `DFEN`, `FAS`, `ERX`, `CURE`, `NVDL`, `NVDX`, `MAGX`, `MAGS`, `PTIR`, `TSLL`, `MSTU`, `CONL`, `UGL`, `NUGT`, `TMF`, `YINN`, `SQQQ`
 
 There is no long-only catalog, watch tier, or missing-underlying watchlist in this universe.
 
