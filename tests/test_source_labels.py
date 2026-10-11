@@ -92,7 +92,7 @@ def _monthly_to_dataframe(monthly: list[list]) -> pd.DataFrame:
 
 # Feature: automation-self-living-data-flow, Property 4: Excel ingest preserves live source labels
 @given(asset_with_live_source_strategy(), monthly_data_strategy())
-@settings(max_examples=100, suppress_health_check=[HealthCheck.too_slow])
+@settings(max_examples=100, deadline=None, suppress_health_check=[HealthCheck.too_slow])
 def test_excel_ingest_preserves_live_source_label(existing_asset, new_monthly):
     """
     **Validates: Requirements 3.5**

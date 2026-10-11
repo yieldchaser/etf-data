@@ -867,10 +867,9 @@
 /* Multi-Mega Flow Workbench Header & Toolbar */
 .flow-research .flow-workbench-header {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem 1rem;
+  gap: 0.65rem 1rem;
   padding: 0.75rem 0.95rem;
   border-bottom: 1px solid var(--flow-line);
   background: rgba(255, 255, 255, 0.015);
@@ -880,13 +879,40 @@
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.flow-research .flow-workbench-title-col .flow-chart-description {
+  max-width: 520px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .flow-research .flow-workbench-toolbar {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  flex-wrap: nowrap;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  max-width: 100%;
+}
+
+.flow-research .flow-workbench-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--flow-line);
+  margin: 0 0.15rem;
+  flex-shrink: 0;
+}
+
+.flow-research .flow-workbench-toolbar .flow-chip {
+  padding: 0.2rem 0.45rem;
+  font-size: 0.675rem;
+  min-height: 24px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .flow-research .flow-chip.flow-chip-active {
@@ -1899,9 +1925,16 @@
 /* ── Empirical Flow Shock Edge & Proximity Ledger ── */
 .flow-research .flow-ledger-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.75rem;
   margin-top: 0.85rem;
+  align-items: stretch;
+}
+
+@media (max-width: 960px) {
+  .flow-research .flow-ledger-grid {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
 }
 
 .flow-research .flow-ledger-card {
@@ -1910,7 +1943,11 @@
   border-radius: 8px;
   background: linear-gradient(180deg, rgba(17, 24, 39, 0.65) 0%, rgba(10, 15, 26, 0.75) 100%);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  box-sizing: border-box;
   gap: 0.35rem;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -1919,6 +1956,69 @@
   border-color: rgba(34, 211, 238, 0.35);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), 0 0 16px rgba(34, 211, 238, 0.06);
   transform: translateY(-1px);
+}
+
+.flow-research .flow-ledger-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 22px;
+  margin-bottom: 0.15rem;
+}
+
+.flow-research .flow-ledger-card-header .flow-eyebrow {
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.flow-research .flow-ledger-card-header .flow-badge {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.flow-research .flow-ledger-card-stat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 22px;
+  font-family: ui-monospace, monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.flow-research .flow-ledger-card-desc {
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  color: #94a3b8;
+  min-height: 34px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0;
+}
+
+.flow-research .flow-range-channel-graph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  width: 100%;
+  margin: 0.25rem 0 0.35rem;
+}
+
+.flow-research .flow-range-channel-graph svg {
+  width: 100%;
+  height: 100%;
+  max-height: 40px;
+  display: block;
 }
 
 .flow-research .flow-range-meter {

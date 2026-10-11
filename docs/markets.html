@@ -2992,37 +2992,37 @@
             <!-- Empirical Flow Shock Edge & Proximity Ledger -->
             <div class="flow-ledger-grid" x-show="flowEmpiricalEdgeLedger">
               <div class="flow-ledger-card">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.3rem">
-                  <span class="flow-eyebrow">20D Price Envelope Position</span>
+                <div class="flow-ledger-card-header">
+                  <span class="flow-eyebrow">20D Price Envelope</span>
                   <span class="flow-badge" :data-state="flowEmpiricalEdgeLedger?.rangeState" x-text="flowEmpiricalEdgeLedger?.rangeBadge"></span>
                 </div>
-                <div style="display:flex;align-items:baseline;justify-content:space-between;font-family:ui-monospace, monospace;font-size:0.75rem;margin-bottom:0.25rem">
+                <div class="flow-ledger-card-stat">
                   <span style="color:var(--flow-subtle)" x-text="flowEmpiricalEdgeLedger?.minP != null ? `Low $${flowEmpiricalEdgeLedger.minP.toFixed(2)}` : 'Low —'"></span>
                   <span style="font-weight:700;color:var(--flow-text)" x-text="flowEmpiricalEdgeLedger?.curP != null ? `$${flowEmpiricalEdgeLedger.curP.toFixed(2)} (${flowEmpiricalEdgeLedger.rangePct}%)` : '—'"></span>
                   <span style="color:var(--flow-subtle)" x-text="flowEmpiricalEdgeLedger?.maxP != null ? `High $${flowEmpiricalEdgeLedger.maxP.toFixed(2)}` : 'High —'"></span>
                 </div>
-                <div class="flow-range-channel-graph" style="margin:0.25rem 0 0.35rem" x-html="flowEmpiricalEdgeLedger?.rangeSparklineSvg"></div>
-                <div class="flow-support" style="font-size:0.6875rem" x-text="flowEmpiricalEdgeLedger?.rangeDesc"></div>
+                <div class="flow-range-channel-graph" x-html="flowEmpiricalEdgeLedger?.rangeSparklineSvg"></div>
+                <div class="flow-ledger-card-desc" x-text="flowEmpiricalEdgeLedger?.rangeDesc"></div>
               </div>
 
               <div class="flow-ledger-card">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.3rem">
-                  <span class="flow-eyebrow">Historical Flow Shock Edge</span>
+                <div class="flow-ledger-card-header">
+                  <span class="flow-eyebrow">Historical Shock Edge</span>
                   <span class="flow-badge" :data-state="flowEmpiricalEdgeLedger?.shockBadgeState" x-text="flowEmpiricalEdgeLedger?.shockBadge"></span>
                 </div>
-                <div style="font-size:0.75rem;color:var(--flow-text);font-weight:600" x-text="flowEmpiricalEdgeLedger?.shockStatLine"></div>
-                <div class="flow-range-channel-graph" style="margin:0.25rem 0 0.35rem" x-html="flowEmpiricalEdgeLedger?.shockMeterSvg"></div>
-                <div class="flow-support" style="font-size:0.6875rem" x-text="flowEmpiricalEdgeLedger?.shockSubtext"></div>
+                <div class="flow-ledger-card-stat" style="justify-content:flex-start" x-text="flowEmpiricalEdgeLedger?.shockStatLine"></div>
+                <div class="flow-range-channel-graph" x-html="flowEmpiricalEdgeLedger?.shockMeterSvg"></div>
+                <div class="flow-ledger-card-desc" x-text="flowEmpiricalEdgeLedger?.shockSubtext"></div>
               </div>
 
               <div class="flow-ledger-card">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.3rem">
-                  <span class="flow-eyebrow">5D Price Velocity &amp; Flow Thrust</span>
+                <div class="flow-ledger-card-header">
+                  <span class="flow-eyebrow">5D Velocity &amp; Thrust</span>
                   <span class="flow-badge" :data-state="flowEmpiricalEdgeLedger?.thrustBadgeState" x-text="flowEmpiricalEdgeLedger?.thrustBadge"></span>
                 </div>
-                <div style="font-size:0.75rem;color:var(--flow-text);font-weight:600" x-text="flowEmpiricalEdgeLedger?.thrustStatLine"></div>
-                <div class="flow-range-channel-graph" style="margin:0.25rem 0 0.35rem" x-html="flowEmpiricalEdgeLedger?.thrustMeterSvg"></div>
-                <div class="flow-support" style="font-size:0.6875rem" x-text="flowEmpiricalEdgeLedger?.thrustSubtext"></div>
+                <div class="flow-ledger-card-stat" style="justify-content:flex-start" x-text="flowEmpiricalEdgeLedger?.thrustStatLine"></div>
+                <div class="flow-range-channel-graph" x-html="flowEmpiricalEdgeLedger?.thrustMeterSvg"></div>
+                <div class="flow-ledger-card-desc" x-text="flowEmpiricalEdgeLedger?.thrustSubtext"></div>
               </div>
             </div>
 
@@ -3036,38 +3036,34 @@
                     <p class="flow-chart-description" style="margin:0">Synchronized multi-pane view of cumulative trend, daily volume-backed flows, and normalized momentum.</p>
                   </div>
                   <div class="flow-workbench-toolbar">
-                    <div style="display:inline-flex;align-items:center;gap:0.3rem">
-                      <button class="flow-chip" :class="flowWorkbenchPriceEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchPriceEnabled" type="button" @click="flowWorkbenchPriceEnabled = !flowWorkbenchPriceEnabled" title="Toggle NAV Line">
-                        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="vertical-align:-1px;margin-right:4px"><path d="M1.5 8.5 L4.5 4.5 L7.5 7 L10.5 2.5" stroke="#c084fc" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>NAV
-                      </button>
-                      <button class="flow-chip" :class="flowWorkbenchCumEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchCumEnabled" type="button" @click="flowWorkbenchCumEnabled = !flowWorkbenchCumEnabled" title="Toggle Cumulative Flow Area">
-                        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="vertical-align:-1px;margin-right:4px"><path d="M1.5 9.5 C4 9.5 6 3 10.5 2.5" stroke="#34d399" stroke-width="1.6" stroke-linecap="round"/><path d="M1.5 9.5 C4 9.5 6 3 10.5 2.5 L10.5 9.5 Z" fill="rgba(52,211,153,0.2)"/></svg>Cum Flow
-                      </button>
-                      <button class="flow-chip" :class="flowWorkbenchDailyEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchDailyEnabled" type="button" @click="flowWorkbenchDailyEnabled = !flowWorkbenchDailyEnabled" title="Toggle Daily Flow Bars">
-                        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="vertical-align:-1px;margin-right:4px"><rect x="1.5" y="4" width="2" height="6" rx="0.5" fill="#22d3ee"/><rect x="5" y="2" width="2" height="8" rx="0.5" fill="#22d3ee"/><rect x="8.5" y="5.5" width="2" height="4.5" rx="0.5" fill="#22d3ee"/></svg>Daily Flow
-                      </button>
-                      <button class="flow-chip" :class="flowWorkbenchVolumeEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchVolumeEnabled" type="button" @click="flowWorkbenchVolumeEnabled = !flowWorkbenchVolumeEnabled" title="Toggle Trading Volume Overlay">
-                        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="vertical-align:-1px;margin-right:4px"><rect x="1.5" y="6" width="2" height="4.5" rx="0.5" fill="#94a3b8"/><rect x="5" y="4" width="2" height="6.5" rx="0.5" fill="#94a3b8"/><rect x="8.5" y="2" width="2" height="8.5" rx="0.5" fill="#94a3b8"/></svg>Volume
-                      </button>
-                      <button class="flow-chip" :class="flowWorkbenchVelocityEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchVelocityEnabled" type="button" @click="flowWorkbenchVelocityEnabled = !flowWorkbenchVelocityEnabled" title="Toggle 20D vs 60D Flow Velocity &amp; Acceleration Engine">
-                        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="vertical-align:-1px;margin-right:4px"><path d="M1 6 L3 6 L4.5 2 L6.5 10 L8 6 L11 6" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Velocity &amp; Accel
-                      </button>
-                      <button class="flow-chip" :class="flowWorkbenchZScoreEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchZScoreEnabled" type="button" @click="flowWorkbenchZScoreEnabled = !flowWorkbenchZScoreEnabled" title="Toggle Flow Z-Score Oscillator">
-                        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="vertical-align:-1px;margin-right:4px"><path d="M1.5 6 Q 3.75 1.5 6 6 T 10.5 6" stroke="#e879f9" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg>Flow Z
-                      </button>
-                    </div>
-                    <div style="width:1px;height:16px;background:var(--flow-line);margin:0 0.15rem"></div>
-                    <div style="display:inline-flex;align-items:center;gap:0.3rem">
-                      <button class="flow-chip" type="button" @click="flowCycleZModel()" :title="flowZModelTooltip" style="border-color:rgba(232,121,249,0.35);font-family:ui-monospace, monospace">
-                        <span style="color:#e879f9">Model:</span> <span x-text="flowZModelLabel"></span>
-                      </button>
-                      <button class="flow-chip" :class="flowWorkbenchShocksEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchShocksEnabled" type="button" @click="flowWorkbenchShocksEnabled = !flowWorkbenchShocksEnabled" title="Toggle climax flow shock markers (|Z| ≥ 2.5σ)">
-                        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="vertical-align:-1px;margin-right:4px"><circle cx="6" cy="6" r="4.5" stroke="#fbbf24" stroke-width="1.2" stroke-dasharray="2 1.5"/><circle cx="6" cy="6" r="2" fill="#fbbf24"/></svg>Shocks
-                      </button>
-                      <button class="flow-chip" type="button" @click="flowScaleMode = flowScaleMode === 'usd' ? 'pct_aum' : 'usd'" title="Switch between Dollar Flow ($) and Net Flow as % of AUM" style="font-weight:600;border-color:rgba(34,211,238,0.4)">
-                        <span x-text="flowScaleMode === 'usd' ? '$ USD' : '% AUM'"></span>
-                      </button>
-                    </div>
+                    <button class="flow-chip" :class="flowWorkbenchPriceEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchPriceEnabled" type="button" @click="flowWorkbenchPriceEnabled = !flowWorkbenchPriceEnabled" title="Toggle NAV Line">
+                      <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="vertical-align:-1px;margin-right:4px"><path d="M1.5 8.5 L4.5 4.5 L7.5 7 L10.5 2.5" stroke="#c084fc" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>NAV
+                    </button>
+                    <button class="flow-chip" :class="flowWorkbenchCumEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchCumEnabled" type="button" @click="flowWorkbenchCumEnabled = !flowWorkbenchCumEnabled" title="Toggle Cumulative Flow Area">
+                      <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="vertical-align:-1px;margin-right:4px"><path d="M1.5 9.5 C4 9.5 6 3 10.5 2.5" stroke="#34d399" stroke-width="1.6" stroke-linecap="round"/><path d="M1.5 9.5 C4 9.5 6 3 10.5 2.5 L10.5 9.5 Z" fill="rgba(52,211,153,0.2)"/></svg>Cum Flow
+                    </button>
+                    <button class="flow-chip" :class="flowWorkbenchDailyEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchDailyEnabled" type="button" @click="flowWorkbenchDailyEnabled = !flowWorkbenchDailyEnabled" title="Toggle Daily Flow Bars">
+                      <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="vertical-align:-1px;margin-right:4px"><rect x="1.5" y="4" width="2" height="6" rx="0.5" fill="#22d3ee"/><rect x="5" y="2" width="2" height="8" rx="0.5" fill="#22d3ee"/><rect x="8.5" y="5.5" width="2" height="4.5" rx="0.5" fill="#22d3ee"/></svg>Daily Flow
+                    </button>
+                    <button class="flow-chip" :class="flowWorkbenchVolumeEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchVolumeEnabled" type="button" @click="flowWorkbenchVolumeEnabled = !flowWorkbenchVolumeEnabled" title="Toggle Trading Volume Overlay">
+                      <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="vertical-align:-1px;margin-right:4px"><rect x="1.5" y="6" width="2" height="4.5" rx="0.5" fill="#94a3b8"/><rect x="5" y="4" width="2" height="6.5" rx="0.5" fill="#94a3b8"/><rect x="8.5" y="2" width="2" height="8.5" rx="0.5" fill="#94a3b8"/></svg>Volume
+                    </button>
+                    <button class="flow-chip" :class="flowWorkbenchVelocityEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchVelocityEnabled" type="button" @click="flowWorkbenchVelocityEnabled = !flowWorkbenchVelocityEnabled" title="Toggle 20D vs 60D Flow Velocity &amp; Acceleration Engine">
+                      <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="vertical-align:-1px;margin-right:4px"><path d="M1 6 L3 6 L4.5 2 L6.5 10 L8 6 L11 6" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Vel &amp; Accel
+                    </button>
+                    <button class="flow-chip" :class="flowWorkbenchZScoreEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchZScoreEnabled" type="button" @click="flowWorkbenchZScoreEnabled = !flowWorkbenchZScoreEnabled" title="Toggle Flow Z-Score Oscillator">
+                      <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="vertical-align:-1px;margin-right:4px"><path d="M1.5 6 Q 3.75 1.5 6 6 T 10.5 6" stroke="#e879f9" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg>Flow Z
+                    </button>
+                    <div class="flow-workbench-divider"></div>
+                    <button class="flow-chip" type="button" @click="flowCycleZModel()" :title="flowZModelTooltip" style="border-color:rgba(232,121,249,0.35);font-family:ui-monospace, monospace">
+                      <span style="color:#e879f9">Model:</span> <span x-text="flowZModelLabel"></span>
+                    </button>
+                    <button class="flow-chip" :class="flowWorkbenchShocksEnabled ? 'flow-chip-active' : ''" :aria-pressed="flowWorkbenchShocksEnabled" type="button" @click="flowWorkbenchShocksEnabled = !flowWorkbenchShocksEnabled" title="Toggle climax flow shock markers (|Z| ≥ 2.5σ)">
+                      <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="vertical-align:-1px;margin-right:4px"><circle cx="6" cy="6" r="4.5" stroke="#fbbf24" stroke-width="1.2" stroke-dasharray="2 1.5"/><circle cx="6" cy="6" r="2" fill="#fbbf24"/></svg>Shocks
+                    </button>
+                    <button class="flow-chip" type="button" @click="flowScaleMode = flowScaleMode === 'usd' ? 'pct_aum' : 'usd'" title="Switch between Dollar Flow ($) and Net Flow as % of AUM" style="font-weight:600;border-color:rgba(34,211,238,0.4)">
+                      <span x-text="flowScaleMode === 'usd' ? '$ USD' : '% AUM'"></span>
+                    </button>
                   </div>
                 </div>
 

@@ -812,8 +812,8 @@
       get flowZModelLabel() {
         switch (this.flowZModel) {
           case 'robust': return 'Robust MAD';
-          case 'volume': return 'Vol-Adjusted';
-          case 'momentum': return '5D Momentum';
+          case 'volume': return 'Vol-Adj';
+          case 'momentum': return '5D Mom';
           default: return '30D Std';
         }
       },
@@ -3779,7 +3779,7 @@
               const ya = sc.yVel(acc);
               const accColor = acc >= 0 ? '#34d399' : '#fb7185';
               hDots += `<circle cx="${hX.toFixed(1)}" cy="${ya.toFixed(1)}" r="2.8" fill="${accColor}" pointer-events="none"/>`;
-              const accStr = `${acc >= 0 ? '+' : ''}${sc.isPctAum ? `${acc.toFixed(1)}%` : formatMoney(acc)}`;
+              const accStr = sc.isPctAum ? `${acc >= 0 ? '+' : ''}${acc.toFixed(1)}%` : formatMoney(acc);
               const accLabel = `Accel ${accStr}`;
               const pillW = accLabel.length * 6.2 + 8;
               const pillX = hX > width / 2 ? hX - pillW - 8 : hX + 8;
@@ -4270,7 +4270,7 @@
           const b60 = s60 !== null ? s60 / 3 : null;
           const acc = (s20 !== null && b60 !== null) ? s20 - b60 : null;
           if (s20 !== null) {
-            const accStr = acc !== null ? `  ·  Accel ${acc >= 0 ? '+' : ''}${formatMoney(acc)}` : '';
+            const accStr = acc !== null ? `  ·  Accel ${formatMoney(acc)}` : '';
             line3 += `\n20D Pace ${formatMoney(s20)}${accStr}`;
           }
         }
