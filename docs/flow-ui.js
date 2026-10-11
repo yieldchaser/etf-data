@@ -783,6 +783,8 @@
       flowScannerDirection: 'all',
       flowScatterFilter: 'all',
       flowScatterHoverTicker: null,
+      flowScatterMode: 'nominal',
+      flowScannerHorizon: 'all',
       flowShowCatalogDrawer: false,
       flowVolumeCache: null,
       flowWorkbenchPriceEnabled: true,
@@ -1314,9 +1316,10 @@
       get flowScatterCounts() {
         const items = this.flowPrimaryInstruments;
         let washout = 0, momentum = 0, dipAccum = 0, distribution = 0, neutral = 0;
+        const isVol = this.flowScatterMode === 'vol_adjusted';
         for (const item of items) {
-          const ret = finiteNumber(item.nav_return_20d_pct) || 0;
-          const z = finiteNumber(item.flow_zscore) || 0;
+          const ret = isVol ? (finiteNumber(item.z_price_20d) || 0) : (finiteNumber(item.nav_return_20d_pct) || 0);
+          const z = isVol ? (finiteNumber(item.z_flow_5d) || 0) : (finiteNumber(item.flow_zscore) || 0);
           if (ret < 0 && z <= -0.4) washout += 1;
           else if (ret >= 0 && z >= 0.4) momentum += 1;
           else if (ret < 0 && z >= 0.4) dipAccum += 1;
@@ -1337,6 +1340,7 @@
 
       get flowActiveCycleAnomalies() {
         const items = this.flowPrimaryInstruments;
+        const horizon = this.flowScannerHorizon || 'all';
         const dipAccum = [];
         const exhaustionLow = [];
         const climaxInflowTop = [];
@@ -1345,10 +1349,18 @@
         for (const it of items) {
           const ret20 = finiteNumber(it.nav_return_20d_pct) || 0;
           const z = finiteNumber(it.flow_zscore) || 0;
+          const zp = finiteNumber(it.z_price_20d) || 0;
+          const zf5 = finiteNumber(it.z_flow_5d) || 0;
+          const vol20 = finiteNumber(it.volatility_20d_pct) || 0;
           const f1 = finiteNumber(it.latest_flow) || 0;
+          const f5 = finiteNumber(it.flow_5d) || 0;
           const f20 = finiteNumber(it.flow_20d) || 0;
           const aum = finiteNumber(it.aum_m) || 0;
+          const oppScore = finiteNumber(it.opportunity_score) || 25;
+          const oppTag = it.opportunity_tag || 'NEUTRAL';
+          const prof = it.behavior_profiles?.[horizon] || it.behavior_profiles?.all || {};
           const name = it.underlying || it.fund_name || it.ticker;
+
           const entry = {
             ticker: it.ticker,
             name,
@@ -1356,28 +1368,47 @@
             leverage: it.leverage,
             ret20,
             z,
+            zp,
+            zf5,
+            vol20,
             flow1d: f1,
+            flow5d: f5,
             flow20d: f20,
-            aum
+            aum,
+            oppScore,
+            oppTag,
+            dipWin: prof.dip_win_rate != null ? prof.dip_win_rate : 50.0,
+            dipAvgRet: prof.dip_avg_fwd_ret != null ? prof.dip_avg_fwd_ret : 0.0,
+            dipEpisodes: prof.dip_episodes || 0,
+            washWin: prof.washout_win_rate != null ? prof.washout_win_rate : 50.0,
+            washEpisodes: prof.washout_episodes || 0,
+            climaxWin: prof.climax_win_rate != null ? prof.climax_win_rate : 50.0,
+            climaxEpisodes: prof.climax_episodes || 0,
+            distPullback: prof.dist_pullback_rate != null ? prof.dist_pullback_rate : 50.0,
+            distEpisodes: prof.dist_episodes || 0
           };
 
-          // Materiality floor: require |1D Flow| >= $50K to exclude micro-noise ($6K-$8K)
-          const isMaterial = Math.abs(f1) >= 50000;
-          if (ret20 <= -5.0 && z >= 0.8 && isMaterial) {
+          const isMaterial = Math.abs(f1) >= 50000 || Math.abs(f5) >= 100000;
+          const isDip = ((ret20 <= -5.0 && z >= 0.8) || (zp <= -1.0 && zf5 >= 0.6)) && isMaterial;
+          const isWash = ((ret20 <= -5.0 && z <= -0.8) || (zp <= -1.0 && zf5 <= -0.6)) && isMaterial;
+          const isClimax = ((ret20 >= 10.0 && z >= 1.0) || (zp >= 1.0 && zf5 >= 0.8)) && isMaterial;
+          const isDist = ((ret20 >= 10.0 && z <= -0.8) || (zp >= 1.0 && zf5 <= -0.6)) && isMaterial;
+
+          if (isDip) {
             dipAccum.push(entry);
-          } else if (ret20 <= -5.0 && z <= -0.8 && isMaterial) {
+          } else if (isWash) {
             exhaustionLow.push(entry);
-          } else if (ret20 >= 10.0 && z >= 1.0 && isMaterial) {
+          } else if (isClimax) {
             climaxInflowTop.push(entry);
-          } else if (ret20 >= 10.0 && z <= -0.8 && isMaterial) {
+          } else if (isDist) {
             distributionTop.push(entry);
           }
         }
 
-        dipAccum.sort((a, b) => b.z - a.z);
-        exhaustionLow.sort((a, b) => a.z - b.z);
-        climaxInflowTop.sort((a, b) => b.z - a.z);
-        distributionTop.sort((a, b) => a.z - b.z);
+        dipAccum.sort((a, b) => b.oppScore - a.oppScore || b.zf5 - a.zf5);
+        exhaustionLow.sort((a, b) => a.zf5 - b.zf5 || a.z - b.z);
+        climaxInflowTop.sort((a, b) => b.zf5 - a.zf5 || b.z - a.z);
+        distributionTop.sort((a, b) => b.oppScore - a.oppScore || a.zf5 - b.zf5);
 
         const slicedDip = dipAccum.slice(0, 8);
         const slicedExhaust = exhaustionLow.slice(0, 8);
@@ -1427,20 +1458,31 @@
         const pad = { left: 52, right: 32, top: 32, bottom: 48 };
         const chartW = width - pad.left - pad.right;
         const chartH = height - pad.top - pad.bottom;
+        const isVol = this.flowScatterMode === 'vol_adjusted';
 
         // Dynamic, un-clamped domain bounds ensuring all 160 points are positioned accurately
-        const rets = items.map(it => finiteNumber(it.nav_return_20d_pct) || 0);
-        const zs = items.map(it => finiteNumber(it.flow_zscore) || 0);
-        const maxAbsRetRaw = rets.length ? Math.max(30, ...rets.map(Math.abs)) : 30;
-        const maxAbsZRaw = zs.length ? Math.max(3.2, ...zs.map(Math.abs)) : 3.2;
+        const xs = items.map(it => isVol ? (finiteNumber(it.z_price_20d) || 0) : (finiteNumber(it.nav_return_20d_pct) || 0));
+        const ys = items.map(it => isVol ? (finiteNumber(it.z_flow_5d) || 0) : (finiteNumber(it.flow_zscore) || 0));
 
-        const maxRet = Math.min(100, Math.ceil((maxAbsRetRaw * 1.05) / 10) * 10);
-        const minRet = -maxRet;
-        const maxZ = Math.min(6.0, Math.max(4.0, Math.ceil((maxAbsZRaw * 1.05) / 2) * 2));
-        const minZ = -maxZ;
+        let minX, maxX, minY, maxY;
+        if (isVol) {
+          const maxAbsXRaw = xs.length ? Math.max(3.0, ...xs.map(Math.abs)) : 3.0;
+          const maxAbsYRaw = ys.length ? Math.max(3.0, ...ys.map(Math.abs)) : 3.0;
+          maxX = Math.min(6.0, Math.max(3.5, Math.ceil((maxAbsXRaw * 1.05) / 0.5) * 0.5));
+          minX = -maxX;
+          maxY = Math.min(6.0, Math.max(3.5, Math.ceil((maxAbsYRaw * 1.05) / 0.5) * 0.5));
+          minY = -maxY;
+        } else {
+          const maxAbsRetRaw = xs.length ? Math.max(30, ...xs.map(Math.abs)) : 30;
+          const maxAbsZRaw = ys.length ? Math.max(3.2, ...ys.map(Math.abs)) : 3.2;
+          maxX = Math.min(100, Math.ceil((maxAbsRetRaw * 1.05) / 10) * 10);
+          minX = -maxX;
+          maxY = Math.min(6.0, Math.max(4.0, Math.ceil((maxAbsZRaw * 1.05) / 2) * 2));
+          minY = -maxY;
+        }
 
-        const xPos = ret => pad.left + ((ret - minRet) / (maxRet - minRet)) * chartW;
-        const yPos = z => pad.top + ((maxZ - z) / (maxZ - minZ)) * chartH;
+        const xPos = x => pad.left + ((x - minX) / (maxX - minX)) * chartW;
+        const yPos = y => pad.top + ((maxY - y) / (maxY - minY)) * chartH;
         const xZero = xPos(0);
         const yZero = yPos(0);
 
@@ -1479,17 +1521,29 @@
         const crossX = `<line x1="${xZero.toFixed(1)}" y1="${pad.top}" x2="${xZero.toFixed(1)}" y2="${(pad.top + chartH).toFixed(1)}" stroke="rgba(255,255,255,0.22)" stroke-width="1.2" stroke-dasharray="3 3"/>`;
         const crossY = `<line x1="${pad.left}" y1="${yZero.toFixed(1)}" x2="${(pad.left + chartW).toFixed(1)}" y2="${yZero.toFixed(1)}" stroke="rgba(255,255,255,0.22)" stroke-width="1.2" stroke-dasharray="3 3"/>`;
 
-        // ±1.8σ Reference Lines (Material shock threshold)
-        const yPos18 = yPos(1.8);
-        const yNeg18 = yPos(-1.8);
-        const zRefLines = `<line x1="${pad.left}" y1="${yPos18.toFixed(1)}" x2="${(pad.left + chartW).toFixed(1)}" y2="${yPos18.toFixed(1)}" stroke="rgba(34,211,238,0.2)" stroke-width="1" stroke-dasharray="2 4"/><line x1="${pad.left}" y1="${yNeg18.toFixed(1)}" x2="${(pad.left + chartW).toFixed(1)}" y2="${yNeg18.toFixed(1)}" stroke="rgba(245,158,11,0.2)" stroke-width="1" stroke-dasharray="2 4"/>`;
+        // Reference Lines
+        let zRefLines = '';
+        if (isVol) {
+          const yPos15 = yPos(1.5);
+          const yNeg15 = yPos(-1.5);
+          const xPos15 = xPos(1.5);
+          const xNeg15 = xPos(-1.5);
+          zRefLines = `<line x1="${pad.left}" y1="${yPos15.toFixed(1)}" x2="${(pad.left + chartW).toFixed(1)}" y2="${yPos15.toFixed(1)}" stroke="rgba(34,211,238,0.2)" stroke-width="1" stroke-dasharray="2 4"/><line x1="${pad.left}" y1="${yNeg15.toFixed(1)}" x2="${(pad.left + chartW).toFixed(1)}" y2="${yNeg15.toFixed(1)}" stroke="rgba(245,158,11,0.2)" stroke-width="1" stroke-dasharray="2 4"/><line x1="${xPos15.toFixed(1)}" y1="${pad.top}" x2="${xPos15.toFixed(1)}" y2="${(pad.top + chartH).toFixed(1)}" stroke="rgba(34,211,238,0.15)" stroke-width="1" stroke-dasharray="2 4"/><line x1="${xNeg15.toFixed(1)}" y1="${pad.top}" x2="${xNeg15.toFixed(1)}" y2="${(pad.top + chartH).toFixed(1)}" stroke="rgba(245,158,11,0.15)" stroke-width="1" stroke-dasharray="2 4"/>`;
+        } else {
+          const yPos18 = yPos(1.8);
+          const yNeg18 = yPos(-1.8);
+          zRefLines = `<line x1="${pad.left}" y1="${yPos18.toFixed(1)}" x2="${(pad.left + chartW).toFixed(1)}" y2="${yPos18.toFixed(1)}" stroke="rgba(34,211,238,0.2)" stroke-width="1" stroke-dasharray="2 4"/><line x1="${pad.left}" y1="${yNeg18.toFixed(1)}" x2="${(pad.left + chartW).toFixed(1)}" y2="${yNeg18.toFixed(1)}" stroke="rgba(245,158,11,0.2)" stroke-width="1" stroke-dasharray="2 4"/>`;
+        }
 
         // Select top prominent outlier tickers to show sleek labels directly on chart
         const outlierScores = items.map(it => {
-          const ret = finiteNumber(it.nav_return_20d_pct) || 0;
-          const z = finiteNumber(it.flow_zscore) || 0;
+          const xVal = isVol ? (finiteNumber(it.z_price_20d) || 0) : (finiteNumber(it.nav_return_20d_pct) || 0);
+          const yVal = isVol ? (finiteNumber(it.z_flow_5d) || 0) : (finiteNumber(it.flow_zscore) || 0);
           const aum = finiteNumber(it.aum_m) || 0;
-          return { item: it, ret, z, score: Math.abs(z) * 1.5 + Math.abs(ret) / 10 + (aum > 1000 ? 2 : 0) };
+          const score = isVol
+            ? (Math.abs(yVal) * 1.5 + Math.abs(xVal) * 1.5 + (aum > 1000 ? 2 : 0))
+            : (Math.abs(yVal) * 1.5 + Math.abs(xVal) / 10 + (aum > 1000 ? 2 : 0));
+          return { item: it, xVal, yVal, score };
         });
         outlierScores.sort((a, b) => b.score - a.score);
         const labeledTickers = new Set(outlierScores.slice(0, 16).map(o => o.item.ticker));
@@ -1499,21 +1553,23 @@
         const rawLabels = [];
 
         for (const item of items) {
+          const xVal = isVol ? (finiteNumber(item.z_price_20d) || 0) : (finiteNumber(item.nav_return_20d_pct) || 0);
+          const yVal = isVol ? (finiteNumber(item.z_flow_5d) || 0) : (finiteNumber(item.flow_zscore) || 0);
           const ret = finiteNumber(item.nav_return_20d_pct) || 0;
           const z = finiteNumber(item.flow_zscore) || 0;
           let quad = 'neutral';
-          if (ret < 0 && z <= -0.4) quad = 'washout';
-          else if (ret >= 0 && z >= 0.4) quad = 'momentum';
-          else if (ret < 0 && z >= 0.4) quad = 'trap';
-          else if (ret >= 0 && z <= -0.4) quad = 'squeeze';
+          if (xVal < 0 && yVal <= -0.4) quad = 'washout';
+          else if (xVal >= 0 && yVal >= 0.4) quad = 'momentum';
+          else if (xVal < 0 && yVal >= 0.4) quad = 'trap';
+          else if (xVal >= 0 && yVal <= -0.4) quad = 'squeeze';
 
           const matchesFilter = filter === 'all' || quad === filter || (filter === 'dipAccum' && quad === 'trap') || (filter === 'distribution' && quad === 'squeeze');
           // In scanner view, only highlight if explicitly hovered or active in scanner
           const isSelected = (this.flowViewMode !== 'scanner' || this.flowScatterActiveTicker === item.ticker) && this.flowTicker === item.ticker;
           const isHovered = this.flowScatterHoverTicker === item.ticker;
 
-          const cx = xPos(ret);
-          const cy = yPos(z);
+          const cx = xPos(xVal);
+          const cy = yPos(yVal);
 
           let dotColor = '#64748b';
           if (quad === 'washout') dotColor = '#34d399';
@@ -1521,13 +1577,17 @@
           else if (quad === 'trap') dotColor = '#fb923c';
           else if (quad === 'squeeze') dotColor = '#a78bfa';
 
-          const r = isSelected ? 6.5 : (isHovered ? 6.0 : (Math.abs(z) >= 1.8 ? 4.8 : 3.4));
+          const r = isSelected ? 6.5 : (isHovered ? 6.0 : (Math.abs(yVal) >= 1.8 ? 4.8 : 3.4));
           const opacity = isSelected ? 1.0 : (isHovered ? 1.0 : (matchesFilter ? 0.88 : 0.16));
           const stroke = isSelected ? '#ffffff' : (isHovered ? '#ffffff' : '#090d16');
           const strokeW = isSelected ? 2.2 : (isHovered ? 2.0 : 1.0);
 
+          const tipText = isVol
+            ? `${item.ticker} (${item.underlying || item.fund_name}): Price Z ${xVal >= 0 ? '+' : ''}${xVal.toFixed(2)}σ, Flow 5D Z ${yVal >= 0 ? '+' : ''}${yVal.toFixed(2)}σ, Opp Score ${item.opportunity_score || 25}/100 · Click to Open Studio`
+            : `${item.ticker} (${item.underlying || item.fund_name}): 20D Ret ${ret >= 0 ? '+' : ''}${ret.toFixed(1)}%, Flow Z ${z >= 0 ? '+' : ''}${z.toFixed(2)}σ, 1D Flow ${formatMoney(item.latest_flow)} · Click to Open Studio`;
+
           dots += `<g data-ticker="${item.ticker}" role="button" tabindex="0" aria-label="${item.ticker} ${ret >= 0 ? '+' : ''}${ret.toFixed(1)}% ${z.toFixed(2)} sigma" style="cursor:pointer">
-            <title>${item.ticker} (${item.underlying || item.fund_name}): 20D Ret ${ret >= 0 ? '+' : ''}${ret.toFixed(1)}%, Flow Z ${z >= 0 ? '+' : ''}${z.toFixed(2)}σ, 1D Flow ${formatMoney(item.latest_flow)} · Click to Open Studio</title>
+            <title>${tipText}</title>
             <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="12" fill="transparent" stroke="transparent"/>
             <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}" fill="${dotColor}" stroke="${stroke}" stroke-width="${strokeW}" opacity="${opacity}" style="pointer-events:none;transition:r 0.15s,opacity 0.15s"/>
           </g>`;
@@ -1578,28 +1638,44 @@
         ).join('');
 
         // Dynamic X-Ticks
-        const xStep = maxRet <= 30 ? 10 : (maxRet <= 60 ? 15 : 20);
-        const xTickVals = [];
-        for (let v = -maxRet; v <= maxRet; v += xStep) {
-          xTickVals.push(v);
+        let xTicks = '';
+        if (isVol) {
+          const xStep = maxX <= 3.5 ? 1 : 2;
+          const xTickVals = [];
+          for (let v = -Math.floor(maxX); v <= Math.floor(maxX); v += xStep) {
+            xTickVals.push(v);
+          }
+          xTicks = xTickVals.map(val => {
+            const x = xPos(val);
+            const formatted = val === 0 ? '0σ' : (val > 0 ? `+${val}σ` : `${val}σ`);
+            return `<text x="${x.toFixed(1)}" y="${height - 24}" text-anchor="middle" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="10">${formatted}</text>`;
+          }).join('');
+        } else {
+          const xStep = maxX <= 30 ? 10 : (maxX <= 60 ? 15 : 20);
+          const xTickVals = [];
+          for (let v = -maxX; v <= maxX; v += xStep) {
+            xTickVals.push(v);
+          }
+          xTicks = xTickVals.map(val => {
+            const x = xPos(val);
+            return `<text x="${x.toFixed(1)}" y="${height - 24}" text-anchor="middle" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="10">${val >= 0 ? '+' : ''}${val}%</text>`;
+          }).join('');
         }
-        const xTicks = xTickVals.map(val => {
-          const x = xPos(val);
-          return `<text x="${x.toFixed(1)}" y="${height - 24}" text-anchor="middle" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="10">${val >= 0 ? '+' : ''}${val}%</text>`;
-        }).join('');
 
         // Dynamic Rounded Y-Ticks (Clean even sigmas: +4.0σ, +2.0σ, 0σ, -2.0σ, -4.0σ)
-        const yTickVals = [maxZ, maxZ / 2, 0, -maxZ / 2, -maxZ];
+        const yTickVals = [maxY, maxY / 2, 0, -maxY / 2, -maxY];
         const yTicks = yTickVals.map(val => {
           const y = yPos(val);
           const formatted = val === 0 ? '0σ' : (val > 0 ? `+${val.toFixed(1)}σ` : `${val.toFixed(1)}σ`);
           return `<text x="${pad.left - 8}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="10">${formatted}</text>`;
         }).join('');
 
-        const axisLabels = `<text x="${(pad.left + chartW / 2).toFixed(1)}" y="${height - 6}" text-anchor="middle" fill="${COLORS.muted}" font-family="ui-sans-serif, sans-serif" font-size="9.5" font-weight="600" letter-spacing="0.04em">20-SESSION NAV PRICE RETURN (%)</text><text transform="rotate(-90)" x="${-(pad.top + chartH / 2).toFixed(1)}" y="${pad.left - 38}" text-anchor="middle" fill="${COLORS.muted}" font-family="ui-sans-serif, sans-serif" font-size="9.5" font-weight="600" letter-spacing="0.04em">DAILY FLOW Z-SCORE (σ)</text>`;
+        const xAxisLabel = isVol ? 'VOLATILITY-STANDARDIZED PRICE DISPLACEMENT (Z_PRICE σ)' : '20-SESSION NAV PRICE RETURN (%)';
+        const yAxisLabel = isVol ? '5D FLOW THRUST VARIANCE (Z_FLOW 5D σ)' : 'DAILY FLOW Z-SCORE (σ)';
+        const axisLabels = `<text x="${(pad.left + chartW / 2).toFixed(1)}" y="${height - 6}" text-anchor="middle" fill="${COLORS.muted}" font-family="ui-sans-serif, sans-serif" font-size="9.5" font-weight="600" letter-spacing="0.04em">${xAxisLabel}</text><text transform="rotate(-90)" x="${-(pad.top + chartH / 2).toFixed(1)}" y="${pad.left - 38}" text-anchor="middle" fill="${COLORS.muted}" font-family="ui-sans-serif, sans-serif" font-size="9.5" font-weight="600" letter-spacing="0.04em">${yAxisLabel}</text>`;
 
         return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Price return versus Flow Z-score distribution map" style="width:100%;height:auto;display:block">
-          <title>Price Return versus Flow Z-Score Map</title>
+          <title>${isVol ? 'Volatility-Standardized Price Displacement vs 5D Flow Thrust Variance Map' : 'Price Return versus Flow Z-Score Map'}</title>
           ${qBgWashout}${qBgMomentum}${qBgTrap}${qBgSqueeze}
           ${lblWashout}${lblMomentum}${lblTrap}${lblSqueeze}
           ${zRefLines}${crossX}${crossY}

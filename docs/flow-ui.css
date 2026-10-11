@@ -1920,19 +1920,19 @@
 .flow-research .flow-anomaly-list {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.35rem;
   margin-top: 0.25rem;
   flex: 1;
-  max-height: 215px;
+  max-height: 260px;
   overflow-y: auto;
   padding-right: 2px;
 }
 
 .flow-research .flow-anomaly-item {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.4rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.2rem;
   padding: 0.35rem 0.5rem;
   border: 1px solid var(--flow-line);
   border-radius: 4px;

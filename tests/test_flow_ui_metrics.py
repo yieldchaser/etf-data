@@ -326,6 +326,66 @@ def test_battle_liquidation_and_peer_radar_zero_flows():
     assert result["bullShareValid"] is True
 
 
+def test_dual_variance_scatter_and_continuous_behavior_scanner():
+    result = run_metrics(
+        """(()=>{
+            const app = m.flowResearchApp();
+            const cat = require('./docs/data/flows/catalog.json');
+            app.flowCatalog = cat;
+            app._flowEntryMap = Object.fromEntries(cat.instruments.map(i => [i.ticker, i]));
+            app.flowTicker = 'TQQQ';
+
+            // 1. Nominal Scatter Mode
+            app.flowScatterMode = 'nominal';
+            const nominalSvg = app.flowScatterSvg;
+            const nominalCounts = app.flowScatterCounts;
+
+            // 2. Volatility-Adjusted Scatter Mode
+            app.flowScatterMode = 'vol_adjusted';
+            const volSvg = app.flowScatterSvg;
+            const volCounts = app.flowScatterCounts;
+
+            // 3. Continuous Behavior Scanner with Horizon Switching
+            app.flowScannerHorizon = 'all';
+            const anomAll = app.flowActiveCycleAnomalies;
+            app.flowScannerHorizon = '1y';
+            const anom1y = app.flowActiveCycleAnomalies;
+
+            const sampleCand = anomAll.dipAccum[0] || anomAll.climaxInflowTop[0] || anomAll.distributionTop[0] || anomAll.exhaustionLow[0];
+
+            return {
+                nominalSvgHasRetAxis: nominalSvg.includes('20-SESSION NAV PRICE RETURN (%)'),
+                nominalSvgHasZAxis: nominalSvg.includes('DAILY FLOW Z-SCORE (σ)'),
+                volSvgHasPriceZAxis: volSvg.includes('VOLATILITY-STANDARDIZED PRICE DISPLACEMENT (Z_PRICE σ)'),
+                volSvgHasFlowZAxis: volSvg.includes('5D FLOW THRUST VARIANCE (Z_FLOW 5D σ)'),
+                volSvgHasDataTicker: volSvg.includes('<g data-ticker='),
+                volSvgHasHitTargets: volSvg.includes('r="12" fill="transparent"'),
+                nominalTotal: nominalCounts.all,
+                volTotal: volCounts.all,
+                hasAnomaliesAll: anomAll.totalAnomalies >= 0,
+                hasAnomalies1y: anom1y.totalAnomalies >= 0,
+                candHasOppScore: sampleCand ? sampleCand.oppScore !== undefined : false,
+                candHasEdgeStats: sampleCand ? sampleCand.dipWin !== undefined || sampleCand.climaxWin !== undefined : false,
+                catalogEnriched: cat.instruments.every(i => i.z_price_20d !== undefined && i.z_flow_5d !== undefined && i.behavior_profiles !== undefined)
+            };
+        })()"""
+    )
+    assert result["nominalSvgHasRetAxis"] is True
+    assert result["nominalSvgHasZAxis"] is True
+    assert result["volSvgHasPriceZAxis"] is True
+    assert result["volSvgHasFlowZAxis"] is True
+    assert result["volSvgHasDataTicker"] is True
+    assert result["volSvgHasHitTargets"] is True
+    assert result["nominalTotal"] == 160
+    assert result["volTotal"] == 160
+    assert result["hasAnomaliesAll"] is True
+    assert result["hasAnomalies1y"] is True
+    assert result["candHasOppScore"] is True
+    assert result["candHasEdgeStats"] is True
+    assert result["catalogEnriched"] is True
+
+
+
 
 
 
