@@ -771,7 +771,7 @@ def _instrument_entry(ticker: str, report: dict[str, Any]) -> dict[str, Any]:
     flow_60d = round(sum(float(r["usd_flow"]) for r in rows[-60:]), 2)
     latest_year = str(last["date"])[:4]
     flow_ytd = round(sum(float(r["usd_flow"]) for r in rows if str(r["date"]).startswith(latest_year)), 2)
-    ref_20 = rows[-21] if len(rows) >= 21 else rows[0]
+    ref_20 = rows[-20] if len(rows) >= 20 else rows[0]
     nav_return_20d_pct = (
         round((float(last["nav"]) / float(ref_20["nav"]) - 1.0) * 100.0, 2)
         if float(ref_20["nav"]) > 0

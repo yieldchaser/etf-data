@@ -765,6 +765,14 @@
   height: 100%;
 }
 
+.flow-research .flow-brush-inputs.thumb-active-start #flow-range-start {
+  z-index: 6 !important;
+}
+
+.flow-research .flow-brush-inputs.thumb-active-end #flow-range-end {
+  z-index: 6 !important;
+}
+
 .flow-research .flow-brush-inputs input[type="range"] {
   position: absolute;
   width: 100%;
@@ -792,7 +800,13 @@
   cursor: ew-resize;
   margin: 0;
   touch-action: none;
-  transition: transform 0.1s ease, border-color 0.1s ease;
+  transition: transform 0.08s ease, border-color 0.08s ease;
+}
+
+.flow-research .flow-brush-inputs input[type="range"]:active::-webkit-slider-thumb {
+  transform: scale(1.18);
+  border-color: #38bdf8;
+  transition: none !important;
 }
 
 .flow-research .flow-brush-inputs input[type="range"]::-webkit-slider-thumb:hover {
@@ -810,7 +824,13 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
   cursor: ew-resize;
   touch-action: none;
-  transition: transform 0.1s ease, border-color 0.1s ease;
+  transition: transform 0.08s ease, border-color 0.08s ease;
+}
+
+.flow-research .flow-brush-inputs input[type="range"]:active::-moz-range-thumb {
+  transform: scale(1.18);
+  border-color: #38bdf8;
+  transition: none !important;
 }
 
 .flow-research .flow-brush-inputs input[type="range"]::-webkit-slider-runnable-track {
