@@ -2856,17 +2856,20 @@
           if (row.nav === null) return;
           const x = frame.xScale(idx);
           const y = yPrice(row.nav);
-          const z = finiteNumber(row.priorOnlyZScore);
+          const z = finiteNumber(this.flowActiveZScore(row));
 
           let isWashout = false;
           let isEuphoria = false;
           let isBottomClimax = false;
           let isTopClimax = false;
 
-          if (idx >= 5 && rows[idx - 5]?.nav !== null) {
-            const ret5 = (row.nav - rows[idx - 5].nav) / rows[idx - 5].nav;
-            if (ret5 <= -0.05 && z !== null && z <= -1.8) isWashout = true;
-            if (ret5 >= 0.06 && z !== null && z >= 1.8) isEuphoria = true;
+          if (idx >= 5) {
+            const prevNav = finiteNumber(rows[idx - 5]?.nav);
+            if (prevNav !== null && prevNav > 0 && row.nav !== null) {
+              const ret5 = (row.nav - prevNav) / prevNav;
+              if (ret5 <= -0.05 && z !== null && z <= -1.8) isWashout = true;
+              if (ret5 >= 0.06 && z !== null && z >= 1.8) isEuphoria = true;
+            }
           }
 
           const wStart = Math.max(0, idx - 10);
@@ -2928,7 +2931,7 @@
 
         // Lower Pane: Z-Score Waveform Line
         const zPoints = rows.map((row, index) => {
-          const z = finiteNumber(row.priorOnlyZScore);
+          const z = finiteNumber(this.flowActiveZScore(row));
           return { x: frame.xScale(index), y: z !== null ? yZ(z) : null };
         });
         const zLine = `<path d="${linePath(zPoints)}" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="3 1" opacity="0.85"/>`;
@@ -3154,6 +3157,10 @@
         const hasTier2 = showDaily || showVol;
         const hasTier3 = showVelocity;
         const hasTier4 = showZ;
+
+        if (!hasTier1 && !hasTier2 && !hasTier3 && !hasTier4) {
+          return emptyChart(width, 220, 'All tiers are hidden. Enable one or more indicators from the workbench toolbar.');
+        }
 
         const tier1H = hasTier1 ? (width < 500 ? 210 : 250) : 0;
         const tier2H = hasTier2 ? (width < 500 ? 110 : 130) : 0;
@@ -3426,7 +3433,7 @@
             t3Grid += `<line x1="${padLeft}" y1="${zeroVelY.toFixed(1)}" x2="${width - padRight}" y2="${zeroVelY.toFixed(1)}" stroke="rgba(255,255,255,0.22)" stroke-width="1.1"/>`;
 
             // Subtitle & Axis Labels
-            t3Grid += `<text x="${padLeft}" y="${(t3Top - 2).toFixed(1)}" text-anchor="start" fill="rgba(255,255,255,0.4)" font-family="ui-monospace, monospace" font-size="8.5" font-weight="700" letter-spacing="0.04em">FLOW VELOCITY (20D vs 60D BASELINE) &amp; ACCELERATION</text>`;
+            t3Grid += `<text x="${padLeft}" y="${(t3Top - 2).toFixed(1)}" text-anchor="start" fill="rgba(255,255,255,0.4)" font-family="ui-monospace, monospace" font-size="8.5" font-weight="700" letter-spacing="0.04em">${width < 550 ? 'VELOCITY &amp; ACCEL' : 'FLOW VELOCITY (20D vs 60D BASELINE) &amp; ACCELERATION'}</text>`;
             t3Grid += `<text x="${padLeft - 8}" y="${(zeroVelY + 3).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="9">${isPctAum ? '0.0%' : '$0'}</text>`;
             t3Grid += `<text x="${padLeft - 8}" y="${(t3Top + 10).toFixed(1)}" text-anchor="end" fill="#34d399" font-family="ui-monospace, monospace" font-size="8.5">${isPctAum ? `+${maxVelAbs.toFixed(1)}%` : axisNumber(maxVelAbs)}</text>`;
             t3Grid += `<text x="${padLeft - 8}" y="${(t3Bottom - 3).toFixed(1)}" text-anchor="end" fill="#fb7185" font-family="ui-monospace, monospace" font-size="8.5">${isPctAum ? `−${maxVelAbs.toFixed(1)}%` : axisNumber(-maxVelAbs)}</text>`;
