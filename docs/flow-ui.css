@@ -643,6 +643,7 @@
   border: 1px solid var(--flow-line);
   border-radius: 8px;
   background: var(--flow-panel);
+  margin-bottom: 0.45rem;
 }
 
 .flow-research .flow-instrument-top {
@@ -1060,6 +1061,8 @@
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.65rem;
+  margin-top: 0.35rem;
+  margin-bottom: 0.35rem;
 }
 
 .flow-research .flow-kpi {
@@ -1516,6 +1519,7 @@
   border: 1px solid var(--flow-line);
   border-radius: 6px;
   background: var(--flow-panel);
+  margin-bottom: 0.45rem;
 }
 
 .flow-research .flow-category-tabs-wrap {
