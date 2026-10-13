@@ -431,7 +431,7 @@ def update_daily_flows(
         entry["earliest_date"] = str(df_final["date"].iloc[0])
         entry["latest_date"] = str(last["date"])
         entry["rows_count"] = int(len(df_final))
-        entry["latest_nav"] = round(float(last["nav"]), 2)
+        entry["latest_nav"] = round(float(last["nav"]), 4)
         entry["total_cumulative_flow_m"] = round(float(last["cumulative_flow"]) / 1_000_000.0, 2)
         entry["flow_zscore_latest"] = round(float(last["flow_zscore"]), 2)
         entry["regime_latest"] = str(last["regime"])

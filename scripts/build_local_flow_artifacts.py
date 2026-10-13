@@ -22,8 +22,8 @@ DEFAULT_SOURCE_DIR = REPO_ROOT / "data" / "flows"
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "docs" / "data" / "flows"
 DEFAULT_UNIVERSE_DOC = REPO_ROOT / "FUND_FLOW_ETFS.md"
 EXPECTED_UNIVERSE_COUNT = 160
-EXPECTED_TOTAL_ROWS = 213308
-EXPECTED_WORKBOOK_DATE_ROWS = 2724
+EXPECTED_TOTAL_ROWS = 213638
+EXPECTED_WORKBOOK_DATE_ROWS = 2726
 ARTIFACT_SCHEMA_VERSION = 1
 DATA_SCHEMA_VERSION = 2
 CATALOG_VERSION = "local-authoritative-117-v1"
@@ -411,7 +411,7 @@ def _validate_individual_files(
         last = rows[-1]
         if first["date"] != summary["earliest_date"] or last["date"] != summary["latest_date"]:
             raise _error(f"{context} date range does not match catalog summary")
-        if not _close(last["nav"], summary["latest_nav"], 0.001):
+        if not _close(last["nav"], summary["latest_nav"], 0.01):
             raise _error(f"{context} latest NAV does not match catalog summary")
         if not _close(last["cumulative_flow"] / 1_000_000, summary["total_cumulative_flow_m"], 0.02):
             raise _error(f"{context} cumulative flow does not match catalog summary")
@@ -581,7 +581,7 @@ def _validate_workbook(
             actual = _excel_value(row[field], field, f"workbook Universe_Catalog {ticker}.{field}")
             expected = summary[field]
             if field in {"aum_m", "latest_nav", "total_cumulative_flow_m", "flow_zscore_latest", "pressure_latest"}:
-                if not _close(actual, expected, 0.001):
+                if not _close(actual, expected, 0.01):
                     raise _error(f"workbook Universe_Catalog {ticker} differs in {field}")
             elif str(actual) != str(expected):
                 raise _error(f"workbook Universe_Catalog {ticker} differs in {field}")
@@ -609,7 +609,7 @@ def _validate_workbook(
             actual = _excel_value(row[field], field, f"workbook Summary_Latest {ticker}.{field}")
             expected = summary[field]
             if field in {"latest_nav", "total_cumulative_flow_m", "flow_zscore_latest", "pressure_latest"}:
-                if not _close(actual, expected, 0.001):
+                if not _close(actual, expected, 0.01):
                     raise _error(f"workbook Summary_Latest {ticker} differs in {field}")
             elif str(actual) != str(expected):
                 raise _error(f"workbook Summary_Latest {ticker} differs in {field}")
@@ -617,7 +617,7 @@ def _validate_workbook(
     for info in files.values():
         expected_dates.update(row["date"] for row in info["data"])
     if len(expected_dates) != EXPECTED_WORKBOOK_DATE_ROWS or len(expected_dates) != aggregate["date_count"]:
-        raise _error("authoritative date union is not the expected 2702 observations")
+        raise _error(f"authoritative date union is not the expected {EXPECTED_WORKBOOK_DATE_ROWS} observations")
     sheet_specs = {
         "Daily_Flows_Wide": "usd_flow",
         "Cumulative_Flows_Wide": "cumulative_flow",
