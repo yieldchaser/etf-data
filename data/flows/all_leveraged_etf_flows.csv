@@ -8927,6 +8927,7 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-10-12,ARKK,ARKK,-233250000.0,88.04,-0.0179,10678993000.0,0.0,-233250000.0,-0.2373,-2561709000.0,-252897000.0,BALANCED,-19.9313,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",Disruptive Innovation Strategy,1x
 2026-10-13,ARKK,ARKK,-52312000.0,87.21,-0.0095,10626681000.0,0.0,-52312000.0,-0.0494,-2650200000.0,-296861000.0,BALANCED,-17.2357,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",Disruptive Innovation Strategy,1x
 2026-10-14,ARKK,ARKK,97098000.0,84.45,-0.0316,10723779000.0,97098000.0,0.0,0.1014,-2624524000.0,-220553000.0,BALANCED,-5.464,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",Disruptive Innovation Strategy,1x
+2026-10-15,ARKK,ARKK,0.0,85.7,0.0148,10723779000.0,0.0,0.0,0.0006,-4477116000.0,-1172119000.0,BALANCED,-9.9839,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",Disruptive Innovation Strategy,1x
 2025-01-14,ARMG,ARMG,391000.0,15.64,0.0,391000.0,391000.0,0.0,0.0,391000.0,391000.0,BALANCED,12.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",ARM Holdings (ARM),+2x
 2025-01-15,ARMG,ARMG,0.0,17.28,0.1045,391000.0,0.0,0.0,0.0,391000.0,391000.0,BALANCED,10.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",ARM Holdings (ARM),+2x
 2025-01-16,ARMG,ARMG,0.0,17.3,0.0013,391000.0,0.0,0.0,0.0,391000.0,391000.0,BALANCED,10.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",ARM Holdings (ARM),+2x
@@ -11753,6 +11754,7 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-10-09,BABX,BABX,29030000.0,17.28,0.1063,163884000.0,29030000.0,0.0,4.8213,28249000.0,32487000.0,ACCUMULATION,100.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Alibaba (BABA),+2x
 2026-10-12,BABX,BABX,-21546000.0,17.1,-0.0104,142338000.0,0.0,-21546000.0,-3.0024,6703000.0,10941000.0,DISTRIBUTION,-67.0603,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Alibaba (BABA),+2x
 2026-10-13,BABX,BABX,0.0,17.11,0.0006,142338000.0,0.0,0.0,0.0116,6703000.0,10941000.0,BALANCED,10.2897,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Alibaba (BABA),+2x
+2026-10-14,BABX,BABX,-516000.0,17.21,0.0058,141822000.0,0.0,-516000.0,-0.0632,6187000.0,6187000.0,BALANCED,6.4204,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Alibaba (BABA),+2x
 2025-11-13,BEX,BEX,159000.0,15.86,0.0,159000.0,159000.0,0.0,0.0,159000.0,159000.0,BALANCED,12.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Bloom Energy (BE),+2x
 2025-11-14,BEX,BEX,4048000.0,18.4,0.1606,4207000.0,4048000.0,0.0,0.0,4207000.0,4207000.0,BALANCED,14.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Bloom Energy (BE),+2x
 2025-11-17,BEX,BEX,421000.0,16.82,-0.0858,4628000.0,421000.0,0.0,0.0,4628000.0,4628000.0,BALANCED,16.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Bloom Energy (BE),+2x
@@ -82837,6 +82839,7 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-10-12,MSTX,MSTX,-7681000.0,17.86,-0.0222,219610000.0,0.0,-7681000.0,-4.2154,-6170000.0,-2127000.0,DISTRIBUTION,-100.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",MicroStrategy (MSTR),+2x
 2026-10-13,MSTX,MSTX,7270000.0,17.73,-0.0072,226880000.0,7270000.0,0.0,3.1483,1934000.0,4890000.0,ACCUMULATION,90.708,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",MicroStrategy (MSTR),+2x
 2026-10-14,MSTX,MSTX,14074000.0,15.64,-0.1181,240954000.0,14074000.0,0.0,3.9623,16673000.0,20292000.0,ACCUMULATION,100.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",MicroStrategy (MSTR),+2x
+2026-10-15,MSTX,MSTX,-5562000.0,17.38,0.1116,235392000.0,0.0,-5562000.0,-1.6898,8466000.0,14730000.0,DISTRIBUTION,-34.2451,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",MicroStrategy (MSTR),+2x
 2024-09-18,MSTZ,BATS:MSTZ,245000.0,489.0,0.0,245000.0,245000.0,0.0,0.0,245000.0,245000.0,BALANCED,12.0,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),MicroStrategy (Bitcoin Pullback Hedge),-2x
 2024-09-19,MSTZ,BATS:MSTZ,0.0,400.8,-0.1805,245000.0,0.0,0.0,0.0,245000.0,245000.0,BALANCED,10.0,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),MicroStrategy (Bitcoin Pullback Hedge),-2x
 2024-09-20,MSTZ,BATS:MSTZ,0.0,400.2,-0.0015,245000.0,0.0,0.0,0.0,245000.0,245000.0,BALANCED,10.0,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),MicroStrategy (Bitcoin Pullback Hedge),-2x
@@ -103277,6 +103280,7 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-10-12,QLD,QLD,0.0,97.06,-0.0141,1170576000.0,0.0,0.0,-0.3316,14817000.0,94316000.0,BALANCED,1.7095,1. Broad Market Equity Index (Bull),NASDAQ-100,+2x
 2026-10-13,QLD,QLD,9642000.0,96.44,-0.0065,1180218000.0,9642000.0,0.0,0.1724,44606000.0,121345000.0,BALANCED,16.3109,1. Broad Market Equity Index (Bull),NASDAQ-100,+2x
 2026-10-14,QLD,QLD,-4626000.0,92.54,-0.0404,1175592000.0,0.0,-4626000.0,-0.468,19922000.0,116719000.0,BALANCED,-3.7004,1. Broad Market Equity Index (Bull),NASDAQ-100,+2x
+2026-10-15,QLD,QLD,13857000.0,92.4,-0.0015,1189449000.0,13857000.0,0.0,0.3954,48404000.0,121580000.0,BALANCED,21.8839,1. Broad Market Equity Index (Bull),NASDAQ-100,+2x
 2020-10-13,QQQM,QQQM,297488000.0,120.93,0.0,297488000.0,297488000.0,0.0,0.0,297488000.0,297488000.0,BALANCED,12.0,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",NASDAQ-100 Index,1x
 2020-10-14,QQQM,QQQM,0.0,119.95,-0.0081,297488000.0,0.0,0.0,0.0,297488000.0,297488000.0,BALANCED,10.0,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",NASDAQ-100 Index,1x
 2020-10-15,QQQM,QQQM,0.0,119.08,-0.0072,297488000.0,0.0,0.0,0.0,297488000.0,297488000.0,BALANCED,10.0,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",NASDAQ-100 Index,1x
@@ -121900,6 +121904,7 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-10-12,SOXL,ARCX:SOXL,0.0,128.26,-0.0815,-17757203000.0,0.0,0.0,0.3184,352825000.0,-2644528000.0,BALANCED,17.9596,"2. Technology, Semiconductor & Thematic (Bull)",Semiconductors,+3x
 2026-10-13,SOXL,ARCX:SOXL,708458000.0,127.65,-0.0048,-17048745000.0,708458000.0,0.0,2.5858,1069487000.0,-2176209000.0,ACCUMULATION,76.6461,"2. Technology, Semiconductor & Thematic (Bull)",Semiconductors,+3x
 2026-10-14,SOXL,ARCX:SOXL,1478636000.0,110.35,-0.1356,-15570109000.0,1478636000.0,0.0,3.6417,2548123000.0,-707982000.0,ACCUMULATION,100.0,"2. Technology, Semiconductor & Thematic (Bull)",Semiconductors,+3x
+2026-10-15,SOXL,ARCX:SOXL,1325896000.0,107.36,-0.0271,-14244213000.0,1325896000.0,0.0,2.7154,3610739000.0,755758000.0,ACCUMULATION,83.885,"2. Technology, Semiconductor & Thematic (Bull)",Semiconductors,+3x
 2016-01-04,SOXS,ARCX:SOXS,-2076000.0,498240000.0,0.0326,-2076000.0,0.0,-2076000.0,0.0,-2076000.0,-2076000.0,BALANCED,-12.0,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),Semiconductors (Cycle Downturn),-3x
 2016-01-05,SOXS,ARCX:SOXS,0.0,513720000.0,0.031,-2076000.0,0.0,0.0,0.0,-2076000.0,-2076000.0,BALANCED,-10.0,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),Semiconductors (Cycle Downturn),-3x
 2016-01-06,SOXS,ARCX:SOXS,2321000.0,557040000.0,0.0843,245000.0,2321000.0,0.0,0.0,245000.0,245000.0,BALANCED,12.0,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),Semiconductors (Cycle Downturn),-3x
@@ -124615,6 +124620,7 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-10-12,SOXS,ARCX:SOXS,0.0,37.26,0.0816,10373989000.0,0.0,0.0,-0.5802,81924000.0,1034316000.0,BALANCED,-4.5059,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),Semiconductors (Cycle Downturn),-3x
 2026-10-13,SOXS,ARCX:SOXS,16848000.0,37.44,0.0049,10390837000.0,16848000.0,0.0,-0.3771,61696000.0,1040940000.0,BALANCED,2.5717,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),Semiconductors (Cycle Downturn),-3x
 2026-10-14,SOXS,ARCX:SOXS,65908000.0,42.52,0.1357,10456745000.0,65908000.0,0.0,0.2633,127604000.0,1104340000.0,BALANCED,20.5815,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),Semiconductors (Cycle Downturn),-3x
+2026-10-15,SOXS,ARCX:SOXS,141931000.0,43.67,0.027,10598676000.0,141931000.0,0.0,1.2116,272915000.0,1124852000.0,BALANCED,46.2893,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),Semiconductors (Cycle Downturn),-3x
 2016-01-04,SPHQ,SPHQ,0.0,22.85,-0.0115,0.0,0.0,0.0,0.0,0.0,0.0,BALANCED,0.0,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",S&P 500 Quality Index,1x
 2016-01-05,SPHQ,SPHQ,4591000.0,22.96,0.0046,4591000.0,4591000.0,0.0,0.0,4591000.0,4591000.0,BALANCED,12.0,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",S&P 500 Quality Index,1x
 2016-01-06,SPHQ,SPHQ,7936000.0,22.67,-0.0123,12527000.0,7936000.0,0.0,0.0,12527000.0,12527000.0,BALANCED,14.0,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",S&P 500 Quality Index,1x
@@ -127336,6 +127342,7 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-10-12,SPHQ,SPHQ,0.0,85.51,-0.0038,10821489000.0,0.0,0.0,-0.2333,58141000.0,89010000.0,BALANCED,4.1673,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",S&P 500 Quality Index,1x
 2026-10-13,SPHQ,SPHQ,5125000.0,85.41,-0.0011,10826614000.0,5125000.0,0.0,0.0775,33315000.0,94135000.0,BALANCED,13.9373,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",S&P 500 Quality Index,1x
 2026-10-14,SPHQ,SPHQ,21105000.0,84.42,-0.0116,10847719000.0,21105000.0,0.0,1.016,54420000.0,146752000.0,BALANCED,39.3995,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",S&P 500 Quality Index,1x
+2026-10-15,SPHQ,SPHQ,11035000.0,84.89,0.0055,10858754000.0,11035000.0,0.0,0.3711,34690000.0,141101000.0,BALANCED,25.2783,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",S&P 500 Quality Index,1x
 2016-01-04,SPMO,SPMO,0.0,25.58,-0.019,0.0,0.0,0.0,0.0,0.0,0.0,BALANCED,0.0,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",S&P 500 Momentum Index,1x
 2016-01-05,SPMO,SPMO,0.0,25.66,0.0033,0.0,0.0,0.0,0.0,0.0,0.0,BALANCED,0.0,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",S&P 500 Momentum Index,1x
 2016-01-06,SPMO,SPMO,0.0,25.47,-0.0074,0.0,0.0,0.0,0.0,0.0,0.0,BALANCED,0.0,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",S&P 500 Momentum Index,1x
@@ -132747,6 +132754,7 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-10-12,SPXL,SPXL,0.0,297.48,-0.0019,-1634826000.0,0.0,0.0,-0.085,-15367000.0,-39256000.0,BALANCED,-12.1243,1. Broad Market Equity Index (Bull),S&P 500,+3x
 2026-10-13,SPXL,SPXL,0.0,297.22,-0.0009,-1634826000.0,0.0,0.0,-0.085,-15367000.0,-39256000.0,BALANCED,-12.1243,1. Broad Market Equity Index (Bull),S&P 500,+3x
 2026-10-14,SPXL,SPXL,-14364000.0,287.27,-0.0335,-1649190000.0,0.0,-14364000.0,-0.3081,-14870000.0,-202979000.0,BALANCED,-19.7026,1. Broad Market Equity Index (Bull),S&P 500,+3x
+2026-10-15,SPXL,SPXL,0.0,290.03,0.0096,-1649190000.0,0.0,0.0,0.0096,-44169000.0,-160863000.0,BALANCED,-9.7607,1. Broad Market Equity Index (Bull),S&P 500,+3x
 2016-01-04,SPXS,ARCX:SPXS,1767000.0,8835.0,0.0452,1767000.0,1767000.0,0.0,0.0,1767000.0,1767000.0,BALANCED,12.0,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),S&P 500 (Primary Market Hedge),-3x
 2016-01-05,SPXS,ARCX:SPXS,0.0,8780.0,-0.0061,1767000.0,0.0,0.0,0.0,1767000.0,1767000.0,BALANCED,10.0,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),S&P 500 (Primary Market Hedge),-3x
 2016-01-06,SPXS,ARCX:SPXS,0.0,9120.0,0.0383,1767000.0,0.0,0.0,0.0,1767000.0,1767000.0,BALANCED,10.0,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),S&P 500 (Primary Market Hedge),-3x
@@ -151683,6 +151691,7 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-10-12,TLT,TLT,-124816000.0,78.01,0.0015,58881155000.0,0.0,-124816000.0,-0.5812,706408000.0,2565024000.0,BALANCED,-6.5309,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",ICE U.S. Treasury 20+ Year Bond Index,1x
 2026-10-13,TLT,TLT,31326000.0,78.31,0.0039,58912481000.0,31326000.0,0.0,-0.2305,637324000.0,3128855000.0,BALANCED,6.2364,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",ICE U.S. Treasury 20+ Year Bond Index,1x
 2026-10-14,TLT,TLT,-181347000.0,78.85,0.0068,58731134000.0,0.0,-181347000.0,-0.6535,340282000.0,2753435000.0,BALANCED,-8.3385,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",ICE U.S. Treasury 20+ Year Bond Index,1x
+2026-10-15,TLT,TLT,-1663868000.0,79.99,0.0146,57067266000.0,0.0,-1663868000.0,-3.0828,-1658276000.0,1212200000.0,DISTRIBUTION,-91.0708,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",ICE U.S. Treasury 20+ Year Bond Index,1x
 2016-01-04,TMF,TMF,0.0,191.025,0.0173,0.0,0.0,0.0,0.0,0.0,0.0,BALANCED,0.0,"7. Fixed Income, Currencies & Crypto (Bull)",20+ Year Treasury,+3x
 2016-01-05,TMF,TMF,-3774000.0,188.725,-0.0121,-3774000.0,0.0,-3774000.0,0.0,-3774000.0,-3774000.0,BALANCED,-12.0,"7. Fixed Income, Currencies & Crypto (Bull)",20+ Year Treasury,+3x
 2016-01-06,TMF,TMF,0.0,196.35,0.0404,-3774000.0,0.0,0.0,0.0,-3774000.0,-3774000.0,BALANCED,-10.0,"7. Fixed Income, Currencies & Crypto (Bull)",20+ Year Treasury,+3x
@@ -157064,6 +157073,7 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-10-12,TMV,TMV,0.0,49.16,-0.0022,-389104000.0,0.0,0.0,-0.1334,0.0,11862000.0,BALANCED,-3.3352,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),20+ Year Treasury (Yield Spike / Inflation),-3x
 2026-10-13,TMV,TMV,0.0,48.58,-0.0118,-389104000.0,0.0,0.0,-0.1334,0.0,9615000.0,BALANCED,-3.3352,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),20+ Year Treasury (Yield Spike / Inflation),-3x
 2026-10-14,TMV,TMV,0.0,47.64,-0.0194,-389104000.0,0.0,0.0,-0.1334,0.0,9615000.0,BALANCED,-3.3352,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),20+ Year Treasury (Yield Spike / Inflation),-3x
+2026-10-15,TMV,TMV,0.0,45.7,-0.0407,-389104000.0,0.0,0.0,-0.1334,0.0,3134000.0,BALANCED,-3.3352,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),20+ Year Treasury (Yield Spike / Inflation),-3x
 2016-01-04,TNA,TNA,-17769000.0,29.615,-0.072,-17769000.0,0.0,-17769000.0,0.0,-17769000.0,-17769000.0,BALANCED,-12.0,1. Broad Market Equity Index (Bull),Russell 2000,+3x
 2016-01-05,TNA,TNA,0.0,29.76,0.0049,-17769000.0,0.0,0.0,0.0,-17769000.0,-17769000.0,BALANCED,-10.0,1. Broad Market Equity Index (Bull),Russell 2000,+3x
 2016-01-06,TNA,TNA,0.0,28.47,-0.0434,-17769000.0,0.0,0.0,0.0,-17769000.0,-17769000.0,BALANCED,-10.0,1. Broad Market Equity Index (Bull),Russell 2000,+3x
@@ -163502,6 +163512,7 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-10-12,TSLL,TSLL,0.0,10.15,-0.0247,2306973000.0,0.0,0.0,0.0439,-253654000.0,-201075000.0,BALANCED,-8.9018,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Tesla (TSLA),+2x
 2026-10-13,TSLL,TSLL,-7501000.0,10.0,-0.0151,2299472000.0,0.0,-7501000.0,-0.0823,-180895000.0,-210885000.0,BALANCED,-14.0587,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Tesla (TSLA),+2x
 2026-10-14,TSLL,TSLL,-11242000.0,9.57,-0.0433,2288230000.0,0.0,-11242000.0,-0.1409,-139284000.0,-213515000.0,BALANCED,-17.5227,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Tesla (TSLA),+2x
+2026-10-15,TSLL,TSLL,-12115000.0,9.32,-0.026,2276115000.0,0.0,-12115000.0,-0.2065,-139137000.0,-203981000.0,BALANCED,-21.1632,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Tesla (TSLA),+2x
 2022-07-14,TSLQ,TSLQ,35000.0,894.852,0.0,35000.0,35000.0,0.0,0.0,35000.0,35000.0,BALANCED,12.0,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),Tesla,-1x
 2022-07-15,TSLQ,TSLQ,152000.0,889.38,-0.0061,187000.0,152000.0,0.0,0.0,187000.0,187000.0,BALANCED,14.0,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),Tesla,-1x
 2022-07-18,TSLQ,TSLQ,420000.0,887.22,-0.0024,607000.0,420000.0,0.0,0.0,607000.0,607000.0,BALANCED,16.0,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),Tesla,-1x
@@ -184069,6 +184080,7 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-10-12,UGL,UGL,22902000.0,45.8,-0.0121,190046000.0,22902000.0,0.0,1.9105,2360000.0,-67514000.0,ACCUMULATION,59.7617,"6. Commodities, Energy & Volatility (Bull)",Gold,+2x
 2026-10-13,UGL,UGL,-13655000.0,45.52,-0.0063,176391000.0,0.0,-13655000.0,-0.9802,2422000.0,-73821000.0,BALANCED,-16.5041,"6. Commodities, Energy & Volatility (Bull)",Gold,+2x
 2026-10-14,UGL,UGL,-2200000.0,44.01,-0.0332,174191000.0,0.0,-2200000.0,-0.0932,222000.0,-76021000.0,BALANCED,3.6698,"6. Commodities, Energy & Volatility (Bull)",Gold,+2x
+2026-10-15,UGL,UGL,-9068000.0,45.34,0.0304,165123000.0,0.0,-9068000.0,-0.6396,-4339000.0,-85089000.0,BALANCED,-31.9895,"6. Commodities, Energy & Volatility (Bull)",Gold,+2x
 2016-01-04,UPRO,UPRO,-44895000.0,9.9767,-0.0453,-44895000.0,0.0,-44895000.0,0.0,-44895000.0,-44895000.0,BALANCED,-12.0,1. Broad Market Equity Index (Bull),S&P 500,+3x
 2016-01-05,UPRO,UPRO,36126000.0,10.035,0.0058,-8769000.0,36126000.0,0.0,0.0,-8769000.0,-8769000.0,BALANCED,-8.0,1. Broad Market Equity Index (Bull),S&P 500,+3x
 2016-01-06,UPRO,UPRO,0.0,9.65,-0.0384,-8769000.0,0.0,0.0,0.0,-8769000.0,-8769000.0,BALANCED,-10.0,1. Broad Market Equity Index (Bull),S&P 500,+3x
@@ -214209,3 +214221,4 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-10-12,YINN,YINN,0.0,25.03,-0.0091,1350753000.0,0.0,0.0,-0.3993,10601000.0,38092000.0,BALANCED,0.0176,8. International / Country (Bull),China 50,+3x
 2026-10-13,YINN,YINN,0.0,25.08,0.0024,1350753000.0,0.0,0.0,-0.3993,8170000.0,39420000.0,BALANCED,0.0176,8. International / Country (Bull),China 50,+3x
 2026-10-14,YINN,YINN,0.0,24.39,-0.0275,1350753000.0,0.0,0.0,-0.4183,4638000.0,39420000.0,BALANCED,-0.458,8. International / Country (Bull),China 50,+3x
+2026-10-15,YINN,YINN,-1262000.0,25.25,0.0351,1349491000.0,0.0,-1262000.0,-0.8083,-2525000.0,39460000.0,BALANCED,-32.2077,8. International / Country (Bull),China 50,+3x
