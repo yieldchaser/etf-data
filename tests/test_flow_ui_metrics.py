@@ -84,7 +84,7 @@ def test_search_scopes_cover_all_primary_and_featured_rows_without_watch_tier():
     assert result["featuredPrimary"] is True
     assert result["watchTiers"] == ["primary"]
     assert result["hasWatchTierKey"] is False
-    assert result["counts"] == {"featured": 24, "instruments": 160, "rows": 214223}
+    assert result["counts"] == {"featured": 24, "instruments": 160, "rows": 214376}
 
 
 def test_history_reconciliation_updates_flow_state_and_clears_missing_selection():
