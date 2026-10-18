@@ -26,7 +26,7 @@
       --text: #e4e4e7; --text-2: #a1a1aa; --text-3: #52525b;
       --cyan: #22d3ee; --up: #34d399; --down: #fb7185; --amber: #fbbf24;
     }
-    html, body { background: var(--bg); color: var(--text); }
+    html, body { background: var(--bg); color: var(--text); overflow-x: hidden; width: 100%; max-width: 100%; }
     body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Inter", sans-serif; }
     .num, table td, .mono { font-variant-numeric: tabular-nums; }
     .font-mono { font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; }
@@ -195,10 +195,10 @@
   <!-- GLOBAL TOGGLE BAR -->
   <div class="flex flex-wrap gap-2 mb-5 items-center">
     <!-- Main tabs -->
-    <div class="flex flex-wrap gap-1">
+    <div class="flex flex-nowrap sm:flex-wrap overflow-x-auto scrollbar gap-1 pb-1 sm:pb-0 -mx-3 px-3 sm:mx-0 sm:px-0 max-w-full">
       <button data-markets-tab="matrix" @click="setMarketsTab('matrix')"
               :class="activeTab === 'matrix' ? 'tab-active' : ''"
-              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition shrink-0"
               :style="activeTab === 'matrix' ? '' : 'color: var(--text-2); border-color: var(--border)'"
               @mouseenter="showTt($event, 'Return Matrix - annual price returns per asset; click any cell for its monthly breakdown')"
               @mouseleave="hideTt()"
@@ -208,7 +208,7 @@
       </button>
       <button data-markets-tab="pricelog" @click="setMarketsTab('pricelog')"
               :class="activeTab === 'pricelog' ? 'tab-active' : ''"
-              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition shrink-0"
               :style="activeTab === 'pricelog' ? '' : 'color: var(--text-2); border-color: var(--border)'"
               @mouseenter="showTt($event, 'Price Log - daily OHLC history for every tracked ticker')"
               @mouseleave="hideTt()"
@@ -218,7 +218,7 @@
       </button>
       <button data-markets-tab="yields" @click="setMarketsTab('yields')"
               :class="activeTab === 'yields' ? 'tab-active' : ''"
-              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition shrink-0"
               :style="activeTab === 'yields' ? '' : 'color: var(--text-2); border-color: var(--border)'"
               @mouseenter="showTt($event, 'Yield History - treasury yields and policy rates across decades')"
               @mouseleave="hideTt()"
@@ -228,7 +228,7 @@
       </button>
       <button data-markets-tab="periodic" @click="setMarketsTab('periodic')"
               :class="activeTab === 'periodic' ? 'tab-active' : ''"
-              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition shrink-0"
               :style="activeTab === 'periodic' ? '' : 'color: var(--text-2); border-color: var(--border)'"
               @mouseenter="showTt($event, 'Callan Periodic Table - best to worst asset each year')"
               @mouseleave="hideTt()"
@@ -238,7 +238,7 @@
       </button>
       <button data-markets-tab="drawdown" @click="setMarketsTab('drawdown')"
               :class="activeTab === 'drawdown' ? 'tab-active' : ''"
-              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition shrink-0"
               :style="activeTab === 'drawdown' ? '' : 'color: var(--text-2); border-color: var(--border)'"
               @mouseenter="showTt($event, 'Drawdown Studio - underwater curves and recovery stats')"
               @mouseleave="hideTt()"
@@ -248,7 +248,7 @@
       </button>
       <button data-markets-tab="holdingperiod" @click="setMarketsTab('holdingperiod')"
               :class="activeTab === 'holdingperiod' ? 'tab-active' : ''"
-              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition shrink-0"
               :style="activeTab === 'holdingperiod' ? '' : 'color: var(--text-2); border-color: var(--border)'"
               @mouseenter="showTt($event, 'Holding-Period Lab - best/worst/median rolling returns + plain trailing 1Y')"
               @mouseleave="hideTt()"
@@ -258,7 +258,7 @@
       </button>
       <button data-markets-tab="seasonality" @click="setMarketsTab('seasonality')"
               :class="activeTab === 'seasonality' ? 'tab-active' : ''"
-              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition shrink-0"
               :style="activeTab === 'seasonality' ? '' : 'color: var(--text-2); border-color: var(--border)'"
               @mouseenter="showTt($event, 'Seasonality - average return by month of year')"
               @mouseleave="hideTt()"
@@ -268,7 +268,7 @@
       </button>
       <button data-markets-tab="correlation" @click="setMarketsTab('correlation')"
               :class="activeTab === 'correlation' ? 'tab-active' : ''"
-              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition shrink-0"
               :style="activeTab === 'correlation' ? '' : 'color: var(--text-2); border-color: var(--border)'"
               @mouseenter="showTt($event, 'Correlation matrix + cumulative growth chart')"
               @mouseleave="hideTt()"
@@ -278,7 +278,7 @@
       </button>
       <button data-markets-tab="volatility" @click="setMarketsTab('volatility')"
               :class="activeTab === 'volatility' ? 'tab-active' : ''"
-              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition shrink-0"
               :style="activeTab === 'volatility' ? '' : 'color: var(--text-2); border-color: var(--border)'"
               @mouseenter="showTt($event, 'Volatility Intelligence - CBOE implied vol indices')"
               @mouseleave="hideTt()"
@@ -288,7 +288,7 @@
       </button>
       <button data-markets-tab="flows" @click="setMarketsTab('flows')"
               :class="activeTab === 'flows' ? 'tab-active' : ''"
-              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition shrink-0"
               :style="activeTab === 'flows' ? '' : 'color: var(--text-2); border-color: var(--border)'"
                @mouseenter="showTt($event, 'ETF estimated net flows - 160 curated ETFs across 10 categories')"
               @mouseleave="hideTt()"

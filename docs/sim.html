@@ -26,7 +26,7 @@
       --cyan: #22d3ee; --up: #34d399; --down: #fb7185; --amber: #fbbf24;
       --violet: #a78bfa;
     }
-    html, body { background: var(--bg); color: var(--text); }
+    html, body { background: var(--bg); color: var(--text); overflow-x: hidden; width: 100%; max-width: 100%; }
     body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
     .num { font-variant-numeric: tabular-nums; }
     .font-mono { font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; }
@@ -130,11 +130,11 @@
   <div x-show="pricesData">
 
   <!-- MAIN TABS -->
-  <div class="flex flex-wrap gap-1 mb-5">
+  <div class="flex flex-nowrap sm:flex-wrap overflow-x-auto scrollbar gap-1 mb-5 pb-1 sm:pb-0 -mx-3 px-3 sm:mx-0 sm:px-0">
     <template x-for="tab in mainTabs" :key="tab.id">
       <button @click="activeTab = tab.id"
               :class="activeTab === tab.id ? 'tab-active' : ''"
-              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition"
+              class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition shrink-0"
               :style="activeTab === tab.id ? '' : 'color: var(--text-2); border-color: var(--border)'"
               x-text="tab.label">
       </button>
@@ -576,7 +576,7 @@
       </div>
 
       <!-- Rolling metrics -->
-      <div class="flex items-center gap-3 mb-3">
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
         <h3 class="text-xs font-medium" style="color: var(--cyan)">PERIOD METRICS</h3>
         <div class="flex gap-1">
           <template x-for="m in ['Return','Sharpe','Vol','Beta']" :key="m">
