@@ -337,6 +337,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         UI and Pre-HC/Stealth-Buy filters use them directly."""
         is_burst  = pd.Series(dtype=bool)
         is_crater = pd.Series(dtype=bool)
+        is_surge = is_slide = pd.Series(dtype=bool)
 
         # 1. Per-ETF rank/weight motion
         d7  = deltas_by_period.get(7)
@@ -390,6 +391,8 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                         "date": fired.index[-1].strftime("%Y-%m-%d"), "count": int(fired.iloc[-1])}
             is_burst = bc["burst"][today_date]
             is_crater = bc["crater"][today_date]
+            is_surge = bc["surge"][today_date]
+            is_slide = bc["slide"][today_date]
             # Rank and holder change over the flag's own window (CRATER's is
             # longer than BURST's).
             bc_rank_then = bc["rank_then"][today_date].where(
@@ -420,6 +423,10 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         # BURST / CRATER flags for today (rule: history.burst_crater_panels)
         leaderboard["burst_30d"]             = leaderboard["ticker"].map(is_burst).fillna(False)
         leaderboard["crater_30d"]            = leaderboard["ticker"].map(is_crater).fillna(False)
+        # SURGE / SLIDE: the same rank move without a fund confirming it — a
+        # momentum tag (mirrors the price move), not a forecast.
+        leaderboard["surge_10d"]             = leaderboard["ticker"].map(is_surge).fillna(False).astype(bool)
+        leaderboard["slide_10d"]             = leaderboard["ticker"].map(is_slide).fillna(False).astype(bool)
         # Size of the flagged move in (smoothed) rank positions, and the
         # holder-count change that confirmed it — 0 when not flagged.
         _then = leaderboard["ticker"].map(bc_rank_then)
@@ -429,6 +436,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         leaderboard["crater_rank_loss"] = ((_now - _then).where(leaderboard["crater_30d"], 0)
                                            .fillna(0).round(0).astype(int))
         leaderboard["motion_rank_then"] = _then.round(0)
+        leaderboard["motion_rank_now"] = _now.round(0)
         leaderboard["motion_funds_delta"] = leaderboard["ticker"].map(bc_funds).fillna(0).astype(int)
         leaderboard["global_rank_drop_30d"]  = leaderboard["crater_rank_loss"]
 
@@ -443,14 +451,17 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         for col in ["avg_rank_delta_7d", "avg_weight_flow_7d", "avg_rank_delta_30d",
                     "global_rank_delta_30d", "global_rank_peak_30d", "global_rank_best_30d",
                     "etf_count_30d_ago", "etf_count_delta_30d", "burst_30d", "crater_30d",
+                    "surge_10d", "slide_10d",
                     "global_rank_drop_30d", "burst_rank_gain", "crater_rank_loss",
                     "motion_funds_delta"]:
-            leaderboard[col] = 0 if col not in ("burst_30d", "crater_30d") else False
+            leaderboard[col] = 0 if col not in ("burst_30d", "crater_30d", "surge_10d", "slide_10d") else False
         leaderboard["motion_rank_then"] = None
+        leaderboard["motion_rank_now"] = None
         burst_count = 0
         crater_count = 0
     print(f"  burst_30d:      {burst_count} tickers (smoothed rank surge, fund-confirmed)")
     print(f"  crater_30d:     {crater_count} tickers (smoothed rank collapse, fund-confirmed)")
+    print(f"  surge / slide:  {int(leaderboard['surge_10d'].sum())} / {int(leaderboard['slide_10d'].sum())} tickers (rank momentum, no fund change)")
 
     # ── Multi-period rank delta and ETF count delta ───────────────────────────
     # Mirrors score_deltas_by_period so the frontend can switch all Change sections
@@ -1190,6 +1201,8 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
             "CONCENTRATED": int((leaderboard["flag"] == "CONCENTRATED").sum()),
             "BURST": int(leaderboard["burst_30d"].sum()),
             "CRATER": int(leaderboard["crater_30d"].sum()),
+            "SURGE": int(leaderboard["surge_10d"].sum()),
+            "SLIDE": int(leaderboard["slide_10d"].sum()),
             "NEW": int(leaderboard["any_new"].sum()) if "any_new" in leaderboard else 0,
             "NONE": int((leaderboard["flag"] == "").sum()),
         },

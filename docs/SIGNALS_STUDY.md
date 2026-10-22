@@ -138,13 +138,14 @@ On the leaderboard rank smoothed by a rolling median of 3 snapshots, over the la
   - it is within 15% (log) of its best in the window, so the move is still in force;
   - the name **gained ≥ 1 holding fund**.
 - **CRATER:**
-  - the rank worsened by at least a factor of 1.65;
+  - the rank worsened by at least a factor of **1.35** (log 0.3);
   - it started inside the top 300;
   - it is still within 15% of its worst;
   - the name **lost ≥ 1 holding fund**;
-  - all measured over **20 snapshots** (~4 weeks), not BURST's 10 — see below.
+  - all measured over **20 snapshots** (~4 weeks), not BURST's 10 — see the two follow-ups below.
+- **SURGE / SLIDE** (momentum tags, not signals): BURST's rank move (×1.65 over 10 snapshots, top 300, in force) up or down, with **no** fund change. A name that is BURST / CRATER is not also tagged.
 
-### CRATER window (follow-up)
+### CRATER window (follow-up 1)
 
 Yageo (2327) fell 55% from its June peak while its rank slid from #6 to #27, and no CRATER fired. PIE sold it at the start of July, but the rank only fell ×1.65 about 13 snapshots later. By then the exit was outside the 10-snapshot window. A fund's exit often comes *before* the slide, so CRATER windows were re-tested (`scripts/signals_study.py <cache> bc`):
 
@@ -153,9 +154,59 @@ Yageo (2327) fell 55% from its June peak while its rank slid from #6 to #27, and
 | 10-snapshot move + fund exit over the same 10 (previous) | −2.0% (t −2.0) | −1.7% (t −0.9) | never flagged |
 | 10-snapshot move + fund exit within 20 | −2.3% (t −2.4) | −0.5% (t −0.2) | 2026-07-18 |
 | 10-snapshot move + fund exit within 30 | −2.1% | −0.5% | 2026-07-18 |
-| **20-snapshot move + fund exit over the same 20 (shipped)** | **−2.4% (t −2.2)** | **−1.3% (t −0.7)** | **2026-07-22** (~650 TWD; low 502 on 2026-08-02) |
+| **20-snapshot move + fund exit over the same 20** (then loosened to ×1.35, follow-up 2) | **−2.4% (t −2.2)** | **−1.3% (t −0.7)** | **2026-07-22** (~650 TWD; low 502 on 2026-08-02) |
 
 The shipped variant is the only one at least as strong as the previous rule averaged across both regimes, and it catches the fund-first case. The same widening **hurt BURST** (30-ETF: −0.9% → −1.6% to −2.8%), so BURST keeps its 10-snapshot window: an addition long before a rank surge is weak evidence; an exit long before a slide is not. Note that Yageo was also on the Funds ↓ list for 14 days after PIE's exit, in early July near the top.
+
+### Motion study (follow-up 2): what BURST and CRATER should be
+
+The redesign cut BURST from ~580 flags a day to ~9 (zero on 41% of days) and CRATER from ~590 to ~15, and the user's experience of the old flags was that they moved with price. Both observations are right. The question is which behaviour carries information.
+
+**What the old flags were** (replay, Mar–Oct; returns vs currency peers):
+
+| | flags/day | days with none | median rank | flags below #300 | prior 10d | next 20d |
+|---|---:|---:|---:|---:|---:|---:|
+| Old BURST (range ≥ 40) | 581 | 0% | #1,372 | 88% | **+4.0%** | +0.6% |
+| Old CRATER | 588 | 0% | #1,619 | 93% | **−3.5%** | +0.1% |
+| BURST (fund-confirmed) | 9 (median 2) | 41% | #124 | 2% | +4.8% | +1.7% |
+| CRATER (fund-confirmed, ×1.65 over 20 snapshots) | 15 (median 7) | 8% | #406 | 65% | −3.3% | −3.0% |
+
+The old flags described the move that had just happened across most of the board, which is why they felt in sync with price. They predicted nothing.
+
+**Twenty rules, both regimes** (`scripts/motion_features.py`, `scripts/motion_study.py … rules`). "Leans in / cuts" is a holding fund changing a name's weight by ≥ 20% **net of price drift**. The fund return is computed from its own book; the six funds that publish weights a day stale are lagged a day, and the four whose weights never drift (JHEM, JHMM, MFEM, AVSC) count any change as deliberate. Onset events, 20-day return vs currency peers:
+
+| BURST rule | flags/day | Jun–Oct (30 ETFs) | Feb–May (16 ETFs) |
+|---|---:|---:|---:|
+| **×1.65 rank rise + a fund joined (shipped)** | 8 / 6 | **−0.9% (t −0.7)** | **+5.2% (t 2.0)** |
+| ×1.65 rank rise, no fund needed | 19 / 19 | −2.6% (t −3.5) | +2.9% (t 2.1) |
+| ×1.35 rank rise, no fund needed | 41 / 31 | −1.7% | +2.6% |
+| 1+ fund leans in (net of price) | 28 / 12 | −2.9% (t −4.5) | +2.1% |
+| 2+ funds lean in | 3 / 1 | −4.4% | +5.6% (10 events) |
+| ×1.35 rise + (fund joined or leaned in) | 22 / 12 | −2.4% | +2.5% |
+| own-book rank up in ⅔ of holders | 20 / 4 | −1.8% | +7.6% |
+| price: top 5% 10-day return in the top 300 | 15 / 13 | −2.3% | +4.8% |
+| ×1.35 / ×1.2 / any rise + a fund joined | 11–18 / 7–9 | −1.6% to −1.7% | +4.4% to +5.4% |
+
+| CRATER rule | flags/day | Jun–Oct | Feb–May |
+|---|---:|---:|---:|
+| ×1.65 rank fall over 20 + a fund left (previous) | 18 / 11 | −2.4% (t −2.2) | −1.3% (t −0.7) |
+| **×1.35 rank fall over 20 + a fund left (shipped)** | 22 / 13 | **−2.9% (t −2.8)** | **−1.0% (t −0.6)** |
+| ×1.2 / any fall over 20 + a fund left | 24–31 / 13–15 | −2.7% | −0.5% to −0.8% |
+| ×1.65 rank fall over 10, no fund needed | 22 / 18 | −1.7% (t −2.3) | +0.9% |
+| 1+ fund cuts (net of price) | 23 / 8 | −1.5% | **+3.1%** |
+| ×1.35 fall + (fund left or cut) | 24 / 11 | −1.5% | +0.1% |
+| own-book rank down in ⅔ of holders | 17 / 5 | −0.7% | +3.4% |
+| price: bottom 5% 10-day return | 15 / 13 | −0.8% | **+2.4%** |
+
+Every rule built from price, rank or re-weighting alone is momentum. It paid in Feb–May and reversed in Jun–Oct, with t-stats of 2–4 in **both** directions. Active re-weighting looked like the natural "fund leaning in" signal, but it is mostly rules-based momentum funds buying recent winners, so it carries the same sign flip. Only a fund **joining or leaving** kept its sign in both regimes.
+
+**Can the momentum regime be timed?** (`… regime`) Each momentum rule's onsets were split by how the same rule's onsets had done over a trailing window whose 20-day outcomes were already known (30–60 and 30–90 days back). The trailing record was **anti-predictive**: correlation −0.06 to −0.17. Own-book-rank onsets returned −4.4% (t −3.4) exactly when their trailing record looked good. Momentum turns at its peak, so a real-time switch would have bought at the turn.
+
+**Decision.**
+
+- **BURST** stays as shipped. It is the only rise rule without a significant loss in either regime, and every way of widening it (lower threshold, longer window, re-weighting as confirmation) doubled its loss in the unwind.
+- **CRATER** loosens to ×1.35 over its 20-snapshot window: at least as strong in both regimes, about 20% more coverage.
+- **SURGE / SLIDE** carry the rank move without a fund change. They give back the always-on, in-sync-with-price view (~19 a day each, a day with none is rare) and are labelled as momentum with both regimes' numbers, never as a forecast.
 
 **One implementation everywhere.** This function now drives:
 

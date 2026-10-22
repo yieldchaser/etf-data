@@ -275,7 +275,7 @@ Built with Tailwind CSS + Alpine.js. Zero build step — static HTML/JS served d
 - Day-over-day score deltas with honest `—` display when no comparable past data exists
 - HC streaks, percentile-of-own-history progress bars
 - **BURST** and **CRATER** badges with micro-breakdown tooltips
-- Filter chips in two groups — Flags (HC, CONC, NEW) and Signals (BURST, CRATER, Funds ↓, Funds ↑, Pre-HC, Stealth, Quality+)
+- Filter chips in three groups — Flags (HC, CONC, NEW), Signals (BURST, CRATER, Funds ↓, Funds ↑, Pre-HC, Stealth, Quality+) and Motion (Surge, Slide)
 - Auto-generated explainer line per row: compresses tier breadth, score delta, burst state, HC streak, quality signals, concentration, NEW-entrant state into one scannable sentence
 - **Expanded Row Detail Drawer**:
   - **Auto-Explainer Grid**: A frosted glassmorphic card container (`STRUCTURE`, `FLOW`, `RISK`) featuring dynamic left-border colored callout bars (`border-l-2 pl-2 border-current`) matching alert severity.
@@ -329,7 +329,8 @@ Every table shows rank then → now, funds then → now and score, with the name
 | Signal | Definition |
 |--------|-----------|
 | `BURST` | On the 3-snapshot rolling-median global rank: improved by ≥ ×1.65 (log move ≥ 0.5) over the last 10 snapshots, is now inside the top 300, is still within 15% (log) of its best rank in the window, **and** gained at least one holding fund over the same window. A one-day rank glitch cannot fire it. |
-| `CRATER` | Mirror of BURST over ~4 weeks (20 snapshots): smoothed rank worsened by ≥ ×1.65 from a starting position inside the top 300, still near its worst, **and** lost at least one holding fund over those 20 snapshots. The longer window catches funds that sell before the slide (Yageo, July 2026). The "get out" signal. |
+| `CRATER` | Over ~4 weeks (20 snapshots): smoothed rank worsened by ≥ ×1.35 from a starting position inside the top 300, still near its worst, **and** lost at least one holding fund over those 20 snapshots. The longer window catches funds that sell before the slide (Yageo, July 2026). The "get out" signal: −2.9% / −1.0% vs peers over 20 days in the two regimes. |
+| `surge_10d` / `slide_10d` | SURGE / SLIDE: BURST's ×1.65 rank move over ~2 weeks in the top 300, up or down, with **no** fund change — the price move showing through fund weights. Momentum tags (~19 a day each), not forecasts: +2.9% / −2.6% (SURGE) across the two regimes. Not set on names already BURST / CRATER. |
 | `funds_down` (chip) | Inside the top 200 and lost a holding fund in the last 14 days — the most robust single exit warning in the audit |
 | `funds_up` (chip) | Inside the top 200 and gained a holding fund over 30 days |
 | `pre_hc` (chip) | Not yet HC, ≥ 3 funds, ≥ 1 non-Core conviction holder, ≥ 2 non-Core tiers, improving 7-day per-fund ranks and a rising score streak — one step from HIGH_CONVICTION |
@@ -349,7 +350,7 @@ Every signal was replayed on each snapshot with the site's definition and scored
 | Signal | Verdict |
 |--------|---------|
 | HIGH_CONVICTION | Redesigned: ≥ 4 holders was ~200 names; the conviction + independence rule is ~20–25 and loses a holder half as often |
-| BURST / CRATER | Redesigned: the old 40-position range rule fired on one-day glitches and on falls; fund-confirmed, smoothed, directional rule replaces it |
+| BURST / CRATER | Redesigned: the old 40-position range rule fired on ~580 names a day, mostly below #300, describing moves that had already happened. 20 rules tested in both regimes: only fund-confirmed rules kept their sign. SURGE / SLIDE keep the unconfirmed rank move as a momentum tag |
 | Funds ↓ / Funds ↑ | Added — fund-count change is the most robust signal in the data |
 | Pre-HC / Stealth | Redefined to the forms that carried information |
 | Quality+, NEW, regime | Kept |

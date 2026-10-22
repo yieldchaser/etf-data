@@ -581,26 +581,33 @@ class ApexConfig:
 
 @dataclass(frozen=True)
 class MotionConfig:
-    """BURST / CRATER (2026-10 redesign, docs/SIGNALS_STUDY.md).
+    """BURST / CRATER signals and SURGE / SLIDE momentum tags
+    (2026-10 redesign, docs/SIGNALS_STUDY.md §3).
 
     On the leaderboard-rank series smoothed by a rolling median of
-    `smooth_snapshots` (a one-day spike can't move it):
-      BURST  — log(R̃[t−k] / R̃[t]) ≥ min_log_rank_move, R̃[t] ≤ relevance_rank,
-               R̃[t] within persist_log_tol of the window's best, and the name
-               GAINED ≥ 1 holding fund over the k snapshots.
-      CRATER — the mirror over kc = crater_lookback_snapshots:
-               log(R̃[t] / R̃[t−kc]) ≥ min_log_rank_move, R̃[t−kc] ≤ relevance_rank,
-               R̃[t] within persist_log_tol of the window's worst, and the name
-               LOST ≥ 1 holding fund over the kc snapshots. A fund's exit often
-               comes BEFORE the slide (Yageo, 2026-07: PIE sold ~13 snapshots
-               before the rank fell ×1.65), which a 10-snapshot window misses.
-               A 20-snapshot CRATER keeps its edge in both regimes; the same
-               widening hurt BURST, which stays at k (docs/SIGNALS_STUDY.md §3).
+    `smooth_snapshots` (a one-day spike can't move it), inside the top
+    `relevance_rank`, with the move still in force (within persist_log_tol of
+    the window's best / worst):
+
+      SURGE  — rank improved by ≥ min_log_rank_move (×1.65) over k snapshots.
+      SLIDE  — rank worsened by the same over k snapshots.
+               Momentum tags, not forecasts: they mirror the price move (the
+               prior 10 days were +9% / −7% vs peers) and their next 20 days
+               flipped sign between regimes, like every rule built from price,
+               rank or re-weighting alone (20 rules tested).
+      BURST  — a SURGE that GAINED ≥ 1 holding fund over the same k snapshots.
+      CRATER — rank worsened by ≥ crater_min_log_rank_move (×1.35) over
+               kc = crater_lookback_snapshots and the name LOST ≥ 1 holding
+               fund over those kc snapshots. A fund's exit often comes BEFORE
+               the slide (Yageo, 2026-07), which a 10-snapshot window misses.
+               Fund-confirmed BURST and CRATER are the only rules whose edge
+               held its sign in both regimes.
     """
     smooth_snapshots: int = 3
     lookback_snapshots: int = 10
-    crater_lookback_snapshots: int = 20  # CRATER's window (rank move + fund exit)
-    min_log_rank_move: float = 0.5      # ≈ rank ×1.65 better/worse (e.g. #250 → #150)
+    crater_lookback_snapshots: int = 20       # CRATER's window (rank move + fund exit)
+    min_log_rank_move: float = 0.5            # ≈ ×1.65 (e.g. #250 → #150): BURST, SURGE, SLIDE
+    crater_min_log_rank_move: float = 0.3     # ≈ ×1.35 over CRATER's longer window
     relevance_rank: int = 300
     persist_log_tol: float = 0.15
     require_fund_confirmation: bool = True

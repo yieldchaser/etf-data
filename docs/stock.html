@@ -266,7 +266,7 @@
         </template>
 
         <!-- Separator -->
-        <div class="h-3 w-px bg-zinc-800 hidden sm:block mx-0.5" x-show="leaderboardRow?.any_new || leaderboardRow?.burst_30d || leaderboardRow?.crater_30d || leaderboardRow?.quality_adopted_30d || (leaderboardRow?.tier_breadth || 0) >= 2"></div>
+        <div class="h-3 w-px bg-zinc-800 hidden sm:block mx-0.5" x-show="leaderboardRow?.any_new || leaderboardRow?.burst_30d || leaderboardRow?.crater_30d || leaderboardRow?.surge_10d || leaderboardRow?.slide_10d || leaderboardRow?.quality_adopted_30d || (leaderboardRow?.tier_breadth || 0) >= 2"></div>
 
         <!-- NEW -->
         <span x-show="leaderboardRow?.any_new" class="chip"
@@ -280,6 +280,13 @@
         <span x-show="leaderboardRow?.crater_30d" class="chip"
               x-tooltip="`CRATER - smoothed rank #${leaderboardRow?.motion_rank_then} → #${(leaderboardRow?.motion_rank_then || 0) + (leaderboardRow?.crater_rank_loss || 0)} in ~4 weeks as ${Math.abs(leaderboardRow?.motion_funds_delta || 0)} fund(s) dropped it - the get-out signal`"
               style="background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.30)">CRATER</span>
+        <!-- SURGE / SLIDE: rank momentum without a fund change -->
+        <span x-show="leaderboardRow?.surge_10d" class="chip"
+              x-tooltip="`SURGE - smoothed rank #${leaderboardRow?.motion_rank_then} → #${leaderboardRow?.motion_rank_now} in ~2 weeks with no fund joining. Momentum, not a forecast: +2.9% vs peers over 20 days in Feb-May, -2.6% in Jun-Oct`"
+              style="background: rgba(196,181,253,0.10); color: #c4b5fd; border: 1px solid rgba(196,181,253,0.30)">SURGE</span>
+        <span x-show="leaderboardRow?.slide_10d" class="chip"
+              x-tooltip="`SLIDE - smoothed rank #${leaderboardRow?.motion_rank_then} → #${leaderboardRow?.motion_rank_now} in ~2 weeks with no fund leaving. Momentum, not a forecast: -1.7% vs peers over 20 days in Jun-Oct, +0.9% in Feb-May`"
+              style="background: rgba(253,164,175,0.10); color: #fda4af; border: 1px solid rgba(253,164,175,0.30)">SLIDE</span>
         <!-- Quality+ -->
         <span x-show="leaderboardRow?.quality_adopted_30d" class="chip"
               x-tooltip="'Quality+ - A free-cash-flow / quality screen ETF (COWZ/CALF/SPHQ) added this name in the last 30 days. Strong fundamentals confirmation.'"
@@ -1456,7 +1463,7 @@ function stockApp() {
       const s = this._stateAt(fh.length - 1);
       const map = {
         'BURST':   'BURST - smoothed rank rose ×1.65+ in ~2 weeks, confirmed by a fund adding the name.',
-        'CRATER':  'CRATER - smoothed rank fell ×1.65+ in ~4 weeks as a fund dropped the name - the get-out signal.',
+        'CRATER':  'CRATER - smoothed rank fell ×1.35+ over ~4 weeks as a fund dropped the name - the get-out signal.',
         'HC':      `HIGH CONVICTION - held by ${this.leaderboardRow?.etf_count || 0} ETFs · HC streak: ${this.leaderboardRow?.hc_streak || 0} days`,
         'NEW':     'NEW - first appearance in any mature ETF within the last 14 days.',
         'Q+':      'Quality+ - a Quality ETF added this name in the last 30 days.',

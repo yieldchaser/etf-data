@@ -313,7 +313,8 @@ motion:
   smooth_snapshots: 3
   lookback_snapshots: 10
   crater_lookback_snapshots: 20   # CRATER: ~4 weeks — fund exits often come before the slide
-  min_log_rank_move: 0.5
+  min_log_rank_move: 0.5          # ×1.65 — BURST, SURGE, SLIDE (over lookback_snapshots)
+  crater_min_log_rank_move: 0.3   # ×1.35 — CRATER (over crater_lookback_snapshots)
   relevance_rank: 300
   persist_log_tol: 0.15
   require_fund_confirmation: true

@@ -53,6 +53,29 @@ class TestBurstCrater:
         ranks = [260, 255, 250, 240, 225, 210, 195, 180, 170, 160, 150, 145, 140, 140]
         assert _flags({"UP": [(r, 3) for r in ranks]}, "burst") == set()
 
+    def test_surge_without_fund_add_is_a_surge(self):
+        """The rank move alone is tagged SURGE — momentum, shown but not a signal."""
+        ranks = [260, 255, 250, 240, 225, 210, 195, 180, 170, 160, 150, 145, 140, 140]
+        assert _flags({"UP": [(r, 3) for r in ranks]}, "surge") == {"UP"}
+
+    def test_burst_is_not_also_a_surge(self):
+        ranks = [260, 255, 250, 240, 225, 210, 195, 180, 170, 160, 150, 145, 140, 140]
+        funds = [3] * 6 + [4] * 8
+        s = {"UP": list(zip(ranks, funds))}
+        assert _flags(s, "burst") == {"UP"} and _flags(s, "surge") == set()
+
+    def test_fall_without_fund_exit_is_a_slide_not_a_crater(self):
+        ranks = [100] * 10 + [100, 100, 105, 110, 120, 135, 150, 165, 180, 195, 210, 220, 230, 235]
+        s = {"DOWN": [(r, 5) for r in ranks]}
+        assert _flags(s, "slide") == {"DOWN"}
+        assert _flags(s, "crater") == set()
+
+    def test_crater_needs_only_x135_over_its_window(self):
+        """#100 → #140 over ~4 weeks with a fund leaving is a CRATER (×1.4)."""
+        ranks = [100] * 12 + [100, 102, 105, 108, 112, 116, 120, 124, 128, 132, 136, 138, 140, 140]
+        funds = [5] * 16 + [4] * 10
+        assert _flags({"DOWN": list(zip(ranks, funds))}, "crater") == {"DOWN"}
+
     def test_collapse_with_fund_exit_is_crater(self):
         ranks = [100] * 10 + [100, 100, 105, 110, 120, 135, 150, 165, 180, 195, 210, 220, 230, 235]
         funds = [5] * 16 + [4] * 8          # CRATER measures over 20 snapshots
