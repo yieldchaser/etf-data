@@ -84,13 +84,13 @@ The ETF count is derived from `config.yaml::etfs[]` — that file is the source 
 
 | Tier | ETFs | Signal |
 |------|------|--------|
-| **Scout** (40–60 pts) | CSD, FPX, FPXI | Spinoffs & IPOs — structural market inefficiencies |
-| **Quant** (40–60 pts) | QMOM, IMOM, XMMO, XSMO, PIE, PDP, DWAS, EEMO, PIZ, JHMM, JHEM, JHSC, MFEM, JOET | Factor-based momentum (US + International) |
+| **Scout** (40 pts) | CSD, FPX, FPXI | Spinoffs & IPOs — structural market inefficiencies |
+| **Quant** (40 pts) | QMOM, IMOM, XMMO, XSMO, PIE, PDP, DWAS, EEMO, PIZ, JHMM, JHEM, JHSC, MFEM, JOET | Factor-based momentum (US + International) |
 | **Quality** (30 pts) | COWZ, CALF, SPHQ, IVAL, QVAL, VLUE, AVSC, GRIN | Free cash flow, value, profitability |
 | **Trend** (10 pts) | SPMO, SPHB, RPG | Broad momentum confirmation |
 | **Core** (2 pts) | XLG, QQQM | Mega-cap benchmarks |
 
-International ETFs (FPXI, IMOM, EEMO, PIZ, JHEM, MFEM) carry 60 points instead of their tier default to level the playing field — global names naturally appear in fewer US-focused ETFs.
+Every fund earns its tier's points. International funds (FPXI, IMOM, EEMO, PIZ, PIE, JHEM, MFEM, IVAL, GRIN) are marked `region: intl` in `config.yaml`; regional levelling is done by the apex universe multiplier. The former 60-point international exception was retired in v4 (2026-10) because it duplicated that job — see [docs/SCORING_V4_STUDY.md](docs/SCORING_V4_STUDY.md).
 
 ### Data note — universe expansion (May 2026)
 
@@ -168,67 +168,73 @@ A green build therefore means data actually flowed.
 
 ## Component 2 — Scoring Engine
 
-### Score Formula
+### Score Formula (apex mode, v4)
 
 ```
-Single Score = (weight% × 100) × tier_points × rank_multiplier + new_entrant_bonus
-
-Final Alpha Score = Σ Single Scores across all ETFs holding this ticker
+C_i      = Wovr(OW_i) × Grank(RP_i)            per-holding conviction
+           OW_i = weight × n_holdings  (1 = equal weight);  Wovr = clamp(ln(1+OW)/ln(5), 0, 1.5)
+           RP_i = rank percentile in the fund;              Grank = 0.35 + 0.65 × RP
+Single_i = tier_points_i × C_i^κ               κ = 2 — filler positions can't add up to a high score
+B        = Σ Single_i over holding ETFs        Jaccard overlap-discounted across similar funds
+Score    = B × M_conc × M_breadth × M_universe
 ```
+
+| Multiplier | Range | Role |
+|---|---|---|
+| `M_conc` | 0.60–1.00 | Concentration guard — 1/HHI effective fund count; single-fund bets dampened, never hidden |
+| `M_breadth` | 1.00–1.35 | Strategy dispersal — entropy of score across the 5 tiers (the only breadth reward) |
+| `M_universe` | 0.80–1.25 | Opportunity normalization — levels international names (the only regional levelling) |
+
+`final_score` / `leaderboard_rank` is the single canonical score and rank (one decimal). `apex_score` / `apex_rank` remain in the payload as aliases. `velocity_z` / `ignition_z` are display diagnostics only.
 
 ### Tier Points
 
-| Tier | Default Points | Override |
-|------|---------------|---------|
-| Scout | 40 | FPXI → 60 (international) |
-| Quant | 40 | IMOM, EEMO, PIZ, JHEM, MFEM → 60 (international) |
-| Quality | 30 | — |
-| Trend | 10 | — |
-| Core | 2 | — |
+| Tier | Points |
+|------|--------|
+| Scout | 40 |
+| Quant | 40 |
+| Quality | 30 |
+| Trend | 10 |
+| Core | 2 |
 
-### Rank Multiplier
+### What v4 changed (2026-10)
 
-Applied per-ETF based on the ticker's rank within that ETF's holdings:
+A walk-forward replay of the real engine over every snapshot (Feb–Oct 2026) drove these changes. Full evidence and every rejected alternative are in [docs/SCORING_V4_STUDY.md](docs/SCORING_V4_STUDY.md); reproduce with `scripts/scoring_study.py`.
 
-| Rank | Multiplier |
-|------|-----------|
-| Top 10 | 1.5× |
-| Top 30 | 1.2× |
-| > 30 | 1.0× |
+- **Added κ = 2 convexity.** It replaces the `m_conv` factor and the conviction gate. Both averaged conviction, applied it twice, and made the score non-monotone: an extra low-conviction holder could lower a name's score.
+- **Removed the tier-synergy bonus in apex mode.** It stacked on `M_breadth`, giving up to 2.16× for breadth alone.
+- **Removed the 60-point international exception.** It stacked on `M_universe`.
+- **Retired the APEX momentum kicker from the ranking.** Its effect on forward-return IC was below 0.001.
+- **Added name-verified security identity resolution** (sanitizer):
+  - splits cross-market ticker collisions (`MTN` was Vail Resorts *and* MTN Group on one fake 4-fund HC row);
+  - merges exchange-suffix fragments (`6857` / `6857.JP`);
+  - adds curated share-class renames (`005935→005930`, `PETR3→PETR4`, …).
+- **Added a 30-day staleness guard** for dead ETF feeds.
 
-### New Entrant Bonus
+Result (30-ETF universe):
 
-When a ticker is absent from the 14-day lookback window and re-enters a Scout or Quant ETF:
+| | Before v4 | After v4 |
+|---|---|---|
+| Top-50 breadth-filler share | 17.6% | 4.8% |
+| Forward fund-accumulation IC | −0.009 | +0.018 |
+| Top-50 30-day exit rate | 18.8% | 14.4% |
+| Forward-return IC | unchanged | unchanged |
 
-```
-New Bonus = tier_points × 5.0
-```
+Forward-return IC tracks the momentum regime either way; the score is not a return forecast.
 
-This amplifies early detection of names entering high-signal ETFs for the first time.
+**Motion.**
 
-### Conviction-Quality Layer (§31.2)
+- **Score and rank changes follow the momentum regime.** They behave the same before and after v4.
+- **Change in the number of holding funds is the most consistent forward signal.** Top-200 names that lost a fund underperformed peers by about 5.5–6% over the next 20 days in both the Feb–May and May–Oct regimes. Use the **Funds ↑ / Funds ↓** chips on the leaderboard to screen on it.
 
-Apex (v3) display ranking multiplies in a conviction-quality term so breadth-filler names (held underweight in many funds) no longer outrank concentrated conviction:
-
-```
-m_conv = clip(avg_conviction, 0.50, 1.25) ^ conv_gamma
-```
-
-Plus a conviction gate (clip 0.40–1.10) with an escape hatch: the gate is bypassed when the median per-ETF rank is ≤ 10. Raw `final_score` is unchanged — this layer affects display ranking only. Parameters `conv_floor` / `conv_cap` / `conv_gamma` live in `config.yaml`; full math on the methodology page, §3.3–3.4. Since 2026-08 the HIGH_CONVICTION flag itself is **not** derived from this layer: it is a raw distinct-ETF count in all scoring modes (see Output Flags).
-
-### ETF Overlap Discount & Tier Synergy Scaling (Option 1)
-
-To prevent duplicate holdings within highly correlated ETF strategy clusters (e.g. `JHEM` + `MFEM` + `EEMO`) from artificially inflating leaderboard scores:
-1. **Jaccard Overlap Matrix**: Pairwise holding similarities are computed across all active ETFs (`similarity[etf1][etf2]`).
-2. **Marginal Overlap Discount**: For an asset held by multiple ETFs, subsequent ETF score contributions are scaled down by `max(min_mult, 1.0 - max_sim * 1.5)` relative to previously processed higher-conviction ETFs for that asset.
-3. **Multi-Tier Synergy Multiplier**: Multi-factor consensus spanning distinct strategy tiers (e.g. *Quality + Trend + Scout*) earns a `+15%` multiplier per unique tier (`1.0 + (num_unique_tiers - 1) * 0.15`), rewarding cross-strategy alignment over duplicate single-factor stacking.
+Legacy (`weight% × 100 × tier_points × rank_multiplier + new bonus`) and conviction (§24, linear) modes remain selectable via `scoring_mode` for comparison.
 
 ### Output Flags
 
 | Flag | Condition | Interpretation |
 |------|-----------|---------------|
 | **HIGH_CONVICTION** | Held by ≥ 4 distinct ETFs (raw count, identical in all scoring modes) | Broad consensus across independent strategies |
-| **CONCENTRATED** | One fund supplies ≥ 85% of score mass, or a lone fund holds it at ≥ 4× equal-weight | Single-fund story — best risk-adjusted flag (0.24× base exit rate) |
+| **CONCENTRATED** | One fund supplies ≥ 85% of linear conviction mass (Σ points × C), or a lone fund holds it at ≥ 4× equal-weight | Single-fund story — best risk-adjusted flag (0.24× base exit rate) |
 | **SPECULATIVE_BETA** | In Trend tier, absent from Quality + Scout | High-volatility momentum without fundamental support |
 | **NEW** | First appearance within the 14-day lookback; suppressed for ETFs younger than the 30-day maturity baseline | Short-horizon entrant (1.38× accumulation lift ≤ 7d, 0.65× by 30d) |
 

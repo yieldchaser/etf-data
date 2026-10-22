@@ -415,6 +415,18 @@
               style="border-color: var(--border-2)"
               x-tooltip="'Stealth Buy - 1-2 funds loading up fast (+10% avg weight in 7d) before ranks catch up. Lonely-buy-before-the-crowd signal.'"
               x-text="`Stealth ${counts.STEALTH_BUY || 0}`"></button>
+      <button @click="fundsUpOnly = !fundsUpOnly; fundsDownOnly = false"
+              :class="fundsUpOnly ? 'border-emerald-400/50 text-emerald-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-emerald-400/40"
+              style="border-color: var(--border-2)"
+              x-tooltip="'Funds ↑ - held by more ETFs than 30 days ago. Net fund adds were the most consistent forward signal in the 2026-10 study (top-200 names that gained a fund: +17% vs peers over the next 20 days in Feb-May; weaker during the May-Oct momentum unwind).'"
+              x-text="`Funds ↑ ${counts.FUNDS_UP || 0}`"></button>
+      <button @click="fundsDownOnly = !fundsDownOnly; fundsUpOnly = false"
+              :class="fundsDownOnly ? 'border-rose-400/50 text-rose-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-rose-400/40"
+              style="border-color: var(--border-2)"
+              x-tooltip="'Funds ↓ - held by fewer ETFs than 30 days ago. The steadiest warning in the 2026-10 study: top-200 names that lost a fund underperformed peers by ~5.5-6% over the next 20 days in BOTH regimes.'"
+              x-text="`Funds ↓ ${counts.FUNDS_DOWN || 0}`"></button>
       <button @click="toggleFlag('CONCENTRATED')"
               :class="flag === 'CONCENTRATED' ? 'border-orange-400/50 text-orange-300' : ''"
               class="chip border px-2 py-1 transition hover:border-orange-400/40"
@@ -562,11 +574,10 @@
           <thead class="text-[10px] uppercase tracking-wider" style="background: #050505; color: var(--text-3)">
             <tr style="border-bottom: 1px solid var(--border)">
               <th class="text-center px-2 py-2" x-tooltip="'Pin to watchlist'">★</th>
-              <th class="text-left px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('leaderboard_rank')" :class="sortClass('leaderboard_rank')" x-tooltip="'Rank by Final Alpha Score (1 = highest conviction)'">#</th>
+              <th class="text-left px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('leaderboard_rank')" :class="sortClass('leaderboard_rank')" x-tooltip="'Rank by Conviction Score (1 = highest conviction) — the single canonical rank'">#</th>
               <th class="text-left px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('ticker')" :class="sortClass('ticker')" x-tooltip="'Stock ticker. Click to open per-stock detail page.'">Ticker</th>
               <th class="text-left px-3 py-2 hidden sm:table-cell cursor-pointer hover:text-zinc-300" @click="sort('company')" :class="sortClass('company')" x-tooltip="'Issuer\'s legal name as reported by the ETF.'">Company</th>
-              <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('apex_score')" :class="sortClass('apex_score')" x-tooltip="'Forward score = structure × bounded momentum kicker'">Apex</th>
-              <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300" @click="sort('final_score')" :class="sortClass('final_score')" x-tooltip="'Final Alpha Score = overlap-discounted sum of ETF conviction points with multi-tier synergy scaling. Hover cell for percentile.'">Score</th>
+              <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300" @click="sort('final_score')" :class="sortClass('final_score')" x-tooltip="'Conviction Score (v4) = Σ tier points × conviction² across holding ETFs, shaped by concentration, strategy-breadth and universe multipliers. Conviction = overweight vs equal-weight × rank in book; squaring it keeps filler positions from adding up to a high score. Hover a cell for percentile.'">Score</th>
               <th class="text-center px-2 py-2 hidden lg:table-cell select-none" style="vertical-align: top;">
                 <div class="cursor-pointer hover:text-zinc-300 inline-block align-middle"
                      @click="sort('score_delta_pct')"
@@ -622,11 +633,6 @@
                        x-text="row.ticker"></a>
                   </td>
                   <td class="px-3 py-2 hidden sm:table-cell truncate max-w-[220px]" :title="row.company || row.ticker" style="color: var(--text-2)" x-text="row.company || row.ticker"></td>
-                  <!-- APEX forward score -->
-                  <td class="px-2 py-2 text-right num font-mono font-medium"
-                      style="color: #fafafa"
-                      x-tooltip="'Forward score = structure × bounded momentum kicker'"
-                      x-text="row.apex_score != null ? Math.round(row.apex_score) : '–'"></td>
                   <td class="px-2 py-2 text-right num font-mono font-medium"
                       x-tooltip="`Score: ${fmt1(row.final_score)}<br>Percentile: ${row.normalized_score != null ? row.normalized_score.toFixed(0) : '-'}/100<br>Concentration: ${row.concentration_score != null ? row.concentration_score : '-'}% from top ETF<br>${row.concentration_score == null ? 'No data' : row.concentration_score < 40 ? 'Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : 'Highly concentrated - fragile if top ETF rebalances'}`"
                       x-text="fmt1(row.final_score)"></td>
@@ -1132,6 +1138,18 @@
                 style="border-color: var(--border-2)"
                 x-tooltip="'Stealth Buy - 1-2 funds loading up fast (+10% avg weight in 7d) before ranks catch up'"
                 x-text="`Stealth ${counts.STEALTH_BUY || 0}`"></button>
+        <button @click="fundsUpOnly = !fundsUpOnly; fundsDownOnly = false"
+                :class="fundsUpOnly ? 'border-emerald-400/50 text-emerald-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-emerald-400/40"
+                style="border-color: var(--border-2)"
+                x-tooltip="'Funds ↑ - held by more ETFs than 30 days ago (net fund adds)'"
+                x-text="`Funds ↑ ${counts.FUNDS_UP || 0}`"></button>
+        <button @click="fundsDownOnly = !fundsDownOnly; fundsUpOnly = false"
+                :class="fundsDownOnly ? 'border-rose-400/50 text-rose-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-rose-400/40"
+                style="border-color: var(--border-2)"
+                x-tooltip="'Funds ↓ - held by fewer ETFs than 30 days ago (net fund exits; steadiest downside warning)'"
+                x-text="`Funds ↓ ${counts.FUNDS_DOWN || 0}`"></button>
         <button @click="toggleFlag('CONCENTRATED')"
                 :class="flag === 'CONCENTRATED' ? 'border-orange-400/50 text-orange-300' : ''"
                 class="chip border px-2 py-1 transition hover:border-orange-400/40"
@@ -1174,11 +1192,10 @@
             <thead class="text-[10px] uppercase tracking-wider" style="background: #050505; color: var(--text-3)">
               <tr style="border-bottom: 1px solid var(--border)">
                 <th class="text-center px-2 py-2" x-tooltip="'Pin to watchlist'">★</th>
-                <th class="text-left px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('leaderboard_rank')" :class="sortClass('leaderboard_rank')" x-tooltip="'Rank by Final Alpha Score (1 = highest conviction)'">#</th>
+                <th class="text-left px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('leaderboard_rank')" :class="sortClass('leaderboard_rank')" x-tooltip="'Rank by Conviction Score (1 = highest conviction) — the single canonical rank'">#</th>
                 <th class="text-left px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('ticker')" :class="sortClass('ticker')" x-tooltip="'Stock ticker. Click to open per-stock detail page.'">Ticker</th>
                 <th class="text-left px-3 py-2 hidden sm:table-cell cursor-pointer hover:text-zinc-300" @click="sort('company')" :class="sortClass('company')" x-tooltip="'Issuer\'s legal name as reported by the ETF.'">Company</th>
-                <th class="text-right px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('apex_score')" :class="sortClass('apex_score')" x-tooltip="'Forward score = structure × bounded momentum kicker'">Apex</th>
-                <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300" @click="sort('final_score')" :class="sortClass('final_score')" x-tooltip="'Final Alpha Score = sum of (weight% × ETF points × rank multiplier × 100) across all ETFs holding this name. Hover score cell for percentile.'">Score</th>
+                <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300" @click="sort('final_score')" :class="sortClass('final_score')" x-tooltip="'Conviction Score (v4) = Σ tier points × conviction² across holding ETFs, shaped by concentration, strategy-breadth and universe multipliers. Conviction = overweight vs equal-weight × rank in book; squaring it keeps filler positions from adding up to a high score. Hover a cell for percentile.'">Score</th>
                 <th class="text-center px-2 py-2 hidden lg:table-cell select-none" style="vertical-align: top;">
                   <div class="cursor-pointer hover:text-zinc-300 inline-block align-middle"
                        @click="sort('score_delta_pct')"
@@ -1234,11 +1251,6 @@
                          x-text="row.ticker"></a>
                     </td>
                     <td class="px-3 py-2 hidden sm:table-cell truncate max-w-[220px]" :title="row.company || row.ticker" style="color: var(--text-2)" x-text="row.company || row.ticker"></td>
-                    <!-- APEX forward score -->
-                    <td class="px-2 py-2 text-right num font-mono font-medium"
-                        style="color: #fafafa"
-                        x-tooltip="'Forward score = structure × bounded momentum kicker'"
-                        x-text="row.apex_score != null ? Math.round(row.apex_score) : '–'"></td>
                     <td class="px-2 py-2 text-right num font-mono font-medium"
                         x-tooltip="`Score: ${fmt1(row.final_score)}<br>Percentile: ${row.normalized_score != null ? row.normalized_score.toFixed(0) : '-'}/100<br>Concentration: ${row.concentration_score != null ? row.concentration_score : '-'}% from top ETF<br>${row.concentration_score == null ? 'No data' : row.concentration_score < 40 ? 'Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : 'Highly concentrated - fragile if top ETF rebalances'}`"
                         x-text="fmt1(row.final_score)"></td>
@@ -2839,7 +2851,7 @@ function app() {
     loading: true, loadProgress: 0, displayProgress: 0, targetProgress: 0, error: '',
     activeTab: 'leaderboard',
     overlapHover: '',
-    flag: '', selectedTier: '', selectedSector: '', selectedCountry: '', regionFilter: '', newOnly: false, burstOnly: false, craterOnly: false, q: '', excludeConcentrated: false, qualityAdoptedOnly: false, preHcOnly: false, stealthBuyOnly: false, quantQualityOnly: false,
+    flag: '', selectedTier: '', selectedSector: '', selectedCountry: '', regionFilter: '', newOnly: false, burstOnly: false, craterOnly: false, q: '', excludeConcentrated: false, qualityAdoptedOnly: false, preHcOnly: false, stealthBuyOnly: false, fundsUpOnly: false, fundsDownOnly: false, quantQualityOnly: false,
     sortKey: 'leaderboard_rank', sortDir: 'asc',
     page: 1, pageSize: 50, open: null,
     // Reactive caches for expensive getters (BUG-5): _filteredCacheKey holds
@@ -2899,7 +2911,6 @@ function app() {
       { key: 'leaderboard_rank', label: '# (default rank)' },
       { key: 'ticker',           label: 'Ticker' },
       { key: 'company',          label: 'Company' },
-      { key: 'apex_score',       label: 'Apex (forward score)' },
       { key: 'final_score',      label: 'Score' },
       { key: 'score_delta_pct',  label: 'Score Δ% (active period)' },
       { key: 'etf_count',        label: 'ETF count' },
@@ -3046,6 +3057,8 @@ function app() {
         QADD: this.leaderboard.filter(r => r.quality_adopted_30d).length,
         PRE_HC: this.leaderboard.filter(r => this._isPreHc(r)).length,
         STEALTH_BUY: this.leaderboard.filter(r => this._isStealthBuy(r)).length,
+        FUNDS_UP: this.leaderboard.filter(r => (r.etf_count_delta_30d || 0) > 0).length,
+        FUNDS_DOWN: this.leaderboard.filter(r => (r.etf_count_delta_30d || 0) < 0).length,
         QUANT_QUALITY: this.leaderboard.filter(r => this._isQuantQuality(r)).length,
         CONCENTRATED: this.leaderboard.filter(r => r.flag === 'CONCENTRATED').length,
       };
@@ -3157,7 +3170,7 @@ function app() {
     },
 
     toggleFlag(f) { this.flag = (this.flag === f) ? '' : f; this.page = 1; },
-    reset() { this.flag = ''; this.newOnly = false; this.burstOnly = false; this.craterOnly = false; this.excludeConcentrated = false; this.qualityAdoptedOnly = false; this.preHcOnly = false; this.stealthBuyOnly = false; this.quantQualityOnly = false; this.selectedTier = ''; this.selectedSector = ''; this.selectedCountry = ''; this.regionFilter = ''; this.q = ''; this.page = 1; },
+    reset() { this.flag = ''; this.newOnly = false; this.burstOnly = false; this.craterOnly = false; this.excludeConcentrated = false; this.qualityAdoptedOnly = false; this.preHcOnly = false; this.stealthBuyOnly = false; this.fundsUpOnly = false; this.fundsDownOnly = false; this.quantQualityOnly = false; this.selectedTier = ''; this.selectedSector = ''; this.selectedCountry = ''; this.regionFilter = ''; this.q = ''; this.page = 1; },
 
     togglePin(t) {
       const i = this.pins.indexOf(t);
@@ -3792,6 +3805,7 @@ function app() {
         burstOnly: this.burstOnly, craterOnly: this.craterOnly, qualityAdoptedOnly: this.qualityAdoptedOnly,
         preHcOnly: this.preHcOnly,
         stealthBuyOnly: this.stealthBuyOnly,
+        fundsUp: this.fundsUpOnly, fundsDown: this.fundsDownOnly,
         quantQualityOnly: this.quantQualityOnly,
         tier: this.selectedTier, sector: this.selectedSector,
         country: this.selectedCountry, region: this.regionFilter,
@@ -3809,6 +3823,8 @@ function app() {
       if (this.qualityAdoptedOnly) r = r.filter(x => x.quality_adopted_30d);
       if (this.preHcOnly)        r = r.filter(x => this._isPreHc(x));
       if (this.stealthBuyOnly)   r = r.filter(x => this._isStealthBuy(x));
+      if (this.fundsUpOnly)      r = r.filter(x => (x.etf_count_delta_30d || 0) > 0);
+      if (this.fundsDownOnly)    r = r.filter(x => (x.etf_count_delta_30d || 0) < 0);
       if (this.quantQualityOnly) r = r.filter(x => this._isQuantQuality(x));
       if (tier)              r = r.filter(x => (x.tiers || '').split(' + ').includes(tier));
       if (sector)            r = r.filter(x => x.sector === sector);
@@ -3986,8 +4002,6 @@ function app() {
         ['leaderboard_rank',       '#'],
         ['ticker',                 'Ticker'],
         ['company',                'Company'],
-        ['apex_score',             'Apex'],
-        ['apex_rank',              'Apex rank'],
         ['final_score',            'Score'],
         ['normalized_score',       'Score (pct)'],
         ['etf_count',              'ETFs'],
@@ -4704,10 +4718,6 @@ function app() {
       structure.push({ k: 'breadth', v: row.n_eff != null ? `${row.n_eff.toFixed(1)} eff / ${ec} funds` : '–' });
       structure.push({ k: 'conviction', v: row.avg_conviction != null ? row.avg_conviction.toFixed(2) + '×' : '–', c: (row.avg_conviction||0) > 1.0 ? 'var(--up)' : 'var(--text-2)' });
       structure.push({ k: 'tier breadth', v: `${row.tier_breadth ?? '–'}` });
-      const ar = row.apex_rank, lr = row.leaderboard_rank;
-      if (ar != null && lr != null && ar !== lr) {
-        structure.push({ k: 'apex', v: `#${ar} (raw #${lr})`, c: ar < lr ? 'var(--up)' : 'var(--down)' });
-      }
 
       // FLOW
       flow.push({ k: 'wt flow 7d', v: this.fmtPct(row.avg_weight_flow_7d), c: this.flowColor(row.avg_weight_flow_7d) });

@@ -227,3 +227,23 @@ When computing day-over-day score deltas (`score_delta`):
 
 *Report generated and checked against repository data: `docs/data/leaderboard.json`, `docs/data/details/*.json`, and `docs/data/holdings_history.parquet`.*
 
+
+---
+
+## 13. Resolution (2026-10-22) — scoring engine v4
+
+Every finding above was tested by replaying the real engine over all 217 snapshot dates and scoring the candidate fixes on forward returns and forward fund behaviour. The full evidence is in **[`docs/SCORING_V4_STUDY.md`](SCORING_V4_STUDY.md)** and can be reproduced with `scripts/scoring_study.py`. Summary:
+
+| # | Finding | Verdict | What shipped |
+|---|---|---|---|
+| 1 | Sticky giants | Partly right, wrong mechanism. Holdings hadn't changed. The moat came from a **2.16× breadth double count** (tier-synergy bonus on top of `M_breadth`) plus low-conviction positions adding up. The rank-bracket argument in §3 applies only to legacy mode. | Synergy bonus removed in apex; κ = 2 convexity. SNDK #1 → #9, GEV #2 → #11, STX #6 → #82. |
+| 2 | Trimming penalty | Mostly passive price drift. Rec. B (outflow decay), measured net of drift, almost never fires and has no effect. | No change. |
+| 3 | Breadth fillers | Confirmed. | κ = 2: AMAT #38 → #264, KLAC #68 → #339, APP #58 → #876. |
+| 4 | Score Δ ⟂ price Δ | Expected for a lagging holdings signal. The real test is forward-looking: the score has no reliable return information beyond 12-1 momentum, and no reshaping changed that. | Documented as a limitation. |
+| 5 | UI sorts by `leaderboard_rank` | Pre-v4 `apex_score` was not better. It swapped breadth inflation for single-fund inflation and the worst rank stability, and its two `avg_conviction` factors made the score non-monotone. | One canonical rank. The Apex column is removed; `apex_*` are aliases. |
+| 6 | Share-class fragmentation | Confirmed and much larger (~135 suffix fragments). **The proposed `ENR.GR → ENR` merge would have been a bug: `ENR` is Energizer.** The audit also missed **50 collisions** that merged *different* companies. For example, `MTN` was Vail Resorts + MTN Group, a fabricated 4-fund HIGH_CONVICTION name at #9. | Name-verified identity resolution (42 splits, 134 merges, 8 curated overrides) + curated share-class renames. Siemens Energy now resolves to one 4-fund identity. |
+| 7 | Single-fund sovereigns buried | Confirmed. | Alibaba #208 → #43, Reliance #286 → #110, ICICI #318 → #117. (CSU fell instead: PIZ exited it on 2026-09-30 and GRIN now holds it below equal weight.) |
+| 8 | Snapshot desync | Not a defect. Per-fund as-of semantics are correct. The real gap was unbounded staleness. | 30-day staleness guard. |
+| Rec. C | Drawdown dampener | Rejected. No IC change, and falling top-100 names lost holders *less* often (5.9% vs 19.5%). | — |
+
+Also changed: the 60-point international exception was retired, because it duplicated `M_universe`'s levelling, and the APEX momentum kicker was taken out of the ranking (effect on IC < 0.001). On the 30-ETF universe, the top-50 breadth-filler share fell from 17.6% to 4.8%, the forward fund-accumulation IC went from −0.009 to +0.018, and the top-50 30-day exit rate fell from 18.8% to 14.4%. Forward-return IC is unchanged.

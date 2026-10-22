@@ -99,6 +99,30 @@ sanitizer:
   ticker_renames:
     GOOG: GOOGL
     ASML: ASML.NA
+    # v4 share-class consolidation (2026-10 study). Conviction is a company-level
+    # read, so voting / non-voting / preferred lines of one issuer pool into the
+    # most widely held line — the same logic as GOOG → GOOGL. Each pair was
+    # verified against holder-reported names in the live store.
+    "005935": "005930"   # Samsung Electronics pref → common (EEMO holds both)
+    "005385": "005380"   # Hyundai Motor pref → common
+    "005387": "005380"   # Hyundai Motor 2nd pref → common
+    PETR3: PETR4         # Petrobras ON → PN (JHEM & EEMO hold both)
+    ITUB3: ITUB4         # Itaú Unibanco ON → PN
+    BBDC3: BBDC4         # Bradesco ON → PN
+    AXIA7: AXIA3         # Axia Energia (ex-Eletrobras) PNC → ON
+    PFCIBEST: CIBEST     # Grupo Cibest pref → common
+    GMEXICO.B: GMEXICOB  # Grupo México — issuer spelling variants
+    FEMSA.UBD: FEMSAUBD  # FEMSA units — issuer spelling variants
+    ENELCHIL: ENELCHILE  # Enel Chile — truncated symbol
+    FOX: FOXA            # Fox Corp class B → A
+    NWS: NWSA            # News Corp class B → A
+    LBTYK: LBTYA         # Liberty Global C → A
+    UA: UAA              # Under Armour C → A
+    LILAK: LILA          # Liberty Latin America C → A
+    GEF.B: GEF           # Greif B → A
+    UHAL.B: UHAL         # U-Haul non-voting → voting
+    # NOT merged: ENR (Energizer, AVSC) vs ENR.GR (Siemens Energy, GRIN) — the
+    # 2026-10 audit proposed this merge, but they are different companies.
 
   # Cross-listing collapse (regex). Same security trading under two ticker forms
   # gets merged into one canonical leaderboard entry. Each rule is a regex
@@ -123,6 +147,35 @@ sanitizer:
   cross_listing_patterns:
     - {pattern: '^A(\d{6})$', replacement: '\1'}   # KRX: A005930 → 005930
 
+  # v4 name-verified identity resolution (conviction/scoring.py
+  # Sanitizer._resolve_identities). Two measured defects:
+  #   • collisions — international funds report bare local codes that clash
+  #     with unrelated US tickers: 'MTN' was Vail Resorts (AVSC, JHSC) AND MTN
+  #     Group (JHEM, MFEM), fabricating a 4-fund HIGH_CONVICTION name in the
+  #     top 20. ~50 tickers affected (KTB, A, TEL, G, KEY, KMB, PRU, SAIL, VAL…).
+  #     The international cluster is renamed '<ticker>.<TAG>' (MTN → MTN.MTN).
+  #   • fragmentation — exchange-suffix dialects of one security ('6857' vs
+  #     '6857.JP', 'ADVANC' vs 'ADVANC.R') collapse into the root symbol.
+  # Every split/merge requires holder-reported company names to agree (or
+  # disagree), so e.g. ENR.GR (Siemens Energy) is never folded into ENR.
+  # Which funds report local-exchange symbols comes from `region: intl` below.
+  resolve_identities: true
+
+  # Curated row-level overrides for collisions BETWEEN international exchanges
+  # (no US holder to anchor the automatic split, and spelling variants such as
+  # ICBC's 'IND + COMM BK' / 'Industrial & Commercial Bank' make a name-only
+  # rule unsafe). `name` is a case-insensitive regex on the holder-reported
+  # company name; `to` uses an exchange suffix the price resolver understands.
+  identity_overrides:
+    - {ticker: "2313", name: "SHENZHOU",    to: "2313.HK"}   # vs Compeq Manufacturing (TW)
+    - {ticker: "2382", name: "SUNNY OPT",   to: "2382.HK"}   # vs Quanta Computer (TW)
+    - {ticker: "1519", name: "J.T GLOBAL",  to: "1519.HK"}   # J&T Express vs Fortune Electric (TW)
+    - {ticker: "6269", name: "MODEC",       to: "6269.JP"}   # vs Flexium Interconnect (TW)
+    - {ticker: "8210", name: "CHENBRO",     to: "8210.TT"}   # vs Bupa Arabia (SA)
+    - {ticker: JSW,    name: "JASTRZEBSKA", to: "JSW.PW"}    # vs JSW Energy (IN)
+    - {ticker: LTM,    name: "^LTM LTD",    to: "LTM.NS"}    # LTM (ex-LTIMindtree, IN) vs LATAM Airlines
+    - {ticker: SAP,    name: "SAPPI",       to: "SAP.SJ"}    # vs SAP SE
+
 # =============================================================================
 # TIERS — Conviction Labs v1, matches the ETF_Config table in the Excel.
 # =============================================================================
@@ -141,40 +194,44 @@ etfs:
   - {ticker: QMOM, tier: Quant,   points: 40}
   - {ticker: XMMO, tier: Quant,   points: 40}
   - {ticker: XSMO, tier: Quant,   points: 40}
-  - {ticker: PIE,  tier: Quant,   points: 40}
+  - {ticker: PIE,  tier: Quant,   points: 40, region: intl}
 
-  # ─── International Exception ────────────────────────────────────────────
-  # FPXI and IMOM are international funds with naturally lower overlap with
-  # US-only ETFs. Bumping their points to 60 levels the playing field for
-  # global names that otherwise wouldn't accumulate score across multiple ETFs.
-  # They stay in their conceptual tier (Scout / Quant) so NEW-entry boost and
-  # SPEC-β logic continue to apply correctly.
-  - {ticker: FPXI, tier: Scout,   points: 60}
-  - {ticker: IMOM, tier: Quant,   points: 60}
+  # ─── International funds ────────────────────────────────────────────────
+  # Until v4, FPXI / IMOM / EEMO / PIZ / JHEM / MFEM carried a 60-point
+  # "international exception" to level the field for global names. That job
+  # is done by apex M_universe (opportunity normalization), so the bump was a
+  # second levelling mechanism stacked on the first — and with four
+  # overlapping EM funds it no longer levelled anything: under the v4 κ = 2
+  # convexity it would have pushed the top-50 to 76% non-US names (vs 56%
+  # pre-v4, 41.5% of holding-points). Every fund now earns its tier's points;
+  # with κ = 2 the top-50 sits at 60% non-US (2026-10 study,
+  # docs/SCORING_V4_STUDY.md). `region: intl` marks funds that report
+  # local-exchange symbols (used only by identity resolution).
+  - {ticker: FPXI, tier: Scout,   points: 40, region: intl}
+  - {ticker: IMOM, tier: Quant,   points: 40, region: intl}
 
   # New Quant additions — Dorsey Wright momentum family + EM momentum
-  # PDP / DWAS: US-focused DW momentum → 40 pts (same as QMOM/XMMO)
-  # EEMO / PIZ:  international-focused → 60 pts (same as IMOM, levels the field)
+  # PDP / DWAS: US-focused DW momentum; EEMO / PIZ: EM / developed-intl momentum
   - {ticker: PDP,  tier: Quant,   points: 40}
   - {ticker: DWAS, tier: Quant,   points: 40}
-  - {ticker: EEMO, tier: Quant,   points: 60}
-  - {ticker: PIZ,  tier: Quant,   points: 60}
+  - {ticker: EEMO, tier: Quant,   points: 40, region: intl}
+  - {ticker: PIZ,  tier: Quant,   points: 40, region: intl}
   # JH Multifactor family + PIMCO RAFI
   - {ticker: JHMM, tier: Quant,   points: 40}  # JH Multifactor Mid Cap
-  - {ticker: JHEM, tier: Quant,   points: 60}  # JH Multifactor Emerging Markets (intl)
+  - {ticker: JHEM, tier: Quant,   points: 40, region: intl}  # JH Multifactor Emerging Markets
   - {ticker: JHSC, tier: Quant,   points: 40}  # JH Multifactor Small Cap
-  - {ticker: MFEM, tier: Quant,   points: 60}  # PIMCO RAFI Dynamic Multi-Factor EM (intl)
+  - {ticker: MFEM, tier: Quant,   points: 40, region: intl}  # PIMCO RAFI Dynamic Multi-Factor EM
   - {ticker: JOET, tier: Quant,   points: 40}  # Virtus Terranova US Quality Momentum
 
   # Quality — free cash flow and profitability
   - {ticker: COWZ, tier: Quality, points: 30}
   - {ticker: CALF, tier: Quality, points: 30}
   - {ticker: SPHQ, tier: Quality, points: 30}
-  - {ticker: IVAL, tier: Quality, points: 30}  # Alpha Architect Intl Quantitative Value
+  - {ticker: IVAL, tier: Quality, points: 30, region: intl}  # Alpha Architect Intl Quantitative Value
   - {ticker: QVAL, tier: Quality, points: 30}  # Alpha Architect US Quantitative Value
   - {ticker: VLUE, tier: Quality, points: 30}  # iShares MSCI USA Value Factor
   - {ticker: AVSC, tier: Quality, points: 30}  # Avantis US Small Cap Value
-  - {ticker: GRIN, tier: Quality, points: 30}  # VictoryShares Intl Free Cash Flow Growth
+  - {ticker: GRIN, tier: Quality, points: 30, region: intl}  # VictoryShares Intl Free Cash Flow Growth
 
   # Trend — momentum confirmation
   - {ticker: SPMO, tier: Trend,   points: 10}
@@ -211,7 +268,9 @@ high_conviction_min_etfs: 4
 # 'apex'       : §30 Conviction v3. Conviction per-holding scoring, then the
 #                per-ticker raw mass is shaped by concentration (HHI guard),
 #                strategy-breadth entropy, and shrunk universe normalization.
-#                Adds the bounded velocity overlay (apex_score / apex_rank).
+#                v4 (2026-10): κ-convex per-holding conviction, one breadth
+#                reward, one regional levelling term, identity resolution;
+#                final_score is the single canonical rank (apex_* are aliases).
 # =============================================================================
 scoring_mode: apex
 
@@ -228,10 +287,18 @@ conviction:
   c_max:     1.5    # ceiling on Wovr (prevents extreme outliers dominating)
   rp_floor:  0.35   # minimum Grank contribution (rank never fully zeroes out)
   hc_theta:  0.8    # conviction threshold for HIGH_CONVICTION breadth count
+  kappa:     2.0    # v4 per-holding convexity: Single_i = points × C_i^κ.
+                    # Shrinks breadth-filler holdings (C=0.3 → 0.09) without the
+                    # non-monotone averaging of the retired m_conv / gate. Applies in
+                    # apex mode only. 2026-10 study (engine replay, 30-ETF universe):
+                    # top-50 filler share 17.6% → 4.8%, top-50 30-day exit rate
+                    # 18.8% → 14.4%, forward fund-accumulation IC −0.009 → +0.018.
   overlap_discount_enabled: true
   overlap_penalty_weight:   1.5    # Scales Jaccard overlap discount rate
   min_overlap_multiplier:   0.20   # Floor multiplier for heavily overlapped ETFs
-  tier_diversity_bonus:     0.15   # +15% per additional unique factor tier
+  tier_diversity_bonus:     0.15   # +15% per extra tier — conviction mode ONLY; ignored
+                                   # in apex mode, where M_breadth already rewards tier
+                                   # dispersal (stacking both double-counted breadth)
 
 # =============================================================================
 # APEX SCORING PARAMETERS (§30, used when scoring_mode = apex)
@@ -255,14 +322,6 @@ apex:
   conc_flag_share:  0.85   # max-share threshold for the CONCENTRATED flag —
                            # one fund supplies >= 85% of score mass (>= 2 ETFs),
                            # above this universe's structural median of ~0.81
-  # §31.2 conviction-quality multiplier applied inside the apex kicker
-  # (display-ranking only — final_score is NOT touched).
-  # breadth-summed score lets multi-fund filler outrank single-fund conviction;
-  # m_conv = clip(avg_conviction, conv_floor, conv_cap) ** conv_gamma
-  # discounts underweight breadth (<1) and rewards overweight conviction (>1).
-  conv_floor:       0.50   # floor: deepest discount a filler can receive
-  conv_cap:         1.25   # cap: maximum boost a high-conviction name can receive
-  conv_gamma:       1.0    # exponent: 1.0 = linear scaling (default)
 
 # =============================================================================
 # ETF MATURITY GATE (§28) — suppresses NEW flood from the 15→30 migration.
@@ -271,6 +330,12 @@ apex:
 # not to NEW flags or new-entrant bonuses.
 # =============================================================================
 etf_maturity_days: 30   # ETFs tracked < 30 days are considered immature
+
+# v4 staleness guard — an ETF whose newest snapshot is older than this many
+# days (relative to the as-of date) stops contributing. Well above the longest
+# observed scrape gap (21 days) so outages never fake exits; it retires feeds
+# that have actually died instead of scoring a frozen book forever.
+stale_snapshot_days: 30
 
 # =============================================================================
 # HISTORY — temporal analytics layer on top of the Power Query algorithm.

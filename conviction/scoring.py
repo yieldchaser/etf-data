@@ -9,9 +9,14 @@ Scoring modes:
                  (+ flat NEW bonus for Scout/Quant entrants).
     conviction — §24 conviction-weighted: C_i = Wovr(OW_i) × Grank(RP_i),
                  Single_i = points_i × C_i, Final = Σ_i Single_i.
-    apex       — §30 Conviction v3. Per-holding scoring identical to conviction;
-                 the per-ticker raw mass B = Σ Single_i is then shaped by three
-                 multipliers:
+    apex       — §30 Conviction v3, revised in v4 (2026-10 study,
+                 docs/SCORING_V4_STUDY.md). Per-holding conviction C_i as in
+                 conviction mode, but convex: Single_i = points_i × C_i^κ
+                 (κ = 2), so filler positions can't add up to a high score and
+                 the score stays monotone in breadth. The per-ticker raw mass
+                 B = Σ Single_i (Jaccard-overlap discounted; no tier-synergy
+                 bonus — M_breadth below is the one breadth reward) is shaped
+                 by three multipliers:
 
                  (a) Concentration (single-fund manipulation guard)
                      s_i    = score_i / Σ score_i      (holding share of mass)
@@ -37,10 +42,11 @@ Scoring modes:
                      Levels intl names with small opportunity sets without
                      false positives — η damps, λ shrinks, clip bounds.
 
-                 Final = B × M_conc × M_breadth × M_universe.
+                 Final = B × M_conc × M_breadth × M_universe — the single
+                 canonical score (apex_score / apex_rank are aliases since v4).
                  New flag "CONCENTRATED": not HC and (s_max ≥ θ_share with
                  ≥ 2 ETFs, or a single-ETF holding at OW ≥ OW★), where s_max
-                 is the max per-ETF score share (dominance criterion).
+                 is the max per-ETF share of linear conviction mass Σ points×C.
 
 Inputs:
     history: long-form holdings, schema from yieldchaser/etf-data scraper.py.
@@ -53,6 +59,8 @@ Outputs (from compute_leaderboard):
 from __future__ import annotations
 import hashlib
 import math
+import re
+from collections import Counter
 from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
@@ -72,6 +80,7 @@ class ETF:
     ticker: str
     tier: str
     points: int
+    region: str = "US"   # "intl" → reports local-exchange symbols (identity resolution)
 
 
 # Backward-compat alias (some code may still reference Tier)
@@ -129,6 +138,67 @@ def _df_fingerprint(df: pd.DataFrame) -> str:
     return f"{df.shape[0]}x{df.shape[1]}|{dtypes_sig}|{val}"
 
 
+# ─── Security-identity resolution (v4) ─────────────────────────────────────
+# Issuers report the same security in different symbol dialects, and bare
+# local-exchange codes from international funds collide with unrelated US
+# tickers. Both failure modes were measured on the live store (2026-10 study):
+#   • collision — JHEM's 'MTN' (MTN Group, JSE) and AVSC's 'MTN' (Vail Resorts)
+#     merged into one fabricated 4-fund HIGH_CONVICTION row; likewise KTB, A,
+#     TEL, G, KEY, KMB, PRU, SAIL, VAL … (~50 tickers).
+#   • fragmentation — '6857' (PIZ) vs '6857.JP' (FPXI, GRIN) split Advantest;
+#     Thai 'ADVANC' / 'ADVANC.F' / 'ADVANC.R' split one company three ways.
+# Every decision is name-verified: holder-reported company names must share a
+# distinctive token, so blind suffix stripping can't merge e.g. Siemens Energy
+# ('ENR.GR') into Energizer ('ENR') or Airbus ('AIR.FP') into AAR Corp ('AIR').
+
+# Words that carry no identity: corporate forms, share-class / listing jargon,
+# country names, and sector words common enough to create false overlaps.
+_NAME_STOPWORDS = frozenset("""
+    THE INC CORP CORPORATION COMPANY LTD LIMITED PLC AG NV SE SPA SAB CV PCL BHD TBK
+    HOLDING HOLDINGS GROUP GRP COMMON STOCK CLASS SHS SHARES ORD ORDINARY ADR ADS GDR
+    SPONSORED NVDR FOREIGN FORGN LOCAL REG UNIT UNITS PREF PREFERRED PREFERENCE PFD SER
+    SERIES INTL INTERNATIONAL GLOBAL NEW AND FOR
+    UNITED STATES AMERICA KOREA REPUBLIC HONG KONG INDIA BRAZIL CHINA TAIWAN THAILAND
+    MEXICO JAPAN CHILE SOUTH AFRICA SAUDI ARABIA INDONESIA MALAYSIA PHILIPPINES POLAND
+    TURKEY GREECE ISRAEL CANADA AUSTRALIA GERMANY FRANCE SPAIN ITALY KINGDOM
+    BANK BANCORP FINANCIAL ENERGY TECHNOLOGY TECHNOLOGIES INDUSTRIES
+    RESOURCES CAPITAL SYSTEMS MINING GOLD PROPERTIES HEALTHCARE SERVICES SOLUTIONS
+    PARTNERS TRUST INVESTMENT INVESTMENTS ENTERPRISES MOTOR MOTORS POWER ELECTRIC
+""".split())
+
+# Exchange / listing-board suffixes issuers append to a root symbol
+# ('6857.JP', '175.HK', 'ADVANC.R'). Share-class letters (A/B) are NOT here —
+# '.B' etc. denote a different line of stock and are handled by curated renames.
+_EXCHANGE_SUFFIXES = frozenset("""
+    JP JT HK TT KS KQ LN AU NO FH SM SS IT IM PW BZ C CT CN US U GR GY FP NA SW DC
+    SE SP BB AV ID R F UH QD SJ AB TB MK IJ PM CI TI GA
+""".split())
+
+
+def _name_tokens(name) -> frozenset[str]:
+    """Distinctive uppercase tokens of a holder-reported company name."""
+    if name is None or (isinstance(name, float) and math.isnan(name)):
+        return frozenset()
+    s = re.sub(r"['’.]", "", str(name).upper())       # Kohl's → KOHLS, Legalzoom.com → LEGALZOOMCOM
+    s = re.sub(r"[^A-Z0-9]+", " ", s)
+    return frozenset(
+        t for t in s.split()
+        if len(t) >= 3 and t not in _NAME_STOPWORDS
+        and not t.isdigit() and not re.fullmatch(r"[A-Z]{3}\d[\d.]*", t)   # KRW100, INR10
+    )
+
+
+def _tokens_overlap(a: frozenset[str], b: frozenset[str]) -> bool:
+    """True when two names plausibly denote the same company: they share a
+    distinctive token exactly, or ≥ 2 tokens match as abbreviation prefixes
+    ('IND + COMM BK' ↔ 'Industrial & Commercial Bank'). A single prefix hit is
+    not enough — 'NEXT PLC' must not match 'NEXTPOWER INC'."""
+    if a & b:
+        return True
+    prefix_hits = {x for x in a for y in b if x.startswith(y) or y.startswith(x)}
+    return len(prefix_hits) >= 2
+
+
 def clear_sanitizer_cache() -> None:
     """Clear the sanitizer memoization cache.
 
@@ -160,6 +230,9 @@ class Sanitizer:
     ticker_replacements: tuple[tuple[str, str], ...] # BRK-B → BRK.B, BF/B → BF.B
     ticker_renames: dict                             # GOOG → GOOGL (after replacements)
     cross_listing_patterns: tuple[tuple[str, str], ...] = ()  # regex (pattern, replacement) — collapses cross-listings (e.g. KRX 'A005930' → '005930')
+    resolve_identities: bool = False                 # v4 name-verified collision split + suffix merge
+    identity_overrides: tuple[tuple[str, str, str], ...] = ()  # (ticker, name regex, new ticker) — row level
+    international_etfs: tuple[str, ...] = ()         # funds reporting local-exchange symbols
 
     def apply(self, df: pd.DataFrame) -> pd.DataFrame:
         """Drop blocked rows, standardize ticker punctuation, then apply renames.
@@ -194,6 +267,9 @@ class Sanitizer:
             self.ticker_replacements,
             tuple(sorted(self.ticker_renames.items())) if self.ticker_renames else (),
             self.cross_listing_patterns,
+            self.resolve_identities,
+            self.international_etfs,
+            self.identity_overrides,
         )
         return hashlib.sha256(repr(payload).encode("utf-8")).hexdigest()
 
@@ -252,10 +328,37 @@ class Sanitizer:
                 )
                 merged_pairs = list(pairs)
 
+        # 5b. Curated row-level overrides for collisions the automatic split
+        # can't adjudicate (two international exchanges sharing a numeric code,
+        # e.g. '2313' = Compeq (TW) in EEMO/MFEM/PIE but Shenzhou (HK) in JHEM).
+        # Matched on the row's company name, so they stay correct even when an
+        # issuer's use of the symbol changes over time.
+        identity_changes: list[tuple[str, str, str]] = []
+        for tkr, name_re, new in self.identity_overrides:
+            hit = out["ticker"].eq(tkr) & out["name"].astype(str).str.contains(
+                name_re, case=False, regex=True, na=False)
+            if hit.any():
+                out.loc[hit, "ticker"] = new
+                identity_changes.append(("override", tkr, new))
+
+        # 5c. Name-verified identity resolution (collision split + suffix merge)
+        if self.resolve_identities:
+            out, resolved = self._resolve_identities(out)
+            identity_changes += resolved
+
         # 6. Deduplicate rows created by renames OR cross-listing collapse
         # (e.g., GOOG+GOOGL same ETF/date → one row; A005930 + 005930 → one row)
-        if self.ticker_renames or self.cross_listing_patterns:
+        if self.ticker_renames or self.cross_listing_patterns or identity_changes:
             out = self._dedupe_after_renames(out)
+
+        if identity_changes:
+            splits = [c for c in identity_changes if c[0] == "split"]
+            merges = [c for c in identity_changes if c[0] == "merge"]
+            overrides = [c for c in identity_changes if c[0] == "override"]
+            print(f"[sanitizer] identity resolution: {len(splits)} collision splits, "
+                  f"{len(merges)} suffix merges, {len(overrides)} curated overrides", flush=True)
+            for kind, raw, canonical in (splits[:10] + merges[:10]):
+                print(f"  {kind:5s} {raw}  ->  {canonical}", flush=True)
 
         # 7. Audit log for cross-listing merges. Runs only on the cache-miss path
         # (i.e. once per distinct input), so a build no longer floods CI with the
@@ -272,6 +375,106 @@ class Sanitizer:
 
         return out
 
+    def _resolve_identities(self, df: pd.DataFrame) -> tuple[pd.DataFrame, list[tuple[str, str, str]]]:
+        """Split cross-market ticker collisions, then merge exchange-suffix
+        variants of the same security. Returns (df, [(kind, raw, canonical)]).
+
+        Identity is decided per (ETF, ticker) pair over the whole input, so a
+        holding keeps one identity across every snapshot date.
+
+        Collision split — a ticker is split only when BOTH hold:
+          • its holders' company names fall into ≥ 2 clusters with no
+            distinctive token in common, and
+          • exactly one cluster contains a US-domestic fund; the others are
+            all international funds.
+        The US cluster keeps the bare symbol (the US listing is the default
+        namespace of a bare ticker); each international cluster becomes
+        '<ticker>.<TAG>', TAG = its most common leading name token
+        (MTN → 'MTN.MTN' for MTN Group, KTB → 'KTB.KRUNG').
+
+        Suffix merge — 'ROOT.SUF' (SUF an exchange/board code) collapses into
+        an identity of ROOT only when exactly one such identity shares a name
+        token with it.
+        """
+        intl = set(self.international_etfs)
+        names = df[["ETF_Ticker", "ticker", "name"]].copy()
+        names["name"] = names["name"].astype(str).str.strip()
+        names = names[~names["name"].str.lower().isin(("", "nan", "none", "null", "n/a"))]
+        if names.empty:
+            return df, []
+        rep = (names.groupby(["ETF_Ticker", "ticker"])["name"]
+               .agg(lambda s: s.value_counts().index[0]))
+        tokens = {k: _name_tokens(v) for k, v in rep.items()}
+
+        def _lead_token(name: str, distinctive: frozenset[str]) -> str:
+            """First word of `name` that is a distinctive token (the tag source)."""
+            words = re.sub(r"[^A-Z0-9]+", " ", re.sub(r"['’.]", "", name.upper())).split()
+            return next((w for w in words if w in distinctive), "")
+
+        # ── collision split ───────────────────────────────────────────────
+        pair_map: dict[tuple[str, str], str] = {}
+        identity_tokens: dict[str, set[str]] = {}
+        changes: list[tuple[str, str, str]] = []
+        by_ticker: dict[str, list[str]] = {}
+        for (etf, tkr) in tokens:
+            by_ticker.setdefault(tkr, []).append(etf)
+        for tkr, etfs in by_ticker.items():
+            known = [e for e in sorted(etfs) if tokens[(e, tkr)]]
+            # Single-linkage clustering of holders by company-name overlap
+            clusters: list[list[str]] = []
+            for e in known:
+                linked = [c for c in clusters
+                          if any(_tokens_overlap(tokens[(e, tkr)], tokens[(o, tkr)]) for o in c)]
+                clusters = [c for c in clusters if c not in linked] + [[e] + [x for c in linked for x in c]]
+            home = [c for c in clusters if any(e not in intl for e in c)]
+            if len(clusters) < 2 or len(home) != 1:
+                identity_tokens.setdefault(tkr, set()).update(*(tokens[(e, tkr)] for e in known))
+                continue
+            identity_tokens.setdefault(tkr, set()).update(*(tokens[(e, tkr)] for e in home[0]))
+            for c in clusters:
+                if c is home[0]:
+                    continue
+                distinctive = frozenset().union(*(tokens[(e, tkr)] for e in c))
+                leads = Counter(_lead_token(rep[(e, tkr)], distinctive) for e in c)
+                tag = (sorted(leads.items(), key=lambda kv: (-kv[1], kv[0]))[0][0] or "X")[:10]
+                new = f"{tkr}.{tag}"
+                for e in c:
+                    pair_map[(e, tkr)] = new
+                identity_tokens.setdefault(new, set()).update(distinctive)
+                changes.append(("split", f"{tkr}@{'/'.join(sorted(c))}", new))
+
+        # ── suffix merge ──────────────────────────────────────────────────
+        ticker_map: dict[str, str] = {}
+        split_children: dict[str, list[str]] = {}
+        for new in set(pair_map.values()):
+            split_children.setdefault(new.rsplit(".", 1)[0], []).append(new)
+        for tkr in by_ticker:
+            if "." not in tkr:
+                continue
+            root, suf = tkr.rsplit(".", 1)
+            if suf not in _EXCHANGE_SUFFIXES or root not in identity_tokens:
+                continue
+            own = identity_tokens.get(tkr, set())
+            if not own:
+                continue
+            cands = [root] + split_children.get(root, [])
+            hits = [c for c in cands if identity_tokens.get(c) and
+                    _tokens_overlap(frozenset(own), frozenset(identity_tokens[c]))]
+            if len(hits) == 1:
+                ticker_map[tkr] = hits[0]
+                changes.append(("merge", tkr, hits[0]))
+
+        if not pair_map and not ticker_map:
+            return df, []
+        out = df.copy()
+        if pair_map:
+            keys = pd.Series(list(zip(out["ETF_Ticker"], out["ticker"])), index=out.index)
+            mapped = keys.map(pair_map)
+            out["ticker"] = mapped.where(mapped.notna(), out["ticker"])
+        if ticker_map:
+            out["ticker"] = out["ticker"].replace(ticker_map)
+        return out, sorted(changes)
+
     def _dedupe_after_renames(self, df: pd.DataFrame) -> pd.DataFrame:
         """After GOOG→GOOGL or KRX A-prefix collapse, sum weights for duplicate
         (ETF_Ticker, ticker, Holdings_As_Of) keys.
@@ -281,8 +484,6 @@ class Sanitizer:
         (build.py merge on [ETF_Ticker, ticker]).
         """
         if df.empty:
-            return df
-        if not self.ticker_renames and not self.cross_listing_patterns:
             return df
         key = ["ETF_Ticker", "ticker", "Holdings_As_Of"]
         if not all(c in df.columns for c in key):
@@ -303,6 +504,7 @@ class ConvictionConfig:
     c_max:    float   # ceiling on Wovr
     rp_floor: float   # minimum Grank contribution
     hc_theta: float   # conviction threshold for HC breadth count
+    kappa: float = 1.0  # per-holding convexity: Single_i = points × C_i^κ (v4: κ = 2)
     overlap_discount_enabled: bool = False
     overlap_penalty_weight: float = 1.5
     min_overlap_multiplier: float = 0.20
@@ -327,13 +529,6 @@ class ApexConfig:
     conc_flag_share: float = 0.85   # max-share threshold for CONCENTRATED flag
                                     # (one fund supplies ≥85% of score mass — above
                                     # this universe's structural median of ~0.81)
-    # §31.2 conviction-quality multiplier (display-ranking only; final_score unchanged)
-    # breadth-summed score lets multi-fund filler outrank single-fund conviction;
-    # m_conv discounts underweight breadth while rewarding overweight conviction.
-    conv_floor: float = 0.50        # floor on avg_conviction before raising to conv_gamma
-    conv_cap: float = 1.25          # ceiling on avg_conviction (limits upward boost)
-    conv_gamma: float = 1.0         # exponent: 1.0 = linear; <1 = compressed; >1 = amplified
-
     def __post_init__(self):
         if self.conc_target_neff <= 1:
             raise ValueError(f"ApexConfig.conc_target_neff must be > 1, got {self.conc_target_neff}")
@@ -368,6 +563,7 @@ class Config:
     conviction: ConvictionConfig | None = None          # §24 params (conviction + apex modes)
     etf_maturity_days: int = 30                         # §28 maturity gate
     apex: ApexConfig | None = None                      # §30 params (apex mode)
+    stale_snapshot_days: int | None = None              # v4: drop ETF snapshots this much older than the freshest
 
     @classmethod
     def from_yaml(cls, path: str | Path) -> "Config":
@@ -382,6 +578,11 @@ class Config:
             for rule in san.get("cross_listing_patterns", [])
             if isinstance(rule, dict) and "pattern" in rule
         )
+        etfs = tuple(
+            ETF(ticker=e["ticker"], tier=e["tier"], points=int(e["points"]),
+                region=str(e.get("region", "US")))
+            for e in cfg["etfs"]
+        )
         sanitizer = Sanitizer(
             blocked_tickers=tuple(san.get("blocked_tickers", [])),
             blocked_name_patterns=tuple(san.get("blocked_name_patterns", [])),
@@ -389,10 +590,13 @@ class Config:
             ticker_replacements=tuple((k, v) for k, v in san.get("ticker_replacements", {}).items()),
             ticker_renames=dict(san.get("ticker_renames", {})),
             cross_listing_patterns=cross_listing,
-        )
-        etfs = tuple(
-            ETF(ticker=e["ticker"], tier=e["tier"], points=int(e["points"]))
-            for e in cfg["etfs"]
+            resolve_identities=bool(san.get("resolve_identities", False)),
+            identity_overrides=tuple(
+                (str(r["ticker"]), str(r["name"]), str(r["to"]))
+                for r in san.get("identity_overrides", [])
+                if isinstance(r, dict) and {"ticker", "name", "to"} <= set(r)
+            ),
+            international_etfs=tuple(e.ticker for e in etfs if e.region == "intl"),
         )
         h_cfg = cfg.get("history", {})
         _periods_raw = h_cfg.get("delta_periods_days", None)
@@ -416,6 +620,7 @@ class Config:
             c_max=float(cv_cfg.get("c_max", 1.5)),
             rp_floor=float(cv_cfg.get("rp_floor", 0.35)),
             hc_theta=float(cv_cfg.get("hc_theta", 0.8)),
+            kappa=float(cv_cfg.get("kappa", 1.0)),
             overlap_discount_enabled=bool(cv_cfg.get("overlap_discount_enabled", False)),
             overlap_penalty_weight=float(cv_cfg.get("overlap_penalty_weight", 1.5)),
             min_overlap_multiplier=float(cv_cfg.get("min_overlap_multiplier", 0.20)),
@@ -433,9 +638,6 @@ class Config:
             universe_clip_lo=float(ax_cfg.get("universe_clip_lo", 0.80)),
             universe_clip_hi=float(ax_cfg.get("universe_clip_hi", 1.25)),
             conc_flag_share=float(ax_cfg.get("conc_flag_share", 0.85)),
-            conv_floor=float(ax_cfg.get("conv_floor", 0.50)),
-            conv_cap=float(ax_cfg.get("conv_cap", 1.25)),
-            conv_gamma=float(ax_cfg.get("conv_gamma", 1.0)),
         ) if ax_cfg or scoring_mode == "apex" else None
 
         return cls(
@@ -452,6 +654,8 @@ class Config:
             conviction=conviction,
             etf_maturity_days=int(cfg.get("etf_maturity_days", 30)),
             apex=apex,
+            stale_snapshot_days=(int(cfg["stale_snapshot_days"])
+                                 if cfg.get("stale_snapshot_days") is not None else None),
         )
 
     def etf_lookup(self) -> dict[str, ETF]:
@@ -608,8 +812,22 @@ def compute_leaderboard(
     latest_dates = df.groupby("ETF_Ticker")["Holdings_As_Of"].transform("max")
     latest = df[df["Holdings_As_Of"] == latest_dates].copy()
 
+    # v4 staleness guard — an ETF whose newest snapshot is older than
+    # stale_snapshot_days relative to the freshest snapshot available at as_of
+    # stops scoring instead of contributing its frozen book forever. Sized well
+    # above the longest observed scrape outage (21 days, COWZ/CALF) so a
+    # transient gap never fakes an exit; it only retires a feed that has died.
+    if cfg.stale_snapshot_days is not None and not latest.empty:
+        freshest = latest["Holdings_As_Of"].max()
+        latest = latest[latest["Holdings_As_Of"] >= freshest - timedelta(days=cfg.stale_snapshot_days)]
+
     # Filter zero-weight rows before ranking/counting (they inflate etf_count/held_by)
     latest = latest[latest["weight"] > 0].copy()
+    if latest.empty:
+        empty = pd.DataFrame(columns=["ticker", "company", "final_score", "etf_count",
+                                       "total_weight", "held_by", "tiers", "any_new",
+                                       "best_rank", "flag", "leaderboard_rank"])
+        return empty, pd.DataFrame()
 
     # Rank within each ETF by weight desc, deterministic tiebreak by ticker
     latest = latest.sort_values(["ETF_Ticker", "weight", "ticker"], ascending=[True, False, True])
@@ -680,7 +898,18 @@ def compute_leaderboard(
         )
         latest["rank_mult"] = latest["conviction"]   # expose for downstream compat
         latest["weight_pct"] = latest["weight"] * 100.0
-        latest["base_score"] = latest["tier_points"] * latest["conviction"]
+        # v4 convexity: Single_i = points × C_i^κ. With κ = 2 a filler held at
+        # C = 0.3 contributes 0.09 of a full position while C = 1.2 contributes
+        # 1.44 — breadth of *conviction*, not breadth of filler. Unlike the
+        # retired avg-conviction factors this is per holding, so adding a holder
+        # can never lower a name's score (monotone in breadth).
+        # Apex only — conviction mode stays the exact §24 reference formula.
+        kappa = cv.kappa if cfg.scoring_mode == "apex" else 1.0
+        latest["base_score"] = latest["tier_points"] * latest["conviction"].pow(kappa)
+        # Linear conviction mass Σ points × C — the basis of the dominance
+        # diagnostics (max_etf_share, top_etf_share), whose calibrated
+        # thresholds (CONCENTRATED at 0.85) predate κ and keep their meaning.
+        latest["linear_mass"] = latest["tier_points"] * latest["conviction"]
         # Column kept (build.py emits it to holdings_latest.json) but always 0
         # in conviction mode — the bonus is folded out, not folded in.
         latest["new_bonus"] = 0.0
@@ -695,6 +924,7 @@ def compute_leaderboard(
         latest["new_bonus"] = (latest["tier_points"] * cfg.new_bonus_mult).where(eligible_new, 0.0)
         latest["score"] = latest["base_score"] + latest["new_bonus"]
         latest["conviction"] = latest["rank_mult"]   # expose for downstream compat
+        latest["linear_mass"] = latest["score"]
 
     # Aggregate per ticker
     agg = latest.groupby("ticker").agg(
@@ -723,7 +953,10 @@ def compute_leaderboard(
         overlap_matrix = compute_etf_overlap_matrix(latest)
         penalty_weight = getattr(cv, "overlap_penalty_weight", 1.5)
         floor_mult = getattr(cv, "min_overlap_multiplier", 0.20)
-        tier_bonus = getattr(cv, "tier_diversity_bonus", 0.15)
+        # Apex mode rewards strategy dispersal through M_breadth (entropy); the
+        # legacy per-tier synergy bonus on top of it double-counted breadth
+        # (up to 1.60 × 1.35 = 2.16× for a 5-tier name), so it is off in apex.
+        tier_bonus = 0.0 if cfg.scoring_mode == "apex" else getattr(cv, "tier_diversity_bonus", 0.15)
         
         # Hot path: this block runs inside EVERY historical_leaderboards call
         # (98× per build). The naive per-ticker group.sort_values() + iterrows()
@@ -786,8 +1019,12 @@ def compute_leaderboard(
     shares = latest["score"].div(tot_per_row.where(tot_per_row > 0))
     hhi = agg["ticker"].map(shares.pow(2).groupby(latest["ticker"]).sum(min_count=1)).fillna(1.0)
     n_eff = 1.0 / hhi
-    # s_max — max per-ETF score share (dominance: drives the CONCENTRATED flag)
-    s_max = agg["ticker"].map(shares.groupby(latest["ticker"]).max()).fillna(1.0)
+    # s_max — max per-ETF share of LINEAR conviction mass (dominance: drives
+    # the CONCENTRATED flag). Read on linear mass because κ = 2 squares the
+    # per-fund ratios: on κ-mass the 0.85 threshold fired 3× as often.
+    lin_tot = latest["ticker"].map(latest.groupby("ticker")["linear_mass"].sum())
+    lin_shares = latest["linear_mass"].div(lin_tot.where(lin_tot > 0))
+    s_max = agg["ticker"].map(lin_shares.groupby(latest["ticker"]).max()).fillna(1.0)
 
     tier_scores = latest.groupby(["ticker", "tier"])["score"].sum()
     tier_totals = tier_scores.groupby(level="ticker").transform("sum")
@@ -892,9 +1129,15 @@ def compute_leaderboard(
     else:
         agg["normalized_score"] = 50.0
 
-    # Display rounding (matches Excel Int64.Type cast on Final Alpha Score).
-    # Sort uses the precise float; final display is truncated to int.
-    agg["final_score"] = agg["final_score"].astype("int64")
+    # Display rounding. Legacy / conviction keep the Excel Int64.Type cast on
+    # Final Alpha Score. Apex keeps one decimal: under κ = 2 convexity a filler
+    # holding contributes fractions of a point, and int truncation collapsed
+    # ~46% of the board to a 0 score (ties, and "score > 0" logic such as
+    # universe exits silently ignoring them). Sort uses the precise float.
+    if cfg.scoring_mode == "apex":
+        agg["final_score"] = agg["final_score"].round(1)
+    else:
+        agg["final_score"] = agg["final_score"].astype("int64")
     agg["total_weight"] = agg["total_weight"].round(6)
     agg["avg_conviction"] = agg["avg_conviction"].round(3)
 
