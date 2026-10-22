@@ -513,7 +513,7 @@ Correlation matrix + Growth of $100 log-scale chart for selected assets.
 
 ### Source and catalog
 
-The authoritative flow dataset is the local, read-only collection under `data/flows/`: **145 leveraged and inverse instruments, 177,699 daily rows from 2016-01-04 through 2026-10-20**, with zero duplicate ticker-dates and zero missing required values. `scripts/build_local_flow_artifacts.py` validates those sources and deterministically regenerates every published artifact under `docs/data/flows/` (145 per-ticker JSON files, `catalog.json`, `manifest.json`); it refuses any output directory inside `data/flows/`.
+The authoritative flow dataset is the local, read-only collection under `data/flows/`: **145 leveraged and inverse instruments, 177,699 daily rows from 2016-01-04 through 2026-10-21**, with zero duplicate ticker-dates and zero missing required values. `scripts/build_local_flow_artifacts.py` validates those sources and deterministically regenerates every published artifact under `docs/data/flows/` (145 per-ticker JSON files, `catalog.json`, `manifest.json`); it refuses any output directory inside `data/flows/`.
 
 `docs/data/flows/catalog.json` is the generated UI catalog (schema 1, `local-authoritative-117-v1`, 145 instruments of which 24 are featured) and `docs/data/flows/manifest.json` is the coverage manifest (schema 2, status `complete`, 145 files, 177,699 rows). Both are marked `network_fetch: false`. The Markets Fund Flows interface reads only these static files; the runtime fallback enforces the same 145/24 cardinality before rendering, and the browser cannot start a source refresh.
 
