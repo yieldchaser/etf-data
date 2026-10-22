@@ -52,8 +52,51 @@
 
     .label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); }
     .label-cyan { color: var(--cyan); }
+    .chip-group-label { font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); padding: 0 2px 0 6px; }
+    .chip-group-label:first-child { padding-left: 2px; }
     .chip { display: inline-flex; align-items: center; padding: 1px 6px; border-radius: 4px; font-size: 10.5px; font-weight: 500; line-height: 1.5; white-space: nowrap; letter-spacing: 0.02em; }
     .sig-badge { font-size: 9px; font-weight: 600; padding: 0 5px; letter-spacing: 0.04em; }
+
+    /* Today's signals strip */
+    .sig-strip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 8px; background: var(--surface); overflow: hidden; }
+    .sig-side { min-width: 0; padding: 8px 10px 10px; }
+    .sig-side + .sig-side { border-left: 1px solid var(--border); }
+    .sig-side-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .sig-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+    .sig-card { display: block; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 7px 9px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface-2); text-decoration: none; color: inherit; transition: border-color 0.15s; }
+    .sig-card:hover { border-color: var(--border-2); }
+    @media (max-width: 1100px) { .sig-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 700px) { .sig-strip { grid-template-columns: 1fr; } .sig-side + .sig-side { border-left: 0; border-top: 1px solid var(--border); } }
+    /* Changes tab — one panel style for every table */
+    .chg-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 8px; background: var(--surface); overflow: hidden; }
+    .chg-sum-cell { text-align: left; padding: 10px 14px; border-left: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
+    .chg-sum-cell:first-child { border-left: 0; }
+    .chg-sum-cell:hover { background: rgba(255,255,255,0.02); }
+    @media (max-width: 900px) {
+      .chg-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .chg-sum-cell:nth-child(3) { border-left: 0; }
+      .chg-sum-cell:nth-child(n+3) { border-top: 1px solid var(--border); }
+    }
+    .chg-panel { display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); overflow: hidden; --tone: var(--text-3); }
+    .chg-panel.tone-up { --tone: var(--up); }
+    .chg-panel.tone-down { --tone: var(--down); }
+    .chg-panel.tone-burst { --tone: var(--burst); }
+    .chg-panel.tone-crater { --tone: var(--crater); }
+    .chg-head { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--border); min-width: 0; }
+    .chg-dot { width: 6px; height: 6px; border-radius: 9999px; background: var(--tone); flex-shrink: 0; }
+    .chg-title { font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; }
+    .chg-count { font-size: 10.5px; color: var(--tone); padding: 0 6px; border-radius: 4px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); }
+    .chg-hint { margin-left: auto; font-size: 10.5px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+    .chg-table thead tr { border-bottom: 1px solid var(--border); }
+    .chg-table th { padding: 6px 8px; font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); user-select: none; white-space: nowrap; }
+    .chg-table th.cursor-pointer:hover { color: var(--text-2); }
+    .chg-table th.chg-key { color: var(--text-2); }
+    .chg-table td { padding: 7px 8px; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+    .chg-table tbody tr:last-child td { border-bottom: 0; }
+    .chg-row { cursor: pointer; transition: background 0.12s; }
+    .chg-row:hover { background: rgba(255,255,255,0.025); }
+    .chg-arrow { color: #52525b; font-size: 10px; margin: 0 3px; }
+    .chg-foot { padding: 6px 12px; font-size: 10px; color: var(--text-3); border-top: 1px solid var(--border); text-align: right; }
 
     /* Macro-status regime glyph (text-color only, no fill) */
     .regime { display: inline-block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; white-space: nowrap; min-width: 76px; }
@@ -322,6 +365,7 @@
           <div class="text-xl sm:text-2xl font-medium num font-mono" :style="`color: ${kpi.color || 'var(--text)'}`" x-text="kpi.value"></div>
           <div class="text-xs num font-mono" :style="`color: ${kpi.deltaColor}`" x-show="kpi.delta !== undefined && kpi.delta !== null" x-text="formatDelta(kpi.delta)"></div>
         </div>
+        <div class="text-[10.5px] mt-0.5 truncate" style="color: var(--text-3)" x-text="kpi.sub || '\u00a0'"></div>
       </div>
     </template>
   </section>
@@ -360,85 +404,81 @@
 
     <!-- Filter bar -->
     <div class="rounded-lg p-2.5 mb-3 border flex flex-wrap gap-1.5 items-center" style="background: var(--surface); border-color: var(--border)">
+      <span class="chip-group-label">Flags</span>
       <button @click="toggleFlag('HIGH_CONVICTION')"
-              :class="flag === 'HIGH_CONVICTION' ? 'border-emerald-500/40 text-emerald-300' : ''"
-              class="chip border px-2 py-1 transition hover:border-emerald-500/30"
+              :class="flag === 'HIGH_CONVICTION' ? 'border-emerald-500/50 text-emerald-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-emerald-500/40"
               style="border-color: var(--border-2)"
-              x-tooltip="'Show only HIGH CONVICTION names - held by 4+ distinct ETFs (broad consensus)'"
+              x-tooltip="'HIGH CONVICTION - held by 4+ ETFs, with 2+ non-benchmark funds holding it overweight (about 2x equal weight, high in the book) across 2+ strategy tiers. Broad, convinced and independent; holders stay (15% lose one within 30 days vs 27% for a plain 4-fund count).'"
               x-text="`HC ${counts.HIGH_CONVICTION || 0}`"></button>
-      <button @click="toggleFlag('SPECULATIVE_BETA')"
-              :class="flag === 'SPECULATIVE_BETA' ? 'border-amber-500/40 text-amber-300' : ''"
-              class="chip border px-2 py-1 transition hover:border-amber-500/30"
+      <button @click="toggleFlag('CONCENTRATED')"
+              :class="flag === 'CONCENTRATED' ? 'border-orange-400/50 text-orange-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-orange-400/40"
               style="border-color: var(--border-2)"
-              x-tooltip="'Show only SPECULATIVE BETA names - Trend tier momentum without Quality or Scout backing'"
-              x-text="`SPEC β ${counts.SPECULATIVE_BETA || 0}`"></button>
+              x-tooltip="'CONCENTRATED - one fund supplies 85%+ of the conviction mass, or a lone fund holds it at 4x+ equal weight. A risk descriptor, not a buy signal: the score rests on one fund.'"
+              x-text="`CONC ${counts.CONCENTRATED || 0}`"></button>
       <button @click="newOnly = !newOnly"
-              :class="newOnly ? 'border-blue-500/40 text-blue-300' : ''"
-              class="chip border px-2 py-1 transition hover:border-blue-500/30"
+              :class="newOnly ? 'border-blue-500/50 text-blue-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-blue-500/40"
               style="border-color: var(--border-2)"
-              x-tooltip="'Show only NEW entrants - first appearance in any ETF within the last 14 days. Short-horizon signal: strongest within the first week.'"
+              x-tooltip="'NEW - first appearance in an ETF within 14 days. Momentum-exposed: +6% vs peers over 20 days in Feb-May, -2% in the May-Oct momentum unwind.'"
               x-text="`NEW ${counts.NEW || 0}`"></button>
+      <span class="chip-group-label">Signals</span>
       <button @click="burstOnly = !burstOnly"
-              :class="burstOnly ? 'border-purple-500/40 text-purple-300' : ''"
-              class="chip border px-2 py-1 transition hover:border-purple-500/30"
+              :class="burstOnly ? 'border-purple-500/50 text-purple-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-purple-500/40"
               style="border-color: var(--border-2)"
-              x-tooltip="'Show only burst movers - stocks that improved global rank by 40+ in the last 30 days'"
+              x-tooltip="'BURST - smoothed rank improved 1.65x+ (e.g. #250 to #150) over ~2 weeks, now in the top 300, confirmed by a fund ADDING the name. +5.2% vs peers over 20 days in a momentum-friendly market; flat in an unwind.'"
               x-text="`BURST ${counts.BURST || 0}`"></button>
       <button @click="craterOnly = !craterOnly"
-              :class="craterOnly ? 'border-rose-500/40 text-rose-300' : ''"
-              class="chip border px-2 py-1 transition hover:border-rose-500/30"
+              :class="craterOnly ? 'border-rose-500/50 text-rose-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-rose-500/40"
               style="border-color: var(--border-2)"
-              x-tooltip="'Show only crater stocks - stocks that dropped global rank by 40+ in the last 30 days'"
+              x-tooltip="'CRATER - smoothed rank fell 1.35x+ from inside the top 300 over ~4 weeks, confirmed by a fund DROPPING the name. The get-out signal: -1.0% to -2.9% vs peers over 20 days in both regimes.'"
               x-text="`CRATER ${counts.CRATER || 0}`"></button>
-      <button @click="excludeConcentrated = !excludeConcentrated"
-              :class="excludeConcentrated ? 'border-emerald-500/40 text-emerald-300' : ''"
-              class="chip border px-2 py-1 transition hover:border-emerald-500/30"
+      <button @click="fundsDownOnly = !fundsDownOnly; fundsUpOnly = false"
+              :class="fundsDownOnly ? 'border-rose-400/50 text-rose-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-rose-400/40"
               style="border-color: var(--border-2)"
-              x-tooltip="'Hide names where 80%+ of score comes from one ETF'">
-        ≤80% conc
-      </button>
-      <button @click="qualityAdoptedOnly = !qualityAdoptedOnly"
-              :class="qualityAdoptedOnly ? 'border-teal-400/50 text-teal-300' : ''"
-              class="chip border px-2 py-1 transition hover:border-teal-400/40"
+              x-tooltip="'Funds down - a top-200 name lost a holding fund in the last 14 days. The steadiest warning in the data: -2.7% (Feb-May) and -7.0% (May-Oct) vs peers over the next 20 days.'"
+              x-text="`Funds ↓ ${counts.FUNDS_DOWN || 0}`"></button>
+      <button @click="fundsUpOnly = !fundsUpOnly; fundsDownOnly = false"
+              :class="fundsUpOnly ? 'border-emerald-400/50 text-emerald-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-emerald-400/40"
               style="border-color: var(--border-2)"
-              x-tooltip="'Names a Quality ETF (COWZ/CALF/SPHQ) added in the last 30 days - momentum + fundamentals confirmation'"
-              x-text="`Quality+ ${counts.QADD || 0}`"></button>
+              x-tooltip="'Funds up - a top-200 name gained a holding fund in the last 30 days. +6.2% (Feb-May) and +1.5% (May-Oct) vs peers over the next 20 days.'"
+              x-text="`Funds ↑ ${counts.FUNDS_UP || 0}`"></button>
       <button @click="preHcOnly = !preHcOnly"
               :class="preHcOnly ? 'border-emerald-400/50 text-emerald-300' : ''"
               class="chip border px-2 py-1 transition hover:border-emerald-400/40"
               style="border-color: var(--border-2)"
-              x-tooltip="'Pre-HC - held by exactly 3 ETFs with improving per-fund ranks over the last 7 days. One pickup away from HIGH_CONVICTION. Catches names the day before broad consensus.'"
+              x-tooltip="'Pre-HC - one step from HIGH CONVICTION and improving: 3+ holders, 1+ holding it with conviction, 2+ strategy tiers, per-fund ranks and score rising. +7.4% vs peers over 20 days in Feb-May, flat in the unwind.'"
               x-text="`Pre-HC ${counts.PRE_HC || 0}`"></button>
       <button @click="stealthBuyOnly = !stealthBuyOnly"
               :class="stealthBuyOnly ? 'border-fuchsia-400/50 text-fuchsia-300' : ''"
               class="chip border px-2 py-1 transition hover:border-fuchsia-400/40"
               style="border-color: var(--border-2)"
-              x-tooltip="'Stealth Buy - 1-2 funds loading up fast (+10% avg weight in 7d) before ranks catch up. Lonely-buy-before-the-crowd signal.'"
+              x-tooltip="'Stealth - a second independent fund joined the name in the last 14 days (top 500): consensus starting to form. +4.9% (Feb-May) and +1.7% (May-Oct) vs peers over 20 days.'"
               x-text="`Stealth ${counts.STEALTH_BUY || 0}`"></button>
-      <button @click="fundsUpOnly = !fundsUpOnly; fundsDownOnly = false"
-              :class="fundsUpOnly ? 'border-emerald-400/50 text-emerald-300' : ''"
-              class="chip border px-2 py-1 transition hover:border-emerald-400/40"
+      <button @click="qualityAdoptedOnly = !qualityAdoptedOnly"
+              :class="qualityAdoptedOnly ? 'border-teal-400/50 text-teal-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-teal-400/40"
               style="border-color: var(--border-2)"
-              x-tooltip="'Funds ↑ - held by more ETFs than 30 days ago. Net fund adds were the most consistent forward signal in the 2026-10 study (top-200 names that gained a fund: +17% vs peers over the next 20 days in Feb-May; weaker during the May-Oct momentum unwind).'"
-              x-text="`Funds ↑ ${counts.FUNDS_UP || 0}`"></button>
-      <button @click="fundsDownOnly = !fundsDownOnly; fundsUpOnly = false"
-              :class="fundsDownOnly ? 'border-rose-400/50 text-rose-300' : ''"
-              class="chip border px-2 py-1 transition hover:border-rose-400/40"
+              x-tooltip="'Quality+ - a Quality-tier fund (free cash flow / value / profitability) added the name in the last 30 days. A weak but consistent positive in both regimes.'"
+              x-text="`Quality+ ${counts.QADD || 0}`"></button>
+      <span class="chip-group-label">Motion</span>
+      <button @click="surgeOnly = !surgeOnly; slideOnly = false"
+              :class="surgeOnly ? 'border-violet-400/50 text-violet-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-violet-400/40"
               style="border-color: var(--border-2)"
-              x-tooltip="'Funds ↓ - held by fewer ETFs than 30 days ago. The steadiest warning in the 2026-10 study: top-200 names that lost a fund underperformed peers by ~5.5-6% over the next 20 days in BOTH regimes.'"
-              x-text="`Funds ↓ ${counts.FUNDS_DOWN || 0}`"></button>
-      <button @click="toggleFlag('CONCENTRATED')"
-              :class="flag === 'CONCENTRATED' ? 'border-orange-400/50 text-orange-300' : ''"
-              class="chip border px-2 py-1 transition hover:border-orange-400/40"
+              x-tooltip="'SURGE - smoothed rank rose 1.65x+ over ~2 weeks into the top 300 with no fund joining: the price move showing through fund weights. A momentum tag, not a forecast: +2.9% vs peers over 20 days in Feb-May, -2.6% in Jun-Oct. With a fund joining it becomes BURST.'"
+              x-text="`Surge ${counts.SURGE || 0}`"></button>
+      <button @click="slideOnly = !slideOnly; surgeOnly = false"
+              :class="slideOnly ? 'border-rose-300/50 text-rose-200' : ''"
+              class="chip border px-2 py-1 transition hover:border-rose-300/40"
               style="border-color: var(--border-2)"
-              x-tooltip="'CONC - flagged CONCENTRATED: the score rests on a single ETF. Fragile if that fund rebalances.'"
-              x-text="`CONC ${counts.CONCENTRATED || 0}`"></button>
-      <button @click="quantQualityOnly = !quantQualityOnly"
-              :class="quantQualityOnly ? 'border-yellow-400/50 text-yellow-300' : ''"
-              class="chip border px-2 py-1 transition hover:border-yellow-400/40"
-              style="border-color: var(--border-2)"
-              x-tooltip="'Q+Q - held by both Quant (forward-looking) AND Quality (backward-looking) tiers, with recent ETF pickup. Two independent epistemologies agreeing.'"
-              x-text="`Q+Q ${counts.QUANT_QUALITY || 0}`"></button>
+              x-tooltip="'SLIDE - smoothed rank fell 1.65x+ over ~2 weeks from the top 300 with no fund leaving: the price drop showing through fund weights. A momentum tag, not a forecast: -1.7% vs peers over 20 days in Jun-Oct, +0.9% in Feb-May. With a fund leaving it becomes CRATER.'"
+              x-text="`Slide ${counts.SLIDE || 0}`"></button>
       <select x-model="selectedTier" class="chip border px-2 py-1 bg-transparent" style="border-color: var(--border-2)">
         <option value="" style="background: #000">all tiers</option>
         <template x-for="t in ['Scout','Quant','Quality','Trend','Core']" :key="t">
@@ -516,55 +556,40 @@
       </div>
     </div>
 
-    <!-- ── Extreme Conviction Moves ribbon ─────────────────────────────────
-         Surfaces names whose motion metrics are statistically unusual vs the
-         rest of the leaderboard right now. Pure presentation: every value is
-          already in leaderboard.json (score_delta_pct,
-         avg_weight_flow_7d, global_rank_delta_30d). |z| ≥ 2.0 against the
-         leaderboard's own mean/std on each metric; the dominant driver is
-         shown as the headline number.
-
-         Translation to Conviction's thesis: "what's statistically unusual right
-         now" inside the conviction-detection lens - not factor decomposition.
-         Adapted from the peer-product hero strip; restrained palette to match
-         the Drawdowns/Periodic Table calm.
-    -->
-    <div x-show="!hideExtremes && extremeMoves.length >= 3"
-         class="rounded-lg border mb-3" style="background: var(--surface); border-color: var(--border)">
-      <div class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-b" style="border-color: var(--border)">
-        <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span class="text-[10px] uppercase tracking-[0.12em] font-medium" style="color: var(--cyan)">Extreme Conviction Moves</span>
-          <span class="text-[10px]" style="color: var(--text-3)">|z| ≥ 2 vs leaderboard · today's outliers</span>
+    <!-- ── Today's signals ─────────────────────────────────────────────────
+         The validated signals that fire today, split by what they ask of you:
+         warnings (CRATER, Funds ↓) on the left, building (BURST, HC entries,
+         Pre-HC, Stealth) on the right. Replaced the "extreme moves" ribbon,
+         which was driven by deep-board rank churn and carried no edge
+         (docs/SIGNALS_STUDY.md §4). -->
+    <div x-show="!hideSignalStrip && (todaySignals.warn.length || todaySignals.build.length)"
+         class="sig-strip mb-3">
+      <template x-for="side in [{ k: 'warn', title: 'Warnings', tone: 'var(--down)' }, { k: 'build', title: 'Building', tone: 'var(--up)' }]" :key="side.k">
+        <div class="sig-side">
+          <div class="sig-side-head">
+            <span class="chg-dot" :style="`background: ${side.tone}`"></span>
+            <span class="text-[11px] font-semibold text-zinc-200" x-text="side.title"></span>
+            <span class="text-[10px] font-mono" style="color: var(--text-3)" x-text="todaySignals[side.k].length ? `${todaySignals[side.k].length} name${todaySignals[side.k].length === 1 ? '' : 's'}` : ''"></span>
+            <button x-show="side.k === 'build'" @click="hideSignalStrip = true; try { sessionStorage.setItem('conviction.hideSignalStrip', '1') } catch {}"
+                    class="ml-auto text-[10px] hover:text-zinc-300 transition" style="color: var(--text-3)"
+                    x-tooltip="'Hide this strip for the session'">Hide</button>
+          </div>
+          <div class="sig-cards">
+            <template x-for="m in todaySignals[side.k].slice(0, 4)" :key="m.ticker + m.kind">
+              <a :href="`stock.html?t=${encodeURIComponent(m.ticker)}`" class="sig-card" x-tooltip="m.tip">
+                <div class="flex items-center justify-between gap-2 min-w-0">
+                  <span class="font-mono font-semibold text-[12.5px] text-zinc-100 truncate" x-text="m.ticker"></span>
+                  <span class="chip sig-badge shrink-0" :style="m.style" x-text="m.label"></span>
+                </div>
+                <div class="text-[10px] truncate mt-0.5" style="color: var(--text-3)" x-text="m.company"></div>
+                <div class="text-[10.5px] font-mono mt-1" style="color: var(--text-2)" x-text="m.detail"></div>
+              </a>
+            </template>
+            <div x-show="!todaySignals[side.k].length" class="text-[11px] px-1 py-3" style="color: var(--text-3)"
+                 x-text="side.k === 'warn' ? 'No CRATER or fund exits among the top 200 today' : 'No BURST, HC entry, Pre-HC or Stealth names today'"></div>
+          </div>
         </div>
-        <div class="flex items-center gap-2">
-          <span class="text-[10px] num font-mono" style="color: var(--text-3)"
-                x-text="extremeMoves.length > 6 ? `showing 6 of ${extremeMoves.length} outliers` : `${extremeMoves.length} of ${leaderboard.length}`"
-                x-tooltip="extremeMoves.length > 6 ? { html: extremeMoves.slice(6).map(m => `<b>${m.ticker}</b> - ${m.driverDisplay}`).join('<br>') } : ''"></span>
-          <button @click="hideExtremes = true; sessionStorage.setItem('conviction.hideExtremes', '1')"
-                  class="text-[10px] hover:text-zinc-300 transition" style="color: var(--text-3)"
-                  x-tooltip="'Hide this ribbon for the session'">Hide</button>
-        </div>
-      </div>
-      <div class="flex gap-2 p-2.5 overflow-x-auto scrollbar sm:overflow-x-visible">
-        <template x-for="m in extremeMoves.slice(0, 6)" :key="m.ticker">
-          <a :href="`stock.html?t=${encodeURIComponent(m.ticker)}`"
-             class="block rounded-md border px-3 py-2 transition hover:border-cyan-500/40 min-w-[145px] sm:min-w-0 sm:flex-1 shrink-0 sm:shrink"
-             style="background: var(--surface-2); border-color: var(--border-2); text-decoration: none; color: inherit;">
-            <div class="flex items-baseline justify-between gap-1 mb-1 min-w-0">
-              <span class="font-mono font-medium text-[13px] truncate min-w-0" style="color: var(--text)" x-text="m.ticker"></span>
-              <span class="font-mono text-[10px] num truncate min-w-0 shrink-0"
-                    :style="`color: ${m.direction === 'up' ? 'var(--up)' : 'var(--down)'}`"
-                    x-text="(m.direction === 'up' ? '▲ ' : '▼ ') + m.driverDisplay"></span>
-            </div>
-            <div class="text-[10px] truncate mb-1.5" style="color: var(--text-3)" x-text="m.company || '–'"></div>
-            <div class="flex items-center justify-between gap-2 text-[9px]" style="color: var(--text-3)">
-              <span class="font-mono num" x-tooltip="`Z-score on ${m.driverLabel} vs leaderboard distribution. |z| ≥ 2 = unusual.`"
-                    x-text="`|z|=${m.absZ.toFixed(1)}`"></span>
-              <span class="truncate min-w-0" :title="m.context" x-text="m.context"></span>
-            </div>
-          </a>
-        </template>
-      </div>
+      </template>
     </div>
 
     <!-- Main table -->
@@ -601,16 +626,16 @@
                   x-tooltip="'Net ETF positions added or lost over the last 30 days - breadth of conviction flow.'">Δ Funds</th>
               <th @click="sort('burst_score')" :class="sortClass('burst_score')"
                   class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell whitespace-nowrap"
-                  x-tooltip="'Burst - 30-day peak rank improvement. Shows rapid upward rank acceleration.'">Burst</th>
+                  x-tooltip="'BURST - smoothed-rank positions gained while the signal is in force (fund-confirmed). Blank when not bursting.'">Burst</th>
               <th @click="sort('crater_score')" :class="sortClass('crater_score')"
                   class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell whitespace-nowrap"
-                  x-tooltip="'Crater - 30-day peak rank drop. Shows rapid downward rank acceleration.'">Crater</th>
+                  x-tooltip="'CRATER - smoothed-rank positions lost while the signal is in force (a fund exited). Blank when not cratering.'">Crater</th>
               <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden md:table-cell" @click="sort('etf_count')" :class="sortClass('etf_count')" x-tooltip="'Count of ETFs holding this ticker. Suffix shows net ETFs added/lost in 30d.'">ETFs</th>
               <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell" @click="sort('total_weight')" :class="sortClass('total_weight')" x-tooltip="'Sum of position weights across all ETFs holding this name.'">Weight</th>
               <th class="text-left px-2 py-2 hidden xl:table-cell" x-tooltip="{html:'Tiers represented. <b>Scout</b>=spinoffs/IPOs · <b>Quant</b>=factor momentum · <b>Quality</b>=FCF/profit · <b>Trend</b>=momentum · <b>Core</b>=mega-cap'}">Strategies</th>
               <th class="text-center px-3 py-2 hidden md:table-cell" x-tooltip="'Consecutive days the score moved in the same direction (▲ up · ▼ down).'">Streak</th>
               <th class="text-left px-3 py-2 hidden xl:table-cell" x-tooltip="'Today\'s score as a percentile of this ticker\'s own score history in the past 60 days.'">Level</th>
-              <th class="text-left px-2 py-2" x-tooltip="{html:'Priority-ordered signal stack (top 2 shown, +n = hover for full list)<br><b>HC</b> = held by 4+ ETFs · <b>BURST</b> = +40 ranks in 30d · <b>CRATER</b> = −40 ranks in 30d · <b>Q+</b> = Quality ETF added 30d · <b>PRE-HC</b> = 3 ETFs, ranks improving · <b>SBUY</b> = 1-2 funds loading · <b>CONC</b> = concentrated conviction · <b>SPEC β</b> = Trend without Quality/Scout · <b>NEW</b> = first appearance within 14d'}">Flag</th>
+              <th class="text-left px-2 py-2" x-tooltip="{html:'Priority-ordered signal stack (top 2 shown, +n = hover for full list)<br><b>HC</b> = 4+ ETFs, 2+ overweight, 2+ tiers · <b>BURST</b> = smoothed rank ×1.65 better + fund added · <b>CRATER</b> = smoothed rank ×1.35 worse over ~4 weeks + fund dropped · <b>SURGE / SLIDE</b> = smoothed rank ×1.65 better / worse in ~2 weeks, no fund change (momentum, not a forecast) · <b>FUNDS ↓/↑</b> = top-200 name lost a fund in 14d / gained one in 30d · <b>PRE-HC</b> = one step from HC, improving · <b>STEALTH</b> = a 2nd fund just joined · <b>Q+</b> = Quality fund added in 30d · <b>CONC</b> = rests on one fund · <b>NEW</b> = first appearance within 14d'}">Flag</th>
             </tr>
           </thead>
           <template x-for="row in paged" :key="row.ticker">
@@ -634,7 +659,7 @@
                   </td>
                   <td class="px-3 py-2 hidden sm:table-cell truncate max-w-[220px]" :title="row.company || row.ticker" style="color: var(--text-2)" x-text="row.company || row.ticker"></td>
                   <td class="px-2 py-2 text-right num font-mono font-medium"
-                      x-tooltip="`Score: ${fmt1(row.final_score)}<br>Percentile: ${row.normalized_score != null ? row.normalized_score.toFixed(0) : '-'}/100<br>Concentration: ${row.concentration_score != null ? row.concentration_score : '-'}% from top ETF<br>${row.concentration_score == null ? 'No data' : row.concentration_score < 40 ? 'Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : 'Highly concentrated - fragile if top ETF rebalances'}`"
+                      x-tooltip="`Score: ${fmt1(row.final_score)}<br>Percentile of own history: ${row.score_percentile != null ? Math.round(row.score_percentile * 100) + '%' : '-'}<br>Top fund: ${row.concentration_score != null ? row.concentration_score : '-'}% of conviction mass<br>${row.concentration_score == null ? 'No data' : row.concentration_score >= 85 ? 'CONCENTRATED - the score rests on one fund' : row.concentration_score >= 60 ? 'Led by one fund' : 'Spread across funds'}`"
                       x-text="fmt1(row.final_score)"></td>
                   <td class="px-2 py-2 text-center num font-mono hidden lg:table-cell" :style="`color: ${flowColor(activeDeltaValue(row))}`" x-text="fmtPct(activeDeltaValue(row))"></td>
                   <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell"
@@ -643,13 +668,13 @@
                           :style="`color: ${(row.etf_count_delta_30d || 0) > 0 ? 'var(--up)' : (row.etf_count_delta_30d || 0) < 0 ? 'var(--down)' : 'var(--text-3)'}`"></span>
                   </td>
                   <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell"
-                      x-tooltip="row.burst_30d ? `Burst: +${row.global_rank_peak_30d} ranks peak improvement in 30d` : 'No burst signal'">
-                    <span x-show="row.burst_30d" class="font-mono text-[10px] font-semibold" style="color: #c084fc" x-text="`+${row.global_rank_peak_30d}`"></span>
+                      x-tooltip="row.burst_30d ? `Burst: #${row.motion_rank_then} → #${row.motion_rank_then - row.burst_rank_gain} (smoothed) · funds +${row.motion_funds_delta}` : 'No burst signal'">
+                    <span x-show="row.burst_30d" class="font-mono text-[10px] font-semibold" style="color: #c084fc" x-text="`+${row.burst_rank_gain}`"></span>
                     <span x-show="!row.burst_30d" class="text-[10px]" style="color: var(--text-3)">–</span>
                   </td>
                   <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell"
-                      x-tooltip="row.crater_30d ? `Crater: -${row.global_rank_drop_30d} ranks peak drop in 30d` : 'No crater signal'">
-                    <span x-show="row.crater_30d" class="font-mono text-[10px] font-semibold" style="color: #f87171" x-text="`-${row.global_rank_drop_30d}`"></span>
+                      x-tooltip="row.crater_30d ? `Crater: #${row.motion_rank_then} → #${row.motion_rank_then + row.crater_rank_loss} (smoothed) · funds ${row.motion_funds_delta}` : 'No crater signal'">
+                    <span x-show="row.crater_30d" class="font-mono text-[10px] font-semibold" style="color: #f87171" x-text="`-${row.crater_rank_loss}`"></span>
                     <span x-show="!row.crater_30d" class="text-[10px]" style="color: var(--text-3)">–</span>
                   </td>
                   <td class="px-2 py-2 text-right num font-mono hidden md:table-cell"
@@ -812,7 +837,7 @@
                                 <th class="text-right py-1.5 pr-3 label">Flow</th>
                                 <th class="text-right py-1.5 pr-3 label">Score</th>
                                 <th class="text-left py-1.5 label cursor-help"
-                                    x-tooltip="{html: '<b>STATUS</b> column:<br><b>NEW</b> = first appeared in this ETF within 14 days<br><b>HC</b> = held by 4+ ETFs overall<br><b>-</b> = no special flag'}">Flags</th>
+                                    x-tooltip="{html: '<b>STATUS</b> column:<br><b>NEW</b> = first appeared in this ETF within 14 days<br><b>HC</b> = HIGH_CONVICTION (4+ ETFs, 2+ overweight, 2+ tiers)<br><b>-</b> = no special flag'}">Flags</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -1083,85 +1108,81 @@
     <div x-show="pins.length > 0">
       <!-- Filter bar (same as leaderboard) -->
       <div class="rounded-lg p-2.5 mb-3 border flex flex-wrap gap-1.5 items-center" style="background: var(--surface); border-color: var(--border)">
+        <span class="chip-group-label">Flags</span>
         <button @click="toggleFlag('HIGH_CONVICTION')"
-                :class="flag === 'HIGH_CONVICTION' ? 'border-emerald-500/40 text-emerald-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-emerald-500/30"
+                :class="flag === 'HIGH_CONVICTION' ? 'border-emerald-500/50 text-emerald-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-emerald-500/40"
                 style="border-color: var(--border-2)"
-                x-tooltip="'Show only HIGH CONVICTION names - held by 4+ distinct ETFs (broad consensus)'"
+                x-tooltip="'HIGH CONVICTION - held by 4+ ETFs, with 2+ non-benchmark funds holding it overweight (about 2x equal weight, high in the book) across 2+ strategy tiers. Broad, convinced and independent; holders stay (15% lose one within 30 days vs 27% for a plain 4-fund count).'"
                 x-text="`HC ${counts.HIGH_CONVICTION || 0}`"></button>
-        <button @click="toggleFlag('SPECULATIVE_BETA')"
-                :class="flag === 'SPECULATIVE_BETA' ? 'border-amber-500/40 text-amber-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-amber-500/30"
+        <button @click="toggleFlag('CONCENTRATED')"
+                :class="flag === 'CONCENTRATED' ? 'border-orange-400/50 text-orange-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-orange-400/40"
                 style="border-color: var(--border-2)"
-                x-tooltip="'Show only SPECULATIVE BETA names - Trend tier momentum without Quality or Scout backing'"
-                x-text="`SPEC β ${counts.SPECULATIVE_BETA || 0}`"></button>
+                x-tooltip="'CONCENTRATED - one fund supplies 85%+ of the conviction mass, or a lone fund holds it at 4x+ equal weight. A risk descriptor, not a buy signal: the score rests on one fund.'"
+                x-text="`CONC ${counts.CONCENTRATED || 0}`"></button>
         <button @click="newOnly = !newOnly"
-                :class="newOnly ? 'border-blue-500/40 text-blue-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-blue-500/30"
+                :class="newOnly ? 'border-blue-500/50 text-blue-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-blue-500/40"
                 style="border-color: var(--border-2)"
-                x-tooltip="'Show only NEW entrants - first appearance in any ETF within the last 14 days'"
+                x-tooltip="'NEW - first appearance in an ETF within 14 days. Momentum-exposed: +6% vs peers over 20 days in Feb-May, -2% in the May-Oct momentum unwind.'"
                 x-text="`NEW ${counts.NEW || 0}`"></button>
+        <span class="chip-group-label">Signals</span>
         <button @click="burstOnly = !burstOnly"
-                :class="burstOnly ? 'border-purple-500/40 text-purple-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-purple-500/30"
+                :class="burstOnly ? 'border-purple-500/50 text-purple-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-purple-500/40"
                 style="border-color: var(--border-2)"
-                x-tooltip="'Show only burst movers - stocks that improved global rank by 40+ in the last 30 days'"
+                x-tooltip="'BURST - smoothed rank improved 1.65x+ (e.g. #250 to #150) over ~2 weeks, now in the top 300, confirmed by a fund ADDING the name. +5.2% vs peers over 20 days in a momentum-friendly market; flat in an unwind.'"
                 x-text="`BURST ${counts.BURST || 0}`"></button>
         <button @click="craterOnly = !craterOnly"
-                :class="craterOnly ? 'border-rose-500/40 text-rose-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-rose-500/30"
+                :class="craterOnly ? 'border-rose-500/50 text-rose-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-rose-500/40"
                 style="border-color: var(--border-2)"
-                x-tooltip="'Show only crater stocks - stocks that dropped global rank by 40+ in the last 30 days'"
+                x-tooltip="'CRATER - smoothed rank fell 1.35x+ from inside the top 300 over ~4 weeks, confirmed by a fund DROPPING the name. The get-out signal: -1.0% to -2.9% vs peers over 20 days in both regimes.'"
                 x-text="`CRATER ${counts.CRATER || 0}`"></button>
-        <button @click="excludeConcentrated = !excludeConcentrated"
-                :class="excludeConcentrated ? 'border-emerald-500/40 text-emerald-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-emerald-500/30"
+        <button @click="fundsDownOnly = !fundsDownOnly; fundsUpOnly = false"
+                :class="fundsDownOnly ? 'border-rose-400/50 text-rose-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-rose-400/40"
                 style="border-color: var(--border-2)"
-                x-tooltip="'Hide names where 80%+ of score comes from one ETF'">
-          ≤80% conc
-        </button>
-        <button @click="qualityAdoptedOnly = !qualityAdoptedOnly"
-                :class="qualityAdoptedOnly ? 'border-teal-400/50 text-teal-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-teal-400/40"
+                x-tooltip="'Funds down - a top-200 name lost a holding fund in the last 14 days. The steadiest warning in the data: -2.7% (Feb-May) and -7.0% (May-Oct) vs peers over the next 20 days.'"
+                x-text="`Funds ↓ ${counts.FUNDS_DOWN || 0}`"></button>
+        <button @click="fundsUpOnly = !fundsUpOnly; fundsDownOnly = false"
+                :class="fundsUpOnly ? 'border-emerald-400/50 text-emerald-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-emerald-400/40"
                 style="border-color: var(--border-2)"
-                x-tooltip="'Names a Quality ETF (COWZ/CALF/SPHQ) added in the last 30 days'"
-                x-text="`Quality+ ${counts.QADD || 0}`"></button>
+                x-tooltip="'Funds up - a top-200 name gained a holding fund in the last 30 days. +6.2% (Feb-May) and +1.5% (May-Oct) vs peers over the next 20 days.'"
+                x-text="`Funds ↑ ${counts.FUNDS_UP || 0}`"></button>
         <button @click="preHcOnly = !preHcOnly"
                 :class="preHcOnly ? 'border-emerald-400/50 text-emerald-300' : ''"
                 class="chip border px-2 py-1 transition hover:border-emerald-400/40"
                 style="border-color: var(--border-2)"
-                x-tooltip="'Pre-HC - 3 ETFs with improving per-fund ranks over 7d, one pickup away from HC'"
+                x-tooltip="'Pre-HC - one step from HIGH CONVICTION and improving: 3+ holders, 1+ holding it with conviction, 2+ strategy tiers, per-fund ranks and score rising. +7.4% vs peers over 20 days in Feb-May, flat in the unwind.'"
                 x-text="`Pre-HC ${counts.PRE_HC || 0}`"></button>
         <button @click="stealthBuyOnly = !stealthBuyOnly"
                 :class="stealthBuyOnly ? 'border-fuchsia-400/50 text-fuchsia-300' : ''"
                 class="chip border px-2 py-1 transition hover:border-fuchsia-400/40"
                 style="border-color: var(--border-2)"
-                x-tooltip="'Stealth Buy - 1-2 funds loading up fast (+10% avg weight in 7d) before ranks catch up'"
+                x-tooltip="'Stealth - a second independent fund joined the name in the last 14 days (top 500): consensus starting to form. +4.9% (Feb-May) and +1.7% (May-Oct) vs peers over 20 days.'"
                 x-text="`Stealth ${counts.STEALTH_BUY || 0}`"></button>
-        <button @click="fundsUpOnly = !fundsUpOnly; fundsDownOnly = false"
-                :class="fundsUpOnly ? 'border-emerald-400/50 text-emerald-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-emerald-400/40"
+        <button @click="qualityAdoptedOnly = !qualityAdoptedOnly"
+                :class="qualityAdoptedOnly ? 'border-teal-400/50 text-teal-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-teal-400/40"
                 style="border-color: var(--border-2)"
-                x-tooltip="'Funds ↑ - held by more ETFs than 30 days ago (net fund adds)'"
-                x-text="`Funds ↑ ${counts.FUNDS_UP || 0}`"></button>
-        <button @click="fundsDownOnly = !fundsDownOnly; fundsUpOnly = false"
-                :class="fundsDownOnly ? 'border-rose-400/50 text-rose-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-rose-400/40"
+                x-tooltip="'Quality+ - a Quality-tier fund (free cash flow / value / profitability) added the name in the last 30 days. A weak but consistent positive in both regimes.'"
+                x-text="`Quality+ ${counts.QADD || 0}`"></button>
+        <span class="chip-group-label">Motion</span>
+        <button @click="surgeOnly = !surgeOnly; slideOnly = false"
+                :class="surgeOnly ? 'border-violet-400/50 text-violet-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-violet-400/40"
                 style="border-color: var(--border-2)"
-                x-tooltip="'Funds ↓ - held by fewer ETFs than 30 days ago (net fund exits; steadiest downside warning)'"
-                x-text="`Funds ↓ ${counts.FUNDS_DOWN || 0}`"></button>
-        <button @click="toggleFlag('CONCENTRATED')"
-                :class="flag === 'CONCENTRATED' ? 'border-orange-400/50 text-orange-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-orange-400/40"
+                x-tooltip="'SURGE - smoothed rank rose 1.65x+ over ~2 weeks into the top 300 with no fund joining: the price move showing through fund weights. A momentum tag, not a forecast: +2.9% vs peers over 20 days in Feb-May, -2.6% in Jun-Oct. With a fund joining it becomes BURST.'"
+                x-text="`Surge ${counts.SURGE || 0}`"></button>
+        <button @click="slideOnly = !slideOnly; surgeOnly = false"
+                :class="slideOnly ? 'border-rose-300/50 text-rose-200' : ''"
+                class="chip border px-2 py-1 transition hover:border-rose-300/40"
                 style="border-color: var(--border-2)"
-                x-tooltip="'CONC - flagged CONCENTRATED: score rests on a single ETF'"
-                x-text="`CONC ${counts.CONCENTRATED || 0}`"></button>
-        <button @click="quantQualityOnly = !quantQualityOnly"
-                :class="quantQualityOnly ? 'border-yellow-400/50 text-yellow-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-yellow-400/40"
-                style="border-color: var(--border-2)"
-                x-tooltip="'Q+Q - both Quant and Quality tiers + recent pickup'"
-                x-text="`Q+Q ${counts.QUANT_QUALITY || 0}`"></button>
+                x-tooltip="'SLIDE - smoothed rank fell 1.65x+ over ~2 weeks from the top 300 with no fund leaving: the price drop showing through fund weights. A momentum tag, not a forecast: -1.7% vs peers over 20 days in Jun-Oct, +0.9% in Feb-May. With a fund leaving it becomes CRATER.'"
+                x-text="`Slide ${counts.SLIDE || 0}`"></button>
         <select x-model="selectedTier" class="chip border px-2 py-1 bg-transparent" style="border-color: var(--border-2)">
           <option value="" style="background: #000">all tiers</option>
           <template x-for="t in ['Scout','Quant','Quality','Trend','Core']" :key="t">
@@ -1219,16 +1240,16 @@
                     x-tooltip="'Net ETF positions added or lost over the last 30 days - breadth of conviction flow.'">Δ Funds</th>
                 <th @click="sort('burst_score')" :class="sortClass('burst_score')"
                     class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell whitespace-nowrap"
-                    x-tooltip="'Burst - 30-day peak rank improvement. Shows rapid upward rank acceleration.'">Burst</th>
+                    x-tooltip="'BURST - smoothed-rank positions gained while the signal is in force (fund-confirmed). Blank when not bursting.'">Burst</th>
                 <th @click="sort('crater_score')" :class="sortClass('crater_score')"
                     class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell whitespace-nowrap"
-                    x-tooltip="'Crater - 30-day peak rank drop. Shows rapid downward rank acceleration.'">Crater</th>
+                    x-tooltip="'CRATER - smoothed-rank positions lost while the signal is in force (a fund exited). Blank when not cratering.'">Crater</th>
                 <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden md:table-cell" @click="sort('etf_count')" :class="sortClass('etf_count')" x-tooltip="'Count of ETFs holding this ticker. Suffix shows net ETFs added/lost in 30d.'">ETFs</th>
                 <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell" @click="sort('total_weight')" :class="sortClass('total_weight')" x-tooltip="'Sum of position weights across all ETFs holding this name.'">Weight</th>
                 <th class="text-left px-2 py-2 hidden xl:table-cell" x-tooltip="{html:'Tiers represented. <b>Scout</b>=spinoffs/IPOs · <b>Quant</b>=factor momentum · <b>Quality</b>=FCF/profit · <b>Trend</b>=momentum · <b>Core</b>=mega-cap'}">Strategies</th>
                 <th class="text-center px-3 py-2 hidden md:table-cell" x-tooltip="'Consecutive days the score moved in the same direction (▲ up · ▼ down).'">Streak</th>
                 <th class="text-left px-3 py-2 hidden xl:table-cell" x-tooltip="'Today\'s score as a percentile of this ticker\'s own score history in the past 60 days.'">Level</th>
-                <th class="text-left px-2 py-2" x-tooltip="{html:'Priority-ordered signal stack (top 2 shown, +n = hover for full list)<br><b>HC</b> = held by 4+ ETFs · <b>BURST</b> = +40 ranks in 30d · <b>CRATER</b> = −40 ranks in 30d · <b>Q+</b> = Quality ETF added 30d · <b>PRE-HC</b> = 3 ETFs, ranks improving · <b>SBUY</b> = 1-2 funds loading · <b>CONC</b> = concentrated conviction · <b>SPEC β</b> = Trend without Quality/Scout · <b>NEW</b> = first appearance within 14d'}">Flag</th>
+                <th class="text-left px-2 py-2" x-tooltip="{html:'Priority-ordered signal stack (top 2 shown, +n = hover for full list)<br><b>HC</b> = 4+ ETFs, 2+ overweight, 2+ tiers · <b>BURST</b> = smoothed rank ×1.65 better + fund added · <b>CRATER</b> = smoothed rank ×1.35 worse over ~4 weeks + fund dropped · <b>SURGE / SLIDE</b> = smoothed rank ×1.65 better / worse in ~2 weeks, no fund change (momentum, not a forecast) · <b>FUNDS ↓/↑</b> = top-200 name lost a fund in 14d / gained one in 30d · <b>PRE-HC</b> = one step from HC, improving · <b>STEALTH</b> = a 2nd fund just joined · <b>Q+</b> = Quality fund added in 30d · <b>CONC</b> = rests on one fund · <b>NEW</b> = first appearance within 14d'}">Flag</th>
               </tr>
             </thead>
             <template x-for="row in paged" :key="row.ticker">
@@ -1252,7 +1273,7 @@
                     </td>
                     <td class="px-3 py-2 hidden sm:table-cell truncate max-w-[220px]" :title="row.company || row.ticker" style="color: var(--text-2)" x-text="row.company || row.ticker"></td>
                     <td class="px-2 py-2 text-right num font-mono font-medium"
-                        x-tooltip="`Score: ${fmt1(row.final_score)}<br>Percentile: ${row.normalized_score != null ? row.normalized_score.toFixed(0) : '-'}/100<br>Concentration: ${row.concentration_score != null ? row.concentration_score : '-'}% from top ETF<br>${row.concentration_score == null ? 'No data' : row.concentration_score < 40 ? 'Well-diversified across ETFs' : row.concentration_score < 70 ? 'Moderate concentration' : 'Highly concentrated - fragile if top ETF rebalances'}`"
+                        x-tooltip="`Score: ${fmt1(row.final_score)}<br>Percentile of own history: ${row.score_percentile != null ? Math.round(row.score_percentile * 100) + '%' : '-'}<br>Top fund: ${row.concentration_score != null ? row.concentration_score : '-'}% of conviction mass<br>${row.concentration_score == null ? 'No data' : row.concentration_score >= 85 ? 'CONCENTRATED - the score rests on one fund' : row.concentration_score >= 60 ? 'Led by one fund' : 'Spread across funds'}`"
                         x-text="fmt1(row.final_score)"></td>
                     <td class="px-2 py-2 text-center num font-mono hidden lg:table-cell" :style="`color: ${flowColor(activeDeltaValue(row))}`" x-text="fmtPct(activeDeltaValue(row))"></td>
                     <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell"
@@ -1261,13 +1282,13 @@
                             :style="`color: ${(row.etf_count_delta_30d || 0) > 0 ? 'var(--up)' : (row.etf_count_delta_30d || 0) < 0 ? 'var(--down)' : 'var(--text-3)'}`"></span>
                     </td>
                     <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell"
-                        x-tooltip="row.burst_30d ? `Burst: +${row.global_rank_peak_30d} ranks peak improvement in 30d` : 'No burst signal'">
-                      <span x-show="row.burst_30d" class="font-mono text-[10px] font-semibold" style="color: #c084fc" x-text="`+${row.global_rank_peak_30d}`"></span>
+                        x-tooltip="row.burst_30d ? `Burst: #${row.motion_rank_then} → #${row.motion_rank_then - row.burst_rank_gain} (smoothed) · funds +${row.motion_funds_delta}` : 'No burst signal'">
+                      <span x-show="row.burst_30d" class="font-mono text-[10px] font-semibold" style="color: #c084fc" x-text="`+${row.burst_rank_gain}`"></span>
                       <span x-show="!row.burst_30d" class="text-[10px]" style="color: var(--text-3)">–</span>
                     </td>
                     <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell"
-                        x-tooltip="row.crater_30d ? `Crater: -${row.global_rank_drop_30d} ranks peak drop in 30d` : 'No crater signal'">
-                      <span x-show="row.crater_30d" class="font-mono text-[10px] font-semibold" style="color: #f87171" x-text="`-${row.global_rank_drop_30d}`"></span>
+                        x-tooltip="row.crater_30d ? `Crater: #${row.motion_rank_then} → #${row.motion_rank_then + row.crater_rank_loss} (smoothed) · funds ${row.motion_funds_delta}` : 'No crater signal'">
+                      <span x-show="row.crater_30d" class="font-mono text-[10px] font-semibold" style="color: #f87171" x-text="`-${row.crater_rank_loss}`"></span>
                       <span x-show="!row.crater_30d" class="text-[10px]" style="color: var(--text-3)">–</span>
                     </td>
                     <td class="px-2 py-2 text-right num font-mono hidden md:table-cell"
@@ -1433,7 +1454,7 @@
                                   <th class="text-right py-2.5 px-3 label">Flow</th>
                                   <th class="text-right py-2.5 px-3 label">Score</th>
                                   <th class="text-left py-2.5 px-3 label cursor-help"
-                                      x-tooltip="{html: '<b>STATUS</b> column:<br><b>NEW</b> = first appeared in this ETF within 14 days<br><b>HC</b> = held by 4+ ETFs overall<br><b>-</b> = no special flag'}">Flags</th>
+                                      x-tooltip="{html: '<b>STATUS</b> column:<br><b>NEW</b> = first appeared in this ETF within 14 days<br><b>HC</b> = HIGH_CONVICTION (4+ ETFs, 2+ overweight, 2+ tiers)<br><b>-</b> = no special flag'}">Flags</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -2086,653 +2107,106 @@
 
   <!-- ═════════════ TAB 3: CHANGES ════════════════════════════════════════ -->
   <section x-show="activeTab === 'changes'">
-    <!-- Tab-level Header Strip (Sticky glassmorphic header strip) -->
-    <div class="sticky top-0 z-30 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-3 py-2.5 mb-3 text-xs backdrop-blur-sm border-b" style="background: rgba(12, 12, 12, 0.92); border-color: var(--border); box-shadow: 0 2px 12px rgba(0,0,0,0.4); margin-left: -1px; margin-right: -1px;">
-      <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-        <div class="font-mono font-semibold text-zinc-100" x-text="`Changes - ${changelog.today || '-'} vs ${changesPeriodTargetDate || '-'}`"></div>
-        <!-- Summary capsule badges showing key counts at a glance -->
-        <div class="flex items-center gap-1.5 flex-wrap text-[10px] text-zinc-400">
-          <span class="bg-white/[0.03] border border-white/[0.04] px-1.5 py-0.5 rounded-full select-none cursor-help"
-                x-tooltip="'Names with the largest conviction score increases over the selected period (min 2 ETFs)'"
-                x-text="`+${dynamicScoreGainers.length} gainers`"></span>
-          <span class="bg-white/[0.03] border border-white/[0.04] px-1.5 py-0.5 rounded-full select-none cursor-help"
-                x-tooltip="'Names with the largest conviction score decreases over the selected period (min 2 ETFs)'"
-                x-text="`-${dynamicScoreLosers.length} losers`"></span>
-          <span class="bg-white/[0.03] border border-white/[0.04] px-1.5 py-0.5 rounded-full select-none cursor-help"
-                x-tooltip="'Burst movers - global rank improved by 40+ positions in the last 30 days'"
-                x-text="`${activeSignalCounts.burst} bursts`"></span>
-          <span class="bg-white/[0.03] border border-white/[0.04] px-1.5 py-0.5 rounded-full select-none cursor-help"
-                x-tooltip="'New entrants - first appearance in any mature ETF within the last 14 days'"
-                x-text="`${changelog.new_entrants?.length || 0} new`"></span>
-          <span class="bg-white/[0.03] border border-white/[0.04] px-1.5 py-0.5 rounded-full select-none cursor-help"
-                x-tooltip="'High Conviction entries and exits versus the prior trading day'"
-                x-text="`${(changelog.entered_hc?.length || 0) + (changelog.exited_hc?.length || 0)} HC`"></span>
-        </div>
+    <!-- Header: what is being compared, and the lookback -->
+    <div class="sticky top-0 z-30 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-3 py-2.5 mb-3 backdrop-blur-sm border-b" style="background: rgba(12, 12, 12, 0.92); border-color: var(--border); margin-left: -1px; margin-right: -1px;">
+      <div class="min-w-0">
+        <div class="text-[13px] font-semibold text-zinc-100">What changed</div>
+        <div class="text-[11px] font-mono" style="color: var(--text-3)" x-text="changesSinceLabel"></div>
       </div>
-      <div class="flex items-center gap-3 shrink-0 overflow-x-auto max-w-full">
-        <!-- Changes Lookback Period Picker -->
-        <div class="flex border rounded overflow-x-auto scrollbar max-w-full" style="border-color: rgba(255,255,255,0.08); background: rgba(0,0,0,0.25)">
-          <template x-for="p in [1,7,14,30,60,90,'YTD']" :key="p">
-            <button @click="setChangesPeriod(p)"
-                    :style="_changesPeriodActive === p ? 'background: rgba(34,211,238,0.15); color: var(--cyan);' : 'color: rgba(255,255,255,0.45);'"
-                    class="px-2.5 py-1 text-[10px] font-mono leading-none hover:text-zinc-300 transition cursor-pointer select-none"
-                    x-text="p === 'YTD' ? 'YTD' : p + 'd'"></button>
-          </template>
-        </div>
-      </div>
-    </div>
-
-    <!-- Section 1: Score Movers - Biggest Gainers & Losers (Side by side) -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
-      <!-- Biggest Gainers -->
-      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
-          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg> Biggest Score Gainers
-            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">GAINERS</span>
-            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
-          </div>
-          <div class="text-[10px] font-mono text-zinc-500" x-text="`Max 15 rows · &ge;2 ETFs`"></div>
-        </div>
-        <div class="overflow-x-auto scrollbar">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04] select-none">
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('gainers', 'leaderboard_rank')" :class="changesSortClass('gainers', 'leaderboard_rank')">#</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('gainers', 'ticker')" :class="changesSortClass('gainers', 'ticker')">Ticker</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 hidden sm:table-cell" @click="sortChangesTable('gainers', 'company')" :class="changesSortClass('gainers', 'company')">Company</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('gainers', 'etf_count')" :class="changesSortClass('gainers', 'etf_count')">ETFs</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('gainers', 'score_delta')" :class="changesSortClass('gainers', 'score_delta')">Δ%</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('gainers', 'final_score')" :class="changesSortClass('gainers', 'final_score')">Score</th>
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-center" @click="sortChangesTable('gainers', 'score_streak')" :class="changesSortClass('gainers', 'score_streak')">Streak</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="r in dynamicScoreGainers" :key="r.ticker">
-                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
-                    @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
-                  <td class="px-3 py-2 font-mono text-zinc-400" x-text="r.leaderboard_rank"></td>
-                  <td class="px-2 py-2 font-mono font-medium text-zinc-200">
-                    <div class="flex items-center gap-1.5">
-                      <span x-text="r.ticker"></span>
-                      <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
-                        <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
-                              x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
-                      </template>
-                    </div>
-                  </td>
-                  <td class="px-2 py-2 text-zinc-400 truncate hidden sm:table-cell max-w-[150px]" x-text="r.company"></td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-400" x-text="r.etf_count"></td>
-                  <td class="px-2 py-2 text-right font-mono font-semibold" :style="`color: ${flowColor(r.score_deltas_by_period[String(changesPeriod)])}`"
-                      x-text="fmtPct(r.score_deltas_by_period[String(changesPeriod)])"></td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
-                  <td class="px-3 py-2 text-center font-mono text-[10px]" :style="`color: ${streakColor(r.score_streak)}`"
-                      x-text="r.score_streak ? fmtStreak(r.score_streak) : '—'"></td>
-                </tr>
-              </template>
-              <tr x-show="dynamicScoreGainers.length === 0">
-                <td colspan="7" class="px-3 py-6 text-center text-zinc-500 italic select-none">No gainers detected in this period</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Biggest Losers -->
-      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
-          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <svg class="w-3.5 h-3.5 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg> Biggest Score Losers
-            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">LOSERS</span>
-            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
-          </div>
-          <div class="text-[10px] font-mono text-zinc-500" x-text="`Max 15 rows · &ge;2 ETFs`"></div>
-        </div>
-        <div class="overflow-x-auto scrollbar">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04] select-none">
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('losers', 'leaderboard_rank')" :class="changesSortClass('losers', 'leaderboard_rank')">#</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('losers', 'ticker')" :class="changesSortClass('losers', 'ticker')">Ticker</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 hidden sm:table-cell" @click="sortChangesTable('losers', 'company')" :class="changesSortClass('losers', 'company')">Company</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('losers', 'etf_count')" :class="changesSortClass('losers', 'etf_count')">ETFs</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('losers', 'score_delta')" :class="changesSortClass('losers', 'score_delta')">Δ%</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('losers', 'final_score')" :class="changesSortClass('losers', 'final_score')">Score</th>
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-center" @click="sortChangesTable('losers', 'score_streak')" :class="changesSortClass('losers', 'score_streak')">Streak</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="r in dynamicScoreLosers" :key="r.ticker">
-                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
-                    @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
-                  <td class="px-3 py-2 font-mono text-zinc-400" x-text="r.leaderboard_rank"></td>
-                  <td class="px-2 py-2 font-mono font-medium text-zinc-200">
-                    <div class="flex items-center gap-1.5">
-                      <span x-text="r.ticker"></span>
-                      <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
-                        <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
-                              x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
-                      </template>
-                    </div>
-                  </td>
-                  <td class="px-2 py-2 text-zinc-400 truncate hidden sm:table-cell max-w-[150px]" x-text="r.company"></td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-400" x-text="r.etf_count"></td>
-                  <td class="px-2 py-2 text-right font-mono font-semibold" :style="`color: ${flowColor(r.score_deltas_by_period[String(changesPeriod)])}`"
-                      x-text="fmtPct(r.score_deltas_by_period[String(changesPeriod)])"></td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
-                  <td class="px-3 py-2 text-center font-mono text-[10px]" :style="`color: ${streakColor(r.score_streak)}`"
-                      x-text="r.score_streak ? fmtStreak(r.score_streak) : '—'"></td>
-                </tr>
-              </template>
-              <tr x-show="dynamicScoreLosers.length === 0">
-                <td colspan="7" class="px-3 py-6 text-center text-zinc-500 italic select-none">No losers detected in this period</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Section 2: Rank Movers (Climbers & Fallers) - period-aware -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
-      <!-- Rank Climbers -->
-      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
-          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg> Biggest Rank Climbers
-            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">CLIMBERS</span>
-            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
-          </div>
-          <div class="text-[10px] font-mono text-zinc-500" x-text="`Max 10 rows · &ge;2 ETFs · Rank Δ &ge; +${(changesPeriod === 1 || changesPeriod === 7) ? 10 : 20}`"></div>
-        </div>
-        <div class="overflow-x-auto scrollbar">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04] select-none">
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('climbers', 'rank_delta')" :class="changesSortClass('climbers', 'rank_delta')">Rank Path</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('climbers', 'ticker')" :class="changesSortClass('climbers', 'ticker')">Ticker</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 hidden sm:table-cell" @click="sortChangesTable('climbers', 'company')" :class="changesSortClass('climbers', 'company')">Company</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('climbers', 'etf_delta')" :class="changesSortClass('climbers', 'etf_delta')">ETFs added</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('climbers', 'etf_count_delta_30d')" :class="changesSortClass('climbers', 'etf_count_delta_30d')">Δ Funds</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('climbers', 'final_score')" :class="changesSortClass('climbers', 'final_score')">Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="r in rankClimbers" :key="r.ticker">
-                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
-                    @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
-                  <td class="px-3 py-2 font-mono text-emerald-400">
-                    <div class="flex items-center gap-1">
-                      <span class="text-zinc-500" x-text="`#${r.leaderboard_rank + (r.global_rank_delta_by_period?.[String(changesPeriod)] || 0)}`"></span>
-                      <span class="text-[9px] text-zinc-600">&rarr;</span>
-                      <span class="font-bold" x-text="`#${r.leaderboard_rank}`"></span>
-                      <span class="text-[10px] ml-0.5 font-bold" x-text="`(+${r.global_rank_delta_by_period?.[String(changesPeriod)] || 0})`"></span>
-                    </div>
-                  </td>
-                  <td class="px-2 py-2 font-mono font-medium text-zinc-200">
-                    <div class="flex items-center gap-1.5">
-                      <span x-text="r.ticker"></span>
-                      <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
-                        <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
-                              x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
-                      </template>
-                    </div>
-                  </td>
-                  <td class="px-2 py-2 text-zinc-400 truncate hidden sm:table-cell max-w-[150px]" x-text="r.company"></td>
-                  <td class="px-2 py-2 text-right font-mono font-semibold text-emerald-400"
-                      x-text="(r.etf_count_delta_by_period?.[String(changesPeriod)] || 0) ? `+${r.etf_count_delta_by_period?.[String(changesPeriod)]}` : '—'"></td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-300" :style="`color: ${(r.etf_count_delta_30d||0) > 0 ? 'var(--up)' : (r.etf_count_delta_30d||0) < 0 ? 'var(--down)' : 'var(--text-3)'}`" x-text="`${(r.etf_count_delta_30d||0) > 0 ? '+' : ''}${r.etf_count_delta_30d||0}`"></td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
-                </tr>
-              </template>
-              <tr x-show="rankClimbers.length === 0">
-                <td colspan="6" class="px-3 py-6 text-center text-zinc-500 italic select-none">No significant rank climbers detected</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Rank Fallers -->
-      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
-          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <svg class="w-3.5 h-3.5 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg> Biggest Rank Fallers
-            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">FALLERS</span>
-            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
-          </div>
-          <div class="text-[10px] font-mono text-zinc-500" x-text="`Max 10 rows · &ge;2 ETFs · Rank Δ &le; -${(changesPeriod === 1 || changesPeriod === 7) ? 10 : 20}`"></div>
-        </div>
-        <div class="overflow-x-auto scrollbar">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04] select-none">
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('fallers', 'rank_delta')" :class="changesSortClass('fallers', 'rank_delta')">Rank Path</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('fallers', 'ticker')" :class="changesSortClass('fallers', 'ticker')">Ticker</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 hidden sm:table-cell" @click="sortChangesTable('fallers', 'company')" :class="changesSortClass('fallers', 'company')">Company</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('fallers', 'etf_delta')" :class="changesSortClass('fallers', 'etf_delta')">ETFs lost</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('fallers', 'etf_count_delta_30d')" :class="changesSortClass('fallers', 'etf_count_delta_30d')">Δ Funds</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('fallers', 'final_score')" :class="changesSortClass('fallers', 'final_score')">Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="r in rankFallers" :key="r.ticker">
-                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
-                    @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
-                  <td class="px-3 py-2 font-mono text-rose-400">
-                    <div class="flex items-center gap-1">
-                      <span class="text-zinc-500" x-text="`#${r.leaderboard_rank + (r.global_rank_delta_by_period?.[String(changesPeriod)] || 0)}`"></span>
-                      <span class="text-[9px] text-zinc-600">&rarr;</span>
-                      <span class="font-bold" x-text="`#${r.leaderboard_rank}`"></span>
-                      <span class="text-[10px] ml-0.5 font-bold" x-text="`(${r.global_rank_delta_by_period?.[String(changesPeriod)] || 0})`"></span>
-                    </div>
-                  </td>
-                  <td class="px-2 py-2 font-mono font-medium text-zinc-200">
-                    <div class="flex items-center gap-1.5">
-                      <span x-text="r.ticker"></span>
-                      <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
-                        <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
-                              x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
-                      </template>
-                    </div>
-                  </td>
-                  <td class="px-2 py-2 text-zinc-400 truncate hidden sm:table-cell max-w-[150px]" x-text="r.company"></td>
-                  <td class="px-2 py-2 text-right font-mono" :style="`color: ${(r.etf_count_delta_by_period?.[String(changesPeriod)] || 0) < 0 ? 'var(--down)' : 'var(--text-3)'}`"
-                      x-text="(r.etf_count_delta_by_period?.[String(changesPeriod)] || 0) ? `${r.etf_count_delta_by_period?.[String(changesPeriod)]}` : '—'"></td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-300" :style="`color: ${(r.etf_count_delta_30d||0) > 0 ? 'var(--up)' : (r.etf_count_delta_30d||0) < 0 ? 'var(--down)' : 'var(--text-3)'}`" x-text="`${(r.etf_count_delta_30d||0) > 0 ? '+' : ''}${r.etf_count_delta_30d||0}`"></td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
-                </tr>
-              </template>
-              <tr x-show="rankFallers.length === 0">
-                <td colspan="6" class="px-3 py-6 text-center text-zinc-500 italic select-none">No significant rank fallers detected</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Section 3: ETF Adoption & Dropout - period-aware -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
-      <!-- ETF Pickups (Adoption) -->
-      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
-          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <svg class="w-3.5 h-3.5 text-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> ETF Adoption (Pickups)
-            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">ADOPTIONS</span>
-            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
-          </div>
-          <div class="text-[10px] font-mono text-zinc-500" x-text="`${etfPickups.length} names · &ge;2 ETFs`"></div>
-        </div>
-        <div class="overflow-x-auto scrollbar">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04] select-none">
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('pickups', 'ticker')" :class="changesSortClass('pickups', 'ticker')">Ticker</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 hidden sm:table-cell" @click="sortChangesTable('pickups', 'company')" :class="changesSortClass('pickups', 'company')">Company</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('pickups', 'etf_delta')" :class="changesSortClass('pickups', 'etf_delta')">ETF Path</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('pickups', 'final_score')" :class="changesSortClass('pickups', 'final_score')">Score</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('pickups', 'etf_count_delta_30d')" :class="changesSortClass('pickups', 'etf_count_delta_30d')">Δ Funds</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="r in etfPickups" :key="r.ticker">
-                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
-                    @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
-                  <td class="px-3 py-2 font-mono font-medium text-zinc-200">
-                    <div class="flex items-center gap-1.5">
-                      <span x-text="r.ticker"></span>
-                      <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
-                        <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
-                              x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
-                      </template>
-                    </div>
-                  </td>
-                  <td class="px-2 py-2 text-zinc-400 truncate hidden sm:table-cell max-w-[180px]" x-text="r.company"></td>
-                  <td class="px-2 py-2 text-right font-mono text-emerald-400 font-semibold">
-                    <span class="text-zinc-500 font-normal" x-text="`${r.etf_count - (r.etf_count_delta_by_period?.[String(changesPeriod)] || 0)}`"></span>
-                    <span class="text-[9px] text-zinc-600 font-normal">&rarr;</span>
-                    <span x-text="r.etf_count"></span>
-                    <span class="text-[10px]" x-text="` (+${r.etf_count_delta_by_period?.[String(changesPeriod)] || 0})`"></span>
-                  </td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
-                  <td class="px-2 py-2 text-right font-mono" :style="`color: ${(r.etf_count_delta_30d||0) > 0 ? 'var(--up)' : (r.etf_count_delta_30d||0) < 0 ? 'var(--down)' : 'var(--text-3)'}`" x-text="`${(r.etf_count_delta_30d||0) > 0 ? '+' : ''}${r.etf_count_delta_30d||0}`"></td>
-                </tr>
-              </template>
-              <tr x-show="etfPickups.length === 0">
-                <td colspan="5" class="px-3 py-6 text-center text-zinc-500 italic select-none">No ETF pickups in this period</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- ETF Dropouts -->
-      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
-          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <svg class="w-3.5 h-3.5 text-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> ETF Defections (Dropouts)
-            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">DEFECTIONS</span>
-            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
-          </div>
-          <div class="text-[10px] font-mono text-zinc-500" x-text="`${etfDropouts.length} names · ≥2 prior ETFs`"></div>
-        </div>
-        <div class="overflow-x-auto scrollbar">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04] select-none">
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('dropouts', 'ticker')" :class="changesSortClass('dropouts', 'ticker')">Ticker</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 hidden sm:table-cell" @click="sortChangesTable('dropouts', 'company')" :class="changesSortClass('dropouts', 'company')">Company</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('dropouts', 'etf_delta')" :class="changesSortClass('dropouts', 'etf_delta')">ETF Path</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('dropouts', 'final_score')" :class="changesSortClass('dropouts', 'final_score')">Score</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('dropouts', 'etf_count_delta_30d')" :class="changesSortClass('dropouts', 'etf_count_delta_30d')">Δ Funds</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="r in etfDropouts" :key="r.ticker">
-                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
-                    @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
-                  <td class="px-3 py-2 font-mono font-medium text-zinc-200">
-                    <div class="flex items-center gap-1.5">
-                      <span x-text="r.ticker"></span>
-                      <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
-                        <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
-                              x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
-                      </template>
-                    </div>
-                  </td>
-                  <td class="px-2 py-2 text-zinc-400 truncate hidden sm:table-cell max-w-[180px]" x-text="r.company"></td>
-                  <td class="px-2 py-2 text-right font-mono text-rose-400 font-semibold">
-                    <span class="text-zinc-500 font-normal" x-text="`${r.etf_count - (r.etf_count_delta_by_period?.[String(changesPeriod)] || 0)}`"></span>
-                    <span class="text-[9px] text-zinc-600 font-normal">&rarr;</span>
-                    <span x-text="r.etf_count"></span>
-                    <span class="text-[10px]" x-text="` (${r.etf_count_delta_by_period?.[String(changesPeriod)] || 0})`"></span>
-                  </td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
-                  <td class="px-2 py-2 text-right font-mono" :style="`color: ${(r.etf_count_delta_30d||0) > 0 ? 'var(--up)' : (r.etf_count_delta_30d||0) < 0 ? 'var(--down)' : 'var(--text-3)'}`" x-text="`${(r.etf_count_delta_30d||0) > 0 ? '+' : ''}${r.etf_count_delta_30d||0}`"></td>
-                </tr>
-              </template>
-              <tr x-show="etfDropouts.length === 0">
-                <td colspan="5" class="px-3 py-6 text-center text-zinc-500 italic select-none">No ETF dropouts in this period</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Section 4: Burst Movers (Winners & Crashers) - fixed 30d signal -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
-      <!-- Burst Winners -->
-      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
-          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <svg class="w-3.5 h-3.5 text-purple-400" viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Burst Winners
-            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">BURST</span>
-            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)">fixed 30d</span>
-          </div>
-          <div class="text-[10px] font-mono text-zinc-500" x-text="`${burstWinners.length} burst · &ge;2 ETFs`"></div>
-        </div>
-        <div class="overflow-x-auto scrollbar">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04] select-none">
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('burstWinners', 'ticker')" :class="changesSortClass('burstWinners', 'ticker')">Ticker</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 hidden sm:table-cell" @click="sortChangesTable('burstWinners', 'company')" :class="changesSortClass('burstWinners', 'company')">Company</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('burstWinners', 'global_rank_peak_30d')" :class="changesSortClass('burstWinners', 'global_rank_peak_30d')">Peak Δ</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('burstWinners', 'global_rank_delta_30d')" :class="changesSortClass('burstWinners', 'global_rank_delta_30d')">Δ30d</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('burstWinners', 'etf_count_delta_30d')" :class="changesSortClass('burstWinners', 'etf_count_delta_30d')">Δ Funds</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('burstWinners', 'final_score')" :class="changesSortClass('burstWinners', 'final_score')">Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="r in burstWinners" :key="r.ticker">
-                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
-                    @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
-                  <td class="px-3 py-2 font-mono font-medium text-zinc-200">
-                    <div class="flex items-center gap-1.5">
-                      <span x-text="r.ticker"></span>
-                      <span class="chip text-[8px] px-1 py-0" style="background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.3)">BURST</span>
-                    </div>
-                  </td>
-                  <td class="px-2 py-2 text-zinc-400 truncate hidden sm:table-cell max-w-[150px]" x-text="r.company"></td>
-                  <td class="px-2 py-2 text-right font-mono font-bold" style="color: #c084fc;" x-text="`+${r.global_rank_peak_30d || 0}`"></td>
-                  <td class="px-2 py-2 text-right font-mono text-emerald-400" x-text="`+${r.global_rank_delta_30d || 0}`"></td>
-                  <td class="px-2 py-2 text-right font-mono" :style="`color: ${(r.etf_count_delta_30d||0) > 0 ? 'var(--up)' : (r.etf_count_delta_30d||0) < 0 ? 'var(--down)' : 'var(--text-3)'}`" x-text="`${(r.etf_count_delta_30d||0) > 0 ? '+' : ''}${r.etf_count_delta_30d||0}`"></td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
-                </tr>
-              </template>
-              <tr x-show="burstWinners.length === 0">
-                <td colspan="6" class="px-3 py-6 text-center text-zinc-500 italic select-none">No active burst signals</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Crater Movers (rank cratered / active crater signal) -->
-      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
-          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <svg class="w-3.5 h-3.5 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg> Crater Movers
-            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">CRATER</span>
-            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)">fixed 30d</span>
-          </div>
-          <div class="text-[10px] font-mono text-zinc-500" x-text="`${burstLosers.length} names · crater / Δ &le; −30`"></div>
-        </div>
-        <div class="overflow-x-auto scrollbar">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04] select-none">
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('burstLosers', 'ticker')" :class="changesSortClass('burstLosers', 'ticker')">Ticker</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 hidden sm:table-cell" @click="sortChangesTable('burstLosers', 'company')" :class="changesSortClass('burstLosers', 'company')">Company</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('burstLosers', 'global_rank_delta_30d')" :class="changesSortClass('burstLosers', 'global_rank_delta_30d')">Rank Δ30d</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('burstLosers', 'etf_count_delta_30d')" :class="changesSortClass('burstLosers', 'etf_count_delta_30d')">ETFs Δ</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('burstLosers', 'final_score')" :class="changesSortClass('burstLosers', 'final_score')">Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="r in burstLosers" :key="r.ticker">
-                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
-                    @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
-                  <td class="px-3 py-2 font-mono font-medium text-zinc-200">
-                    <div class="flex items-center gap-1.5">
-                      <span x-text="r.ticker"></span>
-                      <template x-if="r.crater_30d">
-                        <span class="chip text-[8px] px-1 py-0" style="background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.3)">CRATER</span>
-                      </template>
-                      <template x-if="!r.crater_30d && (r.tiers || '').split(' + ').filter(Boolean)[0]">
-                        <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
-                              x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
-                      </template>
-                    </div>
-                  </td>
-                  <td class="px-2 py-2 text-zinc-400 truncate hidden sm:table-cell max-w-[150px]" x-text="r.company"></td>
-                  <td class="px-2 py-2 text-right font-mono font-bold text-rose-500" x-text="r.global_rank_delta_30d || 0"></td>
-                  <td class="px-2 py-2 text-right font-mono" :style="`color: ${(r.etf_count_delta_30d || 0) < 0 ? 'var(--down)' : 'var(--text-3)'}`"
-                      x-text="r.etf_count_delta_30d ? r.etf_count_delta_30d : '—'"></td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
-                </tr>
-              </template>
-              <tr x-show="burstLosers.length === 0">
-                <td colspan="5" class="px-3 py-6 text-center text-zinc-500 italic select-none">No significant rank crashers detected</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Section 4: Top Accumulation Movers + Active Signals Dashboard -->
-    <div class="rounded-lg border mb-4" style="border-color: var(--border); background: var(--surface);">
-      <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
-        <div class="label flex items-center gap-1.5 text-cyan-400 font-semibold text-xs tracking-wider uppercase">
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Top Accumulation Movers (Last 30 Days)
-        </div>
-        <div class="text-[10px] text-zinc-500">Most ETF positions added over 30 days</div>
-      </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-        <template x-for="r in (changelog.top_accumulation || [])" :key="r.ticker">
-          <a :href="`stock.html?t=${r.ticker}`" style="text-decoration: none; color: inherit; display: block;"
-             class="border-b border-r last:border-b-0 sm:last:border-r-0 border-white/[0.03]">
-            <div class="px-3 py-2.5 text-xs hover:bg-white/5 transition flex flex-col justify-between h-full"
-                 :style="isPinned(r.ticker) ? 'background: rgba(34,211,238,0.03);' : ''">
-              <div class="flex items-center justify-between">
-                <div class="flex flex-col min-w-0">
-                  <div class="flex items-center gap-1.5">
-                    <span x-show="isPinned(r.ticker)" style="color: var(--cyan)">★</span>
-                    <span class="font-mono font-semibold text-zinc-200" x-text="r.ticker"></span>
-                    <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
-                      <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
-                            x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
-                    </template>
-                  </div>
-                  <span style="color: var(--text-2)" class="truncate text-[11px]" x-text="r.company"></span>
-                </div>
-                <div class="num font-mono text-right shrink-0 ml-2">
-                  <div :style="`color: ${(r.etf_count_delta_30d||0) > 0 ? 'var(--up)' : 'var(--down)'}`" class="font-bold" x-text="`${(r.etf_count_delta_30d||0) > 0 ? '+' : ''}${r.etf_count_delta_30d||0} funds`"></div>
-                  <div class="text-[10px] flex items-center justify-end gap-1">
-                    <span x-show="r.burst_30d" class="chip sig-badge text-[8px] px-1 py-0" style="background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.3)">BURST</span>
-                    <span style="color: var(--text-3)" x-text="`${r.etf_count} ETF${r.etf_count===1?'':'s'}`"></span>
-                  </div>
-                </div>
-              </div>
-              <div class="flex gap-3 mt-1.5 text-[10px] text-zinc-500 font-mono">
-                <span x-text="`Δrank7d: ${(r.avg_rank_delta_7d||0)>=0?'+':''}${(r.avg_rank_delta_7d||0).toFixed(1)}`"></span>
-              </div>
-            </div>
-          </a>
+      <div class="flex border rounded overflow-x-auto scrollbar max-w-full shrink-0" style="border-color: rgba(255,255,255,0.08); background: rgba(0,0,0,0.25)">
+        <template x-for="p in [1,7,14,30,60,90,'YTD']" :key="p">
+          <button @click="setChangesPeriod(p)"
+                  :style="_changesPeriodActive === p ? 'background: rgba(34,211,238,0.15); color: var(--cyan);' : 'color: rgba(255,255,255,0.45);'"
+                  class="px-2.5 py-1 text-[10px] font-mono leading-none hover:text-zinc-300 transition cursor-pointer select-none"
+                  x-text="p === 'YTD' ? 'YTD' : p + 'd'"></button>
         </template>
-        <div x-show="!changelog.top_accumulation?.length" class="col-span-3 px-3 py-6 text-center text-xs text-zinc-500 italic select-none">No accumulation data available.</div>
-      </div>
-
-      <!-- Active Signal Summary Strip -->
-      <div class="p-2.5 bg-white/[0.01] border-t flex flex-wrap items-center justify-start gap-2 text-xs border-white/[0.04]">
-        <span class="text-zinc-500 font-mono text-[10px] uppercase tracking-wider pl-1 mr-1">Active Signals:</span>
-        <button @click="reset(); burstOnly = true; activeTab = 'leaderboard'; window.scrollTo({ top: 0, behavior: 'smooth' });"
-                x-tooltip="'Filter leaderboard to show only burst movers (improved rank by 40+ in 30d)'"
-                class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/25 transition cursor-pointer select-none">
-          <span class="font-bold text-[10px] px-1 py-0.5 rounded bg-purple-500/20 text-purple-300 mr-0.5">BURST</span>
-          <span x-text="`${activeSignalCounts.burst} Burst`"></span>
-        </button>
-        <button @click="reset(); qualityAdoptedOnly = true; activeTab = 'leaderboard'; window.scrollTo({ top: 0, behavior: 'smooth' });"
-                x-tooltip="'Filter leaderboard to show only Quality+ names (added by Quality ETF in 30d)'"
-                class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 border border-teal-500/25 transition cursor-pointer select-none">
-          <span class="font-bold text-[10px] px-1 py-0.5 rounded bg-teal-500/20 text-teal-300 mr-0.5">QUAL+</span>
-          <span x-text="`${activeSignalCounts.qualityAdopted} Quality Adopted`"></span>
-        </button>
       </div>
     </div>
 
-    <!-- Section 5: New Entrants + Universe Exits -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
-      <!-- New Entrants -->
-      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
-          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <svg class="w-3.5 h-3.5 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> New Entrants
-            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">NEW</span>
-            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD' : `&le;${changesPeriod}d`"></span>
+    <!-- Summary: four up/down pairs, one per row of panels below -->
+    <div class="chg-summary mb-3">
+      <template x-for="c in changesSummary" :key="c.label">
+        <button type="button" class="chg-sum-cell" @click="document.getElementById('chg-' + c.anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' })">
+          <div class="label" x-text="c.label"></div>
+          <div class="flex items-baseline gap-3 mt-1 font-mono num">
+            <span class="text-[17px] font-semibold" style="color: var(--up)" x-text="`+${c.up}`"></span>
+            <span class="text-[17px] font-semibold" style="color: var(--down)" x-text="`−${c.down}`"></span>
           </div>
-          <div class="text-[10px] font-mono text-zinc-500" x-text="`${newEntrants.length} names`"></div>
-        </div>
-        <div class="overflow-x-auto max-h-[350px] scrollbar">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04] select-none">
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('newEntrants', 'ticker')" :class="changesSortClass('newEntrants', 'ticker')">Ticker</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('newEntrants', 'company')" :class="changesSortClass('newEntrants', 'company')">Company</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('newEntrants', 'final_score')" :class="changesSortClass('newEntrants', 'final_score')">Score</th>
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('newEntrants', 'etf_count')" :class="changesSortClass('newEntrants', 'etf_count')">ETFs</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="r in newEntrants" :key="r.ticker">
-                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
-                    @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
-                  <td class="px-3 py-2 font-mono font-medium text-zinc-200">
-                    <div class="flex items-center gap-1.5">
-                      <span x-text="r.ticker"></span>
-                      <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
-                        <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
-                              x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
-                      </template>
-                    </div>
-                  </td>
-                  <td class="px-2 py-2 text-zinc-400 truncate max-w-[180px]" x-text="r.company || '—'"></td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
-                  <td class="px-3 py-2 text-right font-mono text-zinc-400" x-text="r.etf_count"></td>
-                </tr>
-              </template>
-              <tr x-show="!newEntrants.length">
-                <td colspan="4" class="px-3 py-6 text-center text-zinc-500 italic select-none">No new entrants detected</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Dropped from Universe (Exits) -->
-      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
-          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <svg class="w-3.5 h-3.5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Dropped from Universe
-            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-zinc-500/10 text-zinc-300 border border-zinc-500/20">EXITS</span>
-            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD exits' : changesPeriod + 'd exits'"></span>
-          </div>
-          <div class="text-[10px] font-mono text-zinc-500" x-text="`${universeExits.length} exits`"></div>
-        </div>
-        <div class="overflow-x-auto max-h-[350px] scrollbar">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04] select-none">
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('universeExits', 'ticker')" :class="changesSortClass('universeExits', 'ticker')">Ticker</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('universeExits', 'company')" :class="changesSortClass('universeExits', 'company')">Company</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('universeExits', 'score_delta')" :class="changesSortClass('universeExits', 'score_delta')">Prev. Score</th>
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('universeExits', 'score_delta_pct')" :class="changesSortClass('universeExits', 'score_delta_pct')">Change</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="r in universeExits" :key="r.ticker">
-                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
-                    @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
-                  <td class="px-3 py-2 font-mono font-medium text-zinc-400">
-                    <div class="flex items-center gap-1.5">
-                      <span x-text="r.ticker"></span>
-                      <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
-                        <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
-                              x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
-                      </template>
-                    </div>
-                  </td>
-                  <td class="px-2 py-2 text-zinc-500 truncate max-w-[180px]" x-text="r.company || '—'"></td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-400" x-text="fmt1(r.final_score - r.score_delta)"></td>
-                  <td class="px-3 py-2 text-right font-mono text-rose-500" x-text="fmtPct(r.score_delta_pct)"></td>
-                </tr>
-              </template>
-              <tr x-show="universeExits.length === 0">
-                <td colspan="4" class="px-3 py-6 text-center text-zinc-500 italic select-none">
-                  <div class="border border-dashed rounded p-4 border-white/[0.08]">No exits detected</div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+          <div class="text-[10px] mt-0.5" style="color: var(--text-3)" x-text="c.note"></div>
+        </button>
+      </template>
     </div>
 
-    <!-- Section 6: Sector & Country Flow Intelligence (UPGRADED) -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
-      <!-- Sector Flow Table -->
-      <div class="rounded-lg border" style="border-color: var(--border); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
-          <div class="label flex items-center gap-1.5 text-cyan-400 font-semibold text-xs tracking-wider uppercase">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Sector Flow Intelligence
+    <!-- Paired panels: building on the left, breaking on the right -->
+    <template x-for="pair in changesLayout" :key="pair[0].id">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3" :id="'chg-' + pair[0].id">
+        <template x-for="P in pair" :key="P.id">
+          <div class="chg-panel" :class="'tone-' + P.tone">
+            <div class="chg-head">
+              <span class="chg-dot"></span>
+              <span class="chg-title" x-text="P.title"></span>
+              <span class="chg-count font-mono" x-text="P.count"></span>
+              <span class="chg-hint" x-text="P.hint"></span>
+            </div>
+            <div class="overflow-x-auto scrollbar flex-1">
+              <table class="w-full text-left border-collapse chg-table">
+                <thead>
+                  <tr>
+                    <th class="pl-3 cursor-pointer" @click="sortChangesTable(P.id, 'ticker')" :class="changesSortClass(P.id, 'ticker')">Ticker</th>
+                    <th class="hidden sm:table-cell">Company</th>
+                    <th class="text-right cursor-pointer" @click="sortChangesTable(P.id, 'rank')" :class="[changesSortClass(P.id, 'rank'), P.metric === 'rank' ? 'chg-key' : '']">Rank</th>
+                    <th class="text-right cursor-pointer" @click="sortChangesTable(P.id, 'funds')" :class="[changesSortClass(P.id, 'funds'), P.metric === 'funds' ? 'chg-key' : '']">Funds</th>
+                    <th class="text-right pr-3 cursor-pointer" @click="sortChangesTable(P.id, 'score')" :class="changesSortClass(P.id, 'score')">Score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template x-for="r in P.rows" :key="r.ticker">
+                    <tr class="chg-row" @click="window.open(`stock.html?t=${encodeURIComponent(r.ticker)}`, '_self')">
+                      <td class="pl-3">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                          <span x-show="isPinned(r.ticker)" style="color: var(--cyan)">★</span>
+                          <span class="font-mono font-semibold text-zinc-200" x-text="r.ticker"></span>
+                          <template x-if="r.badge">
+                            <span class="chip sig-badge" :style="r.badge.style" x-text="r.badge.label" x-tooltip="r.badge.tip"></span>
+                          </template>
+                        </div>
+                      </td>
+                      <td class="hidden sm:table-cell truncate max-w-[200px]" style="color: var(--text-2)" x-text="r.company || '—'"></td>
+                      <td class="text-right font-mono whitespace-nowrap">
+                        <span style="color: var(--text-3)" x-text="r.rank_then != null ? '#' + r.rank_then : '—'"></span>
+                        <span class="chg-arrow">→</span>
+                        <span :style="`color: ${P.metric === 'rank' ? toneColor(r.rankDir) : 'var(--text)'}`" x-text="r.rank_now != null ? '#' + r.rank_now : 'off'"></span>
+                      </td>
+                      <td class="text-right font-mono whitespace-nowrap">
+                        <span style="color: var(--text-3)" x-text="r.funds_then"></span>
+                        <span class="chg-arrow">→</span>
+                        <span :style="`color: ${P.metric === 'funds' ? toneColor(Math.sign(r.funds_now - r.funds_then)) : 'var(--text)'}`" x-text="r.funds_now"></span>
+                      </td>
+                      <td class="text-right font-mono pr-3 text-zinc-300" x-text="r.score_now != null ? fmt1(r.score_now) : fmt1(r.score_then)"></td>
+                    </tr>
+                  </template>
+                  <tr x-show="!P.rows.length">
+                    <td colspan="5" class="px-3 py-8 text-center text-[11px] select-none" style="color: var(--text-3)" x-text="P.empty"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="chg-foot" x-show="P.count > P.rows.length" x-text="`Top ${P.rows.length} of ${P.count}`"></div>
           </div>
-          <div class="text-[10px] font-mono text-zinc-500">Net ETF positions added (30d) · 2+ ETF names</div>
+        </template>
+      </div>
+    </template>
+
+    <!-- Sector & country flow (fixed 30-day fund-count change) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4" id="chg-flow">
+      <div class="chg-panel tone-neutral">
+        <div class="chg-head">
+          <span class="chg-dot"></span>
+          <span class="chg-title">Sector flow</span>
+          <span class="chg-hint">Net fund positions added · 30d · names with 2+ funds</span>
         </div>
         <div class="overflow-x-auto scrollbar">
-          <table class="w-full text-left border-collapse">
+          <table class="w-full text-left border-collapse chg-table">
             <thead>
               <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04] select-none">
                 <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortSector('label')" :class="sectorSortClass('label')">Sector</th>
@@ -2770,16 +2244,14 @@
         </div>
       </div>
 
-      <!-- Country Flow Table -->
-      <div class="rounded-lg border" style="border-color: var(--border); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
-          <div class="label flex items-center gap-1.5 text-cyan-400 font-semibold text-xs tracking-wider uppercase">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Country Flow Intelligence
-          </div>
-          <div class="text-[10px] font-mono text-zinc-500">Net ETF positions added (30d) · 2+ ETF names</div>
+      <div class="chg-panel tone-neutral">
+        <div class="chg-head">
+          <span class="chg-dot"></span>
+          <span class="chg-title">Country flow</span>
+          <span class="chg-hint">Net fund positions added · 30d · names with 2+ funds</span>
         </div>
         <div class="overflow-x-auto scrollbar">
-          <table class="w-full text-left border-collapse">
+          <table class="w-full text-left border-collapse chg-table">
             <thead>
               <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04] select-none">
                 <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortCountry('label')" :class="countrySortClass('label')">Country</th>
@@ -2851,7 +2323,7 @@ function app() {
     loading: true, loadProgress: 0, displayProgress: 0, targetProgress: 0, error: '',
     activeTab: 'leaderboard',
     overlapHover: '',
-    flag: '', selectedTier: '', selectedSector: '', selectedCountry: '', regionFilter: '', newOnly: false, burstOnly: false, craterOnly: false, q: '', excludeConcentrated: false, qualityAdoptedOnly: false, preHcOnly: false, stealthBuyOnly: false, fundsUpOnly: false, fundsDownOnly: false, quantQualityOnly: false,
+    flag: '', selectedTier: '', selectedSector: '', selectedCountry: '', regionFilter: '', newOnly: false, burstOnly: false, craterOnly: false, q: '', qualityAdoptedOnly: false, preHcOnly: false, stealthBuyOnly: false, fundsUpOnly: false, fundsDownOnly: false, surgeOnly: false, slideOnly: false,
     sortKey: 'leaderboard_rank', sortDir: 'asc',
     page: 1, pageSize: 50, open: null,
     // Reactive caches for expensive getters (BUG-5): _filteredCacheKey holds
@@ -2867,21 +2339,11 @@ function app() {
     // changesPeriod feeds the heavy Changes-tab getters (debounced via
     // setChangesPeriod so rapid clicks coalesce into one render); the
     // _changesPeriodActive mirror updates instantly for the button highlight.
-    changesPeriod: 7,
-    _changesPeriodActive: 7,
+    changesPeriod: 30,
+    _changesPeriodActive: 30,
     _changesPeriodTimer: null,
-    changesSort: {
-      gainers: { key: '', dir: '' },
-      losers: { key: '', dir: '' },
-      climbers: { key: '', dir: '' },
-      fallers: { key: '', dir: '' },
-      pickups: { key: '', dir: '' },
-      dropouts: { key: '', dir: '' },
-      burstWinners: { key: '', dir: '' },
-      burstLosers: { key: '', dir: '' },
-      newEntrants: { key: '', dir: '' },
-      universeExits: { key: '', dir: '' }
-    },
+    changesSort: Object.fromEntries(['funds_added', 'funds_lost', 'hc_entered', 'hc_exited', 'burst', 'crater',
+      'climbers', 'fallers', 'new', 'exits'].map(k => [k, { key: '', dir: '' }])),
     etfHoldingsSortKey: 'rank',
     etfHoldingsSortDir: 'asc',
     sectorSortKey: '',
@@ -2893,16 +2355,13 @@ function app() {
     sortDialog: false,
     hoveredSlice: null,
     sortLevels: [{ key: 'leaderboard_rank', dir: 'asc' }],
-    // Extreme Conviction Moves ribbon - dismiss persists in sessionStorage
-    hideExtremes: (() => { try { return (sessionStorage.getItem('conviction.hideExtremes') || sessionStorage.getItem('predator.hideExtremes')) === '1'; } catch { return false; } })(),
+    // Today's-signals strip - dismiss persists for the session
+    hideSignalStrip: (() => { try { return sessionStorage.getItem('conviction.hideSignalStrip') === '1'; } catch { return false; } })(),
     pins: (() => {
       // One-time migration from the pre-rebrand storage keys.
       try {
         if (!localStorage.getItem('conviction_pins') && localStorage.getItem('predator_pins')) {
           localStorage.setItem('conviction_pins', localStorage.getItem('predator_pins'));
-        }
-        if (!localStorage.getItem('conviction.hideExtremes') && localStorage.getItem('predator.hideExtremes')) {
-          localStorage.setItem('conviction.hideExtremes', localStorage.getItem('predator.hideExtremes'));
         }
       } catch {}
       try { return JSON.parse(localStorage.getItem('conviction_pins') || '[]'); } catch { return []; }
@@ -2922,7 +2381,6 @@ function app() {
       { key: 'global_rank_delta_30d',  label: 'Global rank Δ (30d)' },
       { key: 'global_rank_peak_30d',   label: 'Peak rank improvement (30d)' },
       { key: 'avg_rank_delta_7d',      label: 'Avg per-ETF rank Δ (7d)' },
-      { key: 'etf_count_delta_30d',    label: 'ETFs added (30d)' },
       { key: 'concentration_score',    label: 'Concentration risk' },
     ],
 
@@ -3050,63 +2508,53 @@ function app() {
     get counts() {
       return {
         HIGH_CONVICTION: this.leaderboard.filter(r => r.flag === 'HIGH_CONVICTION').length,
-        SPECULATIVE_BETA: this.leaderboard.filter(r => r.flag === 'SPECULATIVE_BETA').length,
         NEW: this.leaderboard.filter(r => r.any_new).length,
         BURST: this.leaderboard.filter(r => r.burst_30d).length,
         CRATER: this.leaderboard.filter(r => r.crater_30d).length,
+        SURGE: this.leaderboard.filter(r => r.surge_10d).length,
+        SLIDE: this.leaderboard.filter(r => r.slide_10d).length,
         QADD: this.leaderboard.filter(r => r.quality_adopted_30d).length,
         PRE_HC: this.leaderboard.filter(r => this._isPreHc(r)).length,
         STEALTH_BUY: this.leaderboard.filter(r => this._isStealthBuy(r)).length,
-        FUNDS_UP: this.leaderboard.filter(r => (r.etf_count_delta_30d || 0) > 0).length,
-        FUNDS_DOWN: this.leaderboard.filter(r => (r.etf_count_delta_30d || 0) < 0).length,
-        QUANT_QUALITY: this.leaderboard.filter(r => this._isQuantQuality(r)).length,
+        FUNDS_UP: this.leaderboard.filter(r => r.funds_up).length,
+        FUNDS_DOWN: this.leaderboard.filter(r => r.funds_down).length,
         CONCENTRATED: this.leaderboard.filter(r => r.flag === 'CONCENTRATED').length,
       };
     },
 
-    // ── Predictive filter helpers ─────────────────────────────────────────
-    // Pre-HC: 3 ETFs + improving per-fund ranks, one pickup away from HC threshold
-    _isPreHc(r) {
-      return (r.etf_count || 0) === 3
-        && (r.avg_rank_delta_7d || 0) > 0
-        && (r.score_streak || 0) >= 2
-        && r.flag !== 'HIGH_CONVICTION';
-    },
-    // Stealth Buy: single fund loading up rapidly before consensus forms
-    _isStealthBuy(r) {
-      return (r.etf_count || 0) <= 2
-        && (r.avg_weight_flow_7d || 0) > 0.10
-        && (r.avg_rank_delta_7d || 0) >= 0;
-    },
-    // Quant + Quality recent convergence: both forward-looking and backward-looking screens agree
-    _isQuantQuality(r) {
-      const tiers = (r.tiers || '').split(' + ');
-      return tiers.includes('Quant')
-        && tiers.includes('Quality')
-        && (r.etf_count_delta_30d || 0) > 0;  // recent ETF pickup confirms freshness
-    },
+    // ── Screening signals — computed in the build (history.screening_signals),
+    // so the page, tests and docs share one definition.
+    _isPreHc(r) { return !!r.pre_hc; },
+    _isStealthBuy(r) { return !!r.stealth_buy; },
 
     get kpis() {
       const c = this.counts;
       const yc = this.meta.flag_counts_yesterday || {};
+      const fired = this.meta.signal_last_fired || {};
+      const lastFired = (k, n) => n ? 'in force today' : fired[k] ? `last ${fired[k].date.slice(5)} (${fired[k].count})` : 'none in the window';
       return [
         { label: 'names tracked', value: this.leaderboard.length.toString(),
+          sub: `held by ${this.meta.etfs?.length || 30} ETFs`,
           tooltip: 'Total unique tickers across all ' + (this.meta.etfs?.length || 30) + ' ETFs after sanitization.' },
         { label: 'high conviction', value: c.HIGH_CONVICTION,
           color: 'var(--up)',
           delta: yc.HIGH_CONVICTION !== undefined ? c.HIGH_CONVICTION - (yc.HIGH_CONVICTION || 0) : null,
           deltaColor: this.deltaColor(c.HIGH_CONVICTION - (yc.HIGH_CONVICTION || 0)),
-          tooltip: 'Tickers held by 4 or more ETFs with conviction (§25 conviction breadth).' },
-        { label: 'speculative β', value: c.SPECULATIVE_BETA,
-          color: 'var(--amber)',
-          delta: yc.SPECULATIVE_BETA !== undefined ? c.SPECULATIVE_BETA - (yc.SPECULATIVE_BETA || 0) : null,
-          deltaColor: this.deltaColor(c.SPECULATIVE_BETA - (yc.SPECULATIVE_BETA || 0)),
-          tooltip: 'Held in Trend-tier ETFs without Quality or Scout backing.' },
-        { label: 'new entrants', value: c.NEW, color: 'var(--blue)',
-          tooltip: 'First appearance in any mature ETF within the last 14 days.' },
-        { label: 'changes today', value: (this.changelog.entered_hc?.length || 0) + (this.changelog.exited_hc?.length || 0),
-          color: 'var(--cyan)',
-          tooltip: 'HC entries + exits vs yesterday.' },
+          sub: `${c.PRE_HC} one step away (Pre-HC)`,
+          tooltip: 'HIGH_CONVICTION - held by 4+ ETFs with 2+ non-benchmark funds holding it overweight (≈2× equal weight, high in the book) across 2+ strategy tiers.' },
+        { label: 'burst', value: c.BURST, color: '#c084fc',
+          delta: yc.BURST != null ? c.BURST - yc.BURST : null,
+          deltaColor: this.deltaColor(c.BURST - (yc.BURST || 0)),
+          sub: `${lastFired('BURST', c.BURST)} · ${c.SURGE} surging`,
+          tooltip: 'BURST - smoothed rank up 1.65x+ in ~2 weeks into the top 300, confirmed by a fund adding the name. Fund additions cluster at rebalances, so BURST is quiet between them. "Surging" counts the same rank move with no fund joining (SURGE): momentum, not a forecast.' },
+        { label: 'crater', value: c.CRATER, color: 'var(--down)',
+          delta: yc.CRATER != null ? c.CRATER - yc.CRATER : null,
+          deltaColor: this.deltaColor((yc.CRATER || 0) - c.CRATER),
+          sub: `${lastFired('CRATER', c.CRATER)} · ${c.SLIDE} sliding`,
+          tooltip: 'CRATER - smoothed rank down 1.35x+ over ~4 weeks from the top 300, confirmed by a fund dropping the name. The get-out signal; quiet between fund rebalances. "Sliding" counts a ×1.65 rank fall in ~2 weeks with no fund leaving (SLIDE): momentum, not a forecast.' },
+        { label: 'losing funds', value: c.FUNDS_DOWN, color: 'var(--amber)',
+          sub: `top 200 · 14 days · ${c.FUNDS_UP} gaining`,
+          tooltip: 'Top-200 names that lost a holding fund in the last 14 days - the steadiest downside warning in the data. "Gaining" counts top-200 names that added a fund over 30 days.' },
       ];
     },
 
@@ -3115,21 +2563,14 @@ function app() {
       return this.immatureEtfNames.length;
     },
     get immatureEtfNames() {
-      if (!this.meta?.etfs || !this.leaderboard.length) return [];
-      const maturityDays = this.meta.etf_maturity_days || 30;
-      // Use the leaderboard's ETF list and check if any ETF has very few data points
-      // We detect immaturity by checking if the ETF appears in very few unique dates
-      // (proxy: if the ETF's first_tracked_date is recent)
-      const etfFirstSeen = {};
-      for (const row of this.leaderboard) {
-        const heldBy = (row.held_by || '').split(', ').filter(Boolean);
-        for (const etf of heldBy) {
-          if (!etfFirstSeen[etf]) etfFirstSeen[etf] = row;
-        }
-      }
-      // Check metadata for ETF maturity info if available
-      const immature = (this.meta.immature_etfs || []);
-      return immature;
+      // ETFs still building their maturity baseline (computed in build.py).
+      return this.meta?.immature_etfs || [];
+    },
+
+    get _changesTodayCount() {
+      // Day-over-day events: fund adds/exits and HC transitions.
+      const c = this.changelog?.periods?.['1']?.counts || {};
+      return (c.funds_added || 0) + (c.funds_lost || 0) + (c.hc_entered || 0) + (c.hc_exited || 0);
     },
 
     get tabs() {
@@ -3139,7 +2580,7 @@ function app() {
         { id: 'leaderboard', label: 'leaderboard', count: this.leaderboard.length },
         { id: 'watchlist',   label: 'watchlist',   count: activePins.length },
         { id: 'etfs',        label: 'etfs',        count: this.meta.etfs?.length },
-        { id: 'changes',     label: 'changes',     count: (this.changelog.entered_hc?.length || 0) + (this.changelog.exited_hc?.length || 0) + this.dynamicScoreGainers.length + this.dynamicScoreLosers.length },
+        { id: 'changes',     label: 'changes',     count: this._changesTodayCount },
       ];
     },
 
@@ -3170,7 +2611,7 @@ function app() {
     },
 
     toggleFlag(f) { this.flag = (this.flag === f) ? '' : f; this.page = 1; },
-    reset() { this.flag = ''; this.newOnly = false; this.burstOnly = false; this.craterOnly = false; this.excludeConcentrated = false; this.qualityAdoptedOnly = false; this.preHcOnly = false; this.stealthBuyOnly = false; this.fundsUpOnly = false; this.fundsDownOnly = false; this.quantQualityOnly = false; this.selectedTier = ''; this.selectedSector = ''; this.selectedCountry = ''; this.regionFilter = ''; this.q = ''; this.page = 1; },
+    reset() { this.flag = ''; this.newOnly = false; this.burstOnly = false; this.craterOnly = false; this.qualityAdoptedOnly = false; this.preHcOnly = false; this.stealthBuyOnly = false; this.fundsUpOnly = false; this.fundsDownOnly = false; this.surgeOnly = false; this.slideOnly = false; this.selectedTier = ''; this.selectedSector = ''; this.selectedCountry = ''; this.regionFilter = ''; this.q = ''; this.page = 1; },
 
     togglePin(t) {
       const i = this.pins.indexOf(t);
@@ -3206,444 +2647,113 @@ function app() {
       localStorage.setItem('conviction_pin_snapshot', JSON.stringify(snap));
     },
 
-    get dynamicScoreGainers() {
-      const p = String(this.changesPeriod);
-      const cacheKey = `${p}_${JSON.stringify(this.changesSort.gainers)}_${this.leaderboard.length}`;
-      if (this._dynamicScoreGainersCache && this._dynamicScoreGainersCache.key === cacheKey) {
-        return this._dynamicScoreGainersCache.value;
-      }
-      const compute = () => {
-        const list = this.leaderboard
-          .filter(r => {
-            const d = r.score_deltas_by_period?.[p];
-            return d != null && d > 0 && (r.etf_count || 0) >= 2;
-          })
-          .sort((a, b) => (b.score_deltas_by_period[p] || 0) - (a.score_deltas_by_period[p] || 0));
-        const sliced = list.slice(0, 15);
-        const sortState = this.changesSort.gainers;
-        if (sortState && sortState.key) {
-          this.sortItemList(sliced, sortState.key, sortState.dir, p);
-        }
-        return sliced;
-      };
-      const result = compute();
-      this._dynamicScoreGainersCache = { key: cacheKey, value: result };
-      return result;
+    // ── Changes tab ────────────────────────────────────────────────────────
+    // Every period-based table comes precomputed from changelog.json
+    // (history.changelog — full daily leaderboards, not the capped
+    // score_history.json). BURST / CRATER are "in force now" and come from
+    // the leaderboard itself.
+    _changesPanelDefs: {
+      funds_added: { title: 'Funds adding',          tone: 'up',     metric: 'funds', hint: 'Gained a holding fund · now in the top 500',  empty: 'No fund added a top-500 name in this window' },
+      funds_lost:  { title: 'Funds leaving',         tone: 'down',   metric: 'funds', hint: 'Lost a holding fund · was in the top 500',    empty: 'No fund dropped a top-500 name in this window' },
+      hc_entered:  { title: 'Entered High Conviction', tone: 'up',   metric: 'rank',  hint: 'Met the HC rule now, not at the start',        empty: 'No new High Conviction names' },
+      hc_exited:   { title: 'Left High Conviction',  tone: 'down',   metric: 'rank',  hint: 'Met the HC rule at the start, not now',        empty: 'No name lost High Conviction' },
+      burst:       { title: 'BURST in force',        tone: 'burst',  metric: 'rank',  hint: 'Smoothed rank ×1.65+ in ~2 weeks, fund-confirmed', empty: '' },
+      crater:      { title: 'CRATER in force',       tone: 'crater', metric: 'rank',  hint: 'Smoothed rank ÷1.35+ over ~4 weeks, a fund exited', empty: '' },
+      climbers:    { title: 'Rank climbers',         tone: 'up',     metric: 'rank',  hint: 'Largest rank multiple · now in the top 300',   empty: 'No material rank gains in the top 300' },
+      fallers:     { title: 'Rank fallers',          tone: 'down',   metric: 'rank',  hint: 'Largest rank multiple · was in the top 300',   empty: 'No material rank losses in the top 300' },
+      new:         { title: 'New on the board',      tone: 'neutral', metric: 'funds', hint: 'Held now, by no fund at the start',           empty: 'No new names' },
+      exits:       { title: 'Left the board',        tone: 'neutral', metric: 'funds', hint: 'Held at the start, by no fund now',           empty: 'No names left the board' },
+    },
+    _changesPairs: [['funds_added', 'funds_lost'], ['hc_entered', 'hc_exited'], ['burst', 'crater'],
+                    ['climbers', 'fallers'], ['new', 'exits']],
+
+    get _changesBlock() {
+      return this.changelog?.periods?.[String(this.changesPeriod)] || null;
     },
 
-    get dynamicScoreLosers() {
-      const p = String(this.changesPeriod);
-      const cacheKey = `${p}_${JSON.stringify(this.changesSort.losers)}_${this.leaderboard.length}`;
-      if (this._dynamicScoreLosersCache && this._dynamicScoreLosersCache.key === cacheKey) {
-        return this._dynamicScoreLosersCache.value;
-      }
-      const compute = () => {
-        const list = this.leaderboard
-          .filter(r => {
-            const d = r.score_deltas_by_period?.[p];
-            return d != null && d < 0 && (r.etf_count || 0) >= 2;
-          })
-          .sort((a, b) => (a.score_deltas_by_period[p] || 0) - (b.score_deltas_by_period[p] || 0));
-        const sliced = list.slice(0, 15);
-        const sortState = this.changesSort.losers;
-        if (sortState && sortState.key) {
-          this.sortItemList(sliced, sortState.key, sortState.dir, p);
-        }
-        return sliced;
-      };
-      const result = compute();
-      this._dynamicScoreLosersCache = { key: cacheKey, value: result };
-      return result;
+    get _leaderboardByTicker() {
+      if (this._lbMapCache?.src === this.leaderboard) return this._lbMapCache.map;
+      const map = new Map(this.leaderboard.map(r => [r.ticker, r]));
+      this._lbMapCache = { src: this.leaderboard, map };
+      return map;
     },
 
-    get rankClimbers() {
-      const p = String(this.changesPeriod);
-      const cacheKey = `${p}_${JSON.stringify(this.changesSort.climbers)}_${this.leaderboard.length}`;
-      if (this._rankClimbersCache && this._rankClimbersCache.key === cacheKey) {
-        return this._rankClimbersCache.value;
-      }
-      const compute = () => {
-        const threshold = (this.changesPeriod === 1 || this.changesPeriod === 7) ? 10 : 20;
-        const list = this.leaderboard
-          .filter(r => (r.global_rank_delta_by_period?.[p] || 0) > threshold && (r.etf_count || 0) >= 2)
-          .sort((a, b) => (b.global_rank_delta_by_period?.[p] || 0) - (a.global_rank_delta_by_period?.[p] || 0));
-        const sliced = list.slice(0, 10);
-        const sortState = this.changesSort.climbers;
-        if (sortState && sortState.key) {
-          this.sortItemList(sliced, sortState.key, sortState.dir, p);
-        }
-        return sliced;
-      };
-      const result = compute();
-      this._rankClimbersCache = { key: cacheKey, value: result };
-      return result;
+    _motionRows(kind) {
+      const on = kind === 'burst' ? 'burst_30d' : 'crater_30d';
+      const move = kind === 'burst' ? 'burst_rank_gain' : 'crater_rank_loss';
+      return this.leaderboard.filter(r => r[on])
+        .sort((a, b) => (b[move] || 0) - (a[move] || 0))
+        .map(r => {
+          const then = r.motion_rank_then ?? null;
+          const now = then == null ? r.leaderboard_rank : then + (kind === 'burst' ? -(r[move] || 0) : (r[move] || 0));
+          return { ticker: r.ticker, company: r.company, rank_then: then, rank_now: Math.round(now),
+                   funds_then: (r.etf_count || 0) - (r.motion_funds_delta || 0), funds_now: r.etf_count || 0,
+                   score_then: null, score_now: r.final_score };
+        });
     },
 
-    get rankFallers() {
-      const p = String(this.changesPeriod);
-      const cacheKey = `${p}_${JSON.stringify(this.changesSort.fallers)}_${this.leaderboard.length}`;
-      if (this._rankFallersCache && this._rankFallersCache.key === cacheKey) {
-        return this._rankFallersCache.value;
-      }
-      const compute = () => {
-        const threshold = (this.changesPeriod === 1 || this.changesPeriod === 7) ? -10 : -20;
-        const list = this.leaderboard
-          .filter(r => (r.global_rank_delta_by_period?.[p] || 0) < threshold && (r.etf_count || 0) >= 2)
-          .sort((a, b) => (a.global_rank_delta_by_period?.[p] || 0) - (b.global_rank_delta_by_period?.[p] || 0));
-        const sliced = list.slice(0, 10);
-        const sortState = this.changesSort.fallers;
-        if (sortState && sortState.key) {
-          this.sortItemList(sliced, sortState.key, sortState.dir, p);
+    get changesLayout() {
+      const blk = this._changesBlock;
+      const key = `${this.changesPeriod}|${JSON.stringify(this.changesSort)}|${this.leaderboard.length}|${!!blk}`;
+      if (this._changesLayoutCache?.key === key) return this._changesLayoutCache.value;
+      const lb = this._leaderboardByTicker;
+      const fired = this.meta.signal_last_fired || {};
+      const panel = (id) => {
+        const def = this._changesPanelDefs[id];
+        let rows, count, empty = def.empty;
+        if (id === 'burst' || id === 'crater') {
+          rows = this._motionRows(id); count = rows.length;
+          const last = fired[id.toUpperCase()];
+          empty = last ? `None today · last fired ${last.date} (${last.count} name${last.count === 1 ? '' : 's'})`
+                           : 'None today';
+        } else {
+          rows = (blk?.[id] || []).slice(); count = blk?.counts?.[id] ?? rows.length;
         }
-        return sliced;
-      };
-      const result = compute();
-      this._rankFallersCache = { key: cacheKey, value: result };
-      return result;
-    },
-
-    get etfPickups() {
-      const p = String(this.changesPeriod);
-      const cacheKey = `${p}_${JSON.stringify(this.changesSort.pickups)}_${this.leaderboard.length}`;
-      if (this._etfPickupsCache && this._etfPickupsCache.key === cacheKey) {
-        return this._etfPickupsCache.value;
-      }
-      const compute = () => {
-        const list = this.leaderboard
-          .filter(r => (r.etf_count_delta_by_period?.[p] || 0) > 0 && (r.etf_count || 0) >= 2)
-          .sort((a, b) => (b.etf_count_delta_by_period?.[p] || 0) - (a.etf_count_delta_by_period?.[p] || 0));
-        const sliced = list.slice(0, 10);
-        const sortState = this.changesSort.pickups;
-        if (sortState && sortState.key) {
-          this.sortItemList(sliced, sortState.key, sortState.dir, p);
-        }
-        return sliced;
-      };
-      const result = compute();
-      this._etfPickupsCache = { key: cacheKey, value: result };
-      return result;
-    },
-
-    get etfDropouts() {
-      const p = String(this.changesPeriod);
-      const cacheKey = `${p}_${JSON.stringify(this.changesSort.dropouts)}_${this.leaderboard.length}`;
-      if (this._etfDropoutsCache && this._etfDropoutsCache.key === cacheKey) {
-        return this._etfDropoutsCache.value;
-      }
-      const compute = () => {
-        const list = this.leaderboard
-          .filter(r => (r.etf_count_delta_by_period?.[p] || 0) < 0 && ((r.etf_count || 0) + Math.abs(r.etf_count_delta_by_period?.[p] || 0)) >= 2)
-          .sort((a, b) => (a.etf_count_delta_by_period?.[p] || 0) - (b.etf_count_delta_by_period?.[p] || 0));
-        const sliced = list.slice(0, 10);
-        const sortState = this.changesSort.dropouts;
-        if (sortState && sortState.key) {
-          this.sortItemList(sliced, sortState.key, sortState.dir, p);
-        }
-        return sliced;
-      };
-      const result = compute();
-      this._etfDropoutsCache = { key: cacheKey, value: result };
-      return result;
-    },
-
-    get burstWinners() {
-      const p = String(this.changesPeriod);
-      const cacheKey = `${p}_${JSON.stringify(this.changesSort.burstWinners)}_${this.leaderboard.length}`;
-      if (this._burstWinnersCache && this._burstWinnersCache.key === cacheKey) {
-        return this._burstWinnersCache.value;
-      }
-      const compute = () => {
-        const list = this.leaderboard
-          .filter(r => r.burst_30d && (r.etf_count || 0) >= 2)
-          .sort((a, b) => (b.global_rank_peak_30d || 0) - (a.global_rank_peak_30d || 0));
-        const sliced = list.slice(0, 10);
-        const sortState = this.changesSort.burstWinners;
-        if (sortState && sortState.key) {
-          this.sortItemList(sliced, sortState.key, sortState.dir, p);
-        }
-        return sliced;
-      };
-      const result = compute();
-      this._burstWinnersCache = { key: cacheKey, value: result };
-      return result;
-    },
-
-    get burstLosers() {
-      const p = String(this.changesPeriod);
-      const cacheKey = `${p}_${JSON.stringify(this.changesSort.burstLosers)}_${this.leaderboard.length}`;
-      if (this._burstLosersCache && this._burstLosersCache.key === cacheKey) {
-        return this._burstLosersCache.value;
-      }
-      const compute = () => {
-        const list = this.leaderboard
-          .filter(r => (r.etf_count || 0) >= 2 && (r.crater_30d || (!r.burst_30d && (r.global_rank_delta_30d || 0) < -30)))
-          .sort((a, b) => {
-            if (a.crater_30d && !b.crater_30d) return -1;
-            if (!a.crater_30d && b.crater_30d) return 1;
-            return (a.global_rank_delta_30d || 0) - (b.global_rank_delta_30d || 0);
+        rows = rows.map(r => {
+          const cur = lb.get(r.ticker);
+          const badge = cur ? (this.signalBadges(cur).find(b => b.k !== 'conc' && b.k !== 'new') || null) : null;
+          const rankDir = (r.rank_then == null || r.rank_now == null) ? 0 : Math.sign(r.rank_then - r.rank_now);
+          return { ...r, badge, rankDir };
+        });
+        const st = this.changesSort[id];
+        if (st?.key) {
+          const val = (r) => st.key === 'ticker' ? r.ticker
+            : st.key === 'rank' ? (r.rank_now ?? r.rank_then)
+            : st.key === 'funds' ? (r.funds_now - r.funds_then)
+            : (r.score_now ?? r.score_then);
+          rows.sort((a, b) => {
+            const av = val(a), bv = val(b);
+            if (av == null) return 1; if (bv == null) return -1;
+            const c = typeof av === 'number' ? av - bv : String(av).localeCompare(String(bv));
+            return st.dir === 'asc' ? c : -c;
           });
-        const sliced = list.slice(0, 10);
-        const sortState = this.changesSort.burstLosers;
-        if (sortState && sortState.key) {
-          this.sortItemList(sliced, sortState.key, sortState.dir, p);
         }
-        return sliced;
+        return { id, ...def, empty, rows: rows.slice(0, 15), count };
       };
-      const result = compute();
-      this._burstLosersCache = { key: cacheKey, value: result };
-      return result;
+      const value = this._changesPairs.map(pair => pair.map(panel));
+      this._changesLayoutCache = { key, value };
+      return value;
     },
 
-    get activeSignalCounts() {
-      return {
-        burst: this.leaderboard.filter(r => r.burst_30d).length,
-        crater: this.leaderboard.filter(r => r.crater_30d).length,
-        qualityAdopted: this.leaderboard.filter(r => r.quality_adopted_30d).length,
-      };
+    get changesSummary() {
+      const c = this._changesBlock?.counts || {};
+      const n = (k) => c[k] || 0;
+      return [
+        { label: 'Fund positions', up: n('funds_added'), down: n('funds_lost'), anchor: 'funds_added', note: 'names gaining / losing a fund' },
+        { label: 'High Conviction', up: n('hc_entered'), down: n('hc_exited'), anchor: 'hc_entered', note: 'entered / left the HC list' },
+        { label: 'Rank movers', up: n('climbers'), down: n('fallers'), anchor: 'climbers', note: 'climbers / fallers in the top 300' },
+        { label: 'Board', up: n('new'), down: n('exits'), anchor: 'new', note: 'names added / removed' },
+      ];
     },
 
-    get universeExits() {
-      const cacheKey = `${this.changesPeriod}_${JSON.stringify(this.changesSort.universeExits)}`;
-      if (this._universeExitsCache && this._universeExitsCache.key === cacheKey) {
-        return this._universeExitsCache.value;
-      }
-
-      const computeExits = () => {
-        // Prefer the backend-computed universe_exits_by_period for EVERY period
-        // (built from full ~3900-name leaderboards in build.py). The previous
-        // client-side scoreHistory scan was capped at 600 tickers, so exited
-        // names were truncated and never rendered for 7d/30d/90d/YTD.
-        const pStr = String(this.changesPeriod);
-        const backend = this.changelog.universe_exits_by_period?.[pStr];
-        if (backend) {
-          const exits = [...backend];
-          const sortState = this.changesSort.universeExits;
-          if (sortState && sortState.key) {
-            this.sortItemList(exits, sortState.key, sortState.dir, pStr);
-          }
-          return exits;
-        }
-
-        // Fallback (older changelog.json without universe_exits_by_period, or
-        // 1-day when only the legacy universe_exits key exists).
-        if (this.changesPeriod === 1) {
-          const exits = [...(this.changelog.universe_exits || [])];
-          const sortState = this.changesSort.universeExits;
-          if (sortState && sortState.key) {
-            this.sortItemList(exits, sortState.key, sortState.dir, '1');
-          }
-          return exits;
-        }
-
-        if (!this.scoreHistory || !this.changelog.today || !this.meta.snapshot_dates_in_window) return [];
-        
-        const latestDateStr = this.changelog.today;
-        const latestDate = new Date(latestDateStr);
-        let targetDate = new Date(latestDate);
-        
-        if (this.changesPeriod === 'YTD') {
-          const year = latestDate.getFullYear();
-          targetDate = new Date(`${year}-01-01`);
-        } else {
-          const days = parseInt(this.changesPeriod) || 1;
-          targetDate.setDate(latestDate.getDate() - days);
-        }
-        
-        const dates = this.meta.snapshot_dates_in_window || [];
-        if (!dates.length) return [];
-        
-        let targetDateStr = dates[0];
-        const targetTime = targetDate.getTime();
-        let minDiff = Math.abs(new Date(targetDateStr).getTime() - targetTime);
-        
-        for (const d of dates) {
-          const diff = Math.abs(new Date(d).getTime() - targetTime);
-          if (diff < minDiff) {
-            minDiff = diff;
-            targetDateStr = d;
-          }
-        }
-        
-        if (targetDateStr === latestDateStr) {
-          const idx = dates.indexOf(latestDateStr);
-          if (idx > 0) {
-            targetDateStr = dates[idx - 1];
-          } else {
-            return [];
-          }
-        }
-        
-        // Pre-build company lookup map
-        const companyLookup = {};
-        for (const row of this.leaderboard) {
-          companyLookup[row.ticker] = row.company;
-        }
-        for (const etfExits of Object.values(this.holdingsExits || {})) {
-          for (const periodExits of Object.values(etfExits || {})) {
-            for (const ex of periodExits) {
-              if (ex.ticker && ex.name && !companyLookup[ex.ticker]) {
-                companyLookup[ex.ticker] = ex.name;
-              }
-            }
-          }
-        }
-
-        const exits = [];
-        for (const [ticker, history] of Object.entries(this.scoreHistory)) {
-          const targetEntry = history.find(h => h.d === targetDateStr);
-          if (targetEntry && targetEntry.s > 0) {
-            const todayEntry = history.find(h => h.d === latestDateStr);
-            if (!todayEntry || todayEntry.s === 0) {
-              exits.push({
-                ticker: ticker,
-                company: companyLookup[ticker] || '—',
-                final_score: 0.0,
-                score_delta: -targetEntry.s,
-                score_delta_pct: -1.0,
-                tiers: ''
-              });
-            }
-          }
-        }
-        exits.sort((a, b) => a.score_delta - b.score_delta);
-        const sortState = this.changesSort.universeExits;
-        if (sortState && sortState.key) {
-          this.sortItemList(exits, sortState.key, sortState.dir, String(this.changesPeriod));
-        }
-        return exits;
-      };
-
-      const result = computeExits();
-      this._universeExitsCache = { key: cacheKey, value: result };
-      return result;
+    get changesSinceLabel() {
+      const blk = this._changesBlock;
+      if (!blk?.since || !this.changelog?.today) return '—';
+      const days = Math.round((new Date(this.changelog.today) - new Date(blk.since)) / 86400000);
+      return `${blk.since} → ${this.changelog.today} · ${days} day${days === 1 ? '' : 's'}`;
     },
 
-    get newEntrants() {
-      const cacheKey = `${this.changesPeriod}_${JSON.stringify(this.changesSort.newEntrants)}`;
-      if (this._newEntrantsCache && this._newEntrantsCache.key === cacheKey) {
-        return this._newEntrantsCache.value;
-      }
-
-      const computeEntrants = () => {
-        if (!this.scoreHistory || !this.changelog.today || !this.meta.snapshot_dates_in_window) return [];
-        
-        const latestDateStr = this.changelog.today;
-        const latestDate = new Date(latestDateStr);
-        let targetDate = new Date(latestDate);
-        
-        if (this.changesPeriod === 'YTD') {
-          const year = latestDate.getFullYear();
-          targetDate = new Date(`${year}-01-01`);
-        } else {
-          const days = parseInt(this.changesPeriod) || 1;
-          targetDate.setDate(latestDate.getDate() - days);
-        }
-        
-        const dates = this.meta.snapshot_dates_in_window || [];
-        if (!dates.length) return [];
-        
-        let targetDateStr = dates[0];
-        const targetTime = targetDate.getTime();
-        let minDiff = Math.abs(new Date(targetDateStr).getTime() - targetTime);
-        for (const d of dates) {
-          const diff = Math.abs(new Date(d).getTime() - targetTime);
-          if (diff < minDiff) {
-            minDiff = diff;
-            targetDateStr = d;
-          }
-        }
-        
-        if (targetDateStr === latestDateStr) {
-          const idx = dates.indexOf(latestDateStr);
-          if (idx > 0) {
-            targetDateStr = dates[idx - 1];
-          } else {
-            return [];
-          }
-        }
-        
-        const entrants = [];
-        for (const row of this.leaderboard) {
-          const history = this.scoreHistory[row.ticker];
-          if (history) {
-            const targetEntry = history.find(h => h.d === targetDateStr);
-            if (!targetEntry || targetEntry.s === 0) {
-              entrants.push({
-                ticker: row.ticker,
-                company: row.company,
-                final_score: row.final_score,
-                etf_count: row.etf_count,
-                tiers: row.tiers
-              });
-            }
-          } else {
-            entrants.push({
-              ticker: row.ticker,
-              company: row.company,
-              final_score: row.final_score,
-              etf_count: row.etf_count,
-              tiers: row.tiers
-            });
-          }
-        }
-        const sorted = entrants.sort((a, b) => b.final_score - a.final_score);
-        const sortState = this.changesSort.newEntrants;
-        if (sortState && sortState.key) {
-          this.sortItemList(sorted, sortState.key, sortState.dir, String(this.changesPeriod));
-        }
-        return sorted;
-      };
-
-      const result = computeEntrants();
-      this._newEntrantsCache = { key: cacheKey, value: result };
-      return result;
-    },
-
-    get changesPeriodTargetDate() {
-      if (!this.scoreHistory || !this.changelog.today || !this.meta.snapshot_dates_in_window) {
-        return this.changelog.yesterday || '-';
-      }
-      if (this.changesPeriod === 1) {
-        return this.changelog.yesterday || '-';
-      }
-      
-      const latestDateStr = this.changelog.today;
-      const latestDate = new Date(latestDateStr);
-      let targetDate = new Date(latestDate);
-      
-      if (this.changesPeriod === 'YTD') {
-        const year = latestDate.getFullYear();
-        targetDate = new Date(`${year}-01-01`);
-      } else {
-        const days = parseInt(this.changesPeriod) || 1;
-        targetDate.setDate(latestDate.getDate() - days);
-      }
-      
-      const dates = this.meta.snapshot_dates_in_window || [];
-      if (!dates.length) return '-';
-      
-      let targetDateStr = dates[0];
-      const targetTime = targetDate.getTime();
-      let minDiff = Math.abs(new Date(targetDateStr).getTime() - targetTime);
-      
-      for (const d of dates) {
-        const diff = Math.abs(new Date(d).getTime() - targetTime);
-        if (diff < minDiff) {
-          minDiff = diff;
-          targetDateStr = d;
-        }
-      }
-      
-      if (targetDateStr === latestDateStr) {
-        const idx = dates.indexOf(latestDateStr);
-        if (idx > 0) {
-          targetDateStr = dates[idx - 1];
-        } else {
-          return '-';
-        }
-      }
-      return targetDateStr;
-    },
+    toneColor(dir) { return dir > 0 ? 'var(--up)' : dir < 0 ? 'var(--down)' : 'var(--text)'; },
 
     get sectorMax() {
       return Math.max(1, ...(this.flow?.by_sector || []).map(r => Math.abs(r.net_funds_delta || 0)));
@@ -3684,115 +2794,53 @@ function app() {
       return list.slice(0, 12);
     },
 
-    // ── Extreme Conviction Moves (ribbon) ────────────────────────────────
-    // For each motion metric, compute z-score against the leaderboard's own
-    // distribution; pick the dominant driver per ticker; surface those with
-    // |z| ≥ EXTREME_Z_THRESHOLD. Pure presentation - no new fetches, no
-    // recomputation of scores, no scoring math touched. Only used to
-    // populate the ribbon at top of the leaderboard tab.
-    //
-    // Memoized - recomputed only when leaderboard reference changes, since
-    // Alpine reactivity would otherwise rerun this on every keystroke.
-    _extremeMovesCache: null,
-    _extremeMovesCacheKey: null,
-    get extremeMoves() {
-      if (!Array.isArray(this.leaderboard) || this.leaderboard.length < 30) return [];
-      // Cache invalidates when the leaderboard array reference changes
-      if (this._extremeMovesCache && this._extremeMovesCacheKey === this.leaderboard) {
-        return this._extremeMovesCache;
+    // ── Today's signals strip ─────────────────────────────────────────────
+    get todaySignals() {
+      if (this._todaySignalsCache?.src === this.leaderboard && this._todaySignalsCache?.chg === this.changelog) {
+        return this._todaySignalsCache.value;
       }
-      const EXTREME_Z = 2.0;
-      const TOP_N = 8;
-
-      // Drivers - each row gets a z-score on each, we pick the dominant one.
-      // Labels are intentionally Conviction-language; we are NOT a factor model.
-      const drivers = [
-        { key: 'etf_count_delta_30d',   label: 'funds Δ 30d',      display: v => `${v >= 0 ? '+' : ''}${(v|0)} funds 30d` },
-        { key: 'global_rank_delta_30d', label: '30d rank Δ',       display: v => `${v >= 0 ? '+' : ''}${(v|0)} ranks 30d` },
-        { key: 'global_rank_peak_30d',  label: '30d peak Δ',       display: v => `+${(v|0)} peak 30d` },
-        { key: 'score_delta_pct',       label: 'score Δ%',         display: v => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1)}% score` },
-        { key: 'avg_weight_flow_7d',    label: '7d weight flow',   display: v => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1)}% wflow 7d` },
-      ];
-
-      // Quality gates - keep noise out of the ribbon.
-      // The leaderboard contains some single-ETF entries whose extreme z-score
-      // is data-quality artifact (currency placeholders, scrape transitions,
-      // ticker-symbology collapses), not a conviction signal. Filter
-      // conservatively: require multi-ETF agreement (≥3) so a sanitizer
-      // hiccup on one ETF can't surface a fake outlier.
-      const qualifies = row => {
-        if ((row.etf_count || 0) < 3) return false;
-        // Currency / non-equity placeholders are now dropped at scrape time
-        // too; this ISO-currency guard is belt-and-braces for the ribbon.
-        // Real tickers can be 1-2 chars (X, F) but those are equities; the
-        // suspect set is ISO-currency 3-letter codes.
-        const t = (row.ticker || '').toUpperCase();
-        const ISO_CCY = new Set(['CAD','EUR','USD','GBP','JPY','KRW','MXN','SAR','TWD','CNY','BRL','NOK','HKD','AUD','SGD','CHF','INR']);
-        if (ISO_CCY.has(t)) return false;
-        return true;
-      };
-
-      // Helper: mean & std of a numeric column over the leaderboard
-      const stats = key => {
-        const vals = this.leaderboard.map(r => r[key]).filter(v => typeof v === 'number' && isFinite(v));
-        if (vals.length < 30) return null;
-        const mean = vals.reduce((s, x) => s + x, 0) / vals.length;
-        const variance = vals.reduce((s, x) => s + (x - mean) ** 2, 0) / vals.length;
-        const std = Math.sqrt(variance);
-        return std > 0 ? { mean, std } : null;
-      };
-      const driverStats = drivers.map(d => ({ ...d, stats: stats(d.key) }));
-
-      // Score every qualifying row by max(|z|) over the drivers.
-      const scored = [];
-      for (const row of this.leaderboard) {
-        if (!qualifies(row)) continue;
-        let best = null;
-        for (const d of driverStats) {
-          if (!d.stats) continue;
-          const v = row[d.key];
-          if (typeof v !== 'number' || !isFinite(v)) continue;
-          // Per-metric noise gates - surface real conviction signal, not artifacts.
-          //   weight-flow under 5% is just rebalance jitter
-          //   score Δ between ±10% is normal; |Δ|≥100% is usually entry/exit, not a real move
-          if (d.key === 'avg_weight_flow_7d' && Math.abs(v) < 0.05) continue;
-          if (d.key === 'score_delta_pct') {
-            if (Math.abs(v) < 0.10) continue;
-            if (Math.abs(v) >= 0.99) continue;     // entry/exit artifact
-          }
-          const z = (v - d.stats.mean) / d.stats.std;
-          const absZ = Math.abs(z);
-          if (!best || absZ > best.absZ) {
-            best = { z, absZ, driver: d, val: v };
-          }
-        }
-        if (!best || best.absZ < EXTREME_Z) continue;
-
-        // Build a tight context line - facts only, no editorializing
-        const ctxParts = [];
-        if (row.flag === 'HIGH_CONVICTION') ctxParts.push('HC');
-        if (row.burst_30d)                  ctxParts.push('BURST');
-        if (row.crater_30d)                 ctxParts.push('CRATER');
-        if (row.quality_adopted_30d)        ctxParts.push('Quality+');
-        if ((row.etf_count_delta_30d || 0) >= 2) ctxParts.push('+funds');
-        ctxParts.push(`${row.etf_count || 0} ETFs`);
-
-        scored.push({
-          ticker:        row.ticker,
-          company:       row.company,
-          driverLabel:   best.driver.label,
-          driverDisplay: best.driver.display(best.val),
-          direction:     best.z >= 0 ? 'up' : 'down',
-          absZ:          best.absZ,
-          context:       ctxParts.join(' · '),
-        });
+      const B = (label, rgb, color) => `background: rgba(${rgb},0.10); color: ${color}; border: 1px solid rgba(${rgb},0.30)`;
+      const byRank = (a, b) => a.leaderboard_rank - b.leaderboard_rank;
+      const card = (r, kind, label, style, detail, tip) => ({ ticker: r.ticker, company: r.company || '', kind, label, style, detail, tip });
+      const lb = this.leaderboard;
+      const warn = [], build = [], seen = new Set();
+      const push = (list, c) => { if (!seen.has(c.ticker)) { seen.add(c.ticker); list.push(c); } };
+      for (const r of lb.filter(r => r.crater_30d).sort(byRank)) {
+        const to = r.motion_rank_then || 0;
+        push(warn, card(r, 'crater', 'CRATER', B('', '248,113,113', '#f87171'),
+          `#${to} → #${to + (r.crater_rank_loss || 0)} · ${r.motion_funds_delta || 0} fund`,
+          'CRATER - smoothed rank fell ×1.35+ over ~4 weeks as a fund dropped the name. The get-out signal.'));
       }
-      // Sort by |z| desc, take top N
-      scored.sort((a, b) => b.absZ - a.absZ);
-      const out = scored.slice(0, TOP_N);
-      this._extremeMovesCache = out;
-      this._extremeMovesCacheKey = this.leaderboard;
-      return out;
+      for (const r of lb.filter(r => r.funds_down).sort(byRank)) {
+        push(warn, card(r, 'fdown', 'FUNDS ↓', B('', '251,191,36', 'var(--amber)'),
+          `#${r.leaderboard_rank} · ${r.etf_count_delta_14d || 0} fund in 14d`,
+          'Funds down - a top-200 name lost a holding fund in the last 14 days.'));
+      }
+      for (const r of lb.filter(r => r.burst_30d).sort(byRank)) {
+        const to = r.motion_rank_then || 0;
+        push(build, card(r, 'burst', 'BURST', B('', '168,85,247', '#c084fc'),
+          `#${to} → #${to - (r.burst_rank_gain || 0)} · +${r.motion_funds_delta || 0} fund`,
+          'BURST - smoothed rank rose ×1.65+ in ~2 weeks into the top 300, confirmed by a fund adding the name.'));
+      }
+      const hcIn = new Set((this.changelog?.periods?.['1']?.hc_entered || []).map(x => x.ticker));
+      for (const r of lb.filter(r => hcIn.has(r.ticker)).sort(byRank)) {
+        push(build, card(r, 'hcin', 'HC', B('', '52,211,153', 'var(--up)'),
+          `#${r.leaderboard_rank} · ${r.etf_count} funds · new today`,
+          'Entered HIGH CONVICTION today.'));
+      }
+      for (const r of lb.filter(r => r.pre_hc).sort(byRank)) {
+        push(build, card(r, 'prehc', 'PRE-HC', B('', '52,211,153', '#6ee7b7'),
+          `#${r.leaderboard_rank} · ${r.etf_count} funds`,
+          `Pre-HC - one step from HIGH CONVICTION and improving (${r.conviction_etf_count || 0} convinced holder${r.conviction_etf_count === 1 ? '' : 's'}; HC needs 2).`));
+      }
+      for (const r of lb.filter(r => r.stealth_buy).sort(byRank)) {
+        push(build, card(r, 'stealth', 'STEALTH', B('', '232,121,249', '#f0abfc'),
+          `#${r.leaderboard_rank} · 2nd fund joined`,
+          'Stealth - a second independent fund joined in the last 14 days.'));
+      }
+      const value = { warn, build };
+      this._todaySignalsCache = { src: this.leaderboard, chg: this.changelog, value };
+      return value;
     },
 
     get filtered() {
@@ -3805,11 +2853,10 @@ function app() {
         burstOnly: this.burstOnly, craterOnly: this.craterOnly, qualityAdoptedOnly: this.qualityAdoptedOnly,
         preHcOnly: this.preHcOnly,
         stealthBuyOnly: this.stealthBuyOnly,
-        fundsUp: this.fundsUpOnly, fundsDown: this.fundsDownOnly,
-        quantQualityOnly: this.quantQualityOnly,
+        fundsUp: this.fundsUpOnly, fundsDown: this.fundsDownOnly, surge: this.surgeOnly, slide: this.slideOnly,
         tier: this.selectedTier, sector: this.selectedSector,
         country: this.selectedCountry, region: this.regionFilter,
-        excl: this.excludeConcentrated, q: this.q.trim().toLowerCase(),
+        q: this.q.trim().toLowerCase(),
         sort: this.sortLevels,
       });
       if (this._filteredCacheKey === key && this._filteredCache) return this._filteredCache;
@@ -3820,12 +2867,13 @@ function app() {
       if (this.newOnly)      r = r.filter(x => x.any_new);
       if (this.burstOnly)    r = r.filter(x => x.burst_30d);
       if (this.craterOnly)   r = r.filter(x => x.crater_30d);
+      if (this.surgeOnly)    r = r.filter(x => x.surge_10d);
+      if (this.slideOnly)    r = r.filter(x => x.slide_10d);
       if (this.qualityAdoptedOnly) r = r.filter(x => x.quality_adopted_30d);
       if (this.preHcOnly)        r = r.filter(x => this._isPreHc(x));
       if (this.stealthBuyOnly)   r = r.filter(x => this._isStealthBuy(x));
-      if (this.fundsUpOnly)      r = r.filter(x => (x.etf_count_delta_30d || 0) > 0);
-      if (this.fundsDownOnly)    r = r.filter(x => (x.etf_count_delta_30d || 0) < 0);
-      if (this.quantQualityOnly) r = r.filter(x => this._isQuantQuality(x));
+      if (this.fundsUpOnly)      r = r.filter(x => x.funds_up);
+      if (this.fundsDownOnly)    r = r.filter(x => x.funds_down);
       if (tier)              r = r.filter(x => (x.tiers || '').split(' + ').includes(tier));
       if (sector)            r = r.filter(x => x.sector === sector);
       if (country)           r = r.filter(x => x.country === country);
@@ -3835,18 +2883,17 @@ function app() {
           return region === 'US' ? isUS : !isUS;
         });
       }
-      if (this.excludeConcentrated) r = r.filter(x => (x.concentration_score || 0) <= 80);
       if (q)                 r = r.filter(x => (x.ticker || '').toLowerCase().includes(q) || (x.company || '').toLowerCase().includes(q));
       const out = [...r].sort((a, b) => {
         for (const lvl of this.sortLevels) {
           let av = a[lvl.key], bv = b[lvl.key];
-          if (lvl.key === 'burst_score' || lvl.key === 'global_rank_peak_30d') {
-            av = a.burst_30d ? (a.global_rank_peak_30d || 0) : 0;
-            bv = b.burst_30d ? (b.global_rank_peak_30d || 0) : 0;
+          if (lvl.key === 'burst_score') {
+            av = a.burst_30d ? (a.burst_rank_gain || 0) : 0;
+            bv = b.burst_30d ? (b.burst_rank_gain || 0) : 0;
           }
           if (lvl.key === 'crater_score') {
-            av = a.crater_30d ? (a.global_rank_drop_30d || 0) : 0;
-            bv = b.crater_30d ? (b.global_rank_drop_30d || 0) : 0;
+            av = a.crater_30d ? (a.crater_rank_loss || 0) : 0;
+            bv = b.crater_30d ? (b.crater_rank_loss || 0) : 0;
           }
           const dir = lvl.dir === 'asc' ? 1 : -1;
           if (av == null && bv == null) continue;
@@ -3958,37 +3005,6 @@ function app() {
       if (this.countrySortKey !== key) return '';
       return this.countrySortDir === 'asc' ? 'sort-asc' : 'sort-desc';
     },
-    sortItemList(list, key, dir, period) {
-      list.sort((a, b) => {
-        let av, bv;
-        if (key === 'score_delta') {
-          av = a.score_deltas_by_period?.[period] ?? a.score_delta;
-          bv = b.score_deltas_by_period?.[period] ?? b.score_delta;
-        } else if (key === 'rank_delta') {
-          av = a.global_rank_delta_by_period?.[period] ?? a.rank_delta;
-          bv = b.global_rank_delta_by_period?.[period] ?? b.rank_delta;
-        } else if (key === 'etf_delta') {
-          av = a.etf_count_delta_by_period?.[period] ?? a.etf_delta;
-          bv = b.etf_count_delta_by_period?.[period] ?? b.etf_delta;
-        } else {
-          av = a[key];
-          bv = b[key];
-        }
-
-        if (av == null && bv == null) return 0;
-        if (av == null) return 1;
-        if (bv == null) return -1;
-
-        let cmp = 0;
-        if (typeof av === 'number' && typeof bv === 'number') {
-          cmp = av - bv;
-        } else {
-          cmp = String(av).localeCompare(String(bv));
-        }
-        return dir === 'asc' ? cmp : -cmp;
-      });
-    },
-
     toggle(t) { this.open = (this.open === t) ? null : t; },
 
     // ── CSV export (current filtered leaderboard view) ───────────────────
@@ -4021,8 +3037,6 @@ function app() {
         ['concentration_score',    'Concentration'],
         ['hc_streak',              'HC streak'],
         ['score_streak',           'Score streak'],
-        ['velocity_z',             'Velocity z'],
-        ['ignition_z',             'Ignition z'],
         ['hhi',                    'HHI'],
         ['n_eff',                  'Effective breadth'],
         ['m_conc',                 'Concentration mult'],
@@ -4044,8 +3058,8 @@ function app() {
       for (const r of rows) {
         const rowData = {
           ...r,
-          burst_value: r.burst_30d ? (r.global_rank_peak_30d || 0) : 0,
-          crater_value: r.crater_30d ? (r.global_rank_drop_30d || 0) : 0,
+          burst_value: r.burst_30d ? (r.burst_rank_gain || 0) : 0,
+          crater_value: r.crater_30d ? (r.crater_rank_loss || 0) : 0,
         };
         lines.push(cols.map(([k]) => escape(rowData[k])).join(','));
       }
@@ -4055,7 +3069,7 @@ function app() {
       const filterTag = [
         this.flag, this.selectedTier, this.selectedSector, this.selectedCountry,
         this.regionFilter && (this.regionFilter === 'US' ? 'US' : 'INTL'),
-        this.newOnly && 'NEW', this.burstOnly && 'BURST', this.craterOnly && 'CRATER',
+        this.newOnly && 'NEW', this.burstOnly && 'BURST', this.craterOnly && 'CRATER', this.surgeOnly && 'SURGE', this.slideOnly && 'SLIDE',
       ].filter(Boolean).join('-').replace(/[^A-Za-z0-9_-]/g, '');
       const stamp = new Date().toISOString().slice(0, 10);
       const name = `conviction_leaderboard${filterTag ? '_' + filterTag : ''}_${stamp}.csv`;
@@ -4173,7 +3187,7 @@ function app() {
       }
       const n = this.etfSummary.length;
       const hole = `<circle cx="60" cy="60" r="28" fill="var(--surface)"/>`;
-      const label = `<text x="60" y="58" text-anchor="middle" style="font-size:11px;fill:var(--text);font-family:ui-monospace;pointer-events:none">${n}</text><text x="60" y="70" text-anchor="middle" style="font-size:7px;fill:var(--text-3);text-transform:uppercase;letter-spacing:0.05em;pointer-events:none">ETFs</text>`;
+      const label = `<text x="60" y="58" text-anchor="middle" style="font-size:11px;fill:var(--text);font-family:ui-monospace,Menlo,Consolas,monospace;pointer-events:none">${n}</text><text x="60" y="70" text-anchor="middle" style="font-size:7px;fill:var(--text-3);text-transform:uppercase;letter-spacing:0.05em;pointer-events:none">ETFs</text>`;
       return `<svg viewBox="0 0 120 120" style="width:100px;height:100px">${paths}${hole}${label}</svg>`;
     },
 
@@ -4206,11 +3220,11 @@ function app() {
       const topLabelNudges = { JHEM: -1.5, JHMM: 1.5, QMOM: -2.5, QQQM: 2.5, XMMO: -2, XSMO: 2 };
       for (let j = 0; j < etfs.length; j++) {
         const x = labelW + pad + j * cell + cell / 2 + (topLabelNudges[etfs[j]] || 0);
-        svg += `<text x="${x}" y="15" text-anchor="middle" style="font-family:ui-monospace;font-size:9px;font-weight:600;fill:var(--text-2);letter-spacing:0.01em">${etfs[j]}</text>`;
+        svg += `<text x="${x}" y="15" text-anchor="middle" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:9px;font-weight:600;fill:var(--text-2);letter-spacing:0.01em">${etfs[j]}</text>`;
       }
       for (let i = 0; i < etfs.length; i++) {
         const y = matrixTop + i * cell;
-        svg += `<text x="${labelW - 12}" y="${y + cell / 2 + 3}" text-anchor="end" style="font-family:ui-monospace;font-size:10px;font-weight:600;fill:var(--text-2)">${etfs[i]}</text>`;
+        svg += `<text x="${labelW - 12}" y="${y + cell / 2 + 3}" text-anchor="end" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10px;font-weight:600;fill:var(--text-2)">${etfs[i]}</text>`;
         for (let j = 0; j < etfs.length; j++) {
           const x = labelW + pad + j * cell;
           const v = (J[i] && J[i][j] != null) ? J[i][j] : 0;
@@ -4218,7 +3232,7 @@ function app() {
           const stroke = 'rgba(0,0,0,0.4)';
           const txt = (v >= 0.05 && i !== j) ? `${Math.round(v * 100)}` : '';
           svg += `<rect x="${x}" y="${y}" width="${cell - 2}" height="${cell - 2}" rx="3" fill="${fill}" stroke="${stroke}" stroke-width="0.5" data-i="${i}" data-j="${j}" class="overlap-cell"/>`;
-          if (txt) svg += `<text x="${x + (cell - 2) / 2}" y="${y + cell / 2 + 3}" text-anchor="middle" style="font-family:ui-monospace;font-size:8px;fill:rgba(255,255,255,0.78);pointer-events:none">${txt}</text>`;
+          if (txt) svg += `<text x="${x + (cell - 2) / 2}" y="${y + cell / 2 + 3}" text-anchor="middle" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:8px;fill:rgba(255,255,255,0.78);pointer-events:none">${txt}</text>`;
         }
       }
       return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;max-width:none">${svg}</svg>`;
@@ -4333,23 +3347,27 @@ function app() {
           style: 'background: rgba(52,211,153,0.12); color: var(--up); border: 1px solid rgba(52,211,153,0.30)',
           tip: `HIGH CONVICTION - held by ${r.etf_count} ETFs\nHC streak: ${r.hc_streak||0} days`
         },
-        'SPECULATIVE_BETA': {
-          label: 'SPEC β',
-          style: 'background: rgba(251,191,36,0.10); color: var(--amber); border: 1px solid rgba(251,191,36,0.25)',
-          tip: 'SPECULATIVE BETA - Trend tier momentum without Quality or Scout backing.'
+        'CONCENTRATED': {
+          label: 'CONC',
+          style: 'background: rgba(251,146,60,0.10); color: #fb923c; border: 1px solid rgba(251,146,60,0.30)',
+          tip: 'CONCENTRATED - the score rests on a single fund.'
         },
       };
       let stateLabel = stateMap[r.flag]?.label || 'Neutral';
       let stateStyle = stateMap[r.flag]?.style || 'background: rgba(255,255,255,0.04); color: var(--text-3); border: 1px solid rgba(255,255,255,0.10)';
       let stateTip = stateMap[r.flag]?.tip || 'Neutral status - no major structural anomalies.';
-      if (r.burst_30d) {
+      if (r.crater_30d) {
+        stateLabel = 'CRATER';
+        stateStyle = 'background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.30)';
+        stateTip = 'CRATER - smoothed rank collapsing as funds drop the name. The get-out signal.';
+      } else if (r.burst_30d) {
         stateLabel = 'BURST';
         stateStyle = 'background: rgba(168,85,247,0.15); color: #c084fc; border: 1px solid rgba(168,85,247,0.35)';
-        stateTip = `BURST move - global rank improved by ${r.global_rank_peak_30d ?? 0}+ positions in last 30d.`;
-      } else if ((r.etf_count_delta_30d || 0) >= 2 && (r.etf_count || 0) >= 2) {
-        stateLabel = 'ACCUM';
-        stateStyle = 'background: rgba(34,211,238,0.12); color: var(--cyan); border: 1px solid rgba(34,211,238,0.30)';
-        stateTip = `Accumulating - ${(r.etf_count_delta_30d || 0)} ETF positions added over 30d. Conviction is broadening.`;
+        stateTip = `BURST - smoothed rank #${r.motion_rank_then} → #${(r.motion_rank_then || 0) - (r.burst_rank_gain || 0)} with ${r.motion_funds_delta >= 0 ? '+' : ''}${r.motion_funds_delta} fund(s).`;
+      } else if (r.funds_down) {
+        stateLabel = 'FUNDS ↓';
+        stateStyle = 'background: rgba(251,191,36,0.10); color: var(--amber); border: 1px solid rgba(251,191,36,0.30)';
+        stateTip = 'Lost a holding fund in the last 14 days - the steadiest downside warning.';
       } else if (r.any_new) {
         stateLabel = 'NEW';
         stateStyle = 'background: rgba(96,165,250,0.10); color: var(--blue); border: 1px solid rgba(96,165,250,0.25)';
@@ -4584,13 +3602,13 @@ function app() {
       let center = '';
       if (hi !== null && slices[hi]) {
         const s = slices[hi];
-        center = `<text x="130" y="118" text-anchor="middle" style="font-family:ui-monospace;font-size:16px;font-weight:600;fill:#22d3ee">${s.ticker}</text>` +
-                 `<text x="130" y="138" text-anchor="middle" style="font-family:ui-monospace;font-size:22px;font-weight:700;fill:#e4e4e7">${(s.weight*100).toFixed(2)}%</text>` +
+        center = `<text x="130" y="118" text-anchor="middle" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:16px;font-weight:600;fill:#22d3ee">${s.ticker}</text>` +
+                 `<text x="130" y="138" text-anchor="middle" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:22px;font-weight:700;fill:#e4e4e7">${(s.weight*100).toFixed(2)}%</text>` +
                  `<text x="130" y="155" text-anchor="middle" style="font-family:ui-sans-serif;font-size:9px;fill:#52525b">Rank #${s.rank}</text>`;
       } else {
-        center = `<text x="130" y="122" text-anchor="middle" style="font-family:ui-monospace;font-size:20px;font-weight:600;fill:#22d3ee">${this.activeETF}</text>` +
-                 `<text x="130" y="143" text-anchor="middle" style="font-family:ui-monospace;font-size:11px;fill:#52525b">${this.etfHoldings.length} holdings</text>` +
-                 `<text x="130" y="158" text-anchor="middle" style="font-family:ui-monospace;font-size:9px;fill:#52525b">Tier ${this.currentETFTier}</text>`;
+        center = `<text x="130" y="122" text-anchor="middle" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:20px;font-weight:600;fill:#22d3ee">${this.activeETF}</text>` +
+                 `<text x="130" y="143" text-anchor="middle" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;fill:#52525b">${this.etfHoldings.length} holdings</text>` +
+                 `<text x="130" y="158" text-anchor="middle" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:9px;fill:#52525b">Tier ${this.currentETFTier}</text>`;
       }
       // Also update slice opacity via a style tag (avoids re-rendering paths)
       const styleRules = hi !== null
@@ -4609,18 +3627,6 @@ function app() {
 
     donutPalette() { return this._donutPalette; },
 
-    // §29 Early-vs-Crowded quadrant
-    // EARLY: rising weight in 2–3 ETFs (not yet consensus)
-    // CROWDED: flat weight in 9+ ETFs (consensus formed)
-    earlyVsCrowded(row) {
-      const etfs = row.etf_count || 0;
-      const flow = row.avg_weight_flow_7d || 0;
-      const delta30 = row.etf_count_delta_30d || 0;
-      if (etfs >= 2 && etfs <= 4 && (flow > 0.005 || delta30 > 0)) return 'EARLY';
-      if (etfs >= 9 && Math.abs(flow) < 0.02 && delta30 === 0) return 'CROWDED';
-      return null;
-    },
-
     // ── Macro status - momentum regime glyph + word (text-color only) ────
     regimeInfo(row) {
       const m = {
@@ -4633,47 +3639,35 @@ function app() {
       return m[row.momentum_regime] || null;
     },
 
-    // ── Structural anomalies - priority-ordered micro-badge stack ────────
-    // Shared by both table copies. Priority: BURST > ACCUM > Q+ > PRE-HC >
-    // SBUY > CONC > SPEC β, then legacy NEW / EARLY / CROWD so nothing
-    // previously surfaced in the Flag column is lost (they land in overflow).
+    // ── Signal badges - priority-ordered stack, shared by both table copies ──
     signalBadges(row) {
+      // Priority: exit warnings first, then entry signals, then descriptors.
+      const B = (k, label, rgb, color, tip) => ({ k, label, tip,
+        style: `background: rgba(${rgb},0.10); color: ${color}; border: 1px solid rgba(${rgb},0.30)` });
       const b = [];
-      if (row.burst_30d) b.push({ k: 'burst', label: 'BURST',
-        style: 'background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.30)',
-        tip: `BURST move - global rank improved by ${row.global_rank_peak_30d ?? 0}+ positions in last 30d. Currently #${row.leaderboard_rank}${row.global_rank_best_30d != null ? ` (best in window: #${row.global_rank_best_30d})` : ''}. Early signal: strongest as a HIGH_CONVICTION precursor; expect post-peak rank mean-reversion.` });
-      if (row.crater_30d) b.push({ k: 'crater', label: 'CRATER',
-        style: 'background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.30)',
-        tip: `CRATER signal - global rank dropped by ${row.global_rank_drop_30d ?? 0}+ positions in last 30d. Currently #${row.leaderboard_rank}. Sustained downward rank acceleration.` });
-      if ((row.etf_count_delta_30d || 0) >= 2 && !row.burst_30d)
-        b.push({ k: 'accum', label: 'ACCUM',
-          style: 'background: rgba(34,211,238,0.10); color: var(--cyan); border: 1px solid rgba(34,211,238,0.25)',
-          tip: `Accumulating - ${(row.etf_count_delta_30d || 0)} ETF positions added over 30d. Conviction is broadening.` });
-      if (row.quality_adopted_30d) b.push({ k: 'qplus', label: 'Q+',
-        style: 'background: rgba(52,211,153,0.10); color: var(--up); border: 1px solid rgba(52,211,153,0.25)',
-        tip: 'Quality+ - a Quality-tier ETF added this name in the last 30 days.' });
-      if (this._isPreHc(row)) b.push({ k: 'prehc', label: 'PRE-HC',
-        style: 'background: rgba(52,211,153,0.06); color: #6ee7b7; border: 1px solid rgba(52,211,153,0.20)',
-        tip: 'Pre-HC - held by exactly 3 ETFs with improving per-fund ranks over 7d. One pickup away from HIGH_CONVICTION.' });
-      if (this._isStealthBuy(row)) b.push({ k: 'sbuy', label: 'SBUY',
-        style: 'background: rgba(232,121,249,0.08); color: #f0abfc; border: 1px solid rgba(232,121,249,0.22)',
-        tip: 'Stealth Buy - 1-2 funds loading up fast (+10% avg weight in 7d) before ranks catch up.' });
-      if (row.flag === 'CONCENTRATED') b.push({ k: 'conc', label: 'CONC',
-        style: 'background: rgba(251,146,60,0.10); color: #fb923c; border: 1px solid rgba(251,146,60,0.30)',
-        tip: 'CONCENTRATED - most of this score comes from a single ETF. Fragile if that fund rebalances.' });
-      if (row.flag === 'SPECULATIVE_BETA') b.push({ k: 'spec', label: 'SPEC β',
-        style: 'background: transparent; color: rgba(192,132,252,0.65); border: 1px solid rgba(168,85,247,0.25)',
-        tip: 'SPECULATIVE BETA - Trend tier without Quality or Scout backing.' });
-      if (row.any_new) b.push({ k: 'new', label: 'NEW',
-        style: 'background: rgba(96,165,250,0.10); color: var(--blue); border: 1px solid rgba(96,165,250,0.25)',
-        tip: 'NEW - first appearance in any ETF within the last 14 days.' });
-      const quad = this.earlyVsCrowded(row);
-      if (quad === 'EARLY') b.push({ k: 'early', label: 'EARLY',
-        style: 'background: rgba(52,211,153,0.08); color: #6ee7b7; border: 1px solid rgba(52,211,153,0.2)',
-        tip: 'EARLY - rising weight in 2–4 ETFs, not yet consensus. The alpha window before it becomes crowded.' });
-      else if (quad === 'CROWDED') b.push({ k: 'crowd', label: 'CROWD',
-        style: 'background: rgba(161,161,170,0.08); color: var(--text-3); border: 1px solid rgba(161,161,170,0.2)',
-        tip: 'CROWDED - flat weight in 9+ ETFs. Consensus has formed; alpha may be behind you.' });
+      const to = (row.motion_rank_then || 0);
+      if (row.crater_30d) b.push(B('crater', 'CRATER', '248,113,113', '#f87171',
+        `CRATER - smoothed rank #${to} to #${to + (row.crater_rank_loss || 0)} in ~4 weeks as ${Math.abs(row.motion_funds_delta || 0)} fund(s) dropped it. Lagged peers by 1.0-2.9% over 20 days in both regimes - the get-out signal.`));
+      if (row.funds_down && !row.crater_30d) b.push(B('fdown', 'FUNDS ↓', '251,191,36', 'var(--amber)',
+        `Funds down - lost ${Math.abs(row.etf_count_delta_14d || 0)} holding fund(s) in the last 14 days. The steadiest warning in the data (-2.7% / -7.0% vs peers over 20 days).`));
+      if (row.burst_30d) b.push(B('burst', 'BURST', '168,85,247', '#c084fc',
+        `BURST - smoothed rank #${to} to #${to - (row.burst_rank_gain || 0)} in ~2 weeks, confirmed by +${row.motion_funds_delta || 0} holding fund(s). +5.2% vs peers over 20 days in a momentum-friendly market; flat in an unwind.`));
+      if (row.slide_10d) b.push(B('slide', 'SLIDE', '253,164,175', '#fda4af',
+        `SLIDE - smoothed rank #${row.motion_rank_then} to #${row.motion_rank_now} in ~2 weeks with no fund leaving: the price drop showing through fund weights. Momentum, not a forecast (-1.7% vs peers over 20 days in Jun-Oct, +0.9% in Feb-May).`));
+      if (row.surge_10d) b.push(B('surge', 'SURGE', '196,181,253', '#c4b5fd',
+        `SURGE - smoothed rank #${row.motion_rank_then} to #${row.motion_rank_now} in ~2 weeks with no fund joining: the price move showing through fund weights. Momentum, not a forecast (+2.9% vs peers over 20 days in Feb-May, -2.6% in Jun-Oct).`));
+      if (row.funds_up && !row.burst_30d) b.push(B('fup', 'FUNDS ↑', '52,211,153', 'var(--up)',
+        `Funds up - gained ${row.etf_count_delta_30d || 0} holding fund(s) in the last 30 days.`));
+      if (row.pre_hc) b.push(B('prehc', 'PRE-HC', '52,211,153', '#6ee7b7',
+        'Pre-HC - one step from HIGH CONVICTION and improving: 3+ holders, 1+ with conviction, 2+ strategy tiers, ranks and score rising.'));
+      if (row.stealth_buy) b.push(B('sbuy', 'STEALTH', '232,121,249', '#f0abfc',
+        'Stealth - a second independent fund joined this name in the last 14 days: consensus starting to form.'));
+      if (row.quality_adopted_30d) b.push(B('qplus', 'Q+', '45,212,191', '#5eead4',
+        'Quality+ - a Quality-tier fund added this name in the last 30 days.'));
+      if (row.flag === 'CONCENTRATED') b.push(B('conc', 'CONC', '251,146,60', '#fb923c',
+        'CONCENTRATED - the score rests on a single fund. A risk descriptor, not a buy signal.'));
+      if (row.any_new) b.push(B('new', 'NEW', '96,165,250', 'var(--blue)',
+        'NEW - first appearance in an ETF within the last 14 days.'));
       return b;
     },
 
@@ -4684,16 +3678,12 @@ function app() {
     // ── Auto-explainer verdict - deterministic, priority-ordered ─────────
     verdictLine(row) {
       if (row.burst_30d) {
-        const peak = row.global_rank_peak_30d ?? 0;
-        const sustained = (row.global_rank_delta_30d ?? 0) > 0;
-        return `Burst regime - +${peak} peak ranks in 30d${sustained ? ', sustained.' : ', momentum cooling.'}`;
+        return `Burst - smoothed rank +${row.burst_rank_gain ?? 0} positions in ~2 weeks, confirmed by +${row.motion_funds_delta ?? 0} fund(s).`;
       }
       if (row.crater_30d) {
-        const drop = row.global_rank_drop_30d ?? 0;
-        return `Crater regime - rank dropped ${drop}+ positions in 30d. Sustained downward acceleration.`;
+        return `Crater - smoothed rank −${row.crater_rank_loss ?? 0} positions in ~4 weeks as ${Math.abs(row.motion_funds_delta ?? 0)} fund(s) dropped it. Consider exiting.`;
       }
       if (row.quality_adopted_30d) return 'Quality cosign added in last 30 days - institutional validation.';
-      if ((row.velocity_z ?? 0) > 1.5) return `Velocity ${row.velocity_z.toFixed(1)}σ above universe - accumulation accelerating.`;
       if (row.flag === 'CONCENTRATED') return 'Single-fund dependency - score rests on one ETF.';
       const m = {
         accelerating: 'Momentum accelerating across holders.',
@@ -4741,7 +3731,7 @@ function app() {
       if (row.m_conc == null) risk.push({ k: 'conc penalty', v: '–', c: 'var(--text-3)' });
       else if (row.m_conc < 1) risk.push({ w: true, v: `−${Math.round((1 - row.m_conc) * 100)}% Concentration penalty`, c: 'var(--amber)' });
       else risk.push({ k: 'conc penalty', v: 'none', c: 'var(--text-3)' });
-      if (row.crater_30d) risk.push({ w: true, v: `Crater signal: rank dropped ${row.global_rank_drop_30d ?? 0}+ positions in 30d`, c: 'var(--down)' });
+      if (row.crater_30d) risk.push({ w: true, v: `Crater: smoothed rank −${row.crater_rank_loss ?? 0} as ${Math.abs(row.motion_funds_delta ?? 0)} fund(s) dropped it`, c: 'var(--down)' });
 
       return [
         { label: 'Structure', lines: structure },

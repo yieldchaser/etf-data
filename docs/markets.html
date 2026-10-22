@@ -1571,12 +1571,12 @@
               </th>
               <template x-for="m in ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']" :key="m">
                 <th class="matrix-sticky-header"
-                    style="height:24px;text-align:center;font-size:10px;font-family:ui-monospace;color:var(--text-3);border-bottom:1px solid var(--border-2);"
-                    :style="(new Date().getMonth() + 1) === (['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(m) + 1) ? 'color:var(--cyan);border-bottom:2px solid var(--cyan);height:24px;text-align:center;font-size:10px;font-family:ui-monospace;' : ''"
+                    style="height:24px;text-align:center;font-size:10px;font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--text-3);border-bottom:1px solid var(--border-2);"
+                    :style="(new Date().getMonth() + 1) === (['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(m) + 1) ? 'color:var(--cyan);border-bottom:2px solid var(--cyan);height:24px;text-align:center;font-size:10px;font-family:ui-monospace,Menlo,Consolas,monospace;' : ''"
                     x-text="m"></th>
               </template>
-              <th class="matrix-sticky-header" style="width:60px;height:24px;text-align:center;font-size:10px;font-family:ui-monospace;color:var(--cyan);border-bottom:1px solid var(--border-2);">Best</th>
-              <th class="matrix-sticky-header" style="width:60px;height:24px;text-align:center;font-size:10px;font-family:ui-monospace;color:var(--down);border-bottom:1px solid var(--border-2);">Worst</th>
+              <th class="matrix-sticky-header" style="width:60px;height:24px;text-align:center;font-size:10px;font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--cyan);border-bottom:1px solid var(--border-2);">Best</th>
+              <th class="matrix-sticky-header" style="width:60px;height:24px;text-align:center;font-size:10px;font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--down);border-bottom:1px solid var(--border-2);">Worst</th>
             </tr>
           </thead>
           <tbody>
@@ -1591,7 +1591,7 @@
                          muteColor so the cells are calm and a single grid reads as one
                          table. Hit rate still drives opacity (0.4..1.0). Low-sample cells
                          (n<10) get an italic underline as a visual caveat. -->
-                    <div style="height:30px;display:flex;align-items:center;justify-content:center;font-size:10px;font-family:ui-monospace;font-variant-numeric:tabular-nums;cursor:default;border:1px solid rgba(0,0,0,0.3);"
+                    <div style="height:30px;display:flex;align-items:center;justify-content:center;font-size:10px;font-family:ui-monospace,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;cursor:default;border:1px solid rgba(0,0,0,0.3);"
                          :style="`background:${seasonalityCellColor(cell.avg)};color:${seasonalityCellText(cell.avg)};opacity:${cell.avg !== null ? (0.45 + (cell.hitRate || 0.5) * 0.55) : 1};outline:${(new Date().getMonth()) === mi ? '2px solid var(--cyan)' : 'none'};outline-offset:-1px;text-decoration:${cell.n > 0 && cell.n < 10 ? 'underline dotted' : 'none'};`"
                          @mouseenter="showTt($event, `${row.name}\n${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][mi]}: avg ${cell.avg !== null ? ((cell.avg>=0?'+':'')+(cell.avg*100).toFixed(1)+'%') : '—'}\nHit rate: ${cell.hitRate !== null ? (cell.hitRate*100).toFixed(0)+'%' : '—'} (n=${cell.n} years)${cell.n > 0 && cell.n < 10 ? '\n⚠ Low sample size' : ''}`)"
                          @mouseleave="hideTt()"
@@ -2641,7 +2641,7 @@
                 <template x-if="flowCategoryUniverseTotals">
                   <tfoot>
                     <tr style="border-top:2px solid var(--flow-line);background:rgba(255,255,255,0.03);font-weight:600">
-                      <td style="color:var(--flow-cyan);font-weight:700"><span x-text="`Universe Total (${flowCategorySummaries.length} Categories)`">Universe Total (10 Categories)</span></td>
+                      <td style="color:var(--flow-cyan);font-weight:700"><span x-text="`Universe Total (${flowCategoryHeatmapRows.length} Categories)`">Universe Total (10 Categories)</span></td>
                       <td style="text-align:right;font-family:ui-monospace,monospace" x-text="flowCategoryUniverseTotals.count"></td>
                       <td style="text-align:right;font-family:ui-monospace,monospace" x-text="`$${(flowCategoryUniverseTotals.aum_m / 1000).toFixed(1)}B`"></td>
                       <td style="text-align:right;font-family:ui-monospace,monospace" :class="flowCategoryUniverseTotals.flow_1d > 0 ? 'flow-positive' : flowCategoryUniverseTotals.flow_1d < 0 ? 'flow-negative' : ''" x-text="formatMoney(flowCategoryUniverseTotals.flow_1d)"></td>
@@ -5075,7 +5075,7 @@ function marketsApp() {
         const isZero = i === 0;
         yTicks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" stroke="${isZero ? 'rgba(255,255,255,0.20)' : 'rgba(255,255,255,0.04)'}" stroke-width="${isZero ? 1.5 : 1}"/>`;
         const label = (v >= 0 ? (v > 0 ? '+' : '') : '') + (v * 100).toFixed(0) + '%';
-        yTicks += `<text x="${PL - 5}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:${isZero ? '#a1a1aa' : '#52525b'};font-family:ui-monospace">${label}</text>`;
+        yTicks += `<text x="${PL - 5}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:${isZero ? '#a1a1aa' : '#52525b'};font-family:ui-monospace,Menlo,Consolas,monospace">${label}</text>`;
       }
 
       // X-axis year labels (adaptive - every N years)
@@ -5085,7 +5085,7 @@ function marketsApp() {
         const yr = years[i];
         if (yr % step !== 0) continue;
         const x = xScale(i);
-        xLabels += `<text x="${x.toFixed(1)}" y="${H - 8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${yr}</text>`;
+        xLabels += `<text x="${x.toFixed(1)}" y="${H - 8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace,Menlo,Consolas,monospace">${yr}</text>`;
         xLabels += `<line x1="${x.toFixed(1)}" y1="${PT}" x2="${x.toFixed(1)}" y2="${H - PB}" stroke="rgba(255,255,255,0.025)" stroke-width="1"/>`;
       }
 
@@ -5106,7 +5106,7 @@ function marketsApp() {
         // Value label on tall bars (>20px)
         if (barH > 22 && barW >= 8) {
           const labelY = ret >= 0 ? barTop - 3 : barTop + barH + 10;
-          bars += `<text x="${(parseFloat(x) + barW / 2).toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="middle" style="font-size:8px;fill:${color};font-family:ui-monospace;pointer-events:none">${sign}${pct}%</text>`;
+          bars += `<text x="${(parseFloat(x) + barW / 2).toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="middle" style="font-size:8px;fill:${color};font-family:ui-monospace,Menlo,Consolas,monospace;pointer-events:none">${sign}${pct}%</text>`;
         }
       }
 
@@ -5120,7 +5120,7 @@ function marketsApp() {
         const yc = yScale(stats.cagr);
         const cagrPct = (stats.cagr * 100).toFixed(1);
         cagrLine = `<line x1="${PL}" y1="${yc.toFixed(1)}" x2="${W - PR}" y2="${yc.toFixed(1)}" stroke="#fbbf24" stroke-width="1" stroke-dasharray="5,4" opacity="0.5"/>`;
-        cagrLine += `<text x="${W - PR + 3}" y="${(yc + 3.5).toFixed(1)}" style="font-size:8px;fill:#fbbf24;font-family:ui-monospace;opacity:0.7">CAGR ${cagrPct}%</text>`;
+        cagrLine += `<text x="${W - PR + 3}" y="${(yc + 3.5).toFixed(1)}" style="font-size:8px;fill:#fbbf24;font-family:ui-monospace,Menlo,Consolas,monospace;opacity:0.7">CAGR ${cagrPct}%</text>`;
       }
 
       // Compare asset overlay - dashed line connecting annual returns
@@ -5141,7 +5141,7 @@ function marketsApp() {
         if (pts.length >= 2) {
           const compareName = this.returnsData.assets[this.detailCompareAsset]?.meta?.name || this.detailCompareAsset;
           compareLine = `<polyline points="${pts.join(' ')}" fill="none" stroke="${compareColor}" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.8"/>`;
-          compareLine += `<text x="${W - PR}" y="${PT - 6}" text-anchor="end" style="font-size:8px;fill:${compareColor};font-family:ui-monospace;opacity:0.8">— ${compareName}</text>`;
+          compareLine += `<text x="${W - PR}" y="${PT - 6}" text-anchor="end" style="font-size:8px;fill:${compareColor};font-family:ui-monospace,Menlo,Consolas,monospace;opacity:0.8">— ${compareName}</text>`;
         }
       }
 
@@ -5240,7 +5240,7 @@ function marketsApp() {
         const y = yS(v); if (y < PT - 5 || y > H - PB + 5) continue;
         ticks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>`;
         const label = v >= 1000 ? (v >= 1000000 ? (v/1000000).toFixed(1)+'M' : v >= 1000 ? (v/1000).toFixed(0)+'K' : v) : v < 1 ? v.toFixed(2) : v.toFixed(v < 10 ? 1 : 0);
-        ticks += `<text x="${PL - 5}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${label}</text>`;
+        ticks += `<text x="${PL - 5}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace,Menlo,Consolas,monospace">${label}</text>`;
       }
 
       // X-axis decade labels
@@ -5252,7 +5252,7 @@ function marketsApp() {
         const idx = months.findIndex(m => m.startsWith(yr));
         if (idx < 0) continue;
         const x = xS(idx);
-        xLabels += `<text x="${x.toFixed(1)}" y="${H - 10}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${yr}</text>`;
+        xLabels += `<text x="${x.toFixed(1)}" y="${H - 10}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace,Menlo,Consolas,monospace">${yr}</text>`;
         xLabels += `<line x1="${x.toFixed(1)}" y1="${PT}" x2="${x.toFixed(1)}" y2="${H - PB}" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>`;
       }
 
@@ -5267,7 +5267,7 @@ function marketsApp() {
 
       const scaleLabel = useLog ? ' (log)' : '';
       const nameLabel = asset.meta?.name || this.selectedAsset;
-      const title = `<text x="${PL}" y="13" style="font-size:10px;fill:#71717a;font-family:ui-monospace">${nameLabel}${scaleLabel}</text>`;
+      const title = `<text x="${PL}" y="13" style="font-size:10px;fill:#71717a;font-family:ui-monospace,Menlo,Consolas,monospace">${nameLabel}${scaleLabel}</text>`;
 
       return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block">${title}${ticks}${xLabels}<path d="${d.trim()}" fill="none" stroke="var(--cyan)" stroke-width="1.5" opacity="0.9"/></svg>`;
     },
@@ -5307,7 +5307,7 @@ function marketsApp() {
       const CW = 44, RH = 22, LW = 46, HH = 22, TW = 52;
       const W = LW + 12 * CW + TW + 4, H = HH + years.length * RH + 4;
 
-      let html = `<table style="border-collapse:separate;border-spacing:0;font-size:10px;font-family:ui-monospace;width:${W}px">`;
+      let html = `<table style="border-collapse:separate;border-spacing:0;font-size:10px;font-family:ui-monospace,Menlo,Consolas,monospace;width:${W}px">`;
       // Header row - sticky top
       html += `<thead><tr><th style="position:sticky;left:0;top:0;z-index:4;background:var(--bg);min-width:${LW}px;padding:4px 6px;border-bottom:1px solid var(--border-2);color:var(--text-3);font-size:9px;text-align:left">Year</th>`;
       for (const m of MONTHS) {
@@ -5658,7 +5658,7 @@ function marketsApp() {
       }
 
       const CW = 90, LW = 50;
-      let html = `<table style="border-collapse:separate;border-spacing:0;font-size:10px;font-family:ui-monospace;width:100%">`;
+      let html = `<table style="border-collapse:separate;border-spacing:0;font-size:10px;font-family:ui-monospace,Menlo,Consolas,monospace;width:100%">`;
 
       // ── Sticky header row ──
       html += `<thead><tr>`;
@@ -6034,7 +6034,7 @@ function marketsApp() {
         const v = minV + i * tickStep;
         const y = yScale(v);
         yTicks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>`;
-        yTicks += `<text x="${PL - 4}" y="${(y + 4).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${v.toFixed(1)}%</text>`;
+        yTicks += `<text x="${PL - 4}" y="${(y + 4).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace,Menlo,Consolas,monospace">${v.toFixed(1)}%</text>`;
       }
 
       // X-axis year labels
@@ -6046,7 +6046,7 @@ function marketsApp() {
         const m = `${yr}-01`;
         if (!filteredMonths.includes(m)) continue;
         const x = xScale(m);
-        xLabels += `<text x="${x.toFixed(1)}" y="${H - 8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${yr}</text>`;
+        xLabels += `<text x="${x.toFixed(1)}" y="${H - 8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace,Menlo,Consolas,monospace">${yr}</text>`;
         xLabels += `<line x1="${x.toFixed(1)}" y1="${PT}" x2="${x.toFixed(1)}" y2="${H - PB}" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>`;
       }
 
@@ -6219,7 +6219,7 @@ function marketsApp() {
       const RH = 28;
 
       // Build HTML table - responsive, sticky header, hover highlight
-      let html = `<table id="periodic-tbl" style="border-collapse:separate;border-spacing:1px;font-size:9px;font-family:ui-monospace;table-layout:fixed;width:${years.length * (CW + 1)}px">`;
+      let html = `<table id="periodic-tbl" style="border-collapse:separate;border-spacing:1px;font-size:9px;font-family:ui-monospace,Menlo,Consolas,monospace;table-layout:fixed;width:${years.length * (CW + 1)}px">`;
       // Sticky year header
       html += `<thead><tr>`;
       for (const yr of years) {
@@ -6399,7 +6399,7 @@ function marketsApp() {
         // Format: 0.0% at top, −10.0%, −20.0%... going down
         const label = v === 0 ? '0.0%' : (v * 100).toFixed(1) + '%';
         yTicks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,${v === 0 ? '0.20' : '0.05'})" stroke-width="1"/>`;
-        yTicks += `<text x="${PL - 5}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:${v === 0 ? '#a1a1aa' : '#52525b'};font-family:ui-monospace">${label}</text>`;
+        yTicks += `<text x="${PL - 5}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:${v === 0 ? '#a1a1aa' : '#52525b'};font-family:ui-monospace,Menlo,Consolas,monospace">${label}</text>`;
       }
 
       // X-axis year labels (adaptive density)
@@ -6411,7 +6411,7 @@ function marketsApp() {
         const m = `${yr}-01`;
         if (!monthIdx.has(m)) continue;
         const x = xScale(m);
-        xLabels += `<text x="${x.toFixed(1)}" y="${H - 8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${yr}</text>`;
+        xLabels += `<text x="${x.toFixed(1)}" y="${H - 8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace,Menlo,Consolas,monospace">${yr}</text>`;
         xLabels += `<line x1="${x.toFixed(1)}" y1="${PT}" x2="${x.toFixed(1)}" y2="${H - PB}" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>`;
       }
 
@@ -6714,7 +6714,7 @@ function marketsApp() {
         const fill   = isZero ? '#a1a1aa' : '#52525b';
         const sign   = v > 0 ? '+' : '';
         yTicks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W-PR}" y2="${y.toFixed(1)}" stroke="${stroke}" stroke-width="1"/>`;
-        yTicks += `<text x="${PL-4}" y="${(y+4).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:${fill};font-family:ui-monospace">${sign}${(v*100).toFixed(0)}%</text>`;
+        yTicks += `<text x="${PL-4}" y="${(y+4).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:${fill};font-family:ui-monospace,Menlo,Consolas,monospace">${sign}${(v*100).toFixed(0)}%</text>`;
       }
 
       // Emphasised zero gridline (in case zero isn't exactly on a tick)
@@ -6730,7 +6730,7 @@ function marketsApp() {
         if (rolls[i].ym.slice(5, 7) !== '01') continue;
         yrSeen.add(yr);
         const x = xS(i);
-        xLabels += `<text x="${x.toFixed(1)}" y="${H-8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${yr}</text>`;
+        xLabels += `<text x="${x.toFixed(1)}" y="${H-8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace,Menlo,Consolas,monospace">${yr}</text>`;
       }
 
       // Axis lines
@@ -6773,7 +6773,7 @@ function marketsApp() {
         const c = Math.round((maxC * i) / 3);
         const y = PT + chartH - (c / Math.max(maxC, 1)) * chartH;
         yTicks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W-PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>`;
-        yTicks += `<text x="${PL-4}" y="${(y+3.5).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${c}</text>`;
+        yTicks += `<text x="${PL-4}" y="${(y+3.5).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace,Menlo,Consolas,monospace">${c}</text>`;
       }
 
       // Bars with data-bucket attribute + x-tick labels at every 4th bucket midpoint (signed pct)
@@ -6785,7 +6785,7 @@ function marketsApp() {
         bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(bw-1).toFixed(1)}" height="${bh.toFixed(1)}" fill="${mid >= 0 ? '#34d399' : '#fb7185'}" opacity="0.7" rx="1" data-bucket="${i}"/>`;
         if (i % 4 === 0) {
           const sign = mid > 0 ? '+' : '';
-          xLabels += `<text x="${(x+bw/2).toFixed(1)}" y="${H-8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${sign}${(mid*100).toFixed(0)}%</text>`;
+          xLabels += `<text x="${(x+bw/2).toFixed(1)}" y="${H-8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace,Menlo,Consolas,monospace">${sign}${(mid*100).toFixed(0)}%</text>`;
         }
       }
 
@@ -6900,7 +6900,7 @@ function marketsApp() {
       for (const v of [1,2,5,10,20,50,100,200,500,1000,2000,5000,10000].filter(v => v >= minV*0.5 && v <= maxV*2)) {
         const y = yS(v); if (y < PT || y > H-PB) continue;
         ticks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W-PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>`;
-        ticks += `<text x="${PL-4}" y="${(y+4).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace">$${v}</text>`;
+        ticks += `<text x="${PL-4}" y="${(y+4).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace,Menlo,Consolas,monospace">$${v}</text>`;
       }
       
       const years = [...new Set(months.map(m => m.slice(0,4)))].map(Number).sort((a,b) => a-b);
@@ -6912,7 +6912,7 @@ function marketsApp() {
         const firstMonthOfYear = months.find(m => m.startsWith(`${yr}-`));
         if (!firstMonthOfYear) continue;
         const x = xS(firstMonthOfYear);
-        xLabels += `<text x="${x.toFixed(1)}" y="${H-8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${yr}</text>`;
+        xLabels += `<text x="${x.toFixed(1)}" y="${H-8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace,Menlo,Consolas,monospace">${yr}</text>`;
         xLabels += `<line x1="${x.toFixed(1)}" y1="${PT}" x2="${x.toFixed(1)}" y2="${H-PB}" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>`;
       }
 
@@ -7041,7 +7041,7 @@ function marketsApp() {
       }
       const CELL = 52;
       let html = `<table style="border-collapse:separate;border-spacing:4px;margin:12px auto;"><tr><td style="width:120px;"></td>`;
-      for (const a of assetDefs) html += `<td style="width:${CELL}px;text-align:center;font-size:9px;font-family:ui-monospace;color:#52525b;padding:2px;">${a.shortName.slice(0,6)}</td>`;
+      for (const a of assetDefs) html += `<td style="width:${CELL}px;text-align:center;font-size:9px;font-family:ui-monospace,Menlo,Consolas,monospace;color:#52525b;padding:2px;">${a.shortName.slice(0,6)}</td>`;
       html += `</tr>`;
       for (let i = 0; i < n; i++) {
         html += `<tr><td style="font-size:10px;color:var(--text-2);padding:2px 6px;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis;">${assetDefs[i].shortName}</td>`;
@@ -7062,7 +7062,7 @@ function marketsApp() {
             else                bg = _hsl2hex( 18/360, 0.45, 0.40);   // deep muted red-orange
           }
           const tc = c !== null && Math.abs(c) > 0.3 ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.6)';
-          html += `<td style="width:${CELL}px;height:28px;text-align:center;font-size:10px;font-family:ui-monospace;background:${bg};color:${tc};border-radius:2px;" title="${assetDefs[i].shortName} vs ${assetDefs[j].shortName}: ${c !== null ? c.toFixed(2) : '-'}">${c !== null ? c.toFixed(2) : '—'}</td>`;
+          html += `<td style="width:${CELL}px;height:28px;text-align:center;font-size:10px;font-family:ui-monospace,Menlo,Consolas,monospace;background:${bg};color:${tc};border-radius:2px;" title="${assetDefs[i].shortName} vs ${assetDefs[j].shortName}: ${c !== null ? c.toFixed(2) : '-'}">${c !== null ? c.toFixed(2) : '—'}</td>`;
         }
         html += `</tr>`;
       }
@@ -7157,7 +7157,7 @@ function marketsApp() {
       for (const v of [-1, -0.5, 0, 0.5, 1]) {
         const y = yS(v);
         grid += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W-PR}" y2="${y.toFixed(1)}" stroke="${v === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.04)'}" stroke-width="${v === 0 ? 1.5 : 1}"/>`;
-        grid += `<text x="${PL-4}" y="${(y+3.5).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${v >= 0 ? '+' : ''}${v.toFixed(1)}</text>`;
+        grid += `<text x="${PL-4}" y="${(y+3.5).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace,Menlo,Consolas,monospace">${v >= 0 ? '+' : ''}${v.toFixed(1)}</text>`;
       }
 
       // X-axis labels
@@ -7170,7 +7170,7 @@ function marketsApp() {
         const firstMonthOfYear = allYms.find(m => m.startsWith(`${yr}-`));
         if (!firstMonthOfYear) continue;
         const x = xS(firstMonthOfYear);
-        xLabels += `<text x="${x.toFixed(1)}" y="${H-8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${yr}</text>`;
+        xLabels += `<text x="${x.toFixed(1)}" y="${H-8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace,Menlo,Consolas,monospace">${yr}</text>`;
         xLabels += `<line x1="${x.toFixed(1)}" y1="${PT}" x2="${x.toFixed(1)}" y2="${H-PB}" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>`;
       }
 
@@ -7183,11 +7183,11 @@ function marketsApp() {
         lines += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="1.5" opacity="0.85"/>`;
         // Label at end
         const last = pts[pts.length - 1];
-        lines += `<text x="${(xS(last.ym) + 4).toFixed(1)}" y="${(yS(last.corr) + 3).toFixed(1)}" style="font-size:8px;fill:${s.color};font-family:ui-monospace">${s.name.split(' ').slice(0,2).join(' ')}</text>`;
+        lines += `<text x="${(xS(last.ym) + 4).toFixed(1)}" y="${(yS(last.corr) + 3).toFixed(1)}" style="font-size:8px;fill:${s.color};font-family:ui-monospace,Menlo,Consolas,monospace">${s.name.split(' ').slice(0,2).join(' ')}</text>`;
       }
 
       const ch = `<line id="rolling-crosshair" x1="0" y1="${PT}" x2="0" y2="${H-PB}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
-      const title = `<text x="${PL}" y="12" style="font-size:9px;fill:#71717a;font-family:ui-monospace">12M rolling corr vs ${baseName}</text>`;
+      const title = `<text x="${PL}" y="12" style="font-size:9px;fill:#71717a;font-family:ui-monospace,Menlo,Consolas,monospace">12M rolling corr vs ${baseName}</text>`;
       
       const yAxis = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
       const xAxis = `<line x1="${PL}" y1="${H-PB}" x2="${W-PR}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
@@ -7289,7 +7289,7 @@ function marketsApp() {
           const v = minV + range * i / 3;
           const y = yS(v);
           ticks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W-PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>`;
-          ticks += `<text x="${PL-4}" y="${(y+3.5).toFixed(1)}" text-anchor="end" style="font-size:8px;fill:#52525b;font-family:ui-monospace">${v.toFixed(v < 10 ? 2 : 1)}</text>`;
+          ticks += `<text x="${PL-4}" y="${(y+3.5).toFixed(1)}" text-anchor="end" style="font-size:8px;fill:#52525b;font-family:ui-monospace,Menlo,Consolas,monospace">${v.toFixed(v < 10 ? 2 : 1)}</text>`;
         }
 
         // X labels with dynamic year intervals
@@ -7302,7 +7302,7 @@ function marketsApp() {
           const idx = ratioSeries.findIndex(p => p.ym.startsWith(`${yr}-`));
           if (idx === -1) continue;
           const x = xS(idx);
-          xLabels += `<text x="${x.toFixed(1)}" y="${H-6}" text-anchor="middle" style="font-size:8px;fill:#52525b;font-family:ui-monospace">${yr}</text>`;
+          xLabels += `<text x="${x.toFixed(1)}" y="${H-6}" text-anchor="middle" style="font-size:8px;fill:#52525b;font-family:ui-monospace,Menlo,Consolas,monospace">${yr}</text>`;
           xLabels += `<line x1="${x.toFixed(1)}" y1="${PT}" x2="${x.toFixed(1)}" y2="${H-PB}" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>`;
         }
 
@@ -7316,7 +7316,7 @@ function marketsApp() {
         const yAxis = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
         const xAxis = `<line x1="${PL}" y1="${H-PB}" x2="${W-PR}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
 
-        const svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;background:var(--surface)" preserveAspectRatio="none">${ticks}${xLabels}<path d="${d}" fill="none" stroke="${color}" stroke-width="1.5" opacity="0.9"/><text x="${W-PR}" y="${PT+10}" text-anchor="end" style="font-size:9px;fill:${color};font-family:ui-monospace">${lastVal.toFixed(lastVal < 10 ? 2 : 1)}</text>${yAxis}${xAxis}${ch}</svg>`;
+        const svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;background:var(--surface)" preserveAspectRatio="none">${ticks}${xLabels}<path d="${d}" fill="none" stroke="${color}" stroke-width="1.5" opacity="0.9"/><text x="${W-PR}" y="${PT+10}" text-anchor="end" style="font-size:9px;fill:${color};font-family:ui-monospace,Menlo,Consolas,monospace">${lastVal.toFixed(lastVal < 10 ? 2 : 1)}</text>${yAxis}${xAxis}${ch}</svg>`;
         return { ...r, svg, points: ratioSeries };
       });
     },
@@ -7684,7 +7684,7 @@ function marketsApp() {
       for (let mi = 0; mi < months.length; mi++) {
         const m = months[mi];
         const label = mi % 6 === 0 ? m : '';
-        html += `<th style="min-width:${CELL_W}px;width:${CELL_W}px;height:${CELL_H}px;text-align:center;font-size:8px;font-family:ui-monospace;color:#52525b;border-bottom:1px solid var(--border-2);padding:0;white-space:nowrap;">${label}</th>`;
+        html += `<th style="min-width:${CELL_W}px;width:${CELL_W}px;height:${CELL_H}px;text-align:center;font-size:8px;font-family:ui-monospace,Menlo,Consolas,monospace;color:#52525b;border-bottom:1px solid var(--border-2);padding:0;white-space:nowrap;">${label}</th>`;
       }
       html += `</tr></thead>`;
 
@@ -7703,7 +7703,7 @@ function marketsApp() {
           const tc = this._zCellTextColor(z);
           const zText = z !== null ? (z >= 0 ? '+' : '') + z.toFixed(1) : '';
           const tip = rawVal !== null ? `${s.name}\\n${m}\\nAvg: ${rawVal.toFixed(1)}\\nZ: ${z !== null ? z.toFixed(2) : '—'}` : `${s.name}\\n${m}\\nNo data`;
-          html += `<td style="width:${CELL_W}px;min-width:${CELL_W}px;height:${CELL_H}px;text-align:center;font-size:9px;font-family:ui-monospace;background:${bg};color:${tc};border:1px solid rgba(0,0,0,0.3);cursor:pointer;" onmouseenter="document.getElementById('tt').innerHTML='${tip.replace(/'/g, '&#39;')}';document.getElementById('tt').style.opacity='1';_posTt(this)" onmouseleave="document.getElementById('tt').style.opacity='0'">${zText}</td>`;
+          html += `<td style="width:${CELL_W}px;min-width:${CELL_W}px;height:${CELL_H}px;text-align:center;font-size:9px;font-family:ui-monospace,Menlo,Consolas,monospace;background:${bg};color:${tc};border:1px solid rgba(0,0,0,0.3);cursor:pointer;" onmouseenter="document.getElementById('tt').innerHTML='${tip.replace(/'/g, '&#39;')}';document.getElementById('tt').style.opacity='1';_posTt(this)" onmouseleave="document.getElementById('tt').style.opacity='0'">${zText}</td>`;
         }
         html += `</tr>`;
       }
@@ -7748,7 +7748,7 @@ function marketsApp() {
         const v = minV + (maxV - minV) * i / nTicks;
         const y = yScale(v);
         yTicks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>`;
-        yTicks += `<text x="${PL - 4}" y="${(y + 4).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${v.toFixed(0)}</text>`;
+        yTicks += `<text x="${PL - 4}" y="${(y + 4).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:#52525b;font-family:ui-monospace,Menlo,Consolas,monospace">${v.toFixed(0)}</text>`;
       }
 
       // X-axis year labels with dynamic intervals
@@ -7761,7 +7761,7 @@ function marketsApp() {
         const d = useDaily ? `${yr}-01-01` : `${yr}-01`;
         const closest = dates.find(x => x >= d) || dates[0];
         const x = xScale(closest);
-        xLabels += `<text x="${x.toFixed(1)}" y="${H - 8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace">${yr}</text>`;
+        xLabels += `<text x="${x.toFixed(1)}" y="${H - 8}" text-anchor="middle" style="font-size:9px;fill:#52525b;font-family:ui-monospace,Menlo,Consolas,monospace">${yr}</text>`;
         xLabels += `<line x1="${x.toFixed(1)}" y1="${PT}" x2="${x.toFixed(1)}" y2="${H - PB}" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>`;
       }
 
@@ -7777,7 +7777,7 @@ function marketsApp() {
         if (!closest) continue;
         const x = xScale(closest);
         annotations += `<line x1="${x.toFixed(1)}" y1="${PT}" x2="${x.toFixed(1)}" y2="${H - PB}" stroke="rgba(251,191,36,0.25)" stroke-width="1" stroke-dasharray="3,3"/>`;
-        annotations += `<text x="${x.toFixed(1)}" y="${PT - 4}" text-anchor="middle" style="font-size:8px;fill:#fbbf24;font-family:ui-monospace">${ev.label}</text>`;
+        annotations += `<text x="${x.toFixed(1)}" y="${PT - 4}" text-anchor="middle" style="font-size:8px;fill:#fbbf24;font-family:ui-monospace,Menlo,Consolas,monospace">${ev.label}</text>`;
       }
 
       // Lines per series
@@ -7804,7 +7804,7 @@ function marketsApp() {
         const s = seriesDefs[i];
         const lx = PL + i * 90;
         legend += `<rect x="${lx}" y="${H - PB + 18}" width="12" height="3" fill="${s.color}" rx="1"/>`;
-        legend += `<text x="${lx + 16}" y="${H - PB + 22}" style="font-size:9px;fill:${s.color};font-family:ui-monospace">${s.name}</text>`;
+        legend += `<text x="${lx + 16}" y="${H - PB + 22}" style="font-size:9px;fill:${s.color};font-family:ui-monospace,Menlo,Consolas,monospace">${s.name}</text>`;
       }
 
       const crosshair = `<line id="vol-crosshair" x1="0" y1="${PT}" x2="0" y2="${H - PB}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
@@ -7884,7 +7884,7 @@ function marketsApp() {
         const y = yScale(v);
         const isZero = v === 0;
         yTicks += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,${isZero ? 0.20 : 0.05})" stroke-width="1" ${isZero ? '' : 'stroke-dasharray="3,3"'}/>`;
-        yTicks += `<text x="${PL - 6}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:${isZero ? '#a1a1aa' : '#52525b'};font-family:ui-monospace">${v > 0 ? '+' : ''}${v}σ</text>`;
+        yTicks += `<text x="${PL - 6}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" style="font-size:9px;fill:${isZero ? '#a1a1aa' : '#52525b'};font-family:ui-monospace,Menlo,Consolas,monospace">${v > 0 ? '+' : ''}${v}σ</text>`;
       }
 
       // Bars + labels (σ labels always above the bar so they line up on one band)
@@ -7907,11 +7907,11 @@ function marketsApp() {
 
         // σ value: always at the top label band - single line of values across the chart
         const sigmaLabel = (z >= 0 ? '+' : '') + z.toFixed(1) + 'σ';
-        bars += `<text x="${(slotX + barW / 2).toFixed(1)}" y="${labelBandY.toFixed(1)}" text-anchor="middle" style="font-size:9px;font-weight:500;fill:${color};font-family:ui-monospace">${sigmaLabel}</text>`;
+        bars += `<text x="${(slotX + barW / 2).toFixed(1)}" y="${labelBandY.toFixed(1)}" text-anchor="middle" style="font-size:9px;font-weight:500;fill:${color};font-family:ui-monospace,Menlo,Consolas,monospace">${sigmaLabel}</text>`;
 
         // Index name: under the chart in a consistent label band
-        bars += `<text x="${(slotX + barW / 2).toFixed(1)}" y="${(H - PB + 16).toFixed(1)}" text-anchor="middle" style="font-size:10px;font-weight:600;fill:#e4e4e7;font-family:ui-monospace">${t.name}</text>`;
-        bars += `<text x="${(slotX + barW / 2).toFixed(1)}" y="${(H - PB + 30).toFixed(1)}" text-anchor="middle" style="font-size:8px;fill:#71717a;font-family:ui-monospace">${t.regime}</text>`;
+        bars += `<text x="${(slotX + barW / 2).toFixed(1)}" y="${(H - PB + 16).toFixed(1)}" text-anchor="middle" style="font-size:10px;font-weight:600;fill:#e4e4e7;font-family:ui-monospace,Menlo,Consolas,monospace">${t.name}</text>`;
+        bars += `<text x="${(slotX + barW / 2).toFixed(1)}" y="${(H - PB + 30).toFixed(1)}" text-anchor="middle" style="font-size:8px;fill:#71717a;font-family:ui-monospace,Menlo,Consolas,monospace">${t.regime}</text>`;
       }
 
       const title = `<text x="${W / 2}" y="16" text-anchor="middle" style="font-size:10px;fill:#a1a1aa;font-family:ui-sans-serif">Current Z-Scores vs ${this.volLookback} History · ${this.volGranularity}</text>`;

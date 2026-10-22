@@ -80,7 +80,7 @@ if sys.platform.startswith("win"):
         pass
 
 
-from .scoring import Config, compute_leaderboard, compute_rank_deltas
+from .scoring import Config, MotionConfig, compute_leaderboard, compute_rank_deltas
 from . import history as hist
 
 
@@ -188,7 +188,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     sanitized_rows = len(latest) if not latest.empty else 0
     print(f"  leaderboard: {len(leaderboard)} unique tickers · "
           f"{(leaderboard['flag']=='HIGH_CONVICTION').sum()} HC · "
-          f"{(leaderboard['flag']=='SPECULATIVE_BETA').sum()} SPEC β")
+          f"{(leaderboard['flag']=='CONCENTRATED').sum()} CONC")
 
     # Multi-period rank deltas (Phase 2) — compute once per period
     print("\nComputing rank deltas for all periods…")
@@ -208,7 +208,12 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     score_pnl = hist.score_panel(historical)
     flag_pnl = hist.flag_panel(historical)
     streaks = hist.streaks_and_deltas(score_pnl, flag_pnl)
-    chg = hist.changelog(historical, leaderboard, streaks, top_n=cfg.history.changelog_top_n)
+    chg = hist.changelog(
+        historical, list(cfg.history.delta_periods_days) + ["YTD"],
+        funds_rank_max=cfg.signals.stealth_rank_max,
+        movers_rank_max=(cfg.motion or MotionConfig()).relevance_rank,
+        top_n=cfg.history.changelog_top_n,
+    )
 
     # Enrich leaderboard with temporal fields
     if not streaks.empty:
@@ -318,6 +323,8 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         score_deltas_by_period["YTD"] = {}
 
     # ── MOTION signals — rank trajectory, burst/crater, ETF-count change ──────
+    signal_last_fired: dict[str, dict] = {}
+
     def _attach_motion(leaderboard: pd.DataFrame,
                        deltas_by_period: dict,
                        historical: dict) -> pd.DataFrame:
@@ -330,6 +337,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         UI and Pre-HC/Stealth-Buy filters use them directly."""
         is_burst  = pd.Series(dtype=bool)
         is_crater = pd.Series(dtype=bool)
+        is_surge = is_slide = pd.Series(dtype=bool)
 
         # 1. Per-ETF rank/weight motion
         d7  = deltas_by_period.get(7)
@@ -357,38 +365,41 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                     rank_panel_rows[d] = snap.set_index("ticker")["leaderboard_rank"]
             if rank_panel_rows:
                 rank_panel = pd.DataFrame(rank_panel_rows)
-                
-                # Coverage check: require continuous presence (≥80% of window)
-                nan_count = rank_panel.isna().sum(axis=1)
-                coverage = (len(window_cols) - nan_count) / len(window_cols)
-                
                 first_col        = rank_panel.iloc[:, 0]
                 last_col         = rank_panel.iloc[:, -1]
-                worst_in_window  = rank_panel.max(axis=1)   # highest rank number = worst
                 best_in_window   = rank_panel.min(axis=1)   # lowest rank number = best
                 global_rank_delta_30 = (first_col - last_col).round(0)        # positive = improved
-                peak_improvement_30  = (worst_in_window - best_in_window).round(0)
-                
-                # Sustained: rank must be better than within-window median for ≥5 of last 10 snapshots
-                recent10 = rank_panel.iloc[:, -10:] if rank_panel.shape[1] >= 10 else rank_panel
-                median_per_ticker = rank_panel.median(axis=1)
-                is_better_than_median = recent10.lt(median_per_ticker, axis=0)
-                sustained_count = is_better_than_median.sum(axis=1)
-                
-                # Burst qualifier: peak ≥ 40 AND (coverage ≥ 80% OR ticker has < 15 window
-                # snapshots — newer names get a pass on the coverage gate since they can't
-                # possibly reach 80% of a 30-day window; sustained_count ≥ 8 still guards
-                # against noise from tickers with only a handful of appearances).
-                #
-                # Without this, any ticker added in the last ~6 days of the window fails
-                # the 80% gate and can never qualify for burst regardless of rank movement.
-                actual_obs = rank_panel.notna().sum(axis=1)
-                coverage_ok = (coverage >= 0.80) | (actual_obs < 15)
-                is_burst = (peak_improvement_30 >= 40) & coverage_ok & (sustained_count >= 8)
+                # Peak improvement = largest RISE from an earlier point to a
+                # later one (directional), on the 3-snapshot median so a
+                # one-day glitch can't inflate it. (Was worst − best: a name
+                # that only fell reported its drop as an "improvement".)
+                sm = rank_panel.T.rolling(3, min_periods=1).median().T
+                peak_improvement_30 = (sm.T.cummax().T - sm).max(axis=1).round(0)
 
-                is_worse_than_median = recent10.gt(median_per_ticker, axis=0)
-                sustained_worse_count = is_worse_than_median.sum(axis=1)
-                is_crater = (peak_improvement_30 >= 40) & coverage_ok & (sustained_worse_count >= 8)
+        # BURST / CRATER — the shared 2026-10 implementation (smoothed,
+        # directional, rank-relative, fund-confirmed; history.burst_crater_panels).
+        bc = hist.burst_crater_panels(historical, cfg.motion)
+        bc_rank_then = bc_rank_now = bc_funds = pd.Series(dtype=float)
+        if not bc["burst"].empty:
+            # When each signal last fired: both are quiet between fund
+            # rebalances, so "0 today" alone reads as broken.
+            for kind in ("burst", "crater"):
+                per_day = bc[kind].sum(axis=0)
+                fired = per_day[per_day > 0]
+                if len(fired):
+                    signal_last_fired[kind.upper()] = {
+                        "date": fired.index[-1].strftime("%Y-%m-%d"), "count": int(fired.iloc[-1])}
+            is_burst = bc["burst"][today_date]
+            is_crater = bc["crater"][today_date]
+            is_surge = bc["surge"][today_date]
+            is_slide = bc["slide"][today_date]
+            # Rank and holder change over the flag's own window (CRATER's is
+            # longer than BURST's).
+            bc_rank_then = bc["rank_then"][today_date].where(
+                ~is_crater, bc["crater_rank_then"][today_date])
+            bc_rank_now = bc["rank_now"][today_date]
+            bc_funds = bc["funds_delta"][today_date].where(
+                ~is_crater, bc["crater_funds_delta"][today_date])
 
         # 3. ETF count change vs ~30d ago
         past_counts = pd.Series(dtype=float)
@@ -405,15 +416,29 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         leaderboard["global_rank_delta_30d"] = leaderboard["ticker"].map(global_rank_delta_30).fillna(0).astype(int)
         leaderboard["global_rank_peak_30d"]  = leaderboard["ticker"].map(peak_improvement_30).fillna(0).astype(int)
         leaderboard["global_rank_best_30d"]  = leaderboard["ticker"].map(best_in_window).fillna(leaderboard["leaderboard_rank"]).astype(int)
-        leaderboard["etf_count_30d_ago"]     = leaderboard["ticker"].map(past_counts).fillna(leaderboard["etf_count"]).astype(int)
+        # A name absent from the board 30 days ago had zero holders then, so
+        # its new positions count as additions (was: treated as "no change").
+        leaderboard["etf_count_30d_ago"]     = leaderboard["ticker"].map(past_counts).fillna(0).astype(int)
         leaderboard["etf_count_delta_30d"]   = (leaderboard["etf_count"] - leaderboard["etf_count_30d_ago"]).astype(int)
-        # Burst: peak improvement of >=40 global ranks at any point in last 30d, with sustained presence
+        # BURST / CRATER flags for today (rule: history.burst_crater_panels)
         leaderboard["burst_30d"]             = leaderboard["ticker"].map(is_burst).fillna(False)
-        # Crater: peak drop of >=40 global ranks at any point in last 30d, currently near worst
         leaderboard["crater_30d"]            = leaderboard["ticker"].map(is_crater).fillna(False)
-        leaderboard["global_rank_drop_30d"]  = leaderboard["ticker"].map(
-            lambda t: int(peak_improvement_30.get(t, 0)) if (is_crater.get(t, False)) else 0
-        ).fillna(0).astype(int)
+        # SURGE / SLIDE: the same rank move without a fund confirming it — a
+        # momentum tag (mirrors the price move), not a forecast.
+        leaderboard["surge_10d"]             = leaderboard["ticker"].map(is_surge).fillna(False).astype(bool)
+        leaderboard["slide_10d"]             = leaderboard["ticker"].map(is_slide).fillna(False).astype(bool)
+        # Size of the flagged move in (smoothed) rank positions, and the
+        # holder-count change that confirmed it — 0 when not flagged.
+        _then = leaderboard["ticker"].map(bc_rank_then)
+        _now = leaderboard["ticker"].map(bc_rank_now)
+        leaderboard["burst_rank_gain"] = ((_then - _now).where(leaderboard["burst_30d"], 0)
+                                          .fillna(0).round(0).astype(int))
+        leaderboard["crater_rank_loss"] = ((_now - _then).where(leaderboard["crater_30d"], 0)
+                                           .fillna(0).round(0).astype(int))
+        leaderboard["motion_rank_then"] = _then.round(0)
+        leaderboard["motion_rank_now"] = _now.round(0)
+        leaderboard["motion_funds_delta"] = leaderboard["ticker"].map(bc_funds).fillna(0).astype(int)
+        leaderboard["global_rank_drop_30d"]  = leaderboard["crater_rank_loss"]
 
         return leaderboard
 
@@ -426,12 +451,17 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         for col in ["avg_rank_delta_7d", "avg_weight_flow_7d", "avg_rank_delta_30d",
                     "global_rank_delta_30d", "global_rank_peak_30d", "global_rank_best_30d",
                     "etf_count_30d_ago", "etf_count_delta_30d", "burst_30d", "crater_30d",
-                    "global_rank_drop_30d"]:
-            leaderboard[col] = 0 if col not in ("burst_30d", "crater_30d") else False
+                    "surge_10d", "slide_10d",
+                    "global_rank_drop_30d", "burst_rank_gain", "crater_rank_loss",
+                    "motion_funds_delta"]:
+            leaderboard[col] = 0 if col not in ("burst_30d", "crater_30d", "surge_10d", "slide_10d") else False
+        leaderboard["motion_rank_then"] = None
+        leaderboard["motion_rank_now"] = None
         burst_count = 0
         crater_count = 0
-    print(f"  burst_30d:      {burst_count} tickers with >=40 peak rank improvement")
-    print(f"  crater_30d:     {crater_count} tickers with >=40 peak rank drop")
+    print(f"  burst_30d:      {burst_count} tickers (smoothed rank surge, fund-confirmed)")
+    print(f"  crater_30d:     {crater_count} tickers (smoothed rank collapse, fund-confirmed)")
+    print(f"  surge / slide:  {int(leaderboard['surge_10d'].sum())} / {int(leaderboard['slide_10d'].sum())} tickers (rank momentum, no fund change)")
 
     # ── Multi-period rank delta and ETF count delta ───────────────────────────
     # Mirrors score_deltas_by_period so the frontend can switch all Change sections
@@ -494,6 +524,16 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     leaderboard["momentum_regime"] = leaderboard.apply(_classify_regime, axis=1)
     print(f"  momentum_regime: {leaderboard['momentum_regime'].value_counts().to_dict()}")
 
+    # ── Screening signals (2026-10 audit, docs/SIGNALS_STUDY.md §4) ────────
+    _d14_past = etf_count_past_by_period_map.get(14)
+    leaderboard = hist.screening_signals(
+        leaderboard,
+        leaderboard["ticker"].map(_d14_past).fillna(0) if _d14_past is not None else leaderboard["etf_count"],
+        cfg)
+    print(f"  signals:        funds_up={int(leaderboard['funds_up'].sum())} "
+          f"funds_down={int(leaderboard['funds_down'].sum())} "
+          f"stealth={int(leaderboard['stealth_buy'].sum())} pre_hc={int(leaderboard['pre_hc'].sum())}")
+
     # ── Tier Breadth — how many distinct strategy types co-hold this name ────
     # 5 = held by all five (Scout/Quant/Quality/Trend/Core); 1 = mono-tier.
     # Higher breadth = more independent strategy types confirming the name.
@@ -548,24 +588,12 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     print(f"  tier_breadth:   max={int(leaderboard['tier_breadth'].max())} · "
           f"quality_adopted_30d={int(leaderboard['quality_adopted_30d'].sum())}")
 
-    # ── Accumulation velocity diagnostics + single canonical rank (v4) ──────
-    # velocity_z / ignition_z (OLS slope and acceleration of the score over
-    # the trailing 10 snapshots) remain as display diagnostics. They no longer
-    # move the ranking: the 2026-10 walk-forward study found the bounded APEX
-    # kicker changed forward-return IC by < 0.001 (noise) at every horizon,
-    # and the two conviction-averaging factors stacked on it (m_conv and the
-    # §31.1 gate) were non-monotone — adding a low-conviction holder could
-    # LOWER a name's score. Filler discounting now lives in the per-holding
-    # convexity (conviction.kappa), so final_score is the one canonical score.
-    # apex_score / apex_rank are kept as aliases so the JSON schema is stable.
-    vel = hist.accumulation_velocity(score_pnl) if historical else pd.DataFrame()
-    if not vel.empty:
-        vel = vel.set_index("ticker")
-        leaderboard["velocity_z"] = leaderboard["ticker"].map(vel["velocity_z"]).fillna(0.0).round(3)
-        leaderboard["ignition_z"] = leaderboard["ticker"].map(vel["ignition_z"]).fillna(0.0).round(3)
-    else:
-        leaderboard["velocity_z"] = 0.0
-        leaderboard["ignition_z"] = 0.0
+    # ── Single canonical rank (v4) ────────────────────────────────────────
+    # The APEX velocity kicker and the two conviction-averaging factors on top
+    # of it were removed in the 2026-10 study (kicker: < 0.001 IC change at
+    # every horizon; the averaging factors were non-monotone). final_score is
+    # the one canonical score; apex_score / apex_rank stay as aliases so the
+    # JSON schema is stable.
     leaderboard["apex_score"] = leaderboard["final_score"]
     leaderboard["apex_rank"] = leaderboard["leaderboard_rank"]
     leaderboard["median_etf_rank"] = leaderboard["ticker"].map(
@@ -753,7 +781,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         r["etf_count_delta_by_period"] = {}
         current_etf = int(r.get("etf_count", 0) or 0)
         for _n, _ps in etf_count_past_by_period_map.items():
-            past = int(_ps.get(t)) if t in _ps.index and not pd.isna(_ps.get(t)) else current_etf
+            past = int(_ps.get(t)) if t in _ps.index and not pd.isna(_ps.get(t)) else 0
             r["etf_count_delta_by_period"][str(_n)] = current_etf - past
     _write_json_atomic(output_dir / "leaderboard.json", _dumps(lb_records, separators=(",", ":")))
     # Write flag_history to separate file (keyed by ticker) to reduce leaderboard.json payload
@@ -820,48 +848,8 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         )
         print(f"  holdings_exits.json:  {len(holdings_exits)} ETFs with exit data")
 
-    # Top accumulation movers (15 names, held by 2+ ETFs) — most ETF positions
-    # added over 30d. Replaces the retired top_velocity panel (2026-08 study:
-    # velocity had no forward lift; ETF accumulation is the cleaner
-    # conviction-flow measure).
-    if 'etf_count_delta_30d' in leaderboard.columns:
-        top_acc = leaderboard[(leaderboard['etf_count'] >= 2) & (leaderboard['etf_count_delta_30d'] > 0)].sort_values(
-            ['etf_count_delta_30d', 'global_rank_delta_30d'], ascending=False).head(15)
-        chg['top_accumulation'] = [
-            {
-                'ticker':               str(r['ticker']),
-                'company':              str(r.get('company', '')),
-                'etf_count_delta_30d':  int(r['etf_count_delta_30d']),
-                'avg_rank_delta_7d':    float(r['avg_rank_delta_7d']),
-                'global_rank_delta_30d': int(r.get('global_rank_delta_30d', 0)),
-                'burst_30d':            bool(r.get('burst_30d', False)),
-                'crater_30d':           bool(r.get('crater_30d', False)),
-                'final_score':          float(r['final_score']),
-                'etf_count':            int(r['etf_count']),
-                'tiers':                str(r.get('tiers', '')),
-            }
-            for _, r in top_acc.iterrows()
-        ]
-
-    # ── Multi-period universe exits ───────────────────────────────────────────
-    # The 1-day universe_exits above is computed from full uncapped leaderboards,
-    # but the frontend's multi-day "Dropped from Universe" table previously scanned
-    # score_history.json (capped at 600 tickers → exited names truncated). Compute
-    # exits for every period the Changes-tab picker exposes, using the same full
-    # leaderboards, so 7d/30d/90d/YTD drops actually render.
-    try:
-        exit_periods = list(cfg.history.delta_periods_days) + ["YTD"]
-        chg['universe_exits_by_period'] = hist.compute_universe_exits_by_period(
-            historical, leaderboard, exit_periods, top_n=cfg.history.changelog_top_n,
-        )
-        total_exits = sum(len(v) for v in chg['universe_exits_by_period'].values())
-        print(f"  universe_exits_by_period: {total_exits} exits across {len(exit_periods)} periods")
-    except Exception as e:
-        print(f"  universe_exits_by_period: ERROR — {e}")
-        chg['universe_exits_by_period'] = {str(p): [] for p in exit_periods}
-
-    # ── changelog.json — entries / exits / movers ─────────────────────────────
-    _write_json_atomic(output_dir / "changelog.json", _dumps(chg, indent=2))
+    # ── changelog.json — the Changes tab, per lookback period ─────────────────
+    _write_json_atomic(output_dir / "changelog.json", _dumps(chg, separators=(",", ":")))
 
     # ── score_history.parquet + JSON — for sparklines ─────────────────────────
     if not score_pnl.empty:
@@ -1002,12 +990,15 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     latest_scrape_date = pd.to_datetime(raw["Date_Scraped"]).max().strftime("%Y-%m-%d")
 
     # Yesterday's counts for KPI deltas
-    yday_hc = yday_spec = None
+    yday_hc = yday_burst = yday_crater = None
     if len(historical) >= 2:
         dates_sorted = sorted(historical.keys())
         prev_lb = historical[dates_sorted[-2]]
         yday_hc = int((prev_lb["flag"] == "HIGH_CONVICTION").sum())
-        yday_spec = int((prev_lb["flag"] == "SPECULATIVE_BETA").sum())
+        _bc = hist.burst_crater_panels(historical, cfg.motion)
+        if not _bc["burst"].empty:
+            yday_burst = int(_bc["burst"][dates_sorted[-2]].sum())
+            yday_crater = int(_bc["crater"][dates_sorted[-2]].sum())
 
     # §28 Detect immature ETFs (< etf_maturity_days of history)
     etf_maturity_days = cfg.etf_maturity_days
@@ -1207,14 +1198,20 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         "snapshot_dates_in_window": [d.strftime("%Y-%m-%d") for d in sorted(historical.keys())],
         "flag_counts_today": {
             "HIGH_CONVICTION": int((leaderboard["flag"] == "HIGH_CONVICTION").sum()),
-            "SPECULATIVE_BETA": int((leaderboard["flag"] == "SPECULATIVE_BETA").sum()),
+            "CONCENTRATED": int((leaderboard["flag"] == "CONCENTRATED").sum()),
+            "BURST": int(leaderboard["burst_30d"].sum()),
+            "CRATER": int(leaderboard["crater_30d"].sum()),
+            "SURGE": int(leaderboard["surge_10d"].sum()),
+            "SLIDE": int(leaderboard["slide_10d"].sum()),
             "NEW": int(leaderboard["any_new"].sum()) if "any_new" in leaderboard else 0,
             "NONE": int((leaderboard["flag"] == "").sum()),
         },
         "flag_counts_yesterday": {
             "HIGH_CONVICTION": yday_hc,
-            "SPECULATIVE_BETA": yday_spec,
+            "BURST": yday_burst,
+            "CRATER": yday_crater,
         },
+        "signal_last_fired": signal_last_fired,
         # §28 Maturity gate metadata — drives the UI banner
         "etf_maturity_days": etf_maturity_days,
         "immature_etfs": immature_etfs,
@@ -1238,6 +1235,8 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
             "new_lookback_days": cfg.new_lookback_days,
             "new_bonus_mult": cfg.new_bonus_mult,
             "high_conviction_min_etfs": cfg.high_conviction_min_etfs,
+            "high_conviction_min_conviction_etfs": cfg.high_conviction_min_conviction_etfs,
+            "high_conviction_min_tiers": cfg.high_conviction_min_tiers,
         },
     }
     _write_json_atomic(output_dir / "metadata.json", _dumps(metadata, indent=2))
@@ -1254,10 +1253,11 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     print(f"Today's flags: {metadata['flag_counts_today']}")
     if yday_hc is not None:
         print(f"Yesterday's flags: HC={yday_hc} (Δ {metadata['flag_counts_today']['HIGH_CONVICTION'] - yday_hc:+d}) "
-              f"SPEC={yday_spec} (Δ {metadata['flag_counts_today']['SPECULATIVE_BETA'] - yday_spec:+d})")
-    print(f"\nChangelog: {len(chg.get('entered_hc', []))} entries to HC, "
-          f"{len(chg.get('exited_hc', []))} exits, "
-          f"{len(chg.get('new_entrants', []))} new entrants this week")
+              f"BURST={yday_burst} CRATER={yday_crater}")
+    _c7 = chg.get("periods", {}).get("7", {}).get("counts", {})
+    print(f"\nChanges (7d): HC +{_c7.get('hc_entered', 0)}/-{_c7.get('hc_exited', 0)}, "
+          f"funds added {_c7.get('funds_added', 0)}, lost {_c7.get('funds_lost', 0)}, "
+          f"new {_c7.get('new', 0)}, exits {_c7.get('exits', 0)}")
 
 
 def main(argv: list[str] | None = None) -> int:

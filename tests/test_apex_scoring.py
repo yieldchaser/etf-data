@@ -17,7 +17,7 @@ from conviction.scoring import (
     compute_leaderboard,
     conviction_multiplier,
 )
-from conviction.history import accumulation_velocity, predictive_overlay
+from conviction.history import accumulation_velocity
 
 
 CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
@@ -247,7 +247,7 @@ class TestConcentratedFlag:
 
     def test_high_conviction_takes_priority_over_concentrated(self, apex_cfg):
         """A ticker that satisfies BOTH HC and CONCENTRATED conditions must be
-        flagged HIGH_CONVICTION (priority: HC > CONCENTRATED > SPEC_BETA)."""
+        flagged HIGH_CONVICTION (priority: HC > CONCENTRATED)."""
         rows = []
         # HCT top-of-book overweight in 4 ETFs (conviction ≥ hc_theta in each):
         #   IMOM (40 pts): w=0.95, OW≈10.45 → wovr clamps at 1.5 → linear mass 60
@@ -376,65 +376,3 @@ class TestAccumulationVelocity:
         assert list(vel.columns) == ["ticker", "slope", "slope_pct", "velocity_z", "ignition_z"]
 
 
-# ─── §31 predictive_overlay ───────────────────────────────────────────────────
-class TestPredictiveOverlay:
-    def _fixture(self) -> tuple[pd.DataFrame, pd.DataFrame]:
-        dates = pd.date_range("2026-05-01", periods=10, freq="D")
-        # UP and DOWN are exact mirrors so the cross-sectional mean slope_pct
-        # is 0 — FLAT sits exactly at the mean → velocity_z = 0.
-        panel = pd.DataFrame({
-            "UP":   [100.0 + 10 * i for i in range(10)],
-            "DOWN": [190.0 - 10 * i for i in range(10)],
-            "FLAT": [145.0] * 10,
-        }, index=dates).T
-        lb = pd.DataFrame({
-            "ticker": ["UP", "DOWN", "FLAT"],
-            "final_score": pd.array([1000, 1000, 1000], dtype="int64"),
-            "etf_count": [2, 2, 2],
-            "total_weight": [0.1, 0.1, 0.1],
-            "leaderboard_rank": [1, 2, 3],
-        })
-        return lb, panel
-
-    def test_overlay_directions_and_ceiling(self):
-        lb, panel = self._fixture()
-        out = predictive_overlay(lb, panel)
-
-        up = out[out["ticker"] == "UP"].iloc[0]
-        down = out[out["ticker"] == "DOWN"].iloc[0]
-        flat = out[out["ticker"] == "FLAT"].iloc[0]
-
-        assert up["apex_score"] > up["final_score"]
-        assert flat["apex_score"] == flat["final_score"]
-        assert down["apex_score"] < down["final_score"]
-        # tanh-bounded kicker: apex_score can never exceed final_score × 1.35
-        assert (out["apex_score"] <= out["final_score"] * 1.35).all()
-        # Re-ranked by apex_score
-        assert up["apex_rank"] == 1
-        assert flat["apex_rank"] == 2
-        assert down["apex_rank"] == 3
-
-    def test_overlay_returns_copy_with_new_columns(self):
-        lb, panel = self._fixture()
-        out = predictive_overlay(lb, panel)
-        assert out is not lb
-        assert "apex_score" not in lb.columns  # original untouched
-        for col in ("velocity_z", "ignition_z", "apex_score", "apex_rank"):
-            assert col in out.columns
-
-    def test_empty_panel_neutral_overlay(self):
-        lb, _ = self._fixture()
-        out = predictive_overlay(lb, pd.DataFrame())
-        assert (out["apex_score"] == out["final_score"]).all()
-        assert (out["apex_rank"] == out["leaderboard_rank"]).all()
-        assert (out["velocity_z"] == 0.0).all()
-        assert (out["ignition_z"] == 0.0).all()
-
-    def test_overlay_ignores_avg_conviction(self):
-        """v4 retired the §31.2 m_conv factor (averaging conviction made the
-        score non-monotone in breadth); the research kicker must not read
-        avg_conviction at all."""
-        lb, panel = self._fixture()
-        low = predictive_overlay(lb.assign(avg_conviction=0.2), panel)
-        high = predictive_overlay(lb.assign(avg_conviction=2.0), panel)
-        assert (low["apex_score"] == high["apex_score"]).all()

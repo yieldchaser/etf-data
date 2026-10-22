@@ -1,10 +1,8 @@
-"""Tests for compute_universe_exits_by_period() in conviction/history.py.
+"""Tests for history.changelog() — the per-period Changes tab payload.
 
-This function powers the multi-day "Dropped from Universe" table in the
-Changes tab. The previous frontend path scanned score_history.json, which is
-capped at 600 tickers (all current names) — so exited names were truncated
-and never rendered for 7d/30d/90d/YTD. These tests lock in the uncapped
-backend computation.
+Every table is computed in the backend from the full daily leaderboards. The
+previous frontend derived new entrants and exits from score_history.json,
+which is capped at 600 tickers, so every name outside the cap looked "new".
 
 Run: pytest tests/test_changelog_periods.py -v
 """
@@ -88,92 +86,97 @@ def latest_leaderboard(raw_fixture, cfg) -> pd.DataFrame:
 
 # ── Tests ──────────────────────────────────────────────────────────────────────
 
+PERIODS = [1, 7, 14, 30, 60, 90, "YTD"]
 
-class TestUniverseExitsByPeriod:
-    def test_dropped_ticker_shows_for_long_lookback(self, historical_fixture, latest_leaderboard):
-        """A name that fully exits the universe must appear as an exit for any
-        period whose start snapshot precedes the exit."""
-        result = hist.compute_universe_exits_by_period(
-            historical_fixture, latest_leaderboard, periods=[90, 180], top_n=50,
-        )
-        # Both periods resolve start = day 0 (the only prior snapshot), so
-        # DROPPED must appear in both.
-        for p in ("90", "180"):
-            tickers = {r["ticker"] for r in result[p]}
-            assert "DROPPED" in tickers, f"DROPPED missing from {p}d exits: {tickers}"
 
-    def test_staying_ticker_never_an_exit(self, historical_fixture, latest_leaderboard):
-        """A name still held today must never be reported as a universe exit."""
-        result = hist.compute_universe_exits_by_period(
-            historical_fixture, latest_leaderboard, periods=[90], top_n=50,
-        )
-        tickers = {r["ticker"] for r in result["90"]}
-        assert "STAYS" not in tickers, f"STAYS should not be an exit: {tickers}"
+def _tickers(out, period, key):
+    return {r["ticker"] for r in out["periods"][str(period)][key]}
 
-    def test_new_ticker_never_an_exit(self, historical_fixture, latest_leaderboard):
-        """A name that wasn't held at the start date but is held now is a new
-        entrant, NOT an exit — must be absent."""
-        result = hist.compute_universe_exits_by_period(
-            historical_fixture, latest_leaderboard, periods=[90], top_n=50,
-        )
-        tickers = {r["ticker"] for r in result["90"]}
-        assert "NEW" not in tickers, f"NEW should not be an exit: {tickers}"
 
-    def test_exit_record_shape(self, historical_fixture, latest_leaderboard):
-        """Each exit record carries the prior score so the UI 'Prev. Score'
-        column reflects what the ticker had before dropping out."""
-        result = hist.compute_universe_exits_by_period(
-            historical_fixture, latest_leaderboard, periods=[90], top_n=50,
-        )
-        rec = next(r for r in result["90"] if r["ticker"] == "DROPPED")
+class TestChangelogPeriods:
+    def test_dropped_ticker_is_an_exit_and_lost_its_funds(self, historical_fixture):
+        out = hist.changelog(historical_fixture, [90, 180])
+        for p in (90, 180):
+            assert "DROPPED" in _tickers(out, p, "exits")
+            assert "DROPPED" in _tickers(out, p, "funds_lost")
+
+    def test_staying_ticker_is_neither_new_nor_exit(self, historical_fixture):
+        out = hist.changelog(historical_fixture, [90])
+        assert "STAYS" not in _tickers(out, 90, "exits")
+        assert "STAYS" not in _tickers(out, 90, "new")
+
+    def test_new_ticker_is_new_not_exit(self, historical_fixture):
+        out = hist.changelog(historical_fixture, [90])
+        assert "NEW" in _tickers(out, 90, "new")
+        assert "NEW" not in _tickers(out, 90, "exits")
+
+    def test_record_shape(self, historical_fixture):
+        out = hist.changelog(historical_fixture, [90])
+        rec = next(r for r in out["periods"]["90"]["exits"] if r["ticker"] == "DROPPED")
         assert rec["company"] == "Dropped Co"
-        assert rec["final_score"] == 0.0          # gone today
-        assert rec["score_delta"] is not None and rec["score_delta"] < 0
-        assert rec["score_delta_pct"] == -1.0     # convention: full exit = -100%
+        assert rec["rank_now"] is None and rec["score_now"] is None
+        assert rec["funds_then"] == 2 and rec["funds_now"] == 0
+        assert rec["score_then"] is not None
 
-    def test_returns_every_requested_period_key(self, historical_fixture, latest_leaderboard):
-        """Output dict must contain a key for every requested period, even if
-        empty — the frontend reads by String(changesPeriod) and would crash
-        on an undefined access otherwise."""
-        periods = [1, 7, 14, 30, 60, 90, "YTD"]
-        result = hist.compute_universe_exits_by_period(
-            historical_fixture, latest_leaderboard, periods=periods, top_n=50,
-        )
-        for p in periods:
-            assert str(p) in result, f"missing period key {p!r}"
+    def test_returns_every_requested_period_key(self, historical_fixture):
+        out = hist.changelog(historical_fixture, PERIODS)
+        for p in PERIODS:
+            blk = out["periods"][str(p)]
+            assert blk["since"] == "2026-04-01"
+            assert set(blk["counts"]) == {"funds_added", "funds_lost", "hc_entered", "hc_exited",
+                                          "climbers", "fallers", "new", "exits"}
 
-    def test_ytd_uses_january_first_as_start(self, historical_fixture, latest_leaderboard):
-        """YTD start = Jan 1 of today's year. With day-0 = 2026-01-01, the
-        YTD start snapshot is day 0, so DROPPED must appear."""
-        result = hist.compute_universe_exits_by_period(
-            historical_fixture, latest_leaderboard, periods=["YTD"], top_n=50,
-        )
-        tickers = {r["ticker"] for r in result["YTD"]}
-        assert "DROPPED" in tickers, f"YTD should include DROPPED: {tickers}"
-
-    def test_short_lookback_excludes_early_exit(self, historical_fixture, latest_leaderboard):
-        """A 1-day lookback's start snapshot is the immediately-prior date (day 0),
-        but on day 0 DROPPED was still held — so for the 1-day window the *start*
-        snapshot still includes DROPPED and it counts as an exit. This is correct
-        behaviour; the test pins it so a regression is caught. (The 1-day case is
-        also produced by changelog()'s universe_exits; both must agree.)"""
-        result = hist.compute_universe_exits_by_period(
-            historical_fixture, latest_leaderboard, periods=[1], top_n=50,
-        )
-        tickers = {r["ticker"] for r in result["1"]}
-        assert "DROPPED" in tickers, f"1d exit should include DROPPED: {tickers}"
-
-    def test_handles_empty_historical(self, latest_leaderboard):
-        """No snapshots → return empty lists for every period, never raise."""
-        result = hist.compute_universe_exits_by_period(
-            {}, latest_leaderboard, periods=[1, 7, "YTD"], top_n=50,
-        )
+    def test_handles_empty_historical(self):
+        out = hist.changelog({}, [1, 7, "YTD"])
         for p in ("1", "7", "YTD"):
-            assert result[p] == []
+            assert out["periods"][p]["exits"] == []
 
-    def test_top_n_caps_list_length(self, historical_fixture, latest_leaderboard):
-        """top_n bounds the returned list length."""
-        result = hist.compute_universe_exits_by_period(
-            historical_fixture, latest_leaderboard, periods=[90], top_n=1,
-        )
-        assert len(result["90"]) <= 1
+    def test_top_n_caps_list_length_but_not_counts(self, historical_fixture):
+        out = hist.changelog(historical_fixture, [90], top_n=0)
+        assert out["periods"]["90"]["exits"] == []
+        assert out["periods"]["90"]["counts"]["exits"] >= 1
+
+
+def _boards(rows_then, rows_now):
+    """rows: ticker -> (rank, funds, score, flag)."""
+    def lb(rows):
+        return pd.DataFrame([{"ticker": t, "leaderboard_rank": r, "etf_count": e, "final_score": s,
+                              "flag": f, "company": t + " Inc", "tiers": "Scout + Quant"}
+                             for t, (r, e, s, f) in rows.items()])
+    return {pd.Timestamp("2026-09-01"): lb(rows_then), pd.Timestamp("2026-09-08"): lb(rows_now)}
+
+
+class TestChangesSelection:
+    def test_deep_board_noise_is_not_a_climber(self):
+        """#3,000 → #1,000 is 2,000 positions but irrelevant; #300 → #120 is the move."""
+        h = _boards({"DEEP": (3000, 1, 0.1, ""), "REAL": (300, 3, 20, "")},
+                    {"DEEP": (1000, 1, 0.3, ""), "REAL": (120, 4, 40, "")})
+        out = hist.changelog(h, [7])
+        assert _tickers(out, 7, "climbers") == {"REAL"}
+
+    def test_top_of_board_shuffle_needs_a_real_move(self):
+        """#2 → #1 is a ×2 rank ratio but one position — not a climber."""
+        h = _boards({"A": (2, 9, 900, ""), "B": (1, 9, 950, "")},
+                    {"A": (1, 9, 960, ""), "B": (2, 9, 940, "")})
+        out = hist.changelog(h, [7])
+        assert _tickers(out, 7, "climbers") == set()
+        assert _tickers(out, 7, "fallers") == set()
+
+    def test_faller_must_have_been_relevant(self):
+        h = _boards({"WAS": (50, 6, 300, ""), "NEVER": (900, 2, 5, "")},
+                    {"WAS": (200, 5, 90, ""), "NEVER": (2500, 2, 1, "")})
+        out = hist.changelog(h, [7])
+        assert _tickers(out, 7, "fallers") == {"WAS"}
+
+    def test_funds_tables_order_by_size_then_rank(self):
+        h = _boards({"A": (100, 3, 50, ""), "B": (40, 3, 80, ""), "C": (60, 3, 60, "")},
+                    {"A": (90, 5, 60, ""), "B": (35, 4, 85, ""), "C": (55, 4, 66, "")})
+        out = hist.changelog(h, [7])
+        assert [r["ticker"] for r in out["periods"]["7"]["funds_added"]] == ["A", "B", "C"]
+
+    def test_hc_transitions(self):
+        h = _boards({"IN": (30, 4, 100, ""), "OUT": (10, 5, 200, "HIGH_CONVICTION")},
+                    {"IN": (12, 5, 190, "HIGH_CONVICTION"), "OUT": (25, 3, 120, "")})
+        out = hist.changelog(h, [7])
+        assert _tickers(out, 7, "hc_entered") == {"IN"}
+        assert _tickers(out, 7, "hc_exited") == {"OUT"}

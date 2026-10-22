@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 from typing import Iterable
 
-from .scoring import Config, compute_leaderboard
+from .scoring import Config, MotionConfig, compute_leaderboard
 
 
 def snapshot_dates(history: pd.DataFrame, lookback_days: int) -> list[pd.Timestamp]:
@@ -142,6 +142,9 @@ def accumulation_velocity(score_pnl: pd.DataFrame, window: int = 10) -> pd.DataF
     """
     §31 OLS accumulation velocity over the trailing `window` snapshots.
 
+    Research only: the APEX kicker built on it was removed from the engine in
+    2026-10; scripts/scoring_study.py uses it to reproduce that test (V7).
+
     For each ticker with ≥ 4 non-NaN points in the window:
         x_i       = (date_i − first window date).days   (actual date spacing)
         slope     = cov(x, y) / var(x)                  (OLS on final_score)
@@ -214,287 +217,231 @@ def accumulation_velocity(score_pnl: pd.DataFrame, window: int = 10) -> pd.DataF
     return out[cols_out]
 
 
-def predictive_overlay(leaderboard: pd.DataFrame, score_pnl: pd.DataFrame,
-                       *, v_alpha: float = 0.25, i_alpha: float = 0.10,
-                       window: int = 10) -> pd.DataFrame:
+def burst_crater_panels(historical: dict[pd.Timestamp, pd.DataFrame], motion) -> dict[str, pd.DataFrame]:
+    """BURST / CRATER for every snapshot date (2026-10 redesign).
+
+    The single implementation behind build.py (today's flags), signal_history
+    (per-ticker flag history) and backtest.py (trigger strategies). See
+    scoring.MotionConfig for the rule. The pre-2026-10 rule measured the
+    RANGE (worst − best) of the raw rank over 30 days, so a one-day spike from
+    a partial ETF scrape (#100 → #140 → #100) passed the ≥ 40-rank test for
+    BURST and CRATER alike; it flagged ~850 names a day (median rank ~1,700)
+    and its CRATER names went on to OUTPERFORM. Smoothing, a direction, a
+    rank-relative size, a relevance floor and fund confirmation fix each of
+    those (docs/SIGNALS_STUDY.md).
+
+    Returns ticker × date frames: burst, crater, surge, slide (bool; SURGE /
+    SLIDE exclude names already BURST / CRATER), rank_now (smoothed),
+    rank_then / funds_delta (BURST's window: smoothed rank and holder change
+    over lookback_snapshots) and crater_rank_then / crater_funds_delta (the
+    same over CRATER's longer crater_lookback_snapshots).
     """
-    §31 bounded temporal kicker — RESEARCH ONLY since v4 (not used by build).
+    dates = sorted(historical.keys())
+    empty = pd.DataFrame()
+    if len(dates) < 2:
+        return {"burst": empty, "crater": empty, "surge": empty, "slide": empty,
+                "rank_then": empty, "rank_now": empty, "funds_delta": empty,
+                "crater_rank_then": empty, "crater_funds_delta": empty}
 
-        apex_score = final_score × (1 + v_alpha·tanh(velocity_z / 2)
-                                      + i_alpha·tanh(ignition_z / 2))
+    def _panel(col: str) -> pd.DataFrame:
+        cols = {d: historical[d].set_index("ticker")[col] for d in dates if col in historical[d].columns}
+        return pd.DataFrame(cols).sort_index(axis=1)
 
-    The 2026-10 walk-forward study (docs/SCORING_V4_STUDY.md) found the kicker
-    moved forward-return IC by < 0.001 at every horizon, so production ranks on
-    final_score alone; build.py emits velocity_z / ignition_z as diagnostics.
-    Kept so the study harness can reproduce the comparison. (The §31.2 m_conv
-    factor that used to ride here was removed: averaging conviction made the
-    score non-monotone in breadth — see conviction.kappa for its replacement.)
+    k = motion.lookback_snapshots
+    kc = getattr(motion, "crater_lookback_snapshots", k)
+    ranks = _panel("leaderboard_rank").astype(float)
+    funds = _panel("etf_count").reindex(index=ranks.index, columns=ranks.columns).fillna(0)
+    smooth = ranks.T.rolling(motion.smooth_snapshots, min_periods=motion.smooth_snapshots).median().T
 
-    tanh bounds the kicker to ±(v_alpha + i_alpha). apex_score is floored at 0
-    and cast int64; apex_rank is 1..n ordered by (apex_score desc, etf_count
-    desc, total_weight desc). Empty panel → neutral columns.
+    # SURGE / SLIDE — rank momentum over k snapshots (no fund needed)
+    then = smooth.shift(k, axis=1)
+    win_best = smooth.T.rolling(k + 1, min_periods=k + 1).min().T
+    win_worst_k = smooth.T.rolling(k + 1, min_periods=k + 1).max().T
+    surge = ((np.log(then / smooth) >= motion.min_log_rank_move)
+             & (smooth <= motion.relevance_rank)
+             & (np.log(smooth / win_best) <= motion.persist_log_tol))
+    slide = ((np.log(smooth / then) >= motion.min_log_rank_move)
+             & (then <= motion.relevance_rank)
+             & (np.log(win_worst_k / smooth) <= motion.persist_log_tol))
+
+    # BURST — a SURGE that a fund joined over the same k snapshots
+    funds_delta = funds - funds.shift(k, axis=1)
+    burst = surge.copy()
+
+    # CRATER — over kc snapshots: a fund's exit often comes before the slide
+    crater_then = smooth.shift(kc, axis=1)
+    crater_funds_delta = funds - funds.shift(kc, axis=1)
+    win_worst = smooth.T.rolling(kc + 1, min_periods=kc + 1).max().T
+    crater = ((np.log(smooth / crater_then) >= getattr(motion, "crater_min_log_rank_move", motion.min_log_rank_move))
+              & (crater_then <= motion.relevance_rank)
+              & (np.log(win_worst / smooth) <= motion.persist_log_tol))
+
+    if motion.require_fund_confirmation:
+        burst &= funds_delta >= 1
+        crater &= crater_funds_delta <= -1
+    burst, crater = burst.fillna(False), crater.fillna(False)
+    return {"burst": burst, "crater": crater,
+            # a name already flagged BURST / CRATER is not also tagged SURGE / SLIDE
+            "surge": surge.fillna(False) & ~burst, "slide": slide.fillna(False) & ~crater,
+            "rank_then": then, "rank_now": smooth, "funds_delta": funds_delta,
+            "crater_rank_then": crater_then, "crater_funds_delta": crater_funds_delta}
+
+
+def screening_signals(leaderboard: pd.DataFrame, etf_count_14d_ago: pd.Series, cfg: Config) -> pd.DataFrame:
+    """Screening chips (2026-10 audit, docs/SIGNALS_STUDY.md §4), computed in
+    the build — not the browser — so each has one tested definition.
+
+    Needs leaderboard columns: etf_count, etf_count_delta_30d,
+    leaderboard_rank, flag, conviction_etf_count, strategy_tier_count,
+    avg_rank_delta_7d, score_streak. `etf_count_14d_ago` is aligned to the
+    leaderboard rows (0 for names that were not on the board).
+
+    Each signal was kept only because its 20-day return vs currency peers had
+    the same sign in the Feb–May (momentum-friendly) and May–Oct (unwind)
+    regimes:
+        funds_down   rank ≤ funds_rank_max, lost a holder within 14d   −2.7% / −7.0%
+        funds_up     rank ≤ funds_rank_max, gained a holder within 30d  +6.2% / +1.5%
+        stealth_buy  a 2nd fund joined within 14d, rank ≤ stealth_rank_max  +4.9% / +1.7%
+        pre_hc       one step from HIGH_CONVICTION and improving       +7.4% / +0.1%
+    The pre-audit Stealth rule (≤ 2 funds, +10% weight in 7d) mostly caught
+    price drift in small positions (~250 names a day, no edge).
     """
+    sg = cfg.signals
     out = leaderboard.copy()
-    if out.empty or score_pnl is None or score_pnl.empty:
-        out["velocity_z"] = 0.0
-        out["ignition_z"] = 0.0
-        out["apex_score"] = out.get("final_score", pd.Series(dtype="int64"))
-        out["apex_rank"] = out.get("leaderboard_rank", pd.Series(dtype="int64"))
-        return out
-
-    vel = accumulation_velocity(score_pnl, window=window).set_index("ticker")
-    out["velocity_z"] = out["ticker"].map(vel["velocity_z"]).fillna(0.0).round(3) if not vel.empty else 0.0
-    out["ignition_z"] = out["ticker"].map(vel["ignition_z"]).fillna(0.0).round(3) if not vel.empty else 0.0
-
-    kicker = (1.0
-              + v_alpha * np.tanh(out["velocity_z"] / 2.0)
-              + i_alpha * np.tanh(out["ignition_z"] / 2.0))
-    out["apex_score"] = (out["final_score"] * kicker).clip(lower=0.0).astype("int64")
-
-    order = out.sort_values(
-        ["apex_score", "etf_count", "total_weight", "ticker"],
-        ascending=[False, False, False, True],
-    ).index
-    out["apex_rank"] = pd.Series(range(1, len(out) + 1), index=order).astype("int64")
+    rank = out["leaderboard_rank"]
+    d14 = (out["etf_count"] - pd.Series(etf_count_14d_ago, index=out.index).fillna(0)).astype(int)
+    out["etf_count_delta_14d"] = d14
+    out["funds_down"] = (d14 < 0) & (rank <= sg.funds_rank_max)
+    out["funds_up"] = (out["etf_count_delta_30d"] > 0) & (rank <= sg.funds_rank_max)
+    out["stealth_buy"] = (out["etf_count"] == 2) & (d14 >= 1) & (rank <= sg.stealth_rank_max)
+    out["pre_hc"] = ((out["flag"] != "HIGH_CONVICTION")
+                     & (out["etf_count"] >= sg.pre_hc_min_etfs)
+                     & (out["conviction_etf_count"] >= 1)
+                     & (out["strategy_tier_count"] >= cfg.high_conviction_min_tiers)
+                     & (out["avg_rank_delta_7d"] > 0)
+                     & (out["score_streak"].fillna(0) >= 2))
     return out
 
 
 def changelog(
     historical: dict[pd.Timestamp, pd.DataFrame],
-    latest: pd.DataFrame,
-    streaks: pd.DataFrame,
+    periods: Iterable[int | str],
+    *,
+    funds_rank_max: int = 500,
+    movers_rank_max: int = 300,
+    min_rank_move: int = 10,
     top_n: int = 15,
 ) -> dict:
     """
-    Day-over-day movers.
+    The Changes tab: what moved in the conviction picture between the
+    snapshot closest to (today − N days) and today, for every period N.
+    Built from the full daily leaderboards (every held name), so no table
+    depends on the 600-ticker score_history.json.
 
-    Categories:
-        entered_hc       — newly flagged HIGH_CONVICTION today vs yesterday
-        exited_hc        — flagged HIGH_CONVICTION yesterday, no longer today
-        biggest_gainers  — top score_delta_pct
-        biggest_losers   — bottom score_delta_pct
-        new_entrants     — ticker present today but not in any leaderboard 7d ago
+    Per period, each list holds {ticker, company, tier, rank_then, rank_now,
+    funds_then, funds_now, score_then, score_now} (None where the name was
+    not on the board), ordered most material first:
+
+        funds_added  gained ≥ 1 holding fund, now inside funds_rank_max
+        funds_lost   lost ≥ 1 holding fund, was inside funds_rank_max
+                     (includes names that left the board entirely)
+        hc_entered   HIGH_CONVICTION now, not then
+        hc_exited    HIGH_CONVICTION then, not now
+        climbers     rank improved by the largest factor, now inside
+                     movers_rank_max (a #300→#150 move counts as much as
+                     #20→#10; at least min_rank_move positions so #2→#1
+                     is not a "×2 move")
+        fallers      mirror: rank worsened most, was inside movers_rank_max
+        new          on the board now, not held then
+        exits        held then, on no fund's book now
+
+    `counts` gives each list's full size before the top_n cut. Fund-count
+    change is the most robust signal in the 2026-10 audit
+    (docs/SIGNALS_STUDY.md §4), which is why it leads the tab.
     """
+    periods = list(periods)
     dates = sorted(historical.keys())
+    keys = ("funds_added", "funds_lost", "hc_entered", "hc_exited",
+            "climbers", "fallers", "new", "exits")
+    empty = {"since": None, "counts": {k: 0 for k in keys}, **{k: [] for k in keys}}
     if len(dates) < 2:
-        return {"today": None, "yesterday": None, "entered_hc": [], "exited_hc": [],
-                "biggest_gainers": [], "biggest_losers": [], "new_entrants": []}
+        return {"today": None, "periods": {str(p): dict(empty) for p in periods}}
 
-    today, yday = dates[-1], dates[-2]
-    today_lb = historical[today]
-    yday_lb = historical[yday]
-
-    today_hc = set(today_lb.loc[today_lb["flag"] == "HIGH_CONVICTION", "ticker"])
-    yday_hc = set(yday_lb.loc[yday_lb["flag"] == "HIGH_CONVICTION", "ticker"])
-    entered = today_hc - yday_hc
-    exited = yday_hc - today_hc
-
-    by_ticker = today_lb.set_index("ticker")
-    by_ticker_yday = yday_lb.set_index("ticker")
-    streaks_by_ticker = streaks.set_index("ticker") if not streaks.empty else pd.DataFrame()
-
-    def _enrich(ticker: str, prefer_yday: bool = False) -> dict:
-        src = by_ticker_yday if prefer_yday and ticker in by_ticker_yday.index else by_ticker
-        if ticker not in src.index:
-            return {"ticker": ticker, "company": "", "final_score": None, "etf_count": None,
-                    "tiers": "", "score_delta": None}
-        row = src.loc[ticker]
-        # If duplicate ticker in source, .loc returns a DataFrame — take first row
-        if isinstance(row, pd.DataFrame):
-            row = row.iloc[0]
-        delta = None
-        if not streaks_by_ticker.empty and ticker in streaks_by_ticker.index:
-            d = streaks_by_ticker.loc[ticker]
-            if isinstance(d, pd.DataFrame):
-                d = d.iloc[0]
-            delta = d.get("score_delta")
-        return {
-            "ticker": ticker,
-            "company": row.get("company", ""),
-            "final_score": float(row.get("final_score")) if pd.notna(row.get("final_score")) else None,
-            "etf_count": int(row.get("etf_count")) if pd.notna(row.get("etf_count")) else None,
-            "tiers": row.get("tiers", ""),
-            "score_delta": float(delta) if delta is not None and pd.notna(delta) else None,
-        }
-
-    entered_records = sorted([_enrich(t) for t in entered],
-                              key=lambda r: -(r["final_score"] or 0))[:top_n]
-    exited_records = sorted([_enrich(t, prefer_yday=True) for t in exited],
-                             key=lambda r: -(r["final_score"] or 0))[:top_n]
-
-    # Gainers / losers by score_delta_pct (filter to non-tiny scores to avoid noise)
-    if not streaks.empty:
-        movers = streaks.dropna(subset=["score_delta_pct"]).copy()
-        movers = movers[movers["score_today"].fillna(0) >= 20]
-        movers["enriched"] = movers["ticker"].apply(lambda t: _enrich(t))
-        gainers = movers.sort_values("score_delta_pct", ascending=False).head(top_n)
-        losers = movers.sort_values("score_delta_pct", ascending=True).head(top_n)
-
-        def _movers_records(df):
-            recs = []
-            for _, r in df.iterrows():
-                rec = dict(r["enriched"])
-                rec["score_delta_pct"] = float(r["score_delta_pct"])
-                rec["score_streak"] = int(r["score_streak"])
-                recs.append(rec)
-            return recs
-
-        gainers_recs = _movers_records(gainers)
-        losers_recs = _movers_records(losers)
-    else:
-        gainers_recs, losers_recs = [], []
-
-    # New entrants — appear today, not in any leaderboard 7+ days ago
-    week_ago_dates = [d for d in dates if d <= today - pd.Timedelta(days=7)]
-    if week_ago_dates:
-        old_tickers = set()
-        for d in week_ago_dates:
-            old_tickers.update(historical[d]["ticker"].tolist())
-        new = sorted(set(today_lb["ticker"]) - old_tickers)
-        new_records = sorted([_enrich(t) for t in new],
-                              key=lambda r: -(r["final_score"] or 0))[:top_n]
-    else:
-        new_records = []
-
-    # Universe exits — present yesterday but not today
-    exited_universe = set(yday_lb["ticker"]) - set(today_lb["ticker"])
-
-    def _enrich_exit(ticker: str) -> dict:
-        if ticker not in by_ticker_yday.index:
-            return {"ticker": ticker, "company": "", "final_score": 0.0, "etf_count": 0,
-                    "tiers": "", "score_delta": None, "score_delta_pct": -1.0}
-        row = by_ticker_yday.loc[ticker]
-        if isinstance(row, pd.DataFrame):
-            row = row.iloc[0]
-        yday_score = float(row.get("final_score")) if pd.notna(row.get("final_score")) else 0.0
-        return {
-            "ticker": ticker,
-            "company": row.get("company", ""),
-            "final_score": 0.0,
-            "etf_count": 0,
-            "tiers": row.get("tiers", ""),
-            "score_delta": -yday_score,
-            "score_delta_pct": -1.0,
-        }
-
-    exited_universe_records = sorted(
-        [_enrich_exit(t) for t in exited_universe],
-        key=lambda r: -(abs(r["score_delta"]) if r["score_delta"] is not None else 0)
-    )[:top_n]
-
-    return {
-        "today": today.strftime("%Y-%m-%d"),
-        "yesterday": yday.strftime("%Y-%m-%d"),
-        "entered_hc": entered_records,
-        "exited_hc": exited_records,
-        "biggest_gainers": gainers_recs,
-        "biggest_losers": losers_recs,
-        "new_entrants": new_records,
-        "universe_exits": exited_universe_records,
-    }
-
-
-def compute_universe_exits_by_period(
-    historical: dict[pd.Timestamp, pd.DataFrame],
-    latest: pd.DataFrame,
-    periods: list[int | str],
-    top_n: int = 50,
-) -> dict[str, list[dict]]:
-    """
-    Universe exits for every lookback period, computed from the FULL uncapped
-    daily leaderboards (not the 600-ticker-capped score_history.json the
-    frontend previously scanned).
-
-    A ticker is an "exit" for period N if it was held (etf_count > 0) in the
-    snapshot closest to (today − N days) but is absent from today's
-    leaderboard (i.e. held by zero ETFs now). "YTD" uses Jan-1 of the
-    current year as the start.
-
-    Mirrors the 1-day logic in changelog()'s universe_exits path, but
-    generalised across periods so the frontend "Dropped from Universe"
-    table is accurate for 7d/14d/30d/60d/90d/YTD — not just 1d.
-
-    Returns {str(period): [{ticker, company, final_score, etf_count, tiers,
-                            score_delta, score_delta_pct}, ...]} keyed by the
-    stringified period (matching the frontend's String(changesPeriod) reads).
-    """
-    dates = sorted(historical.keys())
-    if len(dates) < 2:
-        return {str(p): [] for p in periods}
+    def _frame(d):
+        lb = historical[d]
+        lb = lb[lb["etf_count"].fillna(0) > 0] if "etf_count" in lb.columns else lb
+        lb = lb.drop_duplicates("ticker").set_index("ticker")
+        tiers = lb["tiers"].fillna("") if "tiers" in lb.columns else pd.Series("", index=lb.index)
+        return pd.DataFrame({
+            "company": lb["company"].fillna("") if "company" in lb.columns else "",
+            "tier": tiers.str.split(" + ", regex=False).str[0],
+            "rank": lb["leaderboard_rank"],
+            "funds": lb["etf_count"],
+            "score": lb["final_score"],
+            "hc": lb["flag"].eq("HIGH_CONVICTION") if "flag" in lb.columns else False,
+        }, index=lb.index)
 
     today = dates[-1]
-    today_lb = historical[today]
-    today_tickers: set[str] = set(today_lb["ticker"].tolist())
+    now = _frame(today)
+    out = {"today": today.strftime("%Y-%m-%d"), "periods": {}}
+    for p in periods:
+        if p == "YTD":
+            target = pd.Timestamp(year=today.year, month=1, day=1)
+        else:
+            target = today - pd.Timedelta(days=int(p))
+        start = min(dates[:-1], key=lambda d: abs((d - target).total_seconds()))
+        then = _frame(start)
+        m = now.join(then, how="outer", lsuffix="_now", rsuffix="_then")
+        m["funds_now"] = m["funds_now"].fillna(0)
+        m["funds_then"] = m["funds_then"].fillna(0)
+        m["hc_now"] = m["hc_now"].eq(True)
+        m["hc_then"] = m["hc_then"].eq(True)
+        m["company"] = m["company_now"].where(m["company_now"].notna(), m["company_then"])
+        m["tier"] = m["tier_now"].where(m["tier_now"].notna(), m["tier_then"])
+        dfunds = m["funds_now"] - m["funds_then"]
+        on_now, on_then = m["rank_now"].notna(), m["rank_then"].notna()
+        both = on_now & on_then
+        moved = (m["rank_then"] - m["rank_now"]).abs() >= min_rank_move
+        lr = np.log(m["rank_then"] / m["rank_now"])
 
-    # Company / tier lookup from today's leaderboard (enrichment source for the
-    # exit record; falls back to "" if the ticker is already gone).
-    by_ticker_today = today_lb.set_index("ticker") if "ticker" in today_lb.columns else pd.DataFrame()
-
-    def _enrich_exit(ticker: str, start_lb: pd.DataFrame, start_idx) -> dict:
-        # Pull the prior score/company from the START snapshot (the day the
-        # ticker was last seen) so the "Prev. Score" column reflects what it
-        # was before dropping out. NB: `in` on a DataFrame checks COLUMNS, so
-        # test membership against the index explicitly.
-        if "ticker" not in start_lb.columns or ticker not in start_idx.index:
-            return {"ticker": ticker, "company": "", "final_score": 0.0,
-                    "etf_count": 0, "tiers": "", "score_delta": None,
-                    "score_delta_pct": -1.0}
-        row = start_idx.loc[ticker]
-        if isinstance(row, pd.DataFrame):
-            row = row.iloc[0]
-        prior_score = float(row.get("final_score")) if pd.notna(row.get("final_score")) else 0.0
-        return {
-            "ticker": ticker,
-            "company": row.get("company", ""),
-            "final_score": 0.0,
-            "etf_count": int(row.get("etf_count")) if pd.notna(row.get("etf_count")) else 0,
-            "tiers": row.get("tiers", ""),
-            "score_delta": -prior_score,
-            "score_delta_pct": -1.0,
+        # Sort keys live on m itself: .assign(Series) on an EMPTY filtered
+        # frame would adopt the Series' index and resurrect every row.
+        m["_dfunds"], m["_lr"] = dfunds, lr
+        sel = {
+            "funds_added": m[(dfunds >= 1) & (m["rank_now"] <= funds_rank_max)]
+                .sort_values(["_dfunds", "rank_now"], ascending=[False, True]),
+            "funds_lost": m[(dfunds <= -1) & (m["rank_then"] <= funds_rank_max)]
+                .sort_values(["_dfunds", "rank_then"], ascending=[True, True]),
+            "hc_entered": m[m["hc_now"] & ~m["hc_then"]].sort_values("rank_now"),
+            "hc_exited": m[m["hc_then"] & ~m["hc_now"]].sort_values("rank_then"),
+            "climbers": m[both & moved & (lr > 0) & (m["rank_now"] <= movers_rank_max)]
+                .sort_values("_lr", ascending=False),
+            "fallers": m[both & moved & (lr < 0) & (m["rank_then"] <= movers_rank_max)]
+                .sort_values("_lr"),
+            "new": m[on_now & ~on_then].sort_values("rank_now"),
+            "exits": m[on_then & ~on_now].sort_values("rank_then"),
         }
 
-    out: dict[str, list[dict]] = {}
-    for p in periods:
-        # Resolve the start snapshot for this period.
-        if p == "YTD":
-            start_target = pd.Timestamp(year=today.year, month=1, day=1)
-        else:
-            try:
-                n_days = int(p)
-            except (ValueError, TypeError):
-                out[str(p)] = []
-                continue
-            start_target = today - pd.Timedelta(days=n_days)
+        def _num(v, nd=None):
+            if v is None or pd.isna(v):
+                return None
+            return round(float(v), nd) if nd is not None else int(v)
 
-        # Snapshot closest to the target date (must be strictly before today so
-        # 1-day doesn't collapse to today itself).
-        candidates = [d for d in dates if d < today]
-        if not candidates:
-            out[str(p)] = []
-            continue
-        start_d = min(candidates, key=lambda d: abs((d - start_target).total_seconds()))
+        def _records(df):
+            return [{
+                "ticker": str(t),
+                "company": "" if pd.isna(r["company"]) else str(r["company"]),
+                "tier": "" if pd.isna(r["tier"]) else str(r["tier"]),
+                "rank_then": _num(r["rank_then"]), "rank_now": _num(r["rank_now"]),
+                "funds_then": _num(r["funds_then"]), "funds_now": _num(r["funds_now"]),
+                "score_then": _num(r["score_then"], 1), "score_now": _num(r["score_now"], 1),
+            } for t, r in df.head(top_n).iterrows()]
 
-        start_lb = historical[start_d]
-        if "ticker" not in start_lb.columns or "final_score" not in start_lb.columns:
-            out[str(p)] = []
-            continue
-
-        # Held at the start date, gone from today's universe. Presence is read
-        # from etf_count: under apex v4 a held filler can carry a 0.0 score.
-        held = (start_lb["etf_count"].fillna(0) > 0 if "etf_count" in start_lb.columns
-                else start_lb["final_score"].fillna(0) > 0)
-        scored_at_start = start_lb.loc[held, "ticker"]
-        start_tickers: set[str] = set(scored_at_start.tolist())
-        exited = start_tickers - today_tickers
-
-        start_idx = start_lb.set_index("ticker")
-        records = sorted(
-            (_enrich_exit(t, start_lb, start_idx) for t in exited),
-            # Biggest absolute score drop first (most material exits on top)
-            key=lambda r: -(abs(r["score_delta"]) if r["score_delta"] is not None else 0),
-        )[:top_n]
-        out[str(p)] = records
-
+        out["periods"][str(p)] = {
+            "since": start.strftime("%Y-%m-%d"),
+            "counts": {k: int(len(v)) for k, v in sel.items()},
+            **{k: _records(v) for k, v in sel.items()},
+        }
     return out
 
 
@@ -557,51 +504,19 @@ def signal_history(
     rank_panel = _build_panel("leaderboard_rank")   # ticker × date, float (NaN for missing)
     hb_panel   = _build_panel("held_by")            # ticker × date, str
 
-    rp_cols = list(rank_panel.columns) if not rank_panel.empty else []
 
-    # ── 2. Pre-compute burst/crater panels (ticker × date_idx → bool) ─────────
-    # Do this once for all date indices to avoid repeating the window operation.
-    burst_sets: list[set] = []  # burst_sets[di] = set of burst tickers at date di
-    crater_sets: list[set] = []  # crater_sets[di] = set of crater tickers at date di
-    if not rank_panel.empty and len(rp_cols) >= 5:
-        rp_arr = rank_panel.values.astype(float)   # shape (n_tickers_rp, n_dates)
-        rp_tickers = list(rank_panel.index)
-        for di in range(len(rp_cols)):
-            if di < 5:
-                burst_sets.append(set())
-                crater_sets.append(set())
-                continue
-            win_start = max(0, di - 30)
-            win = rp_arr[:, win_start: di + 1]  # shape (n_tickers_rp, win_len)
-            n_win = win.shape[1]
-            valid_mask = np.isfinite(win)
-            coverage = valid_mask.sum(axis=1) / n_win
-            # worst/best ignoring NaN
-            worst = np.where(valid_mask, win, -np.inf).max(axis=1)
-            best  = np.where(valid_mask, win,  np.inf).min(axis=1)
-            peak  = np.where(np.isfinite(worst) & np.isfinite(best), worst - best, 0.0)
-            # Sustained: better than window median for ≥8 of last 10 valid snapshots
-            recent10 = win[:, -10:] if n_win >= 10 else win
-            with_nan = np.where(valid_mask[:, -10:] if n_win >= 10 else valid_mask, win[:, -min(10, n_win):], np.nan)
-            med = np.nanmedian(rp_arr[:, win_start: di + 1], axis=1)
-            better = (with_nan < med[:, None])
-            better_count = np.nansum(better, axis=1)
-            # Coverage gate mirrors build.py's _attach_velocity: newer names
-            # (actual_obs < 15) get a pass since they can't reach 80% of a
-            # 30-day window; sustained_count ≥ 8 still guards against noise.
-            actual_obs = valid_mask.sum(axis=1)
-            coverage_ok = (coverage >= 0.80) | (actual_obs < 15)
-            is_burst_arr = (peak >= 40) & coverage_ok & (better_count >= 8)
-            burst_sets.append(set(t for t, b in zip(rp_tickers, is_burst_arr) if b))
-
-            # Crater: exact polar opposite — sustained WORSE than median
-            worse = (with_nan > med[:, None])
-            worse_count = np.nansum(worse, axis=1)
-            is_crater_arr = (peak >= 40) & coverage_ok & (worse_count >= 8)
-            crater_sets.append(set(t for t, b in zip(rp_tickers, is_crater_arr) if b))
-    else:
-        burst_sets = [set()] * len(dates_sorted)
-        crater_sets = [set()] * len(dates_sorted)
+    # ── 2. BURST / CRATER per date — the shared implementation ───────────────
+    motion = cfg.motion if cfg.motion is not None else MotionConfig()
+    bc = burst_crater_panels(historical, motion)
+    burst_sets: list[set] = []
+    crater_sets: list[set] = []
+    for d in dates_sorted:
+        if not bc["burst"].empty and d in bc["burst"].columns:
+            burst_sets.append(set(bc["burst"].index[bc["burst"][d].to_numpy(dtype=bool)]))
+            crater_sets.append(set(bc["crater"].index[bc["crater"][d].to_numpy(dtype=bool)]))
+        else:
+            burst_sets.append(set())
+            crater_sets.append(set())
 
     # ── 5. Pre-compute per-date quality sets from hb_panel ────────────────────
     # For each (ticker, date_idx): now_q and then_q sets

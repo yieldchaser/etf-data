@@ -185,7 +185,7 @@ Score    = B × M_conc × M_breadth × M_universe
 | `M_breadth` | 1.00–1.35 | Strategy dispersal — entropy of score across the 5 tiers (the only breadth reward) |
 | `M_universe` | 0.80–1.25 | Opportunity normalization — levels international names (the only regional levelling) |
 
-`final_score` / `leaderboard_rank` is the single canonical score and rank (one decimal). `apex_score` / `apex_rank` remain in the payload as aliases. `velocity_z` / `ignition_z` are display diagnostics only.
+`final_score` / `leaderboard_rank` is the single canonical score and rank (one decimal). `apex_score` / `apex_rank` remain in the payload as aliases. The score-velocity diagnostics (`velocity_z` / `ignition_z`) were removed with the APEX kicker.
 
 ### Tier Points
 
@@ -233,12 +233,11 @@ Legacy (`weight% × 100 × tier_points × rank_multiplier + new bonus`) and conv
 
 | Flag | Condition | Interpretation |
 |------|-----------|---------------|
-| **HIGH_CONVICTION** | Held by ≥ 4 distinct ETFs (raw count, identical in all scoring modes) | Broad consensus across independent strategies |
-| **CONCENTRATED** | One fund supplies ≥ 85% of linear conviction mass (Σ points × C), or a lone fund holds it at ≥ 4× equal-weight | Single-fund story — best risk-adjusted flag (0.24× base exit rate) |
-| **SPECULATIVE_BETA** | In Trend tier, absent from Quality + Scout | High-volatility momentum without fundamental support |
+| **HIGH_CONVICTION** | ≥ 4 holders, ≥ 2 non-benchmark holders at conviction ≥ 0.6, ≥ 2 non-benchmark strategy tiers (Core excluded) | Broad, convinced, independent consensus (~20–25 names; raw "≥ 4 holders" flagged ~200) |
+| **CONCENTRATED** | One fund supplies ≥ 85% of linear conviction mass (Σ points × C), or a lone fund holds it at ≥ 4× equal-weight | Single-fund story — a risk descriptor, not a buy signal (no consistent return edge in the 2026-10 audit) |
 | **NEW** | First appearance within the 14-day lookback; suppressed for ETFs younger than the 30-day maturity baseline | Short-horizon entrant (1.38× accumulation lift ≤ 7d, 0.65× by 30d) |
 
-Per-name signals `BURST` / `CRATER` / Quality+ (`quality_adopted_30d`) and the Pre-HC / Stealth-Buy filter chips are documented under [Analytical Signals](#analytical-signals). The former apex-mode conviction-breadth gate for HC (θ ≥ 0.8) was removed in 2026-08 — it fired on ~0.03% of rows; `conviction_etf_count` remains as a diagnostic column only.
+Per-name motion signals `BURST` / `CRATER` and the screening chips (Funds ↓, Funds ↑, Pre-HC, Stealth, Quality+) are documented under [Analytical Signals](#analytical-signals). `SPECULATIVE_BETA` was retired in the 2026-10 signal audit (no edge in either regime).
 
 ### Sanitizer
 
@@ -269,12 +268,14 @@ Built with Tailwind CSS + Alpine.js. Zero build step — static HTML/JS served d
 ### Dashboard Tabs
 
 #### Leaderboard
-- ~3,950 unique tickers ranked by Final Alpha Score
+- KPI strip: names tracked, High Conviction (with Pre-HC count), BURST and CRATER (with the date each last fired when none are live), names losing funds
+- Today's signals strip: warnings (CRATER, Funds ↓) beside building names (BURST, HC entries, Pre-HC, Stealth), up to four each
+- ~3,800 unique tickers ranked by the v4 conviction score (`final_score`, one decimal)
 - Sortable columns: score, rank, rank delta, burst, concentration, tier breadth, ticker, company (3-way click sort toggle: desc → asc → default, with alphabetical columns and rank defaulting to ascending on first click)
 - Day-over-day score deltas with honest `—` display when no comparable past data exists
 - HC streaks, percentile-of-own-history progress bars
 - **BURST** and **CRATER** badges with micro-breakdown tooltips
-- Filter chips: HC only, BURST, CRATER, Pre-HC, Stealth Buy, Quality+, Concentration ≤80%
+- Filter chips in three groups — Flags (HC, CONC, NEW), Signals (BURST, CRATER, Funds ↓, Funds ↑, Pre-HC, Stealth, Quality+) and Motion (Surge, Slide)
 - Auto-generated explainer line per row: compresses tier breadth, score delta, burst state, HC streak, quality signals, concentration, NEW-entrant state into one scannable sentence
 - **Expanded Row Detail Drawer**:
   - **Auto-Explainer Grid**: A frosted glassmorphic card container (`STRUCTURE`, `FLOW`, `RISK`) featuring dynamic left-border colored callout bars (`border-l-2 pl-2 border-current`) matching alert severity.
@@ -291,14 +292,18 @@ Built with Tailwind CSS + Alpine.js. Zero build step — static HTML/JS served d
 - ETF overlap heatmap: 30×30 Jaccard similarity matrix
 
 #### Changes Tab
-- Daily turnover: HC entries/exits, biggest score movers, new discoveries
-- Top 15 accumulation movers panel (`top_accumulation` — net ETF positions added over 30d)
-- Sector flow: net ETF positions added/removed over 30d by GICS sector (Unknown excluded)
-- Country flow: net ETF positions added/removed over 30d by domicile (Unknown excluded)
-- Click a sector/country to filter the leaderboard
-- **Interactive Sorting**: All 10 tables, sector flow, and country flow tables support 3-way toggle sorting (descending → ascending → default/clear) with visual indicators.
-- **Dynamic Lookbacks**: Climbers and Fallers tables dynamically respect the selected lookback changesPeriod.
-- **Color-Coded Card Accents**: Category-matched left-border highlights (green for gainers/climbers, red/rose for losers/fallers/crashed, cyan for pickups, purple for burst, blue for entrants, grey for exits).
+Everything is computed per lookback period (1d / 7d / 14d / 30d / 60d / 90d / YTD, default 30d) by `history.changelog` from the full daily leaderboards, and read as "building" on the left, "breaking" on the right:
+
+| Row | Left | Right |
+|-----|------|-------|
+| Fund positions | Funds adding — gained a holding fund, now in the top 500 | Funds leaving — lost a holding fund, was in the top 500 |
+| High Conviction | Entered HC | Left HC |
+| Motion (in force now) | BURST | CRATER — with the date each last fired when none are live |
+| Rank | Climbers — largest rank multiple, now in the top 300 (≥ 10 positions) | Fallers — largest rank multiple, was in the top 300 |
+| Board | New on the board | Left the board |
+| Flow (30d) | Sector flow | Country flow |
+
+Every table shows rank then → now, funds then → now and score, with the name's strongest current signal as a badge. A summary strip at the top gives the up / down count for each row. Fund-count change leads because it is the most robust signal in the 2026-10 audit; score-% movers were dropped (dominated by near-zero scores) and raw rank deltas were replaced by rank multiples (a #3,000 → #1,000 move is noise; #300 → #120 is not).
 
 #### Watchlist Tab
 - Pin tickers with ★, persisted to localStorage
@@ -306,6 +311,8 @@ Built with Tailwind CSS + Alpine.js. Zero build step — static HTML/JS served d
 - Compare mode: side-by-side cards for top 4 pinned tickers
 
 ### Stock Detail (`stock.html`)
+
+- **KPI cards**: ten, in two rows — where the name stands (score, rank, funds, convinced holders, top-fund share) and how it is moving (score Δ 1d, rank Δ 30d, funds Δ 30d, score streak, HC streak)
 
 - **Score History**: sparkline area chart, score accumulation over time
 - **Global Rank History**: inverted Y-axis line chart, O(1) pre-computed lookup
@@ -321,31 +328,36 @@ Built with Tailwind CSS + Alpine.js. Zero build step — static HTML/JS served d
 
 | Signal | Definition |
 |--------|-----------|
-| `burst_30d` | Peak rank improvement ≥ 40 positions in 30d, with ≥80% continuous presence AND sustained improvement in ≥8 of last 10 snapshots — strongest as an HC-entry precursor (3.3× within 14d) |
-| `crater_30d` | Peak rank drop ≥ 40 positions in 30d, with ≥80% continuous presence AND sustained deterioration in ≥8 of last 10 snapshots — only consistent downside signal (1.28–1.40× exit-rate lift) |
-| `momentum_regime` | accelerating / rising / stable / weakening / declining — classified from `score_streak` direction combined with the mean 7-day per-ETF rank delta (`avg_rank_delta_7d`) |
-| `etf_count_delta_30d` | Net ETF positions added/removed over 30 days; sector/country flow aggregations expose the same measure as `flow.json` keys `net_funds_delta` (sum) and `avg_funds_delta` (mean) |
-| `pre_hc` (chip) | Held by exactly 3 ETFs with improving 7-day per-fund ranks — one pickup away from HIGH_CONVICTION |
-| `stealth_buy` (chip) | Held by 1–2 funds with >10% average weight growth over 7d while ranks haven't started moving yet |
+| `BURST` | On the 3-snapshot rolling-median global rank: improved by ≥ ×1.65 (log move ≥ 0.5) over the last 10 snapshots, is now inside the top 300, is still within 15% (log) of its best rank in the window, **and** gained at least one holding fund over the same window. A one-day rank glitch cannot fire it. |
+| `CRATER` | Over ~4 weeks (20 snapshots): smoothed rank worsened by ≥ ×1.35 from a starting position inside the top 300, still near its worst, **and** lost at least one holding fund over those 20 snapshots. The longer window catches funds that sell before the slide (Yageo, July 2026). The "get out" signal: −2.9% / −1.0% vs peers over 20 days in the two regimes. |
+| `surge_10d` / `slide_10d` | SURGE / SLIDE: BURST's ×1.65 rank move over ~2 weeks in the top 300, up or down, with **no** fund change — the price move showing through fund weights. Momentum tags (~19 a day each), not forecasts: +2.9% / −2.6% (SURGE) across the two regimes. Not set on names already BURST / CRATER. |
+| `funds_down` (chip) | Inside the top 200 and lost a holding fund in the last 14 days — the most robust single exit warning in the audit |
+| `funds_up` (chip) | Inside the top 200 and gained a holding fund over 30 days |
+| `pre_hc` (chip) | Not yet HC, ≥ 3 funds, ≥ 1 non-Core conviction holder, ≥ 2 non-Core tiers, improving 7-day per-fund ranks and a rising score streak — one step from HIGH_CONVICTION |
+| `stealth_buy` (chip) | A second fund joined in the last 14 days (2 holders now), inside the top 500 — the earliest form of independent confirmation |
+| `quality_adopted_30d` | Gained a Quality-tier ETF in the last 30 days (Quality set derived from `config.yaml`) |
+| `momentum_regime` | accelerating / rising / stable / weakening / declining — `score_streak` direction combined with the mean 7-day per-ETF rank delta |
+| `etf_count_delta_30d` | Net ETF positions added/removed over 30 days; a name absent 30 days ago counts as 0 holders. Sector/country flow aggregates the same measure in `flow.json` |
 | `tier_breadth` | Count of distinct strategy tiers (Scout/Quant/Quality/Trend/Core) co-holding this name |
-| `concentration_score` | % of final score from single top ETF (100 = mono-ETF, 25 = perfectly diversified across 4) |
-| `quality_adopted_30d` | Gained a Quality-tier ETF in last 30 days (Quality set derived from `config.yaml`, not hardcoded) |
+| `concentration_score` | % of linear conviction mass from the single top ETF (100 = mono-ETF) |
 
-### Signal evaluation (2026-08)
+BURST, CRATER and the backtest's BURST/CRATER strategies share one implementation (`conviction/history.burst_crater_panels`), so the site, the per-day signal history and the backtest cannot drift apart. Thresholds live under `motion:` and `signals:` in `config.yaml`.
 
-A **156-snapshot walk-forward study** on the production Parquet store tracked each signal's exposed cohort forward at 7/14/30-day horizons against base rates (accumulation lift, HC entry/exit lift). Verdicts:
+### Signal evaluation (2026-10)
 
-| Signal | Verdict | Evidence |
-|--------|---------|----------|
-| `velocity_score` | **Retired** | Components cancel — top-quintile forward lift ≤ 1.0 at every horizon |
-| `burst_30d` | Kept — repositioned as HC-entry precursor | 3.3× lift on HC-entry within 14d; post-peak forward rank drift −6 vs −2 base (mean reversion — early signal, not chase) |
-| `crater_30d` | Kept | Only consistent downside signal: exit-rate lift 1.28–1.40× |
-| `quality_adopted_30d` | Kept | Reliable fundamentals-lens confirmation |
-| NEW entrant | Kept — short-horizon | Accumulation lift 1.38× within 7d fading to 0.65× by 30d |
-| CONCENTRATED | Promoted | Exit rate 0.24× base (0.58% vs 2.39%); accumulation lift 1.17–1.28× |
-| `stealth_accumulation` | Retired | Only 126 events in 6 months — too rare |
-| `conviction_divergence` | Retired | Exit-lift 0.56× — pointed the wrong direction |
-| `quality_defected_30d` | Retired | Lift flipped sign between evaluation grids |
+Every signal was replayed on each snapshot with the site's definition and scored on weekly dates by 20-day forward return vs currency peers, plus whether members went on to gain or lose a holding fund. Full tables: [`docs/SIGNALS_STUDY.md`](docs/SIGNALS_STUDY.md); reproduce with `scripts/signals_study.py` and `scripts/signal_audit.py`.
+
+| Signal | Verdict |
+|--------|---------|
+| HIGH_CONVICTION | Redesigned: ≥ 4 holders was ~200 names; the conviction + independence rule is ~20–25 and loses a holder half as often |
+| BURST / CRATER | Redesigned: the old 40-position range rule fired on ~580 names a day, mostly below #300, describing moves that had already happened. 20 rules tested in both regimes: only fund-confirmed rules kept their sign. SURGE / SLIDE keep the unconfirmed rank move as a momentum tag |
+| Funds ↓ / Funds ↑ | Added — fund-count change is the most robust signal in the data |
+| Pre-HC / Stealth | Redefined to the forms that carried information |
+| Quality+, NEW, regime | Kept |
+| CONCENTRATED | Kept as a risk descriptor only |
+| SPECULATIVE_BETA, Q+Q chip, EARLY/CROWDED/ACCUM badges, ≤80% concentration chip, extreme-moves ribbon | Retired — no edge, or duplicated another signal |
+
+Earlier retirements (2026-08: `velocity_score`, `stealth_accumulation`, `conviction_divergence`, `quality_defected_30d`) still stand.
 
 Retired signals were removed from the engine, payloads, and UI; the full transparency log lives on the [methodology page](https://yieldchaser.github.io/etf-data/methodology.html#retired-signals).
 
@@ -741,7 +753,7 @@ etf-data/
 │   └── data/                     # Pre-built JSON payloads
 │       ├── leaderboard.json      # Main leaderboard (~3.8MB)
 │       ├── holdings_latest.json  # Per-(ETF, ticker) detail
-│       ├── changelog.json        # Daily turnover + top_accumulation (net ETF positions added 30d)
+│       ├── changelog.json        # Changes tab: per-period fund adds/exits, HC moves, rank movers, new/exits
 │       ├── flag_history.json     # Per-ticker flag/rank history (90d)
 │       ├── score_history.json    # Score sparkline data
 │       ├── flow.json             # Sector + country flow (net_funds_delta / avg_funds_delta)

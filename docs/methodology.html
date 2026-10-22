@@ -67,7 +67,7 @@
       </div>
       <h1 class="text-xl font-medium" style="color: var(--text)">How Conviction Labs works</h1>
       <div class="text-xs mt-1" style="color: var(--text-3)">A plain-language explanation of the scoring engine, motion signals, and what it does &amp; doesn't measure.</div>
-      <div class="label mt-2" style="color: var(--text-3)">Last updated: 2026-10-22</div>
+      <div class="label mt-2" style="color: var(--text-3)">Last updated: 2026-10-23</div>
     </div>
     <nav class="top flex flex-wrap gap-1 text-xs">
       <a href="index.html">Dashboard</a>
@@ -186,40 +186,53 @@ Score         = B × M<sub>conc</sub> × M<sub>breadth</sub> × M<sub>universe</
     <li><strong><code>etf_count_delta_30d</code></strong> — net ETF positions added or removed over 30 days. Sector/country flow aggregations now measure the same thing: the <code>flow.json</code> keys are <code>net_funds_delta</code> (sum) and <code>avg_funds_delta</code> (mean) of per-name ETF-count change.</li>
   </ul>
 
-  <h3>4.2 — BURST — strongest as an HC-entry precursor</h3>
-  <p>A name is flagged BURST when <strong>all three</strong> of these hold for the trailing 30 days:</p>
+  <h3>4.2 — BURST — a fund-confirmed rank surge (redesigned 2026-10)</h3>
+  <p>On the leaderboard rank smoothed by a 3-snapshot rolling median (so a one-day spike cannot move it), over the last 10 snapshots (~2 weeks), a name is flagged BURST when <strong>all</strong> of these hold:</p>
   <ul class="list-disc pl-5 space-y-1">
-    <li>Peak global-rank improvement ≥ 40 positions</li>
-    <li>Continuous presence in ≥ 80% of the daily snapshots in the window (names with &lt; 15 observations get a pro-rata pass — they can't physically reach 80% of a full window)</li>
-    <li>Rank better than the within-window median for ≥ 8 of the last 10 snapshots (so the move is sustained, not a fluke)</li>
+    <li>its rank improved by at least ×1.65 (log 0.5; e.g. #250 → #150) — a rank-<em>relative</em> move, so it means the same at #50 as at #250;</li>
+    <li>it is now inside the top 300 (moves deep in the board are churn, not signal);</li>
+    <li>it is still within 15% of its best rank in the window (the move is in force, not already given back);</li>
+    <li>it <strong>gained at least one holding fund</strong> over the same window.</li>
   </ul>
   <div class="callout callout-cyan">
-    <strong>Positioning (2026-08 study):</strong> burst's value is as an <strong>HC-entry precursor</strong> — 3.3× lift on entering HIGH_CONVICTION within 14 days. Documented caveat: after a burst peaks, forward rank drift averages <strong>−6 ranks vs −2 base</strong> (post-peak mean reversion). Treat burst as an <em>early</em> signal, not a chase signal.
+    <strong>Why it was rebuilt (2026-10 signal study):</strong> the old rule measured the <em>range</em> of the raw rank over 30 days (worst − best ≥ 40) with no direction, so a one-day glitch from a partial ETF scrape (#100 → #140 → #100) qualified, and a name that only fell showed a large "peak improvement". It flagged ~870 names a day, median rank ~1,700, with no forward edge (−0.5% vs peers). Fund-confirmed BURST flags ~6–8 names a day; onsets beat currency peers by <strong>+5.2%</strong> over 20 days in the momentum-friendly Feb–May regime and were flat (−0.9%, not significant) in the May–Oct momentum unwind, where an unconfirmed rank surge lost 2.6%. Details: <a href="https://github.com/yieldchaser/etf-data/blob/main/docs/SIGNALS_STUDY.md" target="_blank" rel="noopener">SIGNALS_STUDY.md</a>.
   </div>
 
-  <h3>4.3 — CRATER</h3>
-  <p>The exact polar opposite of BURST: peak drop ≥ 40 positions in 30d, same coverage gate, sustained deterioration in ≥ 8 of the last 10 snapshots. The only consistent <em>downside</em> signal in the study: names in crater exit at <strong>1.28–1.40× the base exit rate</strong>.</p>
+  <h3>4.3 — CRATER — the get-out signal (redesigned 2026-10)</h3>
+  <p>The mirror of BURST, measured over <strong>~4 weeks (20 snapshots)</strong> rather than BURST's ~2: the smoothed rank worsened by at least <strong>×1.35</strong>, starting from inside the top 300, is still near its worst, and the name <strong>lost at least one holding fund over the same 20 snapshots</strong>. The longer window exists because a fund's exit often comes <em>before</em> the slide. PIE sold Yageo (2327) at #6 at the start of July; its rank fell ×1.65 only about 13 snapshots later, as the price fell 55% from its June peak, and a 10-snapshot CRATER never fired. CRATER onsets lagged currency peers by <strong>−2.9%</strong> (May–Oct, t −2.8) and <strong>−1.0%</strong> (Feb–May) over 20 days. It is one of only two motion rules negative in both regimes, the other being the stricter ×1.65 version (−2.4% / −1.3%), which fired about 20% less. The same widening hurt BURST, which keeps its 10-snapshot window. The old CRATER flagged ~590 names a day and its names went on to <em>outperform</em>.</p>
 
-  <h3>4.4 — NEW — short-horizon only</h3>
-  <p>First appearance in an ETF within the 14-day lookback (<code>new_lookback_days</code>), suppressed for ETFs younger than the 30-day maturity baseline (§7). The study repositioned it as a <strong>short-horizon</strong> signal: accumulation lift <strong>1.38× within 7 days</strong>, fading to <strong>0.65× by 30 days</strong> — trade it early or not at all.</p>
+  <h3>4.3b — SURGE / SLIDE — momentum tags, not signals (2026-10)</h3>
+  <p>The same ×1.65 smoothed-rank move as BURST, over ~2 weeks inside the top 300, up (SURGE) or down (SLIDE), <strong>with no fund joining or leaving</strong>. A fund's weight in a name drifts with its price, so this is the price move showing through the funds' books: ~19 names a day each, rarely none. They are what the old BURST / CRATER felt like: in sync with price. Like every rule built from price, rank or fund re-weighting alone (20 were tested), they are momentum. SURGE names beat peers by +2.9% over 20 days in Feb–May and lagged by −2.6% in Jun–Oct; SLIDE was −1.7% in Jun–Oct and +0.9% in Feb–May. Timing the regime from the rules' own recent record failed: their trailing record was anti-predictive. So they are shown as tags describing what just happened, with both regimes' numbers, and never as calls. A name flagged BURST or CRATER is not also tagged.</p>
+  <div class="callout callout-cyan">
+    <strong>Why the old flags felt right and weren't:</strong> the old BURST / CRATER flagged ~580 names a day, 88–93% of them below #300. Flagged names had moved +4.0% / −3.5% vs peers over the <em>previous</em> 10 days and +0.6% / +0.1% over the <em>next</em> 20. They described moves rather than anticipating them. Full tables: <code>docs/SIGNALS_STUDY.md</code> §3, follow-up 2.
+  </div>
 
-  <h3>4.5 — Pre-HC chip</h3>
-  <p>Held by <strong>exactly 3 ETFs</strong> with <strong>improving 7-day per-fund ranks</strong> — one pickup away from HIGH_CONVICTION. Catches names the day before broad consensus.</p>
+  <h3>4.4 — NEW</h3>
+  <p>First appearance in an ETF within the 14-day lookback (<code>new_lookback_days</code>), suppressed for ETFs younger than the 30-day maturity baseline (§7). A factual event rather than a call: new entrants to momentum-run funds are momentum names, so NEW members beat currency peers by +6.2% over 20 days in the momentum-friendly Feb–May regime and lagged by 2.3% in the May–Oct unwind.</p>
 
-  <h3>4.6 — Stealth-Buy chip</h3>
-  <p>Held by <strong>1–2 funds</strong> with <strong>&gt; 10% average weight growth over 7 days</strong> while ranks haven't started moving yet — position building before the rank layer notices.</p>
+  <h3>4.5 — Screening chips (2026-10 audit)</h3>
+  <p>Every chip is computed in the build (<code>history.screening_signals</code>), so each has one tested definition shared by every page. Each was replayed on every snapshot and kept only when its 20-day return vs currency peers had the same sign in both regimes (Feb–May / May–Oct):</p>
+  <table class="tier-table w-full text-sm">
+    <thead><tr><th>Chip</th><th>Rule</th><th>20d vs peers</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Funds ↓</strong></td><td>A top-200 name lost a holding fund in the last 14 days</td><td class="font-mono">−2.7% / −7.0% — the steadiest warning in the data</td></tr>
+      <tr><td><strong>Funds ↑</strong></td><td>A top-200 name gained a holding fund in the last 30 days</td><td class="font-mono">+6.2% / +1.5%</td></tr>
+      <tr><td><strong>Pre-HC</strong></td><td>One step from HIGH_CONVICTION and improving: 3+ holders, 1+ conviction holder, 2+ strategy tiers, per-fund ranks and score rising</td><td class="font-mono">+7.4% / +0.1%</td></tr>
+      <tr><td><strong>Stealth</strong></td><td>A second independent fund joined the name in the last 14 days (top 500): consensus starting to form</td><td class="font-mono">+4.9% / +1.7%</td></tr>
+      <tr><td><strong>Quality+</strong></td><td>A Quality-tier fund added the name in the last 30 days</td><td class="font-mono">+0.4% / +0.8%</td></tr>
+    </tbody>
+  </table>
+  <p class="text-xs mt-2" style="color: var(--text-3)">Selling shows up within two weeks; buying accumulates over a month — hence the different windows. The relevance floor (top 200 / 500) carries most of the gain: deep-board names churn without consequence. Holder-count changes count a name that was not on the board as having had zero holders.</p>
 
-  <h3>4.6b — Funds ↑ / Funds ↓ chips (v4)</h3>
-  <p>Filter to names held by <strong>more</strong> (↑) or <strong>fewer</strong> (↓) ETFs than 30 days ago (<code>etf_count_delta_30d</code>). In the 2026-10 study, change in the number of holding funds was the only motion signal with positive forward-return IC in both the momentum-friendly and the momentum-unwind regime. Its downside side was the most consistent result in the data: top-200 names that lost a fund underperformed currency peers by ~5.5–6% over the next 20 days in <em>both</em> periods. Fund adds were strongly positive in Feb–May (+17%) but neutral during the May–Oct unwind. Score/rank changes, by contrast, follow the momentum regime (§11).</p>
+  <h3>4.6 — CONCENTRATED — a risk descriptor</h3>
+  <p>One fund supplies ≥ 85% of the name's linear conviction mass Σ points × C (or a lone fund holds it at ≥ 4× equal weight); read on the linear mass, not the κ-squared score, so the calibrated threshold keeps its meaning. It tells you the score rests on one fund. It is <em>not</em> a buy signal: CONCENTRATED members showed no edge in the May–Oct regime and lagged peers by 2.0% in Feb–May, so the 2026-08 "best risk-adjusted flag" description was withdrawn.</p>
 
-  <h3>4.7 — CONCENTRATED — promoted</h3>
-  <p>One fund supplies ≥ 85% of the name's linear conviction mass Σ points × C (or a lone fund holds it at ≥ 4× equal-weight). The share is read on the linear mass, not the κ-squared score, so the calibrated 0.85 threshold keeps its meaning. Promoted in prominence after the study: the <strong>best risk-adjusted flag</strong> on the board — exit rate <strong>0.24× base</strong> (0.58% vs 2.39%) and accumulation lift <strong>1.17–1.28×</strong>. Single-fund stories are riskier to trust, but they persist.</p>
+  <h3>4.7 — HIGH_CONVICTION — broad, convinced and independent (redesigned 2026-10)</h3>
+  <p>A name is HIGH_CONVICTION when it is held by <strong>≥ 4 ETFs</strong>, of which <strong>≥ 2 non-benchmark funds hold it at conviction ≥ 0.6</strong> (≈ 2× equal weight near the top of the book), spanning <strong>≥ 2 non-benchmark strategy tiers</strong>. The Core tier (XLG, QQQM) is a cap-weighted benchmark that "overweights" the largest companies by construction, so it counts neither as conviction nor as an independent lens.</p>
+  <p><strong>Why:</strong> "≥ 4 holders" flagged ~38 names in the 16-fund universe but ~200 in the 30-fund one, because several funds hold 500–1,300 names each. The new rule flags ~20–25 (e.g. SNDK, GEV, MU, AAPL), and its names lose a holder within 30 days 15% of the time against 27% under the raw count — the consensus holds. HC names carry more momentum exposure, so their returns follow the momentum regime: +7.3% vs peers in Feb–May, −2.3% in the May–Oct unwind. Each leaderboard row carries <code>conviction_etf_count</code> and <code>strategy_tier_count</code>. Legacy scoring mode keeps the raw-count rule; the 2026-08 gate removed then (θ = 0.8 with ≥ 4 conviction holders) was far stricter and almost never fired.</p>
 
-  <h3>4.8 — HIGH_CONVICTION — raw count, all modes</h3>
-  <p><strong>Held by ≥ 4 distinct ETFs</strong>, applied identically in ALL scoring modes. The former apex-mode conviction-breadth gate (conviction ≥ θ = 0.8 <em>and</em> breadth ≥ 4) fired on ~0.03% of rows — effectively a dead flag — and was removed in 2026-08. <code>conviction_etf_count</code> survives as a diagnostic column only.</p>
-
-  <h3>4.9 — Momentum regime &amp; extreme moves</h3>
-  <p><code>momentum_regime</code> keeps its five labels (accelerating / rising / stable / weakening / declining) but was rebuilt on non-cancelling inputs: the <code>score_streak</code> direction combined with the mean 7-day per-ETF rank delta (<code>avg_rank_delta_7d</code>). The leaderboard's top ribbon still surfaces names whose motion metrics are statistically unusual (|z| ≥ 2) vs today's distribution — pure presentation, gated on ≥ 3 ETFs holding. <code>velocity_z</code> / <code>ignition_z</code> (OLS slope and acceleration of the score over the last 10 snapshots) remain as display diagnostics; since v4 they no longer move the ranking (§5.1).</p>
+  <h3>4.8 — Momentum regime</h3>
+  <p><code>momentum_regime</code> keeps its five labels (accelerating / rising / stable / weakening / declining), built from the <code>score_streak</code> direction combined with the mean 7-day per-ETF rank delta (<code>avg_rank_delta_7d</code>). It is a display label: in the 2026-10 audit only "declining" leaned negative in both regimes, and weakly. The score-velocity diagnostics (<code>velocity_z</code> / <code>ignition_z</code>) were removed from the payload with the APEX kicker they fed (§5.1).</p>
 
   <!-- §5 Flags -->
   <h2 id="signal-flags">5 · Flags &amp; chips</h2>
@@ -227,16 +240,15 @@ Score         = B × M<sub>conc</sub> × M<sub>breadth</sub> × M<sub>universe</
   <table class="tier-table w-full text-sm">
     <thead><tr><th>Flag</th><th>Condition</th><th>Reading</th></tr></thead>
     <tbody>
-      <tr><td><strong>HIGH_CONVICTION</strong></td><td>Held by ≥ 4 distinct ETFs (raw count — identical in all scoring modes)</td><td>Broad consensus across independent strategies</td></tr>
-      <tr><td><strong>CONCENTRATED</strong></td><td>One fund supplies ≥ 85% of the name's conviction mass (or a lone fund holds it at ≥ 4× equal-weight)</td><td>Single-fund story — best risk-adjusted flag: 0.24× base exit rate, 1.17–1.28× accumulation lift</td></tr>
-      <tr><td><strong>SPECULATIVE_BETA</strong></td><td>Held only by Trend tier; no Quality / Scout</td><td>Momentum without fundamental support</td></tr>
-      <tr><td><strong>NEW</strong></td><td>First appearance within the 14-day lookback; suppressed for ETFs younger than the 30-day maturity baseline</td><td>Short-horizon entrant — 1.38× accumulation lift within 7d, fading to 0.65× by 30d (§4.4)</td></tr>
-      <tr><td><strong>BURST</strong></td><td>See §4.2</td><td>HC-entry precursor (3.3× within 14d) — early signal, not a chase signal</td></tr>
-      <tr><td><strong>CRATER</strong></td><td>See §4.3</td><td>Only consistent downside signal: 1.28–1.40× exit-rate lift</td></tr>
-      <tr><td><strong>Quality+</strong></td><td>Gained a Quality-tier ETF in last 30d (Quality set derived from config, not hardcoded)</td><td>Momentum confirmed by a fundamentals lens</td></tr>
+      <tr><td><strong>HIGH_CONVICTION</strong></td><td>≥ 4 holders; ≥ 2 non-benchmark holders at conviction ≥ 0.6; ≥ 2 non-benchmark tiers (§4.7)</td><td>Broad, convinced, independent consensus — holders stay (15% lose one within 30d vs 27% for raw ≥ 4)</td></tr>
+      <tr><td><strong>CONCENTRATED</strong></td><td>One fund supplies ≥ 85% of the name's conviction mass (or a lone fund holds it at ≥ 4× equal-weight)</td><td>Single-fund dependency — a risk descriptor, not a buy signal (§4.6)</td></tr>
+      <tr><td><strong>NEW</strong></td><td>First appearance within the 14-day lookback; suppressed for ETFs younger than the 30-day maturity baseline</td><td>Factual entry event, momentum-exposed (§4.4)</td></tr>
+      <tr><td><strong>BURST</strong></td><td>Smoothed rank ×1.65 better in ~2 weeks, in the top 300, fund added (§4.2)</td><td>Fund-confirmed surge — +5.2% vs peers over 20d in a momentum-friendly market, flat in an unwind</td></tr>
+      <tr><td><strong>CRATER</strong></td><td>Smoothed rank ×1.35 worse over ~4 weeks from the top 300, a fund dropped it in that time (§4.3)</td><td>Get-out signal — −1.0% to −2.9% vs peers over 20d in both regimes</td></tr>
+      <tr><td><strong>Quality+</strong></td><td>Gained a Quality-tier ETF in last 30d (Quality set derived from config, not hardcoded)</td><td>Fundamentals lens added — weak but consistent positive (§4.5)</td></tr>
     </tbody>
   </table>
-  <p class="text-xs mt-2" style="color: var(--text-3)">Pre-HC and Stealth-Buy (§4.5–4.6) ship as leaderboard filter chips rather than flags. The momentum-regime chip is documented in §4.9.</p>
+  <p class="text-xs mt-2" style="color: var(--text-3)">Funds ↓ / Funds ↑, Pre-HC and Stealth (§4.5) ship as leaderboard filter chips and row badges rather than flags. The momentum-regime label is documented in §4.8.</p>
 
   <h3 id="retired-signals">5.1 — Retired signals (transparency)</h3>
   <p>Removed from the engine, payloads, and UI in <strong>2026-08</strong>, after a 156-snapshot walk-forward study on the real store. We retire signals that don't earn their column:</p>
@@ -246,7 +258,19 @@ Score         = B × M<sub>conc</sub> × M<sub>breadth</sub> × M<sub>universe</
     <li><strong>conviction_divergence</strong> — exit-lift pointed the <em>wrong</em> direction (0.56×).</li>
     <li><strong>quality_defected_30d</strong> — lift flipped sign between evaluation grids; unstable. Quality+ adoption remains.</li>
   </ul>
-  <p>Retired in <strong>2026-10</strong> (v4 study, §3.5), alongside proposals that were tested and rejected:</p>
+  <p>Retired or redefined in the <strong>2026-10 signal audit</strong> (<a href="https://github.com/yieldchaser/etf-data/blob/main/docs/SIGNALS_STUDY.md" target="_blank" rel="noopener">SIGNALS_STUDY.md</a> §4) — each replayed on every snapshot and scored on its 20-day return vs currency peers in both regimes:</p>
+  <ul class="list-disc pl-5 space-y-1">
+    <li><strong>SPECULATIVE_BETA</strong> — no edge in either regime (+0.4% / −0.3%); its premise (momentum without a fundamentals lens is speculative) was not borne out.</li>
+    <li><strong>Q+Q chip</strong> (Quant + Quality + recent pickup) — sign flipped between regimes (−2.3% / +0.9%).</li>
+    <li><strong>EARLY / CROWDED badges</strong> — EARLY flagged ~820 names a day (half the board); CROWDED never fired.</li>
+    <li><strong>ACCUM badge</strong> — pure momentum (+3.5% / −1.6%); Funds ↑ covers the idea with an edge in both regimes.</li>
+    <li><strong>"Extreme conviction moves" ribbon</strong> — driven by deep-board rank churn (e.g. "+1,902 ranks"); no edge. Replaced by a strip of today's validated signals.</li>
+    <li><strong>≤ 80% concentration filter</strong> — a convenience filter, not a signal; the CONC chip covers the same cut.</li>
+    <li><strong>Old Stealth-Buy</strong> (≤ 2 funds, +10% weight in 7 days) — ~250 names a day, mostly price drift in small positions; redefined as a second fund joining (§4.5).</li>
+    <li><strong>Old Pre-HC</strong> (exactly 3 funds, improving) and <strong>old Funds ↑/↓</strong> (any name, 30 days) — no consistent edge; redefined (§4.5). The old Funds ↓ pointed the wrong way (+2.0% in May–Oct).</li>
+    <li><strong>Old BURST / CRATER</strong> (range ≥ 40 ranks) and the <strong>raw ≥ 4-holder HIGH_CONVICTION</strong> — redesigned (§4.2, §4.3, §4.7).</li>
+  </ul>
+  <p>Retired in <strong>2026-10</strong> (v4 scoring study, §3.5), alongside proposals that were tested and rejected:</p>
   <ul class="list-disc pl-5 space-y-1">
     <li><strong>APEX momentum kicker</strong> (<code>× (1 + 0.25·tanh(v_z/2) + 0.10·tanh(i_z/2))</code>) — changed forward-return IC by &lt; 0.001 at every horizon, i.e. noise. The velocity diagnostics stay.</li>
     <li><strong>m_conv and the conviction gate</strong> — two separate <code>clip(avg_conviction, …)</code> factors applied on top of each other (≈ conviction² for fillers), on an unweighted mean in which a 2-point Core fund counted as much as a 40-point Scout fund, and non-monotone in breadth. Replaced by the per-holding convexity κ.</li>
@@ -267,6 +291,7 @@ Score         = B × M<sub>conc</sub> × M<sub>breadth</sub> × M<sub>universe</
     <li><strong>Cross-listing collapse</strong> — Korean A-prefix tickers (<code>A005930 → 005930</code>) merged so Samsung Electronics doesn't appear twice with split conviction.</li>
     <li><strong>Share-class consolidation (v4)</strong> — voting / non-voting / preferred lines of one issuer pool into the most widely held line: Samsung pref <code>005935 → 005930</code>, Petrobras <code>PETR3 → PETR4</code>, Itaú <code>ITUB3 → ITUB4</code>, Hyundai prefs <code>→ 005380</code>, <code>FOX → FOXA</code>, <code>NWS → NWSA</code> and others (curated list in <code>config.yaml</code>).</li>
     <li><strong>Security-identity resolution (v4)</strong> — international funds report bare local-exchange codes that collide with unrelated US tickers. Before v4, <code>MTN</code> was Vail Resorts (AVSC, JHSC) <em>and</em> MTN Group (JHEM, MFEM) on one row — a fabricated 4-fund HIGH_CONVICTION name in the top 20 — and about 50 other tickers had the same problem (KTB, A, TEL, G, KEY, PEP, BA…). The engine now clusters each ticker's holders by the company names they report; when a US cluster and an international cluster disagree, the international one becomes <code>&lt;ticker&gt;.&lt;TAG&gt;</code> (MTN Group → <code>MTN.MTN</code>). In the other direction, exchange-suffix dialects of one security (<code>6857</code> vs <code>6857.JP</code> for Advantest, Thai <code>ADVANC</code> / <code>ADVANC.F</code> / <code>ADVANC.R</code>) merge into one row. Every merge and split must agree with the reported names, so e.g. <code>ENR.GR</code> (Siemens Energy) is never folded into <code>ENR</code> (Energizer). A short curated list handles collisions between two international exchanges (e.g. <code>2313</code> = Compeq in Taiwan, Shenzhou in Hong Kong). Each build logs every split, merge and override.</li>
+    <li><strong>Partial-snapshot guard (2026-10)</strong> — a fund snapshot whose weight sum (after cash rows are removed) is below 90% of that fund's median over its previous 10 snapshots was scraped incompletely, and is skipped so the fund's last complete book stays in force. Without it, EEMO's 2026-08-29 partial scrape (72% of weight, SK hynix missing) dropped SK hynix from #3 to #34 for two days and fired fake BURST/CRATER moves. 15 such snapshots exist in the store; genuine reconstitutions (fewer names, weights ≈ 100%) pass untouched.</li>
     <li><strong>Staleness guard (v4)</strong> — an ETF whose newest snapshot is more than 30 days older than the freshest snapshot stops scoring, instead of contributing a frozen book forever. The 30-day window is well above the longest observed scrape gap (21 days), so outages never fake an exit.</li>
   </ul>
 
