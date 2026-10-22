@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 from typing import Iterable
 
-from .scoring import Config, compute_leaderboard
+from .scoring import Config, MotionConfig, compute_leaderboard
 
 
 def snapshot_dates(history: pd.DataFrame, lookback_days: int) -> list[pd.Timestamp]:
@@ -212,6 +212,55 @@ def accumulation_velocity(score_pnl: pd.DataFrame, window: int = 10) -> pd.DataF
     out["velocity_z"] = _zscore(out["slope_pct"])
     out["ignition_z"] = _zscore(out["ignition_raw"])
     return out[cols_out]
+
+
+def burst_crater_panels(historical: dict[pd.Timestamp, pd.DataFrame], motion) -> dict[str, pd.DataFrame]:
+    """BURST / CRATER for every snapshot date (2026-10 redesign).
+
+    The single implementation behind build.py (today's flags), signal_history
+    (per-ticker flag history) and backtest.py (trigger strategies). See
+    scoring.MotionConfig for the rule. The pre-2026-10 rule measured the
+    RANGE (worst − best) of the raw rank over 30 days, so a one-day spike from
+    a partial ETF scrape (#100 → #140 → #100) passed the ≥ 40-rank test for
+    BURST and CRATER alike; it flagged ~850 names a day (median rank ~1,700)
+    and its CRATER names went on to OUTPERFORM. Smoothing, a direction, a
+    rank-relative size, a relevance floor and fund confirmation fix each of
+    those (docs/SIGNALS_STUDY.md).
+
+    Returns ticker × date frames: burst, crater (bool), rank_then, rank_now
+    (smoothed ranks k snapshots apart) and funds_delta (holder-count change
+    over the same k snapshots).
+    """
+    dates = sorted(historical.keys())
+    empty = pd.DataFrame()
+    if len(dates) < 2:
+        return {"burst": empty, "crater": empty, "rank_then": empty, "rank_now": empty, "funds_delta": empty}
+
+    def _panel(col: str) -> pd.DataFrame:
+        cols = {d: historical[d].set_index("ticker")[col] for d in dates if col in historical[d].columns}
+        return pd.DataFrame(cols).sort_index(axis=1)
+
+    k = motion.lookback_snapshots
+    ranks = _panel("leaderboard_rank").astype(float)
+    funds = _panel("etf_count").reindex(index=ranks.index, columns=ranks.columns).fillna(0)
+    smooth = ranks.T.rolling(motion.smooth_snapshots, min_periods=motion.smooth_snapshots).median().T
+    then = smooth.shift(k, axis=1)
+    funds_delta = funds - funds.shift(k, axis=1)
+    win_best = smooth.T.rolling(k + 1, min_periods=k + 1).min().T
+    win_worst = smooth.T.rolling(k + 1, min_periods=k + 1).max().T
+    log_move = np.log(then / smooth)                    # + = rank number fell = improved
+
+    burst = ((log_move >= motion.min_log_rank_move)
+             & (smooth <= motion.relevance_rank)
+             & (np.log(smooth / win_best) <= motion.persist_log_tol))
+    crater = ((-log_move >= motion.min_log_rank_move)
+              & (then <= motion.relevance_rank)
+              & (np.log(win_worst / smooth) <= motion.persist_log_tol))
+    if motion.require_fund_confirmation:
+        burst &= funds_delta >= 1
+        crater &= funds_delta <= -1
+    return {"burst": burst.fillna(False), "crater": crater.fillna(False),
+            "rank_then": then, "rank_now": smooth, "funds_delta": funds_delta}
 
 
 def predictive_overlay(leaderboard: pd.DataFrame, score_pnl: pd.DataFrame,
@@ -557,51 +606,19 @@ def signal_history(
     rank_panel = _build_panel("leaderboard_rank")   # ticker × date, float (NaN for missing)
     hb_panel   = _build_panel("held_by")            # ticker × date, str
 
-    rp_cols = list(rank_panel.columns) if not rank_panel.empty else []
 
-    # ── 2. Pre-compute burst/crater panels (ticker × date_idx → bool) ─────────
-    # Do this once for all date indices to avoid repeating the window operation.
-    burst_sets: list[set] = []  # burst_sets[di] = set of burst tickers at date di
-    crater_sets: list[set] = []  # crater_sets[di] = set of crater tickers at date di
-    if not rank_panel.empty and len(rp_cols) >= 5:
-        rp_arr = rank_panel.values.astype(float)   # shape (n_tickers_rp, n_dates)
-        rp_tickers = list(rank_panel.index)
-        for di in range(len(rp_cols)):
-            if di < 5:
-                burst_sets.append(set())
-                crater_sets.append(set())
-                continue
-            win_start = max(0, di - 30)
-            win = rp_arr[:, win_start: di + 1]  # shape (n_tickers_rp, win_len)
-            n_win = win.shape[1]
-            valid_mask = np.isfinite(win)
-            coverage = valid_mask.sum(axis=1) / n_win
-            # worst/best ignoring NaN
-            worst = np.where(valid_mask, win, -np.inf).max(axis=1)
-            best  = np.where(valid_mask, win,  np.inf).min(axis=1)
-            peak  = np.where(np.isfinite(worst) & np.isfinite(best), worst - best, 0.0)
-            # Sustained: better than window median for ≥8 of last 10 valid snapshots
-            recent10 = win[:, -10:] if n_win >= 10 else win
-            with_nan = np.where(valid_mask[:, -10:] if n_win >= 10 else valid_mask, win[:, -min(10, n_win):], np.nan)
-            med = np.nanmedian(rp_arr[:, win_start: di + 1], axis=1)
-            better = (with_nan < med[:, None])
-            better_count = np.nansum(better, axis=1)
-            # Coverage gate mirrors build.py's _attach_velocity: newer names
-            # (actual_obs < 15) get a pass since they can't reach 80% of a
-            # 30-day window; sustained_count ≥ 8 still guards against noise.
-            actual_obs = valid_mask.sum(axis=1)
-            coverage_ok = (coverage >= 0.80) | (actual_obs < 15)
-            is_burst_arr = (peak >= 40) & coverage_ok & (better_count >= 8)
-            burst_sets.append(set(t for t, b in zip(rp_tickers, is_burst_arr) if b))
-
-            # Crater: exact polar opposite — sustained WORSE than median
-            worse = (with_nan > med[:, None])
-            worse_count = np.nansum(worse, axis=1)
-            is_crater_arr = (peak >= 40) & coverage_ok & (worse_count >= 8)
-            crater_sets.append(set(t for t, b in zip(rp_tickers, is_crater_arr) if b))
-    else:
-        burst_sets = [set()] * len(dates_sorted)
-        crater_sets = [set()] * len(dates_sorted)
+    # ── 2. BURST / CRATER per date — the shared implementation ───────────────
+    motion = cfg.motion if cfg.motion is not None else MotionConfig()
+    bc = burst_crater_panels(historical, motion)
+    burst_sets: list[set] = []
+    crater_sets: list[set] = []
+    for d in dates_sorted:
+        if not bc["burst"].empty and d in bc["burst"].columns:
+            burst_sets.append(set(bc["burst"].index[bc["burst"][d].to_numpy(dtype=bool)]))
+            crater_sets.append(set(bc["crater"].index[bc["crater"][d].to_numpy(dtype=bool)]))
+        else:
+            burst_sets.append(set())
+            crater_sets.append(set())
 
     # ── 5. Pre-compute per-date quality sets from hb_panel ────────────────────
     # For each (ticker, date_idx): now_q and then_q sets

@@ -233,6 +233,7 @@ class Sanitizer:
     resolve_identities: bool = False                 # v4 name-verified collision split + suffix merge
     identity_overrides: tuple[tuple[str, str, str], ...] = ()  # (ticker, name regex, new ticker) — row level
     international_etfs: tuple[str, ...] = ()         # funds reporting local-exchange symbols
+    partial_snapshot_min_ratio: float = 0.0          # drop snapshots whose weight sum < ratio × trailing median (0 = off)
 
     def apply(self, df: pd.DataFrame) -> pd.DataFrame:
         """Drop blocked rows, standardize ticker punctuation, then apply renames.
@@ -270,6 +271,7 @@ class Sanitizer:
             self.resolve_identities,
             self.international_etfs,
             self.identity_overrides,
+            self.partial_snapshot_min_ratio,
         )
         return hashlib.sha256(repr(payload).encode("utf-8")).hexdigest()
 
@@ -350,6 +352,10 @@ class Sanitizer:
         # (e.g., GOOG+GOOGL same ETF/date → one row; A005930 + 005930 → one row)
         if self.ticker_renames or self.cross_listing_patterns or identity_changes:
             out = self._dedupe_after_renames(out)
+
+        # 7. Partial-snapshot guard — runs on SANITIZED rows (cash lines removed)
+        if self.partial_snapshot_min_ratio > 0:
+            out = self._drop_partial_snapshots(out)
 
         if identity_changes:
             splits = [c for c in identity_changes if c[0] == "split"]
@@ -475,6 +481,38 @@ class Sanitizer:
             out["ticker"] = out["ticker"].replace(ticker_map)
         return out, sorted(changes)
 
+    def _drop_partial_snapshots(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Drop fund snapshots that were scraped incompletely.
+
+        A partial scrape (e.g. EEMO 2026-08-29: 231 of ~261 rows, weights
+        summing to 0.72, its #1 holding SK hynix missing) is otherwise read as
+        that fund's current book: names "exit", ranks spike for a day or two,
+        and the spike trips BURST/CRATER, exits and score deltas. A snapshot is
+        partial when its weight sum is below `partial_snapshot_min_ratio` × the
+        median of the fund's previous 10 snapshots (≥ 3 needed). Only PAST
+        snapshots form the reference, so the decision is as-of safe; dropping
+        a snapshot makes the as-of logic fall back to the fund's last complete
+        book. A genuine reconstitution (fewer names, weights still ≈ 100%)
+        passes untouched.
+        """
+        key = ["ETF_Ticker", "Holdings_As_Of"]
+        if df.empty or not all(c in df.columns for c in key + ["weight"]):
+            return df
+        sums = df[df["weight"] > 0].groupby(key, as_index=False)["weight"].sum()
+        sums["_t"] = pd.to_datetime(sums["Holdings_As_Of"], errors="coerce")
+        sums = sums.sort_values(["ETF_Ticker", "_t"])
+        ref = sums.groupby("ETF_Ticker")["weight"].transform(
+            lambda s: s.shift(1).rolling(10, min_periods=3).median())
+        bad = sums[sums["weight"] < self.partial_snapshot_min_ratio * ref]
+        if bad.empty:
+            return df
+        drop = pd.MultiIndex.from_frame(bad[key])
+        mask = pd.MultiIndex.from_frame(df[key]).isin(drop)
+        print(f"[sanitizer] partial-snapshot guard: dropped {len(bad)} incomplete fund snapshot(s): "
+              + ", ".join(f"{e} {str(d)[:10]}" for e, d in list(bad[key].itertuples(index=False, name=None))[:12]),
+              flush=True)
+        return df[~mask]
+
     def _dedupe_after_renames(self, df: pd.DataFrame) -> pd.DataFrame:
         """After GOOG→GOOGL or KRX A-prefix collapse, sum weights for duplicate
         (ETF_Ticker, ticker, Holdings_As_Of) keys.
@@ -542,6 +580,27 @@ class ApexConfig:
 
 
 @dataclass(frozen=True)
+class MotionConfig:
+    """BURST / CRATER (2026-10 redesign, docs/SIGNALS_STUDY.md).
+
+    On the leaderboard-rank series smoothed by a rolling median of
+    `smooth_snapshots` (a one-day spike can't move it):
+      BURST  — log(R̃[t−k] / R̃[t]) ≥ min_log_rank_move, R̃[t] ≤ relevance_rank,
+               R̃[t] within persist_log_tol of the window's best, and the name
+               GAINED ≥ 1 holding fund over the k snapshots.
+      CRATER — log(R̃[t] / R̃[t−k]) ≥ min_log_rank_move, R̃[t−k] ≤ relevance_rank,
+               R̃[t] within persist_log_tol of the window's worst, and the name
+               LOST ≥ 1 holding fund.
+    """
+    smooth_snapshots: int = 3
+    lookback_snapshots: int = 10
+    min_log_rank_move: float = 0.5      # ≈ rank ×1.65 better/worse (e.g. #250 → #150)
+    relevance_rank: int = 300
+    persist_log_tol: float = 0.15
+    require_fund_confirmation: bool = True
+
+
+@dataclass(frozen=True)
 class HistoryConfig:
     rank_delta_lookback_days: int          # kept for backward compat (= delta_periods_days[1])
     delta_periods_days: tuple[int, ...]    # Phase 2: multi-period deltas
@@ -563,6 +622,10 @@ class Config:
     conviction: ConvictionConfig | None = None          # §24 params (conviction + apex modes)
     etf_maturity_days: int = 30                         # §28 maturity gate
     apex: ApexConfig | None = None                      # §30 params (apex mode)
+    high_conviction_min_conviction_etfs: int = 0         # holders at C ≥ hc_theta (non-benchmark)
+    high_conviction_min_tiers: int = 0                   # distinct non-benchmark strategy tiers
+    high_conviction_exclude_tiers: tuple[str, ...] = ()  # benchmark tiers (Core) — not conviction
+    motion: "MotionConfig | None" = None                 # BURST / CRATER parameters
     stale_snapshot_days: int | None = None              # v4: drop ETF snapshots this much older than the freshest
 
     @classmethod
@@ -597,6 +660,7 @@ class Config:
                 if isinstance(r, dict) and {"ticker", "name", "to"} <= set(r)
             ),
             international_etfs=tuple(e.ticker for e in etfs if e.region == "intl"),
+            partial_snapshot_min_ratio=float(san.get("partial_snapshot_min_ratio", 0.0)),
         )
         h_cfg = cfg.get("history", {})
         _periods_raw = h_cfg.get("delta_periods_days", None)
@@ -649,6 +713,10 @@ class Config:
             new_bonus_mult=float(cfg["new_bonus_mult"]),
             new_bonus_tiers=tuple(cfg["new_bonus_tiers"]),
             high_conviction_min_etfs=int(cfg["high_conviction_min_etfs"]),
+            high_conviction_min_conviction_etfs=int(cfg.get("high_conviction_min_conviction_etfs", 0)),
+            high_conviction_min_tiers=int(cfg.get("high_conviction_min_tiers", 0)),
+            high_conviction_exclude_tiers=tuple(cfg.get("high_conviction_exclude_tiers", [])),
+            motion=MotionConfig(**cfg["motion"]) if cfg.get("motion") else MotionConfig(),
             history=history,
             scoring_mode=scoring_mode,
             conviction=conviction,
@@ -993,10 +1061,17 @@ def compute_leaderboard(
 
         agg["final_score"] = agg["ticker"].map(ticker_scores).fillna(agg["final_score"])
 
-    # §25 Conviction breadth: k_c = count of ETFs where C_i ≥ θ
+    # §25 Conviction breadth: k_c = count of ETFs where C_i ≥ θ, and the
+    # number of distinct strategy tiers those funds span. Benchmark tiers
+    # (Core: cap-weighted XLG / QQQM) are excluded — they "overweight" the
+    # largest companies by construction, which is size, not conviction.
+    excluded = set(cfg.high_conviction_exclude_tiers)
+    signal = latest[~latest["tier"].isin(excluded)]
+    agg["strategy_tier_count"] = agg["ticker"].map(
+        signal.groupby("ticker")["tier"].nunique()).fillna(0).astype(int)
     if cfg.scoring_mode in ("conviction", "apex") and cfg.conviction is not None:
         theta = cfg.conviction.hc_theta
-        conviction_etfs = latest[latest["conviction"] >= theta].groupby("ticker")["ETF_Ticker"].nunique()
+        conviction_etfs = signal[signal["conviction"] >= theta].groupby("ticker")["ETF_Ticker"].nunique()
         agg["conviction_etf_count"] = agg["ticker"].map(conviction_etfs).fillna(0).astype(int)
     else:
         agg["conviction_etf_count"] = agg["etf_count"]
@@ -1088,13 +1163,25 @@ def compute_leaderboard(
 
     def _flag(row) -> str:
         tier_set = set(row["tiers"].split(" + ")) if row["tiers"] else set()
-        # HIGH_CONVICTION = held by ≥ high_conviction_min_etfs DISTINCT ETFs
+        # HIGH_CONVICTION (2026-10) = broad AND convinced AND independent:
+        #   ≥ high_conviction_min_etfs holders, of which
+        #   ≥ high_conviction_min_conviction_etfs non-benchmark funds hold it
+        #     at conviction ≥ hc_theta (overweight, high in the book), across
+        #   ≥ high_conviction_min_tiers non-benchmark strategy tiers.
+        # The raw "≥ 4 holders" rule flagged ~38 names in the 16-ETF universe
+        # but ~200 in the 30-ETF one (four broad funds hold 500–1,300 names
+        # each). The conviction rule flags ~20–25, and its names lose a holder
+        # within 30 days 15% of the time vs 27% (2026-10 signal study).
+        # Legacy mode (no conviction column) keeps the raw-count rule.
         # (raw count, ALL modes). Matches the documented definition everywhere
         # (README, methodology, tooltips). The previous apex-mode gate used
         # conviction breadth (C_i ≥ θ in ≥4 ETFs), which fired on ~0.03% of
         # rows — effectively a dead flag. conviction_etf_count is still
         # emitted as a diagnostic column.
-        if row["etf_count"] >= cfg.high_conviction_min_etfs:
+        if row["etf_count"] >= cfg.high_conviction_min_etfs and (
+                cfg.scoring_mode == "legacy"
+                or (row["conviction_etf_count"] >= cfg.high_conviction_min_conviction_etfs
+                    and row["strategy_tier_count"] >= cfg.high_conviction_min_tiers)):
             return "HIGH_CONVICTION"
         if cfg.scoring_mode == "apex":
             # §30 CONCENTRATED — conviction parked in too few books to be HC,
@@ -1108,7 +1195,12 @@ def compute_leaderboard(
             if ((row["max_etf_share"] >= ax.conc_flag_share and row["etf_count"] >= 2)
                     or (row["etf_count"] == 1 and row.get("_max_ow", 0.0) >= ow_anchor)):
                 return "CONCENTRATED"
-        if "Trend" in tier_set and not (tier_set & {"Quality", "Scout"}):
+        # SPECULATIVE_BETA keeps its pre-2026-10 population: before the HC
+        # redesign every ≥ 4-holder name was HC and so never reached this
+        # branch. Broad names that miss the stricter HC bar (GOOGL, NVDA held
+        # via Quant + Trend + Core) are not "speculative beta".
+        if ("Trend" in tier_set and not (tier_set & {"Quality", "Scout"})
+                and row["etf_count"] < cfg.high_conviction_min_etfs):
             return "SPECULATIVE_BETA"
         return ""
 

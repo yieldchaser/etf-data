@@ -357,38 +357,27 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                     rank_panel_rows[d] = snap.set_index("ticker")["leaderboard_rank"]
             if rank_panel_rows:
                 rank_panel = pd.DataFrame(rank_panel_rows)
-                
-                # Coverage check: require continuous presence (≥80% of window)
-                nan_count = rank_panel.isna().sum(axis=1)
-                coverage = (len(window_cols) - nan_count) / len(window_cols)
-                
                 first_col        = rank_panel.iloc[:, 0]
                 last_col         = rank_panel.iloc[:, -1]
-                worst_in_window  = rank_panel.max(axis=1)   # highest rank number = worst
                 best_in_window   = rank_panel.min(axis=1)   # lowest rank number = best
                 global_rank_delta_30 = (first_col - last_col).round(0)        # positive = improved
-                peak_improvement_30  = (worst_in_window - best_in_window).round(0)
-                
-                # Sustained: rank must be better than within-window median for ≥5 of last 10 snapshots
-                recent10 = rank_panel.iloc[:, -10:] if rank_panel.shape[1] >= 10 else rank_panel
-                median_per_ticker = rank_panel.median(axis=1)
-                is_better_than_median = recent10.lt(median_per_ticker, axis=0)
-                sustained_count = is_better_than_median.sum(axis=1)
-                
-                # Burst qualifier: peak ≥ 40 AND (coverage ≥ 80% OR ticker has < 15 window
-                # snapshots — newer names get a pass on the coverage gate since they can't
-                # possibly reach 80% of a 30-day window; sustained_count ≥ 8 still guards
-                # against noise from tickers with only a handful of appearances).
-                #
-                # Without this, any ticker added in the last ~6 days of the window fails
-                # the 80% gate and can never qualify for burst regardless of rank movement.
-                actual_obs = rank_panel.notna().sum(axis=1)
-                coverage_ok = (coverage >= 0.80) | (actual_obs < 15)
-                is_burst = (peak_improvement_30 >= 40) & coverage_ok & (sustained_count >= 8)
+                # Peak improvement = largest RISE from an earlier point to a
+                # later one (directional), on the 3-snapshot median so a
+                # one-day glitch can't inflate it. (Was worst − best: a name
+                # that only fell reported its drop as an "improvement".)
+                sm = rank_panel.T.rolling(3, min_periods=1).median().T
+                peak_improvement_30 = (sm.T.cummax().T - sm).max(axis=1).round(0)
 
-                is_worse_than_median = recent10.gt(median_per_ticker, axis=0)
-                sustained_worse_count = is_worse_than_median.sum(axis=1)
-                is_crater = (peak_improvement_30 >= 40) & coverage_ok & (sustained_worse_count >= 8)
+        # BURST / CRATER — the shared 2026-10 implementation (smoothed,
+        # directional, rank-relative, fund-confirmed; history.burst_crater_panels).
+        bc = hist.burst_crater_panels(historical, cfg.motion)
+        bc_rank_then = bc_rank_now = bc_funds = pd.Series(dtype=float)
+        if not bc["burst"].empty:
+            is_burst = bc["burst"][today_date]
+            is_crater = bc["crater"][today_date]
+            bc_rank_then = bc["rank_then"][today_date]
+            bc_rank_now = bc["rank_now"][today_date]
+            bc_funds = bc["funds_delta"][today_date]
 
         # 3. ETF count change vs ~30d ago
         past_counts = pd.Series(dtype=float)
@@ -411,9 +400,17 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         leaderboard["burst_30d"]             = leaderboard["ticker"].map(is_burst).fillna(False)
         # Crater: peak drop of >=40 global ranks at any point in last 30d, currently near worst
         leaderboard["crater_30d"]            = leaderboard["ticker"].map(is_crater).fillna(False)
-        leaderboard["global_rank_drop_30d"]  = leaderboard["ticker"].map(
-            lambda t: int(peak_improvement_30.get(t, 0)) if (is_crater.get(t, False)) else 0
-        ).fillna(0).astype(int)
+        # Size of the flagged move in (smoothed) rank positions, and the
+        # holder-count change that confirmed it — 0 when not flagged.
+        _then = leaderboard["ticker"].map(bc_rank_then)
+        _now = leaderboard["ticker"].map(bc_rank_now)
+        leaderboard["burst_rank_gain"] = ((_then - _now).where(leaderboard["burst_30d"], 0)
+                                          .fillna(0).round(0).astype(int))
+        leaderboard["crater_rank_loss"] = ((_now - _then).where(leaderboard["crater_30d"], 0)
+                                           .fillna(0).round(0).astype(int))
+        leaderboard["motion_rank_then"] = _then.round(0)
+        leaderboard["motion_funds_delta"] = leaderboard["ticker"].map(bc_funds).fillna(0).astype(int)
+        leaderboard["global_rank_drop_30d"]  = leaderboard["crater_rank_loss"]
 
         return leaderboard
 
@@ -426,12 +423,14 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         for col in ["avg_rank_delta_7d", "avg_weight_flow_7d", "avg_rank_delta_30d",
                     "global_rank_delta_30d", "global_rank_peak_30d", "global_rank_best_30d",
                     "etf_count_30d_ago", "etf_count_delta_30d", "burst_30d", "crater_30d",
-                    "global_rank_drop_30d"]:
+                    "global_rank_drop_30d", "burst_rank_gain", "crater_rank_loss",
+                    "motion_funds_delta"]:
             leaderboard[col] = 0 if col not in ("burst_30d", "crater_30d") else False
+        leaderboard["motion_rank_then"] = None
         burst_count = 0
         crater_count = 0
-    print(f"  burst_30d:      {burst_count} tickers with >=40 peak rank improvement")
-    print(f"  crater_30d:     {crater_count} tickers with >=40 peak rank drop")
+    print(f"  burst_30d:      {burst_count} tickers (smoothed rank surge, fund-confirmed)")
+    print(f"  crater_30d:     {crater_count} tickers (smoothed rank collapse, fund-confirmed)")
 
     # ── Multi-period rank delta and ETF count delta ───────────────────────────
     # Mirrors score_deltas_by_period so the frontend can switch all Change sections

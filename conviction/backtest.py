@@ -179,6 +179,17 @@ def run_backtest(
     historical = hist.historical_leaderboards(raw, cfg)
     dates_sorted = sorted(historical.keys())
     print(f"  {len(dates_sorted)} snapshots")
+    # BURST / CRATER per date from the shared implementation — the historical
+    # leaderboards themselves carry no burst/crater columns (those are added
+    # to today's enriched board only), so the trigger strategies used to skip
+    # every date and report no trades.
+    bc = hist.burst_crater_panels(historical, cfg.motion)
+
+    def _flagged(kind: str, d) -> set[str]:
+        panel = bc[kind]
+        if panel.empty or d not in panel.columns:
+            return set()
+        return set(panel.index[panel[d].to_numpy(dtype=bool)])
 
     if len(dates_sorted) < 2:
         print("ERROR: Need at least 2 snapshots for backtest")
@@ -216,10 +227,7 @@ def run_backtest(
     burst_trades: list[dict] = []
     prev_burst: set[str] = set()
     for d in dates_sorted:
-        lb = historical[d]
-        if "burst_30d" not in lb.columns:
-            continue
-        curr_burst = set(lb.loc[lb["burst_30d"] == True, "ticker"])
+        curr_burst = _flagged("burst", d)
         new_burst = curr_burst - prev_burst
         for ticker in new_burst:
             entry_price = _get_price(price_cache, ticker, d)
@@ -245,10 +253,7 @@ def run_backtest(
     crater_trades: list[dict] = []
     prev_crater: set[str] = set()
     for d in dates_sorted:
-        lb = historical[d]
-        if "crater_30d" not in lb.columns:
-            continue
-        curr_crater = set(lb.loc[lb["crater_30d"] == True, "ticker"])
+        curr_crater = _flagged("crater", d)
         new_crater = curr_crater - prev_crater
         for ticker in new_crater:
             entry_price = _get_price(price_cache, ticker, d)

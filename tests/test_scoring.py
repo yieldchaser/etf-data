@@ -1024,10 +1024,13 @@ class TestNewEntrantBoundary:
         base = datetime.date(2026, 4, 1)
         d0 = base.strftime("%Y-%m-%d")
         d14 = (base + datetime.timedelta(days=cfg.new_lookback_days)).strftime("%Y-%m-%d")
+        # The fillers stay in the book on d0 / d14 too: a book whose weight
+        # suddenly shrinks is an incomplete scrape and is skipped by the
+        # partial-snapshot guard, which would hide X's d0 appearance.
         rows = self._mature_rows(d14) + [
             ("QMOM", "X", "Ticker X", 0.05, d0, d0),
             ("QMOM", "X", "Ticker X", 0.06, d14, d14),
-        ]
+        ] + [("QMOM", f"F{j:02d}", f"Filler {j}", 0.02, d, d) for d in (d0, d14) for j in range(3)]
         df = _h(rows)
         lb, latest = compute_leaderboard(df, cfg, as_of=pd.Timestamp(d14))
         assert latest["ETF_Ticker"].nunique() >= 1
@@ -1048,19 +1051,62 @@ class TestNewEntrantBoundary:
         assert bool(x["is_new"])
 
 
-class TestHighConvictionRawCount:
-    def test_hc_requires_only_raw_etf_count(self):
+class TestHighConvictionDefinition:
+    """2026-10 HIGH_CONVICTION: ≥ 4 holders AND ≥ 2 non-benchmark holders at
+    conviction ≥ hc_theta AND ≥ 2 non-benchmark strategy tiers."""
+
+    @staticmethod
+    def _cfg(mode="apex"):
         import dataclasses
-        yaml_cfg = Config.from_yaml(CONFIG_PATH)
-        apex_cfg = dataclasses.replace(yaml_cfg, scoring_mode="apex")
-        base = "2026-04-01"
-        etfs = ["FPX", "QMOM", "COWZ", "SPMO", "PIE"]
-        rows = [(e, "X", "Ticker X", 0.01, base, base) for e in etfs]
-        df = _h(rows)
-        lb, _ = compute_leaderboard(df, apex_cfg, as_of=pd.Timestamp(base))
+        return dataclasses.replace(Config.from_yaml(CONFIG_PATH), scoring_mode=mode, etf_maturity_days=0)
+
+    @staticmethod
+    def _book(etf, top_weight, n=20, base="2026-04-01"):
+        """`n`-name book with X at `top_weight` (rank 1) and equal fillers."""
+        rest = (1 - top_weight) / (n - 1)
+        rows = [(etf, "X", "Ticker X", top_weight, base, base)]
+        rows += [(etf, f"{etf}F{j:02d}", f"Filler {etf}{j}", rest, base, base) for j in range(n - 1)]
+        return rows
+
+    def test_broad_filler_breadth_alone_is_not_hc(self):
+        rows = []
+        for e in ["FPX", "QMOM", "COWZ", "SPMO", "PIE"]:          # 5 holders, X = smallest position
+            rows += [(e, "X", "Ticker X", 0.001, "2026-04-01", "2026-04-01")]
+            rows += [(e, f"{e}F{j:02d}", f"Filler {e}{j}", 0.0999, "2026-04-01", "2026-04-01") for j in range(10)]
+        lb, _ = compute_leaderboard(_h(rows), self._cfg())
         x = lb[lb["ticker"] == "X"].iloc[0]
         assert int(x["etf_count"]) == 5
+        assert x["flag"] != "HIGH_CONVICTION"
+
+    def test_broad_convinced_multi_strategy_is_hc(self):
+        rows = (self._book("FPX", 0.15) + self._book("COWZ", 0.15)          # Scout + Quality, overweight
+                + self._book("QMOM", 0.06) + self._book("SPMO", 0.06))      # two more holders
+        lb, _ = compute_leaderboard(_h(rows), self._cfg())
+        x = lb[lb["ticker"] == "X"].iloc[0]
+        assert x["conviction_etf_count"] >= 2 and x["strategy_tier_count"] >= 2
         assert x["flag"] == "HIGH_CONVICTION"
+
+    def test_single_strategy_conviction_is_not_hc(self):
+        rows = sum((self._book(e, 0.15) for e in ["QMOM", "XMMO", "XSMO", "PDP"]), [])   # all Quant
+        lb, _ = compute_leaderboard(_h(rows), self._cfg())
+        x = lb[lb["ticker"] == "X"].iloc[0]
+        assert x["strategy_tier_count"] == 1
+        assert x["flag"] != "HIGH_CONVICTION"
+
+    def test_benchmark_overweight_does_not_count_as_conviction(self):
+        rows = (self._book("XLG", 0.15) + self._book("QQQM", 0.15)          # Core = cap-weighted benchmark
+                + self._book("QMOM", 0.01) + self._book("SPMO", 0.01))
+        lb, _ = compute_leaderboard(_h(rows), self._cfg())
+        x = lb[lb["ticker"] == "X"].iloc[0]
+        assert int(x["etf_count"]) == 4
+        assert x["conviction_etf_count"] == 0
+        assert x["flag"] != "HIGH_CONVICTION"
+
+    def test_legacy_mode_keeps_raw_count(self):
+        rows = [(e, "X", "Ticker X", 0.01, "2026-04-01", "2026-04-01")
+                for e in ["FPX", "QMOM", "COWZ", "SPMO", "PIE"]]
+        lb, _ = compute_leaderboard(_h(rows), self._cfg("legacy"))
+        assert lb[lb["ticker"] == "X"].iloc[0]["flag"] == "HIGH_CONVICTION"
 
 
 class TestQualitySetFromConfig:

@@ -161,6 +161,16 @@ sanitizer:
   # Which funds report local-exchange symbols comes from `region: intl` below.
   resolve_identities: true
 
+  # Partial-snapshot guard (2026-10). A fund snapshot whose sanitized weight
+  # sum is below this fraction of the fund's trailing median (previous 10
+  # snapshots) was scraped incompletely and is skipped — the fund's last
+  # complete book stays in force. Without it, EEMO's 2026-08-29 partial scrape
+  # (72% of weight, SK hynix missing) knocked SK hynix from #3 to #34 for two
+  # days and fired fake BURST/CRATER moves. Measured: 13 such snapshots in the
+  # store (EEMO ×3, JHEM ×2, eight funds' top-10-only scrape on 2026-02-23);
+  # genuine reconstitutions (EEMO 261 → 211 names, weights ≈ 100%) pass.
+  partial_snapshot_min_ratio: 0.90
+
   # Curated row-level overrides for collisions BETWEEN international exchanges
   # (no US holder to anchor the automatic split, and spelling variants such as
   # ICBC's 'IND + COMM BK' / 'Industrial & Commercial Bank' make a name-only
@@ -255,8 +265,44 @@ new_lookback_days: 14
 new_bonus_mult: 5.0
 new_bonus_tiers: [Scout, Quant]
 
-# Conviction flagging (Power Query AddFlag step).
+# HIGH_CONVICTION (2026-10 redesign, docs/SIGNALS_STUDY.md) — broad AND
+# convinced AND independent:
+#   ≥ high_conviction_min_etfs holders, of which
+#   ≥ high_conviction_min_conviction_etfs non-benchmark funds hold the name at
+#     conviction ≥ conviction.hc_theta (≈ 2× equal weight near the top of the
+#     book), spanning
+#   ≥ high_conviction_min_tiers non-benchmark strategy tiers.
+# The old raw "≥ 4 holders" rule fit the 16-fund universe (~38 names) but not
+# the 30-fund one (~200 names: four funds hold 500–1,300 names each). The
+# conviction rule flags ~20–25 names; they lose a holder within 30 days 15% of
+# the time vs 27%. Core (XLG, QQQM) is a cap-weighted benchmark — it
+# "overweights" mega-caps by size — so it never counts as conviction or as an
+# independent strategy. Legacy scoring mode keeps the raw count rule.
 high_conviction_min_etfs: 4
+high_conviction_min_conviction_etfs: 2
+high_conviction_min_tiers: 2
+high_conviction_exclude_tiers: [Core]
+
+# BURST / CRATER (2026-10 redesign, docs/SIGNALS_STUDY.md). On the leaderboard
+# rank smoothed by a rolling median of `smooth_snapshots` (a one-day spike can't
+# move it), over the last `lookback_snapshots` snapshots:
+#   BURST  — rank improved by ≥ min_log_rank_move in log terms (×1.65, e.g.
+#            #250 → #150), is now inside the top `relevance_rank`, is still
+#            within persist_log_tol of its best, and the name GAINED a fund.
+#   CRATER — the mirror: rank worsened ×1.65 from inside the top
+#            `relevance_rank`, still near its worst, and the name LOST a fund.
+# The old rule (worst − best rank ≥ 40 over 30 days, no direction) flagged
+# ~850 names a day (median rank ~1,700) and its CRATER names outperformed.
+# The new rule flags ~6–9 a day each: BURST onsets +5.2% vs peers over 20 days
+# in Feb–May (−0.9%, not significant, in the May–Oct momentum unwind); CRATER
+# onsets −1.7% / −2.0% — negative in both regimes.
+motion:
+  smooth_snapshots: 3
+  lookback_snapshots: 10
+  min_log_rank_move: 0.5
+  relevance_rank: 300
+  persist_log_tol: 0.15
+  require_fund_confirmation: true
 
 # =============================================================================
 # SCORING MODE — controls which formula is used.
@@ -286,7 +332,9 @@ conviction:
   ow_star:   4.0    # OW at which Wovr ≈ 1.0 (calibration anchor)
   c_max:     1.5    # ceiling on Wovr (prevents extreme outliers dominating)
   rp_floor:  0.35   # minimum Grank contribution (rank never fully zeroes out)
-  hc_theta:  0.8    # conviction threshold for HIGH_CONVICTION breadth count
+  hc_theta:  0.6    # conviction a holding needs to count toward HIGH_CONVICTION
+                    # (≈ 2× equal weight near the top of the book); was a 0.8
+                    # diagnostic-only threshold before the 2026-10 HC redesign
   kappa:     2.0    # v4 per-holding convexity: Single_i = points × C_i^κ.
                     # Shrinks breadth-filler holdings (C=0.3 → 0.09) without the
                     # non-monotone averaging of the retired m_conv / gate. Applies in

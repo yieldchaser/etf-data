@@ -233,7 +233,7 @@ Legacy (`weight% × 100 × tier_points × rank_multiplier + new bonus`) and conv
 
 | Flag | Condition | Interpretation |
 |------|-----------|---------------|
-| **HIGH_CONVICTION** | Held by ≥ 4 distinct ETFs (raw count, identical in all scoring modes) | Broad consensus across independent strategies |
+| **HIGH_CONVICTION** | ≥ 4 holders, ≥ 2 non-benchmark holders at conviction ≥ 0.6, ≥ 2 non-benchmark strategy tiers (Core excluded) | Broad, convinced, independent consensus (~20–25 names; raw "≥ 4 holders" flagged ~200) |
 | **CONCENTRATED** | One fund supplies ≥ 85% of linear conviction mass (Σ points × C), or a lone fund holds it at ≥ 4× equal-weight | Single-fund story — best risk-adjusted flag (0.24× base exit rate) |
 | **SPECULATIVE_BETA** | In Trend tier, absent from Quality + Scout | High-volatility momentum without fundamental support |
 | **NEW** | First appearance within the 14-day lookback; suppressed for ETFs younger than the 30-day maturity baseline | Short-horizon entrant (1.38× accumulation lift ≤ 7d, 0.65× by 30d) |
