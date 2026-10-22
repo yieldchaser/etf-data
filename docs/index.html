@@ -613,7 +613,7 @@
                 <div class="flex justify-center mt-1" @click.stop>
                   <div class="flex border rounded overflow-hidden" style="border-color: rgba(255,255,255,0.08); background: rgba(0,0,0,0.25)">
                     <template x-for="p in [1,7,14,30,60,90,'YTD']" :key="p">
-                      <button @click.stop="period = p"
+                      <button @click.stop="period = p" x-tooltip="p === 'YTD' ? `YTD - measured from ${meta.ytd_baseline || 'Jan 1'}${(meta.ytd_baseline || '').slice(5) !== '01-01' ? ' (start of the 30-fund universe; true YTD from next January)' : ''}` : ''"
                               :style="period === p ? 'background: rgba(34,211,238,0.15); color: var(--cyan);' : 'color: rgba(255,255,255,0.45);'"
                               class="px-1.5 py-0.5 text-[8.5px] font-mono leading-none hover:text-zinc-300 transition"
                               x-text="p === 'YTD' ? 'YTD' : p + 'd'"></button>
@@ -1227,7 +1227,7 @@
                   <div class="flex justify-center mt-1" @click.stop>
                     <div class="flex border rounded overflow-hidden" style="border-color: rgba(255,255,255,0.08); background: rgba(0,0,0,0.25)">
                       <template x-for="p in [1,7,14,30,60,90,'YTD']" :key="p">
-                        <button @click.stop="period = p"
+                        <button @click.stop="period = p" x-tooltip="p === 'YTD' ? `YTD - measured from ${meta.ytd_baseline || 'Jan 1'}${(meta.ytd_baseline || '').slice(5) !== '01-01' ? ' (start of the 30-fund universe; true YTD from next January)' : ''}` : ''"
                                 :style="period === p ? 'background: rgba(34,211,238,0.15); color: var(--cyan);' : 'color: rgba(255,255,255,0.45);'"
                                 class="px-1.5 py-0.5 text-[8.5px] font-mono leading-none hover:text-zinc-300 transition"
                                 x-text="p === 'YTD' ? 'YTD' : p + 'd'"></button>
@@ -2427,7 +2427,7 @@ function app() {
       try {
         const [
           [lb, hd, chg, mt],
-          flow, overlap, scoreHistory, holdingsExits,
+          flow, overlap, holdingsExits,
         ] = await Promise.all([
           Promise.all([
             track(fetch('data/leaderboard.json').then(r => r.ok ? r.json() : Promise.reject(r.status)), 35),
@@ -2437,7 +2437,6 @@ function app() {
           ]),
           track(fetch('data/flow.json').then(r => r.json()).catch(() => ({})), 5),
           track(fetch('data/etf_overlap.json').then(r => r.json()).catch(() => ({})), 5),
-          track(fetch('data/score_history.json').then(r => r.json()).catch(() => ({})), 5),
           track(fetch('data/holdings_exits.json').then(r => r.json()).catch(() => ({})), 5),
         ]);
 
@@ -2458,7 +2457,7 @@ function app() {
         });
 
         this.leaderboard = lb; this.holdings = hd; this.changelog = chg; this.meta = mt;
-        this.flow = flow; this.overlap = overlap; this.scoreHistory = scoreHistory; this.holdingsExits = holdingsExits;
+        this.flow = flow; this.overlap = overlap; this.holdingsExits = holdingsExits;
         // Default sort: leaderboard rank (1..N top to down)
         // Hash routing - open #etf=XYZ jumps to the ETFs tab for that ETF
         const hash = location.hash || '';
@@ -3403,7 +3402,18 @@ function app() {
       };
     },
 
+    // score_history.json grows with the history window and only feeds the
+    // watchlist compare sparklines, so it loads the first time they render.
+    _scoreHistoryRequested: false,
+    _ensureScoreHistory() {
+      if (this._scoreHistoryRequested) return;
+      this._scoreHistoryRequested = true;
+      fetch('data/score_history.json').then(r => r.ok ? r.json() : {}).catch(() => ({}))
+        .then(h => { this.scoreHistory = h || {}; });
+    },
+
     _buildCompareSpark(ticker) {
+      this._ensureScoreHistory();
       const series = (this.scoreHistory || {})[ticker] || [];
       if (series.length < 2) return '';
       const W = 200, H = 26;

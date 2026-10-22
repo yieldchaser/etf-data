@@ -142,7 +142,7 @@ def _read_parquet_store(store: Path, lookback_days: int = 180) -> pd.DataFrame |
     return combined
 
 
-def fetch_history(source: str) -> pd.DataFrame:
+def fetch_history(source: str, min_lookback_days: int = 0) -> pd.DataFrame:
     # Try partitioned Parquet store first (Tier 2)
     #
     # YTD score deltas need a pre-Jan-1 baseline row; a fixed 180-day lookback
@@ -151,7 +151,9 @@ def fetch_history(source: str) -> pd.DataFrame:
     # Size the window to always span the year-to-date range plus buffer.
     now = pd.Timestamp.now()
     days_into_year = (now - pd.Timestamp(year=now.year, month=1, day=1)).days
-    ytd_safe_lookback = max(180, days_into_year + 45)
+    # …and the configured history window (+ a buffer for the 30-day deltas and
+    # the partial-snapshot guard's 10-snapshot baseline at the window's start).
+    ytd_safe_lookback = max(180, days_into_year + 45, min_lookback_days)
     parquet_df = _read_parquet_store(PARQUET_STORE, lookback_days=ytd_safe_lookback)
     if parquet_df is not None and not parquet_df.empty:
         print(f"Loading from partitioned Parquet store: {PARQUET_STORE}")
@@ -179,7 +181,7 @@ def fetch_history(source: str) -> pd.DataFrame:
 def build(source: str, output_dir: Path, config_path: Path) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     cfg = Config.from_yaml(config_path)
-    raw = fetch_history(source)
+    raw = fetch_history(source, min_lookback_days=cfg.history.leaderboard_lookback_days + 45)
     raw_rows = len(raw)
 
     print("\nRunning sanitizer + scoring…")
@@ -253,6 +255,13 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     raw_dt["Holdings_As_Of"] = pd.to_datetime(raw_dt["Holdings_As_Of"], errors="coerce")
     latest_date = raw_dt["Holdings_As_Of"].max()
     ytd_start = pd.Timestamp(year=latest_date.year, month=1, day=1)
+    # YTD can't reach back past the current fund universe: before it the
+    # board ranked different funds. In the universe's first year "YTD" is
+    # measured from its first snapshot (the archive itself starts after
+    # Jan 1 2026, so a Jan-1 baseline never existed and YTD was blank).
+    ytd_inclusive = False
+    if cfg.history.universe_start is not None and cfg.history.universe_start > ytd_start:
+        ytd_start, ytd_inclusive = cfg.history.universe_start, True
 
     all_periods: list[int | str] = list(cfg.history.delta_periods_days) + ["YTD"]
     score_deltas_by_period: dict[int | str, dict] = {}
@@ -293,7 +302,8 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     # YTD delta
     days_since_ytd = (latest_date - ytd_start).days
     if days_since_ytd > 0:
-        raw_ytd = raw_dt[raw_dt["Holdings_As_Of"] < ytd_start]
+        raw_ytd = raw_dt[(raw_dt["Holdings_As_Of"] <= ytd_start) if ytd_inclusive
+                         else (raw_dt["Holdings_As_Of"] < ytd_start)]
         if not raw_ytd.empty:
             try:
                 lb_ytd, _ = compute_leaderboard(raw_ytd, cfg)
@@ -888,6 +898,8 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     sanitized_raw = sanitized_raw[pd.to_numeric(sanitized_raw["weight"], errors="coerce").fillna(0) > 0]
     sanitized_raw["Holdings_As_Of"] = pd.to_datetime(sanitized_raw["Holdings_As_Of"], errors="coerce")
     window_start = sanitized_raw["Holdings_As_Of"].max() - pd.Timedelta(days=cfg.history.leaderboard_lookback_days)
+    if cfg.history.universe_start is not None:
+        window_start = max(window_start, cfg.history.universe_start)
     hist_window = sanitized_raw[sanitized_raw["Holdings_As_Of"] >= window_start].copy()
     hist_window = hist_window.sort_values(
         ["ETF_Ticker", "Holdings_As_Of", "weight", "ticker"],
@@ -1212,6 +1224,8 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
             "CRATER": yday_crater,
         },
         "signal_last_fired": signal_last_fired,
+        "history_start": min(historical).strftime("%Y-%m-%d") if historical else None,
+        "ytd_baseline": ytd_start.strftime("%Y-%m-%d"),
         # §28 Maturity gate metadata — drives the UI banner
         "etf_maturity_days": etf_maturity_days,
         "immature_etfs": immature_etfs,

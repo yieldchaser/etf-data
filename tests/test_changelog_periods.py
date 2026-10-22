@@ -29,7 +29,8 @@ def cfg() -> Config:
     return dataclasses.replace(
         c,
         etf_maturity_days=1,
-        **{"history": dataclasses.replace(c.history, leaderboard_lookback_days=120)},
+        # the fixture's dates predate the configured universe_start
+        **{"history": dataclasses.replace(c.history, leaderboard_lookback_days=120, universe_start=None)},
     )
 
 
@@ -180,3 +181,27 @@ class TestChangesSelection:
         out = hist.changelog(h, [7])
         assert _tickers(out, 7, "hc_entered") == {"IN"}
         assert _tickers(out, 7, "hc_exited") == {"OUT"}
+
+
+class TestHistoryWindow:
+    """The history window starts at the current fund universe (config
+    history.universe_start) and is capped at leaderboard_lookback_days."""
+
+    @staticmethod
+    def _df(dates):
+        return pd.DataFrame({"Holdings_As_Of": pd.to_datetime(dates)})
+
+    def test_window_never_reaches_before_the_universe_start(self):
+        dates = ["2026-05-01", "2026-05-21", "2026-05-22", "2026-06-01", "2026-10-22"]
+        out = hist.snapshot_dates(self._df(dates), 400, pd.Timestamp("2026-05-22"))
+        assert [d.strftime("%Y-%m-%d") for d in out] == ["2026-05-22", "2026-06-01", "2026-10-22"]
+
+    def test_lookback_cap_still_applies(self):
+        dates = ["2026-05-22", "2026-09-01", "2026-10-22"]
+        out = hist.snapshot_dates(self._df(dates), 60, pd.Timestamp("2026-05-22"))
+        assert [d.strftime("%Y-%m-%d") for d in out] == ["2026-09-01", "2026-10-22"]
+
+    def test_config_sets_the_universe_start(self):
+        c = Config.from_yaml(CONFIG_PATH)
+        assert c.history.universe_start == pd.Timestamp("2026-05-22")
+        assert c.history.leaderboard_lookback_days >= 365

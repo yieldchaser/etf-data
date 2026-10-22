@@ -14,8 +14,10 @@ from typing import Iterable
 from .scoring import Config, MotionConfig, compute_leaderboard
 
 
-def snapshot_dates(history: pd.DataFrame, lookback_days: int) -> list[pd.Timestamp]:
-    """Distinct Holdings_As_Of values in the last `lookback_days` days, ascending."""
+def snapshot_dates(history: pd.DataFrame, lookback_days: int,
+                   start: pd.Timestamp | None = None) -> list[pd.Timestamp]:
+    """Distinct Holdings_As_Of values in the last `lookback_days` days, ascending,
+    and not before `start` (the current fund universe's first snapshot)."""
     s = pd.to_datetime(history["Holdings_As_Of"], errors="coerce").dropna()
     if s.empty:
         return []
@@ -25,12 +27,14 @@ def snapshot_dates(history: pd.DataFrame, lookback_days: int) -> list[pd.Timesta
         s = s.dt.tz_convert(None)
     latest = s.max()
     cutoff = latest - pd.Timedelta(days=lookback_days)
+    if start is not None:
+        cutoff = max(cutoff, pd.Timestamp(start))
     return sorted(s[s >= cutoff].unique().tolist())
 
 
 def historical_leaderboards(history: pd.DataFrame, cfg: Config) -> dict[pd.Timestamp, pd.DataFrame]:
     """Compute leaderboard at each snapshot date in the lookback window."""
-    dates = snapshot_dates(history, cfg.history.leaderboard_lookback_days)
+    dates = snapshot_dates(history, cfg.history.leaderboard_lookback_days, cfg.history.universe_start)
     out: dict[pd.Timestamp, pd.DataFrame] = {}
     for d in dates:
         lb, _ = compute_leaderboard(history, cfg, as_of=d)

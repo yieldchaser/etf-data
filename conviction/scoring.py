@@ -627,6 +627,11 @@ class HistoryConfig:
     delta_periods_days: tuple[int, ...]    # Phase 2: multi-period deltas
     leaderboard_lookback_days: int
     changelog_top_n: int
+    # First snapshot of the current fund universe. History, own-history
+    # stats (percentile, HC streak, best rank) and the YTD baseline never
+    # reach back past it: before 2026-05-22 the board ranked a 16-fund
+    # universe, so ranks and scores are not comparable with today's.
+    universe_start: "pd.Timestamp | None" = None
 
 
 @dataclass(frozen=True)
@@ -696,6 +701,7 @@ class Config:
             delta_periods_days=_periods,
             leaderboard_lookback_days=int(h_cfg.get("leaderboard_lookback_days", 60)),
             changelog_top_n=int(h_cfg.get("changelog_top_n", 15)),
+            universe_start=pd.Timestamp(h_cfg["universe_start"]) if h_cfg.get("universe_start") else None,
         )
 
         # §24 conviction config — apex mode REQUIRES it (per-holding path is shared)

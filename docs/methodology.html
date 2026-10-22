@@ -349,7 +349,8 @@ Score         = B × M<sub>conc</sub> × M<sub>breadth</sub> × M<sub>universe</
     <li><strong>Scores are less affected.</strong> They're additive per holding, so they survive universe growth better — but breadth-dependent terms (tier breadth, HC count, entropy multipliers) still shift at each boundary.</li>
     <li><strong>The maturity gate (§7) suppresses NEW-flag floods</strong> from freshly added ETFs — onboarding a fund doesn't flag every position it holds as NEW.</li>
     <li><strong>Charts annotate the break.</strong> Every build emits <code>metadata.universe_expansion</code> (the largest single jump plus per-date fund counts), which the dashboards use to mark the boundary.</li>
-    <li><strong>Guidance:</strong> for pre/post-May comparisons prefer score-level reads across the boundary and interpret rank-level moves with the dilution effect above in mind.</li>
+    <li><strong>The history window starts at the 30-fund universe (2026-05-22).</strong> Every per-stock history the site shows — rank and score charts, the signal timeline, percentile of own history, HC streak, best rank — and every lookback in the Changes tab begins on or after <code>history.universe_start</code>, so nothing compares a 16-fund board with a 30-fund one. The window then grows with each build up to <code>leaderboard_lookback_days</code> (400) and rolls from there. Signals need far less history (BURST 10 snapshots, CRATER 20), so they are unaffected. The 16-fund era stays in the archive and in the research studies, which analyse it as its own regime.</li>
+    <li><strong>YTD in 2026 means "since 2026-05-22".</strong> The archive starts on 2026-02-12, so a 1 January baseline never existed, and the YTD score change was blank all year. It is now measured from the universe start, and becomes true year-to-date from January 2027. The YTD buttons show the baseline date on hover.</li>
   </ul>
 
   <h3>10.2 — Scraper fail-loud guarantees</h3>
