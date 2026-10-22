@@ -13,10 +13,17 @@ from conviction import history as hist
 CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
 
 
+def _no_universe_floor(c: Config) -> Config:
+    """Synthetic histories here are dated before config history.universe_start
+    (2026-05-22); the window floor is tested in test_changelog_periods."""
+    import dataclasses
+    return dataclasses.replace(c, history=dataclasses.replace(c.history, universe_start=None))
+
+
 @pytest.fixture
 def cfg() -> Config:
     """Live config — uses whatever scoring_mode is set in config.yaml."""
-    return Config.from_yaml(CONFIG_PATH)
+    return _no_universe_floor(Config.from_yaml(CONFIG_PATH))
 
 
 @pytest.fixture
@@ -27,7 +34,7 @@ def legacy_cfg() -> Config:
     c = Config.from_yaml(CONFIG_PATH)
     # Override to legacy mode with maturity gate disabled (etf_maturity_days=0)
     # so NEW detection works exactly as the original formula intended.
-    return dataclasses.replace(c, scoring_mode="legacy", etf_maturity_days=0)
+    return _no_universe_floor(dataclasses.replace(c, scoring_mode="legacy", etf_maturity_days=0))
 
 
 @pytest.fixture
@@ -35,7 +42,7 @@ def conviction_cfg() -> Config:
     """Conviction scoring mode — always uses the §24 formula."""
     import dataclasses
     c = Config.from_yaml(CONFIG_PATH)
-    return dataclasses.replace(c, scoring_mode="conviction")
+    return _no_universe_floor(dataclasses.replace(c, scoring_mode="conviction"))
 
 
 def _h(rows: list[tuple]) -> pd.DataFrame:

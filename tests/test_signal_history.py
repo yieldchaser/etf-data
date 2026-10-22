@@ -23,7 +23,10 @@ CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
 
 @pytest.fixture
 def cfg() -> Config:
-    return Config.from_yaml(CONFIG_PATH)
+    # Synthetic histories predate config history.universe_start; the window
+    # floor is tested in test_changelog_periods.
+    c = Config.from_yaml(CONFIG_PATH)
+    return dataclasses.replace(c, history=dataclasses.replace(c.history, universe_start=None))
 
 
 def _h(rows: list[tuple]) -> pd.DataFrame:

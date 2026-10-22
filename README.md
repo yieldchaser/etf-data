@@ -628,6 +628,7 @@ Steps:
 - **Real verify gate**: the build fails unless every required payload exists, `market_returns.json` has the monthly-array contract shape, and `leaderboard.json` / `prices.json` are non-empty.
 - **continue-on-error**: All market data fetch steps use `continue-on-error: true` — a FRED rate limit or yfinance outage doesn't fail the entire build. The verify gate above is what keeps a fully-empty payload from ever shipping.
 - **YTD deltas stay computable year-round**: the Parquet fetch lookback is sized to `max(180, days_into_year + 45)` days so the December-31 YTD baseline never falls outside the loaded window (previously a fixed 180-day window shipped `YTD: null` for all tickers after ~June).
+- **History window = the current fund universe**: per-stock histories, own-history stats, the Changes tab lookbacks and the YTD baseline start at `history.universe_start` (2026-05-22, the 30-fund universe), growing to `leaderboard_lookback_days` (400) and then rolling. In 2026 "YTD" therefore means since 2026-05-22.
 
 ---
 
@@ -815,7 +816,8 @@ high_conviction_min_etfs: 4  # ≥4 ETFs = HIGH_CONVICTION
 
 history:
   delta_periods_days: [1, 7, 14, 30, 60, 90]
-  leaderboard_lookback_days: 120
+  universe_start: "2026-05-22"     # history never reaches back past the current 30-fund universe
+  leaderboard_lookback_days: 400   # window grows from universe_start up to this cap, then rolls
   changelog_top_n: 15
 ```
 

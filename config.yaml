@@ -408,5 +408,11 @@ stale_snapshot_days: 30
 history:
   delta_periods_days: [1, 7, 14, 30, 60, 90]    # Phase 2.5: add 60d, 90d
   rank_delta_lookback_days: 7                    # backward-compat default
-  leaderboard_lookback_days: 120                 # bumped to cover 90d period
+  # History window: from the start of the current 30-fund universe, growing
+  # to at most leaderboard_lookback_days, then rolling. Before 2026-05-22 the
+  # board ranked a 16-fund universe, so mixing those snapshots into a stock's
+  # history would compare different universes (best rank, percentile of own
+  # history, HC streak, YTD). Move universe_start if the fund set changes again.
+  universe_start: "2026-05-22"
+  leaderboard_lookback_days: 400
   changelog_top_n: 15
