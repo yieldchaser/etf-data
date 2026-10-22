@@ -250,18 +250,21 @@ class TestConcentratedFlag:
         flagged HIGH_CONVICTION (priority: HC > CONCENTRATED > SPEC_BETA)."""
         rows = []
         # HCT top-of-book overweight in 4 ETFs (conviction ≥ hc_theta in each):
-        #   IMOM (60 pts): w=0.95, OW≈10.45 → wovr clamps at 1.5 → score 90
+        #   IMOM (40 pts): w=0.95, OW≈10.45 → wovr clamps at 1.5 → linear mass 60
         #   SPMO (10 pts): w=0.25, OW=2.75 → wovr≈0.82 → score ≈8.2
         #   XLG/QQQM (Core 2 pts): w=0.25, OW=2.75 → wovr≈0.82 → score ≈1.6
-        # Mass share of IMOM ≈ 90/101.5 ≈ 0.89 ≥ conc_flag_share 0.85
-        # (CONCENTRATED condition also true), but conviction_etf_count = 4 ≥ 4
-        # → HC wins.
+        # Since v4 every fund earns its tier points (IMOM 40, not 60), so IMOM's
+        # share of linear mass is ≈ 60/71.5 ≈ 0.84; the threshold is lowered to
+        # 0.80 here so the CONCENTRATED condition is also true — this test pins
+        # flag PRIORITY, not the threshold value. HC (4 ETFs) must win.
         for etf, w in [("IMOM", 0.95), ("SPMO", 0.25), ("XLG", 0.25), ("QQQM", 0.25)]:
             rows.append((etf, "HCT", "HC Ticker", w, "2026-05-01", "2026-05-01"))
             rows.append((etf, "HCT", "HC Ticker", w, "2026-01-01", "2026-01-01"))
             for j in range(10):
                 rows.append((etf, f"FILL_{etf}_{j}", f"Filler {j}", 0.005, "2026-05-01", "2026-05-01"))
                 rows.append((etf, f"FILL_{etf}_{j}", f"Filler {j}", 0.005, "2026-01-01", "2026-01-01"))
+        apex_cfg = dataclasses.replace(
+            apex_cfg, apex=dataclasses.replace(apex_cfg.apex, conc_flag_share=0.80))
         lb, latest = compute_leaderboard(_h(rows), apex_cfg)
         row = lb[lb["ticker"] == "HCT"].iloc[0]
 
@@ -427,77 +430,11 @@ class TestPredictiveOverlay:
         assert (out["velocity_z"] == 0.0).all()
         assert (out["ignition_z"] == 0.0).all()
 
-    # ── §31.2 conviction-quality multiplier (m_conv) ──────────────────────────
-
-    def test_low_conviction_lowers_apex_below_no_factor(self):
-        """avg_conviction < 1 must produce apex_score strictly below the value
-        that would result with no m_conv factor (i.e., m_conv == 1.0)."""
+    def test_overlay_ignores_avg_conviction(self):
+        """v4 retired the §31.2 m_conv factor (averaging conviction made the
+        score non-monotone in breadth); the research kicker must not read
+        avg_conviction at all."""
         lb, panel = self._fixture()
-        # Inject avg_conviction < 1 for all tickers
-        lb["avg_conviction"] = 0.60
-
-        out_with   = predictive_overlay(lb, panel, conv_floor=0.50, conv_cap=1.25, conv_gamma=1.0)
-        out_neutral = predictive_overlay(lb.assign(avg_conviction=1.0), panel,
-                                         conv_floor=0.50, conv_cap=1.25, conv_gamma=1.0)
-
-        # Every apex_score with low conviction must be ≤ the neutral baseline
-        for ticker in ["UP", "DOWN", "FLAT"]:
-            gated = out_with.loc[out_with["ticker"] == ticker, "apex_score"].iloc[0]
-            base  = out_neutral.loc[out_neutral["ticker"] == ticker, "apex_score"].iloc[0]
-            assert gated <= base, (
-                f"{ticker}: low-conviction apex_score {gated} should be ≤ neutral {base}"
-            )
-        # At least one must be strictly lower (not all tied at 0)
-        assert any(
-            out_with.loc[out_with["ticker"] == t, "apex_score"].iloc[0]
-            < out_neutral.loc[out_neutral["ticker"] == t, "apex_score"].iloc[0]
-            for t in ["UP", "FLAT"]
-        )
-
-    def test_high_conviction_raises_apex_capped_at_conv_cap_gamma(self):
-        """avg_conviction > 1 raises apex_score, but is capped at conv_cap ** conv_gamma."""
-        lb, panel = self._fixture()
-        # Very high avg_conviction — should be clipped to conv_cap
-        conv_cap = 1.25
-        conv_gamma = 1.0
-        lb["avg_conviction"] = 2.00  # above cap
-
-        out = predictive_overlay(lb, panel, conv_floor=0.50, conv_cap=conv_cap, conv_gamma=conv_gamma)
-        # Effective multiplier is conv_cap ** conv_gamma = 1.25
-        out_at_cap = predictive_overlay(lb.assign(avg_conviction=conv_cap), panel,
-                                        conv_floor=0.50, conv_cap=conv_cap, conv_gamma=conv_gamma)
-
-        for ticker in ["UP", "DOWN", "FLAT"]:
-            score_high = out.loc[out["ticker"] == ticker, "apex_score"].iloc[0]
-            score_cap  = out_at_cap.loc[out_at_cap["ticker"] == ticker, "apex_score"].iloc[0]
-            # Both should be identical (avg_conviction=2.0 clips to conv_cap=1.25)
-            assert score_high == score_cap, (
-                f"{ticker}: apex_score with avg_conviction=2.0 ({score_high}) "
-                f"should equal cap value ({score_cap})"
-            )
-
-        # Capped scores must be higher than neutral (avg_conviction=1.0)
-        out_neutral = predictive_overlay(lb.assign(avg_conviction=1.0), panel,
-                                         conv_floor=0.50, conv_cap=conv_cap, conv_gamma=conv_gamma)
-        flat_capped  = out.loc[out["ticker"] == "FLAT", "apex_score"].iloc[0]
-        flat_neutral = out_neutral.loc[out_neutral["ticker"] == "FLAT", "apex_score"].iloc[0]
-        assert flat_capped >= flat_neutral
-
-    def test_missing_conviction_is_neutral(self):
-        """Missing (None/NaN) avg_conviction must give m_conv = 1.0 (neutral)."""
-        lb, panel = self._fixture()
-        # No avg_conviction column at all
-        lb_no_conv = lb.drop(columns=["avg_conviction"], errors="ignore")
-        # avg_conviction = 1.0 explicitly
-        lb_one = lb.assign(avg_conviction=1.0)
-
-        out_missing = predictive_overlay(lb_no_conv, panel, conv_floor=0.50, conv_cap=1.25, conv_gamma=1.0)
-        out_one     = predictive_overlay(lb_one, panel, conv_floor=0.50, conv_cap=1.25, conv_gamma=1.0)
-
-        for ticker in ["UP", "DOWN", "FLAT"]:
-            score_missing = out_missing.loc[out_missing["ticker"] == ticker, "apex_score"].iloc[0]
-            score_one     = out_one.loc[out_one["ticker"] == ticker, "apex_score"].iloc[0]
-            assert score_missing == score_one, (
-                f"{ticker}: missing conviction score {score_missing} != "
-                f"explicit 1.0 score {score_one}"
-            )
+        low = predictive_overlay(lb.assign(avg_conviction=0.2), panel)
+        high = predictive_overlay(lb.assign(avg_conviction=2.0), panel)
+        assert (low["apex_score"] == high["apex_score"]).all()

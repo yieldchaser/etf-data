@@ -55,14 +55,17 @@ def _make_raw() -> pd.DataFrame:
     Dates are ~60 days apart so multi-day lookbacks (30/60/90) all resolve the
     day-0 snapshot as the start, exercising the multi-period path.
     """
+    # Each fund's book sums to 100% — under the v4 κ = 2 convexity a toy book
+    # of two 5% positions (10% invested) scores ≈ 0, which would make DROPPED
+    # look unheld at the start date.
     rows = [
         # Day 0 (2026-04-01)
-        ("FPX",  "DROPPED", "Dropped Co", 0.05, "2026-04-01", "2026-04-01"),
-        ("QMOM", "DROPPED", "Dropped Co", 0.04, "2026-04-01", "2026-04-01"),
-        ("FPX",  "STAYS",   "Stays Co",   0.06, "2026-04-01", "2026-04-01"),
+        ("FPX",  "DROPPED", "Dropped Co", 0.45, "2026-04-01", "2026-04-01"),
+        ("QMOM", "DROPPED", "Dropped Co", 1.00, "2026-04-01", "2026-04-01"),
+        ("FPX",  "STAYS",   "Stays Co",   0.55, "2026-04-01", "2026-04-01"),
         # Day 1 (2026-06-01)
-        ("FPX",  "STAYS",   "Stays Co",   0.06, "2026-06-01", "2026-06-01"),
-        ("QMOM", "NEW",     "New Co",     0.04, "2026-06-01", "2026-06-01"),
+        ("FPX",  "STAYS",   "Stays Co",   1.00, "2026-06-01", "2026-06-01"),
+        ("QMOM", "NEW",     "New Co",     1.00, "2026-06-01", "2026-06-01"),
     ]
     return _h(rows)
 

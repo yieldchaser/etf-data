@@ -226,7 +226,9 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     def _compute_concentration(latest_df: pd.DataFrame) -> pd.DataFrame:
         """Per ticker: what fraction of the score comes from its single top ETF?
         100 = entirely one ETF; 25 = perfectly diversified across 4 ETFs."""
-        grouped = latest_df.groupby("ticker")["score"]
+        # Linear conviction mass (pre-κ) so "% from top ETF" keeps its meaning.
+        col = "linear_mass" if "linear_mass" in latest_df.columns else "score"
+        grouped = latest_df.groupby("ticker")[col]
         totals = grouped.sum()
         maxes  = grouped.max()
         # Guard against division by zero (tickers with 0 total score)
@@ -546,91 +548,32 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     print(f"  tier_breadth:   max={int(leaderboard['tier_breadth'].max())} · "
           f"quality_adopted_30d={int(leaderboard['quality_adopted_30d'].sum())}")
 
-    # ── §31 Apex predictive overlay — bounded temporal kicker (apex mode) ─────
-    # apex_score = final_score × (1 + 0.25·tanh(velocity_z/2) + 0.10·tanh(ignition_z/2))
-    # Does NOT touch leaderboard_rank or row sort order — apex_rank is a
-    # separate column the UI can sort by. Reuses the score panel computed
-    # above for streaks.
-    if cfg.scoring_mode == "apex" and historical:
-        _ax = cfg.apex
-        _overlay_kwargs: dict = {}
-        if _ax is not None:
-            _overlay_kwargs = {
-                "conv_floor": _ax.conv_floor,
-                "conv_cap":   _ax.conv_cap,
-                "conv_gamma": _ax.conv_gamma,
-            }
-        leaderboard = hist.predictive_overlay(leaderboard, score_pnl, **_overlay_kwargs)
-        adjusted = int((leaderboard["apex_score"] != leaderboard["final_score"]).sum())
-        print(f"  apex overlay:   velocity_z range "
-              f"[{leaderboard['velocity_z'].min():.2f}, {leaderboard['velocity_z'].max():.2f}] · "
-              f"{adjusted} scores adjusted")
+    # ── Accumulation velocity diagnostics + single canonical rank (v4) ──────
+    # velocity_z / ignition_z (OLS slope and acceleration of the score over
+    # the trailing 10 snapshots) remain as display diagnostics. They no longer
+    # move the ranking: the 2026-10 walk-forward study found the bounded APEX
+    # kicker changed forward-return IC by < 0.001 (noise) at every horizon,
+    # and the two conviction-averaging factors stacked on it (m_conv and the
+    # §31.1 gate) were non-monotone — adding a low-conviction holder could
+    # LOWER a name's score. Filler discounting now lives in the per-holding
+    # convexity (conviction.kappa), so final_score is the one canonical score.
+    # apex_score / apex_rank are kept as aliases so the JSON schema is stable.
+    vel = hist.accumulation_velocity(score_pnl) if historical else pd.DataFrame()
+    if not vel.empty:
+        vel = vel.set_index("ticker")
+        leaderboard["velocity_z"] = leaderboard["ticker"].map(vel["velocity_z"]).fillna(0.0).round(3)
+        leaderboard["ignition_z"] = leaderboard["ticker"].map(vel["ignition_z"]).fillna(0.0).round(3)
     else:
-        # Neutral columns — JSON schema stays stable across modes
         leaderboard["velocity_z"] = 0.0
         leaderboard["ignition_z"] = 0.0
-        leaderboard["apex_score"] = leaderboard["final_score"]
-        leaderboard["apex_rank"] = leaderboard["leaderboard_rank"]
-
-    # ── §31.1 Conviction gate on apex_score (breadth-inflation guard) ─────────
-    # A ticker held as a filler by many ETFs (low avg_conviction, mediocre ranks)
-    # can outscore a true conviction name via raw breadth. The gate multiplies
-    # apex_score by g = clip(avg_conviction, 0.40, 1.10), with an escape hatch
-    # for names whose median per-ETF rank is ≤ 10 (g ≥ 1.0) so that genuine
-    # top-of-book positions (e.g. MU #1/#1/#2, SNDK five #1 ranks) are protected.
-    # final_score is NOT touched — only apex_score / apex_rank are affected.
+    leaderboard["apex_score"] = leaderboard["final_score"]
+    leaderboard["apex_rank"] = leaderboard["leaderboard_rank"]
+    leaderboard["median_etf_rank"] = leaderboard["ticker"].map(
+        latest.groupby("ticker")["rank"].median()
+    ).fillna(9999.0)
     if cfg.scoring_mode == "apex":
-        # Compute median per-ETF rank per ticker from today's latest snapshot
-        _median_etf_rank = (
-            latest.groupby("ticker")["rank"].median()
-            .rename("median_etf_rank")
-        )
-        leaderboard = leaderboard.merge(
-            _median_etf_rank.reset_index(), on="ticker", how="left"
-        )
-        leaderboard["median_etf_rank"] = leaderboard["median_etf_rank"].fillna(9999.0)
-
-        # Base gate: clip avg_conviction to [0.40, 1.10]
-        _conv = leaderboard["avg_conviction"].fillna(0.40)
-        _g = _conv.clip(lower=0.40, upper=1.10)
-
-        # Escape: if median_etf_rank ≤ 10, floor g at 1.0
-        _top_of_book = leaderboard["median_etf_rank"] <= 10
-        _g = _g.where(~_top_of_book, other=_g.clip(lower=1.0))
-
-        leaderboard["conviction_gate"] = _g.round(2)
-        leaderboard["apex_score"] = (
-            leaderboard["apex_score"] * leaderboard["conviction_gate"]
-        ).clip(lower=0.0).round().astype("int64")
-
-        # Recompute apex_rank from gated scores
-        _order = leaderboard.sort_values(
-            ["apex_score", "etf_count", "total_weight", "ticker"],
-            ascending=[False, False, False, True],
-        ).index
-        leaderboard["apex_rank"] = (
-            pd.Series(range(1, len(leaderboard) + 1), index=_order).astype("int64")
-        )
-
-        # Build log
-        _gated_below_1 = int((_g < 1.0).sum())
-        _g_min = float(_g.min())
-        _g_median = float(_g.median())
-        _top10 = (
-            leaderboard.sort_values("apex_rank")
-            .head(10)[["ticker", "apex_score", "conviction_gate", "etf_count"]]
-            .to_string(index=False)
-        )
-        print(
-            f"\n  conviction gate: {_gated_below_1} tickers gated below 1.0 · "
-            f"g_min={_g_min:.2f} · g_median={_g_median:.2f}"
-        )
-        print(f"  apex top-10 after gate:\n{_top10}")
-    else:
-        leaderboard["conviction_gate"] = 1.0
-        leaderboard["median_etf_rank"] = leaderboard["ticker"].map(
-            latest.groupby("ticker")["rank"].median()
-        ).fillna(9999.0)
+        _top10 = leaderboard.head(10)[["ticker", "final_score", "etf_count", "avg_conviction"]]
+        print(f"\n  top-10:\n{_top10.to_string(index=False)}")
 
     # ── Attach metadata (sector, industry, country) for flow analysis ─────────
     def _attach_metadata(leaderboard: pd.DataFrame) -> pd.DataFrame:
@@ -893,7 +836,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                 'global_rank_delta_30d': int(r.get('global_rank_delta_30d', 0)),
                 'burst_30d':            bool(r.get('burst_30d', False)),
                 'crater_30d':           bool(r.get('crater_30d', False)),
-                'final_score':          int(r['final_score']),
+                'final_score':          float(r['final_score']),
                 'etf_count':            int(r['etf_count']),
                 'tiers':                str(r.get('tiers', '')),
             }

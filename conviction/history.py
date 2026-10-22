@@ -216,30 +216,23 @@ def accumulation_velocity(score_pnl: pd.DataFrame, window: int = 10) -> pd.DataF
 
 def predictive_overlay(leaderboard: pd.DataFrame, score_pnl: pd.DataFrame,
                        *, v_alpha: float = 0.25, i_alpha: float = 0.10,
-                       window: int = 10,
-                       conv_floor: float = 0.50, conv_cap: float = 1.25,
-                       conv_gamma: float = 1.0) -> pd.DataFrame:
+                       window: int = 10) -> pd.DataFrame:
     """
-    §31 bounded temporal kicker on top of the leaderboard.
+    §31 bounded temporal kicker — RESEARCH ONLY since v4 (not used by build).
 
         apex_score = final_score × (1 + v_alpha·tanh(velocity_z / 2)
                                       + i_alpha·tanh(ignition_z / 2))
-                                 × m_conv
 
-    where m_conv = clip(avg_conviction, conv_floor, conv_cap) ** conv_gamma.
+    The 2026-10 walk-forward study (docs/SCORING_V4_STUDY.md) found the kicker
+    moved forward-return IC by < 0.001 at every horizon, so production ranks on
+    final_score alone; build.py emits velocity_z / ignition_z as diagnostics.
+    Kept so the study harness can reproduce the comparison. (The §31.2 m_conv
+    factor that used to ride here was removed: averaging conviction made the
+    score non-monotone in breadth — see conviction.kappa for its replacement.)
 
-    Breadth-summed score lets multi-fund filler outrank single-fund conviction;
-    m_conv discounts underweight breadth (avg_conviction < 1) and rewards
-    overweight conviction (avg_conviction > 1), capped at conv_cap ** conv_gamma.
-    Missing/None avg_conviction → m_conv = 1.0 (neutral).
-
-    tanh bounds the kicker to ±(v_alpha + i_alpha), so momentum can re-order
-    neighbours but never fabricate conviction — risk-averse by construction.
-    apex_score is floored at 0 and cast int64; apex_rank is 1..n ordered by
-    (apex_score desc, etf_count desc, total_weight desc).
-
-    Empty/insufficient panel → apex_score = final_score,
-    apex_rank = leaderboard_rank (neutral columns, stable schema).
+    tanh bounds the kicker to ±(v_alpha + i_alpha). apex_score is floored at 0
+    and cast int64; apex_rank is 1..n ordered by (apex_score desc, etf_count
+    desc, total_weight desc). Empty panel → neutral columns.
     """
     out = leaderboard.copy()
     if out.empty or score_pnl is None or score_pnl.empty:
@@ -256,13 +249,7 @@ def predictive_overlay(leaderboard: pd.DataFrame, score_pnl: pd.DataFrame,
     kicker = (1.0
               + v_alpha * np.tanh(out["velocity_z"] / 2.0)
               + i_alpha * np.tanh(out["ignition_z"] / 2.0))
-
-    # §31.2 conviction-quality multiplier — breadth-summed score lets multi-fund
-    # filler outrank single-fund conviction; m_conv discounts underweight breadth.
-    _conv = out["avg_conviction"].fillna(1.0) if "avg_conviction" in out.columns else pd.Series(1.0, index=out.index)
-    m_conv = _conv.clip(lower=conv_floor, upper=conv_cap).pow(conv_gamma)
-
-    out["apex_score"] = (out["final_score"] * kicker * m_conv).clip(lower=0.0).astype("int64")
+    out["apex_score"] = (out["final_score"] * kicker).clip(lower=0.0).astype("int64")
 
     order = out.sort_values(
         ["apex_score", "etf_count", "total_weight", "ticker"],
@@ -418,7 +405,7 @@ def compute_universe_exits_by_period(
     daily leaderboards (not the 600-ticker-capped score_history.json the
     frontend previously scanned).
 
-    A ticker is an "exit" for period N if it had final_score > 0 in the
+    A ticker is an "exit" for period N if it was held (etf_count > 0) in the
     snapshot closest to (today − N days) but is absent from today's
     leaderboard (i.e. held by zero ETFs now). "YTD" uses Jan-1 of the
     current year as the start.
@@ -492,8 +479,11 @@ def compute_universe_exits_by_period(
             out[str(p)] = []
             continue
 
-        # Held-and-scored at the start date, gone from today's universe.
-        scored_at_start = start_lb.loc[start_lb["final_score"].fillna(0) > 0, "ticker"]
+        # Held at the start date, gone from today's universe. Presence is read
+        # from etf_count: under apex v4 a held filler can carry a 0.0 score.
+        held = (start_lb["etf_count"].fillna(0) > 0 if "etf_count" in start_lb.columns
+                else start_lb["final_score"].fillna(0) > 0)
+        scored_at_start = start_lb.loc[held, "ticker"]
         start_tickers: set[str] = set(scored_at_start.tolist())
         exited = start_tickers - today_tickers
 

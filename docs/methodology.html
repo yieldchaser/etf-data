@@ -67,7 +67,7 @@
       </div>
       <h1 class="text-xl font-medium" style="color: var(--text)">How Conviction Labs works</h1>
       <div class="text-xs mt-1" style="color: var(--text-3)">A plain-language explanation of the scoring engine, motion signals, and what it does &amp; doesn't measure.</div>
-      <div class="label mt-2" style="color: var(--text-3)">Last updated: 2026-08-22</div>
+      <div class="label mt-2" style="color: var(--text-3)">Last updated: 2026-10-22</div>
     </div>
     <nav class="top flex flex-wrap gap-1 text-xs">
       <a href="index.html">Dashboard</a>
@@ -83,11 +83,11 @@
     <div class="label mb-2">Contents</div>
     <a href="#thesis">1 · The thesis — what this system tries to detect</a>
     <a href="#universe">2 · The ETF universe (5 tiers)</a>
-    <a href="#conviction">3 · The Conviction Score &amp; APEX (v3)</a>
+    <a href="#conviction">3 · The Conviction Score (v4)</a>
     <a href="#motion">4 · Motion signals (rank trajectory, burst, crater)</a>
     <a href="#signal-flags">5 · Flags &amp; chips</a>
     <a href="#retired-signals">&nbsp;&nbsp;5.1 · Retired signals (transparency)</a>
-    <a href="#sanitizer">6 · Sanitizer (what's filtered before scoring)</a>
+    <a href="#sanitizer">6 · Sanitizer &amp; security identity (what's filtered and merged before scoring)</a>
     <a href="#maturity">7 · Maturity gate (§28)</a>
     <a href="#self-living">8 · Self-living data — how the markets dataset stays fresh</a>
     <a href="#archive">9 · The permanent history archive</a>
@@ -111,67 +111,66 @@
   <table class="tier-table w-full text-sm">
     <thead><tr><th>Tier</th><th>Points</th><th>What it detects</th><th>ETFs</th></tr></thead>
     <tbody>
-      <tr><td><strong>Scout</strong></td><td>40 / 60*</td><td>Spinoffs &amp; IPOs — structural inefficiencies</td><td class="font-mono text-xs" style="color: var(--text-3)">CSD, FPX, FPXI*</td></tr>
-      <tr><td><strong>Quant</strong></td><td>40 / 60*</td><td>Factor-based momentum (US &amp; international)</td><td class="font-mono text-xs" style="color: var(--text-3)">QMOM, IMOM*, XMMO, XSMO, PIE, PDP, DWAS, EEMO*, PIZ*, JHMM, JHEM*, JHSC, MFEM*, JOET</td></tr>
-      <tr><td><strong>Quality</strong></td><td>30</td><td>Free cash flow, value, profitability</td><td class="font-mono text-xs" style="color: var(--text-3)">COWZ, CALF, SPHQ, IVAL, QVAL, VLUE, AVSC, GRIN</td></tr>
+      <tr><td><strong>Scout</strong></td><td>40</td><td>Spinoffs &amp; IPOs — structural inefficiencies</td><td class="font-mono text-xs" style="color: var(--text-3)">CSD, FPX, FPXI†</td></tr>
+      <tr><td><strong>Quant</strong></td><td>40</td><td>Factor-based momentum (US &amp; international)</td><td class="font-mono text-xs" style="color: var(--text-3)">QMOM, IMOM†, XMMO, XSMO, PIE†, PDP, DWAS, EEMO†, PIZ†, JHMM, JHEM†, JHSC, MFEM†, JOET</td></tr>
+      <tr><td><strong>Quality</strong></td><td>30</td><td>Free cash flow, value, profitability</td><td class="font-mono text-xs" style="color: var(--text-3)">COWZ, CALF, SPHQ, IVAL†, QVAL, VLUE, AVSC, GRIN†</td></tr>
       <tr><td><strong>Trend</strong></td><td>10</td><td>Broad momentum confirmation</td><td class="font-mono text-xs" style="color: var(--text-3)">SPMO, SPHB, RPG</td></tr>
       <tr><td><strong>Core</strong></td><td>2</td><td>Mega-cap benchmarks (low signal value)</td><td class="font-mono text-xs" style="color: var(--text-3)">XLG, QQQM</td></tr>
     </tbody>
   </table>
-  <p class="text-xs mt-2" style="color: var(--text-3)">* International ETFs carry 60 points instead of 40 — global names naturally appear in fewer US-focused ETFs, so the bump levels the playing field.</p>
+  <p class="text-xs mt-2" style="color: var(--text-3)">† International funds (<code>region: intl</code> in config — they report local-exchange symbols, which matters for security identity, §6). Until v4 six of them carried a 60-point "international exception"; it was retired in 2026-10 because regional levelling is already done by M<sub>universe</sub> (§3.3) — the bump was a second levelling mechanism stacked on the first, and with four overlapping EM funds it no longer levelled anything (§3.5). Every fund now earns exactly its tier's points.</p>
 
   <!-- §3 Conviction Score -->
-  <h2 id="conviction">3 · The Conviction Score &amp; APEX (v3)</h2>
-  <p>For every (ETF, ticker) pair, we compute a <strong>single-holding score</strong>; the per-holding math below is the conviction-weighted core and hasn't changed. What's new: the current production mode is <strong>APEX (v3)</strong>, which takes the summed conviction mass and shapes it with three structural multipliers plus a bounded momentum kicker (§3.3).</p>
+  <h2 id="conviction">3 · The Conviction Score (v4)</h2>
+  <p>For every (ETF, ticker) pair we compute a per-holding <strong>conviction</strong>, square it, weight it by the fund's tier points, and sum across funds. Three structural multipliers then shape that mass into the <strong>Conviction Score</strong> — the one canonical score and rank on the leaderboard. v4 (2026-10) is the result of a walk-forward study on the real store; the evidence for every change is in <a href="https://github.com/yieldchaser/etf-data/blob/main/docs/SCORING_V4_STUDY.md" target="_blank" rel="noopener">SCORING_V4_STUDY.md</a> and §3.5 below.</p>
 
-  <h3>3.1 — The two ingredients</h3>
-  <p>Each holding contributes proportionally to two factors:</p>
+  <h3>3.1 — Per-holding conviction</h3>
+  <p>Each holding's conviction C<sub>i</sub> is the product of two factors:</p>
   <ul class="list-disc pl-5 space-y-1">
     <li><strong>Overweight (W<sub>ovr</sub>)</strong> — how much more weight this ETF assigns the name vs equal-weight. <code>OW = weight × n_holdings</code>; OW = 1 means equal-weight, OW = 5 means 5× equal-weight. We compress with <code>ln(1 + OW) / ln(1 + OW★)</code> so that OW★ = 4 anchors W<sub>ovr</sub> ≈ 1.0, then clamp to [0, 1.5].</li>
-    <li><strong>Rank percentile (G<sub>rank</sub>)</strong> — where the ticker ranks within the ETF. Top of book = 1.0, bottom = 0.0. We add a 0.35 floor so a position never fully zeroes out: <code>G<sub>rank</sub> = 0.35 + 0.65 × RP</code>.</li>
+    <li><strong>Rank percentile (G<sub>rank</sub>)</strong> — where the ticker ranks within the ETF. Top of book = 1.0, bottom = 0.0. A 0.35 floor keeps a position from fully zeroing out: <code>G<sub>rank</sub> = 0.35 + 0.65 × RP</code>.</li>
   </ul>
-  <pre>Single Score  = TierPoints × W<sub>ovr</sub>(OW) × G<sub>rank</sub>(RP)
-Final Score   = Σ (Single Score) across all ETFs holding this ticker</pre>
+  <pre>C<sub>i</sub>          = W<sub>ovr</sub>(OW<sub>i</sub>) × G<sub>rank</sub>(RP<sub>i</sub>)
+Single<sub>i</sub>     = TierPoints<sub>i</sub> × C<sub>i</sub><sup>κ</sup>          (κ = 2)
+B             = Σ Single<sub>i</sub> across holding ETFs  (overlap-discounted, §3.4)
+Score         = B × M<sub>conc</sub> × M<sub>breadth</sub> × M<sub>universe</sub></pre>
 
   <h3>3.2 — Why this shape</h3>
-  <p>The shape is deliberately additive across ETFs (so <strong>breadth</strong> matters) but multiplicative within each ETF (so an oversized #2 weight in a small fund counts more than a tiny #50 weight in a large fund). The OW★ anchor and 1.5 clamp keep extreme outliers from dominating; the rank floor keeps a #100 holding from becoming worthless when it might still be a real signal.</p>
+  <p>Additive across ETFs (so <strong>breadth</strong> matters), multiplicative within each ETF (so an oversized #2 weight in a small fund counts more than a tiny #50 weight in a large fund). The convexity κ = 2 is what makes it breadth <em>of conviction</em> rather than breadth of filler: a fund carrying a name at C = 0.3 (below equal weight, low in the book) contributes 0.09 of a full position, while a genuine overweight at C = 1.2 contributes 1.44. Six funds' worth of filler no longer outscores two funds that put the name at the top of their books.</p>
+  <p>Because the discount is applied <strong>per holding</strong>, the score is <strong>monotone in breadth</strong>: a new holder can only add to a name's score. The averaging-based corrections it replaces (§3.5) did not have that property — under them, a strong single-fund name that picked up seven filler holders could <em>lose</em> score (57.6 → 45 in a worked example).</p>
 
-  <h3>3.3 — APEX (v3): structural multipliers + bounded kicker</h3>
-  <p>APEX starts from the conviction mass <strong>B</strong> (the sum of Single Scores from §3.1) and applies three structural multipliers, then a momentum kicker with a conviction-quality factor:</p>
-  <pre>B           = Σ TierPoints × W<sub>ovr</sub>(OW) × G<sub>rank</sub>(RP)        (conviction mass)
-Final Score = B × M<sub>conc</sub> × M<sub>breadth</sub> × M<sub>universe</sub>
-m_conv      = clip(avg_conviction, 0.50, 1.25) ** 1.0     (conviction-quality factor)
-APEX Score  = Final × (1 + 0.25·tanh(v_z/2) + 0.10·tanh(i_z/2)) × m_conv</pre>
+  <h3>3.3 — Structural multipliers</h3>
   <ul class="list-disc pl-5 space-y-1">
-    <li><strong>M<sub>conc</sub> (0.60–1.00) — concentration guard.</strong> We compute the effective fund count N<sub>eff</sub> = 1/HHI of per-fund score shares; the penalty fully releases at 3 effective funds. The floor is 0.60 — a single fund's massive bet is dampened, never hidden.</li>
-    <li><strong>M<sub>breadth</sub> (1.00–1.35) — strategy dispersal.</strong> Shannon entropy of the score across the 5 tiers — a name confirmed by Quality AND Scout simultaneously outranks the same mass coming from one style.</li>
-    <li><strong>M<sub>universe</sub> (0.80–1.25) — opportunity normalization.</strong> Score per unit of demonstrated opportunity (Σ points of every ETF that has ever held the name, plus shrinkage), clipped so it can level the field for international names without fabricating signal.</li>
-    <li><strong>APEX kicker.</strong> A cross-sectional z-score of the 10-snapshot score slope (v_z) plus its acceleration (i_z), tanh-bounded at ±35% — momentum re-orders neighbours, never fabricates conviction.</li>
-    <li><strong>m_conv (0.50–1.25) — conviction-quality factor.</strong> Because Final Score sums contributions across all holding ETFs, a name carried as low-conviction filler by many funds accumulates breadth-inflated score. <code>avg_conviction</code> is the mean of C<sub>i</sub> = W<sub>ovr</sub> × G<sub>rank</sub> across all current holders (&lt;1 = underweight filler, &gt;1 = overweight conviction). Clipping to [0.50, 1.25] and raising to gamma=1.0 gives a proportional discount to breadth-filler names while modestly rewarding genuine overweight positions. Missing conviction defaults to 1.0 (neutral). This factor affects only <code>apex_score</code> and <code>apex_rank</code> — <code>final_score</code> is unchanged.</li>
+    <li><strong>M<sub>conc</sub> (0.60–1.00) — concentration guard.</strong> Effective fund count N<sub>eff</sub> = 1/HHI of per-fund score shares; the penalty fully releases at 3 effective funds. The floor is 0.60 — a single fund's massive bet is dampened, never hidden.</li>
+    <li><strong>M<sub>breadth</sub> (1.00–1.35) — strategy dispersal.</strong> Shannon entropy of the score across the 5 tiers — a name confirmed by Quality AND Scout simultaneously outranks the same mass coming from one style. This is the <em>only</em> breadth reward in the score.</li>
+    <li><strong>M<sub>universe</sub> (0.80–1.25) — opportunity normalization.</strong> Score per unit of demonstrated opportunity (Σ points of every ETF that has ever held the name, plus shrinkage), clipped so it can level the field for international names without fabricating signal. This is the <em>only</em> regional levelling in the score.</li>
   </ul>
-  <p>Legacy and conviction modes remain available via config for backward comparison.</p>
+  <p>Scores are reported to one decimal (they were truncated to integers before v4; under κ = 2 a held filler is worth fractions of a point, and truncation collapsed almost half the board to 0). Legacy and conviction modes remain available via config for backward comparison; κ applies in apex mode only.</p>
 
-  <h3>3.4 — Conviction gate (v3.1)</h3>
-  <p><strong>Rationale.</strong> Because APEX Score is additive across ETFs, a ticker held as a low-conviction filler by many funds can outscore a name that every holder puts in its top-3. The gate prevents breadth-without-conviction inflation: it multiplies the APEX Score by a per-ticker gate factor <strong>g</strong> derived from how convincingly each fund holds the name.</p>
-  <pre>median_rank  = median of per-ETF ranks across all current holders
-g            = clip(avg_conviction, 0.40, 1.10)
-if median_rank ≤ 10:  g = max(g, 1.0)   (top-of-book escape hatch)
-APEX Score   = round(APEX Score × g)</pre>
-  <ul class="list-disc pl-5 space-y-1">
-    <li><strong>avg_conviction</strong> is the mean of C<sub>i</sub> = W<sub>ovr</sub>(OW<sub>i</sub>) × G<sub>rank</sub>(RP<sub>i</sub>) across all current (ETF, ticker) pairs — the same per-holding conviction that drives the base score.</li>
-    <li><strong>Clip bounds [0.40, 1.10]</strong> — a filler held at 0.10 conviction is capped at a 40% penalty; a 1.50 overweight position is capped at a 10% bonus. This keeps g a gentle correction, not a second score.</li>
-    <li><strong>median_rank ≤ 10 escape</strong> — names genuinely at the top of every holder's book (e.g. #1/#1/#2 across three funds) have g floored at 1.0 even if their weight implies slightly-under-equal-weight conviction.</li>
-    <li><strong>Final Alpha Score is unchanged</strong> — the conviction gate applies only to apex_score and apex_rank. The leaderboard's default sort and flag logic use final_score, which is byte-identical to the pre-gate computation.</li>
-    <li>Each leaderboard record carries <code>conviction_gate</code> (the g value, 2 decimal places) for tooltip display.</li>
-  </ul>
+  <h3>3.4 — ETF overlap discount</h3>
+  <p>When several ETFs belong to the same strategy cluster (e.g. <code>JHEM</code>, <code>MFEM</code> and <code>EEMO</code>, sharing up to 35% of holdings), additive scoring can double-count duplicate allocator conviction. The engine computes pairwise Jaccard similarity of fund holdings; for a ticker held by several funds, each subsequent (lower-scoring) fund's contribution is scaled by <code>max(0.20, 1.0 − 1.5 × max_similarity)</code> against the funds already counted.</p>
+
   <div class="callout callout-cyan">
-    <h3>3.5 — ETF Overlap Discount & Tier Synergy Scaling (Option 1)</h3>
-  <p><strong>Rationale.</strong> When multiple ETFs belong to the same strategy cluster (e.g. <code>JHEM</code>, <code>MFEM</code>, and <code>EEMO</code> sharing up to 35% holding overlap), additive scoring can double-count duplicate allocator conviction. Option 1 mitigates this duplicate bias:</p>
-  <ul class="list-disc pl-5 space-y-1">
-    <li><strong>Pairwise Jaccard Similarity Matrix:</strong> The engine dynamically computes holding overlap <code>similarity[etf1][etf2]</code> across all active funds.</li>
-    <li><strong>Marginal Overlap Discounting:</strong> For a ticker held by multiple ETFs, subsequent ETF score contributions are scaled down by <code>max(0.20, 1.0 − max_similarity × 1.5)</code> relative to preceding higher-conviction ETFs.</li>
-    <li><strong>Multi-Tier Synergy Multiplier:</strong> Consensus spanning distinct strategy tiers (e.g. Quality + Trend + Scout) earns a <code>+15%</code> bonus per extra tier (<code>1.0 + (num_unique_tiers − 1) × 0.15</code>), ensuring multi-strategy alignment outranks duplicate single-strategy stacking.</li>
-  </ul>
+    <h3>3.5 — What changed in v4 (2026-10) and why</h3>
+    <p>A walk-forward study replayed the real engine on every snapshot date (Feb–Oct 2026) and scored each candidate change on forward returns (T+2 entry, 5–40 trading days, currency-demeaned) and on internal outcomes: the share of breadth-filler names in the top 50, whether the score predicts future fund accumulation, how often top-50 names lose a holder within 30 days, and rank stability. Results, 30-ETF universe:</p>
+    <table class="tier-table w-full text-sm mt-2">
+      <thead><tr><th></th><th>pre-v4</th><th>v4</th></tr></thead>
+      <tbody>
+        <tr><td>Top-50 breadth-filler share (avg conviction &lt; 0.5)</td><td class="font-mono">17.6%</td><td class="font-mono">4.8%</td></tr>
+        <tr><td>Forward fund-accumulation IC (score vs 30d change in holders)</td><td class="font-mono">−0.009</td><td class="font-mono">+0.018</td></tr>
+        <tr><td>Top-50 names losing a holder within 30d</td><td class="font-mono">18.8%</td><td class="font-mono">14.4%</td></tr>
+        <tr><td>Top-50 still top-100 after ~28d</td><td class="font-mono">92.1%</td><td class="font-mono">93.7%</td></tr>
+        <tr><td>20-day forward-return IC (unchanged — see §11)</td><td class="font-mono">−0.031</td><td class="font-mono">−0.031</td></tr>
+      </tbody>
+    </table>
+    <p class="mt-2">The 16-ETF universe (Feb–May, out-of-sample) confirms the direction: filler share 53% → 27%, accumulation IC +0.002 → +0.046, exit rate 15.9% → 11.2%.</p>
+    <ul class="list-disc pl-5 space-y-1 mt-2">
+      <li><strong>Added — κ = 2 per-holding convexity</strong> (§3.2).</li>
+      <li><strong>Removed — tier-synergy bonus</strong> (<code>1 + 0.15 × (tiers − 1)</code>). It rewarded tier breadth on top of M<sub>breadth</sub>, so a 5-tier name earned up to 1.60 × 1.35 = 2.16× from breadth alone — the main source of the "point moat" that kept large multi-fund names pinned at the top.</li>
+      <li><strong>Removed — 60-point international exception.</strong> A second regional-levelling mechanism stacked on M<sub>universe</sub>; combined with κ = 2 it would have pushed the top 50 to 76% non-US names (vs 56% before v4 and 41.5% of holding-points). With uniform tier points the top 50 sits at 60%.</li>
+      <li><strong>Removed — APEX kicker, m_conv and the conviction gate</strong> (formerly §3.3–3.4): see §5.1. <code>apex_score</code> / <code>apex_rank</code> remain in the data as aliases of the Conviction Score so downstream consumers don't break.</li>
+      <li><strong>Added — security-identity resolution and a staleness guard</strong> (§6).</li>
+    </ul>
   </div>
 
   <!-- §4 Motion -->
@@ -211,13 +210,13 @@ APEX Score   = round(APEX Score × g)</pre>
   <p>Held by <strong>1–2 funds</strong> with <strong>&gt; 10% average weight growth over 7 days</strong> while ranks haven't started moving yet — position building before the rank layer notices.</p>
 
   <h3>4.7 — CONCENTRATED — promoted</h3>
-  <p>One fund supplies ≥ 85% of the name's score mass (or a lone fund holds it at ≥ 4× equal-weight). Promoted in prominence after the study: the <strong>best risk-adjusted flag</strong> on the board — exit rate <strong>0.24× base</strong> (0.58% vs 2.39%) and accumulation lift <strong>1.17–1.28×</strong>. Single-fund stories are riskier to trust, but they persist.</p>
+  <p>One fund supplies ≥ 85% of the name's linear conviction mass Σ points × C (or a lone fund holds it at ≥ 4× equal-weight). The share is read on the linear mass, not the κ-squared score, so the calibrated 0.85 threshold keeps its meaning. Promoted in prominence after the study: the <strong>best risk-adjusted flag</strong> on the board — exit rate <strong>0.24× base</strong> (0.58% vs 2.39%) and accumulation lift <strong>1.17–1.28×</strong>. Single-fund stories are riskier to trust, but they persist.</p>
 
   <h3>4.8 — HIGH_CONVICTION — raw count, all modes</h3>
   <p><strong>Held by ≥ 4 distinct ETFs</strong>, applied identically in ALL scoring modes. The former apex-mode conviction-breadth gate (conviction ≥ θ = 0.8 <em>and</em> breadth ≥ 4) fired on ~0.03% of rows — effectively a dead flag — and was removed in 2026-08. <code>conviction_etf_count</code> survives as a diagnostic column only.</p>
 
   <h3>4.9 — Momentum regime &amp; extreme moves</h3>
-  <p><code>momentum_regime</code> keeps its five labels (accelerating / rising / stable / weakening / declining) but was rebuilt on non-cancelling inputs: the <code>score_streak</code> direction combined with the mean 7-day per-ETF rank delta (<code>avg_rank_delta_7d</code>). The leaderboard's top ribbon still surfaces names whose motion metrics are statistically unusual (|z| ≥ 2) vs today's distribution — pure presentation, gated on ≥ 3 ETFs holding. The APEX momentum kicker (§3.3) is unchanged: <code>velocity_z</code> / <code>ignition_z</code> are statistical OLS-slope measures that move the APEX Score — distinct from the retired display composite that used to live in this section.</p>
+  <p><code>momentum_regime</code> keeps its five labels (accelerating / rising / stable / weakening / declining) but was rebuilt on non-cancelling inputs: the <code>score_streak</code> direction combined with the mean 7-day per-ETF rank delta (<code>avg_rank_delta_7d</code>). The leaderboard's top ribbon still surfaces names whose motion metrics are statistically unusual (|z| ≥ 2) vs today's distribution — pure presentation, gated on ≥ 3 ETFs holding. <code>velocity_z</code> / <code>ignition_z</code> (OLS slope and acceleration of the score over the last 10 snapshots) remain as display diagnostics; since v4 they no longer move the ranking (§5.1).</p>
 
   <!-- §5 Flags -->
   <h2 id="signal-flags">5 · Flags &amp; chips</h2>
@@ -226,7 +225,7 @@ APEX Score   = round(APEX Score × g)</pre>
     <thead><tr><th>Flag</th><th>Condition</th><th>Reading</th></tr></thead>
     <tbody>
       <tr><td><strong>HIGH_CONVICTION</strong></td><td>Held by ≥ 4 distinct ETFs (raw count — identical in all scoring modes)</td><td>Broad consensus across independent strategies</td></tr>
-      <tr><td><strong>CONCENTRATED</strong></td><td>One fund supplies ≥ 85% of the name's score mass (or a lone fund holds it at ≥ 4× equal-weight)</td><td>Single-fund story — best risk-adjusted flag: 0.24× base exit rate, 1.17–1.28× accumulation lift</td></tr>
+      <tr><td><strong>CONCENTRATED</strong></td><td>One fund supplies ≥ 85% of the name's conviction mass (or a lone fund holds it at ≥ 4× equal-weight)</td><td>Single-fund story — best risk-adjusted flag: 0.24× base exit rate, 1.17–1.28× accumulation lift</td></tr>
       <tr><td><strong>SPECULATIVE_BETA</strong></td><td>Held only by Trend tier; no Quality / Scout</td><td>Momentum without fundamental support</td></tr>
       <tr><td><strong>NEW</strong></td><td>First appearance within the 14-day lookback; suppressed for ETFs younger than the 30-day maturity baseline</td><td>Short-horizon entrant — 1.38× accumulation lift within 7d, fading to 0.65× by 30d (§4.4)</td></tr>
       <tr><td><strong>BURST</strong></td><td>See §4.2</td><td>HC-entry precursor (3.3× within 14d) — early signal, not a chase signal</td></tr>
@@ -244,6 +243,14 @@ APEX Score   = round(APEX Score × g)</pre>
     <li><strong>conviction_divergence</strong> — exit-lift pointed the <em>wrong</em> direction (0.56×).</li>
     <li><strong>quality_defected_30d</strong> — lift flipped sign between evaluation grids; unstable. Quality+ adoption remains.</li>
   </ul>
+  <p>Retired in <strong>2026-10</strong> (v4 study, §3.5), alongside proposals that were tested and rejected:</p>
+  <ul class="list-disc pl-5 space-y-1">
+    <li><strong>APEX momentum kicker</strong> (<code>× (1 + 0.25·tanh(v_z/2) + 0.10·tanh(i_z/2))</code>) — changed forward-return IC by &lt; 0.001 at every horizon, i.e. noise. The velocity diagnostics stay.</li>
+    <li><strong>m_conv and the conviction gate</strong> — two separate <code>clip(avg_conviction, …)</code> factors applied on top of each other (≈ conviction² for fillers), on an unweighted mean in which a 2-point Core fund counted as much as a 40-point Scout fund, and non-monotone in breadth. Replaced by the per-holding convexity κ.</li>
+    <li><strong>Tested, not adopted — 30-day drawdown dampener</strong> (strip M<sub>breadth</sub> when a name falls &gt; 20% in 21 trading days). No measurable change in forward-return IC; top-100 names that had fallen &gt; 20% lost a holder <em>less</em> often than other top-100 names (5.9% vs 19.5%), so the "falling knife" premise didn't hold.</li>
+    <li><strong>Tested, not adopted — multi-fund outflow decay.</strong> Once a holding's weight change is netted against its own price drift (passive drift isn't selling), the trigger almost never fires; zero measurable effect.</li>
+    <li><strong>Tested, not adopted — diminishing returns on breadth</strong> (k-th largest contribution × d<sup>k−1</sup>). Similar internal gains to κ = 2 with worse rank stability; κ was simpler and better.</li>
+  </ul>
 
   <!-- §6 Sanitizer -->
   <h2 id="sanitizer">6 · Sanitizer</h2>
@@ -255,6 +262,9 @@ APEX Score   = round(APEX Score × g)</pre>
     <li><strong>Ticker punctuation standardised</strong> — <code>BRK-B → BRK.B</code>, <code>BF/B → BF.B</code>, whitespace collapsed.</li>
     <li><strong>Dual-class consolidation</strong> — <code>GOOG → GOOGL</code> (otherwise dual-class shares fragment the leaderboard).</li>
     <li><strong>Cross-listing collapse</strong> — Korean A-prefix tickers (<code>A005930 → 005930</code>) merged so Samsung Electronics doesn't appear twice with split conviction.</li>
+    <li><strong>Share-class consolidation (v4)</strong> — voting / non-voting / preferred lines of one issuer pool into the most widely held line: Samsung pref <code>005935 → 005930</code>, Petrobras <code>PETR3 → PETR4</code>, Itaú <code>ITUB3 → ITUB4</code>, Hyundai prefs <code>→ 005380</code>, <code>FOX → FOXA</code>, <code>NWS → NWSA</code> and others (curated list in <code>config.yaml</code>).</li>
+    <li><strong>Security-identity resolution (v4)</strong> — international funds report bare local-exchange codes that collide with unrelated US tickers. Before v4, <code>MTN</code> was Vail Resorts (AVSC, JHSC) <em>and</em> MTN Group (JHEM, MFEM) on one row — a fabricated 4-fund HIGH_CONVICTION name in the top 20 — and about 50 other tickers had the same problem (KTB, A, TEL, G, KEY, PEP, BA…). The engine now clusters each ticker's holders by the company names they report; when a US cluster and an international cluster disagree, the international one becomes <code>&lt;ticker&gt;.&lt;TAG&gt;</code> (MTN Group → <code>MTN.MTN</code>). In the other direction, exchange-suffix dialects of one security (<code>6857</code> vs <code>6857.JP</code> for Advantest, Thai <code>ADVANC</code> / <code>ADVANC.F</code> / <code>ADVANC.R</code>) merge into one row. Every merge and split must agree with the reported names, so e.g. <code>ENR.GR</code> (Siemens Energy) is never folded into <code>ENR</code> (Energizer). A short curated list handles collisions between two international exchanges (e.g. <code>2313</code> = Compeq in Taiwan, Shenzhou in Hong Kong). Each build logs every split, merge and override.</li>
+    <li><strong>Staleness guard (v4)</strong> — an ETF whose newest snapshot is more than 30 days older than the freshest snapshot stops scoring, instead of contributing a frozen book forever. The 30-day window is well above the longest observed scrape gap (21 days), so outages never fake an exit.</li>
   </ul>
 
   <!-- §7 Maturity -->
@@ -320,11 +330,14 @@ APEX Score   = round(APEX Score × g)</pre>
   <h2 id="limits">11 · Honest limitations</h2>
   <ul class="list-disc pl-5 space-y-1">
     <li><strong>Conviction Labs measures detection breadth, not future returns.</strong> A high score means many independent strategies converge on a name; it does not mean the name will outperform. Backtests of HC-entry, BURST-trigger, and CRATER strategies are on the <a href="backtest.html">Backtest page</a> — judge for yourself.</li>
+    <li><strong>For returns, the score behaves like a momentum exposure.</strong> Most of the tracked funds select on momentum, so the score's forward-return information comes and goes with the momentum regime: 20-day IC ≈ +0.05 in Feb–May 2026, ≈ −0.03 in May–Oct 2026, with plain 12-1 price momentum moving the same way. After controlling for 12-1 momentum the residual IC is ≈ ±0.015 and flips sign between periods. No formula change tested in the v4 study moved forward-return IC beyond noise; v4's gains are in what the board <em>is</em> (conviction rather than filler, real identities) and in what it predicts about future fund behaviour.</li>
+    <li><strong>"Overweight" is measured against equal weight, not a benchmark.</strong> In a cap-weighted fund the largest companies naturally carry large OW, so part of C<sub>i</sub> is company size rather than active conviction — which is why EM mega-caps such as TSMC and Samsung sit near the top. A size-neutral measure needs market caps for the whole universe; the current metadata covers ~1,200 of ~3,900 names.</li>
     <li><strong>The system is one source.</strong> No earnings, no fundamentals, no macro overlay. Use it alongside other tools, not instead of them.</li>
     <li><strong>Daily granularity, not intraday.</strong> Scrapes run 02:00 / 14:00 / 22:00 UTC weekdays plus a weekend catch-up. Same-day moves are not captured.</li>
     <li><strong>Some positions are hidden.</strong> Equity-only filtering removes cash, derivatives, money-market, and currency placeholders. You see the equity book, not the full ETF.</li>
-    <li><strong>Tier weights are editorial.</strong> The 40 / 60 / 30 / 10 / 2 numbers are calibrated by hand. The current values are pinned by regression tests (Samsung &gt; Itaú under the conviction-weighted core that APEX builds on); changes require a measured before/after.</li>
-    <li><strong>APEX multipliers are calibrated to this configured ETF universe.</strong> For example, the 0.85 concentration-dominance threshold sits above the structural median of 0.81 created by the 60/40/30/10/2 point asymmetry. A different universe needs recalibration.</li>
+    <li><strong>Tier weights are editorial.</strong> The 40 / 30 / 10 / 2 numbers are calibrated by hand and pinned by regression tests (Samsung &gt; Itaú, every fund earns its tier's points); changes require a measured before/after — the v4 removal of the 60-point exception is documented in §3.5.</li>
+    <li><strong>Multipliers are calibrated to this configured ETF universe.</strong> For example, the 0.85 concentration-dominance threshold for CONCENTRATED is read on linear conviction mass and keeps the pre-v4 firing rate (~200 names). A different universe needs recalibration.</li>
+    <li><strong>The forward-return evidence is short.</strong> Five months of the 30-ETF universe are roughly four to five independent 20-day windows; v4 was chosen on structural grounds plus internal outcomes that agree in both universes, not on a return backtest.</li>
     <li><strong>History spans two universes.</strong> The May 2026 expansion (see <a href="#data-notes">§10 Data notes</a>) means rank-level comparisons that cross the late-May boundary mix different universe sizes — the rank numbers were mechanically diluted by the jump.</li>
     <li><strong>Cold-start gaps.</strong> Each ETF has a 30-day maturity ramp during which NEW flags are suppressed. The system started in February 2026; the leaderboard reaches its full signal density once every ETF is past the maturity gate.</li>
   </ul>

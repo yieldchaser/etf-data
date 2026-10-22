@@ -203,27 +203,23 @@ class TestScoring:
                     "VLUE", "AVSC", "GRIN", "JHMM", "JHEM", "JHSC", "MFEM", "JOET"}
         assert set(cfg.etf_lookup().keys()) == expected
 
-    def test_fpxi_and_imom_have_60_points(self, cfg):
-        """Per-ETF overrides verified against Excel ETF_Config table."""
+    def test_every_fund_earns_its_tier_points(self, cfg):
+        """v4: the 60-point international exception is retired — regional
+        levelling is apex M_universe's job, and stacking both double-counted it
+        (docs/SCORING_V4_STUDY.md). Every fund earns exactly its tier's points;
+        international funds are marked by `region: intl` instead."""
+        tier_points = {"Scout": 40, "Quant": 40, "Quality": 30, "Trend": 10, "Core": 2}
+        for etf in cfg.etf_lookup().values():
+            assert etf.points == tier_points[etf.tier], etf
         lookup = cfg.etf_lookup()
-        assert lookup["FPXI"].points == 60
         assert lookup["FPXI"].tier == "Scout"
-        assert lookup["IMOM"].points == 60
         assert lookup["IMOM"].tier == "Quant"
-        # Others stay at their tier defaults
-        assert lookup["FPX"].points == 40
-        assert lookup["QMOM"].points == 40
-        assert lookup["COWZ"].points == 30
-        assert lookup["IVAL"].points == 30
         assert lookup["IVAL"].tier == "Quality"
-        assert lookup["VLUE"].points == 30
         assert lookup["VLUE"].tier == "Quality"
         assert lookup["JHMM"].tier == "Quant"
-        assert lookup["JHEM"].points == 60   # international
-        assert lookup["MFEM"].points == 60   # international
-        assert lookup["SPMO"].points == 10
-        assert lookup["QQQM"].points == 2
-
+        intl = {e.ticker for e in lookup.values() if e.region == "intl"}
+        assert intl == {"FPXI", "IMOM", "EEMO", "PIZ", "PIE", "JHEM", "MFEM", "IVAL", "GRIN"}
+        assert set(cfg.sanitizer.international_etfs) == intl
     def test_core_top_rank(self, legacy_cfg):
         """Top-1 in QQQM (Core, 2 pts) with 9% weight.
         Legacy formula: 9 × 2 × 1.5 = 27 (weight_pct × points × rank_mult)"""
