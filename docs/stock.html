@@ -119,6 +119,12 @@
     .kpi-card:hover { border-color: var(--border-2); }
     .kpi-sub { font-size: 10.5px; color: var(--text-3); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: none; }
     @media (max-width: 760px) { .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } }
+    .decomp-bar { display: flex; height: 28px; width: 100%; border-radius: 4px; overflow: hidden; }
+    .decomp-seg { display: flex; align-items: center; justify-content: center; min-width: 0; overflow: hidden; white-space: nowrap;
+                  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; font-size: 10px; font-weight: 600;
+                  color: #fff; opacity: 0.85; box-shadow: inset -1px 0 0 rgba(0,0,0,0.45); }
+    .tl-lane-label { position: absolute; right: 0; display: flex; align-items: center; font-size: 9px; font-weight: 600; letter-spacing: 0.04em;
+                     font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; }
 </style>
 </head>
 <body>
@@ -245,10 +251,17 @@
           </div>
         </template>
         <!-- Neutral -->
-        <template x-if="!leaderboardRow?.flag">
+        <template x-if="leaderboardRow && !leaderboardRow.flag">
           <div class="flex items-center gap-2">
             <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-zinc-500/10 text-zinc-400 border border-zinc-500/30">NEUTRAL</span>
             <span class="text-zinc-500">No flag · watching</span>
+          </div>
+        </template>
+        <!-- Left the board: no tracked fund holds it today -->
+        <template x-if="!leaderboardRow">
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-rose-500/10 text-rose-300 border border-rose-500/30">NOT HELD</span>
+            <span class="text-zinc-400" x-text="(flagHistory || []).length ? `No tracked fund holds it today · last held ${flagHistory[flagHistory.length - 1].d}` : 'No tracked fund holds it today'"></span>
           </div>
         </template>
 
@@ -388,7 +401,7 @@
       <div class="px-4 py-3 border-b border-[rgba(255,255,255,0.06)]" x-show="!stockPending && stockFilteredPrices.length > 1 && stockRangeHigh !== null && stockRangeLow !== null && stockRangeHigh > stockRangeLow">
         <div class="flex items-center justify-between text-[9px] mb-1.5" style="color: var(--text-3)">
           <span class="font-medium">Period Range Position</span>
-          <span class="font-mono font-semibold" x-text="stockFilteredPrices.length && stockRangeHigh > stockRangeLow ? (Math.min(100, Math.max(0, ((stockFilteredPrices[stockFilteredPrices.length-1][1] - stockRangeLow) / (stockRangeHigh - stockRangeLow)) * 100)) : 50).toFixed(0) + '%' : ''"></span>
+          <span class="font-mono font-semibold" x-text="stockFilteredPrices.length && stockRangeHigh > stockRangeLow ? Math.min(100, Math.max(0, ((stockFilteredPrices[stockFilteredPrices.length-1][1] - stockRangeLow) / (stockRangeHigh - stockRangeLow)) * 100)).toFixed(0) + '%' : ''"></span>
         </div>
         <div class="relative w-full h-1.5 bg-[rgba(255,255,255,0.06)] rounded-full">
           <!-- Gradient track filler -->
@@ -464,22 +477,25 @@
           <div class="label-cyan label">Score decomposition</div>
           <span class="text-[10px]" style="color: var(--text-3)">how each ETF contributes to the final score</span>
         </div>
-        <span x-show="(leaderboardRow?.concentration_score || 0) >= 70" class="chip"
-              x-tooltip="`'Top ETF accounts for '+ leaderboardRow?.concentration_score +'% of score - fragile conviction'`"
-              style="background: rgba(251,113,133,0.10); color: #fda4af; border: 1px solid rgba(251,113,133,0.25)"
-              x-text="`Concentrated · ${leaderboardRow?.concentration_score}%`"></span>
-        <span x-show="(leaderboardRow?.concentration_score || 0) < 70 && (leaderboardRow?.etf_count || 0) >= 2" class="chip"
-              style="background: rgba(20,184,166,0.10); color: #5eead4; border: 1px solid rgba(20,184,166,0.25)"
-              x-text="`Diversified · ${leaderboardRow?.concentration_score}% top`"></span>
+        <span class="chip" x-show="leaderboardRow?.concentration_score != null"
+              x-tooltip="`The largest holder supplies ${leaderboardRow?.concentration_score}% of the conviction mass. 85%+ is CONCENTRATED: the score rests on one fund.`"
+              :style="(leaderboardRow?.concentration_score || 0) >= 85
+                ? 'background: rgba(251,146,60,0.10); color: #fdba74; border: 1px solid rgba(251,146,60,0.25)'
+                : 'background: rgba(255,255,255,0.03); color: var(--text-2); border: 1px solid var(--border)'"
+              x-text="(leaderboardRow?.concentration_score || 0) >= 85 ? `Concentrated · ${leaderboardRow?.concentration_score}% top fund` : `${leaderboardRow?.concentration_score}% from top fund`"></span>
       </div>
       <div class="px-3 py-3">
-        <div x-html="scoreDecompSvg" class="w-full" style="height: 28px"></div>
+        <div class="decomp-bar">
+          <template x-for="c in scoreDecompBar" :key="c.etf">
+            <div class="decomp-seg" :style="`width: ${c.width}%; background: ${c.color}`" x-text="c.text"></div>
+          </template>
+        </div>
         <!-- Legend with per-ETF breakdown -->
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-1 mt-2 text-[10px]">
           <template x-for="c in scoreDecompRows" :key="c.etf">
             <div class="flex items-center gap-1.5 cursor-pointer hover:bg-white/5 px-1 rounded"
                  @click="window.location.href = `index.html#etf=${c.etf}`"
-                 x-tooltip="`'Rank #'+c.rank+' in '+c.etf+' · weight '+(c.weight*100).toFixed(2)+'% · score '+c.score.toFixed(0)`">
+                 x-tooltip="`Rank #${c.rank} in ${c.etf} · weight ${(c.weight * 100).toFixed(2)}% · contributes ${c.score.toFixed(1)}`">
               <span class="inline-block w-2 h-2 rounded-sm" :style="`background: ${c.color}`"></span>
               <span class="font-mono font-medium" :style="`color: ${c.color}`" x-text="c.etf"></span>
               <span class="font-mono" style="color: var(--text-2)" x-text="`${c.pct}%`"></span>
@@ -517,18 +533,28 @@
              if (!host || fh.length < 2) return;
              const rect = host.getBoundingClientRect();
              const rx = $event.clientX - rect.left;
-             const idx = Math.round((rx / rect.width) * (fh.length - 1));
+             const idx = Math.floor((rx / rect.width) * fh.length);
              tlci = Math.max(0, Math.min(fh.length - 1, idx));
-             tlcx = (tlci / Math.max(1, fh.length - 1)) * rect.width;
+             tlcx = (rect.left - $el.getBoundingClientRect().left) + ((tlci + 0.5) / fh.length) * rect.width;
            "
            @mouseleave="tlci = null; tlcx = null">
-        <!-- State bars + rank line - built as SVG string (Alpine 3 SVG-template fix) -->
-        <div data-tlsvg x-html="signalTimelineSvg" class="w-full" :style="`height: ${signalTimelineHeight}px`"></div>
-        <!-- X-axis date ticks (5 labels) -->
-        <div class="flex justify-between text-[9px] font-mono mt-1" style="color: var(--text-3)">
-          <template x-for="d in timelineDateTicks" :key="d">
-            <span x-text="d"></span>
-          </template>
+        <div class="flex gap-2">
+          <!-- Lane labels (HTML, so the stretched SVG cannot distort them) -->
+          <div class="relative shrink-0" :style="`width: 44px; height: ${signalTimelineHeight}px`">
+            <template x-for="l in timelineLaneLabels" :key="l.label">
+              <div class="tl-lane-label" :style="`top: ${l.top}px; height: ${l.h}px; color: ${l.color}`" x-text="l.label"></div>
+            </template>
+          </div>
+          <div class="flex-1 min-w-0">
+            <!-- State bars + rank line - built as SVG string (Alpine 3 SVG-template fix) -->
+            <div data-tlsvg x-html="signalTimelineSvg" class="w-full" :style="`height: ${signalTimelineHeight}px`"></div>
+            <!-- X-axis date ticks (5 labels) -->
+            <div class="flex justify-between text-[9px] font-mono mt-1" style="color: var(--text-3)">
+              <template x-for="d in timelineDateTicks" :key="d">
+                <span x-text="d"></span>
+              </template>
+            </div>
+          </div>
         </div>
         <!-- Duration summary chips -->
         <div class="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-[10px] font-mono">
@@ -744,7 +770,7 @@
                       <!-- HC chip when stock is High Conviction overall -->
                       <span x-show="!row.is_new && leaderboardRow?.flag === 'HIGH_CONVICTION'" class="chip"
                             style="background: rgba(52,211,153,0.10); color: var(--up); border: 1px solid rgba(52,211,153,0.25)"
-                            x-tooltip="`'Held by ' + leaderboardRow?.etf_count + ' ETFs · HC streak ' + (leaderboardRow?.hc_streak || 0) + ' days'`">HC</span>
+                            x-tooltip="`Held by ${leaderboardRow?.etf_count} ETFs · HC streak ${leaderboardRow?.hc_streak || 0} days`">HC</span>
                       <!-- em-dash fallback - never empty -->
                       <span x-show="!row.is_new && leaderboardRow?.flag !== 'HIGH_CONVICTION'"
                             class="text-xs text-zinc-600" style="margin-left: 2px">—</span>
@@ -1519,27 +1545,14 @@ function stockApp() {
       return comps;
     },
 
-    get scoreDecompSvg() {
+    get scoreDecompBar() {
       const rows = this.scoreDecompRows;
-      if (!rows.length) return '';
-      const W = 1000, H = 28;
-      const total = rows.reduce((s, c) => s + c.score, 0) || 1;
-      let x = 0;
-      let parts = '';
-      for (let i = 0; i < rows.length; i++) {
-        const c = rows[i];
-        const w = (c.score / total) * W;
-        // Inner bar
-        parts += `<rect x="${x.toFixed(2)}" y="0" width="${w.toFixed(2)}" height="${H}" fill="${c.color}" fill-opacity="0.7" stroke="rgba(0,0,0,0.5)" stroke-width="0.5"/>`;
-        // ETF label inside if wide enough
-        if (w >= 50) {
-          parts += `<text x="${(x + w / 2).toFixed(2)}" y="${(H / 2 + 1).toFixed(2)}" text-anchor="middle" dominant-baseline="middle" style="font-family:ui-monospace;font-size:10px;font-weight:600;fill:#fff;pointer-events:none">${c.etf}</text>`;
-        } else if (w >= 24) {
-          parts += `<text x="${(x + w / 2).toFixed(2)}" y="${(H / 2 + 1).toFixed(2)}" text-anchor="middle" dominant-baseline="middle" style="font-family:ui-monospace;font-size:9px;fill:#fff;pointer-events:none">${c.pct}%</text>`;
-        }
-        x += w;
-      }
-      return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" width="100%" height="${H}" style="display:block;border-radius:3px;overflow:hidden">${parts}</svg>`;
+      const total = rows.reduce((t, c) => t + c.score, 0) || 1;
+      return rows.map(c => {
+        const share = c.score / total;
+        return { etf: c.etf, color: c.color, width: (share * 100).toFixed(3),
+                 text: share >= 0.07 ? c.etf : share >= 0.035 ? `${c.pct}%` : '' };
+      });
     },
 
     // ── Signal Timeline SVG (multi-lane Gantt - each signal gets its own row) ──
@@ -1554,6 +1567,16 @@ function stockApp() {
         { key: 'quality',  label: 'QUAL',    always: false, color: 'rgba(52,211,153,',  bright: '0.7)', dim: '0.35)' },
         { key: 'conc',     label: 'CONC',    always: false, color: 'rgba(251,146,60,',  bright: '0.9)', dim: '0.45)' },
       ];
+    },
+
+    get timelineLaneLabels() {
+      const LANE_H = 14, LANE_GAP = 3, RANK_H = 32;
+      const active = this._activeLaneKeys;
+      const lanes = this._allLaneDefs().filter(l => active.has(l.key));
+      const out = lanes.map((l, i) => ({ label: l.label, color: l.color + '0.75)', top: i * (LANE_H + LANE_GAP), h: LANE_H }));
+      const lanesTotal = lanes.length * LANE_H + Math.max(0, lanes.length - 1) * LANE_GAP;
+      out.push({ label: 'RANK', color: 'rgba(255,255,255,0.4)', top: lanesTotal + 8, h: RANK_H });
+      return out;
     },
 
     get signalTimelineHeight() {
@@ -1582,7 +1605,7 @@ function stockApp() {
       const RANK_Y = LANES_TOTAL + 8;
       const H = RANK_Y + RANK_H + 6;
 
-      const padL = 36, padR = 4;
+      const padL = 0, padR = 0;   // lane labels are HTML (timelineLaneLabels)
       const innerW = W - padL - padR;
       const barW = Math.max(1.2, (innerW / n) * 0.96);
       const xAt = i => padL + ((i + 0.5) / n) * innerW;
@@ -1609,15 +1632,6 @@ function stockApp() {
         }
         return out;
       });
-
-      // ── Lane labels ──────────────────────────────────────────────────────
-      let labels = '';
-      for (let li = 0; li < nLanes; li++) {
-        const lane = LANES[li];
-        const y = li * (LANE_H + LANE_GAP) + LANE_H / 2 + 1;
-        labels += `<text x="${padL - 4}" y="${y + 3}" text-anchor="end" style="font-family:ui-monospace;font-size:8px;font-weight:600;fill:${lane.color}0.6)">${lane.label}</text>`;
-      }
-      labels += `<text x="${padL - 4}" y="${RANK_Y + RANK_H / 2 + 3}" text-anchor="end" style="font-family:ui-monospace;font-size:8px;fill:rgba(255,255,255,0.35)">RANK</text>`;
 
       // ── Lane backgrounds ─────────────────────────────────────────────────
       let bg = '';
@@ -1700,7 +1714,7 @@ function stockApp() {
         }
       }
 
-      return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" width="100%" height="${H}" style="display:block">${bg}${labels}${bars}${markers}${rankLine}${crosshair}</svg>`;
+      return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" width="100%" height="${H}" style="display:block">${bg}${bars}${markers}${rankLine}${crosshair}</svg>`;
     },
 
     get lbRankSvg() {
@@ -1713,7 +1727,7 @@ function stockApp() {
       const yLabels = this.lbYLabels || [];
       for (const lab of yLabels) {
         grid += `<line x1="${xLeft}" x2="${xRight}" y1="${lab.y.toFixed(1)}" y2="${lab.y.toFixed(1)}" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>`;
-        grid += `<text x="44" y="${(lab.y + 3).toFixed(1)}" text-anchor="end" style="font-family:ui-monospace;font-size:9px;fill:var(--text-3)">#${lab.rank}</text>`;
+        grid += `<text x="44" y="${(lab.y + 3).toFixed(1)}" text-anchor="end" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:9px;fill:var(--text-3)">#${lab.rank}</text>`;
       }
 
       // 2. Area fill + path
@@ -1733,7 +1747,7 @@ function stockApp() {
       if (bw && bw.best && Number.isFinite(bw.best.x) && Number.isFinite(bw.best.y)) {
         bestMarker = `<g>
           <circle cx="${bw.best.x.toFixed(1)}" cy="${bw.best.y.toFixed(1)}" r="4" fill="var(--up)" stroke="#000" stroke-width="1"/>
-          <text x="${bw.best.x.toFixed(1)}" y="${(bw.best.y - 8).toFixed(1)}" text-anchor="middle" style="font-family:ui-monospace;font-size:8px;fill:var(--up)">Best #${bw.best.rank}</text>
+          <text x="${bw.best.x.toFixed(1)}" y="${(bw.best.y - 8).toFixed(1)}" text-anchor="middle" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:8px;fill:var(--up)">Best #${bw.best.rank}</text>
         </g>`;
       }
 
@@ -1753,7 +1767,7 @@ function stockApp() {
         const first = this.lbRankSeries[0]?.d || '';
         const mid = this.lbRankSeries[Math.floor(this.lbRankSeries.length / 2)]?.d || '';
         const last = this.lbRankSeries[this.lbRankSeries.length - 1]?.d || '';
-        xAxis = `<g style="font-family:ui-monospace;font-size:9px" fill="var(--text-3)">
+        xAxis = `<g style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:9px" fill="var(--text-3)">
           <text x="${xLeft}" y="225" text-anchor="start">${first}</text>
           <text x="530" y="225" text-anchor="middle">${mid}</text>
           <text x="${xRight}" y="225" text-anchor="end">${last}</text>
@@ -1773,7 +1787,9 @@ function stockApp() {
         let lo = 0, hi = pts.length - 1;
         while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (pts[mid].d <= d) lo = mid; else hi = mid; }
         const a = pts[lo], b = pts[hi];
-        const t = (b.d === a.d) ? 0 : (d - a.d) / (b.d - a.d);
+        // Dates are ISO strings: interpolate on timestamps (string subtraction is NaN).
+        const ta = Date.parse(a.d), tb = Date.parse(b.d);
+        const t = (tb === ta) ? 0 : (Date.parse(d) - ta) / (tb - ta);
         return a.x + t * (b.x - a.x);
       };
       for (let i = 1; i < (this.fundCountByDate || []).length; i++) {
@@ -1790,7 +1806,7 @@ function stockApp() {
         const jx = xAtDate(j.date).toFixed(1);
         jumpMarker = `<g><title>Universe expanded ${j.funds_before}&#8594;${j.funds_after} ETFs on ${j.date}</title>` +
           `<line x1="${jx}" y1="10" x2="${jx}" y2="210" stroke="rgba(251,191,36,0.55)" stroke-width="1" stroke-dasharray="4 4"/>` +
-          `<text x="${(Number(jx) + 5).toFixed(1)}" y="206" transform="rotate(-90 ${(Number(jx) + 5).toFixed(1)} 206)" text-anchor="start" style="font-family:ui-monospace;font-size:8px;fill:rgba(251,191,36,0.75)">Universe ${j.funds_before}&#8594;${j.funds_after} ETFs</text></g>`;
+          `<text x="${(Number(jx) + 5).toFixed(1)}" y="206" transform="rotate(-90 ${(Number(jx) + 5).toFixed(1)} 206)" text-anchor="start" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:8px;fill:rgba(251,191,36,0.75)">Universe ${j.funds_before}&#8594;${j.funds_after} ETFs</text></g>`;
       }
 
       return `<svg viewBox="0 0 ${W} ${H}" class="w-full" style="height: 210px">
@@ -1824,7 +1840,7 @@ function stockApp() {
       let grid = '';
       for (const lab of yLabels) {
         grid += `<line x1="${xLeft}" x2="${xRight}" y1="${lab.y}" y2="${lab.y}" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>`;
-        grid += `<text x="${xLeft - 6}" y="${lab.y + 3}" text-anchor="end" style="font-family:ui-monospace;font-size:9px;fill:var(--text-3)">#${lab.rank}</text>`;
+        grid += `<text x="${xLeft - 6}" y="${lab.y + 3}" text-anchor="end" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:9px;fill:var(--text-3)">#${lab.rank}</text>`;
       }
 
       // 2. One group per ETF - glow stroke, main line, end-of-line pill
@@ -1842,7 +1858,7 @@ function stockApp() {
         // End-of-line rank pill
         const px = line.endX + 4, py = line.endY - 7;
         pathStr += `<rect x="${px.toFixed(1)}" y="${py.toFixed(1)}" width="32" height="14" rx="3" fill="${line.color}" fill-opacity="0.15" stroke="${line.color}" stroke-opacity="0.4" stroke-width="0.5"/>`;
-        pathStr += `<text x="${(line.endX + 20).toFixed(1)}" y="${(line.endY + 3).toFixed(1)}" text-anchor="middle" fill="${line.color}" style="font-family:ui-monospace;font-size:9px;font-weight:600">#${lastPt.r}</text>`;
+        pathStr += `<text x="${(line.endX + 20).toFixed(1)}" y="${(line.endY + 3).toFixed(1)}" text-anchor="middle" fill="${line.color}" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:9px;font-weight:600">#${lastPt.r}</text>`;
       }
 
       // 3. Crosshair (vertical line + dots on each ETF where data exists)
@@ -1863,7 +1879,7 @@ function stockApp() {
       let xAxis = '';
       if (dates.length >= 2) {
         const mid = dates[Math.floor(dates.length / 2)] || '';
-        xAxis = `<g style="font-family:ui-monospace;font-size:9px" fill="var(--text-3)">
+        xAxis = `<g style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:9px" fill="var(--text-3)">
           <text x="${xLeft}" y="242" text-anchor="start">${dates[0]}</text>
           <text x="${(xLeft + xRight) / 2}" y="242" text-anchor="middle">${mid}</text>
           <text x="${xRight}" y="242" text-anchor="end">${dates[dates.length - 1]}</text>

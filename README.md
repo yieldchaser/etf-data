@@ -185,7 +185,7 @@ Score    = B × M_conc × M_breadth × M_universe
 | `M_breadth` | 1.00–1.35 | Strategy dispersal — entropy of score across the 5 tiers (the only breadth reward) |
 | `M_universe` | 0.80–1.25 | Opportunity normalization — levels international names (the only regional levelling) |
 
-`final_score` / `leaderboard_rank` is the single canonical score and rank (one decimal). `apex_score` / `apex_rank` remain in the payload as aliases. `velocity_z` / `ignition_z` are display diagnostics only.
+`final_score` / `leaderboard_rank` is the single canonical score and rank (one decimal). `apex_score` / `apex_rank` remain in the payload as aliases. The score-velocity diagnostics (`velocity_z` / `ignition_z`) were removed with the APEX kicker.
 
 ### Tier Points
 
@@ -268,7 +268,9 @@ Built with Tailwind CSS + Alpine.js. Zero build step — static HTML/JS served d
 ### Dashboard Tabs
 
 #### Leaderboard
-- ~3,950 unique tickers ranked by Final Alpha Score
+- KPI strip: names tracked, High Conviction (with Pre-HC count), BURST and CRATER (with the date each last fired when none are live), names losing funds
+- Today's signals strip: warnings (CRATER, Funds ↓) beside building names (BURST, HC entries, Pre-HC, Stealth), up to four each
+- ~3,800 unique tickers ranked by the v4 conviction score (`final_score`, one decimal)
 - Sortable columns: score, rank, rank delta, burst, concentration, tier breadth, ticker, company (3-way click sort toggle: desc → asc → default, with alphabetical columns and rank defaulting to ascending on first click)
 - Day-over-day score deltas with honest `—` display when no comparable past data exists
 - HC streaks, percentile-of-own-history progress bars
@@ -309,6 +311,8 @@ Every table shows rank then → now, funds then → now and score, with the name
 - Compare mode: side-by-side cards for top 4 pinned tickers
 
 ### Stock Detail (`stock.html`)
+
+- **KPI cards**: ten, in two rows — where the name stands (score, rank, funds, convinced holders, top-fund share) and how it is moving (score Δ 1d, rank Δ 30d, funds Δ 30d, score streak, HC streak)
 
 - **Score History**: sparkline area chart, score accumulation over time
 - **Global Rank History**: inverted Y-axis line chart, O(1) pre-computed lookup

@@ -142,6 +142,9 @@ def accumulation_velocity(score_pnl: pd.DataFrame, window: int = 10) -> pd.DataF
     """
     §31 OLS accumulation velocity over the trailing `window` snapshots.
 
+    Research only: the APEX kicker built on it was removed from the engine in
+    2026-10; scripts/scoring_study.py uses it to reproduce that test (V7).
+
     For each ticker with ≥ 4 non-NaN points in the window:
         x_i       = (date_i − first window date).days   (actual date spacing)
         slope     = cov(x, y) / var(x)                  (OLS on final_score)
@@ -296,51 +299,6 @@ def screening_signals(leaderboard: pd.DataFrame, etf_count_14d_ago: pd.Series, c
                      & (out["strategy_tier_count"] >= cfg.high_conviction_min_tiers)
                      & (out["avg_rank_delta_7d"] > 0)
                      & (out["score_streak"].fillna(0) >= 2))
-    return out
-
-
-def predictive_overlay(leaderboard: pd.DataFrame, score_pnl: pd.DataFrame,
-                       *, v_alpha: float = 0.25, i_alpha: float = 0.10,
-                       window: int = 10) -> pd.DataFrame:
-    """
-    §31 bounded temporal kicker — RESEARCH ONLY since v4 (not used by build).
-
-        apex_score = final_score × (1 + v_alpha·tanh(velocity_z / 2)
-                                      + i_alpha·tanh(ignition_z / 2))
-
-    The 2026-10 walk-forward study (docs/SCORING_V4_STUDY.md) found the kicker
-    moved forward-return IC by < 0.001 at every horizon, so production ranks on
-    final_score alone; build.py emits velocity_z / ignition_z as diagnostics.
-    Kept so the study harness can reproduce the comparison. (The §31.2 m_conv
-    factor that used to ride here was removed: averaging conviction made the
-    score non-monotone in breadth — see conviction.kappa for its replacement.)
-
-    tanh bounds the kicker to ±(v_alpha + i_alpha). apex_score is floored at 0
-    and cast int64; apex_rank is 1..n ordered by (apex_score desc, etf_count
-    desc, total_weight desc). Empty panel → neutral columns.
-    """
-    out = leaderboard.copy()
-    if out.empty or score_pnl is None or score_pnl.empty:
-        out["velocity_z"] = 0.0
-        out["ignition_z"] = 0.0
-        out["apex_score"] = out.get("final_score", pd.Series(dtype="int64"))
-        out["apex_rank"] = out.get("leaderboard_rank", pd.Series(dtype="int64"))
-        return out
-
-    vel = accumulation_velocity(score_pnl, window=window).set_index("ticker")
-    out["velocity_z"] = out["ticker"].map(vel["velocity_z"]).fillna(0.0).round(3) if not vel.empty else 0.0
-    out["ignition_z"] = out["ticker"].map(vel["ignition_z"]).fillna(0.0).round(3) if not vel.empty else 0.0
-
-    kicker = (1.0
-              + v_alpha * np.tanh(out["velocity_z"] / 2.0)
-              + i_alpha * np.tanh(out["ignition_z"] / 2.0))
-    out["apex_score"] = (out["final_score"] * kicker).clip(lower=0.0).astype("int64")
-
-    order = out.sort_values(
-        ["apex_score", "etf_count", "total_weight", "ticker"],
-        ascending=[False, False, False, True],
-    ).index
-    out["apex_rank"] = pd.Series(range(1, len(out) + 1), index=order).astype("int64")
     return out
 
 

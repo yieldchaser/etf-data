@@ -573,24 +573,12 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     print(f"  tier_breadth:   max={int(leaderboard['tier_breadth'].max())} · "
           f"quality_adopted_30d={int(leaderboard['quality_adopted_30d'].sum())}")
 
-    # ── Accumulation velocity diagnostics + single canonical rank (v4) ──────
-    # velocity_z / ignition_z (OLS slope and acceleration of the score over
-    # the trailing 10 snapshots) remain as display diagnostics. They no longer
-    # move the ranking: the 2026-10 walk-forward study found the bounded APEX
-    # kicker changed forward-return IC by < 0.001 (noise) at every horizon,
-    # and the two conviction-averaging factors stacked on it (m_conv and the
-    # §31.1 gate) were non-monotone — adding a low-conviction holder could
-    # LOWER a name's score. Filler discounting now lives in the per-holding
-    # convexity (conviction.kappa), so final_score is the one canonical score.
-    # apex_score / apex_rank are kept as aliases so the JSON schema is stable.
-    vel = hist.accumulation_velocity(score_pnl) if historical else pd.DataFrame()
-    if not vel.empty:
-        vel = vel.set_index("ticker")
-        leaderboard["velocity_z"] = leaderboard["ticker"].map(vel["velocity_z"]).fillna(0.0).round(3)
-        leaderboard["ignition_z"] = leaderboard["ticker"].map(vel["ignition_z"]).fillna(0.0).round(3)
-    else:
-        leaderboard["velocity_z"] = 0.0
-        leaderboard["ignition_z"] = 0.0
+    # ── Single canonical rank (v4) ────────────────────────────────────────
+    # The APEX velocity kicker and the two conviction-averaging factors on top
+    # of it were removed in the 2026-10 study (kicker: < 0.001 IC change at
+    # every horizon; the averaging factors were non-monotone). final_score is
+    # the one canonical score; apex_score / apex_rank stay as aliases so the
+    # JSON schema is stable.
     leaderboard["apex_score"] = leaderboard["final_score"]
     leaderboard["apex_rank"] = leaderboard["leaderboard_rank"]
     leaderboard["median_etf_rank"] = leaderboard["ticker"].map(

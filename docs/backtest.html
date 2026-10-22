@@ -158,7 +158,7 @@
           <!-- Crosshair -->
           <line class="crosshair-line" x-show="hi !== null" :x1="hi !== null ? (hi/(chartDates.length-1))*1000 : 0" y1="0" :x2="hi !== null ? (hi/(chartDates.length-1))*1000 : 0" y2="300"/>
           <!-- X-axis labels -->
-          <g style="font-family:ui-monospace;font-size:9px" fill="var(--text-3)">
+          <g style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:9px" fill="var(--text-3)">
             <text x="0" y="298" text-anchor="start" x-text="chartDates[0]?.slice(0,7)||''"></text>
             <text x="500" y="298" text-anchor="middle" x-text="chartDates[Math.floor(chartDates.length/2)]?.slice(0,7)||''"></text>
             <text x="1000" y="298" text-anchor="end" x-text="chartDates[chartDates.length-1]?.slice(0,7)||''"></text>
