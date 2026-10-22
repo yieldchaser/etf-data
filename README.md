@@ -237,7 +237,7 @@ Legacy (`weight% × 100 × tier_points × rank_multiplier + new bonus`) and conv
 | **CONCENTRATED** | One fund supplies ≥ 85% of linear conviction mass (Σ points × C), or a lone fund holds it at ≥ 4× equal-weight | Single-fund story — a risk descriptor, not a buy signal (no consistent return edge in the 2026-10 audit) |
 | **NEW** | First appearance within the 14-day lookback; suppressed for ETFs younger than the 30-day maturity baseline | Short-horizon entrant (1.38× accumulation lift ≤ 7d, 0.65× by 30d) |
 
-Per-name motion signals `BURST` / `CRATER` and the screening chips (Funds ↓, Funds ↑, Pre-HC, Stealth, Quality+) are documented under [Analytical Signals](#analytical-signals). `SPECULATIVE_BETA` was retired in the 2026-10 signal audit (no edge in either regime).
+Per-name motion signals `BURST` / `CRATER`, the momentum tags `SURGE` / `SLIDE`, and the screening chips (Funds ↓, Funds ↑, Pre-HC, Stealth, Quality+) are documented under [Analytical Signals](#analytical-signals). `SPECULATIVE_BETA` was retired in the 2026-10 signal audit (no edge in either regime).
 
 ### Sanitizer
 
@@ -317,7 +317,7 @@ Every table shows rank then → now, funds then → now and score, with the name
 - **Score History**: sparkline area chart, score accumulation over time
 - **Global Rank History**: inverted Y-axis line chart, O(1) pre-computed lookup
 - **Per-ETF Rank History**: multi-line chart, tier-based coloring, crosshair tooltips
-- **Signal Timeline**: Gantt-style multi-lane chart — per-day signal history (`flag`, `burst`, `crater`, quality adoption, rank, holder count) stored compactly per day in `flag_history.json`, with rank overlay, hover crosshair, duration counters
+- **Signal Timeline**: Gantt-style multi-lane chart — per-day signal history (`flag`, `burst`, `crater`, SURGE / SLIDE, quality adoption, rank, holder count) stored compactly per day in `flag_history.json`, with rank overlay, hover crosshair, duration counters
 - **Score Decomposition Bar**: stacked bar showing each ETF's contribution, colored by tier
 - **Tier Breadth chip**: how many distinct strategy types co-hold this name (1–5)
 - **Quality+ chip**: gained a Quality-tier ETF in last 30 days (set derived from config)

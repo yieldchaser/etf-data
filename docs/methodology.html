@@ -67,7 +67,7 @@
       </div>
       <h1 class="text-xl font-medium" style="color: var(--text)">How Conviction Labs works</h1>
       <div class="text-xs mt-1" style="color: var(--text-3)">A plain-language explanation of the scoring engine, motion signals, and what it does &amp; doesn't measure.</div>
-      <div class="label mt-2" style="color: var(--text-3)">Last updated: 2026-10-23</div>
+      <div class="label mt-2" style="color: var(--text-3)">Last updated: 2026-10-22</div>
     </div>
     <nav class="top flex flex-wrap gap-1 text-xs">
       <a href="index.html">Dashboard</a>
@@ -245,6 +245,7 @@ Score         = B × M<sub>conc</sub> × M<sub>breadth</sub> × M<sub>universe</
       <tr><td><strong>NEW</strong></td><td>First appearance within the 14-day lookback; suppressed for ETFs younger than the 30-day maturity baseline</td><td>Factual entry event, momentum-exposed (§4.4)</td></tr>
       <tr><td><strong>BURST</strong></td><td>Smoothed rank ×1.65 better in ~2 weeks, in the top 300, fund added (§4.2)</td><td>Fund-confirmed surge — +5.2% vs peers over 20d in a momentum-friendly market, flat in an unwind</td></tr>
       <tr><td><strong>CRATER</strong></td><td>Smoothed rank ×1.35 worse over ~4 weeks from the top 300, a fund dropped it in that time (§4.3)</td><td>Get-out signal — −1.0% to −2.9% vs peers over 20d in both regimes</td></tr>
+      <tr><td><strong>SURGE / SLIDE</strong></td><td>Smoothed rank ×1.65 better / worse in ~2 weeks in the top 300, <em>no</em> fund change (§4.3b)</td><td>Momentum tag, not a forecast: +2.9% / −2.6% (SURGE) and +0.9% / −1.7% (SLIDE) vs peers over 20d, Feb–May / Jun–Oct</td></tr>
       <tr><td><strong>Quality+</strong></td><td>Gained a Quality-tier ETF in last 30d (Quality set derived from config, not hardcoded)</td><td>Fundamentals lens added — weak but consistent positive (§4.5)</td></tr>
     </tbody>
   </table>

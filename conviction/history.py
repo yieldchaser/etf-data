@@ -468,6 +468,7 @@ def signal_history(
         qa     quality_adopted (omit when False)
         burst  burst_30d (omit when False)
         crater crater_30d (omit when False)
+        sg, sl SURGE / SLIDE momentum tags (omit when False)
 
     Retired signals (2026-08 signal-evaluation study — no forward predictive
     lift / unstable across walk-forward grids): the velocity composite (vs),
@@ -508,15 +509,13 @@ def signal_history(
     # ── 2. BURST / CRATER per date — the shared implementation ───────────────
     motion = cfg.motion if cfg.motion is not None else MotionConfig()
     bc = burst_crater_panels(historical, motion)
-    burst_sets: list[set] = []
-    crater_sets: list[set] = []
+    kinds = ("burst", "crater", "surge", "slide")
+    flag_sets: dict[str, list[set]] = {k: [] for k in kinds}
     for d in dates_sorted:
-        if not bc["burst"].empty and d in bc["burst"].columns:
-            burst_sets.append(set(bc["burst"].index[bc["burst"][d].to_numpy(dtype=bool)]))
-            crater_sets.append(set(bc["crater"].index[bc["crater"][d].to_numpy(dtype=bool)]))
-        else:
-            burst_sets.append(set())
-            crater_sets.append(set())
+        for k in kinds:
+            panel = bc[k]
+            flag_sets[k].append(set(panel.index[panel[d].to_numpy(dtype=bool)])
+                                if not panel.empty and d in panel.columns else set())
 
     # ── 5. Pre-compute per-date quality sets from hb_panel ────────────────────
     # For each (ticker, date_idx): now_q and then_q sets
@@ -547,9 +546,7 @@ def signal_history(
             target_past = d - pd.Timedelta(days=30)
             q_past_di = min(range(di), key=lambda k: abs((dates_sorted[k] - target_past).total_seconds()))
 
-        # Burst set for this date
-        b_set = burst_sets[di] if di < len(burst_sets) else set()
-        c_set = crater_sets[di] if di < len(crater_sets) else set()
+        b_set, c_set, sg_set, sl_set = (flag_sets[k][di] for k in kinds)
 
         # Iterate tickers in this snapshot
         snap_tickers   = snap["ticker"].tolist()
@@ -584,6 +581,12 @@ def signal_history(
             # crater
             if tkr in c_set:
                 entry["crater"] = 1
+
+            # sg / sl — SURGE / SLIDE momentum tags
+            if tkr in sg_set:
+                entry["sg"] = 1
+            if tkr in sl_set:
+                entry["sl"] = 1
 
             result.setdefault(tkr, []).append(entry)
 

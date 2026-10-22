@@ -525,6 +525,8 @@
         <div class="flex items-center gap-3 text-[10px] flex-wrap" style="color: var(--text-2)">
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(168,85,247,0.85)"></span> BURST</span>
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(248,113,113,0.85)"></span> CRATER</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(196,181,253,0.75)"></span> SURGE</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(253,164,175,0.75)"></span> SLIDE</span>
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(52,211,153,0.85)"></span> HC</span>
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(96,165,250,0.75)"></span> NEW</span>
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(52,211,153,0.6)"></span> QUALITY</span>
@@ -567,6 +569,8 @@
         <div class="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-[10px] font-mono">
           <span x-show="timelineStats.burstDays > 0" style="color: #c084fc" x-text="`BURST · ${timelineStats.burstDays}d`"></span>
           <span x-show="timelineStats.craterDays > 0" style="color: #f87171" x-text="`CRATER · ${timelineStats.craterDays}d`"></span>
+          <span x-show="timelineStats.surgeDays > 0" style="color: #c4b5fd" x-text="`SURGE · ${timelineStats.surgeDays}d`"></span>
+          <span x-show="timelineStats.slideDays > 0" style="color: #fda4af" x-text="`SLIDE · ${timelineStats.slideDays}d`"></span>
           <span x-show="timelineStats.hcDays > 0" style="color: var(--up)" x-text="`HC · ${timelineStats.hcDays}d`"></span>
           <span x-show="timelineStats.newDays > 0" style="color: rgba(96,165,250,0.9)" x-text="`NEW · ${timelineStats.newDays}d`"></span>
           <span x-show="timelineStats.qualityDays > 0" style="color: var(--up)" x-text="`QUALITY · ${timelineStats.qualityDays}d`"></span>
@@ -1380,6 +1384,8 @@ function stockApp() {
         if (e.n) keys.add('newentry');
         if (e.qa) keys.add('quality');
         if (e.flag === 'CONCENTRATED') keys.add('conc');
+        if (e.sg) keys.add('surge');
+        if (e.sl) keys.add('slide');
       }
       return keys;
     },
@@ -1388,7 +1394,7 @@ function stockApp() {
       const fh = this.flagHistory || [];
       let hcDays = 0, burstDays = 0, craterDays = 0, neutralDays = 0;
       let newDays = 0;
-      let qualityDays = 0, concDays = 0;
+      let qualityDays = 0, concDays = 0, surgeDays = 0, slideDays = 0;
       for (let i = 0; i < fh.length; i++) {
         const e = fh[i];
         const isB = this._isBurstAt(i);
@@ -1400,12 +1406,14 @@ function stockApp() {
         if (e.n) newDays++;
         if (e.qa) qualityDays++;
         if (flag === 'CONCENTRATED') concDays++;
+        if (e.sg) surgeDays++;
+        if (e.sl) slideDays++;
         const anySignal = isB || isCr || flag === 'HIGH_CONVICTION'
-          || e.n || e.qa || flag === 'CONCENTRATED';
+          || e.n || e.qa || e.sg || e.sl || flag === 'CONCENTRATED';
         if (!anySignal) neutralDays++;
       }
       return { hcDays, burstDays, craterDays, neutralDays,
-               newDays, qualityDays, concDays };
+               newDays, qualityDays, concDays, surgeDays, slideDays };
     },
 
     // Five evenly-spaced date labels for the timeline x-axis
@@ -1430,6 +1438,8 @@ function stockApp() {
       if (e.crater) return { label: 'CRATER', color: '#f87171' };
       if (this._isBurstAt(i)) return { label: 'BURST', color: '#c084fc' };
       if (e.flag === 'HIGH_CONVICTION') return { label: 'HC', color: 'var(--up)' };
+      if (e.sl) return { label: 'SLIDE', color: '#fda4af' };
+      if (e.sg) return { label: 'SURGE', color: '#c4b5fd' };
       if (e.n) return { label: 'NEW', color: 'rgba(96,165,250,0.9)' };
       if (e.qa) return { label: 'Q+', color: 'var(--up)' };
       if (e.flag === 'CONCENTRATED') return { label: 'CONC', color: '#fb923c' };
@@ -1465,6 +1475,8 @@ function stockApp() {
         'BURST':   'BURST - smoothed rank rose ×1.65+ in ~2 weeks, confirmed by a fund adding the name.',
         'CRATER':  'CRATER - smoothed rank fell ×1.35+ over ~4 weeks as a fund dropped the name - the get-out signal.',
         'HC':      `HIGH CONVICTION - held by ${this.leaderboardRow?.etf_count || 0} ETFs · HC streak: ${this.leaderboardRow?.hc_streak || 0} days`,
+        'SURGE':   'SURGE - smoothed rank rose ×1.65+ in ~2 weeks with no fund joining: momentum, not a forecast.',
+        'SLIDE':   'SLIDE - smoothed rank fell ×1.65+ in ~2 weeks with no fund leaving: momentum, not a forecast.',
         'NEW':     'NEW - first appearance in any mature ETF within the last 14 days.',
         'Q+':      'Quality+ - a Quality ETF added this name in the last 30 days.',
         'CONC':    `CONCENTRATED - score concentrated in single ETF (${this.leaderboardRow?.concentration_score || 0}%) · fragile conviction`,
@@ -1491,6 +1503,8 @@ function stockApp() {
       const sigs = [];
       if (this._isBurstAt(this.tlci)) sigs.push({ label: 'BURST',   color: '#c084fc' });
       if (e.crater) sigs.push({ label: 'CRATER',  color: '#f87171' });
+      if (e.sg) sigs.push({ label: 'SURGE',  color: '#c4b5fd' });
+      if (e.sl) sigs.push({ label: 'SLIDE',  color: '#fda4af' });
       if (e.flag === 'HIGH_CONVICTION') sigs.push({ label: 'HC',     color: 'var(--up)' });
       if (e.n)      sigs.push({ label: 'NEW',     color: 'rgba(96,165,250,0.9)' });
       if (e.qa)     sigs.push({ label: 'Q+',      color: 'var(--up)' });
@@ -1569,6 +1583,8 @@ function stockApp() {
       return [
         { key: 'burst',    label: 'BURST',   always: true,  color: 'rgba(168,85,247,',  bright: '1)',    dim: '0.55)' },
         { key: 'crater',   label: 'CRATER',  always: true,  color: 'rgba(248,113,113,', bright: '1)',    dim: '0.55)' },
+        { key: 'surge',    label: 'SURGE',   always: false, color: 'rgba(196,181,253,', bright: '0.85)', dim: '0.45)' },
+        { key: 'slide',    label: 'SLIDE',   always: false, color: 'rgba(253,164,175,', bright: '0.85)', dim: '0.45)' },
         { key: 'hc',       label: 'HC',      always: true,  color: 'rgba(52,211,153,',  bright: '1)',    dim: '0.55)' },
         { key: 'newentry', label: 'NEW',     always: false, color: 'rgba(96,165,250,',  bright: '0.9)', dim: '0.5)'  },
         { key: 'quality',  label: 'QUAL',    always: false, color: 'rgba(52,211,153,',  bright: '0.7)', dim: '0.35)' },
@@ -1621,6 +1637,8 @@ function stockApp() {
       const states = fh.map((e, i) => ({
         burst:    this._isBurstAt(i),
         crater:   !!e.crater,
+        surge:    !!e.sg,
+        slide:    !!e.sl,
         hc:       e.flag === 'HIGH_CONVICTION',
         newentry: !!e.n,
         quality:  !!e.qa,
