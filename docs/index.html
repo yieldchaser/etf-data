@@ -434,7 +434,7 @@
               :class="craterOnly ? 'border-rose-500/50 text-rose-300' : ''"
               class="chip border px-2 py-1 transition hover:border-rose-500/40"
               style="border-color: var(--border-2)"
-              x-tooltip="'CRATER - smoothed rank fell 1.65x+ from inside the top 300 over ~2 weeks, confirmed by a fund DROPPING the name. The get-out signal: -1.7% to -2.0% vs peers over 20 days in both regimes.'"
+              x-tooltip="'CRATER - smoothed rank fell 1.65x+ from inside the top 300 over ~4 weeks, confirmed by a fund DROPPING the name. The get-out signal: -1.3% to -2.4% vs peers over 20 days in both regimes.'"
               x-text="`CRATER ${counts.CRATER || 0}`"></button>
       <button @click="fundsDownOnly = !fundsDownOnly; fundsUpOnly = false"
               :class="fundsDownOnly ? 'border-rose-400/50 text-rose-300' : ''"
@@ -1125,7 +1125,7 @@
                 :class="craterOnly ? 'border-rose-500/50 text-rose-300' : ''"
                 class="chip border px-2 py-1 transition hover:border-rose-500/40"
                 style="border-color: var(--border-2)"
-                x-tooltip="'CRATER - smoothed rank fell 1.65x+ from inside the top 300 over ~2 weeks, confirmed by a fund DROPPING the name. The get-out signal: -1.7% to -2.0% vs peers over 20 days in both regimes.'"
+                x-tooltip="'CRATER - smoothed rank fell 1.65x+ from inside the top 300 over ~4 weeks, confirmed by a fund DROPPING the name. The get-out signal: -1.3% to -2.4% vs peers over 20 days in both regimes.'"
                 x-text="`CRATER ${counts.CRATER || 0}`"></button>
         <button @click="fundsDownOnly = !fundsDownOnly; fundsUpOnly = false"
                 :class="fundsDownOnly ? 'border-rose-400/50 text-rose-300' : ''"
@@ -2523,7 +2523,7 @@ function app() {
           delta: yc.CRATER != null ? c.CRATER - yc.CRATER : null,
           deltaColor: this.deltaColor((yc.CRATER || 0) - c.CRATER),
           sub: lastFired('CRATER', c.CRATER),
-          tooltip: 'CRATER - smoothed rank down 1.65x+ in ~2 weeks from the top 300, confirmed by a fund dropping the name. The get-out signal; quiet between fund rebalances.' },
+          tooltip: 'CRATER - smoothed rank down 1.65x+ in ~4 weeks from the top 300, confirmed by a fund dropping the name. The get-out signal; quiet between fund rebalances.' },
         { label: 'losing funds', value: c.FUNDS_DOWN, color: 'var(--amber)',
           sub: `top 200 · 14 days · ${c.FUNDS_UP} gaining`,
           tooltip: 'Top-200 names that lost a holding fund in the last 14 days - the steadiest downside warning in the data. "Gaining" counts top-200 names that added a fund over 30 days.' },
@@ -2630,7 +2630,7 @@ function app() {
       hc_entered:  { title: 'Entered High Conviction', tone: 'up',   metric: 'rank',  hint: 'Met the HC rule now, not at the start',        empty: 'No new High Conviction names' },
       hc_exited:   { title: 'Left High Conviction',  tone: 'down',   metric: 'rank',  hint: 'Met the HC rule at the start, not now',        empty: 'No name lost High Conviction' },
       burst:       { title: 'BURST in force',        tone: 'burst',  metric: 'rank',  hint: 'Smoothed rank ×1.65+ in ~2 weeks, fund-confirmed', empty: '' },
-      crater:      { title: 'CRATER in force',       tone: 'crater', metric: 'rank',  hint: 'Smoothed rank ÷1.65+ in ~2 weeks, a fund exited', empty: '' },
+      crater:      { title: 'CRATER in force',       tone: 'crater', metric: 'rank',  hint: 'Smoothed rank ÷1.65+ in ~4 weeks, a fund exited', empty: '' },
       climbers:    { title: 'Rank climbers',         tone: 'up',     metric: 'rank',  hint: 'Largest rank multiple · now in the top 300',   empty: 'No material rank gains in the top 300' },
       fallers:     { title: 'Rank fallers',          tone: 'down',   metric: 'rank',  hint: 'Largest rank multiple · was in the top 300',   empty: 'No material rank losses in the top 300' },
       new:         { title: 'New on the board',      tone: 'neutral', metric: 'funds', hint: 'Held now, by no fund at the start',           empty: 'No new names' },
@@ -2781,7 +2781,7 @@ function app() {
         const to = r.motion_rank_then || 0;
         push(warn, card(r, 'crater', 'CRATER', B('', '248,113,113', '#f87171'),
           `#${to} → #${to + (r.crater_rank_loss || 0)} · ${r.motion_funds_delta || 0} fund`,
-          'CRATER - smoothed rank fell ×1.65+ in ~2 weeks as a fund dropped the name. The get-out signal.'));
+          'CRATER - smoothed rank fell ×1.65+ in ~4 weeks as a fund dropped the name. The get-out signal.'));
       }
       for (const r of lb.filter(r => r.funds_down).sort(byRank)) {
         push(warn, card(r, 'fdown', 'FUNDS ↓', B('', '251,191,36', 'var(--amber)'),
@@ -3617,7 +3617,7 @@ function app() {
       const b = [];
       const to = (row.motion_rank_then || 0);
       if (row.crater_30d) b.push(B('crater', 'CRATER', '248,113,113', '#f87171',
-        `CRATER - smoothed rank #${to} to #${to + (row.crater_rank_loss || 0)} in ~2 weeks as ${Math.abs(row.motion_funds_delta || 0)} fund(s) dropped it. Lagged peers by 1.7-2% over 20 days in both regimes - the get-out signal.`));
+        `CRATER - smoothed rank #${to} to #${to + (row.crater_rank_loss || 0)} in ~4 weeks as ${Math.abs(row.motion_funds_delta || 0)} fund(s) dropped it. Lagged peers by 1.3-2.4% over 20 days in both regimes - the get-out signal.`));
       if (row.funds_down && !row.crater_30d) b.push(B('fdown', 'FUNDS ↓', '251,191,36', 'var(--amber)',
         `Funds down - lost ${Math.abs(row.etf_count_delta_14d || 0)} holding fund(s) in the last 14 days. The steadiest warning in the data (-2.7% / -7.0% vs peers over 20 days).`));
       if (row.burst_30d) b.push(B('burst', 'BURST', '168,85,247', '#c084fc',
@@ -3647,7 +3647,7 @@ function app() {
         return `Burst - smoothed rank +${row.burst_rank_gain ?? 0} positions in ~2 weeks, confirmed by +${row.motion_funds_delta ?? 0} fund(s).`;
       }
       if (row.crater_30d) {
-        return `Crater - smoothed rank −${row.crater_rank_loss ?? 0} positions in ~2 weeks as ${Math.abs(row.motion_funds_delta ?? 0)} fund(s) dropped it. Consider exiting.`;
+        return `Crater - smoothed rank −${row.crater_rank_loss ?? 0} positions in ~4 weeks as ${Math.abs(row.motion_funds_delta ?? 0)} fund(s) dropped it. Consider exiting.`;
       }
       if (row.quality_adopted_30d) return 'Quality cosign added in last 30 days - institutional validation.';
       if (row.flag === 'CONCENTRATED') return 'Single-fund dependency - score rests on one ETF.';

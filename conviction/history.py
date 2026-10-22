@@ -230,40 +230,49 @@ def burst_crater_panels(historical: dict[pd.Timestamp, pd.DataFrame], motion) ->
     rank-relative size, a relevance floor and fund confirmation fix each of
     those (docs/SIGNALS_STUDY.md).
 
-    Returns ticker × date frames: burst, crater (bool), rank_then, rank_now
-    (smoothed ranks k snapshots apart) and funds_delta (holder-count change
-    over the same k snapshots).
+    Returns ticker × date frames: burst, crater (bool), rank_now (smoothed),
+    rank_then / funds_delta (BURST's window: smoothed rank and holder change
+    over lookback_snapshots) and crater_rank_then / crater_funds_delta (the
+    same over CRATER's longer crater_lookback_snapshots).
     """
     dates = sorted(historical.keys())
     empty = pd.DataFrame()
     if len(dates) < 2:
-        return {"burst": empty, "crater": empty, "rank_then": empty, "rank_now": empty, "funds_delta": empty}
+        return {"burst": empty, "crater": empty, "rank_then": empty, "rank_now": empty,
+                "funds_delta": empty, "crater_rank_then": empty, "crater_funds_delta": empty}
 
     def _panel(col: str) -> pd.DataFrame:
         cols = {d: historical[d].set_index("ticker")[col] for d in dates if col in historical[d].columns}
         return pd.DataFrame(cols).sort_index(axis=1)
 
     k = motion.lookback_snapshots
+    kc = getattr(motion, "crater_lookback_snapshots", k)
     ranks = _panel("leaderboard_rank").astype(float)
     funds = _panel("etf_count").reindex(index=ranks.index, columns=ranks.columns).fillna(0)
     smooth = ranks.T.rolling(motion.smooth_snapshots, min_periods=motion.smooth_snapshots).median().T
+
+    # BURST — over k snapshots
     then = smooth.shift(k, axis=1)
     funds_delta = funds - funds.shift(k, axis=1)
     win_best = smooth.T.rolling(k + 1, min_periods=k + 1).min().T
-    win_worst = smooth.T.rolling(k + 1, min_periods=k + 1).max().T
-    log_move = np.log(then / smooth)                    # + = rank number fell = improved
-
-    burst = ((log_move >= motion.min_log_rank_move)
+    burst = ((np.log(then / smooth) >= motion.min_log_rank_move)
              & (smooth <= motion.relevance_rank)
              & (np.log(smooth / win_best) <= motion.persist_log_tol))
-    crater = ((-log_move >= motion.min_log_rank_move)
-              & (then <= motion.relevance_rank)
+
+    # CRATER — over kc snapshots: a fund's exit often comes before the slide
+    crater_then = smooth.shift(kc, axis=1)
+    crater_funds_delta = funds - funds.shift(kc, axis=1)
+    win_worst = smooth.T.rolling(kc + 1, min_periods=kc + 1).max().T
+    crater = ((np.log(smooth / crater_then) >= motion.min_log_rank_move)
+              & (crater_then <= motion.relevance_rank)
               & (np.log(win_worst / smooth) <= motion.persist_log_tol))
+
     if motion.require_fund_confirmation:
         burst &= funds_delta >= 1
-        crater &= funds_delta <= -1
+        crater &= crater_funds_delta <= -1
     return {"burst": burst.fillna(False), "crater": crater.fillna(False),
-            "rank_then": then, "rank_now": smooth, "funds_delta": funds_delta}
+            "rank_then": then, "rank_now": smooth, "funds_delta": funds_delta,
+            "crater_rank_then": crater_then, "crater_funds_delta": crater_funds_delta}
 
 
 def screening_signals(leaderboard: pd.DataFrame, etf_count_14d_ago: pd.Series, cfg: Config) -> pd.DataFrame:

@@ -588,12 +588,18 @@ class MotionConfig:
       BURST  — log(R̃[t−k] / R̃[t]) ≥ min_log_rank_move, R̃[t] ≤ relevance_rank,
                R̃[t] within persist_log_tol of the window's best, and the name
                GAINED ≥ 1 holding fund over the k snapshots.
-      CRATER — log(R̃[t] / R̃[t−k]) ≥ min_log_rank_move, R̃[t−k] ≤ relevance_rank,
+      CRATER — the mirror over kc = crater_lookback_snapshots:
+               log(R̃[t] / R̃[t−kc]) ≥ min_log_rank_move, R̃[t−kc] ≤ relevance_rank,
                R̃[t] within persist_log_tol of the window's worst, and the name
-               LOST ≥ 1 holding fund.
+               LOST ≥ 1 holding fund over the kc snapshots. A fund's exit often
+               comes BEFORE the slide (Yageo, 2026-07: PIE sold ~13 snapshots
+               before the rank fell ×1.65), which a 10-snapshot window misses.
+               A 20-snapshot CRATER keeps its edge in both regimes; the same
+               widening hurt BURST, which stays at k (docs/SIGNALS_STUDY.md §3).
     """
     smooth_snapshots: int = 3
     lookback_snapshots: int = 10
+    crater_lookback_snapshots: int = 20  # CRATER's window (rank move + fund exit)
     min_log_rank_move: float = 0.5      # ≈ rank ×1.65 better/worse (e.g. #250 → #150)
     relevance_rank: int = 300
     persist_log_tol: float = 0.15

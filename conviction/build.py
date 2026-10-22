@@ -390,9 +390,13 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
                         "date": fired.index[-1].strftime("%Y-%m-%d"), "count": int(fired.iloc[-1])}
             is_burst = bc["burst"][today_date]
             is_crater = bc["crater"][today_date]
-            bc_rank_then = bc["rank_then"][today_date]
+            # Rank and holder change over the flag's own window (CRATER's is
+            # longer than BURST's).
+            bc_rank_then = bc["rank_then"][today_date].where(
+                ~is_crater, bc["crater_rank_then"][today_date])
             bc_rank_now = bc["rank_now"][today_date]
-            bc_funds = bc["funds_delta"][today_date]
+            bc_funds = bc["funds_delta"][today_date].where(
+                ~is_crater, bc["crater_funds_delta"][today_date])
 
         # 3. ETF count change vs ~30d ago
         past_counts = pd.Series(dtype=float)

@@ -329,7 +329,7 @@ Every table shows rank then → now, funds then → now and score, with the name
 | Signal | Definition |
 |--------|-----------|
 | `BURST` | On the 3-snapshot rolling-median global rank: improved by ≥ ×1.65 (log move ≥ 0.5) over the last 10 snapshots, is now inside the top 300, is still within 15% (log) of its best rank in the window, **and** gained at least one holding fund over the same window. A one-day rank glitch cannot fire it. |
-| `CRATER` | Mirror of BURST: smoothed rank worsened by ≥ ×1.65 over 10 snapshots from a starting position inside the top 300, still near its worst, **and** lost at least one holding fund. The "get out" signal. |
+| `CRATER` | Mirror of BURST over ~4 weeks (20 snapshots): smoothed rank worsened by ≥ ×1.65 from a starting position inside the top 300, still near its worst, **and** lost at least one holding fund over those 20 snapshots. The longer window catches funds that sell before the slide (Yageo, July 2026). The "get out" signal. |
 | `funds_down` (chip) | Inside the top 200 and lost a holding fund in the last 14 days — the most robust single exit warning in the audit |
 | `funds_up` (chip) | Inside the top 200 and gained a holding fund over 30 days |
 | `pre_hc` (chip) | Not yet HC, ≥ 3 funds, ≥ 1 non-Core conviction holder, ≥ 2 non-Core tiers, improving 7-day per-fund ranks and a rising score streak — one step from HIGH_CONVICTION |

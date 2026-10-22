@@ -278,7 +278,7 @@
               style="background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.30)">BURST</span>
         <!-- CRATER -->
         <span x-show="leaderboardRow?.crater_30d" class="chip"
-              x-tooltip="`CRATER - smoothed rank #${leaderboardRow?.motion_rank_then} → #${(leaderboardRow?.motion_rank_then || 0) + (leaderboardRow?.crater_rank_loss || 0)} in ~2 weeks as ${Math.abs(leaderboardRow?.motion_funds_delta || 0)} fund(s) dropped it - the get-out signal`"
+              x-tooltip="`CRATER - smoothed rank #${leaderboardRow?.motion_rank_then} → #${(leaderboardRow?.motion_rank_then || 0) + (leaderboardRow?.crater_rank_loss || 0)} in ~4 weeks as ${Math.abs(leaderboardRow?.motion_funds_delta || 0)} fund(s) dropped it - the get-out signal`"
               style="background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.30)">CRATER</span>
         <!-- Quality+ -->
         <span x-show="leaderboardRow?.quality_adopted_30d" class="chip"
@@ -1456,7 +1456,7 @@ function stockApp() {
       const s = this._stateAt(fh.length - 1);
       const map = {
         'BURST':   'BURST - smoothed rank rose ×1.65+ in ~2 weeks, confirmed by a fund adding the name.',
-        'CRATER':  'CRATER - smoothed rank fell ×1.65+ in ~2 weeks as a fund dropped the name - the get-out signal.',
+        'CRATER':  'CRATER - smoothed rank fell ×1.65+ in ~4 weeks as a fund dropped the name - the get-out signal.',
         'HC':      `HIGH CONVICTION - held by ${this.leaderboardRow?.etf_count || 0} ETFs · HC streak: ${this.leaderboardRow?.hc_streak || 0} days`,
         'NEW':     'NEW - first appearance in any mature ETF within the last 14 days.',
         'Q+':      'Quality+ - a Quality ETF added this name in the last 30 days.',

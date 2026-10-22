@@ -312,6 +312,7 @@ signals:
 motion:
   smooth_snapshots: 3
   lookback_snapshots: 10
+  crater_lookback_snapshots: 20   # CRATER: ~4 weeks — fund exits often come before the slide
   min_log_rank_move: 0.5
   relevance_rank: 300
   persist_log_tol: 0.15

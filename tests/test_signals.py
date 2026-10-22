@@ -54,11 +54,31 @@ class TestBurstCrater:
         assert _flags({"UP": [(r, 3) for r in ranks]}, "burst") == set()
 
     def test_collapse_with_fund_exit_is_crater(self):
-        ranks = [100, 100, 105, 110, 120, 135, 150, 165, 180, 195, 210, 220, 230, 235]
-        funds = [5] * 6 + [4] * 8
+        ranks = [100] * 10 + [100, 100, 105, 110, 120, 135, 150, 165, 180, 195, 210, 220, 230, 235]
+        funds = [5] * 16 + [4] * 8          # CRATER measures over 20 snapshots
         s = {"DOWN": list(zip(ranks, funds))}
         assert _flags(s, "crater") == {"DOWN"}
         assert _flags(s, "burst") == set()
+
+    def test_crater_when_the_fund_exit_precedes_the_slide(self):
+        """Yageo (2327), 2026-07: PIE sold at #6 and the rank slid to #15+
+        about 13 snapshots later — outside a 10-snapshot window, inside
+        CRATER's 20-snapshot one."""
+        ranks = [6] * 12 + [7, 8, 8, 8, 8, 8, 10, 10, 12, 15, 14, 13, 15, 15, 15]
+        funds = [5] * 10 + [4] * 17          # exit 16 snapshots before the last
+        s = {"YAGEO": list(zip(ranks, funds))}
+        assert _flags(s, "crater") == {"YAGEO"}
+
+    def test_crater_needs_an_exit_somewhere_in_its_window(self):
+        ranks = [6] * 12 + [7, 8, 8, 8, 8, 8, 10, 10, 12, 15, 14, 13, 15, 15, 15]
+        assert _flags({"DRIFT": [(r, 5) for r in ranks]}, "crater") == set()
+
+    def test_burst_still_needs_the_add_inside_its_move_window(self):
+        """Widening BURST's window hurt it in the study, so an add 13+
+        snapshots before the surge does not confirm a BURST."""
+        ranks = [260] * 12 + [255, 250, 240, 225, 210, 195, 180, 170, 160, 150, 145, 140, 140, 140, 140]
+        funds = [3] * 10 + [4] * 17
+        assert _flags({"UP": list(zip(ranks, funds))}, "burst") == set()
 
     def test_fall_is_never_a_burst(self):
         """The old 'peak improvement' was worst − best, so a pure fall counted."""

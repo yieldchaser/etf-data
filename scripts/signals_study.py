@@ -11,8 +11,8 @@ partial-snapshot guard on, i.e. the current config):
 
 Candidate rules are re-implemented here as pure functions of the replayed
 per-date leaderboards so variants can be compared; the shipped rule lives in
-conviction/history.burst_crater_panels (the same as "smoothed k10 tau.5
-floor300 +funds" below) and conviction/scoring.py (HIGH_CONVICTION).
+conviction/history.burst_crater_panels (BURST = "smoothed k10 tau.5 floor300
++funds", CRATER = "smoothed k20 tau.5 floor300 +funds" below) and conviction/scoring.py (HIGH_CONVICTION).
 """
 import sys, warnings
 from pathlib import Path
@@ -103,12 +103,12 @@ def cur_flags(i, burst=True):
     ok = (cov / len(w) >= 0.8) | (cov < 15)
     return set(P.index[(rng >= 40) & ok & (sus >= 8)])
 
-def new_flags(i, burst=True, k=10, tau=0.5, floor=300, funds=False, persist=True):
+def new_flags(i, burst=True, k=10, tau=0.5, floor=300, funds=False, persist=True, kf=None):
     """Smoothed, directional, rank-relative rule.
     BURST : log(R̃[t-k] / R̃[t]) ≥ τ, R̃[t] ≤ floor (relevant now), move still
             in force (R̃[t] at/near its window best), optional fund confirmation.
     CRATER: mirror — log(R̃[t] / R̃[t-k]) ≥ τ, R̃[t-k] ≤ floor (it WAS relevant)."""
-    if i - k < 0: return set()
+    if i - max(k, kf or 0) < 0: return set()
     d, p = DATES[i], DATES[i - k]
     now, then = RS[d], RS[p]
     if burst:
@@ -117,7 +117,9 @@ def new_flags(i, burst=True, k=10, tau=0.5, floor=300, funds=False, persist=True
         if persist:   # not a spent move: within 15% (log) of the best smoothed rank in the window
             best = RS[DATES[i - k:i + 1]].min(axis=1)
             m &= np.log(now / best) <= 0.15
-        if funds:
+        if funds and kf:      # held more funds than its low in the last kf snapshots
+            m &= (E[d] - E[DATES[i - kf:i + 1]].min(axis=1)).reindex(m.index).fillna(0) >= 1
+        elif funds:
             m &= (E[d] - E[p]).reindex(m.index).fillna(0) >= 1
     else:
         lr = np.log(now / then); rel = then <= floor
@@ -125,7 +127,9 @@ def new_flags(i, burst=True, k=10, tau=0.5, floor=300, funds=False, persist=True
         if persist:
             worst = RS[DATES[i - k:i + 1]].max(axis=1)
             m &= np.log(worst / now) <= 0.15
-        if funds:
+        if funds and kf:      # fewer funds than its high in the last kf snapshots 
+            m &= (E[d] - E[DATES[i - kf:i + 1]].max(axis=1)).reindex(m.index).fillna(0) <= -1
+        elif funds:
             m &= (E[d] - E[p]).reindex(m.index).fillna(0) <= -1
     return set(m.index[m.fillna(False)])
 
@@ -170,6 +174,8 @@ def bc_study():
         "smoothed k10 tau.5 floor150": dict(k=10, tau=0.5, floor=150),
         "smoothed k10 tau.5 floor300 +funds": dict(k=10, tau=0.5, floor=300, funds=True),
         "smoothed k20 tau.5 floor300 +funds": dict(k=20, tau=0.5, floor=300, funds=True),
+        "smoothed k10 tau.5 floor300 +funds within 20": dict(k=10, tau=0.5, floor=300, funds=True, kf=20),
+        "smoothed k10 tau.5 floor300 +funds within 30": dict(k=10, tau=0.5, floor=300, funds=True, kf=30),
         "no-smoothing k10 tau.5 floor300": dict(k=10, tau=0.5, floor=300, raw=True),
     }
     global RS
@@ -182,7 +188,7 @@ def bc_study():
                 if v.get("kind") == "cur":
                     f = lambda i, burst=burst: cur_flags(i, burst)
                 else:
-                    kw = {k: v[k] for k in ("k", "tau", "floor", "funds") if k in v}
+                    kw = {k: v[k] for k in ("k", "tau", "floor", "funds", "kf") if k in v}
                     f = lambda i, burst=burst, kw=kw: new_flags(i, burst, **kw)
                 ev, avg_n = onsets(f, a, b)
                 r = eval_events(ev, burst); r["flagged/day"] = avg_n

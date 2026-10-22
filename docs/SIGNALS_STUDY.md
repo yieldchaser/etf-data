@@ -119,7 +119,7 @@ A second copy of the rule lived in `history.signal_history`. The backtest's BURS
 | Smoothed, log-rank ≥ 0.5 over 10 snapshots, from top-300 | 22 / 19 | −1.7% (t −2.3) | +0.8% |
 | … log-rank ≥ 0.7 | 13 / 12 | −3.9% (t −4.1) | −0.1% |
 | … 20-snapshot lookback | 34 / 22 | −1.9% | 0.0% |
-| **… ≥ 0.5 over 10 snapshots, from top-300, + lost a fund (shipped)** | **9 / 6** | **−2.0% (t −2.0)** | **−1.7% (t −0.9)** |
+| **… ≥ 0.5 over 10 snapshots, from top-300, + lost a fund** (shipped first; see the CRATER window follow-up) | **9 / 6** | **−2.0% (t −2.0)** | **−1.7% (t −0.9)** |
 
 ### Why these rules
 
@@ -130,7 +130,7 @@ A second copy of the rule lived in `history.signal_history`. The backtest's BURS
 
 ### The shipped rule (`config.yaml → motion`, `conviction/history.burst_crater_panels`)
 
-On the leaderboard rank smoothed by a rolling median of 3 snapshots, over the last 10 snapshots (~2 weeks):
+On the leaderboard rank smoothed by a rolling median of 3 snapshots, over the last 10 snapshots (~2 weeks) for BURST and 20 (~4 weeks) for CRATER:
 
 - **BURST:**
   - the rank improved by at least a factor of 1.65 (log 0.5, e.g. #250 → #150);
@@ -141,7 +141,21 @@ On the leaderboard rank smoothed by a rolling median of 3 snapshots, over the la
   - the rank worsened by at least a factor of 1.65;
   - it started inside the top 300;
   - it is still within 15% of its worst;
-  - the name **lost ≥ 1 holding fund**.
+  - the name **lost ≥ 1 holding fund**;
+  - all measured over **20 snapshots** (~4 weeks), not BURST's 10 — see below.
+
+### CRATER window (follow-up)
+
+Yageo (2327) fell 55% from its June peak while its rank slid from #6 to #27, and no CRATER fired. PIE sold it at the start of July, but the rank only fell ×1.65 about 13 snapshots later. By then the exit was outside the 10-snapshot window. A fund's exit often comes *before* the slide, so CRATER windows were re-tested (`scripts/signals_study.py <cache> bc`):
+
+| CRATER variant | 20d vs peers, 30-ETF | 16-ETF | Yageo |
+|---|---:|---:|---|
+| 10-snapshot move + fund exit over the same 10 (previous) | −2.0% (t −2.0) | −1.7% (t −0.9) | never flagged |
+| 10-snapshot move + fund exit within 20 | −2.3% (t −2.4) | −0.5% (t −0.2) | 2026-07-18 |
+| 10-snapshot move + fund exit within 30 | −2.1% | −0.5% | 2026-07-18 |
+| **20-snapshot move + fund exit over the same 20 (shipped)** | **−2.4% (t −2.2)** | **−1.3% (t −0.7)** | **2026-07-22** (~650 TWD; low 502 on 2026-08-02) |
+
+The shipped variant is the only one at least as strong as the previous rule averaged across both regimes, and it catches the fund-first case. The same widening **hurt BURST** (30-ETF: −0.9% → −1.6% to −2.8%), so BURST keeps its 10-snapshot window: an addition long before a rank surge is weak evidence; an exit long before a slide is not. Note that Yageo was also on the Funds ↓ list for 14 days after PIE's exit, in early July near the top.
 
 **One implementation everywhere.** This function now drives:
 
