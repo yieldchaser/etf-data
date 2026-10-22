@@ -346,240 +346,123 @@ def predictive_overlay(leaderboard: pd.DataFrame, score_pnl: pd.DataFrame,
 
 def changelog(
     historical: dict[pd.Timestamp, pd.DataFrame],
-    latest: pd.DataFrame,
-    streaks: pd.DataFrame,
+    periods: Iterable[int | str],
+    *,
+    funds_rank_max: int = 500,
+    movers_rank_max: int = 300,
+    min_rank_move: int = 10,
     top_n: int = 15,
 ) -> dict:
     """
-    Day-over-day movers.
+    The Changes tab: what moved in the conviction picture between the
+    snapshot closest to (today − N days) and today, for every period N.
+    Built from the full daily leaderboards (every held name), so no table
+    depends on the 600-ticker score_history.json.
 
-    Categories:
-        entered_hc       — newly flagged HIGH_CONVICTION today vs yesterday
-        exited_hc        — flagged HIGH_CONVICTION yesterday, no longer today
-        biggest_gainers  — top score_delta_pct
-        biggest_losers   — bottom score_delta_pct
-        new_entrants     — ticker present today but not in any leaderboard 7d ago
+    Per period, each list holds {ticker, company, tier, rank_then, rank_now,
+    funds_then, funds_now, score_then, score_now} (None where the name was
+    not on the board), ordered most material first:
+
+        funds_added  gained ≥ 1 holding fund, now inside funds_rank_max
+        funds_lost   lost ≥ 1 holding fund, was inside funds_rank_max
+                     (includes names that left the board entirely)
+        hc_entered   HIGH_CONVICTION now, not then
+        hc_exited    HIGH_CONVICTION then, not now
+        climbers     rank improved by the largest factor, now inside
+                     movers_rank_max (a #300→#150 move counts as much as
+                     #20→#10; at least min_rank_move positions so #2→#1
+                     is not a "×2 move")
+        fallers      mirror: rank worsened most, was inside movers_rank_max
+        new          on the board now, not held then
+        exits        held then, on no fund's book now
+
+    `counts` gives each list's full size before the top_n cut. Fund-count
+    change is the most robust signal in the 2026-10 audit
+    (docs/SIGNALS_STUDY.md §4), which is why it leads the tab.
     """
+    periods = list(periods)
     dates = sorted(historical.keys())
+    keys = ("funds_added", "funds_lost", "hc_entered", "hc_exited",
+            "climbers", "fallers", "new", "exits")
+    empty = {"since": None, "counts": {k: 0 for k in keys}, **{k: [] for k in keys}}
     if len(dates) < 2:
-        return {"today": None, "yesterday": None, "entered_hc": [], "exited_hc": [],
-                "biggest_gainers": [], "biggest_losers": [], "new_entrants": []}
+        return {"today": None, "periods": {str(p): dict(empty) for p in periods}}
 
-    today, yday = dates[-1], dates[-2]
-    today_lb = historical[today]
-    yday_lb = historical[yday]
-
-    today_hc = set(today_lb.loc[today_lb["flag"] == "HIGH_CONVICTION", "ticker"])
-    yday_hc = set(yday_lb.loc[yday_lb["flag"] == "HIGH_CONVICTION", "ticker"])
-    entered = today_hc - yday_hc
-    exited = yday_hc - today_hc
-
-    by_ticker = today_lb.set_index("ticker")
-    by_ticker_yday = yday_lb.set_index("ticker")
-    streaks_by_ticker = streaks.set_index("ticker") if not streaks.empty else pd.DataFrame()
-
-    def _enrich(ticker: str, prefer_yday: bool = False) -> dict:
-        src = by_ticker_yday if prefer_yday and ticker in by_ticker_yday.index else by_ticker
-        if ticker not in src.index:
-            return {"ticker": ticker, "company": "", "final_score": None, "etf_count": None,
-                    "tiers": "", "score_delta": None}
-        row = src.loc[ticker]
-        # If duplicate ticker in source, .loc returns a DataFrame — take first row
-        if isinstance(row, pd.DataFrame):
-            row = row.iloc[0]
-        delta = None
-        if not streaks_by_ticker.empty and ticker in streaks_by_ticker.index:
-            d = streaks_by_ticker.loc[ticker]
-            if isinstance(d, pd.DataFrame):
-                d = d.iloc[0]
-            delta = d.get("score_delta")
-        return {
-            "ticker": ticker,
-            "company": row.get("company", ""),
-            "final_score": float(row.get("final_score")) if pd.notna(row.get("final_score")) else None,
-            "etf_count": int(row.get("etf_count")) if pd.notna(row.get("etf_count")) else None,
-            "tiers": row.get("tiers", ""),
-            "score_delta": float(delta) if delta is not None and pd.notna(delta) else None,
-        }
-
-    entered_records = sorted([_enrich(t) for t in entered],
-                              key=lambda r: -(r["final_score"] or 0))[:top_n]
-    exited_records = sorted([_enrich(t, prefer_yday=True) for t in exited],
-                             key=lambda r: -(r["final_score"] or 0))[:top_n]
-
-    # Gainers / losers by score_delta_pct (filter to non-tiny scores to avoid noise)
-    if not streaks.empty:
-        movers = streaks.dropna(subset=["score_delta_pct"]).copy()
-        movers = movers[movers["score_today"].fillna(0) >= 20]
-        movers["enriched"] = movers["ticker"].apply(lambda t: _enrich(t))
-        gainers = movers.sort_values("score_delta_pct", ascending=False).head(top_n)
-        losers = movers.sort_values("score_delta_pct", ascending=True).head(top_n)
-
-        def _movers_records(df):
-            recs = []
-            for _, r in df.iterrows():
-                rec = dict(r["enriched"])
-                rec["score_delta_pct"] = float(r["score_delta_pct"])
-                rec["score_streak"] = int(r["score_streak"])
-                recs.append(rec)
-            return recs
-
-        gainers_recs = _movers_records(gainers)
-        losers_recs = _movers_records(losers)
-    else:
-        gainers_recs, losers_recs = [], []
-
-    # New entrants — appear today, not in any leaderboard 7+ days ago
-    week_ago_dates = [d for d in dates if d <= today - pd.Timedelta(days=7)]
-    if week_ago_dates:
-        old_tickers = set()
-        for d in week_ago_dates:
-            old_tickers.update(historical[d]["ticker"].tolist())
-        new = sorted(set(today_lb["ticker"]) - old_tickers)
-        new_records = sorted([_enrich(t) for t in new],
-                              key=lambda r: -(r["final_score"] or 0))[:top_n]
-    else:
-        new_records = []
-
-    # Universe exits — present yesterday but not today
-    exited_universe = set(yday_lb["ticker"]) - set(today_lb["ticker"])
-
-    def _enrich_exit(ticker: str) -> dict:
-        if ticker not in by_ticker_yday.index:
-            return {"ticker": ticker, "company": "", "final_score": 0.0, "etf_count": 0,
-                    "tiers": "", "score_delta": None, "score_delta_pct": -1.0}
-        row = by_ticker_yday.loc[ticker]
-        if isinstance(row, pd.DataFrame):
-            row = row.iloc[0]
-        yday_score = float(row.get("final_score")) if pd.notna(row.get("final_score")) else 0.0
-        return {
-            "ticker": ticker,
-            "company": row.get("company", ""),
-            "final_score": 0.0,
-            "etf_count": 0,
-            "tiers": row.get("tiers", ""),
-            "score_delta": -yday_score,
-            "score_delta_pct": -1.0,
-        }
-
-    exited_universe_records = sorted(
-        [_enrich_exit(t) for t in exited_universe],
-        key=lambda r: -(abs(r["score_delta"]) if r["score_delta"] is not None else 0)
-    )[:top_n]
-
-    return {
-        "today": today.strftime("%Y-%m-%d"),
-        "yesterday": yday.strftime("%Y-%m-%d"),
-        "entered_hc": entered_records,
-        "exited_hc": exited_records,
-        "biggest_gainers": gainers_recs,
-        "biggest_losers": losers_recs,
-        "new_entrants": new_records,
-        "universe_exits": exited_universe_records,
-    }
-
-
-def compute_universe_exits_by_period(
-    historical: dict[pd.Timestamp, pd.DataFrame],
-    latest: pd.DataFrame,
-    periods: list[int | str],
-    top_n: int = 50,
-) -> dict[str, list[dict]]:
-    """
-    Universe exits for every lookback period, computed from the FULL uncapped
-    daily leaderboards (not the 600-ticker-capped score_history.json the
-    frontend previously scanned).
-
-    A ticker is an "exit" for period N if it was held (etf_count > 0) in the
-    snapshot closest to (today − N days) but is absent from today's
-    leaderboard (i.e. held by zero ETFs now). "YTD" uses Jan-1 of the
-    current year as the start.
-
-    Mirrors the 1-day logic in changelog()'s universe_exits path, but
-    generalised across periods so the frontend "Dropped from Universe"
-    table is accurate for 7d/14d/30d/60d/90d/YTD — not just 1d.
-
-    Returns {str(period): [{ticker, company, final_score, etf_count, tiers,
-                            score_delta, score_delta_pct}, ...]} keyed by the
-    stringified period (matching the frontend's String(changesPeriod) reads).
-    """
-    dates = sorted(historical.keys())
-    if len(dates) < 2:
-        return {str(p): [] for p in periods}
+    def _frame(d):
+        lb = historical[d]
+        lb = lb[lb["etf_count"].fillna(0) > 0] if "etf_count" in lb.columns else lb
+        lb = lb.drop_duplicates("ticker").set_index("ticker")
+        tiers = lb["tiers"].fillna("") if "tiers" in lb.columns else pd.Series("", index=lb.index)
+        return pd.DataFrame({
+            "company": lb["company"].fillna("") if "company" in lb.columns else "",
+            "tier": tiers.str.split(" + ", regex=False).str[0],
+            "rank": lb["leaderboard_rank"],
+            "funds": lb["etf_count"],
+            "score": lb["final_score"],
+            "hc": lb["flag"].eq("HIGH_CONVICTION") if "flag" in lb.columns else False,
+        }, index=lb.index)
 
     today = dates[-1]
-    today_lb = historical[today]
-    today_tickers: set[str] = set(today_lb["ticker"].tolist())
+    now = _frame(today)
+    out = {"today": today.strftime("%Y-%m-%d"), "periods": {}}
+    for p in periods:
+        if p == "YTD":
+            target = pd.Timestamp(year=today.year, month=1, day=1)
+        else:
+            target = today - pd.Timedelta(days=int(p))
+        start = min(dates[:-1], key=lambda d: abs((d - target).total_seconds()))
+        then = _frame(start)
+        m = now.join(then, how="outer", lsuffix="_now", rsuffix="_then")
+        m["funds_now"] = m["funds_now"].fillna(0)
+        m["funds_then"] = m["funds_then"].fillna(0)
+        m["hc_now"] = m["hc_now"].eq(True)
+        m["hc_then"] = m["hc_then"].eq(True)
+        m["company"] = m["company_now"].where(m["company_now"].notna(), m["company_then"])
+        m["tier"] = m["tier_now"].where(m["tier_now"].notna(), m["tier_then"])
+        dfunds = m["funds_now"] - m["funds_then"]
+        on_now, on_then = m["rank_now"].notna(), m["rank_then"].notna()
+        both = on_now & on_then
+        moved = (m["rank_then"] - m["rank_now"]).abs() >= min_rank_move
+        lr = np.log(m["rank_then"] / m["rank_now"])
 
-    # Company / tier lookup from today's leaderboard (enrichment source for the
-    # exit record; falls back to "" if the ticker is already gone).
-    by_ticker_today = today_lb.set_index("ticker") if "ticker" in today_lb.columns else pd.DataFrame()
-
-    def _enrich_exit(ticker: str, start_lb: pd.DataFrame, start_idx) -> dict:
-        # Pull the prior score/company from the START snapshot (the day the
-        # ticker was last seen) so the "Prev. Score" column reflects what it
-        # was before dropping out. NB: `in` on a DataFrame checks COLUMNS, so
-        # test membership against the index explicitly.
-        if "ticker" not in start_lb.columns or ticker not in start_idx.index:
-            return {"ticker": ticker, "company": "", "final_score": 0.0,
-                    "etf_count": 0, "tiers": "", "score_delta": None,
-                    "score_delta_pct": -1.0}
-        row = start_idx.loc[ticker]
-        if isinstance(row, pd.DataFrame):
-            row = row.iloc[0]
-        prior_score = float(row.get("final_score")) if pd.notna(row.get("final_score")) else 0.0
-        return {
-            "ticker": ticker,
-            "company": row.get("company", ""),
-            "final_score": 0.0,
-            "etf_count": int(row.get("etf_count")) if pd.notna(row.get("etf_count")) else 0,
-            "tiers": row.get("tiers", ""),
-            "score_delta": -prior_score,
-            "score_delta_pct": -1.0,
+        # Sort keys live on m itself: .assign(Series) on an EMPTY filtered
+        # frame would adopt the Series' index and resurrect every row.
+        m["_dfunds"], m["_lr"] = dfunds, lr
+        sel = {
+            "funds_added": m[(dfunds >= 1) & (m["rank_now"] <= funds_rank_max)]
+                .sort_values(["_dfunds", "rank_now"], ascending=[False, True]),
+            "funds_lost": m[(dfunds <= -1) & (m["rank_then"] <= funds_rank_max)]
+                .sort_values(["_dfunds", "rank_then"], ascending=[True, True]),
+            "hc_entered": m[m["hc_now"] & ~m["hc_then"]].sort_values("rank_now"),
+            "hc_exited": m[m["hc_then"] & ~m["hc_now"]].sort_values("rank_then"),
+            "climbers": m[both & moved & (lr > 0) & (m["rank_now"] <= movers_rank_max)]
+                .sort_values("_lr", ascending=False),
+            "fallers": m[both & moved & (lr < 0) & (m["rank_then"] <= movers_rank_max)]
+                .sort_values("_lr"),
+            "new": m[on_now & ~on_then].sort_values("rank_now"),
+            "exits": m[on_then & ~on_now].sort_values("rank_then"),
         }
 
-    out: dict[str, list[dict]] = {}
-    for p in periods:
-        # Resolve the start snapshot for this period.
-        if p == "YTD":
-            start_target = pd.Timestamp(year=today.year, month=1, day=1)
-        else:
-            try:
-                n_days = int(p)
-            except (ValueError, TypeError):
-                out[str(p)] = []
-                continue
-            start_target = today - pd.Timedelta(days=n_days)
+        def _num(v, nd=None):
+            if v is None or pd.isna(v):
+                return None
+            return round(float(v), nd) if nd is not None else int(v)
 
-        # Snapshot closest to the target date (must be strictly before today so
-        # 1-day doesn't collapse to today itself).
-        candidates = [d for d in dates if d < today]
-        if not candidates:
-            out[str(p)] = []
-            continue
-        start_d = min(candidates, key=lambda d: abs((d - start_target).total_seconds()))
+        def _records(df):
+            return [{
+                "ticker": str(t),
+                "company": "" if pd.isna(r["company"]) else str(r["company"]),
+                "tier": "" if pd.isna(r["tier"]) else str(r["tier"]),
+                "rank_then": _num(r["rank_then"]), "rank_now": _num(r["rank_now"]),
+                "funds_then": _num(r["funds_then"]), "funds_now": _num(r["funds_now"]),
+                "score_then": _num(r["score_then"], 1), "score_now": _num(r["score_now"], 1),
+            } for t, r in df.head(top_n).iterrows()]
 
-        start_lb = historical[start_d]
-        if "ticker" not in start_lb.columns or "final_score" not in start_lb.columns:
-            out[str(p)] = []
-            continue
-
-        # Held at the start date, gone from today's universe. Presence is read
-        # from etf_count: under apex v4 a held filler can carry a 0.0 score.
-        held = (start_lb["etf_count"].fillna(0) > 0 if "etf_count" in start_lb.columns
-                else start_lb["final_score"].fillna(0) > 0)
-        scored_at_start = start_lb.loc[held, "ticker"]
-        start_tickers: set[str] = set(scored_at_start.tolist())
-        exited = start_tickers - today_tickers
-
-        start_idx = start_lb.set_index("ticker")
-        records = sorted(
-            (_enrich_exit(t, start_lb, start_idx) for t in exited),
-            # Biggest absolute score drop first (most material exits on top)
-            key=lambda r: -(abs(r["score_delta"]) if r["score_delta"] is not None else 0),
-        )[:top_n]
-        out[str(p)] = records
-
+        out["periods"][str(p)] = {
+            "since": start.strftime("%Y-%m-%d"),
+            "counts": {k: int(len(v)) for k, v in sel.items()},
+            **{k: _records(v) for k, v in sel.items()},
+        }
     return out
 
 

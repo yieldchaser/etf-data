@@ -364,16 +364,13 @@ class TestHistory:
     def test_changelog_shape(self, legacy_cfg):
         df = self._build(days=30)
         historical = hist.historical_leaderboards(df, legacy_cfg)
-        score_p = hist.score_panel(historical)
-        flag_p = hist.flag_panel(historical)
-        streaks = hist.streaks_and_deltas(score_p, flag_p)
-        # Today's leaderboard for the enrichment lookup
-        lb_today, _ = compute_leaderboard(df, legacy_cfg)
-        chg = hist.changelog(historical, lb_today, streaks, top_n=5)
-        assert "entered_hc" in chg
-        assert "exited_hc" in chg
-        assert "biggest_gainers" in chg
+        chg = hist.changelog(historical, [1, 7], top_n=5)
         assert chg["today"] is not None
+        for p in ("1", "7"):
+            blk = chg["periods"][p]
+            assert blk["since"] is not None
+            for key in ("hc_entered", "hc_exited", "funds_added", "funds_lost", "climbers", "fallers"):
+                assert key in blk and len(blk[key]) <= 5
 
 
 # ─── Motion signals ────────────────────────────────────────────────────────────

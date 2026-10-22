@@ -290,14 +290,18 @@ Built with Tailwind CSS + Alpine.js. Zero build step — static HTML/JS served d
 - ETF overlap heatmap: 30×30 Jaccard similarity matrix
 
 #### Changes Tab
-- Daily turnover: HC entries/exits, biggest score movers, new discoveries
-- Top 15 accumulation movers panel (`top_accumulation` — net ETF positions added over 30d)
-- Sector flow: net ETF positions added/removed over 30d by GICS sector (Unknown excluded)
-- Country flow: net ETF positions added/removed over 30d by domicile (Unknown excluded)
-- Click a sector/country to filter the leaderboard
-- **Interactive Sorting**: All 10 tables, sector flow, and country flow tables support 3-way toggle sorting (descending → ascending → default/clear) with visual indicators.
-- **Dynamic Lookbacks**: Climbers and Fallers tables dynamically respect the selected lookback changesPeriod.
-- **Color-Coded Card Accents**: Category-matched left-border highlights (green for gainers/climbers, red/rose for losers/fallers/crashed, cyan for pickups, purple for burst, blue for entrants, grey for exits).
+Everything is computed per lookback period (1d / 7d / 14d / 30d / 60d / 90d / YTD, default 30d) by `history.changelog` from the full daily leaderboards, and read as "building" on the left, "breaking" on the right:
+
+| Row | Left | Right |
+|-----|------|-------|
+| Fund positions | Funds adding — gained a holding fund, now in the top 500 | Funds leaving — lost a holding fund, was in the top 500 |
+| High Conviction | Entered HC | Left HC |
+| Motion (in force now) | BURST | CRATER — with the date each last fired when none are live |
+| Rank | Climbers — largest rank multiple, now in the top 300 (≥ 10 positions) | Fallers — largest rank multiple, was in the top 300 |
+| Board | New on the board | Left the board |
+| Flow (30d) | Sector flow | Country flow |
+
+Every table shows rank then → now, funds then → now and score, with the name's strongest current signal as a badge. A summary strip at the top gives the up / down count for each row. Fund-count change leads because it is the most robust signal in the 2026-10 audit; score-% movers were dropped (dominated by near-zero scores) and raw rank deltas were replaced by rank multiples (a #3,000 → #1,000 move is noise; #300 → #120 is not).
 
 #### Watchlist Tab
 - Pin tickers with ★, persisted to localStorage
@@ -744,7 +748,7 @@ etf-data/
 │   └── data/                     # Pre-built JSON payloads
 │       ├── leaderboard.json      # Main leaderboard (~3.8MB)
 │       ├── holdings_latest.json  # Per-(ETF, ticker) detail
-│       ├── changelog.json        # Daily turnover + top_accumulation (net ETF positions added 30d)
+│       ├── changelog.json        # Changes tab: per-period fund adds/exits, HC moves, rank movers, new/exits
 │       ├── flag_history.json     # Per-ticker flag/rank history (90d)
 │       ├── score_history.json    # Score sparkline data
 │       ├── flow.json             # Sector + country flow (net_funds_delta / avg_funds_delta)

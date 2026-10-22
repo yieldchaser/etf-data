@@ -114,7 +114,12 @@
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
-  </style>
+      .kpi-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+    .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; min-width: 0; transition: border-color 0.2s; }
+    .kpi-card:hover { border-color: var(--border-2); }
+    .kpi-sub { font-size: 10.5px; color: var(--text-3); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: none; }
+    @media (max-width: 760px) { .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } }
+</style>
 </head>
 <body>
 
@@ -206,70 +211,15 @@
   <!-- MAIN CONTENT -->
   <div x-show="!loading && found">
 
-    <!-- KPI strip -->
-    <section class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-4 select-none">
-      <!-- 1. Score -->
-      <div class="rounded-lg px-3.5 py-3 border transition-colors duration-200 hover:border-zinc-800" style="background: var(--surface); border-color: var(--border)"
-           x-tooltip="'Final conviction score: sum of weight% × ETF points × rank multiplier × 100 across all holding ETFs'">
-        <div class="label">Score</div>
-        <div class="text-2xl font-medium num font-mono mt-1" style="color: var(--text)" x-text="leaderboardRow?.final_score?.toFixed(0) || '—'"></div>
-      </div>
-      <!-- 2. Rank -->
-      <div class="rounded-lg px-3.5 py-3 border transition-colors duration-200 hover:border-zinc-800" style="background: var(--surface); border-color: var(--border)"
-           x-tooltip="'Global conviction rank inside the Conviction Labs universe (1 = highest conviction)'">
-        <div class="label">Rank</div>
-        <div class="text-2xl font-medium num font-mono mt-1" style="color: var(--cyan)" x-text="leaderboardRow ? `#${leaderboardRow.leaderboard_rank}` : '—'"></div>
-      </div>
-      <!-- 3. Percentile -->
-      <div class="rounded-lg px-3.5 py-3 border transition-colors duration-200 hover:border-zinc-800" style="background: var(--surface); border-color: var(--border)"
-           x-tooltip="'Today\'s conviction score as a percentile of this stock\'s own historical scores'">
-        <div class="label">Percentile</div>
-        <div class="text-2xl font-medium num font-mono mt-1" style="color: var(--amber)" x-text="leaderboardRow && leaderboardRow.score_percentile != null ? Math.round(leaderboardRow.score_percentile * 100) + '%' : '—'"></div>
-      </div>
-      <!-- 4. Weight -->
-      <div class="rounded-lg px-3.5 py-3 border transition-colors duration-200 hover:border-zinc-800" style="background: var(--surface); border-color: var(--border)"
-           x-tooltip="'Sum of position weights across all ETFs holding this ticker'">
-        <div class="label">Total Weight</div>
-        <div class="text-2xl font-medium num font-mono mt-1" style="color: var(--text-2)" x-text="leaderboardRow ? ((leaderboardRow.total_weight * 100).toFixed(2) + '%') : '—'"></div>
-      </div>
-      <!-- 5. ETFs -->
-      <div class="rounded-lg px-3.5 py-3 border transition-colors duration-200 hover:border-zinc-800" style="background: var(--surface); border-color: var(--border)"
-           x-tooltip="'Total number of ETFs currently holding this ticker'">
-        <div class="label">ETFs</div>
-        <div class="text-2xl font-medium num font-mono mt-1" style="color: var(--text)" x-text="leaderboardRow?.etf_count || '—'"></div>
-      </div>
-      <!-- 6. Score Δ% -->
-      <div class="rounded-lg px-3.5 py-3 border transition-colors duration-200 hover:border-zinc-800" style="background: var(--surface); border-color: var(--border)"
-           x-tooltip="'Conviction score change over the selected timeframe'">
-        <div class="label">Score Δ%</div>
-        <div class="text-2xl font-medium num font-mono mt-1"
-             :style="`color: ${leaderboardRow?.score_delta_pct > 0 ? 'var(--up)' : (leaderboardRow?.score_delta_pct < 0 ? 'var(--down)' : 'var(--text-2)')}`"
-             x-text="leaderboardRow ? (leaderboardRow.score_delta_pct >= 0 ? '+' : '') + (leaderboardRow.score_delta_pct * 100).toFixed(1) + '%' : '—'"></div>
-      </div>
-      <!-- 7. ETFs Added (30d) -->
-      <div class="rounded-lg px-3.5 py-3 border transition-colors duration-200 hover:border-zinc-800" style="background: var(--surface); border-color: var(--border)"
-           x-tooltip="'Net change in number of ETFs holding this ticker over the last 30 days'">
-        <div class="label">ETFs Added (30d)</div>
-        <div class="text-2xl font-medium num font-mono mt-1"
-             :style="(leaderboardRow?.etf_count_delta_30d || 0) > 0 ? 'color: var(--up)' : ((leaderboardRow?.etf_count_delta_30d || 0) < 0 ? 'color: var(--down)' : '')"
-             x-text="leaderboardRow ? ((leaderboardRow.etf_count_delta_30d || 0) > 0 ? '+' + leaderboardRow.etf_count_delta_30d : leaderboardRow.etf_count_delta_30d ?? 0) : '—'"></div>
-      </div>
-      <!-- 9. HC Streak -->
-      <div class="rounded-lg px-3.5 py-3 border transition-colors duration-200 hover:border-zinc-800" style="background: var(--surface); border-color: var(--border)"
-           x-tooltip="'Consecutive days this ticker has remained in the High Conviction tier'">
-        <div class="label">HC Streak</div>
-        <div class="text-2xl font-medium num font-mono mt-1"
-             :style="leaderboardRow?.hc_streak > 0 ? 'color: var(--up)' : 'color: var(--text-3)'"
-             x-text="leaderboardRow && leaderboardRow.hc_streak > 0 ? `▲${leaderboardRow.hc_streak}` : '—'"></div>
-      </div>
-      <!-- 10. Score Streak -->
-      <div class="rounded-lg px-3.5 py-3 border transition-colors duration-200 hover:border-zinc-800" style="background: var(--surface); border-color: var(--border)"
-           x-tooltip="'Consecutive days the conviction score has moved in the same direction'">
-        <div class="label">Score Streak</div>
-        <div class="text-2xl font-medium num font-mono mt-1"
-             :style="`color: ${leaderboardRow?.score_streak > 0 ? 'var(--up)' : (leaderboardRow?.score_streak < 0 ? 'var(--down)' : 'var(--text-3)')}`"
-             x-text="leaderboardRow && leaderboardRow.score_streak !== 0 ? (leaderboardRow.score_streak > 0 ? `▲${leaderboardRow.score_streak}` : `▼${Math.abs(leaderboardRow.score_streak)}`) : '—'"></div>
-      </div>
+    <!-- KPI strip: where it stands (top row), how it is moving (bottom row) -->
+    <section class="kpi-grid mb-4 select-none">
+      <template x-for="k in kpis" :key="k.label">
+        <div class="kpi-card" x-tooltip="k.tip">
+          <div class="label" x-text="k.label"></div>
+          <div class="text-2xl font-medium num font-mono mt-1 leading-none" :style="`color: ${k.color}`" x-text="k.value"></div>
+          <div class="kpi-sub" x-text="k.sub || '\u00a0'"></div>
+        </div>
+      </template>
     </section>
 
     <!-- STATUS & METADATA BANNER -->
@@ -311,11 +261,11 @@
               style="background: rgba(96,165,250,0.12); color: #60a5fa; border: 1px solid rgba(96,165,250,0.3)">NEW</span>
         <!-- BURST -->
         <span x-show="leaderboardRow?.burst_30d" class="chip"
-              x-tooltip="`BURST move - global rank improved by ${leaderboardRow?.global_rank_peak_30d}+ positions in last 30d. Best rank: #${leaderboardRow?.global_rank_best_30d}`"
+              x-tooltip="`BURST - smoothed rank #${leaderboardRow?.motion_rank_then} → #${(leaderboardRow?.motion_rank_then || 0) - (leaderboardRow?.burst_rank_gain || 0)} in ~2 weeks, confirmed by +${leaderboardRow?.motion_funds_delta || 0} holding fund(s)`"
               style="background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.30)">BURST</span>
         <!-- CRATER -->
         <span x-show="leaderboardRow?.crater_30d" class="chip"
-              x-tooltip="`CRATER signal - global rank dropped by ${leaderboardRow?.global_rank_drop_30d}+ positions in last 30d. Sustained downward rank acceleration.`"
+              x-tooltip="`CRATER - smoothed rank #${leaderboardRow?.motion_rank_then} → #${(leaderboardRow?.motion_rank_then || 0) + (leaderboardRow?.crater_rank_loss || 0)} in ~2 weeks as ${Math.abs(leaderboardRow?.motion_funds_delta || 0)} fund(s) dropped it - the get-out signal`"
               style="background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.30)">CRATER</span>
         <!-- Quality+ -->
         <span x-show="leaderboardRow?.quality_adopted_30d" class="chip"
@@ -1174,17 +1124,45 @@ function stockApp() {
     get kpis() {
       const row = this.leaderboardRow;
       if (!row) return [];
-      const fmtPct = n => (n == null || !isFinite(n)) ? '—' : (n >= 0 ? '+' : '') + (n * 100).toFixed(1) + '%';
-      const fmtStreak = n => (n == null || n === 0) ? '—' : (n > 0 ? `▲${n}` : `▼${Math.abs(n)}`);
+      const sgn = n => (n > 0 ? '+' : '') + n;
+      const tone = n => n > 0 ? 'var(--up)' : n < 0 ? 'var(--down)' : 'var(--text-3)';
+      const streak = n => !n ? '—' : (n > 0 ? `▲${n}` : `▼${Math.abs(n)}`);
+      const dPct = row.score_delta_pct, dRank = row.global_rank_delta_30d || 0, dFunds = row.etf_count_delta_30d || 0;
+      const conv = row.conviction_etf_count || 0;
       return [
-        { label: 'Score',      value: row.final_score?.toFixed(0) || '—', color: 'var(--text)' },
-        { label: 'Rank',       value: `#${row.leaderboard_rank}`,         color: 'var(--cyan)' },
-        { label: 'ETFs',       value: row.etf_count || '—',               color: 'var(--text)' },
-        { label: 'Score Δ%',   value: fmtPct(row.score_delta_pct),        color: (row.score_delta_pct > 0) ? 'var(--up)' : (row.score_delta_pct < 0) ? 'var(--down)' : 'var(--text-2)' },
-        { label: 'HC Streak',  value: fmtStreak(row.hc_streak),           color: (row.hc_streak > 0) ? 'var(--up)' : 'var(--text-3)' },
-        { label: 'Sc. Streak', value: fmtStreak(row.score_streak),        color: (row.score_streak > 0) ? 'var(--up)' : (row.score_streak < 0) ? 'var(--down)' : 'var(--text-3)' },
-        { label: 'Weight',     value: this.leaderboardRow ? ((row.total_weight * 100).toFixed(2) + '%') : '—', color: 'var(--text-2)' },
-        { label: 'Percentile', value: (row.score_percentile != null) ? Math.round(row.score_percentile * 100) + '%' : '—', color: 'var(--amber)' },
+        // Where it stands
+        { label: 'Score', value: row.final_score != null ? Number(row.final_score).toFixed(1) : '—', color: 'var(--text)',
+          sub: row.score_percentile != null ? `${Math.round(row.score_percentile * 100)}th pct of own history` : '',
+          tip: 'Conviction score: Σ over holding funds of points × conviction², discounted for overlapping funds, × concentration, breadth and universe multipliers. See How it works §3.' },
+        { label: 'Rank', value: `#${row.leaderboard_rank}`, color: 'var(--cyan)',
+          sub: row.global_rank_best_30d ? `best #${row.global_rank_best_30d} in 30d` : '',
+          tip: 'Global rank across every name any tracked fund holds (1 = highest conviction).' },
+        { label: 'Funds', value: row.etf_count ?? '—', color: 'var(--text)',
+          sub: `${row.strategy_tier_count || 0} strategy tier${row.strategy_tier_count === 1 ? '' : 's'}`,
+          tip: 'Tracked ETFs holding the name today; strategy tiers count Scout / Quant / Quality / Trend (benchmark Core funds excluded).' },
+        { label: 'Convinced holders', value: conv, color: conv >= 2 ? 'var(--up)' : 'var(--text)',
+          sub: row.flag === 'HIGH_CONVICTION' ? 'meets HC' : `HC needs 2 (+4 funds, 2 tiers)`,
+          tip: 'Non-benchmark funds holding it with conviction ≥ 0.6 (overweight and near the top of the fund\'s own book). HIGH CONVICTION needs 2 of these, 4+ funds and 2+ strategy tiers.' },
+        { label: 'Top-fund share', value: row.concentration_score != null ? `${Math.round(row.concentration_score)}%` : '—',
+          color: (row.concentration_score || 0) >= 85 ? 'var(--amber)' : 'var(--text-2)',
+          sub: row.flag === 'CONCENTRATED' ? 'rests on one fund' : 'of conviction mass',
+          tip: 'Share of the conviction mass supplied by the single largest holder. ≥ 85% = CONCENTRATED: the score rests on one fund.' },
+        // How it is moving
+        { label: 'Score Δ 1d', value: dPct == null ? '—' : (dPct >= 0 ? '+' : '') + (dPct * 100).toFixed(1) + '%', color: tone(dPct || 0),
+          sub: row.score_delta != null ? `${row.score_delta >= 0 ? '+' : ''}${Number(row.score_delta).toFixed(1)} pts` : '',
+          tip: 'Score change versus the previous snapshot.' },
+        { label: 'Rank Δ 30d', value: dRank ? sgn(dRank) : '0', color: tone(dRank),
+          sub: dRank ? `from #${row.leaderboard_rank + dRank}` : 'unchanged',
+          tip: 'Global-rank change over ~30 days (positive = moved up).' },
+        { label: 'Funds Δ 30d', value: sgn(dFunds), color: tone(dFunds),
+          sub: (row.etf_count_delta_14d || 0) ? `${sgn(row.etf_count_delta_14d)} in the last 14d` : 'none in the last 14d',
+          tip: 'Net holding funds added over ~30 days. Fund-count change is the most robust signal in the data: a top-200 name losing a fund in 14 days is the Funds ↓ warning.' },
+        { label: 'Score streak', value: streak(row.score_streak), color: tone(row.score_streak || 0),
+          sub: row.momentum_regime || '',
+          tip: 'Consecutive snapshots the score moved in the same direction; the label is the momentum regime (streak combined with per-fund rank changes).' },
+        { label: 'HC streak', value: row.hc_streak > 0 ? `${row.hc_streak}d` : '—', color: row.hc_streak > 0 ? 'var(--up)' : 'var(--text-3)',
+          sub: row.hc_streak > 0 ? 'consecutive days' : 'not High Conviction',
+          tip: 'Consecutive snapshots flagged HIGH CONVICTION.' },
       ];
     },
 
@@ -1416,6 +1394,7 @@ function stockApp() {
       const fh = this.flagHistory || [];
       const e = fh[i];
       if (!e) return { label: 'Neutral', color: 'rgba(255,255,255,0.5)' };
+      if (e.crater) return { label: 'CRATER', color: '#f87171' };
       if (this._isBurstAt(i)) return { label: 'BURST', color: '#c084fc' };
       if (e.flag === 'HIGH_CONVICTION') return { label: 'HC', color: 'var(--up)' };
       if (e.n) return { label: 'NEW', color: 'rgba(96,165,250,0.9)' };
@@ -1450,7 +1429,8 @@ function stockApp() {
       if (!fh.length) return '';
       const s = this._stateAt(fh.length - 1);
       const map = {
-        'BURST':   `BURST move - global rank improved by ${this.leaderboardRow?.global_rank_peak_30d ?? 0}+ positions in last 30d.`,
+        'BURST':   'BURST - smoothed rank rose ×1.65+ in ~2 weeks, confirmed by a fund adding the name.',
+        'CRATER':  'CRATER - smoothed rank fell ×1.65+ in ~2 weeks as a fund dropped the name - the get-out signal.',
         'HC':      `HIGH CONVICTION - held by ${this.leaderboardRow?.etf_count || 0} ETFs · HC streak: ${this.leaderboardRow?.hc_streak || 0} days`,
         'NEW':     'NEW - first appearance in any mature ETF within the last 14 days.',
         'Q+':      'Quality+ - a Quality ETF added this name in the last 30 days.',

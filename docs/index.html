@@ -57,6 +57,37 @@
     .chip { display: inline-flex; align-items: center; padding: 1px 6px; border-radius: 4px; font-size: 10.5px; font-weight: 500; line-height: 1.5; white-space: nowrap; letter-spacing: 0.02em; }
     .sig-badge { font-size: 9px; font-weight: 600; padding: 0 5px; letter-spacing: 0.04em; }
 
+    /* Changes tab — one panel style for every table */
+    .chg-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 8px; background: var(--surface); overflow: hidden; }
+    .chg-sum-cell { text-align: left; padding: 10px 14px; border-left: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
+    .chg-sum-cell:first-child { border-left: 0; }
+    .chg-sum-cell:hover { background: rgba(255,255,255,0.02); }
+    @media (max-width: 900px) {
+      .chg-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .chg-sum-cell:nth-child(3) { border-left: 0; }
+      .chg-sum-cell:nth-child(n+3) { border-top: 1px solid var(--border); }
+    }
+    .chg-panel { display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); overflow: hidden; --tone: var(--text-3); }
+    .chg-panel.tone-up { --tone: var(--up); }
+    .chg-panel.tone-down { --tone: var(--down); }
+    .chg-panel.tone-burst { --tone: var(--burst); }
+    .chg-panel.tone-crater { --tone: var(--crater); }
+    .chg-head { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--border); min-width: 0; }
+    .chg-dot { width: 6px; height: 6px; border-radius: 9999px; background: var(--tone); flex-shrink: 0; }
+    .chg-title { font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; }
+    .chg-count { font-size: 10.5px; color: var(--tone); padding: 0 6px; border-radius: 4px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); }
+    .chg-hint { margin-left: auto; font-size: 10.5px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+    .chg-table thead tr { border-bottom: 1px solid var(--border); }
+    .chg-table th { padding: 6px 8px; font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); user-select: none; white-space: nowrap; }
+    .chg-table th.cursor-pointer:hover { color: var(--text-2); }
+    .chg-table th.chg-key { color: var(--text-2); }
+    .chg-table td { padding: 7px 8px; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+    .chg-table tbody tr:last-child td { border-bottom: 0; }
+    .chg-row { cursor: pointer; transition: background 0.12s; }
+    .chg-row:hover { background: rgba(255,255,255,0.025); }
+    .chg-arrow { color: #52525b; font-size: 10px; margin: 0 3px; }
+    .chg-foot { padding: 6px 12px; font-size: 10px; color: var(--text-3); border-top: 1px solid var(--border); text-align: right; }
+
     /* Macro-status regime glyph (text-color only, no fill) */
     .regime { display: inline-block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; white-space: nowrap; min-width: 76px; }
 
@@ -2054,653 +2085,106 @@
 
   <!-- ═════════════ TAB 3: CHANGES ════════════════════════════════════════ -->
   <section x-show="activeTab === 'changes'">
-    <!-- Tab-level Header Strip (Sticky glassmorphic header strip) -->
-    <div class="sticky top-0 z-30 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-3 py-2.5 mb-3 text-xs backdrop-blur-sm border-b" style="background: rgba(12, 12, 12, 0.92); border-color: var(--border); box-shadow: 0 2px 12px rgba(0,0,0,0.4); margin-left: -1px; margin-right: -1px;">
-      <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-        <div class="font-mono font-semibold text-zinc-100" x-text="`Changes - ${changelog.today || '-'} vs ${changesPeriodTargetDate || '-'}`"></div>
-        <!-- Summary capsule badges showing key counts at a glance -->
-        <div class="flex items-center gap-1.5 flex-wrap text-[10px] text-zinc-400">
-          <span class="bg-white/[0.03] border border-white/[0.04] px-1.5 py-0.5 rounded-full select-none cursor-help"
-                x-tooltip="'Names with the largest conviction score increases over the selected period (min 2 ETFs)'"
-                x-text="`+${dynamicScoreGainers.length} gainers`"></span>
-          <span class="bg-white/[0.03] border border-white/[0.04] px-1.5 py-0.5 rounded-full select-none cursor-help"
-                x-tooltip="'Names with the largest conviction score decreases over the selected period (min 2 ETFs)'"
-                x-text="`-${dynamicScoreLosers.length} losers`"></span>
-          <span class="bg-white/[0.03] border border-white/[0.04] px-1.5 py-0.5 rounded-full select-none cursor-help"
-                x-tooltip="'BURST - rank surged ≥1.65× (e.g. #250→#150) on the 3-snapshot-smoothed rank over ~2 weeks, now in the top 300, confirmed by a fund ADDING the name'"
-                x-text="`${activeSignalCounts.burst} bursts`"></span>
-          <span class="bg-white/[0.03] border border-white/[0.04] px-1.5 py-0.5 rounded-full select-none cursor-help"
-                x-tooltip="'New entrants - first appearance in any mature ETF within the last 14 days'"
-                x-text="`${changelog.new_entrants?.length || 0} new`"></span>
-          <span class="bg-white/[0.03] border border-white/[0.04] px-1.5 py-0.5 rounded-full select-none cursor-help"
-                x-tooltip="'High Conviction entries and exits versus the prior trading day'"
-                x-text="`${(changelog.entered_hc?.length || 0) + (changelog.exited_hc?.length || 0)} HC`"></span>
-        </div>
+    <!-- Header: what is being compared, and the lookback -->
+    <div class="sticky top-0 z-30 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-3 py-2.5 mb-3 backdrop-blur-sm border-b" style="background: rgba(12, 12, 12, 0.92); border-color: var(--border); margin-left: -1px; margin-right: -1px;">
+      <div class="min-w-0">
+        <div class="text-[13px] font-semibold text-zinc-100">What changed</div>
+        <div class="text-[11px] font-mono" style="color: var(--text-3)" x-text="changesSinceLabel"></div>
       </div>
-      <div class="flex items-center gap-3 shrink-0 overflow-x-auto max-w-full">
-        <!-- Changes Lookback Period Picker -->
-        <div class="flex border rounded overflow-x-auto scrollbar max-w-full" style="border-color: rgba(255,255,255,0.08); background: rgba(0,0,0,0.25)">
-          <template x-for="p in [1,7,14,30,60,90,'YTD']" :key="p">
-            <button @click="setChangesPeriod(p)"
-                    :style="_changesPeriodActive === p ? 'background: rgba(34,211,238,0.15); color: var(--cyan);' : 'color: rgba(255,255,255,0.45);'"
-                    class="px-2.5 py-1 text-[10px] font-mono leading-none hover:text-zinc-300 transition cursor-pointer select-none"
-                    x-text="p === 'YTD' ? 'YTD' : p + 'd'"></button>
-          </template>
-        </div>
-      </div>
-    </div>
-
-    <!-- Section 1: Score Movers - Biggest Gainers & Losers (Side by side) -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
-      <!-- Biggest Gainers -->
-      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
-          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg> Biggest Score Gainers
-            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">GAINERS</span>
-            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
-          </div>
-          <div class="text-[10px] font-mono text-zinc-500" x-text="`Max 15 rows · &ge;2 ETFs`"></div>
-        </div>
-        <div class="overflow-x-auto scrollbar">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04] select-none">
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('gainers', 'leaderboard_rank')" :class="changesSortClass('gainers', 'leaderboard_rank')">#</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('gainers', 'ticker')" :class="changesSortClass('gainers', 'ticker')">Ticker</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 hidden sm:table-cell" @click="sortChangesTable('gainers', 'company')" :class="changesSortClass('gainers', 'company')">Company</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('gainers', 'etf_count')" :class="changesSortClass('gainers', 'etf_count')">ETFs</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('gainers', 'score_delta')" :class="changesSortClass('gainers', 'score_delta')">Δ%</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('gainers', 'final_score')" :class="changesSortClass('gainers', 'final_score')">Score</th>
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-center" @click="sortChangesTable('gainers', 'score_streak')" :class="changesSortClass('gainers', 'score_streak')">Streak</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="r in dynamicScoreGainers" :key="r.ticker">
-                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
-                    @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
-                  <td class="px-3 py-2 font-mono text-zinc-400" x-text="r.leaderboard_rank"></td>
-                  <td class="px-2 py-2 font-mono font-medium text-zinc-200">
-                    <div class="flex items-center gap-1.5">
-                      <span x-text="r.ticker"></span>
-                      <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
-                        <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
-                              x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
-                      </template>
-                    </div>
-                  </td>
-                  <td class="px-2 py-2 text-zinc-400 truncate hidden sm:table-cell max-w-[150px]" x-text="r.company"></td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-400" x-text="r.etf_count"></td>
-                  <td class="px-2 py-2 text-right font-mono font-semibold" :style="`color: ${flowColor(r.score_deltas_by_period[String(changesPeriod)])}`"
-                      x-text="fmtPct(r.score_deltas_by_period[String(changesPeriod)])"></td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
-                  <td class="px-3 py-2 text-center font-mono text-[10px]" :style="`color: ${streakColor(r.score_streak)}`"
-                      x-text="r.score_streak ? fmtStreak(r.score_streak) : '—'"></td>
-                </tr>
-              </template>
-              <tr x-show="dynamicScoreGainers.length === 0">
-                <td colspan="7" class="px-3 py-6 text-center text-zinc-500 italic select-none">No gainers detected in this period</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Biggest Losers -->
-      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
-          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <svg class="w-3.5 h-3.5 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg> Biggest Score Losers
-            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">LOSERS</span>
-            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
-          </div>
-          <div class="text-[10px] font-mono text-zinc-500" x-text="`Max 15 rows · &ge;2 ETFs`"></div>
-        </div>
-        <div class="overflow-x-auto scrollbar">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04] select-none">
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('losers', 'leaderboard_rank')" :class="changesSortClass('losers', 'leaderboard_rank')">#</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('losers', 'ticker')" :class="changesSortClass('losers', 'ticker')">Ticker</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 hidden sm:table-cell" @click="sortChangesTable('losers', 'company')" :class="changesSortClass('losers', 'company')">Company</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('losers', 'etf_count')" :class="changesSortClass('losers', 'etf_count')">ETFs</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('losers', 'score_delta')" :class="changesSortClass('losers', 'score_delta')">Δ%</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('losers', 'final_score')" :class="changesSortClass('losers', 'final_score')">Score</th>
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-center" @click="sortChangesTable('losers', 'score_streak')" :class="changesSortClass('losers', 'score_streak')">Streak</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="r in dynamicScoreLosers" :key="r.ticker">
-                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
-                    @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
-                  <td class="px-3 py-2 font-mono text-zinc-400" x-text="r.leaderboard_rank"></td>
-                  <td class="px-2 py-2 font-mono font-medium text-zinc-200">
-                    <div class="flex items-center gap-1.5">
-                      <span x-text="r.ticker"></span>
-                      <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
-                        <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
-                              x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
-                      </template>
-                    </div>
-                  </td>
-                  <td class="px-2 py-2 text-zinc-400 truncate hidden sm:table-cell max-w-[150px]" x-text="r.company"></td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-400" x-text="r.etf_count"></td>
-                  <td class="px-2 py-2 text-right font-mono font-semibold" :style="`color: ${flowColor(r.score_deltas_by_period[String(changesPeriod)])}`"
-                      x-text="fmtPct(r.score_deltas_by_period[String(changesPeriod)])"></td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
-                  <td class="px-3 py-2 text-center font-mono text-[10px]" :style="`color: ${streakColor(r.score_streak)}`"
-                      x-text="r.score_streak ? fmtStreak(r.score_streak) : '—'"></td>
-                </tr>
-              </template>
-              <tr x-show="dynamicScoreLosers.length === 0">
-                <td colspan="7" class="px-3 py-6 text-center text-zinc-500 italic select-none">No losers detected in this period</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Section 2: Rank Movers (Climbers & Fallers) - period-aware -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
-      <!-- Rank Climbers -->
-      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
-          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg> Biggest Rank Climbers
-            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">CLIMBERS</span>
-            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
-          </div>
-          <div class="text-[10px] font-mono text-zinc-500" x-text="`Max 10 rows · &ge;2 ETFs · Rank Δ &ge; +${(changesPeriod === 1 || changesPeriod === 7) ? 10 : 20}`"></div>
-        </div>
-        <div class="overflow-x-auto scrollbar">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04] select-none">
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('climbers', 'rank_delta')" :class="changesSortClass('climbers', 'rank_delta')">Rank Path</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('climbers', 'ticker')" :class="changesSortClass('climbers', 'ticker')">Ticker</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 hidden sm:table-cell" @click="sortChangesTable('climbers', 'company')" :class="changesSortClass('climbers', 'company')">Company</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('climbers', 'etf_delta')" :class="changesSortClass('climbers', 'etf_delta')">ETFs added</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('climbers', 'etf_count_delta_30d')" :class="changesSortClass('climbers', 'etf_count_delta_30d')">Δ Funds</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('climbers', 'final_score')" :class="changesSortClass('climbers', 'final_score')">Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="r in rankClimbers" :key="r.ticker">
-                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
-                    @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
-                  <td class="px-3 py-2 font-mono text-emerald-400">
-                    <div class="flex items-center gap-1">
-                      <span class="text-zinc-500" x-text="`#${r.leaderboard_rank + (r.global_rank_delta_by_period?.[String(changesPeriod)] || 0)}`"></span>
-                      <span class="text-[9px] text-zinc-600">&rarr;</span>
-                      <span class="font-bold" x-text="`#${r.leaderboard_rank}`"></span>
-                      <span class="text-[10px] ml-0.5 font-bold" x-text="`(+${r.global_rank_delta_by_period?.[String(changesPeriod)] || 0})`"></span>
-                    </div>
-                  </td>
-                  <td class="px-2 py-2 font-mono font-medium text-zinc-200">
-                    <div class="flex items-center gap-1.5">
-                      <span x-text="r.ticker"></span>
-                      <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
-                        <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
-                              x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
-                      </template>
-                    </div>
-                  </td>
-                  <td class="px-2 py-2 text-zinc-400 truncate hidden sm:table-cell max-w-[150px]" x-text="r.company"></td>
-                  <td class="px-2 py-2 text-right font-mono font-semibold text-emerald-400"
-                      x-text="(r.etf_count_delta_by_period?.[String(changesPeriod)] || 0) ? `+${r.etf_count_delta_by_period?.[String(changesPeriod)]}` : '—'"></td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-300" :style="`color: ${(r.etf_count_delta_30d||0) > 0 ? 'var(--up)' : (r.etf_count_delta_30d||0) < 0 ? 'var(--down)' : 'var(--text-3)'}`" x-text="`${(r.etf_count_delta_30d||0) > 0 ? '+' : ''}${r.etf_count_delta_30d||0}`"></td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
-                </tr>
-              </template>
-              <tr x-show="rankClimbers.length === 0">
-                <td colspan="6" class="px-3 py-6 text-center text-zinc-500 italic select-none">No significant rank climbers detected</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Rank Fallers -->
-      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
-          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <svg class="w-3.5 h-3.5 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg> Biggest Rank Fallers
-            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">FALLERS</span>
-            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
-          </div>
-          <div class="text-[10px] font-mono text-zinc-500" x-text="`Max 10 rows · &ge;2 ETFs · Rank Δ &le; -${(changesPeriod === 1 || changesPeriod === 7) ? 10 : 20}`"></div>
-        </div>
-        <div class="overflow-x-auto scrollbar">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04] select-none">
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('fallers', 'rank_delta')" :class="changesSortClass('fallers', 'rank_delta')">Rank Path</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('fallers', 'ticker')" :class="changesSortClass('fallers', 'ticker')">Ticker</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 hidden sm:table-cell" @click="sortChangesTable('fallers', 'company')" :class="changesSortClass('fallers', 'company')">Company</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('fallers', 'etf_delta')" :class="changesSortClass('fallers', 'etf_delta')">ETFs lost</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('fallers', 'etf_count_delta_30d')" :class="changesSortClass('fallers', 'etf_count_delta_30d')">Δ Funds</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('fallers', 'final_score')" :class="changesSortClass('fallers', 'final_score')">Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="r in rankFallers" :key="r.ticker">
-                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
-                    @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
-                  <td class="px-3 py-2 font-mono text-rose-400">
-                    <div class="flex items-center gap-1">
-                      <span class="text-zinc-500" x-text="`#${r.leaderboard_rank + (r.global_rank_delta_by_period?.[String(changesPeriod)] || 0)}`"></span>
-                      <span class="text-[9px] text-zinc-600">&rarr;</span>
-                      <span class="font-bold" x-text="`#${r.leaderboard_rank}`"></span>
-                      <span class="text-[10px] ml-0.5 font-bold" x-text="`(${r.global_rank_delta_by_period?.[String(changesPeriod)] || 0})`"></span>
-                    </div>
-                  </td>
-                  <td class="px-2 py-2 font-mono font-medium text-zinc-200">
-                    <div class="flex items-center gap-1.5">
-                      <span x-text="r.ticker"></span>
-                      <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
-                        <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
-                              x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
-                      </template>
-                    </div>
-                  </td>
-                  <td class="px-2 py-2 text-zinc-400 truncate hidden sm:table-cell max-w-[150px]" x-text="r.company"></td>
-                  <td class="px-2 py-2 text-right font-mono" :style="`color: ${(r.etf_count_delta_by_period?.[String(changesPeriod)] || 0) < 0 ? 'var(--down)' : 'var(--text-3)'}`"
-                      x-text="(r.etf_count_delta_by_period?.[String(changesPeriod)] || 0) ? `${r.etf_count_delta_by_period?.[String(changesPeriod)]}` : '—'"></td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-300" :style="`color: ${(r.etf_count_delta_30d||0) > 0 ? 'var(--up)' : (r.etf_count_delta_30d||0) < 0 ? 'var(--down)' : 'var(--text-3)'}`" x-text="`${(r.etf_count_delta_30d||0) > 0 ? '+' : ''}${r.etf_count_delta_30d||0}`"></td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
-                </tr>
-              </template>
-              <tr x-show="rankFallers.length === 0">
-                <td colspan="6" class="px-3 py-6 text-center text-zinc-500 italic select-none">No significant rank fallers detected</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Section 3: ETF Adoption & Dropout - period-aware -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
-      <!-- ETF Pickups (Adoption) -->
-      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
-          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <svg class="w-3.5 h-3.5 text-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> ETF Adoption (Pickups)
-            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">ADOPTIONS</span>
-            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
-          </div>
-          <div class="text-[10px] font-mono text-zinc-500" x-text="`${etfPickups.length} names · &ge;2 ETFs`"></div>
-        </div>
-        <div class="overflow-x-auto scrollbar">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04] select-none">
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('pickups', 'ticker')" :class="changesSortClass('pickups', 'ticker')">Ticker</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 hidden sm:table-cell" @click="sortChangesTable('pickups', 'company')" :class="changesSortClass('pickups', 'company')">Company</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('pickups', 'etf_delta')" :class="changesSortClass('pickups', 'etf_delta')">ETF Path</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('pickups', 'final_score')" :class="changesSortClass('pickups', 'final_score')">Score</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('pickups', 'etf_count_delta_30d')" :class="changesSortClass('pickups', 'etf_count_delta_30d')">Δ Funds</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="r in etfPickups" :key="r.ticker">
-                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
-                    @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
-                  <td class="px-3 py-2 font-mono font-medium text-zinc-200">
-                    <div class="flex items-center gap-1.5">
-                      <span x-text="r.ticker"></span>
-                      <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
-                        <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
-                              x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
-                      </template>
-                    </div>
-                  </td>
-                  <td class="px-2 py-2 text-zinc-400 truncate hidden sm:table-cell max-w-[180px]" x-text="r.company"></td>
-                  <td class="px-2 py-2 text-right font-mono text-emerald-400 font-semibold">
-                    <span class="text-zinc-500 font-normal" x-text="`${r.etf_count - (r.etf_count_delta_by_period?.[String(changesPeriod)] || 0)}`"></span>
-                    <span class="text-[9px] text-zinc-600 font-normal">&rarr;</span>
-                    <span x-text="r.etf_count"></span>
-                    <span class="text-[10px]" x-text="` (+${r.etf_count_delta_by_period?.[String(changesPeriod)] || 0})`"></span>
-                  </td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
-                  <td class="px-2 py-2 text-right font-mono" :style="`color: ${(r.etf_count_delta_30d||0) > 0 ? 'var(--up)' : (r.etf_count_delta_30d||0) < 0 ? 'var(--down)' : 'var(--text-3)'}`" x-text="`${(r.etf_count_delta_30d||0) > 0 ? '+' : ''}${r.etf_count_delta_30d||0}`"></td>
-                </tr>
-              </template>
-              <tr x-show="etfPickups.length === 0">
-                <td colspan="5" class="px-3 py-6 text-center text-zinc-500 italic select-none">No ETF pickups in this period</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- ETF Dropouts -->
-      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
-          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <svg class="w-3.5 h-3.5 text-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> ETF Defections (Dropouts)
-            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">DEFECTIONS</span>
-            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD' : changesPeriod + 'd'"></span>
-          </div>
-          <div class="text-[10px] font-mono text-zinc-500" x-text="`${etfDropouts.length} names · ≥2 prior ETFs`"></div>
-        </div>
-        <div class="overflow-x-auto scrollbar">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04] select-none">
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('dropouts', 'ticker')" :class="changesSortClass('dropouts', 'ticker')">Ticker</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 hidden sm:table-cell" @click="sortChangesTable('dropouts', 'company')" :class="changesSortClass('dropouts', 'company')">Company</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('dropouts', 'etf_delta')" :class="changesSortClass('dropouts', 'etf_delta')">ETF Path</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('dropouts', 'final_score')" :class="changesSortClass('dropouts', 'final_score')">Score</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('dropouts', 'etf_count_delta_30d')" :class="changesSortClass('dropouts', 'etf_count_delta_30d')">Δ Funds</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="r in etfDropouts" :key="r.ticker">
-                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
-                    @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
-                  <td class="px-3 py-2 font-mono font-medium text-zinc-200">
-                    <div class="flex items-center gap-1.5">
-                      <span x-text="r.ticker"></span>
-                      <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
-                        <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
-                              x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
-                      </template>
-                    </div>
-                  </td>
-                  <td class="px-2 py-2 text-zinc-400 truncate hidden sm:table-cell max-w-[180px]" x-text="r.company"></td>
-                  <td class="px-2 py-2 text-right font-mono text-rose-400 font-semibold">
-                    <span class="text-zinc-500 font-normal" x-text="`${r.etf_count - (r.etf_count_delta_by_period?.[String(changesPeriod)] || 0)}`"></span>
-                    <span class="text-[9px] text-zinc-600 font-normal">&rarr;</span>
-                    <span x-text="r.etf_count"></span>
-                    <span class="text-[10px]" x-text="` (${r.etf_count_delta_by_period?.[String(changesPeriod)] || 0})`"></span>
-                  </td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
-                  <td class="px-2 py-2 text-right font-mono" :style="`color: ${(r.etf_count_delta_30d||0) > 0 ? 'var(--up)' : (r.etf_count_delta_30d||0) < 0 ? 'var(--down)' : 'var(--text-3)'}`" x-text="`${(r.etf_count_delta_30d||0) > 0 ? '+' : ''}${r.etf_count_delta_30d||0}`"></td>
-                </tr>
-              </template>
-              <tr x-show="etfDropouts.length === 0">
-                <td colspan="5" class="px-3 py-6 text-center text-zinc-500 italic select-none">No ETF dropouts in this period</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Section 4: Burst Movers (Winners & Crashers) - fixed 30d signal -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
-      <!-- Burst Winners -->
-      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
-          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <svg class="w-3.5 h-3.5 text-purple-400" viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Burst Winners
-            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">BURST</span>
-            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)">fixed 30d</span>
-          </div>
-          <div class="text-[10px] font-mono text-zinc-500" x-text="`${burstWinners.length} burst · &ge;2 ETFs`"></div>
-        </div>
-        <div class="overflow-x-auto scrollbar">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04] select-none">
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('burstWinners', 'ticker')" :class="changesSortClass('burstWinners', 'ticker')">Ticker</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 hidden sm:table-cell" @click="sortChangesTable('burstWinners', 'company')" :class="changesSortClass('burstWinners', 'company')">Company</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('burstWinners', 'burst_rank_gain')" :class="changesSortClass('burstWinners', 'burst_rank_gain')">Peak Δ</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('burstWinners', 'global_rank_delta_30d')" :class="changesSortClass('burstWinners', 'global_rank_delta_30d')">Δ30d</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('burstWinners', 'etf_count_delta_30d')" :class="changesSortClass('burstWinners', 'etf_count_delta_30d')">Δ Funds</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('burstWinners', 'final_score')" :class="changesSortClass('burstWinners', 'final_score')">Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="r in burstWinners" :key="r.ticker">
-                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
-                    @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
-                  <td class="px-3 py-2 font-mono font-medium text-zinc-200">
-                    <div class="flex items-center gap-1.5">
-                      <span x-text="r.ticker"></span>
-                      <span class="chip text-[8px] px-1 py-0" style="background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.3)">BURST</span>
-                    </div>
-                  </td>
-                  <td class="px-2 py-2 text-zinc-400 truncate hidden sm:table-cell max-w-[150px]" x-text="r.company"></td>
-                  <td class="px-2 py-2 text-right font-mono font-bold" style="color: #c084fc;" x-text="`+${r.burst_rank_gain || 0}`"></td>
-                  <td class="px-2 py-2 text-right font-mono text-emerald-400" x-text="`+${r.global_rank_delta_30d || 0}`"></td>
-                  <td class="px-2 py-2 text-right font-mono" :style="`color: ${(r.etf_count_delta_30d||0) > 0 ? 'var(--up)' : (r.etf_count_delta_30d||0) < 0 ? 'var(--down)' : 'var(--text-3)'}`" x-text="`${(r.etf_count_delta_30d||0) > 0 ? '+' : ''}${r.etf_count_delta_30d||0}`"></td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
-                </tr>
-              </template>
-              <tr x-show="burstWinners.length === 0">
-                <td colspan="6" class="px-3 py-6 text-center text-zinc-500 italic select-none">No active burst signals</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Crater Movers (rank cratered / active crater signal) -->
-      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
-          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <svg class="w-3.5 h-3.5 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg> Crater Movers
-            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">CRATER</span>
-            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)">fixed 30d</span>
-          </div>
-          <div class="text-[10px] font-mono text-zinc-500" x-text="`${burstLosers.length} names · crater / Δ &le; −30`"></div>
-        </div>
-        <div class="overflow-x-auto scrollbar">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04] select-none">
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('burstLosers', 'ticker')" :class="changesSortClass('burstLosers', 'ticker')">Ticker</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 hidden sm:table-cell" @click="sortChangesTable('burstLosers', 'company')" :class="changesSortClass('burstLosers', 'company')">Company</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('burstLosers', 'global_rank_delta_30d')" :class="changesSortClass('burstLosers', 'global_rank_delta_30d')">Rank Δ30d</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('burstLosers', 'etf_count_delta_30d')" :class="changesSortClass('burstLosers', 'etf_count_delta_30d')">ETFs Δ</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('burstLosers', 'final_score')" :class="changesSortClass('burstLosers', 'final_score')">Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="r in burstLosers" :key="r.ticker">
-                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
-                    @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
-                  <td class="px-3 py-2 font-mono font-medium text-zinc-200">
-                    <div class="flex items-center gap-1.5">
-                      <span x-text="r.ticker"></span>
-                      <template x-if="r.crater_30d">
-                        <span class="chip text-[8px] px-1 py-0" style="background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.3)">CRATER</span>
-                      </template>
-                      <template x-if="!r.crater_30d && (r.tiers || '').split(' + ').filter(Boolean)[0]">
-                        <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
-                              x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
-                      </template>
-                    </div>
-                  </td>
-                  <td class="px-2 py-2 text-zinc-400 truncate hidden sm:table-cell max-w-[150px]" x-text="r.company"></td>
-                  <td class="px-2 py-2 text-right font-mono font-bold text-rose-500" x-text="r.global_rank_delta_30d || 0"></td>
-                  <td class="px-2 py-2 text-right font-mono" :style="`color: ${(r.etf_count_delta_30d || 0) < 0 ? 'var(--down)' : 'var(--text-3)'}`"
-                      x-text="r.etf_count_delta_30d ? r.etf_count_delta_30d : '—'"></td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
-                </tr>
-              </template>
-              <tr x-show="burstLosers.length === 0">
-                <td colspan="5" class="px-3 py-6 text-center text-zinc-500 italic select-none">No significant rank crashers detected</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Section 4: Top Accumulation Movers + Active Signals Dashboard -->
-    <div class="rounded-lg border mb-4" style="border-color: var(--border); background: var(--surface);">
-      <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
-        <div class="label flex items-center gap-1.5 text-cyan-400 font-semibold text-xs tracking-wider uppercase">
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Top Accumulation Movers (Last 30 Days)
-        </div>
-        <div class="text-[10px] text-zinc-500">Most ETF positions added over 30 days</div>
-      </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-        <template x-for="r in (changelog.top_accumulation || [])" :key="r.ticker">
-          <a :href="`stock.html?t=${r.ticker}`" style="text-decoration: none; color: inherit; display: block;"
-             class="border-b border-r last:border-b-0 sm:last:border-r-0 border-white/[0.03]">
-            <div class="px-3 py-2.5 text-xs hover:bg-white/5 transition flex flex-col justify-between h-full"
-                 :style="isPinned(r.ticker) ? 'background: rgba(34,211,238,0.03);' : ''">
-              <div class="flex items-center justify-between">
-                <div class="flex flex-col min-w-0">
-                  <div class="flex items-center gap-1.5">
-                    <span x-show="isPinned(r.ticker)" style="color: var(--cyan)">★</span>
-                    <span class="font-mono font-semibold text-zinc-200" x-text="r.ticker"></span>
-                    <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
-                      <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
-                            x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
-                    </template>
-                  </div>
-                  <span style="color: var(--text-2)" class="truncate text-[11px]" x-text="r.company"></span>
-                </div>
-                <div class="num font-mono text-right shrink-0 ml-2">
-                  <div :style="`color: ${(r.etf_count_delta_30d||0) > 0 ? 'var(--up)' : 'var(--down)'}`" class="font-bold" x-text="`${(r.etf_count_delta_30d||0) > 0 ? '+' : ''}${r.etf_count_delta_30d||0} funds`"></div>
-                  <div class="text-[10px] flex items-center justify-end gap-1">
-                    <span x-show="r.burst_30d" class="chip sig-badge text-[8px] px-1 py-0" style="background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.3)">BURST</span>
-                    <span style="color: var(--text-3)" x-text="`${r.etf_count} ETF${r.etf_count===1?'':'s'}`"></span>
-                  </div>
-                </div>
-              </div>
-              <div class="flex gap-3 mt-1.5 text-[10px] text-zinc-500 font-mono">
-                <span x-text="`Δrank7d: ${(r.avg_rank_delta_7d||0)>=0?'+':''}${(r.avg_rank_delta_7d||0).toFixed(1)}`"></span>
-              </div>
-            </div>
-          </a>
+      <div class="flex border rounded overflow-x-auto scrollbar max-w-full shrink-0" style="border-color: rgba(255,255,255,0.08); background: rgba(0,0,0,0.25)">
+        <template x-for="p in [1,7,14,30,60,90,'YTD']" :key="p">
+          <button @click="setChangesPeriod(p)"
+                  :style="_changesPeriodActive === p ? 'background: rgba(34,211,238,0.15); color: var(--cyan);' : 'color: rgba(255,255,255,0.45);'"
+                  class="px-2.5 py-1 text-[10px] font-mono leading-none hover:text-zinc-300 transition cursor-pointer select-none"
+                  x-text="p === 'YTD' ? 'YTD' : p + 'd'"></button>
         </template>
-        <div x-show="!changelog.top_accumulation?.length" class="col-span-3 px-3 py-6 text-center text-xs text-zinc-500 italic select-none">No accumulation data available.</div>
-      </div>
-
-      <!-- Active Signal Summary Strip -->
-      <div class="p-2.5 bg-white/[0.01] border-t flex flex-wrap items-center justify-start gap-2 text-xs border-white/[0.04]">
-        <span class="text-zinc-500 font-mono text-[10px] uppercase tracking-wider pl-1 mr-1">Active Signals:</span>
-        <button @click="reset(); burstOnly = true; activeTab = 'leaderboard'; window.scrollTo({ top: 0, behavior: 'smooth' });"
-                x-tooltip="'Filter leaderboard to BURST names (smoothed rank surge confirmed by a fund add)'"
-                class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/25 transition cursor-pointer select-none">
-          <span class="font-bold text-[10px] px-1 py-0.5 rounded bg-purple-500/20 text-purple-300 mr-0.5">BURST</span>
-          <span x-text="`${activeSignalCounts.burst} Burst`"></span>
-        </button>
-        <button @click="reset(); qualityAdoptedOnly = true; activeTab = 'leaderboard'; window.scrollTo({ top: 0, behavior: 'smooth' });"
-                x-tooltip="'Filter leaderboard to show only Quality+ names (added by Quality ETF in 30d)'"
-                class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 border border-teal-500/25 transition cursor-pointer select-none">
-          <span class="font-bold text-[10px] px-1 py-0.5 rounded bg-teal-500/20 text-teal-300 mr-0.5">QUAL+</span>
-          <span x-text="`${activeSignalCounts.qualityAdopted} Quality Adopted`"></span>
-        </button>
       </div>
     </div>
 
-    <!-- Section 5: New Entrants + Universe Exits -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
-      <!-- New Entrants -->
-      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
-          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <svg class="w-3.5 h-3.5 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> New Entrants
-            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">NEW</span>
-            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD' : `&le;${changesPeriod}d`"></span>
+    <!-- Summary: four up/down pairs, one per row of panels below -->
+    <div class="chg-summary mb-3">
+      <template x-for="c in changesSummary" :key="c.label">
+        <button type="button" class="chg-sum-cell" @click="document.getElementById('chg-' + c.anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' })">
+          <div class="label" x-text="c.label"></div>
+          <div class="flex items-baseline gap-3 mt-1 font-mono num">
+            <span class="text-[17px] font-semibold" style="color: var(--up)" x-text="`+${c.up}`"></span>
+            <span class="text-[17px] font-semibold" style="color: var(--down)" x-text="`−${c.down}`"></span>
           </div>
-          <div class="text-[10px] font-mono text-zinc-500" x-text="`${newEntrants.length} names`"></div>
-        </div>
-        <div class="overflow-x-auto max-h-[350px] scrollbar">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04] select-none">
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('newEntrants', 'ticker')" :class="changesSortClass('newEntrants', 'ticker')">Ticker</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('newEntrants', 'company')" :class="changesSortClass('newEntrants', 'company')">Company</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('newEntrants', 'final_score')" :class="changesSortClass('newEntrants', 'final_score')">Score</th>
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('newEntrants', 'etf_count')" :class="changesSortClass('newEntrants', 'etf_count')">ETFs</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="r in newEntrants" :key="r.ticker">
-                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
-                    @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
-                  <td class="px-3 py-2 font-mono font-medium text-zinc-200">
-                    <div class="flex items-center gap-1.5">
-                      <span x-text="r.ticker"></span>
-                      <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
-                        <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
-                              x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
-                      </template>
-                    </div>
-                  </td>
-                  <td class="px-2 py-2 text-zinc-400 truncate max-w-[180px]" x-text="r.company || '—'"></td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-300" x-text="fmt1(r.final_score)"></td>
-                  <td class="px-3 py-2 text-right font-mono text-zinc-400" x-text="r.etf_count"></td>
-                </tr>
-              </template>
-              <tr x-show="!newEntrants.length">
-                <td colspan="4" class="px-3 py-6 text-center text-zinc-500 italic select-none">No new entrants detected</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Dropped from Universe (Exits) -->
-      <div class="rounded-lg border bg-surface" style="border-color: var(--border); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border); background: rgba(255,255,255,0.005);">
-          <div class="label flex items-center gap-2 text-zinc-100 font-bold text-[10px] tracking-wider uppercase">
-            <svg class="w-3.5 h-3.5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Dropped from Universe
-            <span class="px-1.5 py-0.5 rounded text-[8px] font-semibold bg-zinc-500/10 text-zinc-300 border border-zinc-500/20">EXITS</span>
-            <span class="chip text-[9px] font-mono normal-case" style="background: rgba(255,255,255,0.03); color: var(--text-3); border: 1px solid var(--border)" x-text="changesPeriod === 'YTD' ? 'YTD exits' : changesPeriod + 'd exits'"></span>
-          </div>
-          <div class="text-[10px] font-mono text-zinc-500" x-text="`${universeExits.length} exits`"></div>
-        </div>
-        <div class="overflow-x-auto max-h-[350px] scrollbar">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04] select-none">
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('universeExits', 'ticker')" :class="changesSortClass('universeExits', 'ticker')">Ticker</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortChangesTable('universeExits', 'company')" :class="changesSortClass('universeExits', 'company')">Company</th>
-                <th class="px-2 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('universeExits', 'score_delta')" :class="changesSortClass('universeExits', 'score_delta')">Prev. Score</th>
-                <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300 text-right" @click="sortChangesTable('universeExits', 'score_delta_pct')" :class="changesSortClass('universeExits', 'score_delta_pct')">Change</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="r in universeExits" :key="r.ticker">
-                <tr class="text-xs hover:bg-white/5 transition cursor-pointer border-b last:border-0 border-white/[0.03]"
-                    @click="window.open(`stock.html?t=${r.ticker}`, '_self')">
-                  <td class="px-3 py-2 font-mono font-medium text-zinc-400">
-                    <div class="flex items-center gap-1.5">
-                      <span x-text="r.ticker"></span>
-                      <template x-if="(r.tiers || '').split(' + ').filter(Boolean)[0]">
-                        <span class="chip text-[9px] scale-90 origin-left" :style="tierChipStyle((r.tiers || '').split(' + ').filter(Boolean)[0])"
-                              x-text="(r.tiers || '').split(' + ').filter(Boolean)[0]"></span>
-                      </template>
-                    </div>
-                  </td>
-                  <td class="px-2 py-2 text-zinc-500 truncate max-w-[180px]" x-text="r.company || '—'"></td>
-                  <td class="px-2 py-2 text-right font-mono text-zinc-400" x-text="fmt1(r.final_score - r.score_delta)"></td>
-                  <td class="px-3 py-2 text-right font-mono text-rose-500" x-text="fmtPct(r.score_delta_pct)"></td>
-                </tr>
-              </template>
-              <tr x-show="universeExits.length === 0">
-                <td colspan="4" class="px-3 py-6 text-center text-zinc-500 italic select-none">
-                  <div class="border border-dashed rounded p-4 border-white/[0.08]">No exits detected</div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+          <div class="text-[10px] mt-0.5" style="color: var(--text-3)" x-text="c.note"></div>
+        </button>
+      </template>
     </div>
 
-    <!-- Section 6: Sector & Country Flow Intelligence (UPGRADED) -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
-      <!-- Sector Flow Table -->
-      <div class="rounded-lg border" style="border-color: var(--border); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
-          <div class="label flex items-center gap-1.5 text-cyan-400 font-semibold text-xs tracking-wider uppercase">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Sector Flow Intelligence
+    <!-- Paired panels: building on the left, breaking on the right -->
+    <template x-for="pair in changesLayout" :key="pair[0].id">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3" :id="'chg-' + pair[0].id">
+        <template x-for="P in pair" :key="P.id">
+          <div class="chg-panel" :class="'tone-' + P.tone">
+            <div class="chg-head">
+              <span class="chg-dot"></span>
+              <span class="chg-title" x-text="P.title"></span>
+              <span class="chg-count font-mono" x-text="P.count"></span>
+              <span class="chg-hint" x-text="P.hint"></span>
+            </div>
+            <div class="overflow-x-auto scrollbar flex-1">
+              <table class="w-full text-left border-collapse chg-table">
+                <thead>
+                  <tr>
+                    <th class="pl-3 cursor-pointer" @click="sortChangesTable(P.id, 'ticker')" :class="changesSortClass(P.id, 'ticker')">Ticker</th>
+                    <th class="hidden sm:table-cell">Company</th>
+                    <th class="text-right cursor-pointer" @click="sortChangesTable(P.id, 'rank')" :class="[changesSortClass(P.id, 'rank'), P.metric === 'rank' ? 'chg-key' : '']">Rank</th>
+                    <th class="text-right cursor-pointer" @click="sortChangesTable(P.id, 'funds')" :class="[changesSortClass(P.id, 'funds'), P.metric === 'funds' ? 'chg-key' : '']">Funds</th>
+                    <th class="text-right pr-3 cursor-pointer" @click="sortChangesTable(P.id, 'score')" :class="changesSortClass(P.id, 'score')">Score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template x-for="r in P.rows" :key="r.ticker">
+                    <tr class="chg-row" @click="window.open(`stock.html?t=${encodeURIComponent(r.ticker)}`, '_self')">
+                      <td class="pl-3">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                          <span x-show="isPinned(r.ticker)" style="color: var(--cyan)">★</span>
+                          <span class="font-mono font-semibold text-zinc-200" x-text="r.ticker"></span>
+                          <template x-if="r.badge">
+                            <span class="chip sig-badge" :style="r.badge.style" x-text="r.badge.label" x-tooltip="r.badge.tip"></span>
+                          </template>
+                        </div>
+                      </td>
+                      <td class="hidden sm:table-cell truncate max-w-[200px]" style="color: var(--text-2)" x-text="r.company || '—'"></td>
+                      <td class="text-right font-mono whitespace-nowrap">
+                        <span style="color: var(--text-3)" x-text="r.rank_then != null ? '#' + r.rank_then : '—'"></span>
+                        <span class="chg-arrow">→</span>
+                        <span :style="`color: ${P.metric === 'rank' ? toneColor(r.rankDir) : 'var(--text)'}`" x-text="r.rank_now != null ? '#' + r.rank_now : 'off'"></span>
+                      </td>
+                      <td class="text-right font-mono whitespace-nowrap">
+                        <span style="color: var(--text-3)" x-text="r.funds_then"></span>
+                        <span class="chg-arrow">→</span>
+                        <span :style="`color: ${P.metric === 'funds' ? toneColor(Math.sign(r.funds_now - r.funds_then)) : 'var(--text)'}`" x-text="r.funds_now"></span>
+                      </td>
+                      <td class="text-right font-mono pr-3 text-zinc-300" x-text="r.score_now != null ? fmt1(r.score_now) : fmt1(r.score_then)"></td>
+                    </tr>
+                  </template>
+                  <tr x-show="!P.rows.length">
+                    <td colspan="5" class="px-3 py-8 text-center text-[11px] select-none" style="color: var(--text-3)" x-text="P.empty"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="chg-foot" x-show="P.count > P.rows.length" x-text="`Top ${P.rows.length} of ${P.count}`"></div>
           </div>
-          <div class="text-[10px] font-mono text-zinc-500">Net ETF positions added (30d) · 2+ ETF names</div>
+        </template>
+      </div>
+    </template>
+
+    <!-- Sector & country flow (fixed 30-day fund-count change) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4" id="chg-flow">
+      <div class="chg-panel tone-neutral">
+        <div class="chg-head">
+          <span class="chg-dot"></span>
+          <span class="chg-title">Sector flow</span>
+          <span class="chg-hint">Net fund positions added · 30d · names with 2+ funds</span>
         </div>
         <div class="overflow-x-auto scrollbar">
-          <table class="w-full text-left border-collapse">
+          <table class="w-full text-left border-collapse chg-table">
             <thead>
               <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04] select-none">
                 <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortSector('label')" :class="sectorSortClass('label')">Sector</th>
@@ -2738,16 +2222,14 @@
         </div>
       </div>
 
-      <!-- Country Flow Table -->
-      <div class="rounded-lg border" style="border-color: var(--border); background: var(--surface);">
-        <div class="px-3 py-2 flex items-center justify-between border-b" style="border-color: var(--border);">
-          <div class="label flex items-center gap-1.5 text-cyan-400 font-semibold text-xs tracking-wider uppercase">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Country Flow Intelligence
-          </div>
-          <div class="text-[10px] font-mono text-zinc-500">Net ETF positions added (30d) · 2+ ETF names</div>
+      <div class="chg-panel tone-neutral">
+        <div class="chg-head">
+          <span class="chg-dot"></span>
+          <span class="chg-title">Country flow</span>
+          <span class="chg-hint">Net fund positions added · 30d · names with 2+ funds</span>
         </div>
         <div class="overflow-x-auto scrollbar">
-          <table class="w-full text-left border-collapse">
+          <table class="w-full text-left border-collapse chg-table">
             <thead>
               <tr class="text-[9px] uppercase tracking-[0.15em] font-medium text-zinc-500 border-b border-white/[0.04] select-none">
                 <th class="px-3 py-1.5 font-semibold cursor-pointer hover:text-zinc-300" @click="sortCountry('label')" :class="countrySortClass('label')">Country</th>
@@ -2835,21 +2317,11 @@ function app() {
     // changesPeriod feeds the heavy Changes-tab getters (debounced via
     // setChangesPeriod so rapid clicks coalesce into one render); the
     // _changesPeriodActive mirror updates instantly for the button highlight.
-    changesPeriod: 7,
-    _changesPeriodActive: 7,
+    changesPeriod: 30,
+    _changesPeriodActive: 30,
     _changesPeriodTimer: null,
-    changesSort: {
-      gainers: { key: '', dir: '' },
-      losers: { key: '', dir: '' },
-      climbers: { key: '', dir: '' },
-      fallers: { key: '', dir: '' },
-      pickups: { key: '', dir: '' },
-      dropouts: { key: '', dir: '' },
-      burstWinners: { key: '', dir: '' },
-      burstLosers: { key: '', dir: '' },
-      newEntrants: { key: '', dir: '' },
-      universeExits: { key: '', dir: '' }
-    },
+    changesSort: Object.fromEntries(['funds_added', 'funds_lost', 'hc_entered', 'hc_exited', 'burst', 'crater',
+      'climbers', 'fallers', 'new', 'exits'].map(k => [k, { key: '', dir: '' }])),
     etfHoldingsSortKey: 'rank',
     etfHoldingsSortDir: 'asc',
     sectorSortKey: '',
@@ -3081,6 +2553,12 @@ function app() {
       return immature;
     },
 
+    get _changesTodayCount() {
+      // Day-over-day events: fund adds/exits and HC transitions.
+      const c = this.changelog?.periods?.['1']?.counts || {};
+      return (c.funds_added || 0) + (c.funds_lost || 0) + (c.hc_entered || 0) + (c.hc_exited || 0);
+    },
+
     get tabs() {
       // Filter pin count to only tickers that still exist in leaderboard
       const activePins = this.pins.filter(t => this.leaderboard.some(r => r.ticker === t));
@@ -3088,7 +2566,7 @@ function app() {
         { id: 'leaderboard', label: 'leaderboard', count: this.leaderboard.length },
         { id: 'watchlist',   label: 'watchlist',   count: activePins.length },
         { id: 'etfs',        label: 'etfs',        count: this.meta.etfs?.length },
-        { id: 'changes',     label: 'changes',     count: (this.changelog.entered_hc?.length || 0) + (this.changelog.exited_hc?.length || 0) + this.dynamicScoreGainers.length + this.dynamicScoreLosers.length },
+        { id: 'changes',     label: 'changes',     count: this._changesTodayCount },
       ];
     },
 
@@ -3155,444 +2633,113 @@ function app() {
       localStorage.setItem('conviction_pin_snapshot', JSON.stringify(snap));
     },
 
-    get dynamicScoreGainers() {
-      const p = String(this.changesPeriod);
-      const cacheKey = `${p}_${JSON.stringify(this.changesSort.gainers)}_${this.leaderboard.length}`;
-      if (this._dynamicScoreGainersCache && this._dynamicScoreGainersCache.key === cacheKey) {
-        return this._dynamicScoreGainersCache.value;
-      }
-      const compute = () => {
-        const list = this.leaderboard
-          .filter(r => {
-            const d = r.score_deltas_by_period?.[p];
-            return d != null && d > 0 && (r.etf_count || 0) >= 2;
-          })
-          .sort((a, b) => (b.score_deltas_by_period[p] || 0) - (a.score_deltas_by_period[p] || 0));
-        const sliced = list.slice(0, 15);
-        const sortState = this.changesSort.gainers;
-        if (sortState && sortState.key) {
-          this.sortItemList(sliced, sortState.key, sortState.dir, p);
-        }
-        return sliced;
-      };
-      const result = compute();
-      this._dynamicScoreGainersCache = { key: cacheKey, value: result };
-      return result;
+    // ── Changes tab ────────────────────────────────────────────────────────
+    // Every period-based table comes precomputed from changelog.json
+    // (history.changelog — full daily leaderboards, not the capped
+    // score_history.json). BURST / CRATER are "in force now" and come from
+    // the leaderboard itself.
+    _changesPanelDefs: {
+      funds_added: { title: 'Funds adding',          tone: 'up',     metric: 'funds', hint: 'Gained a holding fund · now in the top 500',  empty: 'No fund added a top-500 name in this window' },
+      funds_lost:  { title: 'Funds leaving',         tone: 'down',   metric: 'funds', hint: 'Lost a holding fund · was in the top 500',    empty: 'No fund dropped a top-500 name in this window' },
+      hc_entered:  { title: 'Entered High Conviction', tone: 'up',   metric: 'rank',  hint: 'Met the HC rule now, not at the start',        empty: 'No new High Conviction names' },
+      hc_exited:   { title: 'Left High Conviction',  tone: 'down',   metric: 'rank',  hint: 'Met the HC rule at the start, not now',        empty: 'No name lost High Conviction' },
+      burst:       { title: 'BURST in force',        tone: 'burst',  metric: 'rank',  hint: 'Smoothed rank ×1.65+ in ~2 weeks, fund-confirmed', empty: '' },
+      crater:      { title: 'CRATER in force',       tone: 'crater', metric: 'rank',  hint: 'Smoothed rank ÷1.65+ in ~2 weeks, a fund exited', empty: '' },
+      climbers:    { title: 'Rank climbers',         tone: 'up',     metric: 'rank',  hint: 'Largest rank multiple · now in the top 300',   empty: 'No material rank gains in the top 300' },
+      fallers:     { title: 'Rank fallers',          tone: 'down',   metric: 'rank',  hint: 'Largest rank multiple · was in the top 300',   empty: 'No material rank losses in the top 300' },
+      new:         { title: 'New on the board',      tone: 'neutral', metric: 'funds', hint: 'Held now, by no fund at the start',           empty: 'No new names' },
+      exits:       { title: 'Left the board',        tone: 'neutral', metric: 'funds', hint: 'Held at the start, by no fund now',           empty: 'No names left the board' },
+    },
+    _changesPairs: [['funds_added', 'funds_lost'], ['hc_entered', 'hc_exited'], ['burst', 'crater'],
+                    ['climbers', 'fallers'], ['new', 'exits']],
+
+    get _changesBlock() {
+      return this.changelog?.periods?.[String(this.changesPeriod)] || null;
     },
 
-    get dynamicScoreLosers() {
-      const p = String(this.changesPeriod);
-      const cacheKey = `${p}_${JSON.stringify(this.changesSort.losers)}_${this.leaderboard.length}`;
-      if (this._dynamicScoreLosersCache && this._dynamicScoreLosersCache.key === cacheKey) {
-        return this._dynamicScoreLosersCache.value;
-      }
-      const compute = () => {
-        const list = this.leaderboard
-          .filter(r => {
-            const d = r.score_deltas_by_period?.[p];
-            return d != null && d < 0 && (r.etf_count || 0) >= 2;
-          })
-          .sort((a, b) => (a.score_deltas_by_period[p] || 0) - (b.score_deltas_by_period[p] || 0));
-        const sliced = list.slice(0, 15);
-        const sortState = this.changesSort.losers;
-        if (sortState && sortState.key) {
-          this.sortItemList(sliced, sortState.key, sortState.dir, p);
-        }
-        return sliced;
-      };
-      const result = compute();
-      this._dynamicScoreLosersCache = { key: cacheKey, value: result };
-      return result;
+    get _leaderboardByTicker() {
+      if (this._lbMapCache?.src === this.leaderboard) return this._lbMapCache.map;
+      const map = new Map(this.leaderboard.map(r => [r.ticker, r]));
+      this._lbMapCache = { src: this.leaderboard, map };
+      return map;
     },
 
-    get rankClimbers() {
-      const p = String(this.changesPeriod);
-      const cacheKey = `${p}_${JSON.stringify(this.changesSort.climbers)}_${this.leaderboard.length}`;
-      if (this._rankClimbersCache && this._rankClimbersCache.key === cacheKey) {
-        return this._rankClimbersCache.value;
-      }
-      const compute = () => {
-        const threshold = (this.changesPeriod === 1 || this.changesPeriod === 7) ? 10 : 20;
-        const list = this.leaderboard
-          .filter(r => (r.global_rank_delta_by_period?.[p] || 0) > threshold && (r.etf_count || 0) >= 2)
-          .sort((a, b) => (b.global_rank_delta_by_period?.[p] || 0) - (a.global_rank_delta_by_period?.[p] || 0));
-        const sliced = list.slice(0, 10);
-        const sortState = this.changesSort.climbers;
-        if (sortState && sortState.key) {
-          this.sortItemList(sliced, sortState.key, sortState.dir, p);
-        }
-        return sliced;
-      };
-      const result = compute();
-      this._rankClimbersCache = { key: cacheKey, value: result };
-      return result;
+    _motionRows(kind) {
+      const on = kind === 'burst' ? 'burst_30d' : 'crater_30d';
+      const move = kind === 'burst' ? 'burst_rank_gain' : 'crater_rank_loss';
+      return this.leaderboard.filter(r => r[on])
+        .sort((a, b) => (b[move] || 0) - (a[move] || 0))
+        .map(r => {
+          const then = r.motion_rank_then ?? null;
+          const now = then == null ? r.leaderboard_rank : then + (kind === 'burst' ? -(r[move] || 0) : (r[move] || 0));
+          return { ticker: r.ticker, company: r.company, rank_then: then, rank_now: Math.round(now),
+                   funds_then: (r.etf_count || 0) - (r.motion_funds_delta || 0), funds_now: r.etf_count || 0,
+                   score_then: null, score_now: r.final_score };
+        });
     },
 
-    get rankFallers() {
-      const p = String(this.changesPeriod);
-      const cacheKey = `${p}_${JSON.stringify(this.changesSort.fallers)}_${this.leaderboard.length}`;
-      if (this._rankFallersCache && this._rankFallersCache.key === cacheKey) {
-        return this._rankFallersCache.value;
-      }
-      const compute = () => {
-        const threshold = (this.changesPeriod === 1 || this.changesPeriod === 7) ? -10 : -20;
-        const list = this.leaderboard
-          .filter(r => (r.global_rank_delta_by_period?.[p] || 0) < threshold && (r.etf_count || 0) >= 2)
-          .sort((a, b) => (a.global_rank_delta_by_period?.[p] || 0) - (b.global_rank_delta_by_period?.[p] || 0));
-        const sliced = list.slice(0, 10);
-        const sortState = this.changesSort.fallers;
-        if (sortState && sortState.key) {
-          this.sortItemList(sliced, sortState.key, sortState.dir, p);
+    get changesLayout() {
+      const blk = this._changesBlock;
+      const key = `${this.changesPeriod}|${JSON.stringify(this.changesSort)}|${this.leaderboard.length}|${!!blk}`;
+      if (this._changesLayoutCache?.key === key) return this._changesLayoutCache.value;
+      const lb = this._leaderboardByTicker;
+      const fired = this.meta.signal_last_fired || {};
+      const panel = (id) => {
+        const def = this._changesPanelDefs[id];
+        let rows, count, empty = def.empty;
+        if (id === 'burst' || id === 'crater') {
+          rows = this._motionRows(id); count = rows.length;
+          const last = fired[id.toUpperCase()];
+          empty = last ? `None today · last fired ${last.date} (${last.count} name${last.count === 1 ? '' : 's'})`
+                           : 'None today';
+        } else {
+          rows = (blk?.[id] || []).slice(); count = blk?.counts?.[id] ?? rows.length;
         }
-        return sliced;
-      };
-      const result = compute();
-      this._rankFallersCache = { key: cacheKey, value: result };
-      return result;
-    },
-
-    get etfPickups() {
-      const p = String(this.changesPeriod);
-      const cacheKey = `${p}_${JSON.stringify(this.changesSort.pickups)}_${this.leaderboard.length}`;
-      if (this._etfPickupsCache && this._etfPickupsCache.key === cacheKey) {
-        return this._etfPickupsCache.value;
-      }
-      const compute = () => {
-        const list = this.leaderboard
-          .filter(r => (r.etf_count_delta_by_period?.[p] || 0) > 0 && (r.etf_count || 0) >= 2)
-          .sort((a, b) => (b.etf_count_delta_by_period?.[p] || 0) - (a.etf_count_delta_by_period?.[p] || 0));
-        const sliced = list.slice(0, 10);
-        const sortState = this.changesSort.pickups;
-        if (sortState && sortState.key) {
-          this.sortItemList(sliced, sortState.key, sortState.dir, p);
-        }
-        return sliced;
-      };
-      const result = compute();
-      this._etfPickupsCache = { key: cacheKey, value: result };
-      return result;
-    },
-
-    get etfDropouts() {
-      const p = String(this.changesPeriod);
-      const cacheKey = `${p}_${JSON.stringify(this.changesSort.dropouts)}_${this.leaderboard.length}`;
-      if (this._etfDropoutsCache && this._etfDropoutsCache.key === cacheKey) {
-        return this._etfDropoutsCache.value;
-      }
-      const compute = () => {
-        const list = this.leaderboard
-          .filter(r => (r.etf_count_delta_by_period?.[p] || 0) < 0 && ((r.etf_count || 0) + Math.abs(r.etf_count_delta_by_period?.[p] || 0)) >= 2)
-          .sort((a, b) => (a.etf_count_delta_by_period?.[p] || 0) - (b.etf_count_delta_by_period?.[p] || 0));
-        const sliced = list.slice(0, 10);
-        const sortState = this.changesSort.dropouts;
-        if (sortState && sortState.key) {
-          this.sortItemList(sliced, sortState.key, sortState.dir, p);
-        }
-        return sliced;
-      };
-      const result = compute();
-      this._etfDropoutsCache = { key: cacheKey, value: result };
-      return result;
-    },
-
-    get burstWinners() {
-      const p = String(this.changesPeriod);
-      const cacheKey = `${p}_${JSON.stringify(this.changesSort.burstWinners)}_${this.leaderboard.length}`;
-      if (this._burstWinnersCache && this._burstWinnersCache.key === cacheKey) {
-        return this._burstWinnersCache.value;
-      }
-      const compute = () => {
-        const list = this.leaderboard
-          .filter(r => r.burst_30d && (r.etf_count || 0) >= 2)
-          .sort((a, b) => (b.burst_rank_gain || 0) - (a.burst_rank_gain || 0));
-        const sliced = list.slice(0, 10);
-        const sortState = this.changesSort.burstWinners;
-        if (sortState && sortState.key) {
-          this.sortItemList(sliced, sortState.key, sortState.dir, p);
-        }
-        return sliced;
-      };
-      const result = compute();
-      this._burstWinnersCache = { key: cacheKey, value: result };
-      return result;
-    },
-
-    get burstLosers() {
-      const p = String(this.changesPeriod);
-      const cacheKey = `${p}_${JSON.stringify(this.changesSort.burstLosers)}_${this.leaderboard.length}`;
-      if (this._burstLosersCache && this._burstLosersCache.key === cacheKey) {
-        return this._burstLosersCache.value;
-      }
-      const compute = () => {
-        const list = this.leaderboard
-          .filter(r => (r.etf_count || 0) >= 2 && (r.crater_30d || (!r.burst_30d && (r.global_rank_delta_30d || 0) < -30)))
-          .sort((a, b) => {
-            if (a.crater_30d && !b.crater_30d) return -1;
-            if (!a.crater_30d && b.crater_30d) return 1;
-            return (a.global_rank_delta_30d || 0) - (b.global_rank_delta_30d || 0);
+        rows = rows.map(r => {
+          const cur = lb.get(r.ticker);
+          const badge = cur ? (this.signalBadges(cur).find(b => b.k !== 'conc' && b.k !== 'new') || null) : null;
+          const rankDir = (r.rank_then == null || r.rank_now == null) ? 0 : Math.sign(r.rank_then - r.rank_now);
+          return { ...r, badge, rankDir };
+        });
+        const st = this.changesSort[id];
+        if (st?.key) {
+          const val = (r) => st.key === 'ticker' ? r.ticker
+            : st.key === 'rank' ? (r.rank_now ?? r.rank_then)
+            : st.key === 'funds' ? (r.funds_now - r.funds_then)
+            : (r.score_now ?? r.score_then);
+          rows.sort((a, b) => {
+            const av = val(a), bv = val(b);
+            if (av == null) return 1; if (bv == null) return -1;
+            const c = typeof av === 'number' ? av - bv : String(av).localeCompare(String(bv));
+            return st.dir === 'asc' ? c : -c;
           });
-        const sliced = list.slice(0, 10);
-        const sortState = this.changesSort.burstLosers;
-        if (sortState && sortState.key) {
-          this.sortItemList(sliced, sortState.key, sortState.dir, p);
         }
-        return sliced;
+        return { id, ...def, empty, rows: rows.slice(0, 15), count };
       };
-      const result = compute();
-      this._burstLosersCache = { key: cacheKey, value: result };
-      return result;
+      const value = this._changesPairs.map(pair => pair.map(panel));
+      this._changesLayoutCache = { key, value };
+      return value;
     },
 
-    get activeSignalCounts() {
-      return {
-        burst: this.leaderboard.filter(r => r.burst_30d).length,
-        crater: this.leaderboard.filter(r => r.crater_30d).length,
-        qualityAdopted: this.leaderboard.filter(r => r.quality_adopted_30d).length,
-      };
+    get changesSummary() {
+      const c = this._changesBlock?.counts || {};
+      const n = (k) => c[k] || 0;
+      return [
+        { label: 'Fund positions', up: n('funds_added'), down: n('funds_lost'), anchor: 'funds_added', note: 'names gaining / losing a fund' },
+        { label: 'High Conviction', up: n('hc_entered'), down: n('hc_exited'), anchor: 'hc_entered', note: 'entered / left the HC list' },
+        { label: 'Rank movers', up: n('climbers'), down: n('fallers'), anchor: 'climbers', note: 'climbers / fallers in the top 300' },
+        { label: 'Board', up: n('new'), down: n('exits'), anchor: 'new', note: 'names added / removed' },
+      ];
     },
 
-    get universeExits() {
-      const cacheKey = `${this.changesPeriod}_${JSON.stringify(this.changesSort.universeExits)}`;
-      if (this._universeExitsCache && this._universeExitsCache.key === cacheKey) {
-        return this._universeExitsCache.value;
-      }
-
-      const computeExits = () => {
-        // Prefer the backend-computed universe_exits_by_period for EVERY period
-        // (built from full ~3900-name leaderboards in build.py). The previous
-        // client-side scoreHistory scan was capped at 600 tickers, so exited
-        // names were truncated and never rendered for 7d/30d/90d/YTD.
-        const pStr = String(this.changesPeriod);
-        const backend = this.changelog.universe_exits_by_period?.[pStr];
-        if (backend) {
-          const exits = [...backend];
-          const sortState = this.changesSort.universeExits;
-          if (sortState && sortState.key) {
-            this.sortItemList(exits, sortState.key, sortState.dir, pStr);
-          }
-          return exits;
-        }
-
-        // Fallback (older changelog.json without universe_exits_by_period, or
-        // 1-day when only the legacy universe_exits key exists).
-        if (this.changesPeriod === 1) {
-          const exits = [...(this.changelog.universe_exits || [])];
-          const sortState = this.changesSort.universeExits;
-          if (sortState && sortState.key) {
-            this.sortItemList(exits, sortState.key, sortState.dir, '1');
-          }
-          return exits;
-        }
-
-        if (!this.scoreHistory || !this.changelog.today || !this.meta.snapshot_dates_in_window) return [];
-        
-        const latestDateStr = this.changelog.today;
-        const latestDate = new Date(latestDateStr);
-        let targetDate = new Date(latestDate);
-        
-        if (this.changesPeriod === 'YTD') {
-          const year = latestDate.getFullYear();
-          targetDate = new Date(`${year}-01-01`);
-        } else {
-          const days = parseInt(this.changesPeriod) || 1;
-          targetDate.setDate(latestDate.getDate() - days);
-        }
-        
-        const dates = this.meta.snapshot_dates_in_window || [];
-        if (!dates.length) return [];
-        
-        let targetDateStr = dates[0];
-        const targetTime = targetDate.getTime();
-        let minDiff = Math.abs(new Date(targetDateStr).getTime() - targetTime);
-        
-        for (const d of dates) {
-          const diff = Math.abs(new Date(d).getTime() - targetTime);
-          if (diff < minDiff) {
-            minDiff = diff;
-            targetDateStr = d;
-          }
-        }
-        
-        if (targetDateStr === latestDateStr) {
-          const idx = dates.indexOf(latestDateStr);
-          if (idx > 0) {
-            targetDateStr = dates[idx - 1];
-          } else {
-            return [];
-          }
-        }
-        
-        // Pre-build company lookup map
-        const companyLookup = {};
-        for (const row of this.leaderboard) {
-          companyLookup[row.ticker] = row.company;
-        }
-        for (const etfExits of Object.values(this.holdingsExits || {})) {
-          for (const periodExits of Object.values(etfExits || {})) {
-            for (const ex of periodExits) {
-              if (ex.ticker && ex.name && !companyLookup[ex.ticker]) {
-                companyLookup[ex.ticker] = ex.name;
-              }
-            }
-          }
-        }
-
-        const exits = [];
-        for (const [ticker, history] of Object.entries(this.scoreHistory)) {
-          const targetEntry = history.find(h => h.d === targetDateStr);
-          if (targetEntry && targetEntry.s > 0) {
-            const todayEntry = history.find(h => h.d === latestDateStr);
-            if (!todayEntry || todayEntry.s === 0) {
-              exits.push({
-                ticker: ticker,
-                company: companyLookup[ticker] || '—',
-                final_score: 0.0,
-                score_delta: -targetEntry.s,
-                score_delta_pct: -1.0,
-                tiers: ''
-              });
-            }
-          }
-        }
-        exits.sort((a, b) => a.score_delta - b.score_delta);
-        const sortState = this.changesSort.universeExits;
-        if (sortState && sortState.key) {
-          this.sortItemList(exits, sortState.key, sortState.dir, String(this.changesPeriod));
-        }
-        return exits;
-      };
-
-      const result = computeExits();
-      this._universeExitsCache = { key: cacheKey, value: result };
-      return result;
+    get changesSinceLabel() {
+      const blk = this._changesBlock;
+      if (!blk?.since || !this.changelog?.today) return '—';
+      const days = Math.round((new Date(this.changelog.today) - new Date(blk.since)) / 86400000);
+      return `${blk.since} → ${this.changelog.today} · ${days} day${days === 1 ? '' : 's'}`;
     },
 
-    get newEntrants() {
-      const cacheKey = `${this.changesPeriod}_${JSON.stringify(this.changesSort.newEntrants)}`;
-      if (this._newEntrantsCache && this._newEntrantsCache.key === cacheKey) {
-        return this._newEntrantsCache.value;
-      }
-
-      const computeEntrants = () => {
-        if (!this.scoreHistory || !this.changelog.today || !this.meta.snapshot_dates_in_window) return [];
-        
-        const latestDateStr = this.changelog.today;
-        const latestDate = new Date(latestDateStr);
-        let targetDate = new Date(latestDate);
-        
-        if (this.changesPeriod === 'YTD') {
-          const year = latestDate.getFullYear();
-          targetDate = new Date(`${year}-01-01`);
-        } else {
-          const days = parseInt(this.changesPeriod) || 1;
-          targetDate.setDate(latestDate.getDate() - days);
-        }
-        
-        const dates = this.meta.snapshot_dates_in_window || [];
-        if (!dates.length) return [];
-        
-        let targetDateStr = dates[0];
-        const targetTime = targetDate.getTime();
-        let minDiff = Math.abs(new Date(targetDateStr).getTime() - targetTime);
-        for (const d of dates) {
-          const diff = Math.abs(new Date(d).getTime() - targetTime);
-          if (diff < minDiff) {
-            minDiff = diff;
-            targetDateStr = d;
-          }
-        }
-        
-        if (targetDateStr === latestDateStr) {
-          const idx = dates.indexOf(latestDateStr);
-          if (idx > 0) {
-            targetDateStr = dates[idx - 1];
-          } else {
-            return [];
-          }
-        }
-        
-        const entrants = [];
-        for (const row of this.leaderboard) {
-          const history = this.scoreHistory[row.ticker];
-          if (history) {
-            const targetEntry = history.find(h => h.d === targetDateStr);
-            if (!targetEntry || targetEntry.s === 0) {
-              entrants.push({
-                ticker: row.ticker,
-                company: row.company,
-                final_score: row.final_score,
-                etf_count: row.etf_count,
-                tiers: row.tiers
-              });
-            }
-          } else {
-            entrants.push({
-              ticker: row.ticker,
-              company: row.company,
-              final_score: row.final_score,
-              etf_count: row.etf_count,
-              tiers: row.tiers
-            });
-          }
-        }
-        const sorted = entrants.sort((a, b) => b.final_score - a.final_score);
-        const sortState = this.changesSort.newEntrants;
-        if (sortState && sortState.key) {
-          this.sortItemList(sorted, sortState.key, sortState.dir, String(this.changesPeriod));
-        }
-        return sorted;
-      };
-
-      const result = computeEntrants();
-      this._newEntrantsCache = { key: cacheKey, value: result };
-      return result;
-    },
-
-    get changesPeriodTargetDate() {
-      if (!this.scoreHistory || !this.changelog.today || !this.meta.snapshot_dates_in_window) {
-        return this.changelog.yesterday || '-';
-      }
-      if (this.changesPeriod === 1) {
-        return this.changelog.yesterday || '-';
-      }
-      
-      const latestDateStr = this.changelog.today;
-      const latestDate = new Date(latestDateStr);
-      let targetDate = new Date(latestDate);
-      
-      if (this.changesPeriod === 'YTD') {
-        const year = latestDate.getFullYear();
-        targetDate = new Date(`${year}-01-01`);
-      } else {
-        const days = parseInt(this.changesPeriod) || 1;
-        targetDate.setDate(latestDate.getDate() - days);
-      }
-      
-      const dates = this.meta.snapshot_dates_in_window || [];
-      if (!dates.length) return '-';
-      
-      let targetDateStr = dates[0];
-      const targetTime = targetDate.getTime();
-      let minDiff = Math.abs(new Date(targetDateStr).getTime() - targetTime);
-      
-      for (const d of dates) {
-        const diff = Math.abs(new Date(d).getTime() - targetTime);
-        if (diff < minDiff) {
-          minDiff = diff;
-          targetDateStr = d;
-        }
-      }
-      
-      if (targetDateStr === latestDateStr) {
-        const idx = dates.indexOf(latestDateStr);
-        if (idx > 0) {
-          targetDateStr = dates[idx - 1];
-        } else {
-          return '-';
-        }
-      }
-      return targetDateStr;
-    },
+    toneColor(dir) { return dir > 0 ? 'var(--up)' : dir < 0 ? 'var(--down)' : 'var(--text)'; },
 
     get sectorMax() {
       return Math.max(1, ...(this.flow?.by_sector || []).map(r => Math.abs(r.net_funds_delta || 0)));
@@ -3904,37 +3051,6 @@ function app() {
       if (this.countrySortKey !== key) return '';
       return this.countrySortDir === 'asc' ? 'sort-asc' : 'sort-desc';
     },
-    sortItemList(list, key, dir, period) {
-      list.sort((a, b) => {
-        let av, bv;
-        if (key === 'score_delta') {
-          av = a.score_deltas_by_period?.[period] ?? a.score_delta;
-          bv = b.score_deltas_by_period?.[period] ?? b.score_delta;
-        } else if (key === 'rank_delta') {
-          av = a.global_rank_delta_by_period?.[period] ?? a.rank_delta;
-          bv = b.global_rank_delta_by_period?.[period] ?? b.rank_delta;
-        } else if (key === 'etf_delta') {
-          av = a.etf_count_delta_by_period?.[period] ?? a.etf_delta;
-          bv = b.etf_count_delta_by_period?.[period] ?? b.etf_delta;
-        } else {
-          av = a[key];
-          bv = b[key];
-        }
-
-        if (av == null && bv == null) return 0;
-        if (av == null) return 1;
-        if (bv == null) return -1;
-
-        let cmp = 0;
-        if (typeof av === 'number' && typeof bv === 'number') {
-          cmp = av - bv;
-        } else {
-          cmp = String(av).localeCompare(String(bv));
-        }
-        return dir === 'asc' ? cmp : -cmp;
-      });
-    },
-
     toggle(t) { this.open = (this.open === t) ? null : t; },
 
     // ── CSV export (current filtered leaderboard view) ───────────────────

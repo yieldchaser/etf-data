@@ -825,13 +825,71 @@ def compute_etf_overlap_matrix(latest_df: pd.DataFrame) -> dict[str, dict[str, f
     return matrix
 
 
+_NAME_INVALID = ("none", "nan", "null", "n/a", "undefined", "unknown")
+
+# Some fund files publish names as "<ISSUER> COMMON STOCK USD.01" or
+# "<ISSUER> <COUNTRY OF DOMICILE>" in capitals. Stripped only from all-caps
+# names, which is the format that carries them.
+_NAME_COUNTRY_SUFFIX = re.compile(
+    r"\s+(UNITED STATES OF AMERICA(\s*\(THE\))?|HONG KONG|INDIA|SOUTH AFRICA|"
+    r"KOREA\s*\(THE REPUBLIC OF\)|SAUDI ARABIA|THAILAND|INDONESIA|MALAYSIA|"
+    r"TAIWAN\s*\(PROVINCE OF CHINA\)|CHINA|BRAZIL|MEXICO|CHILE|PERU|COLOMBIA|"
+    r"PHILIPPINES(\s*\(THE\))?|POLAND|TURKEY|TURKIYE|GREECE|QATAR|KUWAIT|UNITED ARAB EMIRATES|"
+    r"EGYPT|HUNGARY|CZECHIA|JAPAN|SINGAPORE|ISRAEL)\s*$")
+_NAME_SHARE_SUFFIX = re.compile(
+    r"\s+(COMMON STOCK|ORDINARY SHARES?|ORD SHS?|NVDR|(FOREIGN\s+)+SH\.?|(CLASS|CL)\s+[A-Z](\s+SHARES?)?|SHARES)"
+    r"(\s+[A-Z]{3}\s*[\d.]+)?(\s+[A-Z])?\s*$")
+_NAME_KEEP_LOWER = {"INC": "Inc", "CORP": "Corp", "CO": "Co", "LTD": "Ltd", "THE": "The", "AND": "and",
+                    "OF": "of", "GRP": "Grp", "INTL": "Intl", "BHD": "Bhd", "TBK": "Tbk",
+                    # short real words that are not acronyms
+                    "AN": "An", "ON": "On", "AT": "At", "BY": "By", "FOR": "for", "NEW": "New", "ONE": "One",
+                    "AIR": "Air", "OIL": "Oil", "GAS": "Gas", "SEA": "Sea", "SUN": "Sun", "BIG": "Big",
+                    "TOP": "Top", "BIO": "Bio", "CAR": "Car", "BAY": "Bay", "DE": "de", "LA": "La"}
+
+
+def clean_company_name(name: str) -> str:
+    """Readable issuer name from a fund-file string. Mixed-case names are
+    returned unchanged; all-caps names lose share-class / domicile noise
+    and are re-cased (tokens of ≤ 3 letters such as AMD, SK or MP stay
+    upper case, since they are usually acronyms)."""
+    s = re.sub(r"\s+", " ", str(name)).strip()
+    if re.search(r"/the$", s, re.I):          # "Cigna Group/The" -> "The Cigna Group"
+        s = "The " + s[:-4] if s != s.upper() else s
+    if not s or s != s.upper():
+        return s
+    for _ in range(2):   # "… INC COMMON STOCK USD.01" or "… CO LTD HONG KONG"
+        s = _NAME_SHARE_SUFFIX.sub("", s)
+        s = _NAME_COUNTRY_SUFFIX.sub("", s)
+    s = re.sub(r"\s+[A-Z]\s*$", "", s) if len(s.split()) > 2 else s   # trailing share-class letter
+    if s.endswith("/THE"):
+        s = "The " + s[:-4]
+    words = []
+    for w in s.split(" "):
+        core = re.sub(r"[^A-Z]", "", w)
+        if w in _NAME_KEEP_LOWER:
+            words.append(_NAME_KEEP_LOWER[w])
+        elif len(core) <= 3:
+            words.append(w)
+        else:
+            words.append(re.sub(r"[A-Z]+", lambda m: m.group(0).capitalize(), w))
+    out = " ".join(words)
+    return out[0].upper() + out[1:] if out else str(name).strip()
+
+
 def _first_valid_name(series: pd.Series) -> str:
+    """Best display name among the holders' name strings: a mixed-case name
+    (the cleaner fund-file format) wins; otherwise the cleaned capitals."""
+    best = ""
     for val in series:
-        if val is not None and pd.notna(val):
-            s = str(val).strip()
-            if s and s.lower() not in ("none", "nan", "null", "n/a", "undefined", "unknown"):
-                return s
-    return ""
+        if val is None or not pd.notna(val):
+            continue
+        s = str(val).strip()
+        if not s or s.lower() in _NAME_INVALID:
+            continue
+        if s != s.upper():
+            return clean_company_name(s)
+        best = best or s
+    return clean_company_name(best) if best else ""
 
 
 def _validate_input(df: pd.DataFrame) -> None:

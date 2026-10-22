@@ -210,3 +210,29 @@ class TestIdentityResolution:
         assert not _tokens_overlap(_name_tokens("NEXT PLC"), _name_tokens("NEXTPOWER INC"))
         assert _tokens_overlap(_name_tokens("Kohl's Corp"), _name_tokens("KOHLS CORP COMMON STOCK"))
         assert _name_tokens("SAMSUNG ELECTRONICS CO LTD COMMON STOCK KRW100.0") == {"SAMSUNG", "ELECTRONICS"}
+
+
+class TestCompanyNames:
+    """Fund files publish "<ISSUER> COMMON STOCK USD.01" or "<ISSUER> <COUNTRY>"
+    in capitals; the leaderboard shows a readable issuer name instead."""
+
+    @pytest.mark.parametrize("raw, clean", [
+        ("FORMFACTOR INC UNITED STATES OF AMERICA (THE)", "Formfactor Inc"),
+        ("ATKORE INC COMMON STOCK USD.01", "Atkore Inc"),
+        ("CHEESECAKE FACTORY INC/THE COMMON STOCK USD.01", "The Cheesecake Factory Inc"),
+        ("SAMSUNG SDS CO LTD KOREA (THE REPUBLIC OF)", "Samsung SDS Co Ltd"),
+        ("BANK OF CHINA LTD H HONG KONG", "Bank of China Ltd"),
+        ("PING AN BANK CO LTD A HONG KONG", "Ping An Bank Co Ltd"),
+        ("SONIC AUTOMOTIVE INC CLASS A COMMON STOCK USD.01", "Sonic Automotive Inc"),
+        ("Cigna Group/The", "The Cigna Group"),
+        ("Apple Inc", "Apple Inc"),
+        ("AT&T INC", "AT&T Inc"),
+    ])
+    def test_clean(self, raw, clean):
+        from conviction.scoring import clean_company_name
+        assert clean_company_name(raw) == clean
+
+    def test_mixed_case_source_wins(self):
+        from conviction.scoring import _first_valid_name
+        s = pd.Series(["NATERA INC UNITED STATES OF AMERICA (THE)", "Natera Inc."])
+        assert _first_valid_name(s) == "Natera Inc."
