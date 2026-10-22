@@ -601,6 +601,14 @@ class MotionConfig:
 
 
 @dataclass(frozen=True)
+class SignalsConfig:
+    """Screening signals (2026-10 audit, docs/SIGNALS_STUDY.md §4)."""
+    funds_rank_max: int = 200       # Funds ↑ / ↓ apply to names inside this rank
+    stealth_rank_max: int = 500     # Stealth applies inside this rank
+    pre_hc_min_etfs: int = 3        # Pre-HC: holders needed (HC needs high_conviction_min_etfs)
+
+
+@dataclass(frozen=True)
 class HistoryConfig:
     rank_delta_lookback_days: int          # kept for backward compat (= delta_periods_days[1])
     delta_periods_days: tuple[int, ...]    # Phase 2: multi-period deltas
@@ -626,6 +634,7 @@ class Config:
     high_conviction_min_tiers: int = 0                   # distinct non-benchmark strategy tiers
     high_conviction_exclude_tiers: tuple[str, ...] = ()  # benchmark tiers (Core) — not conviction
     motion: "MotionConfig | None" = None                 # BURST / CRATER parameters
+    signals: "SignalsConfig" = SignalsConfig()           # screening chips
     stale_snapshot_days: int | None = None              # v4: drop ETF snapshots this much older than the freshest
 
     @classmethod
@@ -717,6 +726,7 @@ class Config:
             high_conviction_min_tiers=int(cfg.get("high_conviction_min_tiers", 0)),
             high_conviction_exclude_tiers=tuple(cfg.get("high_conviction_exclude_tiers", [])),
             motion=MotionConfig(**cfg["motion"]) if cfg.get("motion") else MotionConfig(),
+            signals=SignalsConfig(**cfg["signals"]) if cfg.get("signals") else SignalsConfig(),
             history=history,
             scoring_mode=scoring_mode,
             conviction=conviction,
@@ -1162,7 +1172,6 @@ def compute_leaderboard(
     agg["tier_entropy"] = tier_entropy.round(4)
 
     def _flag(row) -> str:
-        tier_set = set(row["tiers"].split(" + ")) if row["tiers"] else set()
         # HIGH_CONVICTION (2026-10) = broad AND convinced AND independent:
         #   ≥ high_conviction_min_etfs holders, of which
         #   ≥ high_conviction_min_conviction_etfs non-benchmark funds hold it
@@ -1195,13 +1204,6 @@ def compute_leaderboard(
             if ((row["max_etf_share"] >= ax.conc_flag_share and row["etf_count"] >= 2)
                     or (row["etf_count"] == 1 and row.get("_max_ow", 0.0) >= ow_anchor)):
                 return "CONCENTRATED"
-        # SPECULATIVE_BETA keeps its pre-2026-10 population: before the HC
-        # redesign every ≥ 4-holder name was HC and so never reached this
-        # branch. Broad names that miss the stricter HC bar (GOOGL, NVDA held
-        # via Quant + Trend + Core) are not "speculative beta".
-        if ("Trend" in tier_set and not (tier_set & {"Quality", "Scout"})
-                and row["etf_count"] < cfg.high_conviction_min_etfs):
-            return "SPECULATIVE_BETA"
         return ""
 
     agg["flag"] = agg.apply(_flag, axis=1)

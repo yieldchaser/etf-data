@@ -139,3 +139,52 @@ class TestPartialSnapshotGuard:
         rows += [("EEMO", t, f"{t} Corp", 0.72 / 19, "2026-08-29", "2026-08-29") for t in names[1:]]
         lb, _ = compute_leaderboard(self._df(rows), cfg)
         assert "HYNIX" in set(lb["ticker"])
+
+
+class TestScreeningSignals:
+    @staticmethod
+    def _lb(**over):
+        base = dict(ticker="X", etf_count=2, etf_count_delta_30d=0, leaderboard_rank=150, flag="",
+                    conviction_etf_count=0, strategy_tier_count=1, avg_rank_delta_7d=0.0, score_streak=0)
+        base.update(over)
+        return pd.DataFrame([base])
+
+    def _run(self, lb, ago):
+        return hist.screening_signals(lb, pd.Series([ago], index=lb.index), Config.from_yaml(CONFIG_PATH)).iloc[0]
+
+    def test_funds_down_needs_a_recent_loss_inside_the_relevant_board(self):
+        assert self._run(self._lb(etf_count=3, leaderboard_rank=150), ago=4)["funds_down"]
+        assert not self._run(self._lb(etf_count=3, leaderboard_rank=900), ago=4)["funds_down"]
+        assert not self._run(self._lb(etf_count=3, leaderboard_rank=150), ago=3)["funds_down"]
+
+    def test_funds_up_uses_the_30_day_change(self):
+        assert self._run(self._lb(etf_count_delta_30d=1), ago=2)["funds_up"]
+        assert not self._run(self._lb(etf_count_delta_30d=0), ago=1)["funds_up"]
+
+    def test_stealth_is_a_second_fund_joining(self):
+        assert self._run(self._lb(etf_count=2, leaderboard_rank=400), ago=1)["stealth_buy"]
+        assert not self._run(self._lb(etf_count=2, leaderboard_rank=400), ago=2)["stealth_buy"]   # no join
+        assert not self._run(self._lb(etf_count=3, leaderboard_rank=400), ago=2)["stealth_buy"]   # not the 2nd
+        assert not self._run(self._lb(etf_count=2, leaderboard_rank=900), ago=1)["stealth_buy"]   # irrelevant
+
+    def test_new_name_counts_its_funds_as_additions(self):
+        """A name absent from the board 14 days ago had 0 holders, not 'no change'."""
+        row = self._run(self._lb(etf_count=2, leaderboard_rank=300), ago=0)
+        assert row["etf_count_delta_14d"] == 2
+
+    def test_pre_hc_is_one_step_from_hc_and_improving(self):
+        good = dict(etf_count=3, conviction_etf_count=1, strategy_tier_count=2, avg_rank_delta_7d=3.0, score_streak=2)
+        assert self._run(self._lb(**good), ago=3)["pre_hc"]
+        assert not self._run(self._lb(**{**good, "flag": "HIGH_CONVICTION"}), ago=3)["pre_hc"]
+        assert not self._run(self._lb(**{**good, "conviction_etf_count": 0}), ago=3)["pre_hc"]
+        assert not self._run(self._lb(**{**good, "avg_rank_delta_7d": -1.0}), ago=3)["pre_hc"]
+
+
+def test_speculative_beta_is_retired():
+    """2026-10 audit: no edge in either regime (+0.4% / −0.3%) — the flag is gone."""
+    cfg = Config.from_yaml(CONFIG_PATH)
+    rows = [("SPMO", "TR", "Trend Only", 0.5, "2026-05-01", "2026-05-01"),
+            ("SPMO", "Z", "Zed", 0.5, "2026-05-01", "2026-05-01")]
+    df = pd.DataFrame(rows, columns=["ETF_Ticker", "ticker", "name", "weight", "Holdings_As_Of", "Date_Scraped"])
+    lb, _ = compute_leaderboard(df, cfg)
+    assert "SPECULATIVE_BETA" not in set(lb["flag"])

@@ -159,7 +159,43 @@ On the leaderboard rank smoothed by a rolling median of 3 snapshots, over the la
 
 ---
 
-## 4. Limitations
+## 4. Every other signal — audit
+
+`scripts/signal_audit.py` replays each remaining signal with the definition the site used, on every snapshot, and scores it on weekly sample dates. The measure is the members' mean 20-day forward return vs currency peers, with a t-statistic over the weekly series. A signal is kept only if that sign agrees across both regimes, or if it is a descriptor rather than a call.
+
+| Signal (old definition) | Members/day (30 / 16) | 20d vs peers, 30-ETF | 20d vs peers, 16-ETF | Decision |
+|---|---:|---:|---:|---|
+| Pre-HC (exactly 3 funds, ranks improving) | 25 / 4 | −0.4% | +0.9% | **Redefined** |
+| Pre-HC (new: one step from the HC bar) | 13 / 5 | +0.1% | **+7.4% (t 3.5)** | Shipped |
+| Stealth-Buy (≤ 2 funds, +10% weight in 7d) | **251** / 54 | −0.3% | +2.1% | **Redefined** — mostly price drift in small positions |
+| Stealth (new: 2nd fund joined in 14d, top 500) | 4 / 12 | +1.7% | **+4.9% (t 2.0)** | Shipped |
+| Funds ↓ (any name, 30d) | 157 / 32 | **+2.0%** (wrong sign) | −2.0% | **Redefined** |
+| Funds ↓ (new: top-200, lost a fund in 14d) | 8 / 5 | **−7.0% (t −2.8)** | −2.7% | Shipped |
+| Funds ↑ (any name, 30d) | 707 / 127 | +0.2% | +2.1% | **Redefined** |
+| Funds ↑ (new: top-200, gained a fund in 30d) | 48 / 37 | +1.5% | **+6.2% (t 5.3)** | Shipped |
+| CONCENTRATED | 195 / 71 | 0.0% | −2.0% (t −2.6) | **Kept as a risk descriptor.** The "best risk-adjusted flag" claim is withdrawn. |
+| SPECULATIVE_BETA | 70 / 112 | −0.3% | +0.4% | **Removed** — no edge, and its premise (momentum without fundamental support is speculative) is not borne out |
+| Quality+ | 296 / 95 | +0.8% (t 1.7) | +0.4% | Kept — weak but consistent |
+| Q+Q chip (Quant + Quality + recent pickup) | 153 / 9 | +0.9% | −2.3% | **Removed** — sign flips |
+| ACCUM badge (≥ 2 funds added in 30d) | 168 / 4 | −1.6% | +3.5% | **Removed** — pure momentum; Funds ↑ covers it |
+| EARLY badge (2–4 funds, any weight rise) | **822** / 111 | −0.2% | +1.7% | **Removed** — flags half the board |
+| CROWDED badge | 0 / 0 | — | — | **Removed** — never fired |
+| NEW | 136 / 66 | −2.3% | +6.2% | Kept — a factual event, momentum-exposed |
+| Momentum regime "declining" | 14 / 6 | −3.6% | −1.1% | Kept as a display label; the other regimes carry no edge |
+| "Extreme conviction moves" ribbon (top \|z\| ≥ 2) | 8 / 7 | ~0% / −0.9% | −0.7% / −3.3% | **Replaced** by a strip of today's validated signals |
+
+The deep-board rank churn that drove the ribbon (e.g. "+1,902 ranks") is the same artifact that broke the old BURST/CRATER.
+
+**What made the redefinitions work:**
+
+- **A relevance floor.** The top-200 or top-500 restriction carries most of the gain. Deep-board names churn without consequence.
+- **Funds, not weights.** A fund adding or dropping a name is a decision. A weight change is mostly price drift.
+
+**Where the definitions now live.** Every chip is now a build-time column (`funds_up`, `funds_down`, `stealth_buy`, `pre_hc`, `etf_count_delta_14d` — `history.screening_signals`). That gives each one a single tested definition instead of browser-side logic.
+
+**Bug fixed along the way.** Holder-count deltas used to treat a name absent from the board N days ago as "no change". It is now counted as zero holders, so a brand-new two-fund name shows +2.
+
+## 5. Limitations
 
 - **A short window.** About eight months and two regimes. The BURST and CRATER effects have t-statistics of 0.7–2.0 per regime, so they are directionally consistent rather than proven. The old rules showed no edge at all, and one pointed the wrong way.
 - **HIGH_CONVICTION carries momentum exposure.** It is a statement about consensus and its durability, not a return forecast. Its returns follow the momentum regime.

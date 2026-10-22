@@ -283,6 +283,19 @@ high_conviction_min_conviction_etfs: 2
 high_conviction_min_tiers: 2
 high_conviction_exclude_tiers: [Core]
 
+# Screening chips (2026-10 audit, docs/SIGNALS_STUDY.md §4). Each was replayed
+# on every snapshot and kept only if its 20-day return vs currency peers had
+# the same sign in the momentum-friendly (Feb–May) and unwind (May–Oct) regimes:
+#   Funds ↓  rank ≤ funds_rank_max, lost a holder within 14d   −2.7% / −7.0%
+#   Funds ↑  rank ≤ funds_rank_max, gained a holder within 30d +6.2% / +1.5%
+#   Stealth  a second fund joined within 14d, rank ≤ stealth_rank_max  +4.9% / +1.7%
+#   Pre-HC   ≥ pre_hc_min_etfs holders, ≥ 1 conviction holder, ≥ 2 tiers,
+#            improving — one step from HIGH_CONVICTION       +7.4% / +0.1%
+signals:
+  funds_rank_max: 200
+  stealth_rank_max: 500
+  pre_hc_min_etfs: 3
+
 # BURST / CRATER (2026-10 redesign, docs/SIGNALS_STUDY.md). On the leaderboard
 # rank smoothed by a rolling median of `smooth_snapshots` (a one-day spike can't
 # move it), over the last `lookback_snapshots` snapshots:

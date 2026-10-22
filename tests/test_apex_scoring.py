@@ -247,7 +247,7 @@ class TestConcentratedFlag:
 
     def test_high_conviction_takes_priority_over_concentrated(self, apex_cfg):
         """A ticker that satisfies BOTH HC and CONCENTRATED conditions must be
-        flagged HIGH_CONVICTION (priority: HC > CONCENTRATED > SPEC_BETA)."""
+        flagged HIGH_CONVICTION (priority: HC > CONCENTRATED)."""
         rows = []
         # HCT top-of-book overweight in 4 ETFs (conviction ≥ hc_theta in each):
         #   IMOM (40 pts): w=0.95, OW≈10.45 → wovr clamps at 1.5 → linear mass 60

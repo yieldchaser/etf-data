@@ -188,7 +188,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     sanitized_rows = len(latest) if not latest.empty else 0
     print(f"  leaderboard: {len(leaderboard)} unique tickers · "
           f"{(leaderboard['flag']=='HIGH_CONVICTION').sum()} HC · "
-          f"{(leaderboard['flag']=='SPECULATIVE_BETA').sum()} SPEC β")
+          f"{(leaderboard['flag']=='CONCENTRATED').sum()} CONC")
 
     # Multi-period rank deltas (Phase 2) — compute once per period
     print("\nComputing rank deltas for all periods…")
@@ -394,7 +394,9 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         leaderboard["global_rank_delta_30d"] = leaderboard["ticker"].map(global_rank_delta_30).fillna(0).astype(int)
         leaderboard["global_rank_peak_30d"]  = leaderboard["ticker"].map(peak_improvement_30).fillna(0).astype(int)
         leaderboard["global_rank_best_30d"]  = leaderboard["ticker"].map(best_in_window).fillna(leaderboard["leaderboard_rank"]).astype(int)
-        leaderboard["etf_count_30d_ago"]     = leaderboard["ticker"].map(past_counts).fillna(leaderboard["etf_count"]).astype(int)
+        # A name absent from the board 30 days ago had zero holders then, so
+        # its new positions count as additions (was: treated as "no change").
+        leaderboard["etf_count_30d_ago"]     = leaderboard["ticker"].map(past_counts).fillna(0).astype(int)
         leaderboard["etf_count_delta_30d"]   = (leaderboard["etf_count"] - leaderboard["etf_count_30d_ago"]).astype(int)
         # Burst: peak improvement of >=40 global ranks at any point in last 30d, with sustained presence
         leaderboard["burst_30d"]             = leaderboard["ticker"].map(is_burst).fillna(False)
@@ -492,6 +494,16 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
 
     leaderboard["momentum_regime"] = leaderboard.apply(_classify_regime, axis=1)
     print(f"  momentum_regime: {leaderboard['momentum_regime'].value_counts().to_dict()}")
+
+    # ── Screening signals (2026-10 audit, docs/SIGNALS_STUDY.md §4) ────────
+    _d14_past = etf_count_past_by_period_map.get(14)
+    leaderboard = hist.screening_signals(
+        leaderboard,
+        leaderboard["ticker"].map(_d14_past).fillna(0) if _d14_past is not None else leaderboard["etf_count"],
+        cfg)
+    print(f"  signals:        funds_up={int(leaderboard['funds_up'].sum())} "
+          f"funds_down={int(leaderboard['funds_down'].sum())} "
+          f"stealth={int(leaderboard['stealth_buy'].sum())} pre_hc={int(leaderboard['pre_hc'].sum())}")
 
     # ── Tier Breadth — how many distinct strategy types co-hold this name ────
     # 5 = held by all five (Scout/Quant/Quality/Trend/Core); 1 = mono-tier.
@@ -752,7 +764,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         r["etf_count_delta_by_period"] = {}
         current_etf = int(r.get("etf_count", 0) or 0)
         for _n, _ps in etf_count_past_by_period_map.items():
-            past = int(_ps.get(t)) if t in _ps.index and not pd.isna(_ps.get(t)) else current_etf
+            past = int(_ps.get(t)) if t in _ps.index and not pd.isna(_ps.get(t)) else 0
             r["etf_count_delta_by_period"][str(_n)] = current_etf - past
     _write_json_atomic(output_dir / "leaderboard.json", _dumps(lb_records, separators=(",", ":")))
     # Write flag_history to separate file (keyed by ticker) to reduce leaderboard.json payload
@@ -1001,12 +1013,15 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     latest_scrape_date = pd.to_datetime(raw["Date_Scraped"]).max().strftime("%Y-%m-%d")
 
     # Yesterday's counts for KPI deltas
-    yday_hc = yday_spec = None
+    yday_hc = yday_burst = yday_crater = None
     if len(historical) >= 2:
         dates_sorted = sorted(historical.keys())
         prev_lb = historical[dates_sorted[-2]]
         yday_hc = int((prev_lb["flag"] == "HIGH_CONVICTION").sum())
-        yday_spec = int((prev_lb["flag"] == "SPECULATIVE_BETA").sum())
+        _bc = hist.burst_crater_panels(historical, cfg.motion)
+        if not _bc["burst"].empty:
+            yday_burst = int(_bc["burst"][dates_sorted[-2]].sum())
+            yday_crater = int(_bc["crater"][dates_sorted[-2]].sum())
 
     # §28 Detect immature ETFs (< etf_maturity_days of history)
     etf_maturity_days = cfg.etf_maturity_days
@@ -1206,13 +1221,16 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         "snapshot_dates_in_window": [d.strftime("%Y-%m-%d") for d in sorted(historical.keys())],
         "flag_counts_today": {
             "HIGH_CONVICTION": int((leaderboard["flag"] == "HIGH_CONVICTION").sum()),
-            "SPECULATIVE_BETA": int((leaderboard["flag"] == "SPECULATIVE_BETA").sum()),
+            "CONCENTRATED": int((leaderboard["flag"] == "CONCENTRATED").sum()),
+            "BURST": int(leaderboard["burst_30d"].sum()),
+            "CRATER": int(leaderboard["crater_30d"].sum()),
             "NEW": int(leaderboard["any_new"].sum()) if "any_new" in leaderboard else 0,
             "NONE": int((leaderboard["flag"] == "").sum()),
         },
         "flag_counts_yesterday": {
             "HIGH_CONVICTION": yday_hc,
-            "SPECULATIVE_BETA": yday_spec,
+            "BURST": yday_burst,
+            "CRATER": yday_crater,
         },
         # §28 Maturity gate metadata — drives the UI banner
         "etf_maturity_days": etf_maturity_days,
@@ -1237,6 +1255,8 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
             "new_lookback_days": cfg.new_lookback_days,
             "new_bonus_mult": cfg.new_bonus_mult,
             "high_conviction_min_etfs": cfg.high_conviction_min_etfs,
+            "high_conviction_min_conviction_etfs": cfg.high_conviction_min_conviction_etfs,
+            "high_conviction_min_tiers": cfg.high_conviction_min_tiers,
         },
     }
     _write_json_atomic(output_dir / "metadata.json", _dumps(metadata, indent=2))
@@ -1253,7 +1273,7 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     print(f"Today's flags: {metadata['flag_counts_today']}")
     if yday_hc is not None:
         print(f"Yesterday's flags: HC={yday_hc} (Δ {metadata['flag_counts_today']['HIGH_CONVICTION'] - yday_hc:+d}) "
-              f"SPEC={yday_spec} (Δ {metadata['flag_counts_today']['SPECULATIVE_BETA'] - yday_spec:+d})")
+              f"BURST={yday_burst} CRATER={yday_crater}")
     print(f"\nChangelog: {len(chg.get('entered_hc', []))} entries to HC, "
           f"{len(chg.get('exited_hc', []))} exits, "
           f"{len(chg.get('new_entrants', []))} new entrants this week")

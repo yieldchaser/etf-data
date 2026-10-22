@@ -246,7 +246,7 @@ class TestScoring:
         row = lb[lb["ticker"] == "GEV"].iloc[0]
         assert row["flag"] == "HIGH_CONVICTION"
 
-    def test_speculative_beta_overridden_by_quality(self, legacy_cfg):
+    def test_trend_plus_quality_has_no_flag(self, legacy_cfg):
         df = _h([
             ("SPHB", "X1", "X1", 0.05, "2026-05-01", "2026-05-01"),
             ("COWZ", "X1", "X1", 0.04, "2026-05-01", "2026-05-01"),

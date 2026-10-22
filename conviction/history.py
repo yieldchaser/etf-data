@@ -263,6 +263,42 @@ def burst_crater_panels(historical: dict[pd.Timestamp, pd.DataFrame], motion) ->
             "rank_then": then, "rank_now": smooth, "funds_delta": funds_delta}
 
 
+def screening_signals(leaderboard: pd.DataFrame, etf_count_14d_ago: pd.Series, cfg: Config) -> pd.DataFrame:
+    """Screening chips (2026-10 audit, docs/SIGNALS_STUDY.md §4), computed in
+    the build — not the browser — so each has one tested definition.
+
+    Needs leaderboard columns: etf_count, etf_count_delta_30d,
+    leaderboard_rank, flag, conviction_etf_count, strategy_tier_count,
+    avg_rank_delta_7d, score_streak. `etf_count_14d_ago` is aligned to the
+    leaderboard rows (0 for names that were not on the board).
+
+    Each signal was kept only because its 20-day return vs currency peers had
+    the same sign in the Feb–May (momentum-friendly) and May–Oct (unwind)
+    regimes:
+        funds_down   rank ≤ funds_rank_max, lost a holder within 14d   −2.7% / −7.0%
+        funds_up     rank ≤ funds_rank_max, gained a holder within 30d  +6.2% / +1.5%
+        stealth_buy  a 2nd fund joined within 14d, rank ≤ stealth_rank_max  +4.9% / +1.7%
+        pre_hc       one step from HIGH_CONVICTION and improving       +7.4% / +0.1%
+    The pre-audit Stealth rule (≤ 2 funds, +10% weight in 7d) mostly caught
+    price drift in small positions (~250 names a day, no edge).
+    """
+    sg = cfg.signals
+    out = leaderboard.copy()
+    rank = out["leaderboard_rank"]
+    d14 = (out["etf_count"] - pd.Series(etf_count_14d_ago, index=out.index).fillna(0)).astype(int)
+    out["etf_count_delta_14d"] = d14
+    out["funds_down"] = (d14 < 0) & (rank <= sg.funds_rank_max)
+    out["funds_up"] = (out["etf_count_delta_30d"] > 0) & (rank <= sg.funds_rank_max)
+    out["stealth_buy"] = (out["etf_count"] == 2) & (d14 >= 1) & (rank <= sg.stealth_rank_max)
+    out["pre_hc"] = ((out["flag"] != "HIGH_CONVICTION")
+                     & (out["etf_count"] >= sg.pre_hc_min_etfs)
+                     & (out["conviction_etf_count"] >= 1)
+                     & (out["strategy_tier_count"] >= cfg.high_conviction_min_tiers)
+                     & (out["avg_rank_delta_7d"] > 0)
+                     & (out["score_streak"].fillna(0) >= 2))
+    return out
+
+
 def predictive_overlay(leaderboard: pd.DataFrame, score_pnl: pd.DataFrame,
                        *, v_alpha: float = 0.25, i_alpha: float = 0.10,
                        window: int = 10) -> pd.DataFrame:

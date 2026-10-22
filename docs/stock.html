@@ -286,14 +286,6 @@
             <span class="font-medium text-emerald-400/90" x-text="`${leaderboardRow?.hc_streak || 0} day streak`"></span>
           </div>
         </template>
-        <!-- Speculative Beta -->
-        <template x-if="leaderboardRow?.flag === 'SPECULATIVE_BETA'">
-          <div class="flex items-center gap-2">
-            <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/30 cursor-help"
-                  x-tooltip="'SPECULATIVE BETA - Trend tier momentum without Quality or Scout backing'">SPECULATIVE BETA</span>
-            <span class="text-zinc-400">Trend tier without Quality/Scout backing</span>
-          </div>
-        </template>
         <!-- Concentrated -->
         <template x-if="leaderboardRow?.flag === 'CONCENTRATED'">
           <div class="flex items-center gap-2">
@@ -561,7 +553,6 @@
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(168,85,247,0.85)"></span> BURST</span>
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(248,113,113,0.85)"></span> CRATER</span>
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(52,211,153,0.85)"></span> HC</span>
-          <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(251,191,36,0.7)"></span> SPEC</span>
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(96,165,250,0.75)"></span> NEW</span>
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(52,211,153,0.6)"></span> QUALITY</span>
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(251,146,60,0.75)"></span> CONC</span>
@@ -594,7 +585,6 @@
           <span x-show="timelineStats.burstDays > 0" style="color: #c084fc" x-text="`BURST · ${timelineStats.burstDays}d`"></span>
           <span x-show="timelineStats.craterDays > 0" style="color: #f87171" x-text="`CRATER · ${timelineStats.craterDays}d`"></span>
           <span x-show="timelineStats.hcDays > 0" style="color: var(--up)" x-text="`HC · ${timelineStats.hcDays}d`"></span>
-          <span x-show="timelineStats.specDays > 0" style="color: var(--amber)" x-text="`SPEC · ${timelineStats.specDays}d`"></span>
           <span x-show="timelineStats.newDays > 0" style="color: rgba(96,165,250,0.9)" x-text="`NEW · ${timelineStats.newDays}d`"></span>
           <span x-show="timelineStats.qualityDays > 0" style="color: var(--up)" x-text="`QUALITY · ${timelineStats.qualityDays}d`"></span>
           <span x-show="timelineStats.concDays > 0" style="color: #fb923c" x-text="`CONC · ${timelineStats.concDays}d`"></span>
@@ -1340,21 +1330,12 @@ function stockApp() {
 
     // ── Signal Timeline helpers ──────────────────────────────────────────
 
+    // BURST on snapshot i — the build's flag only (history.burst_crater_panels).
+    // signal_history omits the key on non-burst days; the old JS fallback
+    // re-derived BURST from the retired 40-rank range rule on those days.
     _isBurstAt(i) {
-      const fh = this.flagHistory || [];
-      const e = fh[i];
-      if (!e) return false;
-      // Prefer stored burst field (new data)
-      if ('burst' in e) return !!e.burst;
-      // Fallback: rank improved by 40+ positions in a 30-entry window (old data)
-      if (i < 5) return false;
-      const windowStart = Math.max(0, i - 30);
-      let worstRank = 0;
-      for (let j = windowStart; j <= i; j++) {
-        if ((fh[j]?.rank || 0) > worstRank) worstRank = fh[j].rank;
-      }
-      const curRank = e.rank || 0;
-      return (worstRank - curRank) >= 40;
+      const e = (this.flagHistory || [])[i];
+      return !!(e && e.burst);
     },
 
     timelineTooltip(entry, i) {
@@ -1382,7 +1363,7 @@ function stockApp() {
     // Compute which optional lanes are active for this ticker (have ≥1 active day)
     get _activeLaneKeys() {
       const fh = this.flagHistory || [];
-      const keys = new Set(['burst', 'crater', 'hc', 'spec']);  // always shown
+      const keys = new Set(['burst', 'crater', 'hc']);  // always shown
       for (let i = 0; i < fh.length; i++) {
         const e = fh[i];
         if (e.n) keys.add('newentry');
@@ -1394,7 +1375,7 @@ function stockApp() {
 
     get timelineStats() {
       const fh = this.flagHistory || [];
-      let hcDays = 0, burstDays = 0, craterDays = 0, specDays = 0, neutralDays = 0;
+      let hcDays = 0, burstDays = 0, craterDays = 0, neutralDays = 0;
       let newDays = 0;
       let qualityDays = 0, concDays = 0;
       for (let i = 0; i < fh.length; i++) {
@@ -1405,15 +1386,14 @@ function stockApp() {
         if (isB) burstDays++;
         if (isCr) craterDays++;
         if (flag === 'HIGH_CONVICTION') hcDays++;
-        if (flag === 'SPECULATIVE_BETA') specDays++;
         if (e.n) newDays++;
         if (e.qa) qualityDays++;
         if (flag === 'CONCENTRATED') concDays++;
-        const anySignal = isB || isCr || flag === 'HIGH_CONVICTION' || flag === 'SPECULATIVE_BETA'
+        const anySignal = isB || isCr || flag === 'HIGH_CONVICTION'
           || e.n || e.qa || flag === 'CONCENTRATED';
         if (!anySignal) neutralDays++;
       }
-      return { hcDays, burstDays, craterDays, specDays, neutralDays,
+      return { hcDays, burstDays, craterDays, neutralDays,
                newDays, qualityDays, concDays };
     },
 
@@ -1438,7 +1418,6 @@ function stockApp() {
       if (!e) return { label: 'Neutral', color: 'rgba(255,255,255,0.5)' };
       if (this._isBurstAt(i)) return { label: 'BURST', color: '#c084fc' };
       if (e.flag === 'HIGH_CONVICTION') return { label: 'HC', color: 'var(--up)' };
-      if (e.flag === 'SPECULATIVE_BETA') return { label: 'SPEC β', color: 'var(--amber)' };
       if (e.n) return { label: 'NEW', color: 'rgba(96,165,250,0.9)' };
       if (e.qa) return { label: 'Q+', color: 'var(--up)' };
       if (e.flag === 'CONCENTRATED') return { label: 'CONC', color: '#fb923c' };
@@ -1458,7 +1437,6 @@ function stockApp() {
       const map = {
         'BURST':   'background: rgba(168,85,247,0.15); color: #c084fc; border: 1px solid rgba(168,85,247,0.35)',
         'HC':      'background: rgba(52,211,153,0.12); color: var(--up); border: 1px solid rgba(52,211,153,0.30)',
-        'SPEC β':  'background: rgba(251,191,36,0.12); color: var(--amber); border: 1px solid rgba(251,191,36,0.30)',
         'NEW':     'background: rgba(96,165,250,0.10); color: rgba(96,165,250,0.9); border: 1px solid rgba(96,165,250,0.25)',
         'Q+':      'background: rgba(52,211,153,0.10); color: var(--up); border: 1px solid rgba(52,211,153,0.25)',
         'CONC':    'background: rgba(251,146,60,0.10); color: #fb923c; border: 1px solid rgba(251,146,60,0.25)',
@@ -1474,7 +1452,6 @@ function stockApp() {
       const map = {
         'BURST':   `BURST move - global rank improved by ${this.leaderboardRow?.global_rank_peak_30d ?? 0}+ positions in last 30d.`,
         'HC':      `HIGH CONVICTION - held by ${this.leaderboardRow?.etf_count || 0} ETFs · HC streak: ${this.leaderboardRow?.hc_streak || 0} days`,
-        'SPEC β':  'SPECULATIVE BETA - Trend tier momentum without Quality or Scout backing.',
         'NEW':     'NEW - first appearance in any mature ETF within the last 14 days.',
         'Q+':      'Quality+ - a Quality ETF added this name in the last 30 days.',
         'CONC':    `CONCENTRATED - score concentrated in single ETF (${this.leaderboardRow?.concentration_score || 0}%) · fragile conviction`,
@@ -1502,7 +1479,6 @@ function stockApp() {
       if (this._isBurstAt(this.tlci)) sigs.push({ label: 'BURST',   color: '#c084fc' });
       if (e.crater) sigs.push({ label: 'CRATER',  color: '#f87171' });
       if (e.flag === 'HIGH_CONVICTION') sigs.push({ label: 'HC',     color: 'var(--up)' });
-      if (e.flag === 'SPECULATIVE_BETA') sigs.push({ label: 'SPEC β', color: 'var(--amber)' });
       if (e.n)      sigs.push({ label: 'NEW',     color: 'rgba(96,165,250,0.9)' });
       if (e.qa)     sigs.push({ label: 'Q+',      color: 'var(--up)' });
       if (e.flag === 'CONCENTRATED') sigs.push({ label: 'CONC', color: '#fb923c' });
@@ -1594,7 +1570,6 @@ function stockApp() {
         { key: 'burst',    label: 'BURST',   always: true,  color: 'rgba(168,85,247,',  bright: '1)',    dim: '0.55)' },
         { key: 'crater',   label: 'CRATER',  always: true,  color: 'rgba(248,113,113,', bright: '1)',    dim: '0.55)' },
         { key: 'hc',       label: 'HC',      always: true,  color: 'rgba(52,211,153,',  bright: '1)',    dim: '0.55)' },
-        { key: 'spec',     label: 'SPEC',    always: true,  color: 'rgba(251,191,36,',  bright: '0.9)', dim: '0.45)' },
         { key: 'newentry', label: 'NEW',     always: false, color: 'rgba(96,165,250,',  bright: '0.9)', dim: '0.5)'  },
         { key: 'quality',  label: 'QUAL',    always: false, color: 'rgba(52,211,153,',  bright: '0.7)', dim: '0.35)' },
         { key: 'conc',     label: 'CONC',    always: false, color: 'rgba(251,146,60,',  bright: '0.9)', dim: '0.45)' },
@@ -1637,7 +1612,6 @@ function stockApp() {
         burst:    this._isBurstAt(i),
         crater:   !!e.crater,
         hc:       e.flag === 'HIGH_CONVICTION',
-        spec:     e.flag === 'SPECULATIVE_BETA',
         newentry: !!e.n,
         quality:  !!e.qa,
         conc:     e.flag === 'CONCENTRATED',

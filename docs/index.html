@@ -52,6 +52,8 @@
 
     .label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); }
     .label-cyan { color: var(--cyan); }
+    .chip-group-label { font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); padding: 0 2px 0 6px; }
+    .chip-group-label:first-child { padding-left: 2px; }
     .chip { display: inline-flex; align-items: center; padding: 1px 6px; border-radius: 4px; font-size: 10.5px; font-weight: 500; line-height: 1.5; white-space: nowrap; letter-spacing: 0.02em; }
     .sig-badge { font-size: 9px; font-weight: 600; padding: 0 5px; letter-spacing: 0.04em; }
 
@@ -360,85 +362,68 @@
 
     <!-- Filter bar -->
     <div class="rounded-lg p-2.5 mb-3 border flex flex-wrap gap-1.5 items-center" style="background: var(--surface); border-color: var(--border)">
+      <span class="chip-group-label">Flags</span>
       <button @click="toggleFlag('HIGH_CONVICTION')"
-              :class="flag === 'HIGH_CONVICTION' ? 'border-emerald-500/40 text-emerald-300' : ''"
-              class="chip border px-2 py-1 transition hover:border-emerald-500/30"
+              :class="flag === 'HIGH_CONVICTION' ? 'border-emerald-500/50 text-emerald-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-emerald-500/40"
               style="border-color: var(--border-2)"
-              x-tooltip="'Show only HIGH CONVICTION names - held by 4+ ETFs with 2+ non-benchmark funds holding it overweight (≈2× equal weight, high in the book) across 2+ strategy tiers. Broad AND convinced AND independent.'"
+              x-tooltip="'HIGH CONVICTION - held by 4+ ETFs, with 2+ non-benchmark funds holding it overweight (about 2x equal weight, high in the book) across 2+ strategy tiers. Broad, convinced and independent; holders stay (15% lose one within 30 days vs 27% for a plain 4-fund count).'"
               x-text="`HC ${counts.HIGH_CONVICTION || 0}`"></button>
-      <button @click="toggleFlag('SPECULATIVE_BETA')"
-              :class="flag === 'SPECULATIVE_BETA' ? 'border-amber-500/40 text-amber-300' : ''"
-              class="chip border px-2 py-1 transition hover:border-amber-500/30"
+      <button @click="toggleFlag('CONCENTRATED')"
+              :class="flag === 'CONCENTRATED' ? 'border-orange-400/50 text-orange-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-orange-400/40"
               style="border-color: var(--border-2)"
-              x-tooltip="'Show only SPECULATIVE BETA names - Trend tier momentum without Quality or Scout backing'"
-              x-text="`SPEC β ${counts.SPECULATIVE_BETA || 0}`"></button>
+              x-tooltip="'CONCENTRATED - one fund supplies 85%+ of the conviction mass, or a lone fund holds it at 4x+ equal weight. A risk descriptor, not a buy signal: the score rests on one fund.'"
+              x-text="`CONC ${counts.CONCENTRATED || 0}`"></button>
       <button @click="newOnly = !newOnly"
-              :class="newOnly ? 'border-blue-500/40 text-blue-300' : ''"
-              class="chip border px-2 py-1 transition hover:border-blue-500/30"
+              :class="newOnly ? 'border-blue-500/50 text-blue-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-blue-500/40"
               style="border-color: var(--border-2)"
-              x-tooltip="'Show only NEW entrants - first appearance in any ETF within the last 14 days. Short-horizon signal: strongest within the first week.'"
+              x-tooltip="'NEW - first appearance in an ETF within 14 days. Momentum-exposed: +6% vs peers over 20 days in Feb-May, -2% in the May-Oct momentum unwind.'"
               x-text="`NEW ${counts.NEW || 0}`"></button>
+      <span class="chip-group-label">Signals</span>
       <button @click="burstOnly = !burstOnly"
-              :class="burstOnly ? 'border-purple-500/40 text-purple-300' : ''"
-              class="chip border px-2 py-1 transition hover:border-purple-500/30"
+              :class="burstOnly ? 'border-purple-500/50 text-purple-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-purple-500/40"
               style="border-color: var(--border-2)"
-              x-tooltip="'Show only BURST names - rank surged ≥1.65× (e.g. #250→#150) on the 3-snapshot-smoothed rank over ~2 weeks, now in the top 300, confirmed by a fund ADDING the name'"
+              x-tooltip="'BURST - smoothed rank improved 1.65x+ (e.g. #250 to #150) over ~2 weeks, now in the top 300, confirmed by a fund ADDING the name. +5.2% vs peers over 20 days in a momentum-friendly market; flat in an unwind.'"
               x-text="`BURST ${counts.BURST || 0}`"></button>
       <button @click="craterOnly = !craterOnly"
-              :class="craterOnly ? 'border-rose-500/40 text-rose-300' : ''"
-              class="chip border px-2 py-1 transition hover:border-rose-500/30"
+              :class="craterOnly ? 'border-rose-500/50 text-rose-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-rose-500/40"
               style="border-color: var(--border-2)"
-              x-tooltip="'Show only CRATER names - rank collapsed ≥1.65× from inside the top 300 (smoothed, ~2 weeks), confirmed by a fund DROPPING the name - the get-out signal'"
+              x-tooltip="'CRATER - smoothed rank fell 1.65x+ from inside the top 300 over ~2 weeks, confirmed by a fund DROPPING the name. The get-out signal: -1.7% to -2.0% vs peers over 20 days in both regimes.'"
               x-text="`CRATER ${counts.CRATER || 0}`"></button>
-      <button @click="excludeConcentrated = !excludeConcentrated"
-              :class="excludeConcentrated ? 'border-emerald-500/40 text-emerald-300' : ''"
-              class="chip border px-2 py-1 transition hover:border-emerald-500/30"
+      <button @click="fundsDownOnly = !fundsDownOnly; fundsUpOnly = false"
+              :class="fundsDownOnly ? 'border-rose-400/50 text-rose-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-rose-400/40"
               style="border-color: var(--border-2)"
-              x-tooltip="'Hide names where 80%+ of score comes from one ETF'">
-        ≤80% conc
-      </button>
-      <button @click="qualityAdoptedOnly = !qualityAdoptedOnly"
-              :class="qualityAdoptedOnly ? 'border-teal-400/50 text-teal-300' : ''"
-              class="chip border px-2 py-1 transition hover:border-teal-400/40"
+              x-tooltip="'Funds down - a top-200 name lost a holding fund in the last 14 days. The steadiest warning in the data: -2.7% (Feb-May) and -7.0% (May-Oct) vs peers over the next 20 days.'"
+              x-text="`Funds ↓ ${counts.FUNDS_DOWN || 0}`"></button>
+      <button @click="fundsUpOnly = !fundsUpOnly; fundsDownOnly = false"
+              :class="fundsUpOnly ? 'border-emerald-400/50 text-emerald-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-emerald-400/40"
               style="border-color: var(--border-2)"
-              x-tooltip="'Names a Quality ETF (COWZ/CALF/SPHQ) added in the last 30 days - momentum + fundamentals confirmation'"
-              x-text="`Quality+ ${counts.QADD || 0}`"></button>
+              x-tooltip="'Funds up - a top-200 name gained a holding fund in the last 30 days. +6.2% (Feb-May) and +1.5% (May-Oct) vs peers over the next 20 days.'"
+              x-text="`Funds ↑ ${counts.FUNDS_UP || 0}`"></button>
       <button @click="preHcOnly = !preHcOnly"
               :class="preHcOnly ? 'border-emerald-400/50 text-emerald-300' : ''"
               class="chip border px-2 py-1 transition hover:border-emerald-400/40"
               style="border-color: var(--border-2)"
-              x-tooltip="'Pre-HC - not yet HIGH_CONVICTION but 3+ holders, at least one holding it with conviction, across 2+ strategy tiers, with per-fund ranks and score improving. One step from HC.'"
+              x-tooltip="'Pre-HC - one step from HIGH CONVICTION and improving: 3+ holders, 1+ holding it with conviction, 2+ strategy tiers, per-fund ranks and score rising. +7.4% vs peers over 20 days in Feb-May, flat in the unwind.'"
               x-text="`Pre-HC ${counts.PRE_HC || 0}`"></button>
       <button @click="stealthBuyOnly = !stealthBuyOnly"
               :class="stealthBuyOnly ? 'border-fuchsia-400/50 text-fuchsia-300' : ''"
               class="chip border px-2 py-1 transition hover:border-fuchsia-400/40"
               style="border-color: var(--border-2)"
-              x-tooltip="'Stealth Buy - 1-2 funds loading up fast (+10% avg weight in 7d) before ranks catch up. Lonely-buy-before-the-crowd signal.'"
+              x-tooltip="'Stealth - a second independent fund joined the name in the last 14 days (top 500): consensus starting to form. +4.9% (Feb-May) and +1.7% (May-Oct) vs peers over 20 days.'"
               x-text="`Stealth ${counts.STEALTH_BUY || 0}`"></button>
-      <button @click="fundsUpOnly = !fundsUpOnly; fundsDownOnly = false"
-              :class="fundsUpOnly ? 'border-emerald-400/50 text-emerald-300' : ''"
-              class="chip border px-2 py-1 transition hover:border-emerald-400/40"
+      <button @click="qualityAdoptedOnly = !qualityAdoptedOnly"
+              :class="qualityAdoptedOnly ? 'border-teal-400/50 text-teal-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-teal-400/40"
               style="border-color: var(--border-2)"
-              x-tooltip="'Funds ↑ - held by more ETFs than 30 days ago. Net fund adds were the most consistent forward signal in the 2026-10 study (top-200 names that gained a fund: +17% vs peers over the next 20 days in Feb-May; weaker during the May-Oct momentum unwind).'"
-              x-text="`Funds ↑ ${counts.FUNDS_UP || 0}`"></button>
-      <button @click="fundsDownOnly = !fundsDownOnly; fundsUpOnly = false"
-              :class="fundsDownOnly ? 'border-rose-400/50 text-rose-300' : ''"
-              class="chip border px-2 py-1 transition hover:border-rose-400/40"
-              style="border-color: var(--border-2)"
-              x-tooltip="'Funds ↓ - held by fewer ETFs than 30 days ago. The steadiest warning in the 2026-10 study: top-200 names that lost a fund underperformed peers by ~5.5-6% over the next 20 days in BOTH regimes.'"
-              x-text="`Funds ↓ ${counts.FUNDS_DOWN || 0}`"></button>
-      <button @click="toggleFlag('CONCENTRATED')"
-              :class="flag === 'CONCENTRATED' ? 'border-orange-400/50 text-orange-300' : ''"
-              class="chip border px-2 py-1 transition hover:border-orange-400/40"
-              style="border-color: var(--border-2)"
-              x-tooltip="'CONC - flagged CONCENTRATED: the score rests on a single ETF. Fragile if that fund rebalances.'"
-              x-text="`CONC ${counts.CONCENTRATED || 0}`"></button>
-      <button @click="quantQualityOnly = !quantQualityOnly"
-              :class="quantQualityOnly ? 'border-yellow-400/50 text-yellow-300' : ''"
-              class="chip border px-2 py-1 transition hover:border-yellow-400/40"
-              style="border-color: var(--border-2)"
-              x-tooltip="'Q+Q - held by both Quant (forward-looking) AND Quality (backward-looking) tiers, with recent ETF pickup. Two independent epistemologies agreeing.'"
-              x-text="`Q+Q ${counts.QUANT_QUALITY || 0}`"></button>
+              x-tooltip="'Quality+ - a Quality-tier fund (free cash flow / value / profitability) added the name in the last 30 days. A weak but consistent positive in both regimes.'"
+              x-text="`Quality+ ${counts.QADD || 0}`"></button>
       <select x-model="selectedTier" class="chip border px-2 py-1 bg-transparent" style="border-color: var(--border-2)">
         <option value="" style="background: #000">all tiers</option>
         <template x-for="t in ['Scout','Quant','Quality','Trend','Core']" :key="t">
@@ -610,7 +595,7 @@
               <th class="text-left px-2 py-2 hidden xl:table-cell" x-tooltip="{html:'Tiers represented. <b>Scout</b>=spinoffs/IPOs · <b>Quant</b>=factor momentum · <b>Quality</b>=FCF/profit · <b>Trend</b>=momentum · <b>Core</b>=mega-cap'}">Strategies</th>
               <th class="text-center px-3 py-2 hidden md:table-cell" x-tooltip="'Consecutive days the score moved in the same direction (▲ up · ▼ down).'">Streak</th>
               <th class="text-left px-3 py-2 hidden xl:table-cell" x-tooltip="'Today\'s score as a percentile of this ticker\'s own score history in the past 60 days.'">Level</th>
-              <th class="text-left px-2 py-2" x-tooltip="{html:'Priority-ordered signal stack (top 2 shown, +n = hover for full list)<br><b>HC</b> = 4+ ETFs, 2+ overweight, 2+ tiers · <b>BURST</b> = smoothed rank ×1.65 better + fund added · <b>CRATER</b> = smoothed rank ×1.65 worse + fund dropped · <b>Q+</b> = Quality ETF added 30d · <b>PRE-HC</b> = one step from HC, improving · <b>SBUY</b> = 1-2 funds loading · <b>CONC</b> = concentrated conviction · <b>SPEC β</b> = Trend without Quality/Scout · <b>NEW</b> = first appearance within 14d'}">Flag</th>
+              <th class="text-left px-2 py-2" x-tooltip="{html:'Priority-ordered signal stack (top 2 shown, +n = hover for full list)<br><b>HC</b> = 4+ ETFs, 2+ overweight, 2+ tiers · <b>BURST</b> = smoothed rank ×1.65 better + fund added · <b>CRATER</b> = smoothed rank ×1.65 worse + fund dropped · <b>FUNDS ↓/↑</b> = top-200 name lost a fund in 14d / gained one in 30d · <b>PRE-HC</b> = one step from HC, improving · <b>STEALTH</b> = a 2nd fund just joined · <b>Q+</b> = Quality fund added in 30d · <b>CONC</b> = rests on one fund · <b>NEW</b> = first appearance within 14d'}">Flag</th>
             </tr>
           </thead>
           <template x-for="row in paged" :key="row.ticker">
@@ -1083,85 +1068,68 @@
     <div x-show="pins.length > 0">
       <!-- Filter bar (same as leaderboard) -->
       <div class="rounded-lg p-2.5 mb-3 border flex flex-wrap gap-1.5 items-center" style="background: var(--surface); border-color: var(--border)">
+        <span class="chip-group-label">Flags</span>
         <button @click="toggleFlag('HIGH_CONVICTION')"
-                :class="flag === 'HIGH_CONVICTION' ? 'border-emerald-500/40 text-emerald-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-emerald-500/30"
+                :class="flag === 'HIGH_CONVICTION' ? 'border-emerald-500/50 text-emerald-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-emerald-500/40"
                 style="border-color: var(--border-2)"
-                x-tooltip="'Show only HIGH CONVICTION names - held by 4+ ETFs with 2+ non-benchmark funds holding it overweight (≈2× equal weight, high in the book) across 2+ strategy tiers. Broad AND convinced AND independent.'"
+                x-tooltip="'HIGH CONVICTION - held by 4+ ETFs, with 2+ non-benchmark funds holding it overweight (about 2x equal weight, high in the book) across 2+ strategy tiers. Broad, convinced and independent; holders stay (15% lose one within 30 days vs 27% for a plain 4-fund count).'"
                 x-text="`HC ${counts.HIGH_CONVICTION || 0}`"></button>
-        <button @click="toggleFlag('SPECULATIVE_BETA')"
-                :class="flag === 'SPECULATIVE_BETA' ? 'border-amber-500/40 text-amber-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-amber-500/30"
+        <button @click="toggleFlag('CONCENTRATED')"
+                :class="flag === 'CONCENTRATED' ? 'border-orange-400/50 text-orange-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-orange-400/40"
                 style="border-color: var(--border-2)"
-                x-tooltip="'Show only SPECULATIVE BETA names - Trend tier momentum without Quality or Scout backing'"
-                x-text="`SPEC β ${counts.SPECULATIVE_BETA || 0}`"></button>
+                x-tooltip="'CONCENTRATED - one fund supplies 85%+ of the conviction mass, or a lone fund holds it at 4x+ equal weight. A risk descriptor, not a buy signal: the score rests on one fund.'"
+                x-text="`CONC ${counts.CONCENTRATED || 0}`"></button>
         <button @click="newOnly = !newOnly"
-                :class="newOnly ? 'border-blue-500/40 text-blue-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-blue-500/30"
+                :class="newOnly ? 'border-blue-500/50 text-blue-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-blue-500/40"
                 style="border-color: var(--border-2)"
-                x-tooltip="'Show only NEW entrants - first appearance in any ETF within the last 14 days'"
+                x-tooltip="'NEW - first appearance in an ETF within 14 days. Momentum-exposed: +6% vs peers over 20 days in Feb-May, -2% in the May-Oct momentum unwind.'"
                 x-text="`NEW ${counts.NEW || 0}`"></button>
+        <span class="chip-group-label">Signals</span>
         <button @click="burstOnly = !burstOnly"
-                :class="burstOnly ? 'border-purple-500/40 text-purple-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-purple-500/30"
+                :class="burstOnly ? 'border-purple-500/50 text-purple-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-purple-500/40"
                 style="border-color: var(--border-2)"
-                x-tooltip="'Show only BURST names - rank surged ≥1.65× (e.g. #250→#150) on the 3-snapshot-smoothed rank over ~2 weeks, now in the top 300, confirmed by a fund ADDING the name'"
+                x-tooltip="'BURST - smoothed rank improved 1.65x+ (e.g. #250 to #150) over ~2 weeks, now in the top 300, confirmed by a fund ADDING the name. +5.2% vs peers over 20 days in a momentum-friendly market; flat in an unwind.'"
                 x-text="`BURST ${counts.BURST || 0}`"></button>
         <button @click="craterOnly = !craterOnly"
-                :class="craterOnly ? 'border-rose-500/40 text-rose-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-rose-500/30"
+                :class="craterOnly ? 'border-rose-500/50 text-rose-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-rose-500/40"
                 style="border-color: var(--border-2)"
-                x-tooltip="'Show only CRATER names - rank collapsed ≥1.65× from inside the top 300 (smoothed, ~2 weeks), confirmed by a fund DROPPING the name - the get-out signal'"
+                x-tooltip="'CRATER - smoothed rank fell 1.65x+ from inside the top 300 over ~2 weeks, confirmed by a fund DROPPING the name. The get-out signal: -1.7% to -2.0% vs peers over 20 days in both regimes.'"
                 x-text="`CRATER ${counts.CRATER || 0}`"></button>
-        <button @click="excludeConcentrated = !excludeConcentrated"
-                :class="excludeConcentrated ? 'border-emerald-500/40 text-emerald-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-emerald-500/30"
+        <button @click="fundsDownOnly = !fundsDownOnly; fundsUpOnly = false"
+                :class="fundsDownOnly ? 'border-rose-400/50 text-rose-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-rose-400/40"
                 style="border-color: var(--border-2)"
-                x-tooltip="'Hide names where 80%+ of score comes from one ETF'">
-          ≤80% conc
-        </button>
-        <button @click="qualityAdoptedOnly = !qualityAdoptedOnly"
-                :class="qualityAdoptedOnly ? 'border-teal-400/50 text-teal-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-teal-400/40"
+                x-tooltip="'Funds down - a top-200 name lost a holding fund in the last 14 days. The steadiest warning in the data: -2.7% (Feb-May) and -7.0% (May-Oct) vs peers over the next 20 days.'"
+                x-text="`Funds ↓ ${counts.FUNDS_DOWN || 0}`"></button>
+        <button @click="fundsUpOnly = !fundsUpOnly; fundsDownOnly = false"
+                :class="fundsUpOnly ? 'border-emerald-400/50 text-emerald-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-emerald-400/40"
                 style="border-color: var(--border-2)"
-                x-tooltip="'Names a Quality ETF (COWZ/CALF/SPHQ) added in the last 30 days'"
-                x-text="`Quality+ ${counts.QADD || 0}`"></button>
+                x-tooltip="'Funds up - a top-200 name gained a holding fund in the last 30 days. +6.2% (Feb-May) and +1.5% (May-Oct) vs peers over the next 20 days.'"
+                x-text="`Funds ↑ ${counts.FUNDS_UP || 0}`"></button>
         <button @click="preHcOnly = !preHcOnly"
                 :class="preHcOnly ? 'border-emerald-400/50 text-emerald-300' : ''"
                 class="chip border px-2 py-1 transition hover:border-emerald-400/40"
                 style="border-color: var(--border-2)"
-                x-tooltip="'Pre-HC - 3+ holders, 1+ with conviction, 2+ tiers, improving - one step from HC'"
+                x-tooltip="'Pre-HC - one step from HIGH CONVICTION and improving: 3+ holders, 1+ holding it with conviction, 2+ strategy tiers, per-fund ranks and score rising. +7.4% vs peers over 20 days in Feb-May, flat in the unwind.'"
                 x-text="`Pre-HC ${counts.PRE_HC || 0}`"></button>
         <button @click="stealthBuyOnly = !stealthBuyOnly"
                 :class="stealthBuyOnly ? 'border-fuchsia-400/50 text-fuchsia-300' : ''"
                 class="chip border px-2 py-1 transition hover:border-fuchsia-400/40"
                 style="border-color: var(--border-2)"
-                x-tooltip="'Stealth Buy - 1-2 funds loading up fast (+10% avg weight in 7d) before ranks catch up'"
+                x-tooltip="'Stealth - a second independent fund joined the name in the last 14 days (top 500): consensus starting to form. +4.9% (Feb-May) and +1.7% (May-Oct) vs peers over 20 days.'"
                 x-text="`Stealth ${counts.STEALTH_BUY || 0}`"></button>
-        <button @click="fundsUpOnly = !fundsUpOnly; fundsDownOnly = false"
-                :class="fundsUpOnly ? 'border-emerald-400/50 text-emerald-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-emerald-400/40"
+        <button @click="qualityAdoptedOnly = !qualityAdoptedOnly"
+                :class="qualityAdoptedOnly ? 'border-teal-400/50 text-teal-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-teal-400/40"
                 style="border-color: var(--border-2)"
-                x-tooltip="'Funds ↑ - held by more ETFs than 30 days ago (net fund adds)'"
-                x-text="`Funds ↑ ${counts.FUNDS_UP || 0}`"></button>
-        <button @click="fundsDownOnly = !fundsDownOnly; fundsUpOnly = false"
-                :class="fundsDownOnly ? 'border-rose-400/50 text-rose-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-rose-400/40"
-                style="border-color: var(--border-2)"
-                x-tooltip="'Funds ↓ - held by fewer ETFs than 30 days ago (net fund exits; steadiest downside warning)'"
-                x-text="`Funds ↓ ${counts.FUNDS_DOWN || 0}`"></button>
-        <button @click="toggleFlag('CONCENTRATED')"
-                :class="flag === 'CONCENTRATED' ? 'border-orange-400/50 text-orange-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-orange-400/40"
-                style="border-color: var(--border-2)"
-                x-tooltip="'CONC - flagged CONCENTRATED: score rests on a single ETF'"
-                x-text="`CONC ${counts.CONCENTRATED || 0}`"></button>
-        <button @click="quantQualityOnly = !quantQualityOnly"
-                :class="quantQualityOnly ? 'border-yellow-400/50 text-yellow-300' : ''"
-                class="chip border px-2 py-1 transition hover:border-yellow-400/40"
-                style="border-color: var(--border-2)"
-                x-tooltip="'Q+Q - both Quant and Quality tiers + recent pickup'"
-                x-text="`Q+Q ${counts.QUANT_QUALITY || 0}`"></button>
+                x-tooltip="'Quality+ - a Quality-tier fund (free cash flow / value / profitability) added the name in the last 30 days. A weak but consistent positive in both regimes.'"
+                x-text="`Quality+ ${counts.QADD || 0}`"></button>
         <select x-model="selectedTier" class="chip border px-2 py-1 bg-transparent" style="border-color: var(--border-2)">
           <option value="" style="background: #000">all tiers</option>
           <template x-for="t in ['Scout','Quant','Quality','Trend','Core']" :key="t">
@@ -1228,7 +1196,7 @@
                 <th class="text-left px-2 py-2 hidden xl:table-cell" x-tooltip="{html:'Tiers represented. <b>Scout</b>=spinoffs/IPOs · <b>Quant</b>=factor momentum · <b>Quality</b>=FCF/profit · <b>Trend</b>=momentum · <b>Core</b>=mega-cap'}">Strategies</th>
                 <th class="text-center px-3 py-2 hidden md:table-cell" x-tooltip="'Consecutive days the score moved in the same direction (▲ up · ▼ down).'">Streak</th>
                 <th class="text-left px-3 py-2 hidden xl:table-cell" x-tooltip="'Today\'s score as a percentile of this ticker\'s own score history in the past 60 days.'">Level</th>
-                <th class="text-left px-2 py-2" x-tooltip="{html:'Priority-ordered signal stack (top 2 shown, +n = hover for full list)<br><b>HC</b> = 4+ ETFs, 2+ overweight, 2+ tiers · <b>BURST</b> = smoothed rank ×1.65 better + fund added · <b>CRATER</b> = smoothed rank ×1.65 worse + fund dropped · <b>Q+</b> = Quality ETF added 30d · <b>PRE-HC</b> = one step from HC, improving · <b>SBUY</b> = 1-2 funds loading · <b>CONC</b> = concentrated conviction · <b>SPEC β</b> = Trend without Quality/Scout · <b>NEW</b> = first appearance within 14d'}">Flag</th>
+                <th class="text-left px-2 py-2" x-tooltip="{html:'Priority-ordered signal stack (top 2 shown, +n = hover for full list)<br><b>HC</b> = 4+ ETFs, 2+ overweight, 2+ tiers · <b>BURST</b> = smoothed rank ×1.65 better + fund added · <b>CRATER</b> = smoothed rank ×1.65 worse + fund dropped · <b>FUNDS ↓/↑</b> = top-200 name lost a fund in 14d / gained one in 30d · <b>PRE-HC</b> = one step from HC, improving · <b>STEALTH</b> = a 2nd fund just joined · <b>Q+</b> = Quality fund added in 30d · <b>CONC</b> = rests on one fund · <b>NEW</b> = first appearance within 14d'}">Flag</th>
               </tr>
             </thead>
             <template x-for="row in paged" :key="row.ticker">
@@ -2851,7 +2819,7 @@ function app() {
     loading: true, loadProgress: 0, displayProgress: 0, targetProgress: 0, error: '',
     activeTab: 'leaderboard',
     overlapHover: '',
-    flag: '', selectedTier: '', selectedSector: '', selectedCountry: '', regionFilter: '', newOnly: false, burstOnly: false, craterOnly: false, q: '', excludeConcentrated: false, qualityAdoptedOnly: false, preHcOnly: false, stealthBuyOnly: false, fundsUpOnly: false, fundsDownOnly: false, quantQualityOnly: false,
+    flag: '', selectedTier: '', selectedSector: '', selectedCountry: '', regionFilter: '', newOnly: false, burstOnly: false, craterOnly: false, q: '', qualityAdoptedOnly: false, preHcOnly: false, stealthBuyOnly: false, fundsUpOnly: false, fundsDownOnly: false,
     sortKey: 'leaderboard_rank', sortDir: 'asc',
     page: 1, pageSize: 50, open: null,
     // Reactive caches for expensive getters (BUG-5): _filteredCacheKey holds
@@ -3050,44 +3018,22 @@ function app() {
     get counts() {
       return {
         HIGH_CONVICTION: this.leaderboard.filter(r => r.flag === 'HIGH_CONVICTION').length,
-        SPECULATIVE_BETA: this.leaderboard.filter(r => r.flag === 'SPECULATIVE_BETA').length,
         NEW: this.leaderboard.filter(r => r.any_new).length,
         BURST: this.leaderboard.filter(r => r.burst_30d).length,
         CRATER: this.leaderboard.filter(r => r.crater_30d).length,
         QADD: this.leaderboard.filter(r => r.quality_adopted_30d).length,
         PRE_HC: this.leaderboard.filter(r => this._isPreHc(r)).length,
         STEALTH_BUY: this.leaderboard.filter(r => this._isStealthBuy(r)).length,
-        FUNDS_UP: this.leaderboard.filter(r => (r.etf_count_delta_30d || 0) > 0).length,
-        FUNDS_DOWN: this.leaderboard.filter(r => (r.etf_count_delta_30d || 0) < 0).length,
-        QUANT_QUALITY: this.leaderboard.filter(r => this._isQuantQuality(r)).length,
+        FUNDS_UP: this.leaderboard.filter(r => r.funds_up).length,
+        FUNDS_DOWN: this.leaderboard.filter(r => r.funds_down).length,
         CONCENTRATED: this.leaderboard.filter(r => r.flag === 'CONCENTRATED').length,
       };
     },
 
-    // ── Predictive filter helpers ─────────────────────────────────────────
-    // Pre-HC: one step from the 2026-10 HC bar (4+ holders, 2+ overweight
-    // non-benchmark holders, 2+ strategy tiers) and improving
-    _isPreHc(r) {
-      return (r.etf_count || 0) >= 3
-        && (r.conviction_etf_count || 0) >= 1
-        && (r.strategy_tier_count || 0) >= 2
-        && (r.avg_rank_delta_7d || 0) > 0
-        && (r.score_streak || 0) >= 2
-        && r.flag !== 'HIGH_CONVICTION';
-    },
-    // Stealth Buy: single fund loading up rapidly before consensus forms
-    _isStealthBuy(r) {
-      return (r.etf_count || 0) <= 2
-        && (r.avg_weight_flow_7d || 0) > 0.10
-        && (r.avg_rank_delta_7d || 0) >= 0;
-    },
-    // Quant + Quality recent convergence: both forward-looking and backward-looking screens agree
-    _isQuantQuality(r) {
-      const tiers = (r.tiers || '').split(' + ');
-      return tiers.includes('Quant')
-        && tiers.includes('Quality')
-        && (r.etf_count_delta_30d || 0) > 0;  // recent ETF pickup confirms freshness
-    },
+    // ── Screening signals — computed in the build (history.screening_signals),
+    // so the page, tests and docs share one definition.
+    _isPreHc(r) { return !!r.pre_hc; },
+    _isStealthBuy(r) { return !!r.stealth_buy; },
 
     get kpis() {
       const c = this.counts;
@@ -3100,16 +3046,16 @@ function app() {
           delta: yc.HIGH_CONVICTION !== undefined ? c.HIGH_CONVICTION - (yc.HIGH_CONVICTION || 0) : null,
           deltaColor: this.deltaColor(c.HIGH_CONVICTION - (yc.HIGH_CONVICTION || 0)),
           tooltip: 'HIGH_CONVICTION - held by 4+ ETFs with 2+ non-benchmark funds holding it overweight (≈2× equal weight, high in the book) across 2+ strategy tiers.' },
-        { label: 'speculative β', value: c.SPECULATIVE_BETA,
-          color: 'var(--amber)',
-          delta: yc.SPECULATIVE_BETA !== undefined ? c.SPECULATIVE_BETA - (yc.SPECULATIVE_BETA || 0) : null,
-          deltaColor: this.deltaColor(c.SPECULATIVE_BETA - (yc.SPECULATIVE_BETA || 0)),
-          tooltip: 'Held in Trend-tier ETFs without Quality or Scout backing.' },
-        { label: 'new entrants', value: c.NEW, color: 'var(--blue)',
-          tooltip: 'First appearance in any mature ETF within the last 14 days.' },
-        { label: 'changes today', value: (this.changelog.entered_hc?.length || 0) + (this.changelog.exited_hc?.length || 0),
-          color: 'var(--cyan)',
-          tooltip: 'HC entries + exits vs yesterday.' },
+        { label: 'burst', value: c.BURST, color: '#c084fc',
+          delta: yc.BURST != null ? c.BURST - yc.BURST : null,
+          deltaColor: this.deltaColor(c.BURST - (yc.BURST || 0)),
+          tooltip: 'BURST - smoothed rank up 1.65x+ in ~2 weeks into the top 300, confirmed by a fund adding the name.' },
+        { label: 'crater', value: c.CRATER, color: 'var(--down)',
+          delta: yc.CRATER != null ? c.CRATER - yc.CRATER : null,
+          deltaColor: this.deltaColor((yc.CRATER || 0) - c.CRATER),
+          tooltip: 'CRATER - smoothed rank down 1.65x+ in ~2 weeks from the top 300, confirmed by a fund dropping the name. The get-out signal.' },
+        { label: 'losing funds', value: c.FUNDS_DOWN, color: 'var(--amber)',
+          tooltip: 'Top-200 names that lost a holding fund in the last 14 days - the steadiest downside warning in the data.' },
       ];
     },
 
@@ -3173,7 +3119,7 @@ function app() {
     },
 
     toggleFlag(f) { this.flag = (this.flag === f) ? '' : f; this.page = 1; },
-    reset() { this.flag = ''; this.newOnly = false; this.burstOnly = false; this.craterOnly = false; this.excludeConcentrated = false; this.qualityAdoptedOnly = false; this.preHcOnly = false; this.stealthBuyOnly = false; this.fundsUpOnly = false; this.fundsDownOnly = false; this.quantQualityOnly = false; this.selectedTier = ''; this.selectedSector = ''; this.selectedCountry = ''; this.regionFilter = ''; this.q = ''; this.page = 1; },
+    reset() { this.flag = ''; this.newOnly = false; this.burstOnly = false; this.craterOnly = false; this.qualityAdoptedOnly = false; this.preHcOnly = false; this.stealthBuyOnly = false; this.fundsUpOnly = false; this.fundsDownOnly = false; this.selectedTier = ''; this.selectedSector = ''; this.selectedCountry = ''; this.regionFilter = ''; this.q = ''; this.page = 1; },
 
     togglePin(t) {
       const i = this.pins.indexOf(t);
@@ -3809,10 +3755,9 @@ function app() {
         preHcOnly: this.preHcOnly,
         stealthBuyOnly: this.stealthBuyOnly,
         fundsUp: this.fundsUpOnly, fundsDown: this.fundsDownOnly,
-        quantQualityOnly: this.quantQualityOnly,
         tier: this.selectedTier, sector: this.selectedSector,
         country: this.selectedCountry, region: this.regionFilter,
-        excl: this.excludeConcentrated, q: this.q.trim().toLowerCase(),
+        q: this.q.trim().toLowerCase(),
         sort: this.sortLevels,
       });
       if (this._filteredCacheKey === key && this._filteredCache) return this._filteredCache;
@@ -3826,9 +3771,8 @@ function app() {
       if (this.qualityAdoptedOnly) r = r.filter(x => x.quality_adopted_30d);
       if (this.preHcOnly)        r = r.filter(x => this._isPreHc(x));
       if (this.stealthBuyOnly)   r = r.filter(x => this._isStealthBuy(x));
-      if (this.fundsUpOnly)      r = r.filter(x => (x.etf_count_delta_30d || 0) > 0);
-      if (this.fundsDownOnly)    r = r.filter(x => (x.etf_count_delta_30d || 0) < 0);
-      if (this.quantQualityOnly) r = r.filter(x => this._isQuantQuality(x));
+      if (this.fundsUpOnly)      r = r.filter(x => x.funds_up);
+      if (this.fundsDownOnly)    r = r.filter(x => x.funds_down);
       if (tier)              r = r.filter(x => (x.tiers || '').split(' + ').includes(tier));
       if (sector)            r = r.filter(x => x.sector === sector);
       if (country)           r = r.filter(x => x.country === country);
@@ -3838,7 +3782,6 @@ function app() {
           return region === 'US' ? isUS : !isUS;
         });
       }
-      if (this.excludeConcentrated) r = r.filter(x => (x.concentration_score || 0) <= 80);
       if (q)                 r = r.filter(x => (x.ticker || '').toLowerCase().includes(q) || (x.company || '').toLowerCase().includes(q));
       const out = [...r].sort((a, b) => {
         for (const lvl of this.sortLevels) {
@@ -4336,23 +4279,27 @@ function app() {
           style: 'background: rgba(52,211,153,0.12); color: var(--up); border: 1px solid rgba(52,211,153,0.30)',
           tip: `HIGH CONVICTION - held by ${r.etf_count} ETFs\nHC streak: ${r.hc_streak||0} days`
         },
-        'SPECULATIVE_BETA': {
-          label: 'SPEC β',
-          style: 'background: rgba(251,191,36,0.10); color: var(--amber); border: 1px solid rgba(251,191,36,0.25)',
-          tip: 'SPECULATIVE BETA - Trend tier momentum without Quality or Scout backing.'
+        'CONCENTRATED': {
+          label: 'CONC',
+          style: 'background: rgba(251,146,60,0.10); color: #fb923c; border: 1px solid rgba(251,146,60,0.30)',
+          tip: 'CONCENTRATED - the score rests on a single fund.'
         },
       };
       let stateLabel = stateMap[r.flag]?.label || 'Neutral';
       let stateStyle = stateMap[r.flag]?.style || 'background: rgba(255,255,255,0.04); color: var(--text-3); border: 1px solid rgba(255,255,255,0.10)';
       let stateTip = stateMap[r.flag]?.tip || 'Neutral status - no major structural anomalies.';
-      if (r.burst_30d) {
+      if (r.crater_30d) {
+        stateLabel = 'CRATER';
+        stateStyle = 'background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.30)';
+        stateTip = 'CRATER - smoothed rank collapsing as funds drop the name. The get-out signal.';
+      } else if (r.burst_30d) {
         stateLabel = 'BURST';
         stateStyle = 'background: rgba(168,85,247,0.15); color: #c084fc; border: 1px solid rgba(168,85,247,0.35)';
         stateTip = `BURST - smoothed rank #${r.motion_rank_then} → #${(r.motion_rank_then || 0) - (r.burst_rank_gain || 0)} with ${r.motion_funds_delta >= 0 ? '+' : ''}${r.motion_funds_delta} fund(s).`;
-      } else if ((r.etf_count_delta_30d || 0) >= 2 && (r.etf_count || 0) >= 2) {
-        stateLabel = 'ACCUM';
-        stateStyle = 'background: rgba(34,211,238,0.12); color: var(--cyan); border: 1px solid rgba(34,211,238,0.30)';
-        stateTip = `Accumulating - ${(r.etf_count_delta_30d || 0)} ETF positions added over 30d. Conviction is broadening.`;
+      } else if (r.funds_down) {
+        stateLabel = 'FUNDS ↓';
+        stateStyle = 'background: rgba(251,191,36,0.10); color: var(--amber); border: 1px solid rgba(251,191,36,0.30)';
+        stateTip = 'Lost a holding fund in the last 14 days - the steadiest downside warning.';
       } else if (r.any_new) {
         stateLabel = 'NEW';
         stateStyle = 'background: rgba(96,165,250,0.10); color: var(--blue); border: 1px solid rgba(96,165,250,0.25)';
@@ -4612,18 +4559,6 @@ function app() {
 
     donutPalette() { return this._donutPalette; },
 
-    // §29 Early-vs-Crowded quadrant
-    // EARLY: rising weight in 2–3 ETFs (not yet consensus)
-    // CROWDED: flat weight in 9+ ETFs (consensus formed)
-    earlyVsCrowded(row) {
-      const etfs = row.etf_count || 0;
-      const flow = row.avg_weight_flow_7d || 0;
-      const delta30 = row.etf_count_delta_30d || 0;
-      if (etfs >= 2 && etfs <= 4 && (flow > 0.005 || delta30 > 0)) return 'EARLY';
-      if (etfs >= 9 && Math.abs(flow) < 0.02 && delta30 === 0) return 'CROWDED';
-      return null;
-    },
-
     // ── Macro status - momentum regime glyph + word (text-color only) ────
     regimeInfo(row) {
       const m = {
@@ -4636,47 +4571,31 @@ function app() {
       return m[row.momentum_regime] || null;
     },
 
-    // ── Structural anomalies - priority-ordered micro-badge stack ────────
-    // Shared by both table copies. Priority: BURST > ACCUM > Q+ > PRE-HC >
-    // SBUY > CONC > SPEC β, then legacy NEW / EARLY / CROWD so nothing
-    // previously surfaced in the Flag column is lost (they land in overflow).
+    // ── Signal badges - priority-ordered stack, shared by both table copies ──
     signalBadges(row) {
+      // Priority: exit warnings first, then entry signals, then descriptors.
+      const B = (k, label, rgb, color, tip) => ({ k, label, tip,
+        style: `background: rgba(${rgb},0.10); color: ${color}; border: 1px solid rgba(${rgb},0.30)` });
       const b = [];
-      if (row.burst_30d) b.push({ k: 'burst', label: 'BURST',
-        style: 'background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.30)',
-        tip: `BURST - smoothed rank #${row.motion_rank_then} → #${(row.motion_rank_then || 0) - (row.burst_rank_gain || 0)} over ~2 weeks, confirmed by ${row.motion_funds_delta >= 0 ? '+' : ''}${row.motion_funds_delta} holding fund(s). Currently #${row.leaderboard_rank}. Study: onsets beat peers by +5.2% over 20d in a momentum-friendly market; no edge in a momentum unwind.` });
-      if (row.crater_30d) b.push({ k: 'crater', label: 'CRATER',
-        style: 'background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.30)',
-        tip: `CRATER - smoothed rank #${row.motion_rank_then} → #${(row.motion_rank_then || 0) + (row.crater_rank_loss || 0)} over ~2 weeks as ${Math.abs(row.motion_funds_delta || 0)} fund(s) dropped it. Currently #${row.leaderboard_rank}. Study: onsets lagged peers by 1.7-2% over 20d in BOTH market regimes - the get-out signal.` });
-      if ((row.etf_count_delta_30d || 0) >= 2 && !row.burst_30d)
-        b.push({ k: 'accum', label: 'ACCUM',
-          style: 'background: rgba(34,211,238,0.10); color: var(--cyan); border: 1px solid rgba(34,211,238,0.25)',
-          tip: `Accumulating - ${(row.etf_count_delta_30d || 0)} ETF positions added over 30d. Conviction is broadening.` });
-      if (row.quality_adopted_30d) b.push({ k: 'qplus', label: 'Q+',
-        style: 'background: rgba(52,211,153,0.10); color: var(--up); border: 1px solid rgba(52,211,153,0.25)',
-        tip: 'Quality+ - a Quality-tier ETF added this name in the last 30 days.' });
-      if (this._isPreHc(row)) b.push({ k: 'prehc', label: 'PRE-HC',
-        style: 'background: rgba(52,211,153,0.06); color: #6ee7b7; border: 1px solid rgba(52,211,153,0.20)',
-        tip: 'Pre-HC - 3+ holders, 1+ holding it with conviction, 2+ strategy tiers, ranks and score improving. One step from HIGH_CONVICTION.' });
-      if (this._isStealthBuy(row)) b.push({ k: 'sbuy', label: 'SBUY',
-        style: 'background: rgba(232,121,249,0.08); color: #f0abfc; border: 1px solid rgba(232,121,249,0.22)',
-        tip: 'Stealth Buy - 1-2 funds loading up fast (+10% avg weight in 7d) before ranks catch up.' });
-      if (row.flag === 'CONCENTRATED') b.push({ k: 'conc', label: 'CONC',
-        style: 'background: rgba(251,146,60,0.10); color: #fb923c; border: 1px solid rgba(251,146,60,0.30)',
-        tip: 'CONCENTRATED - most of this score comes from a single ETF. Fragile if that fund rebalances.' });
-      if (row.flag === 'SPECULATIVE_BETA') b.push({ k: 'spec', label: 'SPEC β',
-        style: 'background: transparent; color: rgba(192,132,252,0.65); border: 1px solid rgba(168,85,247,0.25)',
-        tip: 'SPECULATIVE BETA - Trend tier without Quality or Scout backing.' });
-      if (row.any_new) b.push({ k: 'new', label: 'NEW',
-        style: 'background: rgba(96,165,250,0.10); color: var(--blue); border: 1px solid rgba(96,165,250,0.25)',
-        tip: 'NEW - first appearance in any ETF within the last 14 days.' });
-      const quad = this.earlyVsCrowded(row);
-      if (quad === 'EARLY') b.push({ k: 'early', label: 'EARLY',
-        style: 'background: rgba(52,211,153,0.08); color: #6ee7b7; border: 1px solid rgba(52,211,153,0.2)',
-        tip: 'EARLY - rising weight in 2–4 ETFs, not yet consensus. The alpha window before it becomes crowded.' });
-      else if (quad === 'CROWDED') b.push({ k: 'crowd', label: 'CROWD',
-        style: 'background: rgba(161,161,170,0.08); color: var(--text-3); border: 1px solid rgba(161,161,170,0.2)',
-        tip: 'CROWDED - flat weight in 9+ ETFs. Consensus has formed; alpha may be behind you.' });
+      const to = (row.motion_rank_then || 0);
+      if (row.crater_30d) b.push(B('crater', 'CRATER', '248,113,113', '#f87171',
+        `CRATER - smoothed rank #${to} to #${to + (row.crater_rank_loss || 0)} in ~2 weeks as ${Math.abs(row.motion_funds_delta || 0)} fund(s) dropped it. Lagged peers by 1.7-2% over 20 days in both regimes - the get-out signal.`));
+      if (row.funds_down && !row.crater_30d) b.push(B('fdown', 'FUNDS ↓', '251,191,36', 'var(--amber)',
+        `Funds down - lost ${Math.abs(row.etf_count_delta_14d || 0)} holding fund(s) in the last 14 days. The steadiest warning in the data (-2.7% / -7.0% vs peers over 20 days).`));
+      if (row.burst_30d) b.push(B('burst', 'BURST', '168,85,247', '#c084fc',
+        `BURST - smoothed rank #${to} to #${to - (row.burst_rank_gain || 0)} in ~2 weeks, confirmed by +${row.motion_funds_delta || 0} holding fund(s). +5.2% vs peers over 20 days in a momentum-friendly market; flat in an unwind.`));
+      if (row.funds_up && !row.burst_30d) b.push(B('fup', 'FUNDS ↑', '52,211,153', 'var(--up)',
+        `Funds up - gained ${row.etf_count_delta_30d || 0} holding fund(s) in the last 30 days.`));
+      if (row.pre_hc) b.push(B('prehc', 'PRE-HC', '52,211,153', '#6ee7b7',
+        'Pre-HC - one step from HIGH CONVICTION and improving: 3+ holders, 1+ with conviction, 2+ strategy tiers, ranks and score rising.'));
+      if (row.stealth_buy) b.push(B('sbuy', 'STEALTH', '232,121,249', '#f0abfc',
+        'Stealth - a second independent fund joined this name in the last 14 days: consensus starting to form.'));
+      if (row.quality_adopted_30d) b.push(B('qplus', 'Q+', '45,212,191', '#5eead4',
+        'Quality+ - a Quality-tier fund added this name in the last 30 days.'));
+      if (row.flag === 'CONCENTRATED') b.push(B('conc', 'CONC', '251,146,60', '#fb923c',
+        'CONCENTRATED - the score rests on a single fund. A risk descriptor, not a buy signal.'));
+      if (row.any_new) b.push(B('new', 'NEW', '96,165,250', 'var(--blue)',
+        'NEW - first appearance in an ETF within the last 14 days.'));
       return b;
     },
 
