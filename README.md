@@ -222,6 +222,11 @@ Result (30-ETF universe):
 
 Forward-return IC tracks the momentum regime either way; the score is not a return forecast.
 
+**Motion.**
+
+- **Score and rank changes follow the momentum regime.** They behave the same before and after v4.
+- **Change in the number of holding funds is the most consistent forward signal.** Top-200 names that lost a fund underperformed peers by about 5.5–6% over the next 20 days in both the Feb–May and May–Oct regimes. Use the **Funds ↑ / Funds ↓** chips on the leaderboard to screen on it.
+
 Legacy (`weight% × 100 × tier_points × rank_multiplier + new bonus`) and conviction (§24, linear) modes remain selectable via `scoring_mode` for comparison.
 
 ### Output Flags

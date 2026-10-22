@@ -147,7 +147,26 @@ Each row changes one thing relative to the row it builds on. All rows start from
 
 ---
 
-## 6. Known limitations (unchanged by v4)
+## 6. Does it catch risers early and drop fallers? (motion signals)
+
+The product's purpose is to catch names before they run and drop them as conviction unwinds, so motion was tested separately from the score level. Universe: top-300 names; outcome: 20-day forward currency-demeaned return.
+
+| Motion signal (IC, NW t) | 30-ETF (Jun–Oct) | 16-ETF (Mar–May) |
+|---|---:|---:|
+| Score change over 10 snapshots — pre-v4 | −0.023 (−0.7) | +0.055 (1.3) |
+| Score change over 10 snapshots — v4 | −0.028 (−0.8) | +0.050 (1.0) |
+| Linear conviction-mass change (v4, pre-κ) | −0.027 (−0.8) | +0.056 (1.2) |
+| **Change in number of holding funds** | **+0.014 (1.2)** | **+0.078 (3.3)** |
+
+- **Score and rank motion behave like the score level.** They help in a momentum-friendly regime and hurt in a momentum unwind. Pre-v4 and v4 are statistically indistinguishable; κ does not amplify drift noise.
+- **Fund-count change is the only motion signal positive in both regimes.** Calendar-window events for top-200 names over the next 20 days:
+  - *Lost a fund in the last 14 days:* −5.5% vs peers in Feb–May and −5.9% in May–Oct. This is **the steadiest warning in the data.**
+  - *Gained a fund:* +16.9% in Feb–May, but no edge during the May–Oct unwind.
+  - The 30-day window predicts as well as 14 days. The UI therefore keeps its existing 30-day `etf_count_delta_30d` column, and v4 adds **Funds ↑ / Funds ↓ filter chips** to screen on it directly.
+- **v4 moves deteriorating giants.** The old engine held GEV at #2 and SNDK at #1 through the whole Aug–Oct decline. Under v4 their ranks drift down as their holdings soften (GEV 5 → 11, SNDK 2 → 9), and STX falls 16 → 82 (vs 4 → 34 before). The rank now reflects the trimming, while the score stays a holdings measure, not a price filter.
+- **Follow-up, not in v4.** BURST and CRATER use a fixed 40-rank threshold. On a 3,800-name board most hits are low-ranked names whose near-tie scores churn: ~800–950 flags both before and after v4, median rank ~1,200–1,800. A rank-relative definition needs its own validation.
+
+## 7. Known limitations (unchanged by v4)
 
 - **Overweight is measured against equal weight, not a benchmark.** In cap-weighted funds, part of C is company size. That is why EM mega-caps (TSMC, MediaTek, Samsung, SK hynix) top the v4 board; they also ranked #1–#7 under pre-v4 `apex_score`. A size-neutral measure needs market caps for the whole universe; `data/ticker_metadata.csv` covers 1,224 of ~3,900 names.
 - **Forward-return evidence is short and regime-dependent.** See §2. v4 was chosen on structural grounds plus internal outcomes that agree in both universes, not on a return backtest.
@@ -156,7 +175,7 @@ Each row changes one thing relative to the row it builds on. All rows start from
 
 ---
 
-## 7. The audit's findings, answered
+## 8. The audit's findings, answered
 
 | # | Audit finding | Verdict | Resolution |
 |---|---|---|---|
@@ -171,7 +190,7 @@ Each row changes one thing relative to the row it builds on. All rows start from
 
 ---
 
-## 8. Reproduce
+## 9. Reproduce
 
 ```bash
 pip install -r requirements.txt

@@ -415,6 +415,18 @@
               style="border-color: var(--border-2)"
               x-tooltip="'Stealth Buy - 1-2 funds loading up fast (+10% avg weight in 7d) before ranks catch up. Lonely-buy-before-the-crowd signal.'"
               x-text="`Stealth ${counts.STEALTH_BUY || 0}`"></button>
+      <button @click="fundsUpOnly = !fundsUpOnly; fundsDownOnly = false"
+              :class="fundsUpOnly ? 'border-emerald-400/50 text-emerald-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-emerald-400/40"
+              style="border-color: var(--border-2)"
+              x-tooltip="'Funds ↑ - held by more ETFs than 30 days ago. Net fund adds were the most consistent forward signal in the 2026-10 study (top-200 names that gained a fund: +17% vs peers over the next 20 days in Feb-May; weaker during the May-Oct momentum unwind).'"
+              x-text="`Funds ↑ ${counts.FUNDS_UP || 0}`"></button>
+      <button @click="fundsDownOnly = !fundsDownOnly; fundsUpOnly = false"
+              :class="fundsDownOnly ? 'border-rose-400/50 text-rose-300' : ''"
+              class="chip border px-2 py-1 transition hover:border-rose-400/40"
+              style="border-color: var(--border-2)"
+              x-tooltip="'Funds ↓ - held by fewer ETFs than 30 days ago. The steadiest warning in the 2026-10 study: top-200 names that lost a fund underperformed peers by ~5.5-6% over the next 20 days in BOTH regimes.'"
+              x-text="`Funds ↓ ${counts.FUNDS_DOWN || 0}`"></button>
       <button @click="toggleFlag('CONCENTRATED')"
               :class="flag === 'CONCENTRATED' ? 'border-orange-400/50 text-orange-300' : ''"
               class="chip border px-2 py-1 transition hover:border-orange-400/40"
@@ -1126,6 +1138,18 @@
                 style="border-color: var(--border-2)"
                 x-tooltip="'Stealth Buy - 1-2 funds loading up fast (+10% avg weight in 7d) before ranks catch up'"
                 x-text="`Stealth ${counts.STEALTH_BUY || 0}`"></button>
+        <button @click="fundsUpOnly = !fundsUpOnly; fundsDownOnly = false"
+                :class="fundsUpOnly ? 'border-emerald-400/50 text-emerald-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-emerald-400/40"
+                style="border-color: var(--border-2)"
+                x-tooltip="'Funds ↑ - held by more ETFs than 30 days ago (net fund adds)'"
+                x-text="`Funds ↑ ${counts.FUNDS_UP || 0}`"></button>
+        <button @click="fundsDownOnly = !fundsDownOnly; fundsUpOnly = false"
+                :class="fundsDownOnly ? 'border-rose-400/50 text-rose-300' : ''"
+                class="chip border px-2 py-1 transition hover:border-rose-400/40"
+                style="border-color: var(--border-2)"
+                x-tooltip="'Funds ↓ - held by fewer ETFs than 30 days ago (net fund exits; steadiest downside warning)'"
+                x-text="`Funds ↓ ${counts.FUNDS_DOWN || 0}`"></button>
         <button @click="toggleFlag('CONCENTRATED')"
                 :class="flag === 'CONCENTRATED' ? 'border-orange-400/50 text-orange-300' : ''"
                 class="chip border px-2 py-1 transition hover:border-orange-400/40"
@@ -2827,7 +2851,7 @@ function app() {
     loading: true, loadProgress: 0, displayProgress: 0, targetProgress: 0, error: '',
     activeTab: 'leaderboard',
     overlapHover: '',
-    flag: '', selectedTier: '', selectedSector: '', selectedCountry: '', regionFilter: '', newOnly: false, burstOnly: false, craterOnly: false, q: '', excludeConcentrated: false, qualityAdoptedOnly: false, preHcOnly: false, stealthBuyOnly: false, quantQualityOnly: false,
+    flag: '', selectedTier: '', selectedSector: '', selectedCountry: '', regionFilter: '', newOnly: false, burstOnly: false, craterOnly: false, q: '', excludeConcentrated: false, qualityAdoptedOnly: false, preHcOnly: false, stealthBuyOnly: false, fundsUpOnly: false, fundsDownOnly: false, quantQualityOnly: false,
     sortKey: 'leaderboard_rank', sortDir: 'asc',
     page: 1, pageSize: 50, open: null,
     // Reactive caches for expensive getters (BUG-5): _filteredCacheKey holds
@@ -3033,6 +3057,8 @@ function app() {
         QADD: this.leaderboard.filter(r => r.quality_adopted_30d).length,
         PRE_HC: this.leaderboard.filter(r => this._isPreHc(r)).length,
         STEALTH_BUY: this.leaderboard.filter(r => this._isStealthBuy(r)).length,
+        FUNDS_UP: this.leaderboard.filter(r => (r.etf_count_delta_30d || 0) > 0).length,
+        FUNDS_DOWN: this.leaderboard.filter(r => (r.etf_count_delta_30d || 0) < 0).length,
         QUANT_QUALITY: this.leaderboard.filter(r => this._isQuantQuality(r)).length,
         CONCENTRATED: this.leaderboard.filter(r => r.flag === 'CONCENTRATED').length,
       };
@@ -3144,7 +3170,7 @@ function app() {
     },
 
     toggleFlag(f) { this.flag = (this.flag === f) ? '' : f; this.page = 1; },
-    reset() { this.flag = ''; this.newOnly = false; this.burstOnly = false; this.craterOnly = false; this.excludeConcentrated = false; this.qualityAdoptedOnly = false; this.preHcOnly = false; this.stealthBuyOnly = false; this.quantQualityOnly = false; this.selectedTier = ''; this.selectedSector = ''; this.selectedCountry = ''; this.regionFilter = ''; this.q = ''; this.page = 1; },
+    reset() { this.flag = ''; this.newOnly = false; this.burstOnly = false; this.craterOnly = false; this.excludeConcentrated = false; this.qualityAdoptedOnly = false; this.preHcOnly = false; this.stealthBuyOnly = false; this.fundsUpOnly = false; this.fundsDownOnly = false; this.quantQualityOnly = false; this.selectedTier = ''; this.selectedSector = ''; this.selectedCountry = ''; this.regionFilter = ''; this.q = ''; this.page = 1; },
 
     togglePin(t) {
       const i = this.pins.indexOf(t);
@@ -3779,6 +3805,7 @@ function app() {
         burstOnly: this.burstOnly, craterOnly: this.craterOnly, qualityAdoptedOnly: this.qualityAdoptedOnly,
         preHcOnly: this.preHcOnly,
         stealthBuyOnly: this.stealthBuyOnly,
+        fundsUp: this.fundsUpOnly, fundsDown: this.fundsDownOnly,
         quantQualityOnly: this.quantQualityOnly,
         tier: this.selectedTier, sector: this.selectedSector,
         country: this.selectedCountry, region: this.regionFilter,
@@ -3796,6 +3823,8 @@ function app() {
       if (this.qualityAdoptedOnly) r = r.filter(x => x.quality_adopted_30d);
       if (this.preHcOnly)        r = r.filter(x => this._isPreHc(x));
       if (this.stealthBuyOnly)   r = r.filter(x => this._isStealthBuy(x));
+      if (this.fundsUpOnly)      r = r.filter(x => (x.etf_count_delta_30d || 0) > 0);
+      if (this.fundsDownOnly)    r = r.filter(x => (x.etf_count_delta_30d || 0) < 0);
       if (this.quantQualityOnly) r = r.filter(x => this._isQuantQuality(x));
       if (tier)              r = r.filter(x => (x.tiers || '').split(' + ').includes(tier));
       if (sector)            r = r.filter(x => x.sector === sector);
