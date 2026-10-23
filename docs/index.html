@@ -1609,7 +1609,7 @@
   <section x-show="activeTab === 'etfs'">
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-3">
       <!-- ETF picker -->
-      <aside class="lg:col-span-1 rounded-lg border p-2.5 flex flex-col gap-2.5" style="background: var(--surface); border-color: var(--border)">
+      <aside class="lg:col-span-1 rounded-lg border p-2.5 flex flex-col gap-2.5 self-start" style="background: var(--surface); border-color: var(--border)">
         <!-- Header & Reset Controls -->
         <div class="flex items-center justify-between px-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 select-none">
           <span x-text="selectedTier ? `${etfSummary.filter(e => e.tier === selectedTier).length} ${selectedTier} ETFs` : `${etfSummary.length} ETFs`"></span>
@@ -1652,7 +1652,7 @@
         </div>
 
         <!-- ETF list with expandable details -->
-        <div class="space-y-1 overflow-y-auto max-h-[500px] pr-1 scrollbar">
+        <div class="space-y-1">
           <template x-for="etfRow in etfSummary" :key="etfRow.etf">
             <div x-show="!selectedTier || etfRow.tier === selectedTier" x-transition.opacity>
               <button @click="activeETF = etfRow.etf; etfPage = 1; expandedSidebarETF = expandedSidebarETF === etfRow.etf ? null : etfRow.etf"
