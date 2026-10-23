@@ -118,12 +118,23 @@ jobs:
           path: |
             docs/data/leaderboard.json
             docs/data/holdings_latest.json
+            docs/data/holdings_exits.json
             docs/data/changelog.json
             docs/data/metadata.json
             docs/data/leaderboard.parquet
             docs/data/score_history.json
+            docs/data/score_history.parquet
             docs/data/holdings_history.json
+            docs/data/holdings_history.parquet
             docs/data/flag_history.json
+            docs/data/flow.json
+            docs/data/etf_overlap.json
+            docs/data/history
+            docs/data/prices.json
+            docs/data/market_returns.json
+            docs/data/markets.json
+            docs/data/sim_underlyings.json
+            docs/data/vol_history.json
           key: conviction-artifacts-${{ hashFiles('data/history_parquet/**', 'conviction/**', 'config.yaml', 'config.json') }}
 
       # ── Markets data pipeline ─────────────────────────────────────────
@@ -248,6 +259,7 @@ jobs:
           test -f docs/data/flag_history.json
           test -f docs/data/prices.json
           test -f docs/data/market_returns.json          # Verify market_returns.json has the §2.3 contract shape (monthly arrays, not close dicts)
+          test -d docs/data/history
           python -c "
           import json, sys, datetime, os
           d = json.load(open('docs/data/market_returns.json'))
@@ -287,6 +299,19 @@ jobs:
           assert isinstance(lb, list), 'leaderboard.json must be a list'
           assert len(lb) > 0, f'leaderboard.json is empty — build may have failed'
           print(f'leaderboard.json OK: {len(lb)} entries')
+          "
+          python -c "
+          import json, glob, datetime
+          files = glob.glob('docs/data/history/*.json')
+          assert len(files) >= 1000, f'Expected >=1000 history files, got {len(files)}'
+          sample = json.load(open('docs/data/history/2330.json'))
+          sh = sample.get('scoreHistory') or []
+          assert len(sh) > 0, '2330.json has empty scoreHistory'
+          last_d = datetime.date.fromisoformat(sh[-1]['d'])
+          meta = json.load(open('docs/data/metadata.json'))
+          asof_d = datetime.date.fromisoformat(meta['latest_holdings_as_of'])
+          assert (asof_d - last_d).days <= 3, f'docs/data/history stale: last={last_d}, asof={asof_d}'
+          print(f'docs/data/history OK: {len(files)} files, 2330 last date={last_d}')
           "
           ls -lh docs/data/
           # Portfolio Lab sanity check: required JSON + non-zero ticker count

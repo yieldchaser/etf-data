@@ -229,3 +229,14 @@ def test_git_pull_rebase_present():
         "No step in daily_scrape.yml contains 'git pull --rebase'. "
         "This is required to avoid push conflicts when the scraper runs concurrently."
     )
+
+
+def test_cache_conviction_includes_history_and_artifacts():
+    """Ensure build_site.yml cache_conviction caches docs/data/history and key outputs
+    so fast builds do not deploy stale history or missing data."""
+    step = _find_step(_build_steps(), "Cache conviction artifacts")
+    assert step is not None, "Cache conviction artifacts step missing"
+    paths = step.get("with", {}).get("path", "")
+    assert "docs/data/history" in paths, "docs/data/history must be in cache paths"
+    assert "docs/data/leaderboard.json" in paths, "docs/data/leaderboard.json must be in cache paths"
+    assert "docs/data/holdings_exits.json" in paths, "docs/data/holdings_exits.json must be in cache paths"
