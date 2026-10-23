@@ -787,17 +787,13 @@
       // keys the fund's own record in behavior_profiles.all.
       flowScannerColumns: [
         { list: 'dipAccum', setup: 'dip', title: 'Inflows after a drop', color: '251,146,60',
-          rule: 'Price down hard over 20 days, money flowing in',
-          note: 'The one setup with a steady edge in 10 years of data: these did a little better than similar drops without buyers. Small next to these funds\' swings.' },
+          rule: 'Price down hard over 20 days, money flowing in' },
         { list: 'exhaustionLow', setup: 'washout', title: 'Outflows after a drop', color: '52,211,153',
-          rule: 'Price down hard over 20 days, money flowing out',
-          note: 'Selling into a drop used to come before small rebounds; that has faded in recent years.' },
+          rule: 'Price down hard over 20 days, money flowing out' },
         { list: 'climaxInflowTop', setup: 'climax', title: 'Inflows after a rally', color: '34,211,238',
-          rule: 'Price up strongly over 20 days, money flowing in',
-          note: 'No reliable pattern: has come before both further gains and pullbacks.' },
+          rule: 'Price up strongly over 20 days, money flowing in' },
         { list: 'distributionTop', setup: 'dist', title: 'Outflows after a rally', color: '251,113,133',
-          rule: 'Price up strongly over 20 days, money flowing out',
-          note: 'Not a sell signal: these mostly kept pace with other rallying funds.' },
+          rule: 'Price up strongly over 20 days, money flowing out' },
       ],
       flowShowCatalogDrawer: false,
       flowVolumeCache: null,
@@ -1221,6 +1217,21 @@
       },
 
       // This fund's own record in a setup: next 20 days vs its typical 20 days.
+      // What the pooled history says about a setup, from catalog.flow_evidence
+      // (recomputed on every build, so the wording follows the data).
+      flowSetupEvidence(setup) {
+        const ev = this.flowCatalog?.flow_evidence;
+        const st = ev?.setups?.[setup];
+        if (!st) return { verdict: '', eras: [] };
+        const verdict = st.verdict === 'consistent_positive'
+          ? 'Did better than funds with the same price move in every period: a small but steady edge.'
+          : st.verdict === 'consistent_negative'
+            ? 'Did worse than funds with the same price move in every period: a small but steady drag.'
+            : 'No reliable pattern: better in some periods, worse in others.';
+        const eras = (ev.eras || []).map((label, i) => ({ label, v: st.excess_20d_pct[i], n: st.n[i] }));
+        return { verdict, eras };
+      },
+
       flowSetupRecord(item, setup) {
         const p = item.prof || {};
         const n = p[`${setup}_episodes`] || 0;
@@ -1267,11 +1278,14 @@
             prof
           };
 
-          const isMaterial = Math.abs(f1) >= 50000 || Math.abs(f5) >= 100000;
-          const isDip = ((ret20 <= -5.0 && z >= 0.8) || (zp <= -1.0 && zf5 >= 0.6)) && isMaterial;
-          const isWash = ((ret20 <= -5.0 && z <= -0.8) || (zp <= -1.0 && zf5 <= -0.6)) && isMaterial;
-          const isClimax = ((ret20 >= 10.0 && z >= 1.0) || (zp >= 1.0 && zf5 >= 0.8)) && isMaterial;
-          const isDist = ((ret20 >= 10.0 && z <= -0.8) || (zp >= 1.0 && zf5 <= -0.6)) && isMaterial;
+          // Same setup definitions as the pooled evidence (catalog.flow_evidence,
+          // scripts/flow_study.py): 20-day price z of +/-1 and 5-day flow z of
+          // +/-0.8, both in units of the fund's own 60-day variability.
+          const isMaterial = Math.abs(f5) >= 100000;
+          const isDip = zp <= -1.0 && zf5 >= 0.8 && isMaterial;
+          const isWash = zp <= -1.0 && zf5 <= -0.8 && isMaterial;
+          const isClimax = zp >= 1.0 && zf5 >= 0.8 && isMaterial;
+          const isDist = zp >= 1.0 && zf5 <= -0.8 && isMaterial;
 
           if (isDip) {
             dipAccum.push(entry);
@@ -1378,22 +1392,22 @@
         const lblTrap = `
           <g pointer-events="none">
             <rect x="${(xZero - 170).toFixed(1)}" y="${pad.top + 6}" width="162" height="22" rx="3" fill="rgba(8,12,18,0.72)" stroke="rgba(251,146,60,0.3)" stroke-width="0.8"/>
-            <text x="${(xZero - 8).toFixed(1)}" y="${pad.top + 20}" text-anchor="end" fill="#fb923c" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.03em">INFLOWS AFTER DROP (${counts.dipAccum})</text>
+            <text x="${(xZero - 8).toFixed(1)}" y="${pad.top + 20}" text-anchor="end" fill="#fb923c" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.03em">PRICE ↓ · INFLOWS (${counts.dipAccum})</text>
           </g>`;
         const lblMomentum = `
           <g pointer-events="none">
             <rect x="${(xZero + 8).toFixed(1)}" y="${pad.top + 6}" width="162" height="22" rx="3" fill="rgba(8,12,18,0.72)" stroke="rgba(34,211,238,0.3)" stroke-width="0.8"/>
-            <text x="${(xZero + 16).toFixed(1)}" y="${pad.top + 20}" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.03em">INFLOWS AFTER RALLY (${counts.momentum})</text>
+            <text x="${(xZero + 16).toFixed(1)}" y="${pad.top + 20}" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.03em">PRICE ↑ · INFLOWS (${counts.momentum})</text>
           </g>`;
         const lblWashout = `
           <g pointer-events="none">
             <rect x="${(xZero - 170).toFixed(1)}" y="${(pad.top + chartH - 28).toFixed(1)}" width="162" height="22" rx="3" fill="rgba(8,12,18,0.72)" stroke="rgba(52,211,153,0.3)" stroke-width="0.8"/>
-            <text x="${(xZero - 8).toFixed(1)}" y="${(pad.top + chartH - 14).toFixed(1)}" text-anchor="end" fill="#34d399" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.03em">OUTFLOWS AFTER DROP (${counts.washout})</text>
+            <text x="${(xZero - 8).toFixed(1)}" y="${(pad.top + chartH - 14).toFixed(1)}" text-anchor="end" fill="#34d399" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.03em">PRICE ↓ · OUTFLOWS (${counts.washout})</text>
           </g>`;
         const lblSqueeze = `
           <g pointer-events="none">
             <rect x="${(xZero + 8).toFixed(1)}" y="${(pad.top + chartH - 28).toFixed(1)}" width="172" height="22" rx="3" fill="rgba(8,12,18,0.72)" stroke="rgba(167,139,250,0.3)" stroke-width="0.8"/>
-            <text x="${(xZero + 16).toFixed(1)}" y="${(pad.top + chartH - 14).toFixed(1)}" fill="#a78bfa" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.03em">OUTFLOWS AFTER RALLY (${counts.distribution})</text>
+            <text x="${(xZero + 16).toFixed(1)}" y="${(pad.top + chartH - 14).toFixed(1)}" fill="#a78bfa" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.03em">PRICE ↑ · OUTFLOWS (${counts.distribution})</text>
           </g>`;
 
         // Axes and Zero Crosshairs
@@ -1594,7 +1608,7 @@
         let rangePct = 50;
         let minP = 0, maxP = 0, curP = 0;
         let rangeState = 'BALANCED';
-        let rangeBadge = 'RANGE BALANCED';
+        let rangeBadge = 'MID-RANGE';
         let rangeDesc = 'Trading midway through 20-session high/low envelope.';
 
         if (prices20.length >= 2) {
@@ -1607,23 +1621,23 @@
           const f20 = finiteNumber(item.flow_20d) ?? (allMetricRows[allMetricRows.length - 1]?.rollingSum20 ?? 0);
           if (rangePct >= 80 && f20 < 0) {
             rangeState = 'DISTRIBUTION';
-            rangeBadge = 'DIVERGENCE ACTIVE';
-            rangeDesc = `Trading at ${rangePct}% of 20D range ($${minP.toFixed(2)} → $${maxP.toFixed(2)}) while 20D net flow is negative (${formatMoney(f20)}).`;
+            rangeBadge = 'OUTFLOWS NEAR HIGH';
+            rangeDesc = `Near the top of its 20-day range (${rangePct}%) while money left (${formatMoney(f20)}). Outflows after a rally have not reliably come before a drop.`;
           } else if (rangePct <= 20 && f20 > 0) {
             rangeState = 'ACCUMULATION';
-            rangeBadge = 'ACCUMULATION AT LOWS';
-            rangeDesc = `Near 20D trough (${rangePct}%) with positive capital absorption (${formatMoney(f20)}).`;
+            rangeBadge = 'INFLOWS NEAR LOW';
+            rangeDesc = `Near the bottom of its 20-day range (${rangePct}%) while money came in (${formatMoney(f20)}). Buyers after a drop is the one flow pattern with a small, steady edge in this data.`;
           } else if (rangePct >= 80 && f20 > 0) {
             rangeState = 'ACCUMULATION';
-            rangeBadge = 'MOMENTUM CONFIRMED';
-            rangeDesc = `Trading near 20D high (${rangePct}%) backed by concurrent net inflows (${formatMoney(f20)}).`;
+            rangeBadge = 'INFLOWS NEAR HIGH';
+            rangeDesc = `Near the top of its 20-day range (${rangePct}%) with money coming in (${formatMoney(f20)}). Inflows after a rally have not predicted either way.`;
           } else if (rangePct <= 20 && f20 < 0) {
             rangeState = 'DISTRIBUTION';
-            rangeBadge = 'PRESSURE AT LOWS';
-            rangeDesc = `Trading near 20D low (${rangePct}%) alongside persistent capital outflows (${formatMoney(f20)}).`;
+            rangeBadge = 'OUTFLOWS NEAR LOW';
+            rangeDesc = `Near the bottom of its 20-day range (${rangePct}%) while money left (${formatMoney(f20)}).`;
           } else {
             rangeState = 'BALANCED';
-            rangeBadge = 'RANGE BALANCED';
+            rangeBadge = 'MID-RANGE';
             rangeDesc = `Trading at ${rangePct}% of 20D range ($${minP.toFixed(2)} → $${maxP.toFixed(2)}). 20D net flow: ${formatMoney(f20)}.`;
           }
         }
@@ -1639,10 +1653,10 @@
           const xMid = padX + plotW / 2;
 
           let themeColor = '#94a3b8';
-          if (rangeBadge === 'MOMENTUM CONFIRMED') themeColor = '#34d399';
-          else if (rangeBadge === 'DIVERGENCE ACTIVE') themeColor = '#f59e0b';
-          else if (rangeBadge === 'ACCUMULATION AT LOWS') themeColor = '#22d3ee';
-          else if (rangeBadge === 'PRESSURE AT LOWS') themeColor = '#fb7185';
+          if (rangeBadge === 'INFLOWS NEAR HIGH') themeColor = '#34d399';
+          else if (rangeBadge === 'OUTFLOWS NEAR HIGH') themeColor = '#f59e0b';
+          else if (rangeBadge === 'INFLOWS NEAR LOW') themeColor = '#22d3ee';
+          else if (rangeBadge === 'OUTFLOWS NEAR LOW') themeColor = '#fb7185';
 
           const curPinX = padX + (Math.max(0, Math.min(100, rangePct)) / 100) * plotW;
           const fillW = Math.max(2, (Math.max(0, Math.min(100, rangePct)) / 100) * plotW);
@@ -1673,33 +1687,45 @@
         let negEvaluated = 0;
         let negSumRet = 0;
 
+        // Next 5 days after a flow spike, entered the day after and compared
+        // with this fund's typical 5 days over the same window (a bull
+        // fund's drift is not an edge). Spikes < 5 days apart count once.
+        const fwd5 = i => {
+          const a0 = allMetricRows[i + 1]?.nav, a5 = allMetricRows[i + 6]?.nav;
+          return a0 && a5 ? (a5 / a0 - 1) * 100 : null;
+        };
+        const allFwd = allMetricRows.map((_, i) => fwd5(i)).filter(v => v !== null);
+        const typical5 = allFwd.length ? allFwd.reduce((x, y) => x + y, 0) / allFwd.length : 0;
+        let lastPos = -99, lastNeg = -99;
         for (let i = 0; i < allMetricRows.length; i++) {
           const z = finiteNumber(allMetricRows[i].priorOnlyZScore);
           if (z === null) continue;
           if (z >= 1.5) {
             posShocks++;
             if (z >= 2.0) extremePosShocks++;
-            if (i + 5 < allMetricRows.length && allMetricRows[i].nav && allMetricRows[i + 5].nav) {
-              const r = (allMetricRows[i + 5].nav - allMetricRows[i].nav) / allMetricRows[i].nav * 100;
-              posSumRet += r;
+            const r = fwd5(i);
+            if (r !== null && i - lastPos >= 5) {
+              lastPos = i;
+              posSumRet += r - typical5;
               posEvaluated++;
-              if (r > 0) posFwdGains++;
+              if (r > typical5) posFwdGains++;
             }
           } else if (z <= -1.5) {
             negShocks++;
             if (z <= -2.0) extremeNegShocks++;
-            if (i + 5 < allMetricRows.length && allMetricRows[i].nav && allMetricRows[i + 5].nav) {
-              const r = (allMetricRows[i + 5].nav - allMetricRows[i].nav) / allMetricRows[i].nav * 100;
-              negSumRet += r;
+            const r = fwd5(i);
+            if (r !== null && i - lastNeg >= 5) {
+              lastNeg = i;
+              negSumRet += r - typical5;
               negEvaluated++;
-              if (r > 0) negFwdGains++;
+              if (r > typical5) negFwdGains++;
             }
           }
         }
 
         const latestZ = finiteNumber(allMetricRows[allMetricRows.length - 1]?.priorOnlyZScore) || 0;
         const isShockActiveToday = Math.abs(latestZ) >= 1.5;
-        let shockBadge = 'BASELINE FLOW (|Z| < 1.5σ)';
+        let shockBadge = 'NORMAL FLOW';
         let shockBadgeState = 'BALANCED';
 
         if (latestZ >= 2.0) {
@@ -1729,20 +1755,20 @@
         const negWinRate = negEvaluated > 0 ? (negFwdGains / negEvaluated * 100).toFixed(1) : null;
         const negAvgRet = negEvaluated > 0 ? (negSumRet / negEvaluated).toFixed(2) : null;
 
-        if (latestZ >= 1.0 && posEvaluated >= 3) {
-          shockStatLine = `Inflow Shock Edge: ${posWinRate}% 5D Win Rate (n = ${posEvaluated})`;
-          shockSubtext = `Following prior ≥+1.5σ inflow shocks, 5D forward return averaged ${posAvgRet >= 0 ? '+' : ''}${posAvgRet}%. Current: ${latestZ >= 0 ? '+' : ''}${latestZ.toFixed(2)}σ.`;
-        } else if (latestZ <= -1.0 && negEvaluated >= 3) {
-          shockStatLine = `Outflow Shock Edge: ${negWinRate}% 5D Rebound Rate (n = ${negEvaluated})`;
-          shockSubtext = `Following prior ≤-1.5σ outflows, 5D forward return averaged ${negAvgRet >= 0 ? '+' : ''}${negAvgRet}%. Current: ${latestZ >= 0 ? '+' : ''}${latestZ.toFixed(2)}σ.`;
+        const MIN_N = 8;
+        const rec = (n, wr, avg) => n >= MIN_N
+          ? `beat its typical 5 days ${wr}% of ${n} times (avg ${avg >= 0 ? '+' : ''}${avg}%)`
+          : `has too few cases to judge (${n})`;
+        const zTxt = `${latestZ >= 0 ? '+' : ''}${latestZ.toFixed(2)}σ`;
+        if (latestZ >= 1.0) {
+          shockStatLine = `After inflow spikes: ${posEvaluated >= MIN_N ? `${posWinRate}% beat typical` : 'too few to judge'} (n = ${posEvaluated})`;
+          shockSubtext = `Today ${zTxt}. After past ≥+1.5σ inflow days this fund ${rec(posEvaluated, posWinRate, Number(posAvgRet))}.`;
+        } else if (latestZ <= -1.0) {
+          shockStatLine = `After outflow spikes: ${negEvaluated >= MIN_N ? `${negWinRate}% beat typical` : 'too few to judge'} (n = ${negEvaluated})`;
+          shockSubtext = `Today ${zTxt}. After past ≤−1.5σ outflow days this fund ${rec(negEvaluated, negWinRate, Number(negAvgRet))}.`;
         } else {
-          const totalShocks = posShocks + negShocks;
-          shockStatLine = `Historical Shocks: ${posShocks} Inflow · ${negShocks} Outflow (n = ${totalShocks})`;
-          if (posWinRate && negWinRate) {
-            shockSubtext = `Flow within normal range (${latestZ >= 0 ? '+' : ''}${latestZ.toFixed(2)}σ). Shocks resolve positive ${posWinRate}% of time after inflows vs ${negWinRate}% after outflows.`;
-          } else {
-            shockSubtext = `Flow within normal range (${latestZ >= 0 ? '+' : ''}${latestZ.toFixed(2)}σ). Sample baseline tracking ${totalShocks} historical shock events.`;
-          }
+          shockStatLine = `Flow spikes in window: ${posShocks} inflow · ${negShocks} outflow`;
+          shockSubtext = `Today's flow is normal (${zTxt}). After inflow spikes this fund ${rec(posEvaluated, posWinRate, Number(posAvgRet))}; after outflow spikes it ${rec(negEvaluated, negWinRate, Number(negAvgRet))}.`;
         }
 
         // SVG Distribution Gauge for Card 2 (shockMeterSvg)
@@ -1792,47 +1818,47 @@
         }
         const flow5d = finiteNumber(item.flow_5d) ?? (allMetricRows[allMetricRows.length - 1]?.rollingSum5 ?? 0);
 
-        let thrustBadge = 'FLOW EQUILIBRIUM';
+        let thrustBadge = 'NO NET FLOW';
         let thrustBadgeState = 'BALANCED';
         let thrustStatLine = '';
         let thrustSubtext = '';
         const isThrustActive = ret5d !== null && (Math.abs(ret5d) >= 1.0 || Math.abs(flow5d) >= 100000);
 
         if (ret5d !== null && ret5d >= 1.0 && flow5d > 0) {
-          thrustBadge = 'BULLISH SPONSORSHIP';
+          thrustBadge = 'UP WITH INFLOWS';
           thrustBadgeState = 'ACCUMULATION';
           thrustStatLine = `5D Move: +${ret5d.toFixed(2)}% · 5D Flow: ${formatMoney(flow5d)}`;
-          thrustSubtext = `Upward price momentum backed by concurrent capital inflows over 5 sessions.`;
+          thrustSubtext = `Price up and money coming in over the last 5 sessions.`;
         } else if (ret5d !== null && ret5d >= 1.0 && flow5d < 0) {
-          thrustBadge = 'BEARISH DIVERGENCE';
+          thrustBadge = 'UP WITH OUTFLOWS';
           thrustBadgeState = 'DISTRIBUTION';
           thrustStatLine = `5D Move: +${ret5d.toFixed(2)}% · 5D Flow: ${formatMoney(flow5d)}`;
-          thrustSubtext = `Price moving higher while net capital is exiting, signaling potential divergence.`;
+          thrustSubtext = `Price up while money left over the last 5 sessions.`;
         } else if (ret5d !== null && ret5d <= -1.0 && flow5d > 0) {
-          thrustBadge = 'DIP ABSORPTION';
+          thrustBadge = 'DOWN WITH INFLOWS';
           thrustBadgeState = 'ACCUMULATION';
           thrustStatLine = `5D Move: ${ret5d.toFixed(2)}% · 5D Flow: ${formatMoney(flow5d)}`;
-          thrustSubtext = `Pullback is absorbing positive net capital inflows, signaling dip sponsorship.`;
+          thrustSubtext = `Price down while money came in over the last 5 sessions: buyers stepping into the drop.`;
         } else if (ret5d !== null && ret5d <= -1.0 && flow5d < 0) {
-          thrustBadge = 'LIQUIDATION PRESSURE';
+          thrustBadge = 'DOWN WITH OUTFLOWS';
           thrustBadgeState = 'DISTRIBUTION';
           thrustStatLine = `5D Move: ${ret5d.toFixed(2)}% · 5D Flow: ${formatMoney(flow5d)}`;
-          thrustSubtext = `Price decline accompanied by persistent capital outflows over 5 sessions.`;
+          thrustSubtext = `Price down and money leaving over the last 5 sessions.`;
         } else if (flow5d > 0) {
-          thrustBadge = 'STEALTH ACCUMULATION';
+          thrustBadge = 'FLAT, INFLOWS';
           thrustBadgeState = 'ACCUMULATION';
           thrustStatLine = `5D Move: ${ret5d !== null ? (ret5d >= 0 ? '+' : '') + ret5d.toFixed(2) + '%' : '0.00%'} · 5D Flow: ${formatMoney(flow5d)}`;
-          thrustSubtext = `Capital accumulating during price consolidation without yet driving upward velocity.`;
+          thrustSubtext = `Price roughly flat while money came in over the last 5 sessions.`;
         } else if (flow5d < 0) {
-          thrustBadge = 'STEALTH DISTRIBUTION';
+          thrustBadge = 'FLAT, OUTFLOWS';
           thrustBadgeState = 'DISTRIBUTION';
           thrustStatLine = `5D Move: ${ret5d !== null ? (ret5d >= 0 ? '+' : '') + ret5d.toFixed(2) + '%' : '0.00%'} · 5D Flow: ${formatMoney(flow5d)}`;
-          thrustSubtext = `Capital exiting during price consolidation without yet triggering downward breakdown.`;
+          thrustSubtext = `Price roughly flat while money left over the last 5 sessions.`;
         } else {
-          thrustBadge = 'FLOW EQUILIBRIUM';
+          thrustBadge = 'NO NET FLOW';
           thrustBadgeState = 'BALANCED';
           thrustStatLine = `5D Move: ${ret5d !== null ? (ret5d >= 0 ? '+' : '') + ret5d.toFixed(2) + '%' : '0.00%'} · Flow Balanced`;
-          thrustSubtext = `Balanced net flow and neutral price action over the preceding 5 sessions.`;
+          thrustSubtext = `No net flow and little price change over the last 5 sessions.`;
         }
 
         // SVG Dual Comparison Meter for Card 3 (thrustMeterSvg)
@@ -2239,8 +2265,9 @@
           entry.totalFlow1d += f1;
           entry.totalFlow20d += f20;
           entry.totalAumM += finiteNumber(item.aum_m) || 0;
-          if (z >= entry.maxAbsZ) {
-            entry.maxAbsZ = z;
+          if (z >= entry.maxAbsZ) entry.maxAbsZ = z;
+          if (Math.abs(f20) >= (entry.leadAbsFlow20d || 0)) {
+            entry.leadAbsFlow20d = Math.abs(f20);
             entry.leadTicker = item.ticker;
           }
         }
@@ -2251,25 +2278,23 @@
           const totalForce = bullishForce + bearishForce;
           const bullSharePct = totalForce > 0 ? Math.round((bullishForce / totalForce) * 100) : 50;
           const bearSharePct = 100 - bullSharePct;
+          // Money into bear funds is a bearish bet, so positioning nets it out.
+          const netBull20d = row.bullFlow20d - row.bearFlow20d;
+          const bullLeads = Math.abs(row.bullFlow20d) >= Math.abs(row.bearFlow20d);  // which side's flow drives the label
           let biasState = 'BALANCED';
-          let biasLabel = 'Contested';
-          if (row.bullFlow20d > 0 && row.bearFlow20d <= 0) {
+          let biasLabel = 'Mixed';
+          if (totalForce > 0 && bullSharePct >= 65) {
             biasState = 'ACCUMULATION';
-            biasLabel = 'Bull Dominant';
-          } else if (row.bullFlow20d <= 0 && row.bearFlow20d > 0) {
+            biasLabel = bullLeads ? 'Buying bulls' : 'Selling bears';
+          } else if (totalForce > 0 && bullSharePct <= 35) {
             biasState = 'DISTRIBUTION';
-            biasLabel = 'Bear Hedging';
-          } else if (row.bullFlow20d > 0 && row.bearFlow20d > 0) {
-            biasState = 'ACCUMULATION';
-            biasLabel = 'Concurrent Expansion';
-          } else if (row.bullFlow20d < 0 && row.bearFlow20d < 0) {
-            biasState = 'DISTRIBUTION';
-            biasLabel = 'Concurrent Outflows';
+            biasLabel = bullLeads ? 'Selling bulls' : 'Buying bears';
           }
           return {
             ...row,
             bullSharePct,
             bearSharePct,
+            netBull20d,
             biasState,
             biasLabel
           };

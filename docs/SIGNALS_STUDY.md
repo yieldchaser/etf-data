@@ -289,6 +289,12 @@ Flows also lag price a little: corr(1-day flow z, prior-day return) = −0.03. B
 - **Opportunity score.** The arbitrary "opportunity score /100" and the 1Y/3Y/All slices of those tiny samples are removed. The setups are named for what they are (inflows / outflows after a drop / rally), and each column says what the pooled history above shows.
 - **Strategy signals view.** The "Systematic Strategy Signals & Conviction Basket" view (+72.8% CAGR, 2.84 Sharpe) is removed. It was a file generated once on 2026-10-05 by a script that read inputs from a local scratch directory outside the repo, so it could not be rebuilt or checked. It was still displayed as live ("Next rebalance 2026-10-09"), and its claimed edge is far beyond anything the pooled data supports.
 
+- **Follow-up (same day):**
+  - The scanner's setup rules now match the study's exactly (price z ±1, 5-day flow z ±0.8). The evidence under each column is recomputed by `build_local_flow_artifacts.py` on every build (`flow_evidence` in the catalog), and the verdict is worded from those numbers, so the tab can't go stale.
+  - The Studio "shock edge" card counted absolute 5-day win rates. It now compares each spike's next 5 days with the fund's typical 5 days, with spikes at least 5 days apart and ≥ 8 needed.
+  - Card language that implied a forecast ("dip sponsorship", "bullish sponsorship", "divergence active") now says what happened.
+  - The bull-vs-bear "net spread" added bear-fund inflows to bull-fund inflows. Money into an inverse fund is a bearish bet, so it is now bull − bear. The "leader" was the fund with the largest flow z, which often sat on the losing side; it is now the fund with the biggest 20-day flow.
+
 **Bottom line:** flows are context, not a trading edge, on this data. "Money is buying the dip" is the one consistent positive, and it is small.
 
 ## 6. Limitations

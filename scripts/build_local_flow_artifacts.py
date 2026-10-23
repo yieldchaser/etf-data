@@ -964,6 +964,75 @@ def _instrument_entry(ticker: str, report: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _flow_evidence(report: dict[str, Any]) -> dict[str, Any]:
+    """Pooled evidence behind the scanner setups, recomputed on every build
+    (same method as scripts/flow_study.py; docs/SIGNALS_STUDY.md section 5).
+
+    Every long-side fund's next-20-day return (entered the day after) is
+    compared with all funds in the same 20-day price state on the same date,
+    so each number is what the flow added beyond the price move itself.
+    Reported per era so a setup that only worked in one market shows as such.
+    """
+    import numpy as np
+    import pandas as pd
+
+    frames = []
+    for ticker, info in report["files"].items():
+        if "Short" in str(report["summary"][ticker].get("category", "")):
+            continue
+        g = pd.DataFrame(info["data"], columns=["date", "nav", "usd_flow"])
+        g["nav"] = pd.to_numeric(g["nav"], errors="coerce")
+        g["usd_flow"] = pd.to_numeric(g["usd_flow"], errors="coerce")
+        g = g[g["nav"] > 0]
+        if len(g) < 200:
+            continue
+        r = g["nav"].pct_change()
+        g = g.assign(
+            ticker=ticker,
+            zf=g["usd_flow"].rolling(5).sum() / (g["usd_flow"].rolling(60).std() * math.sqrt(5)),
+            zp=(g["nav"] / g["nav"].shift(20) - 1) / (r.rolling(60).std() * math.sqrt(20)),
+            fwd=g["nav"].shift(-21) / g["nav"].shift(-1) - 1,
+        )
+        frames.append(g)
+    if not frames:
+        return {}
+    a = pd.concat(frames).replace([np.inf, -np.inf], np.nan).dropna(subset=["zf", "zp", "fwd"])
+    a["date"] = pd.to_datetime(a["date"])
+    a["price"] = np.select([a["zp"] <= -1.0, a["zp"] >= 1.0], ["down", "up"], "mid")
+    a["excess"] = a["fwd"] - a.groupby(["date", "price"])["fwd"].transform("mean")
+    end = int(a["date"].dt.year.max())
+    bounds = [(2016, 2020), (2021, 2023), (2024, end)]
+    eras = [f"{lo}–{str(hi)[2:]}" for lo, hi in bounds]
+    masks = {
+        "dip": (a["price"] == "down") & (a["zf"] >= 0.8),
+        "washout": (a["price"] == "down") & (a["zf"] <= -0.8),
+        "climax": (a["price"] == "up") & (a["zf"] >= 0.8),
+        "dist": (a["price"] == "up") & (a["zf"] <= -0.8),
+    }
+    setups = {}
+    for key, m in masks.items():
+        ex, ns = [], []
+        for lo, hi in bounds:
+            sub = a.loc[m & a["date"].dt.year.between(lo, hi), "excess"]
+            ns.append(int(len(sub)))
+            ex.append(round(float(sub.mean()) * 100, 2) if len(sub) >= 100 else None)
+        vals = [x for x in ex if x is not None]
+        if len(vals) == len(bounds) and all(x > 0 for x in vals):
+            verdict = "consistent_positive"
+        elif len(vals) == len(bounds) and all(x < 0 for x in vals):
+            verdict = "consistent_negative"
+        else:
+            verdict = "mixed"
+        setups[key] = {"excess_20d_pct": ex, "n": ns, "verdict": verdict}
+    return {
+        "eras": eras,
+        "funds": int(a["ticker"].nunique()),
+        "fund_days": int(len(a)),
+        "through": a["date"].max().strftime("%Y-%m-%d"),
+        "setups": setups,
+    }
+
+
 def _build_catalog(report: dict[str, Any]) -> dict[str, Any]:
     instruments = [
         _instrument_entry(ticker, report)
@@ -986,6 +1055,7 @@ def _build_catalog(report: dict[str, Any]) -> dict[str, Any]:
         },
         "category_counts": report["category_counts"],
         "featured_tickers": list(FEATURED_TICKERS),
+        "flow_evidence": _flow_evidence(report),
         "instruments": instruments,
     }
     return _with_content_hash(payload)

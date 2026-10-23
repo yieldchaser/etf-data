@@ -2335,10 +2335,10 @@
                 </div>
                 <div style="display:flex;flex-wrap:wrap;gap:0.25rem;align-items:center">
                   <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'all' ? 'true' : 'false'" @click="flowScatterFilter = 'all'">All (<span x-text="flowScatterCounts.all">160</span>)</button>
-                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'momentum' ? 'true' : 'false'" @click="flowScatterFilter = 'momentum'">Inflows after rally (<span x-text="flowScatterCounts.momentum">17</span>)</button>
-                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'dipAccum' ? 'true' : 'false'" @click="flowScatterFilter = 'dipAccum'">Inflows after drop (<span x-text="flowScatterCounts.dipAccum">18</span>)</button>
-                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'washout' ? 'true' : 'false'" @click="flowScatterFilter = 'washout'">Outflows after drop (<span x-text="flowScatterCounts.washout">11</span>)</button>
-                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'distribution' ? 'true' : 'false'" @click="flowScatterFilter = 'distribution'">Outflows after rally (<span x-text="flowScatterCounts.distribution">16</span>)</button>
+                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'momentum' ? 'true' : 'false'" @click="flowScatterFilter = 'momentum'">Price ↑ · inflows (<span x-text="flowScatterCounts.momentum">17</span>)</button>
+                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'dipAccum' ? 'true' : 'false'" @click="flowScatterFilter = 'dipAccum'">Price ↓ · inflows (<span x-text="flowScatterCounts.dipAccum">18</span>)</button>
+                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'washout' ? 'true' : 'false'" @click="flowScatterFilter = 'washout'">Price ↓ · outflows (<span x-text="flowScatterCounts.washout">11</span>)</button>
+                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'distribution' ? 'true' : 'false'" @click="flowScatterFilter = 'distribution'">Price ↑ · outflows (<span x-text="flowScatterCounts.distribution">16</span>)</button>
                   <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'neutral' ? 'true' : 'false'" @click="flowScatterFilter = 'neutral'">Neutral (<span x-text="flowScatterCounts.neutral">88</span>)</button>
                 </div>
               </div>
@@ -2352,7 +2352,7 @@
               <div style="margin-top:0.6rem;padding-top:0.65rem;border-top:1px solid var(--flow-line)">
                 <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:0.5rem;margin-bottom:0.5rem">
                   <span class="flow-eyebrow" style="color:var(--flow-cyan)">Flow setups today</span>
-                  <span class="flow-support" style="font-size:0.6875rem;max-width:46rem">Funds whose 20-day price move and 5-day flows are both unusual for that fund. Flows here are context, not a trade signal: across 10 years of these funds, only inflows after a drop showed a consistent edge, and a small one.</span>
+                  <span class="flow-support" style="font-size:0.6875rem;max-width:46rem" x-text="`Funds whose 20-day price move and 5-day flow are both unusual for that fund. Under each setup: how funds in it did over the next 20 days versus funds with the same price move, across ${flowCatalog?.flow_evidence?.funds || 'all'} funds since 2016, updated daily. Flows are context; check the numbers before treating any setup as a signal.`"></span>
                 </div>
                 <div class="flow-anomaly-grid">
                   <template x-for="col in flowScannerColumns" :key="col.list">
@@ -2362,7 +2362,12 @@
                         <span class="flow-badge" style="font-size:0.625rem;padding:0 0.35rem" :style="`color: rgb(${col.color}); border-color: rgba(${col.color},0.3); background: rgba(${col.color},0.1)`" x-text="flowActiveCycleAnomalies[col.list].length"></span>
                       </div>
                       <p style="font-size:0.6875rem;color:var(--flow-subtle);margin:0;line-height:1.3" x-text="col.rule"></p>
-                      <p style="font-size:0.6875rem;color:var(--flow-text);margin:0.15rem 0 0;line-height:1.3;opacity:0.85" x-text="col.note"></p>
+                      <p style="font-size:0.6875rem;color:var(--flow-text);margin:0.15rem 0 0;line-height:1.3;opacity:0.85" x-text="flowSetupEvidence(col.setup).verdict"></p>
+                      <div style="display:flex;gap:0.35rem;flex-wrap:wrap;margin-top:0.2rem" x-show="flowSetupEvidence(col.setup).eras.length">
+                        <template x-for="e in flowSetupEvidence(col.setup).eras" :key="e.label">
+                          <span class="flow-badge" style="font-size:0.625rem;padding:0 0.35rem" :class="e.v == null ? '' : (e.v >= 0 ? 'flow-positive' : 'flow-negative')" :title="`${e.n} fund-days`" x-text="`${e.label} ${e.v == null ? '—' : flowSigned(e.v, 2, '%')}`"></span>
+                        </template>
+                      </div>
                       <div style="display:flex;justify-content:space-between;padding:0.15rem 0.45rem;font-size:0.625rem;color:var(--flow-subtle);font-family:ui-monospace, monospace;letter-spacing:0.04em">
                         <span>TICKER · PRICE 20D</span>
                         <span>FLOW 5D</span>
@@ -2377,7 +2382,7 @@
                               </div>
                               <span style="font-size:0.6875rem" :class="item.zf5 >= 0 ? 'flow-positive' : 'flow-negative'" x-text="flowSigned(item.zf5, 1, 'σ')"></span>
                             </div>
-                            <div style="width:100%;font-size:0.625rem;text-align:left" :class="flowSetupRecord(item, col.setup).cls" :style="flowSetupRecord(item, col.setup).cls ? '' : 'color: var(--flow-subtle)'" x-text="flowSetupRecord(item, col.setup).text"></div>
+                            <div style="width:100%;font-size:0.625rem;text-align:left" :class="flowSetupRecord(item, col.setup).cls" :style="'text-align:left;' + (flowSetupRecord(item, col.setup).cls ? '' : 'color: var(--flow-subtle)')" x-text="flowSetupRecord(item, col.setup).text"></div>
                           </button>
                         </template>
                         <div x-show="flowActiveCycleAnomalies[col.list].length === 0" style="color:var(--flow-subtle);font-size:0.6875rem;padding:0.4rem 0;text-align:center">None today</div>
@@ -2568,9 +2573,9 @@
                     <th scope="col" style="text-align:center">Balance of Power (20D)</th>
                     <th scope="col" style="text-align:right">20D Bull Flow</th>
                     <th scope="col" style="text-align:right">20D Bear Flow</th>
-                    <th scope="col" style="text-align:right">20D Net Spread</th>
+                    <th scope="col" style="text-align:right" title="20-day flow into bull funds minus flow into bear funds: money betting up, net of money betting down">20D Net Bull</th>
                     <th scope="col" style="text-align:right">Peak |z|</th>
-                    <th scope="col" style="text-align:left">Leader</th>
+                    <th scope="col" style="text-align:left">Biggest 20D flow</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2601,7 +2606,7 @@
                       </td>
                       <td style="text-align:right;font-family:ui-monospace,monospace" :class="row.bullFlow20d > 0 ? 'flow-positive' : row.bullFlow20d < 0 ? 'flow-negative' : ''" x-text="formatMoney(row.bullFlow20d)"></td>
                       <td style="text-align:right;font-family:ui-monospace,monospace" :class="row.bearFlow20d > 0 ? 'flow-positive' : row.bearFlow20d < 0 ? 'flow-negative' : ''" x-text="formatMoney(row.bearFlow20d)"></td>
-                      <td style="text-align:right;font-family:ui-monospace,monospace;font-weight:600" :class="row.totalFlow20d > 0 ? 'flow-positive' : row.totalFlow20d < 0 ? 'flow-negative' : ''" x-text="formatMoney(row.totalFlow20d)"></td>
+                      <td style="text-align:right;font-family:ui-monospace,monospace;font-weight:600" :class="row.netBull20d > 0 ? 'flow-positive' : row.netBull20d < 0 ? 'flow-negative' : ''" x-text="formatMoney(row.netBull20d)"></td>
                       <td style="text-align:right;font-family:ui-monospace,monospace" class="flow-cyan" x-text="`${row.maxAbsZ.toFixed(2)}σ`"></td>
                       <td style="text-align:left">
                         <button class="flow-chip" type="button" @click="selectFlowTicker(row.leadTicker, { writeUrl: true, push: true, switchToStudio: true })" x-text="row.leadTicker"></button>
@@ -2690,7 +2695,7 @@
             <div class="flow-ledger-grid" x-show="flowEmpiricalEdgeLedger">
               <div class="flow-ledger-card">
                 <div class="flow-ledger-card-header">
-                  <span class="flow-eyebrow">20D Price Envelope</span>
+                  <span class="flow-eyebrow">20-day range · price vs flow</span>
                   <span class="flow-badge" :data-state="flowEmpiricalEdgeLedger?.rangeState" x-text="flowEmpiricalEdgeLedger?.rangeBadge"></span>
                 </div>
                 <div class="flow-ledger-card-stat">
@@ -2704,7 +2709,7 @@
 
               <div class="flow-ledger-card">
                 <div class="flow-ledger-card-header">
-                  <span class="flow-eyebrow">Historical Shock Edge</span>
+                  <span class="flow-eyebrow">After flow spikes · this fund</span>
                   <span class="flow-badge" :data-state="flowEmpiricalEdgeLedger?.shockBadgeState" x-text="flowEmpiricalEdgeLedger?.shockBadge"></span>
                 </div>
                 <div class="flow-ledger-card-stat" style="justify-content:flex-start" x-text="flowEmpiricalEdgeLedger?.shockStatLine"></div>
@@ -2714,7 +2719,7 @@
 
               <div class="flow-ledger-card">
                 <div class="flow-ledger-card-header">
-                  <span class="flow-eyebrow">5D Velocity &amp; Thrust</span>
+                  <span class="flow-eyebrow">Last 5 sessions · price vs flow</span>
                   <span class="flow-badge" :data-state="flowEmpiricalEdgeLedger?.thrustBadgeState" x-text="flowEmpiricalEdgeLedger?.thrustBadge"></span>
                 </div>
                 <div class="flow-ledger-card-stat" style="justify-content:flex-start" x-text="flowEmpiricalEdgeLedger?.thrustStatLine"></div>
