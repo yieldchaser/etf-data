@@ -2352,7 +2352,7 @@
               <div style="margin-top:0.6rem;padding-top:0.65rem;border-top:1px solid var(--flow-line)">
                 <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:0.5rem;margin-bottom:0.5rem">
                   <span class="flow-eyebrow" style="color:var(--flow-cyan)">Flow setups today</span>
-                  <span class="flow-support" style="font-size:0.6875rem;max-width:46rem" x-text="`Funds whose 20-day price move and 5-day flow are both unusual for that fund. Under each setup: how funds in it did over the next 20 days versus funds with the same price move, across ${flowCatalog?.flow_evidence?.funds || 'all'} funds since 2016, updated daily. Flows are context; check the numbers before treating any setup as a signal.`"></span>
+                  <span class="flow-support" style="font-size:0.6875rem;max-width:46rem" x-text="`Long funds whose 20-day price move and 5-day flow are both unusual for that fund. Under each setup: how funds in it did over the next 20 days versus funds with the same price move, across ${flowCatalog?.flow_evidence?.funds || 'all'} funds since 2016, updated daily. Flows are context; check the numbers before treating any setup as a signal.`"></span>
                 </div>
                 <div class="flow-anomaly-grid">
                   <template x-for="col in flowScannerColumns" :key="col.list">
