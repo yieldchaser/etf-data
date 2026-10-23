@@ -92,7 +92,8 @@
     <a href="#self-living">8 · Self-living data — how the markets dataset stays fresh</a>
     <a href="#archive">9 · The permanent history archive</a>
     <a href="#data-notes">10 · Data notes — universe expansion &amp; pipeline guarantees</a>
-    <a href="#limits">11 · Honest limitations</a>
+    <a href="#flows">10b · Fund Flows</a>
+      <a href="#limits">11 · Honest limitations</a>
     <a href="backtest.html">Backtest page ↗ — strategy performance comparison</a>
   </div>
 
@@ -357,6 +358,30 @@ Score         = B × M<sub>conc</sub> × M<sub>breadth</sub> × M<sub>universe</
   <h3>10.2 — Scraper fail-loud guarantees</h3>
   <p>The scraper exits 1 on a missing or corrupt config and when zero enabled primary ETFs scrape successfully (a systemic outage must never produce a green run). Partial failures stay warnings — fault isolation across funds is by design, and cron redundancy covers transient blips. Consequence: <strong>a green build means data actually flowed</strong>; silence is never success.</p>
 
+  <!-- §10b Fund Flows -->
+  <h2 id="flows">10b · Fund Flows tab (leveraged ETFs)</h2>
+  <p>Daily creations and redemptions for 160 leveraged, inverse and benchmark ETFs since 2016. The pipeline is automatic. On weekdays, <code>update_daily_flows.py</code> fetches new rows and computes z-scores, 5- and 20-day sums, regime and pressure. Every site build then runs <code>build_local_flow_artifacts.py</code>, which recomputes each fund's record and the pooled evidence.</p>
+  <ul>
+    <li><strong>Setups.</strong> The scanner tracks four setups on long funds only:
+      <ul>
+        <li>inflows after a drop;</li>
+        <li>outflows after a drop;</li>
+        <li>inflows after a rally;</li>
+        <li>outflows after a rally.</li>
+      </ul>
+      A fund is in a setup when its 20-day price z (|z| ≥ 1, the 20-day return over 60-day volatility) and its 5-day flow z (|z| ≥ 0.8) both stand out against the fund's own history.</li>
+    <li><strong>Evidence.</strong> Each setup is shown with its pooled next-20-day result, compared with funds that had the same price move on the same date, for each era (2016–20, 2021–23, 2024–now). The figures are recomputed on every build (<code>catalog.flow_evidence</code>), and the verdict text is generated from them. So far only <em>inflows after a drop</em> has a consistent edge, and it is a small one. No flow setup reliably marks a top.</li>
+    <li><strong>Per-fund record.</strong> A fund's own record compares the 20 days after each past setup with that fund's typical 20 days. Episodes must be at least 20 days apart, and the record is shown only once there are 8 or more. The Studio's flow-spike card works the same way over 5 days.</li>
+    <li><strong>Data hygiene.</strong>
+      <ul>
+        <li>Sometimes a large creation is followed the next day by an almost equal redemption. Each day must be at least 5× typical and the two must cancel to within 20%. This is a source reporting error. It is netted out of the derived metrics and marked ⚠ in the 1-day columns, which rank it as zero.</li>
+        <li>A 1-day flow of 50% or more of AUM is also marked ⚠.</li>
+        <li>Bull vs bear positioning is bull-fund flow minus bear-fund flow.</li>
+      </ul>
+    </li>
+  </ul>
+  <p>Full study: <code>scripts/flow_study.py</code> and <code>docs/SIGNALS_STUDY.md</code> §5. Flows are context for choosing among dips, not a standalone trade signal.</p>
+
   <!-- §11 Limitations -->
   <h2 id="limits">11 · Honest limitations</h2>
   <ul class="list-disc pl-5 space-y-1">
@@ -380,3 +405,4 @@ Score         = B × M<sub>conc</sub> × M<sub>breadth</sub> × M<sub>universe</
 </div>
 </body>
 </html>
+
