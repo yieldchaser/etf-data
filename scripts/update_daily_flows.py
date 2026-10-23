@@ -144,21 +144,46 @@ def _parse_snapshot_item(item: Any) -> list[dict[str, Any]]:
     return rows
 
 
+def _net_reversal_pairs(flow: pd.Series) -> pd.Series:
+    """Flows with source reversal pairs netted onto the second day.
+
+    The source sometimes reports a large creation and a near-equal
+    redemption on consecutive days (NVDL 2026-10-19 +$1.02B, 10-20 -$0.99B):
+    a shares-outstanding reporting error. A pair qualifies when the two days
+    have opposite signs, each is >= 5x the fund's typical (median absolute,
+    prior 60 days) daily flow, and they cancel to within 20%. The pair's net
+    goes on the second day and the first becomes 0, so running totals are
+    unchanged. Used for the derived metrics only; usd_flow stays as reported.
+    """
+    c = flow.fillna(0.0).to_numpy(dtype=float).copy()
+    typical = flow.abs().rolling(60, min_periods=20).median().shift(2).to_numpy()
+    for i in range(1, len(c)):
+        a, b, t = c[i - 1], c[i], typical[i]
+        if not np.isfinite(t) or a * b >= 0:
+            continue
+        if min(abs(a), abs(b)) >= 5 * max(t, 1.0) and abs(a + b) <= 0.2 * max(abs(a), abs(b)):
+            c[i], c[i - 1] = a + b, 0.0
+    return pd.Series(c, index=flow.index)
+
+
 def _apply_derived_metrics(df: pd.DataFrame) -> pd.DataFrame:
     flows_filled = df["usd_flow"].fillna(0.0)
     df["cumulative_flow"] = flows_filled.cumsum()
     df["daily_inflow"] = df["usd_flow"].clip(lower=0)
     df["daily_outflow"] = df["usd_flow"].clip(upper=0)
 
+    # z, 5/20-day sums, regime and pressure use flows with source reversal
+    # pairs netted, so a reporting error can't fake a flow shock.
+    net = _net_reversal_pairs(df["usd_flow"])
     window = 30
-    mean_30d = df["usd_flow"].rolling(window, min_periods=5).mean()
-    std_30d = df["usd_flow"].rolling(window, min_periods=5).std()
-    raw_z = np.where(std_30d > 0, (df["usd_flow"] - mean_30d) / std_30d, 0.0)
+    mean_30d = net.rolling(window, min_periods=5).mean()
+    std_30d = net.rolling(window, min_periods=5).std()
+    raw_z = np.where(std_30d > 0, (net - mean_30d) / std_30d, 0.0)
     raw_z = pd.Series(raw_z, index=df.index).fillna(0.0)
     df["flow_zscore"] = raw_z
 
-    df["flow_5d"] = df["usd_flow"].rolling(5, min_periods=1).sum()
-    df["flow_20d"] = df["usd_flow"].rolling(20, min_periods=1).sum()
+    df["flow_5d"] = net.rolling(5, min_periods=1).sum()
+    df["flow_20d"] = net.rolling(20, min_periods=1).sum()
 
     df["regime"] = np.where(
         raw_z > 1.5,
@@ -166,7 +191,7 @@ def _apply_derived_metrics(df: pd.DataFrame) -> pd.DataFrame:
         np.where(raw_z < -1.5, "DISTRIBUTION", "BALANCED"),
     )
 
-    sign = np.sign(flows_filled)
+    sign = np.sign(net)
     streak = sign.groupby((sign != sign.shift()).cumsum()).cumsum()
 
     mom_factor = np.where(
