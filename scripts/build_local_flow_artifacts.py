@@ -760,22 +760,40 @@ def _quality(info: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+# Flow / price setups shown on the Fund Flows scanner. Thresholds are in
+# sigma of the fund's own 60-day return / flow variability.
+_SETUPS = ("dip", "washout", "climax", "dist")
+_SETUP_TAGS = {"dip": "INFLOWS AFTER DROP", "washout": "OUTFLOWS AFTER DROP",
+               "climax": "INFLOWS AFTER RALLY", "dist": "OUTFLOWS AFTER RALLY"}
+_MIN_EPISODES = 8
+
+
+def _setup_for(zp: float, zf: float, loose: bool = False) -> str | None:
+    """Which setup a (price z, 5-day flow z) pair is in, if any. `loose` is
+    the looser band used for today's tag (0.8 / 0.4 instead of 1.0 / 0.8)."""
+    p, f = (0.8, 0.4) if loose else (1.0, 0.8)
+    if zp <= -p and zf >= f:
+        return "dip"
+    if zp <= -p and zf <= -f:
+        return "washout"
+    if zp >= p and zf >= (f if loose else 1.0):
+        return "climax"
+    if zp >= p and zf <= -f:
+        return "dist"
+    return None
+
+
 def _compute_behavior_dna(rows: list[dict[str, Any]]) -> dict[str, Any]:
     n = len(rows)
-    empty_prof = {
-        "dip_episodes": 0, "dip_win_rate": 50.0, "dip_avg_fwd_ret": 0.0,
-        "washout_episodes": 0, "washout_win_rate": 50.0, "washout_avg_fwd_ret": 0.0,
-        "climax_episodes": 0, "climax_win_rate": 50.0, "climax_avg_fwd_ret": 0.0,
-        "dist_episodes": 0, "dist_pullback_rate": 50.0, "dist_avg_pullback": 0.0,
-    }
+    empty_prof = {f"{k}_{m}": (0 if m == "episodes" else None)
+                  for k in _SETUPS for m in ("episodes", "beat_rate", "avg_excess")}
     if n < 60:
         return {
             "z_price_20d": 0.0,
             "z_flow_5d": 0.0,
             "volatility_20d_pct": 0.0,
             "flow_variance_m": 0.0,
-            "behavior_profiles": {"all": empty_prof, "3y": empty_prof, "1y": empty_prof},
-            "opportunity_score": 25,
+            "behavior_profiles": {"all": empty_prof},
             "opportunity_tag": "NEUTRAL",
         }
 
@@ -832,115 +850,44 @@ def _compute_behavior_dna(rows: list[dict[str, Any]]) -> dict[str, Any]:
     df = flows_60_std[-1] * math.sqrt(5)
     z_flow_5d = round(max(-5.0, min(5.0, flows_5d_sum[-1] / df if df > 1e-6 else 0.0)), 2)
 
-    horizons = {"all": n, "3y": min(n, 756), "1y": min(n, 252)}
-    profiles: dict[str, dict[str, Any]] = {}
-
-    for h_name, h_len in horizons.items():
-        start_idx = max(60, n - h_len)
-        dip_episodes = []
-        washout_episodes = []
-        climax_episodes = []
-        dist_episodes = []
-
-        last_dip_t = -999
-        last_wash_t = -999
-        last_climax_t = -999
-        last_dist_t = -999
-
-        for t in range(start_idx, n - 20):
-            r20 = (navs[t] / navs[t - 20] - 1.0) if navs[t - 20] > 0 else 0.0
-            zp = r20 / (rets_60_std[t] * math.sqrt(20))
-            zf = flows_5d_sum[t] / (flows_60_std[t] * math.sqrt(5))
-            fwd20 = (navs[t + 20] / navs[t] - 1.0) * 100.0 if navs[t] > 0 else 0.0
-
-            if zp <= -1.0 and zf >= 0.8:
-                if t - last_dip_t >= 5:
-                    dip_episodes.append(fwd20)
-                    last_dip_t = t
-            elif zp <= -1.0 and zf <= -0.8:
-                if t - last_wash_t >= 5:
-                    washout_episodes.append(fwd20)
-                    last_wash_t = t
-            elif zp >= 1.0 and zf >= 1.0:
-                if t - last_climax_t >= 5:
-                    climax_episodes.append(fwd20)
-                    last_climax_t = t
-            elif zp >= 1.0 and zf <= -0.8:
-                if t - last_dist_t >= 5:
-                    dist_episodes.append(fwd20)
-                    last_dist_t = t
-
-        num_dip = len(dip_episodes)
-        dip_win_rate = round(sum(1 for x in dip_episodes if x > 0) / num_dip * 100.0, 1) if num_dip else 50.0
-        dip_avg_ret = round(sum(dip_episodes) / num_dip, 2) if num_dip else 0.0
-
-        num_wash = len(washout_episodes)
-        wash_win_rate = round(sum(1 for x in washout_episodes if x > 0) / num_wash * 100.0, 1) if num_wash else 50.0
-        wash_avg_ret = round(sum(washout_episodes) / num_wash, 2) if num_wash else 0.0
-
-        num_climax = len(climax_episodes)
-        climax_win_rate = round(sum(1 for x in climax_episodes if x > 0) / num_climax * 100.0, 1) if num_climax else 50.0
-        climax_avg_ret = round(sum(climax_episodes) / num_climax, 2) if num_climax else 0.0
-
-        num_dist = len(dist_episodes)
-        dist_pullback_rate = round(sum(1 for x in dist_episodes if x < 0) / num_dist * 100.0, 1) if num_dist else 50.0
-        dist_avg_pullback = round(sum(dist_episodes) / num_dist, 2) if num_dist else 0.0
-
-        profiles[h_name] = {
-            "dip_episodes": num_dip,
-            "dip_win_rate": dip_win_rate,
-            "dip_avg_fwd_ret": dip_avg_ret,
-            "washout_episodes": num_wash,
-            "washout_win_rate": wash_win_rate,
-            "washout_avg_fwd_ret": wash_avg_ret,
-            "climax_episodes": num_climax,
-            "climax_win_rate": climax_win_rate,
-            "climax_avg_fwd_ret": climax_avg_ret,
-            "dist_episodes": num_dist,
-            "dist_pullback_rate": dist_pullback_rate,
-            "dist_avg_pullback": dist_avg_pullback,
-        }
-
-    dip_wr = profiles["all"]["dip_win_rate"]
-    dist_pr = profiles["all"]["dist_pullback_rate"]
-
-    if z_price <= -0.8 and z_flow_5d >= 0.4:
-        depth_comp = min(35.0, max(0.0, (-z_price - 0.5) * 20.0))
-        thrust_comp = min(35.0, max(0.0, (z_flow_5d - 0.2) * 20.0))
-        win_comp = (dip_wr / 100.0) * 30.0
-        opp_score = round(min(100.0, max(10.0, depth_comp + thrust_comp + win_comp)))
-        if opp_score >= 70 and dip_wr >= 60.0:
-            opp_tag = "HIGH CONVICTION ACCUMULATION"
-        elif opp_score >= 50:
-            opp_tag = "TACTICAL ACCUMULATION"
-        elif dip_wr < 45.0:
-            opp_tag = "CONTINUATION RISK"
-        else:
-            opp_tag = "ACCUMULATION"
-    elif z_price >= 0.8 and z_flow_5d <= -0.4:
-        opp_score = round(min(100.0, max(10.0, (z_price * 15.0) + (abs(z_flow_5d) * 15.0) + (dist_pr * 0.4))))
-        if dist_pr >= 60.0:
-            opp_tag = "DISTRIBUTION WARNING"
-        else:
-            opp_tag = "DISTRIBUTION"
-    elif z_price <= -0.8 and z_flow_5d <= -0.4:
-        opp_score = 40
-        opp_tag = "WASHOUT AT LOWS"
-    elif z_price >= 0.8 and z_flow_5d >= 0.4:
-        opp_score = 50
-        opp_tag = "CLIMAX INFLOW TOP"
-    else:
-        opp_score = 25
-        opp_tag = "NEUTRAL"
+    # This fund's own record in each setup (whole history). Each episode's
+    # next 20 days (entered the day after the signal) is compared with this
+    # fund's typical 20 days, so a bull fund's drift doesn't read as an edge.
+    # Episodes are >= 20 trading days apart so their windows don't overlap,
+    # and a record needs >= _MIN_EPISODES episodes to be shown at all.
+    # Pooled across funds and eras, only "inflows after a drop" kept a
+    # consistent (small) edge: docs/SIGNALS_STUDY.md, "Fund flows".
+    fwd = [None] * n
+    for t in range(60, n - 21):
+        if navs[t + 1] > 0:
+            fwd[t] = (navs[t + 21] / navs[t + 1] - 1.0) * 100.0
+    valid = [x for x in fwd if x is not None]
+    typical = sum(valid) / len(valid) if valid else 0.0
+    episodes: dict[str, list[float]] = {k: [] for k in _SETUPS}
+    last_t = {k: -999 for k in _SETUPS}
+    for t in range(60, n - 21):
+        if fwd[t] is None or navs[t - 20] <= 0:
+            continue
+        zp = (navs[t] / navs[t - 20] - 1.0) / (rets_60_std[t] * math.sqrt(20))
+        zf = flows_5d_sum[t] / (flows_60_std[t] * math.sqrt(5))
+        setup = _setup_for(zp, zf)
+        if setup and t - last_t[setup] >= 20:
+            episodes[setup].append(fwd[t] - typical)
+            last_t[setup] = t
+    prof: dict[str, Any] = {}
+    for k, xs in episodes.items():
+        enough = len(xs) >= _MIN_EPISODES
+        prof[f"{k}_episodes"] = len(xs)
+        prof[f"{k}_beat_rate"] = round(sum(1 for x in xs if x > 0) / len(xs) * 100.0, 1) if enough else None
+        prof[f"{k}_avg_excess"] = round(sum(xs) / len(xs), 2) if enough else None
 
     return {
         "z_price_20d": z_price,
         "z_flow_5d": z_flow_5d,
         "volatility_20d_pct": vol_20d,
         "flow_variance_m": flow_var_m,
-        "behavior_profiles": profiles,
-        "opportunity_score": opp_score,
-        "opportunity_tag": opp_tag,
+        "behavior_profiles": {"all": prof},
+        "opportunity_tag": _SETUP_TAGS.get(_setup_for(z_price, z_flow_5d, loose=True), "NEUTRAL"),
     }
 
 
@@ -993,7 +940,6 @@ def _instrument_entry(ticker: str, report: dict[str, Any]) -> dict[str, Any]:
         "z_price_20d": dna["z_price_20d"],
         "z_flow_5d": dna["z_flow_5d"],
         "behavior_profiles": dna["behavior_profiles"],
-        "opportunity_score": dna["opportunity_score"],
         "opportunity_tag": dna["opportunity_tag"],
         "regime": last["regime"],
         "pressure": last["pressure"],

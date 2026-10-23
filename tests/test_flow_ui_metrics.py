@@ -208,37 +208,6 @@ def test_underlying_battle_rows_normalization_and_paired_filter():
     assert 0 <= result["nvdaBullShare"] <= 100
 
 
-def test_alpha_bull_bear_pairs_live_regime_enrichment():
-    result = run_metrics(
-        "(()=>{const app=m.flowResearchApp();const cat=require('./docs/data/flows/catalog.json');const alpha=require('./docs/data/alpha_signals.json');app.flowCatalog=cat;app.flowAlphaSignalsData=alpha;const pairs=app.flowAlphaBullBearPairs;return {count:pairs.length,first:pairs[0] ? {eco:pairs[0].ecosystem,activeCode:pairs[0].activeCode,activeLabel:pairs[0].activeLabel,hasStats:!!pairs[0].activeStats,has20d:typeof pairs[0].total20d==='number'} : null};})()"
-    )
-    assert result["count"] == 10
-    assert result["first"]["eco"] == "NASDAQ-100"
-    assert result["first"]["activeCode"] in ["Q1", "Q2", "Q3", "Q4"]
-    assert result["first"]["hasStats"] is True
-    assert result["first"]["has20d"] is True
-
-
-def test_flow_trade_blotter_rows_and_conviction_basket():
-    result = run_metrics(
-        "(()=>{const app=m.flowResearchApp();const cat=require('./docs/data/flows/catalog.json');const alpha=require('./docs/data/alpha_signals.json');app.flowCatalog=cat;app.flowAlphaSignalsData=alpha;const counts=app.flowAlphaCounts;const basket=app.flowAlphaTopBasket;const blotterAll=app.flowTradeBlotterRows;app.flowAlphaFilter='trap';const trapRows=app.flowTradeBlotterRows;const sqqq=blotterAll.find(r=>r.ticker==='SQQQ');const winRates=[...new Set(trapRows.map(r=>r.winRate))];const expRets=[...new Set(trapRows.map(r=>r.expRet))];return {counts,basketCount:basket.length,coreBasketCount:basket.filter(b=>b.basket_role==='CORE').length,reserveBasketCount:basket.filter(b=>b.basket_role==='RESERVE').length,blotterTotal:blotterAll.length,trapTotal:trapRows.length,trapUniqueWinRates:winRates.length,trapUniqueExpRets:expRets.length,sqqqAction:sqqq?.action,sqqqClass:sqqq?.actionClass,hasSummary:app.flowAlphaBacktestSummaryText.includes('+72.8% CAGR')};})()"
-    )
-    assert result["counts"] == {"all": 26, "ignition": 4, "slingshot": 9, "squeeze": 6, "trap": 7}
-    assert result["basketCount"] == 10
-    assert result["coreBasketCount"] == 5
-    assert result["reserveBasketCount"] == 5
-    assert result["blotterTotal"] == 26
-    assert result["trapTotal"] == 7
-    # Verify numbers are diversified, not hardcoded identical clones
-    assert result["trapUniqueWinRates"] >= 4
-    assert result["trapUniqueExpRets"] >= 4
-    # Inverse fund SQQQ should not have "SHORT" action
-    assert "AVOID" in result["sqqqAction"]
-    assert "SHORT" not in result["sqqqAction"]
-    assert result["sqqqClass"] == "flow-action-reduce"
-    assert result["hasSummary"] is True
-
-
 def test_flow_empirical_edge_ledger_metrics_and_meters():
     result = run_metrics(
         "(()=>{const app=m.flowResearchApp();const cat=require('./docs/data/flows/catalog.json');app.flowCatalog=cat;const tqqqItem=cat.instruments.find(i=>i.ticker==='TQQQ');app.flowTicker='TQQQ';app._flowEntryMap=Object.fromEntries(cat.instruments.map(i=>[i.ticker,i]));const raw=require('./docs/data/flows/TQQQ.json');app.flowData=m.normalizeFlowPayload(raw,tqqqItem);const ledger=app.flowEmpiricalEdgeLedger;return {hasLedger:!!ledger,shockBadge:ledger.shockBadge,hasShockMeter:ledger.shockMeterSvg.includes('<svg')&&ledger.shockMeterSvg.includes('−1.5σ'),hasThrustMeter:ledger.thrustMeterSvg.includes('<svg')&&ledger.thrustMeterSvg.includes('NAV 5D'),thrustBadge:ledger.thrustBadge,thrustStatLine:ledger.thrustStatLine,hasSparkline:ledger.rangeSparklineSvg.includes('<svg')};})()"
@@ -345,11 +314,8 @@ def test_dual_variance_scatter_and_continuous_behavior_scanner():
             const volSvg = app.flowScatterSvg;
             const volCounts = app.flowScatterCounts;
 
-            // 3. Continuous Behavior Scanner with Horizon Switching
-            app.flowScannerHorizon = 'all';
+            // 3. Flow setups scanner
             const anomAll = app.flowActiveCycleAnomalies;
-            app.flowScannerHorizon = '1y';
-            const anom1y = app.flowActiveCycleAnomalies;
 
             const sampleCand = anomAll.dipAccum[0] || anomAll.climaxInflowTop[0] || anomAll.distributionTop[0] || anomAll.exhaustionLow[0];
 
@@ -363,9 +329,8 @@ def test_dual_variance_scatter_and_continuous_behavior_scanner():
                 nominalTotal: nominalCounts.all,
                 volTotal: volCounts.all,
                 hasAnomaliesAll: anomAll.totalAnomalies >= 0,
-                hasAnomalies1y: anom1y.totalAnomalies >= 0,
-                candHasOppScore: sampleCand ? sampleCand.oppScore !== undefined : false,
-                candHasEdgeStats: sampleCand ? sampleCand.dipWin !== undefined || sampleCand.climaxWin !== undefined : false,
+                candHasRecord: sampleCand ? typeof app.flowSetupRecord(sampleCand, 'dip').text === 'string' : true,
+                noFakeRates: cat.instruments.every(i => Object.entries(i.behavior_profiles.all).every(([k, v]) => !k.endsWith('_beat_rate') || v === null || i.behavior_profiles.all[k.replace('_beat_rate', '_episodes')] >= 8)),
                 catalogEnriched: cat.instruments.every(i => i.z_price_20d !== undefined && i.z_flow_5d !== undefined && i.behavior_profiles !== undefined)
             };
         })()"""
@@ -379,9 +344,8 @@ def test_dual_variance_scatter_and_continuous_behavior_scanner():
     assert result["nominalTotal"] == 160
     assert result["volTotal"] == 160
     assert result["hasAnomaliesAll"] is True
-    assert result["hasAnomalies1y"] is True
-    assert result["candHasOppScore"] is True
-    assert result["candHasEdgeStats"] is True
+    assert result["candHasRecord"] is True
+    assert result["noFakeRates"] is True
     assert result["catalogEnriched"] is True
 
 

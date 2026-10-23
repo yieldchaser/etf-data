@@ -2037,9 +2037,6 @@
             <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'scanner' ? 'true' : 'false'" @click="setFlowViewMode('scanner')" x-text="`Cross-ETF leaderboard (${flowCatalog ? flowCatalog.counts.instruments : 160})`"></button>
             <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'studio' ? 'true' : 'false'" @click="setFlowViewMode('studio')">Instrument studio</button>
             <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'matrix' ? 'true' : 'false'" @click="setFlowViewMode('matrix')">Category &amp; regime matrix</button>
-            <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'alpha' ? 'true' : 'false'" @click="setFlowViewMode('alpha')">
-              <svg class="flow-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Strategy signals
-            </button>
           </div>
           <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:0.45rem">
             <h2>ETF estimated net flows</h2>
@@ -2129,7 +2126,7 @@
                   </div>
                   <div class="flow-outlier-meta">
                     <span class="flow-no-case" :class="card.zscore >= 1.8 ? 'flow-cyan' : card.zscore <= -1.8 ? 'flow-amber' : ''" x-text="`${card.zscore >= 0 ? '+' : ''}${card.zscore.toFixed(2)}σ`"></span>
-                    <span x-text="card.flowPctAum != null ? `${card.flowPctAum >= 0 ? '+' : ''}${card.flowPctAum.toFixed(1)}% AUM · AUM $${card.aum_m.toFixed(0)}M` : `20D ${formatMoney(card.flow20d)} · AUM $${card.aum_m.toFixed(0)}M`"></span>
+                    <span x-text="card.flowPctAum != null ? `${card.flowPctAum >= 0 ? '+' : ''}${card.flowPctAum.toFixed(1)}% AUM · AUM ${formatMoney(card.aum_m * 1e6, { signed: false })}` : `20D ${formatMoney(card.flow20d)} · AUM ${formatMoney(card.aum_m * 1e6, { signed: false })}`"></span>
                   </div>
                 </button>
               </template>
@@ -2338,10 +2335,10 @@
                 </div>
                 <div style="display:flex;flex-wrap:wrap;gap:0.25rem;align-items:center">
                   <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'all' ? 'true' : 'false'" @click="flowScatterFilter = 'all'">All (<span x-text="flowScatterCounts.all">160</span>)</button>
-                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'momentum' ? 'true' : 'false'" @click="flowScatterFilter = 'momentum'">Momentum (<span x-text="flowScatterCounts.momentum">17</span>)</button>
-                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'dipAccum' ? 'true' : 'false'" @click="flowScatterFilter = 'dipAccum'">Dip Accum (<span x-text="flowScatterCounts.dipAccum">18</span>)</button>
-                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'washout' ? 'true' : 'false'" @click="flowScatterFilter = 'washout'">Washout (<span x-text="flowScatterCounts.washout">11</span>)</button>
-                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'distribution' ? 'true' : 'false'" @click="flowScatterFilter = 'distribution'">Distribution (<span x-text="flowScatterCounts.distribution">16</span>)</button>
+                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'momentum' ? 'true' : 'false'" @click="flowScatterFilter = 'momentum'">Inflows after rally (<span x-text="flowScatterCounts.momentum">17</span>)</button>
+                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'dipAccum' ? 'true' : 'false'" @click="flowScatterFilter = 'dipAccum'">Inflows after drop (<span x-text="flowScatterCounts.dipAccum">18</span>)</button>
+                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'washout' ? 'true' : 'false'" @click="flowScatterFilter = 'washout'">Outflows after drop (<span x-text="flowScatterCounts.washout">11</span>)</button>
+                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'distribution' ? 'true' : 'false'" @click="flowScatterFilter = 'distribution'">Outflows after rally (<span x-text="flowScatterCounts.distribution">16</span>)</button>
                   <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'neutral' ? 'true' : 'false'" @click="flowScatterFilter = 'neutral'">Neutral (<span x-text="flowScatterCounts.neutral">88</span>)</button>
                 </div>
               </div>
@@ -2351,158 +2348,42 @@
                    @mouseleave="flowScatterHoverTicker = null"
                    x-html="flowScatterSvg"></div>
 
-              <!-- Active Market Regime & Trough/Peak Anomalies Scanner -->
+              <!-- Flow / price setups scanner -->
               <div style="margin-top:0.6rem;padding-top:0.65rem;border-top:1px solid var(--flow-line)">
-                <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:0.5rem;margin-bottom:0.5rem">
-                  <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
-                    <span class="flow-eyebrow" style="color:var(--flow-cyan);display:inline-flex;align-items:center;gap:0.35rem"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><circle cx="4" cy="4" r="3" fill="#22d3ee"/></svg> Continuous Behavioral Opportunity Scanner</span>
-                    <span class="flow-support" style="font-size:0.6875rem">(Automated ongoing classification &amp; historical edge ranking across <span x-text="flowPrimaryInstruments.length">160</span> instruments)</span>
-                  </div>
-                  <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
-                    <div class="flow-pill-group" style="display:inline-flex">
-                      <button class="flow-pill" type="button" :class="flowScannerHorizon === '1y' ? 'active' : ''" @click="flowScannerHorizon = '1y'">1Y Horizon</button>
-                      <button class="flow-pill" type="button" :class="flowScannerHorizon === '3y' ? 'active' : ''" @click="flowScannerHorizon = '3y'">3Y Horizon</button>
-                      <button class="flow-pill" type="button" :class="flowScannerHorizon === 'all' ? 'active' : ''" @click="flowScannerHorizon = 'all'">All History</button>
-                    </div>
-                    <span class="flow-eyebrow" x-text="`${flowActiveCycleAnomalies.totalAnomalies} Active Regimes Flagged`"></span>
-                  </div>
+                <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:0.5rem;margin-bottom:0.5rem">
+                  <span class="flow-eyebrow" style="color:var(--flow-cyan)">Flow setups today</span>
+                  <span class="flow-support" style="font-size:0.6875rem;max-width:46rem">Funds whose 20-day price move and 5-day flows are both unusual for that fund. Flows here are context, not a trade signal: across 10 years of these funds, only inflows after a drop showed a consistent edge, and a small one.</span>
                 </div>
                 <div class="flow-anomaly-grid">
-                  <!-- Col 1: Dip Accumulators -->
-                  <div class="flow-anomaly-col">
-                    <div style="display:flex;align-items:center;justify-content:space-between">
-                      <span style="color:#fb923c;font-size:0.6875rem;font-weight:700;font-family:ui-monospace, monospace;letter-spacing:0.04em">DIP ACCUMULATION</span>
-                      <span class="flow-badge" style="color:#fb923c;border-color:rgba(251,146,60,0.3);background:rgba(251,146,60,0.1);font-size:0.625rem;padding:0 0.35rem" x-text="flowActiveCycleAnomalies.dipAccum.length"></span>
-                    </div>
-                    <p style="font-size:0.6875rem;color:var(--flow-subtle);margin:0;line-height:1.2">Inflows into 20D Trough (Z_price ≤ -1.0σ or Ret ≤ -5%)</p>
-                    <div style="display:flex;justify-content:space-between;padding:0.15rem 0.45rem;font-size:0.625rem;color:var(--flow-subtle);font-family:ui-monospace, monospace;letter-spacing:0.04em">
-                      <span>TICKER · DISPLACEMENT</span>
-                      <span>FLOW 5D · SCORE</span>
-                    </div>
-                    <div class="flow-anomaly-list scrollbar">
-                      <template x-for="item in flowActiveCycleAnomalies.dipAccum" :key="item.ticker">
-                        <button class="flow-anomaly-item" type="button" @click="selectFlowTicker(item.ticker, { writeUrl: true, push: true, switchToStudio: true })">
-                          <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
-                            <div style="display:flex;align-items:center;gap:0.35rem">
-                              <strong class="flow-ticker-tag" style="color:var(--flow-text);font-size:0.75rem" x-text="item.ticker"></strong>
-                              <span style="color:var(--flow-subtle);font-size:0.6875rem" x-text="`${item.zp.toFixed(1)}σ (${item.ret20.toFixed(1)}%)`"></span>
+                  <template x-for="col in flowScannerColumns" :key="col.list">
+                    <div class="flow-anomaly-col">
+                      <div style="display:flex;align-items:center;justify-content:space-between">
+                        <span style="font-size:0.6875rem;font-weight:700;font-family:ui-monospace, monospace;letter-spacing:0.04em;text-transform:uppercase" :style="`color: rgb(${col.color})`" x-text="col.title"></span>
+                        <span class="flow-badge" style="font-size:0.625rem;padding:0 0.35rem" :style="`color: rgb(${col.color}); border-color: rgba(${col.color},0.3); background: rgba(${col.color},0.1)`" x-text="flowActiveCycleAnomalies[col.list].length"></span>
+                      </div>
+                      <p style="font-size:0.6875rem;color:var(--flow-subtle);margin:0;line-height:1.3" x-text="col.rule"></p>
+                      <p style="font-size:0.6875rem;color:var(--flow-text);margin:0.15rem 0 0;line-height:1.3;opacity:0.85" x-text="col.note"></p>
+                      <div style="display:flex;justify-content:space-between;padding:0.15rem 0.45rem;font-size:0.625rem;color:var(--flow-subtle);font-family:ui-monospace, monospace;letter-spacing:0.04em">
+                        <span>TICKER · PRICE 20D</span>
+                        <span>FLOW 5D</span>
+                      </div>
+                      <div class="flow-anomaly-list scrollbar">
+                        <template x-for="item in flowActiveCycleAnomalies[col.list]" :key="item.ticker">
+                          <button class="flow-anomaly-item" type="button" @click="selectFlowTicker(item.ticker, { writeUrl: true, push: true, switchToStudio: true })">
+                            <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+                              <div style="display:flex;align-items:center;gap:0.35rem">
+                                <strong class="flow-ticker-tag" style="color:var(--flow-text);font-size:0.75rem" x-text="item.ticker"></strong>
+                                <span style="color:var(--flow-subtle);font-size:0.6875rem" x-text="`${flowSigned(item.ret20, 1, '%')} (${flowSigned(item.zp, 1, 'σ')})`"></span>
+                              </div>
+                              <span style="font-size:0.6875rem" :class="item.zf5 >= 0 ? 'flow-positive' : 'flow-negative'" x-text="flowSigned(item.zf5, 1, 'σ')"></span>
                             </div>
-                            <div style="display:flex;align-items:center;gap:0.35rem">
-                              <span class="flow-positive" style="font-size:0.6875rem" x-text="`+${item.zf5.toFixed(1)}σ`"></span>
-                              <span class="flow-badge" :style="item.oppScore >= 70 ? 'color:#10b981;border-color:rgba(16,185,129,0.3);background:rgba(16,185,129,0.15);font-size:0.625rem' : 'color:#fb923c;border-color:rgba(251,146,60,0.3);background:rgba(251,146,60,0.15);font-size:0.625rem'" x-text="`${item.oppScore}/100`"></span>
-                            </div>
-                          </div>
-                          <div style="display:flex;align-items:center;justify-content:space-between;width:100%;font-size:0.625rem;color:var(--flow-subtle)">
-                            <span x-text="`Win: ${item.dipWin.toFixed(0)}% (${item.dipEpisodes} eps)`"></span>
-                            <span :class="item.dipAvgRet >= 0 ? 'flow-positive' : 'flow-negative'" x-text="`Fwd: ${item.dipAvgRet >= 0 ? '+' : ''}${item.dipAvgRet.toFixed(1)}%`"></span>
-                          </div>
-                        </button>
-                      </template>
-                      <div x-show="flowActiveCycleAnomalies.dipAccum.length === 0" style="color:var(--flow-subtle);font-size:0.6875rem;padding:0.4rem 0;text-align:center">No current candidates</div>
+                            <div style="width:100%;font-size:0.625rem;text-align:left" :class="flowSetupRecord(item, col.setup).cls" :style="flowSetupRecord(item, col.setup).cls ? '' : 'color: var(--flow-subtle)'" x-text="flowSetupRecord(item, col.setup).text"></div>
+                          </button>
+                        </template>
+                        <div x-show="flowActiveCycleAnomalies[col.list].length === 0" style="color:var(--flow-subtle);font-size:0.6875rem;padding:0.4rem 0;text-align:center">None today</div>
+                      </div>
                     </div>
-                  </div>
-
-                  <!-- Col 2: Exhaustion Washout Lows -->
-                  <div class="flow-anomaly-col">
-                    <div style="display:flex;align-items:center;justify-content:space-between">
-                      <span style="color:#34d399;font-size:0.6875rem;font-weight:700;font-family:ui-monospace, monospace;letter-spacing:0.04em">WASHOUT AT LOWS</span>
-                      <span class="flow-badge" style="color:#34d399;border-color:rgba(52,211,153,0.3);background:rgba(52,211,153,0.1);font-size:0.625rem;padding:0 0.35rem" x-text="flowActiveCycleAnomalies.exhaustionLow.length"></span>
-                    </div>
-                    <p style="font-size:0.6875rem;color:var(--flow-subtle);margin:0;line-height:1.2">Outflows into 20D Trough (Z_price ≤ -1.0σ or Ret ≤ -5%)</p>
-                    <div style="display:flex;justify-content:space-between;padding:0.15rem 0.45rem;font-size:0.625rem;color:var(--flow-subtle);font-family:ui-monospace, monospace;letter-spacing:0.04em">
-                      <span>TICKER · DISPLACEMENT</span>
-                      <span>FLOW 5D · SCORE</span>
-                    </div>
-                    <div class="flow-anomaly-list scrollbar">
-                      <template x-for="item in flowActiveCycleAnomalies.exhaustionLow" :key="item.ticker">
-                        <button class="flow-anomaly-item" type="button" @click="selectFlowTicker(item.ticker, { writeUrl: true, push: true, switchToStudio: true })">
-                          <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
-                            <div style="display:flex;align-items:center;gap:0.35rem">
-                              <strong class="flow-ticker-tag" style="color:var(--flow-text);font-size:0.75rem" x-text="item.ticker"></strong>
-                              <span style="color:var(--flow-subtle);font-size:0.6875rem" x-text="`${item.zp.toFixed(1)}σ (${item.ret20.toFixed(1)}%)`"></span>
-                            </div>
-                            <div style="display:flex;align-items:center;gap:0.35rem">
-                              <span class="flow-negative" style="font-size:0.6875rem" x-text="`${item.zf5.toFixed(1)}σ`"></span>
-                              <span class="flow-badge" style="color:#34d399;border-color:rgba(52,211,153,0.3);background:rgba(52,211,153,0.15);font-size:0.625rem" x-text="`${item.oppScore}/100`"></span>
-                            </div>
-                          </div>
-                          <div style="display:flex;align-items:center;justify-content:space-between;width:100%;font-size:0.625rem;color:var(--flow-subtle)">
-                            <span x-text="`Rebound Win: ${item.washWin.toFixed(0)}%`"></span>
-                            <span x-text="`${item.washEpisodes} eps`"></span>
-                          </div>
-                        </button>
-                      </template>
-                      <div x-show="flowActiveCycleAnomalies.exhaustionLow.length === 0" style="color:var(--flow-subtle);font-size:0.6875rem;padding:0.4rem 0;text-align:center">No current candidates</div>
-                    </div>
-                  </div>
-
-                  <!-- Col 3: Climax Inflow Tops -->
-                  <div class="flow-anomaly-col">
-                    <div style="display:flex;align-items:center;justify-content:space-between">
-                      <span style="color:#22d3ee;font-size:0.6875rem;font-weight:700;font-family:ui-monospace, monospace;letter-spacing:0.04em">CLIMAX INFLOW TOPS</span>
-                      <span class="flow-badge" style="color:#22d3ee;border-color:rgba(34,211,238,0.3);background:rgba(34,211,238,0.1);font-size:0.625rem;padding:0 0.35rem" x-text="flowActiveCycleAnomalies.climaxInflowTop.length"></span>
-                    </div>
-                    <p style="font-size:0.6875rem;color:var(--flow-subtle);margin:0;line-height:1.2">Inflows into Extended Peak (Z_price ≥ +1.0σ or Ret ≥ +10%)</p>
-                    <div style="display:flex;justify-content:space-between;padding:0.15rem 0.45rem;font-size:0.625rem;color:var(--flow-subtle);font-family:ui-monospace, monospace;letter-spacing:0.04em">
-                      <span>TICKER · DISPLACEMENT</span>
-                      <span>FLOW 5D · SCORE</span>
-                    </div>
-                    <div class="flow-anomaly-list scrollbar">
-                      <template x-for="item in flowActiveCycleAnomalies.climaxInflowTop" :key="item.ticker">
-                        <button class="flow-anomaly-item" type="button" @click="selectFlowTicker(item.ticker, { writeUrl: true, push: true, switchToStudio: true })">
-                          <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
-                            <div style="display:flex;align-items:center;gap:0.35rem">
-                              <strong class="flow-ticker-tag" style="color:var(--flow-text);font-size:0.75rem" x-text="item.ticker"></strong>
-                              <span style="color:var(--flow-subtle);font-size:0.6875rem" x-text="`+${item.zp.toFixed(1)}σ (+${item.ret20.toFixed(1)}%)`"></span>
-                            </div>
-                            <div style="display:flex;align-items:center;gap:0.35rem">
-                              <span class="flow-positive" style="font-size:0.6875rem" x-text="`+${item.zf5.toFixed(1)}σ`"></span>
-                              <span class="flow-badge" style="color:#22d3ee;border-color:rgba(34,211,238,0.3);background:rgba(34,211,238,0.15);font-size:0.625rem" x-text="`${item.oppScore}/100`"></span>
-                            </div>
-                          </div>
-                          <div style="display:flex;align-items:center;justify-content:space-between;width:100%;font-size:0.625rem;color:var(--flow-subtle)">
-                            <span x-text="`Trend Win: ${item.climaxWin.toFixed(0)}%`"></span>
-                            <span x-text="`${item.climaxEpisodes} eps`"></span>
-                          </div>
-                        </button>
-                      </template>
-                      <div x-show="flowActiveCycleAnomalies.climaxInflowTop.length === 0" style="color:var(--flow-subtle);font-size:0.6875rem;padding:0.4rem 0;text-align:center">No current candidates</div>
-                    </div>
-                  </div>
-
-                  <!-- Col 4: Distribution Tops -->
-                  <div class="flow-anomaly-col">
-                    <div style="display:flex;align-items:center;justify-content:space-between">
-                      <span style="color:#fb7185;font-size:0.6875rem;font-weight:700;font-family:ui-monospace, monospace;letter-spacing:0.04em">DISTRIBUTION TOPS</span>
-                      <span class="flow-badge" style="color:#fb7185;border-color:rgba(251,113,133,0.3);background:rgba(251,113,133,0.1);font-size:0.625rem;padding:0 0.35rem" x-text="flowActiveCycleAnomalies.distributionTop.length"></span>
-                    </div>
-                    <p style="font-size:0.6875rem;color:var(--flow-subtle);margin:0;line-height:1.2">Outflows at Rally Highs (Z_price ≥ +1.0σ or Ret ≥ +10%)</p>
-                    <div style="display:flex;justify-content:space-between;padding:0.15rem 0.45rem;font-size:0.625rem;color:var(--flow-subtle);font-family:ui-monospace, monospace;letter-spacing:0.04em">
-                      <span>TICKER · DISPLACEMENT</span>
-                      <span>FLOW 5D · SCORE</span>
-                    </div>
-                    <div class="flow-anomaly-list scrollbar">
-                      <template x-for="item in flowActiveCycleAnomalies.distributionTop" :key="item.ticker">
-                        <button class="flow-anomaly-item" type="button" @click="selectFlowTicker(item.ticker, { writeUrl: true, push: true, switchToStudio: true })">
-                          <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
-                            <div style="display:flex;align-items:center;gap:0.35rem">
-                              <strong class="flow-ticker-tag" style="color:var(--flow-text);font-size:0.75rem" x-text="item.ticker"></strong>
-                              <span style="color:var(--flow-subtle);font-size:0.6875rem" x-text="`+${item.zp.toFixed(1)}σ (+${item.ret20.toFixed(1)}%)`"></span>
-                            </div>
-                            <div style="display:flex;align-items:center;gap:0.35rem">
-                              <span class="flow-negative" style="font-size:0.6875rem" x-text="`${item.zf5.toFixed(1)}σ`"></span>
-                              <span class="flow-badge" style="color:#fb7185;border-color:rgba(251,113,133,0.3);background:rgba(251,113,133,0.15);font-size:0.625rem" x-text="`${item.oppScore}/100`"></span>
-                            </div>
-                          </div>
-                          <div style="display:flex;align-items:center;justify-content:space-between;width:100%;font-size:0.625rem;color:var(--flow-subtle)">
-                            <span x-text="`Pullback Rate: ${item.distPullback.toFixed(0)}%`"></span>
-                            <span x-text="`${item.distEpisodes} eps`"></span>
-                          </div>
-                        </button>
-                      </template>
-                      <div x-show="flowActiveCycleAnomalies.distributionTop.length === 0" style="color:var(--flow-subtle);font-size:0.6875rem;padding:0.4rem 0;text-align:center">No current candidates</div>
-                    </div>
-                  </div>
+                  </template>
                 </div>
               </div>
             </div>
@@ -2568,13 +2449,10 @@
                       <td :class="item.flow_zscore >= 1.5 ? 'flow-cyan' : item.flow_zscore <= -1.5 ? 'flow-amber' : ''" x-text="item.flow_zscore != null ? `${item.flow_zscore >= 0 ? '+' : ''}${item.flow_zscore.toFixed(2)}σ` : '—'"></td>
                       <td><div x-html="item.sparklineSvg"></div></td>
                       <td :class="item.nav_return_20d_pct > 0 ? 'flow-positive' : item.nav_return_20d_pct < 0 ? 'flow-negative' : ''" x-text="formatSignedPercent(item.nav_return_20d_pct)"></td>
-                      <td x-text="`$${(item.aum_m || 0).toFixed(1)}M`"></td>
+                      <td x-text="formatMoney((item.aum_m || 0) * 1e6, { signed: false })"></td>
                       <td>
                         <div style="display:inline-flex;align-items:center;gap:0.3rem">
                           <span class="flow-badge" :data-state="item.regime" x-text="item.regime"></span>
-                          <template x-if="item.setup_icon">
-                            <span :title="item.setup_name" @click.stop="setFlowViewMode('alpha')" style="cursor:pointer;display:inline-flex;align-items:center" x-html="item.setup_icon"></span>
-                          </template>
                         </div>
                       </td>
                     </tr>
@@ -2734,183 +2612,6 @@
               </table>
             </div>
 
-            <!-- Bull vs Bear Ecosystem Pairs Section -->
-            <div style="margin:1.5rem 0 0.5rem">
-              <div class="flow-chart-heading">
-                <div>
-                  <p class="flow-chart-kicker">Matched Pair Rotation Models</p>
-                  <h4 style="color:var(--flow-text);margin:0" x-text="`Bull vs. Bear Ecosystem Models (${flowAlphaBullBearPairs.length} Matched Sets)`">Bull vs. Bear Ecosystem Models (10 Matched Sets)</h4>
-                  <p class="flow-chart-description" style="margin-top:0.25rem">Dynamic liquidity transfers between paired Leveraged Bull and Inverse Bear instruments. Cards automatically highlight today's active flow regime and display empirical 5-day forward return distributions.</p>
-                </div>
-              </div>
-              <div class="flow-pairs-grid">
-                <template x-for="eco in flowAlphaBullBearPairs" :key="eco.ecosystem">
-                  <div class="flow-pair-card" :class="eco.activeState === 'ACCUMULATION' ? 'flow-pair-card-bull' : eco.activeState === 'DISTRIBUTION' ? 'flow-pair-card-bear' : ''">
-                    <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;flex-wrap:wrap">
-                      <strong style="color:var(--flow-cyan);font-size:0.8125rem" x-text="eco.ecosystem"></strong>
-                      <span class="flow-badge" :data-state="eco.activeState" style="font-size:0.625rem" x-text="`ACTIVE: ${eco.activeCode}`"></span>
-                    </div>
-                    <div style="display:flex;align-items:baseline;justify-content:space-between;font-size:0.6875rem;color:var(--flow-muted)">
-                      <span x-text="`AUM: $${(eco.aumM / 1000).toFixed(1)}B · ${eco.overlapping_days} paired sessions`"></span>
-                      <span :class="eco.total20d >= 0 ? 'flow-positive' : 'flow-negative'" class="font-mono" x-text="`20D Net: ${formatMoney(eco.total20d)}`"></span>
-                    </div>
-                    <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;flex-wrap:wrap;font-size:0.75rem;padding:0.25rem 0;border-top:1px solid rgba(255,255,255,0.06);border-bottom:1px solid rgba(255,255,255,0.06)">
-                      <div style="display:flex;align-items:center;gap:0.25rem">
-                        <span class="flow-eyebrow" style="color:#34d399">Bull:</span>
-                        <template x-for="tk in eco.bull_tickers" :key="tk">
-                          <button class="flow-chip" type="button" @click="selectFlowTicker(tk, { writeUrl: true, push: true, switchToStudio: true })" x-text="tk"></button>
-                        </template>
-                      </div>
-                      <div style="display:flex;align-items:center;gap:0.25rem">
-                        <span class="flow-eyebrow" style="color:#fb7185">Bear:</span>
-                        <template x-for="tk in eco.bear_tickers" :key="tk">
-                          <button class="flow-chip" type="button" @click="selectFlowTicker(tk, { writeUrl: true, push: true, switchToStudio: true })" x-text="tk"></button>
-                        </template>
-                      </div>
-                    </div>
-                    <!-- Live Active Regime Banner -->
-                    <div style="background:rgba(255,255,255,0.03);border-radius:4px;padding:0.35rem 0.5rem;font-size:0.6875rem">
-                      <div style="color:var(--flow-muted)">Active Flow Dynamic:</div>
-                      <div style="font-weight:600;display:flex;align-items:center;justify-content:space-between;margin-top:0.1rem">
-                        <span :class="eco.activeState === 'ACCUMULATION' ? 'flow-positive' : eco.activeState === 'DISTRIBUTION' ? 'flow-negative' : 'flow-cyan'" x-text="eco.activeLabel"></span>
-                        <template x-if="eco.activeStats">
-                          <span :class="eco.activeStats.fwd5_pct >= 0 ? 'flow-positive' : 'flow-negative'" class="font-mono" x-text="`${eco.activeStats.fwd5_pct >= 0 ? '+' : '−'}${Math.abs(eco.activeStats.fwd5_pct).toFixed(2)}% 5D Avg`"></span>
-                        </template>
-                      </div>
-                    </div>
-                    <!-- Quadrant Empirical Odds Comparison -->
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.35rem;font-size:0.6875rem">
-                      <div :style="eco.activeCode === 'Q1' ? 'border:1px solid rgba(52,211,153,0.4);background:rgba(52,211,153,0.06);border-radius:4px;padding:0.25rem' : 'padding:0.25rem'">
-                        <div class="flow-eyebrow" style="color:#34d399">Q1 (Bull In / Bear Out)</div>
-                        <div class="font-mono" style="font-weight:600" :class="(eco.Q1_bull_in_bear_out?.fwd5_pct || 0) >= 0 ? 'flow-positive' : 'flow-negative'" x-text="`${(eco.Q1_bull_in_bear_out?.fwd5_pct || 0) >= 0 ? '+' : '−'}${Math.abs(eco.Q1_bull_in_bear_out?.fwd5_pct || 0).toFixed(2)}% (Win ${(eco.Q1_bull_in_bear_out?.win5_pct || 0).toFixed(1)}%)`"></div>
-                      </div>
-                      <div :style="eco.activeCode === 'Q2' ? 'border:1px solid rgba(251,113,133,0.4);background:rgba(251,113,133,0.06);border-radius:4px;padding:0.25rem' : 'padding:0.25rem'">
-                        <div class="flow-eyebrow" style="color:#fb7185">Q2 (Bear In / Bull Out)</div>
-                        <div class="font-mono" style="font-weight:600" :class="(eco.Q2_bull_out_bear_in?.fwd5_pct || 0) >= 0 ? 'flow-positive' : 'flow-negative'" x-text="`${(eco.Q2_bull_out_bear_in?.fwd5_pct || 0) >= 0 ? '+' : '−'}${Math.abs(eco.Q2_bull_out_bear_in?.fwd5_pct || 0).toFixed(2)}% (Win ${(eco.Q2_bull_out_bear_in?.win5_pct || 0).toFixed(1)}%)`"></div>
-                      </div>
-                    </div>
-                  </div>
-                </template>
-              </div>
-            </div>
-          </div>
-
-          <!-- ─── VIEW 4: STRATEGY SIGNALS (26 SIGNALS, TOP-5 BASKET, 10 ECOSYSTEMS) ─── -->
-          <div class="flow-panel-card" x-show="flowViewMode === 'alpha'">
-            <div class="flow-chart-heading">
-              <div>
-                <p class="flow-chart-kicker">Multi-Factor Quantitative Systematic Engine</p>
-                <h3>Systematic Strategy Signals &amp; Conviction Basket</h3>
-                <p class="flow-chart-description">Active quantitative strategy signals across all <span x-text="flowCatalog ? flowCatalog.counts.instruments : 160">160</span> leveraged and inverse ETFs. Derived from split-adjusted historical flow event-studies, empirical z-score shocks, and bull/bear flow transfers.</p>
-              </div>
-              <div>
-                <span class="flow-eyebrow" style="color:var(--flow-cyan)">Rebalanced Fri 2026-10-02 · Weekly 5-Day Hold · Next: 2026-10-09</span>
-              </div>
-            </div>
-
-            <!-- Top-5 Conviction Core Basket Cards -->
-            <div style="margin:0.85rem 0">
-              <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:0.45rem;flex-wrap:wrap;gap:0.4rem">
-                <h4 style="color:var(--flow-cyan);text-transform:uppercase;letter-spacing:0.04em">Top Conviction Multi-Factor Basket (Systematic High-Alpha Selection)</h4>
-                <span class="flow-eyebrow" style="color:var(--flow-text)" x-text="flowAlphaBacktestSummaryText">Model Backtest: +72.8% CAGR · 2.84 Sharpe · 56.4% Win Rate · +1.88% 5D Avg · +7.90% 20D Avg</span>
-              </div>
-              <div class="flow-conviction-grid">
-                <template x-for="(item, idx) in flowAlphaTopBasket" :key="item.ticker">
-                  <div class="flow-conviction-card" style="cursor:pointer" @click="selectFlowTicker(item.ticker, { writeUrl: true, push: true, switchToStudio: true })">
-                    <div style="display:flex;align-items:center;justify-content:space-between">
-                      <div style="display:flex;align-items:center;gap:0.35rem">
-                        <span class="flow-eyebrow" style="color:var(--flow-cyan);font-weight:700" x-text="`#${idx + 1}`"></span>
-                        <strong class="flow-result-symbol" style="font-size:0.95rem" x-text="item.ticker"></strong>
-                        <span :class="item.basket_role === 'CORE' ? 'flow-role-core' : 'flow-role-reserve'" x-text="item.basket_role"></span>
-                      </div>
-                      <span class="flow-badge" :data-state="(item.leverage_value || 0) < 0 ? 'DISTRIBUTION' : 'ACCUMULATION'" x-text="item.leverage"></span>
-                    </div>
-                    <div style="color:var(--flow-text);font-weight:500;font-size:0.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" x-text="item.underlying"></div>
-                    <div style="display:flex;align-items:baseline;justify-content:space-between;font-size:0.72rem">
-                      <span class="flow-eyebrow">Flow Alpha Score:</span>
-                      <strong class="flow-cyan" style="font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums" x-text="`+${(item.flow_alpha_score || 0).toFixed(2)}`"></strong>
-                    </div>
-                    <div style="display:flex;align-items:baseline;justify-content:space-between;font-size:0.72rem">
-                      <span class="flow-eyebrow">Flow Z-Score:</span>
-                      <strong :class="(item.flow_zscore || 0) >= 0 ? 'flow-cyan' : 'flow-amber'" style="font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums" x-text="`${(item.flow_zscore || 0) >= 0 ? '+' : ''}${(item.flow_zscore || 0).toFixed(2)}σ`"></strong>
-                    </div>
-                    <div style="display:flex;align-items:baseline;justify-content:space-between;font-size:0.72rem">
-                      <span class="flow-eyebrow">5D NAV Return:</span>
-                      <strong :class="(item.nav_return_5d_pct ?? item.ret_5d_pct ?? 0) >= 0 ? 'flow-positive' : 'flow-negative'" style="font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums" x-text="formatSignedPercent(item.nav_return_5d_pct ?? item.ret_5d_pct)"></strong>
-                    </div>
-                    <div style="display:flex;align-items:baseline;justify-content:space-between;font-size:0.72rem">
-                      <span class="flow-eyebrow">20D NAV Return:</span>
-                      <strong :class="(item.nav_return_20d_pct ?? item.ret_20d_pct ?? 0) >= 0 ? 'flow-positive' : 'flow-negative'" style="font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums" x-text="formatSignedPercent(item.nav_return_20d_pct ?? item.ret_20d_pct)"></strong>
-                    </div>
-                    <div style="font-size:0.6875rem;color:var(--flow-cyan);border-top:1px solid rgba(255,255,255,0.06);padding-top:0.35rem;font-weight:600" x-text="item.allocation_label"></div>
-                    <div style="font-size:0.65rem;color:var(--flow-subtle);line-height:1.3" x-text="item.setup_driver"></div>
-                  </div>
-                </template>
-              </div>
-            </div>
-
-            <!-- Tier 4: Live Quantitative Action Blotter Table -->
-            <div style="margin:1rem 0">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.45rem;flex-wrap:wrap;gap:0.5rem">
-                <div>
-                  <h4 style="color:var(--flow-cyan);text-transform:uppercase;letter-spacing:0.04em">Live Quantitative Action Blotter (Execution Grid)</h4>
-                  <span class="flow-eyebrow"><span x-text="flowTradeBlotterRows.length"></span> Active Trade Setups</span>
-                </div>
-                <div style="display:flex;flex-wrap:wrap;gap:0.35rem;align-items:center">
-                  <button class="flow-chip" type="button" :aria-pressed="flowAlphaFilter === 'all' ? 'true' : 'false'" @click="flowAlphaFilter = 'all'">All Active Setups (<span x-text="flowAlphaCounts.all">26</span>)</button>
-                  <button class="flow-chip" type="button" :aria-pressed="flowAlphaFilter === 'ignition' ? 'true' : 'false'" @click="flowAlphaFilter = 'ignition'">Breakout with Inflow (<span x-text="flowAlphaCounts.ignition">4</span>)</button>
-                  <button class="flow-chip" type="button" :aria-pressed="flowAlphaFilter === 'slingshot' ? 'true' : 'false'" @click="flowAlphaFilter = 'slingshot'">Washout Bounce (<span x-text="flowAlphaCounts.slingshot">9</span>)</button>
-                  <button class="flow-chip" type="button" :aria-pressed="flowAlphaFilter === 'squeeze' ? 'true' : 'false'" @click="flowAlphaFilter = 'squeeze'">Wall of Worry (<span x-text="flowAlphaCounts.squeeze">6</span>)</button>
-                  <button class="flow-chip" type="button" :aria-pressed="flowAlphaFilter === 'trap' ? 'true' : 'false'" @click="flowAlphaFilter = 'trap'">Avoid: Dip Inflow (<span x-text="flowAlphaCounts.trap">7</span>)</button>
-                </div>
-              </div>
-              <div class="flow-table-wrap">
-                <table class="flow-table">
-                  <thead>
-                    <tr>
-                      <th scope="col" style="text-align:left">Ticker</th>
-                      <th scope="col" style="text-align:left">Triggered Setup</th>
-                      <th scope="col" style="text-align:center">Action</th>
-                      <th scope="col" style="text-align:center">Horizon</th>
-                      <th scope="col" style="text-align:right">Flow Z</th>
-                      <th scope="col" style="text-align:right">Hist Win Rate</th>
-                      <th scope="col" style="text-align:right">Exp Return</th>
-                      <th scope="col" style="text-align:right">Stop-Loss</th>
-                      <th scope="col" style="text-align:right">Profit Target</th>
-                      <th scope="col" style="text-align:left">Primary Micro Catalyst</th>
-                      <th scope="col" style="text-align:center">Inspect</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <template x-for="row in flowTradeBlotterRows" :key="row.ticker">
-                      <tr style="cursor:pointer" @click="selectFlowTicker(row.ticker, { writeUrl: true, push: true, switchToStudio: true })">
-                        <td style="text-align:left">
-                          <div style="display:flex;align-items:center;gap:0.35rem">
-                            <span class="flow-result-symbol" x-text="row.ticker"></span>
-                            <span class="flow-badge" :data-state="(row.leverage_value || 0) < 0 ? 'DISTRIBUTION' : 'ACCUMULATION'" x-text="row.leverage"></span>
-                          </div>
-                          <div style="color:var(--flow-subtle);font-size:0.6875rem;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" x-text="row.underlying"></div>
-                        </td>
-                        <td style="text-align:left;color:var(--flow-text);font-weight:600" x-text="row.setup"></td>
-                        <td style="text-align:center">
-                          <span class="flow-action-badge" :class="row.actionClass" x-text="row.action"></span>
-                        </td>
-                        <td style="text-align:center;font-family:ui-monospace,monospace;font-size:0.75rem" x-text="row.horizon"></td>
-                        <td style="text-align:right;font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums" :class="row.flow_zscore >= 1.5 ? 'flow-cyan' : row.flow_zscore <= -1.5 ? 'flow-amber' : ''" x-text="row.flow_zscore != null ? `${row.flow_zscore >= 0 ? '+' : ''}${row.flow_zscore.toFixed(2)}σ` : '—'"></td>
-                        <td style="text-align:right;font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums" class="flow-positive" x-text="row.winRate"></td>
-                        <td style="text-align:right;font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums" :class="String(row.expRet).startsWith('-') ? 'flow-negative' : 'flow-cyan'" x-text="row.expRet"></td>
-                        <td style="text-align:right;font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums" class="flow-negative" x-text="row.stopLoss"></td>
-                        <td style="text-align:right;font-family:ui-monospace,monospace;font-variant-numeric:tabular-nums" class="flow-positive" x-text="row.target"></td>
-                        <td style="text-align:left;color:var(--flow-muted);font-size:0.75rem" x-text="row.catalyst"></td>
-                        <td style="text-align:center">
-                          <button class="flow-chip" type="button" @click.stop="selectFlowTicker(row.ticker, { writeUrl: true, push: true, switchToStudio: true })">Inspect Studio →</button>
-                        </td>
-                      </tr>
-                    </template>
-                  </tbody>
-                </table>
-              </div>
-            </div>
           </div>
 
           <!-- ─── VIEW 1: INSTRUMENT STUDIO (DEFAULT) ─── -->
@@ -2926,7 +2627,7 @@
                   <span x-text="flowDisplayCategory || 'Not in catalog'"></span>
                   <span x-text="flowSelectedInstrument?.underlying ? `Underlying: ${flowSelectedInstrument.underlying}` : ''"></span>
                   <span x-text="flowSelectedInstrument?.issuer || 'Issuer unavailable'"></span>
-                  <span x-text="flowSelectedInstrument?.aum_m != null ? `AUM $${flowSelectedInstrument.aum_m.toFixed(1)}M · TER ${flowSelectedInstrument.ter || '—'}` : ''"></span>
+                  <span x-text="flowSelectedInstrument?.aum_m != null ? `AUM ${formatMoney(flowSelectedInstrument.aum_m * 1e6, { signed: false })} · TER ${flowSelectedInstrument.ter || '—'}` : ''"></span>
                 </div>
                 <div class="flow-support" style="margin-top:0.35rem;font-size:0.6875rem;opacity:0.75" x-show="flowData">
                   <span x-text="flowData ? `${flowData.count.toLocaleString('en-US')} available source observations` : ''"></span>
@@ -2937,45 +2638,6 @@
               <div class="flow-instrument-right">
                 <span class="flow-badge" x-show="flowSelectedInstrument?.regime" :data-state="flowSelectedInstrument?.regime" x-text="flowSelectedInstrument?.regime"></span>
                 <span class="flow-badge" x-show="flowDataState !== 'ready'" :data-state="flowDataState" x-text="flowSelectedStateLabel"></span>
-              </div>
-            </div>
-
-            <!-- Alpha Intelligence Strip (Live Strategy Trigger & Quick Hop Twins/Pairs) -->
-            <div class="flow-alpha-intel-strip" x-show="flowSelectedInstrument && ((flowSelectedInstrument?.live_signal && flowSelectedInstrument?.live_signal !== 'NEUTRAL') || flowSelectedInstrument?.paired_bear || flowSelectedInstrument?.paired_bull || flowSelectedInstrument?.smart_twin)">
-              <div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.65rem">
-                <div style="display:inline-flex;align-items:center;gap:0.35rem" x-show="flowSelectedInstrument?.archetype && flowSelectedInstrument?.archetype !== 'BALANCED'">
-                  <span class="flow-eyebrow">Archetype:</span>
-                  <span class="flow-badge" :data-state="flowSelectedInstrument?.archetype === 'WASHOUT_REBOUND_SPECIALIST' ? 'ACCUMULATION' : 'BALANCED'" x-text="flowSelectedInstrument?.archetype_label"></span>
-                </div>
-                <div style="display:inline-flex;align-items:center;gap:0.35rem" x-show="flowSelectedInstrument?.live_signal && flowSelectedInstrument?.live_signal !== 'NEUTRAL'">
-                  <span class="flow-eyebrow">Signal:</span>
-                  <span class="flow-badge" :data-state="flowSelectedInstrument?.live_signal?.includes('BUY') ? 'ACCUMULATION' : 'DISTRIBUTION'" x-text="flowSelectedInstrument?.live_signal_label"></span>
-                </div>
-                <div style="display:inline-flex;align-items:center;gap:0.35rem" x-show="flowSelectedInstrument?.dd_from_60d_high_pct !== undefined">
-                  <span class="flow-eyebrow">60D High Drawdown:</span>
-                  <span :class="(flowSelectedInstrument?.dd_from_60d_high_pct || 0) < -20 ? 'flow-amber' : 'flow-muted'" x-text="`${(flowSelectedInstrument?.dd_from_60d_high_pct || 0).toFixed(1)}%`"></span>
-                </div>
-              </div>
-              <div class="flow-alpha-hops" x-show="flowSelectedInstrument?.paired_bear || flowSelectedInstrument?.paired_bull || flowSelectedInstrument?.smart_twin">
-                <span class="flow-eyebrow">Ecosystem Hops:</span>
-                <template x-if="flowSelectedInstrument?.paired_bear">
-                  <button class="flow-chip" type="button" @click="selectFlowTicker(flowSelectedInstrument.paired_bear, { writeUrl: true, push: true })">
-                    <svg class="flow-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M16 16l4-4-4-4M8 8l-4 4 4 4"/></svg>
-                    <span x-text="`Paired Bear: ${flowSelectedInstrument.paired_bear}`"></span>
-                  </button>
-                </template>
-                <template x-if="flowSelectedInstrument?.paired_bull">
-                  <button class="flow-chip" type="button" @click="selectFlowTicker(flowSelectedInstrument.paired_bull, { writeUrl: true, push: true })">
-                    <svg class="flow-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M16 16l4-4-4-4M8 8l-4 4 4 4"/></svg>
-                    <span x-text="`Paired Bull: ${flowSelectedInstrument.paired_bull}`"></span>
-                  </button>
-                </template>
-                <template x-if="flowSelectedInstrument?.smart_twin">
-                  <button class="flow-chip" type="button" @click="selectFlowTicker(flowSelectedInstrument.smart_twin, { writeUrl: true, push: true })">
-                    <svg class="flow-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-                    <span x-text="`Paired Twin: ${flowSelectedInstrument.smart_twin}`"></span>
-                  </button>
-                </template>
               </div>
             </div>
 

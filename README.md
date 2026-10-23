@@ -517,10 +517,11 @@ Correlation matrix + Growth of $100 log-scale chart for selected assets.
 4. Cross-asset bar chart (current vs 1Y avg)
 
 #### Fund Flows
-- Searches the generated 145-instrument local catalog by default; explicit filters expose the 24-name featured subset.
+- Searches the generated 160-instrument local catalog by default; explicit filters expose the 24-name featured subset.
 - Loads one selected static ticker file at a time, normalizes v1 and v2 payloads, and caches data by ticker and source revision.
 - Uses one shared native range control, daily ETF estimated net-flow bars, a complete 20-observation rolling mean, selected-window cumulative source-reported aggregate net flow, complete-window/tie-aware percentile, and a clearly labeled prior-only z-score.
 - Provides an optional two-axis price-and-flow view, an accessible selected-window data table, status definitions, and catalog alternative metadata.
+- **Flow setups today** (scanner): funds whose 20-day price move and 5-day flow are both unusual for that fund, in four setups (inflows / outflows after a drop / rally). Each column states what 10 years of pooled history shows for the setup, and each fund shows its own record (next 20 days vs its typical 20 days, episodes ≥ 20 days apart) only when it has ≥ 8 episodes. Flows are context, not a trade signal: only inflows after a drop kept a small, consistent edge (`scripts/flow_study.py`, `docs/SIGNALS_STUDY.md` §5).
 - Keeps legacy, stale, pending, empty, unavailable, loading, and error states explicit; missing observations are never rendered as zero.
 - Keeps ticker, range, and optional price state in the URL and responds to browser history navigation. The browser cannot start a source refresh.
 - Uses optional CDN enhancement with a local static-data fallback; the fallback removes `x-cloak`, loads the local catalog/history files, and exposes an accessible table when enhancement is unavailable.
@@ -531,9 +532,9 @@ Correlation matrix + Growth of $100 log-scale chart for selected assets.
 
 ### Source and catalog
 
-The authoritative flow dataset is the local, read-only collection under `data/flows/`: **145 leveraged and inverse instruments, 177,699 daily rows from 2016-01-04 through 2026-10-21**, with zero duplicate ticker-dates and zero missing required values. `scripts/build_local_flow_artifacts.py` validates those sources and deterministically regenerates every published artifact under `docs/data/flows/` (145 per-ticker JSON files, `catalog.json`, `manifest.json`); it refuses any output directory inside `data/flows/`.
+The authoritative flow dataset is the local, read-only collection under `data/flows/`: **160 leveraged, inverse and benchmark instruments, 214,834 daily rows from 2016-01-04 through 2026-10-21**, with zero duplicate ticker-dates and zero missing required values. `scripts/build_local_flow_artifacts.py` validates those sources and deterministically regenerates every published artifact under `docs/data/flows/` (145 per-ticker JSON files, `catalog.json`, `manifest.json`); it refuses any output directory inside `data/flows/`.
 
-`docs/data/flows/catalog.json` is the generated UI catalog (schema 1, `local-authoritative-117-v1`, 145 instruments of which 24 are featured) and `docs/data/flows/manifest.json` is the coverage manifest (schema 2, status `complete`, 145 files, 177,699 rows). Both are marked `network_fetch: false`. The Markets Fund Flows interface reads only these static files; the runtime fallback enforces the same 145/24 cardinality before rendering, and the browser cannot start a source refresh.
+`docs/data/flows/catalog.json` is the generated UI catalog (schema 1, 160 instruments of which 24 are featured) and `docs/data/flows/manifest.json` is the coverage manifest (schema 2, status `complete`, 160 files, 214,834 rows). Both are marked `network_fetch: false`. The Markets Fund Flows interface reads only these static files; the runtime fallback enforces the same 145/24 cardinality before rendering, and the browser cannot start a source refresh.
 
 Trackinsight remains recorded as the historical provider in the metadata (`source_provider: Trackinsight`, `source_mode: historical_local`), but no runtime path performs a Trackinsight or other network request. External ingestion is disabled: `scripts/fetch_etf_flow.py` exits with code 2 in every mode unless the explicit `--unsafe-external-fetch` manual opt-in is passed, and `daily_etf_flows.yml` has no schedule — its only job prints the local-only policy and exits 1.
 
