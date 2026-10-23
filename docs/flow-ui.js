@@ -1281,6 +1281,9 @@
           // Same setup definitions as the pooled evidence (catalog.flow_evidence,
           // scripts/flow_study.py): 20-day price z of +/-1 and 5-day flow z of
           // +/-0.8, both in units of the fund's own 60-day variability.
+          // Long funds only: the evidence is pooled over long funds, and for an
+          // inverse fund 'price down, money in' is the opposite bet.
+          if ((finiteNumber(it.leverage_value) || 0) < 0) continue;
           const isMaterial = Math.abs(f5) >= 100000;
           const isDip = zp <= -1.0 && zf5 >= 0.8 && isMaterial;
           const isWash = zp <= -1.0 && zf5 <= -0.8 && isMaterial;
