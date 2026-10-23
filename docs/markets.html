@@ -2445,7 +2445,7 @@
                       <td>
                         <span class="flow-badge" :data-state="(item.leverage_value || 0) < 0 ? 'DISTRIBUTION' : 'ACCUMULATION'" x-text="item.leverage"></span>
                       </td>
-                      <td :class="item.latest_flow > 0 ? 'flow-positive' : item.latest_flow < 0 ? 'flow-negative' : ''" x-text="formatMoney(item.latest_flow)" :title="item.flow_pct_aum != null ? `${item.flow_pct_aum >= 0 ? '+' : ''}${item.flow_pct_aum.toFixed(1)}% AUM` : ''"></td>
+                      <td :class="item.flow_reversal ? 'flow-muted' : item.latest_flow > 0 ? 'flow-positive' : item.latest_flow < 0 ? 'flow-negative' : ''" x-text="formatMoney(item.latest_flow) + (item.flow_reversal ? ' ⚠' : '')" :title="item.flow_reversal ? `Undoes the previous day's ${formatMoney(item.flow_reversal.prev_flow)} (${item.flow_reversal.prev_date}); the two net to ${formatMoney(item.flow_reversal.net_2d)}. Almost certainly a source reporting error, not money moving; ranked as zero.` : item.flow_pct_aum != null ? `${item.flow_pct_aum >= 0 ? '+' : ''}${item.flow_pct_aum.toFixed(1)}% AUM` : ''"></td>
                       <td :class="item.flow_5d > 0 ? 'flow-positive' : item.flow_5d < 0 ? 'flow-negative' : ''" x-text="formatMoney(item.flow_5d)"></td>
                       <td :class="item.flow_20d > 0 ? 'flow-positive' : item.flow_20d < 0 ? 'flow-negative' : ''" x-text="formatMoney(item.flow_20d)"></td>
                       <td :class="item.flow_60d > 0 ? 'flow-positive' : item.flow_60d < 0 ? 'flow-negative' : ''" x-text="formatMoney(item.flow_60d)"></td>
