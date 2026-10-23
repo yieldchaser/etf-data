@@ -433,17 +433,21 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
         # BURST / CRATER flags for today (rule: history.burst_crater_panels)
         leaderboard["burst_30d"]             = leaderboard["ticker"].map(is_burst).fillna(False)
         leaderboard["crater_30d"]            = leaderboard["ticker"].map(is_crater).fillna(False)
-        # SURGE / SLIDE: the same rank move without a fund confirming it — a
-        # momentum tag (mirrors the price move), not a forecast.
+        # SURGE / SLIDE: a rank move (×1.4) with no fund change — shown on the
+        # site as the price-driven grade of BURST / CRATER. It mirrors the
+        # price move; it doesn't predict the next one.
         leaderboard["surge_10d"]             = leaderboard["ticker"].map(is_surge).fillna(False).astype(bool)
         leaderboard["slide_10d"]             = leaderboard["ticker"].map(is_slide).fillna(False).astype(bool)
-        # Size of the flagged move in (smoothed) rank positions, and the
-        # holder-count change that confirmed it — 0 when not flagged.
+        # Size of the flagged move in (smoothed) rank positions, for either
+        # grade (fund-backed or price-driven), and the holder-count change
+        # over the window — 0 when not flagged.
         _then = leaderboard["ticker"].map(bc_rank_then)
         _now = leaderboard["ticker"].map(bc_rank_now)
-        leaderboard["burst_rank_gain"] = ((_then - _now).where(leaderboard["burst_30d"], 0)
+        _up = leaderboard["burst_30d"] | leaderboard["surge_10d"]
+        _down = leaderboard["crater_30d"] | leaderboard["slide_10d"]
+        leaderboard["burst_rank_gain"] = ((_then - _now).where(_up, 0)
                                           .fillna(0).round(0).astype(int))
-        leaderboard["crater_rank_loss"] = ((_now - _then).where(leaderboard["crater_30d"], 0)
+        leaderboard["crater_rank_loss"] = ((_now - _then).where(_down, 0)
                                            .fillna(0).round(0).astype(int))
         leaderboard["motion_rank_then"] = _then.round(0)
         leaderboard["motion_rank_now"] = _now.round(0)

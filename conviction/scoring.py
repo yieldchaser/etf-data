@@ -589,13 +589,16 @@ class MotionConfig:
     `relevance_rank`, with the move still in force (within persist_log_tol of
     the window's best / worst):
 
-      SURGE  — rank improved by ≥ min_log_rank_move (×1.65) over k snapshots.
-      SLIDE  — rank worsened by the same over k snapshots.
-               Momentum tags, not forecasts: they mirror the price move (the
-               prior 10 days were +9% / −7% vs peers) and their next 20 days
-               flipped sign between regimes, like every rule built from price,
-               rank or re-weighting alone (20 rules tested).
-      BURST  — a SURGE that GAINED ≥ 1 holding fund over the same k snapshots.
+      SURGE  — rank improved by ≥ momentum_min_log_rank_move (×1.4) over k
+               snapshots; shown as the price-driven grade of BURST.
+      SLIDE  — rank worsened by the same; the price-driven grade of CRATER.
+               They mirror the price move (the prior 10 days were +9% / −7%
+               vs peers) and their next 20 days flipped sign between regimes,
+               like every rule built from price, rank or re-weighting alone
+               (20 rules tested). ×1.4 puts ~25 names up and ~40 down in force
+               on a typical day inside the top 300.
+      BURST  — rank improved by ≥ min_log_rank_move (×1.65) over k snapshots
+               and GAINED ≥ 1 holding fund over the same k snapshots.
       CRATER — rank worsened by ≥ crater_min_log_rank_move (×1.35) over
                kc = crater_lookback_snapshots and the name LOST ≥ 1 holding
                fund over those kc snapshots. A fund's exit often comes BEFORE
@@ -605,8 +608,9 @@ class MotionConfig:
     """
     smooth_snapshots: int = 3
     lookback_snapshots: int = 10
+    momentum_min_log_rank_move: float = 0.336  # ln 1.4 — SURGE / SLIDE bar
     crater_lookback_snapshots: int = 20       # CRATER's window (rank move + fund exit)
-    min_log_rank_move: float = 0.5            # ≈ ×1.65 (e.g. #250 → #150): BURST, SURGE, SLIDE
+    min_log_rank_move: float = 0.5            # ≈ ×1.65 (e.g. #250 → #150): BURST
     crater_min_log_rank_move: float = 0.3     # ≈ ×1.35 over CRATER's longer window
     relevance_rank: int = 300
     persist_log_tol: float = 0.15

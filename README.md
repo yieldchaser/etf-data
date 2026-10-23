@@ -237,7 +237,7 @@ Legacy (`weight% × 100 × tier_points × rank_multiplier + new bonus`) and conv
 | **CONCENTRATED** | One fund supplies ≥ 85% of linear conviction mass (Σ points × C), or a lone fund holds it at ≥ 4× equal-weight | Single-fund story — a risk descriptor, not a buy signal (no consistent return edge in the 2026-10 audit) |
 | **NEW** | First appearance within the 14-day lookback; suppressed for ETFs younger than the 30-day maturity baseline | Short-horizon entrant (1.38× accumulation lift ≤ 7d, 0.65× by 30d) |
 
-Per-name motion signals `BURST` / `CRATER`, the momentum tags `SURGE` / `SLIDE`, and the screening chips (Funds ↓, Funds ↑, Pre-HC, Stealth, Quality+) are documented under [Analytical Signals](#analytical-signals). `SPECULATIVE_BETA` was retired in the 2026-10 signal audit (no edge in either regime).
+Per-name motion signals `BURST` / `CRATER`, their price-driven grade (`SURGE` / `SLIDE` in the data), and the screening chips (Funds ↓, Funds ↑, Pre-HC, Stealth, Quality+) are documented under [Analytical Signals](#analytical-signals). `SPECULATIVE_BETA` was retired in the 2026-10 signal audit (no edge in either regime).
 
 ### Sanitizer
 
@@ -275,7 +275,7 @@ Built with Tailwind CSS + Alpine.js. Zero build step — static HTML/JS served d
 - Day-over-day score deltas with honest `—` display when no comparable past data exists
 - HC streaks, percentile-of-own-history progress bars
 - **BURST** and **CRATER** badges with micro-breakdown tooltips
-- Filter chips in three groups — Flags (HC, CONC, NEW), Signals (BURST, CRATER, Funds ↓, Funds ↑, Pre-HC, Stealth, Quality+) and Motion (Surge, Slide)
+- Filter chips in three groups — Flags (HC, CONC, NEW), Signals (BURST, CRATER, Funds ↓, Funds ↑, Pre-HC, Stealth, Quality+); BURST and CRATER include their price-driven grade (dashed badge)
 - Auto-generated explainer line per row: compresses tier breadth, score delta, burst state, HC streak, quality signals, concentration, NEW-entrant state into one scannable sentence
 - **Expanded Row Detail Drawer**:
   - **Auto-Explainer Grid**: A frosted glassmorphic card container (`STRUCTURE`, `FLOW`, `RISK`) featuring dynamic left-border colored callout bars (`border-l-2 pl-2 border-current`) matching alert severity.
@@ -317,7 +317,7 @@ Every table shows rank then → now, funds then → now and score, with the name
 - **Score History**: sparkline area chart, score accumulation over time
 - **Global Rank History**: inverted Y-axis line chart, O(1) pre-computed lookup
 - **Per-ETF Rank History**: multi-line chart, tier-based coloring, crosshair tooltips
-- **Signal Timeline**: Gantt-style multi-lane chart — per-day signal history (`flag`, `burst`, `crater`, SURGE / SLIDE, quality adoption, rank, holder count) stored compactly per day in `flag_history.json`, with rank overlay, hover crosshair, duration counters
+- **Signal Timeline**: Gantt-style multi-lane chart — per-day signal history (`flag`, `burst`, `crater`, price-driven burst / crater, quality adoption, rank, holder count) stored compactly per day in `flag_history.json`, with rank overlay, hover crosshair, duration counters
 - **Score Decomposition Bar**: stacked bar showing each ETF's contribution, colored by tier
 - **Tier Breadth chip**: how many distinct strategy types co-hold this name (1–5)
 - **Quality+ chip**: gained a Quality-tier ETF in last 30 days (set derived from config)
@@ -330,7 +330,7 @@ Every table shows rank then → now, funds then → now and score, with the name
 |--------|-----------|
 | `BURST` | On the 3-snapshot rolling-median global rank: improved by ≥ ×1.65 (log move ≥ 0.5) over the last 10 snapshots, is now inside the top 300, is still within 15% (log) of its best rank in the window, **and** gained at least one holding fund over the same window. A one-day rank glitch cannot fire it. |
 | `CRATER` | Over ~4 weeks (20 snapshots): smoothed rank worsened by ≥ ×1.35 from a starting position inside the top 300, still near its worst, **and** lost at least one holding fund over those 20 snapshots. The longer window catches funds that sell before the slide (Yageo, July 2026). The "get out" signal: −2.9% / −1.0% vs peers over 20 days in the two regimes. |
-| `surge_10d` / `slide_10d` | SURGE / SLIDE: BURST's ×1.65 rank move over ~2 weeks in the top 300, up or down, with **no** fund change — the price move showing through fund weights. Momentum tags (~19 a day each), not forecasts: +2.9% / −2.6% (SURGE) across the two regimes. Not set on names already BURST / CRATER. |
+| `surge_10d` / `slide_10d` | Price-driven grade of BURST / CRATER (dashed badge on the site): smoothed rank ×1.4 better / worse over ~2 weeks in the top 300 with **no** fund change — the price move showing through fund weights (~25 / ~40 names on a typical day). Confirms a move, doesn't predict one. Not set on names already fund-backed BURST / CRATER. |
 | `funds_down` (chip) | Inside the top 200 and lost a holding fund in the last 14 days — the most robust single exit warning in the audit |
 | `funds_up` (chip) | Inside the top 200 and gained a holding fund over 30 days |
 | `pre_hc` (chip) | Not yet HC, ≥ 3 funds, ≥ 1 non-Core conviction holder, ≥ 2 non-Core tiers, improving 7-day per-fund ranks and a rising score streak — one step from HIGH_CONVICTION |
@@ -350,7 +350,7 @@ Every signal was replayed on each snapshot with the site's definition and scored
 | Signal | Verdict |
 |--------|---------|
 | HIGH_CONVICTION | Redesigned: ≥ 4 holders was ~200 names; the conviction + independence rule is ~20–25 and loses a holder half as often |
-| BURST / CRATER | Redesigned: the old 40-position range rule fired on ~580 names a day, mostly below #300, describing moves that had already happened. 20 rules tested in both regimes: only fund-confirmed rules kept their sign. SURGE / SLIDE keep the unconfirmed rank move as a momentum tag |
+| BURST / CRATER | Redesigned: the old 40-position range rule fired on ~580 names a day, mostly below #300, describing moves that had already happened. 20 rules tested in both regimes: only fund-confirmed rules kept their sign. The unconfirmed rank move (×1.4) is shown as BURST / CRATER's price-driven grade |
 | Funds ↓ / Funds ↑ | Added — fund-count change is the most robust signal in the data |
 | Pre-HC / Stealth | Redefined to the forms that carried information |
 | Quality+, NEW, regime | Kept |

@@ -257,20 +257,21 @@ def burst_crater_panels(historical: dict[pd.Timestamp, pd.DataFrame], motion) ->
     funds = _panel("etf_count").reindex(index=ranks.index, columns=ranks.columns).fillna(0)
     smooth = ranks.T.rolling(motion.smooth_snapshots, min_periods=motion.smooth_snapshots).median().T
 
-    # SURGE / SLIDE — rank momentum over k snapshots (no fund needed)
+    # Rank momentum over k snapshots. SURGE / SLIDE (the price-driven grade
+    # of BURST / CRATER) use the lower momentum_min_log_rank_move bar.
     then = smooth.shift(k, axis=1)
     win_best = smooth.T.rolling(k + 1, min_periods=k + 1).min().T
     win_worst_k = smooth.T.rolling(k + 1, min_periods=k + 1).max().T
-    surge = ((np.log(then / smooth) >= motion.min_log_rank_move)
-             & (smooth <= motion.relevance_rank)
-             & (np.log(smooth / win_best) <= motion.persist_log_tol))
-    slide = ((np.log(smooth / then) >= motion.min_log_rank_move)
-             & (then <= motion.relevance_rank)
-             & (np.log(win_worst_k / smooth) <= motion.persist_log_tol))
+    up_move, down_move = np.log(then / smooth), np.log(smooth / then)
+    up_held = (smooth <= motion.relevance_rank) & (np.log(smooth / win_best) <= motion.persist_log_tol)
+    down_held = (then <= motion.relevance_rank) & (np.log(win_worst_k / smooth) <= motion.persist_log_tol)
+    m_bar = getattr(motion, "momentum_min_log_rank_move", motion.min_log_rank_move)
+    surge = (up_move >= m_bar) & up_held
+    slide = (down_move >= m_bar) & down_held
 
-    # BURST — a SURGE that a fund joined over the same k snapshots
+    # BURST — the full ×1.65 move, with a fund joining over the same k snapshots
     funds_delta = funds - funds.shift(k, axis=1)
-    burst = surge.copy()
+    burst = (up_move >= motion.min_log_rank_move) & up_held
 
     # CRATER — over kc snapshots: a fund's exit often comes before the slide
     crater_then = smooth.shift(kc, axis=1)
