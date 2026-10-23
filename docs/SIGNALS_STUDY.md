@@ -260,7 +260,38 @@ The deep-board rank churn that drove the ribbon (e.g. "+1,902 ranks") is the sam
 
 **Bug fixed along the way.** Holder-count deltas used to treat a name absent from the board N days ago as "no change". It is now counted as zero holders, so a brand-new two-fund name shows +2.
 
-## 5. Limitations
+## 5. Fund flows on leveraged ETFs (2026-10)
+
+**Question:** can a leveraged ETF's own creations and redemptions tell you when to buy its lows or sell its highs?
+
+**Data and method** (`scripts/flow_study.py`, reproducible):
+- Every long-side fund in `data/flows/all_leveraged_etf_flows.csv`: 137 funds, 175k fund-days, 2016–2026.
+- Price z = 20-day NAV return / (60-day return std × √20). Flow z = 5-day net flow / (60-day flow std × √5).
+- Outcome: the next 20 days' NAV return, entered the day after the signal.
+- Each fund-day is compared with all funds **in the same price state on the same date**. This isolates what the flow adds beyond "the price fell / rose", which on its own already moves forward returns.
+
+**20-day return vs same-date, same-price-state funds:**
+
+| Setup | 2016–20 | 2021–23 | 2024–26 | Reading |
+|---|---|---|---|---|
+| Inflows after a drop | +0.26% | +0.16% | +0.92% | The only setup with the same sign in all three eras. Small next to 20-day swings of ±15–30%. |
+| No unusual flow after a drop | −0.27% | −0.17% | −0.38% | The mirror of the row above. |
+| Outflows after a drop ("washout") | +0.51% | +0.31% | −0.06% | Fading. |
+| Inflows after a rally ("climax") | +0.58% | −0.85% | +1.16% | Flips sign. |
+| Outflows after a rally ("distribution") | −0.38% | +0.50% | +0.45% | Wrong way round in two of three eras. Not a sell warning. |
+
+Flows also lag price a little: corr(1-day flow z, prior-day return) = −0.03. Buyers arrive after drops.
+
+**Outflow streaks.** `docs/research_alpha_findings.md` reported 67–80% win rates after four-day redemption streaks. Win rates there are absolute, so they include the base rate: TQQQ's next 20 days were positive 56–72% of the time in any case. Against same-date, same-price-quintile peers, a streak of exactly four days did come out positive in all three eras (+1.15% / +0.65% / +1.67%). Streaks of three, five and six days flip sign (e.g. five days: +1.37% / −0.15% / +0.25%), so the "four" looks like a threshold picked in-sample, not a mechanism.
+
+**What changed on the Fund Flows tab:**
+- **Scanner.** The scanner's per-fund "Win %" counted any positive 20-day return, mostly the base rate of a bull fund. Its episodes were only 5 days apart, so their 20-day windows overlapped and the counts were inflated. Funds with no episodes showed a placeholder 50%. The scanner now shows a fund's record against its own typical 20 days, with episodes at least 20 days apart, and only when there are ≥ 8 of them.
+- **Opportunity score.** The arbitrary "opportunity score /100" and the 1Y/3Y/All slices of those tiny samples are removed. The setups are named for what they are (inflows / outflows after a drop / rally), and each column says what the pooled history above shows.
+- **Strategy signals view.** The "Systematic Strategy Signals & Conviction Basket" view (+72.8% CAGR, 2.84 Sharpe) is removed. It was a file generated once on 2026-10-05 by a script that read inputs from a local scratch directory outside the repo, so it could not be rebuilt or checked. It was still displayed as live ("Next rebalance 2026-10-09"), and its claimed edge is far beyond anything the pooled data supports.
+
+**Bottom line:** flows are context, not a trading edge, on this data. "Money is buying the dip" is the one consistent positive, and it is small.
+
+## 6. Limitations
 
 - **A short window.** About eight months and two regimes. The BURST and CRATER effects have t-statistics of 0.7–2.0 per regime, so they are directionally consistent rather than proven. The old rules showed no edge at all, and one pointed the wrong way.
 - **HIGH_CONVICTION carries momentum exposure.** It is a statement about consensus and its durability, not a return forecast. Its returns follow the momentum regime.

@@ -1,4 +1,11 @@
 # Quantitative Alpha & Market Microstructure in Leveraged ETFs
+
+> **Read with caution (2026-10 review).** The win rates below are absolute (share of positive 20-day returns), so they include each fund's base rate. They were not controlled for the price move, and they were not split by era. Re-tested against same-date, same-price-state peers (`scripts/flow_study.py`, `docs/SIGNALS_STUDY.md` §5):
+> - Only "inflows after a drop" kept a consistent sign, and it is small.
+> - "Washout" outflows at lows have faded since 2024.
+> - The four-day outflow streak result does not hold for three-, five- or six-day streaks.
+>
+> Kept as a record of the earlier research, not as guidance.
 ## Empirical Discoveries from 170,392 Daily Fund Flow Observations (2016–2026)
 
 **Research Lab**: Antigravity Quantitative Research  

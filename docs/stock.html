@@ -280,13 +280,13 @@
         <span x-show="leaderboardRow?.crater_30d" class="chip"
               x-tooltip="`CRATER - smoothed rank #${leaderboardRow?.motion_rank_then} → #${(leaderboardRow?.motion_rank_then || 0) + (leaderboardRow?.crater_rank_loss || 0)} in ~4 weeks as ${Math.abs(leaderboardRow?.motion_funds_delta || 0)} fund(s) dropped it - the get-out signal`"
               style="background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.30)">CRATER</span>
-        <!-- SURGE / SLIDE: rank momentum without a fund change -->
+        <!-- Price-driven grade of BURST / CRATER: rank move with no fund change -->
         <span x-show="leaderboardRow?.surge_10d" class="chip"
-              x-tooltip="`SURGE - smoothed rank #${leaderboardRow?.motion_rank_then} → #${leaderboardRow?.motion_rank_now} in ~2 weeks with no fund joining. Momentum, not a forecast: +2.9% vs peers over 20 days in Feb-May, -2.6% in Jun-Oct`"
-              style="background: rgba(196,181,253,0.10); color: #c4b5fd; border: 1px solid rgba(196,181,253,0.30)">SURGE</span>
+              x-tooltip="`Burst, price-driven - smoothed rank #${leaderboardRow?.motion_rank_then} → #${leaderboardRow?.motion_rank_now} in about two weeks as the price runs. No fund has bought in yet; it confirms the move rather than predicting the next one.`"
+              style="background: transparent; color: #c084fc; opacity: 0.8; border: 1px dashed rgba(168,85,247,0.45)">BURST</span>
         <span x-show="leaderboardRow?.slide_10d" class="chip"
-              x-tooltip="`SLIDE - smoothed rank #${leaderboardRow?.motion_rank_then} → #${leaderboardRow?.motion_rank_now} in ~2 weeks with no fund leaving. Momentum, not a forecast: -1.7% vs peers over 20 days in Jun-Oct, +0.9% in Feb-May`"
-              style="background: rgba(253,164,175,0.10); color: #fda4af; border: 1px solid rgba(253,164,175,0.30)">SLIDE</span>
+              x-tooltip="`Crater, price-driven - smoothed rank #${leaderboardRow?.motion_rank_then} → #${leaderboardRow?.motion_rank_now} in about two weeks as the price falls. No fund has sold yet; if one does, it becomes a fund-backed Crater.`"
+              style="background: transparent; color: #f87171; opacity: 0.8; border: 1px dashed rgba(248,113,113,0.45)">CRATER</span>
         <!-- Quality+ -->
         <span x-show="leaderboardRow?.quality_adopted_30d" class="chip"
               x-tooltip="'Quality+ - A free-cash-flow / quality screen ETF (COWZ/CALF/SPHQ) added this name in the last 30 days. Strong fundamentals confirmation.'"
@@ -525,8 +525,8 @@
         <div class="flex items-center gap-3 text-[10px] flex-wrap" style="color: var(--text-2)">
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(168,85,247,0.85)"></span> BURST</span>
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(248,113,113,0.85)"></span> CRATER</span>
-          <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(196,181,253,0.75)"></span> SURGE</span>
-          <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(253,164,175,0.75)"></span> SLIDE</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(196,181,253,0.75)"></span> PRICE ↑ (burst, no fund)</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(253,164,175,0.75)"></span> PRICE ↓ (crater, no fund)</span>
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(52,211,153,0.85)"></span> HC</span>
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(96,165,250,0.75)"></span> NEW</span>
           <span class="flex items-center gap-1"><span class="inline-block w-3 h-2 rounded-sm" style="background: rgba(52,211,153,0.6)"></span> QUALITY</span>
@@ -569,8 +569,8 @@
         <div class="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-[10px] font-mono">
           <span x-show="timelineStats.burstDays > 0" style="color: #c084fc" x-text="`BURST · ${timelineStats.burstDays}d`"></span>
           <span x-show="timelineStats.craterDays > 0" style="color: #f87171" x-text="`CRATER · ${timelineStats.craterDays}d`"></span>
-          <span x-show="timelineStats.surgeDays > 0" style="color: #c4b5fd" x-text="`SURGE · ${timelineStats.surgeDays}d`"></span>
-          <span x-show="timelineStats.slideDays > 0" style="color: #fda4af" x-text="`SLIDE · ${timelineStats.slideDays}d`"></span>
+          <span x-show="timelineStats.surgeDays > 0" style="color: #c4b5fd" x-text="`PRICE ↑ · ${timelineStats.surgeDays}d`"></span>
+          <span x-show="timelineStats.slideDays > 0" style="color: #fda4af" x-text="`PRICE ↓ · ${timelineStats.slideDays}d`"></span>
           <span x-show="timelineStats.hcDays > 0" style="color: var(--up)" x-text="`HC · ${timelineStats.hcDays}d`"></span>
           <span x-show="timelineStats.newDays > 0" style="color: rgba(96,165,250,0.9)" x-text="`NEW · ${timelineStats.newDays}d`"></span>
           <span x-show="timelineStats.qualityDays > 0" style="color: var(--up)" x-text="`QUALITY · ${timelineStats.qualityDays}d`"></span>
@@ -1438,8 +1438,8 @@ function stockApp() {
       if (e.crater) return { label: 'CRATER', color: '#f87171' };
       if (this._isBurstAt(i)) return { label: 'BURST', color: '#c084fc' };
       if (e.flag === 'HIGH_CONVICTION') return { label: 'HC', color: 'var(--up)' };
-      if (e.sl) return { label: 'SLIDE', color: '#fda4af' };
-      if (e.sg) return { label: 'SURGE', color: '#c4b5fd' };
+      if (e.sl) return { label: 'CRATER · PRICE', color: '#fda4af' };
+      if (e.sg) return { label: 'BURST · PRICE', color: '#c4b5fd' };
       if (e.n) return { label: 'NEW', color: 'rgba(96,165,250,0.9)' };
       if (e.qa) return { label: 'Q+', color: 'var(--up)' };
       if (e.flag === 'CONCENTRATED') return { label: 'CONC', color: '#fb923c' };
@@ -1475,8 +1475,8 @@ function stockApp() {
         'BURST':   'BURST - smoothed rank rose ×1.65+ in ~2 weeks, confirmed by a fund adding the name.',
         'CRATER':  'CRATER - smoothed rank fell ×1.35+ over ~4 weeks as a fund dropped the name - the get-out signal.',
         'HC':      `HIGH CONVICTION - held by ${this.leaderboardRow?.etf_count || 0} ETFs · HC streak: ${this.leaderboardRow?.hc_streak || 0} days`,
-        'SURGE':   'SURGE - smoothed rank rose ×1.65+ in ~2 weeks with no fund joining: momentum, not a forecast.',
-        'SLIDE':   'SLIDE - smoothed rank fell ×1.65+ in ~2 weeks with no fund leaving: momentum, not a forecast.',
+        'BURST · PRICE':  'Burst, price-driven - smoothed rank 1.4x+ better in about two weeks with no fund buying in: the price is running.',
+        'CRATER · PRICE': 'Crater, price-driven - smoothed rank 1.4x+ worse in about two weeks with no fund selling yet: the price is falling.',
         'NEW':     'NEW - first appearance in any mature ETF within the last 14 days.',
         'Q+':      'Quality+ - a Quality ETF added this name in the last 30 days.',
         'CONC':    `CONCENTRATED - score concentrated in single ETF (${this.leaderboardRow?.concentration_score || 0}%) · fragile conviction`,
@@ -1503,8 +1503,8 @@ function stockApp() {
       const sigs = [];
       if (this._isBurstAt(this.tlci)) sigs.push({ label: 'BURST',   color: '#c084fc' });
       if (e.crater) sigs.push({ label: 'CRATER',  color: '#f87171' });
-      if (e.sg) sigs.push({ label: 'SURGE',  color: '#c4b5fd' });
-      if (e.sl) sigs.push({ label: 'SLIDE',  color: '#fda4af' });
+      if (e.sg) sigs.push({ label: 'BURST · PRICE',  color: '#c4b5fd' });
+      if (e.sl) sigs.push({ label: 'CRATER · PRICE',  color: '#fda4af' });
       if (e.flag === 'HIGH_CONVICTION') sigs.push({ label: 'HC',     color: 'var(--up)' });
       if (e.n)      sigs.push({ label: 'NEW',     color: 'rgba(96,165,250,0.9)' });
       if (e.qa)     sigs.push({ label: 'Q+',      color: 'var(--up)' });
@@ -1583,8 +1583,8 @@ function stockApp() {
       return [
         { key: 'burst',    label: 'BURST',   always: true,  color: 'rgba(168,85,247,',  bright: '1)',    dim: '0.55)' },
         { key: 'crater',   label: 'CRATER',  always: true,  color: 'rgba(248,113,113,', bright: '1)',    dim: '0.55)' },
-        { key: 'surge',    label: 'SURGE',   always: false, color: 'rgba(196,181,253,', bright: '0.85)', dim: '0.45)' },
-        { key: 'slide',    label: 'SLIDE',   always: false, color: 'rgba(253,164,175,', bright: '0.85)', dim: '0.45)' },
+        { key: 'surge',    label: 'PRICE ↑',   always: false, color: 'rgba(196,181,253,', bright: '0.85)', dim: '0.45)' },
+        { key: 'slide',    label: 'PRICE ↓',   always: false, color: 'rgba(253,164,175,', bright: '0.85)', dim: '0.45)' },
         { key: 'hc',       label: 'HC',      always: true,  color: 'rgba(52,211,153,',  bright: '1)',    dim: '0.55)' },
         { key: 'newentry', label: 'NEW',     always: false, color: 'rgba(96,165,250,',  bright: '0.9)', dim: '0.5)'  },
         { key: 'quality',  label: 'QUAL',    always: false, color: 'rgba(52,211,153,',  bright: '0.7)', dim: '0.35)' },

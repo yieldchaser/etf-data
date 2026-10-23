@@ -309,11 +309,15 @@ signals:
 # The new rule flags ~6–9 a day each: BURST onsets +5.2% vs peers over 20 days
 # in Feb–May (−0.9%, not significant, in the May–Oct momentum unwind); CRATER
 # onsets −1.7% / −2.0% — negative in both regimes.
+# The site also shows a price-driven grade of each (rank ×1.4 in ~2 weeks, no
+# fund change; SURGE / SLIDE in the data): it confirms a move, it doesn't
+# predict one.
 motion:
   smooth_snapshots: 3
   lookback_snapshots: 10
   crater_lookback_snapshots: 20   # CRATER: ~4 weeks — fund exits often come before the slide
-  min_log_rank_move: 0.5          # ×1.65 — BURST, SURGE, SLIDE (over lookback_snapshots)
+  min_log_rank_move: 0.5          # ×1.65 — fund-backed BURST (over lookback_snapshots)
+  momentum_min_log_rank_move: 0.336  # ×1.4 — price-driven grade (SURGE / SLIDE in the data)
   crater_min_log_rank_move: 0.3   # ×1.35 — CRATER (over crater_lookback_snapshots)
   relevance_rank: 300
   persist_log_tol: 0.15

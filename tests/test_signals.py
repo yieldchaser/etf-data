@@ -58,6 +58,21 @@ class TestBurstCrater:
         ranks = [260, 255, 250, 240, 225, 210, 195, 180, 170, 160, 150, 145, 140, 140]
         assert _flags({"UP": [(r, 3) for r in ranks]}, "surge") == {"UP"}
 
+    def test_x1_5_move_with_fund_add_is_price_grade_not_burst(self):
+        """×1.5 clears the price-driven bar (×1.4) but not BURST's ×1.65, even
+        with a fund joining: it shows as the dim (SURGE) grade."""
+        ranks = [225, 225, 225, 215, 205, 195, 185, 175, 165, 158, 152, 150, 150, 150]
+        funds = [3] * 6 + [4] * 8
+        s = {"UP": list(zip(ranks, funds))}
+        assert _flags(s, "burst") == set() and _flags(s, "surge") == {"UP"}
+
+    def test_x1_3_move_fires_neither_grade(self):
+        ranks = [195, 195, 195, 190, 185, 180, 175, 170, 165, 160, 155, 150, 150, 150]
+        s = {"UP": [(r, 3) for r in ranks]}
+        assert _flags(s, "burst") == set() and _flags(s, "surge") == set()
+        down = {"DN": [(r, 3) for r in reversed(ranks)]}
+        assert _flags(down, "slide") == set()
+
     def test_burst_is_not_also_a_surge(self):
         ranks = [260, 255, 250, 240, 225, 210, 195, 180, 170, 160, 150, 145, 140, 140]
         funds = [3] * 6 + [4] * 8

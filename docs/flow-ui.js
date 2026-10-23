@@ -75,7 +75,7 @@
       range: params.get('range') || '1y',
       priceEnabled: params.get('price') !== '0',
       chart: CHART_TABS.some(tab => tab.key === chart) ? chart : 'workbench',
-      view: ['studio', 'scanner', 'matrix', 'alpha'].includes(view) ? view : (ticker ? 'studio' : null)
+      view: ['studio', 'scanner', 'matrix'].includes(view) ? view : (ticker ? 'studio' : null)
     };
   }
 
@@ -769,8 +769,6 @@
       flowStatusFilter: 'all',
       flowActiveCategoryTab: 'featured',
       flowUniverseDrawerOpen: false,
-      flowAlphaSignalsData: null,
-      flowAlphaFilter: 'all',
       flowHoverIndex: null,
       flowHoverChart: null,
       flowViewMode: 'scanner',
@@ -784,7 +782,23 @@
       flowScatterFilter: 'all',
       flowScatterHoverTicker: null,
       flowScatterMode: 'nominal',
-      flowScannerHorizon: 'all',
+      // Fund Flows scanner columns. `note` is what 10 years of pooled history
+      // shows for the setup (docs/SIGNALS_STUDY.md, "Fund flows"); `setup`
+      // keys the fund's own record in behavior_profiles.all.
+      flowScannerColumns: [
+        { list: 'dipAccum', setup: 'dip', title: 'Inflows after a drop', color: '251,146,60',
+          rule: 'Price down hard over 20 days, money flowing in',
+          note: 'The one setup with a steady edge in 10 years of data: these did a little better than similar drops without buyers. Small next to these funds\' swings.' },
+        { list: 'exhaustionLow', setup: 'washout', title: 'Outflows after a drop', color: '52,211,153',
+          rule: 'Price down hard over 20 days, money flowing out',
+          note: 'Selling into a drop used to come before small rebounds; that has faded in recent years.' },
+        { list: 'climaxInflowTop', setup: 'climax', title: 'Inflows after a rally', color: '34,211,238',
+          rule: 'Price up strongly over 20 days, money flowing in',
+          note: 'No reliable pattern: has come before both further gains and pullbacks.' },
+        { list: 'distributionTop', setup: 'dist', title: 'Outflows after a rally', color: '251,113,133',
+          rule: 'Price up strongly over 20 days, money flowing out',
+          note: 'Not a sell signal: these mostly kept pace with other rallying funds.' },
+      ],
       flowShowCatalogDrawer: false,
       flowVolumeCache: null,
       flowWorkbenchPriceEnabled: true,
@@ -977,144 +991,6 @@
 
       get flowIsHovering() {
         return this.flowHoverIndex !== null;
-      },
-
-      get flowAlphaActiveSignals() {
-        return Array.isArray(this.flowAlphaSignalsData?.active_signals) ? this.flowAlphaSignalsData.active_signals : [];
-      },
-
-      get flowAlphaTopBasket() {
-        const basket = Array.isArray(this.flowAlphaSignalsData?.top5_conviction_basket) ? this.flowAlphaSignalsData.top5_conviction_basket : [];
-        return basket.map((item, idx) => {
-          const isCore = idx < 5;
-          return {
-            ...item,
-            basket_role: item.basket_role || (isCore ? 'CORE' : 'RESERVE'),
-            allocation_label: item.allocation_label || (isCore ? 'Core Basket · 20% Equal Weight' : 'Reserve Candidate · High Alpha Score'),
-            setup_driver: item.setup_driver || (item.strategy_triggered || 'Quantitative Multi-Factor Conviction'),
-            nav_return_5d_pct: item.nav_return_5d_pct ?? item.ret_5d_pct ?? null,
-            nav_return_20d_pct: item.nav_return_20d_pct ?? item.ret_20d_pct ?? null,
-            ret_5d_pct: item.ret_5d_pct ?? item.nav_return_5d_pct ?? null,
-            ret_20d_pct: item.ret_20d_pct ?? item.nav_return_20d_pct ?? null
-          };
-        });
-      },
-
-      get flowAlphaBullBearPairs() {
-        const list = Array.isArray(this.flowAlphaSignalsData?.bull_bear_ecosystems) ? this.flowAlphaSignalsData.bull_bear_ecosystems : [];
-        const map = (this._flowEntryMap && Object.keys(this._flowEntryMap).length)
-          ? this._flowEntryMap
-          : Object.fromEntries((this.flowPrimaryInstruments || []).map(it => [it.ticker, it]));
-        return list.map(eco => {
-          let bull1d = 0, bear1d = 0, bull20d = 0, bear20d = 0, aum = 0;
-          for (const tk of (eco.bull_tickers || [])) {
-            const inst = map[tk];
-            if (inst) {
-              bull1d += finiteNumber(inst.latest_flow) || 0;
-              bull20d += finiteNumber(inst.flow_20d) || 0;
-              aum += finiteNumber(inst.aum_m) || 0;
-            }
-          }
-          for (const tk of (eco.bear_tickers || [])) {
-            const inst = map[tk];
-            if (inst) {
-              bear1d += finiteNumber(inst.latest_flow) || 0;
-              bear20d += finiteNumber(inst.flow_20d) || 0;
-              aum += finiteNumber(inst.aum_m) || 0;
-            }
-          }
-
-          let activeRegimeKey = 'Q4_both_out';
-          let activeCode = 'Q4';
-          let activeLabel = 'Concurrent Outflows';
-          let activeState = 'BALANCED';
-
-          if (bull1d > 0 && bear1d <= 0) {
-            activeRegimeKey = 'Q1_bull_in_bear_out';
-            activeCode = 'Q1';
-            activeLabel = 'Bull Inflow / Bear Outflow';
-            activeState = 'ACCUMULATION';
-          } else if (bull1d <= 0 && bear1d > 0) {
-            activeRegimeKey = 'Q2_bull_out_bear_in';
-            activeCode = 'Q2';
-            activeLabel = 'Bear Hedging / Bull Outflow';
-            activeState = 'DISTRIBUTION';
-          } else if (bull1d > 0 && bear1d > 0) {
-            activeRegimeKey = 'Q3_both_in';
-            activeCode = 'Q3';
-            activeLabel = 'Concurrent Inflows';
-            activeState = 'ACCUMULATION';
-          }
-
-          const activeStats = eco[activeRegimeKey] || null;
-
-          return {
-            ...eco,
-            bull1d,
-            bear1d,
-            bull20d,
-            bear20d,
-            total20d: bull20d + bear20d,
-            aumM: aum,
-            activeCode,
-            activeLabel,
-            activeState,
-            activeRegimeKey,
-            activeStats
-          };
-        });
-      },
-
-      get flowAlphaCategoryRotations() {
-        return Array.isArray(this.flowAlphaSignalsData?.category_rotations_top10) ? this.flowAlphaSignalsData.category_rotations_top10 : [];
-      },
-
-      get flowAlphaCounts() {
-        const signals = this.flowAlphaActiveSignals;
-        return {
-          all: signals.length,
-          ignition: signals.filter(s => String(s.live_signal || '').includes('IGNITION')).length,
-          slingshot: signals.filter(s => String(s.live_signal || '').includes('SLINGSHOT')).length,
-          squeeze: signals.filter(s => String(s.live_signal || '').includes('SQUEEZE')).length,
-          trap: signals.filter(s => String(s.live_signal || '').includes('TRAP') || String(s.live_signal || '').includes('DEAD_CAT')).length
-        };
-      },
-
-      get flowAlphaFilteredSignals() {
-        const filter = this.flowAlphaFilter;
-        const signals = this.flowAlphaActiveSignals;
-        if (filter === 'all') return signals;
-        if (filter === 'slingshot') return signals.filter(s => String(s.live_signal || '').includes('SLINGSHOT'));
-        if (filter === 'ignition') return signals.filter(s => String(s.live_signal || '').includes('IGNITION'));
-        if (filter === 'trap') return signals.filter(s => String(s.live_signal || '').includes('TRAP') || String(s.live_signal || '').includes('DEAD_CAT'));
-        if (filter === 'squeeze') return signals.filter(s => String(s.live_signal || '').includes('SQUEEZE'));
-        return signals;
-      },
-
-      get flowTradeBlotterRows() {
-        const signals = this.flowAlphaFilteredSignals;
-        return signals.map(s => {
-          const isInverse = (s.leverage_value || 0) < 0;
-          return {
-            ...s,
-            setup: s.setup || s.live_signal_label || 'Quantitative Setup',
-            action: s.action || (isInverse ? 'AVOID HEDGE' : 'BUY'),
-            actionClass: s.actionClass || (isInverse ? 'flow-action-reduce' : 'flow-action-buy'),
-            horizon: s.horizon || '5D–10D',
-            winRate: s.winRate || (s.hist_win_rate_pct ? `${s.hist_win_rate_pct.toFixed(1)}%` : '56.0%'),
-            expRet: s.expRet || (s.hist_expected_5d_pct ? `${s.hist_expected_5d_pct >= 0 ? '+' : ''}${s.hist_expected_5d_pct.toFixed(2)}%` : '+4.5%'),
-            stopLoss: s.stopLoss || '-5.0%',
-            target: s.target || '+12.0%',
-            catalyst: s.catalyst || s.live_signal_label || 'Empirical flow shock dynamic',
-            flow_zscore: finiteNumber(s.flow_zscore)
-          };
-        });
-      },
-
-      get flowAlphaBacktestSummaryText() {
-        const s = this.flowAlphaSignalsData?.basket_backtest_summary;
-        if (!s) return 'Model Backtest: +72.8% CAGR · 2.84 Sharpe · 56.4% Win Rate · +1.88% 5D Avg · +7.90% 20D Avg';
-        return `Model Backtest: +${(s.cagr_pct || 0).toFixed(1)}% CAGR · ${(s.sharpe || 0).toFixed(2)} Sharpe · ${(s.win_rate_pct || 0).toFixed(1)}% Win Rate · +${(s.expected_5d_pct || 0).toFixed(2)}% 5D Avg · +${(s.expected_20d_pct || 0).toFixed(2)}% 20D Avg`;
       },
 
       get flowUniversePulse() {
@@ -1338,9 +1214,24 @@
         };
       },
 
+      flowSigned(v, digits = 1, suffix = '') {
+        const n = Number(v);
+        if (!Number.isFinite(n)) return '—';
+        return `${n > 0 ? '+' : ''}${n.toFixed(digits)}${suffix}`;
+      },
+
+      // This fund's own record in a setup: next 20 days vs its typical 20 days.
+      flowSetupRecord(item, setup) {
+        const p = item.prof || {};
+        const n = p[`${setup}_episodes`] || 0;
+        const beat = p[`${setup}_beat_rate`], ex = p[`${setup}_avg_excess`];
+        if (beat == null || ex == null) return { text: `This fund: too little history (${n} time${n === 1 ? '' : 's'})`, cls: '' };
+        return { text: `This fund, ${n} times: beat its typical 20 days in ${Math.round(beat)}%, avg ${this.flowSigned(ex, 1, '%')}`,
+                 cls: ex >= 0 ? 'flow-positive' : 'flow-negative' };
+      },
+
       get flowActiveCycleAnomalies() {
         const items = this.flowPrimaryInstruments;
-        const horizon = this.flowScannerHorizon || 'all';
         const dipAccum = [];
         const exhaustionLow = [];
         const climaxInflowTop = [];
@@ -1356,9 +1247,7 @@
           const f5 = finiteNumber(it.flow_5d) || 0;
           const f20 = finiteNumber(it.flow_20d) || 0;
           const aum = finiteNumber(it.aum_m) || 0;
-          const oppScore = finiteNumber(it.opportunity_score) || 25;
-          const oppTag = it.opportunity_tag || 'NEUTRAL';
-          const prof = it.behavior_profiles?.[horizon] || it.behavior_profiles?.all || {};
+          const prof = it.behavior_profiles?.all || {};
           const name = it.underlying || it.fund_name || it.ticker;
 
           const entry = {
@@ -1375,17 +1264,7 @@
             flow5d: f5,
             flow20d: f20,
             aum,
-            oppScore,
-            oppTag,
-            dipWin: prof.dip_win_rate != null ? prof.dip_win_rate : 50.0,
-            dipAvgRet: prof.dip_avg_fwd_ret != null ? prof.dip_avg_fwd_ret : 0.0,
-            dipEpisodes: prof.dip_episodes || 0,
-            washWin: prof.washout_win_rate != null ? prof.washout_win_rate : 50.0,
-            washEpisodes: prof.washout_episodes || 0,
-            climaxWin: prof.climax_win_rate != null ? prof.climax_win_rate : 50.0,
-            climaxEpisodes: prof.climax_episodes || 0,
-            distPullback: prof.dist_pullback_rate != null ? prof.dist_pullback_rate : 50.0,
-            distEpisodes: prof.dist_episodes || 0
+            prof
           };
 
           const isMaterial = Math.abs(f1) >= 50000 || Math.abs(f5) >= 100000;
@@ -1405,10 +1284,10 @@
           }
         }
 
-        dipAccum.sort((a, b) => b.oppScore - a.oppScore || b.zf5 - a.zf5);
+        dipAccum.sort((a, b) => b.zf5 - a.zf5 || a.zp - b.zp);
         exhaustionLow.sort((a, b) => a.zf5 - b.zf5 || a.z - b.z);
         climaxInflowTop.sort((a, b) => b.zf5 - a.zf5 || b.z - a.z);
-        distributionTop.sort((a, b) => b.oppScore - a.oppScore || a.zf5 - b.zf5);
+        distributionTop.sort((a, b) => a.zf5 - b.zf5 || b.zp - a.zp);
 
         const slicedDip = dipAccum.slice(0, 8);
         const slicedExhaust = exhaustionLow.slice(0, 8);
@@ -1499,22 +1378,22 @@
         const lblTrap = `
           <g pointer-events="none">
             <rect x="${(xZero - 170).toFixed(1)}" y="${pad.top + 6}" width="162" height="22" rx="3" fill="rgba(8,12,18,0.72)" stroke="rgba(251,146,60,0.3)" stroke-width="0.8"/>
-            <text x="${(xZero - 8).toFixed(1)}" y="${pad.top + 20}" text-anchor="end" fill="#fb923c" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.03em">DIP ACCUMULATION (${counts.dipAccum})</text>
+            <text x="${(xZero - 8).toFixed(1)}" y="${pad.top + 20}" text-anchor="end" fill="#fb923c" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.03em">INFLOWS AFTER DROP (${counts.dipAccum})</text>
           </g>`;
         const lblMomentum = `
           <g pointer-events="none">
             <rect x="${(xZero + 8).toFixed(1)}" y="${pad.top + 6}" width="162" height="22" rx="3" fill="rgba(8,12,18,0.72)" stroke="rgba(34,211,238,0.3)" stroke-width="0.8"/>
-            <text x="${(xZero + 16).toFixed(1)}" y="${pad.top + 20}" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.03em">MOMENTUM INFLOWS (${counts.momentum})</text>
+            <text x="${(xZero + 16).toFixed(1)}" y="${pad.top + 20}" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.03em">INFLOWS AFTER RALLY (${counts.momentum})</text>
           </g>`;
         const lblWashout = `
           <g pointer-events="none">
             <rect x="${(xZero - 170).toFixed(1)}" y="${(pad.top + chartH - 28).toFixed(1)}" width="162" height="22" rx="3" fill="rgba(8,12,18,0.72)" stroke="rgba(52,211,153,0.3)" stroke-width="0.8"/>
-            <text x="${(xZero - 8).toFixed(1)}" y="${(pad.top + chartH - 14).toFixed(1)}" text-anchor="end" fill="#34d399" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.03em">WASHOUT AT LOWS (${counts.washout})</text>
+            <text x="${(xZero - 8).toFixed(1)}" y="${(pad.top + chartH - 14).toFixed(1)}" text-anchor="end" fill="#34d399" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.03em">OUTFLOWS AFTER DROP (${counts.washout})</text>
           </g>`;
         const lblSqueeze = `
           <g pointer-events="none">
             <rect x="${(xZero + 8).toFixed(1)}" y="${(pad.top + chartH - 28).toFixed(1)}" width="172" height="22" rx="3" fill="rgba(8,12,18,0.72)" stroke="rgba(167,139,250,0.3)" stroke-width="0.8"/>
-            <text x="${(xZero + 16).toFixed(1)}" y="${(pad.top + chartH - 14).toFixed(1)}" fill="#a78bfa" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.03em">DISTRIBUTION AT HIGHS (${counts.distribution})</text>
+            <text x="${(xZero + 16).toFixed(1)}" y="${(pad.top + chartH - 14).toFixed(1)}" fill="#a78bfa" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.03em">OUTFLOWS AFTER RALLY (${counts.distribution})</text>
           </g>`;
 
         // Axes and Zero Crosshairs
@@ -1625,15 +1504,29 @@
         }
 
         // Collision avoidance for nearby labels
-        rawLabels.sort((a, b) => a.ly - b.ly);
-        for (let i = 1; i < rawLabels.length; i++) {
-          const prev = rawLabels[i - 1];
-          const curr = rawLabels[i];
-          if (Math.abs(curr.lx - prev.lx) < 40 && curr.ly - prev.ly < 11) {
-            curr.ly = prev.ly + 11;
+        // Place labels without overlap: each label's box is tried at its spot,
+        // then nudged 11px down / up; a label that still collides with a placed
+        // label or a quadrant header is dropped (its dot stays, with a tooltip).
+        const placed = [
+          { x0: xZero - 170, x1: xZero - 8, y0: pad.top + 6, y1: pad.top + 28 },
+          { x0: xZero + 8, x1: xZero + 170, y0: pad.top + 6, y1: pad.top + 28 },
+          { x0: xZero - 170, x1: xZero - 8, y0: pad.top + chartH - 28, y1: pad.top + chartH - 6 },
+          { x0: xZero + 8, x1: xZero + 180, y0: pad.top + chartH - 28, y1: pad.top + chartH - 6 },
+        ];
+        const boxOf = (l, ly) => {
+          const w = l.ticker.length * 5.6;
+          const x0 = l.anchor === 'end' ? l.lx - w : (l.anchor === 'middle' ? l.lx - w / 2 : l.lx);
+          return { x0, x1: x0 + w, y0: ly - 8, y1: ly + 2 };
+        };
+        const hits = (b) => placed.some(p => b.x0 < p.x1 && b.x1 > p.x0 && b.y0 < p.y1 && b.y1 > p.y0);
+        const shown = [];
+        for (const lbl of rawLabels) {
+          for (const dy of [0, 11, -11, 22, -22]) {
+            const b = boxOf(lbl, lbl.ly + dy);
+            if (!hits(b)) { lbl.ly += dy; placed.push(b); shown.push(lbl); break; }
           }
         }
-        const labels = rawLabels.map(lbl =>
+        const labels = shown.map(lbl =>
           `<text x="${lbl.lx.toFixed(1)}" y="${lbl.ly.toFixed(1)}" text-anchor="${lbl.anchor}" fill="${lbl.color}" font-family="ui-monospace, monospace" font-size="9" font-weight="700" pointer-events="none" opacity="0.9">${lbl.ticker}</text>`
         ).join('');
 
@@ -2193,27 +2086,9 @@
           const aumVal = finiteNumber(item.aum_m) || 0;
           const f1Val = finiteNumber(item.latest_flow);
           const flow_pct_aum = (aumVal > 0 && f1Val !== null) ? ((f1Val / (aumVal * 1e6)) * 100) : null;
-          let setup_icon = '';
-          let setup_name = '';
-          const sig = String(item.live_signal || item.live_signal_label || '');
-          if (sig.includes('SLINGSHOT') || sig.includes('WASHOUT')) {
-            setup_icon = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 6 L3 6 L4.5 2 L6.5 10 L8 6 L11 6" stroke="#f59e0b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-            setup_name = 'Washout Rebound Setup';
-          } else if (sig.includes('IGNITION') || sig.includes('BREAKOUT') || sig.includes('MOMENTUM')) {
-            setup_icon = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 9.5 L9.5 2.5 M9.5 2.5 H4.5 M9.5 2.5 V7.5" stroke="#34d399" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-            setup_name = 'Momentum Ignition Setup';
-          } else if (sig.includes('SQUEEZE') || sig.includes('WALL')) {
-            setup_icon = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="#c084fc" stroke-width="1.4"/><path d="M6 1.5 A4.5 4.5 0 0 1 6 10.5 Z" fill="#c084fc"/></svg>';
-            setup_name = 'Wall of Worry Squeeze';
-          } else if (sig.includes('TRAP') || sig.includes('DEAD_CAT') || sig.includes('AVOID')) {
-            setup_icon = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="#fb7185" stroke-width="1.4"/><line x1="3" y1="9" x2="9" y2="3" stroke="#fb7185" stroke-width="1.4" stroke-linecap="round"/></svg>';
-            setup_name = 'Dip Inflow Avoid Setup';
-          }
           rows.push({
             ...item,
             flow_pct_aum,
-            setup_icon,
-            setup_name,
             sparklineSvg: miniFlowSparklineSvg(item.sparkline_20d || [], 76, 18)
           });
         }
@@ -2462,9 +2337,7 @@
               item.issuer,
               item.category,
               item.trackinsight_key,
-              item.leverage,
-              item.archetype_label,
-              item.live_signal_label
+              item.leverage
             ]
               .filter(Boolean)
               .join(' ')
@@ -4117,13 +3990,10 @@
               }
               return payload;
             });
-          const alphaPromise = fetch('data/alpha_signals.json')
-            .then(async response => response.ok ? response.json() : null)
-            .catch(() => null);
           const volumePromise = fetch('data/flows/volume.json')
             .then(async response => response.ok ? response.json() : null)
             .catch(() => null);
-          const [catalogResult, manifestResult, alphaResult, volumeResult] = await Promise.allSettled([catalogPromise, manifestPromise, alphaPromise, volumePromise]);
+          const [catalogResult, manifestResult, volumeResult] = await Promise.allSettled([catalogPromise, manifestPromise, volumePromise]);
           this.flowBootstrapControllers = [];
           if (this.flowDestroyed) return;
           if (volumeResult.status === 'fulfilled' && volumeResult.value) {
@@ -4150,27 +4020,6 @@
             this._flowEntryMap = Object.fromEntries(this.flowAllEntries.map(item => [item.ticker, item]));
           } else {
             this.flowCatalogError = catalogResult.status === 'rejected' ? String(catalogResult.reason?.message || catalogResult.reason) : 'The curated catalog is empty.';
-          }
-          if (alphaResult.status === 'fulfilled' && alphaResult.value) {
-            this.flowAlphaSignalsData = alphaResult.value;
-            if (Array.isArray(alphaResult.value.active_signals) && this.flowCatalog?.instruments) {
-              const enrichmentMap = new Map(alphaResult.value.active_signals.map(s => [s.ticker, s]));
-              for (const inst of this.flowCatalog.instruments) {
-                const enrichment = enrichmentMap.get(inst.ticker);
-                if (enrichment) {
-                  inst.archetype = enrichment.archetype;
-                  inst.archetype_label = enrichment.archetype_label;
-                  inst.live_signal = enrichment.live_signal;
-                  inst.live_signal_label = enrichment.live_signal_label;
-                  inst.paired_bear = enrichment.paired_bear;
-                  inst.paired_bull = enrichment.paired_bull;
-                  inst.smart_twin = enrichment.smart_twin;
-                  inst.conviction = enrichment.conviction;
-                  inst.dd_from_60d_high_pct = enrichment.dd_from_60d_high_pct;
-                  inst.rally_from_60d_low_pct = enrichment.rally_from_60d_low_pct;
-                }
-              }
-            }
           }
           if (manifestResult.status === 'fulfilled' && manifestResult.value && typeof manifestResult.value === 'object') {
             this.flowManifest = manifestResult.value;
@@ -4818,8 +4667,8 @@
         return shortCategoryName(value);
       },
 
-      formatMoney(value) {
-        return formatMoney(value);
+      formatMoney(value, options) {
+        return formatMoney(value, options);
       },
 
       formatPercent(value) {
