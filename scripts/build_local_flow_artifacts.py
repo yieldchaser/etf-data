@@ -891,6 +891,30 @@ def _compute_behavior_dna(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _flow_reversal(rows: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """Flag a latest 1-day flow that undoes the previous day's.
+
+    The source sometimes reports a large creation one day and an almost
+    equal redemption the next (e.g. MULL 2026-10-19 +$297M, 10-20 −$289M):
+    a shares-outstanding reporting error, not money moving. 5- and 20-day
+    sums net it out, but the 1-day number and 1-day z would rank such a fund
+    as a top mover. Returns the pair's net when the last two flows have
+    opposite signs, are each >= 5x the fund's typical (median absolute)
+    daily flow, and cancel to within 20%; otherwise None.
+    """
+    if len(rows) < 30:
+        return None
+    f_prev, f_last = float(rows[-2]["usd_flow"]), float(rows[-1]["usd_flow"])
+    if f_prev * f_last >= 0:
+        return None
+    recent = sorted(abs(float(r["usd_flow"])) for r in rows[-62:-2])
+    typical = max(recent[len(recent) // 2], 1.0)
+    big = min(abs(f_prev), abs(f_last))
+    if big < 5 * typical or abs(f_prev + f_last) > 0.2 * max(abs(f_prev), abs(f_last)):
+        return None
+    return {"net_2d": round(f_prev + f_last, 2), "prev_date": rows[-2]["date"], "prev_flow": f_prev}
+
+
 def _instrument_entry(ticker: str, report: dict[str, Any]) -> dict[str, Any]:
     info = report["files"][ticker]
     summary = report["summary"][ticker]
@@ -935,6 +959,7 @@ def _instrument_entry(ticker: str, report: dict[str, Any]) -> dict[str, Any]:
         "sparkline_20d": sparkline_20d,
         "latest_cumulative_flow": last["cumulative_flow"],
         "flow_zscore": last["flow_zscore"],
+        "flow_reversal": _flow_reversal(rows),
         "volatility_20d_pct": dna["volatility_20d_pct"],
         "flow_variance_m": dna["flow_variance_m"],
         "z_price_20d": dna["z_price_20d"],

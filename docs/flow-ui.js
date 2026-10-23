@@ -1033,7 +1033,7 @@
         let topOutflowVal = Infinity;
 
         for (const item of items) {
-          const f1 = finiteNumber(item.latest_flow) || 0;
+          const f1 = item.flow_reversal ? 0 : (finiteNumber(item.latest_flow) || 0);  // reversal pair: source error
           const f20 = finiteNumber(item.flow_20d) ?? (finiteNumber(item.source_summary?.flow_30d_m) || 0) * 1e6;
           const z = finiteNumber(item.flow_zscore) || 0;
           const lev = finiteNumber(item.leverage_value) || 0;
@@ -1160,7 +1160,8 @@
       get flowTopMovers() {
         const items = this.flowPrimaryInstruments;
         if (!items.length) return { inflows: [], outflows: [] };
-        const valid = items.filter(it => it.latest_flow !== null && Number.isFinite(it.latest_flow));
+        // Skip reversal pairs (a creation undone the next day: a source error).
+        const valid = items.filter(it => it.latest_flow !== null && Number.isFinite(it.latest_flow) && !it.flow_reversal);
         const sortedDesc = [...valid].sort((a, b) => (b.latest_flow || 0) - (a.latest_flow || 0));
         const sortedAsc = [...valid].sort((a, b) => (a.latest_flow || 0) - (b.latest_flow || 0));
         return {
@@ -1254,7 +1255,7 @@
           const zp = finiteNumber(it.z_price_20d) || 0;
           const zf5 = finiteNumber(it.z_flow_5d) || 0;
           const vol20 = finiteNumber(it.volatility_20d_pct) || 0;
-          const f1 = finiteNumber(it.latest_flow) || 0;
+          const f1 = it.flow_reversal ? 0 : (finiteNumber(it.latest_flow) || 0);
           const f5 = finiteNumber(it.flow_5d) || 0;
           const f20 = finiteNumber(it.flow_20d) || 0;
           const aum = finiteNumber(it.aum_m) || 0;
@@ -2012,7 +2013,7 @@
         });
         return pool.slice(0, 6).map(item => {
           const z = finiteNumber(item.flow_zscore) || 0;
-          const f1 = finiteNumber(item.latest_flow) || 0;
+          const f1 = item.flow_reversal ? 0 : (finiteNumber(item.latest_flow) || 0);  // reversal pair: source error
           const f20 = finiteNumber(item.flow_20d) ?? 0;
           const aumVal = finiteNumber(item.aum_m) || 0;
           const flowPctAum = (aumVal > 0 && f1 !== null) ? ((f1 / (aumVal * 1e6)) * 100) : null;
@@ -2127,15 +2128,17 @@
           let va = 0;
           let vb = 0;
           if (key === 'ticker') return dir * a.ticker.localeCompare(b.ticker);
+          // A flagged reversal pair's 1-day numbers are a source error: rank as 0.
+          const z1 = it => (it.flow_reversal ? 0 : finiteNumber(it.flow_zscore) || 0);
           if (key === 'abs_z') {
-            va = Math.abs(finiteNumber(a.flow_zscore) || 0);
-            vb = Math.abs(finiteNumber(b.flow_zscore) || 0);
+            va = Math.abs(z1(a));
+            vb = Math.abs(z1(b));
           } else if (key === 'zscore') {
-            va = finiteNumber(a.flow_zscore) || 0;
-            vb = finiteNumber(b.flow_zscore) || 0;
+            va = z1(a);
+            vb = z1(b);
           } else if (key === 'flow_1d') {
-            va = finiteNumber(a.latest_flow) || 0;
-            vb = finiteNumber(b.latest_flow) || 0;
+            va = a.flow_reversal ? 0 : finiteNumber(a.latest_flow) || 0;
+            vb = b.flow_reversal ? 0 : finiteNumber(b.latest_flow) || 0;
           } else if (key === 'flow_pct_aum') {
             va = finiteNumber(a.flow_pct_aum) || 0;
             vb = finiteNumber(b.flow_pct_aum) || 0;
@@ -2251,7 +2254,7 @@
             };
           }
           const entry = byUnderlying[u];
-          const f1 = finiteNumber(item.latest_flow) || 0;
+          const f1 = item.flow_reversal ? 0 : (finiteNumber(item.latest_flow) || 0);  // reversal pair: source error
           const f20 = finiteNumber(item.flow_20d) || 0;
           const lev = finiteNumber(item.leverage_value) || 0;
           const z = Math.abs(finiteNumber(item.flow_zscore) || 0);
