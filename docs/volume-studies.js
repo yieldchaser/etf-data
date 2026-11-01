@@ -512,8 +512,13 @@
 
       if (w < 40 || h < 40) return;
 
-      canvas.width = Math.round(w * dpr);
-      canvas.height = Math.round(h * dpr);
+      const targetW = Math.round(w * dpr);
+      const targetH = Math.round(h * dpr);
+
+      if (canvas.width !== targetW || canvas.height !== targetH) {
+        canvas.width = targetW;
+        canvas.height = targetH;
+      }
 
       const ctx = canvas.getContext('2d');
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -759,19 +764,10 @@
         drawPolyline(ma, this.COLORS.ma, 1.4, [4, 3]);
       }
 
-      // ── Render Crosshair & Hover Markers ──
+      // ── Render Hover Markers (NO CROSSHAIR) ──
       if (this.state.hoverIdx != null && this.state.hoverIdx >= 0 && this.state.hoverIdx < n) {
         const i = this.state.hoverIdx;
         const hx = getX(i);
-
-        ctx.strokeStyle = this.COLORS.crosshair;
-        ctx.lineWidth = 1;
-        ctx.setLineDash([3, 3]);
-        ctx.beginPath();
-        ctx.moveTo(hx, pad.top);
-        ctx.lineTo(hx, pad.top + chartH);
-        ctx.stroke();
-        ctx.setLineDash([]);
 
         if (bars) {
           const v = bars[i];
@@ -972,12 +968,40 @@
       let idx = Math.round(((x - pad.left) / chartW) * (n - 1));
       idx = Math.max(0, Math.min(n - 1, idx));
 
+      const idxChanged = (idx !== this.state.hoverIdx);
       this.state.hoverIdx = idx;
       this.state.lastMouse = { x, y };
 
-      this._scheduleDraw();
-      this._showTooltip(idx);
-      this._updateHUD(idx);
+      this._positionTooltip(x, y);
+
+      if (idxChanged) {
+        this._renderTooltipContent(idx);
+        this._updateHUD(idx);
+        this._scheduleDraw();
+      }
+    },
+
+    _positionTooltip(x, y) {
+      const tooltip = document.getElementById('vs-tooltip');
+      const viewport = document.getElementById('vs-canvas-container');
+      if (!tooltip || !viewport) return;
+
+      const vw = viewport.clientWidth;
+      const vh = viewport.clientHeight;
+      const tw = tooltip._cachedWidth || 210;
+      const th = tooltip._cachedHeight || 140;
+
+      let left = x + 16;
+      if (left + tw > vw - 12) left = x - tw - 16;
+      left = Math.max(10, Math.min(vw - tw - 10, left));
+
+      let top = y + 12;
+      if (top + th > vh - 10) top = y - th - 12;
+      top = Math.max(10, Math.min(vh - th - 10, top));
+
+      tooltip.style.left = left + 'px';
+      tooltip.style.top = top + 'px';
+      tooltip.style.display = 'block';
     },
 
     _onPointerLeave() {
@@ -1002,6 +1026,13 @@
     },
 
     _showTooltip(idx) {
+      this._renderTooltipContent(idx);
+      if (this.state.lastMouse) {
+        this._positionTooltip(this.state.lastMouse.x, this.state.lastMouse.y);
+      }
+    },
+
+    _renderTooltipContent(idx) {
       const tooltip = document.getElementById('vs-tooltip');
       const viewport = document.getElementById('vs-canvas-container');
       const payload = this._payload;
@@ -1178,22 +1209,11 @@
       `;
 
       tooltip.style.display = 'block';
-      const m = this.state.lastMouse;
-      const vw = viewport.clientWidth;
-      const vh = viewport.clientHeight;
-      const tw = tooltip.offsetWidth;
-      const th = tooltip.offsetHeight;
-
-      let left = m.x + 16;
-      if (left + tw > vw - 12) left = m.x - tw - 16;
-      left = Math.max(10, Math.min(vw - tw - 10, left));
-
-      let top = m.y + 12;
-      if (top + th > vh - 10) top = m.y - th - 12;
-      top = Math.max(10, Math.min(vh - th - 10, top));
-
-      tooltip.style.left = left + 'px';
-      tooltip.style.top = top + 'px';
+      tooltip._cachedWidth = tooltip.offsetWidth;
+      tooltip._cachedHeight = tooltip.offsetHeight;
+      if (this.state.lastMouse) {
+        this._positionTooltip(this.state.lastMouse.x, this.state.lastMouse.y);
+      }
     },
 
     _updateHUD(hoverIdx) {
@@ -1392,13 +1412,18 @@
       this._resizeObserver = new ResizeObserver(entries => {
         for (const entry of entries) {
           const cr = entry.contentRect;
-          if (cr && cr.width > 40 && cr.height > 40) {
-            if (!this._bound) this._bindEvents();
-            if (!this._sliderBound) this._initSlider();
-            this._draw();
-            if (this._payload) {
-              this._syncSlider(this._payload.fullLength, this._payload.startIdx, this._payload.endIdx);
-            }
+          if (!cr || cr.width < 40 || cr.height < 40) continue;
+          const w = Math.round(cr.width);
+          const h = Math.round(cr.height);
+          if (this._lastObservedW === w && this._lastObservedH === h) continue;
+          this._lastObservedW = w;
+          this._lastObservedH = h;
+
+          if (!this._bound) this._bindEvents();
+          if (!this._sliderBound) this._initSlider();
+          this._draw();
+          if (this._payload) {
+            this._syncSlider(this._payload.fullLength, this._payload.startIdx, this._payload.endIdx);
           }
         }
       });
