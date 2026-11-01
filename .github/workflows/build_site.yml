@@ -343,6 +343,7 @@ jobs:
           assert catalog['source']['network_fetch'] is False, catalog['source']
           print('local ETF flow artifacts OK: 160 instruments, 24 featured, no watch tier, no network fetch')
           "
+          test -f docs/data/flows/etf_history.json
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
