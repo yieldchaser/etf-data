@@ -18,6 +18,7 @@
   <script defer data-runtime-optional="tailwind" src="https://cdn.tailwindcss.com"></script>
   <script defer data-runtime-optional="alpine" src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
   <link rel="stylesheet" href="flow-ui.css">
+  <link rel="stylesheet" href="volume-studies.css">
   <link rel="stylesheet" href="runtime-fallback.css">
   <style>
     :root {
@@ -2037,6 +2038,7 @@
             <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'scanner' ? 'true' : 'false'" @click="setFlowViewMode('scanner')" x-text="`Cross-ETF leaderboard (${flowCatalog ? flowCatalog.counts.instruments : 160})`"></button>
             <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'studio' ? 'true' : 'false'" @click="setFlowViewMode('studio')">Instrument studio</button>
             <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'matrix' ? 'true' : 'false'" @click="setFlowViewMode('matrix')">Category &amp; regime matrix</button>
+            <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'volume_studies' ? 'true' : 'false'" @click="setFlowViewMode('volume_studies')">Price-Volume Studies</button>
           </div>
           <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:0.45rem">
             <h2>ETF estimated net flows</h2>
@@ -2641,6 +2643,9 @@
                 </div>
               </div>
               <div class="flow-instrument-right">
+                <button class="flow-chip" type="button" @click="setFlowViewMode('volume_studies')" title="Open detailed Price-Volume Studies for this ETF">
+                  <span>Volume Studies &rarr;</span>
+                </button>
                 <span class="flow-badge" x-show="flowSelectedInstrument?.regime" :data-state="flowSelectedInstrument?.regime" x-text="flowSelectedInstrument?.regime"></span>
                 <span class="flow-badge" x-show="flowDataState !== 'ready'" :data-state="flowDataState" x-text="flowSelectedStateLabel"></span>
               </div>
@@ -2990,6 +2995,126 @@
                 <p>ETF estimated net flow is the source-reported aggregate net flow series stored for the selected fund.</p>
                 <p>The selected-window cumulative view begins at a zero baseline before the first selected session and sums available daily values.</p>
                 <p>The trailing 10-session percentile uses complete windows only. The prior-only z-score uses up to 30 preceding numeric sessions and excludes the current session from its baseline.</p>
+              </div>
+            </details>
+          </div>
+
+          <!-- ─── VIEW 4: PRICE-VOLUME STUDIES (6 CLASSIC INDICATORS) ─── -->
+          <div class="flow-panel-card flow-volume-studies-card" x-show="flowViewMode === 'volume_studies'">
+            <!-- Top Instrument Context Strip + Quick Switcher -->
+            <div class="vs-header-strip">
+              <div class="vs-title-col">
+                <div style="display:flex;align-items:center;gap:0.5rem">
+                  <h3 class="flow-result-symbol" style="font-size:1.15rem;margin:0" x-text="flowTicker"></h3>
+                  <span class="flow-badge" :data-state="(flowSelectedInstrument?.leverage_value || 0) < 0 ? 'DISTRIBUTION' : 'ACCUMULATION'" x-text="flowSelectedInstrument?.leverage"></span>
+                  <span style="color:var(--flow-text);font-weight:600;font-size:0.875rem" x-text="flowSelectedInstrument?.fund_name"></span>
+                </div>
+                <div class="flow-eyebrow" style="margin-top:0.2rem" x-text="`${flowDisplayCategory} · Underlying: ${flowSelectedInstrument?.underlying || '—'}`"></div>
+              </div>
+              <div class="vs-quick-actions">
+                <label class="flow-eyebrow" for="vs-ticker-select" style="margin:0;display:flex;align-items:center;gap:0.35rem">
+                  <span>Switch:</span>
+                  <select id="vs-ticker-select"
+                          class="flow-chip"
+                          style="padding:0.25rem 0.6rem;font-weight:600;background:#000000;color:var(--flow-cyan);border-color:rgba(34,211,238,0.3);cursor:pointer;font-family:ui-monospace, 'SF Mono', 'JetBrains Mono', monospace;"
+                          aria-label="Switch ETF Instrument"
+                          :value="flowTicker"
+                          @change="selectFlowTicker($event.target.value, { writeUrl: true, push: true, switchToStudio: false })">
+                    <template x-for="item in (flowCatalog?.instruments || [])" :key="item.ticker">
+                      <option :value="item.ticker" :selected="item.ticker === flowTicker" x-text="`${item.ticker} — ${item.fund_name} (${item.leverage})`"></option>
+                    </template>
+                  </select>
+                </label>
+                <button class="flow-button" type="button" @click="setFlowViewMode('studio')">&larr; Back to Flow Studio</button>
+              </div>
+            </div>
+
+            <!-- Study & Control Deck -->
+            <div class="vs-controls-deck">
+              <!-- Study Tabs (6 Indicators) -->
+              <div class="vs-study-pills" role="tablist" aria-label="Volume Studies">
+                <template x-for="study in vsStudiesList" :key="study.key">
+                  <button class="flow-pill" type="button"
+                          :class="vsActiveStudy === study.key ? 'active' : ''"
+                          @click="vsSetStudy(study.key)"
+                          :title="study.desc">
+                    <span x-text="study.label"></span>
+                  </button>
+                </template>
+              </div>
+
+              <!-- Range Presets, Dynamic Years & Unit Selector -->
+              <div class="vs-toolbar-row">
+                <!-- Range Presets (3M, 6M, 1Y, 2Y, ALL) -->
+                <div class="vs-range-group">
+                  <span class="flow-eyebrow">Range:</span>
+                  <button class="flow-chip" type="button" :class="vsRange === '3m' ? 'flow-chip-active' : ''" @click="vsSetRange('3m')">3M</button>
+                  <button class="flow-chip" type="button" :class="vsRange === '6m' ? 'flow-chip-active' : ''" @click="vsSetRange('6m')">6M</button>
+                  <button class="flow-chip" type="button" :class="vsRange === '1y' ? 'flow-chip-active' : ''" @click="vsSetRange('1y')">1Y</button>
+                  <button class="flow-chip" type="button" :class="vsRange === '2y' ? 'flow-chip-active' : ''" @click="vsSetRange('2y')">2Y</button>
+                  <button class="flow-chip" type="button" :class="vsRange === 'all' ? 'flow-chip-active' : ''" @click="vsSetRange('all')">ALL</button>
+                </div>
+
+                <!-- Dynamic Calendar Year Selector -->
+                <div class="vs-years-group" x-show="vsAvailableYears.length">
+                  <span class="flow-eyebrow">Year:</span>
+                  <template x-for="yr in vsAvailableYears" :key="yr">
+                    <button class="flow-chip" type="button" :class="vsRange === `year_${yr}` ? 'flow-chip-active' : ''" @click="vsSetYear(yr)" x-text="`'${yr.slice(2)}`"></button>
+                  </template>
+                </div>
+
+                <!-- Unit Selector (Shares S vs Dollars $) -->
+                <div class="vs-unit-group">
+                  <span class="flow-eyebrow">Unit:</span>
+                  <div class="flow-pill-group">
+                    <button class="flow-pill" type="button" :class="vsUnit === 'shares' ? 'active' : ''" @click="vsSetUnit('shares')" title="Share Volume">Shares (S)</button>
+                    <button class="flow-pill" type="button" :class="vsUnit === 'dollar' ? 'active' : ''" @click="vsSetUnit('dollar')" title="Dollar Volume">USD ($)</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- High-DPI Canvas Viewport -->
+            <div class="vs-canvas-viewport" id="vs-canvas-container" style="position:relative;width:100%;min-height:360px">
+              <canvas id="vs-canvas" style="display:block;width:100%;height:360px"></canvas>
+              <!-- Floating Glassmorphic Tooltip Card -->
+              <div id="vs-tooltip" class="vs-tooltip" style="display:none;position:absolute;pointer-events:none;z-index:20"></div>
+            </div>
+
+            <!-- Dual-Handle Range Scrubber -->
+            <div class="vs-scrub-panel">
+              <div class="vs-scrub-info">
+                <span class="flow-eyebrow" style="color:var(--flow-cyan)">Selected Study Window</span>
+                <span class="flow-support" id="vs-window-dates">—</span>
+              </div>
+              <div class="vs-brush-container" id="vs-brush-container">
+                <div class="vs-brush-track"></div>
+                <div class="vs-brush-highlight" id="vs-brush-highlight"></div>
+                <input type="range" id="vs-range-start" class="vs-range-thumb" min="0" max="100" value="0" aria-label="Study Start Session">
+                <input type="range" id="vs-range-end" class="vs-range-thumb" min="0" max="100" value="100" aria-label="Study End Session">
+              </div>
+            </div>
+
+            <!-- Live HUD Reading Status Bar -->
+            <div class="vs-reading-bar" id="vs-reading">
+              <div class="vs-reading-metric"><span class="flow-eyebrow">PRICE</span><strong id="vs-hud-price">—</strong></div>
+              <div class="vs-reading-divider"></div>
+              <div class="vs-reading-metric"><span class="flow-eyebrow">DAILY CHG</span><strong id="vs-hud-chg">—</strong></div>
+              <div class="vs-reading-divider"></div>
+              <div class="vs-reading-metric"><span class="flow-eyebrow">VOLUME</span><strong id="vs-hud-vol">—</strong></div>
+              <div class="vs-reading-divider"></div>
+              <div class="vs-reading-metric"><span class="flow-eyebrow">RVOL-21</span><strong id="vs-hud-rvol">—</strong></div>
+              <div class="vs-reading-divider"></div>
+              <div class="vs-reading-metric"><span class="flow-eyebrow" id="vs-hud-study-label">STUDY VALUE</span><strong id="vs-hud-val" class="flow-cyan">—</strong></div>
+              <div class="vs-reading-divider"></div>
+              <div class="vs-reading-metric"><span class="flow-eyebrow">REGIME</span><strong id="vs-hud-regime" class="vs-hud-badge">—</strong></div>
+            </div>
+
+            <!-- Methodology & Technical Interpretation Drawer -->
+            <details class="vs-methodology-details">
+              <summary>Study methodology, formulas, and regime boundaries</summary>
+              <div class="flow-details-body" id="vs-methodology-content">
+                <!-- Dynamically filled with active indicator notes -->
               </div>
             </details>
           </div>
@@ -7593,6 +7718,7 @@ function marketsApp() {
   };
 }
 </script>
+<script src="volume-studies.js"></script>
 <script src="flow-ui.js"></script>
 <script src="runtime-fallback.js"></script>
 </body>

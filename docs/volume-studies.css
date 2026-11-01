@@ -1,0 +1,502 @@
+/* ==========================================================================
+   Price-Volume Studies Stylesheet — etf-data Fund Flows
+   Native Canvas 2D Glassmorphic Interface for Tape & Positioning Studies
+   ========================================================================== */
+
+.flow-volume-studies-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: var(--flow-panel, #0a0a0a);
+  border: 1px solid var(--flow-line, rgba(255, 255, 255, 0.06));
+  border-radius: 8px;
+  padding: 1.15rem;
+  color: var(--flow-text, #e4e4e7);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+}
+
+.flow-volume-studies-card * {
+  box-sizing: border-box;
+}
+
+/* ── Top Instrument Context Strip ── */
+.vs-header-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--flow-line, rgba(255, 255, 255, 0.06));
+}
+
+.vs-title-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.vs-quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ── Study Deck & Controls ── */
+.vs-controls-deck {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.vs-study-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.vs-study-pills .flow-pill {
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.3rem 0.65rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--flow-line, rgba(255, 255, 255, 0.06));
+  color: var(--flow-muted, #b1bdca);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.vs-study-pills .flow-pill:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--flow-text, #e4e4e7);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.vs-study-pills .flow-pill.active {
+  background: rgba(34, 211, 238, 0.12);
+  border-color: var(--flow-cyan, #22d3ee);
+  color: var(--flow-cyan, #22d3ee);
+  font-weight: 600;
+}
+
+/* ── Toolbar Row: Presets, Dynamic Years, Units ── */
+.vs-toolbar-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.5rem 0.65rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--flow-line, rgba(255, 255, 255, 0.04));
+  border-radius: 6px;
+}
+
+.vs-range-group,
+.vs-years-group,
+.vs-unit-group {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.vs-toolbar-row .flow-chip {
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", monospace;
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  background: transparent;
+  border: 1px solid var(--flow-line, rgba(255, 255, 255, 0.06));
+  color: var(--flow-subtle, #8d9aaa);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.vs-toolbar-row .flow-chip:hover {
+  color: var(--flow-text, #e4e4e7);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.vs-toolbar-row .flow-chip.flow-chip-active {
+  background: rgba(34, 211, 238, 0.12);
+  border-color: var(--flow-cyan, #22d3ee);
+  color: var(--flow-cyan, #22d3ee);
+  font-weight: 600;
+}
+
+.vs-toolbar-row .flow-pill-group {
+  display: inline-flex;
+  border: 1px solid var(--flow-line, rgba(255, 255, 255, 0.08));
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.vs-toolbar-row .flow-pill-group .flow-pill {
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", monospace;
+  font-size: 0.6875rem;
+  padding: 0.2rem 0.55rem;
+  border: none;
+  background: transparent;
+  color: var(--flow-subtle, #8d9aaa);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.vs-toolbar-row .flow-pill-group .flow-pill.active {
+  background: rgba(34, 211, 238, 0.16);
+  color: var(--flow-cyan, #22d3ee);
+  font-weight: 600;
+}
+
+/* ── High-DPI Canvas Viewport ── */
+.vs-canvas-viewport {
+  position: relative;
+  width: 100%;
+  min-height: 360px;
+  background: #000000;
+  border: 1px solid var(--flow-line, rgba(255, 255, 255, 0.06));
+  border-radius: 6px;
+  overflow: hidden;
+  user-select: none;
+}
+
+#vs-canvas {
+  display: block;
+  width: 100%;
+  height: 360px;
+  cursor: crosshair;
+}
+
+/* ── Floating Glassmorphic Tooltip Card ── */
+.vs-tooltip {
+  position: absolute;
+  pointer-events: none;
+  z-index: 25;
+  background: rgba(10, 10, 10, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 6px;
+  padding: 0.55rem 0.75rem;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.6875rem;
+  color: var(--flow-text, #e4e4e7);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8);
+  min-width: 180px;
+}
+
+.vs-tt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.vs-tt-date {
+  font-weight: 600;
+  color: var(--flow-cyan, #22d3ee);
+}
+
+.vs-tt-badge {
+  font-size: 0.625rem;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.vs-tt-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  line-height: 1.45;
+}
+
+.vs-tt-lbl {
+  color: var(--flow-subtle, #8d9aaa);
+  font-size: 0.625rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.vs-tt-val {
+  font-weight: 600;
+}
+
+.vs-tt-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 0.35rem 0;
+}
+
+/* ── Dual-Handle Range Scrubber ── */
+.vs-scrub-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.65rem 0.75rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--flow-line, rgba(255, 255, 255, 0.06));
+  border-radius: 6px;
+}
+
+.vs-scrub-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.6875rem;
+}
+
+.vs-brush-container {
+  position: relative;
+  height: 32px;
+  width: 100%;
+  touch-action: none;
+}
+
+.vs-brush-track {
+  position: absolute;
+  top: 13px;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  z-index: 1;
+}
+
+.vs-brush-highlight {
+  position: absolute;
+  top: 13px;
+  height: 6px;
+  background: var(--flow-cyan, #22d3ee);
+  border-radius: 3px;
+  z-index: 2;
+  box-shadow: 0 0 8px rgba(34, 211, 238, 0.35);
+  pointer-events: none;
+}
+
+.vs-range-thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  background: transparent !important;
+  border: none !important;
+  outline: none;
+  pointer-events: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  cursor: ew-resize;
+  z-index: 3;
+  touch-action: none;
+}
+
+.vs-range-thumb::-webkit-slider-runnable-track {
+  background: transparent !important;
+  border: none !important;
+  height: 6px;
+}
+
+.vs-range-thumb::-moz-range-track {
+  background: transparent !important;
+  border: none !important;
+  height: 6px;
+}
+
+.vs-range-thumb::-webkit-slider-thumb {
+  pointer-events: auto;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: #ffffff !important;
+  border: 2px solid var(--flow-cyan, #22d3ee) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  cursor: grab;
+  margin-top: -6px;
+  transition: transform 0.08s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.vs-range-thumb::-moz-range-thumb {
+  pointer-events: auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: #ffffff !important;
+  border: 2px solid var(--flow-cyan, #22d3ee) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  cursor: grab;
+  transition: transform 0.08s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.vs-range-thumb:active::-webkit-slider-thumb {
+  cursor: grabbing;
+  transform: scale(1.15);
+  background: var(--flow-cyan, #22d3ee) !important;
+  border-color: #ffffff !important;
+}
+
+.vs-range-thumb:active::-moz-range-thumb {
+  cursor: grabbing;
+  transform: scale(1.15);
+  background: var(--flow-cyan, #22d3ee) !important;
+  border-color: #ffffff !important;
+}
+
+.vs-range-thumb:hover::-webkit-slider-thumb {
+  background: var(--flow-cyan, #22d3ee) !important;
+  border-color: #ffffff !important;
+}
+
+.vs-range-thumb:hover::-moz-range-thumb {
+  background: var(--flow-cyan, #22d3ee) !important;
+  border-color: #ffffff !important;
+}
+
+/* ── Live HUD Reading Status Bar ── */
+.vs-reading-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  padding: 0.65rem 0.85rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--flow-line, rgba(255, 255, 255, 0.06));
+  border-radius: 6px;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.75rem;
+}
+
+.vs-reading-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.vs-reading-metric .flow-eyebrow {
+  font-size: 0.625rem;
+  color: var(--flow-subtle, #8d9aaa);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.vs-reading-metric strong {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--flow-text, #e4e4e7);
+}
+
+.vs-hud-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  letter-spacing: 0.03em;
+  font-weight: 600;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  min-width: 60px;
+  text-align: center;
+}
+
+.vs-reading-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--flow-line, rgba(255, 255, 255, 0.08));
+}
+
+/* ── Methodology Accordion ── */
+.vs-methodology-details {
+  border: 1px solid var(--flow-line, rgba(255, 255, 255, 0.06));
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.015);
+  font-size: 0.75rem;
+}
+
+.vs-methodology-details summary {
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  color: var(--flow-subtle, #8d9aaa);
+  font-weight: 500;
+  user-select: none;
+}
+
+.vs-methodology-details summary:hover {
+  color: var(--flow-text, #e4e4e7);
+}
+
+.vs-methodology-details .flow-details-body {
+  padding: 0.75rem;
+  border-top: 1px solid var(--flow-line, rgba(255, 255, 255, 0.06));
+  line-height: 1.6;
+  color: var(--flow-muted, #b1bdca);
+}
+
+.vs-methodology-details p {
+  margin: 0.35rem 0;
+}
+
+.vs-methodology-details code {
+  font-family: ui-monospace, "SF Mono", monospace;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  color: var(--flow-cyan, #22d3ee);
+}
+
+/* ── Responsive Adaptations ── */
+@media (max-width: 768px) {
+  .vs-reading-bar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.65rem;
+  }
+  .vs-reading-divider {
+    display: none;
+  }
+  #vs-canvas {
+    height: 300px;
+  }
+  .vs-canvas-viewport {
+    min-height: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .vs-reading-bar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .vs-toolbar-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  #vs-canvas {
+    height: 260px;
+  }
+  .vs-canvas-viewport {
+    min-height: 260px;
+  }
+}

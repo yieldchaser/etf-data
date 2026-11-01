@@ -75,7 +75,7 @@
       range: params.get('range') || '1y',
       priceEnabled: params.get('price') !== '0',
       chart: CHART_TABS.some(tab => tab.key === chart) ? chart : 'workbench',
-      view: ['studio', 'scanner', 'matrix'].includes(view) ? view : (ticker ? 'studio' : null)
+      view: ['studio', 'scanner', 'matrix', 'volume_studies'].includes(view) ? view : (ticker ? 'studio' : null)
     };
   }
 
@@ -104,6 +104,13 @@
     }
     if (app.flowData?.ticker === next.ticker) {
       app._flowApplyUrlRange();
+      if (next.view === 'volume_studies' && typeof VolumeStudies !== 'undefined') {
+        if (typeof app.$nextTick === 'function') {
+          app.$nextTick(() => VolumeStudies.loadTicker(next.ticker));
+        } else {
+          VolumeStudies.loadTicker(next.ticker);
+        }
+      }
       return next;
     }
     app.selectFlowTicker(next.ticker, { writeUrl: false, push: false });
@@ -772,6 +779,18 @@
       flowHoverIndex: null,
       flowHoverChart: null,
       flowViewMode: 'scanner',
+      vsActiveStudy: 'vol',
+      vsRange: '1y',
+      vsUnit: 'shares',
+      vsAvailableYears: [],
+      vsStudiesList: [
+        { key: 'vol', label: 'Daily Volume', desc: 'Daily trading volume with 21D SMA and RVOL surge classification' },
+        { key: 'osc', label: 'Volume Oscillator', desc: '5D vs 21D volume SMA percentage spread' },
+        { key: 'net', label: 'Net Volume', desc: 'Signed daily volume with 21D cumulative rolling sum' },
+        { key: 'cmf', label: 'Chaikin Money Flow', desc: '21D Close Location Value accumulation/distribution' },
+        { key: 'obv', label: 'On-Balance Volume', desc: 'Re-based cumulative signed volume with 21D MA overlay' },
+        { key: 'pvt', label: 'Price-Volume Trend', desc: 'Price-move weighted cumulative volume with 21D MA overlay' }
+      ],
       flowBattleMode: 'paired',
       flowShowMarketPulse: true,
       flowShowOutliers: true,
@@ -3961,6 +3980,14 @@
         this._flowReadUrl();
         this.flowHistoryHandler = event => reconcileFlowHistory(this, event.detail?.search || window.location.search);
         window.addEventListener('flow-historychange', this.flowHistoryHandler);
+        window.addEventListener('volume-studies-years', (e) => {
+          this.vsAvailableYears = (e.detail && e.detail.years) || [];
+        });
+        window.addEventListener('volume-studies-range', (e) => {
+          if (e.detail && e.detail.range) {
+            this.vsRange = e.detail.range;
+          }
+        });
         this._flowBootstrap();
       },
 
@@ -4066,6 +4093,13 @@
         const requested = this.flowTicker;
         const initialTicker = this._flowEntryMap[requested] ? requested : (this.flowFeaturedInstruments[0]?.ticker || this.flowPrimaryInstruments[0]?.ticker || '');
         await this.selectFlowTicker(initialTicker, { writeUrl: false, push: false });
+        if (this.flowViewMode === 'volume_studies' && typeof VolumeStudies !== 'undefined') {
+          if (typeof this.$nextTick === 'function') {
+            this.$nextTick(() => VolumeStudies.loadTicker(initialTicker));
+          } else {
+            VolumeStudies.loadTicker(initialTicker);
+          }
+        }
       },
 
       flowChartTabAvailable(key) {
@@ -4301,6 +4335,13 @@
         this.flowSearchQuery = '';
         this.flowSearchActiveIndex = -1;
         await this._flowLoadTicker(normalized, settings.writeUrl !== false, Boolean(settings.push));
+        if (typeof VolumeStudies !== 'undefined' && (this.flowViewMode === 'volume_studies' || VolumeStudies.state.ticker)) {
+          if (typeof this.$nextTick === 'function') {
+            this.$nextTick(() => VolumeStudies.loadTicker(normalized));
+          } else {
+            VolumeStudies.loadTicker(normalized);
+          }
+        }
       },
 
       async _flowLoadTicker(ticker, writeUrl, push) {
@@ -4638,6 +4679,34 @@
       setFlowViewMode(mode) {
         this.flowViewMode = mode;
         this._flowWriteUrl(false);
+        if (mode === 'volume_studies' && typeof VolumeStudies !== 'undefined') {
+          const targetTicker = this.flowTicker || (this.flowCatalog?.instruments?.[0]?.ticker || '');
+          if (targetTicker) {
+            this.$nextTick(() => {
+              VolumeStudies.loadTicker(targetTicker);
+            });
+          }
+        }
+      },
+
+      vsSetStudy(studyKey) {
+        this.vsActiveStudy = studyKey;
+        if (typeof VolumeStudies !== 'undefined') VolumeStudies.setStudy(studyKey);
+      },
+
+      vsSetRange(rangeKey) {
+        this.vsRange = rangeKey;
+        if (typeof VolumeStudies !== 'undefined') VolumeStudies.setRange(rangeKey);
+      },
+
+      vsSetYear(yearStr) {
+        this.vsRange = `year_${yearStr}`;
+        if (typeof VolumeStudies !== 'undefined') VolumeStudies.setYear(yearStr);
+      },
+
+      vsSetUnit(unitKey) {
+        this.vsUnit = unitKey;
+        if (typeof VolumeStudies !== 'undefined') VolumeStudies.setUnit(unitKey);
       },
 
       setFlowBattleMode(mode) {
