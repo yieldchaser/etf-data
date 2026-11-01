@@ -675,10 +675,13 @@
              const host = $el.querySelector('[data-lbsvg]');
              if (!host || !lbRankSeries || !lbRankSeries.length || lbRankSeries.length < 2) return;
              const rect = host.getBoundingClientRect();
+             if (!rect.width) return;
              const rx = $event.clientX - rect.left;
-             const idx = Math.round((rx / rect.width) * (lbRankSeries.length - 1));
-             lbci = Math.max(0, Math.min(lbRankSeries.length - 1, idx));
-             lbcx = (lbci / (lbRankSeries.length - 1)) * rect.width;
+             const svgX = (rx / rect.width) * 1060;
+             const n = lbRankSeries.length;
+             const ratio = (svgX - 50) / 960;
+             lbci = Math.max(0, Math.min(n - 1, Math.round(ratio * (n - 1))));
+             lbcx = (50 + (lbci / (n - 1)) * 960) * (rect.width / 1060);
            "
            @mouseleave="lbci = null; lbcx = null">
         <!-- SVG container via x-html to prevent Alpine template quirks -->
@@ -706,11 +709,14 @@
              const svg = $el.querySelector('svg');
              if (!svg || !rankSharedDates.length) return;
              const rect = svg.getBoundingClientRect();
+             if (!rect.width) return;
              const rx = $event.clientX - rect.left;
+             const svgX = (rx / rect.width) * 1060;
              const n = rankSharedDates.length;
              if (n < 2) return;
-             rci = Math.max(0, Math.min(n - 1, Math.round((rx / rect.width) * (n - 1))));
-             rcx = (rci / (n - 1)) * rect.width;
+             const ratio = (svgX - 50) / 960;
+             rci = Math.max(0, Math.min(n - 1, Math.round(ratio * (n - 1))));
+             rcx = (50 + (rci / (n - 1)) * 960) * (rect.width / 1060);
            "
            @mouseleave="rci = null; rcx = null">
         <!-- Static SVG via x-html - bypasses Alpine 3 SVG-template rendering issue -->
@@ -1834,7 +1840,7 @@ function stockApp() {
           `<text x="${(Number(jx) + 5).toFixed(1)}" y="206" transform="rotate(-90 ${(Number(jx) + 5).toFixed(1)} 206)" text-anchor="start" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:8px;fill:rgba(251,191,36,0.75)">Universe ${j.funds_before}&#8594;${j.funds_after} ETFs</text></g>`;
       }
 
-      return `<svg viewBox="0 0 ${W} ${H}" class="w-full" style="height: 210px">
+      return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" class="w-full" style="height: 210px; display: block">
         <defs>
           <linearGradient id="lbGrad" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.18"/>
@@ -1911,7 +1917,7 @@ function stockApp() {
         </g>`;
       }
 
-      return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" style="display:block">${grid}${pathStr}${crosshair}${xAxis}</svg>`;
+      return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" width="100%" height="${H}" style="display:block">${grid}${pathStr}${crosshair}${xAxis}</svg>`;
     },
 
     // ── Per-ETF rank-chart hover tooltip (built as HTML string) ──────────────
