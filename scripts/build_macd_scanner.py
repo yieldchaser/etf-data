@@ -1349,14 +1349,8 @@ def main() -> None:
     with open(CATALOG_PATH, "r", encoding="utf-8") as f:
         catalog = json.load(f)
 
-    # Filter strictly for Leveraged & Inverse ETFs (Exclude 1x unleveraged benchmark ETFs)
-    raw_instruments = catalog.get("instruments", [])
-    instruments = [
-        inst
-        for inst in raw_instruments
-        if inst.get("leverage") not in ("1x", "+1x", "1", None)
-        and float(inst.get("leverage_value", 0.0) or 0.0) not in (1.0, 0.0)
-    ]
+    # Full curated universe: exactly the 160 ETFs from the fund flow side (catalog.json)
+    instruments = catalog.get("instruments", [])
     if args.limit > 0:
         instruments = instruments[: args.limit]
 
