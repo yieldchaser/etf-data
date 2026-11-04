@@ -587,7 +587,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Run 1H/1D MACD Momentum Scanner across ETF Universe.")
     parser.add_argument("--limit", type=int, default=0, help="Limit number of tickers scanned (0 = full 160)")
     parser.add_argument("--send-email", action="store_true", help="Send email alert if triggers found")
+    parser.add_argument("--recipient", type=str, default="", help="Custom recipient email (defaults to raghavendra.ds1@gmail.com)")
     args = parser.parse_args()
+
+    recipient = args.recipient or os.environ.get("ALERT_EMAIL_RECIPIENT") or DEFAULT_RECIPIENT
 
     if not CATALOG_PATH.is_file():
         print(f"Catalog file not found at {CATALOG_PATH}")
@@ -666,9 +669,9 @@ def main() -> None:
         )
     print(f"Saved latest alert artifact to {ALERT_OUT}")
 
-    if args.send_email or os.environ.get("ALERT_EMAIL_SENDER"):
+    if args.send_email:
         subject = f"[Conviction Labs] 1H MACD Momentum Radar · {scan_time_str}"
-        send_email_alert(subject, text_alert, html_alert, DEFAULT_RECIPIENT)
+        send_email_alert(subject, text_alert, html_alert, recipient)
 
 
 if __name__ == "__main__":
