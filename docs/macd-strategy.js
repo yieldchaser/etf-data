@@ -285,6 +285,9 @@
         select.value = signal.ticker;
       }
 
+      // Populate Flagship Pills dynamically if not yet rendered
+      this.renderFlagshipPills();
+
       // Update quick pill highlights
       document.querySelectorAll('.macd-ticker-pill').forEach(btn => {
         if (btn.dataset.ticker === signal.ticker) btn.classList.add('active');
@@ -300,6 +303,28 @@
       }
 
       this.renderAlertPreview();
+    },
+
+    /** Render Flagship Instrument Pills */
+    renderFlagshipPills() {
+      const container = document.getElementById('macd-flagship-pills');
+      if (!container || container.children.length > 0) return;
+      const flagshipList = [
+        { ticker: 'INTW', label: 'INTW (2x Intel)' },
+        { ticker: 'SNDU', label: 'SNDU (2x SanDisk Target)' },
+        { ticker: 'TQQQ', label: 'TQQQ (3x QQQ)' },
+        { ticker: 'SOXL', label: 'SOXL (3x Semis)' },
+        { ticker: 'TSLL', label: 'TSLL (2x Tesla)' },
+        { ticker: 'NVDL', label: 'NVDL (2x Nvidia)' },
+        { ticker: 'CONL', label: 'CONL (2x Coinbase)' },
+        { ticker: 'SQQQ', label: 'SQQQ (-3x QQQ)' }
+      ];
+      let html = '<span class="flow-eyebrow" style="color:#22d3ee;font-weight:700">Flagship Instruments:</span>';
+      flagshipList.forEach(item => {
+        const isActive = this.state.activeTicker === item.ticker;
+        html += `<button type="button" class="macd-ticker-pill ${isActive ? 'active' : ''}" data-ticker="${item.ticker}" onclick="window.MACDStrategy.setTicker('${item.ticker}')">${item.label}</button>`;
+      });
+      container.innerHTML = html;
     },
 
     /** Update button state */
