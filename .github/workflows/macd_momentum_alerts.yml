@@ -1,20 +1,30 @@
-name: Hourly MACD Momentum Radar & Pre-Close Alert
+name: Quantitative MACD Momentum Radar & Pre-Close Alert
 
 'on':
   schedule:
-    # Run hourly during US equity market hours (Mon-Fri)
-    # 14:00, 15:00, 16:00, 17:00, 18:00, 19:00, 20:00 UTC (09:00 to 15:00 EST / 10:00 to 16:00 EDT)
-    # The 20:00 UTC (15:00 EST / 3:00 PM EST) trigger is the critical pre-market-close scan.
-    - cron: '0 14,15,16,17,18,19,20 * * 1-5'
+    # Mon-Fri schedule aligned to US equity market sessions:
+    # 13:30 UTC = 08:30 EST (Pre-Market Indicative Radar)
+    - cron: '30 13 * * 1-5'
+    # 35 mins past the hour (15:35 to 20:35 UTC = 10:35 to 15:35 EST, 5 mins after each 1H bar closes!)
+    - cron: '35 15,16,17,18,19,20 * * 1-5'
+    # 20:00 UTC = 15:00 EST (The Pre-Market-Close Golden Hour Diagnostic)
+    - cron: '0 20 * * 1-5'
+    # 21:05 UTC = 16:05 EST (Post-Close Final Session Audit)
+    - cron: '5 21 * * 1-5'
   workflow_dispatch:
     inputs:
-      send_email:
-        description: "Force send email alert regardless of trigger threshold"
+      force_send:
+        description: "Force send email alert regardless of deduplication state"
         required: false
-        default: true
+        default: false
         type: boolean
+      recipient:
+        description: "Custom recipient email (defaults to raghavendra.ds1@gmail.com)"
+        required: false
+        default: ""
+        type: string
       limit:
-        description: "Limit number of tickers scanned (0 = full universe)"
+        description: "Limit number of tickers scanned (0 = full 160 universe)"
         required: false
         default: "0"
         type: string
@@ -54,15 +64,17 @@ jobs:
           ALERT_SMTP_HOST: ${{ secrets.ALERT_SMTP_HOST }}
           ALERT_SMTP_PORT: ${{ secrets.ALERT_SMTP_PORT }}
         run: |
-          send_flag=""
-          if [ "${{ inputs.send_email }}" != "false" ]; then
-            send_flag="--send-email"
+          flags="--send-email"
+          if [ "${{ inputs.force_send }}" = "true" ]; then
+            flags="$flags --force-send"
           fi
-          limit_flag=""
+          if [ -n "${{ inputs.recipient }}" ]; then
+            flags="$flags --recipient ${{ inputs.recipient }}"
+          fi
           if [ -n "${{ inputs.limit }}" ] && [ "${{ inputs.limit }}" != "0" ]; then
-            limit_flag="--limit ${{ inputs.limit }}"
+            flags="$flags --limit ${{ inputs.limit }}"
           fi
-          python scripts/build_macd_scanner.py $send_flag $limit_flag
+          python scripts/build_macd_scanner.py $flags
 
       - name: Commit and push updated MACD signals to GitHub Pages
         run: |
