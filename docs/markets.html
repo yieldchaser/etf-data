@@ -3131,6 +3131,8 @@
                   <span class="flow-badge" id="macd-active-leverage" data-state="ACCUMULATION">+2x</span>
                   <span style="color:var(--flow-text);font-weight:600;font-size:0.875rem" id="macd-active-name">GraniteShares 2x Long INTC Daily ETF</span>
                   <span class="flow-badge macd-badge-subzero" id="macd-active-regime-badge">SUB-ZERO REVERSAL CONFLUENCE</span>
+                  <span class="mono" id="macd-active-price" style="font-size:1.05rem;font-weight:700;color:#f3f4f6;margin-left:0.5rem"></span>
+                  <span id="macd-active-chg" style="font-size:0.8rem;color:#a1a1aa"></span>
                 </div>
                 <div class="flow-eyebrow" id="macd-active-category" style="margin-top:0.2rem">
                   Single-Stock Leveraged (Bull) · Underlying: Intel Corporation (INTC)
@@ -3226,7 +3228,7 @@
                 </div>
                 <div class="macd-hud-sep"></div>
                 <div class="macd-hud-cell">
-                  <span class="macd-hud-label">1H Candle</span>
+                  <span class="macd-hud-label" id="macd-hud-candle-label">1H Candle</span>
                   <span class="macd-hud-val" id="macd-hud-candle" style="color:#10b981">—</span>
                 </div>
                 <div class="macd-hud-sep"></div>
@@ -3242,14 +3244,14 @@
               <div class="macd-screener-toolbar">
                 <div class="macd-filter-group">
                   <button type="button" class="macd-filter-btn active" data-filter="all" onclick="window.MACDStrategy.setFilter('all')">All Universe (160)</button>
-                  <button type="button" class="macd-filter-btn" data-filter="subzero" onclick="window.MACDStrategy.setFilter('subzero')">Sub-Zero Crossovers (Golden Reversals)</button>
+                  <button type="button" class="macd-filter-btn" data-filter="subzero" onclick="window.MACDStrategy.setFilter('subzero')">Sub-Zero Reversals</button>
                   <button type="button" class="macd-filter-btn" data-filter="bull" onclick="window.MACDStrategy.setFilter('bull')">All Bullish Crossovers</button>
                   <button type="button" class="macd-filter-btn" data-filter="imminent" onclick="window.MACDStrategy.setFilter('imminent')">Pre-Close Squeeze Watch (15:00 EST)</button>
                   <button type="button" class="macd-filter-btn" data-filter="bear" onclick="window.MACDStrategy.setFilter('bear')">Bearish Exits / Cash Parking</button>
                   <button type="button" class="macd-filter-btn" data-filter="macro_bull" onclick="window.MACDStrategy.setFilter('macro_bull')">Macro Trend Confirmed (1D MACD > 0)</button>
                 </div>
                 <div style="display:flex;align-items:center;gap:0.5rem">
-                  <input type="text" class="macd-search-box" placeholder="Filter ticker, fund, underlying…" oninput="window.MACDStrategy.handleSearch(this.value)">
+                  <input type="text" class="macd-search-box" placeholder="Filter ticker, fund, underlying, leverage…" oninput="window.MACDStrategy.handleSearch(this.value)">
                   <span class="flow-eyebrow" id="macd-screener-count" style="white-space:nowrap;color:#22d3ee">160 Instruments</span>
                 </div>
               </div>
@@ -3258,19 +3260,19 @@
                 <table class="macd-table">
                   <thead>
                     <tr>
-                      <th onclick="window.MACDStrategy.sortBy('ticker')">Ticker &uarr;&darr;</th>
-                      <th onclick="window.MACDStrategy.sortBy('fund_name')">Fund Name &uarr;&darr;</th>
-                      <th onclick="window.MACDStrategy.sortBy('leverage')">Mult</th>
-                      <th style="text-align:right" onclick="window.MACDStrategy.sortBy('latest_price')">Price &uarr;&darr;</th>
-                      <th style="text-align:center" onclick="window.MACDStrategy.sortBy('candle_color_1h')">1H Candle &uarr;&darr;</th>
-                      <th style="text-align:right" onclick="window.MACDStrategy.sortBy('chg_1h_pct')">1H % &uarr;&darr;</th>
-                      <th style="text-align:right" onclick="window.MACDStrategy.sortBy('chg_1d_pct')">24H % &uarr;&darr;</th>
-                      <th style="text-align:right" onclick="window.MACDStrategy.sortBy('macd_1h')">MACD &uarr;&darr;</th>
-                      <th style="text-align:right" onclick="window.MACDStrategy.sortBy('signal_1h')">Signal &uarr;&darr;</th>
-                      <th style="text-align:right" onclick="window.MACDStrategy.sortBy('hist_1h')">Hist &uarr;&darr;</th>
-                      <th style="text-align:right" onclick="window.MACDStrategy.sortBy('rvol_1h')">RVOL &uarr;&darr;</th>
-                      <th style="text-align:center" onclick="window.MACDStrategy.sortBy('daily_trend_bullish')">1D Macro &uarr;&darr;</th>
-                      <th style="text-align:right" onclick="window.MACDStrategy.sortBy('confluence_score')">Score &uarr;&darr;</th>
+                      <th data-sort-col="ticker" onclick="window.MACDStrategy.sortBy('ticker')">Ticker &uarr;&darr;</th>
+                      <th data-sort-col="fund_name" onclick="window.MACDStrategy.sortBy('fund_name')">Fund Name &uarr;&darr;</th>
+                      <th data-sort-col="leverage" onclick="window.MACDStrategy.sortBy('leverage')">Mult &uarr;&darr;</th>
+                      <th data-sort-col="latest_price" style="text-align:right" onclick="window.MACDStrategy.sortBy('latest_price')">Price &uarr;&darr;</th>
+                      <th data-sort-col="candle_color_1h" style="text-align:center" onclick="window.MACDStrategy.sortBy('candle_color_1h')">1H Candle &uarr;&darr;</th>
+                      <th data-sort-col="chg_1h_pct" style="text-align:right" onclick="window.MACDStrategy.sortBy('chg_1h_pct')">1H % &uarr;&darr;</th>
+                      <th data-sort-col="chg_1d_pct" style="text-align:right" onclick="window.MACDStrategy.sortBy('chg_1d_pct')">24H % &uarr;&darr;</th>
+                      <th data-sort-col="macd_1h" style="text-align:right" onclick="window.MACDStrategy.sortBy('macd_1h')">MACD &uarr;&darr;</th>
+                      <th data-sort-col="signal_1h" style="text-align:right" onclick="window.MACDStrategy.sortBy('signal_1h')">Signal &uarr;&darr;</th>
+                      <th data-sort-col="hist_1h" style="text-align:right" onclick="window.MACDStrategy.sortBy('hist_1h')">Hist &uarr;&darr;</th>
+                      <th data-sort-col="rvol_1h" style="text-align:right" onclick="window.MACDStrategy.sortBy('rvol_1h')">RVOL &uarr;&darr;</th>
+                      <th data-sort-col="daily_trend_bullish" style="text-align:center" onclick="window.MACDStrategy.sortBy('daily_trend_bullish')">1D Macro &uarr;&darr;</th>
+                      <th data-sort-col="confluence_score" style="text-align:right" onclick="window.MACDStrategy.sortBy('confluence_score')">Score &uarr;&darr;</th>
                       <th style="text-align:center">Signal State</th>
                     </tr>
                   </thead>
@@ -3302,7 +3304,7 @@
                 <h4>2. Tactical Sub-Zero Reversal Confluence Architecture</h4>
                 <p>When evaluated strictly during extreme mean-reversion conditions where <code>MACD &lt; 0</code> (Z-Score &le; -1.0&sigma;), <code>RVOL &ge; 1.25&times;</code>, and price tests Floor Support (S3, S4, or S5), the probability of positive convexity increases significantly. On <strong>INTW</strong> (GraniteShares 2x Long INTC), this confluence produced a <strong>+139.0% total return</strong> (vs +9.9% unconstrained) and slashed Maximum Drawdown from 66.5% to 24.7%. On <strong>SNDU</strong>, confirmed setups yielded a <strong>100% win rate</strong> with only 12.1% MaxDD.</p>
 
-                <h4>3. The 15:00 EST Pre-Close Golden Hour Scan</h4>
+                <h4>3. 15:00 EST Pre-Close Rebalance Auction Scan</h4>
                 <p>Leveraged ETF Authorized Participants (APs) mechanically rebalance exposure between 15:45 and 16:00 EST to realign target daily beta multiples. Triggering alerts on the closed 14:00–15:00 EST 1-hour bar provides systematic entry visibility ahead of the closing rebalancing auction liquidity surge.</p>
 
                 <h4>4. Exit Protocol &amp; Cash Parking Imperative</h4>

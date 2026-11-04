@@ -2,7 +2,7 @@
  * MACD Momentum Engine & Tactical Quant Radar — Canvas 2D Engine
  * Standard MACD (12, 26, 9 EMA EMA) on 1-Hour & 1-Day Timeframes
  * Traditional Floor Pivots (P, S1-S5, R1-R5) + Sub-Zero Reversal Confluence
- * Zero external dependencies. Zero AI slop. 100% Institutional Precision.
+ * Zero external dependencies · Institutional Quantitative Execution Architecture
  */
 
 (function (root, factory) {
@@ -102,6 +102,7 @@
         }
       } catch (_) {}
       this.render();
+      this.updateHUD(null);
     },
 
     /** Set active timeframe */
@@ -110,6 +111,7 @@
       this.state.activeTimeframe = tf;
       this.state.hoverIndex = null;
       this.updateControlsUI();
+      this.updateHUD(null);
       this.drawChart();
     },
 
@@ -227,7 +229,7 @@
       this.drawChart();
     },
 
-    /** Touch movement over Canvas for Mobile Phones */
+    /** Touch movement over Canvas for Mobile Devices */
     handleTouch(e) {
       if (!e.touches || e.touches.length === 0) return;
       e.preventDefault();
@@ -271,10 +273,15 @@
       const elRvol = document.getElementById('macd-hud-rvol');
       const elPivots = document.getElementById('macd-hud-pivot');
       const elCandle = document.getElementById('macd-hud-candle');
+      const elCandleLabel = document.getElementById('macd-hud-candle-label');
       const elDate = document.getElementById('macd-hud-date');
 
-      if (elPrice) elPrice.textContent = `$${Number(latestBar.c).toFixed(2)}`;
+      if (elPrice) elPrice.textContent = `$${Number(latestBar.c || 0).toFixed(2)}`;
       if (elDate) elDate.textContent = latestBar.dt || '—';
+
+      if (elCandleLabel) {
+        elCandleLabel.textContent = `${this.state.activeTimeframe.toUpperCase()} Candle`;
+      }
 
       if (elCandle) {
         const isUp = latestBar.c >= latestBar.o;
@@ -283,9 +290,10 @@
       }
 
       if (elChg) {
-        const chg = this.state.activeTimeframe === '1h' ? signal.chg_1h_pct : signal.chg_1d_pct;
-        elChg.textContent = `${chg >= 0 ? '+' : ''}${chg}%`;
-        elChg.style.color = chg >= 0 ? '#10b981' : '#f43f5e';
+        const rawChg = this.state.activeTimeframe === '1h' ? signal.chg_1h_pct : signal.chg_1d_pct;
+        const numChg = Number(rawChg || 0);
+        elChg.textContent = `${numChg >= 0 ? '+' : ''}${numChg.toFixed(2)}%`;
+        elChg.style.color = numChg >= 0 ? '#10b981' : '#f43f5e';
       }
 
       if (elMacd) {
@@ -302,14 +310,14 @@
         elHist.style.color = h >= 0 ? '#10b981' : '#f43f5e';
       }
       if (elRvol) {
-        elRvol.textContent = `${signal.rvol_1h || 1.0}x`;
-        elRvol.style.color = (signal.rvol_1h >= 1.5) ? '#22d3ee' : '#9ca3af';
+        const rv = Number(signal.rvol_1h || 1.0);
+        elRvol.textContent = `${rv.toFixed(2)}x`;
+        elRvol.style.color = rv >= 1.5 ? '#22d3ee' : '#9ca3af';
       }
       if (elPivots && signal.pivots) {
-        // Find closest pivot
         const p = latestBar.c;
         let closestKey = 'P';
-        let minDist = 999999;
+        let minDist = Infinity;
         for (const [k, v] of Object.entries(signal.pivots)) {
           const dist = Math.abs(p - v);
           if (dist < minDist) {
@@ -317,8 +325,9 @@
             closestKey = k;
           }
         }
-        const pctDist = ((p - signal.pivots[closestKey]) / signal.pivots[closestKey] * 100).toFixed(1);
-        elPivots.textContent = `${closestKey} ($${signal.pivots[closestKey]}) · ${pctDist >= 0 ? '+' : ''}${pctDist}%`;
+        const refVal = signal.pivots[closestKey];
+        const pctDist = refVal ? ((p - refVal) / refVal * 100).toFixed(1) : '0.0';
+        elPivots.textContent = `${closestKey} ($${refVal}) · ${Number(pctDist) >= 0 ? '+' : ''}${pctDist}%`;
       }
     },
 
@@ -348,15 +357,15 @@
         if (signal.live_premarket_price) {
           const pmChg = signal.live_premarket_chg_pct != null ? signal.live_premarket_chg_pct : 0;
           const pmColor = pmChg >= 0 ? '#10b981' : '#f43f5e';
-          elPrice.innerHTML = `$${Number(signal.latest_price).toFixed(2)} <span style="font-size:12px;color:${pmColor};font-weight:700;margin-left:8px;">Pre: $${Number(signal.live_premarket_price).toFixed(2)} (${pmChg >= 0 ? '+' : ''}${pmChg.toFixed(2)}%)</span>`;
+          elPrice.innerHTML = `$${Number(signal.latest_price).toFixed(2)} <span style="font-size:0.75rem;color:${pmColor};font-weight:700;margin-left:6px;">Pre: $${Number(signal.live_premarket_price).toFixed(2)} (${pmChg >= 0 ? '+' : ''}${pmChg.toFixed(2)}%)</span>`;
         } else {
           elPrice.textContent = `$${Number(signal.latest_price).toFixed(2)}`;
         }
       }
       if (elChg) {
-        const c1h = signal.chg_1h_pct || 0;
-        const c1d = signal.chg_1d_pct || 0;
-        elChg.innerHTML = `1H: <span style="color:${c1h >= 0 ? '#10b981' : '#f43f5e'}">${c1h >= 0 ? '+' : ''}${c1h}%</span> · 24H: <span style="color:${c1d >= 0 ? '#10b981' : '#f43f5e'}">${c1d >= 0 ? '+' : ''}${c1d}%</span>`;
+        const c1h = Number(signal.chg_1h_pct || 0);
+        const c1d = Number(signal.chg_1d_pct || 0);
+        elChg.innerHTML = `1H: <span style="color:${c1h >= 0 ? '#10b981' : '#f43f5e'}">${c1h >= 0 ? '+' : ''}${c1h.toFixed(2)}%</span> · 24H: <span style="color:${c1d >= 0 ? '#10b981' : '#f43f5e'}">${c1d >= 0 ? '+' : ''}${c1d.toFixed(2)}%</span>`;
       }
 
       // Update Dynamic Regime Header Badge
@@ -424,20 +433,24 @@
     /** Render Flagship Instrument Pills */
     renderFlagshipPills() {
       const container = document.getElementById('macd-flagship-pills');
-      if (!container || container.children.length > 0) return;
+      if (!container) return;
+      if (container.querySelectorAll('.macd-ticker-pill').length > 0) return;
+
       const availableTickers = new Set((this.state.signalsData?.signals || []).map(s => s.ticker));
       const preferred = [
-        { ticker: 'INTW', label: 'INTW (2x Intel)' },
+        { ticker: 'INTW', label: 'INTW (2x INTC)' },
         { ticker: 'SOXL', label: 'SOXL (3x Semis)' },
-        { ticker: 'TQQQ', label: 'TQQQ (3x QQQ)' },
-        { ticker: 'TSLL', label: 'TSLL (2x Tesla)' },
-        { ticker: 'NVDL', label: 'NVDL (2x Nvidia)' },
-        { ticker: 'CONL', label: 'CONL (2x Coinbase)' },
+        { ticker: 'TQQQ', label: 'TQQQ (3x NDX)' },
+        { ticker: 'TSLL', label: 'TSLL (2x TSLA)' },
+        { ticker: 'NVDL', label: 'NVDL (2x NVDA)' },
+        { ticker: 'CONL', label: 'CONL (2x COIN)' },
         { ticker: 'SOXS', label: 'SOXS (-3x Semis)' },
-        { ticker: 'SQQQ', label: 'SQQQ (-3x QQQ)' }
+        { ticker: 'SQQQ', label: 'SQQQ (-3x NDX)' }
       ];
       const flagshipList = preferred.filter(p => availableTickers.has(p.ticker));
-      let html = '<span class="flow-eyebrow" style="color:#22d3ee;font-weight:700">Flagship Instruments:</span>';
+      if (flagshipList.length === 0) return;
+
+      let html = '<span class="flow-eyebrow" style="color:var(--flow-cyan,#22d3ee);font-weight:600;margin-right:0.25rem">Flagship:</span>';
       flagshipList.forEach(item => {
         const isActive = this.state.activeTicker === item.ticker;
         html += `<button type="button" class="macd-ticker-pill ${isActive ? 'active' : ''}" data-ticker="${item.ticker}" onclick="window.MACDStrategy.setTicker('${item.ticker}')">${item.label}</button>`;
@@ -478,7 +491,7 @@
         ctx.fillStyle = '#090a0f';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#9ca3af';
-        ctx.font = '14px sans-serif';
+        ctx.font = '13px -apple-system, sans-serif';
         ctx.fillText('Insufficient bar history for selected timeframe', 20, 40);
         return;
       }
@@ -511,11 +524,11 @@
       ctx.fillRect(0, 0, w, h);
 
       // Layout geometry
-      const paddingLeft = 10;
-      const paddingRight = 72;
-      const paddingTop = 26;
-      const paddingBottom = 22;
-      const splitGap = 16;
+      const paddingLeft = 12;
+      const paddingRight = 78;
+      const paddingTop = 28;
+      const paddingBottom = 24;
+      const splitGap = 22;
 
       const availableHeight = h - paddingTop - paddingBottom - splitGap;
       const topPaneHeight = Math.floor(availableHeight * 0.62);
@@ -529,7 +542,6 @@
       const chartW = w - paddingLeft - paddingRight;
 
       // ── TOP PANE: CANDLESTICKS + PIVOTS ──
-      // Calculate Price Y-Bounds
       let minP = Math.min(...bars.map(b => b.l));
       let maxP = Math.max(...bars.map(b => b.h));
 
@@ -556,18 +568,18 @@
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
       ctx.lineWidth = 1;
       const yTicks = 5;
-      ctx.font = '10px ui-monospace, "SF Mono", monospace';
+      ctx.font = '10px ui-monospace, "SF Mono", Menlo, monospace';
       ctx.fillStyle = '#6b7280';
       ctx.textAlign = 'left';
 
       for (let i = 0; i <= yTicks; i++) {
         const val = minP + (i / yTicks) * (maxP - minP);
-        const y = getYTop(val);
+        const y = Math.round(getYTop(val)) + 0.5;
         ctx.beginPath();
         ctx.moveTo(paddingLeft, y);
         ctx.lineTo(w - paddingRight, y);
         ctx.stroke();
-        ctx.fillText(`$${val.toFixed(2)}`, w - paddingRight + 6, y + 3);
+        ctx.fillText(`$${val.toFixed(2)}`, w - paddingRight + 6, y + 3.5);
       }
 
       // Draw Floor Pivots (P, R1-R5, S1-S5)
@@ -575,7 +587,7 @@
         const piv = signal.pivots;
         const pivotDefs = [
           { key: 'R5', val: piv.R5, color: 'rgba(52, 211, 153, 0.65)', dash: [4, 4] },
-          { key: 'R4', val: piv.R4, color: 'rgba(52, 211, 153, 0.7)', dash: [4, 4] },
+          { key: 'R4', val: piv.R4, color: 'rgba(52, 211, 153, 0.70)', dash: [4, 4] },
           { key: 'R3', val: piv.R3, color: 'rgba(52, 211, 153, 0.75)', dash: [4, 4] },
           { key: 'R2', val: piv.R2, color: 'rgba(52, 211, 153, 0.85)', dash: [4, 4] },
           { key: 'R1', val: piv.R1, color: 'rgba(52, 211, 153, 0.95)', dash: [4, 4] },
@@ -583,13 +595,13 @@
           { key: 'S1', val: piv.S1, color: 'rgba(251, 113, 133, 0.95)', dash: [4, 4] },
           { key: 'S2', val: piv.S2, color: 'rgba(251, 113, 133, 0.85)', dash: [4, 4] },
           { key: 'S3', val: piv.S3, color: 'rgba(251, 113, 133, 0.75)', dash: [4, 4] },
-          { key: 'S4', val: piv.S4, color: 'rgba(251, 113, 133, 0.7)', dash: [4, 4] },
+          { key: 'S4', val: piv.S4, color: 'rgba(251, 113, 133, 0.70)', dash: [4, 4] },
           { key: 'S5', val: piv.S5, color: 'rgba(251, 113, 133, 0.65)', dash: [4, 4] },
         ];
 
         pivotDefs.forEach(pDef => {
           if (pDef.val && pDef.val >= minP && pDef.val <= maxP) {
-            const py = getYTop(pDef.val);
+            const py = Math.round(getYTop(pDef.val)) + 0.5;
             ctx.save();
             ctx.strokeStyle = pDef.color;
             ctx.setLineDash(pDef.dash);
@@ -601,7 +613,7 @@
 
             // Right label
             ctx.fillStyle = pDef.color;
-            ctx.font = '9px ui-monospace, "SF Mono", monospace';
+            ctx.font = '9px ui-monospace, "SF Mono", Menlo, monospace';
             ctx.fillText(`${pDef.key}: ${pDef.val.toFixed(2)}`, w - paddingRight + 6, py - 2);
             ctx.restore();
           }
@@ -631,15 +643,15 @@
         ctx.strokeStyle = candleColor;
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(cx, yHigh);
-        ctx.lineTo(cx, yLow);
+        ctx.moveTo(Math.round(cx) + 0.5, Math.round(yHigh));
+        ctx.lineTo(Math.round(cx) + 0.5, Math.round(yLow));
         ctx.stroke();
 
         // Body
         ctx.fillStyle = candleColor;
         const bodyTop = Math.min(yOpen, yClose);
         const bodyHeight = Math.max(1.5, Math.abs(yClose - yOpen));
-        ctx.fillRect(cx - candleWidth / 2, bodyTop, candleWidth, bodyHeight);
+        ctx.fillRect(Math.round(cx - candleWidth / 2), Math.round(bodyTop), candleWidth, Math.round(bodyHeight));
 
         // Check if mouse hovers this bar
         if (this.state.isHovering && Math.abs(this.state.lastMouse.x - cx) <= barSpacing / 2) {
@@ -648,7 +660,7 @@
           this.state.hoverIndex = i;
         }
 
-        // Crossover Markers on candles (Raghav Sir Candle Confirmation)
+        // Directional Crossover Markers on candles
         if (i >= 1) {
           const prev = bars[i - 1];
           const isBullCross = (b.macd > b.sig) && (prev.macd <= prev.sig);
@@ -667,8 +679,9 @@
               ctx.fill();
 
               if (b.macd < 0) {
-                // Sub-Zero halo
-                ctx.strokeStyle = 'rgba(34, 211, 238, 0.4)';
+                // Sub-Zero halo ring
+                ctx.strokeStyle = 'rgba(34, 211, 238, 0.45)';
+                ctx.lineWidth = 1;
                 ctx.beginPath();
                 ctx.arc(cx, my + 4, 8, 0, Math.PI * 2);
                 ctx.stroke();
@@ -714,10 +727,9 @@
       ctx.fillStyle = '#9ca3af';
       ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.textAlign = 'left';
-      ctx.fillText(`${signal.ticker} · ${this.state.activeTimeframe.toUpperCase()} Price Candles & Traditional Floor Pivots`, paddingLeft + 4, topY0 - 8);
+      ctx.fillText(`${signal.ticker} · ${this.state.activeTimeframe.toUpperCase()} Price Candles & Floor Pivots`, paddingLeft + 4, topY0 - 9);
 
       // ── BOTTOM PANE: MACD (12, 26, 9) + 4-COLOR HISTOGRAM ──
-      // Calculate MACD Y-Bounds
       let minM = Math.min(...bars.map(b => Math.min(b.macd, b.sig, b.hist)));
       let maxM = Math.max(...bars.map(b => Math.max(b.macd, b.sig, b.hist)));
       const mRange = (maxM - minM) || 0.1;
@@ -738,10 +750,10 @@
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(paddingLeft, bottomY0);
-      ctx.lineTo(w - paddingRight, bottomY0);
-      ctx.moveTo(paddingLeft, bottomY1);
-      ctx.lineTo(w - paddingRight, bottomY1);
+      ctx.moveTo(paddingLeft, Math.round(bottomY0) + 0.5);
+      ctx.lineTo(w - paddingRight, Math.round(bottomY0) + 0.5);
+      ctx.moveTo(paddingLeft, Math.round(bottomY1) + 0.5);
+      ctx.lineTo(w - paddingRight, Math.round(bottomY1) + 0.5);
       ctx.stroke();
 
       // Zero Axis
@@ -749,14 +761,14 @@
       ctx.lineWidth = 1;
       ctx.setLineDash([3, 3]);
       ctx.beginPath();
-      ctx.moveTo(paddingLeft, yZero);
-      ctx.lineTo(w - paddingRight, yZero);
+      ctx.moveTo(paddingLeft, Math.round(yZero) + 0.5);
+      ctx.lineTo(w - paddingRight, Math.round(yZero) + 0.5);
       ctx.stroke();
       ctx.setLineDash([]);
 
       ctx.fillStyle = '#64748b';
-      ctx.font = '10px ui-monospace, "SF Mono", monospace';
-      ctx.fillText('0.00', w - paddingRight + 6, yZero + 3);
+      ctx.font = '10px ui-monospace, "SF Mono", Menlo, monospace';
+      ctx.fillText('0.00', w - paddingRight + 6, Math.round(yZero) + 3.5);
 
       // Draw 4-Color Histogram Bars
       for (let i = 0; i < nBars; i++) {
@@ -768,15 +780,15 @@
 
         let hColor;
         if (hVal >= 0) {
-          hColor = hVal >= prevH ? '#10b981' : '#34d399'; // Expanding green vs contracting mint
+          hColor = hVal >= prevH ? '#10b981' : '#34d399';
         } else {
-          hColor = hVal <= prevH ? '#f43f5e' : '#fb7185'; // Expanding rose vs contracting light rose
+          hColor = hVal <= prevH ? '#f43f5e' : '#fb7185';
         }
 
         ctx.fillStyle = hColor;
         const top = Math.min(yZero, yH);
         const barH = Math.max(1, Math.abs(yH - yZero));
-        ctx.fillRect(cx - candleWidth / 2, top, candleWidth, barH);
+        ctx.fillRect(Math.round(cx - candleWidth / 2), Math.round(top), candleWidth, Math.round(barH));
       }
 
       // Draw MACD Line (#38bdf8 sky blue)
@@ -803,52 +815,94 @@
       }
       ctx.stroke();
 
-      // Bottom Pane Header label
+      // Bottom Pane Header label (Responsive formatting)
       ctx.fillStyle = '#9ca3af';
       ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.textAlign = 'left';
-      ctx.fillText('MACD (12, 26, close, 9 EMA EMA) · Sky: MACD | Amber: Signal | 4-Color Momentum Histogram', paddingLeft + 4, bottomY0 - 5);
+      const bottomLabel = w < 640
+        ? 'MACD (12, 26, 9) · Momentum Histogram'
+        : 'MACD (12, 26, close, 9 EMA) · Sky: MACD | Amber: Signal | 4-Color Histogram';
+      ctx.fillText(bottomLabel, paddingLeft + 4, bottomY0 - 7);
 
       // Draw Date/Time X-Axis Ticks
       ctx.fillStyle = '#64748b';
-      ctx.font = '9px ui-monospace, "SF Mono", monospace';
+      ctx.font = '9px ui-monospace, "SF Mono", Menlo, monospace';
       ctx.textAlign = 'center';
       const tickStep = Math.max(1, Math.floor(nBars / 6));
       for (let i = 0; i < nBars; i += tickStep) {
         const b = bars[i];
         const cx = paddingLeft + i * barSpacing + barSpacing / 2;
         const rawDt = b.dt || '';
-        const dtLabel = rawDt.length > 10 ? rawDt.slice(5) : rawDt.slice(5);
-        ctx.fillText(dtLabel, cx, bottomY1 + 14);
+        const dtLabel = rawDt.length > 10 ? rawDt.slice(5) : rawDt;
+        ctx.fillText(dtLabel, cx, bottomY1 + 15);
       }
 
       // ── CROSSHAIR & TOOLTIP ──
       if (this.state.isHovering && hoverBar && hoverX > 0) {
-        // Vertical crosshair
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+        const my = this.state.lastMouse.y;
+
+        // Vertical crosshair line
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
         ctx.lineWidth = 1;
         ctx.setLineDash([2, 2]);
         ctx.beginPath();
-        ctx.moveTo(hoverX, topY0);
-        ctx.lineTo(hoverX, bottomY1);
+        ctx.moveTo(Math.round(hoverX) + 0.5, topY0);
+        ctx.lineTo(Math.round(hoverX) + 0.5, bottomY1);
         ctx.stroke();
-        ctx.setLineDash([]);
 
-        // Horizontal crosshair in pane under mouse
-        const my = this.state.lastMouse.y;
+        // Horizontal crosshair line in active pane
         if (my >= topY0 && my <= topY1) {
           ctx.beginPath();
-          ctx.moveTo(paddingLeft, my);
-          ctx.lineTo(w - paddingRight, my);
+          ctx.moveTo(paddingLeft, Math.round(my) + 0.5);
+          ctx.lineTo(w - paddingRight, Math.round(my) + 0.5);
           ctx.stroke();
+
+          // Active Price Tag on Right Axis
+          const hoverPrice = maxP - ((my - topY0) / topPaneHeight) * (maxP - minP);
+          ctx.setLineDash([]);
+          ctx.fillStyle = '#1e2230';
+          ctx.fillRect(w - paddingRight + 1, my - 8, paddingRight - 4, 16);
+          ctx.strokeStyle = '#22d3ee';
+          ctx.strokeRect(w - paddingRight + 1, my - 8, paddingRight - 4, 16);
+          ctx.fillStyle = '#22d3ee';
+          ctx.font = '9.5px ui-monospace, "SF Mono", Menlo, monospace';
+          ctx.textAlign = 'left';
+          ctx.fillText(`$${hoverPrice.toFixed(2)}`, w - paddingRight + 5, my + 3.5);
         } else if (my >= bottomY0 && my <= bottomY1) {
           ctx.beginPath();
-          ctx.moveTo(paddingLeft, my);
-          ctx.lineTo(w - paddingRight, my);
+          ctx.moveTo(paddingLeft, Math.round(my) + 0.5);
+          ctx.lineTo(w - paddingRight, Math.round(my) + 0.5);
           ctx.stroke();
-        }
 
-        // Update Tooltip DOM
+          // Active MACD Tag on Right Axis
+          const hoverMacd = maxM - ((my - bottomY0) / bottomPaneHeight) * (maxM - minM);
+          ctx.setLineDash([]);
+          ctx.fillStyle = '#1e2230';
+          ctx.fillRect(w - paddingRight + 1, my - 8, paddingRight - 4, 16);
+          ctx.strokeStyle = '#38bdf8';
+          ctx.strokeRect(w - paddingRight + 1, my - 8, paddingRight - 4, 16);
+          ctx.fillStyle = '#38bdf8';
+          ctx.font = '9.5px ui-monospace, "SF Mono", Menlo, monospace';
+          ctx.textAlign = 'left';
+          ctx.fillText(hoverMacd.toFixed(3), w - paddingRight + 5, my + 3.5);
+        }
+        ctx.setLineDash([]);
+
+        // Active Date Tag on X-Axis
+        const hDt = hoverBar.dt || '';
+        const hDtLabel = hDt.length > 10 ? hDt.slice(5) : hDt;
+        ctx.fillStyle = '#1e2230';
+        ctx.font = '9px ui-monospace, "SF Mono", Menlo, monospace';
+        const hDtW = ctx.measureText(hDtLabel).width + 8;
+        ctx.fillRect(hoverX - hDtW / 2, bottomY1 + 5, hDtW, 14);
+        ctx.strokeStyle = '#a1a1aa';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(hoverX - hDtW / 2, bottomY1 + 5, hDtW, 14);
+        ctx.fillStyle = '#f3f4f6';
+        ctx.textAlign = 'center';
+        ctx.fillText(hDtLabel, hoverX, bottomY1 + 15);
+
+        // Update Tooltip DOM & HUD
         this.renderTooltip(hoverBar, hoverX, rect.top);
         this.updateHUD(hoverBar);
       }
@@ -857,40 +911,45 @@
     },
 
     /** Render Floating Tooltip */
-    renderTooltip(bar, clientX, rectTop) {
+    renderTooltip(bar, hoverX, rectTop) {
       const tooltip = document.getElementById('macd-tooltip');
       if (!tooltip) return;
 
       const isSubZero = bar.macd < 0;
-      const spread = bar.macd - bar.sig;
+      const spread = (bar.macd || 0) - (bar.sig || 0);
       const isUp = bar.c >= bar.o;
       const candleLabel = isUp ? '<strong style="color:#10b981">GREEN (Bullish)</strong>' : '<strong style="color:#f43f5e">RED (Bearish)</strong>';
 
       tooltip.innerHTML = `
-        <div style="font-weight:700;color:#22d3ee;margin-bottom:4px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:2px">
-          ${bar.dt}
+        <div style="font-weight:700;color:#22d3ee;margin-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:4px;display:flex;justify-content:space-between">
+          <span>${bar.dt || 'Bar Data'}</span>
+          <span style="color:#a1a1aa;font-weight:500;font-size:0.65rem">${this.state.activeTimeframe.toUpperCase()} Interval</span>
         </div>
-        <div style="display:grid;grid-template-columns:auto auto;gap:4px 12px;font-size:0.7rem">
-          <span style="color:#9ca3af">Price:</span> <strong style="color:#ffffff">$${bar.c.toFixed(2)}</strong>
-          <span style="color:#9ca3af">O/H/L:</span> <span>$${bar.o.toFixed(2)} / $${bar.h.toFixed(2)} / $${bar.l.toFixed(2)}</span>
-          <span style="color:#9ca3af">1H Candle:</span> <span>${candleLabel}</span>
-          <span style="color:#9ca3af">Volume:</span> <span>${bar.v.toLocaleString()}</span>
-          <span style="color:#38bdf8">MACD (12,26):</span> <strong style="color:#38bdf8">${bar.macd.toFixed(4)}</strong>
-          <span style="color:#f59e0b">Signal (9):</span> <strong style="color:#f59e0b">${bar.sig.toFixed(4)}</strong>
-          <span style="color:#34d399">Histogram:</span> <strong style="color:${bar.hist >= 0 ? '#10b981' : '#f43f5e'}">${bar.hist >= 0 ? '+' : ''}${bar.hist.toFixed(4)}</strong>
-          <span style="color:#9ca3af">Spread:</span> <span>${spread >= 0 ? '+' : ''}${spread.toFixed(4)}</span>
+        <div style="display:grid;grid-template-columns:auto auto;gap:4px 14px;font-size:0.72rem;font-variant-numeric:tabular-nums">
+          <span style="color:#9ca3af">Price:</span> <strong style="color:#ffffff">$${Number(bar.c || 0).toFixed(2)}</strong>
+          <span style="color:#9ca3af">O / H / L:</span> <span>$${Number(bar.o || 0).toFixed(2)} / $${Number(bar.h || 0).toFixed(2)} / $${Number(bar.l || 0).toFixed(2)}</span>
+          <span style="color:#9ca3af">Candle:</span> <span>${candleLabel}</span>
+          <span style="color:#9ca3af">Volume:</span> <span>${Number(bar.v || 0).toLocaleString()}</span>
+          <span style="color:#38bdf8">MACD (12,26):</span> <strong style="color:#38bdf8">${Number(bar.macd || 0).toFixed(4)}</strong>
+          <span style="color:#f59e0b">Signal (9):</span> <strong style="color:#f59e0b">${Number(bar.sig || 0).toFixed(4)}</strong>
+          <span style="color:#34d399">Histogram:</span> <strong style="color:${(bar.hist || 0) >= 0 ? '#10b981' : '#f43f5e'}">${(bar.hist || 0) >= 0 ? '+' : ''}${Number(bar.hist || 0).toFixed(4)}</strong>
+          <span style="color:#9ca3af">Spread:</span> <span>${spread >= 0 ? '+' : ''}${Number(spread).toFixed(4)}</span>
           <span style="color:#9ca3af">Regime:</span> <span style="color:${isSubZero ? '#34d399' : '#38bdf8'}">${isSubZero ? 'Sub-Zero (Convex)' : 'Supra-Zero'}</span>
         </div>
       `;
 
       tooltip.style.display = 'block';
-      const tooltipW = tooltip.offsetWidth || 200;
-      let left = clientX + 12;
-      if (left + tooltipW > window.innerWidth - 60) {
-        left = clientX - tooltipW - 12;
+      const container = document.getElementById('macd-canvas-container');
+      const containerW = container ? container.clientWidth : 800;
+      const tooltipW = tooltip.offsetWidth || 230;
+
+      let left = hoverX + 16;
+      if (left + tooltipW > containerW - 14) {
+        left = hoverX - tooltipW - 16;
       }
-      tooltip.style.left = `${left}px`;
-      tooltip.style.top = '40px';
+      if (left < 10) left = 10;
+      tooltip.style.left = `${Math.round(left)}px`;
+      tooltip.style.top = '38px';
     },
 
     /** Render 160-Instrument Screener Table */
@@ -901,7 +960,7 @@
 
       let list = [...this.state.signalsData.signals];
 
-      // Filter by category / tier (Strict Raghav Sir confirmation)
+      // Filter by category / tier
       const f = this.state.filter;
       if (f === 'subzero') {
         list = list.filter(s => (s.signal_state === 'SUB_ZERO_BOUNCE' || (s.bull_cross_fresh && s.is_subzero)) && (s.candle_color_1h === 'GREEN' || s.is_green_candle_1h));
@@ -921,7 +980,8 @@
         list = list.filter(s =>
           (s.ticker || '').toLowerCase().includes(q) ||
           (s.fund_name || '').toLowerCase().includes(q) ||
-          (s.underlying || '').toLowerCase().includes(q)
+          (s.underlying || '').toLowerCase().includes(q) ||
+          (s.leverage || '').toLowerCase().includes(q)
         );
       }
 
@@ -931,15 +991,38 @@
       list.sort((a, b) => {
         let va = a[key] !== undefined ? a[key] : 0;
         let vb = b[key] !== undefined ? b[key] : 0;
+        if (key === 'leverage') {
+          va = parseFloat(String(va).replace('x', '')) || 0;
+          vb = parseFloat(String(vb).replace('x', '')) || 0;
+        }
         if (typeof va === 'string' || typeof vb === 'string') {
           return asc ? String(va || '').localeCompare(String(vb || '')) : String(vb || '').localeCompare(String(va || ''));
         }
         return asc ? va - vb : vb - va;
       });
 
+      // Update table header sort indicators
+      document.querySelectorAll('.macd-table th[data-sort-col]').forEach(th => {
+        const col = th.dataset.sortCol;
+        const baseLabel = th.dataset.label || th.textContent.replace(/[\s▲▼↑↓↕].*$/, '').trim();
+        th.dataset.label = baseLabel;
+        if (col === key) {
+          th.classList.add('sorted-col');
+          th.innerHTML = `${baseLabel} <span class="macd-sort-arrow">${asc ? '▲' : '▼'}</span>`;
+        } else {
+          th.classList.remove('sorted-col');
+          th.innerHTML = `${baseLabel} <span class="macd-sort-arrow-idle">↕</span>`;
+        }
+      });
+
       if (countEl) countEl.textContent = `Showing ${list.length} of ${this.state.signalsData.signals.length} Instruments`;
 
       // Build HTML rows
+      if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="14" style="text-align:center;padding:2.5rem 1rem;color:#71717a;font-family:-apple-system,BlinkMacSystemFont,sans-serif">No instruments match the active query or filter criteria.</td></tr>`;
+        return;
+      }
+
       let html = '';
       list.forEach(s => {
         const isActive = s.ticker === this.state.activeTicker;
@@ -966,26 +1049,33 @@
           badgeHtml = '<span class="macd-badge macd-badge-neutral">Neutral</span>';
         }
 
-        const scoreColor = s.confluence_score > 30 ? '#10b981' : (s.confluence_score < -30 ? '#f43f5e' : '#9ca3af');
+        const score = Number(s.confluence_score || 0);
+        const scoreColor = score > 30 ? '#10b981' : (score < -30 ? '#f43f5e' : '#9ca3af');
+        const c1h = Number(s.chg_1h_pct || 0);
+        const c1d = Number(s.chg_1d_pct || 0);
+        const m1h = Number(s.macd_1h || 0);
+        const s1h = Number(s.signal_1h || 0);
+        const h1h = Number(s.hist_1h || 0);
+        const rv1h = Number(s.rvol_1h || 1.0);
 
         html += `
-          <tr class="${isActive ? 'active-row' : ''}" onclick="window.MACDStrategy.setTicker('${s.ticker}'); window.MACDStrategy.setView('chart');">
+          <tr class="${isActive ? 'active-row' : ''}" onclick="window.MACDStrategy.setTicker('${s.ticker}'); window.MACDStrategy.setView('chart'); const p = document.getElementById('macd-chart-view-panel'); if (p) p.scrollIntoView({behavior:'smooth',block:'nearest'});">
             <td><strong style="color:#22d3ee">${s.ticker}</strong></td>
             <td style="color:#f3f4f6;max-width:240px;overflow:hidden;text-overflow:ellipsis">${s.fund_name}</td>
             <td><span class="macd-badge macd-badge-neutral">${s.leverage}</span></td>
             <td style="text-align:right">
-              $${Number(s.latest_price).toFixed(2)}
-              ${s.live_premarket_price ? `<div style="font-size:9.5px;color:${(s.live_premarket_chg_pct || 0) >= 0 ? '#10b981' : '#f43f5e'};font-weight:700">Pre: $${Number(s.live_premarket_price).toFixed(2)} (${(s.live_premarket_chg_pct || 0) >= 0 ? '+' : ''}${(s.live_premarket_chg_pct || 0).toFixed(1)}%)</div>` : ''}
+              $${Number(s.latest_price || 0).toFixed(2)}
+              ${s.live_premarket_price ? `<div style="font-size:9.5px;color:${(s.live_premarket_chg_pct || 0) >= 0 ? '#10b981' : '#f43f5e'};font-weight:700">Pre: $${Number(s.live_premarket_price).toFixed(2)} (${(s.live_premarket_chg_pct || 0) >= 0 ? '+' : ''}${Number(s.live_premarket_chg_pct || 0).toFixed(1)}%)</div>` : ''}
             </td>
             <td style="text-align:center">${candlePill}</td>
-            <td style="text-align:right;color:${s.chg_1h_pct >= 0 ? '#10b981' : '#f43f5e'}">${s.chg_1h_pct >= 0 ? '+' : ''}${s.chg_1h_pct}%</td>
-            <td style="text-align:right;color:${s.chg_1d_pct >= 0 ? '#10b981' : '#f43f5e'}">${s.chg_1d_pct >= 0 ? '+' : ''}${s.chg_1d_pct}%</td>
-            <td style="text-align:right;color:#38bdf8">${s.macd_1h.toFixed(3)}</td>
-            <td style="text-align:right;color:#f59e0b">${s.signal_1h.toFixed(3)}</td>
-            <td style="text-align:right;color:${s.hist_1h >= 0 ? '#10b981' : '#f43f5e'}">${s.hist_1h >= 0 ? '+' : ''}${s.hist_1h.toFixed(3)}</td>
-            <td style="text-align:right;color:${s.rvol_1h >= 1.5 ? '#22d3ee' : '#9ca3af'}">${s.rvol_1h}x</td>
+            <td style="text-align:right;color:${c1h >= 0 ? '#10b981' : '#f43f5e'}">${c1h >= 0 ? '+' : ''}${c1h.toFixed(2)}%</td>
+            <td style="text-align:right;color:${c1d >= 0 ? '#10b981' : '#f43f5e'}">${c1d >= 0 ? '+' : ''}${c1d.toFixed(2)}%</td>
+            <td style="text-align:right;color:#38bdf8">${m1h.toFixed(3)}</td>
+            <td style="text-align:right;color:#f59e0b">${s1h.toFixed(3)}</td>
+            <td style="text-align:right;color:${h1h >= 0 ? '#10b981' : '#f43f5e'}">${h1h >= 0 ? '+' : ''}${h1h.toFixed(3)}</td>
+            <td style="text-align:right;color:${rv1h >= 1.5 ? '#22d3ee' : '#9ca3af'}">${rv1h.toFixed(2)}x</td>
             <td style="text-align:center">${s.daily_trend_bullish ? '<span style="color:#10b981">UP</span>' : '<span style="color:#f43f5e">DOWN</span>'}</td>
-            <td style="text-align:right"><strong style="color:${scoreColor}">${s.confluence_score > 0 ? '+' : ''}${s.confluence_score}</strong></td>
+            <td style="text-align:right"><strong style="color:${scoreColor}">${score > 0 ? '+' : ''}${score}</strong></td>
             <td style="text-align:center">${badgeHtml}</td>
           </tr>
         `;
@@ -1001,10 +1091,12 @@
       if (!container) return;
 
       if (this.state.alertData && this.state.alertData.text_content) {
-        container.textContent = this.state.alertData.text_content;
+        let text = this.state.alertData.text_content;
+        text = text.replace(/\ufffd/g, '·');
+        container.textContent = text;
         if (timeEl) timeEl.textContent = `As of ${this.state.alertData.timestamp_utc || 'Latest scan'}`;
       } else {
-        container.textContent = 'Hourly scan operational. Monitoring 160 leveraged/inverse ETFs for 15:00 EST Golden Hour triggers and sub-zero reversals.';
+        container.textContent = 'Hourly scan operational. Monitoring 160 leveraged/inverse ETFs for 15:00 EST pre-close rebalance triggers and sub-zero reversals.';
       }
     }
   };

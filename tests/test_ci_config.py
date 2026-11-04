@@ -13,10 +13,11 @@ from pathlib import Path
 # Load workflow files once at module level
 # ---------------------------------------------------------------------------
 _REPO_ROOT = Path(__file__).parent.parent
-# encoding='utf-8': workflow comments now contain non-ASCII (—, ⚠️) and the
+# encoding='utf-8': workflow comments may contain non-ASCII em-dashes and the
 # Windows default (cp1252) chokes on them.
 BUILD_YML = yaml.safe_load((_REPO_ROOT / ".github/workflows/build_site.yml").read_text(encoding="utf-8"))
 SCRAPE_YML = yaml.safe_load((_REPO_ROOT / ".github/workflows/daily_scrape.yml").read_text(encoding="utf-8"))
+MACD_YML = yaml.safe_load((_REPO_ROOT / ".github/workflows/macd_momentum_alerts.yml").read_text(encoding="utf-8"))
 
 
 def _build_steps() -> list:
@@ -240,3 +241,47 @@ def test_cache_conviction_includes_history_and_artifacts():
     assert "docs/data/history" in paths, "docs/data/history must be in cache paths"
     assert "docs/data/leaderboard.json" in paths, "docs/data/leaderboard.json must be in cache paths"
     assert "docs/data/holdings_exits.json" in paths, "docs/data/holdings_exits.json must be in cache paths"
+
+
+def test_macd_momentum_alerts_workflow_contract():
+    """Validate macd_momentum_alerts.yml CI configuration, permissions, and security hygiene."""
+    # Permissions: contents: write, actions: write
+    perms = MACD_YML.get("permissions", {})
+    assert perms.get("contents") == "write", "macd_momentum_alerts.yml must have contents: write"
+    assert perms.get("actions") == "write", "macd_momentum_alerts.yml must have actions: write"
+
+    # Concurrency
+    conc = MACD_YML.get("concurrency", {})
+    assert conc.get("group") == "macd-momentum-alerts", "concurrency group must be macd-momentum-alerts"
+    assert conc.get("cancel-in-progress") is False, "cancel-in-progress must be False"
+
+    # Triggers
+    on_block = MACD_YML.get(True) or MACD_YML.get("on") or {}
+    schedule = on_block.get("schedule", [])
+    assert len(schedule) >= 4, f"Expected at least 4 cron schedules, found {len(schedule)}"
+    assert "workflow_dispatch" in on_block, "workflow_dispatch trigger must exist"
+
+    # Timeout
+    job = MACD_YML["jobs"]["scan-and-alert"]
+    tm = job.get("timeout-minutes")
+    assert isinstance(tm, int) and 0 < tm <= 30, f"Invalid timeout-minutes: {tm}"
+
+    # Secrets mapping (strictly via secrets context)
+    steps = job["steps"]
+    scanner_step = next(s for s in steps if "MACD Momentum Scanner" in s.get("name", ""))
+    env = scanner_step.get("env", {})
+    required_secrets = [
+        "ALERT_EMAIL_SENDER",
+        "ALERT_EMAIL_PASSWORD",
+        "ALERT_EMAIL_RECIPIENT",
+        "ALERT_SMTP_HOST",
+        "ALERT_SMTP_PORT",
+    ]
+    for sec in required_secrets:
+        assert sec in env, f"Missing secret mapping for {sec}"
+        assert "secrets." in env[sec], f"Secret {sec} must reference secrets context"
+
+    # Trigger chaining to build_site.yml
+    chain_step = next((s for s in steps if "Trigger site deployment" in s.get("name", "")), None)
+    assert chain_step is not None, "Must have step to trigger build_site.yml"
+    assert "gh workflow run build_site.yml" in chain_step.get("run", "")

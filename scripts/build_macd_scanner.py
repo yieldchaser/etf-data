@@ -57,7 +57,6 @@ ALERT_OUT_FLOWS = REPO_ROOT / "docs" / "data" / "flows" / "latest_macd_alert.jso
 SIGNALS_OUT = SIGNALS_OUT_MACD
 ALERT_OUT = ALERT_OUT_MACD
 
-DEFAULT_RECIPIENT = ""
 NY_TZ = ZoneInfo("America/New_York")
 
 
@@ -75,10 +74,10 @@ def get_market_session(now_ny: dt.datetime) -> tuple[str, str, str]:
         return "PRE_MARKET", "PRE-MARKET INDICATIVE RADAR", "PRE-MARKET SCAN"
     elif 9.5 <= time_float < 10.5:
         return "SESSION_OPEN", "REGULAR SESSION OPEN MOMENTUM", "SESSION OPEN"
-    elif 14.75 <= time_float < 15.5:
-        return "PRE_CLOSE", "PRE-MARKET-CLOSE GOLDEN HOUR SCAN", "15:00 EST PRE-CLOSE"
-    elif 10.5 <= time_float < 16.0:
+    elif 10.5 <= time_float < 14.75:
         return "INTRADAY", "INTRADAY HOURLY MOMENTUM SCAN", "INTRADAY RADAR"
+    elif 14.75 <= time_float < 16.0:
+        return "PRE_CLOSE", "PRE-MARKET-CLOSE GOLDEN HOUR SCAN", "15:00 EST PRE-CLOSE"
     elif 16.0 <= time_float < 20.0:
         return "POST_MARKET", "POST-MARKET CLOSING AUDIT", "POST-MARKET SCAN"
     else:
@@ -92,13 +91,21 @@ def calculate_ema(series: list[float], period: int) -> list[float]:
     if n == 0 or period <= 0:
         return out
 
+    # Sanitize inputs (forward-fill non-finite or missing values)
+    clean: list[float] = []
+    last_valid = 0.0
+    for val in series:
+        if val is not None and not math.isnan(val) and not math.isinf(val):
+            last_valid = float(val)
+        clean.append(last_valid)
+
     alpha = 2.0 / (period + 1)
     seed_len = min(period, n)
-    sma = sum(series[:seed_len]) / seed_len
+    sma = sum(clean[:seed_len]) / seed_len if seed_len > 0 else 0.0
     out[seed_len - 1] = sma
 
     for i in range(seed_len, n):
-        out[i] = series[i] * alpha + out[i - 1] * (1.0 - alpha)
+        out[i] = clean[i] * alpha + out[i - 1] * (1.0 - alpha)
 
     for i in range(seed_len - 1):
         out[i] = out[seed_len - 1]
@@ -111,7 +118,7 @@ def calculate_macd(
 ) -> dict[str, list[float]]:
     """Compute standard MACD Line (fast - slow), Signal Line, and Histogram."""
     n = len(closes)
-    if n < slow:
+    if n < slow or slow <= 0 or fast <= 0 or signal_period <= 0:
         return {
             "macd": [0.0] * n,
             "signal": [0.0] * n,
@@ -139,6 +146,9 @@ def calculate_macd(
 
 def calculate_pivots(high: float, low: float, close: float) -> dict[str, float]:
     """Calculate traditional Floor Trader Pivots (P, S1-S5, R1-R5)."""
+    if any(math.isnan(v) or math.isinf(v) for v in (high, low, close)):
+        return {k: 0.0 for k in ["P", "R1", "R2", "R3", "R4", "R5", "S1", "S2", "S3", "S4", "S5"]}
+
     p = (high + low + close) / 3.0
     diff = high - low
 
@@ -185,21 +195,25 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
         if len(df_1h) < 30 or len(df_1d) < 10:
             return None
 
-        # Clean 1H series
-        df_1h = df_1h.dropna(subset=["Close", "Volume"])
-        closes_1h = df_1h["Close"].tolist()
-        volumes_1h = df_1h["Volume"].tolist()
-        highs_1h = df_1h["High"].tolist()
-        lows_1h = df_1h["Low"].tolist()
-        opens_1h = df_1h["Open"].tolist()
+        # Clean 1H series (sanitize missing/NaN values across all OHLCV columns)
+        df_1h = df_1h.dropna(subset=["Open", "High", "Low", "Close", "Volume"])
+        if len(df_1h) < 30:
+            return None
+        closes_1h = [float(x) for x in df_1h["Close"]]
+        volumes_1h = [float(x) for x in df_1h["Volume"]]
+        highs_1h = [float(x) for x in df_1h["High"]]
+        lows_1h = [float(x) for x in df_1h["Low"]]
+        opens_1h = [float(x) for x in df_1h["Open"]]
         timestamps_1h = [
             ts.strftime("%Y-%m-%d %H:%M") if hasattr(ts, "strftime") else str(ts)[:16]
             for ts in df_1h.index
         ]
 
         # Clean 1D series
-        df_1d = df_1d.dropna(subset=["Close", "Volume"])
-        closes_1d = df_1d["Close"].tolist()
+        df_1d = df_1d.dropna(subset=["Open", "High", "Low", "Close", "Volume"])
+        if len(df_1d) < 10:
+            return None
+        closes_1d = [float(x) for x in df_1d["Close"]]
         timestamps_1d = [
             ts.strftime("%Y-%m-%d") if hasattr(ts, "strftime") else str(ts)[:10]
             for ts in df_1d.index
@@ -218,7 +232,7 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
 
         # Reconcile latest price against official exchange last_price if available
         official_last = getattr(t.fast_info, "last_price", None)
-        if official_last and float(official_last) > 0:
+        if official_last and float(official_last) > 0 and not math.isnan(float(official_last)):
             latest_price = round(float(official_last), 2)
         else:
             latest_price = round(float(closes_1h[-1]), 2)
@@ -233,7 +247,7 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
                 df_ext = t.history(period="1d", interval="1m", prepost=True)
                 if not df_ext.empty:
                     last_ext_px = float(df_ext["Close"].iloc[-1])
-                    if last_ext_px > 0:
+                    if last_ext_px > 0 and latest_price > 0 and not math.isnan(last_ext_px):
                         live_premarket_price = round(last_ext_px, 2)
                         live_premarket_chg_pct = round(((last_ext_px - latest_price) / latest_price) * 100.0, 2)
             except Exception:
@@ -245,24 +259,44 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
             else 0.0
         )
 
-        # 1H Candle Confirmation (Raghav Sir's TradingView Rule)
+        # 1H Candle Confirmation (TradingView Rule)
         latest_open_1h = float(opens_1h[-1])
         latest_close_1h = float(closes_1h[-1])
         latest_high_1h = float(highs_1h[-1])
         latest_low_1h = float(lows_1h[-1])
 
-        is_green_candle_1h = bool(latest_close_1h >= latest_open_1h)
-        is_red_candle_1h = bool(latest_close_1h <= latest_open_1h)
-        if latest_close_1h == latest_open_1h:
-            # Flat doji candle: disambiguate using bar change
-            is_green_candle_1h = bool(chg_1h_pct >= 0)
-            is_red_candle_1h = bool(chg_1h_pct <= 0)
+        if latest_close_1h > latest_open_1h:
+            is_green_candle_1h = True
+            is_red_candle_1h = False
+        elif latest_close_1h < latest_open_1h:
+            is_green_candle_1h = False
+            is_red_candle_1h = True
+        else:
+            # Flat doji candle (Close == Open): disambiguate using bar change vs prev close
+            if chg_1h_pct > 0:
+                is_green_candle_1h = True
+                is_red_candle_1h = False
+            elif chg_1h_pct < 0:
+                is_green_candle_1h = False
+                is_red_candle_1h = True
+            else:
+                # Zero change: disambiguate using histogram delta direction
+                is_green_candle_1h = bool(hist_delta_1h[-1] >= 0)
+                is_red_candle_1h = bool(hist_delta_1h[-1] < 0)
 
         candle_color_1h = "GREEN" if is_green_candle_1h else "RED"
 
         # 24H Price change vs prior completed day close (strictly session before today)
         today_date = now_ny.date()
-        prior_session_days = df_1d[df_1d.index.map(lambda x: x.date() < today_date)]
+
+        def _to_ny_date(ts: Any) -> dt.date:
+            if hasattr(ts, "tz") and ts.tz is not None:
+                return ts.tz_convert(NY_TZ).date()
+            elif hasattr(ts, "date"):
+                return ts.date()
+            return dt.date.fromisoformat(str(ts)[:10])
+
+        prior_session_days = df_1d[df_1d.index.map(lambda x: _to_ny_date(x) < today_date)]
         if not prior_session_days.empty:
             prior_day_bar = prior_session_days.iloc[-1]
             prior_day_close = float(prior_day_bar["Close"])
@@ -282,7 +316,7 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
         # so upcoming pivots are derived from today's completed session.
         is_post_close = (now_ny.weekday() >= 5) or ((now_ny.hour + now_ny.minute / 60.0) >= 16.0)
         pivot_reference_days = (
-            df_1d[df_1d.index.map(lambda x: x.date() <= today_date)]
+            df_1d[df_1d.index.map(lambda x: _to_ny_date(x) <= today_date)]
             if is_post_close
             else prior_session_days
         )
@@ -301,6 +335,8 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
         vol_sma20 = sum(recent_vol_20) / len(recent_vol_20) if recent_vol_20 else 1.0
         current_vol = float(volumes_1h[-1])
         rvol_1h = round(current_vol / vol_sma20, 2) if vol_sma20 > 0 else 1.0
+        if math.isnan(rvol_1h) or math.isinf(rvol_1h):
+            rvol_1h = 1.0
 
         # MACD Z-score over rolling 60 bars
         window_macd = macd_1h[-60:]
@@ -308,6 +344,8 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
         var_macd = sum((x - mean_macd) ** 2 for x in window_macd) / len(window_macd)
         std_macd = math.sqrt(var_macd) if var_macd > 0 else 1e-4
         z_macd = round((macd_1h[-1] - mean_macd) / std_macd, 2)
+        if math.isnan(z_macd) or math.isinf(z_macd):
+            z_macd = 0.0
 
         # Crossover Detection
         curr_m = macd_1h[-1]
@@ -345,7 +383,7 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
             and (spread <= 0.05 * abs(curr_s) or spread <= 0.08)
         )
 
-        # Raghav Sir's Confirmation Enforcement:
+        # Quantitative Candle Confirmation Enforcement:
         # Bullish Crossover requires: MACD > Signal (hist > 0) AND confirmed Green Candle (Close >= Open).
         # Bearish Crossover requires: MACD < Signal (hist < 0) AND confirmed Red Candle (Close <= Open).
         has_recent_bull_cross = (
@@ -566,6 +604,35 @@ def format_institutional_email(
     pt_lines.extend(
         [
             "",
+            f"[TIER 1B: CONFIRMED SUPRA-ZERO BULLISH CROSSOVERS] (Active: {len(tier1_bull)})",
+            "Trigger: 1-Hour MACD crossed above Signal Line while MACD >= 0 (Momentum Continuation)",
+            "-" * 80,
+        ]
+    )
+
+    for it in tier1_bull:
+        piv = it.get("pivots", {})
+        px_display = f"${it['latest_price']:.2f}"
+        if it.get("live_premarket_price"):
+            pm_chg = it.get('live_premarket_chg_pct')
+            chg_str = f" | {pm_chg:+.2f}%" if pm_chg is not None else ""
+            px_display += f" (Pre-Market: ${it['live_premarket_price']:.2f}{chg_str})"
+        pt_lines.extend(
+            [
+                f"TICKER: {it['ticker']:<6} | {it['fund_name']} ({it['leverage']})",
+                f"  Price: {px_display} (1H: {it['chg_1h_pct']:+.2f}% | 24H: {it['chg_1d_pct']:+.2f}%)",
+                f"  1H Candle: {it.get('candle_color_1h', 'GREEN')} (Confirmed Green: O=${it.get('open_1h', 0):.2f} -> C=${it.get('latest_price', 0):.2f})",
+                f"  1H MACD: {it['macd_1h']:+.4f} | Signal: {it['signal_1h']:+.4f} | Hist: {it['hist_1h']:+.4f} (GREEN)",
+                f"  RVOL: {it['rvol_1h']:.2f}x | Z-Score: {it['z_macd_1h']:.2f} sigma | Score: {it['confluence_score']}/100",
+                f"  Floor Pivots: S2=${piv.get('S2', 0):.2f} S1=${piv.get('S1', 0):.2f} P=${piv.get('P', 0):.2f} R1=${piv.get('R1', 0):.2f}",
+                f"  1D Trend: {'BULLISH' if it['daily_trend_bullish'] else 'BEARISH'}",
+                "",
+            ]
+        )
+
+    pt_lines.extend(
+        [
+            "",
             f"[TIER 2: PRE-CLOSE SQUEEZE RADAR] (Impending: {len(tier2_imminent)})",
             "Trigger: Histogram spread compression >= 35% heading into closing rebalancing hour",
             "-" * 80,
@@ -623,12 +690,13 @@ def format_institutional_email(
         score = it.get("confluence_score", 0)
         score_color = "#34d399" if score >= 40 else ("#38bdf8" if score >= 0 else "#facc15")
 
-        px_str = f"${it['latest_price']:.2f}"
+        px_display = f"${it['latest_price']:.2f}"
+        pm_display_html = ""
         if it.get("live_premarket_price"):
             pm_chg = it.get('live_premarket_chg_pct')
             pm_color = '#34d399' if (pm_chg or 0) >= 0 else '#fb7185'
             chg_badge = f" ({pm_chg:+.2f}%)" if pm_chg is not None else ""
-            px_str = f"""${it['latest_price']:.2f} <div style="font-size:10.5px; color:{pm_color}; font-weight:700;">Pre-Mkt: ${it['live_premarket_price']:.2f}{chg_badge}</div>"""
+            pm_display_html = f'<div style="font-size:10px; color:{pm_color}; font-weight:700; margin-top:2px;">Pre-Mkt: ${it["live_premarket_price"]:.2f}{chg_badge}</div>'
 
         card = f"""
         <!-- CARD: {it['ticker']} -->
@@ -640,12 +708,13 @@ def format_institutional_email(
                 <tr>
                   <td style="vertical-align:middle;">
                     <span style="font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:19px; font-weight:800; color:#38bdf8; letter-spacing:0.03em;">{it['ticker']}</span>
-                    <span style="display:inline-block; margin-left:6px; background-color:#1e2638; color:#cbd5e1; padding:2px 7px; border-radius:3px; font-size:10.5px; font-weight:700; font-family:ui-monospace, monospace;">{it.get('leverage', '1x')}</span>
-                    <span style="display:inline-block; margin-left:6px; background-color:rgba(16,185,129,0.15); color:#34d399; border:1px solid rgba(52,211,153,0.35); padding:2px 7px; border-radius:3px; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">SUB-ZERO REVERSAL</span>
-                    <span style="display:inline-block; margin-left:6px; background-color:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(52,211,153,0.4); padding:2px 7px; border-radius:3px; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">1H CANDLE: GREEN (CONFIRMED)</span>
+                    <span style="display:inline-block; margin:2px 2px 2px 6px; background-color:#1e2638; color:#cbd5e1; padding:2px 7px; border-radius:3px; font-size:10.5px; font-weight:700; font-family:ui-monospace, monospace;">{it.get('leverage', '1x')}</span>
+                    <span style="display:inline-block; margin:2px 2px 2px 4px; background-color:rgba(16,185,129,0.15); color:#34d399; border:1px solid rgba(52,211,153,0.35); padding:2px 7px; border-radius:3px; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">SUB-ZERO REVERSAL</span>
+                    <span style="display:inline-block; margin:2px 2px 2px 4px; background-color:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(52,211,153,0.4); padding:2px 7px; border-radius:3px; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">1H CANDLE: GREEN (CONFIRMED)</span>
                   </td>
-                  <td style="text-align:right; vertical-align:middle;">
-                    <span style="font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:19px; font-weight:800; color:#ffffff;">{px_str}</span>
+                  <td style="text-align:right; vertical-align:middle; white-space:nowrap; padding-left:12px;">
+                    <div style="font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:18px; font-weight:800; color:#ffffff;">{px_display}</div>
+                    {pm_display_html}
                   </td>
                 </tr>
                 <tr>
@@ -749,6 +818,158 @@ def format_institutional_email(
         else """
     <div style="padding:16px; background-color:#111622; border:1px solid #1e2638; border-radius:6px; color:#94a3b8; text-align:center; font-size:12px;">
       No active sub-zero crossovers triggered during this diagnostic window.
+    </div>
+    """
+    )
+
+    # 2B. HTML Card Generation for Tier 1B Supra-Zero Crossovers
+    cards_bull_html = []
+    for it in tier1_bull:
+        piv = it.get("pivots", {})
+        p = piv.get("P", 0.0)
+        s1 = piv.get("S1", 0.0)
+        s2 = piv.get("S2", 0.0)
+        r1 = piv.get("R1", 0.0)
+        z = it.get("z_macd_1h", 0.0)
+        regime_desc = "Supra-Zero Momentum Expansion"
+        is_bull_trend = it.get("daily_trend_bullish", False)
+        trend_text = "BULLISH (DUAL TIMEFRAME)" if is_bull_trend else "BEARISH (PULLBACK RISK)"
+        trend_color = "#34d399" if is_bull_trend else "#fb7185"
+        chg_1h = it.get("chg_1h_pct", 0.0)
+        chg_1h_color = "#34d399" if chg_1h >= 0 else "#fb7185"
+        chg_24h = it.get("chg_1d_pct", 0.0)
+        chg_24h_color = "#34d399" if chg_24h >= 0 else "#fb7185"
+        score = it.get("confluence_score", 0)
+        score_color = "#34d399" if score >= 40 else ("#38bdf8" if score >= 0 else "#facc15")
+
+        px_display = f"${it['latest_price']:.2f}"
+        pm_display_html = ""
+        if it.get("live_premarket_price"):
+            pm_chg = it.get('live_premarket_chg_pct')
+            pm_color = '#34d399' if (pm_chg or 0) >= 0 else '#fb7185'
+            chg_badge = f" ({pm_chg:+.2f}%)" if pm_chg is not None else ""
+            pm_display_html = f'<div style="font-size:10px; color:{pm_color}; font-weight:700; margin-top:2px;">Pre-Mkt: ${it["live_premarket_price"]:.2f}{chg_badge}</div>'
+
+        card = f"""
+        <!-- CARD: {it['ticker']} -->
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#111622; border:1px solid #1e2638; border-left:4px solid #10b981; border-radius:6px; margin-bottom:14px; overflow:hidden;">
+          <tr>
+            <td style="padding:14px 16px;">
+              <!-- Header Row: Ticker, Badges, Price -->
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td style="vertical-align:middle;">
+                    <span style="font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:19px; font-weight:800; color:#34d399; letter-spacing:0.03em;">{it['ticker']}</span>
+                    <span style="display:inline-block; margin:2px 2px 2px 6px; background-color:#1e2638; color:#cbd5e1; padding:2px 7px; border-radius:3px; font-size:10.5px; font-weight:700; font-family:ui-monospace, monospace;">{it.get('leverage', '1x')}</span>
+                    <span style="display:inline-block; margin:2px 2px 2px 4px; background-color:rgba(16,185,129,0.15); color:#34d399; border:1px solid rgba(52,211,153,0.35); padding:2px 7px; border-radius:3px; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">SUPRA-ZERO CROSS</span>
+                    <span style="display:inline-block; margin:2px 2px 2px 4px; background-color:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(52,211,153,0.4); padding:2px 7px; border-radius:3px; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">1H CANDLE: GREEN (CONFIRMED)</span>
+                  </td>
+                  <td style="text-align:right; vertical-align:middle; white-space:nowrap; padding-left:12px;">
+                    <div style="font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:18px; font-weight:800; color:#ffffff;">{px_display}</div>
+                    {pm_display_html}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding-top:4px; font-size:11.5px; color:#cbd5e1;">
+                    {it.get('fund_name', it['ticker'])} &middot; <span style="color:#94a3b8;">Underlying: {it.get('underlying', '—')}</span>
+                  </td>
+                  <td style="padding-top:4px; text-align:right; font-family:ui-monospace, monospace; font-size:11.5px;">
+                    <span style="color:{chg_1h_color}; font-weight:700;">1H: {chg_1h:+.2f}%</span>
+                    <span style="color:#64748b; margin:0 4px;">|</span>
+                    <span style="color:{chg_24h_color};">24H: {chg_24h:+.2f}%</span>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- 4-Box Metric Strip -->
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top:12px; background-color:#0b0f17; border:1px solid #1e2638; border-radius:4px; table-layout:fixed;">
+                <tr>
+                  <td style="padding:8px 8px; border-right:1px solid #1e2638; width:25%;">
+                    <div style="font-size:9px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; font-weight:700;">1H MACD</div>
+                    <div style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#38bdf8; margin-top:2px;">
+                      {it.get('macd_1h', 0):+.3f}
+                    </div>
+                    <div style="font-family:ui-monospace, monospace; font-size:9.5px; color:#94a3b8; margin-top:1px;">
+                      Sig: {it.get('signal_1h', 0):+.3f}
+                    </div>
+                  </td>
+                  <td style="padding:8px 8px; border-right:1px solid #1e2638; width:25%;">
+                    <div style="font-size:9px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; font-weight:700;">HISTOGRAM</div>
+                    <div style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#34d399; margin-top:2px;">
+                      {it.get('hist_1h', 0):+.4f}
+                    </div>
+                    <div style="font-family:ui-monospace, monospace; font-size:9.5px; color:#94a3b8; margin-top:1px;">
+                      Delta: {it.get('hist_delta_1h', 0):+.4f}
+                    </div>
+                  </td>
+                  <td style="padding:8px 8px; border-right:1px solid #1e2638; width:25%;">
+                    <div style="font-size:9px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; font-weight:700;">RVOL (20-BAR)</div>
+                    <div style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#e2e8f0; margin-top:2px;">
+                      {it.get('rvol_1h', 1.0):.2f}x
+                    </div>
+                    <div style="font-family:ui-monospace, monospace; font-size:9.5px; color:#94a3b8; margin-top:1px;">
+                      Vol Pace
+                    </div>
+                  </td>
+                  <td style="padding:8px 8px; width:25%;">
+                    <div style="font-size:9px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; font-weight:700;">SCORE</div>
+                    <div style="font-family:ui-monospace, monospace; font-size:13px; font-weight:800; color:{score_color}; margin-top:2px;">
+                      {score:+d}/100
+                    </div>
+                    <div style="font-family:ui-monospace, monospace; font-size:9.5px; color:#94a3b8; margin-top:1px;">
+                      Confluence
+                    </div>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Structured Floor Pivots & Macro Alignment Box -->
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top:10px; background-color:#0b0f17; border:1px solid #1e2638; border-radius:4px; font-size:11px;">
+                <tr>
+                  <td style="padding:7px 10px; border-bottom:1px solid #1e2638;">
+                    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td style="font-size:9.5px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.04em;">
+                          FLOOR PIVOTS (AUTO)
+                        </td>
+                        <td style="text-align:right; font-family:ui-monospace, monospace; font-size:11px;">
+                          <span style="color:#64748b;">S2:</span> <span style="color:#38bdf8; font-weight:700;">${s2:.2f}</span> &nbsp;
+                          <span style="color:#64748b;">S1:</span> <span style="color:#38bdf8; font-weight:700;">${s1:.2f}</span> &nbsp;
+                          <span style="color:#94a3b8;">P:</span> <strong style="color:#ffffff;">${p:.2f}</strong> &nbsp;
+                          <span style="color:#64748b;">R1:</span> <span style="color:#fb7185; font-weight:700;">${r1:.2f}</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:7px 10px;">
+                    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td style="font-size:10.5px; color:#cbd5e1;">
+                          Regime: <strong style="color:#ffffff;">{z:.2f}&sigma;</strong> ({regime_desc})
+                        </td>
+                        <td style="text-align:right; font-size:10.5px;">
+                          1D Macro: <strong style="color:{trend_color};">{trend_text}</strong>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+        </table>
+        """
+        cards_bull_html.append(card)
+
+    cards_bull_block = (
+        "\n".join(cards_bull_html)
+        if cards_bull_html
+        else """
+    <div style="padding:16px; background-color:#111622; border:1px solid #1e2638; border-radius:6px; color:#94a3b8; text-align:center; font-size:12px;">
+      No active supra-zero crossovers triggered during this diagnostic window.
     </div>
     """
     )
@@ -882,17 +1103,21 @@ def format_institutional_email(
             <td style="padding:12px 16px; background-color:#090d15; border-bottom:1px solid #1e2638;">
               <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="table-layout:fixed;">
                 <tr>
-                  <td style="padding:6px 6px; border-right:1px solid #1e2638; text-align:center;">
-                    <div class="kpi-sub" style="font-size:9.5px; color:#94a3b8; font-weight:700; text-transform:uppercase; letter-spacing:0.05em;">SUB-ZERO REVERSALS</div>
-                    <div class="kpi-text" style="font-family:ui-monospace, monospace; font-size:16px; font-weight:800; color:#34d399; margin-top:2px;">{len(tier1_subzero)} ACTIVE</div>
+                  <td style="padding:6px 4px; border-right:1px solid #1e2638; text-align:center;">
+                    <div class="kpi-sub" style="font-size:9px; color:#94a3b8; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">SUB-ZERO REV</div>
+                    <div class="kpi-text" style="font-family:ui-monospace, monospace; font-size:15px; font-weight:800; color:#38bdf8; margin-top:2px;">{len(tier1_subzero)} ACTIVE</div>
                   </td>
-                  <td style="padding:6px 6px; border-right:1px solid #1e2638; text-align:center;">
-                    <div class="kpi-sub" style="font-size:9.5px; color:#94a3b8; font-weight:700; text-transform:uppercase; letter-spacing:0.05em;">PRE-CLOSE SQUEEZE</div>
-                    <div class="kpi-text" style="font-family:ui-monospace, monospace; font-size:16px; font-weight:800; color:#facc15; margin-top:2px;">{len(tier2_imminent)} RADAR</div>
+                  <td style="padding:6px 4px; border-right:1px solid #1e2638; text-align:center;">
+                    <div class="kpi-sub" style="font-size:9px; color:#94a3b8; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">SUPRA-ZERO CROSS</div>
+                    <div class="kpi-text" style="font-family:ui-monospace, monospace; font-size:15px; font-weight:800; color:#34d399; margin-top:2px;">{len(tier1_bull)} ACTIVE</div>
                   </td>
-                  <td style="padding:6px 6px; text-align:center;">
-                    <div class="kpi-sub" style="font-size:9.5px; color:#94a3b8; font-weight:700; text-transform:uppercase; letter-spacing:0.05em;">MANDATORY EXITS</div>
-                    <div class="kpi-text" style="font-family:ui-monospace, monospace; font-size:16px; font-weight:800; color:#fb7185; margin-top:2px;">{len(tier_bear)} CASH</div>
+                  <td style="padding:6px 4px; border-right:1px solid #1e2638; text-align:center;">
+                    <div class="kpi-sub" style="font-size:9px; color:#94a3b8; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">PRE-CLOSE SQUEEZE</div>
+                    <div class="kpi-text" style="font-family:ui-monospace, monospace; font-size:15px; font-weight:800; color:#facc15; margin-top:2px;">{len(tier2_imminent)} RADAR</div>
+                  </td>
+                  <td style="padding:6px 4px; text-align:center;">
+                    <div class="kpi-sub" style="font-size:9px; color:#94a3b8; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">MANDATORY EXITS</div>
+                    <div class="kpi-text" style="font-family:ui-monospace, monospace; font-size:15px; font-weight:800; color:#fb7185; margin-top:2px;">{len(tier_bear)} CASH</div>
                   </td>
                 </tr>
               </table>
@@ -903,16 +1128,29 @@ def format_institutional_email(
           <tr>
             <td class="box-td" style="padding:18px 22px;">
 
-              <!-- SECTION 1: TIER 1A SUB-ZERO REVERSALS -->
+              <!-- SECTION 1A: TIER 1A SUB-ZERO REVERSALS -->
               <div style="margin-bottom:20px;">
                 <div style="font-size:12px; font-weight:800; color:#38bdf8; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">
                   TIER 1A: CONFIRMED SUB-ZERO BULLISH REVERSALS
                 </div>
                 <div style="font-size:11px; color:#cbd5e1; margin-bottom:14px; line-height:1.5;">
-                  Confirmed 1-Hour bar close where MACD Line crossed above Signal Line while MACD &lt; 0. Sub-zero crossovers signal high-convexity turnaround points at key structural floor pivot levels.
+                  Confirmed 1-Hour bar close where MACD Line crossed above Signal Line while MACD &lt; 0 with confirmed Green Candle. High-convexity turnaround points at structural floor pivot levels.
                 </div>
                 
                 {cards_block}
+
+              </div>
+
+              <!-- SECTION 1B: TIER 1B SUPRA-ZERO BULLISH CROSSOVERS -->
+              <div style="margin-top:24px; margin-bottom:20px;">
+                <div style="font-size:12px; font-weight:800; color:#34d399; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">
+                  TIER 1B: CONFIRMED SUPRA-ZERO BULLISH CROSSOVERS
+                </div>
+                <div style="font-size:11px; color:#cbd5e1; margin-bottom:14px; line-height:1.5;">
+                  Confirmed 1-Hour bar close where MACD Line crossed above Signal Line while MACD &ge; 0 with confirmed Green Candle. Upward momentum continuation in established trends.
+                </div>
+                
+                {cards_bull_block}
 
               </div>
 
@@ -1028,12 +1266,13 @@ def send_email_alert(
     if isinstance(recipient, str):
         recipients_list = [r.strip() for r in re.split(r"[,;]", recipient) if r.strip()]
     else:
-        recipients_list = list(recipient)
+        recipients_list = [str(r).strip() for r in recipient if str(r).strip()]
 
-    if not recipients_list or recipients_list == [""]:
-        recipients_list = [sender] if sender else [DEFAULT_RECIPIENT]
+    if not recipients_list:
+        recipients_list = [sender]
 
     try:
+        ssl_ctx = ssl.create_default_context()
         # Send individual message per recipient to ensure maximum deliverability (1-on-1 inbox classification)
         for target_email in recipients_list:
             msg = email.mime.multipart.MIMEMultipart("alternative")
@@ -1041,13 +1280,13 @@ def send_email_alert(
             msg["From"] = sender
             msg["To"] = target_email
             msg["Date"] = email.utils.formatdate(localtime=True)
-            # Let SMTP server (Gmail) generate authentic DKIM-aligned Message-ID automatically
+            # Let SMTP server generate authentic DKIM-aligned Message-ID automatically
 
             msg.attach(email.mime.text.MIMEText(text_body, "plain", "utf-8"))
             msg.attach(email.mime.text.MIMEText(html_body, "html", "utf-8"))
 
             if smtp_port == 465:
-                with smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=20) as server:
+                with smtplib.SMTP_SSL(smtp_host, smtp_port, context=ssl_ctx, timeout=20) as server:
                     server.login(sender, password)
                     refused = server.sendmail(sender, [target_email], msg.as_string())
                     if refused:
@@ -1055,7 +1294,7 @@ def send_email_alert(
             else:
                 with smtplib.SMTP(smtp_host, smtp_port, timeout=20) as server:
                     server.ehlo()
-                    server.starttls()
+                    server.starttls(context=ssl_ctx)
                     server.ehlo()
                     server.login(sender, password)
                     refused = server.sendmail(sender, [target_email], msg.as_string())
@@ -1086,6 +1325,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--force-send",
+        "--force-email",
+        dest="force_send",
         action="store_true",
         help="Force dispatch email regardless of deduplication state",
     )
@@ -1164,7 +1405,7 @@ def main() -> None:
             json.dump(payload, f, indent=2)
     print(f"Saved signals artifact to {SIGNALS_OUT_MACD} ({SIGNALS_OUT_MACD.stat().st_size:,} bytes)")
 
-    # Identify active signal sets for this run (Raghav Sir Confirmed Rules)
+    # Identify active signal sets for this run (Confirmed Candle Rules)
     current_subzero_tickers = sorted(
         [
             s["ticker"]
@@ -1217,10 +1458,10 @@ def main() -> None:
         except Exception:
             prior_state = {}
 
-    prev_subzero = set(prior_state.get("active_subzero", []))
-    prev_bear = set(prior_state.get("active_bear", []))
-    prev_squeeze = set(prior_state.get("active_squeeze", []))
-    prev_crossovers = set(prior_state.get("active_crossovers", []))
+    prev_subzero = set(prior_state.get("sent_subzero", prior_state.get("active_subzero", [])))
+    prev_bear = set(prior_state.get("sent_bear", prior_state.get("active_bear", [])))
+    prev_squeeze = set(prior_state.get("sent_squeeze", prior_state.get("active_squeeze", [])))
+    prev_crossovers = set(prior_state.get("sent_crossovers", prior_state.get("active_crossovers", [])))
 
     new_subzero = set(current_subzero_tickers) - prev_subzero
     new_bear = set(current_bear_tickers) - prev_bear
@@ -1284,6 +1525,10 @@ def main() -> None:
         "active_bear": current_bear_tickers,
         "active_squeeze": current_squeeze_tickers,
         "active_crossovers": current_crossovers,
+        "sent_subzero": current_subzero_tickers if should_send else list(prev_subzero),
+        "sent_bear": current_bear_tickers if should_send else list(prev_bear),
+        "sent_squeeze": current_squeeze_tickers if should_send else list(prev_squeeze),
+        "sent_crossovers": current_crossovers if should_send else list(prev_crossovers),
         "new_subzero": sorted(list(new_subzero)),
         "new_bear": sorted(list(new_bear)),
         "new_squeeze": sorted(list(new_squeeze)),
@@ -1300,8 +1545,32 @@ def main() -> None:
     print(f"Saved latest alert artifact to {ALERT_OUT_MACD}")
 
     if should_send:
-        subject = f"[Conviction Labs] 1H MACD Momentum Radar · {session_badge} · {scan_time_str}"
+        # Dynamic institutional subject with ticker highlights
+        if new_subzero:
+            ticker_list = sorted(list(new_subzero))
+            lead_tickers = ", ".join(ticker_list[:4])
+            if len(ticker_list) > 4:
+                lead_tickers += f" (+{len(ticker_list) - 4} more)"
+            subject = f"[Conviction Labs] SUB-ZERO REVERSAL: {lead_tickers} · {session_badge} · {scan_time_str}"
+        elif new_bear and not new_crossovers:
+            ticker_list = sorted(list(new_bear))
+            lead_tickers = ", ".join(ticker_list[:4])
+            if len(ticker_list) > 4:
+                lead_tickers += f" (+{len(ticker_list) - 4} more)"
+            subject = f"[Conviction Labs] BEARISH EXIT: {lead_tickers} · {session_badge} · {scan_time_str}"
+        elif new_crossovers:
+            ticker_list = sorted(list(new_crossovers))
+            lead_tickers = ", ".join(ticker_list[:4])
+            if len(ticker_list) > 4:
+                lead_tickers += f" (+{len(ticker_list) - 4} more)"
+            subject = f"[Conviction Labs] 1H MOMENTUM CROSS: {lead_tickers} · {session_badge} · {scan_time_str}"
+        elif is_pre_close_time:
+            subject = f"[Conviction Labs] PRE-CLOSE SQUEEZE RADAR · {session_badge} · {scan_time_str}"
+        else:
+            subject = f"[Conviction Labs] 1H MACD Momentum Radar · {session_badge} · {scan_time_str}"
+
         print(f"[Alert Engine] Dispatching email ({send_reason})...")
+        print(f"[Alert Engine] Subject: {subject}")
         send_email_alert(subject, text_alert, html_alert, recipient)
 
 
