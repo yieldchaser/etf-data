@@ -13,7 +13,7 @@ This script:
    - Tier 1B: Confirmed Supra-Zero Bullish Crossovers (momentum continuation).
    - Tier 2: Pre-Close Squeeze Watch (histogram compression >= 35% heading into 15:00-16:00 EST).
    - Tier 3: Bearish Breakdowns / Mandatory Cash Parking (long de-grossing exits).
-4. Dispatches institutional alerts to `raghavendra.ds1@gmail.com`:
+4. Dispatches tactical alerts to configured recipients:
    - "Whenever or as soon as data triggers": event-driven dispatch upon fresh crossovers.
    - Scheduled Pre-Close Golden Hour briefing at 15:00 EST.
    - Deduplication engine tracks state in `latest_macd_alert.json` to prevent inbox spam.
@@ -50,10 +50,14 @@ if sys.platform == "win32":
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CATALOG_PATH = REPO_ROOT / "docs" / "data" / "flows" / "catalog.json"
-SIGNALS_OUT = REPO_ROOT / "docs" / "data" / "flows" / "macd_signals.json"
-ALERT_OUT = REPO_ROOT / "docs" / "data" / "flows" / "latest_macd_alert.json"
+SIGNALS_OUT_MACD = REPO_ROOT / "docs" / "data" / "macd" / "signals.json"
+ALERT_OUT_MACD = REPO_ROOT / "docs" / "data" / "macd" / "latest_alert.json"
+SIGNALS_OUT_FLOWS = REPO_ROOT / "docs" / "data" / "flows" / "macd_signals.json"
+ALERT_OUT_FLOWS = REPO_ROOT / "docs" / "data" / "flows" / "latest_macd_alert.json"
+SIGNALS_OUT = SIGNALS_OUT_MACD
+ALERT_OUT = ALERT_OUT_MACD
 
-DEFAULT_RECIPIENT = "raghavendra.ds1@gmail.com"
+DEFAULT_RECIPIENT = ""
 NY_TZ = ZoneInfo("America/New_York")
 
 
@@ -433,7 +437,6 @@ def format_institutional_email(
     signals_data: list[dict[str, Any]],
     scan_time_str: str,
     session_info: tuple[str, str, str],
-    recipient_email: str = DEFAULT_RECIPIENT,
 ) -> tuple[str, str]:
     """Build high-DPI responsive HTML & Plain Text alert without emojis or fluff."""
     session_code, session_name, session_badge = session_info
@@ -460,7 +463,7 @@ def format_institutional_email(
     pt_lines = [
         "=" * 80,
         f"CONVICTION LABS · QUANTITATIVE MACD RADAR ({session_name})",
-        f"SCAN WINDOW: {scan_time_str} · RECIPIENT: {recipient_email}",
+        f"SCAN WINDOW: {scan_time_str}",
         "=" * 80,
         "",
         f"[TIER 1A: CONFIRMED SUB-ZERO BULLISH REVERSALS] (Active: {len(tier1_subzero)})",
@@ -789,7 +792,7 @@ def format_institutional_email(
                 </tr>
               </table>
               <div style="font-size:11px; color:#cbd5e1; margin-top:8px;">
-                Scan Window: <strong style="color:#ffffff;">{scan_time_str}</strong> &middot; Target: <strong style="color:#ffffff;">{recipient_email}</strong>
+                Scan Window: <strong style="color:#ffffff;">{scan_time_str}</strong>
               </div>
             </td>
           </tr>
@@ -923,7 +926,7 @@ def format_institutional_email(
 
 
 def send_email_alert(
-    subject: str, text_body: str, html_body: str, recipient: str = DEFAULT_RECIPIENT
+    subject: str, text_body: str, html_body: str, recipient: str = ""
 ) -> bool:
     """Send email via SMTP SSL (465) or STARTTLS (587) with multi-recipient support."""
     sender = (os.environ.get("ALERT_EMAIL_SENDER") or "").strip()
@@ -1003,11 +1006,11 @@ def main() -> None:
         "--recipient",
         type=str,
         default="",
-        help="Custom recipient email (defaults to raghavendra.ds1@gmail.com)",
+        help="Custom recipient email (defaults to ALERT_EMAIL_RECIPIENT env var)",
     )
     args = parser.parse_args()
 
-    recipient = args.recipient or os.environ.get("ALERT_EMAIL_RECIPIENT") or DEFAULT_RECIPIENT
+    recipient = (args.recipient or os.environ.get("ALERT_EMAIL_RECIPIENT") or "").strip()
 
     if not CATALOG_PATH.is_file():
         print(f"Catalog file not found at {CATALOG_PATH}")
@@ -1064,15 +1067,15 @@ def main() -> None:
         "session": session_code,
         "session_name": session_name,
         "total_scanned": len(results),
-        "recipient": recipient,
         "signals": results,
     }
 
-    # Save to JSON
-    SIGNALS_OUT.parent.mkdir(parents=True, exist_ok=True)
-    with open(SIGNALS_OUT, "w", encoding="utf-8") as f:
-        json.dump(payload, f, indent=2)
-    print(f"Saved signals artifact to {SIGNALS_OUT} ({SIGNALS_OUT.stat().st_size:,} bytes)")
+    # Save to JSON (both dedicated macd/ directory and flows/ fallback)
+    for p in (SIGNALS_OUT_MACD, SIGNALS_OUT_FLOWS):
+        p.parent.mkdir(parents=True, exist_ok=True)
+        with open(p, "w", encoding="utf-8") as f:
+            json.dump(payload, f, indent=2)
+    print(f"Saved signals artifact to {SIGNALS_OUT_MACD} ({SIGNALS_OUT_MACD.stat().st_size:,} bytes)")
 
     # Identify active signal sets for this run
     current_subzero_tickers = sorted(
@@ -1097,9 +1100,10 @@ def main() -> None:
 
     # Load prior alert state for deduplication
     prior_state = {}
-    if ALERT_OUT.is_file():
+    alert_read_path = ALERT_OUT_MACD if ALERT_OUT_MACD.is_file() else ALERT_OUT_FLOWS
+    if alert_read_path.is_file():
         try:
-            with open(ALERT_OUT, "r", encoding="utf-8") as f:
+            with open(alert_read_path, "r", encoding="utf-8") as f:
                 prior_state = json.load(f)
         except Exception:
             prior_state = {}
@@ -1126,16 +1130,13 @@ def main() -> None:
     )
 
     # Build Email Alert Text and HTML
-    text_alert, html_alert = format_institutional_email(
-        results, scan_time_str, session_info, recipient
-    )
+    text_alert, html_alert = format_institutional_email(results, scan_time_str, session_info)
 
     # Save Alert payload for inspection and state tracking
     alert_payload = {
         "timestamp_utc": now_utc.isoformat(),
         "scan_time_str": scan_time_str,
         "session": session_code,
-        "recipient": recipient,
         "active_subzero": current_subzero_tickers,
         "active_bear": current_bear_tickers,
         "active_squeeze": current_squeeze_tickers,
@@ -1146,9 +1147,11 @@ def main() -> None:
         "html_content": html_alert,
     }
 
-    with open(ALERT_OUT, "w", encoding="utf-8") as f:
-        json.dump(alert_payload, f, indent=2)
-    print(f"Saved latest alert artifact to {ALERT_OUT}")
+    for p in (ALERT_OUT_MACD, ALERT_OUT_FLOWS):
+        p.parent.mkdir(parents=True, exist_ok=True)
+        with open(p, "w", encoding="utf-8") as f:
+            json.dump(alert_payload, f, indent=2)
+    print(f"Saved latest alert artifact to {ALERT_OUT_MACD}")
 
     should_send = False
     send_reason = ""

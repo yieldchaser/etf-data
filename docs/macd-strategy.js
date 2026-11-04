@@ -44,11 +44,24 @@
     },
 
     /** Fetch pre-computed 160-instrument dataset */
-    async loadData() {
+    async loadData(force = false) {
+      if (this.state.signalsData && !force) return;
       try {
+        const fetchWithFallback = async (primary, fallback) => {
+          try {
+            const res = await fetch(primary);
+            if (res && res.ok) return res;
+          } catch (_) {}
+          try {
+            const res = await fetch(fallback);
+            if (res && res.ok) return res;
+          } catch (_) {}
+          return null;
+        };
+
         const [sigRes, alertRes] = await Promise.all([
-          fetch('data/flows/macd_signals.json'),
-          fetch('data/flows/latest_macd_alert.json').catch(() => null)
+          fetchWithFallback('data/macd/signals.json', 'data/flows/macd_signals.json'),
+          fetchWithFallback('data/macd/latest_alert.json', 'data/flows/latest_macd_alert.json')
         ]);
 
         if (sigRes && sigRes.ok) {
@@ -152,6 +165,9 @@
 
     /** Bind DOM events */
     bindEvents() {
+      if (this._eventsBound) return;
+      this._eventsBound = true;
+
       window.addEventListener('resize', () => {
         if (this.state.activeView === 'chart') {
           this.drawChart();
@@ -298,6 +314,27 @@
         elChg.innerHTML = `1H: <span style="color:${c1h >= 0 ? '#10b981' : '#f43f5e'}">${c1h >= 0 ? '+' : ''}${c1h}%</span> · 24H: <span style="color:${c1d >= 0 ? '#10b981' : '#f43f5e'}">${c1d >= 0 ? '+' : ''}${c1d}%</span>`;
       }
 
+      // Update Dynamic Regime Header Badge
+      const elRegimeBadge = document.getElementById('macd-active-regime-badge');
+      if (elRegimeBadge) {
+        if (signal.signal_state === 'SUB_ZERO_BOUNCE' || (signal.bull_cross_fresh && signal.is_subzero)) {
+          elRegimeBadge.textContent = 'SUB-ZERO REVERSAL CONFLUENCE';
+          elRegimeBadge.className = 'flow-badge macd-badge-subzero';
+        } else if (signal.signal_state === 'BULLISH_CROSS' || signal.bull_cross_fresh) {
+          elRegimeBadge.textContent = 'BULLISH MOMENTUM CROSS';
+          elRegimeBadge.className = 'flow-badge macd-badge-bull';
+        } else if (signal.signal_state === 'IMMINENT_SQUEEZE') {
+          elRegimeBadge.textContent = 'PRE-CLOSE SQUEEZE WATCH';
+          elRegimeBadge.className = 'flow-badge macd-badge-imminent';
+        } else if (signal.signal_direction === 'BEARISH' || signal.bear_cross_fresh) {
+          elRegimeBadge.textContent = 'BEARISH EXIT TO CASH';
+          elRegimeBadge.className = 'flow-badge macd-badge-bear';
+        } else {
+          elRegimeBadge.textContent = signal.signal_label || 'MOMENTUM REGIME ACTIVE';
+          elRegimeBadge.className = 'flow-badge macd-badge-neutral';
+        }
+      }
+
       // Update Ticker Selector Dropdown
       const select = document.getElementById('macd-ticker-select');
       if (select && select.value !== signal.ticker) {
@@ -389,6 +426,7 @@
       // Setup High-DPI
       const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
+      if (!rect || rect.width <= 0 || rect.height <= 0) return;
       const w = rect.width;
       const h = rect.height;
 
@@ -786,9 +824,9 @@
       if (this.state.searchQuery) {
         const q = this.state.searchQuery;
         list = list.filter(s =>
-          s.ticker.toLowerCase().includes(q) ||
-          s.fund_name.toLowerCase().includes(q) ||
-          s.underlying.toLowerCase().includes(q)
+          (s.ticker || '').toLowerCase().includes(q) ||
+          (s.fund_name || '').toLowerCase().includes(q) ||
+          (s.underlying || '').toLowerCase().includes(q)
         );
       }
 
@@ -798,8 +836,8 @@
       list.sort((a, b) => {
         let va = a[key] !== undefined ? a[key] : 0;
         let vb = b[key] !== undefined ? b[key] : 0;
-        if (typeof va === 'string') {
-          return asc ? va.localeCompare(vb) : vb.localeCompare(va);
+        if (typeof va === 'string' || typeof vb === 'string') {
+          return asc ? String(va || '').localeCompare(String(vb || '')) : String(vb || '').localeCompare(String(va || ''));
         }
         return asc ? va - vb : vb - va;
       });
