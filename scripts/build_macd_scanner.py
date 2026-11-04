@@ -28,6 +28,7 @@ import concurrent.futures
 import datetime as dt
 import email.mime.multipart
 import email.mime.text
+import email.utils
 import json
 import math
 import os
@@ -562,8 +563,10 @@ def send_email_alert(
     try:
         msg = email.mime.multipart.MIMEMultipart("alternative")
         msg["Subject"] = subject
-        msg["From"] = f"Conviction Labs Quant <{sender}>"
+        msg["From"] = f"Prateek Upadhyay <{sender}>"
         msg["To"] = recipient
+        msg["Date"] = email.utils.formatdate(localtime=True)
+        msg["Message-ID"] = email.utils.make_msgid(domain="gmail.com")
 
         msg.attach(email.mime.text.MIMEText(text_body, "plain", "utf-8"))
         msg.attach(email.mime.text.MIMEText(html_body, "html", "utf-8"))
