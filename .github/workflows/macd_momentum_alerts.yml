@@ -62,7 +62,6 @@ jobs:
           ALERT_EMAIL_SENDER: ${{ secrets.ALERT_EMAIL_SENDER }}
           ALERT_EMAIL_PASSWORD: ${{ secrets.ALERT_EMAIL_PASSWORD }}
           ALERT_EMAIL_RECIPIENT: ${{ secrets.ALERT_EMAIL_RECIPIENT }}
-          ALERT_EMAIL_SENDER_NAME: ${{ secrets.ALERT_EMAIL_SENDER_NAME }}
           ALERT_SMTP_HOST: ${{ secrets.ALERT_SMTP_HOST }}
           ALERT_SMTP_PORT: ${{ secrets.ALERT_SMTP_PORT }}
         run: |

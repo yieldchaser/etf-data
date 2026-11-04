@@ -928,7 +928,6 @@ def send_email_alert(
     """Send email via SMTP SSL (465) or STARTTLS (587) with multi-recipient support."""
     sender = (os.environ.get("ALERT_EMAIL_SENDER") or "").strip()
     password = (os.environ.get("ALERT_EMAIL_PASSWORD") or "").strip().replace(" ", "")
-    sender_name = (os.environ.get("ALERT_EMAIL_SENDER_NAME") or "Conviction Labs").strip()
     smtp_host = (os.environ.get("ALERT_SMTP_HOST") or "smtp.gmail.com").strip()
     smtp_port_raw = (os.environ.get("ALERT_SMTP_PORT") or "465").strip()
     try:
@@ -953,7 +952,7 @@ def send_email_alert(
     try:
         msg = email.mime.multipart.MIMEMultipart("alternative")
         msg["Subject"] = subject
-        msg["From"] = f"{sender_name} <{sender}>"
+        msg["From"] = sender
         msg["To"] = ", ".join(recipients_list)
         msg["Date"] = email.utils.formatdate(localtime=True)
         msg["Message-ID"] = email.utils.make_msgid(domain=smtp_host.split(".")[-2] + "." + smtp_host.split(".")[-1] if "." in smtp_host else "gmail.com")
