@@ -571,11 +571,7 @@ def send_email_alert(
         msg.attach(email.mime.text.MIMEText(text_body, "plain", "utf-8"))
         msg.attach(email.mime.text.MIMEText(html_body, "html", "utf-8"))
 
-        context = ssl.create_default_context()
-        with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
-            server.ehlo()
-            server.starttls(context=context)
-            server.ehlo()
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=20) as server:
             server.login(sender, password)
             server.sendmail(sender, recipient, msg.as_string())
 
