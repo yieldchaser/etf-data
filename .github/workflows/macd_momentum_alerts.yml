@@ -2,11 +2,12 @@ name: Quantitative MACD Momentum Radar & Pre-Close Alert
 
 'on':
   schedule:
-    # Mon-Fri schedule aligned to US equity market sessions:
+    # Continuous Mon-Fri execution across US trading sessions:
     # 13:30 UTC = 08:30 EST (Pre-Market Indicative Radar)
     - cron: '30 13 * * 1-5'
-    # 35 mins past the hour (15:35 to 20:35 UTC = 10:35 to 15:35 EST, 5 mins after each 1H bar closes!)
-    - cron: '35 15,16,17,18,19,20 * * 1-5'
+    # Regular trading hours: 09:30 to 16:00 EST (14:30 to 21:00 UTC)
+    # Check every 30 mins (at :05 and :35 after every hour & 1H bar close)
+    - cron: '5,35 14-20 * * 1-5'
     # 20:00 UTC = 15:00 EST (The Pre-Market-Close Golden Hour Diagnostic)
     - cron: '0 20 * * 1-5'
     # 21:05 UTC = 16:05 EST (Post-Close Final Session Audit)
@@ -31,6 +32,7 @@ name: Quantitative MACD Momentum Radar & Pre-Close Alert
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: macd-momentum-alerts
@@ -78,14 +80,41 @@ jobs:
           python scripts/build_macd_scanner.py $flags
 
       - name: Commit and push updated MACD signals to GitHub Pages
+        id: commit_macd
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/data/macd/signals.json docs/data/macd/latest_alert.json docs/data/flows/macd_signals.json docs/data/flows/latest_macd_alert.json || true
           if git diff --staged --quiet; then
             echo "No changes in MACD signals to commit."
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
           else
-            git commit -m "Auto-update: 1H MACD momentum signals & alerts [skip ci]"
-            git pull --rebase origin main || true
-            git push origin main
+            git commit -m "Auto-update: 1H MACD momentum signals & alerts"
+            pushed=false
+            for attempt in 1 2 3; do
+              if git pull --rebase --autostash origin main; then
+                if git push origin HEAD:main; then
+                  pushed=true
+                  break
+                fi
+              else
+                git rebase --abort >/dev/null 2>&1 || true
+                echo "Rebase conflict; retrying..." >&2
+              fi
+              echo "Push attempt $attempt failed; retrying in $((attempt * 5))s..." >&2
+              sleep $((attempt * 5))
+            done
+            if [ "$pushed" = "true" ]; then
+              echo "pushed=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "Could not push MACD signals after 3 attempts." >&2
+              echo "pushed=false" >> "$GITHUB_OUTPUT"
+            fi
           fi
+
+      - name: Trigger site deployment to publish new MACD data to Pages
+        if: steps.commit_macd.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run build_site.yml --ref main || true

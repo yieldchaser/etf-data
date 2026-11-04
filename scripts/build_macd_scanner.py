@@ -949,33 +949,39 @@ def send_email_alert(
     else:
         recipients_list = list(recipient)
 
-    if not recipients_list:
-        recipients_list = [DEFAULT_RECIPIENT]
+    if not recipients_list or recipients_list == [""]:
+        recipients_list = [sender] if sender else [DEFAULT_RECIPIENT]
 
     try:
-        msg = email.mime.multipart.MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"] = sender
-        msg["To"] = ", ".join(recipients_list)
-        msg["Date"] = email.utils.formatdate(localtime=True)
-        msg["Message-ID"] = email.utils.make_msgid(domain=smtp_host.split(".")[-2] + "." + smtp_host.split(".")[-1] if "." in smtp_host else "gmail.com")
+        # Send individual message per recipient to ensure maximum deliverability (1-on-1 inbox classification)
+        for target_email in recipients_list:
+            msg = email.mime.multipart.MIMEMultipart("alternative")
+            msg["Subject"] = subject
+            msg["From"] = sender
+            msg["To"] = target_email
+            msg["Date"] = email.utils.formatdate(localtime=True)
+            # Let SMTP server (Gmail) generate authentic DKIM-aligned Message-ID automatically
 
-        msg.attach(email.mime.text.MIMEText(text_body, "plain", "utf-8"))
-        msg.attach(email.mime.text.MIMEText(html_body, "html", "utf-8"))
+            msg.attach(email.mime.text.MIMEText(text_body, "plain", "utf-8"))
+            msg.attach(email.mime.text.MIMEText(html_body, "html", "utf-8"))
 
-        if smtp_port == 465:
-            with smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=20) as server:
-                server.login(sender, password)
-                server.sendmail(sender, recipients_list, msg.as_string())
-        else:
-            with smtplib.SMTP(smtp_host, smtp_port, timeout=20) as server:
-                server.ehlo()
-                server.starttls()
-                server.ehlo()
-                server.login(sender, password)
-                server.sendmail(sender, recipients_list, msg.as_string())
+            if smtp_port == 465:
+                with smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=20) as server:
+                    server.login(sender, password)
+                    refused = server.sendmail(sender, [target_email], msg.as_string())
+                    if refused:
+                        print(f"[SMTP Engine] Refused by server for {target_email}: {refused}")
+            else:
+                with smtplib.SMTP(smtp_host, smtp_port, timeout=20) as server:
+                    server.ehlo()
+                    server.starttls()
+                    server.ehlo()
+                    server.login(sender, password)
+                    refused = server.sendmail(sender, [target_email], msg.as_string())
+                    if refused:
+                        print(f"[SMTP Engine] Refused by server for {target_email}: {refused}")
 
-        print(f"[SMTP Engine] Successfully dispatched email alert to {recipients_list} via {smtp_host}:{smtp_port}!")
+        print(f"[SMTP Engine] Successfully dispatched individual email alerts to {recipients_list} via {smtp_host}:{smtp_port}!")
         return True
     except Exception as ex:
         print(f"[SMTP Engine] Error dispatching email: {ex}")
@@ -1091,12 +1097,14 @@ def main() -> None:
         [s["ticker"] for s in results if s["signal_state"] == "IMMINENT_SQUEEZE"]
     )
 
-    # Check for Fresh Crossover Trigger (crossover happened on the latest closed bar)
-    fresh_crossovers = [
-        s["ticker"]
-        for s in results
-        if s.get("bull_cross_fresh") or s.get("bear_cross_fresh")
-    ]
+    # Check for Active Crossovers on recent bar
+    current_crossovers = sorted(
+        [
+            s["ticker"]
+            for s in results
+            if s.get("bull_cross_fresh") or s.get("bear_cross_fresh")
+        ]
+    )
 
     # Load prior alert state for deduplication
     prior_state = {}
@@ -1111,12 +1119,14 @@ def main() -> None:
     prev_subzero = set(prior_state.get("active_subzero", []))
     prev_bear = set(prior_state.get("active_bear", []))
     prev_squeeze = set(prior_state.get("active_squeeze", []))
+    prev_crossovers = set(prior_state.get("active_crossovers", []))
 
     new_subzero = set(current_subzero_tickers) - prev_subzero
     new_bear = set(current_bear_tickers) - prev_bear
     new_squeeze = set(current_squeeze_tickers) - prev_squeeze
+    new_crossovers = set(current_crossovers) - prev_crossovers
 
-    has_fresh_trigger = bool(new_subzero or new_bear or (fresh_crossovers and len(fresh_crossovers) > 0))
+    has_fresh_trigger = bool(new_subzero or new_bear or new_crossovers)
     is_pre_close_time = session_code == "PRE_CLOSE"
 
     print(
@@ -1128,9 +1138,41 @@ def main() -> None:
     print(
         f"[Trigger Evaluation] Pre-Close Squeeze: {len(current_squeeze_tickers)} (New: {len(new_squeeze)})"
     )
+    print(
+        f"[Trigger Evaluation] Active Crossovers: {len(current_crossovers)} (New: {len(new_crossovers)}: {sorted(list(new_crossovers))})"
+    )
 
     # Build Email Alert Text and HTML
     text_alert, html_alert = format_institutional_email(results, scan_time_str, session_info)
+
+    should_send = False
+    send_reason = ""
+    today_ny = now_ny.strftime("%Y-%m-%d")
+    last_preclose = prior_state.get("last_preclose_date", "")
+
+    if args.force_send:
+        should_send = True
+        send_reason = "Manual override (--force-send enabled)"
+    elif args.send_email:
+        if has_fresh_trigger:
+            triggers_summary = []
+            if new_subzero:
+                triggers_summary.append(f"New Sub-Zero: {sorted(list(new_subzero))}")
+            if new_bear:
+                triggers_summary.append(f"New Exits: {sorted(list(new_bear))}")
+            uncat = new_crossovers - new_subzero - new_bear
+            if uncat:
+                triggers_summary.append(f"New Crosses: {sorted(list(uncat))}")
+            should_send = True
+            send_reason = f"Fresh Trigger Detected ({', '.join(triggers_summary)})"
+        elif is_pre_close_time:
+            if last_preclose != today_ny:
+                should_send = True
+                send_reason = "Pre-Close Golden Hour Scheduled Scan (15:00 EST)"
+            else:
+                print("[Alert Engine] Pre-Close Golden Hour diagnostic already dispatched today.")
+        else:
+            print("[Alert Engine] No fresh trigger changes detected. Email suppressed to preserve recipient inbox.")
 
     # Save Alert payload for inspection and state tracking
     alert_payload = {
@@ -1140,9 +1182,12 @@ def main() -> None:
         "active_subzero": current_subzero_tickers,
         "active_bear": current_bear_tickers,
         "active_squeeze": current_squeeze_tickers,
-        "new_subzero": list(new_subzero),
-        "new_bear": list(new_bear),
-        "new_squeeze": list(new_squeeze),
+        "active_crossovers": current_crossovers,
+        "new_subzero": sorted(list(new_subzero)),
+        "new_bear": sorted(list(new_bear)),
+        "new_squeeze": sorted(list(new_squeeze)),
+        "new_crossovers": sorted(list(new_crossovers)),
+        "last_preclose_date": today_ny if (should_send and is_pre_close_time) else last_preclose,
         "text_content": text_alert,
         "html_content": html_alert,
     }
@@ -1152,22 +1197,6 @@ def main() -> None:
         with open(p, "w", encoding="utf-8") as f:
             json.dump(alert_payload, f, indent=2)
     print(f"Saved latest alert artifact to {ALERT_OUT_MACD}")
-
-    should_send = False
-    send_reason = ""
-
-    if args.force_send:
-        should_send = True
-        send_reason = "Manual override (--force-send enabled)"
-    elif args.send_email:
-        if has_fresh_trigger:
-            should_send = True
-            send_reason = f"Fresh Trigger Detected (New Sub-Zero: {list(new_subzero)}, New Exits: {list(new_bear)})"
-        elif is_pre_close_time:
-            should_send = True
-            send_reason = "Pre-Close Golden Hour Scheduled Scan (15:00 EST)"
-        else:
-            print("[Alert Engine] No fresh trigger changes detected. Email suppressed to preserve recipient inbox.")
 
     if should_send:
         subject = f"[Conviction Labs] 1H MACD Momentum Radar · {session_badge} · {scan_time_str}"
