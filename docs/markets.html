@@ -3226,6 +3226,11 @@
                 </div>
                 <div class="macd-hud-sep"></div>
                 <div class="macd-hud-cell">
+                  <span class="macd-hud-label">1H Candle</span>
+                  <span class="macd-hud-val" id="macd-hud-candle" style="color:#10b981">—</span>
+                </div>
+                <div class="macd-hud-sep"></div>
+                <div class="macd-hud-cell">
                   <span class="macd-hud-label">Bar Timestamp</span>
                   <span class="macd-hud-val" id="macd-hud-date" style="color:#9ca3af">—</span>
                 </div>
@@ -3257,6 +3262,7 @@
                       <th onclick="window.MACDStrategy.sortBy('fund_name')">Fund Name &uarr;&darr;</th>
                       <th onclick="window.MACDStrategy.sortBy('leverage')">Mult</th>
                       <th style="text-align:right" onclick="window.MACDStrategy.sortBy('latest_price')">Price &uarr;&darr;</th>
+                      <th style="text-align:center" onclick="window.MACDStrategy.sortBy('candle_color_1h')">1H Candle &uarr;&darr;</th>
                       <th style="text-align:right" onclick="window.MACDStrategy.sortBy('chg_1h_pct')">1H % &uarr;&darr;</th>
                       <th style="text-align:right" onclick="window.MACDStrategy.sortBy('chg_1d_pct')">24H % &uarr;&darr;</th>
                       <th style="text-align:right" onclick="window.MACDStrategy.sortBy('macd_1h')">MACD &uarr;&darr;</th>

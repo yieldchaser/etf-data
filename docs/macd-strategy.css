@@ -403,6 +403,12 @@
   border: 1px solid rgba(251, 191, 36, 0.3);
 }
 
+.macd-badge-unconfirmed {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+}
+
 .macd-badge-bear {
   background: rgba(244, 63, 94, 0.18);
   color: #fb7185;
@@ -413,6 +419,29 @@
   background: #1e2230;
   color: #9ca3af;
   border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.macd-candle-pill {
+  display: inline-block;
+  padding: 0.12rem 0.45rem;
+  border-radius: 3px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-family: ui-monospace, "SF Mono", monospace;
+}
+
+.macd-candle-pill.green {
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.35);
+}
+
+.macd-candle-pill.red {
+  background: rgba(244, 63, 94, 0.18);
+  color: #fb7185;
+  border: 1px solid rgba(251, 113, 133, 0.35);
 }
 
 /* ── Alert Drawer Box ── */

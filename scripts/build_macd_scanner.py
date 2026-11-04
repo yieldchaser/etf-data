@@ -191,6 +191,7 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
         volumes_1h = df_1h["Volume"].tolist()
         highs_1h = df_1h["High"].tolist()
         lows_1h = df_1h["Low"].tolist()
+        opens_1h = df_1h["Open"].tolist()
         timestamps_1h = [
             ts.strftime("%Y-%m-%d %H:%M") if hasattr(ts, "strftime") else str(ts)[:16]
             for ts in df_1h.index
@@ -204,18 +205,6 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
             for ts in df_1d.index
         ]
 
-        # Check for Pre-Market Live Price
-        now_ny = dt.datetime.now(dt.timezone.utc).astimezone(NY_TZ)
-        is_premarket = 4.0 <= (now_ny.hour + now_ny.minute / 60.0) < 9.5
-        live_premarket_price: float | None = None
-        if is_premarket:
-            try:
-                df_ext = t.history(period="2d", interval="1h", prepost=True)
-                if not df_ext.empty and df_ext.index[-1] > df_1h.index[-1]:
-                    live_premarket_price = round(float(df_ext["Close"].iloc[-1]), 4)
-            except Exception:
-                pass
-
         # Compute 1H MACD
         m_1h = calculate_macd(closes_1h, fast=12, slow=26, signal_period=9)
         macd_1h = m_1h["macd"]
@@ -227,13 +216,49 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
         m_1d = calculate_macd(closes_1d, fast=12, slow=26, signal_period=9)
         hist_1d = m_1d["hist"]
 
-        latest_price = round(float(closes_1h[-1]), 4)
+        # Reconcile latest price against official exchange last_price if available
+        official_last = getattr(t.fast_info, "last_price", None)
+        if official_last and float(official_last) > 0:
+            latest_price = round(float(official_last), 2)
+        else:
+            latest_price = round(float(closes_1h[-1]), 2)
+
+        # Check for Live Pre-Market Tick (1m resolution for real-time accuracy)
+        now_ny = dt.datetime.now(dt.timezone.utc).astimezone(NY_TZ)
+        is_premarket = 4.0 <= (now_ny.hour + now_ny.minute / 60.0) < 9.5
+        live_premarket_price: float | None = None
+        live_premarket_chg_pct: float | None = None
+        if is_premarket:
+            try:
+                df_ext = t.history(period="1d", interval="1m", prepost=True)
+                if not df_ext.empty:
+                    last_ext_px = float(df_ext["Close"].iloc[-1])
+                    if last_ext_px > 0:
+                        live_premarket_price = round(last_ext_px, 2)
+                        live_premarket_chg_pct = round(((last_ext_px - latest_price) / latest_price) * 100.0, 2)
+            except Exception:
+                pass
         prev_close_1h = float(closes_1h[-2]) if len(closes_1h) >= 2 else latest_price
         chg_1h_pct = (
             round(((latest_price - prev_close_1h) / prev_close_1h) * 100.0, 2)
             if prev_close_1h > 0
             else 0.0
         )
+
+        # 1H Candle Confirmation (Raghav Sir's TradingView Rule)
+        latest_open_1h = float(opens_1h[-1])
+        latest_close_1h = float(closes_1h[-1])
+        latest_high_1h = float(highs_1h[-1])
+        latest_low_1h = float(lows_1h[-1])
+
+        is_green_candle_1h = bool(latest_close_1h >= latest_open_1h)
+        is_red_candle_1h = bool(latest_close_1h <= latest_open_1h)
+        if latest_close_1h == latest_open_1h:
+            # Flat doji candle: disambiguate using bar change
+            is_green_candle_1h = bool(chg_1h_pct >= 0)
+            is_red_candle_1h = bool(chg_1h_pct <= 0)
+
+        candle_color_1h = "GREEN" if is_green_candle_1h else "RED"
 
         # 24H Price change vs prior completed day close (strictly session before today)
         today_date = now_ny.date()
@@ -320,24 +345,52 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
             and (spread <= 0.05 * abs(curr_s) or spread <= 0.08)
         )
 
+        # Raghav Sir's Confirmation Enforcement:
+        # Bullish Crossover requires: MACD > Signal (hist > 0) AND confirmed Green Candle (Close >= Open).
+        # Bearish Crossover requires: MACD < Signal (hist < 0) AND confirmed Red Candle (Close <= Open).
+        has_recent_bull_cross = (
+            (is_bull_cross or bull_cross_bars_ago in (0, 1))
+            and (curr_m > curr_s)
+            and (hist_1h[-1] > 0)
+        )
+        has_recent_bear_cross = (
+            (is_bear_cross or bear_cross_bars_ago in (0, 1))
+            and (curr_m < curr_s)
+            and (hist_1h[-1] < 0)
+        )
+
+        bull_cross_fresh = bool(has_recent_bull_cross and is_green_candle_1h)
+        bear_cross_fresh = bool(has_recent_bear_cross and is_red_candle_1h)
+
         # Signal Classification
-        if is_bull_cross and curr_m < 0:
-            signal_state = "SUB_ZERO_BOUNCE"
-            signal_label = "Sub-Zero Reversal (High Convexity)"
-            signal_direction = "BULLISH"
-        elif is_bull_cross:
-            signal_state = "BULLISH_CROSS"
-            signal_label = "Bullish Momentum Crossover"
-            signal_direction = "BULLISH"
-        elif is_bear_cross:
-            signal_state = "BEARISH_CROSS"
-            signal_label = "Bearish Breakdown Crossover"
-            signal_direction = "BEARISH"
+        if has_recent_bull_cross:
+            if is_green_candle_1h:
+                if curr_m < 0:
+                    signal_state = "SUB_ZERO_BOUNCE"
+                    signal_label = "Sub-Zero Reversal (Confirmed Green)"
+                    signal_direction = "BULLISH"
+                else:
+                    signal_state = "BULLISH_CROSS"
+                    signal_label = "Bullish Momentum Crossover (Confirmed Green)"
+                    signal_direction = "BULLISH"
+            else:
+                signal_state = "UNCONFIRMED_CROSS"
+                signal_label = "Unconfirmed Bullish Cross (Red Candle)"
+                signal_direction = "WATCH"
+        elif has_recent_bear_cross:
+            if is_red_candle_1h:
+                signal_state = "BEARISH_CROSS"
+                signal_label = "Bearish Breakdown Crossover (Confirmed Red)"
+                signal_direction = "BEARISH"
+            else:
+                signal_state = "UNCONFIRMED_BEAR_CROSS"
+                signal_label = "Unconfirmed Bearish Cross (Green Candle)"
+                signal_direction = "WATCH"
         elif is_imminent:
             signal_state = "IMMINENT_SQUEEZE"
             signal_label = "Pre-Close Squeeze Imminent"
             signal_direction = "WATCH"
-        elif curr_m > curr_s:
+        elif curr_m > curr_s and hist_1h[-1] > 0:
             signal_state = "BULLISH_TRENDING"
             signal_label = "Bullish Momentum Active"
             signal_direction = "BULLISH"
@@ -348,7 +401,7 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
 
         # Confluence Score (-100 to +100)
         score = 0
-        if curr_m > curr_s:
+        if curr_m > curr_s and hist_1h[-1] > 0:
             score += 35
         else:
             score -= 35
@@ -357,9 +410,9 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
         else:
             score -= 35
         if rvol_1h >= 1.25:
-            score += 15 if curr_m > curr_s else -15
-        if curr_m < 0 and curr_m > curr_s:
-            score += 15  # Sub-zero value premium
+            score += 15 if (curr_m > curr_s and is_green_candle_1h) else -15
+        if curr_m < 0 and curr_m > curr_s and is_green_candle_1h:
+            score += 15  # Sub-zero value premium only awarded if confirmed green candle
 
         score = max(-100, min(100, score))
 
@@ -406,7 +459,16 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
             "category": catalog_meta.get("category", "Unclassified"),
             "underlying": catalog_meta.get("underlying", "—"),
             "latest_price": latest_price,
+            "open_1h": round(latest_open_1h, 4),
+            "high_1h": round(latest_high_1h, 4),
+            "low_1h": round(latest_low_1h, 4),
+            "close_1h": round(latest_close_1h, 4),
+            "candle_color_1h": candle_color_1h,
+            "is_green_candle_1h": is_green_candle_1h,
+            "is_red_candle_1h": is_red_candle_1h,
+            "candle_confirmed": bool(bull_cross_fresh or bear_cross_fresh),
             "live_premarket_price": live_premarket_price,
+            "live_premarket_chg_pct": live_premarket_chg_pct,
             "chg_1h_pct": chg_1h_pct,
             "chg_1d_pct": chg_1d_pct,
             "macd_1h": round(curr_m, 4),
@@ -420,8 +482,8 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
             "signal_state": signal_state,
             "signal_label": signal_label,
             "signal_direction": signal_direction,
-            "bull_cross_fresh": bool(is_bull_cross or bull_cross_bars_ago in (0, 1)),
-            "bear_cross_fresh": bool(is_bear_cross or bear_cross_bars_ago in (0, 1)),
+            "bull_cross_fresh": bull_cross_fresh,
+            "bear_cross_fresh": bear_cross_fresh,
             "is_subzero": bool(curr_m < 0),
             "confluence_score": score,
             "pivots": pivots,
@@ -444,15 +506,25 @@ def format_institutional_email(
     tier1_subzero = [
         s
         for s in signals_data
-        if s["signal_state"] == "SUB_ZERO_BOUNCE" or (s["bull_cross_fresh"] and s["is_subzero"])
+        if (s["signal_state"] == "SUB_ZERO_BOUNCE" or (s.get("bull_cross_fresh") and s.get("is_subzero")))
+        and s.get("candle_color_1h") == "GREEN"
+        and s.get("hist_1h", 0) > 0
     ]
     tier1_bull = [
         s
         for s in signals_data
-        if s["signal_state"] == "BULLISH_CROSS" or (s["bull_cross_fresh"] and not s["is_subzero"])
+        if (s["signal_state"] == "BULLISH_CROSS" or (s.get("bull_cross_fresh") and not s.get("is_subzero")))
+        and s.get("candle_color_1h") == "GREEN"
+        and s.get("hist_1h", 0) > 0
     ]
     tier2_imminent = [s for s in signals_data if s["signal_state"] == "IMMINENT_SQUEEZE"]
-    tier_bear = [s for s in signals_data if s["bear_cross_fresh"]]
+    tier_bear = [
+        s
+        for s in signals_data
+        if (s["signal_state"] == "BEARISH_CROSS" or s.get("bear_cross_fresh"))
+        and s.get("candle_color_1h") == "RED"
+        and s.get("hist_1h", 0) < 0
+    ]
 
     # Sort each tier by confluence score descending
     tier1_subzero.sort(key=lambda x: x.get("confluence_score", 0), reverse=True)
@@ -475,12 +547,15 @@ def format_institutional_email(
         piv = it.get("pivots", {})
         px_display = f"${it['latest_price']:.2f}"
         if it.get("live_premarket_price"):
-            px_display += f" (Pre-Market: ${it['live_premarket_price']:.2f})"
+            pm_chg = it.get('live_premarket_chg_pct')
+            chg_str = f" | {pm_chg:+.2f}%" if pm_chg is not None else ""
+            px_display += f" (Pre-Market: ${it['live_premarket_price']:.2f}{chg_str})"
         pt_lines.extend(
             [
                 f"TICKER: {it['ticker']:<6} | {it['fund_name']} ({it['leverage']})",
                 f"  Price: {px_display} (1H: {it['chg_1h_pct']:+.2f}% | 24H: {it['chg_1d_pct']:+.2f}%)",
-                f"  1H MACD: {it['macd_1h']:+.4f} | Signal: {it['signal_1h']:+.4f} | Hist: {it['hist_1h']:+.4f}",
+                f"  1H Candle: {it.get('candle_color_1h', 'GREEN')} (Confirmed Green: O=${it.get('open_1h', 0):.2f} -> C=${it.get('latest_price', 0):.2f})",
+                f"  1H MACD: {it['macd_1h']:+.4f} | Signal: {it['signal_1h']:+.4f} | Hist: {it['hist_1h']:+.4f} (GREEN)",
                 f"  RVOL: {it['rvol_1h']:.2f}x | Z-Score: {it['z_macd_1h']:.2f} sigma | Score: {it['confluence_score']}/100",
                 f"  Floor Pivots: S2=${piv.get('S2', 0):.2f} S1=${piv.get('S1', 0):.2f} P=${piv.get('P', 0):.2f} R1=${piv.get('R1', 0):.2f}",
                 f"  1D Trend: {'BULLISH' if it['daily_trend_bullish'] else 'BEARISH'}",
@@ -512,7 +587,7 @@ def format_institutional_email(
     )
     for it in tier_bear[:8]:
         pt_lines.append(
-            f"{it['ticker']:<6} | Px: ${it['latest_price']:<7.2f} | 1H MACD: {it['macd_1h']:+6.3f} | Hist: {it['hist_1h']:+6.3f} | ACTION: EXIT TO CASH"
+            f"{it['ticker']:<6} | Px: ${it['latest_price']:<7.2f} | 1H Candle: {it.get('candle_color_1h', 'RED')} | 1H MACD: {it['macd_1h']:+6.3f} | Hist: {it['hist_1h']:+6.3f} (RED) | ACTION: EXIT TO CASH"
         )
 
     pt_lines.extend(
@@ -550,7 +625,10 @@ def format_institutional_email(
 
         px_str = f"${it['latest_price']:.2f}"
         if it.get("live_premarket_price"):
-            px_str = f"""${it['latest_price']:.2f} <div style="font-size:10px; color:#facc15; font-weight:700;">Pre-Mkt: ${it['live_premarket_price']:.2f}</div>"""
+            pm_chg = it.get('live_premarket_chg_pct')
+            pm_color = '#34d399' if (pm_chg or 0) >= 0 else '#fb7185'
+            chg_badge = f" ({pm_chg:+.2f}%)" if pm_chg is not None else ""
+            px_str = f"""${it['latest_price']:.2f} <div style="font-size:10.5px; color:{pm_color}; font-weight:700;">Pre-Mkt: ${it['live_premarket_price']:.2f}{chg_badge}</div>"""
 
         card = f"""
         <!-- CARD: {it['ticker']} -->
@@ -564,6 +642,7 @@ def format_institutional_email(
                     <span style="font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:19px; font-weight:800; color:#38bdf8; letter-spacing:0.03em;">{it['ticker']}</span>
                     <span style="display:inline-block; margin-left:6px; background-color:#1e2638; color:#cbd5e1; padding:2px 7px; border-radius:3px; font-size:10.5px; font-weight:700; font-family:ui-monospace, monospace;">{it.get('leverage', '1x')}</span>
                     <span style="display:inline-block; margin-left:6px; background-color:rgba(16,185,129,0.15); color:#34d399; border:1px solid rgba(52,211,153,0.35); padding:2px 7px; border-radius:3px; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">SUB-ZERO REVERSAL</span>
+                    <span style="display:inline-block; margin-left:6px; background-color:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(52,211,153,0.4); padding:2px 7px; border-radius:3px; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">1H CANDLE: GREEN (CONFIRMED)</span>
                   </td>
                   <td style="text-align:right; vertical-align:middle;">
                     <span style="font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:19px; font-weight:800; color:#ffffff;">{px_str}</span>
@@ -712,6 +791,7 @@ def format_institutional_email(
             {it['fund_name']} <span style="font-size:10px; color:#94a3b8;">({it['leverage']})</span>
           </td>
           <td style="padding:9px 10px; font-family:ui-monospace, monospace; text-align:right; color:#ffffff; font-weight:700; font-size:12px;">${it['latest_price']:.2f}</td>
+          <td style="padding:9px 10px; font-family:ui-monospace, monospace; text-align:center; color:#fb7185; font-weight:700; font-size:11px;">RED</td>
           <td style="padding:9px 10px; font-family:ui-monospace, monospace; text-align:right; color:#fb7185; font-size:11.5px;">{it['macd_1h']:+.3f}</td>
           <td style="padding:9px 10px; font-family:ui-monospace, monospace; text-align:right; color:#fb7185; font-weight:700; font-size:11.5px;">{it['hist_1h']:+.4f}</td>
           <td style="padding:9px 10px; text-align:center;">
@@ -725,7 +805,7 @@ def format_institutional_email(
         "\n".join(bear_rows)
         if bear_rows
         else """
-    <tr><td colspan="6" style="padding:14px; text-align:center; color:#94a3b8;">No fresh bearish breakdowns detected in this scan.</td></tr>
+    <tr><td colspan="7" style="padding:14px; text-align:center; color:#94a3b8;">No fresh bearish breakdowns detected in this scan.</td></tr>
     """
     )
 
@@ -880,6 +960,7 @@ def format_institutional_email(
                         <th style="padding:8px 10px; text-align:left;">Ticker</th>
                         <th style="padding:8px 10px; text-align:left;">Instrument</th>
                         <th style="padding:8px 10px; text-align:right;">Price</th>
+                        <th style="padding:8px 10px; text-align:center;">Candle</th>
                         <th style="padding:8px 10px; text-align:right;">1H MACD</th>
                         <th style="padding:8px 10px; text-align:right;">Hist</th>
                         <th style="padding:8px 10px; text-align:center;">Action</th>
@@ -1083,27 +1164,47 @@ def main() -> None:
             json.dump(payload, f, indent=2)
     print(f"Saved signals artifact to {SIGNALS_OUT_MACD} ({SIGNALS_OUT_MACD.stat().st_size:,} bytes)")
 
-    # Identify active signal sets for this run
+    # Identify active signal sets for this run (Raghav Sir Confirmed Rules)
     current_subzero_tickers = sorted(
         [
             s["ticker"]
             for s in results
-            if s["signal_state"] == "SUB_ZERO_BOUNCE"
-            or (s["bull_cross_fresh"] and s["is_subzero"])
+            if (s["signal_state"] == "SUB_ZERO_BOUNCE" or (s.get("bull_cross_fresh") and s.get("is_subzero")))
+            and s.get("candle_color_1h") == "GREEN"
+            and s.get("hist_1h", 0) > 0
         ]
     )
-    current_bear_tickers = sorted([s["ticker"] for s in results if s["bear_cross_fresh"]])
+    current_bear_tickers = sorted(
+        [
+            s["ticker"]
+            for s in results
+            if (s["signal_state"] == "BEARISH_CROSS" or s.get("bear_cross_fresh"))
+            and s.get("candle_color_1h") == "RED"
+            and s.get("hist_1h", 0) < 0
+        ]
+    )
     current_squeeze_tickers = sorted(
         [s["ticker"] for s in results if s["signal_state"] == "IMMINENT_SQUEEZE"]
     )
 
-    # Check for Active Crossovers on recent bar
+    # Check for Active Crossovers on recent bar (Must be confirmed by candle color)
     current_crossovers = sorted(
         [
             s["ticker"]
             for s in results
-            if s.get("bull_cross_fresh") or s.get("bear_cross_fresh")
+            if (
+                (s.get("bull_cross_fresh") and s.get("candle_color_1h") == "GREEN" and s.get("hist_1h", 0) > 0)
+                or (s.get("bear_cross_fresh") and s.get("candle_color_1h") == "RED" and s.get("hist_1h", 0) < 0)
+            )
         ]
+    )
+
+    # Audit unconfirmed crossovers (e.g. bullish crossover with red candle)
+    unconfirmed_subzero = sorted(
+        [s["ticker"] for s in results if s.get("signal_state") == "UNCONFIRMED_CROSS" and s.get("is_subzero")]
+    )
+    print(
+        f"[Trigger Evaluation] Unconfirmed Bullish Crosses (Awaiting Green Candle): {len(unconfirmed_subzero)}: {unconfirmed_subzero}"
     )
 
     # Load prior alert state for deduplication

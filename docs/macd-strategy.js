@@ -34,8 +34,15 @@
 
     /** Initialize and mount UI */
     async mount(defaultTicker) {
-      if (defaultTicker) {
-        this.state.activeTicker = defaultTicker.toUpperCase();
+      let initTicker = defaultTicker;
+      if (!initTicker) {
+        try {
+          const urlParams = new URLSearchParams(window.location.search);
+          initTicker = urlParams.get('flow') || urlParams.get('ticker');
+        } catch (_) {}
+      }
+      if (initTicker) {
+        this.state.activeTicker = initTicker.toUpperCase();
       }
       await this.loadData();
       this.bindEvents();
@@ -87,6 +94,13 @@
       if (!ticker) return;
       this.state.activeTicker = ticker.toUpperCase();
       this.state.hoverIndex = null;
+      try {
+        const url = new URL(window.location.href);
+        if (url.searchParams.get('flow') !== this.state.activeTicker) {
+          url.searchParams.set('flow', this.state.activeTicker);
+          window.history.replaceState({}, '', url.toString());
+        }
+      } catch (_) {}
       this.render();
     },
 
@@ -114,6 +128,7 @@
           if (btnChart) btnChart.classList.add('active');
           if (btnScreener) btnScreener.classList.remove('active');
           this.drawChart();
+          requestAnimationFrame(() => this.drawChart());
         } else {
           chartContainer.style.display = 'none';
           screenerContainer.style.display = 'flex';
@@ -165,17 +180,32 @@
 
     /** Bind DOM events */
     bindEvents() {
-      if (this._eventsBound) return;
-      this._eventsBound = true;
+      if (!this._windowEventsBound) {
+        this._windowEventsBound = true;
+        window.addEventListener('resize', () => {
+          if (this.state.activeView === 'chart') {
+            this.drawChart();
+          }
+        });
+      }
 
-      window.addEventListener('resize', () => {
-        if (this.state.activeView === 'chart') {
-          this.drawChart();
+      if (window.ResizeObserver && !this._resizeObserver) {
+        const container = document.getElementById('macd-canvas-container');
+        if (container) {
+          this._resizeObserver = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+              if (entry.contentRect && entry.contentRect.width > 0) {
+                this.drawChart();
+              }
+            }
+          });
+          this._resizeObserver.observe(container);
         }
-      });
+      }
 
       const canvas = document.getElementById('macd-canvas');
-      if (canvas) {
+      if (canvas && !this._canvasEventsBound) {
+        this._canvasEventsBound = true;
         canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
         canvas.addEventListener('mouseleave', () => this.handleMouseLeave());
         canvas.addEventListener('touchstart', (e) => this.handleTouch(e), { passive: false });
@@ -240,10 +270,17 @@
       const elHist = document.getElementById('macd-hud-hist');
       const elRvol = document.getElementById('macd-hud-rvol');
       const elPivots = document.getElementById('macd-hud-pivot');
+      const elCandle = document.getElementById('macd-hud-candle');
       const elDate = document.getElementById('macd-hud-date');
 
       if (elPrice) elPrice.textContent = `$${Number(latestBar.c).toFixed(2)}`;
       if (elDate) elDate.textContent = latestBar.dt || '—';
+
+      if (elCandle) {
+        const isUp = latestBar.c >= latestBar.o;
+        elCandle.textContent = isUp ? 'GREEN (Bullish)' : 'RED (Bearish)';
+        elCandle.style.color = isUp ? '#10b981' : '#f43f5e';
+      }
 
       if (elChg) {
         const chg = this.state.activeTimeframe === '1h' ? signal.chg_1h_pct : signal.chg_1d_pct;
@@ -307,7 +344,15 @@
       if (elCategory) {
         elCategory.textContent = `${signal.category} · Underlying: ${signal.underlying}`;
       }
-      if (elPrice) elPrice.textContent = `$${Number(signal.latest_price).toFixed(2)}`;
+      if (elPrice) {
+        if (signal.live_premarket_price) {
+          const pmChg = signal.live_premarket_chg_pct != null ? signal.live_premarket_chg_pct : 0;
+          const pmColor = pmChg >= 0 ? '#10b981' : '#f43f5e';
+          elPrice.innerHTML = `$${Number(signal.latest_price).toFixed(2)} <span style="font-size:12px;color:${pmColor};font-weight:700;margin-left:8px;">Pre: $${Number(signal.live_premarket_price).toFixed(2)} (${pmChg >= 0 ? '+' : ''}${pmChg.toFixed(2)}%)</span>`;
+        } else {
+          elPrice.textContent = `$${Number(signal.latest_price).toFixed(2)}`;
+        }
+      }
       if (elChg) {
         const c1h = signal.chg_1h_pct || 0;
         const c1d = signal.chg_1d_pct || 0;
@@ -318,16 +363,25 @@
       const elRegimeBadge = document.getElementById('macd-active-regime-badge');
       if (elRegimeBadge) {
         if (signal.signal_state === 'SUB_ZERO_BOUNCE' || (signal.bull_cross_fresh && signal.is_subzero)) {
-          elRegimeBadge.textContent = 'SUB-ZERO REVERSAL CONFLUENCE';
+          elRegimeBadge.textContent = 'SUB-ZERO REVERSAL (CONFIRMED GREEN)';
           elRegimeBadge.className = 'flow-badge macd-badge-subzero';
+        } else if (signal.signal_state === 'UNCONFIRMED_CROSS') {
+          elRegimeBadge.textContent = 'UNCONFIRMED CROSS (AWAITING GREEN CANDLE)';
+          elRegimeBadge.className = 'flow-badge macd-badge-unconfirmed';
         } else if (signal.signal_state === 'BULLISH_CROSS' || signal.bull_cross_fresh) {
-          elRegimeBadge.textContent = 'BULLISH MOMENTUM CROSS';
+          elRegimeBadge.textContent = 'BULLISH MOMENTUM CROSS (CONFIRMED GREEN)';
           elRegimeBadge.className = 'flow-badge macd-badge-bull';
+        } else if (signal.signal_state === 'BEARISH_CROSS' || signal.bear_cross_fresh) {
+          elRegimeBadge.textContent = 'BEARISH EXIT TO CASH (CONFIRMED RED)';
+          elRegimeBadge.className = 'flow-badge macd-badge-bear';
+        } else if (signal.signal_state === 'UNCONFIRMED_BEAR_CROSS') {
+          elRegimeBadge.textContent = 'UNCONFIRMED BEAR CROSS (GREEN CANDLE)';
+          elRegimeBadge.className = 'flow-badge macd-badge-neutral';
         } else if (signal.signal_state === 'IMMINENT_SQUEEZE') {
           elRegimeBadge.textContent = 'PRE-CLOSE SQUEEZE WATCH';
           elRegimeBadge.className = 'flow-badge macd-badge-imminent';
-        } else if (signal.signal_direction === 'BEARISH' || signal.bear_cross_fresh) {
-          elRegimeBadge.textContent = 'BEARISH EXIT TO CASH';
+        } else if (signal.signal_direction === 'BEARISH') {
+          elRegimeBadge.textContent = 'BEARISH MOMENTUM ACTIVE';
           elRegimeBadge.className = 'flow-badge macd-badge-bear';
         } else {
           elRegimeBadge.textContent = signal.signal_label || 'MOMENTUM REGIME ACTIVE';
@@ -337,7 +391,12 @@
 
       // Update Ticker Selector Dropdown
       const select = document.getElementById('macd-ticker-select');
-      if (select && select.value !== signal.ticker) {
+      if (select) {
+        if (select.options.length <= 1 && this.state.signalsData?.signals) {
+          select.innerHTML = this.state.signalsData.signals.map(s =>
+            `<option value="${s.ticker}">${s.ticker} — ${s.fund_name} (${s.leverage})</option>`
+          ).join('');
+        }
         select.value = signal.ticker;
       }
 
@@ -354,6 +413,7 @@
 
       if (this.state.activeView === 'chart') {
         this.drawChart();
+        requestAnimationFrame(() => this.drawChart());
       } else {
         this.renderScreenerTable();
       }
@@ -426,7 +486,15 @@
       // Setup High-DPI
       const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
-      if (!rect || rect.width <= 0 || rect.height <= 0) return;
+      if (!rect || rect.width <= 0 || rect.height <= 0) {
+        if (!this._retryRaf) {
+          this._retryRaf = requestAnimationFrame(() => {
+            this._retryRaf = null;
+            this.drawChart();
+          });
+        }
+        return;
+      }
       const w = rect.width;
       const h = rect.height;
 
@@ -580,40 +648,64 @@
           this.state.hoverIndex = i;
         }
 
-        // Crossover Markers on candles
+        // Crossover Markers on candles (Raghav Sir Candle Confirmation)
         if (i >= 1) {
           const prev = bars[i - 1];
           const isBullCross = (b.macd > b.sig) && (prev.macd <= prev.sig);
           const isBearCross = (b.macd < b.sig) && (prev.macd >= prev.sig);
 
           if (isBullCross) {
-            // Upward triangle under low
             const my = yLow + 8;
-            ctx.fillStyle = b.macd < 0 ? '#22d3ee' : '#10b981';
-            ctx.beginPath();
-            ctx.moveTo(cx, my);
-            ctx.lineTo(cx - 5, my + 8);
-            ctx.lineTo(cx + 5, my + 8);
-            ctx.closePath();
-            ctx.fill();
-
-            if (b.macd < 0) {
-              // Sub-Zero halo
-              ctx.strokeStyle = 'rgba(34, 211, 238, 0.4)';
+            if (isUp) {
+              // Confirmed Green Candle Crossover
+              ctx.fillStyle = b.macd < 0 ? '#22d3ee' : '#10b981';
               ctx.beginPath();
-              ctx.arc(cx, my + 4, 8, 0, Math.PI * 2);
+              ctx.moveTo(cx, my);
+              ctx.lineTo(cx - 5, my + 8);
+              ctx.lineTo(cx + 5, my + 8);
+              ctx.closePath();
+              ctx.fill();
+
+              if (b.macd < 0) {
+                // Sub-Zero halo
+                ctx.strokeStyle = 'rgba(34, 211, 238, 0.4)';
+                ctx.beginPath();
+                ctx.arc(cx, my + 4, 8, 0, Math.PI * 2);
+                ctx.stroke();
+              }
+            } else {
+              // Unconfirmed: Bullish cross with Red Candle
+              ctx.strokeStyle = '#f59e0b';
+              ctx.lineWidth = 1.25;
+              ctx.beginPath();
+              ctx.moveTo(cx, my);
+              ctx.lineTo(cx - 5, my + 8);
+              ctx.lineTo(cx + 5, my + 8);
+              ctx.closePath();
               ctx.stroke();
             }
           } else if (isBearCross) {
-            // Downward triangle above high
             const my = yHigh - 8;
-            ctx.fillStyle = '#f43f5e';
-            ctx.beginPath();
-            ctx.moveTo(cx, my);
-            ctx.lineTo(cx - 5, my - 8);
-            ctx.lineTo(cx + 5, my - 8);
-            ctx.closePath();
-            ctx.fill();
+            if (!isUp) {
+              // Confirmed Red Candle Crossover
+              ctx.fillStyle = '#f43f5e';
+              ctx.beginPath();
+              ctx.moveTo(cx, my);
+              ctx.lineTo(cx - 5, my - 8);
+              ctx.lineTo(cx + 5, my - 8);
+              ctx.closePath();
+              ctx.fill();
+            } else {
+              // Unconfirmed: Bearish cross with Green Candle
+              ctx.strokeStyle = '#f59e0b';
+              ctx.lineWidth = 1.25;
+              ctx.beginPath();
+              ctx.moveTo(cx, my);
+              ctx.lineTo(cx - 5, my - 8);
+              ctx.lineTo(cx + 5, my - 8);
+              ctx.closePath();
+              ctx.stroke();
+            }
           }
         }
       }
@@ -771,6 +863,8 @@
 
       const isSubZero = bar.macd < 0;
       const spread = bar.macd - bar.sig;
+      const isUp = bar.c >= bar.o;
+      const candleLabel = isUp ? '<strong style="color:#10b981">GREEN (Bullish)</strong>' : '<strong style="color:#f43f5e">RED (Bearish)</strong>';
 
       tooltip.innerHTML = `
         <div style="font-weight:700;color:#22d3ee;margin-bottom:4px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:2px">
@@ -779,6 +873,7 @@
         <div style="display:grid;grid-template-columns:auto auto;gap:4px 12px;font-size:0.7rem">
           <span style="color:#9ca3af">Price:</span> <strong style="color:#ffffff">$${bar.c.toFixed(2)}</strong>
           <span style="color:#9ca3af">O/H/L:</span> <span>$${bar.o.toFixed(2)} / $${bar.h.toFixed(2)} / $${bar.l.toFixed(2)}</span>
+          <span style="color:#9ca3af">1H Candle:</span> <span>${candleLabel}</span>
           <span style="color:#9ca3af">Volume:</span> <span>${bar.v.toLocaleString()}</span>
           <span style="color:#38bdf8">MACD (12,26):</span> <strong style="color:#38bdf8">${bar.macd.toFixed(4)}</strong>
           <span style="color:#f59e0b">Signal (9):</span> <strong style="color:#f59e0b">${bar.sig.toFixed(4)}</strong>
@@ -806,16 +901,16 @@
 
       let list = [...this.state.signalsData.signals];
 
-      // Filter by category / tier
+      // Filter by category / tier (Strict Raghav Sir confirmation)
       const f = this.state.filter;
       if (f === 'subzero') {
-        list = list.filter(s => s.signal_state === 'SUB_ZERO_BOUNCE' || (s.bull_cross_fresh && s.is_subzero));
+        list = list.filter(s => (s.signal_state === 'SUB_ZERO_BOUNCE' || (s.bull_cross_fresh && s.is_subzero)) && (s.candle_color_1h === 'GREEN' || s.is_green_candle_1h));
       } else if (f === 'bull') {
-        list = list.filter(s => s.signal_direction === 'BULLISH' || s.bull_cross_fresh);
+        list = list.filter(s => (s.signal_direction === 'BULLISH' || s.bull_cross_fresh) && s.signal_state !== 'UNCONFIRMED_CROSS');
       } else if (f === 'imminent') {
-        list = list.filter(s => s.signal_state === 'IMMINENT_SQUEEZE');
+        list = list.filter(s => s.signal_state === 'IMMINENT_SQUEEZE' || s.signal_state === 'UNCONFIRMED_CROSS');
       } else if (f === 'bear') {
-        list = list.filter(s => s.signal_direction === 'BEARISH' || s.bear_cross_fresh);
+        list = list.filter(s => (s.signal_direction === 'BEARISH' || s.bear_cross_fresh) && s.signal_state !== 'UNCONFIRMED_BEAR_CROSS');
       } else if (f === 'macro_bull') {
         list = list.filter(s => s.daily_trend_bullish);
       }
@@ -848,15 +943,25 @@
       let html = '';
       list.forEach(s => {
         const isActive = s.ticker === this.state.activeTicker;
+        const candleColor = s.candle_color_1h || (s.chg_1h_pct >= 0 ? 'GREEN' : 'RED');
+        const isGreenCandle = candleColor === 'GREEN';
+        const candlePill = `<span class="macd-candle-pill ${isGreenCandle ? 'green' : 'red'}">${candleColor}</span>`;
+
         let badgeHtml = '';
         if (s.signal_state === 'SUB_ZERO_BOUNCE' || (s.bull_cross_fresh && s.is_subzero)) {
-          badgeHtml = '<span class="macd-badge macd-badge-subzero">Sub-Zero Cross</span>';
+          badgeHtml = '<span class="macd-badge macd-badge-subzero">Sub-Zero (Confirmed)</span>';
+        } else if (s.signal_state === 'UNCONFIRMED_CROSS') {
+          badgeHtml = '<span class="macd-badge macd-badge-unconfirmed">Cross (Unconfirmed)</span>';
         } else if (s.signal_state === 'BULLISH_CROSS' || s.bull_cross_fresh) {
-          badgeHtml = '<span class="macd-badge macd-badge-bull">Bull Cross</span>';
+          badgeHtml = '<span class="macd-badge macd-badge-bull">Bull Cross (Confirmed)</span>';
+        } else if (s.signal_state === 'BEARISH_CROSS' || s.bear_cross_fresh) {
+          badgeHtml = '<span class="macd-badge macd-badge-bear">Bear Exit (Confirmed)</span>';
+        } else if (s.signal_state === 'UNCONFIRMED_BEAR_CROSS') {
+          badgeHtml = '<span class="macd-badge macd-badge-neutral">Bear Cross (Unconf)</span>';
         } else if (s.signal_state === 'IMMINENT_SQUEEZE') {
           badgeHtml = '<span class="macd-badge macd-badge-imminent">Imminent Squeeze</span>';
-        } else if (s.signal_direction === 'BEARISH' || s.bear_cross_fresh) {
-          badgeHtml = '<span class="macd-badge macd-badge-bear">Bearish Exit</span>';
+        } else if (s.signal_direction === 'BEARISH') {
+          badgeHtml = '<span class="macd-badge macd-badge-bear">Bearish Active</span>';
         } else {
           badgeHtml = '<span class="macd-badge macd-badge-neutral">Neutral</span>';
         }
@@ -868,7 +973,11 @@
             <td><strong style="color:#22d3ee">${s.ticker}</strong></td>
             <td style="color:#f3f4f6;max-width:240px;overflow:hidden;text-overflow:ellipsis">${s.fund_name}</td>
             <td><span class="macd-badge macd-badge-neutral">${s.leverage}</span></td>
-            <td style="text-align:right">$${Number(s.latest_price).toFixed(2)}</td>
+            <td style="text-align:right">
+              $${Number(s.latest_price).toFixed(2)}
+              ${s.live_premarket_price ? `<div style="font-size:9.5px;color:${(s.live_premarket_chg_pct || 0) >= 0 ? '#10b981' : '#f43f5e'};font-weight:700">Pre: $${Number(s.live_premarket_price).toFixed(2)} (${(s.live_premarket_chg_pct || 0) >= 0 ? '+' : ''}${(s.live_premarket_chg_pct || 0).toFixed(1)}%)</div>` : ''}
+            </td>
+            <td style="text-align:center">${candlePill}</td>
             <td style="text-align:right;color:${s.chg_1h_pct >= 0 ? '#10b981' : '#f43f5e'}">${s.chg_1h_pct >= 0 ? '+' : ''}${s.chg_1h_pct}%</td>
             <td style="text-align:right;color:${s.chg_1d_pct >= 0 ? '#10b981' : '#f43f5e'}">${s.chg_1d_pct >= 0 ? '+' : ''}${s.chg_1d_pct}%</td>
             <td style="text-align:right;color:#38bdf8">${s.macd_1h.toFixed(3)}</td>
