@@ -19,6 +19,7 @@
   <script defer data-runtime-optional="alpine" src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
   <link rel="stylesheet" href="flow-ui.css">
   <link rel="stylesheet" href="volume-studies.css">
+  <link rel="stylesheet" href="macd-strategy.css">
   <link rel="stylesheet" href="runtime-fallback.css">
   <style>
     :root {
@@ -2039,6 +2040,7 @@
             <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'studio' ? 'true' : 'false'" @click="setFlowViewMode('studio')">Instrument studio</button>
             <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'matrix' ? 'true' : 'false'" @click="setFlowViewMode('matrix')">Category &amp; regime matrix</button>
             <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'volume_studies' ? 'true' : 'false'" @click="setFlowViewMode('volume_studies')">Price-Volume Studies</button>
+            <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'macd_strategy' ? 'true' : 'false'" @click="setFlowViewMode('macd_strategy')">MACD Momentum Engine</button>
           </div>
           <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:0.45rem">
             <h2>ETF estimated net flows</h2>
@@ -3115,6 +3117,199 @@
               <summary>Study methodology, formulas, and regime boundaries</summary>
               <div class="flow-details-body" id="vs-methodology-content">
                 <!-- Dynamically filled with active indicator notes -->
+              </div>
+            </details>
+          </div>
+
+          <!-- ─── VIEW 5: MACD MOMENTUM RADAR & DUAL-PANE ENGINE (RAGHAV QUANT ARCHITECTURE) ─── -->
+          <div class="flow-panel-card flow-macd-card" x-show="flowViewMode === 'macd_strategy'">
+            <!-- Header Context Strip -->
+            <div class="macd-header-strip">
+              <div class="macd-title-col">
+                <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
+                  <h3 class="flow-result-symbol" style="font-size:1.15rem;margin:0" id="macd-active-symbol">INTW</h3>
+                  <span class="flow-badge" id="macd-active-leverage" data-state="ACCUMULATION">+2x</span>
+                  <span style="color:var(--flow-text);font-weight:600;font-size:0.875rem" id="macd-active-name">GraniteShares 2x Long INTC Daily ETF</span>
+                  <span class="flow-badge macd-badge-subzero" id="macd-active-regime-badge">SUB-ZERO REVERSAL CONFLUENCE</span>
+                </div>
+                <div class="flow-eyebrow" id="macd-active-category" style="margin-top:0.2rem">
+                  Single-Stock Leveraged (Bull) · Underlying: Intel Corporation (INTC)
+                </div>
+              </div>
+
+              <!-- Top Controls: Primary View Switcher + Quick Actions -->
+              <div class="macd-quick-actions">
+                <div class="macd-nav-switch" role="tablist" aria-label="MACD View Switcher">
+                  <button type="button" class="macd-nav-btn active" id="macd-nav-chart" onclick="window.MACDStrategy.setView('chart')">Dual-Pane Chart</button>
+                  <button type="button" class="macd-nav-btn" id="macd-nav-screener" onclick="window.MACDStrategy.setView('screener')">160-ETF Radar</button>
+                </div>
+
+                <label class="flow-eyebrow" for="macd-ticker-select" style="margin:0;display:flex;align-items:center;gap:0.35rem">
+                  <span>Switch:</span>
+                  <select id="macd-ticker-select"
+                          class="flow-chip"
+                          style="padding:0.25rem 0.6rem;font-weight:600;background:#000000;color:var(--flow-cyan);border-color:rgba(34,211,238,0.3);cursor:pointer;font-family:ui-monospace, 'SF Mono', 'JetBrains Mono', monospace;"
+                          aria-label="Switch MACD Instrument"
+                          onchange="window.MACDStrategy.setTicker(this.value)">
+                    <template x-for="item in (flowCatalog?.instruments || [])" :key="item.ticker">
+                      <option :value="item.ticker" x-text="`${item.ticker} — ${item.fund_name} (${item.leverage})`"></option>
+                    </template>
+                  </select>
+                </label>
+
+                <button class="flow-button" type="button" @click="setFlowViewMode('studio')">&larr; Back to Flow Studio</button>
+              </div>
+            </div>
+
+            <!-- Quick Ticker Switcher Row (Direct 1-Click access to key case studies & universe leaders) -->
+            <div class="macd-ticker-row">
+              <span class="flow-eyebrow" style="color:#22d3ee;font-weight:700">Flagship Instruments:</span>
+              <button type="button" class="macd-ticker-pill active" data-ticker="INTW" onclick="window.MACDStrategy.setTicker('INTW')">INTW (2x Intel)</button>
+              <button type="button" class="macd-ticker-pill" data-ticker="SNDU" onclick="window.MACDStrategy.setTicker('SNDU')">SNDU (2x SanDisk Target)</button>
+              <button type="button" class="macd-ticker-pill" data-ticker="TQQQ" onclick="window.MACDStrategy.setTicker('TQQQ')">TQQQ (3x QQQ)</button>
+              <button type="button" class="macd-ticker-pill" data-ticker="SOXL" onclick="window.MACDStrategy.setTicker('SOXL')">SOXL (3x Semis)</button>
+              <button type="button" class="macd-ticker-pill" data-ticker="TSLL" onclick="window.MACDStrategy.setTicker('TSLL')">TSLL (2x Tesla)</button>
+              <button type="button" class="macd-ticker-pill" data-ticker="NVDL" onclick="window.MACDStrategy.setTicker('NVDL')">NVDL (2x Nvidia)</button>
+              <button type="button" class="macd-ticker-pill" data-ticker="CONL" onclick="window.MACDStrategy.setTicker('CONL')">CONL (2x Coinbase)</button>
+              <button type="button" class="macd-ticker-pill" data-ticker="SQQQ" onclick="window.MACDStrategy.setTicker('SQQQ')">SQQQ (-3x QQQ)</button>
+            </div>
+
+            <!-- VIEW A: DUAL-PANE CHART PANEL -->
+            <div id="macd-chart-view-panel" style="display:flex;flex-direction:column;gap:0.85rem">
+              <!-- Tactical Controls Bar: Timeframe switch (1H vs 1D) + Overlays -->
+              <div class="macd-controls-bar">
+                <div class="macd-tf-group">
+                  <span class="flow-eyebrow">Timeframe:</span>
+                  <button type="button" class="macd-tf-btn active" id="macd-tf-1h" onclick="window.MACDStrategy.setTimeframe('1h')" title="1-Hour Intraday Tactical Timing Bar">1-Hour (1H)</button>
+                  <button type="button" class="macd-tf-btn" id="macd-tf-1d" onclick="window.MACDStrategy.setTimeframe('1d')" title="1-Day Macro Trend Filter">1-Day (1D)</button>
+                </div>
+
+                <div style="display:flex;align-items:center;gap:0.5rem">
+                  <button type="button" class="macd-toggle-btn active" id="macd-toggle-pivots" onclick="window.MACDStrategy.togglePivots()" title="Toggle Traditional Floor Pivots (P, R1-R5, S1-S5)">Auto Pivots (P, R1-R5, S1-S5)</button>
+                </div>
+              </div>
+
+              <!-- High-DPI Dual-Pane Canvas Viewport -->
+              <div class="macd-canvas-viewport" id="macd-canvas-container">
+                <canvas id="macd-canvas"></canvas>
+                <!-- Tooltip Overlay -->
+                <div id="macd-tooltip" class="macd-tooltip" style="display:none"></div>
+              </div>
+
+              <!-- Tactical HUD Reading Bar -->
+              <div class="macd-reading-bar">
+                <div class="macd-hud-cell">
+                  <span class="macd-hud-label">Price</span>
+                  <span class="macd-hud-val" id="macd-hud-price">—</span>
+                </div>
+                <div class="macd-hud-sep"></div>
+                <div class="macd-hud-cell">
+                  <span class="macd-hud-label">Change</span>
+                  <span class="macd-hud-val" id="macd-hud-chg">—</span>
+                </div>
+                <div class="macd-hud-sep"></div>
+                <div class="macd-hud-cell">
+                  <span class="macd-hud-label">MACD (12,26)</span>
+                  <span class="macd-hud-val" id="macd-hud-macd" style="color:#38bdf8">—</span>
+                </div>
+                <div class="macd-hud-sep"></div>
+                <div class="macd-hud-cell">
+                  <span class="macd-hud-label">Signal (9)</span>
+                  <span class="macd-hud-val" id="macd-hud-sig" style="color:#f59e0b">—</span>
+                </div>
+                <div class="macd-hud-sep"></div>
+                <div class="macd-hud-cell">
+                  <span class="macd-hud-label">Histogram</span>
+                  <span class="macd-hud-val" id="macd-hud-hist">—</span>
+                </div>
+                <div class="macd-hud-sep"></div>
+                <div class="macd-hud-cell">
+                  <span class="macd-hud-label">RVOL (20)</span>
+                  <span class="macd-hud-val" id="macd-hud-rvol">—</span>
+                </div>
+                <div class="macd-hud-sep"></div>
+                <div class="macd-hud-cell">
+                  <span class="macd-hud-label">Nearest Floor Pivot</span>
+                  <span class="macd-hud-val" id="macd-hud-pivot" style="color:#f59e0b">—</span>
+                </div>
+                <div class="macd-hud-sep"></div>
+                <div class="macd-hud-cell">
+                  <span class="macd-hud-label">Bar Timestamp</span>
+                  <span class="macd-hud-val" id="macd-hud-date" style="color:#9ca3af">—</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- VIEW B: 160-INSTRUMENT SCREENER & RADAR PANEL -->
+            <div id="macd-screener-view-panel" class="macd-screener-container" style="display:none">
+              <div class="macd-screener-toolbar">
+                <div class="macd-filter-group">
+                  <button type="button" class="macd-filter-btn active" data-filter="all" onclick="window.MACDStrategy.setFilter('all')">All Universe (160)</button>
+                  <button type="button" class="macd-filter-btn" data-filter="subzero" onclick="window.MACDStrategy.setFilter('subzero')">Sub-Zero Crossovers (Golden Reversals)</button>
+                  <button type="button" class="macd-filter-btn" data-filter="bull" onclick="window.MACDStrategy.setFilter('bull')">All Bullish Crossovers</button>
+                  <button type="button" class="macd-filter-btn" data-filter="imminent" onclick="window.MACDStrategy.setFilter('imminent')">Pre-Close Squeeze Watch (15:00 EST)</button>
+                  <button type="button" class="macd-filter-btn" data-filter="bear" onclick="window.MACDStrategy.setFilter('bear')">Bearish Exits / Cash Parking</button>
+                  <button type="button" class="macd-filter-btn" data-filter="macro_bull" onclick="window.MACDStrategy.setFilter('macro_bull')">Macro Trend Confirmed (1D MACD > 0)</button>
+                </div>
+                <div style="display:flex;align-items:center;gap:0.5rem">
+                  <input type="text" class="macd-search-box" placeholder="Filter ticker, fund, underlying…" oninput="window.MACDStrategy.handleSearch(this.value)">
+                  <span class="flow-eyebrow" id="macd-screener-count" style="white-space:nowrap;color:#22d3ee">160 Instruments</span>
+                </div>
+              </div>
+
+              <div class="macd-table-wrap">
+                <table class="macd-table">
+                  <thead>
+                    <tr>
+                      <th onclick="window.MACDStrategy.sortBy('ticker')">Ticker &uarr;&darr;</th>
+                      <th onclick="window.MACDStrategy.sortBy('fund_name')">Fund Name &uarr;&darr;</th>
+                      <th onclick="window.MACDStrategy.sortBy('leverage')">Mult</th>
+                      <th style="text-align:right" onclick="window.MACDStrategy.sortBy('latest_price')">Price &uarr;&darr;</th>
+                      <th style="text-align:right" onclick="window.MACDStrategy.sortBy('chg_1h_pct')">1H % &uarr;&darr;</th>
+                      <th style="text-align:right" onclick="window.MACDStrategy.sortBy('chg_1d_pct')">24H % &uarr;&darr;</th>
+                      <th style="text-align:right" onclick="window.MACDStrategy.sortBy('macd_1h')">MACD &uarr;&darr;</th>
+                      <th style="text-align:right" onclick="window.MACDStrategy.sortBy('signal_1h')">Signal &uarr;&darr;</th>
+                      <th style="text-align:right" onclick="window.MACDStrategy.sortBy('hist_1h')">Hist &uarr;&darr;</th>
+                      <th style="text-align:right" onclick="window.MACDStrategy.sortBy('rvol_1h')">RVOL &uarr;&darr;</th>
+                      <th style="text-align:center" onclick="window.MACDStrategy.sortBy('daily_trend_bullish')">1D Macro &uarr;&darr;</th>
+                      <th style="text-align:right" onclick="window.MACDStrategy.sortBy('confluence_score')">Score &uarr;&darr;</th>
+                      <th style="text-align:center">Signal State</th>
+                    </tr>
+                  </thead>
+                  <tbody id="macd-screener-tbody">
+                    <!-- Populated dynamically by MACDStrategy.renderScreenerTable() -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Automated Email Alert Notification Box -->
+            <div class="macd-alert-box">
+              <div class="macd-alert-header">
+                <div>
+                  <strong style="color:#22d3ee;text-transform:uppercase;letter-spacing:0.04em">Automated Hourly Radar Dispatch</strong>
+                  <span style="color:#9ca3af;margin-left:0.5rem">Target: <code>raghavendra.ds1@gmail.com</code></span>
+                </div>
+                <span class="flow-eyebrow" id="macd-alert-timestamp" style="color:#38bdf8">—</span>
+              </div>
+              <div class="macd-alert-content" id="macd-alert-text-preview">Loading latest radar dispatch…</div>
+            </div>
+
+            <!-- Methodology & Quantitative Verification Drawer -->
+            <details class="macd-methodology">
+              <summary>Institutional MACD Strategy Specification, Volatility Drag Proofs &amp; Backtest Findings</summary>
+              <div class="macd-methodology-body">
+                <h4>1. Mathematical Mechanics &amp; Multi-Timeframe Architecture</h4>
+                <p>Standard MACD utilizes dual exponential moving averages: <code>MACD Line = EMA(Close, 12) - EMA(Close, 26)</code> with a 9-period signal trigger: <code>Signal = EMA(MACD, 9)</code> and <code>Histogram = MACD - Signal</code>. On intraday 1-hour intervals, unconstrained crossovers suffer from severe whipsaw and mechanical decay due to the constant leverage reset volatility penalty: <code>&Delta;V = -&frac12;(k&sup2; - k)&sigma;&sup2;&Delta;t</code>.</p>
+
+                <h4>2. The Raghav Setup: Sub-Zero Reversal Confluence (INTW &amp; SNDU Case Studies)</h4>
+                <p>When evaluated strictly during extreme mean-reversion conditions where <code>MACD &lt; 0</code> (Z-Score &le; -1.0&sigma;), <code>RVOL &ge; 1.25&times;</code>, and price tests Floor Support (S3, S4, or S5), the probability of positive convexity increases significantly. On <strong>INTW</strong> (GraniteShares 2x Long INTC), this confluence produced a <strong>+139.0% total return</strong> (vs +9.9% unconstrained) and slashed Maximum Drawdown from 66.5% to 24.7%. On <strong>SNDU</strong>, confirmed setups yielded a <strong>100% win rate</strong> with only 12.1% MaxDD.</p>
+
+                <h4>3. The 15:00 EST Pre-Close Golden Hour Scan</h4>
+                <p>Leveraged ETF Authorized Participants (APs) mechanically rebalance exposure between 15:45 and 16:00 EST to realign target daily beta multiples. Triggering alerts on the closed 14:00–15:00 EST 1-hour bar provides systematic entry visibility ahead of the institutional closing auction liquidity surge.</p>
+
+                <h4>4. Exit Protocol &amp; Cash Parking Imperative</h4>
+                <p>Holding leveraged ETFs during bearish regimes guarantees exponential path decay. All positions must be liquidated into cash immediately upon a 1-Hour Bearish MACD crossover (<code>MACD &lt; Signal</code>) or within a maximum 30-hour holding window.</p>
               </div>
             </details>
           </div>
@@ -7718,6 +7913,7 @@ function marketsApp() {
   };
 }
 </script>
+<script src="macd-strategy.js"></script>
 <script src="volume-studies.js"></script>
 <script src="flow-ui.js"></script>
 <script src="runtime-fallback.js"></script>

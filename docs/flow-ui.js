@@ -75,7 +75,7 @@
       range: params.get('range') || '1y',
       priceEnabled: params.get('price') !== '0',
       chart: CHART_TABS.some(tab => tab.key === chart) ? chart : 'workbench',
-      view: ['studio', 'scanner', 'matrix', 'volume_studies'].includes(view) ? view : (ticker ? 'studio' : null)
+      view: ['studio', 'scanner', 'matrix', 'volume_studies', 'macd_strategy'].includes(view) ? view : (ticker ? 'studio' : null)
     };
   }
 
@@ -4100,6 +4100,13 @@
             VolumeStudies.loadTicker(initialTicker);
           }
         }
+        if (this.flowViewMode === 'macd_strategy' && typeof MACDStrategy !== 'undefined') {
+          if (typeof this.$nextTick === 'function') {
+            this.$nextTick(() => MACDStrategy.mount(initialTicker));
+          } else {
+            MACDStrategy.mount(initialTicker);
+          }
+        }
       },
 
       flowChartTabAvailable(key) {
@@ -4340,6 +4347,13 @@
             this.$nextTick(() => VolumeStudies.loadTicker(normalized));
           } else {
             VolumeStudies.loadTicker(normalized);
+          }
+        }
+        if (typeof MACDStrategy !== 'undefined' && (this.flowViewMode === 'macd_strategy' || MACDStrategy.state.activeTicker)) {
+          if (typeof this.$nextTick === 'function') {
+            this.$nextTick(() => MACDStrategy.setTicker(normalized));
+          } else {
+            MACDStrategy.setTicker(normalized);
           }
         }
       },
@@ -4686,6 +4700,12 @@
               VolumeStudies.loadTicker(targetTicker);
             });
           }
+        }
+        if (mode === 'macd_strategy' && typeof MACDStrategy !== 'undefined') {
+          const targetTicker = this.flowTicker || (this.flowCatalog?.instruments?.[0]?.ticker || 'INTW');
+          this.$nextTick(() => {
+            MACDStrategy.mount(targetTicker);
+          });
         }
       },
 
