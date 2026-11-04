@@ -34,6 +34,7 @@ import email.utils
 import json
 import math
 import os
+import re
 import smtplib
 import ssl
 import sys
@@ -224,27 +225,46 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
 
         latest_price = round(float(closes_1h[-1]), 4)
         prev_close_1h = float(closes_1h[-2]) if len(closes_1h) >= 2 else latest_price
-        chg_1h_pct = round(((latest_price - prev_close_1h) / prev_close_1h) * 100.0, 2)
+        chg_1h_pct = (
+            round(((latest_price - prev_close_1h) / prev_close_1h) * 100.0, 2)
+            if prev_close_1h > 0
+            else 0.0
+        )
 
-        # 24H Price change vs prior completed day close
+        # 24H Price change vs prior completed day close (strictly session before today)
         today_date = now_ny.date()
-        completed_days = df_1d[df_1d.index.map(lambda x: x.date() < today_date)]
-        if not completed_days.empty:
-            prior_day_bar = completed_days.iloc[-1]
+        prior_session_days = df_1d[df_1d.index.map(lambda x: x.date() < today_date)]
+        if not prior_session_days.empty:
+            prior_day_bar = prior_session_days.iloc[-1]
             prior_day_close = float(prior_day_bar["Close"])
-            prev_day_h = float(prior_day_bar["High"])
-            prev_day_l = float(prior_day_bar["Low"])
-            prev_day_c = prior_day_close
         else:
             prior_day_bar = df_1d.iloc[-1]
             prior_day_close = float(prior_day_bar["Close"])
-            prev_day_h = float(prior_day_bar["High"])
-            prev_day_l = float(prior_day_bar["Low"])
-            prev_day_c = prior_day_close
 
-        chg_1d_pct = round(((latest_price - prior_day_close) / prior_day_close) * 100.0, 2)
+        chg_1d_pct = (
+            round(((latest_price - prior_day_close) / prior_day_close) * 100.0, 2)
+            if prior_day_close > 0
+            else 0.0
+        )
 
-        # Floor Pivots derived strictly from last completed regular session
+        # Floor Pivots:
+        # During market hours (<16:00 EST), pivots are derived from yesterday's completed session.
+        # After regular close (>=16:00 EST or weekends), today's session has completed,
+        # so upcoming pivots are derived from today's completed session.
+        is_post_close = (now_ny.weekday() >= 5) or ((now_ny.hour + now_ny.minute / 60.0) >= 16.0)
+        pivot_reference_days = (
+            df_1d[df_1d.index.map(lambda x: x.date() <= today_date)]
+            if is_post_close
+            else prior_session_days
+        )
+        if not pivot_reference_days.empty:
+            pivot_bar = pivot_reference_days.iloc[-1]
+        else:
+            pivot_bar = df_1d.iloc[-1]
+
+        prev_day_h = float(pivot_bar["High"])
+        prev_day_l = float(pivot_bar["Low"])
+        prev_day_c = float(pivot_bar["Close"])
         pivots = calculate_pivots(prev_day_h, prev_day_l, prev_day_c)
 
         # Volume Metrics (1H RVOL over 20-bar window)
@@ -905,31 +925,55 @@ def format_institutional_email(
 def send_email_alert(
     subject: str, text_body: str, html_body: str, recipient: str = DEFAULT_RECIPIENT
 ) -> bool:
-    """Send email via SMTP SSL port 465 if credentials exist in environment."""
+    """Send email via SMTP SSL (465) or STARTTLS (587) with multi-recipient support."""
     sender = (os.environ.get("ALERT_EMAIL_SENDER") or "").strip()
     password = (os.environ.get("ALERT_EMAIL_PASSWORD") or "").strip().replace(" ", "")
+    sender_name = (os.environ.get("ALERT_EMAIL_SENDER_NAME") or "Conviction Labs").strip()
+    smtp_host = (os.environ.get("ALERT_SMTP_HOST") or "smtp.gmail.com").strip()
+    smtp_port_raw = (os.environ.get("ALERT_SMTP_PORT") or "465").strip()
+    try:
+        smtp_port = int(smtp_port_raw)
+    except ValueError:
+        smtp_port = 465
 
     if not sender or not password:
         print("[SMTP Engine] ALERT_EMAIL_SENDER or ALERT_EMAIL_PASSWORD not configured.")
         print("[SMTP Engine] Executed deterministic dry run. Artifacts written to disk.")
         return False
 
+    # Parse potential comma/semicolon-separated recipients
+    if isinstance(recipient, str):
+        recipients_list = [r.strip() for r in re.split(r"[,;]", recipient) if r.strip()]
+    else:
+        recipients_list = list(recipient)
+
+    if not recipients_list:
+        recipients_list = [DEFAULT_RECIPIENT]
+
     try:
         msg = email.mime.multipart.MIMEMultipart("alternative")
         msg["Subject"] = subject
-        msg["From"] = f"Prateek Upadhyay <{sender}>"
-        msg["To"] = recipient
+        msg["From"] = f"{sender_name} <{sender}>"
+        msg["To"] = ", ".join(recipients_list)
         msg["Date"] = email.utils.formatdate(localtime=True)
-        msg["Message-ID"] = email.utils.make_msgid(domain="gmail.com")
+        msg["Message-ID"] = email.utils.make_msgid(domain=smtp_host.split(".")[-2] + "." + smtp_host.split(".")[-1] if "." in smtp_host else "gmail.com")
 
         msg.attach(email.mime.text.MIMEText(text_body, "plain", "utf-8"))
         msg.attach(email.mime.text.MIMEText(html_body, "html", "utf-8"))
 
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=20) as server:
-            server.login(sender, password)
-            server.sendmail(sender, recipient, msg.as_string())
+        if smtp_port == 465:
+            with smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=20) as server:
+                server.login(sender, password)
+                server.sendmail(sender, recipients_list, msg.as_string())
+        else:
+            with smtplib.SMTP(smtp_host, smtp_port, timeout=20) as server:
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
+                server.login(sender, password)
+                server.sendmail(sender, recipients_list, msg.as_string())
 
-        print(f"[SMTP Engine] Successfully dispatched email alert to {recipient}!")
+        print(f"[SMTP Engine] Successfully dispatched email alert to {recipients_list} via {smtp_host}:{smtp_port}!")
         return True
     except Exception as ex:
         print(f"[SMTP Engine] Error dispatching email: {ex}")

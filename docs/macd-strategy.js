@@ -162,6 +162,9 @@
       if (canvas) {
         canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
         canvas.addEventListener('mouseleave', () => this.handleMouseLeave());
+        canvas.addEventListener('touchstart', (e) => this.handleTouch(e), { passive: false });
+        canvas.addEventListener('touchmove', (e) => this.handleTouch(e), { passive: false });
+        canvas.addEventListener('touchend', () => this.handleMouseLeave());
       }
     },
 
@@ -172,6 +175,22 @@
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
+
+      this.state.lastMouse = { x, y };
+      this.state.isHovering = true;
+      this.drawChart();
+    },
+
+    /** Touch movement over Canvas for Mobile Phones */
+    handleTouch(e) {
+      if (!e.touches || e.touches.length === 0) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      const canvas = document.getElementById('macd-canvas');
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = touch.clientX - rect.left;
+      const y = touch.clientY - rect.top;
 
       this.state.lastMouse = { x, y };
       this.state.isHovering = true;
@@ -309,16 +328,18 @@
     renderFlagshipPills() {
       const container = document.getElementById('macd-flagship-pills');
       if (!container || container.children.length > 0) return;
-      const flagshipList = [
+      const availableTickers = new Set((this.state.signalsData?.signals || []).map(s => s.ticker));
+      const preferred = [
         { ticker: 'INTW', label: 'INTW (2x Intel)' },
-        { ticker: 'SNDU', label: 'SNDU (2x SanDisk Target)' },
-        { ticker: 'TQQQ', label: 'TQQQ (3x QQQ)' },
         { ticker: 'SOXL', label: 'SOXL (3x Semis)' },
+        { ticker: 'TQQQ', label: 'TQQQ (3x QQQ)' },
         { ticker: 'TSLL', label: 'TSLL (2x Tesla)' },
         { ticker: 'NVDL', label: 'NVDL (2x Nvidia)' },
         { ticker: 'CONL', label: 'CONL (2x Coinbase)' },
+        { ticker: 'SOXS', label: 'SOXS (-3x Semis)' },
         { ticker: 'SQQQ', label: 'SQQQ (-3x QQQ)' }
       ];
+      const flagshipList = preferred.filter(p => availableTickers.has(p.ticker));
       let html = '<span class="flow-eyebrow" style="color:#22d3ee;font-weight:700">Flagship Instruments:</span>';
       flagshipList.forEach(item => {
         const isActive = this.state.activeTicker === item.ticker;
@@ -657,6 +678,19 @@
       ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.textAlign = 'left';
       ctx.fillText('MACD (12, 26, close, 9 EMA EMA) · Sky: MACD | Amber: Signal | 4-Color Momentum Histogram', paddingLeft + 4, bottomY0 - 5);
+
+      // Draw Date/Time X-Axis Ticks
+      ctx.fillStyle = '#64748b';
+      ctx.font = '9px ui-monospace, "SF Mono", monospace';
+      ctx.textAlign = 'center';
+      const tickStep = Math.max(1, Math.floor(nBars / 6));
+      for (let i = 0; i < nBars; i += tickStep) {
+        const b = bars[i];
+        const cx = paddingLeft + i * barSpacing + barSpacing / 2;
+        const rawDt = b.dt || '';
+        const dtLabel = rawDt.length > 10 ? rawDt.slice(5) : rawDt.slice(5);
+        ctx.fillText(dtLabel, cx, bottomY1 + 14);
+      }
 
       // ── CROSSHAIR & TOOLTIP ──
       if (this.state.isHovering && hoverBar && hoverX > 0) {
