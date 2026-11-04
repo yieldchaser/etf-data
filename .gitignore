@@ -139,6 +139,10 @@ docs/data/history/
 !docs/data/flows/*.json
 !docs/data/macd/
 !docs/data/macd/*.json
+!docs/data/macd/history/
+!docs/data/macd/history/*.json
+!docs/data/flows/history/
+!docs/data/flows/history/*.json
 
 # Whitelist the authoritative local flow SOURCE dataset (data/flows/).
 # The repo-wide *.csv / *.json rules above must never apply here: the 117

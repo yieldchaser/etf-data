@@ -54,6 +54,8 @@ SIGNALS_OUT_MACD = REPO_ROOT / "docs" / "data" / "macd" / "signals.json"
 ALERT_OUT_MACD = REPO_ROOT / "docs" / "data" / "macd" / "latest_alert.json"
 SIGNALS_OUT_FLOWS = REPO_ROOT / "docs" / "data" / "flows" / "macd_signals.json"
 ALERT_OUT_FLOWS = REPO_ROOT / "docs" / "data" / "flows" / "latest_macd_alert.json"
+HISTORY_DIR_MACD = REPO_ROOT / "docs" / "data" / "macd" / "history"
+HISTORY_DIR_FLOWS = REPO_ROOT / "docs" / "data" / "flows" / "history"
 SIGNALS_OUT = SIGNALS_OUT_MACD
 ALERT_OUT = ALERT_OUT_MACD
 
@@ -188,9 +190,9 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
 
     try:
         t = yf.Ticker(ticker)
-        # Fetch 60d of 1h RTH bars and up to 2y of 1d bars for warm-up & 1-year history
-        df_1h = t.history(period="60d", interval="1h", prepost=False)
-        df_1d = t.history(period="2y", interval="1d")
+        # Fetch up to 730d of 1h RTH bars (max Yahoo intraday depth) and up to 5y of 1d bars
+        df_1h = t.history(period="730d", interval="1h", prepost=False)
+        df_1d = t.history(period="5y", interval="1d")
 
         if len(df_1h) < 30 or len(df_1d) < 10:
             return None
@@ -457,10 +459,10 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
 
         score = max(-100, min(100, score))
 
-        # Up to 120 bars of 1H chart payload for web UI (~3-4 weeks of intraday hourly context)
-        chart_bars_1h = []
-        for i in range(max(0, len(closes_1h) - 120), len(closes_1h)):
-            chart_bars_1h.append(
+        # Full deep 1H bars for LOD on-demand artifact (up to 730d / ~5,000 bars)
+        deep_bars_1h = []
+        for i in range(len(closes_1h)):
+            deep_bars_1h.append(
                 {
                     "dt": timestamps_1h[i],
                     "o": round(float(opens_1h[i]), 2 if opens_1h[i] >= 10 else 3),
@@ -473,13 +475,16 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
                 }
             )
 
-        # Up to 252 bars of 1D chart payload for web UI (1 full trading year of daily bars)
-        chart_bars_1d = []
+        # Retain trailing 120 bars for preview/tests
+        chart_bars_1h = deep_bars_1h[-120:] if len(deep_bars_1h) > 120 else deep_bars_1h
+
+        # Full deep 1D bars for LOD on-demand artifact (up to 5y / ~1,260 bars)
+        deep_bars_1d = []
         macd_1d = m_1d["macd"]
         sig_1d = m_1d["signal"]
         hist_1d_series = m_1d["hist"]
-        for i in range(max(0, len(closes_1d) - 252), len(closes_1d)):
-            chart_bars_1d.append(
+        for i in range(len(closes_1d)):
+            deep_bars_1d.append(
                 {
                     "dt": timestamps_1d[i],
                     "o": round(float(opens_1d[i]), 2 if opens_1d[i] >= 10 else 3),
@@ -491,6 +496,9 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
                     "hist": round(float(hist_1d_series[i]), 3),
                 }
             )
+
+        # Retain trailing 252 bars for preview/tests
+        chart_bars_1d = deep_bars_1d[-252:] if len(deep_bars_1d) > 252 else deep_bars_1d
 
         return {
             "ticker": ticker,
@@ -530,6 +538,8 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
             "as_of_utc": timestamps_1h[-1],
             "chart_bars_1h": chart_bars_1h,
             "chart_bars_1d": chart_bars_1d,
+            "deep_bars_1h": deep_bars_1h,
+            "deep_bars_1d": deep_bars_1d,
         }
     except Exception:
         return None
@@ -1350,9 +1360,9 @@ def main() -> None:
         catalog = json.load(f)
 
     # Full curated universe: exactly the 160 ETFs from the fund flow side (catalog.json)
-    instruments = catalog.get("instruments", [])
-    if args.limit > 0:
-        instruments = instruments[: args.limit]
+    all_instruments = catalog.get("instruments", [])
+    total_catalog_count = len(all_instruments)
+    instruments = all_instruments[: args.limit] if args.limit > 0 else all_instruments
 
     now_utc = dt.datetime.now(dt.timezone.utc)
     now_ny = now_utc.astimezone(NY_TZ)
@@ -1391,7 +1401,39 @@ def main() -> None:
 
     scan_time_str = now_ny.strftime("%Y-%m-%d %H:%M:%S %Z")
 
-    # Structure payload for Web Dashboard
+    # Ensure Tier 1 LOD history directories exist
+    HISTORY_DIR_MACD.mkdir(parents=True, exist_ok=True)
+    HISTORY_DIR_FLOWS.mkdir(parents=True, exist_ok=True)
+
+    flagship_preview_set = {"CONL", "NVDL", "TQQQ", "SOXL", "TSLL", "INTW", "SOXS", "SQQQ"}
+
+    # Write per-ticker deep LOD history files (5Y Daily + 2Y 1H bars)
+    for item in results:
+        tick = item["ticker"]
+        deep_1d = item.pop("deep_bars_1d", [])
+        deep_1h = item.pop("deep_bars_1h", [])
+
+        hist_payload = {
+            "ticker": tick,
+            "updated_utc": now_utc.isoformat(),
+            "bars_1d": deep_1d,
+            "bars_1h": deep_1h,
+        }
+        for hdir in (HISTORY_DIR_MACD, HISTORY_DIR_FLOWS):
+            out_file = hdir / f"{tick}.json"
+            with open(out_file, "w", encoding="utf-8") as f:
+                json.dump(hist_payload, f, separators=(",", ":"))
+
+        # Compact signals.json: preserve 60 preview bars for top flagship tickers,
+        # and clear for others so signals.json is lightning fast (~95 KB total)
+        if tick not in flagship_preview_set:
+            item["chart_bars_1h"] = []
+            item["chart_bars_1d"] = []
+        else:
+            item["chart_bars_1h"] = item.get("chart_bars_1h", [])[-60:]
+            item["chart_bars_1d"] = item.get("chart_bars_1d", [])[-60:]
+
+    # Structure payload for Web Dashboard (Tier 0 Screener Radar)
     payload = {
         "updated_utc": now_utc.isoformat(),
         "scan_time_str": scan_time_str,
@@ -1401,15 +1443,14 @@ def main() -> None:
         "signals": results,
     }
 
-    total_universe_count = len(instruments)
-    is_full_universe = (args.limit == 0 or len(results) >= total_universe_count)
+    is_full_universe = (args.limit == 0 and len(results) >= total_catalog_count)
 
     # Save to JSON (both dedicated macd/ directory and flows/ fallback)
     # INVARIANT: Only overwrite production signal artifacts when scanning full universe.
     # Partial / limited test runs (e.g. --limit 5) must never truncate the production 160-instrument dataset!
     if not is_full_universe:
         print(
-            f"[Scanner Safety] Limited test scan active ({len(results)} of {total_universe_count} instruments). "
+            f"[Scanner Safety] Limited test scan active ({len(results)} of {total_catalog_count} instruments). "
             f"Preserving full production signals artifacts at {SIGNALS_OUT_MACD}."
         )
     else:

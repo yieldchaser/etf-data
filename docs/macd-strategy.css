@@ -211,6 +211,7 @@
 
 .macd-tf-btn,
 .macd-range-btn,
+.macd-range-btn-1h,
 .macd-toggle-btn {
   background: transparent;
   color: #a1a1aa;
@@ -228,13 +229,15 @@
 
 .macd-tf-btn:hover,
 .macd-range-btn:hover,
+.macd-range-btn-1h:hover,
 .macd-toggle-btn:hover {
   color: #f3f4f6;
   border-color: rgba(255, 255, 255, 0.18);
 }
 
 .macd-tf-btn.active,
-.macd-range-btn.active {
+.macd-range-btn.active,
+.macd-range-btn-1h.active {
   background: rgba(34, 211, 238, 0.1);
   color: #22d3ee;
   border-color: rgba(34, 211, 238, 0.35);

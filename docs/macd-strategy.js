@@ -19,7 +19,9 @@
       signalsData: null,
       activeTicker: 'INTW',
       activeTimeframe: '1h', // '1h' | '1d'
-      range1D: 'ALL',        // '1M' | '3M' | '6M' | '1Y' | 'ALL'
+      range1H: '1M',         // '1W' | '2W' | '1M' | '3M' | '1Y' | 'ALL'
+      range1D: 'ALL',        // '1M' | '3M' | '6M' | '1Y' | '2Y' | '5Y' | 'ALL'
+      historyCache: {},      // Per-ticker deep LOD history cache
       activeView: 'chart',   // 'chart' | 'screener'
       showPivots: false,     // Default OFF to prevent clutter
       filter: 'all',         // 'all' | 'subzero' | 'bull' | 'imminent' | 'bear' | 'macro_bull'
@@ -45,6 +47,7 @@
         this.state.activeTicker = initTicker.toUpperCase();
       }
       await this.loadData();
+      this.loadHistory(this.state.activeTicker);
       this.bindEvents();
       this.render();
       this.state.isMounted = true;
@@ -75,6 +78,49 @@
       }
     },
 
+    /** Asynchronously fetch and cache Tier 1 LOD deep history for ticker */
+    async loadHistory(ticker) {
+      if (!ticker) return;
+      const t = ticker.toUpperCase();
+      if (!this.state.historyCache) this.state.historyCache = {};
+      if (this.state.historyCache[t]) {
+        if (this.state.activeTicker === t) {
+          this.drawChart();
+          this.updateHUD(null);
+        }
+        return;
+      }
+
+      try {
+        const fetchWithFallback = async (primary, fallback) => {
+          try {
+            const res = await fetch(primary);
+            if (res && res.ok) return res;
+          } catch (_) {}
+          try {
+            const res = await fetch(fallback);
+            if (res && res.ok) return res;
+          } catch (_) {}
+          return null;
+        };
+
+        const res = await fetchWithFallback(
+          `data/macd/history/${t}.json`,
+          `data/flows/history/${t}.json`
+        );
+        if (res && res.ok) {
+          const hist = await res.json();
+          this.state.historyCache[t] = hist;
+          if (this.state.activeTicker === t) {
+            this.drawChart();
+            this.updateHUD(null);
+          }
+        }
+      } catch (err) {
+        console.warn(`[MACDStrategy] Deep history unavailable for ${t}:`, err);
+      }
+    },
+
     /** Get active instrument data */
     getActiveSignal() {
       if (!this.state.signalsData || !this.state.signalsData.signals) return null;
@@ -84,14 +130,33 @@
 
     /** Get bars for active timeframe & selected range */
     getActiveBars() {
-      const signal = this.getActiveSignal();
-      if (!signal) return [];
+      const t = this.state.activeTicker;
+      const hist = this.state.historyCache && this.state.historyCache[t];
 
       if (this.state.activeTimeframe === '1h') {
-        return signal.chart_bars_1h || [];
+        const allHourly = (hist && hist.bars_1h && hist.bars_1h.length)
+          ? hist.bars_1h
+          : ((this.getActiveSignal() && this.getActiveSignal().chart_bars_1h) || []);
+
+        if (!allHourly.length) return [];
+
+        const r = this.state.range1H || '1M';
+        let count = allHourly.length;
+        if (r === '1W') count = 35;
+        else if (r === '2W') count = 70;
+        else if (r === '1M') count = 140;
+        else if (r === '3M') count = 420;
+        else if (r === '1Y') count = 1750;
+        else count = allHourly.length; // ALL (2Y / ~5,000 bars)
+
+        return allHourly.slice(Math.max(0, allHourly.length - count));
       }
 
-      const allDaily = signal.chart_bars_1d || [];
+      // 1D Timeframe
+      const allDaily = (hist && hist.bars_1d && hist.bars_1d.length)
+        ? hist.bars_1d
+        : ((this.getActiveSignal() && this.getActiveSignal().chart_bars_1d) || []);
+
       if (!allDaily.length) return [];
 
       const r = this.state.range1D || 'ALL';
@@ -100,7 +165,9 @@
       else if (r === '3M') count = 65;
       else if (r === '6M') count = 130;
       else if (r === '1Y') count = 252;
-      else count = allDaily.length;
+      else if (r === '2Y') count = 504;
+      else if (r === '5Y') count = 1260;
+      else count = allDaily.length; // ALL (up to 5Y / Inception)
 
       return allDaily.slice(Math.max(0, allDaily.length - count));
     },
@@ -109,6 +176,7 @@
     setTicker(ticker) {
       if (!ticker) return;
       this.state.activeTicker = ticker.toUpperCase();
+      this.loadHistory(this.state.activeTicker);
       this.state.hoverIndex = null;
       try {
         const url = new URL(window.location.href);
@@ -131,7 +199,21 @@
       this.drawChart();
     },
 
-    /** Set 1D historical range filter (1M, 3M, 6M, 1Y, ALL) */
+    /** Set 1H historical range filter (1W, 2W, 1M, 3M, 1Y, ALL) */
+    setRange1H(range) {
+      if (!range) return;
+      this.state.range1H = range;
+      const buttons = document.querySelectorAll('.macd-range-btn-1h');
+      buttons.forEach(b => {
+        if (b.dataset.range === range) b.classList.add('active');
+        else b.classList.remove('active');
+      });
+      this.state.hoverIndex = null;
+      this.drawChart();
+      this.updateHUD(null);
+    },
+
+    /** Set 1D historical range filter (1M, 3M, 6M, 1Y, 2Y, 5Y, ALL) */
     setRange(range) {
       if (!range) return;
       this.state.range1D = range;
@@ -565,13 +647,26 @@
         }
       }
 
-      // Toggle Range Selector visibility (only shown for 1D Macro view)
-      const rangeGroup = document.getElementById('macd-range-group');
-      if (rangeGroup) {
-        rangeGroup.style.display = this.state.activeTimeframe === '1d' ? 'flex' : 'none';
+      // Toggle Range Selector visibility (1H vs 1D)
+      const rangeGroup1H = document.getElementById('macd-range-group-1h');
+      const rangeGroup1D = document.getElementById('macd-range-group');
+      if (rangeGroup1H) {
+        rangeGroup1H.style.display = this.state.activeTimeframe === '1h' ? 'flex' : 'none';
+      }
+      if (rangeGroup1D) {
+        rangeGroup1D.style.display = this.state.activeTimeframe === '1d' ? 'flex' : 'none';
       }
 
-      // Update active range button
+      // Update active 1H range button
+      if (this.state.activeTimeframe === '1h') {
+        const buttons = document.querySelectorAll('.macd-range-btn-1h');
+        buttons.forEach(b => {
+          if (b.dataset.range === this.state.range1H) b.classList.add('active');
+          else b.classList.remove('active');
+        });
+      }
+
+      // Update active 1D range button
       if (this.state.activeTimeframe === '1d') {
         const buttons = document.querySelectorAll('.macd-range-btn');
         buttons.forEach(b => {
@@ -604,8 +699,11 @@
         ctx.fillStyle = '#090a0f';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#9ca3af';
-        ctx.font = '13px -apple-system, sans-serif';
-        ctx.fillText('Insufficient bar history for selected timeframe / range', 20, 40);
+        ctx.font = '12px ui-monospace, "SF Mono", Menlo, monospace';
+        const msg = (this.state.historyCache && this.state.historyCache[this.state.activeTicker])
+          ? 'Insufficient bar history for selected timeframe / range'
+          : `Loading deep historical candlestick data for ${this.state.activeTicker}...`;
+        ctx.fillText(msg, 24, 40);
         return;
       }
 
@@ -955,7 +1053,14 @@
         const b = bars[i];
         const cx = paddingLeft + i * barSpacing + barSpacing / 2;
         const rawDt = b.dt || '';
-        const dtLabel = rawDt.length > 10 ? rawDt.slice(5) : rawDt;
+        let dtLabel = rawDt;
+        if (this.state.activeTimeframe === '1d') {
+          // If viewing multi-year, display YYYY-MM
+          dtLabel = nBars > 300 ? rawDt.slice(0, 7) : rawDt;
+        } else {
+          // 1H view: if >= 1000 bars show YYYY-MM-DD, else MM-DD HH:MM
+          dtLabel = nBars > 1000 ? rawDt.slice(0, 10) : (rawDt.length > 10 ? rawDt.slice(5) : rawDt);
+        }
         ctx.fillText(dtLabel, cx, bottomY1 + 15);
       }
 

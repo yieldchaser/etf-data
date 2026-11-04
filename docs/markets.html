@@ -3182,12 +3182,23 @@
                   <button type="button" class="macd-tf-btn" id="macd-tf-1d" onclick="window.MACDStrategy.setTimeframe('1d')" title="1-Day Macro Trend Filter">1-Day (1D)</button>
                 </div>
 
+                <div class="macd-range-group" id="macd-range-group-1h" style="display:flex;align-items:center;gap:0.35rem">
+                  <span class="flow-eyebrow">Intraday:</span>
+                  <button type="button" class="macd-range-btn-1h" data-range="1W" onclick="window.MACDStrategy.setRange1H('1W')" title="1 Week (~35 Trading Hours)">1W</button>
+                  <button type="button" class="macd-range-btn-1h active" data-range="1M" onclick="window.MACDStrategy.setRange1H('1M')" title="1 Month (~140 Trading Hours)">1M</button>
+                  <button type="button" class="macd-range-btn-1h" data-range="3M" onclick="window.MACDStrategy.setRange1H('3M')" title="3 Months (~420 Trading Hours)">3M</button>
+                  <button type="button" class="macd-range-btn-1h" data-range="1Y" onclick="window.MACDStrategy.setRange1H('1Y')" title="1 Year (~1,750 Trading Hours)">1Y</button>
+                  <button type="button" class="macd-range-btn-1h" data-range="ALL" onclick="window.MACDStrategy.setRange1H('ALL')" title="Full 2-Year Intraday Depth (~5,000 Hours)">ALL (2Y)</button>
+                </div>
+
                 <div class="macd-range-group" id="macd-range-group" style="display:none;align-items:center;gap:0.35rem">
                   <span class="flow-eyebrow">Range:</span>
                   <button type="button" class="macd-range-btn" data-range="1M" onclick="window.MACDStrategy.setRange('1M')" title="1 Month (~22 Trading Days)">1M</button>
                   <button type="button" class="macd-range-btn" data-range="3M" onclick="window.MACDStrategy.setRange('3M')" title="3 Months (~65 Trading Days)">3M</button>
                   <button type="button" class="macd-range-btn" data-range="6M" onclick="window.MACDStrategy.setRange('6M')" title="6 Months (~130 Trading Days)">6M</button>
                   <button type="button" class="macd-range-btn" data-range="1Y" onclick="window.MACDStrategy.setRange('1Y')" title="1 Year (~252 Trading Days)">1Y</button>
+                  <button type="button" class="macd-range-btn" data-range="2Y" onclick="window.MACDStrategy.setRange('2Y')" title="2 Years (~504 Trading Days)">2Y</button>
+                  <button type="button" class="macd-range-btn" data-range="5Y" onclick="window.MACDStrategy.setRange('5Y')" title="5 Years (~1260 Trading Days)">5Y</button>
                   <button type="button" class="macd-range-btn active" data-range="ALL" onclick="window.MACDStrategy.setRange('ALL')" title="All Available History">ALL</button>
                 </div>
 

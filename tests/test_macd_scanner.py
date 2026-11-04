@@ -12,6 +12,7 @@ Covers TradingView 1H Candle confirmation rule:
 from __future__ import annotations
 
 import datetime as dt
+import json
 from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
@@ -774,3 +775,69 @@ def test_160_etf_run_deduplication_and_email_dispatch_logic():
     sent_crossovers_active = current_crossovers if should_send_with_flag else list(prev_crossovers)
     assert sent_subzero_active == ["SHPU"]
     assert sorted(sent_crossovers_active) == sorted(current_crossovers)
+
+
+@patch("scripts.build_macd_scanner.calculate_macd")
+@patch("yfinance.Ticker")
+def test_lod_deep_history_generation_and_schema(mock_ticker, mock_calc, tmp_path):
+    """Verify Level-of-Detail (LOD) architecture: deep history generation, per-ticker schema, and compact signals."""
+    n_1h, n_1d = 600, 1300
+    df_1h, df_1d = _make_mock_data(n_1h, n_1d, is_green=True)
+
+    inst = MagicMock()
+    inst.history.side_effect = lambda period, interval, prepost=False: df_1h if interval == "1h" else df_1d
+    inst.fast_info = MagicMock()
+    inst.fast_info.last_price = 45.20
+    mock_ticker.return_value = inst
+
+    def _calc(closes, fast=12, slow=26, signal_period=9):
+        length = len(closes)
+        return {
+            "macd": [0.25] * length,
+            "signal": [0.15] * length,
+            "hist": [0.10] * length,
+            "hist_delta": [0.02] * length,
+        }
+
+    mock_calc.side_effect = _calc
+
+    res = analyze_ticker("LOD_TEST", {"fund_name": "LOD Deep History Test", "leverage": "2x"})
+    assert res is not None
+
+    # Deep history bars are populated
+    assert "deep_bars_1h" in res
+    assert "deep_bars_1d" in res
+    assert len(res["deep_bars_1h"]) == n_1h
+    assert len(res["deep_bars_1d"]) == n_1d
+
+    # Lightweight preview bars are bounded to 120 / 252 for tests & previews
+    assert len(res["chart_bars_1h"]) == 120
+    assert len(res["chart_bars_1d"]) == 252
+
+    # Simulate LOD per-ticker persistence
+    tick = res["ticker"]
+    deep_1d = res.pop("deep_bars_1d", [])
+    deep_1h = res.pop("deep_bars_1h", [])
+
+    lod_payload = {
+        "ticker": tick,
+        "updated_utc": "2026-11-05T03:00:00Z",
+        "bars_1d": deep_1d,
+        "bars_1h": deep_1h,
+    }
+
+    test_file = tmp_path / f"{tick}.json"
+    with open(test_file, "w", encoding="utf-8") as f:
+        json.dump(lod_payload, f, separators=(",", ":"))
+
+    assert test_file.is_file()
+    with open(test_file, "r", encoding="utf-8") as f:
+        loaded = json.load(f)
+
+    assert loaded["ticker"] == "LOD_TEST"
+    assert len(loaded["bars_1d"]) == n_1d
+    assert len(loaded["bars_1h"]) == n_1h
+
+    # Schema keys check on loaded bars
+    assert set(loaded["bars_1d"][0].keys()) == {"dt", "o", "h", "l", "c", "macd", "sig", "hist"}
+    assert set(loaded["bars_1h"][0].keys()) == {"dt", "o", "h", "l", "c", "macd", "sig", "hist"}
