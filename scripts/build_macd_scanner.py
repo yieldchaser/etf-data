@@ -1349,7 +1349,14 @@ def main() -> None:
     with open(CATALOG_PATH, "r", encoding="utf-8") as f:
         catalog = json.load(f)
 
-    instruments = catalog.get("instruments", [])
+    # Filter strictly for Leveraged & Inverse ETFs (Exclude 1x unleveraged benchmark ETFs)
+    raw_instruments = catalog.get("instruments", [])
+    instruments = [
+        inst
+        for inst in raw_instruments
+        if inst.get("leverage") not in ("1x", "+1x", "1", None)
+        and float(inst.get("leverage_value", 0.0) or 0.0) not in (1.0, 0.0)
+    ]
     if args.limit > 0:
         instruments = instruments[: args.limit]
 
@@ -1400,7 +1407,7 @@ def main() -> None:
         "signals": results,
     }
 
-    total_universe_count = len(catalog.get("instruments", []))
+    total_universe_count = len(instruments)
     is_full_universe = (args.limit == 0 or len(results) >= total_universe_count)
 
     # Save to JSON (both dedicated macd/ directory and flows/ fallback)

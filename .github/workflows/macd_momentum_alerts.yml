@@ -2,16 +2,15 @@ name: Quantitative MACD Momentum Radar & Pre-Close Alert
 
 'on':
   schedule:
-    # Continuous Mon-Fri execution across US trading sessions:
-    # 13:30 UTC = 08:30 EST (Pre-Market Indicative Radar)
+    # 4 High-Conviction Institutional Trading Decision Windows (Mon-Fri):
+    # 1. 13:30 UTC = 08:30 EST (Pre-Market Indicative Radar)
     - cron: '30 13 * * 1-5'
-    # Regular trading hours: 09:30 to 16:00 EST (14:30 to 21:00 UTC)
-    # Check every 30 mins (at :05 and :35 after every hour & 1H bar close)
-    - cron: '5,35 14-20 * * 1-5'
-    # 20:00 UTC = 15:00 EST (The Pre-Market-Close Golden Hour Diagnostic)
+    # 2. 15:35 UTC = 10:35 EST (Morning Session Confirmation - 1st 1H bar close)
+    - cron: '35 15 * * 1-5'
+    # 3. 18:05 UTC = 13:05 EST (Midday Momentum Rebalance Check)
+    - cron: '5 18 * * 1-5'
+    # 4. 20:00 UTC = 15:00 EST (Pre-Close Rebalance Auction Scan - Golden Hour)
     - cron: '0 20 * * 1-5'
-    # 21:05 UTC = 16:05 EST (Post-Close Final Session Audit)
-    - cron: '5 21 * * 1-5'
   workflow_dispatch:
     inputs:
       force_send:
