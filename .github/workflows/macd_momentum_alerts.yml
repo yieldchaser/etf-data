@@ -81,6 +81,7 @@ jobs:
 
       - name: Commit and push updated MACD signals to GitHub Pages
         id: commit_macd
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.limit == '' || inputs.limit == '0' }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

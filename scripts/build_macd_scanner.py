@@ -1398,12 +1398,23 @@ def main() -> None:
         "signals": results,
     }
 
+    total_universe_count = len(catalog.get("instruments", []))
+    is_full_universe = (args.limit == 0 or len(results) >= total_universe_count)
+
     # Save to JSON (both dedicated macd/ directory and flows/ fallback)
-    for p in (SIGNALS_OUT_MACD, SIGNALS_OUT_FLOWS):
-        p.parent.mkdir(parents=True, exist_ok=True)
-        with open(p, "w", encoding="utf-8") as f:
-            json.dump(payload, f, indent=2)
-    print(f"Saved signals artifact to {SIGNALS_OUT_MACD} ({SIGNALS_OUT_MACD.stat().st_size:,} bytes)")
+    # INVARIANT: Only overwrite production signal artifacts when scanning full universe.
+    # Partial / limited test runs (e.g. --limit 5) must never truncate the production 160-instrument dataset!
+    if not is_full_universe:
+        print(
+            f"[Scanner Safety] Limited test scan active ({len(results)} of {total_universe_count} instruments). "
+            f"Preserving full production signals artifacts at {SIGNALS_OUT_MACD}."
+        )
+    else:
+        for p in (SIGNALS_OUT_MACD, SIGNALS_OUT_FLOWS):
+            p.parent.mkdir(parents=True, exist_ok=True)
+            with open(p, "w", encoding="utf-8") as f:
+                json.dump(payload, f, indent=2)
+        print(f"Saved signals artifact to {SIGNALS_OUT_MACD} ({SIGNALS_OUT_MACD.stat().st_size:,} bytes)")
 
     # Identify active signal sets for this run (Confirmed Candle Rules)
     current_subzero_tickers = sorted(
@@ -1538,11 +1549,14 @@ def main() -> None:
         "html_content": html_alert,
     }
 
-    for p in (ALERT_OUT_MACD, ALERT_OUT_FLOWS):
-        p.parent.mkdir(parents=True, exist_ok=True)
-        with open(p, "w", encoding="utf-8") as f:
-            json.dump(alert_payload, f, indent=2)
-    print(f"Saved latest alert artifact to {ALERT_OUT_MACD}")
+    if is_full_universe:
+        for p in (ALERT_OUT_MACD, ALERT_OUT_FLOWS):
+            p.parent.mkdir(parents=True, exist_ok=True)
+            with open(p, "w", encoding="utf-8") as f:
+                json.dump(alert_payload, f, indent=2)
+        print(f"Saved latest alert artifact to {ALERT_OUT_MACD}")
+    else:
+        print(f"[Scanner Safety] Limited test scan: skipped overwriting {ALERT_OUT_MACD}.")
 
     if should_send:
         # Dynamic institutional subject with ticker highlights
