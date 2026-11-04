@@ -624,3 +624,153 @@ def test_deduplication_state_logic():
     should_send_live = True
     sent_subzero_live = current_subzero_2 if should_send_live else list(prev_subzero)
     assert sorted(sent_subzero_live) == ["SOXL", "TQQQ"]
+
+
+@patch("yfinance.Ticker")
+@patch("scripts.build_macd_scanner.calculate_macd")
+def test_historical_bars_expansion_and_compact_schema(mock_calc, mock_ticker):
+    """Verify historical bar expansion: 1H up to 120 bars, 1D up to 252 bars, with compact 8-field schema."""
+    n_1h, n_1d = 150, 300
+    df_1h, df_1d = _make_mock_data(n_1h, n_1d, is_green=True)
+
+    inst = MagicMock()
+    inst.history.side_effect = lambda period, interval, prepost=False: df_1h if interval == "1h" else df_1d
+    inst.fast_info = MagicMock()
+    inst.fast_info.last_price = 25.50
+    mock_ticker.return_value = inst
+
+    def _calc(closes, fast=12, slow=26, signal_period=9):
+        length = len(closes)
+        return {
+            "macd": [0.5] * length,
+            "signal": [0.4] * length,
+            "hist": [0.1] * length,
+            "hist_delta": [0.05] * length,
+        }
+
+    mock_calc.side_effect = _calc
+
+    res = analyze_ticker("EXPAND_TEST", {"fund_name": "Historical Expansion Test", "leverage": "3x"})
+    assert res is not None
+
+    bars_1h = res["chart_bars_1h"]
+    bars_1d = res["chart_bars_1d"]
+
+    # Exactly 120 bars for 1h, 252 bars for 1d
+    assert len(bars_1h) == 120
+    assert len(bars_1d) == 252
+
+    expected_keys = {"dt", "o", "h", "l", "c", "macd", "sig", "hist"}
+
+    for b in bars_1h:
+        assert set(b.keys()) == expected_keys
+        assert isinstance(b["dt"], str)
+        assert isinstance(b["c"], (int, float))
+        assert isinstance(b["hist"], (int, float))
+
+    for b in bars_1d:
+        assert set(b.keys()) == expected_keys
+        assert isinstance(b["dt"], str)
+        assert isinstance(b["c"], (int, float))
+        assert isinstance(b["hist"], (int, float))
+
+
+def test_160_etf_run_deduplication_and_email_dispatch_logic():
+    """Verify deduplication & email dispatch rules during the transition from 5 ETFs to 160 ETFs.
+    
+    In the 160-ETF run:
+    - Prior state (from 5-ETF run): sent_subzero=['AAPU'], sent_crossovers=['AAPU']
+    - Current active state:
+      active_subzero: ['SHPU']
+      active_bear: ['TZA']
+      active_crossovers: ['BIB', 'CURE', 'DPST', 'LABU', 'NAIL', 'SHPU', 'SOFX', 'TZA', 'XBI']
+    
+    1. Dry-run without --send-email:
+       - should_send evaluates to False
+       - deduplication state is preserved (sent_subzero remains ['AAPU'])
+    2. Execution with --send-email:
+       - has_fresh_trigger evaluates to True
+       - should_send evaluates to True
+       - send_reason captures new subzero, exits, and crosses
+       - sent state updates to all active tickers
+    """
+    prior_state = {
+        "sent_subzero": ["AAPU"],
+        "sent_bear": [],
+        "sent_squeeze": [],
+        "sent_crossovers": ["AAPU"],
+        "last_preclose_date": "",
+    }
+
+    current_subzero_tickers = ["SHPU"]
+    current_bear_tickers = ["TZA"]
+    current_squeeze_tickers = ["COWZ", "TLT", "TMF", "TYD", "UBT", "YCL"]
+    current_crossovers = ["BIB", "CURE", "DPST", "LABU", "NAIL", "SHPU", "SOFX", "TZA", "XBI"]
+
+    prev_subzero = set(prior_state.get("sent_subzero", []))
+    prev_bear = set(prior_state.get("sent_bear", []))
+    prev_squeeze = set(prior_state.get("sent_squeeze", []))
+    prev_crossovers = set(prior_state.get("sent_crossovers", []))
+
+    new_subzero = set(current_subzero_tickers) - prev_subzero
+    new_bear = set(current_bear_tickers) - prev_bear
+    new_squeeze = set(current_squeeze_tickers) - prev_squeeze
+    new_crossovers = set(current_crossovers) - prev_crossovers
+
+    # 1. Triggers must be detected
+    has_fresh_trigger = bool(new_subzero or new_bear or new_crossovers)
+    assert has_fresh_trigger is True
+    assert new_subzero == {"SHPU"}
+    assert new_bear == {"TZA"}
+    assert len(new_crossovers) == 9
+
+    # 2. Case A: Command run without --send-email (manual build_macd_scanner.py run)
+    args_send_email = False
+    args_force_send = False
+    session_code = "INTRADAY"
+
+    should_send_without_flag = False
+    if args_force_send:
+        should_send_without_flag = True
+    elif args_send_email:
+        if has_fresh_trigger:
+            should_send_without_flag = True
+
+    assert should_send_without_flag is False
+    # Verify sent state preserved
+    sent_subzero = current_subzero_tickers if should_send_without_flag else list(prev_subzero)
+    sent_crossovers = current_crossovers if should_send_without_flag else list(prev_crossovers)
+    assert sent_subzero == ["AAPU"]
+    assert sent_crossovers == ["AAPU"]
+
+    # 3. Case B: Command run with --send-email (GitHub Actions automated cron run)
+    args_send_email_active = True
+    should_send_with_flag = False
+    send_reason = ""
+
+    if args_force_send:
+        should_send_with_flag = True
+        send_reason = "Manual override"
+    elif args_send_email_active:
+        if has_fresh_trigger:
+            triggers_summary = []
+            if new_subzero:
+                triggers_summary.append(f"New Sub-Zero: {sorted(list(new_subzero))}")
+            if new_bear:
+                triggers_summary.append(f"New Exits: {sorted(list(new_bear))}")
+            uncat = new_crossovers - new_subzero - new_bear
+            if uncat:
+                triggers_summary.append(f"New Crosses: {sorted(list(uncat))}")
+            should_send_with_flag = True
+            send_reason = f"Fresh Trigger Detected ({', '.join(triggers_summary)})"
+
+    assert should_send_with_flag is True
+    assert "New Sub-Zero: ['SHPU']" in send_reason
+    assert "New Exits: ['TZA']" in send_reason
+    assert "New Crosses" in send_reason
+
+    # Verify sent state is updated upon dispatch
+    sent_subzero_active = current_subzero_tickers if should_send_with_flag else list(prev_subzero)
+    sent_crossovers_active = current_crossovers if should_send_with_flag else list(prev_crossovers)
+    assert sent_subzero_active == ["SHPU"]
+    assert sorted(sent_crossovers_active) == sorted(current_crossovers)

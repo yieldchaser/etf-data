@@ -3125,41 +3125,45 @@
           <div class="flow-panel-card flow-macd-card" x-show="flowViewMode === 'macd_strategy'">
             <!-- Header Context Strip -->
             <div class="macd-header-strip">
-              <div class="macd-title-col">
-                <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
+              <!-- Row 1: Left has Ticker + Leverage + Name + Price + Changes + Regime, Right has Switch dropdown + Back button -->
+              <div class="macd-header-row-1">
+                <div class="macd-header-identity">
                   <h3 class="flow-result-symbol" style="font-size:1.15rem;margin:0" id="macd-active-symbol">INTW</h3>
                   <span class="flow-badge" id="macd-active-leverage" data-state="ACCUMULATION">+2x</span>
                   <span style="color:var(--flow-text);font-weight:600;font-size:0.875rem" id="macd-active-name">GraniteShares 2x Long INTC Daily ETF</span>
-                  <span class="flow-badge macd-badge-subzero" id="macd-active-regime-badge">SUB-ZERO REVERSAL CONFLUENCE</span>
-                  <span class="mono" id="macd-active-price" style="font-size:1.05rem;font-weight:700;color:#f3f4f6;margin-left:0.5rem"></span>
+                  <span class="mono" id="macd-active-price" style="font-size:1.05rem;font-weight:700;color:#f3f4f6"></span>
                   <span id="macd-active-chg" style="font-size:0.8rem;color:#a1a1aa"></span>
+                  <span class="flow-badge macd-badge-subzero" id="macd-active-regime-badge">SUB-ZERO REVERSAL CONFLUENCE</span>
                 </div>
-                <div class="flow-eyebrow" id="macd-active-category" style="margin-top:0.2rem">
-                  Single-Stock Leveraged (Bull) · Underlying: Intel Corporation (INTC)
+
+                <div class="macd-header-actions">
+                  <label class="flow-eyebrow macd-switch-label" for="macd-ticker-select" style="margin:0;display:flex;align-items:center;gap:0.35rem">
+                    <span>Switch:</span>
+                    <select id="macd-ticker-select"
+                            class="flow-chip macd-header-select"
+                            style="padding:0.25rem 0.6rem;font-weight:600;background:#000000;color:var(--flow-cyan);border-color:rgba(34,211,238,0.3);cursor:pointer;font-family:ui-monospace, 'SF Mono', 'JetBrains Mono', monospace;"
+                            aria-label="Switch MACD Instrument"
+                            onchange="window.MACDStrategy.setTicker(this.value)">
+                      <template x-for="item in (flowCatalog?.instruments || [])" :key="item.ticker">
+                        <option :value="item.ticker" x-text="`${item.ticker} — ${item.fund_name} (${item.leverage})`"></option>
+                      </template>
+                    </select>
+                  </label>
+
+                  <button class="flow-button macd-back-btn" type="button" @click="setFlowViewMode('studio')">&larr; Back to Flow Studio</button>
                 </div>
               </div>
 
-              <!-- Top Controls: Primary View Switcher + Quick Actions -->
-              <div class="macd-quick-actions">
+              <!-- Row 2: Left has Underlying info + Category, Right has Dual-Pane Chart / 160-ETF Radar view switch -->
+              <div class="macd-header-row-2">
+                <div class="flow-eyebrow" id="macd-active-category" style="margin:0">
+                  Single-Stock Leveraged (Bull) · Underlying: Intel Corporation (INTC)
+                </div>
+
                 <div class="macd-nav-switch" role="tablist" aria-label="MACD View Switcher">
                   <button type="button" class="macd-nav-btn active" id="macd-nav-chart" onclick="window.MACDStrategy.setView('chart')">Dual-Pane Chart</button>
                   <button type="button" class="macd-nav-btn" id="macd-nav-screener" onclick="window.MACDStrategy.setView('screener')">160-ETF Radar</button>
                 </div>
-
-                <label class="flow-eyebrow" for="macd-ticker-select" style="margin:0;display:flex;align-items:center;gap:0.35rem">
-                  <span>Switch:</span>
-                  <select id="macd-ticker-select"
-                          class="flow-chip"
-                          style="padding:0.25rem 0.6rem;font-weight:600;background:#000000;color:var(--flow-cyan);border-color:rgba(34,211,238,0.3);cursor:pointer;font-family:ui-monospace, 'SF Mono', 'JetBrains Mono', monospace;"
-                          aria-label="Switch MACD Instrument"
-                          onchange="window.MACDStrategy.setTicker(this.value)">
-                    <template x-for="item in (flowCatalog?.instruments || [])" :key="item.ticker">
-                      <option :value="item.ticker" x-text="`${item.ticker} — ${item.fund_name} (${item.leverage})`"></option>
-                    </template>
-                  </select>
-                </label>
-
-                <button class="flow-button" type="button" @click="setFlowViewMode('studio')">&larr; Back to Flow Studio</button>
               </div>
             </div>
 
@@ -3178,8 +3182,17 @@
                   <button type="button" class="macd-tf-btn" id="macd-tf-1d" onclick="window.MACDStrategy.setTimeframe('1d')" title="1-Day Macro Trend Filter">1-Day (1D)</button>
                 </div>
 
+                <div class="macd-range-group" id="macd-range-group" style="display:none;align-items:center;gap:0.35rem">
+                  <span class="flow-eyebrow">Range:</span>
+                  <button type="button" class="macd-range-btn" data-range="1M" onclick="window.MACDStrategy.setRange('1M')" title="1 Month (~22 Trading Days)">1M</button>
+                  <button type="button" class="macd-range-btn" data-range="3M" onclick="window.MACDStrategy.setRange('3M')" title="3 Months (~65 Trading Days)">3M</button>
+                  <button type="button" class="macd-range-btn" data-range="6M" onclick="window.MACDStrategy.setRange('6M')" title="6 Months (~130 Trading Days)">6M</button>
+                  <button type="button" class="macd-range-btn" data-range="1Y" onclick="window.MACDStrategy.setRange('1Y')" title="1 Year (~252 Trading Days)">1Y</button>
+                  <button type="button" class="macd-range-btn active" data-range="ALL" onclick="window.MACDStrategy.setRange('ALL')" title="All Available History">ALL</button>
+                </div>
+
                 <div style="display:flex;align-items:center;gap:0.5rem">
-                  <button type="button" class="macd-toggle-btn active" id="macd-toggle-pivots" onclick="window.MACDStrategy.togglePivots()" title="Toggle Traditional Floor Pivots (P, R1-R5, S1-S5)">Auto Pivots (P, R1-R5, S1-S5)</button>
+                  <button type="button" class="macd-toggle-btn" id="macd-toggle-pivots" onclick="window.MACDStrategy.togglePivots()" title="Toggle Structural Floor Pivots (P, R1, S1)">Pivots (P, R1, S1)</button>
                 </div>
               </div>
 
@@ -3283,16 +3296,7 @@
               </div>
             </div>
 
-            <!-- Automated Email Alert Notification Box -->
-            <div class="macd-alert-box">
-              <div class="macd-alert-header">
-                <div>
-                  <strong style="color:#22d3ee;text-transform:uppercase;letter-spacing:0.04em">Tactical Momentum Alert Dispatch</strong>
-                </div>
-                <span class="flow-eyebrow" id="macd-alert-timestamp" style="color:#38bdf8">—</span>
-              </div>
-              <div class="macd-alert-content" id="macd-alert-text-preview">Loading latest radar dispatch…</div>
-            </div>
+            
 
             <!-- Methodology & Quantitative Verification Drawer -->
             <details class="macd-methodology">

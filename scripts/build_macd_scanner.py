@@ -188,9 +188,9 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
 
     try:
         t = yf.Ticker(ticker)
-        # Fetch 60d of 1h RTH bars and 1y of 1d bars
+        # Fetch 60d of 1h RTH bars and up to 2y of 1d bars for warm-up & 1-year history
         df_1h = t.history(period="60d", interval="1h", prepost=False)
-        df_1d = t.history(period="1y", interval="1d")
+        df_1d = t.history(period="2y", interval="1d")
 
         if len(df_1h) < 30 or len(df_1d) < 10:
             return None
@@ -214,6 +214,9 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
         if len(df_1d) < 10:
             return None
         closes_1d = [float(x) for x in df_1d["Close"]]
+        opens_1d = [float(x) for x in df_1d["Open"]]
+        highs_1d = [float(x) for x in df_1d["High"]]
+        lows_1d = [float(x) for x in df_1d["Low"]]
         timestamps_1d = [
             ts.strftime("%Y-%m-%d") if hasattr(ts, "strftime") else str(ts)[:10]
             for ts in df_1d.index
@@ -454,39 +457,38 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
 
         score = max(-100, min(100, score))
 
-        # Recent 40 bars of 1H chart payload for web UI
+        # Up to 120 bars of 1H chart payload for web UI (~3-4 weeks of intraday hourly context)
         chart_bars_1h = []
-        for i in range(max(0, len(closes_1h) - 40), len(closes_1h)):
+        for i in range(max(0, len(closes_1h) - 120), len(closes_1h)):
             chart_bars_1h.append(
                 {
                     "dt": timestamps_1h[i],
-                    "o": round(float(df_1h["Open"].iloc[i]), 3),
-                    "h": round(float(highs_1h[i]), 3),
-                    "l": round(float(lows_1h[i]), 3),
-                    "c": round(float(closes_1h[i]), 3),
-                    "v": int(volumes_1h[i]),
-                    "macd": round(float(macd_1h[i]), 4),
-                    "sig": round(float(sig_1h[i]), 4),
-                    "hist": round(float(hist_1h[i]), 4),
+                    "o": round(float(opens_1h[i]), 2 if opens_1h[i] >= 10 else 3),
+                    "h": round(float(highs_1h[i]), 2 if highs_1h[i] >= 10 else 3),
+                    "l": round(float(lows_1h[i]), 2 if lows_1h[i] >= 10 else 3),
+                    "c": round(float(closes_1h[i]), 2 if closes_1h[i] >= 10 else 3),
+                    "macd": round(float(macd_1h[i]), 3),
+                    "sig": round(float(sig_1h[i]), 3),
+                    "hist": round(float(hist_1h[i]), 3),
                 }
             )
 
-        # Recent 40 bars of 1D chart payload
+        # Up to 252 bars of 1D chart payload for web UI (1 full trading year of daily bars)
         chart_bars_1d = []
         macd_1d = m_1d["macd"]
         sig_1d = m_1d["signal"]
-        for i in range(max(0, len(closes_1d) - 40), len(closes_1d)):
+        hist_1d_series = m_1d["hist"]
+        for i in range(max(0, len(closes_1d) - 252), len(closes_1d)):
             chart_bars_1d.append(
                 {
                     "dt": timestamps_1d[i],
-                    "o": round(float(df_1d["Open"].iloc[i]), 3),
-                    "h": round(float(df_1d["High"].iloc[i]), 3),
-                    "l": round(float(df_1d["Low"].iloc[i]), 3),
-                    "c": round(float(closes_1d[i]), 3),
-                    "v": int(df_1d["Volume"].iloc[i]),
-                    "macd": round(float(macd_1d[i]), 4),
-                    "sig": round(float(sig_1d[i]), 4),
-                    "hist": round(float(hist_1d[i]), 4),
+                    "o": round(float(opens_1d[i]), 2 if opens_1d[i] >= 10 else 3),
+                    "h": round(float(highs_1d[i]), 2 if highs_1d[i] >= 10 else 3),
+                    "l": round(float(lows_1d[i]), 2 if lows_1d[i] >= 10 else 3),
+                    "c": round(float(closes_1d[i]), 2 if closes_1d[i] >= 10 else 3),
+                    "macd": round(float(macd_1d[i]), 3),
+                    "sig": round(float(sig_1d[i]), 3),
+                    "hist": round(float(hist_1d_series[i]), 3),
                 }
             )
 
@@ -1413,7 +1415,7 @@ def main() -> None:
         for p in (SIGNALS_OUT_MACD, SIGNALS_OUT_FLOWS):
             p.parent.mkdir(parents=True, exist_ok=True)
             with open(p, "w", encoding="utf-8") as f:
-                json.dump(payload, f, indent=2)
+                json.dump(payload, f, separators=(",", ":"))
         print(f"Saved signals artifact to {SIGNALS_OUT_MACD} ({SIGNALS_OUT_MACD.stat().st_size:,} bytes)")
 
     # Identify active signal sets for this run (Confirmed Candle Rules)

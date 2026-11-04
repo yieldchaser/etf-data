@@ -1,7 +1,7 @@
 /**
  * MACD Momentum Engine & Tactical Quant Radar — Canvas 2D Engine
  * Standard MACD (12, 26, 9 EMA EMA) on 1-Hour & 1-Day Timeframes
- * Traditional Floor Pivots (P, S1-S5, R1-R5) + Sub-Zero Reversal Confluence
+ * Floor Pivots (P, R1, S1) + Sub-Zero Reversal Confluence
  * Zero external dependencies · Institutional Quantitative Execution Architecture
  */
 
@@ -17,11 +17,11 @@
   const MACDStrategy = {
     state: {
       signalsData: null,
-      alertData: null,
       activeTicker: 'INTW',
       activeTimeframe: '1h', // '1h' | '1d'
+      range1D: 'ALL',        // '1M' | '3M' | '6M' | '1Y' | 'ALL'
       activeView: 'chart',   // 'chart' | 'screener'
-      showPivots: true,
+      showPivots: false,     // Default OFF to prevent clutter
       filter: 'all',         // 'all' | 'subzero' | 'bull' | 'imminent' | 'bear' | 'macro_bull'
       searchQuery: '',
       sortKey: 'confluence_score',
@@ -66,16 +66,9 @@
           return null;
         };
 
-        const [sigRes, alertRes] = await Promise.all([
-          fetchWithFallback('data/macd/signals.json', 'data/flows/macd_signals.json'),
-          fetchWithFallback('data/macd/latest_alert.json', 'data/flows/latest_macd_alert.json')
-        ]);
-
+        const sigRes = await fetchWithFallback('data/macd/signals.json', 'data/flows/macd_signals.json');
         if (sigRes && sigRes.ok) {
           this.state.signalsData = await sigRes.json();
-        }
-        if (alertRes && alertRes.ok) {
-          this.state.alertData = await alertRes.json();
         }
       } catch (err) {
         console.warn('[MACDStrategy] Error loading signals data:', err);
@@ -87,6 +80,29 @@
       if (!this.state.signalsData || !this.state.signalsData.signals) return null;
       const t = this.state.activeTicker;
       return this.state.signalsData.signals.find(s => s.ticker === t) || this.state.signalsData.signals[0] || null;
+    },
+
+    /** Get bars for active timeframe & selected range */
+    getActiveBars() {
+      const signal = this.getActiveSignal();
+      if (!signal) return [];
+
+      if (this.state.activeTimeframe === '1h') {
+        return signal.chart_bars_1h || [];
+      }
+
+      const allDaily = signal.chart_bars_1d || [];
+      if (!allDaily.length) return [];
+
+      const r = this.state.range1D || 'ALL';
+      let count = allDaily.length;
+      if (r === '1M') count = 22;
+      else if (r === '3M') count = 65;
+      else if (r === '6M') count = 130;
+      else if (r === '1Y') count = 252;
+      else count = allDaily.length;
+
+      return allDaily.slice(Math.max(0, allDaily.length - count));
     },
 
     /** Set active ETF instrument */
@@ -105,7 +121,7 @@
       this.updateHUD(null);
     },
 
-    /** Set active timeframe */
+    /** Set active timeframe (1H vs 1D) */
     setTimeframe(tf) {
       if (tf !== '1h' && tf !== '1d') return;
       this.state.activeTimeframe = tf;
@@ -113,6 +129,20 @@
       this.updateControlsUI();
       this.updateHUD(null);
       this.drawChart();
+    },
+
+    /** Set 1D historical range filter (1M, 3M, 6M, 1Y, ALL) */
+    setRange(range) {
+      if (!range) return;
+      this.state.range1D = range;
+      const buttons = document.querySelectorAll('.macd-range-btn');
+      buttons.forEach(b => {
+        if (b.dataset.range === range) b.classList.add('active');
+        else b.classList.remove('active');
+      });
+      this.state.hoverIndex = null;
+      this.drawChart();
+      this.updateHUD(null);
     },
 
     /** Toggle between Chart View and Screener View */
@@ -141,7 +171,7 @@
       }
     },
 
-    /** Toggle floor pivot visibility */
+    /** Toggle floor pivot visibility (P, R1, S1 only) */
     togglePivots() {
       this.state.showPivots = !this.state.showPivots;
       const btn = document.getElementById('macd-toggle-pivots');
@@ -259,10 +289,8 @@
       const signal = this.getActiveSignal();
       if (!signal) return;
 
-      const latestBar = bar || (this.state.activeTimeframe === '1h'
-        ? (signal.chart_bars_1h && signal.chart_bars_1h[signal.chart_bars_1h.length - 1])
-        : (signal.chart_bars_1d && signal.chart_bars_1d[signal.chart_bars_1d.length - 1]));
-
+      const bars = this.getActiveBars();
+      const latestBar = bar || (bars && bars[bars.length - 1]);
       if (!latestBar) return;
 
       const elPrice = document.getElementById('macd-hud-price');
@@ -316,16 +344,23 @@
       }
       if (elPivots && signal.pivots) {
         const p = latestBar.c;
+        // Key structural pivots: P, R1, S1
+        const keyPivots = {
+          'P': signal.pivots.P,
+          'R1': signal.pivots.R1,
+          'S1': signal.pivots.S1
+        };
         let closestKey = 'P';
         let minDist = Infinity;
-        for (const [k, v] of Object.entries(signal.pivots)) {
+        for (const [k, v] of Object.entries(keyPivots)) {
+          if (!v) continue;
           const dist = Math.abs(p - v);
           if (dist < minDist) {
             minDist = dist;
             closestKey = k;
           }
         }
-        const refVal = signal.pivots[closestKey];
+        const refVal = keyPivots[closestKey];
         const pctDist = refVal ? ((p - refVal) / refVal * 100).toFixed(1) : '0.0';
         elPivots.textContent = `${closestKey} ($${refVal}) · ${Number(pctDist) >= 0 ? '+' : ''}${pctDist}%`;
       }
@@ -409,7 +444,7 @@
         select.value = signal.ticker;
       }
 
-      // Populate Flagship Pills dynamically if not yet rendered
+      // Populate Dynamic Flagship Pills
       this.renderFlagshipPills();
 
       // Update quick pill highlights
@@ -426,39 +461,97 @@
       } else {
         this.renderScreenerTable();
       }
-
-      this.renderAlertPreview();
     },
 
-    /** Render Flagship Instrument Pills */
+    /** Render Dynamic Flagship Instrument Pills (Top Momentum, Biggest Movers & RVOL) */
     renderFlagshipPills() {
       const container = document.getElementById('macd-flagship-pills');
       if (!container) return;
-      if (container.querySelectorAll('.macd-ticker-pill').length > 0) return;
+      const signals = this.state.signalsData?.signals;
+      if (!signals || signals.length === 0) return;
 
-      const availableTickers = new Set((this.state.signalsData?.signals || []).map(s => s.ticker));
-      const preferred = [
-        { ticker: 'INTW', label: 'INTW (2x INTC)' },
-        { ticker: 'SOXL', label: 'SOXL (3x Semis)' },
-        { ticker: 'TQQQ', label: 'TQQQ (3x NDX)' },
-        { ticker: 'TSLL', label: 'TSLL (2x TSLA)' },
-        { ticker: 'NVDL', label: 'NVDL (2x NVDA)' },
-        { ticker: 'CONL', label: 'CONL (2x COIN)' },
-        { ticker: 'SOXS', label: 'SOXS (-3x Semis)' },
-        { ticker: 'SQQQ', label: 'SQQQ (-3x NDX)' }
-      ];
-      const flagshipList = preferred.filter(p => availableTickers.has(p.ticker));
-      if (flagshipList.length === 0) return;
+      const pillsMap = new Map();
 
-      let html = '<span class="flow-eyebrow" style="color:var(--flow-cyan,#22d3ee);font-weight:600;margin-right:0.25rem">Flagship:</span>';
-      flagshipList.forEach(item => {
-        const isActive = this.state.activeTicker === item.ticker;
-        html += `<button type="button" class="macd-ticker-pill ${isActive ? 'active' : ''}" data-ticker="${item.ticker}" onclick="window.MACDStrategy.setTicker('${item.ticker}')">${item.label}</button>`;
+      // 1. Top 2 Bullish Reversals (highest confluence score)
+      const topReversals = [...signals]
+        .filter(s => (s.confluence_score || 0) > 0 || s.signal_direction === 'BULLISH' || s.bull_cross_fresh)
+        .sort((a, b) => (b.confluence_score || 0) - (a.confluence_score || 0))
+        .slice(0, 2);
+
+      topReversals.forEach(s => {
+        pillsMap.set(s.ticker, {
+          ticker: s.ticker,
+          badge: `Rev ${s.confluence_score > 0 ? '+' : ''}${s.confluence_score}`,
+          metricClass: 'pill-reversal',
+          title: `Momentum Reversal: Score ${s.confluence_score}`
+        });
       });
+
+      // 2. Top 2 Gainers (highest 24H return)
+      const topGainers = [...signals]
+        .sort((a, b) => (b.chg_1d_pct || 0) - (a.chg_1d_pct || 0))
+        .slice(0, 2);
+
+      topGainers.forEach(s => {
+        if (!pillsMap.has(s.ticker)) {
+          const chg = Number(s.chg_1d_pct || 0);
+          pillsMap.set(s.ticker, {
+            ticker: s.ticker,
+            badge: `${chg >= 0 ? '+' : ''}${chg.toFixed(1)}%`,
+            metricClass: chg >= 0 ? 'pill-pos' : 'pill-neg',
+            title: `Top 24H Gainer: ${chg.toFixed(2)}%`
+          });
+        }
+      });
+
+      // 3. Top 2 Volume Surges (highest RVOL)
+      const topRvol = [...signals]
+        .sort((a, b) => (b.rvol_1h || 0) - (a.rvol_1h || 0))
+        .slice(0, 2);
+
+      topRvol.forEach(s => {
+        if (!pillsMap.has(s.ticker)) {
+          const rv = Number(s.rvol_1h || 1.0);
+          pillsMap.set(s.ticker, {
+            ticker: s.ticker,
+            badge: `${rv.toFixed(1)}x Vol`,
+            metricClass: 'pill-vol',
+            title: `Relative Volume Surge: ${rv.toFixed(2)}x`
+          });
+        }
+      });
+
+      // 4. Core Anchors (TQQQ, SOXL)
+      const coreAnchors = ['TQQQ', 'SOXL'];
+      coreAnchors.forEach(t => {
+        if (!pillsMap.has(t)) {
+          const s = signals.find(item => item.ticker === t);
+          if (s) {
+            const chg = Number(s.chg_1d_pct || 0);
+            pillsMap.set(t, {
+              ticker: t,
+              badge: `${chg >= 0 ? '+' : ''}${chg.toFixed(1)}%`,
+              metricClass: chg >= 0 ? 'pill-pos' : 'pill-neg',
+              title: `Core Benchmark: ${s.fund_name}`
+            });
+          }
+        }
+      });
+
+      const pillsList = Array.from(pillsMap.values());
+      let html = '<span class="flow-eyebrow macd-flagship-label">Leaders:</span>';
+      pillsList.forEach(item => {
+        const isActive = this.state.activeTicker === item.ticker;
+        html += `<button type="button" class="macd-ticker-pill ${isActive ? 'active' : ''}" data-ticker="${item.ticker}" onclick="window.MACDStrategy.setTicker('${item.ticker}')" title="${item.title}">
+          <span class="macd-pill-ticker">${item.ticker}</span>
+          <span class="macd-pill-badge ${item.metricClass}">${item.badge}</span>
+        </button>`;
+      });
+
       container.innerHTML = html;
     },
 
-    /** Update button state */
+    /** Update button states and controls */
     updateControlsUI() {
       const btn1h = document.getElementById('macd-tf-1h');
       const btn1d = document.getElementById('macd-tf-1d');
@@ -470,6 +563,28 @@
           btn1h.classList.remove('active');
           btn1d.classList.add('active');
         }
+      }
+
+      // Toggle Range Selector visibility (only shown for 1D Macro view)
+      const rangeGroup = document.getElementById('macd-range-group');
+      if (rangeGroup) {
+        rangeGroup.style.display = this.state.activeTimeframe === '1d' ? 'flex' : 'none';
+      }
+
+      // Update active range button
+      if (this.state.activeTimeframe === '1d') {
+        const buttons = document.querySelectorAll('.macd-range-btn');
+        buttons.forEach(b => {
+          if (b.dataset.range === this.state.range1D) b.classList.add('active');
+          else b.classList.remove('active');
+        });
+      }
+
+      // Update Pivot button active state
+      const pivotBtn = document.getElementById('macd-toggle-pivots');
+      if (pivotBtn) {
+        if (this.state.showPivots) pivotBtn.classList.add('active');
+        else pivotBtn.classList.remove('active');
       }
     },
 
@@ -483,16 +598,14 @@
       const signal = this.getActiveSignal();
       if (!signal) return;
 
-      const bars = this.state.activeTimeframe === '1h'
-        ? (signal.chart_bars_1h || [])
-        : (signal.chart_bars_1d || []);
+      const bars = this.getActiveBars();
 
       if (!bars || bars.length < 2) {
         ctx.fillStyle = '#090a0f';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#9ca3af';
         ctx.font = '13px -apple-system, sans-serif';
-        ctx.fillText('Insufficient bar history for selected timeframe', 20, 40);
+        ctx.fillText('Insufficient bar history for selected timeframe / range', 20, 40);
         return;
       }
 
@@ -525,7 +638,7 @@
 
       // Layout geometry
       const paddingLeft = 12;
-      const paddingRight = 78;
+      const paddingRight = 72; // Clean dedicated right Y-axis margin
       const paddingTop = 28;
       const paddingBottom = 24;
       const splitGap = 22;
@@ -545,10 +658,10 @@
       let minP = Math.min(...bars.map(b => b.l));
       let maxP = Math.max(...bars.map(b => b.h));
 
-      // Include nearby pivots if enabled
+      // Include structural pivots (P, R1, S1) in bounds only if enabled
       if (this.state.showPivots && signal.pivots) {
-        const pVals = Object.values(signal.pivots).filter(v => v > 0);
-        const nearPivots = pVals.filter(v => v >= minP * 0.85 && v <= maxP * 1.15);
+        const keyPivots = [signal.pivots.P, signal.pivots.R1, signal.pivots.S1].filter(v => v > 0);
+        const nearPivots = keyPivots.filter(v => v >= minP * 0.85 && v <= maxP * 1.15);
         if (nearPivots.length > 0) {
           minP = Math.min(minP, ...nearPivots);
           maxP = Math.max(maxP, ...nearPivots);
@@ -564,12 +677,14 @@
         return topY1 - ((val - minP) / (maxP - minP)) * topPaneHeight;
       };
 
-      // Draw Top Pane Grid & Axes
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      // Draw Top Pane Grid & Clean Right Y-Axis Price Ticks
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
       ctx.lineWidth = 1;
-      const yTicks = 5;
+
+      // Compute number of ticks with minTickSpacing of ~36px to prevent collisions
+      const yTicks = Math.max(3, Math.min(6, Math.floor(topPaneHeight / 36)));
       ctx.font = '10px ui-monospace, "SF Mono", Menlo, monospace';
-      ctx.fillStyle = '#6b7280';
+      ctx.fillStyle = '#71717a';
       ctx.textAlign = 'left';
 
       for (let i = 0; i <= yTicks; i++) {
@@ -579,24 +694,19 @@
         ctx.moveTo(paddingLeft, y);
         ctx.lineTo(w - paddingRight, y);
         ctx.stroke();
-        ctx.fillText(`$${val.toFixed(2)}`, w - paddingRight + 6, y + 3.5);
+
+        // Right Y-axis price label: clean, round, never collides with pivots
+        ctx.fillText(`$${val.toFixed(2)}`, w - paddingRight + 8, y + 3.5);
       }
 
-      // Draw Floor Pivots (P, R1-R5, S1-S5)
+      // Draw Structural Floor Pivots (P, R1, S1 only)
+      // Labels are drawn on the LEFT side of canvas to avoid Y-axis collisions
       if (this.state.showPivots && signal.pivots) {
         const piv = signal.pivots;
         const pivotDefs = [
-          { key: 'R5', val: piv.R5, color: 'rgba(52, 211, 153, 0.65)', dash: [4, 4] },
-          { key: 'R4', val: piv.R4, color: 'rgba(52, 211, 153, 0.70)', dash: [4, 4] },
-          { key: 'R3', val: piv.R3, color: 'rgba(52, 211, 153, 0.75)', dash: [4, 4] },
-          { key: 'R2', val: piv.R2, color: 'rgba(52, 211, 153, 0.85)', dash: [4, 4] },
-          { key: 'R1', val: piv.R1, color: 'rgba(52, 211, 153, 0.95)', dash: [4, 4] },
+          { key: 'R1', val: piv.R1, color: '#34d399', dash: [4, 4] },
           { key: 'P',  val: piv.P,  color: '#f59e0b', dash: [] },
-          { key: 'S1', val: piv.S1, color: 'rgba(251, 113, 133, 0.95)', dash: [4, 4] },
-          { key: 'S2', val: piv.S2, color: 'rgba(251, 113, 133, 0.85)', dash: [4, 4] },
-          { key: 'S3', val: piv.S3, color: 'rgba(251, 113, 133, 0.75)', dash: [4, 4] },
-          { key: 'S4', val: piv.S4, color: 'rgba(251, 113, 133, 0.70)', dash: [4, 4] },
-          { key: 'S5', val: piv.S5, color: 'rgba(251, 113, 133, 0.65)', dash: [4, 4] },
+          { key: 'S1', val: piv.S1, color: '#fb7185', dash: [4, 4] },
         ];
 
         pivotDefs.forEach(pDef => {
@@ -611,19 +721,30 @@
             ctx.lineTo(w - paddingRight, py);
             ctx.stroke();
 
-            // Right label
-            ctx.fillStyle = pDef.color;
+            // Left-aligned subtle badge inside plot area (no collision with right price ticks)
+            ctx.setLineDash([]);
+            const labelText = `${pDef.key} $${pDef.val.toFixed(2)}`;
             ctx.font = '9px ui-monospace, "SF Mono", Menlo, monospace';
-            ctx.fillText(`${pDef.key}: ${pDef.val.toFixed(2)}`, w - paddingRight + 6, py - 2);
+            const badgeW = ctx.measureText(labelText).width + 8;
+            const badgeH = 13;
+            ctx.fillStyle = 'rgba(9, 10, 15, 0.88)';
+            ctx.fillRect(paddingLeft + 6, py - 7, badgeW, badgeH);
+            ctx.strokeStyle = pDef.color;
+            ctx.lineWidth = 0.75;
+            ctx.strokeRect(paddingLeft + 6, py - 7, badgeW, badgeH);
+
+            ctx.fillStyle = pDef.color;
+            ctx.textAlign = 'left';
+            ctx.fillText(labelText, paddingLeft + 10, py + 3);
             ctx.restore();
           }
         });
       }
 
-      // Draw Candlesticks
+      // Draw Candlesticks with dynamic sizing
       const nBars = bars.length;
       const barSpacing = chartW / nBars;
-      const candleWidth = Math.max(2, Math.floor(barSpacing * 0.7));
+      const candleWidth = Math.max(1, Math.min(18, Math.floor(barSpacing * 0.72)));
 
       let hoverBar = null;
       let hoverX = 0;
@@ -660,8 +781,8 @@
           this.state.hoverIndex = i;
         }
 
-        // Directional Crossover Markers on candles
-        if (i >= 1) {
+        // Directional Crossover Markers on candles (only on 1H interval or when spacing allows)
+        if (i >= 1 && barSpacing >= 6) {
           const prev = bars[i - 1];
           const isBullCross = (b.macd > b.sig) && (prev.macd <= prev.sig);
           const isBearCross = (b.macd < b.sig) && (prev.macd >= prev.sig);
@@ -673,8 +794,8 @@
               ctx.fillStyle = b.macd < 0 ? '#22d3ee' : '#10b981';
               ctx.beginPath();
               ctx.moveTo(cx, my);
-              ctx.lineTo(cx - 5, my + 8);
-              ctx.lineTo(cx + 5, my + 8);
+              ctx.lineTo(cx - 4, my + 7);
+              ctx.lineTo(cx + 4, my + 7);
               ctx.closePath();
               ctx.fill();
 
@@ -683,7 +804,7 @@
                 ctx.strokeStyle = 'rgba(34, 211, 238, 0.45)';
                 ctx.lineWidth = 1;
                 ctx.beginPath();
-                ctx.arc(cx, my + 4, 8, 0, Math.PI * 2);
+                ctx.arc(cx, my + 3.5, 6, 0, Math.PI * 2);
                 ctx.stroke();
               }
             } else {
@@ -692,8 +813,8 @@
               ctx.lineWidth = 1.25;
               ctx.beginPath();
               ctx.moveTo(cx, my);
-              ctx.lineTo(cx - 5, my + 8);
-              ctx.lineTo(cx + 5, my + 8);
+              ctx.lineTo(cx - 4, my + 7);
+              ctx.lineTo(cx + 4, my + 7);
               ctx.closePath();
               ctx.stroke();
             }
@@ -704,8 +825,8 @@
               ctx.fillStyle = '#f43f5e';
               ctx.beginPath();
               ctx.moveTo(cx, my);
-              ctx.lineTo(cx - 5, my - 8);
-              ctx.lineTo(cx + 5, my - 8);
+              ctx.lineTo(cx - 4, my - 7);
+              ctx.lineTo(cx + 4, my - 7);
               ctx.closePath();
               ctx.fill();
             } else {
@@ -714,8 +835,8 @@
               ctx.lineWidth = 1.25;
               ctx.beginPath();
               ctx.moveTo(cx, my);
-              ctx.lineTo(cx - 5, my - 8);
-              ctx.lineTo(cx + 5, my - 8);
+              ctx.lineTo(cx - 4, my - 7);
+              ctx.lineTo(cx + 4, my - 7);
               ctx.closePath();
               ctx.stroke();
             }
@@ -727,7 +848,8 @@
       ctx.fillStyle = '#9ca3af';
       ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.textAlign = 'left';
-      ctx.fillText(`${signal.ticker} · ${this.state.activeTimeframe.toUpperCase()} Price Candles & Floor Pivots`, paddingLeft + 4, topY0 - 9);
+      const rangeTag = this.state.activeTimeframe === '1d' ? ` · ${this.state.range1D}` : '';
+      ctx.fillText(`${signal.ticker} · ${this.state.activeTimeframe.toUpperCase()}${rangeTag} Price Candles${this.state.showPivots ? ' & Structural Pivots' : ''}`, paddingLeft + 4, topY0 - 9);
 
       // ── BOTTOM PANE: MACD (12, 26, 9) + 4-COLOR HISTOGRAM ──
       let minM = Math.min(...bars.map(b => Math.min(b.macd, b.sig, b.hist)));
@@ -747,7 +869,7 @@
       const yZero = getYBottom(0);
 
       // Draw Bottom Pane Grid & Zero line
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(paddingLeft, Math.round(bottomY0) + 0.5);
@@ -768,7 +890,7 @@
 
       ctx.fillStyle = '#64748b';
       ctx.font = '10px ui-monospace, "SF Mono", Menlo, monospace';
-      ctx.fillText('0.00', w - paddingRight + 6, Math.round(yZero) + 3.5);
+      ctx.fillText('0.00', w - paddingRight + 8, Math.round(yZero) + 3.5);
 
       // Draw 4-Color Histogram Bars
       for (let i = 0; i < nBars; i++) {
@@ -815,7 +937,7 @@
       }
       ctx.stroke();
 
-      // Bottom Pane Header label (Responsive formatting)
+      // Bottom Pane Header label
       ctx.fillStyle = '#9ca3af';
       ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.textAlign = 'left';
@@ -837,72 +959,37 @@
         ctx.fillText(dtLabel, cx, bottomY1 + 15);
       }
 
-      // ── CROSSHAIR & TOOLTIP ──
+      // ── SUBTLE HOVER & TOOLTIP (NO HARSH CROSSHAIRS) ──
       if (this.state.isHovering && hoverBar && hoverX > 0) {
-        const my = this.state.lastMouse.y;
+        // Subtle vertical column highlight over active bar
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.035)';
+        ctx.fillRect(Math.round(hoverX - barSpacing / 2), topY0, Math.max(1, Math.round(barSpacing)), bottomY1 - topY0);
 
-        // Vertical crosshair line
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+        // Subtle vertical hairline
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
         ctx.lineWidth = 1;
         ctx.setLineDash([2, 2]);
         ctx.beginPath();
         ctx.moveTo(Math.round(hoverX) + 0.5, topY0);
         ctx.lineTo(Math.round(hoverX) + 0.5, bottomY1);
         ctx.stroke();
-
-        // Horizontal crosshair line in active pane
-        if (my >= topY0 && my <= topY1) {
-          ctx.beginPath();
-          ctx.moveTo(paddingLeft, Math.round(my) + 0.5);
-          ctx.lineTo(w - paddingRight, Math.round(my) + 0.5);
-          ctx.stroke();
-
-          // Active Price Tag on Right Axis
-          const hoverPrice = maxP - ((my - topY0) / topPaneHeight) * (maxP - minP);
-          ctx.setLineDash([]);
-          ctx.fillStyle = '#1e2230';
-          ctx.fillRect(w - paddingRight + 1, my - 8, paddingRight - 4, 16);
-          ctx.strokeStyle = '#22d3ee';
-          ctx.strokeRect(w - paddingRight + 1, my - 8, paddingRight - 4, 16);
-          ctx.fillStyle = '#22d3ee';
-          ctx.font = '9.5px ui-monospace, "SF Mono", Menlo, monospace';
-          ctx.textAlign = 'left';
-          ctx.fillText(`$${hoverPrice.toFixed(2)}`, w - paddingRight + 5, my + 3.5);
-        } else if (my >= bottomY0 && my <= bottomY1) {
-          ctx.beginPath();
-          ctx.moveTo(paddingLeft, Math.round(my) + 0.5);
-          ctx.lineTo(w - paddingRight, Math.round(my) + 0.5);
-          ctx.stroke();
-
-          // Active MACD Tag on Right Axis
-          const hoverMacd = maxM - ((my - bottomY0) / bottomPaneHeight) * (maxM - minM);
-          ctx.setLineDash([]);
-          ctx.fillStyle = '#1e2230';
-          ctx.fillRect(w - paddingRight + 1, my - 8, paddingRight - 4, 16);
-          ctx.strokeStyle = '#38bdf8';
-          ctx.strokeRect(w - paddingRight + 1, my - 8, paddingRight - 4, 16);
-          ctx.fillStyle = '#38bdf8';
-          ctx.font = '9.5px ui-monospace, "SF Mono", Menlo, monospace';
-          ctx.textAlign = 'left';
-          ctx.fillText(hoverMacd.toFixed(3), w - paddingRight + 5, my + 3.5);
-        }
         ctx.setLineDash([]);
 
         // Active Date Tag on X-Axis
         const hDt = hoverBar.dt || '';
         const hDtLabel = hDt.length > 10 ? hDt.slice(5) : hDt;
-        ctx.fillStyle = '#1e2230';
+        ctx.fillStyle = '#181b24';
         ctx.font = '9px ui-monospace, "SF Mono", Menlo, monospace';
         const hDtW = ctx.measureText(hDtLabel).width + 8;
         ctx.fillRect(hoverX - hDtW / 2, bottomY1 + 5, hDtW, 14);
-        ctx.strokeStyle = '#a1a1aa';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
         ctx.lineWidth = 1;
         ctx.strokeRect(hoverX - hDtW / 2, bottomY1 + 5, hDtW, 14);
         ctx.fillStyle = '#f3f4f6';
         ctx.textAlign = 'center';
         ctx.fillText(hDtLabel, hoverX, bottomY1 + 15);
 
-        // Update Tooltip DOM & HUD
+        // Update Floating Tooltip & HUD
         this.renderTooltip(hoverBar, hoverX, rect.top);
         this.updateHUD(hoverBar);
       }
@@ -929,7 +1016,7 @@
           <span style="color:#9ca3af">Price:</span> <strong style="color:#ffffff">$${Number(bar.c || 0).toFixed(2)}</strong>
           <span style="color:#9ca3af">O / H / L:</span> <span>$${Number(bar.o || 0).toFixed(2)} / $${Number(bar.h || 0).toFixed(2)} / $${Number(bar.l || 0).toFixed(2)}</span>
           <span style="color:#9ca3af">Candle:</span> <span>${candleLabel}</span>
-          <span style="color:#9ca3af">Volume:</span> <span>${Number(bar.v || 0).toLocaleString()}</span>
+          ${bar.v ? `<span style="color:#9ca3af">Volume:</span> <span>${Number(bar.v || 0).toLocaleString()}</span>` : ''}
           <span style="color:#38bdf8">MACD (12,26):</span> <strong style="color:#38bdf8">${Number(bar.macd || 0).toFixed(4)}</strong>
           <span style="color:#f59e0b">Signal (9):</span> <strong style="color:#f59e0b">${Number(bar.sig || 0).toFixed(4)}</strong>
           <span style="color:#34d399">Histogram:</span> <strong style="color:${(bar.hist || 0) >= 0 ? '#10b981' : '#f43f5e'}">${(bar.hist || 0) >= 0 ? '+' : ''}${Number(bar.hist || 0).toFixed(4)}</strong>
@@ -1082,22 +1169,6 @@
       });
 
       tbody.innerHTML = html;
-    },
-
-    /** Render Alert Drawer Preview */
-    renderAlertPreview() {
-      const container = document.getElementById('macd-alert-text-preview');
-      const timeEl = document.getElementById('macd-alert-timestamp');
-      if (!container) return;
-
-      if (this.state.alertData && this.state.alertData.text_content) {
-        let text = this.state.alertData.text_content;
-        text = text.replace(/\ufffd/g, '·');
-        container.textContent = text;
-        if (timeEl) timeEl.textContent = `As of ${this.state.alertData.timestamp_utc || 'Latest scan'}`;
-      } else {
-        container.textContent = 'Hourly scan operational. Monitoring 160 leveraged/inverse ETFs for 15:00 EST pre-close rebalance triggers and sub-zero reversals.';
-      }
     }
   };
 
