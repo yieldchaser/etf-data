@@ -23,52 +23,82 @@
   box-sizing: border-box;
 }
 
-/* ── Top Header Strip (Balanced 2-Column: Left Info, Right Actions) ── */
+/* ── Top Header Strip (Two Dedicated Rows: Row 1 Header + Quick Actions, Row 2 Category) ── */
 .macd-header-strip {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 1rem;
   padding-bottom: 0.85rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .macd-title-col {
+  min-width: 0;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  min-width: 0;
-  flex: 1 1 auto;
 }
 
 .macd-title-row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .macd-fund-name {
   color: var(--flow-text, #f3f4f6);
   font-weight: 600;
   font-size: 0.875rem;
-  max-width: 340px;
+  max-width: 240px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex-shrink: 1;
+}
+
+#macd-active-category {
+  color: var(--flow-muted, #71717a);
+  font-size: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .macd-quick-actions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.65rem;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .macd-header-select {
-  max-width: 240px;
+  max-width: 210px;
   text-overflow: ellipsis;
+}
+
+.macd-back-btn {
+  font-size: 0.75rem;
+  padding: 0.35rem 0.75rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--flow-text, #e4e4e7);
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.macd-back-btn:hover {
+  background: rgba(34, 211, 238, 0.12);
+  border-color: rgba(34, 211, 238, 0.4);
+  color: #22d3ee;
 }
 
 /* ── Navigation Deck (Leaders on Left, View Switcher on Right) ── */

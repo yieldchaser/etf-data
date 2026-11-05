@@ -184,6 +184,16 @@ def calculate_pivots(high: float, low: float, close: float) -> dict[str, float]:
     }
 
 
+def clean_category_name(raw_cat: str) -> str:
+    """Strip leading numbers and maintenance notes from category string."""
+    if not raw_cat:
+        return "Unclassified"
+    import re
+    cleaned = re.sub(r"^\d+\.\s*", "", str(raw_cat))
+    cleaned = re.sub(r"\s*\(Pruned to Key Anchors Only\)", "", cleaned, flags=re.IGNORECASE)
+    return cleaned.strip()
+
+
 def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] | None:
     """Fetch 1h (RTH) and 1d bars, compute technical metrics, and classify signals."""
     import yfinance as yf
@@ -504,7 +514,7 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
             "ticker": ticker,
             "fund_name": catalog_meta.get("fund_name", ticker),
             "leverage": catalog_meta.get("leverage", "1x"),
-            "category": catalog_meta.get("category", "Unclassified"),
+            "category": clean_category_name(catalog_meta.get("category", "Unclassified")),
             "underlying": catalog_meta.get("underlying", "—"),
             "latest_price": latest_price,
             "open_1h": round(latest_open_1h, 4),

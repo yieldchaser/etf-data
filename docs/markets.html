@@ -3006,22 +3006,22 @@
             <!-- Top Instrument Context Strip + Quick Switcher -->
             <div class="vs-header-strip">
               <div class="vs-title-col">
-                <div class="vs-title-row" style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
+                <div class="vs-title-row">
                   <h3 class="flow-result-symbol" style="font-size:1.15rem;margin:0" x-text="flowTicker"></h3>
                   <span class="flow-badge" :data-state="(flowSelectedInstrument?.leverage_value || 0) < 0 ? 'DISTRIBUTION' : 'ACCUMULATION'" x-text="flowSelectedInstrument?.leverage"></span>
-                  <span class="vs-fund-name" style="color:var(--flow-text);font-weight:600;font-size:0.875rem" x-text="flowSelectedInstrument?.fund_name"></span>
+                  <span class="vs-fund-name" x-text="flowSelectedInstrument?.fund_name"></span>
                   <span class="mono" id="vs-header-price" style="font-size:1.05rem;font-weight:700;color:#f3f4f6"></span>
                   <span id="vs-header-chg" style="font-size:0.8rem;color:#a1a1aa"></span>
                   <span class="flow-badge vs-badge-regime" id="vs-header-regime-badge" style="display:none"></span>
                 </div>
-                <div class="flow-eyebrow" style="margin-top:0.2rem" x-text="`${flowDisplayCategory} · Underlying: ${flowSelectedInstrument?.underlying || '—'}`"></div>
+                <div class="flow-eyebrow" id="vs-active-category" style="margin-top:0.25rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" x-text="`${flowDisplayCategory} · Underlying: ${flowSelectedInstrument?.underlying || '—'}`"></div>
               </div>
               <div class="vs-quick-actions">
                 <label class="flow-eyebrow" for="vs-ticker-select" style="margin:0;display:flex;align-items:center;gap:0.35rem">
                   <span>Switch:</span>
                   <select id="vs-ticker-select"
                           class="flow-chip"
-                          style="padding:0.25rem 0.6rem;font-weight:600;background:#000000;color:var(--flow-cyan);border-color:rgba(34,211,238,0.3);cursor:pointer;font-family:ui-monospace, 'SF Mono', 'JetBrains Mono', monospace;max-width:240px;text-overflow:ellipsis;"
+                          style="padding:0.25rem 0.6rem;font-weight:600;background:#000000;color:var(--flow-cyan);border-color:rgba(34,211,238,0.3);cursor:pointer;font-family:ui-monospace, 'SF Mono', 'JetBrains Mono', monospace;max-width:210px;text-overflow:ellipsis;"
                           aria-label="Switch ETF Instrument"
                           :value="flowTicker"
                           @change="selectFlowTicker($event.target.value, { writeUrl: true, push: true, switchToStudio: false })">
@@ -3126,7 +3126,7 @@
 
           <!-- ─── VIEW 5: MACD MOMENTUM RADAR & DUAL-PANE ENGINE ─── -->
           <div class="flow-panel-card flow-macd-card" x-show="flowViewMode === 'macd_strategy'">
-            <!-- Header Context Strip (Balanced 2-Column: Left Info, Right Quick Switch & Back) -->
+            <!-- Header Context Strip (Row 1: Title + Quick Switch; Row 2: Category & Underlying) -->
             <div class="macd-header-strip">
               <div class="macd-title-col">
                 <div class="macd-title-row">
@@ -3137,7 +3137,7 @@
                   <span id="macd-active-chg" style="font-size:0.8rem;color:#a1a1aa"></span>
                   <span class="flow-badge macd-badge-subzero" id="macd-active-regime-badge">SUB-ZERO REVERSAL CONFLUENCE</span>
                 </div>
-                <div class="flow-eyebrow" id="macd-active-category" style="margin-top:0.2rem">
+                <div class="flow-eyebrow" id="macd-active-category" style="margin-top:0.25rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
                   Single-Stock Leveraged (Bull) · Underlying: Intel Corporation (INTC)
                 </div>
               </div>
@@ -3147,7 +3147,7 @@
                   <span>Switch:</span>
                   <select id="macd-ticker-select"
                           class="flow-chip macd-header-select"
-                          style="padding:0.25rem 0.6rem;font-weight:600;background:#000000;color:var(--flow-cyan);border-color:rgba(34,211,238,0.3);cursor:pointer;font-family:ui-monospace, 'SF Mono', 'JetBrains Mono', monospace;max-width:240px;text-overflow:ellipsis;"
+                          style="padding:0.25rem 0.6rem;font-weight:600;background:#000000;color:var(--flow-cyan);border-color:rgba(34,211,238,0.3);cursor:pointer;font-family:ui-monospace, 'SF Mono', 'JetBrains Mono', monospace;max-width:210px;text-overflow:ellipsis;"
                           aria-label="Switch MACD Instrument"
                           onchange="window.MACDStrategy.setTicker(this.value)">
                     <template x-for="item in (flowCatalog?.instruments || [])" :key="item.ticker">

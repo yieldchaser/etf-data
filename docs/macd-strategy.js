@@ -122,6 +122,15 @@
       }
     },
 
+    /** Strip leading numeric indices and internal maintenance tags like '(Pruned to Key Anchors Only)' */
+    cleanCategory(cat) {
+      if (!cat) return '';
+      return String(cat)
+        .replace(/^\d+\.\s*/, '')
+        .replace(/\s*\([^)]*Pruned[^)]*\)/gi, '')
+        .trim();
+    },
+
     /** Get active instrument data */
     getActiveSignal() {
       if (!this.state.signalsData || !this.state.signalsData.signals) return null;
@@ -583,7 +592,8 @@
         elLeverage.dataset.state = signal.leverage.includes('-') ? 'DISTRIBUTION' : 'ACCUMULATION';
       }
       if (elCategory) {
-        elCategory.textContent = `${signal.category} · Underlying: ${signal.underlying}`;
+        const cat = this.cleanCategory(signal.category);
+        elCategory.textContent = `${cat} · Underlying: ${signal.underlying}`;
       }
       if (elPrice) {
         if (signal.live_premarket_price) {

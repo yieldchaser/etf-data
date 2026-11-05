@@ -675,7 +675,10 @@
 
   function cleanCategoryName(value) {
     if (!value) return '';
-    return String(value).replace(/^\d+\.\s*/, '').trim();
+    return String(value)
+      .replace(/^\d+\.\s*/, '')
+      .replace(/\s*\([^)]*Pruned[^)]*\)/gi, '')
+      .trim();
   }
 
   function dateTickIndices(count, width) {
