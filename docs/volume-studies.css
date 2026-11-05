@@ -40,6 +40,16 @@
   min-width: 0;
 }
 
+.vs-fund-name {
+  color: var(--flow-text);
+  font-weight: 600;
+  font-size: 0.875rem;
+  max-width: 340px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .vs-quick-actions {
   display: flex;
   align-items: center;

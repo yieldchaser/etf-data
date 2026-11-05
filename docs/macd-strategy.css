@@ -23,16 +23,56 @@
   box-sizing: border-box;
 }
 
-/* ── Top Header Strip (Two Balanced Rows) ── */
+/* ── Top Header Strip (Balanced 2-Column: Left Info, Right Actions) ── */
 .macd-header-strip {
   display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
   padding-bottom: 0.85rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.macd-header-row-1 {
+.macd-title-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.macd-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.macd-fund-name {
+  color: var(--flow-text, #f3f4f6);
+  font-weight: 600;
+  font-size: 0.875rem;
+  max-width: 340px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.macd-quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.macd-header-select {
+  max-width: 240px;
+  text-overflow: ellipsis;
+}
+
+/* ── Navigation Deck (Leaders on Left, View Switcher on Right) ── */
+.macd-nav-deck {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -40,26 +80,9 @@
   gap: 0.75rem;
 }
 
-.macd-header-identity {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.macd-header-actions {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.macd-header-row-2 {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.75rem;
+.macd-nav-deck .macd-ticker-row {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 /* ── Primary View Selector (Chart vs Screener) ── */
@@ -267,6 +290,125 @@
   width: 100%;
   height: 480px;
   cursor: default;
+}
+
+/* ── Dual-Handle Range Scrubber ── */
+.macd-scrub-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.65rem 0.75rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--flow-line, rgba(255, 255, 255, 0.06));
+  border-radius: 6px;
+}
+
+.macd-scrub-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.6875rem;
+}
+
+.macd-brush-container {
+  position: relative;
+  height: 32px;
+  width: 100%;
+  touch-action: none;
+}
+
+.macd-brush-track {
+  position: absolute;
+  top: 13px;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  z-index: 1;
+}
+
+.macd-brush-highlight {
+  position: absolute;
+  top: 13px;
+  height: 6px;
+  background: var(--flow-cyan, #22d3ee);
+  border-radius: 3px;
+  z-index: 2;
+  box-shadow: 0 0 8px rgba(34, 211, 238, 0.35);
+  pointer-events: none;
+}
+
+.macd-range-thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  background: transparent !important;
+  border: none !important;
+  outline: none;
+  pointer-events: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  cursor: ew-resize;
+  z-index: 3;
+  touch-action: none;
+}
+
+.macd-range-thumb::-webkit-slider-runnable-track {
+  background: transparent !important;
+  border: none !important;
+  height: 6px;
+}
+
+.macd-range-thumb::-moz-range-track {
+  background: transparent !important;
+  border: none !important;
+  height: 6px;
+}
+
+.macd-range-thumb::-webkit-slider-thumb {
+  pointer-events: auto;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: #ffffff !important;
+  border: 2px solid var(--flow-cyan, #22d3ee) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  cursor: grab;
+  margin-top: -6px;
+  transition: transform 0.08s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.macd-range-thumb::-moz-range-thumb {
+  pointer-events: auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: #ffffff !important;
+  border: 2px solid var(--flow-cyan, #22d3ee) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  cursor: grab;
+}
+
+.macd-range-thumb:active::-webkit-slider-thumb {
+  cursor: grabbing;
+  transform: scale(1.15);
+  background: var(--flow-cyan, #22d3ee) !important;
+}
+
+.macd-range-thumb:active::-moz-range-thumb {
+  cursor: grabbing;
+  transform: scale(1.15);
+  background: var(--flow-cyan, #22d3ee) !important;
 }
 
 /* ── HUD Reading Bar ── */

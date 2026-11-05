@@ -841,3 +841,52 @@ def test_lod_deep_history_generation_and_schema(mock_ticker, mock_calc, tmp_path
     # Schema keys check on loaded bars
     assert set(loaded["bars_1d"][0].keys()) == {"dt", "o", "h", "l", "c", "macd", "sig", "hist"}
     assert set(loaded["bars_1h"][0].keys()) == {"dt", "o", "h", "l", "c", "macd", "sig", "hist"}
+
+
+def test_macd_ui_symmetry_and_dual_slider_contract():
+    """Verify symmetrical 2-column header layout, nav deck, and dual-handle range slider across MACD & Volume Studies."""
+    from pathlib import Path
+    html = Path("docs/markets.html").read_text(encoding="utf-8")
+    macd_css = Path("docs/macd-strategy.css").read_text(encoding="utf-8")
+    macd_js = Path("docs/macd-strategy.js").read_text(encoding="utf-8")
+    vs_js = Path("docs/volume-studies.js").read_text(encoding="utf-8")
+    vs_css = Path("docs/volume-studies.css").read_text(encoding="utf-8")
+
+    # 1. Dual-handle slider elements in HTML
+    assert 'id="macd-range-start"' in html
+    assert 'id="macd-range-end"' in html
+    assert 'id="macd-brush-highlight"' in html
+    assert 'id="macd-window-dates"' in html
+    assert 'class="macd-scrub-panel"' in html
+
+    # 2. Navigation Deck: Leaders on left, View Switcher moved down to right
+    assert 'class="macd-nav-deck"' in html
+    assert 'id="macd-flagship-pills"' in html
+    assert 'id="macd-nav-chart"' in html
+    assert 'id="macd-nav-screener"' in html
+
+    # 3. Symmetrical 2-Column Header layout
+    assert 'class="macd-title-col"' in html
+    assert 'class="macd-quick-actions"' in html
+    assert 'class="vs-title-col"' in html
+    assert 'class="vs-quick-actions"' in html
+    assert 'id="vs-header-price"' in html
+    assert 'id="vs-header-chg"' in html
+    assert 'id="vs-header-regime-badge"' in html
+
+    # 4. CSS Slider and Deck Rules
+    assert '.macd-scrub-panel' in macd_css
+    assert '.macd-brush-highlight' in macd_css
+    assert '.macd-range-thumb' in macd_css
+    assert '.macd-nav-deck' in macd_css
+    assert '.macd-title-col' in macd_css
+    assert '.macd-quick-actions' in macd_css
+    assert '.vs-fund-name' in vs_css
+
+    # 5. JavaScript Slider Mechanics
+    assert '_initSlider()' in macd_js
+    assert '_syncSlider(' in macd_js
+    assert 'getAllBarsForActiveTimeframe()' in macd_js
+    assert 'customRange' in macd_js
+    assert 'vs-header-price' in vs_js
+    assert 'vs-header-regime-badge' in vs_js

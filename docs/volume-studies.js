@@ -1322,6 +1322,24 @@
         hudRegime.style.background = (regimeColor && regimeColor !== 'inherit') ? `${regimeColor}1a` : 'transparent';
         hudRegime.style.borderColor = (regimeColor && regimeColor !== 'inherit') ? `${regimeColor}44` : 'transparent';
       }
+
+      // Symmetrical top header context updates matching MACD Engine
+      const hdrPrice = document.getElementById('vs-header-price');
+      const hdrChg = document.getElementById('vs-header-chg');
+      const hdrRegime = document.getElementById('vs-header-regime-badge');
+
+      if (hdrPrice) hdrPrice.textContent = this.fmtPrice(close);
+      if (hdrChg) {
+        hdrChg.textContent = `${chgSign}${pricePct.toFixed(2)}%`;
+        hdrChg.style.color = chgColor;
+      }
+      if (hdrRegime) {
+        hdrRegime.style.display = 'inline-block';
+        hdrRegime.textContent = regimeText;
+        hdrRegime.style.color = regimeColor;
+        hdrRegime.style.background = (regimeColor && regimeColor !== 'inherit') ? `${regimeColor}1a` : 'transparent';
+        hdrRegime.style.borderColor = (regimeColor && regimeColor !== 'inherit') ? `${regimeColor}44` : 'transparent';
+      }
     },
 
     _updateMethodology(studyKey) {

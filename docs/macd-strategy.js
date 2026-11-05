@@ -21,6 +21,7 @@
       activeTimeframe: '1h', // '1h' | '1d'
       range1H: '1M',         // '1W' | '2W' | '1M' | '3M' | '1Y' | 'ALL'
       range1D: 'ALL',        // '1M' | '3M' | '6M' | '1Y' | '2Y' | '5Y' | 'ALL'
+      customRange: null,     // { startIdx, endIdx }
       historyCache: {},      // Per-ticker deep LOD history cache
       activeView: 'chart',   // 'chart' | 'screener'
       showPivots: false,     // Default OFF to prevent clutter
@@ -128,54 +129,60 @@
       return this.state.signalsData.signals.find(s => s.ticker === t) || this.state.signalsData.signals[0] || null;
     },
 
-    /** Get bars for active timeframe & selected range */
-    getActiveBars() {
+    /** Get all available bars for active timeframe */
+    getAllBarsForActiveTimeframe() {
       const t = this.state.activeTicker;
       const hist = this.state.historyCache && this.state.historyCache[t];
-
       if (this.state.activeTimeframe === '1h') {
-        const allHourly = (hist && hist.bars_1h && hist.bars_1h.length)
+        return (hist && hist.bars_1h && hist.bars_1h.length)
           ? hist.bars_1h
           : ((this.getActiveSignal() && this.getActiveSignal().chart_bars_1h) || []);
+      }
+      return (hist && hist.bars_1d && hist.bars_1d.length)
+        ? hist.bars_1d
+        : ((this.getActiveSignal() && this.getActiveSignal().chart_bars_1d) || []);
+    },
 
-        if (!allHourly.length) return [];
+    /** Get bars for active timeframe & selected range */
+    getActiveBars() {
+      const allBars = this.getAllBarsForActiveTimeframe();
+      if (!allBars || !allBars.length) return [];
 
+      if (this.state.customRange) {
+        const s = Math.max(0, Math.min(allBars.length - 1, this.state.customRange.startIdx));
+        const e = Math.max(s, Math.min(allBars.length - 1, this.state.customRange.endIdx));
+        return allBars.slice(s, e + 1);
+      }
+
+      let count = allBars.length;
+      if (this.state.activeTimeframe === '1h') {
         const r = this.state.range1H || '1M';
-        let count = allHourly.length;
         if (r === '1W') count = 35;
         else if (r === '2W') count = 70;
         else if (r === '1M') count = 140;
         else if (r === '3M') count = 420;
         else if (r === '1Y') count = 1750;
-        else count = allHourly.length; // ALL (2Y / ~5,000 bars)
-
-        return allHourly.slice(Math.max(0, allHourly.length - count));
+        else count = allBars.length; // ALL (2Y / ~5,000 bars)
+      } else {
+        const r = this.state.range1D || 'ALL';
+        if (r === '1M') count = 22;
+        else if (r === '3M') count = 65;
+        else if (r === '6M') count = 130;
+        else if (r === '1Y') count = 252;
+        else if (r === '2Y') count = 504;
+        else if (r === '5Y') count = 1260;
+        else count = allBars.length; // ALL (up to 5Y / Inception)
       }
 
-      // 1D Timeframe
-      const allDaily = (hist && hist.bars_1d && hist.bars_1d.length)
-        ? hist.bars_1d
-        : ((this.getActiveSignal() && this.getActiveSignal().chart_bars_1d) || []);
-
-      if (!allDaily.length) return [];
-
-      const r = this.state.range1D || 'ALL';
-      let count = allDaily.length;
-      if (r === '1M') count = 22;
-      else if (r === '3M') count = 65;
-      else if (r === '6M') count = 130;
-      else if (r === '1Y') count = 252;
-      else if (r === '2Y') count = 504;
-      else if (r === '5Y') count = 1260;
-      else count = allDaily.length; // ALL (up to 5Y / Inception)
-
-      return allDaily.slice(Math.max(0, allDaily.length - count));
+      const startIdx = Math.max(0, allBars.length - count);
+      return allBars.slice(startIdx);
     },
 
     /** Set active ETF instrument */
     setTicker(ticker) {
       if (!ticker) return;
       this.state.activeTicker = ticker.toUpperCase();
+      this.state.customRange = null;
       this.loadHistory(this.state.activeTicker);
       this.state.hoverIndex = null;
       try {
@@ -193,6 +200,7 @@
     setTimeframe(tf) {
       if (tf !== '1h' && tf !== '1d') return;
       this.state.activeTimeframe = tf;
+      this.state.customRange = null;
       this.state.hoverIndex = null;
       this.updateControlsUI();
       this.updateHUD(null);
@@ -203,6 +211,7 @@
     setRange1H(range) {
       if (!range) return;
       this.state.range1H = range;
+      this.state.customRange = null;
       const buttons = document.querySelectorAll('.macd-range-btn-1h');
       buttons.forEach(b => {
         if (b.dataset.range === range) b.classList.add('active');
@@ -217,6 +226,7 @@
     setRange(range) {
       if (!range) return;
       this.state.range1D = range;
+      this.state.customRange = null;
       const buttons = document.querySelectorAll('.macd-range-btn');
       buttons.forEach(b => {
         if (b.dataset.range === range) b.classList.add('active');
@@ -325,6 +335,111 @@
         canvas.addEventListener('touchstart', (e) => this.handleTouch(e), { passive: false });
         canvas.addEventListener('touchmove', (e) => this.handleTouch(e), { passive: false });
         canvas.addEventListener('touchend', () => this.handleMouseLeave());
+      }
+
+      this._initSlider();
+    },
+
+    /** Initialize dual-handle interactive range scrubber */
+    _initSlider() {
+      if (this._sliderBound) return;
+      const sStart = document.getElementById('macd-range-start');
+      const sEnd = document.getElementById('macd-range-end');
+      if (!sStart || !sEnd) return;
+
+      const MIN_GAP = 5;
+
+      const setActive = activeThumb => {
+        if (activeThumb === sStart) {
+          sStart.style.zIndex = '5';
+          sEnd.style.zIndex = '4';
+        } else {
+          sEnd.style.zIndex = '5';
+          sStart.style.zIndex = '4';
+        }
+      };
+
+      const onSliderChange = e => {
+        const allBars = this.getAllBarsForActiveTimeframe();
+        if (!allBars || allBars.length < 2) return;
+        const maxVal = allBars.length - 1;
+
+        let v1 = parseInt(sStart.value, 10);
+        let v2 = parseInt(sEnd.value, 10);
+
+        if (e.target.id === 'macd-range-start') {
+          setActive(sStart);
+          if (v1 > v2 - MIN_GAP) {
+            v1 = Math.max(0, v2 - MIN_GAP);
+            sStart.value = v1;
+          }
+        } else {
+          setActive(sEnd);
+          if (v2 < v1 + MIN_GAP) {
+            v2 = Math.min(maxVal, v1 + MIN_GAP);
+            sEnd.value = v2;
+          }
+        }
+
+        this.state.customRange = { startIdx: v1, endIdx: v2 };
+        this.state.hoverIndex = null;
+
+        // Deselect preset range buttons to indicate custom scrubber window
+        document.querySelectorAll('.macd-range-btn, .macd-range-btn-1h').forEach(b => b.classList.remove('active'));
+
+        this.drawChart();
+      };
+
+      const elevateThumb = e => {
+        if (e.target) setActive(e.target);
+      };
+
+      ['pointerdown', 'mousedown', 'touchstart', 'focus'].forEach(evt => {
+        sStart.addEventListener(evt, elevateThumb, { passive: true });
+        sEnd.addEventListener(evt, elevateThumb, { passive: true });
+      });
+
+      sStart.addEventListener('input', onSliderChange);
+      sEnd.addEventListener('input', onSliderChange);
+
+      this._sliderBound = true;
+    },
+
+    /** Synchronize dual-handle slider thumbs, highlight track, and date label */
+    _syncSlider(totalBars, startIdx, endIdx, activeBars) {
+      const sStart = document.getElementById('macd-range-start');
+      const sEnd = document.getElementById('macd-range-end');
+      const highlight = document.getElementById('macd-brush-highlight');
+      const datesLabel = document.getElementById('macd-window-dates');
+
+      if (!sStart || !sEnd || totalBars < 2) return;
+
+      const maxVal = totalBars - 1;
+      sStart.max = maxVal;
+      sEnd.max = maxVal;
+
+      if (typeof document !== 'undefined') {
+        if (document.activeElement !== sStart && Number(sStart.value) !== startIdx) {
+          sStart.value = startIdx;
+        }
+        if (document.activeElement !== sEnd && Number(sEnd.value) !== endIdx) {
+          sEnd.value = endIdx;
+        }
+      }
+
+      if (highlight && maxVal > 0) {
+        const p1 = Math.max(0, Math.min(1, startIdx / maxVal));
+        const p2 = Math.max(p1, Math.min(1, endIdx / maxVal));
+        const thumbRadius = 9; // Half of 18px thumb width
+        highlight.style.left = `calc(${thumbRadius}px + (100% - ${thumbRadius * 2}px) * ${p1.toFixed(4)})`;
+        highlight.style.width = `calc((100% - ${thumbRadius * 2}px) * ${(p2 - p1).toFixed(4)})`;
+      }
+
+      if (datesLabel && activeBars && activeBars.length) {
+        const first = activeBars[0].dt;
+        const last = activeBars[activeBars.length - 1].dt;
+        const tfLabel = this.state.activeTimeframe === '1h' ? 'hours' : 'days';
+        datesLabel.textContent = `${first} → ${last} (${activeBars.length} ${tfLabel})`;
       }
     },
 
@@ -705,6 +820,20 @@
           : `Loading deep historical candlestick data for ${this.state.activeTicker}...`;
         ctx.fillText(msg, 24, 40);
         return;
+      }
+
+      // Synchronize dual-handle range scrubber with active window
+      const allBars = this.getAllBarsForActiveTimeframe();
+      if (allBars && allBars.length >= 2) {
+        let sIdx, eIdx;
+        if (this.state.customRange) {
+          sIdx = Math.max(0, Math.min(allBars.length - 1, this.state.customRange.startIdx));
+          eIdx = Math.max(sIdx, Math.min(allBars.length - 1, this.state.customRange.endIdx));
+        } else {
+          sIdx = Math.max(0, allBars.length - bars.length);
+          eIdx = allBars.length - 1;
+        }
+        this._syncSlider(allBars.length, sIdx, eIdx, bars);
       }
 
       // Setup High-DPI

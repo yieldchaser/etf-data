@@ -107,11 +107,13 @@ def test_flow_ui_uses_factual_labels_and_explicit_states():
 def test_flow_ui_has_one_shared_native_range_group():
     markup = active_flow_markup()
     assert markup.count("<fieldset") == 1
-    assert markup.count('type="range"') == 4
+    assert markup.count('type="range"') == 6
     assert 'id="flow-range-start"' in markup
     assert 'id="flow-range-end"' in markup
     assert 'id="vs-range-start"' in markup
     assert 'id="vs-range-end"' in markup
+    assert 'id="macd-range-start"' in markup
+    assert 'id="macd-range-end"' in markup
     assert "flowSetChartPreset" not in markup
     assert "flowSyncAllCharts" not in markup
     assert "min-width: 600" not in markup
