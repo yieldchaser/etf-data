@@ -2,7 +2,7 @@
   {
     "ticker": "AAOX",
     "trackinsight_key": "AAOX",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Tradr 2X Long AAOI Daily ETF",
     "issuer": "AXS Investments",
     "underlying": "Applied Optoelectronics (AAOI)",
@@ -21,7 +21,7 @@
   {
     "ticker": "AAPU",
     "trackinsight_key": "XNMS:AAPU",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "Direxion Daily AAPL Bull 2X Shares",
     "issuer": "Direxion",
     "underlying": "Apple (AAPL)",
@@ -59,7 +59,7 @@
   {
     "ticker": "AMDL",
     "trackinsight_key": "AMDL",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "GraniteShares 2x Long AMD Daily ETF",
     "issuer": "GraniteShares",
     "underlying": "AMD (AMD)",
@@ -78,7 +78,7 @@
   {
     "ticker": "AMZU",
     "trackinsight_key": "XNMS:AMZU",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "Direxion Daily AMZN Bull 2X Shares",
     "issuer": "Direxion",
     "underlying": "Amazon (AMZN)",
@@ -97,7 +97,7 @@
   {
     "ticker": "APLX",
     "trackinsight_key": "APLX",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Tradr 2X Long APLD Daily ETF",
     "issuer": "AXS Investments",
     "underlying": "Applied Digital (APLD)",
@@ -116,7 +116,7 @@
   {
     "ticker": "APPX",
     "trackinsight_key": "APPX",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Tradr 2X Long APP Daily ETF",
     "issuer": "AXS Investments",
     "underlying": "AppLovin (APP)",
@@ -154,7 +154,7 @@
   {
     "ticker": "ARMG",
     "trackinsight_key": "ARMG",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Leverage Shares 2X Long ARM Daily ETF",
     "issuer": "Themes Management Company",
     "underlying": "ARM Holdings (ARM)",
@@ -173,7 +173,7 @@
   {
     "ticker": "ASMG",
     "trackinsight_key": "ASMG",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Leverage Shares 2X Long ASML Daily ETF",
     "issuer": "Themes Management Company",
     "underlying": "ASML Holding (ASML)",
@@ -192,7 +192,7 @@
   {
     "ticker": "ASTX",
     "trackinsight_key": "BATS:ASTX",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "Tradr 2X Long ASTS Daily ETF",
     "issuer": "AXS Investments",
     "underlying": "AST SpaceMobile (ASTS)",
@@ -211,7 +211,7 @@
   {
     "ticker": "AVGX",
     "trackinsight_key": "AVGX",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Defiance Daily Target 2x Long AVGO ETF",
     "issuer": "Defiance ETFs",
     "underlying": "Broadcom (AVGO)",
@@ -230,7 +230,7 @@
   {
     "ticker": "AXTX",
     "trackinsight_key": "AXTX",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Tradr 2X Long AXTI Daily ETF",
     "issuer": "AXS Investments",
     "underlying": "AXT Inc (AXTI)",
@@ -249,7 +249,7 @@
   {
     "ticker": "BABX",
     "trackinsight_key": "BABX",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "GraniteShares 2x Long BABA Daily ETF",
     "issuer": "GraniteShares",
     "underlying": "Alibaba (BABA)",
@@ -268,7 +268,7 @@
   {
     "ticker": "BEX",
     "trackinsight_key": "BEX",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "Tradr 2X Long BE Daily ETF",
     "issuer": "AXS Investments",
     "underlying": "Bloom Energy (BE)",
@@ -382,7 +382,7 @@
   {
     "ticker": "COHX",
     "trackinsight_key": "COHX",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Tradr 2X Long COHR Daily ETF",
     "issuer": "AXS Investments",
     "underlying": "Coherent Corp (COHR)",
@@ -420,7 +420,7 @@
   {
     "ticker": "CONL",
     "trackinsight_key": "CONL",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "GraniteShares 2x Long COIN Daily ETF",
     "issuer": "GraniteShares",
     "underlying": "Coinbase (COIN)",
@@ -439,7 +439,7 @@
   {
     "ticker": "COTG",
     "trackinsight_key": "COTG",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "Leverage Shares 2X Long COST Daily ETF",
     "issuer": "Leverage Shares",
     "underlying": "Costco (COST)",
@@ -477,7 +477,7 @@
   {
     "ticker": "CRDU",
     "trackinsight_key": "CRDU",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Tradr 2X Long CRDO Daily ETF",
     "issuer": "AXS Investments",
     "underlying": "Credo Technology (CRDO)",
@@ -496,7 +496,7 @@
   {
     "ticker": "CRML",
     "trackinsight_key": "CRML",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Direxion Daily CRM Bull 2X Shares",
     "issuer": "Direxion",
     "underlying": "Salesforce",
@@ -515,7 +515,7 @@
   {
     "ticker": "CRWL",
     "trackinsight_key": "CRWL",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "GraniteShares 2x Long CRWD Daily ETF",
     "issuer": "GraniteShares",
     "underlying": "CrowdStrike (CRWD)",
@@ -534,7 +534,7 @@
   {
     "ticker": "CSEX",
     "trackinsight_key": "CSEX",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Tradr 2X Long CLS Daily ETF",
     "issuer": "AXS Investments",
     "underlying": "Celestica (CLS)",
@@ -591,7 +591,7 @@
   {
     "ticker": "CWVX",
     "trackinsight_key": "CWVX",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Tradr 2X Long CRWV Daily ETF",
     "issuer": "AXS Investments",
     "underlying": "CoreWeave (CRWV)",
@@ -648,7 +648,7 @@
   {
     "ticker": "DLLL",
     "trackinsight_key": "DLLL",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "GraniteShares 2x Long DELL Daily ETF",
     "issuer": "GraniteShares",
     "underlying": "Dell Technologies (DELL)",
@@ -800,7 +800,7 @@
   {
     "ticker": "FBL",
     "trackinsight_key": "FBL",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "GraniteShares 2x Long META Daily ETF",
     "issuer": "GraniteShares",
     "underlying": "Meta Platforms (META)",
@@ -838,7 +838,7 @@
   {
     "ticker": "GEVX",
     "trackinsight_key": "GEVX",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "Tradr 2X Long GEV Daily ETF",
     "issuer": "AXS Investments",
     "underlying": "GE Vernova (GEV)",
@@ -857,7 +857,7 @@
   {
     "ticker": "GGLL",
     "trackinsight_key": "GGLL",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "Direxion Daily GOOGL Bull 2X Shares",
     "issuer": "Direxion",
     "underlying": "Alphabet (GOOGL)",
@@ -876,7 +876,7 @@
   {
     "ticker": "GLWG",
     "trackinsight_key": "GLWG",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Leverage Shares 2X Long GLW Daily ETF",
     "issuer": "Leverage Shares",
     "underlying": "Corning (GLW)",
@@ -895,7 +895,7 @@
   {
     "ticker": "GOOX",
     "trackinsight_key": "GOOX",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "T-Rex 2X Long Alphabet Daily Target ETF",
     "issuer": "REX Shares",
     "underlying": "Alphabet (GOOGL)",
@@ -933,7 +933,7 @@
   {
     "ticker": "HOOG",
     "trackinsight_key": "HOOG",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "Leverage Shares 2X Long HOOD Daily ETF",
     "issuer": "Leverage Shares",
     "underlying": "Robinhood (HOOD)",
@@ -990,7 +990,7 @@
   {
     "ticker": "INTW",
     "trackinsight_key": "INTW",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "GraniteShares 2x Long INTC Daily ETF",
     "issuer": "GraniteShares",
     "underlying": "Intel (INTC)",
@@ -1009,7 +1009,7 @@
   {
     "ticker": "IREX",
     "trackinsight_key": "IREX",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "Tradr 2X Long IREN Daily ETF",
     "issuer": "AXS Investments",
     "underlying": "IREN (IREN)",
@@ -1085,7 +1085,7 @@
   {
     "ticker": "LABX",
     "trackinsight_key": "LABX",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Tradr 2X Long ALAB Daily ETF",
     "issuer": "AXS Investments",
     "underlying": "Astera Labs (ALAB)",
@@ -1104,7 +1104,7 @@
   {
     "ticker": "LITX",
     "trackinsight_key": "LITX",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Tradr 2X Long LITE Daily ETF",
     "issuer": "AXS Investments",
     "underlying": "Lumentum Holdings (LITE)",
@@ -1123,7 +1123,7 @@
   {
     "ticker": "LLYX",
     "trackinsight_key": "LLYX",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "Defiance Daily Target 2x Long LLY ETF",
     "issuer": "Defiance ETFs",
     "underlying": "Eli Lilly (LLY)",
@@ -1142,7 +1142,7 @@
   {
     "ticker": "LRCU",
     "trackinsight_key": "LRCU",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Tradr 2X Long LRCX Daily ETF",
     "issuer": "AXS Investments",
     "underlying": "Lam Research (LRCX)",
@@ -1161,7 +1161,7 @@
   {
     "ticker": "LULG",
     "trackinsight_key": "LULG",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "Leverage Shares 2X Long LULU Daily ETF",
     "issuer": "Leverage Shares",
     "underlying": "Lululemon (LULU)",
@@ -1218,7 +1218,7 @@
   {
     "ticker": "METU",
     "trackinsight_key": "XNMS:METU",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "Direxion Daily META Bull 2X Shares",
     "issuer": "Direxion",
     "underlying": "Meta Platforms (META)",
@@ -1275,7 +1275,7 @@
   {
     "ticker": "MSFL",
     "trackinsight_key": "MSFL",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "GraniteShares 2x Long MSFT Daily ETF",
     "issuer": "GraniteShares",
     "underlying": "Microsoft (MSFT)",
@@ -1294,7 +1294,7 @@
   {
     "ticker": "MSFU",
     "trackinsight_key": "XNMS:MSFU",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "Direxion Daily MSFT Bull 2X Shares",
     "issuer": "Direxion",
     "underlying": "Microsoft (MSFT)",
@@ -1332,7 +1332,7 @@
   {
     "ticker": "MSTU",
     "trackinsight_key": "BATS:MSTU",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "T-Rex 2X Long MSTR Daily Target ETF - USD",
     "issuer": "Tuttle Capital Management",
     "underlying": "MicroStrategy (MSTR)",
@@ -1351,7 +1351,7 @@
   {
     "ticker": "MSTX",
     "trackinsight_key": "MSTX",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "Defiance Daily Target 2X Long MSTR ETF",
     "issuer": "Defiance ETFs",
     "underlying": "MicroStrategy (MSTR)",
@@ -1389,7 +1389,7 @@
   {
     "ticker": "MULL",
     "trackinsight_key": "MULL",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "GraniteShares 2x Long MU Daily ETF",
     "issuer": "GraniteShares",
     "underlying": "Micron Technology (MU)",
@@ -1408,7 +1408,7 @@
   {
     "ticker": "MUU",
     "trackinsight_key": "MUU",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Direxion Daily MU Bull 2X Shares",
     "issuer": "Direxion",
     "underlying": "Micron Technology",
@@ -1427,7 +1427,7 @@
   {
     "ticker": "MVLL",
     "trackinsight_key": "MVLL",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "GraniteShares 2x Long MRVL Daily ETF",
     "issuer": "GraniteShares",
     "underlying": "Marvell Technology (MRVL)",
@@ -1465,7 +1465,7 @@
   {
     "ticker": "NEBX",
     "trackinsight_key": "NEBX",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Tradr 2X Long NBIS Daily ETF",
     "issuer": "AXS Investments",
     "underlying": "Nebius Group (NBIS)",
@@ -1484,7 +1484,7 @@
   {
     "ticker": "NFXL",
     "trackinsight_key": "NFXL",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "Direxion Daily NFLX Bull 2X Shares",
     "issuer": "Direxion",
     "underlying": "Netflix",
@@ -1503,7 +1503,7 @@
   {
     "ticker": "NOWL",
     "trackinsight_key": "NOWL",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "GraniteShares 2x Long NOW Daily ETF",
     "issuer": "GraniteShares",
     "underlying": "ServiceNow (NOW)",
@@ -1560,7 +1560,7 @@
   {
     "ticker": "NVDL",
     "trackinsight_key": "NVDL",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "GraniteShares 2x Long NVDA Daily ETF",
     "issuer": "GraniteShares",
     "underlying": "NVIDIA (NVDA)",
@@ -1598,7 +1598,7 @@
   {
     "ticker": "NVDU",
     "trackinsight_key": "NVDU",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Direxion Daily NVDA Bull 2X Shares",
     "issuer": "Direxion",
     "underlying": "NVIDIA",
@@ -1617,7 +1617,7 @@
   {
     "ticker": "NVDX",
     "trackinsight_key": "NVDX",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "T-Rex 2X Long NVIDIA Daily Target ETF",
     "issuer": "Tuttle Capital Management",
     "underlying": "NVIDIA (NVDA)",
@@ -1636,7 +1636,7 @@
   {
     "ticker": "NVTX",
     "trackinsight_key": "NVTX",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Tradr 2X Long NVTS Daily ETF",
     "issuer": "AXS Investments",
     "underlying": "Navitas Semiconductor (NVTS)",
@@ -1655,7 +1655,7 @@
   {
     "ticker": "ORCX",
     "trackinsight_key": "ORCX",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Defiance Daily Target 2X Long ORCL ETF",
     "issuer": "Defiance ETFs",
     "underlying": "Oracle (ORCL)",
@@ -1674,7 +1674,7 @@
   {
     "ticker": "PANG",
     "trackinsight_key": "PANG",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Leverage Shares 2X Long PANW Daily ETF",
     "issuer": "Leverage Shares",
     "underlying": "Palo Alto Networks (PANW)",
@@ -1731,7 +1731,7 @@
   {
     "ticker": "PLTU",
     "trackinsight_key": "PLTU",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Direxion Daily PLTR Bull 2X Shares",
     "issuer": "Direxion",
     "underlying": "Palantir Technologies",
@@ -1750,7 +1750,7 @@
   {
     "ticker": "PTIR",
     "trackinsight_key": "PTIR",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "GraniteShares 2x Long PLTR Daily ETF",
     "issuer": "GraniteShares",
     "underlying": "Palantir (PLTR)",
@@ -1769,7 +1769,7 @@
   {
     "ticker": "QBTX",
     "trackinsight_key": "QBTX",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Tradr 2X Long QBTS Daily ETF",
     "issuer": "AXS Investments",
     "underlying": "D-Wave Quantum (QBTS)",
@@ -1788,7 +1788,7 @@
   {
     "ticker": "QCML",
     "trackinsight_key": "QCML",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "GraniteShares 2x Long QCOM Daily ETF",
     "issuer": "GraniteShares",
     "underlying": "Qualcomm (QCOM)",
@@ -1883,7 +1883,7 @@
   {
     "ticker": "RGTU",
     "trackinsight_key": "RGTU",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Tradr 2X Long RGTI Daily ETF",
     "issuer": "AXS Investments",
     "underlying": "Rigetti Computing (RGTI)",
@@ -1902,7 +1902,7 @@
   {
     "ticker": "RKLX",
     "trackinsight_key": "RKLX",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Defiance Daily Target 2X Long RKLB ETF",
     "issuer": "Defiance ETFs",
     "underlying": "Rocket Lab (RKLB)",
@@ -1959,7 +1959,7 @@
   {
     "ticker": "SHPU",
     "trackinsight_key": "XNMS:SHPU",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "Direxion Daily SHOP Bull 2X ETF",
     "issuer": "Direxion",
     "underlying": "Shopify (SHOP)",
@@ -1978,7 +1978,7 @@
   {
     "ticker": "SMCX",
     "trackinsight_key": "SMCX",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Defiance Daily Target 2x Long SMCI ETF",
     "issuer": "Defiance ETFs",
     "underlying": "Super Micro (SMCI)",
@@ -2035,7 +2035,7 @@
   {
     "ticker": "SMST",
     "trackinsight_key": "SMST",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "T-Rex 2X Long MSTR Daily Target ETF",
     "issuer": "T-Rex",
     "underlying": "MicroStrategy",
@@ -2054,7 +2054,7 @@
   {
     "ticker": "SMU",
     "trackinsight_key": "SMU",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "Tradr 2X Long SMR Daily ETF",
     "issuer": "AXS Investments",
     "underlying": "NuScale Power (SMR)",
@@ -2073,7 +2073,7 @@
   {
     "ticker": "SNOU",
     "trackinsight_key": "SNOU",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Direxion Daily SNOW Bull 2X Shares",
     "issuer": "Direxion",
     "underlying": "Snowflake",
@@ -2092,7 +2092,7 @@
   {
     "ticker": "SNXX",
     "trackinsight_key": "SNXX",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Tradr 2X Long SNDK Daily ETF",
     "issuer": "AXS Investments",
     "underlying": "SanDisk (SNDK)",
@@ -2111,7 +2111,7 @@
   {
     "ticker": "SOFX",
     "trackinsight_key": "SOFX",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "Defiance Daily Target 2X Long SOFI ETF",
     "issuer": "Defiance ETFs",
     "underlying": "SoFi Technologies (SOFI)",
@@ -2282,7 +2282,7 @@
   {
     "ticker": "STXX",
     "trackinsight_key": "STXX",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Tradr 2X Long STX Daily ETF",
     "issuer": "AXS Investments",
     "underlying": "Seagate Technology (STX)",
@@ -2377,7 +2377,7 @@
   {
     "ticker": "TEMT",
     "trackinsight_key": "TEMT",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Tradr 2X Long TEM Daily ETF",
     "issuer": "AXS Investments",
     "underlying": "Tempus AI (TEM)",
@@ -2491,7 +2491,7 @@
   {
     "ticker": "TSLL",
     "trackinsight_key": "TSLL",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "Direxion Daily TSLA Bull 2X Shares",
     "issuer": "Direxion",
     "underlying": "Tesla (TSLA)",
@@ -2529,7 +2529,7 @@
   {
     "ticker": "TSLR",
     "trackinsight_key": "TSLR",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "GraniteShares 2x Long TSLA Daily ETF",
     "issuer": "GraniteShares",
     "underlying": "Tesla",
@@ -2548,7 +2548,7 @@
   {
     "ticker": "TSLT",
     "trackinsight_key": "TSLT",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "T-REX 2X Long Tesla Daily Target ETF",
     "issuer": "Tuttle Capital Management",
     "underlying": "Tesla (TSLA)",
@@ -2586,7 +2586,7 @@
   {
     "ticker": "TSMU",
     "trackinsight_key": "TSMU",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "GraniteShares 2x Long TSM Daily ETF",
     "issuer": "GraniteShares",
     "underlying": "Taiwan Semi (TSM)",
@@ -2601,25 +2601,6 @@
     "flow_zscore_latest": 0.02,
     "regime_latest": "BALANCED",
     "pressure_latest": -9.4
-  },
-  {
-    "ticker": "TTMX",
-    "trackinsight_key": "TTMX",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
-    "fund_name": "Tradr 2X Long TTMI Daily ETF",
-    "issuer": "AXS Investments",
-    "underlying": "TTM Technologies (TTMI)",
-    "leverage": "+2x",
-    "aum_m": 2.1,
-    "ter": "1.30%",
-    "earliest_date": "2026-07-01",
-    "latest_date": "2026-11-04",
-    "rows_count": 90,
-    "latest_nav": 2.34,
-    "total_cumulative_flow_m": 4.64,
-    "flow_zscore_latest": -0.06,
-    "regime_latest": "BALANCED",
-    "pressure_latest": 14.5
   },
   {
     "ticker": "TYD",
@@ -2662,7 +2643,7 @@
   {
     "ticker": "UBRL",
     "trackinsight_key": "UBRL",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "GraniteShares 2x Long UBER Daily ETF",
     "issuer": "GraniteShares",
     "underlying": "Uber Technologies (UBER)",
@@ -2776,7 +2757,7 @@
   {
     "ticker": "UPSX",
     "trackinsight_key": "UPSX",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "Tradr 2X Long UPST Daily ETF",
     "issuer": "AXS Investments",
     "underlying": "Upstart Holdings (UPST)",
@@ -2850,6 +2831,25 @@
     "pressure_latest": 1.9
   },
   {
+    "ticker": "UVIX",
+    "trackinsight_key": "BATS:UVIX",
+    "category": "6. Commodities, Energy & Volatility (Bull)",
+    "fund_name": "Volatility Shares 2x Long VIX Futures ETF",
+    "issuer": "Volatility Shares",
+    "underlying": "Long VIX Short-Term Futures Index",
+    "leverage": "+2x",
+    "aum_m": 185.0,
+    "ter": "2.78%",
+    "earliest_date": "2022-03-30",
+    "latest_date": "2026-11-04",
+    "rows_count": 1152,
+    "latest_nav": 33.11,
+    "total_cumulative_flow_m": 176.25,
+    "flow_zscore_latest": -0.09,
+    "regime_latest": "BALANCED",
+    "pressure_latest": 7.7
+  },
+  {
     "ticker": "UVXY",
     "trackinsight_key": "BATS:UVXY",
     "category": "6. Commodities, Energy & Volatility (Bull)",
@@ -2909,7 +2909,7 @@
   {
     "ticker": "WDCX",
     "trackinsight_key": "WDCX",
-    "category": "4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",
+    "category": "4. Single-Stock Leveraged (Bull) \u2014 AI, Semis & High-Beta Tech",
     "fund_name": "Tradr 2X Long WDC Daily ETF",
     "issuer": "AXS Investments",
     "underlying": "Western Digital (WDC)",
@@ -2947,7 +2947,7 @@
   {
     "ticker": "WULX",
     "trackinsight_key": "WULX",
-    "category": "5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",
+    "category": "5. Single-Stock Leveraged (Bull) \u2014 Mega-Cap Giants, Crypto & Consumer",
     "fund_name": "Tradr 2X Long WULF Daily ETF",
     "issuer": "AXS Investments",
     "underlying": "TeraWulf (WULF)",

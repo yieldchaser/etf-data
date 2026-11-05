@@ -22,7 +22,7 @@ DEFAULT_SOURCE_DIR = REPO_ROOT / "data" / "flows"
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "docs" / "data" / "flows"
 DEFAULT_UNIVERSE_DOC = REPO_ROOT / "FUND_FLOW_ETFS.md"
 EXPECTED_UNIVERSE_COUNT = 160
-EXPECTED_TOTAL_ROWS = 216365
+EXPECTED_TOTAL_ROWS = 217427
 EXPECTED_WORKBOOK_DATE_ROWS = 2744
 ARTIFACT_SCHEMA_VERSION = 1
 DATA_SCHEMA_VERSION = 2
@@ -1195,7 +1195,18 @@ def _expected_output_names(report: dict[str, Any]) -> set[str]:
 def _verify_generated_output(output_dir: Path, report: dict[str, Any]) -> None:
     if not output_dir.is_dir():
         raise _error(f"generated output directory is missing: {output_dir}")
-    actual_names = {path.name for path in output_dir.iterdir() if path.is_file() and path.name not in ("volume.json", "etf_history.json")}
+    actual_names = {
+        path.name
+        for path in output_dir.iterdir()
+        if path.is_file()
+        and path.name
+        not in (
+            "volume.json",
+            "etf_history.json",
+            "macd_signals.json",
+            "latest_macd_alert.json",
+        )
+    }
     expected_names = _expected_output_names(report)
     if actual_names != expected_names:
         extra = sorted(actual_names - expected_names)
@@ -1282,9 +1293,11 @@ def build_local_artifacts(
     output.parent.mkdir(parents=True, exist_ok=True)
     staging = Path(tempfile.mkdtemp(prefix=f".{output.name}.staging-", dir=output.parent))
     try:
-        for aux_name in ("volume.json", "etf_history.json"):
+        for aux_name in ("volume.json", "etf_history.json", "macd_signals.json", "latest_macd_alert.json"):
             if (output / aux_name).is_file():
                 shutil.copy2(output / aux_name, staging / aux_name)
+        if (output / "history").is_dir():
+            shutil.copytree(output / "history", staging / "history")
         _atomic_write_json(staging / "catalog.json", _build_catalog(report))
         for ticker in sorted(report["files"]):
             _atomic_write_json(staging / f"{ticker}.json", _build_ticker_payload(ticker, report))

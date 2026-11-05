@@ -17,9 +17,9 @@
 | 1 | 1. Broad Market Equity Index (Bull) | 9 | Bull (+2x / +3x) | NASDAQ-100, S&P 500, Russell 2000... |
 | 2 | 2. Technology, Semiconductor & Thematic (Bull) | 16 | Bull (+2x / +3x) | Semiconductors, Technology Select, Dow Jones Internet, High Beta... |
 | 3 | 3. Sector Specific Leveraged (Bull) | 11 | Bull (+2x / +3x) | Financials Select, Regional Banking, Aerospace & Defense, Retail... |
-| 4 | 4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech | 45 | Bull (+2x / +3x) | Palantir, NVIDIA, Micron, Broadcom, Rocket Lab, AppLovin, SanDisk... |
+| 4 | 4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech | 44 | Bull (+2x / +3x) | Palantir, NVIDIA, Micron, Broadcom, Rocket Lab, AppLovin, SanDisk... |
 | 5 | 5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer | 31 | Bull (+2x / +3x) | Apple, Tesla, Meta, Amazon, Microsoft, Alphabet, MicroStrategy, Netflix, SoFi... |
-| 6 | 6. Commodities, Energy & Volatility (Bull) | 9 | Bull (+2x / +3x) | Crude Oil, Gold, Gold Miners, Silver... |
+| 6 | 6. Commodities, Energy & Volatility (Bull) | 10 | Bull (+2x / +3x) | Crude Oil, Gold, Gold Miners, Silver... |
 | 7 | 7. Fixed Income, Currencies & Crypto (Bull) | 7 | Bull (+2x / +3x) | Bitcoin, Ether, 20+ Year Treasury, 7-10 Year Treasury... |
 | 8 | 8. International / Country (Bull) | 8 | Bull (+2x / +3x) | Brazil, China 50, India, South Korea, Emerging Markets... |
 | 9 | 9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only) | 14 | Tactical Short | NASDAQ-100, Russell 2000, Semiconductors, Palantir Bear, Tesla Bear, NVIDIA Bear... |
@@ -88,7 +88,7 @@ There is no long-only catalog, watch tier, or missing-underlying watchlist in th
 | **UYG** | `UYG` | +2x | ProShares Ultra Financials ETF | ProShares | U.S. Financials | $773.8M | 0.94% |
 | **WANT** | `WANT` | +3x | Direxion Daily Consumer Discretionary Bull 3X Shares | Direxion | Consumer Discretionary | $35.0M | 0.95% |
 
-## 4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech (45)
+## 4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech (44)
 
 | Ticker | Trackinsight Key | Leverage | Fund Name | Issuer | Underlying | AUM ($M) | TER |
 |---|---|---|---|---|---|---|---|
@@ -135,7 +135,6 @@ There is no long-only catalog, watch tier, or missing-underlying watchlist in th
 | **STXX** | `STXX` | +2x | Tradr 2X Long STX Daily ETF | AXS Investments | Seagate Technology (STX) | $13.9M | 1.49% |
 | **TEMT** | `TEMT` | +2x | Tradr 2X Long TEM Daily ETF | AXS Investments | Tempus AI (TEM) | $46.4M | 1.30% |
 | **TSMU** | `TSMU` | +2x | GraniteShares 2x Long TSM Daily ETF | GraniteShares | Taiwan Semi (TSM) | $45.7M | 2.45% |
-| **TTMX** | `TTMX` | +2x | Tradr 2X Long TTMI Daily ETF | AXS Investments | TTM Technologies (TTMI) | $2.1M | 1.30% |
 | **WDCX** | `WDCX` | +2x | Tradr 2X Long WDC Daily ETF | AXS Investments | Western Digital (WDC) | $99.2M | 1.49% |
 
 ## 5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer (31)
@@ -174,7 +173,7 @@ There is no long-only catalog, watch tier, or missing-underlying watchlist in th
 | **UPSX** | `UPSX` | +2x | Tradr 2X Long UPST Daily ETF | AXS Investments | Upstart Holdings (UPST) | $17.9M | 1.30% |
 | **WULX** | `WULX` | +2x | Tradr 2X Long WULF Daily ETF | AXS Investments | TeraWulf (WULF) | $24.1M | 1.30% |
 
-## 6. Commodities, Energy & Volatility (Bull) (9)
+## 6. Commodities, Energy & Volatility (Bull) (10)
 
 | Ticker | Trackinsight Key | Leverage | Fund Name | Issuer | Underlying | AUM ($M) | TER |
 |---|---|---|---|---|---|---|---|
@@ -186,6 +185,7 @@ There is no long-only catalog, watch tier, or missing-underlying watchlist in th
 | **SVXY** | `SVXY` | -0.5x | ProShares Short VIX Short-Term Futures ETF | ProShares | S&P 500 VIX (Long Vol Compression) | $258.7M | 1.01% |
 | **UCO** | `ARCX:UCO` | +2x | ProShares Ultra Bloomberg Crude Oil ETF | ProShares | Crude Oil | $427.6M | 1.47% |
 | **UGL** | `UGL` | +2x | ProShares Ultra GOLD ETF | ProShares | Gold | $852.6M | 1.19% |
+| **UVIX** | BATS:UVIX | +2x | Volatility Shares 2x Long VIX Futures ETF | Volatility Shares | Long VIX Short-Term Futures Index | $185.0M | 2.78% |
 | **UVXY** | `BATS:UVXY` | +1.5x | ProShares Ultra VIX Short-Term Futures ETF - USD | ProShares | S&P 500 VIX | $284.6M | 1.23% |
 
 ## 7. Fixed Income, Currencies & Crypto (Bull) (7)
