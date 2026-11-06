@@ -155,5 +155,628 @@
     "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-500-equal-weight-etf.html",
     "scraper_type": "invesco_api",
     "enabled": true
+  },
+  {
+    "ticker": "RSPT",
+    "cusip": "46137V282",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-500-equal-weight-technology-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "RSPG",
+    "cusip": "46137V365",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-500-equal-weight-energy-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "RSPF",
+    "cusip": "46137V340",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-500-equal-weight-financials-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "RSPH",
+    "cusip": "46137V332",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-500-equal-weight-health-care-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "RSPN",
+    "cusip": "46137V324",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-500-equal-weight-industrials-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "RSPD",
+    "cusip": "46137V381",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-500-equal-weight-consumer-discretionary-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "RSPS",
+    "cusip": "46137V373",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-500-equal-weight-consumer-staples-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "RSPM",
+    "cusip": "46137V316",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-500-equal-weight-materials-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "RSPU",
+    "cusip": "46137V274",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-500-equal-weight-utilities-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "RSPC",
+    "cusip": "46137Y609",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-500-equal-weight-communication-services-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "RSPR",
+    "cusip": "46137V290",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-500-equal-weight-real-estate-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "QQQ",
+    "cusip": "46090E103",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-qqq-trust-series-1.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "QQQJ",
+    "cusip": "46138G631",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-nasdaq-next-gen-100-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "QQQS",
+    "cusip": "46138G482",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-nasdaq-future-gen-200-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "SOXQ",
+    "cusip": "46138G615",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-phlx-semiconductor-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PSI",
+    "cusip": "46137V647",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-semiconductors-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "IGPT",
+    "cusip": "46137V639",
+    "url": "https://www.invesco.com/content/invesco/it/it/financial-products/etfs/invesco-ai-and-next-gen-software-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PNQI",
+    "cusip": "46137V530",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-nasdaq-internet-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "QEW",
+    "cusip": "46138G375",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-qqq-equal-weight-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "SPLV",
+    "cusip": "46138E354",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-500-low-volatility-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "SPHD",
+    "cusip": "46138E362",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-500-high-dividend-low-volatility-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "SPGP",
+    "cusip": "46137V431",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-500-garp-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "RPV",
+    "cusip": "46137V258",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-500-pure-value-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "RFG",
+    "cusip": "46137V217",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-midcap-400-pure-growth-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "RFV",
+    "cusip": "46137V191",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-midcap-400-pure-value-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "RZG",
+    "cusip": "46137V175",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-smallcap-600-pure-growth-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "RZV",
+    "cusip": "46137V167",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-smallcap-600-pure-value-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "XMHQ",
+    "cusip": "46137V472",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-midcap-quality-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "XSHQ",
+    "cusip": "46138G300",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-smallcap-quality-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "XMLV",
+    "cusip": "46138E198",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-midcap-low-volatility-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "XSLV",
+    "cusip": "46138G102",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-smallcap-low-volatility-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "XMVM",
+    "cusip": "46137V456",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-midcap-value-with-momentum-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "XSVM",
+    "cusip": "46137V480",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-smallcap-value-with-momentum-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "OMFL",
+    "cusip": "46138J619",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-russell-1000-dynamic-multifactor-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "OMFS",
+    "cusip": "46138J593",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-russell-2000-dynamic-multifactor-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PKW",
+    "cusip": "46137V308",
+    "url": "https://www.invesco.com/content/invesco/fi/fi/financial-products/etfs/invesco-buyback-achieverstm-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PEY",
+    "cusip": "46137V563",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-high-yield-equity-dividend-achievers-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PFM",
+    "cusip": "46137V506",
+    "url": "https://www.invesco.com/content/invesco/se/sv/financial-products/etfs/invesco-dividend-achieverstm-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "RWL",
+    "cusip": "46138G698",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-500-revenue-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "RWK",
+    "cusip": "46138G672",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-midcap-400-revenue-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "RWJ",
+    "cusip": "46138G664",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-smallcap-600-revenue-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "EQAL",
+    "cusip": "46138E420",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-russell-1000-equal-weight-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "EQWL",
+    "cusip": "46137V449",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-100-equal-weight-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "SPVM",
+    "cusip": "46137V423",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-500-value-with-momentum-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "GRPM",
+    "cusip": "46137V225",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-midcap-400-garp-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PPA",
+    "cusip": "46137V100",
+    "url": "https://www.invesco.com/content/invesco/it/it/financial-products/etfs/invesco-aerospace-defense-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PHO",
+    "cusip": "46137V142",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-water-resources-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PIO",
+    "cusip": "46138E651",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-global-water-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "TAN",
+    "cusip": "46138G706",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-solar-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PBW",
+    "cusip": "46137V134",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-wilderhill-clean-energy-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "KBWB",
+    "cusip": "46138E628",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-kbw-bank-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "KBWD",
+    "cusip": "46138E610",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-kbw-high-dividend-yield-financial-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "KBWP",
+    "cusip": "46138E586",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-kbw-property-casualty-insurance-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PJP",
+    "cusip": "46137V662",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-pharmaceuticals-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PBE",
+    "cusip": "46137V787",
+    "url": "https://www.invesco.com/content/invesco/it/it/financial-products/etfs/invesco-biotechnology-genome-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "IBBQ",
+    "cusip": "46138G599",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-nasdaq-biotechnology-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PEJ",
+    "cusip": "46137V720",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-leisure-and-entertainment-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PBJ",
+    "cusip": "46137V753",
+    "url": "https://www.invesco.com/content/invesco/dk/da/financial-products/etfs/invesco-food-beverage-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PKB",
+    "cusip": "46137V779",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-building-construction-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PSP",
+    "cusip": "46137V118",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-global-listed-private-equity-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PRF",
+    "cusip": "46137V613",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-rafi-us-1000-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PRFZ",
+    "cusip": "46137V597",
+    "url": "https://www.invesco.com/content/invesco/dk/en/financial-products/etfs/invesco-ftse-rafi-us-1500-small-mid-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PTF",
+    "cusip": "46137V811",
+    "url": "https://www.invesco.com/content/invesco/se/sv/financial-products/etfs/invesco-dorsey-wright-technology-momentum-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PFI",
+    "cusip": "46137V860",
+    "url": "https://www.invesco.com/content/invesco/se/en/financial-products/etfs/invesco-dorsey-wright-financial-momentum-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PTH",
+    "cusip": "46137V852",
+    "url": "https://www.invesco.com/content/invesco/se/sv/financial-products/etfs/invesco-dorsey-wright-healthcare-momentum-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PRN",
+    "cusip": "46137V845",
+    "url": "https://www.invesco.com/content/invesco/se/sv/financial-products/etfs/invesco-dorsey-wright-industrials-momentum-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PXI",
+    "cusip": "46137V878",
+    "url": "https://www.invesco.com/content/invesco/se/sv/financial-products/etfs/invesco-dorsey-wright-energy-momentum-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PEZ",
+    "cusip": "46137V803",
+    "url": "https://www.invesco.com/content/invesco/se/sv/financial-products/etfs/invesco-dorsey-wright-consumer-cyclicals-momentum-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PSL",
+    "cusip": "46137V886",
+    "url": "https://www.invesco.com/content/invesco/se/sv/financial-products/etfs/invesco-dorsey-wright-consumer-staples-momentum-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PYZ",
+    "cusip": "46137V704",
+    "url": "https://www.invesco.com/content/invesco/se/en/financial-products/etfs/invesco-dorsey-wright-basic-materials-momentum-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PUI",
+    "cusip": "46137V795",
+    "url": "https://www.invesco.com/content/invesco/se/en/financial-products/etfs/invesco-dorsey-wright-utilities-momentum-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PSCT",
+    "cusip": "46138E115",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-smallcap-information-technology-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PSCF",
+    "cusip": "46138E156",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-smallcap-financials-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PSCH",
+    "cusip": "46138E149",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-smallcap-health-care-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PSCI",
+    "cusip": "46138E123",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-smallcap-industrials-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PSCE",
+    "cusip": "46138G474",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-smallcap-energy-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PSCD",
+    "cusip": "46138E180",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-smallcap-consumer-discretionary-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PSCC",
+    "cusip": "46138E172",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-smallcap-consumer-staples-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PSCM",
+    "cusip": "46138G201",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-smallcap-materials-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PSCU",
+    "cusip": "46138G409",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-smallcap-utilities-communication-services-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "GRPZ",
+    "cusip": "46138G441",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-smallcap-600-garp-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "CQQQ",
+    "cusip": "46138E800",
+    "url": "https://www.invesco.com/content/invesco/fi/fi/financial-products/etfs/invesco-china-technology-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PGJ",
+    "cusip": "46137V571",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-golden-dragon-china-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "PID",
+    "cusip": "46137V548",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-international-dividend-achievers-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "IDMO",
+    "cusip": "46138E222",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-international-developed-momentum-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "IDHQ",
+    "cusip": "46138E214",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-international-developed-quality-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "IDLV",
+    "cusip": "46138E230",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-international-developed-low-volatility-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "EELV",
+    "cusip": "46138E297",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-sp-emerging-markets-low-volatility-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
+  },
+  {
+    "ticker": "IPKW",
+    "cusip": "46138E644",
+    "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-international-buyback-achievers-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
   }
 ]
