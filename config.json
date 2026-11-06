@@ -778,5 +778,3015 @@
     "url": "https://www.invesco.com/content/invesco/us/en/financial-products/etfs/invesco-international-buyback-achievers-etf.html",
     "scraper_type": "invesco_api",
     "enabled": true
+  },
+  {
+    "ticker": "MCHI",
+    "portfolio_id": "239619",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ECH",
+    "portfolio_id": "239618",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EFA",
+    "portfolio_id": "239623",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EFG",
+    "portfolio_id": "239622",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EDEN",
+    "portfolio_id": "239621",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ECNS",
+    "portfolio_id": "239620",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "SCZ",
+    "portfolio_id": "239627",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EFAV",
+    "portfolio_id": "239626",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EEMA",
+    "portfolio_id": "239629",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EFV",
+    "portfolio_id": "239628",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "BLCV",
+    "portfolio_id": "331795",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EEM",
+    "portfolio_id": "239637",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EEMS",
+    "portfolio_id": "239642",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EEMV",
+    "portfolio_id": "239641",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EFNL",
+    "portfolio_id": "239647",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EUFN",
+    "portfolio_id": "239645",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EZU",
+    "portfolio_id": "239644",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EWG",
+    "portfolio_id": "239650",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EWQ",
+    "portfolio_id": "239648",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "PICK",
+    "portfolio_id": "239655",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "RING",
+    "portfolio_id": "239654",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "POWR",
+    "portfolio_id": "239653",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "VEGI",
+    "portfolio_id": "239652",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "INDA",
+    "portfolio_id": "239659",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EWH",
+    "portfolio_id": "239657",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "SLVP",
+    "portfolio_id": "239656",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EIS",
+    "portfolio_id": "239663",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IDYN",
+    "portfolio_id": "345128",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EIRL",
+    "portfolio_id": "239662",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IDEV",
+    "portfolio_id": "286762",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EIDO",
+    "portfolio_id": "239661",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "SMIN",
+    "portfolio_id": "239660",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "DSI",
+    "portfolio_id": "239667",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "SCJ",
+    "portfolio_id": "239666",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EWJ",
+    "portfolio_id": "239665",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EWI",
+    "portfolio_id": "239664",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EWN",
+    "portfolio_id": "239671",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EWW",
+    "portfolio_id": "239670",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EWM",
+    "portfolio_id": "239669",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "TOK",
+    "portfolio_id": "239668",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EPHE",
+    "portfolio_id": "239675",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EPP",
+    "portfolio_id": "239674",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ENOR",
+    "portfolio_id": "239673",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EWJV",
+    "portfolio_id": "307263",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ENZL",
+    "portfolio_id": "239672",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EVUS",
+    "portfolio_id": "330809",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EGUS",
+    "portfolio_id": "330808",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EWS",
+    "portfolio_id": "239678",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EPOL",
+    "portfolio_id": "239676",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "MADE",
+    "portfolio_id": "337989",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EWP",
+    "portfolio_id": "239683",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EWY",
+    "portfolio_id": "239681",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EZA",
+    "portfolio_id": "239680",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "BLCR",
+    "portfolio_id": "333889",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EWT",
+    "portfolio_id": "239686",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EWL",
+    "portfolio_id": "239685",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EWD",
+    "portfolio_id": "239684",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EWUS",
+    "portfolio_id": "239691",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EWU",
+    "portfolio_id": "239690",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "TUR",
+    "portfolio_id": "239689",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "THD",
+    "portfolio_id": "239688",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EUSA",
+    "portfolio_id": "239693",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "SUSA",
+    "portfolio_id": "239692",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IBB",
+    "portfolio_id": "239699",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "URTH",
+    "portfolio_id": "239696",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "QAT",
+    "portfolio_id": "264273",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "DYNF",
+    "portfolio_id": "307283",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "UAE",
+    "portfolio_id": "264275",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IWB",
+    "portfolio_id": "239707",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "PABU",
+    "portfolio_id": "325725",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IWF",
+    "portfolio_id": "239706",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "SOXX",
+    "portfolio_id": "239705",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IGRO",
+    "portfolio_id": "283737",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IWM",
+    "portfolio_id": "239710",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IWO",
+    "portfolio_id": "239709",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IWD",
+    "portfolio_id": "239708",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IUSV",
+    "portfolio_id": "239715",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IWV",
+    "portfolio_id": "239714",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IUSG",
+    "portfolio_id": "239713",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IWN",
+    "portfolio_id": "239712",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IWS",
+    "portfolio_id": "239719",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IWR",
+    "portfolio_id": "239718",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "QUAL",
+    "portfolio_id": "256101",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IWP",
+    "portfolio_id": "239717",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IWC",
+    "portfolio_id": "239716",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ISVL",
+    "portfolio_id": "317548",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "OEF",
+    "portfolio_id": "239723",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IWX",
+    "portfolio_id": "239722",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IWL",
+    "portfolio_id": "239721",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IWY",
+    "portfolio_id": "239720",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IVV",
+    "portfolio_id": "239726",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IVW",
+    "portfolio_id": "239725",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ITOT",
+    "portfolio_id": "239724",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "AIA",
+    "portfolio_id": "239730",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IVE",
+    "portfolio_id": "239728",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EMIF",
+    "portfolio_id": "239735",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "RXI",
+    "portfolio_id": "239739",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ICLN",
+    "portfolio_id": "239738",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IOO",
+    "portfolio_id": "239737",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IEV",
+    "portfolio_id": "239736",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IXG",
+    "portfolio_id": "239742",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IXC",
+    "portfolio_id": "239741",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "KXI",
+    "portfolio_id": "239740",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IDRV",
+    "portfolio_id": "307332",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IGF",
+    "portfolio_id": "239746",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EXI",
+    "portfolio_id": "239745",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IXJ",
+    "portfolio_id": "239744",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IXP",
+    "portfolio_id": "239751",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ESGE",
+    "portfolio_id": "283777",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IXN",
+    "portfolio_id": "239750",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ESGD",
+    "portfolio_id": "283778",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "MXI",
+    "portfolio_id": "239748",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "JXI",
+    "portfolio_id": "239753",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "WOOD",
+    "portfolio_id": "239752",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "BAI",
+    "portfolio_id": "339081",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "INDY",
+    "portfolio_id": "239758",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "TEK",
+    "portfolio_id": "339083",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "XT",
+    "portfolio_id": "272532",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IJH",
+    "portfolio_id": "239763",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IJK",
+    "portfolio_id": "239762",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ILF",
+    "portfolio_id": "239761",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IJJ",
+    "portfolio_id": "239764",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IGV",
+    "portfolio_id": "239771",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IDGT",
+    "portfolio_id": "239770",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IGM",
+    "portfolio_id": "239769",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IGE",
+    "portfolio_id": "239768",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IHAK",
+    "portfolio_id": "307352",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IJS",
+    "portfolio_id": "239775",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IJR",
+    "portfolio_id": "239774",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IJT",
+    "portfolio_id": "239773",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IQLT",
+    "portfolio_id": "271540",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "KSA",
+    "portfolio_id": "271542",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IMTM",
+    "portfolio_id": "271538",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "PABD",
+    "portfolio_id": "335054",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ENHI",
+    "portfolio_id": "349384",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "PFF",
+    "portfolio_id": "239826",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "JPXN",
+    "portfolio_id": "239831",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "BDYN",
+    "portfolio_id": "345325",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "BDVL",
+    "portfolio_id": "345327",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "SMMD",
+    "portfolio_id": "288024",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "USCL",
+    "portfolio_id": "332075",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ESGU",
+    "portfolio_id": "286007",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "AIBF",
+    "portfolio_id": "353593",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ENHE",
+    "portfolio_id": "353595",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "WSML",
+    "portfolio_id": "342357",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IEMG",
+    "portfolio_id": "244050",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IEFA",
+    "portfolio_id": "244049",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IXUS",
+    "portfolio_id": "244048",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "SUSL",
+    "portfolio_id": "308574",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "HAWX",
+    "portfolio_id": "273768",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "HSCZ",
+    "portfolio_id": "273771",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IWMW",
+    "portfolio_id": "336263",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "CORO",
+    "portfolio_id": "340366",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IVVW",
+    "portfolio_id": "336267",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "BALI",
+    "portfolio_id": "333207",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IQQ",
+    "portfolio_id": "351653",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "HEZU",
+    "portfolio_id": "268708",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "HEEM",
+    "portfolio_id": "268704",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "AQLT",
+    "portfolio_id": "340396",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "DGRO",
+    "portfolio_id": "264623",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IBAT",
+    "portfolio_id": "336296",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "BPAY",
+    "portfolio_id": "329128",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IEUR",
+    "portfolio_id": "264617",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IFRA",
+    "portfolio_id": "294315",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IPAC",
+    "portfolio_id": "264619",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EMGF",
+    "portfolio_id": "272820",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "GLOF",
+    "portfolio_id": "272821",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "INTF",
+    "portfolio_id": "272822",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ISCF",
+    "portfolio_id": "272823",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IBRN",
+    "portfolio_id": "329137",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "LRGF",
+    "portfolio_id": "272824",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "SMLF",
+    "portfolio_id": "272825",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "KWT",
+    "portfolio_id": "312763",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EFRA",
+    "portfolio_id": "330188",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "XOEF",
+    "portfolio_id": "344551",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ETEC",
+    "portfolio_id": "331244",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IDEF",
+    "portfolio_id": "343529",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ILIT",
+    "portfolio_id": "332281",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ICOP",
+    "portfolio_id": "332280",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "XVV",
+    "portfolio_id": "315917",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "XJH",
+    "portfolio_id": "315914",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "XJR",
+    "portfolio_id": "315920",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IVVB",
+    "portfolio_id": "332307",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IVVM",
+    "portfolio_id": "332306",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "BFLX",
+    "portfolio_id": "350747",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "HEFA",
+    "portfolio_id": "259622",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "INRO",
+    "portfolio_id": "336430",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "HEWJ",
+    "portfolio_id": "259624",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "DIVB",
+    "portfolio_id": "291387",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ENHU",
+    "portfolio_id": "346694",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "SIZE",
+    "portfolio_id": "251465",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IETC",
+    "portfolio_id": "292425",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "BMED",
+    "portfolio_id": "316007",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EMXF",
+    "portfolio_id": "316020",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "BGRO",
+    "portfolio_id": "337538",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IDNA",
+    "portfolio_id": "308878",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "TOPC",
+    "portfolio_id": "342676",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ESML",
+    "portfolio_id": "296644",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "CRBN",
+    "portfolio_id": "271054",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "MTUM",
+    "portfolio_id": "251614",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "TECB",
+    "portfolio_id": "312046",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "QNXT",
+    "portfolio_id": "339694",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "BALQ",
+    "portfolio_id": "346870",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "SDG",
+    "portfolio_id": "283378",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EMXC",
+    "portfolio_id": "288504",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "LCTU",
+    "portfolio_id": "318215",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EQLT",
+    "portfolio_id": "338701",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "TCHI",
+    "portfolio_id": "325390",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "THRO",
+    "portfolio_id": "325384",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "LCTD",
+    "portfolio_id": "318216",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EVLU",
+    "portfolio_id": "338704",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ESMV",
+    "portfolio_id": "321324",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "QTOP",
+    "portfolio_id": "339775",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "TOPT",
+    "portfolio_id": "339779",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "DVYA",
+    "portfolio_id": "239443",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "RBTX",
+    "portfolio_id": "354128",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IDV",
+    "portfolio_id": "239499",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "SQLT",
+    "portfolio_id": "350089",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IYM",
+    "portfolio_id": "239503",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ITA",
+    "portfolio_id": "239502",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IYT",
+    "portfolio_id": "239501",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "DVY",
+    "portfolio_id": "239500",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "GARP",
+    "portfolio_id": "312212",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IYE",
+    "portfolio_id": "239507",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IYC",
+    "portfolio_id": "239506",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IYK",
+    "portfolio_id": "239505",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IAI",
+    "portfolio_id": "239504",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IYH",
+    "portfolio_id": "239511",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IHF",
+    "portfolio_id": "239510",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IYG",
+    "portfolio_id": "239509",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IYF",
+    "portfolio_id": "239508",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IAK",
+    "portfolio_id": "239515",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IYJ",
+    "portfolio_id": "239514",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "LDEM",
+    "portfolio_id": "312222",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IYY",
+    "portfolio_id": "239513",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ITB",
+    "portfolio_id": "239512",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IHE",
+    "portfolio_id": "239519",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IEZ",
+    "portfolio_id": "239518",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IEO",
+    "portfolio_id": "239517",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IHI",
+    "portfolio_id": "239516",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IYZ",
+    "portfolio_id": "239523",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IYW",
+    "portfolio_id": "239522",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "CNYA",
+    "portfolio_id": "273318",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IAT",
+    "portfolio_id": "239521",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "DVYE",
+    "portfolio_id": "239526",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IDU",
+    "portfolio_id": "239524",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "BIDD",
+    "portfolio_id": "338863",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IVLU",
+    "portfolio_id": "275382",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IEUS",
+    "portfolio_id": "239537",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FXI",
+    "portfolio_id": "239536",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ARTY",
+    "portfolio_id": "297905",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "SMMV",
+    "portfolio_id": "284609",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "HDV",
+    "portfolio_id": "239563",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "TEXN",
+    "portfolio_id": "344021",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IBLC",
+    "portfolio_id": "326614",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "MLRG",
+    "portfolio_id": "239579",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IMCG",
+    "portfolio_id": "239583",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IMCB",
+    "portfolio_id": "239582",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ILCV",
+    "portfolio_id": "239581",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ILCG",
+    "portfolio_id": "239580",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ISCG",
+    "portfolio_id": "239587",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "MSML",
+    "portfolio_id": "239586",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IMCV",
+    "portfolio_id": "239584",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ISCV",
+    "portfolio_id": "239588",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ACWX",
+    "portfolio_id": "239594",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "SVAL",
+    "portfolio_id": "316394",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "AAXJ",
+    "portfolio_id": "239601",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ACWI",
+    "portfolio_id": "239600",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "BILT",
+    "portfolio_id": "345073",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EWA",
+    "portfolio_id": "239607",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EPU",
+    "portfolio_id": "239606",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ACWV",
+    "portfolio_id": "239605",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "USXF",
+    "portfolio_id": "314365",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EWK",
+    "portfolio_id": "239610",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EWO",
+    "portfolio_id": "239609",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EWC",
+    "portfolio_id": "239615",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "BKF",
+    "portfolio_id": "239614",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "DMXF",
+    "portfolio_id": "314362",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EWZS",
+    "portfolio_id": "239613",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EWZ",
+    "portfolio_id": "239612",
+    "scraper_type": "blackrock_api",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "NTRL",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=NTRL",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FTLS",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FTLS",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "LALT",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=LALT",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "SHRY",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=SHRY",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FTCB",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FTCB",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FTDS",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FTDS",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "DDIV",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=DDIV",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FGD",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FGD",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FTSM",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FTSM",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FIIG",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FIIG",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "MGOV",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=MGOV",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IDVY",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=IDVY",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FSIG",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FSIG",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "LGOV",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=LGOV",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "LMBS",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=LMBS",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "LDSF",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=LDSF",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FMB",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FMB",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FDL",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FDL",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "TDIV",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=TDIV",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EMLP",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=EMLP",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "RDVY",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=RDVY",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "KNGZ",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=KNGZ",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FID",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FID",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "DEED",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=DEED",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FSMB",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FSMB",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "SDVY",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=SDVY",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FCVT",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FCVT",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FDD",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FDD",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "HYLS",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=HYLS",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FUMB",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FUMB",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FVD",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FVD",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FXG",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FXG",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FXN",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FXN",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FXO",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FXO",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FXH",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FXH",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FXR",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FXR",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FXZ",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FXZ",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FTXO",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FTXO",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FTXG",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FTXG",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FTXN",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FTXN",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FTXR",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FTXR",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "QABA",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=QABA",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "QTEC",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=QTEC",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FCG",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FCG",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FRI",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FRI",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FXL",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FXL",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FXU",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FXU",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "AFLG",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=AFLG",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "AFGR",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=AFGR",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "AFMC",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=AFMC",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "AFSM",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=AFSM",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FTCS",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FTCS",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EDOW",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=EDOW",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FDM",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FDM",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FTGS",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FTGS",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "HUSV",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=HUSV",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "HSMV",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=HSMV",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FEX",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FEX",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FTC",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FTC",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FTA",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FTA",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FNX",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FNX",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FNY",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FNY",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FNK",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FNK",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FAD",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FAD",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FAB",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FAB",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "MMSC",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=MMSC",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EMOT",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=EMOT",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FYX",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FYX",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FYC",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FYC",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FYT",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FYT",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FSCS",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FSCS",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FSGS",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FSGS",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "AFEM",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=AFEM",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "AFDM",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=AFDM",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FPA",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FPA",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EMDM",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=EMDM",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FCA",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FCA",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FDT",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FDT",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FDTS",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FDTS",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "IFV",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=IFV",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FEM",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FEM",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FTHF",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FTHF",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FEMS",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FEMS",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FEP",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FEP",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FEUZ",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FEUZ",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FGM",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FGM",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "HDMV",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=HDMV",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "NFTY",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=NFTY",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FICS",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FICS",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FPXE",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FPXE",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FJP",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FJP",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FLN",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FLN",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FSZ",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FSZ",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FKU",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FKU",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "WCME",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=WCME",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "WCMG",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=WCMG",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "WCMI",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=WCMI",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "RBLD",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=RBLD",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FAI",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FAI",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "RCTR",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=RCTR",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FSPC",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FSPC",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "SKYY",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=SKYY",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FDNI",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FDNI",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FDN",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FDN",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FPWR",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FPWR",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "XPND",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=XPND",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FAN",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FAN",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "MISL",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=MISL",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FMTL",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FMTL",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FTAG",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FTAG",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "LEGR",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=LEGR",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "MDEV",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=MDEV",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ARVR",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=ARVR",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "NXTG",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=NXTG",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "PMTL",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=PMTL",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ILDR",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=ILDR",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ROBT",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=ROBT",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "CIBR",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=CIBR",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "EKG",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=EKG",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FTXH",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FTXH",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FTXL",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FTXL",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "QCLN",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=QCLN",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "GRID",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=GRID",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FBT",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FBT",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "AIRR",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=AIRR",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "DGLO",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=DGLO",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ISHP",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=ISHP",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "CARZ",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=CARZ",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "BNGE",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=BNGE",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FIW",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FIW",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "RND",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=RND",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "DALI",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=DALI",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FVC",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FVC",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FV",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FV",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "DVOL",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=DVOL",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "DVLU",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=DVLU",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FCTR",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FCTR",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "QQXT",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=QQXT",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "QQEW",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=QQEW",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "FTCE",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=FTCE",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "BFXU",
+    "url": "https://www.ftportfolios.com/retail/etf/ETFholdings.aspx?Ticker=BFXU",
+    "scraper_type": "first_trust",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "GCOW",
+    "url": "https://www.paceretfs.com/products/holdings_download/GCOW",
+    "scraper_type": "pacer_csv",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ICOW",
+    "url": "https://www.paceretfs.com/products/holdings_download/ICOW",
+    "scraper_type": "pacer_csv",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "ECOW",
+    "url": "https://www.paceretfs.com/products/holdings_download/ECOW",
+    "scraper_type": "pacer_csv",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "BUL",
+    "url": "https://www.paceretfs.com/products/holdings_download/BUL",
+    "scraper_type": "pacer_csv",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "HERD",
+    "url": "https://www.paceretfs.com/products/holdings_download/HERD",
+    "scraper_type": "pacer_csv",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "PTLC",
+    "url": "https://www.paceretfs.com/products/holdings_download/PTLC",
+    "scraper_type": "pacer_csv",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "PTIN",
+    "url": "https://www.paceretfs.com/products/holdings_download/PTIN",
+    "scraper_type": "pacer_csv",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "PTMC",
+    "url": "https://www.paceretfs.com/products/holdings_download/PTMC",
+    "scraper_type": "pacer_csv",
+    "enabled": true,
+    "weight_unit": "percent"
+  },
+  {
+    "ticker": "PTNQ",
+    "url": "https://www.paceretfs.com/products/holdings_download/PTNQ",
+    "scraper_type": "pacer_csv",
+    "enabled": true,
+    "weight_unit": "percent"
   }
 ]

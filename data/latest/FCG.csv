@@ -1,0 +1,42 @@
+ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
+FCG,COP,ConocoPhillips,0.0512,2026-11-05,2026-11-06
+FCG,EOG,"EOG Resources, Inc.",0.0493,2026-11-05,2026-11-06
+FCG,RRC,Range Resources Corporation,0.0441,2026-11-05,2026-11-06
+FCG,OXY,Occidental Petroleum Corporation,0.0438,2026-11-05,2026-11-06
+FCG,DVN,Devon Energy Corporation,0.0424,2026-11-05,2026-11-06
+FCG,WES,Western Midstream Partners LP,0.0414,2026-11-05,2026-11-06
+FCG,EQT,EQT Corporation,0.0412,2026-11-05,2026-11-06
+FCG,FANG,"Diamondback Energy, Inc.",0.0407,2026-11-05,2026-11-06
+FCG,APA,APA Corporation,0.0392,2026-11-05,2026-11-06
+FCG,PR,Permian Resources Corp.,0.0381,2026-11-05,2026-11-06
+FCG,HESM,Hess Midstream LP (Class A),0.0377,2026-11-05,2026-11-06
+FCG,OVV,Ovintiv Inc.,0.0373,2026-11-05,2026-11-06
+FCG,EXE,Expand Energy Corporation,0.037200000000000004,2026-11-05,2026-11-06
+FCG,AR,Antero Resources Corporation,0.0356,2026-11-05,2026-11-06
+FCG,CHRD,Chord Energy Corporation,0.0304,2026-11-05,2026-11-06
+FCG,WDS,Woodside Energy Group Limited (ADR),0.029900000000000003,2026-11-05,2026-11-06
+FCG,SM,SM Energy Company,0.0279,2026-11-05,2026-11-06
+FCG,MGY,Magnolia Oil & Gas Corporation (Class A),0.0273,2026-11-05,2026-11-06
+FCG,MTDR,Matador Resources Company,0.025699999999999997,2026-11-05,2026-11-06
+FCG,NFG,National Fuel Gas Company,0.0254,2026-11-05,2026-11-06
+FCG,CNX,CNX Resources Corporation,0.0252,2026-11-05,2026-11-06
+FCG,MUR,Murphy Oil Corporation,0.0246,2026-11-05,2026-11-06
+FCG,BTE,Baytex Energy Corp.,0.0236,2026-11-05,2026-11-06
+FCG,CRGY,Crescent Energy Company,0.019,2026-11-05,2026-11-06
+FCG,NOG,"Northern Oil and Gas, Inc.",0.018799999999999997,2026-11-05,2026-11-06
+FCG,GPOR,Gulfport Energy Corporation,0.0179,2026-11-05,2026-11-06
+FCG,KOS,Kosmos Energy Ltd.,0.015,2026-11-05,2026-11-06
+FCG,VET,Vermilion Energy Inc.,0.0149,2026-11-05,2026-11-06
+FCG,CRK,"Comstock Resources, Inc.",0.0144,2026-11-05,2026-11-06
+FCG,BKV,BKV Corporation,0.0126,2026-11-05,2026-11-06
+FCG,DEC,Diversified Energy Co.,0.011200000000000002,2026-11-05,2026-11-06
+FCG,WTI,"W&T Offshore, Inc.",0.0098,2026-11-05,2026-11-06
+FCG,REPX,"Riley Exploration Permian, Inc.",0.009300000000000001,2026-11-05,2026-11-06
+FCG,OBE,Obsidian Energy Ltd.,0.0084,2026-11-05,2026-11-06
+FCG,VTS,"Vitesse Energy, Inc.",0.0067,2026-11-05,2026-11-06
+FCG,SD,"SandRidge Energy, Inc.",0.0058,2026-11-05,2026-11-06
+FCG,NUAI,"New Era Energy & Digital, Inc.",0.0049,2026-11-05,2026-11-06
+FCG,PNRG,PrimeEnergy Resources Corporation,0.0044,2026-11-05,2026-11-06
+FCG,REI,"Ring Energy, Inc.",0.003,2026-11-05,2026-11-06
+FCG,GRNT,"Granite Ridge Resources, Inc.",0.0024,2026-11-05,2026-11-06
+FCG,GTE,Gran Tierra Energy Inc.,0.0012,2026-11-05,2026-11-06

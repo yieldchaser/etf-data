@@ -488,6 +488,90 @@ def fetch_invesco_api(etf_ticker, etf_cusip):
     print(f"      -> {len(df)} equity rows | reported={reported_total} | as_of={holdings_as_of}")
     return df, holdings_as_of
 
+
+def fetch_blackrock_api(ticker: str, portfolio_id: str):
+    """Fetch latest holdings for a BlackRock/iShares ETF via public Varnish CDN API.
+    
+    Retries back through recent business days to locate the latest published book.
+    Returns (cleaned_df, holdings_as_of) in PIPELINE_SCHEMA_COLS, or (None, TODAY).
+    """
+    headers = {
+        'Accept': '*/*',
+        'Referer': 'https://www.blackrock.com/',
+        'Origin':  'https://www.blackrock.com',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    }
+    today_dt = _dt.date.fromisoformat(TODAY)
+    for n in range(0, 8):
+        d = today_dt
+        cur_n = n
+        while cur_n > 0:
+            d -= _dt.timedelta(days=1)
+            if d.weekday() < 5 and d.isoformat() not in _US_HOLIDAYS:
+                cur_n -= 1
+        while d.weekday() >= 5 or d.isoformat() in _US_HOLIDAYS:
+            d -= _dt.timedelta(days=1)
+
+        dstr = d.strftime('%Y%m%d')
+        url = (
+            'https://www.blackrock.com/varnish-api/blk-one01-product-data/product-data/api/v1/'
+            f'get-fund-document?appType=PRODUCT_PAGE&appSubType=ISHARES&targetSite=us-ishares'
+            f'&locale=en_US&portfolioId={portfolio_id}&userType=individual&asOfDate={dstr}&component=holdings'
+        )
+        try:
+            r = requests.get(url, headers=headers, timeout=20)
+            if r.status_code != 200 or len(r.content) < 3000:
+                continue
+            lines = r.text.splitlines()
+            hidx = next((i for i, ln in enumerate(lines) if ln.strip().startswith('Ticker,')), None)
+            if hidx is None:
+                continue
+
+            aod = ''
+            for meta_line in lines[:hidx]:
+                if re.search(r'fund holdings date|holdings date|as of date|as-of date|asofdate', meta_line, re.I):
+                    parts = meta_line.split(',', 1)
+                    if len(parts) == 2:
+                        raw_d = parts[1].strip().strip('"')
+                        for fmt in ('%B %d, %Y', '%b %d, %Y', '%m/%d/%Y', '%Y-%m-%d', '%B %d %Y', '%b %d %Y'):
+                            try:
+                                aod = datetime.strptime(raw_d, fmt).strftime('%Y-%m-%d')
+                                break
+                            except ValueError:
+                                pass
+                    if aod:
+                        break
+            if not aod:
+                for meta_line in lines[:hidx]:
+                    m2 = re.search(r'([A-Za-z]+ \d{1,2},? \d{4})', meta_line)
+                    if m2:
+                        raw_d = m2.group(1).replace(',', '')
+                        for fmt in ('%B %d %Y', '%b %d %Y'):
+                            try:
+                                aod = datetime.strptime(raw_d, fmt).strftime('%Y-%m-%d')
+                                break
+                            except ValueError:
+                                pass
+                        if aod:
+                            break
+            if not aod:
+                aod = d.strftime('%Y-%m-%d')
+
+            if aod > TODAY:
+                aod = TODAY
+            aod = roll_to_prev_biz_day(aod)
+
+            df_raw = pd.read_csv(StringIO(r.text), skiprows=hidx)
+            df_clean = clean_dataframe(df_raw, ticker, aod, weight_unit='percent')
+            if df_clean is not None and not df_clean.empty:
+                print(f"      -> BlackRock API: {len(df_clean)} rows | as_of={aod}")
+                return df_clean, aod
+        except Exception:
+            continue
+
+    print(f"      -> 0 rows or no recent data for BlackRock {ticker}")
+    return None, TODAY
+
 def clean_date_string(date_text):
     if not date_text: return None
     clean = re.sub(r"(?i)as of|date|[:,-]", " ", date_text).strip()
@@ -548,6 +632,8 @@ def find_first_trust_table(dfs):
     if not dfs: return None
     valid_keywords = ['ticker', 'symbol', 'holding', 'identifier', 'weighting', 'cusip']
     for df in dfs:
+        if len(df) <= 5 or df.shape[1] < 4:
+            continue
         cols = [str(c).strip().lower() for c in df.columns]
         if any(k in cols for k in valid_keywords): return df
         if not df.empty:
@@ -910,25 +996,48 @@ def main():
                     print(f"    No data for {ticker}.")
                 continue
 
+            elif etf['scraper_type'] == 'blackrock_api':
+                pid = etf.get('portfolio_id', '')
+                if not pid:
+                    print(f"    blackrock_api requires portfolio_id — skipping {ticker}")
+                    continue
+                clean_df, h_date = fetch_blackrock_api(ticker, pid)
+                if clean_df is not None:
+                    master_list.append(clean_df)
+                    if check_if_new_data(ticker, h_date):
+                        clean_df.to_csv(os.path.join(DATA_DIR_LATEST, f"{ticker}.csv"), index=False)
+                        print(f"    New Data Saved: {len(clean_df)} rows | Date: {h_date}")
+                        new_data_list.append(clean_df)
+                    else:
+                        clean_df.to_csv(os.path.join(DATA_DIR_LATEST, f"{ticker}.csv"), index=False)
+                        print(f"    (Forced Update) Saved: {len(clean_df)} rows | Date: {h_date}")
+                else:
+                    print(f"    No data for {ticker}.")
+                continue
+
             elif etf['scraper_type'] == 'pacer_csv':
-                driver.get(etf['url']); time.sleep(3)
-                text = driver.find_element(By.TAG_NAME, "body").text
-                h_date = clean_date_string(text) or TODAY
                 csv_text = fetch_pacer_with_proxies(etf['url'])
-                if csv_text is None:
-                    raise Exception("Failed to fetch Pacer CSV data (all proxy options exhausted)")
-                content = csv_text.splitlines()
-                start = 0
-                for i, line in enumerate(content[:20]):
-                    if "Ticker" in line or "Symbol" in line: start = i; break
-                df = pd.read_csv(StringIO('\n'.join(content[start:])))
-                if not df.empty:
-                    date_col = next((c for c in df.columns if str(c).strip().lower() == "date"), None)
-                    if date_col is not None and len(df) > 0:
-                        first_val = str(df[date_col].iloc[0]).strip()
-                        parsed = clean_date_string(first_val)
-                        if parsed:
-                            h_date = parsed
+                h_date = TODAY
+                if csv_text is not None:
+                    content = csv_text.splitlines()
+                    start = 0
+                    for i, line in enumerate(content[:20]):
+                        if "Ticker" in line or "Symbol" in line: start = i; break
+                    df = pd.read_csv(StringIO('\n'.join(content[start:])))
+                    if not df.empty:
+                        date_col = next((c for c in df.columns if str(c).strip().lower() == "date"), None)
+                        if date_col is not None and len(df) > 0:
+                            first_val = str(df[date_col].iloc[0]).strip()
+                            parsed = clean_date_string(first_val)
+                            if parsed:
+                                h_date = parsed
+                else:
+                    if driver is not None:
+                        driver.get(etf['url']); time.sleep(3)
+                        text = driver.find_element(By.TAG_NAME, "body").text
+                        h_date = clean_date_string(text) or TODAY
+                    else:
+                        raise Exception("Failed to fetch Pacer CSV data (all proxy options exhausted)")
 
             elif etf['scraper_type'] == 'selenium_alpha':
                 driver.get(etf['url']); time.sleep(3)
@@ -945,11 +1054,23 @@ def main():
                     if len(d) > 25: df = d; break
 
             elif etf['scraper_type'] == 'first_trust':
-                driver.get(etf['url']); time.sleep(5) 
-                text = driver.find_element(By.TAG_NAME, "body").text
-                h_date = clean_date_string(text) or TODAY
-                dfs = pd.read_html(StringIO(driver.page_source))
-                df = find_first_trust_table(dfs)
+                # Fast HTTP path first:
+                df, h_date = None, TODAY
+                try:
+                    r = requests.get(etf['url'], headers=HEADERS, timeout=12)
+                    if r.status_code == 200:
+                        h_date = clean_date_string(r.text) or TODAY
+                        dfs = pd.read_html(StringIO(r.text))
+                        df = find_first_trust_table(dfs)
+                except Exception:
+                    df = None
+                # Fallback to driver if fast HTTP missed
+                if df is None and driver is not None:
+                    driver.get(etf['url']); time.sleep(3)
+                    text = driver.find_element(By.TAG_NAME, "body").text
+                    h_date = clean_date_string(text) or TODAY
+                    dfs = pd.read_html(StringIO(driver.page_source))
+                    df = find_first_trust_table(dfs)
             
             else: 
                 r = requests.get(etf['url'], headers=HEADERS, timeout=15)

@@ -1,14 +1,41 @@
 {
-  "generated_at": "2026-11-06T16:33:15+00:00",
+  "generated_at": "2026-11-06T18:20:38+00:00",
   "generated_utc": "2026-09-27T06:18:43+00:00",
   "partitions": {
+    "2023": {
+      "etfs": 9,
+      "file_size": 135163,
+      "first_date": "2023-12-29",
+      "last_date": "2023-12-29",
+      "rows": 6023,
+      "sha256": "af2459d789da4d21cd7bf5e2fb9606b02f556828e695e2a690e90e2887901811",
+      "year": 2023
+    },
+    "2024": {
+      "etfs": 262,
+      "file_size": 1088174,
+      "first_date": "2024-03-28",
+      "last_date": "2024-12-31",
+      "rows": 209323,
+      "sha256": "9885dd0e110bd23b2d81d6df7ab59049c00923cbb8bfb8f15bf51a48e73fb82a",
+      "year": 2024
+    },
+    "2025": {
+      "etfs": 274,
+      "file_size": 1331506,
+      "first_date": "2025-01-31",
+      "last_date": "2025-12-31",
+      "rows": 274430,
+      "sha256": "7da0c90afe21b22c765b3c8ddefcaa5400a1e05ed53dde3573dc8a268437fd33",
+      "year": 2025
+    },
     "2026": {
-      "etfs": 119,
-      "file_size": 4251136,
-      "first_date": "2026-02-12",
+      "etfs": 399,
+      "file_size": 6191423,
+      "first_date": "2026-01-30",
       "last_date": "2026-11-06",
-      "rows": 839153,
-      "sha256": "b38f2c8cdc55df0977c92b05eb9644c3dce9fde1f3a4d8e7b89deca56583813d",
+      "rows": 1192828,
+      "sha256": "44dd88558bd0720e4db2d8c4e67971debd2d90bdcbbe0eb94c26a1cc8985aea0",
       "year": 2026
     }
   },

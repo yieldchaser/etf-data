@@ -1,0 +1,6 @@
+ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
+IFV,FEP,First Trust Europe AlphaDEX® Fund,0.209,2026-11-05,2026-11-06
+IFV,FEUZ,First Trust Eurozone AlphaDEX® ETF,0.20739999999999997,2026-11-05,2026-11-06
+IFV,FGM,First Trust Germany AlphaDEX® Fund,0.20629999999999998,2026-11-05,2026-11-06
+IFV,FDT,First Trust Developed Markets ex-US AlphaDEX® Fund,0.19440000000000002,2026-11-05,2026-11-06
+IFV,FPA,First Trust Asia Pacific ex-Japan AlphaDEX® Fund,0.1826,2026-11-05,2026-11-06

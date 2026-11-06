@@ -158,3 +158,5 @@ docs/data/history/
 # Whitelist latest holdings snapshots
 !data/latest/
 !data/latest/**
+
+data/.cache_backfill/
