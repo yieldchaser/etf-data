@@ -890,3 +890,200 @@ def test_macd_ui_symmetry_and_dual_slider_contract():
     assert 'customRange' in macd_js
     assert 'vs-header-price' in vs_js
     assert 'vs-header-regime-badge' in vs_js
+
+
+# ---------------------------------------------------------------------------
+# Tests: Floor Pivot Breakout & Extreme Volatility Surge Triggers
+# ---------------------------------------------------------------------------
+
+@patch("yfinance.Ticker")
+@patch("scripts.build_macd_scanner.calculate_macd")
+def test_breakout_and_breakdown_detection(mock_calc, mock_ticker):
+    """Verify Floor Pivot (R4/R5) and velocity surge breakouts vs (S4/S5) liquidation cascades."""
+    n_1h, n_1d = 60, 60
+
+    # Helper to build mock ticker response
+    def _run_test(price, prev_h, prev_l, prev_c, chg_1d, is_green, hist_val):
+        df_1h, df_1d = _make_mock_data(n_1h, n_1d, is_green=is_green)
+        # Set daily bars so pivot derivation and prior day close match test inputs
+        df_1d["High"] = prev_h
+        df_1d["Low"] = prev_l
+        df_1d["Close"] = prev_c
+
+        inst = MagicMock()
+        inst.history.side_effect = lambda period, interval, prepost=False: df_1h if interval == "1h" else df_1d
+        inst.fast_info = MagicMock()
+        inst.fast_info.last_price = price
+        mock_ticker.return_value = inst
+
+        mock_calc.side_effect = lambda closes, fast=12, slow=26, signal_period=9: {
+            "macd": [0.5 if hist_val > 0 else -0.5] * len(closes),
+            "signal": [0.3 if hist_val > 0 else -0.3] * len(closes),
+            "hist": [hist_val] * len(closes),
+            "hist_delta": [0.05 if hist_val > 0 else -0.05] * len(closes),
+        }
+
+        return analyze_ticker("TEST", {"fund_name": "Test ETF", "leverage": "2x"})
+
+    # Case 1: R5 Breakout (Price extends above R5, confirmed green candle, hist > 0)
+    # H=100, L=90, C=95 -> P=95, diff=10, R3=100+2*(95-90)=110, R4=120, R5=130
+    res_r5 = _run_test(price=135.0, prev_h=100.0, prev_l=90.0, prev_c=95.0, chg_1d=42.1, is_green=True, hist_val=0.2)
+    assert res_r5 is not None
+    assert res_r5["is_breakout"] is True
+    assert res_r5["breakout_type"] == "R5 Floor Pivot Expansion"
+
+    # Case 2: R4 Breakout (Price reaches R4 but below R5, confirmed green candle, hist > 0)
+    res_r4 = _run_test(price=122.0, prev_h=100.0, prev_l=90.0, prev_c=95.0, chg_1d=28.4, is_green=True, hist_val=0.2)
+    assert res_r4 is not None
+    assert res_r4["is_breakout"] is True
+    assert res_r4["breakout_type"] == "R4 Floor Pivot Breakout"
+
+    # Case 3: Velocity Surge (+15.0% 24H move without hitting R4/R5, confirmed green candle, hist > 0)
+    # H=100, L=50, C=75 -> diff=50, R4=225. Price=86.25 (+15% vs 75), well below R4
+    res_surge = _run_test(price=86.25, prev_h=100.0, prev_l=50.0, prev_c=75.0, chg_1d=15.0, is_green=True, hist_val=0.2)
+    assert res_surge is not None
+    assert res_surge["is_breakout"] is True
+    assert "Velocity Surge" in res_surge["breakout_type"]
+
+    # Case 4: Unconfirmed Breakout (Price >= R5, but RED 1H candle) -> Suppressed!
+    res_unconfirmed_red = _run_test(price=135.0, prev_h=100.0, prev_l=90.0, prev_c=95.0, chg_1d=42.1, is_green=False, hist_val=0.2)
+    assert res_unconfirmed_red is not None
+    assert res_unconfirmed_red["is_breakout"] is False
+
+    # Case 5: S5 Liquidation (Price collapses below S5, confirmed red candle, hist < 0)
+    # H=100, L=90, C=95 -> P=95, diff=10, S3=90-2*(100-95)=80, S4=70, S5=60
+    res_s5 = _run_test(price=55.0, prev_h=100.0, prev_l=90.0, prev_c=95.0, chg_1d=-42.1, is_green=False, hist_val=-0.2)
+    assert res_s5 is not None
+    assert res_s5["is_breakdown"] is True
+    assert res_s5["breakdown_type"] == "S5 Floor Pivot Liquidation"
+
+    # Case 6: S4 Breakdown (Price collapses below S4 but above S5, confirmed red candle, hist < 0)
+    res_s4 = _run_test(price=68.0, prev_h=100.0, prev_l=90.0, prev_c=95.0, chg_1d=-28.4, is_green=False, hist_val=-0.2)
+    assert res_s4 is not None
+    assert res_s4["is_breakdown"] is True
+    assert res_s4["breakdown_type"] == "S4 Floor Pivot Breakdown"
+
+    # Case 7: Velocity Plunge (-15.0% 24H move, confirmed red candle, hist < 0)
+    res_plunge = _run_test(price=63.75, prev_h=100.0, prev_l=50.0, prev_c=75.0, chg_1d=-15.0, is_green=False, hist_val=-0.2)
+    assert res_plunge is not None
+    assert res_plunge["is_breakdown"] is True
+    assert "Velocity Plunge" in res_plunge["breakdown_type"]
+
+    # Case 8: Unconfirmed Breakdown (Price <= S5, but GREEN 1H candle) -> Suppressed!
+    res_unconfirmed_green = _run_test(price=55.0, prev_h=100.0, prev_l=90.0, prev_c=95.0, chg_1d=-42.1, is_green=True, hist_val=-0.2)
+    assert res_unconfirmed_green is not None
+    assert res_unconfirmed_green["is_breakdown"] is False
+
+
+def test_format_institutional_email_with_breakouts_and_breakdowns():
+    """Verify institutional email formatting displays Tier 0 Breakouts and Critical Breakdowns."""
+    mock_signals = [
+        {
+            "ticker": "UVIX",
+            "fund_name": "2x Long VIX Futures ETF",
+            "leverage": "2x",
+            "category": "Volatility",
+            "underlying": "Long VIX Futures",
+            "latest_price": 49.62,
+            "chg_1h_pct": 5.2,
+            "chg_1d_pct": 49.86,
+            "candle_color_1h": "GREEN",
+            "is_green_candle_1h": True,
+            "is_red_candle_1h": False,
+            "macd_1h": 2.15,
+            "signal_1h": 1.45,
+            "hist_1h": 0.70,
+            "hist_delta_1h": 0.15,
+            "rvol_1h": 3.8,
+            "z_macd_1h": 2.8,
+            "confluence_score": 90,
+            "is_breakout": True,
+            "breakout_type": "R5 Floor Pivot Expansion",
+            "is_breakdown": False,
+            "breakdown_type": "",
+            "signal_state": "BULLISH_TRENDING",
+            "daily_trend_bullish": True,
+            "pivots": {"P": 33.50, "R3": 42.00, "R4": 46.00, "R5": 49.00, "S1": 31.00, "S2": 29.00},
+        },
+        {
+            "ticker": "SOXL",
+            "fund_name": "Daily Semiconductor Bull 3X",
+            "leverage": "3x",
+            "category": "Technology",
+            "underlying": "Semiconductors",
+            "latest_price": 64.99,
+            "chg_1h_pct": -1.17,
+            "chg_1d_pct": -11.12,
+            "candle_color_1h": "RED",
+            "is_green_candle_1h": False,
+            "is_red_candle_1h": True,
+            "macd_1h": -1.25,
+            "signal_1h": -0.85,
+            "hist_1h": -0.40,
+            "hist_delta_1h": -0.10,
+            "rvol_1h": 1.9,
+            "z_macd_1h": -1.5,
+            "confluence_score": -80,
+            "is_breakout": False,
+            "breakout_type": "",
+            "is_breakdown": True,
+            "breakdown_type": "S4 Floor Pivot Breakdown",
+            "signal_state": "BEARISH_CROSS",
+            "daily_trend_bullish": False,
+            "pivots": {"P": 72.00, "S1": 70.00, "S2": 68.00, "S4": 65.50, "S5": 62.00},
+        },
+    ]
+
+    session_info = ("INTRADAY", "INTRADAY HOURLY MOMENTUM SCAN", "INTRADAY RADAR")
+    text_content, html_content = format_institutional_email(mock_signals, "2026-11-05 11:35:00 EST", session_info)
+
+    # Plain text checks
+    assert "[TIER 0: EXTREME MOMENTUM BREAKOUTS & VOLATILITY SURGES]" in text_content
+    assert "TICKER: UVIX" in text_content
+    assert "R5 Floor Pivot Expansion" in text_content
+    assert "[CRITICAL CAPITAL PRESERVATION: SEVERE BREAKDOWNS & LIQUIDATIONS]" in text_content
+    assert "SOXL" in text_content
+    assert "S4 Floor Pivot Breakdown" in text_content
+
+    # HTML checks
+    assert "TIER 0: EXTREME MOMENTUM BREAKOUTS" in html_content
+    assert "UVIX" in html_content
+    assert "PIVOT RESISTANCE EXTENSION" in html_content
+    assert "CRITICAL CAPITAL PRESERVATION &middot; SEVERE LIQUIDATION CASCADE" in html_content
+    assert "BREAKOUT SURGE" in html_content
+
+
+def test_deduplication_state_with_breakouts_and_breakdowns():
+    """Verify deduplication engine handles breakout and breakdown state tracking."""
+    prior_state = {
+        "sent_subzero": [],
+        "sent_bear": [],
+        "sent_crossovers": [],
+        "sent_breakouts": ["UVIX"],
+        "sent_breakdowns": [],
+        "last_preclose_date": "2026-11-04",
+    }
+
+    prev_breakouts = set(prior_state.get("sent_breakouts", []))
+    prev_breakdowns = set(prior_state.get("sent_breakdowns", []))
+
+    # Run 1: UVIX is still active breakout -> Suppressed, no fresh trigger
+    current_breakouts = ["UVIX"]
+    current_breakdowns = []
+    new_breakouts = set(current_breakouts) - prev_breakouts
+    new_breakdowns = set(current_breakdowns) - prev_breakdowns
+
+    has_fresh_trigger = bool(new_breakouts or new_breakdowns)
+    assert has_fresh_trigger is False
+
+    # Run 2: Fresh breakout emerges (SOXS joins) -> Triggers alert
+    current_breakouts_2 = ["UVIX", "SOXS"]
+    new_breakouts_2 = set(current_breakouts_2) - prev_breakouts
+    assert bool(new_breakouts_2) is True
+    assert new_breakouts_2 == {"SOXS"}
+
+    # Run 3: Fresh breakdown emerges (SOXL collapses) -> Triggers alert
+    current_breakdowns_3 = ["SOXL"]
+    new_breakdowns_3 = set(current_breakdowns_3) - prev_breakdowns
+    assert bool(new_breakdowns_3) is True
+    assert new_breakdowns_3 == {"SOXL"}

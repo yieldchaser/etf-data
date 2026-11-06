@@ -2,15 +2,17 @@ name: Quantitative MACD Momentum Radar & Pre-Close Alert
 
 'on':
   schedule:
-    # 4 High-Conviction Institutional Trading Decision Windows (Mon-Fri):
+    # Institutional Trading Decision Windows & 30-Minute Intraday Heartbeat (Mon-Fri):
     # 1. 13:30 UTC = 08:30 EST (Pre-Market Indicative Radar)
     - cron: '30 13 * * 1-5'
-    # 2. 15:35 UTC = 10:35 EST (Morning Session Confirmation - 1st 1H bar close)
-    - cron: '35 15 * * 1-5'
-    # 3. 18:05 UTC = 13:05 EST (Midday Momentum Rebalance Check)
-    - cron: '5 18 * * 1-5'
-    # 4. 20:00 UTC = 15:00 EST (Pre-Close Rebalance Auction Scan - Golden Hour)
-    - cron: '0 20 * * 1-5'
+    # 2. 14:35 UTC = 09:35 EST (Opening Session Confirmation - Captures Open Gaps & Surges)
+    - cron: '35 14 * * 1-5'
+    # 3. 15-19 UTC = 10:05 to 14:35 EST (Continuous 30-Min Intraday Volatility & Momentum Radar)
+    - cron: '5,35 15-19 * * 1-5'
+    # 4. 20:00, 20:35 UTC = 15:00, 15:35 EST (Pre-Close Golden Hour & Closing Auction Scan)
+    - cron: '0,35 20 * * 1-5'
+    # 5. 21:05 UTC = 16:05 EST (Post-Close Official Settlement & Pivot Derivation)
+    - cron: '5 21 * * 1-5'
   workflow_dispatch:
     inputs:
       force_send:

@@ -452,6 +452,54 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
             signal_label = "Bearish Momentum Active"
             signal_direction = "BEARISH"
 
+        # Floor Pivot Extension & Extreme Momentum Volatility Triggers:
+        # A Breakout occurs when price pushes beyond key Floor Pivot resistance (R4/R5)
+        # OR experiences an extreme single-day velocity surge (>= +10.0%), confirmed by
+        # a green 1H candle and positive histogram (expanding bullish impulse).
+        r4 = pivots.get("R4", 0.0)
+        r5 = pivots.get("R5", 0.0)
+        s4 = pivots.get("S4", 0.0)
+        s5 = pivots.get("S5", 0.0)
+
+        is_breakout_r5 = bool(r5 > 0 and latest_price >= r5)
+        is_breakout_r4 = bool(r4 > 0 and latest_price >= r4)
+        is_velocity_surge = bool(chg_1d_pct >= 10.0)
+        is_breakout = bool(
+            (is_breakout_r5 or is_breakout_r4 or is_velocity_surge)
+            and is_green_candle_1h
+            and hist_1h[-1] > 0
+        )
+
+        breakout_type = ""
+        if is_breakout:
+            if is_breakout_r5:
+                breakout_type = "R5 Floor Pivot Expansion"
+            elif is_breakout_r4:
+                breakout_type = "R4 Floor Pivot Breakout"
+            elif is_velocity_surge:
+                breakout_type = f"Velocity Surge ({chg_1d_pct:+.1f}%)"
+
+        # A Breakdown occurs when price collapses below Floor Pivot support (S4/S5)
+        # OR suffers an extreme single-day velocity plunge (<= -10.0%), confirmed by
+        # a red 1H candle and negative histogram (expanding bearish liquidation).
+        is_breakdown_s5 = bool(s5 > 0 and latest_price <= s5)
+        is_breakdown_s4 = bool(s4 > 0 and latest_price <= s4)
+        is_velocity_plunge = bool(chg_1d_pct <= -10.0)
+        is_breakdown = bool(
+            (is_breakdown_s5 or is_breakdown_s4 or is_velocity_plunge)
+            and is_red_candle_1h
+            and hist_1h[-1] < 0
+        )
+
+        breakdown_type = ""
+        if is_breakdown:
+            if is_breakdown_s5:
+                breakdown_type = "S5 Floor Pivot Liquidation"
+            elif is_breakdown_s4:
+                breakdown_type = "S4 Floor Pivot Breakdown"
+            elif is_velocity_plunge:
+                breakdown_type = f"Velocity Plunge ({chg_1d_pct:+.1f}%)"
+
         # Confluence Score (-100 to +100)
         score = 0
         if curr_m > curr_s and hist_1h[-1] > 0:
@@ -466,6 +514,10 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
             score += 15 if (curr_m > curr_s and is_green_candle_1h) else -15
         if curr_m < 0 and curr_m > curr_s and is_green_candle_1h:
             score += 15  # Sub-zero value premium only awarded if confirmed green candle
+        if is_breakout:
+            score += 15
+        elif is_breakdown:
+            score -= 15
 
         score = max(-100, min(100, score))
 
@@ -543,6 +595,10 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
             "bull_cross_fresh": bull_cross_fresh,
             "bear_cross_fresh": bear_cross_fresh,
             "is_subzero": bool(curr_m < 0),
+            "is_breakout": is_breakout,
+            "breakout_type": breakout_type,
+            "is_breakdown": is_breakdown,
+            "breakdown_type": breakdown_type,
             "confluence_score": score,
             "pivots": pivots,
             "as_of_utc": timestamps_1h[-1],
@@ -563,6 +619,16 @@ def format_institutional_email(
     """Build high-DPI responsive HTML & Plain Text alert without emojis or fluff."""
     session_code, session_name, session_badge = session_info
 
+    tier0_breakouts = [
+        s
+        for s in signals_data
+        if s.get("is_breakout")
+    ]
+    tier_breakdowns = [
+        s
+        for s in signals_data
+        if s.get("is_breakdown")
+    ]
     tier1_subzero = [
         s
         for s in signals_data
@@ -586,7 +652,9 @@ def format_institutional_email(
         and s.get("hist_1h", 0) < 0
     ]
 
-    # Sort each tier by confluence score descending
+    # Sort tiers
+    tier0_breakouts.sort(key=lambda x: x.get("chg_1d_pct", 0), reverse=True)
+    tier_breakdowns.sort(key=lambda x: x.get("chg_1d_pct", 0))
     tier1_subzero.sort(key=lambda x: x.get("confluence_score", 0), reverse=True)
     tier1_bull.sort(key=lambda x: x.get("confluence_score", 0), reverse=True)
     tier2_imminent.sort(key=lambda x: x.get("confluence_score", 0), reverse=True)
@@ -598,10 +666,42 @@ def format_institutional_email(
         f"SCAN WINDOW: {scan_time_str}",
         "=" * 80,
         "",
-        f"[TIER 1A: CONFIRMED SUB-ZERO BULLISH REVERSALS] (Active: {len(tier1_subzero)})",
-        "Trigger: 1-Hour MACD crossed above Signal Line while MACD < 0 (High Convexity Turnaround)",
+        f"[TIER 0: EXTREME MOMENTUM BREAKOUTS & VOLATILITY SURGES] (Active: {len(tier0_breakouts)})",
+        "Trigger: Price >= R4/R5 Floor Pivot Extension or 24H Velocity >= +10.0% with Confirmed 1H Green Candle",
         "-" * 80,
     ]
+
+    if tier0_breakouts:
+        for it in tier0_breakouts:
+            piv = it.get("pivots", {})
+            px_display = f"${it['latest_price']:.2f}"
+            if it.get("live_premarket_price"):
+                pm_chg = it.get("live_premarket_chg_pct")
+                chg_str = f" | {pm_chg:+.2f}%" if pm_chg is not None else ""
+                px_display += f" (Pre-Market: ${it['live_premarket_price']:.2f}{chg_str})"
+            pt_lines.extend(
+                [
+                    f"TICKER: {it['ticker']:<6} | {it['fund_name']} ({it['leverage']})",
+                    f"  Price: {px_display} (1H: {it['chg_1h_pct']:+.2f}% | 24H: {it['chg_1d_pct']:+.2f}%)",
+                    f"  Trigger: {it.get('breakout_type', 'Breakout')} | Score: {it.get('confluence_score', 0)}/100",
+                    f"  1H Candle: {it.get('candle_color_1h', 'GREEN')} (Confirmed Green: O=${it.get('open_1h', 0):.2f} -> C=${it.get('latest_price', 0):.2f})",
+                    f"  1H MACD: {it['macd_1h']:+.4f} | Signal: {it['signal_1h']:+.4f} | Hist: {it['hist_1h']:+.4f} (GREEN)",
+                    f"  RVOL: {it['rvol_1h']:.2f}x | Z-Score: {it['z_macd_1h']:.2f} sigma",
+                    f"  Floor Pivots: P=${piv.get('P', 0):.2f} R3=${piv.get('R3', 0):.2f} R4=${piv.get('R4', 0):.2f} R5=${piv.get('R5', 0):.2f}",
+                    "",
+                ]
+            )
+    else:
+        pt_lines.extend(["None active in this scan window.", ""])
+
+    pt_lines.extend(
+        [
+            "",
+            f"[TIER 1A: CONFIRMED SUB-ZERO BULLISH REVERSALS] (Active: {len(tier1_subzero)})",
+            "Trigger: 1-Hour MACD crossed above Signal Line while MACD < 0 (High Convexity Turnaround)",
+            "-" * 80,
+        ]
+    )
 
     for it in tier1_subzero:
         piv = it.get("pivots", {})
@@ -666,10 +766,25 @@ def format_institutional_email(
             f"{it['ticker']:<6} | Px: ${it['latest_price']:<7.2f} | Spread: {spread:.4f} | RVOL: {it['rvol_1h']:3.1f}x | {it['fund_name']}"
         )
 
+    if tier_breakdowns:
+        pt_lines.extend(
+            [
+                "",
+                f"[CRITICAL CAPITAL PRESERVATION: SEVERE BREAKDOWNS & LIQUIDATIONS] (Active: {len(tier_breakdowns)})",
+                "Trigger: Price <= S4/S5 Floor Pivot Support or 24H Velocity <= -10.0% with Confirmed 1H Red Candle",
+                "-" * 80,
+            ]
+        )
+        for it in tier_breakdowns[:12]:
+            piv = it.get("pivots", {})
+            pt_lines.append(
+                f"{it['ticker']:<6} | Px: ${it['latest_price']:<7.2f} | 24H: {it['chg_1d_pct']:+.2f}% | Trigger: {it.get('breakdown_type', 'Breakdown')} | S4=${piv.get('S4', 0):.2f} S5=${piv.get('S5', 0):.2f} | ACTION: MANDATORY EXIT / CASH PRESERVATION"
+            )
+
     pt_lines.extend(
         [
             "",
-            f"[TIER 3: BEARISH BREAKDOWNS / CASH PARKING] (Active Exits: {len(tier_bear)})",
+            f"[TIER 3: BEARISH MACD CROSSOVER / CASH PARKING] (Active Exits: {len(tier_bear)})",
             "Trigger: 1-Hour MACD crossed below Signal Line. Longs liquidate to cash immediately.",
             "-" * 80,
         ]
@@ -691,6 +806,135 @@ def format_institutional_email(
         ]
     )
     text_content = "\n".join(pt_lines)
+
+    # 2-A0. HTML Card Generation for Tier 0 Breakouts
+    cards_breakout_html = []
+    for it in tier0_breakouts:
+        piv = it.get("pivots", {})
+        p = piv.get("P", 0.0)
+        r3 = piv.get("R3", 0.0)
+        r4 = piv.get("R4", 0.0)
+        r5 = piv.get("R5", 0.0)
+        chg_1h = it.get("chg_1h_pct", 0.0)
+        chg_1h_color = "#34d399" if chg_1h >= 0 else "#fb7185"
+        chg_24h = it.get("chg_1d_pct", 0.0)
+        chg_24h_color = "#34d399" if chg_24h >= 0 else "#fb7185"
+        score = it.get("confluence_score", 0)
+        score_color = "#34d399" if score >= 40 else ("#38bdf8" if score >= 0 else "#facc15")
+        px_display = f"${it['latest_price']:.2f}"
+        pm_display_html = ""
+        if it.get("live_premarket_price"):
+            pm_chg = it.get("live_premarket_chg_pct")
+            pm_color = "#34d399" if (pm_chg or 0) >= 0 else "#fb7185"
+            chg_badge = f" ({pm_chg:+.2f}%)" if pm_chg is not None else ""
+            pm_display_html = f'<div style="font-size:10px; color:{pm_color}; font-weight:700; margin-top:2px;">Pre-Mkt: ${it["live_premarket_price"]:.2f}{chg_badge}</div>'
+
+        card = f"""
+        <!-- CARD: {it['ticker']} BREAKOUT -->
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#140e1f; border:1px solid #3b2054; border-left:4px solid #c084fc; border-radius:6px; margin-bottom:14px; overflow:hidden;">
+          <tr>
+            <td style="padding:14px 16px;">
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td style="vertical-align:middle;">
+                    <span style="font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:19px; font-weight:800; color:#c084fc; letter-spacing:0.03em;">{it['ticker']}</span>
+                    <span style="display:inline-block; margin:2px 2px 2px 6px; background-color:#2e1065; color:#e9d5ff; padding:2px 7px; border-radius:3px; font-size:10.5px; font-weight:700; font-family:ui-monospace, monospace;">{it.get('leverage', '1x')}</span>
+                    <span style="display:inline-block; margin:2px 2px 2px 4px; background-color:rgba(192,132,252,0.2); color:#c084fc; border:1px solid rgba(192,132,252,0.45); padding:2px 7px; border-radius:3px; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:0.04em;">{it.get('breakout_type', 'VOLATILITY BREAKOUT')}</span>
+                    <span style="display:inline-block; margin:2px 2px 2px 4px; background-color:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(52,211,153,0.4); padding:2px 7px; border-radius:3px; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">1H CANDLE: GREEN</span>
+                  </td>
+                  <td style="text-align:right; vertical-align:middle; white-space:nowrap; padding-left:12px;">
+                    <div style="font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:18px; font-weight:800; color:#ffffff;">{px_display}</div>
+                    {pm_display_html}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding-top:4px; font-size:11.5px; color:#cbd5e1;">
+                    {it.get('fund_name', it['ticker'])} &middot; <span style="color:#94a3b8;">Underlying: {it.get('underlying', '—')}</span>
+                  </td>
+                  <td style="padding-top:4px; text-align:right; font-family:ui-monospace, monospace; font-size:11.5px;">
+                    <span style="color:{chg_1h_color}; font-weight:700;">1H: {chg_1h:+.2f}%</span>
+                    <span style="color:#64748b; margin:0 4px;">|</span>
+                    <span style="color:{chg_24h_color}; font-weight:800;">24H: {chg_24h:+.2f}%</span>
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top:12px; background-color:#0b0814; border:1px solid #3b2054; border-radius:4px; table-layout:fixed;">
+                <tr>
+                  <td style="padding:8px 8px; border-right:1px solid #3b2054; width:25%;">
+                    <div style="font-size:9px; color:#c084fc; text-transform:uppercase; letter-spacing:0.05em; font-weight:700;">1H MACD</div>
+                    <div style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#c084fc; margin-top:2px;">
+                      {it.get('macd_1h', 0):+.3f}
+                    </div>
+                    <div style="font-family:ui-monospace, monospace; font-size:9.5px; color:#94a3b8; margin-top:1px;">
+                      Sig: {it.get('signal_1h', 0):+.3f}
+                    </div>
+                  </td>
+                  <td style="padding:8px 8px; border-right:1px solid #3b2054; width:25%;">
+                    <div style="font-size:9px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; font-weight:700;">HISTOGRAM</div>
+                    <div style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#34d399; margin-top:2px;">
+                      {it.get('hist_1h', 0):+.4f}
+                    </div>
+                    <div style="font-family:ui-monospace, monospace; font-size:9.5px; color:#94a3b8; margin-top:1px;">
+                      Delta: {it.get('hist_delta_1h', 0):+.4f}
+                    </div>
+                  </td>
+                  <td style="padding:8px 8px; border-right:1px solid #3b2054; width:25%;">
+                    <div style="font-size:9px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; font-weight:700;">RVOL (20-BAR)</div>
+                    <div style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#e2e8f0; margin-top:2px;">
+                      {it.get('rvol_1h', 1.0):.2f}x
+                    </div>
+                    <div style="font-family:ui-monospace, monospace; font-size:9.5px; color:#94a3b8; margin-top:1px;">
+                      Vol Pace
+                    </div>
+                  </td>
+                  <td style="padding:8px 8px; width:25%;">
+                    <div style="font-size:9px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; font-weight:700;">SCORE</div>
+                    <div style="font-family:ui-monospace, monospace; font-size:13px; font-weight:800; color:{score_color}; margin-top:2px;">
+                      {score:+d}/100
+                    </div>
+                    <div style="font-family:ui-monospace, monospace; font-size:9.5px; color:#94a3b8; margin-top:1px;">
+                      Confluence
+                    </div>
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top:10px; background-color:#0b0814; border:1px solid #3b2054; border-radius:4px; font-size:11px;">
+                <tr>
+                  <td style="padding:7px 10px;">
+                    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td style="font-size:9.5px; font-weight:700; color:#c084fc; text-transform:uppercase; letter-spacing:0.04em;">
+                          PIVOT RESISTANCE EXTENSION
+                        </td>
+                        <td style="text-align:right; font-family:ui-monospace, monospace; font-size:11px;">
+                          <span style="color:#64748b;">P:</span> <span style="color:#94a3b8;">${p:.2f}</span> &nbsp;
+                          <span style="color:#64748b;">R3:</span> <span style="color:#cbd5e1;">${r3:.2f}</span> &nbsp;
+                          <span style="color:#c084fc;">R4:</span> <strong style="color:#c084fc;">${r4:.2f}</strong> &nbsp;
+                          <span style="color:#e9d5ff;">R5:</span> <strong style="color:#e9d5ff;">${r5:.2f}</strong>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+        </table>
+        """
+        cards_breakout_html.append(card)
+
+    cards_breakout_block = (
+        "\n".join(cards_breakout_html)
+        if cards_breakout_html
+        else """
+    <div style="padding:16px; background-color:#111622; border:1px solid #1e2638; border-radius:6px; color:#94a3b8; text-align:center; font-size:12px;">
+      No active Floor Pivot (R4/R5) or extreme velocity surge breakouts in this scan window.
+    </div>
+    """
+    )
 
     # 2. HTML Card Generation for Tier 1A Sub-Zero Reversals
     cards_html = []
@@ -1024,6 +1268,36 @@ def format_institutional_email(
     """
     )
 
+    # 4-A. Critical Capital Preservation: Severe Breakdown Table Rows
+    breakdown_rows = []
+    for it in tier_breakdowns[:10]:
+        piv = it.get("pivots", {})
+        s4 = piv.get("S4", 0.0)
+        s5 = piv.get("S5", 0.0)
+        row = f"""
+        <tr style="border-bottom:1px solid #2d151d;">
+          <td style="padding:9px 10px; font-family:ui-monospace, monospace; font-weight:800; color:#fda4af; font-size:12px;">{it['ticker']}</td>
+          <td style="padding:9px 10px; color:#cbd5e1; font-size:11.5px;">
+            {it['fund_name']} <span style="font-size:10px; color:#94a3b8;">({it['leverage']})</span>
+          </td>
+          <td style="padding:9px 10px; font-family:ui-monospace, monospace; text-align:right; color:#ffffff; font-weight:700; font-size:12px;">${it['latest_price']:.2f}</td>
+          <td style="padding:9px 10px; font-family:ui-monospace, monospace; text-align:right; color:#fb7185; font-weight:800; font-size:12px;">{it['chg_1d_pct']:+.2f}%</td>
+          <td style="padding:9px 10px; font-family:ui-monospace, monospace; text-align:right; color:#fda4af; font-size:11px;">S4: ${s4:.2f} / S5: ${s5:.2f}</td>
+          <td style="padding:9px 10px; text-align:center;">
+            <span style="background-color:rgba(225,29,72,0.25); color:#fda4af; border:1px solid rgba(244,63,94,0.5); padding:3px 8px; border-radius:3px; font-size:9.5px; font-weight:800; letter-spacing:0.04em;">MANDATORY EXIT</span>
+          </td>
+        </tr>
+        """
+        breakdown_rows.append(row)
+
+    breakdown_table_body = (
+        "\n".join(breakdown_rows)
+        if breakdown_rows
+        else """
+    <tr><td colspan="6" style="padding:14px; text-align:center; color:#94a3b8;">No severe liquidation breakdowns (S4/S5 or &le; -10%) detected.</td></tr>
+    """
+    )
+
     # 4. Tier 3: Bearish Breakdown Table Rows (High Contrast!)
     bear_rows = []
     for it in tier_bear[:8]:
@@ -1126,6 +1400,10 @@ def format_institutional_email(
               <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="table-layout:fixed;">
                 <tr>
                   <td style="padding:6px 4px; border-right:1px solid #1e2638; text-align:center;">
+                    <div class="kpi-sub" style="font-size:9px; color:#c084fc; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">BREAKOUT SURGE</div>
+                    <div class="kpi-text" style="font-family:ui-monospace, monospace; font-size:15px; font-weight:800; color:#c084fc; margin-top:2px;">{len(tier0_breakouts)} ACTIVE</div>
+                  </td>
+                  <td style="padding:6px 4px; border-right:1px solid #1e2638; text-align:center;">
                     <div class="kpi-sub" style="font-size:9px; color:#94a3b8; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">SUB-ZERO REV</div>
                     <div class="kpi-text" style="font-family:ui-monospace, monospace; font-size:15px; font-weight:800; color:#38bdf8; margin-top:2px;">{len(tier1_subzero)} ACTIVE</div>
                   </td>
@@ -1133,13 +1411,9 @@ def format_institutional_email(
                     <div class="kpi-sub" style="font-size:9px; color:#94a3b8; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">SUPRA-ZERO CROSS</div>
                     <div class="kpi-text" style="font-family:ui-monospace, monospace; font-size:15px; font-weight:800; color:#34d399; margin-top:2px;">{len(tier1_bull)} ACTIVE</div>
                   </td>
-                  <td style="padding:6px 4px; border-right:1px solid #1e2638; text-align:center;">
-                    <div class="kpi-sub" style="font-size:9px; color:#94a3b8; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">PRE-CLOSE SQUEEZE</div>
-                    <div class="kpi-text" style="font-family:ui-monospace, monospace; font-size:15px; font-weight:800; color:#facc15; margin-top:2px;">{len(tier2_imminent)} RADAR</div>
-                  </td>
                   <td style="padding:6px 4px; text-align:center;">
                     <div class="kpi-sub" style="font-size:9px; color:#94a3b8; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">MANDATORY EXITS</div>
-                    <div class="kpi-text" style="font-family:ui-monospace, monospace; font-size:15px; font-weight:800; color:#fb7185; margin-top:2px;">{len(tier_bear)} CASH</div>
+                    <div class="kpi-text" style="font-family:ui-monospace, monospace; font-size:15px; font-weight:800; color:#fb7185; margin-top:2px;">{len(tier_bear) + len(tier_breakdowns)} CASH</div>
                   </td>
                 </tr>
               </table>
@@ -1149,6 +1423,19 @@ def format_institutional_email(
           <!-- Body Content Area -->
           <tr>
             <td class="box-td" style="padding:18px 22px;">
+
+              <!-- SECTION 0: TIER 0 EXTREME MOMENTUM BREAKOUTS -->
+              <div style="margin-bottom:24px;">
+                <div style="font-size:12px; font-weight:800; color:#c084fc; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">
+                  TIER 0: EXTREME MOMENTUM BREAKOUTS &amp; VOLATILITY SURGES
+                </div>
+                <div style="font-size:11px; color:#cbd5e1; margin-bottom:14px; line-height:1.5;">
+                  Price breached traditional Floor Pivot resistance (R4/R5 extension) or registered single-day velocity surge &ge; +10.0% with confirmed 1-Hour Green Candle. Priority institutional momentum breakouts.
+                </div>
+                
+                {cards_breakout_block}
+
+              </div>
 
               <!-- SECTION 1A: TIER 1A SUB-ZERO REVERSALS -->
               <div style="margin-bottom:20px;">
@@ -1204,13 +1491,38 @@ def format_institutional_email(
                 </div>
               </div>
 
-              <!-- SECTION 3: TIER 3 BEARISH BREAKDOWNS / CASH PARKING -->
+              <!-- SECTION 3: TIER 3 BEARISH BREAKDOWN & CRITICAL CAPITAL PRESERVATION -->
               <div style="margin-top:24px; margin-bottom:20px;">
                 <div style="font-size:12px; font-weight:800; color:#fb7185; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">
-                  TIER 3: BEARISH BREAKDOWN &middot; MANDATORY CASH PARKING
+                  CRITICAL CAPITAL PRESERVATION &middot; SEVERE LIQUIDATION CASCADE
                 </div>
                 <div style="font-size:11px; color:#cbd5e1; margin-bottom:12px; line-height:1.5;">
-                  1-Hour MACD crossed below Signal Line. Leveraged decay accelerates rapidly during counter-trend regimes; long positions must be liquidated into cash immediately to prevent capital erosion.
+                  Price breached Floor Pivot support (S4/S5) or collapsed &le; -10.0% on confirmed Red Candle. Severe institutional liquidation cascade requiring immediate exit to cash.
+                </div>
+                
+                <div class="table-scroll" style="width:100%; overflow-x:auto; margin-bottom:18px;">
+                  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="font-size:11px; background-color:#160b11; border:1px solid #3d1520; border-radius:6px; min-width:520px; overflow:hidden;">
+                    <thead>
+                      <tr style="background-color:#230e16; color:#fda4af; font-size:10px; text-transform:uppercase; letter-spacing:0.05em;">
+                        <th style="padding:8px 10px; text-align:left;">Ticker</th>
+                        <th style="padding:8px 10px; text-align:left;">Instrument</th>
+                        <th style="padding:8px 10px; text-align:right;">Price</th>
+                        <th style="padding:8px 10px; text-align:right;">24H Change</th>
+                        <th style="padding:8px 10px; text-align:right;">Pivot Breach</th>
+                        <th style="padding:8px 10px; text-align:center;">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {breakdown_table_body}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div style="font-size:12px; font-weight:800; color:#fb7185; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">
+                  TIER 3: BEARISH MACD CROSSOVER &middot; SYSTEMATIC EXITS
+                </div>
+                <div style="font-size:11px; color:#cbd5e1; margin-bottom:12px; line-height:1.5;">
+                  1-Hour MACD crossed below Signal Line on confirmed Red Candle. Exit longs immediately to cash.
                 </div>
                 
                 <div class="table-scroll" style="width:100%; overflow-x:auto;">
@@ -1471,6 +1783,12 @@ def main() -> None:
         print(f"Saved signals artifact to {SIGNALS_OUT_MACD} ({SIGNALS_OUT_MACD.stat().st_size:,} bytes)")
 
     # Identify active signal sets for this run (Confirmed Candle Rules)
+    current_breakouts = sorted(
+        [s["ticker"] for s in results if s.get("is_breakout")]
+    )
+    current_breakdowns = sorted(
+        [s["ticker"] for s in results if s.get("is_breakdown")]
+    )
     current_subzero_tickers = sorted(
         [
             s["ticker"]
@@ -1527,15 +1845,25 @@ def main() -> None:
     prev_bear = set(prior_state.get("sent_bear", prior_state.get("active_bear", [])))
     prev_squeeze = set(prior_state.get("sent_squeeze", prior_state.get("active_squeeze", [])))
     prev_crossovers = set(prior_state.get("sent_crossovers", prior_state.get("active_crossovers", [])))
+    prev_breakouts = set(prior_state.get("sent_breakouts", prior_state.get("active_breakouts", [])))
+    prev_breakdowns = set(prior_state.get("sent_breakdowns", prior_state.get("active_breakdowns", [])))
 
     new_subzero = set(current_subzero_tickers) - prev_subzero
     new_bear = set(current_bear_tickers) - prev_bear
     new_squeeze = set(current_squeeze_tickers) - prev_squeeze
     new_crossovers = set(current_crossovers) - prev_crossovers
+    new_breakouts = set(current_breakouts) - prev_breakouts
+    new_breakdowns = set(current_breakdowns) - prev_breakdowns
 
-    has_fresh_trigger = bool(new_subzero or new_bear or new_crossovers)
+    has_fresh_trigger = bool(new_breakouts or new_breakdowns or new_subzero or new_bear or new_crossovers)
     is_pre_close_time = session_code == "PRE_CLOSE"
 
+    print(
+        f"[Trigger Evaluation] Active Breakouts (R4/R5/Velocity): {len(current_breakouts)} (New: {len(new_breakouts)}: {sorted(list(new_breakouts))})"
+    )
+    print(
+        f"[Trigger Evaluation] Active Breakdowns (S4/S5/Liquidation): {len(current_breakdowns)} (New: {len(new_breakdowns)}: {sorted(list(new_breakdowns))})"
+    )
     print(
         f"[Trigger Evaluation] Active Sub-Zero: {len(current_subzero_tickers)} (New: {len(new_subzero)}: {sorted(list(new_subzero))})"
     )
@@ -1563,6 +1891,10 @@ def main() -> None:
     elif args.send_email:
         if has_fresh_trigger:
             triggers_summary = []
+            if new_breakouts:
+                triggers_summary.append(f"New Breakouts: {sorted(list(new_breakouts))}")
+            if new_breakdowns:
+                triggers_summary.append(f"New Breakdowns: {sorted(list(new_breakdowns))}")
             if new_subzero:
                 triggers_summary.append(f"New Sub-Zero: {sorted(list(new_subzero))}")
             if new_bear:
@@ -1586,14 +1918,20 @@ def main() -> None:
         "timestamp_utc": now_utc.isoformat(),
         "scan_time_str": scan_time_str,
         "session": session_code,
+        "active_breakouts": current_breakouts,
+        "active_breakdowns": current_breakdowns,
         "active_subzero": current_subzero_tickers,
         "active_bear": current_bear_tickers,
         "active_squeeze": current_squeeze_tickers,
         "active_crossovers": current_crossovers,
+        "sent_breakouts": current_breakouts if should_send else list(prev_breakouts),
+        "sent_breakdowns": current_breakdowns if should_send else list(prev_breakdowns),
         "sent_subzero": current_subzero_tickers if should_send else list(prev_subzero),
         "sent_bear": current_bear_tickers if should_send else list(prev_bear),
         "sent_squeeze": current_squeeze_tickers if should_send else list(prev_squeeze),
         "sent_crossovers": current_crossovers if should_send else list(prev_crossovers),
+        "new_breakouts": sorted(list(new_breakouts)),
+        "new_breakdowns": sorted(list(new_breakdowns)),
         "new_subzero": sorted(list(new_subzero)),
         "new_bear": sorted(list(new_bear)),
         "new_squeeze": sorted(list(new_squeeze)),
@@ -1614,7 +1952,19 @@ def main() -> None:
 
     if should_send:
         # Dynamic institutional subject with ticker highlights
-        if new_subzero:
+        if new_breakouts:
+            ticker_list = sorted(list(new_breakouts))
+            lead_tickers = ", ".join(ticker_list[:4])
+            if len(ticker_list) > 4:
+                lead_tickers += f" (+{len(ticker_list) - 4} more)"
+            subject = f"[Conviction Labs] VOLATILITY BREAKOUT: {lead_tickers} · {session_badge} · {scan_time_str}"
+        elif new_breakdowns and not new_breakouts and not new_subzero:
+            ticker_list = sorted(list(new_breakdowns))
+            lead_tickers = ", ".join(ticker_list[:4])
+            if len(ticker_list) > 4:
+                lead_tickers += f" (+{len(ticker_list) - 4} more)"
+            subject = f"[Conviction Labs] CRITICAL BREAKDOWN: {lead_tickers} · {session_badge} · {scan_time_str}"
+        elif new_subzero:
             ticker_list = sorted(list(new_subzero))
             lead_tickers = ", ".join(ticker_list[:4])
             if len(ticker_list) > 4:
