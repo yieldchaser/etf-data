@@ -100,7 +100,7 @@ INVESCO_SKIP_TYPES = {
 # REQUIRED_CANONICAL_COLUMNS: schema validation gate for the Bridge.
 # NON_EQUITY_SECURITY_TYPES: substring filters applied to security_type.
 V42_ETFS: frozenset = frozenset({
-    "VLUE", "AVSC", "GRIN", "JHMM", "JHEM", "JHSC", "MFEM", "JOET",
+    "VLUE", "AVSC", "GRIN", "JHMM", "JHEM", "JHSC", "MFEM", "JOET", "USMV",
 })
 
 REQUIRED_CANONICAL_COLUMNS: frozenset = frozenset({

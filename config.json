@@ -148,5 +148,12 @@
     "cusip": "46138E875",
     "scraper_type": "invesco_api",
     "enabled": true
+  },
+  {
+    "ticker": "RSP",
+    "cusip": "46137V357",
+    "url": "https://www.invesco.com/us/en/financial-products/etfs/invesco-sp-500-equal-weight-etf.html",
+    "scraper_type": "invesco_api",
+    "enabled": true
   }
 ]

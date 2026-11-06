@@ -8,6 +8,7 @@ Sources & methods (all confirmed via browser network recon):
   JHEM  → JH PDF  fund_id=2Y7Z
   JHSC  → JH PDF  fund_id=2Y7Y
   VLUE  → BlackRock CSV API, rolling prev-biz-day date
+  USMV  → BlackRock CSV API, rolling prev-biz-day date (portfolioId=239695)
   MFEM  → PIMCO  Playwright session → cookie+API → local file
   JOET  → Virtus direct XLS, dynamic header row detection
   AVSC  → Avantis Playwright
@@ -550,23 +551,23 @@ def fetch_jh_family() -> dict:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 3. VLUE — BlackRock CSV API
+# 3. BlackRock CSV API (VLUE, USMV)
 # ═══════════════════════════════════════════════════════════════════════════════
-def fetch_vlue() -> pd.DataFrame:
+def _fetch_blackrock_csv(ticker: str, portfolio_id: str) -> pd.DataFrame:
     for n in range(1, 8):
         d    = prev_biz_day(TODAY, n)
         dstr = d.strftime('%Y%m%d')
         url  = (
             'https://www.blackrock.com/varnish-api/blk-one01-product-data/product-data/api/v1/'
             f'get-fund-document?appType=PRODUCT_PAGE&appSubType=ISHARES&targetSite=us-ishares'
-            f'&locale=en_US&portfolioId=251616&userType=individual&asOfDate={dstr}&component=holdings'
+            f'&locale=en_US&portfolioId={portfolio_id}&userType=individual&asOfDate={dstr}&component=holdings'
         )
         r = S.get(url, headers={
             'Accept': '*/*',
             'Referer': 'https://www.blackrock.com/',
             'Origin':  'https://www.blackrock.com',
         }, timeout=30)
-        print(f"  VLUE: {dstr} -> {r.status_code} | {len(r.content)} bytes")
+        print(f"  {ticker}: {dstr} -> {r.status_code} | {len(r.content)} bytes")
         if r.status_code != 200 or len(r.content) < 5000:
             continue
         lines = r.text.splitlines()
@@ -574,9 +575,9 @@ def fetch_vlue() -> pd.DataFrame:
         if hidx is None:
             continue
         df = pd.read_csv(io.StringIO(r.text), skiprows=hidx)
-        df = df[df['Ticker'].notna() & df['Ticker'].str.match(r'^[A-Z0-9\-\.]{1,12}$', na=False)]
+        df = df[df['Ticker'].notna() & df['Ticker'].str.match(r'^[A-Z0-9\-\.\s/]{1,12}$', na=False)]
         if len(df) > 0:
-            df.insert(0, 'etf', 'VLUE')
+            df.insert(0, 'etf', ticker)
             # Parse the exact holdings date from the BlackRock CSV metadata.
             # The format varies slightly across fund pages; we try several
             # known field names and fall back to a regex scan for any line
@@ -617,15 +618,23 @@ def fetch_vlue() -> pd.DataFrame:
                         except Exception:
                             pass
                         if aod:
-                            print(f"  VLUE: as_of_date from metadata regex = {aod}  (raw: '{meta_line.strip()}')")
+                            print(f"  {ticker}: as_of_date from metadata regex = {aod}  (raw: '{meta_line.strip()}')")
                             break
             if not aod:
                 aod = d.strftime('%Y-%m-%d')
-                print(f"  VLUE: ⚠ metadata date not found — using loop date {aod}")
+                print(f"  {ticker}: ⚠ metadata date not found — using loop date {aod}")
             df['as_of_date'] = aod
-            print(f"  VLUE: ✅ {len(df)} rows | as_of_date={aod}")
+            print(f"  {ticker}: ✅ {len(df)} rows | as_of_date={aod}")
             return df
-    raise RuntimeError("VLUE: no data found for recent dates")
+    raise RuntimeError(f"{ticker}: no data found for recent dates")
+
+
+def fetch_vlue() -> pd.DataFrame:
+    return _fetch_blackrock_csv('VLUE', '251616')
+
+
+def fetch_usmv() -> pd.DataFrame:
+    return _fetch_blackrock_csv('USMV', '239695')
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1486,6 +1495,7 @@ def run_all():
         ('GRIN', fetch_grin),
         ('JH',   fetch_jh_family),
         ('VLUE', fetch_vlue),
+        ('USMV', fetch_usmv),
         ('MFEM', fetch_mfem),
         ('JOET', fetch_joet),
         ('AVSC', fetch_avsc),

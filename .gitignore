@@ -154,3 +154,7 @@ docs/data/history/
 !data/flows/
 !data/flows/**
 !data/flows/**/*
+
+# Whitelist latest holdings snapshots
+!data/latest/
+!data/latest/**
