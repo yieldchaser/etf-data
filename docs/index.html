@@ -2013,7 +2013,7 @@
           <span class="chip font-mono text-[9.5px] font-semibold" style="background: rgba(34, 211, 238, 0.1); color: var(--cyan); border: 1px solid rgba(34, 211, 238, 0.25)">DYNF</span>
           <span class="text-[10px] hidden sm:inline" style="color: var(--text-3)">iShares U.S. Equity Factor Rotation Active ETF</span>
           <div class="chip text-[9.5px] font-medium" style="background: rgba(96, 165, 250, 0.1); color: var(--blue); border: 1px solid rgba(96, 165, 250, 0.25)">
-            Regime: <span class="font-semibold ml-1 text-zinc-100" x-text="dynfEngine?.macro_regime || '-'"></span>
+            Regime: <span class="font-semibold ml-1 text-zinc-100" x-text="dynfHoverIdx !== null && dynfFilteredTimeline[dynfHoverIdx] ? dynfFilteredTimeline[dynfHoverIdx].regime : (dynfEngine?.macro_regime || '-')"></span>
           </div>
         </div>
         <div class="flex items-center gap-2">
@@ -2053,10 +2053,16 @@
               </div>
               <div class="flex items-baseline justify-between gap-1 mb-1">
                 <span class="text-lg font-mono font-bold tracking-tight tabular-nums text-zinc-100"
-                      x-text="`${(dynfEngine.current_factors?.[fKey]?.current_weight || 0).toFixed(1)}%`"></span>
-                <span class="text-[11px] font-mono tabular-nums font-semibold"
-                      :style="`color: ${(dynfEngine.current_factors?.[fKey]?.delta_30d || 0) > 0 ? 'var(--up)' : (dynfEngine.current_factors?.[fKey]?.delta_30d || 0) < 0 ? 'var(--down)' : 'var(--text-3)'}`"
-                      x-text="`${(dynfEngine.current_factors?.[fKey]?.delta_30d || 0) > 0 ? '+' : ''}${(dynfEngine.current_factors?.[fKey]?.delta_30d || 0).toFixed(1)}% 30d`"></span>
+                      x-text="dynfHoverIdx !== null && dynfFilteredTimeline[dynfHoverIdx] ? `${(dynfFilteredTimeline[dynfHoverIdx][fKey] || 0).toFixed(1)}%` : `${(dynfEngine.current_factors?.[fKey]?.current_weight || 0).toFixed(1)}%`"></span>
+                <template x-if="dynfHoverIdx === null">
+                  <span class="text-[11px] font-mono tabular-nums font-semibold"
+                        :style="`color: ${(dynfEngine.current_factors?.[fKey]?.delta_30d || 0) > 0 ? 'var(--up)' : (dynfEngine.current_factors?.[fKey]?.delta_30d || 0) < 0 ? 'var(--down)' : 'var(--text-3)'}`"
+                        x-text="`${(dynfEngine.current_factors?.[fKey]?.delta_30d || 0) > 0 ? '+' : ''}${(dynfEngine.current_factors?.[fKey]?.delta_30d || 0).toFixed(1)}% 30d`"></span>
+                </template>
+                <template x-if="dynfHoverIdx !== null && dynfFilteredTimeline[dynfHoverIdx]">
+                  <span class="text-[9.5px] font-mono text-cyan-400 font-semibold"
+                        x-text="dynfFilteredTimeline[dynfHoverIdx].date"></span>
+                </template>
               </div>
               <div class="text-[9px] font-mono mb-1.5 flex items-center justify-between" style="color: var(--text-3)">
                 <span>Trade: <span :style="(dynfEngine.current_factors?.[fKey]?.flow_active_30d || 0) > 0 ? 'color: var(--up)' : (dynfEngine.current_factors?.[fKey]?.flow_active_30d || 0) < 0 ? 'color: var(--down)' : ''" x-text="`${(dynfEngine.current_factors?.[fKey]?.flow_active_30d || 0) > 0 ? '+' : ''}${(dynfEngine.current_factors?.[fKey]?.flow_active_30d || 0).toFixed(1)}%`"></span></span>
@@ -2070,11 +2076,11 @@
               <div class="space-y-1">
                 <template x-for="d in (dynfEngine.current_factors?.[fKey]?.top_drivers || []).slice(0, 4)" :key="d.ticker">
                   <div class="flex items-center justify-between text-[10.5px]">
-                    <a :href="`stock.html?t=${d.ticker}`"
+                    <a :href="`stock.html?t=${encodeURIComponent(d.ticker || '')}`"
                        class="font-mono font-semibold hover:underline text-zinc-200 hover:text-cyan-400 truncate max-w-[90px]"
-                       x-text="d.ticker"
-                       :title="d.name"></a>
-                    <span class="font-mono text-[10px] tabular-nums" style="color: var(--text-3)" x-text="`${d.weight.toFixed(1)}%`"></span>
+                       x-text="d.ticker || '-'"
+                       :title="d.name || d.ticker || ''"></a>
+                    <span class="font-mono text-[10px] tabular-nums" style="color: var(--text-3)" x-text="`${(d.weight ?? 0).toFixed(1)}%`"></span>
                   </div>
                 </template>
               </div>
@@ -2119,37 +2125,84 @@
                @mousemove="dynfHandleChartHover($event)"
                @mouseleave="dynfClearChartHover()">
             <div x-html="dynfChartSvgHtml" class="w-full"></div>
+
+            <!-- Floating interactive tooltip card -->
+            <div x-show="dynfHoverIdx !== null && dynfFilteredTimeline[dynfHoverIdx]"
+                 x-cloak
+                 class="absolute pointer-events-none rounded-lg border p-2.5 text-xs font-mono select-none transition-all duration-75"
+                 style="background: rgba(13, 17, 23, 0.95); border-color: rgba(34, 211, 238, 0.35); backdrop-filter: blur(12px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.7), 0 0 15px rgba(34,211,238,0.15); z-index: 40; width: 230px;"
+                 :style="`top: 14px; left: ${dynfTooltipLeft};`">
+              <div class="flex items-center justify-between pb-1.5 mb-1.5 border-b border-white/[0.08]">
+                <div class="flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                  <span class="font-bold text-zinc-100" x-text="dynfFilteredTimeline[dynfHoverIdx]?.date"></span>
+                </div>
+                <span class="chip sig-badge font-mono text-[9px] px-1.5 py-0.5 truncate max-w-[110px]"
+                      style="background: rgba(96, 165, 250, 0.12); color: var(--blue); border: 1px solid rgba(96, 165, 250, 0.25)"
+                      x-text="dynfFilteredTimeline[dynfHoverIdx]?.regime"
+                      :title="dynfFilteredTimeline[dynfHoverIdx]?.regime"></span>
+              </div>
+              <div class="space-y-1">
+                <template x-for="fKey in ['momentum', 'quality', 'value', 'min_vol', 'size']" :key="fKey">
+                  <div class="flex items-center justify-between py-0.5 px-1 rounded transition-colors"
+                       :style="dynfActiveFactor === fKey ? 'background: rgba(255,255,255,0.08); font-weight: 700;' : ''">
+                    <span class="flex items-center gap-1.5">
+                      <span class="w-2 h-2 rounded-full inline-block shrink-0" :style="`background: ${dynfFactorColor(fKey)}`"></span>
+                      <span :style="dynfActiveFactor && dynfActiveFactor !== fKey ? 'color: var(--text-3); opacity: 0.5;' : 'color: var(--text-2);'"
+                            x-text="dynfFactorLabel(fKey)"></span>
+                    </span>
+                    <span class="tabular-nums text-right font-semibold"
+                          :style="dynfActiveFactor === fKey ? `color: ${dynfFactorColor(fKey)}` : (dynfActiveFactor && dynfActiveFactor !== fKey ? 'color: var(--text-3); opacity: 0.5;' : 'color: var(--text-1);')"
+                          x-text="`${(dynfFilteredTimeline[dynfHoverIdx]?.[fKey] ?? 0).toFixed(1)}%`"></span>
+                  </div>
+                </template>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Interactive Range Slider & Timeline Scrubber Bar -->
+        <!-- Interactive Range Slider & Timeline Scrubber Bar (Directly aligned with chart plot area: 4.1667% left, 93.75% width) -->
         <div class="px-3 pb-2 pt-0">
-          <div class="p-2 rounded-lg border flex items-center gap-3 flex-wrap sm:flex-nowrap" style="background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.06)">
-            <!-- Play / Pause animation button -->
-            <button @click="dynfTogglePlay()"
-                    class="px-2.5 py-1 rounded text-[10px] font-mono font-semibold flex items-center gap-1.5 transition border cursor-pointer shrink-0"
-                    :style="dynfIsPlaying ? 'background: rgba(34,211,238,0.15); color: var(--cyan); border-color: rgba(34,211,238,0.4);' : 'background: rgba(255,255,255,0.04); color: var(--text-2); border-color: var(--border);'">
-              <span x-text="dynfIsPlaying ? 'Pause' : 'Play Timeline'"></span>
-            </button>
-
-            <!-- HTML5 Range slider -->
-            <div class="flex-1 flex items-center gap-2 min-w-[200px]">
-              <span class="text-[9px] font-mono text-zinc-500 shrink-0" x-text="dynfFilteredTimeline[0]?.date || ''"></span>
-              <input type="range"
-                     min="0"
-                     :max="Math.max(0, dynfFilteredTimeline.length - 1)"
-                     :value="dynfHoverIdx !== null ? dynfHoverIdx : dynfFilteredTimeline.length - 1"
-                     @input="dynfHoverIdx = parseInt($event.target.value, 10)"
-                     class="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-zinc-800 accent-cyan-400">
-              <span class="text-[9px] font-mono text-zinc-500 shrink-0" x-text="dynfFilteredTimeline[dynfFilteredTimeline.length - 1]?.date || ''"></span>
+          <div class="p-2.5 rounded-lg border" style="background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.06)">
+            <!-- Slider track aligned 1-to-1 with the chart plot area -->
+            <div class="relative w-full mb-2">
+              <div style="margin-left: 4.1667%; width: 93.75%;" class="relative flex items-center">
+                <input type="range"
+                       min="0"
+                       :max="Math.max(0, dynfFilteredTimeline.length - 1)"
+                       :value="dynfHoverIdx !== null ? dynfHoverIdx : dynfFilteredTimeline.length - 1"
+                       @input="dynfHoverIdx = parseInt($event.target.value, 10)"
+                       class="w-full h-2 rounded-lg appearance-none cursor-pointer bg-zinc-800/90 hover:bg-zinc-700/90 accent-cyan-400 transition-colors"
+                       style="margin: 0; padding: 0;">
+              </div>
+              <!-- Timeline boundaries aligned under the slider edges -->
+              <div style="margin-left: 4.1667%; width: 93.75%;" class="flex justify-between items-center text-[9px] font-mono text-zinc-500 pt-1 select-none">
+                <span x-text="dynfFilteredTimeline[0]?.date || ''"></span>
+                <span x-show="dynfHoverIdx !== null && dynfFilteredTimeline[dynfHoverIdx]"
+                      class="text-cyan-400 font-semibold px-2 py-0.5 rounded bg-cyan-400/10 border border-cyan-400/20"
+                      x-text="`Inspecting: ${dynfFilteredTimeline[dynfHoverIdx]?.date}`"></span>
+                <span x-text="dynfFilteredTimeline[dynfFilteredTimeline.length - 1]?.date || ''"></span>
+              </div>
             </div>
 
-            <!-- Jump to latest / Reset button -->
-            <button x-show="dynfHoverIdx !== null && dynfHoverIdx < dynfFilteredTimeline.length - 1"
-                    @click="dynfHoverIdx = null; dynfPausePlay()"
-                    class="px-2 py-0.5 text-[9.5px] font-mono rounded border text-zinc-400 hover:text-cyan-400 border-white/[0.08] hover:border-cyan-400/40 transition cursor-pointer shrink-0">
-              Reset to Latest
-            </button>
+            <!-- Controls row below slider track -->
+            <div class="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-white/[0.04]">
+              <div class="flex items-center gap-2">
+                <button @click="dynfTogglePlay()"
+                        class="px-2.5 py-1 rounded text-[10px] font-mono font-semibold flex items-center gap-1.5 transition border cursor-pointer shrink-0"
+                        :style="dynfIsPlaying ? 'background: rgba(34,211,238,0.15); color: var(--cyan); border-color: rgba(34,211,238,0.4);' : 'background: rgba(255,255,255,0.04); color: var(--text-2); border-color: var(--border);'">
+                  <span x-text="dynfIsPlaying ? 'Pause' : 'Play Timeline'"></span>
+                </button>
+                <button x-show="dynfHoverIdx !== null && dynfHoverIdx < dynfFilteredTimeline.length - 1"
+                        @click="dynfHoverIdx = null; dynfPausePlay()"
+                        class="px-2 py-1 text-[9.5px] font-mono rounded border text-zinc-400 hover:text-cyan-400 border-white/[0.08] hover:border-cyan-400/40 transition cursor-pointer shrink-0">
+                  Reset to Latest
+                </button>
+              </div>
+              <div class="text-[10px] font-mono text-zinc-500">
+                <span x-text="`${dynfFilteredTimeline.length} daily rebalance snapshots`"></span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -2531,6 +2584,7 @@ function app() {
     dynfTimeframe: 'ALL', // 'ALL', '5Y', '3Y', '1Y', 'YTD'
     dynfActiveFactor: null, // null or factor key to highlight
     dynfHoverIdx: null,
+    dynfHoverXPx: 0,
     dynfIsPlaying: false,
     dynfPlayInterval: null,
     dynfShowMilestones: false,
@@ -3786,6 +3840,15 @@ function app() {
       const clampedX = Math.max(xLeft, Math.min(xRight, svgX));
       const frac = (clampedX - xLeft) / (xRight - xLeft);
       this.dynfHoverIdx = Math.min(pts.length - 1, Math.max(0, Math.round(frac * (pts.length - 1))));
+      this.dynfHoverXPx = ev.clientX - rect.left;
+    },
+
+    get dynfTooltipLeft() {
+      const x = this.dynfHoverXPx || 0;
+      if (x > 500) {
+        return Math.max(10, x - 245) + 'px';
+      }
+      return (x + 15) + 'px';
     },
 
     dynfClearChartHover() {

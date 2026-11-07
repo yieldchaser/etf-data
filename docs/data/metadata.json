@@ -1,11 +1,11 @@
 {
-  "generated_at_utc": "2026-10-23T16:58:09+00:00",
-  "source": "C:\\Users\\Dell\\Github\\etf-data\\data\\all_history.csv",
-  "source_rows_raw": 760291,
-  "source_rows_after_sanitize": 6312,
-  "leaderboard_rows": 3803,
-  "latest_holdings_as_of": "2026-10-23",
-  "latest_scrape_date": "2026-10-23",
+  "generated_at_utc": "2026-11-07T08:15:36+00:00",
+  "source": "data/all_history.csv",
+  "source_rows_raw": 833292,
+  "source_rows_after_sanitize": 6272,
+  "leaderboard_rows": 3772,
+  "latest_holdings_as_of": "2026-11-07",
+  "latest_scrape_date": "2026-11-07",
   "etfs": [
     "AVSC",
     "CALF",
@@ -172,31 +172,46 @@
     "2026-10-20",
     "2026-10-21",
     "2026-10-22",
-    "2026-10-23"
+    "2026-10-23",
+    "2026-10-24",
+    "2026-10-25",
+    "2026-10-26",
+    "2026-10-27",
+    "2026-10-28",
+    "2026-10-29",
+    "2026-10-30",
+    "2026-10-31",
+    "2026-11-01",
+    "2026-11-02",
+    "2026-11-03",
+    "2026-11-04",
+    "2026-11-05",
+    "2026-11-06",
+    "2026-11-07"
   ],
   "flag_counts_today": {
     "HIGH_CONVICTION": 24,
-    "CONCENTRATED": 208,
-    "BURST": 0,
-    "CRATER": 2,
-    "SURGE": 12,
-    "SLIDE": 30,
-    "NEW": 11,
-    "NONE": 3571
+    "CONCENTRATED": 185,
+    "BURST": 9,
+    "CRATER": 9,
+    "SURGE": 53,
+    "SLIDE": 70,
+    "NEW": 66,
+    "NONE": 3563
   },
   "flag_counts_yesterday": {
-    "HIGH_CONVICTION": 24,
-    "BURST": 0,
-    "CRATER": 2
+    "HIGH_CONVICTION": 23,
+    "BURST": 9,
+    "CRATER": 9
   },
   "signal_last_fired": {
     "BURST": {
-      "date": "2026-10-19",
-      "count": 1
+      "date": "2026-11-07",
+      "count": 9
     },
     "CRATER": {
-      "date": "2026-10-23",
-      "count": 2
+      "date": "2026-11-07",
+      "count": 9
     }
   },
   "history_start": "2026-05-22",
@@ -211,6 +226,30 @@
       "funds_after": 30
     },
     "fund_count_by_date": [
+      {
+        "date": "2025-08-29",
+        "funds": 1
+      },
+      {
+        "date": "2025-09-30",
+        "funds": 1
+      },
+      {
+        "date": "2025-10-31",
+        "funds": 1
+      },
+      {
+        "date": "2025-11-28",
+        "funds": 1
+      },
+      {
+        "date": "2025-12-31",
+        "funds": 1
+      },
+      {
+        "date": "2026-01-30",
+        "funds": 1
+      },
       {
         "date": "2026-02-12",
         "funds": 8
@@ -261,7 +300,7 @@
       },
       {
         "date": "2026-02-27",
-        "funds": 8
+        "funds": 9
       },
       {
         "date": "2026-03-01",
@@ -369,7 +408,7 @@
       },
       {
         "date": "2026-03-31",
-        "funds": 16
+        "funds": 17
       },
       {
         "date": "2026-04-01",
@@ -477,7 +516,7 @@
       },
       {
         "date": "2026-04-30",
-        "funds": 8
+        "funds": 9
       },
       {
         "date": "2026-05-01",
@@ -1081,10 +1120,70 @@
       },
       {
         "date": "2026-10-22",
-        "funds": 8
+        "funds": 29
       },
       {
         "date": "2026-10-23",
+        "funds": 16
+      },
+      {
+        "date": "2026-10-24",
+        "funds": 16
+      },
+      {
+        "date": "2026-10-25",
+        "funds": 1
+      },
+      {
+        "date": "2026-10-26",
+        "funds": 30
+      },
+      {
+        "date": "2026-10-27",
+        "funds": 30
+      },
+      {
+        "date": "2026-10-28",
+        "funds": 30
+      },
+      {
+        "date": "2026-10-29",
+        "funds": 30
+      },
+      {
+        "date": "2026-10-30",
+        "funds": 16
+      },
+      {
+        "date": "2026-10-31",
+        "funds": 2
+      },
+      {
+        "date": "2026-11-01",
+        "funds": 16
+      },
+      {
+        "date": "2026-11-02",
+        "funds": 16
+      },
+      {
+        "date": "2026-11-03",
+        "funds": 30
+      },
+      {
+        "date": "2026-11-04",
+        "funds": 30
+      },
+      {
+        "date": "2026-11-05",
+        "funds": 30
+      },
+      {
+        "date": "2026-11-06",
+        "funds": 9
+      },
+      {
+        "date": "2026-11-07",
         "funds": 2
       }
     ]

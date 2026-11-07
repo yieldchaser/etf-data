@@ -182,6 +182,13 @@ def build(source: str, output_dir: Path, config_path: Path) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     cfg = Config.from_yaml(config_path)
     raw = fetch_history(source, min_lookback_days=cfg.history.leaderboard_lookback_days + 45)
+
+    # Restrict raw history to the active configured ETF universe (30 smart-beta ETFs).
+    # Background/incubating ETFs accumulating in the parquet store remain intact on disk
+    # for long-term history accumulation, but must not leak into the public frontend
+    # metadata, holdings row counts, maturity gates, or snapshot lists.
+    active_etf_set = set(cfg.etf_lookup())
+    raw = raw[raw["ETF_Ticker"].isin(active_etf_set)].copy()
     raw_rows = len(raw)
 
     print("\nRunning sanitizer + scoring…")
