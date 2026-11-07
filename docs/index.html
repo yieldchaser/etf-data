@@ -2004,6 +2004,235 @@
       </div>
     </div>
 
+    <!-- Factor Rotation Radar (DYNF) -->
+    <div x-show="dynfEngine" class="rounded-lg border mt-3" style="background: var(--surface); border-color: var(--border)">
+      <!-- Header bar -->
+      <div class="px-3 py-2.5 flex items-center justify-between flex-wrap gap-y-2 gap-x-3" style="border-bottom: 1px solid var(--border)">
+        <div class="flex items-center gap-2 flex-wrap">
+          <div class="label-cyan label font-bold">FACTOR ROTATION RADAR</div>
+          <span class="chip font-mono text-[9.5px] font-semibold" style="background: rgba(34, 211, 238, 0.1); color: var(--cyan); border: 1px solid rgba(34, 211, 238, 0.25)">DYNF</span>
+          <span class="text-[10px] hidden sm:inline" style="color: var(--text-3)">iShares U.S. Equity Factor Rotation Active ETF</span>
+          <div class="chip text-[9.5px] font-medium" style="background: rgba(96, 165, 250, 0.1); color: var(--blue); border: 1px solid rgba(96, 165, 250, 0.25)">
+            Regime: <span class="font-semibold ml-1 text-zinc-100" x-text="dynfEngine?.macro_regime || '-'"></span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-[9px] uppercase tracking-wider font-semibold" style="color: var(--text-3)">Horizon</span>
+          <div class="inline-flex items-center rounded-full border p-0.5" style="border-color: var(--border); background: rgba(255,255,255,0.02)">
+            <template x-for="tf in ['ALL', '5Y', '3Y', '1Y', 'YTD']" :key="tf">
+              <button @click="setDynfTimeframe(tf)"
+                      :class="dynfTimeframe === tf ? 'bg-cyan-400/10 text-cyan-400 border-white/[0.08] shadow-[0_1px_3px_rgba(34,211,238,0.1)]' : 'text-zinc-400 hover:text-zinc-200 border-transparent'"
+                      class="px-2.5 py-0.5 text-[9.5px] font-mono font-semibold rounded-full border leading-none transition-all duration-150 cursor-pointer"
+                      x-text="tf"></button>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <!-- Factor Acceleration & Deceleration KPI Grid (6 cards) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2.5 p-3">
+        <template x-for="fKey in ['momentum', 'quality', 'value_fcf', 'financials', 'low_volatility', 'cyclicals']" :key="fKey">
+          <div class="rounded-lg border p-2.5 flex flex-col justify-between transition-all duration-150 cursor-pointer"
+               :style="dynfActiveFactor === fKey
+                 ? `background: rgba(255,255,255,0.04); border-color: ${dynfFactorColor(fKey)}; box-shadow: 0 0 12px ${dynfFactorColor(fKey)}33;`
+                 : 'background: var(--surface-2); border-color: var(--border);'"
+               @click="dynfActiveFactor = (dynfActiveFactor === fKey ? null : fKey)">
+            <div>
+              <div class="flex items-center justify-between gap-1 mb-1.5">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="`background: ${dynfFactorColor(fKey)}`"></span>
+                  <span class="text-xs font-semibold truncate text-zinc-100" x-text="dynfEngine.current_factors?.[fKey]?.label || dynfFactorLabel(fKey)"></span>
+                </div>
+                <span class="chip sig-badge font-mono shrink-0 uppercase text-[8.5px]"
+                      :style="dynfEngine.current_factors?.[fKey]?.badge === 'up'
+                        ? 'background: rgba(52, 211, 153, 0.12); color: var(--up); border: 1px solid rgba(52, 211, 153, 0.25);'
+                        : 'background: rgba(251, 113, 133, 0.12); color: var(--down); border: 1px solid rgba(251, 113, 133, 0.25);'"
+                      x-text="dynfEngine.current_factors?.[fKey]?.status || '-'"></span>
+              </div>
+              <div class="flex items-baseline justify-between gap-1 mb-1.5">
+                <span class="text-lg font-mono font-bold tracking-tight tabular-nums text-zinc-100"
+                      x-text="`${(dynfEngine.current_factors?.[fKey]?.current_weight || 0).toFixed(1)}%`"></span>
+                <span class="text-[11px] font-mono tabular-nums font-semibold"
+                      :style="`color: ${(dynfEngine.current_factors?.[fKey]?.delta_30d || 0) > 0 ? 'var(--up)' : (dynfEngine.current_factors?.[fKey]?.delta_30d || 0) < 0 ? 'var(--down)' : 'var(--text-3)'}`"
+                      x-text="`${(dynfEngine.current_factors?.[fKey]?.delta_30d || 0) > 0 ? '+' : ''}${(dynfEngine.current_factors?.[fKey]?.delta_30d || 0).toFixed(1)}% 30d`"></span>
+              </div>
+              <div class="text-[9.5px] line-clamp-2 mb-2 leading-relaxed" style="color: var(--text-3)"
+                   x-text="dynfEngine.current_factors?.[fKey]?.description || ''"></div>
+            </div>
+            <div class="pt-2 border-t" style="border-color: rgba(255,255,255,0.04)" @click.stop>
+              <div class="text-[8.5px] uppercase tracking-wider font-semibold mb-1" style="color: var(--text-3)">Top Drivers</div>
+              <div class="space-y-1">
+                <template x-for="d in (dynfEngine.current_factors?.[fKey]?.top_drivers || []).slice(0, 4)" :key="d.ticker">
+                  <div class="flex items-center justify-between text-[10.5px]">
+                    <a :href="`stock.html?t=${d.ticker}`"
+                       class="font-mono font-semibold hover:underline text-zinc-200 hover:text-cyan-400 truncate max-w-[90px]"
+                       x-text="d.ticker"
+                       :title="d.name"></a>
+                    <span class="font-mono text-[10px] tabular-nums" style="color: var(--text-3)" x-text="`${d.weight.toFixed(1)}%`"></span>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- Factor Trajectory Graph Section -->
+      <div class="border-t" style="border-color: var(--border)">
+        <!-- Inspection / Hover status strip -->
+        <div class="px-3 py-2 flex items-center justify-between flex-wrap gap-2 text-xs" style="background: rgba(255,255,255,0.015); border-bottom: 1px solid var(--border)">
+          <template x-if="dynfHoverIdx !== null && dynfFilteredTimeline[dynfHoverIdx]">
+            <div class="flex items-center gap-3 flex-wrap">
+              <div class="flex items-center gap-1.5 font-mono">
+                <span class="text-zinc-500 uppercase tracking-wider text-[9px] font-semibold">Date</span>
+                <span class="font-bold text-zinc-100" x-text="dynfFilteredTimeline[dynfHoverIdx].date"></span>
+              </div>
+              <div class="chip sig-badge font-mono" style="background: rgba(96, 165, 250, 0.12); color: var(--blue); border: 1px solid rgba(96, 165, 250, 0.25)" x-text="dynfFilteredTimeline[dynfHoverIdx].regime"></div>
+              <div class="flex items-center gap-2.5 flex-wrap text-[11px] font-mono tabular-nums">
+                <template x-for="fKey in ['momentum', 'quality', 'value_fcf', 'financials', 'low_volatility', 'cyclicals']" :key="fKey">
+                  <span class="inline-flex items-center gap-1" :style="`opacity: ${(!dynfActiveFactor || dynfActiveFactor === fKey) ? '1' : '0.35'}`">
+                    <span class="w-1.5 h-1.5 rounded-full inline-block" :style="`background: ${dynfFactorColor(fKey)}`"></span>
+                    <span style="color: var(--text-3)" x-text="dynfFactorShortLabel(fKey)"></span>
+                    <span class="font-semibold text-zinc-200" x-text="`${(dynfFilteredTimeline[dynfHoverIdx][fKey] || 0).toFixed(1)}%`"></span>
+                  </span>
+                </template>
+              </div>
+            </div>
+          </template>
+          <template x-if="dynfHoverIdx === null">
+            <div class="flex items-center justify-between w-full">
+              <span class="text-[11px]" style="color: var(--text-3)">Hover timeline or scrub slider below &middot; Click cards or legend to isolate factor</span>
+              <span class="text-[10px] font-mono" style="color: var(--text-3)" x-text="`${dynfFilteredTimeline.length} data points`"></span>
+            </div>
+          </template>
+        </div>
+
+        <!-- SVG Line Chart container -->
+        <div class="p-3">
+          <div class="relative w-full overflow-hidden select-none"
+               @mousemove="dynfHandleChartHover($event)"
+               @mouseleave="dynfClearChartHover()">
+            <div x-html="dynfChartSvgHtml" class="w-full"></div>
+          </div>
+        </div>
+
+        <!-- Interactive Range Slider & Timeline Scrubber Bar -->
+        <div class="px-3 pb-2 pt-0">
+          <div class="p-2 rounded-lg border flex items-center gap-3 flex-wrap sm:flex-nowrap" style="background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.06)">
+            <!-- Play / Pause animation button -->
+            <button @click="dynfTogglePlay()"
+                    class="px-2.5 py-1 rounded text-[10px] font-mono font-semibold flex items-center gap-1.5 transition border cursor-pointer shrink-0"
+                    :style="dynfIsPlaying ? 'background: rgba(34,211,238,0.15); color: var(--cyan); border-color: rgba(34,211,238,0.4);' : 'background: rgba(255,255,255,0.04); color: var(--text-2); border-color: var(--border);'">
+              <span x-text="dynfIsPlaying ? 'Pause' : 'Play Timeline'"></span>
+            </button>
+
+            <!-- HTML5 Range slider -->
+            <div class="flex-1 flex items-center gap-2 min-w-[200px]">
+              <span class="text-[9px] font-mono text-zinc-500 shrink-0" x-text="dynfFilteredTimeline[0]?.date || ''"></span>
+              <input type="range"
+                     min="0"
+                     :max="Math.max(0, dynfFilteredTimeline.length - 1)"
+                     :value="dynfHoverIdx !== null ? dynfHoverIdx : dynfFilteredTimeline.length - 1"
+                     @input="dynfHoverIdx = parseInt($event.target.value, 10)"
+                     class="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-zinc-800 accent-cyan-400">
+              <span class="text-[9px] font-mono text-zinc-500 shrink-0" x-text="dynfFilteredTimeline[dynfFilteredTimeline.length - 1]?.date || ''"></span>
+            </div>
+
+            <!-- Jump to latest / Reset button -->
+            <button x-show="dynfHoverIdx !== null && dynfHoverIdx < dynfFilteredTimeline.length - 1"
+                    @click="dynfHoverIdx = null; dynfPausePlay()"
+                    class="px-2 py-0.5 text-[9.5px] font-mono rounded border text-zinc-400 hover:text-cyan-400 border-white/[0.08] hover:border-cyan-400/40 transition cursor-pointer shrink-0">
+              Reset to Latest
+            </button>
+          </div>
+        </div>
+
+        <!-- Interactive Legend Pills -->
+        <div class="px-3 pb-3 flex items-center justify-between flex-wrap gap-2 text-xs">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="label mr-1">Factors:</span>
+            <template x-for="fKey in ['momentum', 'quality', 'value_fcf', 'financials', 'low_volatility', 'cyclicals']" :key="fKey">
+              <button @click="dynfActiveFactor = (dynfActiveFactor === fKey ? null : fKey)"
+                      class="px-2 py-0.5 rounded-full border text-[10px] font-mono font-medium flex items-center gap-1.5 transition-all duration-150 cursor-pointer"
+                      :style="dynfActiveFactor === fKey
+                        ? `background: ${dynfFactorColor(fKey)}22; border-color: ${dynfFactorColor(fKey)}; color: ${dynfFactorColor(fKey)};`
+                        : dynfActiveFactor === null
+                          ? `background: rgba(255,255,255,0.03); border-color: var(--border); color: var(--text-2);`
+                          : `background: rgba(255,255,255,0.01); border-color: transparent; color: var(--text-3); opacity: 0.45;`">
+                <span class="w-2 h-2 rounded-full inline-block" :style="`background: ${dynfFactorColor(fKey)}`"></span>
+                <span x-text="dynfFactorLabel(fKey)"></span>
+                <span class="tabular-nums font-semibold" :style="dynfActiveFactor === fKey ? '' : 'color: var(--text-3)'" x-text="`${(dynfEngine.current_factors?.[fKey]?.current_weight || 0).toFixed(1)}%`"></span>
+              </button>
+            </template>
+            <button x-show="dynfActiveFactor !== null"
+                    @click="dynfActiveFactor = null"
+                    class="px-2 py-0.5 rounded-full border text-[9.5px] font-mono text-zinc-400 hover:text-zinc-200 border-white/[0.08] hover:bg-white/[0.04] transition cursor-pointer">
+              Reset Highlight
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Collapsible Historical Regime Rotations Drawer -->
+      <div class="px-3 pb-3">
+        <button @click="dynfShowMilestones = !dynfShowMilestones"
+                class="flex items-center justify-between w-full px-3 py-2 text-left rounded border transition-colors duration-150 cursor-pointer hover:bg-white/[0.02]"
+                style="background: rgba(255,255,255,0.015); border-color: var(--border);">
+          <div class="flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full" style="background: var(--cyan)"></span>
+            <span class="label font-semibold" style="color: var(--text)" x-text="`Historical Regime Rotations & Macro Cycles (${dynfEngine?.annual_snapshots?.[0]?.year || 2019} - Present)`"></span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-mono" style="color: var(--cyan)" x-text="dynfShowMilestones ? 'Hide History [-]' : 'Expand Annual History [+]'"></span>
+          </div>
+        </button>
+        <div x-show="dynfShowMilestones" x-cloak class="mt-2.5 rounded-lg border overflow-x-auto" style="border-color: var(--border); background: var(--surface-2)">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b text-[9.5px] uppercase tracking-wider font-semibold" style="border-color: var(--border); color: var(--text-3)">
+                <th class="py-2 px-3">Year / Date</th>
+                <th class="py-2 px-3">Macro Regime</th>
+                <th class="py-2 px-3 text-right">Holdings</th>
+                <th class="py-2 px-3 text-right font-mono" style="color: #c084fc">Momentum</th>
+                <th class="py-2 px-3 text-right font-mono" style="color: #22d3ee">Quality</th>
+                <th class="py-2 px-3 text-right font-mono" style="color: #34d399">Value FCF</th>
+                <th class="py-2 px-3 text-right font-mono" style="color: #60a5fa">Financials</th>
+                <th class="py-2 px-3 text-right font-mono" style="color: #fbbf24">Low Vol</th>
+                <th class="py-2 px-3 text-right font-mono" style="color: #fb923c">Cyclicals</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/[0.03] font-mono text-[11px] tabular-nums">
+              <template x-for="snap in (dynfEngine?.annual_snapshots || [])" :key="snap.year">
+                <tr class="hover:bg-white/[0.04] transition cursor-pointer"
+                    @click="dynfJumpToYear(snap.year)"
+                    :title="`Click to jump chart scrubber to ${snap.year}`">
+                  <td class="py-2 px-3">
+                    <span class="font-bold text-zinc-100" x-text="snap.year"></span>
+                    <span class="text-[9px] text-zinc-500 ml-1.5" x-text="snap.date"></span>
+                  </td>
+                  <td class="py-2 px-3 font-sans">
+                    <span class="chip sig-badge font-mono text-[9px]"
+                          :style="snap.regime.includes('Expansion') ? 'background: rgba(34,211,238,0.1); color: var(--cyan); border: 1px solid rgba(34,211,238,0.25);'
+                                : snap.regime.includes('Slowdown') ? 'background: rgba(251,191,36,0.1); color: var(--amber); border: 1px solid rgba(251,191,36,0.25);'
+                                : snap.regime.includes('Recovery') ? 'background: rgba(52,211,153,0.1); color: var(--up); border: 1px solid rgba(52,211,153,0.25);'
+                                : 'background: rgba(251,113,133,0.1); color: var(--down); border: 1px solid rgba(251,113,133,0.25);'"
+                          x-text="snap.regime"></span>
+                  </td>
+                  <td class="py-2 px-3 text-right text-zinc-300" x-text="snap.holdings_count"></td>
+                  <td class="py-2 px-3 text-right" :class="snap.momentum >= 15 ? 'font-bold text-purple-300' : 'text-zinc-400'" x-text="`${snap.momentum.toFixed(1)}%`"></td>
+                  <td class="py-2 px-3 text-right" :class="snap.quality >= 25 ? 'font-bold text-cyan-300' : 'text-zinc-400'" x-text="`${snap.quality.toFixed(1)}%`"></td>
+                  <td class="py-2 px-3 text-right" :class="snap.value_fcf >= 12 ? 'font-bold text-emerald-300' : 'text-zinc-400'" x-text="`${snap.value_fcf.toFixed(1)}%`"></td>
+                  <td class="py-2 px-3 text-right" :class="snap.financials >= 12 ? 'font-bold text-blue-300' : 'text-zinc-400'" x-text="`${snap.financials.toFixed(1)}%`"></td>
+                  <td class="py-2 px-3 text-right" :class="snap.low_volatility >= 12 ? 'font-bold text-amber-300' : 'text-zinc-400'" x-text="`${snap.low_volatility.toFixed(1)}%`"></td>
+                  <td class="py-2 px-3 text-right" :class="snap.cyclicals >= 10 ? 'font-bold text-orange-300' : 'text-zinc-400'" x-text="`${snap.cyclicals.toFixed(1)}%`"></td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- ETF Overlap Heatmap - surfaces which ETFs are echoes vs independent signals -->
     <div x-show="overlap?.etfs?.length" class="rounded-lg border mt-3" style="background: var(--surface); border-color: var(--border)">
       <div class="px-3 py-2 flex items-center justify-between flex-wrap gap-y-1 gap-x-3" style="border-bottom: 1px solid var(--border)">
@@ -2294,6 +2523,13 @@ function app() {
   return {
     leaderboard: [], holdings: [], changelog: {}, meta: {}, flow: {}, overlap: {},
     scoreHistory: {},
+    dynfEngine: null,
+    dynfTimeframe: 'ALL', // 'ALL', '5Y', '3Y', '1Y', 'YTD'
+    dynfActiveFactor: null, // null or factor key to highlight
+    dynfHoverIdx: null,
+    dynfIsPlaying: false,
+    dynfPlayInterval: null,
+    dynfShowMilestones: false,
     loading: true, loadProgress: 0, displayProgress: 0, targetProgress: 0, error: '',
     activeTab: 'leaderboard',
     overlapHover: '',
@@ -2403,7 +2639,7 @@ function app() {
       try {
         const [
           [lb, hd, chg, mt],
-          flow, overlap, holdingsExits,
+          flow, overlap, holdingsExits, dynfData,
         ] = await Promise.all([
           Promise.all([
             track(fetch('data/leaderboard.json').then(r => r.ok ? r.json() : Promise.reject(r.status)), 35),
@@ -2414,6 +2650,7 @@ function app() {
           track(fetch('data/flow.json').then(r => r.json()).catch(() => ({})), 5),
           track(fetch('data/etf_overlap.json').then(r => r.json()).catch(() => ({})), 5),
           track(fetch('data/holdings_exits.json').then(r => r.json()).catch(() => ({})), 5),
+          track(fetch('data/dynf_factor_engine.json').then(r => r.ok ? r.json() : null).catch(() => null), 3),
         ]);
 
         this.targetProgress = 100;
@@ -2434,6 +2671,7 @@ function app() {
 
         this.leaderboard = lb; this.holdings = hd; this.changelog = chg; this.meta = mt;
         this.flow = flow; this.overlap = overlap; this.holdingsExits = holdingsExits;
+        this.dynfEngine = dynfData;
         // Default sort: leaderboard rank (1..N top to down)
         // Hash routing - open #etf=XYZ jumps to the ETFs tab for that ETF
         const hash = location.hash || '';
@@ -3304,6 +3542,254 @@ function app() {
         .slice(0, 3)
         .map(p => `${p.a}->${p.b} ${p.pct}%`)
         .join(' / ');
+    },
+
+    // ── Factor Rotation Radar (DYNF) ──────────────────────────────────────
+    get dynfFilteredTimeline() {
+      const list = this.dynfEngine?.timeline || [];
+      if (!list.length) return [];
+      if (this.dynfTimeframe === 'ALL') return list;
+
+      const latestDateStr = list[list.length - 1].date;
+      const latestYear = parseInt(latestDateStr.slice(0, 4), 10);
+
+      if (this.dynfTimeframe === 'YTD') {
+        const ytdStart = `${latestYear}-01-01`;
+        return list.filter(p => p.date >= ytdStart);
+      }
+
+      const latestDate = new Date(latestDateStr);
+      const yearsBack = this.dynfTimeframe === '1Y' ? 1 : this.dynfTimeframe === '3Y' ? 3 : 5;
+      const cutoff = new Date(latestDate);
+      cutoff.setFullYear(cutoff.getFullYear() - yearsBack);
+      const cutoffStr = cutoff.toISOString().slice(0, 10);
+      return list.filter(p => p.date >= cutoffStr);
+    },
+
+    setDynfTimeframe(tf) {
+      this.dynfTimeframe = tf;
+      this.dynfPausePlay();
+      this.dynfHoverIdx = null;
+    },
+
+    dynfTogglePlay() {
+      if (this.dynfIsPlaying) {
+        this.dynfPausePlay();
+      } else {
+        this.dynfStartPlay();
+      }
+    },
+
+    dynfStartPlay() {
+      const pts = this.dynfFilteredTimeline;
+      if (!pts || !pts.length) return;
+      this.dynfIsPlaying = true;
+      if (this.dynfHoverIdx === null || this.dynfHoverIdx >= pts.length - 1) {
+        this.dynfHoverIdx = 0;
+      }
+      clearInterval(this.dynfPlayInterval);
+      this.dynfPlayInterval = setInterval(() => {
+        if (!this.dynfIsPlaying) {
+          clearInterval(this.dynfPlayInterval);
+          return;
+        }
+        if (this.dynfHoverIdx < pts.length - 1) {
+          this.dynfHoverIdx++;
+        } else {
+          this.dynfPausePlay();
+        }
+      }, 75);
+    },
+
+    dynfPausePlay() {
+      this.dynfIsPlaying = false;
+      if (this.dynfPlayInterval) {
+        clearInterval(this.dynfPlayInterval);
+        this.dynfPlayInterval = null;
+      }
+    },
+
+    dynfJumpToYear(yr) {
+      const pts = this.dynfFilteredTimeline;
+      if (!pts || !pts.length) return;
+      const targetStr = String(yr);
+      const idx = pts.findIndex(p => p.date.startsWith(targetStr));
+      if (idx !== -1) {
+        this.dynfHoverIdx = idx;
+      }
+    },
+
+    dynfFactorColor(k) {
+      const fallback = {
+        momentum: '#c084fc',
+        quality: '#22d3ee',
+        value_fcf: '#34d399',
+        financials: '#60a5fa',
+        low_volatility: '#fbbf24',
+        cyclicals: '#fb923c'
+      };
+      return this.dynfEngine?.factor_definitions?.[k]?.color || fallback[k] || '#22d3ee';
+    },
+
+    dynfFactorLabel(k) {
+      return this.dynfEngine?.factor_definitions?.[k]?.label || k;
+    },
+
+    dynfFactorShortLabel(k) {
+      const map = {
+        momentum: 'Mom',
+        quality: 'Qual',
+        value_fcf: 'Val',
+        financials: 'Fin',
+        low_volatility: 'LoVol',
+        cyclicals: 'Cyc'
+      };
+      return map[k] || k;
+    },
+
+    get dynfChartSvgHtml() {
+      const pts = this.dynfFilteredTimeline;
+      if (!pts || !pts.length) {
+        return '<svg viewBox="0 0 960 210" style="display:block;width:100%;height:auto"><text x="480" y="105" text-anchor="middle" style="fill:var(--text-3);font-size:12px;font-family:ui-monospace,Menlo,Consolas,monospace">Loading Factor Engine data...</text></svg>';
+      }
+
+      const factorKeys = ['momentum', 'quality', 'value_fcf', 'financials', 'low_volatility', 'cyclicals'];
+      const xLeft = 40;
+      const xRight = 940;
+      const plotW = xRight - xLeft;
+      const yTop = 18;
+      const yBottom = 184;
+      const plotH = yBottom - yTop;
+      const n = pts.length;
+
+      let svg = '<svg viewBox="0 0 960 210" style="display:block;width:100%;height:auto;overflow:visible">';
+
+      // Plot area background
+      svg += '<rect x="' + xLeft + '" y="' + yTop + '" width="' + plotW + '" height="' + plotH + '" fill="rgba(255,255,255,0.01)" rx="4"/>';
+
+      // Gridlines & Y-axis labels (0%, 10%, 20%, 30%, 40%)
+      const gridLevels = [0, 10, 20, 30, 40];
+      for (let i = 0; i < gridLevels.length; i++) {
+        const lvl = gridLevels[i];
+        const y = (yBottom - (lvl / 40) * plotH).toFixed(1);
+        const dash = lvl === 0 ? 'none' : '3 3';
+        const strokeW = lvl === 0 ? '1' : '0.75';
+        svg += '<line x1="' + xLeft + '" y1="' + y + '" x2="' + xRight + '" y2="' + y + '" stroke="rgba(255,255,255,0.06)" stroke-dasharray="' + dash + '" stroke-width="' + strokeW + '"/>';
+        svg += '<text x="' + (xLeft - 6) + '" y="' + (parseFloat(y) + 3) + '" text-anchor="end" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:9px;fill:var(--text-3);user-select:none">' + lvl + '%</text>';
+      }
+
+      // Date labels on X-axis (Dynamic ticks based on timeframe)
+      const ticks = [];
+      if (this.dynfTimeframe === 'ALL' || this.dynfTimeframe === '5Y') {
+        let lastYr = '';
+        for (let i = 0; i < n; i++) {
+          const yr = pts[i].date.substring(0, 4);
+          if (yr !== lastYr) {
+            ticks.push({ idx: i, label: yr });
+            lastYr = yr;
+          }
+        }
+      } else if (this.dynfTimeframe === '3Y') {
+        let lastHalf = '';
+        for (let i = 0; i < n; i++) {
+          const m = parseInt(pts[i].date.substring(5, 7), 10);
+          const half = pts[i].date.substring(0, 4) + (m <= 6 ? '-H1' : '-H2');
+          if (half !== lastHalf) {
+            ticks.push({ idx: i, label: pts[i].date.substring(0, 7) });
+            lastHalf = half;
+          }
+        }
+      } else {
+        let lastMonth = '';
+        const monthNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        for (let i = 0; i < n; i++) {
+          const m = parseInt(pts[i].date.substring(5, 7), 10);
+          if (m % 2 === 1) {
+            const ym = pts[i].date.substring(0, 7);
+            if (ym !== lastMonth) {
+              ticks.push({ idx: i, label: monthNames[m] + " '" + pts[i].date.substring(2, 4) });
+              lastMonth = ym;
+            }
+          }
+        }
+      }
+
+      for (let i = 0; i < ticks.length; i++) {
+        const t = ticks[i];
+        const tx = (xLeft + (t.idx / (n - 1)) * plotW).toFixed(1);
+        svg += '<line x1="' + tx + '" y1="' + yBottom + '" x2="' + tx + '" y2="' + (yBottom + 4) + '" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>';
+        svg += '<text x="' + tx + '" y="200" text-anchor="middle" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:9.5px;fill:var(--text-3);user-select:none">' + t.label + '</text>';
+      }
+
+      // Factor polylines (draw active factor last so it renders on top)
+      const orderedKeys = factorKeys.slice().sort((a, b) => {
+        if (a === this.dynfActiveFactor) return 1;
+        if (b === this.dynfActiveFactor) return -1;
+        return 0;
+      });
+
+      for (let f = 0; f < orderedKeys.length; f++) {
+        const k = orderedKeys[f];
+        const color = this.dynfFactorColor(k);
+        const isHighlight = this.dynfActiveFactor === k;
+        const opacity = isHighlight ? '1' : this.dynfActiveFactor ? '0.18' : '0.85';
+        const strokeW = isHighlight ? '2.8' : this.dynfActiveFactor ? '1.2' : '2';
+
+        const polyPoints = [];
+        for (let i = 0; i < n; i++) {
+          const px = (xLeft + (i / (n - 1)) * plotW).toFixed(1);
+          const v = pts[i][k] != null ? pts[i][k] : 0;
+          const py = Math.max(yTop, Math.min(yBottom, yBottom - (v / 40) * plotH)).toFixed(1);
+          polyPoints.push(px + ',' + py);
+        }
+
+        svg += '<polyline points="' + polyPoints.join(' ') + '" fill="none" stroke="' + color + '" stroke-width="' + strokeW + '" opacity="' + opacity + '" stroke-linecap="round" stroke-linejoin="round"/>';
+      }
+
+      // Vertical hover/scrubber crosshair indicator & intersection dots
+      const activeIdx = this.dynfHoverIdx !== null ? this.dynfHoverIdx : (this.dynfIsPlaying ? this.dynfHoverIdx : null);
+      if (activeIdx !== null && activeIdx >= 0 && activeIdx < n) {
+        const hoverPt = pts[activeIdx];
+        const hx = (xLeft + (activeIdx / (n - 1)) * plotW).toFixed(1);
+
+        svg += '<line x1="' + hx + '" y1="' + yTop + '" x2="' + hx + '" y2="' + yBottom + '" stroke="rgba(255,255,255,0.45)" stroke-dasharray="3 3" stroke-width="1.2"/>';
+
+        for (let f = 0; f < factorKeys.length; f++) {
+          const k = factorKeys[f];
+          const color = this.dynfFactorColor(k);
+          const v = hoverPt[k] != null ? hoverPt[k] : 0;
+          const hy = Math.max(yTop, Math.min(yBottom, yBottom - (v / 40) * plotH)).toFixed(1);
+          const isHighlight = this.dynfActiveFactor === k;
+          const isDimmed = this.dynfActiveFactor && !isHighlight;
+          const r = isHighlight ? '5.5' : isDimmed ? '2' : '3.5';
+          const dotOpacity = isDimmed ? '0.25' : '1';
+
+          svg += '<circle cx="' + hx + '" cy="' + hy + '" r="' + r + '" fill="' + color + '" stroke="#0a0a0a" stroke-width="1.5" opacity="' + dotOpacity + '"/>';
+        }
+      }
+
+      svg += '</svg>';
+      return svg;
+    },
+
+    dynfHandleChartHover(ev) {
+      const pts = this.dynfFilteredTimeline;
+      if (!pts || !pts.length) return;
+      const rect = ev.currentTarget.getBoundingClientRect();
+      if (rect.width <= 0) return;
+      const relX = (ev.clientX - rect.left) / rect.width;
+      const svgX = relX * 960;
+      const xLeft = 40;
+      const xRight = 940;
+      const clampedX = Math.max(xLeft, Math.min(xRight, svgX));
+      const frac = (clampedX - xLeft) / (xRight - xLeft);
+      this.dynfHoverIdx = Math.min(pts.length - 1, Math.max(0, Math.round(frac * (pts.length - 1))));
+    },
+
+    dynfClearChartHover() {
+      if (!this.dynfIsPlaying) {
+        this.dynfHoverIdx = null;
+      }
     },
 
     // ── Compare Mode (top 4 pinned by score) ─────────────────────────────

@@ -133,6 +133,7 @@ docs/data/history/
 *.json
 
 # Whitelist Fund Flows data assets
+!docs/data/dynf_factor_engine.json
 !docs/data/etf_search_index.json
 !docs/data/alpha_signals.json
 !docs/data/flows/

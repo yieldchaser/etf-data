@@ -15,6 +15,7 @@ on:
       - 'data/**'           # rebuild whenever raw data is pushed (scraper or hotfix)
       - 'scraper.py'
       - 'scripts/build_local_flow_artifacts.py'
+      - 'scripts/build_dynf_factor_engine.py'
       - 'FUND_FLOW_ETFS.md'
       - 'config.yaml'
       - 'config.json'
@@ -135,7 +136,8 @@ jobs:
             docs/data/markets.json
             docs/data/sim_underlyings.json
             docs/data/vol_history.json
-          key: conviction-artifacts-${{ hashFiles('data/history_parquet/**', 'conviction/**', 'config.yaml', 'config.json') }}
+            docs/data/dynf_factor_engine.json
+          key: conviction-artifacts-${{ hashFiles('data/history_parquet/**', 'conviction/**', 'config.yaml', 'config.json', 'scripts/build_dynf_factor_engine.py') }}
 
       # ── Markets data pipeline ─────────────────────────────────────────
       # ORDER (charter v2 Part 2 — self-living merge):
@@ -158,6 +160,11 @@ jobs:
       - name: Build site artifacts (conviction)
         if: steps.scope.outputs.full_build == 'true' || steps.cache_conviction.outputs.cache-hit != 'true'
         run: python -m conviction.build --source data/all_history.csv --output docs/data --config config.yaml
+
+      - name: Build DYNF Factor Rotation Engine
+        if: steps.scope.outputs.full_build == 'true' || steps.cache_conviction.outputs.cache-hit != 'true'
+        run: python scripts/build_dynf_factor_engine.py
+
 
       # ── Portfolio Lab price data (§22.1) ──────────────────────────────
       - name: Fetch Portfolio Lab prices (yfinance adjusted-close)
@@ -258,6 +265,7 @@ jobs:
           test -f docs/data/holdings_history.json
           test -f docs/data/flag_history.json
           test -f docs/data/prices.json
+          test -f docs/data/dynf_factor_engine.json
           test -f docs/data/market_returns.json          # Verify market_returns.json has the §2.3 contract shape (monthly arrays, not close dicts)
           test -d docs/data/history
           python -c "
