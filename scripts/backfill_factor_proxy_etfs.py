@@ -41,6 +41,22 @@ PROXY_ETFS = {
     "IWB":  "239707",
 }
 
+# Inception dates (earliest constituent holdings availability on BlackRock CDN):
+# - IWB:  Russell 1000 benchmark constituent holdings archive begins June 2008
+# - USMV: MSCI USA Min Vol Factor ETF inception October 2011
+# - MTUM: MSCI USA Momentum Factor ETF inception April 2013
+# - VLUE: MSCI USA Value Factor ETF inception April 2013
+# - SIZE: MSCI USA Size Factor ETF inception April 2013
+# - QUAL: MSCI USA Quality Factor ETF inception July 2013
+ETF_INCEPTION_DATES: Dict[str, dt.date] = {
+    "IWB":  dt.date(2008, 6, 1),
+    "USMV": dt.date(2011, 10, 1),
+    "MTUM": dt.date(2013, 4, 1),
+    "VLUE": dt.date(2013, 4, 1),
+    "SIZE": dt.date(2013, 4, 1),
+    "QUAL": dt.date(2013, 7, 1),
+}
+
 HEADERS = {
     "Accept": "*/*",
     "Referer": "https://www.blackrock.com/",
@@ -268,18 +284,17 @@ def parse_holdings_csv(
 
 def run_backfill(
     tickers: List[str],
-    start_date: dt.date,
+    start_date: Optional[dt.date],
     end_date: dt.date,
     cadence: str = "weekly_and_month_end",
-    workers: int = 5,
+    workers: int = 8,
     out_dir: Path = DEFAULT_OUT_DIR,
 ) -> None:
     """
     Execute multi-threaded backfill and generate Parquet archives.
+    If start_date is None, each ETF starts from its inception date in ETF_INCEPTION_DATES.
     """
     out_dir.mkdir(parents=True, exist_ok=True)
-    dates = generate_target_dates(start_date, end_date, cadence)
-    print(f"Targeting {len(dates)} dates between {start_date} and {end_date} (cadence={cadence})")
 
     session = requests.Session()
     adapter = requests.adapters.HTTPAdapter(pool_connections=workers * 2, pool_maxsize=workers * 2)
@@ -287,14 +302,18 @@ def run_backfill(
 
     all_dfs: Dict[str, List[pd.DataFrame]] = {t: [] for t in tickers}
 
-    total_tasks = len(tickers) * len(dates)
-    print(f"Total download tasks: {total_tasks} across {len(tickers)} ETFs with {workers} workers")
-
     tasks = []
+    print(f"Planning target dates up to {end_date} (cadence={cadence}):")
     for ticker in tickers:
         pid = PROXY_ETFS[ticker]
-        for d in dates:
+        t_start = start_date if start_date is not None else ETF_INCEPTION_DATES.get(ticker, dt.date(2013, 1, 1))
+        t_dates = generate_target_dates(t_start, end_date, cadence)
+        print(f"  {ticker} (portfolio {pid}): {len(t_dates)} dates ({t_start} to {end_date})")
+        for d in t_dates:
             tasks.append((ticker, pid, d))
+
+    total_tasks = len(tasks)
+    print(f"\nTotal download tasks: {total_tasks} across {len(tickers)} ETFs with {workers} workers")
 
     completed = 0
     valid_count = 0
@@ -353,15 +372,22 @@ def run_backfill(
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Backfill iShares factor proxy ETF holdings")
-    parser.add_argument("--start-date", default="2019-03-01", help="Start date (YYYY-MM-DD)")
+    parser.add_argument(
+        "--start-date",
+        default="inception",
+        help="Start date (YYYY-MM-DD) or 'inception' (default) to backfill each ETF from its earliest available history",
+    )
     parser.add_argument("--end-date", default=dt.date.today().strftime("%Y-%m-%d"), help="End date (YYYY-MM-DD)")
     parser.add_argument("--cadence", default="weekly_and_month_end", choices=["weekly_and_month_end", "all"])
-    parser.add_argument("--workers", type=int, default=5, help="Number of concurrent workers")
+    parser.add_argument("--workers", type=int, default=8, help="Number of concurrent workers")
     parser.add_argument("--tickers", nargs="+", default=list(PROXY_ETFS.keys()), help="ETFs to backfill")
     parser.add_argument("--out-dir", default=str(DEFAULT_OUT_DIR), help="Output directory")
 
     args = parser.parse_args()
-    start_d = dt.date.fromisoformat(args.start_date)
+    if args.start_date.lower() == "inception":
+        start_d = None
+    else:
+        start_d = dt.date.fromisoformat(args.start_date)
     end_d = dt.date.fromisoformat(args.end_date)
     out_path = Path(args.out_dir)
 
