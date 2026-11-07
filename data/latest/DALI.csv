@@ -1,7 +1,7 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-DALI,FDT,First Trust Developed Markets ex-US AlphaDEX® Fund,0.3018,2026-11-05,2026-11-06
-DALI,FEM,First Trust Emerging Markets AlphaDEX® Fund,0.16449999999999998,2026-11-05,2026-11-06
-DALI,FEP,First Trust Europe AlphaDEX® Fund,0.1383,2026-11-05,2026-11-06
-DALI,FEUZ,First Trust Eurozone AlphaDEX® ETF,0.1373,2026-11-05,2026-11-06
-DALI,FGM,First Trust Germany AlphaDEX® Fund,0.1366,2026-11-05,2026-11-06
-DALI,FPA,First Trust Asia Pacific ex-Japan AlphaDEX® Fund,0.1209,2026-11-05,2026-11-06
+DALI,FDT,First Trust Developed Markets ex-US AlphaDEX® Fund,0.3018,2026-11-05,2026-11-07
+DALI,FEM,First Trust Emerging Markets AlphaDEX® Fund,0.16449999999999998,2026-11-05,2026-11-07
+DALI,FEP,First Trust Europe AlphaDEX® Fund,0.1383,2026-11-05,2026-11-07
+DALI,FEUZ,First Trust Eurozone AlphaDEX® ETF,0.1373,2026-11-05,2026-11-07
+DALI,FGM,First Trust Germany AlphaDEX® Fund,0.1366,2026-11-05,2026-11-07
+DALI,FPA,First Trust Asia Pacific ex-Japan AlphaDEX® Fund,0.1209,2026-11-05,2026-11-07

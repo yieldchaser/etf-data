@@ -1,126 +1,126 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-FRI,WELL,Welltower Inc.,0.1294,2026-11-05,2026-11-06
-FRI,PLD,"Prologis, Inc.",0.0894,2026-11-05,2026-11-06
-FRI,SPG,"Simon Property Group, Inc.",0.046,2026-11-05,2026-11-06
-FRI,EQIX,"Equinix, Inc.",0.0455,2026-11-05,2026-11-06
-FRI,DLR,"Digital Realty Trust, Inc.",0.0449,2026-11-05,2026-11-06
-FRI,PSA,Public Storage,0.04190000000000001,2026-11-05,2026-11-06
-FRI,O,Realty Income Corporation,0.0412,2026-11-05,2026-11-06
-FRI,VMRK,Vivmark Residential,0.0344,2026-11-05,2026-11-06
-FRI,VTR,"Ventas, Inc.",0.0334,2026-11-05,2026-11-06
-FRI,EXR,Extra Space Storage Inc.,0.024700000000000003,2026-11-05,2026-11-06
-FRI,IRM,Iron Mountain Incorporated,0.023,2026-11-05,2026-11-06
-FRI,VICI,VICI Properties Inc.,0.0203,2026-11-05,2026-11-06
-FRI,ESS,"Essex Property Trust, Inc.",0.0128,2026-11-05,2026-11-06
-FRI,KIM,Kimco Realty Corporation,0.0126,2026-11-05,2026-11-06
-FRI,HST,"Host Hotels & Resorts, Inc.",0.0123,2026-11-05,2026-11-06
-FRI,SUI,"Sun Communities, Inc.",0.0109,2026-11-05,2026-11-06
-FRI,WPC,W.P. Carey Inc.,0.0109,2026-11-05,2026-11-06
-FRI,INVH,Invitation Homes Inc.,0.0108,2026-11-05,2026-11-06
-FRI,OHI,"Omega Healthcare Investors, Inc.",0.0106,2026-11-05,2026-11-06
-FRI,MAA,"Mid-America Apartment Communities, Inc.",0.0103,2026-11-05,2026-11-06
-FRI,DOC,"Healthpeak Properties, Inc.",0.0102,2026-11-05,2026-11-06
-FRI,LAMR,Lamar Advertising Company,0.01,2026-11-05,2026-11-06
-FRI,REG,Regency Centers Corporation,0.009300000000000001,2026-11-05,2026-11-06
-FRI,AHR,"American Healthcare REIT, Inc.",0.0089,2026-11-05,2026-11-06
-FRI,ELS,"Equity Lifestyle Properties, Inc.",0.0089,2026-11-05,2026-11-06
-FRI,GLPI,"Gaming and Leisure Properties, Inc.",0.0084,2026-11-05,2026-11-06
-FRI,UDR,"UDR, Inc.",0.0079,2026-11-05,2026-11-06
-FRI,AMH,American Homes 4 Rent (Class A),0.0077,2026-11-05,2026-11-06
-FRI,BXP,"BXP, Inc.",0.0076,2026-11-05,2026-11-06
-FRI,CPT,Camden Property Trust,0.0076,2026-11-05,2026-11-06
-FRI,EGP,"EastGroup Properties, Inc.",0.0076,2026-11-05,2026-11-06
-FRI,CUBE,CubeSmart,0.006999999999999999,2026-11-05,2026-11-06
-FRI,BRX,Brixmor Property Group Inc.,0.0067,2026-11-05,2026-11-06
-FRI,FRT,Federal Realty Investment Trust,0.0066,2026-11-05,2026-11-06
-FRI,RHP,"Ryman Hospitality Properties, Inc.",0.0066,2026-11-05,2026-11-06
-FRI,ADC,Agree Realty Corporation,0.0064,2026-11-05,2026-11-06
-FRI,CTRE,"CareTrust REIT, Inc.",0.0064,2026-11-05,2026-11-06
-FRI,REXR,"Rexford Industrial Realty, Inc.",0.0062,2026-11-05,2026-11-06
-FRI,NNN,NNN REIT Inc.,0.0058,2026-11-05,2026-11-06
-FRI,TRNO,Terreno Realty Corporation,0.0053,2026-11-05,2026-11-06
-FRI,ARE,"Alexandria Real Estate Equities, Inc.",0.0052,2026-11-05,2026-11-06
-FRI,FR,"First Industrial Realty Trust, Inc.",0.0052,2026-11-05,2026-11-06
-FRI,STAG,"STAG Industrial, Inc.",0.0052,2026-11-05,2026-11-06
-FRI,MAC,The Macerich Company,0.0052,2026-11-05,2026-11-06
-FRI,HR,Healthcare Realty Trust Inc.,0.0048,2026-11-05,2026-11-06
-FRI,EPRT,"Essential Properties Realty Trust, Inc.",0.0045000000000000005,2026-11-05,2026-11-06
-FRI,VNO,Vornado Realty Trust,0.0042,2026-11-05,2026-11-06
-FRI,OUT,OUTFRONT Media Inc.,0.0040999999999999995,2026-11-05,2026-11-06
-FRI,PECO,"Phillips Edison & Company, Inc.",0.0039000000000000003,2026-11-05,2026-11-06
-FRI,SBRA,"Sabra Health Care REIT, Inc.",0.0039000000000000003,2026-11-05,2026-11-06
-FRI,KRG,Kite Realty Group Trust,0.0038,2026-11-05,2026-11-06
-FRI,CUZ,Cousins Properties Incorporated,0.0036,2026-11-05,2026-11-06
-FRI,EPR,EPR Properties,0.0034000000000000002,2026-11-05,2026-11-06
-FRI,COLD,Americold Realty Trust Inc.,0.0033,2026-11-05,2026-11-06
-FRI,SKT,Tanger Inc.,0.0032,2026-11-05,2026-11-06
-FRI,KRC,Kilroy Realty Corp,0.0031,2026-11-05,2026-11-06
-FRI,MRP,"Millrose Properties, Inc. (Class A)",0.003,2026-11-05,2026-11-06
-FRI,APLE,"Apple Hospitality REIT, Inc.",0.0029,2026-11-05,2026-11-06
-FRI,CDP,COPT Defense Properties,0.0027,2026-11-05,2026-11-06
-FRI,SLG,SL Green Realty Corp.,0.0027,2026-11-05,2026-11-06
-FRI,HIW,"Highwoods Properties, Inc.",0.0026,2026-11-05,2026-11-06
-FRI,IRT,"Independence Realty Trust, Inc.",0.0026,2026-11-05,2026-11-06
-FRI,NHI,"National Health Investors, Inc.",0.0026,2026-11-05,2026-11-06
-FRI,BNL,"Broadstone Net Lease, Inc.",0.0025,2026-11-05,2026-11-06
-FRI,CURB,Curbline Properties Corp.,0.0023,2026-11-05,2026-11-06
-FRI,PK,Park Hotels & Resorts Inc.,0.0023,2026-11-05,2026-11-06
-FRI,DRH,DiamondRock Hospitality Company,0.0021,2026-11-05,2026-11-06
-FRI,AKR,Acadia Realty Trust,0.002,2026-11-05,2026-11-06
-FRI,FCPT,"Four Corners Property Trust, Inc.",0.0019,2026-11-05,2026-11-06
-FRI,JAN,"Janus Living, Inc. (Class A-1)",0.0019,2026-11-05,2026-11-06
-FRI,UE,Urban Edge Properties,0.0019,2026-11-05,2026-11-06
-FRI,IVT,InvenTrust Properties Corp.,0.0018,2026-11-05,2026-11-06
-FRI,LTC,"LTC Properties, Inc.",0.0018,2026-11-05,2026-11-06
-FRI,PEB,Pebblebrook Hotel Trust,0.0017000000000000001,2026-11-05,2026-11-06
-FRI,SHO,"Sunstone Hotel Investors, Inc.",0.0017000000000000001,2026-11-05,2026-11-06
-FRI,LINE,"Lineage, Inc.",0.0016,2026-11-05,2026-11-06
-FRI,SMA,"SmartStop Self Storage REIT, Inc.",0.0016,2026-11-05,2026-11-06
-FRI,NTST,NetSTREIT Corp.,0.0014000000000000002,2026-11-05,2026-11-06
-FRI,XHR,"Xenia Hotels & Resorts, Inc.",0.0014000000000000002,2026-11-05,2026-11-06
-FRI,DEI,"Douglas Emmett, Inc.",0.0013,2026-11-05,2026-11-06
-FRI,GTY,Getty Realty Corp.,0.0012,2026-11-05,2026-11-06
-FRI,RLJ,RLJ Lodging Trust,0.0012,2026-11-05,2026-11-06
-FRI,BXDC,Blackstone Digital Infrastructure Trust Inc.,0.0011,2026-11-05,2026-11-06
-FRI,DHC,Diversified Healthcare Trust,0.0011,2026-11-05,2026-11-06
-FRI,GNL,"Global Net Lease, Inc.",0.0011,2026-11-05,2026-11-06
-FRI,IIPR,"Innovative Industrial Properties, Inc.",0.0011,2026-11-05,2026-11-06
-FRI,PDM,"Piedmont Realty Trust, Inc.",0.0009,2026-11-05,2026-11-06
-FRI,UMH,"UMH Properties, Inc.",0.0009,2026-11-05,2026-11-06
-FRI,AAT,"American Assets Trust, Inc.",0.0008,2026-11-05,2026-11-06
-FRI,CBL,"CBL & Associates Properties, Inc.",0.0007000000000000001,2026-11-05,2026-11-06
-FRI,CSR,Centerspace,0.0007000000000000001,2026-11-05,2026-11-06
-FRI,DEA,"Easterly Government Properties, Inc.",0.0007000000000000001,2026-11-05,2026-11-06
-FRI,MPT,"Medical Properties Trust, Inc.",0.0007000000000000001,2026-11-05,2026-11-06
-FRI,CTO,"CTO Realty Growth, Inc.",0.0006,2026-11-05,2026-11-06
-FRI,ESRT,"Empire State Realty Trust, Inc. (Class A)",0.0006,2026-11-05,2026-11-06
-FRI,CLDT,Chatham Lodging Trust,0.0005,2026-11-05,2026-11-06
-FRI,JBGS,JBG Smith Properties,0.0005,2026-11-05,2026-11-06
-FRI,NHP,"National Healthcare Properties, Inc.",0.0005,2026-11-05,2026-11-06
-FRI,PSTL,"Postal Realty Trust, Inc. (Class A)",0.0005,2026-11-05,2026-11-06
-FRI,SVC,Service Properties Trust,0.0005,2026-11-05,2026-11-06
-FRI,INN,"Summit Hotel Properties, Inc.",0.0005,2026-11-05,2026-11-06
-FRI,AHRT,AH Realty Trust Inc.,0.0004,2026-11-05,2026-11-06
-FRI,ALX,"Alexander's, Inc.",0.0004,2026-11-05,2026-11-06
-FRI,BDN,Brandywine Realty Trust,0.0004,2026-11-05,2026-11-06
-FRI,GOOD,Gladstone Commercial Corporation,0.0004,2026-11-05,2026-11-06
-FRI,UHT,Universal Health Realty Income Trust,0.0004,2026-11-05,2026-11-06
-FRI,XRN,Chiron Real Estate Inc.,0.0003,2026-11-05,2026-11-06
-FRI,CHCT,Community Healthcare Trust Incorporated,0.0003,2026-11-05,2026-11-06
-FRI,FPI,Farmland Partners Inc.,0.0003,2026-11-05,2026-11-06
-FRI,FRMI,Fermi Inc.,0.0003,2026-11-05,2026-11-06
-FRI,FVR,"FrontView REIT, Inc.",0.0003,2026-11-05,2026-11-06
-FRI,HPP,"Hudson Pacific Properties, Inc.",0.0003,2026-11-05,2026-11-06
-FRI,NXRT,"NexPoint Residential Trust, Inc.",0.0003,2026-11-05,2026-11-06
-FRI,SAFE,Safehold Inc.,0.0003,2026-11-05,2026-11-06
-FRI,BFS,"Saul Centers, Inc.",0.0003,2026-11-05,2026-11-06
-FRI,PINE,"Alpine Income Property Trust, Inc.",0.0002,2026-11-05,2026-11-06
-FRI,LAND,Gladstone Land Corporation,0.0002,2026-11-05,2026-11-06
-FRI,ILPT,Industrial Logistics Properties Trust,0.0002,2026-11-05,2026-11-06
-FRI,OLP,"One Liberty Properties, Inc.",0.0002,2026-11-05,2026-11-06
-FRI,BHR,Braemar Hotels & Resorts Inc.,0.0001,2026-11-05,2026-11-06
-FRI,BRT,BRT Apartments Corp.,0.0001,2026-11-05,2026-11-06
-FRI,NLOP,Net Lease Office Properties,0.0001,2026-11-05,2026-11-06
-FRI,NXDT,NexPoint Diversified Real Estate Trust,0.0001,2026-11-05,2026-11-06
-FRI,ONL,Orion Properties Inc.,0.0001,2026-11-05,2026-11-06
-FRI,STRW,"Strawberry Fields REIT, Ltd.",0.0001,2026-11-05,2026-11-06
+FRI,WELL,Welltower Inc.,0.1294,2026-11-05,2026-11-07
+FRI,PLD,"Prologis, Inc.",0.0894,2026-11-05,2026-11-07
+FRI,SPG,"Simon Property Group, Inc.",0.046,2026-11-05,2026-11-07
+FRI,EQIX,"Equinix, Inc.",0.0455,2026-11-05,2026-11-07
+FRI,DLR,"Digital Realty Trust, Inc.",0.0449,2026-11-05,2026-11-07
+FRI,PSA,Public Storage,0.04190000000000001,2026-11-05,2026-11-07
+FRI,O,Realty Income Corporation,0.0412,2026-11-05,2026-11-07
+FRI,VMRK,Vivmark Residential,0.0344,2026-11-05,2026-11-07
+FRI,VTR,"Ventas, Inc.",0.0334,2026-11-05,2026-11-07
+FRI,EXR,Extra Space Storage Inc.,0.024700000000000003,2026-11-05,2026-11-07
+FRI,IRM,Iron Mountain Incorporated,0.023,2026-11-05,2026-11-07
+FRI,VICI,VICI Properties Inc.,0.0203,2026-11-05,2026-11-07
+FRI,ESS,"Essex Property Trust, Inc.",0.0128,2026-11-05,2026-11-07
+FRI,KIM,Kimco Realty Corporation,0.0126,2026-11-05,2026-11-07
+FRI,HST,"Host Hotels & Resorts, Inc.",0.0123,2026-11-05,2026-11-07
+FRI,SUI,"Sun Communities, Inc.",0.0109,2026-11-05,2026-11-07
+FRI,WPC,W.P. Carey Inc.,0.0109,2026-11-05,2026-11-07
+FRI,INVH,Invitation Homes Inc.,0.0108,2026-11-05,2026-11-07
+FRI,OHI,"Omega Healthcare Investors, Inc.",0.0106,2026-11-05,2026-11-07
+FRI,MAA,"Mid-America Apartment Communities, Inc.",0.0103,2026-11-05,2026-11-07
+FRI,DOC,"Healthpeak Properties, Inc.",0.0102,2026-11-05,2026-11-07
+FRI,LAMR,Lamar Advertising Company,0.01,2026-11-05,2026-11-07
+FRI,REG,Regency Centers Corporation,0.009300000000000001,2026-11-05,2026-11-07
+FRI,AHR,"American Healthcare REIT, Inc.",0.0089,2026-11-05,2026-11-07
+FRI,ELS,"Equity Lifestyle Properties, Inc.",0.0089,2026-11-05,2026-11-07
+FRI,GLPI,"Gaming and Leisure Properties, Inc.",0.0084,2026-11-05,2026-11-07
+FRI,UDR,"UDR, Inc.",0.0079,2026-11-05,2026-11-07
+FRI,AMH,American Homes 4 Rent (Class A),0.0077,2026-11-05,2026-11-07
+FRI,BXP,"BXP, Inc.",0.0076,2026-11-05,2026-11-07
+FRI,CPT,Camden Property Trust,0.0076,2026-11-05,2026-11-07
+FRI,EGP,"EastGroup Properties, Inc.",0.0076,2026-11-05,2026-11-07
+FRI,CUBE,CubeSmart,0.006999999999999999,2026-11-05,2026-11-07
+FRI,BRX,Brixmor Property Group Inc.,0.0067,2026-11-05,2026-11-07
+FRI,FRT,Federal Realty Investment Trust,0.0066,2026-11-05,2026-11-07
+FRI,RHP,"Ryman Hospitality Properties, Inc.",0.0066,2026-11-05,2026-11-07
+FRI,ADC,Agree Realty Corporation,0.0064,2026-11-05,2026-11-07
+FRI,CTRE,"CareTrust REIT, Inc.",0.0064,2026-11-05,2026-11-07
+FRI,REXR,"Rexford Industrial Realty, Inc.",0.0062,2026-11-05,2026-11-07
+FRI,NNN,NNN REIT Inc.,0.0058,2026-11-05,2026-11-07
+FRI,TRNO,Terreno Realty Corporation,0.0053,2026-11-05,2026-11-07
+FRI,ARE,"Alexandria Real Estate Equities, Inc.",0.0052,2026-11-05,2026-11-07
+FRI,FR,"First Industrial Realty Trust, Inc.",0.0052,2026-11-05,2026-11-07
+FRI,STAG,"STAG Industrial, Inc.",0.0052,2026-11-05,2026-11-07
+FRI,MAC,The Macerich Company,0.0052,2026-11-05,2026-11-07
+FRI,HR,Healthcare Realty Trust Inc.,0.0048,2026-11-05,2026-11-07
+FRI,EPRT,"Essential Properties Realty Trust, Inc.",0.0045000000000000005,2026-11-05,2026-11-07
+FRI,VNO,Vornado Realty Trust,0.0042,2026-11-05,2026-11-07
+FRI,OUT,OUTFRONT Media Inc.,0.0040999999999999995,2026-11-05,2026-11-07
+FRI,PECO,"Phillips Edison & Company, Inc.",0.0039000000000000003,2026-11-05,2026-11-07
+FRI,SBRA,"Sabra Health Care REIT, Inc.",0.0039000000000000003,2026-11-05,2026-11-07
+FRI,KRG,Kite Realty Group Trust,0.0038,2026-11-05,2026-11-07
+FRI,CUZ,Cousins Properties Incorporated,0.0036,2026-11-05,2026-11-07
+FRI,EPR,EPR Properties,0.0034000000000000002,2026-11-05,2026-11-07
+FRI,COLD,Americold Realty Trust Inc.,0.0033,2026-11-05,2026-11-07
+FRI,SKT,Tanger Inc.,0.0032,2026-11-05,2026-11-07
+FRI,KRC,Kilroy Realty Corp,0.0031,2026-11-05,2026-11-07
+FRI,MRP,"Millrose Properties, Inc. (Class A)",0.003,2026-11-05,2026-11-07
+FRI,APLE,"Apple Hospitality REIT, Inc.",0.0029,2026-11-05,2026-11-07
+FRI,CDP,COPT Defense Properties,0.0027,2026-11-05,2026-11-07
+FRI,SLG,SL Green Realty Corp.,0.0027,2026-11-05,2026-11-07
+FRI,HIW,"Highwoods Properties, Inc.",0.0026,2026-11-05,2026-11-07
+FRI,IRT,"Independence Realty Trust, Inc.",0.0026,2026-11-05,2026-11-07
+FRI,NHI,"National Health Investors, Inc.",0.0026,2026-11-05,2026-11-07
+FRI,BNL,"Broadstone Net Lease, Inc.",0.0025,2026-11-05,2026-11-07
+FRI,CURB,Curbline Properties Corp.,0.0023,2026-11-05,2026-11-07
+FRI,PK,Park Hotels & Resorts Inc.,0.0023,2026-11-05,2026-11-07
+FRI,DRH,DiamondRock Hospitality Company,0.0021,2026-11-05,2026-11-07
+FRI,AKR,Acadia Realty Trust,0.002,2026-11-05,2026-11-07
+FRI,FCPT,"Four Corners Property Trust, Inc.",0.0019,2026-11-05,2026-11-07
+FRI,JAN,"Janus Living, Inc. (Class A-1)",0.0019,2026-11-05,2026-11-07
+FRI,UE,Urban Edge Properties,0.0019,2026-11-05,2026-11-07
+FRI,IVT,InvenTrust Properties Corp.,0.0018,2026-11-05,2026-11-07
+FRI,LTC,"LTC Properties, Inc.",0.0018,2026-11-05,2026-11-07
+FRI,PEB,Pebblebrook Hotel Trust,0.0017000000000000001,2026-11-05,2026-11-07
+FRI,SHO,"Sunstone Hotel Investors, Inc.",0.0017000000000000001,2026-11-05,2026-11-07
+FRI,LINE,"Lineage, Inc.",0.0016,2026-11-05,2026-11-07
+FRI,SMA,"SmartStop Self Storage REIT, Inc.",0.0016,2026-11-05,2026-11-07
+FRI,NTST,NetSTREIT Corp.,0.0014000000000000002,2026-11-05,2026-11-07
+FRI,XHR,"Xenia Hotels & Resorts, Inc.",0.0014000000000000002,2026-11-05,2026-11-07
+FRI,DEI,"Douglas Emmett, Inc.",0.0013,2026-11-05,2026-11-07
+FRI,GTY,Getty Realty Corp.,0.0012,2026-11-05,2026-11-07
+FRI,RLJ,RLJ Lodging Trust,0.0012,2026-11-05,2026-11-07
+FRI,BXDC,Blackstone Digital Infrastructure Trust Inc.,0.0011,2026-11-05,2026-11-07
+FRI,DHC,Diversified Healthcare Trust,0.0011,2026-11-05,2026-11-07
+FRI,GNL,"Global Net Lease, Inc.",0.0011,2026-11-05,2026-11-07
+FRI,IIPR,"Innovative Industrial Properties, Inc.",0.0011,2026-11-05,2026-11-07
+FRI,PDM,"Piedmont Realty Trust, Inc.",0.0009,2026-11-05,2026-11-07
+FRI,UMH,"UMH Properties, Inc.",0.0009,2026-11-05,2026-11-07
+FRI,AAT,"American Assets Trust, Inc.",0.0008,2026-11-05,2026-11-07
+FRI,CBL,"CBL & Associates Properties, Inc.",0.0007000000000000001,2026-11-05,2026-11-07
+FRI,CSR,Centerspace,0.0007000000000000001,2026-11-05,2026-11-07
+FRI,DEA,"Easterly Government Properties, Inc.",0.0007000000000000001,2026-11-05,2026-11-07
+FRI,MPT,"Medical Properties Trust, Inc.",0.0007000000000000001,2026-11-05,2026-11-07
+FRI,CTO,"CTO Realty Growth, Inc.",0.0006,2026-11-05,2026-11-07
+FRI,ESRT,"Empire State Realty Trust, Inc. (Class A)",0.0006,2026-11-05,2026-11-07
+FRI,CLDT,Chatham Lodging Trust,0.0005,2026-11-05,2026-11-07
+FRI,JBGS,JBG Smith Properties,0.0005,2026-11-05,2026-11-07
+FRI,NHP,"National Healthcare Properties, Inc.",0.0005,2026-11-05,2026-11-07
+FRI,PSTL,"Postal Realty Trust, Inc. (Class A)",0.0005,2026-11-05,2026-11-07
+FRI,SVC,Service Properties Trust,0.0005,2026-11-05,2026-11-07
+FRI,INN,"Summit Hotel Properties, Inc.",0.0005,2026-11-05,2026-11-07
+FRI,AHRT,AH Realty Trust Inc.,0.0004,2026-11-05,2026-11-07
+FRI,ALX,"Alexander's, Inc.",0.0004,2026-11-05,2026-11-07
+FRI,BDN,Brandywine Realty Trust,0.0004,2026-11-05,2026-11-07
+FRI,GOOD,Gladstone Commercial Corporation,0.0004,2026-11-05,2026-11-07
+FRI,UHT,Universal Health Realty Income Trust,0.0004,2026-11-05,2026-11-07
+FRI,XRN,Chiron Real Estate Inc.,0.0003,2026-11-05,2026-11-07
+FRI,CHCT,Community Healthcare Trust Incorporated,0.0003,2026-11-05,2026-11-07
+FRI,FPI,Farmland Partners Inc.,0.0003,2026-11-05,2026-11-07
+FRI,FRMI,Fermi Inc.,0.0003,2026-11-05,2026-11-07
+FRI,FVR,"FrontView REIT, Inc.",0.0003,2026-11-05,2026-11-07
+FRI,HPP,"Hudson Pacific Properties, Inc.",0.0003,2026-11-05,2026-11-07
+FRI,NXRT,"NexPoint Residential Trust, Inc.",0.0003,2026-11-05,2026-11-07
+FRI,SAFE,Safehold Inc.,0.0003,2026-11-05,2026-11-07
+FRI,BFS,"Saul Centers, Inc.",0.0003,2026-11-05,2026-11-07
+FRI,PINE,"Alpine Income Property Trust, Inc.",0.0002,2026-11-05,2026-11-07
+FRI,LAND,Gladstone Land Corporation,0.0002,2026-11-05,2026-11-07
+FRI,ILPT,Industrial Logistics Properties Trust,0.0002,2026-11-05,2026-11-07
+FRI,OLP,"One Liberty Properties, Inc.",0.0002,2026-11-05,2026-11-07
+FRI,BHR,Braemar Hotels & Resorts Inc.,0.0001,2026-11-05,2026-11-07
+FRI,BRT,BRT Apartments Corp.,0.0001,2026-11-05,2026-11-07
+FRI,NLOP,Net Lease Office Properties,0.0001,2026-11-05,2026-11-07
+FRI,NXDT,NexPoint Diversified Real Estate Trust,0.0001,2026-11-05,2026-11-07
+FRI,ONL,Orion Properties Inc.,0.0001,2026-11-05,2026-11-07
+FRI,STRW,"Strawberry Fields REIT, Ltd.",0.0001,2026-11-05,2026-11-07

@@ -1,79 +1,79 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-DEED,,"U.S. Treasury Bill, 0%, due 11/17/2026",0.0425,2026-11-05,2026-11-06
-DEED,,"Fannie Mae or Freddie Mac TBA, 6%, due 06/01/2056",0.0319,2026-11-05,2026-11-06
-DEED,,"GNMA TBA, 6%, due 05/01/2056",0.0319,2026-11-05,2026-11-06
-DEED,,"Gracie Point International Funding Series 2025-1A, Class D, Variable rate, due 08/15/2028",0.031,2026-11-05,2026-11-06
-DEED,,"Freddie Mac Series 4639, Class HZ, Variable rate, due 04/15/2053",0.028399999999999998,2026-11-05,2026-11-06
-DEED,,"Freddie Mac - SLST Series 2025-1, Class YF, Variable rate, due 05/25/2035",0.0268,2026-11-05,2026-11-06
-DEED,,"Fannie Mae Series 2015-32, Class PB, 3%, due 05/25/2045",0.026000000000000002,2026-11-05,2026-11-06
-DEED,,"Freddie Mac FR SL1523, 3.50%, due 07/01/2050",0.025699999999999997,2026-11-05,2026-11-06
-DEED,,"GNMA G2 MA7366, 2%, due 05/20/2051",0.0255,2026-11-05,2026-11-06
-DEED,,"Fannie Mae FN AL9394, 3%, due 11/01/2046",0.0254,2026-11-05,2026-11-06
-DEED,,"Fannie Mae Series 2025-49, Class FA, Variable rate, due 06/25/2055",0.0254,2026-11-05,2026-11-06
-DEED,,"Freddie Mac FR SL1390, 4%, due 07/01/2050",0.025,2026-11-05,2026-11-06
-DEED,,"Fannie Mae FN BM4963, 3%, due 05/01/2048",0.0236,2026-11-05,2026-11-06
-DEED,,"Freddie Mac - SLST Series 2025-1, Class A2, 3%, due 05/25/2035",0.022400000000000003,2026-11-05,2026-11-06
-DEED,,"Fannie Mae Series 2024-84, Class FD, Variable rate, due 11/25/2054",0.0217,2026-11-05,2026-11-06
-DEED,,"Pretium Mortgage Credit Partners LLC Series 2025-NPL6, Class A2, Variable rate, due 06/25/2055",0.021400000000000002,2026-11-05,2026-11-06
-DEED,,"PRP Advisors, LLC Series 2025-3, Class A2, Variable rate, due 05/25/2030",0.0212,2026-11-05,2026-11-06
-DEED,,"U.S. Treasury Bill, 0%, due 11/24/2026",0.0212,2026-11-05,2026-11-06
-DEED,,"Madison Park Funding Ltd Series 2019-35A, Class D2R2, Variable rate, due 02/13/2039",0.021099999999999997,2026-11-05,2026-11-06
-DEED,,"PRP Advisors, LLC Series 2025-6, Class M1, Variable rate, due 08/25/2030",0.021,2026-11-05,2026-11-06
-DEED,,"Mill City Mortgage Trust Series 2019-GS2, Class B2, Variable rate, due 08/25/2059",0.0209,2026-11-05,2026-11-06
-DEED,,"Fannie Mae Series 2022-65, Class FB, Variable rate, due 09/25/2052",0.0208,2026-11-05,2026-11-06
-DEED,,"Farmer Mac Agricultural Real Estate Trust Series 2025-1, Class B, Variable rate, due 08/01/2055",0.019,2026-11-05,2026-11-06
-DEED,,"Credit Suisse Mortgage Trust Series 2021-RBL4, Class A1, 1.79561%",0.0181,2026-11-05,2026-11-06
-DEED,,"Fannie Mae Variable rate, due 09/25/2052",0.0181,2026-11-05,2026-11-06
-DEED,,"Credit Suisse Mortgage Trust Series 2020-SPT1, Class M1, Variable rate, due 04/25/2065",0.0174,2026-11-05,2026-11-06
-DEED,,"Fannie Mae Series 2022-66, Class CF, Variable rate, due 10/25/2052",0.0172,2026-11-05,2026-11-06
-DEED,,"GNMA Series 2025-206, Class IO, Variable rate, due 04/16/2064",0.0171,2026-11-05,2026-11-06
-DEED,,"GNMA Series 2021-31, Class IO, Variable rate, due 01/16/2061",0.0163,2026-11-05,2026-11-06
-DEED,,"Research-Driven Pagaya Motor Asset Trust I Series 2025-6A, Class C, 5.534%, due 08/25/2034",0.016200000000000003,2026-11-05,2026-11-06
-DEED,,"GNMA Series 2025-21, Class IO, Variable rate, due 04/16/2065",0.016,2026-11-05,2026-11-06
-DEED,,"Gracie Point International Funding Series 2025-1A, Class A, Variable rate, due 08/15/2028",0.0158,2026-11-05,2026-11-06
-DEED,,"GNMA Series 2024-47, Class AI, 0.75%, due 06/16/2064",0.0151,2026-11-05,2026-11-06
-DEED,,"Fannie Mae or Freddie Mac TBA, 5.50%, due 05/01/2056",0.015,2026-11-05,2026-11-06
-DEED,,"GS Mortgage-Backed Securities Trust Series 2020-NQM1, Class B1, Variable rate, due 09/27/2060",0.015,2026-11-05,2026-11-06
-DEED,,"Freddie Mac Series 5435, Class BS, Variable rate, due 07/25/2054",0.0146,2026-11-05,2026-11-06
-DEED,,"REMIC FUNDING TRUST 98-1 Series 2026-2, Class A, 6.259%, due 11/27/2056",0.0141,2026-11-05,2026-11-06
-DEED,,"GNMA TBA, 6.50%, due 01/01/2056",0.0137,2026-11-05,2026-11-06
-DEED,,"Freddie Mac Series 4765, Class PZ, 3%, due 01/15/2048",0.013500000000000002,2026-11-05,2026-11-06
-DEED,,"GNMA Series 2053-153, Class IO, Variable rate, due 09/16/2067",0.0125,2026-11-05,2026-11-06
-DEED,,"GNMA Series 2017-38, Class Z, 4%, due 03/20/2047",0.012199999999999999,2026-11-05,2026-11-06
-DEED,,"Farmer Mac Agricultural Real Estate Trust Serues 2021-1, Class B, Variable rate, due 07/25/2051",0.0116,2026-11-05,2026-11-06
-DEED,,"Fannie Mae or Freddie Mac TBA, 4.50%, due 02/01/2056",0.0109,2026-11-05,2026-11-06
-DEED,,"GNMA TBA, 6%, due 04/01/2056",0.010700000000000001,2026-11-05,2026-11-06
-DEED,,"SFO Commerical Mortgage Trust Series 2021-555, Class D, Variable rate, due 05/15/2038",0.0105,2026-11-05,2026-11-06
-DEED,,"SG Capital Partners Series 2022-1, Class A1, Variable rate, due 03/27/2062",0.01,2026-11-05,2026-11-06
-DEED,,"FHLMC Multifamily Structured Pass Through Certs. Series K-1510, Class X1, Variable rate, due 01/25/2034",0.009899999999999999,2026-11-05,2026-11-06
-DEED,,"Fannie Mae FN BV9960, 4%, due 06/01/2052",0.009300000000000001,2026-11-05,2026-11-06
-DEED,,"BINOM Securitization Trust Series 2021-INV1, Class B1, Variable rate, due 06/25/2056",0.0089,2026-11-05,2026-11-06
-DEED,,"BX Trust Series 2025-DELC, Class E, Variable rate, due 12/15/2030",0.0085,2026-11-05,2026-11-06
-DEED,CAAA,First Trust AAA CMBS ETF,0.0085,2026-11-05,2026-11-06
-DEED,,"MSWF Commercial Mortgage Trust Series 2023-1, Class XA, Variable rate, due 05/15/2056",0.0085,2026-11-05,2026-11-06
-DEED,,"NRTH PARK Mortgage Trust Series 2025-PARK, Class A, Variable rate, due 10/15/2040",0.0085,2026-11-05,2026-11-06
-DEED,,"PRP Advisors, LLC Series 2025-RCF6, Class M1, Variable rate, due 12/25/2055",0.008199999999999999,2026-11-05,2026-11-06
-DEED,,"Ellington Financial Mortgage Trust Series 2024-INV1, Class B2, Variable rate, due 03/25/2069",0.008100000000000001,2026-11-05,2026-11-06
-DEED,,"Research-Driven Pagaya Motor Asset Trust I Series 2025-5A, Class C, 5.473%, due 06/26/2034",0.0079,2026-11-05,2026-11-06
-DEED,,"GNMA Series 2015-103, Class ZA, 3.50%, due 07/20/2045",0.0078000000000000005,2026-11-05,2026-11-06
-DEED,,"Research-Driven Pagaya Motor Asset Trust I Series 2025-5A, Class D, 6.012%, due 06/26/2034",0.0078000000000000005,2026-11-05,2026-11-06
-DEED,,"Freddie Mac Series 4292, Class PB, 3.50%, due 01/15/2044",0.0076,2026-11-05,2026-11-06
-DEED,,"GNMA Series 2031-39, Class DP, 2.50%, due 03/20/2043",0.0076,2026-11-05,2026-11-06
-DEED,,"Freddie Mac Series 4753, Class HL, 3%, due 02/15/2048",0.0075,2026-11-05,2026-11-06
-DEED,,"GNMA Series 2023-18, Class AZ, 4.75%, due 02/20/2053",0.006999999999999999,2026-11-05,2026-11-06
-DEED,,"Freddie Mac FR SD1382, 4%, due 08/01/2052",0.0068000000000000005,2026-11-05,2026-11-06
-DEED,,"GNMA Series 2021-125, Class EL, 1.50%, due 07/20/2051",0.0062,2026-11-05,2026-11-06
-DEED,,"GNMA Series 2015-39, Class ZA, 3.50%, due 03/20/2045",0.0058,2026-11-05,2026-11-06
-DEED,,"Fannie Mae Series 2024-73, Class FB, Variable rate, due 10/25/2054",0.005600000000000001,2026-11-05,2026-11-06
-DEED,,"Pretium Mortgage Credit Partners LLC Series 2025-NPL9, Class A2, Variable rate, due 08/25/2055",0.0053,2026-11-05,2026-11-06
-DEED,SCIO,First Trust Structured Credit Income Opportunities ETF,0.0052,2026-11-05,2026-11-06
-DEED,,"Research-Driven Pagaya Motor Asset Trust I Series 2025-3A, Class E, 11.089%, due 02/27/2034",0.0031,2026-11-05,2026-11-06
-DEED,,"FHLMC Multifamily Structured Pass Through Certs. Series K546, Class X1, Variable rate, due 05/25/2030",0.0022,2026-11-05,2026-11-06
-DEED,,"Fannie Mae Series 2006-56, Class FE, Variable rate, due 07/25/2036",0.0012,2026-11-05,2026-11-06
-DEED,,"Colony American Finance Ltd Series 2021-2, Class XA, Variable rate, due 07/15/2054",0.0003,2026-11-05,2026-11-06
-DEED,,"Fannie Mae FN FA1348, 4.50%, due 09/01/2052",0.0002,2026-11-05,2026-11-06
-DEED,,"Freddie Mac FR RE6055, 2.50%, due 08/01/2050",0.0002,2026-11-05,2026-11-06
-DEED,,"Gracechurch Mortgage Finance Plc Series 2020-GRCE, Class X, 0.30091%, due 12/10/2040",0.0002,2026-11-05,2026-11-06
-DEED,,"COMM Mortgage Trust Series 2012-CR4, Class XA, Variable rate, due 10/15/2045",0.0001,2026-11-05,2026-11-06
-DEED,,"JP Morgan Chase Commercial Mortgage Sec Trust Series 2017-JP5, Class XA, Variable rate, due 03/15/2050",0.0001,2026-11-05,2026-11-06
-DEED,,"Wells Fargo Commercial Mortgage Trust Series 2016-C37, Class XEF, Variable rate, due 12/15/2049",0.0001,2026-11-05,2026-11-06
+DEED,,"U.S. Treasury Bill, 0%, due 11/17/2026",0.0425,2026-11-05,2026-11-07
+DEED,,"Fannie Mae or Freddie Mac TBA, 6%, due 06/01/2056",0.0319,2026-11-05,2026-11-07
+DEED,,"GNMA TBA, 6%, due 05/01/2056",0.0319,2026-11-05,2026-11-07
+DEED,,"Gracie Point International Funding Series 2025-1A, Class D, Variable rate, due 08/15/2028",0.031,2026-11-05,2026-11-07
+DEED,,"Freddie Mac Series 4639, Class HZ, Variable rate, due 04/15/2053",0.028399999999999998,2026-11-05,2026-11-07
+DEED,,"Freddie Mac - SLST Series 2025-1, Class YF, Variable rate, due 05/25/2035",0.0268,2026-11-05,2026-11-07
+DEED,,"Fannie Mae Series 2015-32, Class PB, 3%, due 05/25/2045",0.026000000000000002,2026-11-05,2026-11-07
+DEED,,"Freddie Mac FR SL1523, 3.50%, due 07/01/2050",0.025699999999999997,2026-11-05,2026-11-07
+DEED,,"GNMA G2 MA7366, 2%, due 05/20/2051",0.0255,2026-11-05,2026-11-07
+DEED,,"Fannie Mae FN AL9394, 3%, due 11/01/2046",0.0254,2026-11-05,2026-11-07
+DEED,,"Fannie Mae Series 2025-49, Class FA, Variable rate, due 06/25/2055",0.0254,2026-11-05,2026-11-07
+DEED,,"Freddie Mac FR SL1390, 4%, due 07/01/2050",0.025,2026-11-05,2026-11-07
+DEED,,"Fannie Mae FN BM4963, 3%, due 05/01/2048",0.0236,2026-11-05,2026-11-07
+DEED,,"Freddie Mac - SLST Series 2025-1, Class A2, 3%, due 05/25/2035",0.022400000000000003,2026-11-05,2026-11-07
+DEED,,"Fannie Mae Series 2024-84, Class FD, Variable rate, due 11/25/2054",0.0217,2026-11-05,2026-11-07
+DEED,,"Pretium Mortgage Credit Partners LLC Series 2025-NPL6, Class A2, Variable rate, due 06/25/2055",0.021400000000000002,2026-11-05,2026-11-07
+DEED,,"PRP Advisors, LLC Series 2025-3, Class A2, Variable rate, due 05/25/2030",0.0212,2026-11-05,2026-11-07
+DEED,,"U.S. Treasury Bill, 0%, due 11/24/2026",0.0212,2026-11-05,2026-11-07
+DEED,,"Madison Park Funding Ltd Series 2019-35A, Class D2R2, Variable rate, due 02/13/2039",0.021099999999999997,2026-11-05,2026-11-07
+DEED,,"PRP Advisors, LLC Series 2025-6, Class M1, Variable rate, due 08/25/2030",0.021,2026-11-05,2026-11-07
+DEED,,"Mill City Mortgage Trust Series 2019-GS2, Class B2, Variable rate, due 08/25/2059",0.0209,2026-11-05,2026-11-07
+DEED,,"Fannie Mae Series 2022-65, Class FB, Variable rate, due 09/25/2052",0.0208,2026-11-05,2026-11-07
+DEED,,"Farmer Mac Agricultural Real Estate Trust Series 2025-1, Class B, Variable rate, due 08/01/2055",0.019,2026-11-05,2026-11-07
+DEED,,"Credit Suisse Mortgage Trust Series 2021-RBL4, Class A1, 1.79561%",0.0181,2026-11-05,2026-11-07
+DEED,,"Fannie Mae Variable rate, due 09/25/2052",0.0181,2026-11-05,2026-11-07
+DEED,,"Credit Suisse Mortgage Trust Series 2020-SPT1, Class M1, Variable rate, due 04/25/2065",0.0174,2026-11-05,2026-11-07
+DEED,,"Fannie Mae Series 2022-66, Class CF, Variable rate, due 10/25/2052",0.0172,2026-11-05,2026-11-07
+DEED,,"GNMA Series 2025-206, Class IO, Variable rate, due 04/16/2064",0.0171,2026-11-05,2026-11-07
+DEED,,"GNMA Series 2021-31, Class IO, Variable rate, due 01/16/2061",0.0163,2026-11-05,2026-11-07
+DEED,,"Research-Driven Pagaya Motor Asset Trust I Series 2025-6A, Class C, 5.534%, due 08/25/2034",0.016200000000000003,2026-11-05,2026-11-07
+DEED,,"GNMA Series 2025-21, Class IO, Variable rate, due 04/16/2065",0.016,2026-11-05,2026-11-07
+DEED,,"Gracie Point International Funding Series 2025-1A, Class A, Variable rate, due 08/15/2028",0.0158,2026-11-05,2026-11-07
+DEED,,"GNMA Series 2024-47, Class AI, 0.75%, due 06/16/2064",0.0151,2026-11-05,2026-11-07
+DEED,,"Fannie Mae or Freddie Mac TBA, 5.50%, due 05/01/2056",0.015,2026-11-05,2026-11-07
+DEED,,"GS Mortgage-Backed Securities Trust Series 2020-NQM1, Class B1, Variable rate, due 09/27/2060",0.015,2026-11-05,2026-11-07
+DEED,,"Freddie Mac Series 5435, Class BS, Variable rate, due 07/25/2054",0.0146,2026-11-05,2026-11-07
+DEED,,"REMIC FUNDING TRUST 98-1 Series 2026-2, Class A, 6.259%, due 11/27/2056",0.0141,2026-11-05,2026-11-07
+DEED,,"GNMA TBA, 6.50%, due 01/01/2056",0.0137,2026-11-05,2026-11-07
+DEED,,"Freddie Mac Series 4765, Class PZ, 3%, due 01/15/2048",0.013500000000000002,2026-11-05,2026-11-07
+DEED,,"GNMA Series 2053-153, Class IO, Variable rate, due 09/16/2067",0.0125,2026-11-05,2026-11-07
+DEED,,"GNMA Series 2017-38, Class Z, 4%, due 03/20/2047",0.012199999999999999,2026-11-05,2026-11-07
+DEED,,"Farmer Mac Agricultural Real Estate Trust Serues 2021-1, Class B, Variable rate, due 07/25/2051",0.0116,2026-11-05,2026-11-07
+DEED,,"Fannie Mae or Freddie Mac TBA, 4.50%, due 02/01/2056",0.0109,2026-11-05,2026-11-07
+DEED,,"GNMA TBA, 6%, due 04/01/2056",0.010700000000000001,2026-11-05,2026-11-07
+DEED,,"SFO Commerical Mortgage Trust Series 2021-555, Class D, Variable rate, due 05/15/2038",0.0105,2026-11-05,2026-11-07
+DEED,,"SG Capital Partners Series 2022-1, Class A1, Variable rate, due 03/27/2062",0.01,2026-11-05,2026-11-07
+DEED,,"FHLMC Multifamily Structured Pass Through Certs. Series K-1510, Class X1, Variable rate, due 01/25/2034",0.009899999999999999,2026-11-05,2026-11-07
+DEED,,"Fannie Mae FN BV9960, 4%, due 06/01/2052",0.009300000000000001,2026-11-05,2026-11-07
+DEED,,"BINOM Securitization Trust Series 2021-INV1, Class B1, Variable rate, due 06/25/2056",0.0089,2026-11-05,2026-11-07
+DEED,,"BX Trust Series 2025-DELC, Class E, Variable rate, due 12/15/2030",0.0085,2026-11-05,2026-11-07
+DEED,CAAA,First Trust AAA CMBS ETF,0.0085,2026-11-05,2026-11-07
+DEED,,"MSWF Commercial Mortgage Trust Series 2023-1, Class XA, Variable rate, due 05/15/2056",0.0085,2026-11-05,2026-11-07
+DEED,,"NRTH PARK Mortgage Trust Series 2025-PARK, Class A, Variable rate, due 10/15/2040",0.0085,2026-11-05,2026-11-07
+DEED,,"PRP Advisors, LLC Series 2025-RCF6, Class M1, Variable rate, due 12/25/2055",0.008199999999999999,2026-11-05,2026-11-07
+DEED,,"Ellington Financial Mortgage Trust Series 2024-INV1, Class B2, Variable rate, due 03/25/2069",0.008100000000000001,2026-11-05,2026-11-07
+DEED,,"Research-Driven Pagaya Motor Asset Trust I Series 2025-5A, Class C, 5.473%, due 06/26/2034",0.0079,2026-11-05,2026-11-07
+DEED,,"GNMA Series 2015-103, Class ZA, 3.50%, due 07/20/2045",0.0078000000000000005,2026-11-05,2026-11-07
+DEED,,"Research-Driven Pagaya Motor Asset Trust I Series 2025-5A, Class D, 6.012%, due 06/26/2034",0.0078000000000000005,2026-11-05,2026-11-07
+DEED,,"Freddie Mac Series 4292, Class PB, 3.50%, due 01/15/2044",0.0076,2026-11-05,2026-11-07
+DEED,,"GNMA Series 2031-39, Class DP, 2.50%, due 03/20/2043",0.0076,2026-11-05,2026-11-07
+DEED,,"Freddie Mac Series 4753, Class HL, 3%, due 02/15/2048",0.0075,2026-11-05,2026-11-07
+DEED,,"GNMA Series 2023-18, Class AZ, 4.75%, due 02/20/2053",0.006999999999999999,2026-11-05,2026-11-07
+DEED,,"Freddie Mac FR SD1382, 4%, due 08/01/2052",0.0068000000000000005,2026-11-05,2026-11-07
+DEED,,"GNMA Series 2021-125, Class EL, 1.50%, due 07/20/2051",0.0062,2026-11-05,2026-11-07
+DEED,,"GNMA Series 2015-39, Class ZA, 3.50%, due 03/20/2045",0.0058,2026-11-05,2026-11-07
+DEED,,"Fannie Mae Series 2024-73, Class FB, Variable rate, due 10/25/2054",0.005600000000000001,2026-11-05,2026-11-07
+DEED,,"Pretium Mortgage Credit Partners LLC Series 2025-NPL9, Class A2, Variable rate, due 08/25/2055",0.0053,2026-11-05,2026-11-07
+DEED,SCIO,First Trust Structured Credit Income Opportunities ETF,0.0052,2026-11-05,2026-11-07
+DEED,,"Research-Driven Pagaya Motor Asset Trust I Series 2025-3A, Class E, 11.089%, due 02/27/2034",0.0031,2026-11-05,2026-11-07
+DEED,,"FHLMC Multifamily Structured Pass Through Certs. Series K546, Class X1, Variable rate, due 05/25/2030",0.0022,2026-11-05,2026-11-07
+DEED,,"Fannie Mae Series 2006-56, Class FE, Variable rate, due 07/25/2036",0.0012,2026-11-05,2026-11-07
+DEED,,"Colony American Finance Ltd Series 2021-2, Class XA, Variable rate, due 07/15/2054",0.0003,2026-11-05,2026-11-07
+DEED,,"Fannie Mae FN FA1348, 4.50%, due 09/01/2052",0.0002,2026-11-05,2026-11-07
+DEED,,"Freddie Mac FR RE6055, 2.50%, due 08/01/2050",0.0002,2026-11-05,2026-11-07
+DEED,,"Gracechurch Mortgage Finance Plc Series 2020-GRCE, Class X, 0.30091%, due 12/10/2040",0.0002,2026-11-05,2026-11-07
+DEED,,"COMM Mortgage Trust Series 2012-CR4, Class XA, Variable rate, due 10/15/2045",0.0001,2026-11-05,2026-11-07
+DEED,,"JP Morgan Chase Commercial Mortgage Sec Trust Series 2017-JP5, Class XA, Variable rate, due 03/15/2050",0.0001,2026-11-05,2026-11-07
+DEED,,"Wells Fargo Commercial Mortgage Trust Series 2016-C37, Class XEF, Variable rate, due 12/15/2049",0.0001,2026-11-05,2026-11-07
