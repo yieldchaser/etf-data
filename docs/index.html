@@ -460,13 +460,13 @@
     <div class="rounded-lg p-2.5 mb-3 border flex flex-wrap gap-1.5 items-center" style="background: var(--surface); border-color: var(--border)">
       <span class="chip-group-label">Flags</span>
       <button @click="toggleFlag('HIGH_CONVICTION')"
-              :class="flag === 'HIGH_CONVICTION' ? 'border-emerald-500/50 text-emerald-300' : ''"
+              :class="(selectedFlags && selectedFlags.includes('HIGH_CONVICTION')) || flag === 'HIGH_CONVICTION' ? 'border-emerald-500/50 text-emerald-300 bg-emerald-500/10' : ''"
               class="chip border px-2 py-1 transition hover:border-emerald-500/40"
               style="border-color: var(--border-2)"
               x-tooltip="'HIGH CONVICTION - held by 4+ ETFs, with 2+ non-benchmark funds holding it overweight (about 2x equal weight, high in the book) across 2+ strategy tiers. Broad, convinced and independent; holders stay (15% lose one within 30 days vs 27% for a plain 4-fund count).'"
               x-text="`HC ${counts.HIGH_CONVICTION || 0}`"></button>
       <button @click="toggleFlag('CONCENTRATED')"
-              :class="flag === 'CONCENTRATED' ? 'border-orange-400/50 text-orange-300' : ''"
+              :class="(selectedFlags && selectedFlags.includes('CONCENTRATED')) || flag === 'CONCENTRATED' ? 'border-orange-400/50 text-orange-300 bg-orange-400/10' : ''"
               class="chip border px-2 py-1 transition hover:border-orange-400/40"
               style="border-color: var(--border-2)"
               x-tooltip="'Concentrated - one fund supplies 85%+ of the score, or a lone fund holds it at 4x+ equal weight. A risk note: the whole score rests on one fund\'s view.'"
@@ -549,9 +549,9 @@
       </div>
       <button @click="sortDialog = true" class="chip border px-2 py-1 hover:border-cyan-500/30 whitespace-nowrap"
               style="border-color: var(--border-2); color: var(--text-2)"
-              x-tooltip="'Open multi-level sort dialog'"
-              :class="sortLevels.length > 1 ? 'border-cyan-500/40 text-cyan-300' : ''">
-        ⇅ Sort <span x-show="sortLevels.length > 1" class="num font-mono" x-text="`(${sortLevels.length})`"></span>
+              x-tooltip="'Open multi-level sort & quantitative filter dialog'"
+              :class="(sortLevels.length > 1 || minScore > 0 || minEtfCount > 0 || minWeight > 0) ? 'border-cyan-500/50 text-cyan-300 bg-cyan-500/10' : ''">
+        ⇅ Sort <span x-show="sortLevels.length > 1 || minScore > 0 || minEtfCount > 0 || minWeight > 0" class="num font-mono text-cyan-400" x-text="`(${sortLevels.length + (minScore>0?1:0) + (minEtfCount>0?1:0) + (minWeight>0?1:0)})`"></span>
       </button>
       <button @click="exportLeaderboardCSV()" class="chip border px-2 py-1 hover:border-cyan-500/30 whitespace-nowrap"
               style="border-color: var(--border-2); color: var(--text-2)"
@@ -560,39 +560,109 @@
       </button>
     </div>
 
-    <!-- Multi-sort dialog -->
+    <!-- Multi-sort & Filter dialog -->
     <div x-show="sortDialog" x-cloak @click.self="sortDialog = false"
          @keydown.escape.window="sortDialog = false"
-         role="dialog" aria-modal="true" aria-label="Multi-level sort"
+         role="dialog" aria-modal="true" aria-label="Multi-level sort and filters"
          class="fixed inset-0 z-50 flex items-center justify-center p-3"
-         style="background: rgba(0,0,0,0.7)">
-      <div class="rounded-xl border p-5 w-full max-w-sm text-sm" style="background: var(--surface-2); border-color: var(--border-2)">
-        <div class="flex items-center justify-between mb-4">
-          <span class="font-medium" style="color: var(--cyan)">Multi-level Sort</span>
-          <button @click="sortDialog = false" style="color: var(--text-3)" class="hover:text-white">✕</button>
-        </div>
-        <template x-for="(lvl, i) in sortLevels" :key="i">
-          <div class="flex items-center gap-2 mb-2">
-            <span class="text-xs num font-mono w-4 text-center" style="color: var(--text-3)" x-text="i === 0 ? '1st' : (i === 1 ? '2nd' : '3rd')"></span>
-            <select x-model="lvl.key" class="flex-1 bg-transparent border rounded px-2 py-1 text-xs" style="border-color: var(--border-2)">
-              <template x-for="col in sortableCols" :key="col.key">
-                <option :value="col.key" x-text="col.label" style="background:#111"></option>
-              </template>
-            </select>
-            <button @click="lvl.dir = lvl.dir === 'asc' ? 'desc' : 'asc'"
-                    class="chip border px-2 py-1 font-mono text-xs" style="border-color: var(--border-2)"
-                    x-text="lvl.dir === 'asc' ? '▲ asc' : '▼ desc'"></button>
-            <button x-show="sortLevels.length > 1" @click="sortLevels.splice(i, 1)"
-                    class="text-xs hover:text-red-400" style="color: var(--text-3)">✕</button>
+         style="background: rgba(0,0,0,0.78); backdrop-filter: blur(4px);">
+      <div class="rounded-xl border p-5 w-full max-w-md text-sm shadow-2xl" style="background: var(--surface-2); border-color: var(--border-2)">
+        <div class="flex items-center justify-between mb-3 pb-2 border-b border-white/[0.08]">
+          <div class="flex items-center gap-2">
+            <span class="font-semibold text-sm tracking-wide" style="color: var(--cyan)">Multi-Level Sort & Quantitative Filters</span>
           </div>
-        </template>
-        <div class="flex gap-2 mt-4">
-          <button x-show="sortLevels.length < 3" @click="sortLevels.push({ key: 'final_score', dir: 'desc' })"
-                  class="chip border px-3 py-1 hover:border-cyan-500/30" style="border-color: var(--border-2); color: var(--text-2)">+ Add level</button>
-          <button @click="sortLevels = [{ key: 'leaderboard_rank', dir: 'asc' }]"
-                  class="chip border px-3 py-1 hover:border-red-500/30 ml-auto" style="border-color: var(--border-2); color: var(--text-3)">Reset</button>
-          <button @click="sortDialog = false; page = 1"
-                  class="chip border px-3 py-1 hover:border-cyan-500/30" style="border-color: rgba(34,211,238,0.3); color: var(--cyan)">Apply</button>
+          <button @click="sortDialog = false" style="color: var(--text-3)" class="hover:text-white p-1 text-base">✕</button>
+        </div>
+
+        <!-- Quick Presets -->
+        <div class="mb-3.5">
+          <div class="text-[10px] uppercase font-mono tracking-wider mb-1.5" style="color: var(--text-3)">Quick Sort Presets</div>
+          <div class="flex flex-wrap gap-1.5">
+            <button @click="applySortPreset('conviction')" class="chip border px-2 py-0.5 text-[11px] hover:border-cyan-500/50 hover:text-cyan-300 transition" style="border-color: var(--border-2)">
+              Flag + Score + Weight
+            </button>
+            <button @click="applySortPreset('momentum')" class="chip border px-2 py-0.5 text-[11px] hover:border-cyan-500/50 hover:text-cyan-300 transition" style="border-color: var(--border-2)">
+              Burst + Score Δ% + Rank
+            </button>
+            <button @click="applySortPreset('institutional')" class="chip border px-2 py-0.5 text-[11px] hover:border-cyan-500/50 hover:text-cyan-300 transition" style="border-color: var(--border-2)">
+              ETF Count + Weight + Score
+            </button>
+            <button @click="applySortPreset('default')" class="chip border px-2 py-0.5 text-[11px] hover:border-cyan-500/50 hover:text-cyan-300 transition" style="border-color: var(--border-2)">
+              Default Rank
+            </button>
+          </div>
+        </div>
+
+        <!-- 3 Sort Levels Pre-populated -->
+        <div class="mb-4">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[10px] uppercase font-mono tracking-wider" style="color: var(--text-3)">Sort Hierarchy (1st → 2nd → 3rd)</span>
+            <span class="text-[10px] font-mono" style="color: var(--text-3)" x-text="`${sortLevels.length} level${sortLevels.length === 1 ? '' : 's'} active`"></span>
+          </div>
+          <div class="space-y-2">
+            <template x-for="(lvl, i) in sortLevels" :key="i">
+              <div class="flex items-center gap-2">
+                <span class="text-xs num font-mono w-7 text-center font-bold px-1 py-0.5 rounded shrink-0"
+                      :style="i === 0 ? 'background: rgba(34,211,238,0.15); color: var(--cyan);' : 'background: rgba(255,255,255,0.05); color: var(--text-3);'"
+                      x-text="i === 0 ? '1st' : (i === 1 ? '2nd' : '3rd')"></span>
+                <select x-model="lvl.key" class="flex-1 bg-transparent border rounded px-2 py-1 text-xs focus:border-cyan-500/50 min-w-0" style="border-color: var(--border-2); color: var(--text)">
+                  <template x-for="col in sortableCols" :key="col.key">
+                    <option :value="col.key" x-text="col.label" style="background:#111"></option>
+                  </template>
+                </select>
+                <button @click="lvl.dir = lvl.dir === 'asc' ? 'desc' : 'asc'"
+                        class="chip border px-2 py-1 font-mono text-xs w-16 text-center shrink-0" style="border-color: var(--border-2)"
+                        :class="lvl.dir === 'desc' ? 'text-amber-300' : 'text-cyan-300'"
+                        x-text="lvl.dir === 'asc' ? '▲ asc' : '▼ desc'"></button>
+                <button x-show="sortLevels.length > 1" @click="sortLevels.splice(i, 1)"
+                        class="text-xs hover:text-red-400 p-1 shrink-0" style="color: var(--text-3)" title="Remove level">✕</button>
+              </div>
+            </template>
+          </div>
+          <button x-show="sortLevels.length < 3" @click="sortLevels.push({ key: sortLevels.length === 1 ? 'final_score' : 'total_weight', dir: 'desc' })"
+                  class="mt-2 text-xs text-cyan-400 hover:text-cyan-300 font-mono transition flex items-center gap-1">
+            + Add tie-breaker level
+          </button>
+        </div>
+
+        <!-- Quantitative Threshold Filters -->
+        <div class="mb-4 pt-3 border-t border-white/[0.08]">
+          <div class="text-[10px] uppercase font-mono tracking-wider mb-2" style="color: var(--text-3)">Quantitative Threshold Filters</div>
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="text-[10px] font-mono block text-zinc-400 mb-1">Min Score</label>
+              <input type="number" x-model.number="minScore" placeholder="Any" min="0" max="300" step="10"
+                     class="w-full bg-transparent border rounded px-2 py-1 text-xs font-mono focus:border-cyan-500/50" style="border-color: var(--border-2); color: var(--text)">
+            </div>
+            <div>
+              <label class="text-[10px] font-mono block text-zinc-400 mb-1">Min ETF Count</label>
+              <input type="number" x-model.number="minEtfCount" placeholder="Any" min="0" max="30" step="1"
+                     class="w-full bg-transparent border rounded px-2 py-1 text-xs font-mono focus:border-cyan-500/50" style="border-color: var(--border-2); color: var(--text)">
+            </div>
+            <div>
+              <label class="text-[10px] font-mono block text-zinc-400 mb-1">Min Weight %</label>
+              <input type="number" x-model.number="minWeight" placeholder="Any %" min="0" max="100" step="5"
+                     class="w-full bg-transparent border rounded px-2 py-1 text-xs font-mono focus:border-cyan-500/50" style="border-color: var(--border-2); color: var(--text)">
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="flex items-center justify-between pt-3 border-t border-white/[0.08]">
+          <button @click="resetSortsAndFilters()"
+                  class="chip border px-3 py-1 text-xs hover:border-red-500/40 hover:text-red-300 transition" style="border-color: var(--border-2); color: var(--text-3)">
+            Reset
+          </button>
+          <div class="flex gap-2">
+            <button @click="sortDialog = false"
+                    class="chip border px-3 py-1 text-xs hover:border-zinc-500 transition" style="border-color: var(--border-2); color: var(--text-2)">
+              Cancel
+            </button>
+            <button @click="sortDialog = false; page = 1"
+                    class="chip border px-4 py-1 text-xs font-semibold hover:border-cyan-400 transition" style="border-color: rgba(34,211,238,0.4); color: var(--cyan); background: rgba(34,211,238,0.1)">
+              Apply
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1151,13 +1221,13 @@
       <div class="rounded-lg p-2.5 mb-3 border flex flex-wrap gap-1.5 items-center" style="background: var(--surface); border-color: var(--border)">
         <span class="chip-group-label">Flags</span>
         <button @click="toggleFlag('HIGH_CONVICTION')"
-                :class="flag === 'HIGH_CONVICTION' ? 'border-emerald-500/50 text-emerald-300' : ''"
+                :class="(selectedFlags && selectedFlags.includes('HIGH_CONVICTION')) || flag === 'HIGH_CONVICTION' ? 'border-emerald-500/50 text-emerald-300 bg-emerald-500/10' : ''"
                 class="chip border px-2 py-1 transition hover:border-emerald-500/40"
                 style="border-color: var(--border-2)"
                 x-tooltip="'HIGH CONVICTION - held by 4+ ETFs, with 2+ non-benchmark funds holding it overweight (about 2x equal weight, high in the book) across 2+ strategy tiers. Broad, convinced and independent; holders stay (15% lose one within 30 days vs 27% for a plain 4-fund count).'"
                 x-text="`HC ${counts.HIGH_CONVICTION || 0}`"></button>
         <button @click="toggleFlag('CONCENTRATED')"
-                :class="flag === 'CONCENTRATED' ? 'border-orange-400/50 text-orange-300' : ''"
+                :class="(selectedFlags && selectedFlags.includes('CONCENTRATED')) || flag === 'CONCENTRATED' ? 'border-orange-400/50 text-orange-300 bg-orange-400/10' : ''"
                 class="chip border px-2 py-1 transition hover:border-orange-400/40"
                 style="border-color: var(--border-2)"
                 x-tooltip="'Concentrated - one fund supplies 85%+ of the score, or a lone fund holds it at 4x+ equal weight. A risk note: the whole score rests on one fund\'s view.'"
@@ -2709,7 +2779,7 @@ function app() {
     loading: true, loadProgress: 0, displayProgress: 0, targetProgress: 0, error: '',
     activeTab: 'leaderboard',
     overlapHover: '',
-    flag: '', selectedTier: '', selectedSector: '', selectedCountry: '', regionFilter: '', newOnly: false, burstOnly: false, craterOnly: false, q: '', qualityAdoptedOnly: false, preHcOnly: false, stealthBuyOnly: false, fundsUpOnly: false, fundsDownOnly: false, 
+    flag: '', selectedFlags: [], minScore: 0, minEtfCount: 0, minWeight: 0, selectedTier: '', selectedSector: '', selectedCountry: '', regionFilter: '', newOnly: false, burstOnly: false, craterOnly: false, q: '', qualityAdoptedOnly: false, preHcOnly: false, stealthBuyOnly: false, fundsUpOnly: false, fundsDownOnly: false, 
     sortKey: 'leaderboard_rank', sortDir: 'asc',
     page: 1, pageSize: 50, open: null,
     // Reactive caches for expensive getters (BUG-5): _filteredCacheKey holds
@@ -2740,7 +2810,16 @@ function app() {
     holdingsExits: {},
     sortDialog: false,
     hoveredSlice: null,
-    sortLevels: [{ key: 'leaderboard_rank', dir: 'asc' }],
+    sortLevels: [
+      { key: 'leaderboard_rank', dir: 'asc' },
+      { key: 'final_score',      dir: 'desc' },
+      { key: 'total_weight',     dir: 'desc' }
+    ],
+    _dynfTimelineCache: null,
+    _dynfTimelineKey: null,
+    _dynfBaseSvgCache: null,
+    _dynfBaseSvgKey: null,
+    _dynfHoverRaf: null,
     // Today's-signals strip - dismiss persists for the session
     hideSignalStrip: (() => { try { return sessionStorage.getItem('conviction.hideSignalStrip') === '1'; } catch { return false; } })(),
     pins: (() => {
@@ -2999,8 +3078,76 @@ function app() {
               60:'two months ago',90:'three months ago',YTD:'Jan 1'}[p] || 'a custom date';
     },
 
-    toggleFlag(f) { this.flag = (this.flag === f) ? '' : f; this.page = 1; },
-    reset() { this.flag = ''; this.newOnly = false; this.burstOnly = false; this.craterOnly = false; this.qualityAdoptedOnly = false; this.preHcOnly = false; this.stealthBuyOnly = false; this.fundsUpOnly = false; this.fundsDownOnly = false; this.selectedTier = ''; this.selectedSector = ''; this.selectedCountry = ''; this.regionFilter = ''; this.q = ''; this.page = 1; },
+    toggleFlag(f) {
+      if (!this.selectedFlags) this.selectedFlags = [];
+      if (this.selectedFlags.includes(f)) {
+        this.selectedFlags = this.selectedFlags.filter(x => x !== f);
+      } else {
+        this.selectedFlags.push(f);
+      }
+      this.flag = this.selectedFlags.length === 1 ? this.selectedFlags[0] : (this.selectedFlags.length > 1 ? this.selectedFlags.join(',') : '');
+      this.page = 1;
+    },
+    reset() {
+      this.flag = '';
+      this.selectedFlags = [];
+      this.minScore = 0;
+      this.minEtfCount = 0;
+      this.minWeight = 0;
+      this.newOnly = false;
+      this.burstOnly = false;
+      this.craterOnly = false;
+      this.qualityAdoptedOnly = false;
+      this.preHcOnly = false;
+      this.stealthBuyOnly = false;
+      this.fundsUpOnly = false;
+      this.fundsDownOnly = false;
+      this.selectedTier = '';
+      this.selectedSector = '';
+      this.selectedCountry = '';
+      this.regionFilter = '';
+      this.q = '';
+      this.page = 1;
+    },
+    applySortPreset(p) {
+      if (p === 'conviction') {
+        this.sortLevels = [
+          { key: 'flag_rank',    dir: 'desc' },
+          { key: 'final_score',  dir: 'desc' },
+          { key: 'total_weight', dir: 'desc' }
+        ];
+      } else if (p === 'momentum') {
+        this.sortLevels = [
+          { key: 'burst_score',      dir: 'desc' },
+          { key: 'score_delta_pct',  dir: 'desc' },
+          { key: 'leaderboard_rank', dir: 'asc' }
+        ];
+      } else if (p === 'institutional') {
+        this.sortLevels = [
+          { key: 'etf_count',    dir: 'desc' },
+          { key: 'total_weight', dir: 'desc' },
+          { key: 'final_score',  dir: 'desc' }
+        ];
+      } else {
+        this.sortLevels = [
+          { key: 'leaderboard_rank', dir: 'asc' },
+          { key: 'final_score',      dir: 'desc' },
+          { key: 'total_weight',     dir: 'desc' }
+        ];
+      }
+      this.page = 1;
+    },
+    resetSortsAndFilters() {
+      this.sortLevels = [
+        { key: 'leaderboard_rank', dir: 'asc' },
+        { key: 'final_score',      dir: 'desc' },
+        { key: 'total_weight',     dir: 'desc' }
+      ];
+      this.minScore = 0;
+      this.minEtfCount = 0;
+      this.minWeight = 0;
+      this.page = 1;
+    },
 
     togglePin(t) {
       const i = this.pins.indexOf(t);
@@ -3238,7 +3385,9 @@ function app() {
       // times per render tick. Recompute only when an input actually changes.
       const key = JSON.stringify({
         n: this.leaderboard.length, tab: this.activeTab, pins: this.pins.join(','),
-        flag: this.flag, newOnly: this.newOnly,
+        flag: this.flag, flags: (this.selectedFlags || []).slice().sort().join(','),
+        minScore: this.minScore, minEtfCount: this.minEtfCount, minWeight: this.minWeight,
+        newOnly: this.newOnly,
         burstOnly: this.burstOnly, craterOnly: this.craterOnly, qualityAdoptedOnly: this.qualityAdoptedOnly,
         preHcOnly: this.preHcOnly,
         stealthBuyOnly: this.stealthBuyOnly,
@@ -3252,7 +3401,14 @@ function app() {
       const q = this.q.trim().toLowerCase(), tier = this.selectedTier, sector = this.selectedSector, country = this.selectedCountry, region = this.regionFilter;
       let r = this.leaderboard;
       if (this.activeTab === 'watchlist') r = r.filter(x => this.pins.includes(x.ticker));
-      if (this.flag)         r = r.filter(x => x.flag === this.flag);
+      if (this.selectedFlags && this.selectedFlags.length > 0) {
+        r = r.filter(x => this.selectedFlags.includes(x.flag));
+      } else if (this.flag) {
+        r = r.filter(x => x.flag === this.flag);
+      }
+      if (this.minScore > 0)    r = r.filter(x => (x.final_score || 0) >= this.minScore);
+      if (this.minEtfCount > 0) r = r.filter(x => (x.etf_count || 0) >= this.minEtfCount);
+      if (this.minWeight > 0)   r = r.filter(x => (x.total_weight || 0) >= this.minWeight);
       if (this.newOnly)      r = r.filter(x => x.any_new);
       if (this.burstOnly)    r = r.filter(x => x.burst_30d || x.surge_10d);
       if (this.craterOnly)   r = r.filter(x => x.crater_30d || x.slide_10d);
@@ -3720,14 +3876,18 @@ function app() {
         .join(' / ');
     },
 
-    // ── Factor Rotation Radar (DYNF) ──────────────────────────────────────
+    // ── Factor Rotation Radar (DYNF) (Optimized for Zero Lag) ───────────
     get dynfFilteredTimeline() {
       const list = this.dynfEngine?.timeline || [];
       if (!list.length) return [];
       const n = list.length;
       const sIdx = Math.max(0, Math.min(n - 2, Math.round(this.dynfZoomStart * (n - 1))));
       const eIdx = Math.max(sIdx + 1, Math.min(n - 1, Math.round(this.dynfZoomEnd * (n - 1))));
-      return list.slice(sIdx, eIdx + 1);
+      const cacheKey = `${sIdx}-${eIdx}-${n}`;
+      if (this._dynfTimelineKey === cacheKey && this._dynfTimelineCache) return this._dynfTimelineCache;
+      this._dynfTimelineKey = cacheKey;
+      this._dynfTimelineCache = list.slice(sIdx, eIdx + 1);
+      return this._dynfTimelineCache;
     },
 
     get dynfSliderStartVal() {
@@ -3900,10 +4060,10 @@ function app() {
       return map[k] || k;
     },
 
-    get dynfChartSvgHtml() {
+    dynfBuildBaseSvg() {
       const pts = this.dynfFilteredTimeline;
       if (!pts || !pts.length) {
-        return '<svg viewBox="0 0 960 210" style="display:block;width:100%;height:auto"><text x="480" y="105" text-anchor="middle" style="fill:var(--text-3);font-size:12px;font-family:ui-monospace,Menlo,Consolas,monospace">Loading Factor Engine data...</text></svg>';
+        return '<rect x="40" y="18" width="900" height="166" fill="rgba(255,255,255,0.01)" rx="4"/>';
       }
 
       const factorKeys = ['momentum', 'quality', 'value', 'min_vol', 'size'];
@@ -3915,10 +4075,7 @@ function app() {
       const plotH = yBottom - yTop;
       const n = pts.length;
 
-      let svg = '<svg viewBox="0 0 960 210" style="display:block;width:100%;height:auto;overflow:visible">';
-
-      // Plot area background
-      svg += '<rect x="' + xLeft + '" y="' + yTop + '" width="' + plotW + '" height="' + plotH + '" fill="rgba(255,255,255,0.01)" rx="4"/>';
+      let svg = '<rect x="' + xLeft + '" y="' + yTop + '" width="' + plotW + '" height="' + plotH + '" fill="rgba(255,255,255,0.01)" rx="4"/>';
 
       // Gridlines & Y-axis labels (0%, 15%, 30%, 45%, 60%)
       const gridLevels = [0, 15, 30, 45, 60];
@@ -3999,14 +4156,40 @@ function app() {
         svg += '<polyline points="' + polyPoints.join(' ') + '" fill="none" stroke="' + color + '" stroke-width="' + strokeW + '" opacity="' + opacity + '" stroke-linecap="round" stroke-linejoin="round"/>';
       }
 
-      // Vertical hover/scrubber crosshair indicator & intersection dots
+      return svg;
+    },
+
+    get dynfChartSvgHtml() {
+      const pts = this.dynfFilteredTimeline;
+      if (!pts || !pts.length) {
+        return '<svg viewBox="0 0 960 210" style="display:block;width:100%;height:auto"><text x="480" y="105" text-anchor="middle" style="fill:var(--text-3);font-size:12px;font-family:ui-monospace,Menlo,Consolas,monospace">Loading Factor Engine data...</text></svg>';
+      }
+
+      const key = `${pts.length}|${pts[0]?.date}|${pts[pts.length - 1]?.date}|${this.dynfActiveFactor}|${this.dynfTimeframe}`;
+      if (this._dynfBaseSvgKey !== key || !this._dynfBaseSvgCache) {
+        this._dynfBaseSvgKey = key;
+        this._dynfBaseSvgCache = this.dynfBuildBaseSvg();
+      }
+
+      let svg = '<svg viewBox="0 0 960 210" style="display:block;width:100%;height:auto;overflow:visible">';
+      svg += this._dynfBaseSvgCache;
+
+      // Vertical hover/scrubber crosshair indicator & intersection dots (super lightweight: only 6 SVG elements)
       const activeIdx = this.dynfHoverIdx !== null ? this.dynfHoverIdx : (this.dynfIsPlaying ? this.dynfHoverIdx : null);
-      if (activeIdx !== null && activeIdx >= 0 && activeIdx < n) {
+      if (activeIdx !== null && activeIdx >= 0 && activeIdx < pts.length) {
+        const xLeft = 40;
+        const xRight = 940;
+        const plotW = xRight - xLeft;
+        const yTop = 18;
+        const yBottom = 184;
+        const plotH = yBottom - yTop;
+        const n = pts.length;
         const hoverPt = pts[activeIdx];
         const hx = (xLeft + (activeIdx / (n - 1)) * plotW).toFixed(1);
 
         svg += '<line x1="' + hx + '" y1="' + yTop + '" x2="' + hx + '" y2="' + yBottom + '" stroke="rgba(255,255,255,0.45)" stroke-dasharray="3 3" stroke-width="1.2"/>';
 
+        const factorKeys = ['momentum', 'quality', 'value', 'min_vol', 'size'];
         for (let f = 0; f < factorKeys.length; f++) {
           const k = factorKeys[f];
           const color = this.dynfFactorColor(k);
@@ -4036,8 +4219,17 @@ function app() {
       const xRight = 940;
       const clampedX = Math.max(xLeft, Math.min(xRight, svgX));
       const frac = (clampedX - xLeft) / (xRight - xLeft);
-      this.dynfHoverIdx = Math.min(pts.length - 1, Math.max(0, Math.round(frac * (pts.length - 1))));
-      this.dynfHoverXPx = ev.clientX - rect.left;
+      const newIdx = Math.min(pts.length - 1, Math.max(0, Math.round(frac * (pts.length - 1))));
+      const newX = ev.clientX - rect.left;
+
+      // Skip redundant re-renders if cursor stays on the same timeline point
+      if (this.dynfHoverIdx === newIdx && Math.abs(newX - (this.dynfHoverXPx || 0)) < 3) return;
+
+      if (this._dynfHoverRaf) cancelAnimationFrame(this._dynfHoverRaf);
+      this._dynfHoverRaf = requestAnimationFrame(() => {
+        this.dynfHoverIdx = newIdx;
+        this.dynfHoverXPx = newX;
+      });
     },
 
     get dynfTooltipLeft() {
@@ -4049,6 +4241,10 @@ function app() {
     },
 
     dynfClearChartHover() {
+      if (this._dynfHoverRaf) {
+        cancelAnimationFrame(this._dynfHoverRaf);
+        this._dynfHoverRaf = null;
+      }
       if (!this.dynfIsPlaying) {
         this.dynfHoverIdx = null;
       }
