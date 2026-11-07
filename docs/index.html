@@ -45,6 +45,60 @@
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
     }
+        /* Double-thumb Range Slider - matches Nat-Gas-ETFs brush */
+    .range-slider-container { margin: 6px 0 10px; }
+    .range-slider-wrap {
+      position: relative;
+      height: 42px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 0 12px;
+    }
+    .range-slider-track {
+      position: absolute;
+      top: 18px; left: 0; right: 0;
+      height: 6px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 3px; z-index: 1;
+    }
+    .range-slider-highlight {
+      position: absolute;
+      top: 18px; height: 6px;
+      background: var(--cyan);
+      border-radius: 3px; z-index: 2;
+      box-shadow: 0 0 10px rgba(34,211,238,0.4);
+    }
+    .range-inputs { position: relative; width: 100%; height: 100%; }
+    .range-inputs input[type=range] {
+      position: absolute; width: 100%; top: 5px; left: 0;
+      pointer-events: none; -webkit-appearance: none; appearance: none;
+      background: none; height: 32px; margin: 0; z-index: 3;
+    }
+    .range-inputs input[type=range]::-webkit-slider-thumb {
+      pointer-events: auto;
+      -webkit-appearance: none; appearance: none;
+      width: 18px; height: 18px; border-radius: 4px;
+      background: #fff; border: 2px solid var(--cyan);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+      cursor: ew-resize; transition: all 0.15s;
+    }
+    .range-inputs input[type=range]::-moz-range-thumb {
+      pointer-events: auto;
+      width: 18px; height: 18px; border-radius: 4px;
+      background: #fff; border: 2px solid var(--cyan);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+      cursor: ew-resize; transition: all 0.15s;
+    }
+    .range-inputs input[type=range]:hover::-webkit-slider-thumb {
+      background: var(--cyan); border-color: #fff; transform: scale(1.1);
+    }
+    .range-inputs input[type=range]:hover::-moz-range-thumb {
+      background: var(--cyan); border-color: #fff; transform: scale(1.1);
+    }
+    .range-inputs input[type=range]::-webkit-slider-runnable-track { background: none !important; border: none !important; }
+    .range-inputs input[type=range]::-moz-range-track { background: none !important; border: none !important; }
+
     html, body { background: var(--bg); color: var(--text); overflow-x: hidden; width: 100%; max-width: 100%; }
     body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Inter", sans-serif; }
     .num, table td, .mono { font-variant-numeric: tabular-nums; }
@@ -2072,9 +2126,12 @@
                    x-text="dynfEngine.current_factors?.[fKey]?.description || ''"></div>
             </div>
             <div class="pt-2 border-t" style="border-color: rgba(255,255,255,0.04)" @click.stop>
-              <div class="text-[8.5px] uppercase tracking-wider font-semibold mb-1" style="color: var(--text-3)">Top Drivers</div>
+              <div class="flex items-center justify-between text-[8.5px] uppercase tracking-wider font-semibold mb-1" style="color: var(--text-3)">
+                <span>Top Drivers</span>
+                <span x-show="dynfHoverIdx !== null && dynfFilteredTimeline[dynfHoverIdx]" class="text-cyan-400 font-mono text-[8px]" x-text="dynfFilteredTimeline[dynfHoverIdx]?.date"></span>
+              </div>
               <div class="space-y-1">
-                <template x-for="d in (dynfEngine.current_factors?.[fKey]?.top_drivers || []).slice(0, 4)" :key="d.ticker">
+                <template x-for="d in dynfCurrentDrivers(fKey)" :key="d.ticker">
                   <div class="flex items-center justify-between text-[10.5px]">
                     <a :href="`stock.html?t=${encodeURIComponent(d.ticker || '')}`"
                        class="font-mono font-semibold hover:underline text-zinc-200 hover:text-cyan-400 truncate max-w-[90px]"
@@ -2157,30 +2214,51 @@
                   </div>
                 </template>
               </div>
+              <!-- Contemporaneous Top Drivers on Hover -->
+              <div class="mt-2 pt-1.5 border-t border-white/[0.08]">
+                <div class="text-[8.5px] uppercase tracking-wider text-zinc-500 font-semibold mb-1">Key Drivers</div>
+                <div class="grid grid-cols-2 gap-x-2 gap-y-1 text-[9px] font-mono">
+                  <template x-for="fKey in (dynfActiveFactor ? [dynfActiveFactor] : ['momentum', 'quality', 'value', 'size'])" :key="fKey">
+                    <div class="truncate flex items-center gap-1">
+                      <span class="w-1.5 h-1.5 rounded-full inline-block shrink-0" :style="`background: ${dynfFactorColor(fKey)}`"></span>
+                      <span class="text-zinc-400" x-text="dynfFactorShortLabel(fKey) + ':'"></span>
+                      <span class="text-zinc-200 font-semibold truncate" x-text="dynfCurrentDrivers(fKey)[0]?.ticker || '-'"></span>
+                    </div>
+                  </template>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Interactive Range Slider & Timeline Scrubber Bar (Directly aligned with chart plot area: 4.1667% left, 93.75% width) -->
+        <!-- Interactive Double-Thumb Range Slider & Zoom Brush (Matches Nat-Gas-ETFs) -->
         <div class="px-3 pb-2 pt-0">
           <div class="p-2.5 rounded-lg border" style="background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.06)">
-            <!-- Slider track aligned 1-to-1 with the chart plot area -->
-            <div class="relative w-full mb-2">
-              <div style="margin-left: 4.1667%; width: 93.75%;" class="relative flex items-center">
-                <input type="range"
-                       min="0"
-                       :max="Math.max(0, dynfFilteredTimeline.length - 1)"
-                       :value="dynfHoverIdx !== null ? dynfHoverIdx : dynfFilteredTimeline.length - 1"
-                       @input="dynfHoverIdx = parseInt($event.target.value, 10)"
-                       class="w-full h-2 rounded-lg appearance-none cursor-pointer bg-zinc-800/90 hover:bg-zinc-700/90 accent-cyan-400 transition-colors"
-                       style="margin: 0; padding: 0;">
+            <!-- Dual-Thumb Range Slider -->
+            <div class="range-slider-container">
+              <div class="range-slider-wrap">
+                <div class="range-inputs">
+                  <div class="range-slider-track"></div>
+                  <div id="dynf-range-highlight" class="range-slider-highlight"
+                       :style="`left: calc(${dynfZoomStart * 100}% + ${10 - dynfZoomStart * 20}px); width: calc(${(dynfZoomEnd - dynfZoomStart) * 100}% + ${(dynfZoomStart - dynfZoomEnd) * 20}px);`"></div>
+                  <input type="range"
+                         min="0"
+                         :max="Math.max(1, (dynfEngine?.timeline?.length || 1) - 1)"
+                         :value="dynfSliderStartVal"
+                         @input="onDynfSliderStart($event)"
+                         data-tooltip="Drag to set zoom start date">
+                  <input type="range"
+                         min="0"
+                         :max="Math.max(1, (dynfEngine?.timeline?.length || 1) - 1)"
+                         :value="dynfSliderEndVal"
+                         @input="onDynfSliderEnd($event)"
+                         data-tooltip="Drag to set zoom end date">
+                </div>
               </div>
-              <!-- Timeline boundaries aligned under the slider edges -->
-              <div style="margin-left: 4.1667%; width: 93.75%;" class="flex justify-between items-center text-[9px] font-mono text-zinc-500 pt-1 select-none">
+              <div class="flex items-center justify-between text-[9px] font-mono font-bold pt-1.5 px-1 select-none text-zinc-400">
                 <span x-text="dynfFilteredTimeline[0]?.date || ''"></span>
-                <span x-show="dynfHoverIdx !== null && dynfFilteredTimeline[dynfHoverIdx]"
-                      class="text-cyan-400 font-semibold px-2 py-0.5 rounded bg-cyan-400/10 border border-cyan-400/20"
-                      x-text="`Inspecting: ${dynfFilteredTimeline[dynfHoverIdx]?.date}`"></span>
+                <span class="text-cyan-400 uppercase tracking-wider px-2 py-0.5 rounded bg-cyan-400/10 border border-cyan-400/20"
+                      x-text="dynfActiveRangeLabel"></span>
                 <span x-text="dynfFilteredTimeline[dynfFilteredTimeline.length - 1]?.date || ''"></span>
               </div>
             </div>
@@ -2193,14 +2271,14 @@
                         :style="dynfIsPlaying ? 'background: rgba(34,211,238,0.15); color: var(--cyan); border-color: rgba(34,211,238,0.4);' : 'background: rgba(255,255,255,0.04); color: var(--text-2); border-color: var(--border);'">
                   <span x-text="dynfIsPlaying ? 'Pause' : 'Play Timeline'"></span>
                 </button>
-                <button x-show="dynfHoverIdx !== null && dynfHoverIdx < dynfFilteredTimeline.length - 1"
-                        @click="dynfHoverIdx = null; dynfPausePlay()"
+                <button x-show="dynfTimeframe !== 'ALL'"
+                        @click="setDynfTimeframe('ALL')"
                         class="px-2 py-1 text-[9.5px] font-mono rounded border text-zinc-400 hover:text-cyan-400 border-white/[0.08] hover:border-cyan-400/40 transition cursor-pointer shrink-0">
-                  Reset to Latest
+                  Reset Zoom to All
                 </button>
               </div>
               <div class="text-[10px] font-mono text-zinc-500">
-                <span x-text="`${dynfFilteredTimeline.length} daily rebalance snapshots`"></span>
+                <span x-text="`${dynfFilteredTimeline.length} visible points (${(dynfEngine?.timeline || []).length} total)`"></span>
               </div>
             </div>
           </div>
@@ -2288,7 +2366,44 @@
           </table>
         </div>
       </div>
-    </div>
+    
+        <!-- Academic Benchmark: Jensen, Kelly, and Pedersen (Journal of Finance 2023) Factor Taxonomy -->
+        <div class="mt-2 border-t" style="border-color: rgba(255,255,255,0.04)">
+          <div class="px-3 py-2 flex items-center justify-between text-xs cursor-pointer select-none hover:bg-white/[0.01] transition"
+               @click="dynfShowJkpReference = !dynfShowJkpReference">
+            <div class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+              <span class="font-bold text-zinc-200 uppercase tracking-wider text-[10.5px]">Academic Benchmark: Jensen, Kelly &amp; Pedersen (JKP 2023) Taxonomy</span>
+            </div>
+            <span class="text-zinc-500 font-mono text-[10px]" x-text="dynfShowJkpReference ? 'Hide [-]' : 'Explore Taxonomy [+]'"></span>
+          </div>
+
+          <div x-show="dynfShowJkpReference" x-cloak class="px-3 pb-3 pt-1 border-t border-white/[0.04] space-y-2.5">
+            <div class="text-[11px] leading-relaxed text-zinc-400">
+              Our 5-factor rotation engine maps directly to the global empirical asset pricing framework published by
+              Theis I. Jensen, Bryan Kelly, and Lasse H. Pedersen (<em>Journal of Finance</em>, 2023), replicating 153 firm characteristics across 93 countries.
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-2 text-xs">
+              <template x-for="th in (dynfEngine?.jkp_academic_reference?.themes || [])" :key="th.theme">
+                <div class="p-2 rounded border border-white/[0.06] bg-black/40 flex flex-col justify-between">
+                  <div>
+                    <div class="flex items-center justify-between mb-1">
+                      <span class="font-semibold text-zinc-200 text-[11px]" x-text="th.theme"></span>
+                      <span class="font-mono text-[9px] px-1 py-0.5 rounded bg-white/[0.05] text-cyan-400 font-bold" x-text="th.tradable_proxy"></span>
+                    </div>
+                    <div class="text-[9.5px] text-zinc-400 font-mono mb-1.5" x-text="`JKP: ${th.jkp_cluster}`"></div>
+                    <div class="text-[9px] text-zinc-500 leading-tight" x-text="th.key_metrics"></div>
+                  </div>
+                </div>
+              </template>
+            </div>
+            <div class="text-[9.5px] text-zinc-500 font-mono border-t border-white/[0.04] pt-1.5 flex items-center justify-between flex-wrap gap-1">
+              <span>Source: bkelly-lab/jkp-data &bull; 100-Year Historical Return Universe (1926-2025)</span>
+              <a href="https://jkpfactors.com" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:underline">jkpfactors.com &rarr;</a>
+            </div>
+          </div>
+        </div>
+</div>
 
     <!-- ETF Overlap Heatmap - surfaces which ETFs are echoes vs independent signals -->
     <div x-show="overlap?.etfs?.length" class="rounded-lg border mt-3" style="background: var(--surface); border-color: var(--border)">
@@ -2581,6 +2696,9 @@ function app() {
     leaderboard: [], holdings: [], changelog: {}, meta: {}, flow: {}, overlap: {},
     scoreHistory: {},
     dynfEngine: null,
+    dynfZoomStart: 0.0,
+    dynfZoomEnd: 1.0,
+    dynfShowJkpReference: false,
     dynfTimeframe: 'ALL', // 'ALL', '5Y', '3Y', '1Y', 'YTD'
     dynfActiveFactor: null, // null or factor key to highlight
     dynfHoverIdx: null,
@@ -3606,28 +3724,107 @@ function app() {
     get dynfFilteredTimeline() {
       const list = this.dynfEngine?.timeline || [];
       if (!list.length) return [];
-      if (this.dynfTimeframe === 'ALL') return list;
+      const n = list.length;
+      const sIdx = Math.max(0, Math.min(n - 2, Math.round(this.dynfZoomStart * (n - 1))));
+      const eIdx = Math.max(sIdx + 1, Math.min(n - 1, Math.round(this.dynfZoomEnd * (n - 1))));
+      return list.slice(sIdx, eIdx + 1);
+    },
 
-      const latestDateStr = list[list.length - 1].date;
-      const latestYear = parseInt(latestDateStr.slice(0, 4), 10);
+    get dynfSliderStartVal() {
+      const n = this.dynfEngine?.timeline?.length || 1;
+      return Math.round(this.dynfZoomStart * (n - 1));
+    },
 
-      if (this.dynfTimeframe === 'YTD') {
-        const ytdStart = `${latestYear}-01-01`;
-        return list.filter(p => p.date >= ytdStart);
+    get dynfSliderEndVal() {
+      const n = this.dynfEngine?.timeline?.length || 1;
+      return Math.round(this.dynfZoomEnd * (n - 1));
+    },
+
+    onDynfSliderStart(ev) {
+      const n = this.dynfEngine?.timeline?.length || 1;
+      const max = Math.max(1, n - 1);
+      let v1 = parseInt(ev.target.value, 10);
+      let v2 = Math.round(this.dynfZoomEnd * max);
+      if (v1 >= v2) {
+        v1 = Math.max(0, v2 - 1);
       }
+      this.dynfZoomStart = v1 / max;
+      this.dynfTimeframe = (this.dynfZoomStart < 0.01 && this.dynfZoomEnd > 0.99) ? 'ALL' : 'CUSTOM';
+      this.dynfHoverIdx = null;
+      this.dynfPausePlay();
+    },
 
-      const latestDate = new Date(latestDateStr);
-      const yearsBack = this.dynfTimeframe === '1Y' ? 1 : this.dynfTimeframe === '3Y' ? 3 : 5;
-      const cutoff = new Date(latestDate);
-      cutoff.setFullYear(cutoff.getFullYear() - yearsBack);
-      const cutoffStr = cutoff.toISOString().slice(0, 10);
-      return list.filter(p => p.date >= cutoffStr);
+    onDynfSliderEnd(ev) {
+      const n = this.dynfEngine?.timeline?.length || 1;
+      const max = Math.max(1, n - 1);
+      let v2 = parseInt(ev.target.value, 10);
+      let v1 = Math.round(this.dynfZoomStart * max);
+      if (v2 <= v1) {
+        v2 = Math.min(max, v1 + 1);
+      }
+      this.dynfZoomEnd = v2 / max;
+      this.dynfTimeframe = (this.dynfZoomStart < 0.01 && this.dynfZoomEnd > 0.99) ? 'ALL' : 'CUSTOM';
+      this.dynfHoverIdx = null;
+      this.dynfPausePlay();
+    },
+
+    get dynfActiveRangeLabel() {
+      const pts = this.dynfFilteredTimeline;
+      if (!pts || !pts.length) return 'ALL DATA';
+      if (this.dynfTimeframe !== 'CUSTOM') {
+        const map = {
+          'ALL': 'FULL TIMELINE (2019 - PRESENT)',
+          '5Y': '5 YEAR LOOKBACK',
+          '3Y': '3 YEAR LOOKBACK',
+          '1Y': '1 YEAR LOOKBACK',
+          'YTD': 'YEAR TO DATE (YTD)'
+        };
+        return map[this.dynfTimeframe] || this.dynfTimeframe;
+      }
+      return `${pts[0].date} TO ${pts[pts.length - 1].date}`;
+    },
+
+    dynfCurrentDrivers(fKey) {
+      const hovered = this.dynfHoverIdx !== null && this.dynfFilteredTimeline[this.dynfHoverIdx];
+      if (hovered && hovered.top_drivers && hovered.top_drivers[fKey]) {
+        return hovered.top_drivers[fKey].slice(0, 4);
+      }
+      return (this.dynfEngine?.current_factors?.[fKey]?.top_drivers || []).slice(0, 4);
     },
 
     setDynfTimeframe(tf) {
       this.dynfTimeframe = tf;
       this.dynfPausePlay();
       this.dynfHoverIdx = null;
+
+      const list = this.dynfEngine?.timeline || [];
+      if (!list.length) return;
+      const n = list.length;
+
+      if (tf === 'ALL') {
+        this.dynfZoomStart = 0.0;
+        this.dynfZoomEnd = 1.0;
+        return;
+      }
+
+      const latestDateStr = list[n - 1].date;
+      const latestYear = parseInt(latestDateStr.slice(0, 4), 10);
+      let cutoffStr = '';
+
+      if (tf === 'YTD') {
+        cutoffStr = `${latestYear}-01-01`;
+      } else {
+        const latestDate = new Date(latestDateStr);
+        const yearsBack = tf === '1Y' ? 1 : tf === '3Y' ? 3 : 5;
+        const cutoff = new Date(latestDate);
+        cutoff.setFullYear(cutoff.getFullYear() - yearsBack);
+        cutoffStr = cutoff.toISOString().slice(0, 10);
+      }
+
+      let sIdx = list.findIndex(p => p.date >= cutoffStr);
+      if (sIdx === -1) sIdx = 0;
+      this.dynfZoomStart = sIdx / (n - 1);
+      this.dynfZoomEnd = 1.0;
     },
 
     dynfTogglePlay() {

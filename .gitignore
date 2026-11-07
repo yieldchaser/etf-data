@@ -162,3 +162,8 @@ docs/data/history/
 !data/latest/**
 
 data/.cache_backfill/
+
+data/jkp_research/*.zip
+data/jkp_research/page_*.html
+data/jkp_research/*.pdf
+data/jkp_research/

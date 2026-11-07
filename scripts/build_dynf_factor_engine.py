@@ -74,7 +74,7 @@ FACTOR_METADATA = {
         "label": "Size",
         "proxy": "SIZE",
         "color": "#fb923c",  # orange
-        "description": "MSCI USA Size active factor loading: mid-to-large equal-weighted capitalization tilt",
+        "description": "MSCI USA Size active factor loading: mid-to-large equal-weighted capitalization tilt (overweights mid-caps, underweights mega-caps)",
     },
 }
 
@@ -363,12 +363,13 @@ def main() -> int:
     print("Executing cross-sectional factor exposure attribution...")
     for dt_val in dates:
         day_df = dynf_df[dynf_df["Holdings_As_Of"] == dt_val]
-        raw_exp, factor_pcts, _ = compute_cross_sectional_factor_exposures(day_df, dt_val, lookup)
+        raw_exp, factor_pcts, day_drivers = compute_cross_sectional_factor_exposures(day_df, dt_val, lookup)
 
         rec = {
             "date": dt_val.strftime("%Y-%m-%d"),
             "Holdings_As_Of": dt_val,
             "holdings_count": int(len(day_df)),
+            "top_drivers": day_drivers,
         }
         for f in factor_keys:
             rec[f] = factor_pcts[f]
@@ -484,6 +485,7 @@ def main() -> int:
         pt = {
             "date": row["date"],
             "regime": row["regime"],
+            "top_drivers": row["top_drivers"],
         }
         for f in factor_keys:
             pt[f] = round(float(row[f]), 2)
@@ -503,6 +505,7 @@ def main() -> int:
             "min_vol": round(float(last_day["min_vol"]), 2),
             "size": round(float(last_day["size"]), 2),
             "holdings_count": int(last_day["holdings_count"]),
+            "top_drivers": last_day["top_drivers"],
         })
 
     payload = {
@@ -526,6 +529,42 @@ def main() -> int:
         "timeline": timeline,
         "milestones": annual_snapshots,
         "annual_snapshots": annual_snapshots,
+        "jkp_academic_reference": {
+            "framework": "Jensen, Kelly, and Pedersen (Journal of Finance 2023) 13 Factor Themes",
+            "citation": "Jensen, Theis I., Bryan Kelly, and Lasse Heje Pedersen. 'Is there a replication crisis in finance?' The Journal of Finance 78.5 (2023): 2465-2518.",
+            "themes": [
+                {
+                    "theme": "Value",
+                    "jkp_cluster": "VALUE",
+                    "tradable_proxy": "VLUE",
+                    "key_metrics": "Book-to-Market, Forward P/E, EV/EBITDA, Cash Flow-to-Price"
+                },
+                {
+                    "theme": "Momentum",
+                    "jkp_cluster": "Momentum",
+                    "tradable_proxy": "MTUM",
+                    "key_metrics": "Price Momentum (2-12m), Earnings Surprise (SUE), Analyst Revisions"
+                },
+                {
+                    "theme": "Quality / Profitability",
+                    "jkp_cluster": "Profitability & Intangibles",
+                    "tradable_proxy": "QUAL",
+                    "key_metrics": "ROE, ROA, Cash Flow Profitability, Conservative Investment"
+                },
+                {
+                    "theme": "Minimum Volatility",
+                    "jkp_cluster": "Low Risk / Trading Frictions",
+                    "tradable_proxy": "USMV",
+                    "key_metrics": "Idiosyncratic Volatility, Beta, Down-Market Semi-variance"
+                },
+                {
+                    "theme": "Size",
+                    "jkp_cluster": "Trading Frictions (Market Equity)",
+                    "tradable_proxy": "SIZE",
+                    "key_metrics": "MSCI Equal-Weighting, Mid-Cap Overweight (+SMB), Mega-Cap Underweight (-SMB)"
+                }
+            ]
+        },
     }
 
     out_dir = REPO_ROOT / "docs" / "data"

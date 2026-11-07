@@ -236,8 +236,8 @@ def parse_holdings_csv(
             df["weight"].astype(str).str.replace(",", "").str.replace("%", "").str.strip(),
             errors="coerce"
         ).fillna(0.0)
-        # Convert percent to decimal 0..1 if max > 1.0
-        if df["weight"].max() > 1.0:
+        # Convert percent to decimal 0..1 if max > 1.0 or sum > 1.5
+        if df["weight"].max() > 1.0 or df["weight"].sum() > 1.5:
             df["weight"] = df["weight"] / 100.0
 
     if "shares" in df.columns:
