@@ -2029,9 +2029,9 @@
         </div>
       </div>
 
-      <!-- Factor Acceleration & Deceleration KPI Grid (6 cards) -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2.5 p-3">
-        <template x-for="fKey in ['momentum', 'quality', 'value_fcf', 'financials', 'low_volatility', 'cyclicals']" :key="fKey">
+      <!-- Factor Acceleration & Deceleration KPI Grid (5 Canonical Styles) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 p-3">
+        <template x-for="fKey in ['momentum', 'quality', 'value', 'min_vol', 'size']" :key="fKey">
           <div class="rounded-lg border p-2.5 flex flex-col justify-between transition-all duration-150 cursor-pointer"
                :style="dynfActiveFactor === fKey
                  ? `background: rgba(255,255,255,0.04); border-color: ${dynfFactorColor(fKey)}; box-shadow: 0 0 12px ${dynfFactorColor(fKey)}33;`
@@ -2046,15 +2046,21 @@
                 <span class="chip sig-badge font-mono shrink-0 uppercase text-[8.5px]"
                       :style="dynfEngine.current_factors?.[fKey]?.badge === 'up'
                         ? 'background: rgba(52, 211, 153, 0.12); color: var(--up); border: 1px solid rgba(52, 211, 153, 0.25);'
-                        : 'background: rgba(251, 113, 133, 0.12); color: var(--down); border: 1px solid rgba(251, 113, 133, 0.25);'"
+                        : dynfEngine.current_factors?.[fKey]?.badge === 'down'
+                        ? 'background: rgba(251, 113, 133, 0.12); color: var(--down); border: 1px solid rgba(251, 113, 133, 0.25);'
+                        : 'background: rgba(161, 161, 170, 0.12); color: var(--text-2); border: 1px solid rgba(161, 161, 170, 0.25);'"
                       x-text="dynfEngine.current_factors?.[fKey]?.status || '-'"></span>
               </div>
-              <div class="flex items-baseline justify-between gap-1 mb-1.5">
+              <div class="flex items-baseline justify-between gap-1 mb-1">
                 <span class="text-lg font-mono font-bold tracking-tight tabular-nums text-zinc-100"
                       x-text="`${(dynfEngine.current_factors?.[fKey]?.current_weight || 0).toFixed(1)}%`"></span>
                 <span class="text-[11px] font-mono tabular-nums font-semibold"
                       :style="`color: ${(dynfEngine.current_factors?.[fKey]?.delta_30d || 0) > 0 ? 'var(--up)' : (dynfEngine.current_factors?.[fKey]?.delta_30d || 0) < 0 ? 'var(--down)' : 'var(--text-3)'}`"
                       x-text="`${(dynfEngine.current_factors?.[fKey]?.delta_30d || 0) > 0 ? '+' : ''}${(dynfEngine.current_factors?.[fKey]?.delta_30d || 0).toFixed(1)}% 30d`"></span>
+              </div>
+              <div class="text-[9px] font-mono mb-1.5 flex items-center justify-between" style="color: var(--text-3)">
+                <span>Trade: <span :style="(dynfEngine.current_factors?.[fKey]?.flow_active_30d || 0) > 0 ? 'color: var(--up)' : (dynfEngine.current_factors?.[fKey]?.flow_active_30d || 0) < 0 ? 'color: var(--down)' : ''" x-text="`${(dynfEngine.current_factors?.[fKey]?.flow_active_30d || 0) > 0 ? '+' : ''}${(dynfEngine.current_factors?.[fKey]?.flow_active_30d || 0).toFixed(1)}%`"></span></span>
+                <span>Drift: <span :style="(dynfEngine.current_factors?.[fKey]?.drift_30d || 0) > 0 ? 'color: var(--up)' : (dynfEngine.current_factors?.[fKey]?.drift_30d || 0) < 0 ? 'color: var(--down)' : ''" x-text="`${(dynfEngine.current_factors?.[fKey]?.drift_30d || 0) > 0 ? '+' : ''}${(dynfEngine.current_factors?.[fKey]?.drift_30d || 0).toFixed(1)}%`"></span></span>
               </div>
               <div class="text-[9.5px] line-clamp-2 mb-2 leading-relaxed" style="color: var(--text-3)"
                    x-text="dynfEngine.current_factors?.[fKey]?.description || ''"></div>
@@ -2089,7 +2095,7 @@
               </div>
               <div class="chip sig-badge font-mono" style="background: rgba(96, 165, 250, 0.12); color: var(--blue); border: 1px solid rgba(96, 165, 250, 0.25)" x-text="dynfFilteredTimeline[dynfHoverIdx].regime"></div>
               <div class="flex items-center gap-2.5 flex-wrap text-[11px] font-mono tabular-nums">
-                <template x-for="fKey in ['momentum', 'quality', 'value_fcf', 'financials', 'low_volatility', 'cyclicals']" :key="fKey">
+                <template x-for="fKey in ['momentum', 'quality', 'value', 'min_vol', 'size']" :key="fKey">
                   <span class="inline-flex items-center gap-1" :style="`opacity: ${(!dynfActiveFactor || dynfActiveFactor === fKey) ? '1' : '0.35'}`">
                     <span class="w-1.5 h-1.5 rounded-full inline-block" :style="`background: ${dynfFactorColor(fKey)}`"></span>
                     <span style="color: var(--text-3)" x-text="dynfFactorShortLabel(fKey)"></span>
@@ -2151,7 +2157,7 @@
         <div class="px-3 pb-3 flex items-center justify-between flex-wrap gap-2 text-xs">
           <div class="flex items-center gap-1.5 flex-wrap">
             <span class="label mr-1">Factors:</span>
-            <template x-for="fKey in ['momentum', 'quality', 'value_fcf', 'financials', 'low_volatility', 'cyclicals']" :key="fKey">
+            <template x-for="fKey in ['momentum', 'quality', 'value', 'min_vol', 'size']" :key="fKey">
               <button @click="dynfActiveFactor = (dynfActiveFactor === fKey ? null : fKey)"
                       class="px-2 py-0.5 rounded-full border text-[10px] font-mono font-medium flex items-center gap-1.5 transition-all duration-150 cursor-pointer"
                       :style="dynfActiveFactor === fKey
@@ -2193,12 +2199,11 @@
                 <th class="py-2 px-3">Year / Date</th>
                 <th class="py-2 px-3">Macro Regime</th>
                 <th class="py-2 px-3 text-right">Holdings</th>
-                <th class="py-2 px-3 text-right font-mono" style="color: #c084fc">Momentum</th>
-                <th class="py-2 px-3 text-right font-mono" style="color: #22d3ee">Quality</th>
-                <th class="py-2 px-3 text-right font-mono" style="color: #34d399">Value FCF</th>
-                <th class="py-2 px-3 text-right font-mono" style="color: #60a5fa">Financials</th>
-                <th class="py-2 px-3 text-right font-mono" style="color: #fbbf24">Low Vol</th>
-                <th class="py-2 px-3 text-right font-mono" style="color: #fb923c">Cyclicals</th>
+                <th class="py-2 px-3 text-right font-mono" style="color: #c084fc">Momentum (MTUM)</th>
+                <th class="py-2 px-3 text-right font-mono" style="color: #22d3ee">Quality (QUAL)</th>
+                <th class="py-2 px-3 text-right font-mono" style="color: #34d399">Value (VLUE)</th>
+                <th class="py-2 px-3 text-right font-mono" style="color: #fbbf24">Min Vol (USMV)</th>
+                <th class="py-2 px-3 text-right font-mono" style="color: #fb923c">Size (SIZE)</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-white/[0.03] font-mono text-[11px] tabular-nums">
@@ -2219,12 +2224,11 @@
                           x-text="snap.regime"></span>
                   </td>
                   <td class="py-2 px-3 text-right text-zinc-300" x-text="snap.holdings_count"></td>
-                  <td class="py-2 px-3 text-right" :class="snap.momentum >= 15 ? 'font-bold text-purple-300' : 'text-zinc-400'" x-text="`${snap.momentum.toFixed(1)}%`"></td>
+                  <td class="py-2 px-3 text-right" :class="snap.momentum >= 20 ? 'font-bold text-purple-300' : 'text-zinc-400'" x-text="`${snap.momentum.toFixed(1)}%`"></td>
                   <td class="py-2 px-3 text-right" :class="snap.quality >= 25 ? 'font-bold text-cyan-300' : 'text-zinc-400'" x-text="`${snap.quality.toFixed(1)}%`"></td>
-                  <td class="py-2 px-3 text-right" :class="snap.value_fcf >= 12 ? 'font-bold text-emerald-300' : 'text-zinc-400'" x-text="`${snap.value_fcf.toFixed(1)}%`"></td>
-                  <td class="py-2 px-3 text-right" :class="snap.financials >= 12 ? 'font-bold text-blue-300' : 'text-zinc-400'" x-text="`${snap.financials.toFixed(1)}%`"></td>
-                  <td class="py-2 px-3 text-right" :class="snap.low_volatility >= 12 ? 'font-bold text-amber-300' : 'text-zinc-400'" x-text="`${snap.low_volatility.toFixed(1)}%`"></td>
-                  <td class="py-2 px-3 text-right" :class="snap.cyclicals >= 10 ? 'font-bold text-orange-300' : 'text-zinc-400'" x-text="`${snap.cyclicals.toFixed(1)}%`"></td>
+                  <td class="py-2 px-3 text-right" :class="snap.value >= 10 ? 'font-bold text-emerald-300' : 'text-zinc-400'" x-text="`${snap.value.toFixed(1)}%`"></td>
+                  <td class="py-2 px-3 text-right" :class="snap.min_vol >= 10 ? 'font-bold text-amber-300' : 'text-zinc-400'" x-text="`${snap.min_vol.toFixed(1)}%`"></td>
+                  <td class="py-2 px-3 text-right" :class="snap.size >= 40 ? 'font-bold text-orange-300' : 'text-zinc-400'" x-text="`${snap.size.toFixed(1)}%`"></td>
                 </tr>
               </template>
             </tbody>
@@ -3623,10 +3627,9 @@ function app() {
       const fallback = {
         momentum: '#c084fc',
         quality: '#22d3ee',
-        value_fcf: '#34d399',
-        financials: '#60a5fa',
-        low_volatility: '#fbbf24',
-        cyclicals: '#fb923c'
+        value: '#34d399',
+        min_vol: '#fbbf24',
+        size: '#fb923c'
       };
       return this.dynfEngine?.factor_definitions?.[k]?.color || fallback[k] || '#22d3ee';
     },
@@ -3639,10 +3642,9 @@ function app() {
       const map = {
         momentum: 'Mom',
         quality: 'Qual',
-        value_fcf: 'Val',
-        financials: 'Fin',
-        low_volatility: 'LoVol',
-        cyclicals: 'Cyc'
+        value: 'Val',
+        min_vol: 'MinVol',
+        size: 'Size'
       };
       return map[k] || k;
     },
@@ -3653,7 +3655,7 @@ function app() {
         return '<svg viewBox="0 0 960 210" style="display:block;width:100%;height:auto"><text x="480" y="105" text-anchor="middle" style="fill:var(--text-3);font-size:12px;font-family:ui-monospace,Menlo,Consolas,monospace">Loading Factor Engine data...</text></svg>';
       }
 
-      const factorKeys = ['momentum', 'quality', 'value_fcf', 'financials', 'low_volatility', 'cyclicals'];
+      const factorKeys = ['momentum', 'quality', 'value', 'min_vol', 'size'];
       const xLeft = 40;
       const xRight = 940;
       const plotW = xRight - xLeft;
@@ -3667,11 +3669,11 @@ function app() {
       // Plot area background
       svg += '<rect x="' + xLeft + '" y="' + yTop + '" width="' + plotW + '" height="' + plotH + '" fill="rgba(255,255,255,0.01)" rx="4"/>';
 
-      // Gridlines & Y-axis labels (0%, 10%, 20%, 30%, 40%)
-      const gridLevels = [0, 10, 20, 30, 40];
+      // Gridlines & Y-axis labels (0%, 15%, 30%, 45%, 60%)
+      const gridLevels = [0, 15, 30, 45, 60];
       for (let i = 0; i < gridLevels.length; i++) {
         const lvl = gridLevels[i];
-        const y = (yBottom - (lvl / 40) * plotH).toFixed(1);
+        const y = (yBottom - (lvl / 60) * plotH).toFixed(1);
         const dash = lvl === 0 ? 'none' : '3 3';
         const strokeW = lvl === 0 ? '1' : '0.75';
         svg += '<line x1="' + xLeft + '" y1="' + y + '" x2="' + xRight + '" y2="' + y + '" stroke="rgba(255,255,255,0.06)" stroke-dasharray="' + dash + '" stroke-width="' + strokeW + '"/>';
@@ -3739,7 +3741,7 @@ function app() {
         for (let i = 0; i < n; i++) {
           const px = (xLeft + (i / (n - 1)) * plotW).toFixed(1);
           const v = pts[i][k] != null ? pts[i][k] : 0;
-          const py = Math.max(yTop, Math.min(yBottom, yBottom - (v / 40) * plotH)).toFixed(1);
+          const py = Math.max(yTop, Math.min(yBottom, yBottom - (v / 60) * plotH)).toFixed(1);
           polyPoints.push(px + ',' + py);
         }
 
@@ -3758,7 +3760,7 @@ function app() {
           const k = factorKeys[f];
           const color = this.dynfFactorColor(k);
           const v = hoverPt[k] != null ? hoverPt[k] : 0;
-          const hy = Math.max(yTop, Math.min(yBottom, yBottom - (v / 40) * plotH)).toFixed(1);
+          const hy = Math.max(yTop, Math.min(yBottom, yBottom - (v / 60) * plotH)).toFixed(1);
           const isHighlight = this.dynfActiveFactor === k;
           const isDimmed = this.dynfActiveFactor && !isHighlight;
           const r = isHighlight ? '5.5' : isDimmed ? '2' : '3.5';

@@ -27,6 +27,7 @@ Thumbs.db
 data/markets_history/
 data/vol_history/
 data/markets/
+data/factor_proxies/cache/
 
 # data/history_parquet/ is the PERMANENT year-partitioned archive (charter v2 Part 3)
 # and is INTENTIONALLY NOT IGNORED — it must be committed to Git as the permanent
