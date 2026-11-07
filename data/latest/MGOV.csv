@@ -1,145 +1,146 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-MGOV,,"Fannie Mae or Freddie Mac TBA, 5.50%, due 05/01/2056",0.0492,2026-11-05,2026-11-07
-MGOV,,"GNMA G2 MA7366, 2%, due 05/20/2051",0.0417,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae FN MA4319, 2%, due 04/01/2051",0.0301,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae FN MA4392, 2.50%, due 07/01/2051",0.0278,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae FN MA4057, 2.50%, due 06/01/2050",0.0277,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae or Freddie Mac TBA, 6%, due 06/01/2056",0.0239,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae Series 2025-49, Class FA, Variable rate, due 06/25/2055",0.0227,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae FN BM7521, 3.50%, due 10/01/2048",0.0223,2026-11-05,2026-11-07
-MGOV,,"U.S. Treasury Bond, 0%, due 05/15/2034",0.0222,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae or Freddie Mac TBA, 3.50%, due 01/01/2052",0.0203,2026-11-05,2026-11-07
-MGOV,,"Freddie Mac Series 5642, Class FN, Variable rate, due 03/25/2056",0.020099999999999996,2026-11-05,2026-11-07
-MGOV,,"Freddie Mac FR SL1523, 3.50%, due 07/01/2050",0.0197,2026-11-05,2026-11-07
-MGOV,,"Freddie Mac - SLST Series 2025-2, Class A2, 3%, due 10/25/2035",0.0194,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae Series 2012-118, Class VZ, 3%, due 11/25/2042",0.0189,2026-11-05,2026-11-07
-MGOV,,"Freddie Mac Series 4741, Class GY, 3%, due 12/15/2047",0.018600000000000002,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae FN BM4963, 3%, due 05/01/2048",0.018500000000000003,2026-11-05,2026-11-07
-MGOV,,"Freddie Mac Series 5082, Class LA, 1.50%, due 03/25/2051",0.0177,2026-11-05,2026-11-07
-MGOV,,"Freddie Mac Series 5075, Class Q, 1.50%, due 02/25/2051",0.0174,2026-11-05,2026-11-07
-MGOV,,"Freddie Mac Series 4639, Class HZ, Variable rate, due 04/15/2053",0.0161,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae Series 2014-60, Class EZ, 3%, due 10/25/2044",0.0159,2026-11-05,2026-11-07
-MGOV,,"Freddie Mac FT ZT2264, 4%, due 03/01/2044",0.015300000000000001,2026-11-05,2026-11-07
-MGOV,,"Freddie Mac Series 5066, Class MA, 1.50%, due 01/25/2051",0.014499999999999999,2026-11-05,2026-11-07
-MGOV,,"GNMA TBA, 6.50%, due 01/01/2056",0.013999999999999999,2026-11-05,2026-11-07
-MGOV,,"GNMA Series 2015-123, Class ZA, 3.50%, due 09/20/2045",0.0138,2026-11-05,2026-11-07
-MGOV,,"GNMA Series 2022-139, Class AL, 4%, due 07/20/2051",0.0137,2026-11-05,2026-11-07
-MGOV,,"Freddie Mac - SLST Series 2025-1, Class YF, Variable rate, due 05/25/2035",0.0134,2026-11-05,2026-11-07
-MGOV,,"GNMA Series 2026-2, Class AF, Variable rate, due 01/20/2056",0.013000000000000001,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae FN AL9394, 3%, due 11/01/2046",0.0127,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae Series 2012-134, Class ZC, 2.50%, due 12/25/2042",0.012199999999999999,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae Series 2024-6, Class AL, 2%, due 04/01/2040",0.0121,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae FN AS7738, 3%, due 08/01/2046",0.0115,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae Series 2016-94, Class MB, 2.50%, due 12/25/2046",0.011200000000000002,2026-11-05,2026-11-07
-MGOV,,"Freddie Mac - SLST Series 2025-1, Class A2, 3%, due 05/25/2035",0.011200000000000002,2026-11-05,2026-11-07
-MGOV,,"FHLMC Multifamily Structured Pass Through Certs. Series K152, Class A1, 2.83%, due 05/25/2030",0.0111,2026-11-05,2026-11-07
-MGOV,,"GNMA Series 2023-81, Class YD, 4%, due 06/20/2053",0.011000000000000001,2026-11-05,2026-11-07
-MGOV,,"U.S. Treasury Bond, 0%, due 08/15/2034",0.0109,2026-11-05,2026-11-07
-MGOV,,"GNMA Series 2025-4, Class FY, Variable rate, due 01/20/2055",0.0108,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae Series 2017-49, Class ZJ, 4%, due 07/25/2057",0.010700000000000001,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae FN BF0207, 4.50%, due 04/01/2047",0.0105,2026-11-05,2026-11-07
-MGOV,,"U.S. Treasury Note, 4.125%, due 06/15/2029",0.0105,2026-11-05,2026-11-07
-MGOV,,"Freddie Mac Series 4316, Class BZ, 3%, due 03/15/2044",0.0104,2026-11-05,2026-11-07
-MGOV,,"U.S. Treasury Bond, 5.125%, due 08/15/2056",0.0104,2026-11-05,2026-11-07
-MGOV,,"Freddie Mac Series 4213, Class GZ, 3.50%, due 06/15/2043",0.0098,2026-11-05,2026-11-07
-MGOV,,"Chase Mortgage Finance Corporation Series 2026-CINV1, Class A11, Variable rate, due 01/25/2057",0.0096,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae FN MA4199, 1.50%, due 11/01/2050",0.0095,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae or Freddie Mac TBA, 2.50%, due 11/01/2051",0.009000000000000001,2026-11-05,2026-11-07
-MGOV,,"Freddie Mac Series 5325, Class SA, Variable rate, due 11/25/2052",0.009000000000000001,2026-11-05,2026-11-07
-MGOV,,"Freddie Mac - SLST Series 2024-2, Class VF, Variable rate, due 10/25/2034",0.0088,2026-11-05,2026-11-07
-MGOV,,"U.S. Treasury Inflation Indexed Note, 2.375%, due 10/15/2028",0.0087,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae or Freddie Mac TBA, 4.50%, due 02/01/2056",0.0084,2026-11-05,2026-11-07
-MGOV,,"Freddie Mac FR ZS9776, 3.50%, due 08/01/2046",0.008199999999999999,2026-11-05,2026-11-07
-MGOV,,"Freddie Mac Series 4798, Class GZ, 4%, due 06/15/2048",0.008199999999999999,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae FN AS7749, 3.50%, due 08/01/2046",0.008100000000000001,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae Series 2023-54, Class PO, 0%, due 11/25/2053",0.0074,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae Series 2024-26, Class PO, 0%, due 05/25/2054",0.0074,2026-11-05,2026-11-07
-MGOV,,"Freddie Mac Series 5256, Class FC, Variable rate, due 09/25/2052",0.0074,2026-11-05,2026-11-07
-MGOV,,"Freddie Mac Series 5435, Class BS, Variable rate, due 07/25/2054",0.0073,2026-11-05,2026-11-07
-MGOV,,"U.S. Treasury Bond, 0%, due 08/15/2035",0.0069,2026-11-05,2026-11-07
-MGOV,,"U.S. Treasury Inflation Indexed Note, 0.125%, due 04/15/2027",0.0062,2026-11-05,2026-11-07
-MGOV,,"U.S. Treasury Bond, 0%, due 05/15/2038",0.0059,2026-11-05,2026-11-07
-MGOV,,"U.S. Treasury Bond, 0%, due 11/15/2037",0.0058,2026-11-05,2026-11-07
-MGOV,,"U.S. Treasury Bond, 5.125%, due 08/15/2046",0.005699999999999999,2026-11-05,2026-11-07
-MGOV,,"GNMA TBA, 6%, due 04/01/2056",0.005600000000000001,2026-11-05,2026-11-07
-MGOV,,"U.S. Treasury Bond, 1.875%, due 02/15/2051",0.005600000000000001,2026-11-05,2026-11-07
-MGOV,,"JP Morgan Mortgage Trust Series 2022-LTV1, Class A2, Variable rate, due 07/25/2052",0.0054,2026-11-05,2026-11-07
-MGOV,,"SG Capital Partners Series 2022-1, Class A1, Variable rate, due 03/27/2062",0.0054,2026-11-05,2026-11-07
-MGOV,,"U.S. Treasury Bill, 0%, due 11/17/2026",0.0053,2026-11-05,2026-11-07
-MGOV,,"U.S. Treasury Bill, 0%, due 12/01/2026",0.0053,2026-11-05,2026-11-07
-MGOV,,"PRP Advisors, LLC Series 2025-NQM6, Class A1, Variable rate, due 12/25/2070",0.0051,2026-11-05,2026-11-07
-MGOV,,"U.S. Treasury Note, 4.375%, due 05/15/2036",0.0051,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae FN 310208, 3%, due 03/01/2048",0.005,2026-11-05,2026-11-07
-MGOV,,"GNMA Series 2026-111, Class AS, Variable rate, due 06/20/2056",0.0048,2026-11-05,2026-11-07
-MGOV,,"GNMA TBA, 6%, due 05/01/2056",0.004699999999999999,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae Series 2015-89, Class CZ, 4%, due 08/25/2045",0.0045000000000000005,2026-11-05,2026-11-07
-MGOV,,"Freddiemac Strip Series 413, Class PO, 0%, due 05/25/2054",0.0045000000000000005,2026-11-05,2026-11-07
-MGOV,,"Barclays Commercial Mortgage Securities LLC Series 2018-TALL, Class A, Variable rate, due 03/15/2037",0.0043,2026-11-05,2026-11-07
-MGOV,,"Fidelis Mortgage Trust Series 2025-RTL2, Class A1, Variable rate, due 07/25/2040",0.0043,2026-11-05,2026-11-07
-MGOV,,"FHLMC Multifamily Structured Pass Through Certs. Series K129, Class XAM, Variable rate, due 05/25/2031",0.004,2026-11-05,2026-11-07
-MGOV,,"Onslow Bay Financial LLC Series 2026-J1, Class AF, Variable rate, due 02/25/2056",0.004,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae FN BM7079, 4%, due 10/01/2048",0.0038,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae FN 310211, 3.50%, due 07/01/2048",0.0037,2026-11-05,2026-11-07
-MGOV,,"FHLMC Multifamily Structured Pass Through Certs. Series KG04, Class X1, Variable rate, due 11/25/2030",0.0037,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae FN BM7129, 3%, due 01/01/2047",0.0036,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae FN FS0704, 4%, due 03/01/2047",0.0036,2026-11-05,2026-11-07
-MGOV,,"Preston Ridge Partners Mortgage Trust Series 2026-RCF1, Class A1, Variable rate, due 01/25/2056",0.0036,2026-11-05,2026-11-07
-MGOV,,"U.S. Treasury Bond, 2.25%, due 02/15/2052",0.0036,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae Series 2016-61, Class ML, 3%, due 09/25/2046",0.0034999999999999996,2026-11-05,2026-11-07
-MGOV,,"Onslow Bay Financial LLC Series 2022-NQM2, Class A1B, Variable rate, due 01/25/2062",0.0034999999999999996,2026-11-05,2026-11-07
-MGOV,,"FHLMC Multifamily Structured Pass Through Certs. Series K-165, Class XAM, Variable rate, due 09/25/2034",0.0034000000000000002,2026-11-05,2026-11-07
-MGOV,,"Freddie Mac FR SD4005, 4%, due 12/01/2049",0.0034000000000000002,2026-11-05,2026-11-07
-MGOV,,"Freddie Mac FR ZL8982, 3.50%, due 01/01/2045",0.0034000000000000002,2026-11-05,2026-11-07
-MGOV,,"Freddie Mac FR ZS9446, 3.50%, due 08/01/2045",0.0034000000000000002,2026-11-05,2026-11-07
-MGOV,,"PMT Loan Trust Series 2025-INV11, Class A36, Variable rate, due 11/25/2056",0.0034000000000000002,2026-11-05,2026-11-07
-MGOV,,"FHLMC Multifamily Structured Pass Through Certs. Series K757, Class XAM, Variable rate, due 08/25/2031",0.0033,2026-11-05,2026-11-07
-MGOV,,"Freddie Mac Series 4945, Class LB, 3%, due 03/25/2040",0.0033,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae FN BM6732, 4%, due 11/01/2048",0.0032,2026-11-05,2026-11-07
-MGOV,,"Research-Driven Pagaya Motor Asset Trust I Series 2026-R1A, Class A, 5.659%, due 07/25/2034",0.0032,2026-11-05,2026-11-07
-MGOV,,"REMIC FUNDING TRUST 98-1 Series 2026-RR1, Class A1, Variable rate, due 07/27/2030",0.0031,2026-11-05,2026-11-07
-MGOV,,"U.S. Treasury Bond, 5%, due 05/15/2046",0.0031,2026-11-05,2026-11-07
-MGOV,,"BWAY Mortgage Trust Series 2025-1535, Class B, Variable rate, due 05/05/2030",0.003,2026-11-05,2026-11-07
-MGOV,,"GNMA Series 2025-206, Class IO, Variable rate, due 04/16/2064",0.003,2026-11-05,2026-11-07
-MGOV,,"GNMA Series 2025-21, Class IO, Variable rate, due 04/16/2065",0.003,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae FN MA4271, 1.50%, due 02/01/2051",0.0029,2026-11-05,2026-11-07
-MGOV,,"GNMA Series 2021-31, Class IO, Variable rate, due 01/16/2061",0.0029,2026-11-05,2026-11-07
-MGOV,,"FHLMC Multifamily Structured Pass Through Certs. Series K-1512, Class X1, Variable rate, due 04/25/2034",0.0028000000000000004,2026-11-05,2026-11-07
-MGOV,,"GNMA TBA, 5%, due 04/01/2056",0.0028000000000000004,2026-11-05,2026-11-07
-MGOV,,"KRE Commercial Mortgage Trust Series 2026-ICNA, Class A, Variable rate, due 05/15/2043",0.0028000000000000004,2026-11-05,2026-11-07
-MGOV,,"U.S. Treasury Inflation Indexed Note, 1.625%, due 10/15/2029",0.0028000000000000004,2026-11-05,2026-11-07
-MGOV,,"FIGRE Trust Series 2026-FL1, Class A1LC, Variable rate, due 03/25/2056",0.0027,2026-11-05,2026-11-07
-MGOV,,"JP Morgan Mortgage Trust Series 2026-1, Class A11, Variable rate, due 07/25/2056",0.0027,2026-11-05,2026-11-07
-MGOV,,"Preston Ridge Partners Mortgage Trust Series 2024-RCF1, Class A2, Variable rate, due 01/25/2054",0.0027,2026-11-05,2026-11-07
-MGOV,,"Preston Ridge Partners Mortgage Trust Series 2024-RCF2, Class A2, Variable rate, due 03/25/2054",0.0027,2026-11-05,2026-11-07
-MGOV,,"Research-Driven Pagaya Motor Asset Trust I Series 2025-5A, Class A3, 4.838%, due 06/26/2034",0.0027,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae FN FS4157, 4%, due 05/01/2049",0.0026,2026-11-05,2026-11-07
-MGOV,,"GGP Trust Series 2026-2PAK, Class A, Variable rate, due 04/10/2043",0.0026,2026-11-05,2026-11-07
-MGOV,,"FHLMC Multifamily Structured Pass Through Certs. Series KG05, Class X1, Variable rate, due 01/25/2031",0.0025,2026-11-05,2026-11-07
-MGOV,,"GNMA Series 2024-47, Class AI, 0.75%, due 06/16/2064",0.0025,2026-11-05,2026-11-07
-MGOV,,"REMIC FUNDING TRUST 98-1 Series 2026-2, Class A, 6.259%, due 11/27/2056",0.0025,2026-11-05,2026-11-07
-MGOV,,"MFRA Trust Series 2026-NQM1, Class A1, Variable rate, due 02/25/2071",0.0024,2026-11-05,2026-11-07
-MGOV,,"Sequoia Mortgage Trust Series 2026-HYB1, Class A1B, Variable rate, due 04/25/2056",0.0023,2026-11-05,2026-11-07
-MGOV,,"Preston Ridge Partners Mortgage Trust Series 2026-NQM1, Class A1, Variable rate, due 02/25/2071",0.0022,2026-11-05,2026-11-07
-MGOV,,"GNMA TBA, 6.50%, due 02/01/2056",0.002,2026-11-05,2026-11-07
-MGOV,,"Research-Driven Pagaya Motor Asset Trust I Series 2025-1A, Class A, 5.044%, due 06/27/2033",0.002,2026-11-05,2026-11-07
-MGOV,,"Santander Mortgage Asset Receivable Trust Series 2026-NQM3, Class A1LC, Variable rate, due 02/25/2066",0.0016,2026-11-05,2026-11-07
-MGOV,,"FHLMC Multifamily Structured Pass Through Certs. Series K110, Class X1, Variable rate, due 04/25/2030",0.0015,2026-11-05,2026-11-07
-MGOV,,"GNMA TBA, 4%, due 07/01/2055",0.0015,2026-11-05,2026-11-07
-MGOV,,"Freddie Mac FG U90690, 3.50%, due 06/01/2042",0.0014000000000000002,2026-11-05,2026-11-07
-MGOV,,"FHLMC Multifamily Structured Pass Through Certs. Series K546, Class X1, Variable rate, due 05/25/2030",0.0012,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae or Freddie Mac TBA, 6%, due 11/01/2037",0.0011,2026-11-05,2026-11-07
-MGOV,,"Preston Ridge Partners Mortgage Trust Series 2024-RCF1, Class A3, Variable rate, due 01/25/2054",0.001,2026-11-05,2026-11-07
-MGOV,,"U.S. Treasury Bond, 0%, due 11/15/2044",0.001,2026-11-05,2026-11-07
-MGOV,,"Pagaya AI Debt Selection Trust Series 2026-R1, Class A, 4.714%, due 12/15/2033",0.0009,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae or Freddie Mac TBA, 6.50%, due 04/01/2055",0.0007000000000000001,2026-11-05,2026-11-07
-MGOV,,"FHLMC Multifamily Structured Pass Through Certs. Series K740, Class XAM, 1.11174%, due 10/25/2027",0.0007000000000000001,2026-11-05,2026-11-07
-MGOV,,"U.S. Treasury Bond, 0%, due 08/15/2044",0.0007000000000000001,2026-11-05,2026-11-07
-MGOV,,"U.S. Treasury Bond, 0%, due 11/15/2043",0.0007000000000000001,2026-11-05,2026-11-07
-MGOV,,"GNMA TBA, 4.50%, due 05/01/2056",0.0006,2026-11-05,2026-11-07
-MGOV,,"U.S. Treasury Bond, 0%, due 02/15/2035",0.0005,2026-11-05,2026-11-07
-MGOV,,"U.S. Treasury Bond, 0%, due 11/15/2034",0.0004,2026-11-05,2026-11-07
-MGOV,,"U.S. Treasury Bond, 0%, due 11/15/2041",0.0004,2026-11-05,2026-11-07
-MGOV,,"U.S. Treasury Bond, 0%, due 08/15/2039",0.0003,2026-11-05,2026-11-07
-MGOV,,"U.S. Treasury Bond, 4.75%, due 11/15/2043",0.0003,2026-11-05,2026-11-07
-MGOV,,"FHLMC Multifamily Structured Pass Through Certs. Series KSW4, Class A, Variable rate, due 10/25/2028",0.0002,2026-11-05,2026-11-07
-MGOV,,"Fannie Mae FN FA1348, 4.50%, due 09/01/2052",0.0001,2026-11-05,2026-11-07
+MGOV,,"Fannie Mae or Freddie Mac TBA, 5.50%, due 05/01/2056",0.0492,2026-11-06,2026-11-07
+MGOV,,"GNMA G2 MA7366, 2%, due 05/20/2051",0.0417,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae FN MA4319, 2%, due 04/01/2051",0.0301,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae FN MA4057, 2.50%, due 06/01/2050",0.0277,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae FN MA4392, 2.50%, due 07/01/2051",0.0277,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae or Freddie Mac TBA, 6%, due 06/01/2056",0.0239,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae Series 2025-49, Class FA, Variable rate, due 06/25/2055",0.0227,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae FN BM7521, 3.50%, due 10/01/2048",0.0223,2026-11-06,2026-11-07
+MGOV,,"U.S. Treasury Bond, 0%, due 05/15/2034",0.022099999999999998,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae or Freddie Mac TBA, 3.50%, due 01/01/2052",0.0203,2026-11-06,2026-11-07
+MGOV,,"Freddie Mac Series 5642, Class FN, Variable rate, due 03/25/2056",0.020099999999999996,2026-11-06,2026-11-07
+MGOV,,"Freddie Mac FR SL1523, 3.50%, due 07/01/2050",0.0197,2026-11-06,2026-11-07
+MGOV,,"Freddie Mac - SLST Series 2025-2, Class A2, 3%, due 10/25/2035",0.0194,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae Series 2012-118, Class VZ, 3%, due 11/25/2042",0.0189,2026-11-06,2026-11-07
+MGOV,,"Freddie Mac Series 4741, Class GY, 3%, due 12/15/2047",0.018600000000000002,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae FN BM4963, 3%, due 05/01/2048",0.018500000000000003,2026-11-06,2026-11-07
+MGOV,,"Freddie Mac Series 5082, Class LA, 1.50%, due 03/25/2051",0.0177,2026-11-06,2026-11-07
+MGOV,,"Freddie Mac Series 5075, Class Q, 1.50%, due 02/25/2051",0.0174,2026-11-06,2026-11-07
+MGOV,,"Freddie Mac Series 4639, Class HZ, Variable rate, due 04/15/2053",0.0161,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae Series 2014-60, Class EZ, 3%, due 10/25/2044",0.0159,2026-11-06,2026-11-07
+MGOV,,"Freddie Mac FT ZT2264, 4%, due 03/01/2044",0.015300000000000001,2026-11-06,2026-11-07
+MGOV,,"Freddie Mac Series 5066, Class MA, 1.50%, due 01/25/2051",0.0144,2026-11-06,2026-11-07
+MGOV,,"GNMA TBA, 6.50%, due 01/01/2056",0.013999999999999999,2026-11-06,2026-11-07
+MGOV,,"GNMA Series 2015-123, Class ZA, 3.50%, due 09/20/2045",0.0138,2026-11-06,2026-11-07
+MGOV,,"GNMA Series 2022-139, Class AL, 4%, due 07/20/2051",0.0137,2026-11-06,2026-11-07
+MGOV,,"Freddie Mac - SLST Series 2025-1, Class YF, Variable rate, due 05/25/2035",0.0134,2026-11-06,2026-11-07
+MGOV,,"GNMA Series 2026-2, Class AF, Variable rate, due 01/20/2056",0.0129,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae FN AL9394, 3%, due 11/01/2046",0.0127,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae Series 2012-134, Class ZC, 2.50%, due 12/25/2042",0.012199999999999999,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae Series 2024-6, Class AL, 2%, due 04/01/2040",0.0121,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae FN AS7738, 3%, due 08/01/2046",0.0115,2026-11-06,2026-11-07
+MGOV,,"Freddie Mac - SLST Series 2025-1, Class A2, 3%, due 05/25/2035",0.011200000000000002,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae Series 2016-94, Class MB, 2.50%, due 12/25/2046",0.0111,2026-11-06,2026-11-07
+MGOV,,"FHLMC Multifamily Structured Pass Through Certs. Series K152, Class A1, 2.83%, due 05/25/2030",0.0111,2026-11-06,2026-11-07
+MGOV,,"GNMA Series 2023-81, Class YD, 4%, due 06/20/2053",0.011000000000000001,2026-11-06,2026-11-07
+MGOV,,"U.S. Treasury Bond, 0%, due 08/15/2034",0.0109,2026-11-06,2026-11-07
+MGOV,,"GNMA Series 2025-4, Class FY, Variable rate, due 01/20/2055",0.0108,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae Series 2017-49, Class ZJ, 4%, due 07/25/2057",0.010700000000000001,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae FN BF0207, 4.50%, due 04/01/2047",0.0105,2026-11-06,2026-11-07
+MGOV,,"U.S. Treasury Note, 4.125%, due 06/15/2029",0.0105,2026-11-06,2026-11-07
+MGOV,,"Freddie Mac Series 4316, Class BZ, 3%, due 03/15/2044",0.0104,2026-11-06,2026-11-07
+MGOV,,"U.S. Treasury Bond, 5.125%, due 08/15/2056",0.0104,2026-11-06,2026-11-07
+MGOV,,"Freddie Mac Series 4213, Class GZ, 3.50%, due 06/15/2043",0.0098,2026-11-06,2026-11-07
+MGOV,,"Chase Mortgage Finance Corporation Series 2026-CINV1, Class A11, Variable rate, due 01/25/2057",0.0096,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae FN MA4199, 1.50%, due 11/01/2050",0.0096,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae or Freddie Mac TBA, 2.50%, due 11/01/2051",0.009000000000000001,2026-11-06,2026-11-07
+MGOV,,"Freddie Mac Series 5325, Class SA, Variable rate, due 11/25/2052",0.009000000000000001,2026-11-06,2026-11-07
+MGOV,,"Freddie Mac - SLST Series 2024-2, Class VF, Variable rate, due 10/25/2034",0.0088,2026-11-06,2026-11-07
+MGOV,,"U.S. Treasury Inflation Indexed Note, 2.375%, due 10/15/2028",0.0087,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae or Freddie Mac TBA, 4.50%, due 02/01/2056",0.0084,2026-11-06,2026-11-07
+MGOV,,"Freddie Mac FR ZS9776, 3.50%, due 08/01/2046",0.008199999999999999,2026-11-06,2026-11-07
+MGOV,,"Freddie Mac Series 4798, Class GZ, 4%, due 06/15/2048",0.008199999999999999,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae FN AS7749, 3.50%, due 08/01/2046",0.008100000000000001,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae Series 2023-54, Class PO, 0%, due 11/25/2053",0.0074,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae Series 2024-26, Class PO, 0%, due 05/25/2054",0.0074,2026-11-06,2026-11-07
+MGOV,,"Freddie Mac Series 5256, Class FC, Variable rate, due 09/25/2052",0.0074,2026-11-06,2026-11-07
+MGOV,,"Freddie Mac Series 5435, Class BS, Variable rate, due 07/25/2054",0.0073,2026-11-06,2026-11-07
+MGOV,,"U.S. Treasury Bond, 0%, due 08/15/2035",0.0069,2026-11-06,2026-11-07
+MGOV,,"U.S. Treasury Inflation Indexed Note, 0.125%, due 04/15/2027",0.0062,2026-11-06,2026-11-07
+MGOV,,"U.S. Treasury Bond, 0%, due 05/15/2038",0.0058,2026-11-06,2026-11-07
+MGOV,,"U.S. Treasury Bond, 0%, due 11/15/2037",0.005699999999999999,2026-11-06,2026-11-07
+MGOV,,"U.S. Treasury Bond, 5.125%, due 08/15/2046",0.005699999999999999,2026-11-06,2026-11-07
+MGOV,,"GNMA TBA, 6%, due 04/01/2056",0.005600000000000001,2026-11-06,2026-11-07
+MGOV,,"U.S. Treasury Bond, 1.875%, due 02/15/2051",0.005600000000000001,2026-11-06,2026-11-07
+MGOV,,"JP Morgan Mortgage Trust Series 2022-LTV1, Class A2, Variable rate, due 07/25/2052",0.0054,2026-11-06,2026-11-07
+MGOV,,"SG Capital Partners Series 2022-1, Class A1, Variable rate, due 03/27/2062",0.0054,2026-11-06,2026-11-07
+MGOV,,"U.S. Treasury Bill, 0%, due 11/17/2026",0.0053,2026-11-06,2026-11-07
+MGOV,,"U.S. Treasury Bill, 0%, due 12/01/2026",0.0053,2026-11-06,2026-11-07
+MGOV,,"U.S. Treasury Bill, 0%, due 12/08/2026",0.0053,2026-11-06,2026-11-07
+MGOV,,"PRP Advisors, LLC Series 2025-NQM6, Class A1, Variable rate, due 12/25/2070",0.0051,2026-11-06,2026-11-07
+MGOV,,"U.S. Treasury Note, 4.375%, due 05/15/2036",0.0051,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae FN 310208, 3%, due 03/01/2048",0.005,2026-11-06,2026-11-07
+MGOV,,"GNMA Series 2026-111, Class AS, Variable rate, due 06/20/2056",0.0048,2026-11-06,2026-11-07
+MGOV,,"GNMA TBA, 6%, due 05/01/2056",0.004699999999999999,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae Series 2015-89, Class CZ, 4%, due 08/25/2045",0.0045000000000000005,2026-11-06,2026-11-07
+MGOV,,"Freddiemac Strip Series 413, Class PO, 0%, due 05/25/2054",0.0045000000000000005,2026-11-06,2026-11-07
+MGOV,,"Barclays Commercial Mortgage Securities LLC Series 2018-TALL, Class A, Variable rate, due 03/15/2037",0.0043,2026-11-06,2026-11-07
+MGOV,,"Fidelis Mortgage Trust Series 2025-RTL2, Class A1, Variable rate, due 07/25/2040",0.0043,2026-11-06,2026-11-07
+MGOV,,"FHLMC Multifamily Structured Pass Through Certs. Series K129, Class XAM, Variable rate, due 05/25/2031",0.004,2026-11-06,2026-11-07
+MGOV,,"Onslow Bay Financial LLC Series 2026-J1, Class AF, Variable rate, due 02/25/2056",0.004,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae FN BM7079, 4%, due 10/01/2048",0.0038,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae FN 310211, 3.50%, due 07/01/2048",0.0037,2026-11-06,2026-11-07
+MGOV,,"FHLMC Multifamily Structured Pass Through Certs. Series KG04, Class X1, Variable rate, due 11/25/2030",0.0037,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae FN BM7129, 3%, due 01/01/2047",0.0036,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae FN FS0704, 4%, due 03/01/2047",0.0036,2026-11-06,2026-11-07
+MGOV,,"Preston Ridge Partners Mortgage Trust Series 2026-RCF1, Class A1, Variable rate, due 01/25/2056",0.0036,2026-11-06,2026-11-07
+MGOV,,"U.S. Treasury Bond, 2.25%, due 02/15/2052",0.0036,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae Series 2016-61, Class ML, 3%, due 09/25/2046",0.0034999999999999996,2026-11-06,2026-11-07
+MGOV,,"Freddie Mac FR ZS9446, 3.50%, due 08/01/2045",0.0034999999999999996,2026-11-06,2026-11-07
+MGOV,,"Onslow Bay Financial LLC Series 2022-NQM2, Class A1B, Variable rate, due 01/25/2062",0.0034999999999999996,2026-11-06,2026-11-07
+MGOV,,"FHLMC Multifamily Structured Pass Through Certs. Series K-165, Class XAM, Variable rate, due 09/25/2034",0.0034000000000000002,2026-11-06,2026-11-07
+MGOV,,"Freddie Mac FR SD4005, 4%, due 12/01/2049",0.0034000000000000002,2026-11-06,2026-11-07
+MGOV,,"Freddie Mac FR ZL8982, 3.50%, due 01/01/2045",0.0034000000000000002,2026-11-06,2026-11-07
+MGOV,,"PMT Loan Trust Series 2025-INV11, Class A36, Variable rate, due 11/25/2056",0.0034000000000000002,2026-11-06,2026-11-07
+MGOV,,"FHLMC Multifamily Structured Pass Through Certs. Series K757, Class XAM, Variable rate, due 08/25/2031",0.0033,2026-11-06,2026-11-07
+MGOV,,"Freddie Mac Series 4945, Class LB, 3%, due 03/25/2040",0.0033,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae FN BM6732, 4%, due 11/01/2048",0.0032,2026-11-06,2026-11-07
+MGOV,,"Research-Driven Pagaya Motor Asset Trust I Series 2026-R1A, Class A, 5.659%, due 07/25/2034",0.0032,2026-11-06,2026-11-07
+MGOV,,"REMIC FUNDING TRUST 98-1 Series 2026-RR1, Class A1, Variable rate, due 07/27/2030",0.0031,2026-11-06,2026-11-07
+MGOV,,"U.S. Treasury Bond, 5%, due 05/15/2046",0.0031,2026-11-06,2026-11-07
+MGOV,,"GNMA Series 2025-206, Class IO, Variable rate, due 04/16/2064",0.003,2026-11-06,2026-11-07
+MGOV,,"GNMA Series 2025-21, Class IO, Variable rate, due 04/16/2065",0.003,2026-11-06,2026-11-07
+MGOV,,"BWAY Mortgage Trust Series 2025-1535, Class B, Variable rate, due 05/05/2030",0.0029,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae FN MA4271, 1.50%, due 02/01/2051",0.0029,2026-11-06,2026-11-07
+MGOV,,"GNMA Series 2021-31, Class IO, Variable rate, due 01/16/2061",0.0029,2026-11-06,2026-11-07
+MGOV,,"FHLMC Multifamily Structured Pass Through Certs. Series K-1512, Class X1, Variable rate, due 04/25/2034",0.0028000000000000004,2026-11-06,2026-11-07
+MGOV,,"GNMA TBA, 5%, due 04/01/2056",0.0028000000000000004,2026-11-06,2026-11-07
+MGOV,,"KRE Commercial Mortgage Trust Series 2026-ICNA, Class A, Variable rate, due 05/15/2043",0.0028000000000000004,2026-11-06,2026-11-07
+MGOV,,"U.S. Treasury Inflation Indexed Note, 1.625%, due 10/15/2029",0.0028000000000000004,2026-11-06,2026-11-07
+MGOV,,"FIGRE Trust Series 2026-FL1, Class A1LC, Variable rate, due 03/25/2056",0.0027,2026-11-06,2026-11-07
+MGOV,,"JP Morgan Mortgage Trust Series 2026-1, Class A11, Variable rate, due 07/25/2056",0.0027,2026-11-06,2026-11-07
+MGOV,,"Preston Ridge Partners Mortgage Trust Series 2024-RCF1, Class A2, Variable rate, due 01/25/2054",0.0027,2026-11-06,2026-11-07
+MGOV,,"Preston Ridge Partners Mortgage Trust Series 2024-RCF2, Class A2, Variable rate, due 03/25/2054",0.0027,2026-11-06,2026-11-07
+MGOV,,"Research-Driven Pagaya Motor Asset Trust I Series 2025-5A, Class A3, 4.838%, due 06/26/2034",0.0027,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae FN FS4157, 4%, due 05/01/2049",0.0026,2026-11-06,2026-11-07
+MGOV,,"GGP Trust Series 2026-2PAK, Class A, Variable rate, due 04/10/2043",0.0026,2026-11-06,2026-11-07
+MGOV,,"GNMA Series 2024-47, Class AI, 0.75%, due 06/16/2064",0.0026,2026-11-06,2026-11-07
+MGOV,,"FHLMC Multifamily Structured Pass Through Certs. Series KG05, Class X1, Variable rate, due 01/25/2031",0.0025,2026-11-06,2026-11-07
+MGOV,,"REMIC FUNDING TRUST 98-1 Series 2026-2, Class A, 6.259%, due 11/27/2056",0.0025,2026-11-06,2026-11-07
+MGOV,,"MFRA Trust Series 2026-NQM1, Class A1, Variable rate, due 02/25/2071",0.0024,2026-11-06,2026-11-07
+MGOV,,"Sequoia Mortgage Trust Series 2026-HYB1, Class A1B, Variable rate, due 04/25/2056",0.0023,2026-11-06,2026-11-07
+MGOV,,"Preston Ridge Partners Mortgage Trust Series 2026-NQM1, Class A1, Variable rate, due 02/25/2071",0.0022,2026-11-06,2026-11-07
+MGOV,,"GNMA TBA, 6.50%, due 02/01/2056",0.002,2026-11-06,2026-11-07
+MGOV,,"Research-Driven Pagaya Motor Asset Trust I Series 2025-1A, Class A, 5.044%, due 06/27/2033",0.002,2026-11-06,2026-11-07
+MGOV,,"Santander Mortgage Asset Receivable Trust Series 2026-NQM3, Class A1LC, Variable rate, due 02/25/2066",0.0016,2026-11-06,2026-11-07
+MGOV,,"FHLMC Multifamily Structured Pass Through Certs. Series K110, Class X1, Variable rate, due 04/25/2030",0.0015,2026-11-06,2026-11-07
+MGOV,,"GNMA TBA, 4%, due 07/01/2055",0.0015,2026-11-06,2026-11-07
+MGOV,,"Freddie Mac FG U90690, 3.50%, due 06/01/2042",0.0014000000000000002,2026-11-06,2026-11-07
+MGOV,,"FHLMC Multifamily Structured Pass Through Certs. Series K546, Class X1, Variable rate, due 05/25/2030",0.0012,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae or Freddie Mac TBA, 6%, due 11/01/2037",0.0011,2026-11-06,2026-11-07
+MGOV,,"Preston Ridge Partners Mortgage Trust Series 2024-RCF1, Class A3, Variable rate, due 01/25/2054",0.001,2026-11-06,2026-11-07
+MGOV,,"U.S. Treasury Bond, 0%, due 11/15/2044",0.001,2026-11-06,2026-11-07
+MGOV,,"Pagaya AI Debt Selection Trust Series 2026-R1, Class A, 4.714%, due 12/15/2033",0.0009,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae or Freddie Mac TBA, 6.50%, due 04/01/2055",0.0007000000000000001,2026-11-06,2026-11-07
+MGOV,,"FHLMC Multifamily Structured Pass Through Certs. Series K740, Class XAM, 1.11174%, due 10/25/2027",0.0007000000000000001,2026-11-06,2026-11-07
+MGOV,,"U.S. Treasury Bond, 0%, due 08/15/2044",0.0007000000000000001,2026-11-06,2026-11-07
+MGOV,,"U.S. Treasury Bond, 0%, due 11/15/2043",0.0007000000000000001,2026-11-06,2026-11-07
+MGOV,,"GNMA TBA, 4.50%, due 05/01/2056",0.0006,2026-11-06,2026-11-07
+MGOV,,"U.S. Treasury Bond, 0%, due 02/15/2035",0.0005,2026-11-06,2026-11-07
+MGOV,,"U.S. Treasury Bond, 0%, due 11/15/2034",0.0004,2026-11-06,2026-11-07
+MGOV,,"U.S. Treasury Bond, 0%, due 11/15/2041",0.0004,2026-11-06,2026-11-07
+MGOV,,"U.S. Treasury Bond, 0%, due 08/15/2039",0.0003,2026-11-06,2026-11-07
+MGOV,,"U.S. Treasury Bond, 4.75%, due 11/15/2043",0.0003,2026-11-06,2026-11-07
+MGOV,,"FHLMC Multifamily Structured Pass Through Certs. Series KSW4, Class A, Variable rate, due 10/25/2028",0.0002,2026-11-06,2026-11-07
+MGOV,,"Fannie Mae FN FA1348, 4.50%, due 09/01/2052",0.0001,2026-11-06,2026-11-07
