@@ -1,136 +1,136 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-FDM,PD,"PagerDuty, Inc.",0.02,2026-11-06,2026-11-08
-FDM,QNST,"QuinStreet, Inc.",0.0184,2026-11-06,2026-11-08
-FDM,APOG,"Apogee Enterprises, Inc.",0.0158,2026-11-06,2026-11-08
-FDM,SMP,"Standard Motor Products, Inc.",0.015600000000000001,2026-11-06,2026-11-08
-FDM,ORRF,"Orrstown Financial Services, Inc.",0.014199999999999999,2026-11-06,2026-11-08
-FDM,IBCP,Independent Bank Corporation,0.013300000000000001,2026-11-06,2026-11-08
-FDM,CCSI,"Consensus Cloud Solutions, Inc.",0.0131,2026-11-06,2026-11-08
-FDM,EVER,"EverQuote, Inc. (Class A)",0.0131,2026-11-06,2026-11-08
-FDM,OSPN,OneSpan Inc.,0.0131,2026-11-06,2026-11-08
-FDM,HRTG,"Heritage Insurance Holdings, Inc.",0.013000000000000001,2026-11-06,2026-11-08
-FDM,FISI,"Financial Institutions, Inc.",0.0129,2026-11-06,2026-11-08
-FDM,FLOC,Flowco Holdings Inc. (Class A),0.0128,2026-11-06,2026-11-08
-FDM,GCMG,GCM Grosvenor Inc. (Class A),0.0128,2026-11-06,2026-11-08
-FDM,CTO,"CTO Realty Growth, Inc.",0.0125,2026-11-06,2026-11-08
-FDM,RIGL,"Rigel Pharmaceuticals, Inc.",0.012199999999999999,2026-11-06,2026-11-08
-FDM,WASH,"Washington Trust Bancorp, Inc.",0.012199999999999999,2026-11-06,2026-11-08
-FDM,PGC,Peapack-Gladstone Financial Corporation,0.012,2026-11-06,2026-11-08
-FDM,HIPO,Hippo Holdings Inc.,0.011699999999999999,2026-11-06,2026-11-08
-FDM,HTB,"HomeTrust Bancshares, Inc.",0.0116,2026-11-06,2026-11-08
-FDM,REPX,"Riley Exploration Permian, Inc.",0.0116,2026-11-06,2026-11-08
-FDM,PAHC,Phibro Animal Health Corporation (Class A),0.0115,2026-11-06,2026-11-08
-FDM,BHB,Bar Harbor Bankshares,0.011399999999999999,2026-11-06,2026-11-08
-FDM,CCBG,"Capital City Bank Group, Inc.",0.011399999999999999,2026-11-06,2026-11-08
-FDM,SHBI,"Shore Bancshares, Inc.",0.011399999999999999,2026-11-06,2026-11-08
-FDM,PMT,PennyMac Mortgage Investment Trust,0.0113,2026-11-06,2026-11-08
-FDM,PFIS,Peoples Financial Services Corp.,0.0111,2026-11-06,2026-11-08
-FDM,SENEA,Seneca Foods Corporation,0.0111,2026-11-06,2026-11-08
-FDM,ACNB,ACNB Corporation,0.011000000000000001,2026-11-06,2026-11-08
-FDM,IRWD,"Ironwood Pharmaceuticals, Inc.",0.011000000000000001,2026-11-06,2026-11-08
-FDM,SMBC,"Southern Missouri Bancorp, Inc.",0.0108,2026-11-06,2026-11-08
-FDM,GSBC,"Great Southern Bancorp, Inc.",0.0106,2026-11-06,2026-11-08
-FDM,CARE,"Carter Bankshares, Inc.",0.0105,2026-11-06,2026-11-08
-FDM,SPFI,"South Plains Financial, Inc.",0.0104,2026-11-06,2026-11-08
-FDM,FBIZ,"First Business Financial Services, Inc.",0.0103,2026-11-06,2026-11-08
-FDM,AROW,Arrow Financial Corporation,0.0102,2026-11-06,2026-11-08
-FDM,BCAL,California BanCorp,0.0098,2026-11-06,2026-11-08
-FDM,ROOT,"Root, Inc. (Class A)",0.0098,2026-11-06,2026-11-08
-FDM,TCBX,"Third Coast Bancshares, Inc.",0.0098,2026-11-06,2026-11-08
-FDM,CIVB,"Civista Bancshares, Inc.",0.0097,2026-11-06,2026-11-08
-FDM,IVR,Invesco Mortgage Capital Inc.,0.0096,2026-11-06,2026-11-08
-FDM,SCHL,Scholastic Corporation,0.0096,2026-11-06,2026-11-08
-FDM,SFST,"Southern First Bancshares, Inc.",0.0088,2026-11-06,2026-11-08
-FDM,IIIN,"Insteel Industries, Inc.",0.0086,2026-11-06,2026-11-08
-FDM,KRNY,Kearny Financial Corp.,0.0086,2026-11-06,2026-11-08
-FDM,NRIM,"Northrim BanCorp, Inc.",0.0086,2026-11-06,2026-11-08
-FDM,TRTX,"TPG RE Finance Trust, Inc.",0.0086,2026-11-06,2026-11-08
-FDM,COFS,"ChoiceOne Financial Services, Inc.",0.0085,2026-11-06,2026-11-08
-FDM,EBF,"Ennis, Inc.",0.0083,2026-11-06,2026-11-08
-FDM,JBSS,"John B. Sanfilippo & Son, Inc.",0.0083,2026-11-06,2026-11-08
-FDM,FMAO,"Farmers & Merchants Bancorp, Inc.",0.008199999999999999,2026-11-06,2026-11-08
-FDM,OPRT,Oportun Financial Corp.,0.008,2026-11-06,2026-11-08
-FDM,ADAM,Adamas Trust Inc.,0.0079,2026-11-06,2026-11-08
-FDM,CBNK,"Capital Bancorp, Inc.",0.0079,2026-11-06,2026-11-08
-FDM,BSRR,Sierra Bancorp,0.0079,2026-11-06,2026-11-08
-FDM,WTBA,"West Bancorporation, Inc.",0.0077,2026-11-06,2026-11-08
-FDM,ETD,Ethan Allen Interiors Inc.,0.0076,2026-11-06,2026-11-08
-FDM,BWB,"Bridgewater Bancshares, Inc.",0.0075,2026-11-06,2026-11-08
-FDM,LOCO,"El Pollo Loco Holdings, Inc.",0.0075,2026-11-06,2026-11-08
-FDM,PDLB,"Ponce Financial Group, Inc.",0.0075,2026-11-06,2026-11-08
-FDM,OBT,"Orange County Bancorp, Inc.",0.0074,2026-11-06,2026-11-08
-FDM,ABUS,Arbutus Biopharma Corporation,0.0073,2026-11-06,2026-11-08
-FDM,MAX,"MediaAlpha, Inc. (Class A)",0.0073,2026-11-06,2026-11-08
-FDM,FRBA,First Bank,0.0072,2026-11-06,2026-11-08
-FDM,CBAN,"Colony Bankcorp, Inc.",0.0070999999999999995,2026-11-06,2026-11-08
-FDM,HBCP,"Home Bancorp, Inc.",0.0070999999999999995,2026-11-06,2026-11-08
-FDM,CRCT,"Cricut, Inc. (Class A)",0.0069,2026-11-06,2026-11-08
-FDM,UNTY,"Unity Bancorp, Inc.",0.0069,2026-11-06,2026-11-08
-FDM,BWFG,"Bankwell Financial Group, Inc.",0.0068000000000000005,2026-11-06,2026-11-08
-FDM,PLBC,Plumas Bancorp,0.0068000000000000005,2026-11-06,2026-11-08
-FDM,RBB,RBB Bancorp,0.0067,2026-11-06,2026-11-08
-FDM,ITIC,Investors Title Company,0.0066,2026-11-06,2026-11-08
-FDM,SD,"SandRidge Energy, Inc.",0.006500000000000001,2026-11-06,2026-11-08
-FDM,CENT,Central Garden & Pet Company,0.0064,2026-11-06,2026-11-08
-FDM,CSV,"Carriage Services, Inc.",0.0063,2026-11-06,2026-11-08
-FDM,VLGEA,"Village Super Market, Inc.",0.0063,2026-11-06,2026-11-08
-FDM,TSBK,"Timberland Bancorp, Inc.",0.0062,2026-11-06,2026-11-08
-FDM,RCKY,"Rocky Brands, Inc.",0.006,2026-11-06,2026-11-08
-FDM,NPB,"Northpointe Bancshares, Inc.",0.0059,2026-11-06,2026-11-08
-FDM,FRST,Primis Financial Corp.,0.0059,2026-11-06,2026-11-08
-FDM,CRMD,CorMedix Inc.,0.0058,2026-11-06,2026-11-08
-FDM,FLXS,"Flexsteel Industries, Inc.",0.0058,2026-11-06,2026-11-08
-FDM,ISTR,Investar Holding Corporation,0.0058,2026-11-06,2026-11-08
-FDM,PKBK,"Parke Bancorp, Inc.",0.005600000000000001,2026-11-06,2026-11-08
-FDM,CHMG,Chemung Financial Corporation,0.0055000000000000005,2026-11-06,2026-11-08
-FDM,WSBF,"Waterstone Financia, Inc.",0.0055000000000000005,2026-11-06,2026-11-08
-FDM,PBYI,"Puma Biotechnology, Inc.",0.0054,2026-11-06,2026-11-08
-FDM,DGICA,Donegal Group Inc. (Class A),0.0053,2026-11-06,2026-11-08
-FDM,AII,"American Integrity Insurance Group, Inc.",0.0052,2026-11-06,2026-11-08
-FDM,FCCO,First Community Corporation,0.0051,2026-11-06,2026-11-08
-FDM,MVBF,MVB Financial Corp.,0.0051,2026-11-06,2026-11-08
-FDM,ATLO,Ames National Corporation,0.005,2026-11-06,2026-11-08
-FDM,RM,Regional Management Corp.,0.005,2026-11-06,2026-11-08
-FDM,ALTO,"Alto Ingredients, Inc.",0.0048,2026-11-06,2026-11-08
-FDM,FRAF,Franklin Financial Services Corporation,0.0048,2026-11-06,2026-11-08
-FDM,ISBA,Isabella Bank Corporation,0.0048,2026-11-06,2026-11-08
-FDM,NGVC,"Natural Grocers by Vitamin Cottage, Inc.",0.0045000000000000005,2026-11-06,2026-11-08
-FDM,NEWT,"NewtekOne, Inc.",0.0044,2026-11-06,2026-11-08
-FDM,MYFW,"First Western Financial, Inc.",0.0043,2026-11-06,2026-11-08
-FDM,PRTH,"Priority Technology Holdings, Inc.",0.0043,2026-11-06,2026-11-08
-FDM,STRT,Strattec Security Corporation,0.0043,2026-11-06,2026-11-08
-FDM,TWIN,"Twin Disc, Incorporated",0.0043,2026-11-06,2026-11-08
-FDM,LEGH,Legacy Housing Corporation,0.0042,2026-11-06,2026-11-08
-FDM,AGEN,Agenus Inc.,0.0040999999999999995,2026-11-06,2026-11-08
-FDM,CMTV,Community Bancorp,0.0040999999999999995,2026-11-06,2026-11-08
-FDM,FNRN,First Northern Community Bancorp,0.0040999999999999995,2026-11-06,2026-11-08
-FDM,FVCB,"FVCBankcorp, Inc.",0.0040999999999999995,2026-11-06,2026-11-08
-FDM,RMR,The RMR Group Inc. (Class A),0.0040999999999999995,2026-11-06,2026-11-08
-FDM,ACIC,American Coastal Insurance Corporation,0.004,2026-11-06,2026-11-08
-FDM,FXNC,First National Corporation,0.004,2026-11-06,2026-11-08
-FDM,FRD,"Friedman Industries, Incorporated",0.004,2026-11-06,2026-11-08
-FDM,KINS,"Kingstone Companies, Inc.",0.004,2026-11-06,2026-11-08
-FDM,OVLY,Oak Valley Bancorp,0.004,2026-11-06,2026-11-08
-FDM,COSO,"CoastalSouth Bancshares, Inc.",0.0039000000000000003,2026-11-06,2026-11-08
-FDM,PANL,Pangaea Logistics Solutions Ltd.,0.0039000000000000003,2026-11-06,2026-11-08
-FDM,PPIH,"Perma-Pipe International Holdings, Inc.",0.0038,2026-11-06,2026-11-08
-FDM,QUAD,"Quad/Graphics, Inc.",0.0038,2026-11-06,2026-11-08
-FDM,REFI,"Chicago Atlantic Real Estate Finance, Inc.",0.0037,2026-11-06,2026-11-08
-FDM,EFSI,"Eagle Financial Services, Inc.",0.0034999999999999996,2026-11-06,2026-11-08
-FDM,INR,"Infinity Natural Resources, Inc. (Class A)",0.0034999999999999996,2026-11-06,2026-11-08
-FDM,OPFI,"OppFi, Inc.",0.0034999999999999996,2026-11-06,2026-11-08
-FDM,VEL,"Velocity Financial, Inc.",0.0034999999999999996,2026-11-06,2026-11-08
-FDM,PEBK,"Peoples Bancorp of North Carolina, Inc.",0.0033,2026-11-06,2026-11-08
-FDM,CZWI,"Citizens Community Bancorp, Inc.",0.0032,2026-11-06,2026-11-08
-FDM,CFBK,CF Bankshares Inc.,0.0031,2026-11-06,2026-11-08
-FDM,QTTB,Q32 Bio Inc.,0.0031,2026-11-06,2026-11-08
-FDM,MRBK,Meridian Corporation,0.0029,2026-11-06,2026-11-08
-FDM,OVBC,Ohio Valley Banc Corp.,0.0027,2026-11-06,2026-11-08
-FDM,EBMT,"Eagle Bancorp Montana, Inc.",0.0025,2026-11-06,2026-11-08
-FDM,RCMT,"RCM Technologies, Inc.",0.0024,2026-11-06,2026-11-08
-FDM,TG,Tredegar Corporation,0.0024,2026-11-06,2026-11-08
-FDM,HMH,HMH Holding Inc. (Class A),0.0022,2026-11-06,2026-11-08
-FDM,RILY,"BRC Group Holdings, Inc.",0.0019,2026-11-06,2026-11-08
-FDM,PNRG,PrimeEnergy Resources Corporation,0.0019,2026-11-06,2026-11-08
-FDM,ESP,Espey Mfg. & Electronics Corp.,0.0018,2026-11-06,2026-11-08
-FDM,PDEX,"Pro-Dex, Inc.",0.0018,2026-11-06,2026-11-08
+FDM,PD,"PagerDuty, Inc.",0.02,2026-11-06,2026-11-09
+FDM,QNST,"QuinStreet, Inc.",0.0184,2026-11-06,2026-11-09
+FDM,APOG,"Apogee Enterprises, Inc.",0.0158,2026-11-06,2026-11-09
+FDM,SMP,"Standard Motor Products, Inc.",0.015600000000000001,2026-11-06,2026-11-09
+FDM,ORRF,"Orrstown Financial Services, Inc.",0.014199999999999999,2026-11-06,2026-11-09
+FDM,IBCP,Independent Bank Corporation,0.013300000000000001,2026-11-06,2026-11-09
+FDM,CCSI,"Consensus Cloud Solutions, Inc.",0.0131,2026-11-06,2026-11-09
+FDM,EVER,"EverQuote, Inc. (Class A)",0.0131,2026-11-06,2026-11-09
+FDM,OSPN,OneSpan Inc.,0.0131,2026-11-06,2026-11-09
+FDM,HRTG,"Heritage Insurance Holdings, Inc.",0.013000000000000001,2026-11-06,2026-11-09
+FDM,FISI,"Financial Institutions, Inc.",0.0129,2026-11-06,2026-11-09
+FDM,FLOC,Flowco Holdings Inc. (Class A),0.0128,2026-11-06,2026-11-09
+FDM,GCMG,GCM Grosvenor Inc. (Class A),0.0128,2026-11-06,2026-11-09
+FDM,CTO,"CTO Realty Growth, Inc.",0.0125,2026-11-06,2026-11-09
+FDM,RIGL,"Rigel Pharmaceuticals, Inc.",0.012199999999999999,2026-11-06,2026-11-09
+FDM,WASH,"Washington Trust Bancorp, Inc.",0.012199999999999999,2026-11-06,2026-11-09
+FDM,PGC,Peapack-Gladstone Financial Corporation,0.012,2026-11-06,2026-11-09
+FDM,HIPO,Hippo Holdings Inc.,0.011699999999999999,2026-11-06,2026-11-09
+FDM,HTB,"HomeTrust Bancshares, Inc.",0.0116,2026-11-06,2026-11-09
+FDM,REPX,"Riley Exploration Permian, Inc.",0.0116,2026-11-06,2026-11-09
+FDM,PAHC,Phibro Animal Health Corporation (Class A),0.0115,2026-11-06,2026-11-09
+FDM,BHB,Bar Harbor Bankshares,0.011399999999999999,2026-11-06,2026-11-09
+FDM,CCBG,"Capital City Bank Group, Inc.",0.011399999999999999,2026-11-06,2026-11-09
+FDM,SHBI,"Shore Bancshares, Inc.",0.011399999999999999,2026-11-06,2026-11-09
+FDM,PMT,PennyMac Mortgage Investment Trust,0.0113,2026-11-06,2026-11-09
+FDM,PFIS,Peoples Financial Services Corp.,0.0111,2026-11-06,2026-11-09
+FDM,SENEA,Seneca Foods Corporation,0.0111,2026-11-06,2026-11-09
+FDM,ACNB,ACNB Corporation,0.011000000000000001,2026-11-06,2026-11-09
+FDM,IRWD,"Ironwood Pharmaceuticals, Inc.",0.011000000000000001,2026-11-06,2026-11-09
+FDM,SMBC,"Southern Missouri Bancorp, Inc.",0.0108,2026-11-06,2026-11-09
+FDM,GSBC,"Great Southern Bancorp, Inc.",0.0106,2026-11-06,2026-11-09
+FDM,CARE,"Carter Bankshares, Inc.",0.0105,2026-11-06,2026-11-09
+FDM,SPFI,"South Plains Financial, Inc.",0.0104,2026-11-06,2026-11-09
+FDM,FBIZ,"First Business Financial Services, Inc.",0.0103,2026-11-06,2026-11-09
+FDM,AROW,Arrow Financial Corporation,0.0102,2026-11-06,2026-11-09
+FDM,BCAL,California BanCorp,0.0098,2026-11-06,2026-11-09
+FDM,ROOT,"Root, Inc. (Class A)",0.0098,2026-11-06,2026-11-09
+FDM,TCBX,"Third Coast Bancshares, Inc.",0.0098,2026-11-06,2026-11-09
+FDM,CIVB,"Civista Bancshares, Inc.",0.0097,2026-11-06,2026-11-09
+FDM,IVR,Invesco Mortgage Capital Inc.,0.0096,2026-11-06,2026-11-09
+FDM,SCHL,Scholastic Corporation,0.0096,2026-11-06,2026-11-09
+FDM,SFST,"Southern First Bancshares, Inc.",0.0088,2026-11-06,2026-11-09
+FDM,IIIN,"Insteel Industries, Inc.",0.0086,2026-11-06,2026-11-09
+FDM,KRNY,Kearny Financial Corp.,0.0086,2026-11-06,2026-11-09
+FDM,NRIM,"Northrim BanCorp, Inc.",0.0086,2026-11-06,2026-11-09
+FDM,TRTX,"TPG RE Finance Trust, Inc.",0.0086,2026-11-06,2026-11-09
+FDM,COFS,"ChoiceOne Financial Services, Inc.",0.0085,2026-11-06,2026-11-09
+FDM,EBF,"Ennis, Inc.",0.0083,2026-11-06,2026-11-09
+FDM,JBSS,"John B. Sanfilippo & Son, Inc.",0.0083,2026-11-06,2026-11-09
+FDM,FMAO,"Farmers & Merchants Bancorp, Inc.",0.008199999999999999,2026-11-06,2026-11-09
+FDM,OPRT,Oportun Financial Corp.,0.008,2026-11-06,2026-11-09
+FDM,ADAM,Adamas Trust Inc.,0.0079,2026-11-06,2026-11-09
+FDM,CBNK,"Capital Bancorp, Inc.",0.0079,2026-11-06,2026-11-09
+FDM,BSRR,Sierra Bancorp,0.0079,2026-11-06,2026-11-09
+FDM,WTBA,"West Bancorporation, Inc.",0.0077,2026-11-06,2026-11-09
+FDM,ETD,Ethan Allen Interiors Inc.,0.0076,2026-11-06,2026-11-09
+FDM,BWB,"Bridgewater Bancshares, Inc.",0.0075,2026-11-06,2026-11-09
+FDM,LOCO,"El Pollo Loco Holdings, Inc.",0.0075,2026-11-06,2026-11-09
+FDM,PDLB,"Ponce Financial Group, Inc.",0.0075,2026-11-06,2026-11-09
+FDM,OBT,"Orange County Bancorp, Inc.",0.0074,2026-11-06,2026-11-09
+FDM,ABUS,Arbutus Biopharma Corporation,0.0073,2026-11-06,2026-11-09
+FDM,MAX,"MediaAlpha, Inc. (Class A)",0.0073,2026-11-06,2026-11-09
+FDM,FRBA,First Bank,0.0072,2026-11-06,2026-11-09
+FDM,CBAN,"Colony Bankcorp, Inc.",0.0070999999999999995,2026-11-06,2026-11-09
+FDM,HBCP,"Home Bancorp, Inc.",0.0070999999999999995,2026-11-06,2026-11-09
+FDM,CRCT,"Cricut, Inc. (Class A)",0.0069,2026-11-06,2026-11-09
+FDM,UNTY,"Unity Bancorp, Inc.",0.0069,2026-11-06,2026-11-09
+FDM,BWFG,"Bankwell Financial Group, Inc.",0.0068000000000000005,2026-11-06,2026-11-09
+FDM,PLBC,Plumas Bancorp,0.0068000000000000005,2026-11-06,2026-11-09
+FDM,RBB,RBB Bancorp,0.0067,2026-11-06,2026-11-09
+FDM,ITIC,Investors Title Company,0.0066,2026-11-06,2026-11-09
+FDM,SD,"SandRidge Energy, Inc.",0.006500000000000001,2026-11-06,2026-11-09
+FDM,CENT,Central Garden & Pet Company,0.0064,2026-11-06,2026-11-09
+FDM,CSV,"Carriage Services, Inc.",0.0063,2026-11-06,2026-11-09
+FDM,VLGEA,"Village Super Market, Inc.",0.0063,2026-11-06,2026-11-09
+FDM,TSBK,"Timberland Bancorp, Inc.",0.0062,2026-11-06,2026-11-09
+FDM,RCKY,"Rocky Brands, Inc.",0.006,2026-11-06,2026-11-09
+FDM,NPB,"Northpointe Bancshares, Inc.",0.0059,2026-11-06,2026-11-09
+FDM,FRST,Primis Financial Corp.,0.0059,2026-11-06,2026-11-09
+FDM,CRMD,CorMedix Inc.,0.0058,2026-11-06,2026-11-09
+FDM,FLXS,"Flexsteel Industries, Inc.",0.0058,2026-11-06,2026-11-09
+FDM,ISTR,Investar Holding Corporation,0.0058,2026-11-06,2026-11-09
+FDM,PKBK,"Parke Bancorp, Inc.",0.005600000000000001,2026-11-06,2026-11-09
+FDM,CHMG,Chemung Financial Corporation,0.0055000000000000005,2026-11-06,2026-11-09
+FDM,WSBF,"Waterstone Financia, Inc.",0.0055000000000000005,2026-11-06,2026-11-09
+FDM,PBYI,"Puma Biotechnology, Inc.",0.0054,2026-11-06,2026-11-09
+FDM,DGICA,Donegal Group Inc. (Class A),0.0053,2026-11-06,2026-11-09
+FDM,AII,"American Integrity Insurance Group, Inc.",0.0052,2026-11-06,2026-11-09
+FDM,FCCO,First Community Corporation,0.0051,2026-11-06,2026-11-09
+FDM,MVBF,MVB Financial Corp.,0.0051,2026-11-06,2026-11-09
+FDM,ATLO,Ames National Corporation,0.005,2026-11-06,2026-11-09
+FDM,RM,Regional Management Corp.,0.005,2026-11-06,2026-11-09
+FDM,ALTO,"Alto Ingredients, Inc.",0.0048,2026-11-06,2026-11-09
+FDM,FRAF,Franklin Financial Services Corporation,0.0048,2026-11-06,2026-11-09
+FDM,ISBA,Isabella Bank Corporation,0.0048,2026-11-06,2026-11-09
+FDM,NGVC,"Natural Grocers by Vitamin Cottage, Inc.",0.0045000000000000005,2026-11-06,2026-11-09
+FDM,NEWT,"NewtekOne, Inc.",0.0044,2026-11-06,2026-11-09
+FDM,MYFW,"First Western Financial, Inc.",0.0043,2026-11-06,2026-11-09
+FDM,PRTH,"Priority Technology Holdings, Inc.",0.0043,2026-11-06,2026-11-09
+FDM,STRT,Strattec Security Corporation,0.0043,2026-11-06,2026-11-09
+FDM,TWIN,"Twin Disc, Incorporated",0.0043,2026-11-06,2026-11-09
+FDM,LEGH,Legacy Housing Corporation,0.0042,2026-11-06,2026-11-09
+FDM,AGEN,Agenus Inc.,0.0040999999999999995,2026-11-06,2026-11-09
+FDM,CMTV,Community Bancorp,0.0040999999999999995,2026-11-06,2026-11-09
+FDM,FNRN,First Northern Community Bancorp,0.0040999999999999995,2026-11-06,2026-11-09
+FDM,FVCB,"FVCBankcorp, Inc.",0.0040999999999999995,2026-11-06,2026-11-09
+FDM,RMR,The RMR Group Inc. (Class A),0.0040999999999999995,2026-11-06,2026-11-09
+FDM,ACIC,American Coastal Insurance Corporation,0.004,2026-11-06,2026-11-09
+FDM,FXNC,First National Corporation,0.004,2026-11-06,2026-11-09
+FDM,FRD,"Friedman Industries, Incorporated",0.004,2026-11-06,2026-11-09
+FDM,KINS,"Kingstone Companies, Inc.",0.004,2026-11-06,2026-11-09
+FDM,OVLY,Oak Valley Bancorp,0.004,2026-11-06,2026-11-09
+FDM,COSO,"CoastalSouth Bancshares, Inc.",0.0039000000000000003,2026-11-06,2026-11-09
+FDM,PANL,Pangaea Logistics Solutions Ltd.,0.0039000000000000003,2026-11-06,2026-11-09
+FDM,PPIH,"Perma-Pipe International Holdings, Inc.",0.0038,2026-11-06,2026-11-09
+FDM,QUAD,"Quad/Graphics, Inc.",0.0038,2026-11-06,2026-11-09
+FDM,REFI,"Chicago Atlantic Real Estate Finance, Inc.",0.0037,2026-11-06,2026-11-09
+FDM,EFSI,"Eagle Financial Services, Inc.",0.0034999999999999996,2026-11-06,2026-11-09
+FDM,INR,"Infinity Natural Resources, Inc. (Class A)",0.0034999999999999996,2026-11-06,2026-11-09
+FDM,OPFI,"OppFi, Inc.",0.0034999999999999996,2026-11-06,2026-11-09
+FDM,VEL,"Velocity Financial, Inc.",0.0034999999999999996,2026-11-06,2026-11-09
+FDM,PEBK,"Peoples Bancorp of North Carolina, Inc.",0.0033,2026-11-06,2026-11-09
+FDM,CZWI,"Citizens Community Bancorp, Inc.",0.0032,2026-11-06,2026-11-09
+FDM,CFBK,CF Bankshares Inc.,0.0031,2026-11-06,2026-11-09
+FDM,QTTB,Q32 Bio Inc.,0.0031,2026-11-06,2026-11-09
+FDM,MRBK,Meridian Corporation,0.0029,2026-11-06,2026-11-09
+FDM,OVBC,Ohio Valley Banc Corp.,0.0027,2026-11-06,2026-11-09
+FDM,EBMT,"Eagle Bancorp Montana, Inc.",0.0025,2026-11-06,2026-11-09
+FDM,RCMT,"RCM Technologies, Inc.",0.0024,2026-11-06,2026-11-09
+FDM,TG,Tredegar Corporation,0.0024,2026-11-06,2026-11-09
+FDM,HMH,HMH Holding Inc. (Class A),0.0022,2026-11-06,2026-11-09
+FDM,RILY,"BRC Group Holdings, Inc.",0.0019,2026-11-06,2026-11-09
+FDM,PNRG,PrimeEnergy Resources Corporation,0.0019,2026-11-06,2026-11-09
+FDM,ESP,Espey Mfg. & Electronics Corp.,0.0018,2026-11-06,2026-11-09
+FDM,PDEX,"Pro-Dex, Inc.",0.0018,2026-11-06,2026-11-09
