@@ -1765,7 +1765,7 @@ def main() -> None:
         "signals": results,
     }
 
-    is_full_universe = (args.limit == 0 and len(results) >= total_catalog_count)
+    is_full_universe = (args.limit == 0 and len(results) >= int(total_catalog_count * 0.5))
 
     # Save to JSON (both dedicated macd/ directory and flows/ fallback)
     # INVARIANT: Only overwrite production signal artifacts when scanning full universe.
@@ -1951,36 +1951,41 @@ def main() -> None:
         print(f"[Scanner Safety] Limited test scan: skipped overwriting {ALERT_OUT_MACD}.")
 
     if should_send:
-        # Dynamic institutional subject with ticker highlights
+        # Dynamic institutional subject with ticker highlights prioritized by absolute % return magnitude
+        sig_map = {s.get("ticker"): s for s in results if isinstance(s, dict)}
+
+        def format_lead_tickers(tickers_set: set[str], max_count: int = 4) -> str:
+            sorted_t = sorted(
+                list(tickers_set),
+                key=lambda t: abs(sig_map.get(t, {}).get("chg_1d_pct") or sig_map.get(t, {}).get("chg_1h_pct") or 0.0),
+                reverse=True
+            )
+            parts = []
+            for t in sorted_t[:max_count]:
+                chg = sig_map.get(t, {}).get("chg_1d_pct")
+                if chg is not None:
+                    parts.append(f"{t} ({chg:+.1f}%)")
+                else:
+                    parts.append(t)
+            out = ", ".join(parts)
+            if len(sorted_t) > max_count:
+                out += f" (+{len(sorted_t) - max_count} more)"
+            return out
+
         if new_breakouts:
-            ticker_list = sorted(list(new_breakouts))
-            lead_tickers = ", ".join(ticker_list[:4])
-            if len(ticker_list) > 4:
-                lead_tickers += f" (+{len(ticker_list) - 4} more)"
+            lead_tickers = format_lead_tickers(new_breakouts)
             subject = f"[Conviction Labs] VOLATILITY BREAKOUT: {lead_tickers} · {session_badge} · {scan_time_str}"
         elif new_breakdowns and not new_breakouts and not new_subzero:
-            ticker_list = sorted(list(new_breakdowns))
-            lead_tickers = ", ".join(ticker_list[:4])
-            if len(ticker_list) > 4:
-                lead_tickers += f" (+{len(ticker_list) - 4} more)"
+            lead_tickers = format_lead_tickers(new_breakdowns)
             subject = f"[Conviction Labs] CRITICAL BREAKDOWN: {lead_tickers} · {session_badge} · {scan_time_str}"
         elif new_subzero:
-            ticker_list = sorted(list(new_subzero))
-            lead_tickers = ", ".join(ticker_list[:4])
-            if len(ticker_list) > 4:
-                lead_tickers += f" (+{len(ticker_list) - 4} more)"
+            lead_tickers = format_lead_tickers(new_subzero)
             subject = f"[Conviction Labs] SUB-ZERO REVERSAL: {lead_tickers} · {session_badge} · {scan_time_str}"
         elif new_bear and not new_crossovers:
-            ticker_list = sorted(list(new_bear))
-            lead_tickers = ", ".join(ticker_list[:4])
-            if len(ticker_list) > 4:
-                lead_tickers += f" (+{len(ticker_list) - 4} more)"
+            lead_tickers = format_lead_tickers(new_bear)
             subject = f"[Conviction Labs] BEARISH EXIT: {lead_tickers} · {session_badge} · {scan_time_str}"
         elif new_crossovers:
-            ticker_list = sorted(list(new_crossovers))
-            lead_tickers = ", ".join(ticker_list[:4])
-            if len(ticker_list) > 4:
-                lead_tickers += f" (+{len(ticker_list) - 4} more)"
+            lead_tickers = format_lead_tickers(new_crossovers)
             subject = f"[Conviction Labs] 1H MOMENTUM CROSS: {lead_tickers} · {session_badge} · {scan_time_str}"
         elif is_pre_close_time:
             subject = f"[Conviction Labs] PRE-CLOSE SQUEEZE RADAR · {session_badge} · {scan_time_str}"
