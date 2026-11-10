@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       force_all:
-        description: "Probe all 145 ETFs even if benchmark latest date matches local max date"
+        description: "Probe all 160 ETFs even if benchmark latest date matches local max date"
         required: false
         default: false
         type: boolean
@@ -49,7 +49,7 @@ jobs:
           pip install -r requirements.txt playwright
           playwright install --with-deps chromium
 
-      - name: Incremental stealth sync of 145 ETF flow series
+      - name: Incremental stealth sync of 160 ETF flow series
         run: |
           extra_args=""
           if [ "${{ inputs.force_all }}" = "true" ]; then
@@ -73,7 +73,7 @@ jobs:
 
       - name: Run flow dataset and UI contract tests
         run: |
-          python -m pytest tests/test_local_flow_artifacts.py tests/test_flow_ui.py tests/test_flow_ui_metrics.py tests/test_etf_ohlcv.py -v
+          python -m pytest tests/test_local_flow_artifacts.py tests/test_flow_ui.py tests/test_flow_ui_metrics.py tests/test_ci_config.py tests/test_etf_ohlcv.py -v
 
       - name: Commit and push updated flow dataset
         id: commit_flows

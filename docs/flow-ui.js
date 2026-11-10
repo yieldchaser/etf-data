@@ -75,13 +75,18 @@
       range: params.get('range') || '1y',
       priceEnabled: params.get('price') !== '0',
       chart: CHART_TABS.some(tab => tab.key === chart) ? chart : 'workbench',
-      view: ['studio', 'scanner', 'matrix', 'volume_studies', 'macd_strategy'].includes(view) ? view : (ticker ? 'studio' : null)
+      view: ['studio', 'scanner', 'matrix', 'volume_studies', 'macd_strategy', 'trough_peak'].includes(view) ? view : (ticker ? 'studio' : null)
     };
   }
 
   function reconcileFlowHistory(app, search) {
     const next = flowHistoryState(search);
     if (next.view) app.flowViewMode = next.view;
+    const studyParam = new URLSearchParams(search || '').get('study');
+    if (studyParam && Array.isArray(app.vsStudiesList) && app.vsStudiesList.some(s => s.key === studyParam)) {
+      app.vsActiveStudy = studyParam;
+      if (typeof VolumeStudies !== 'undefined') VolumeStudies.state.study = studyParam;
+    }
     app.flowTicker = next.ticker;
     app.flowRangePreset = next.range;
     app.flowPriceEnabled = next.priceEnabled;
@@ -105,10 +110,19 @@
     if (app.flowData?.ticker === next.ticker) {
       app._flowApplyUrlRange();
       if (next.view === 'volume_studies' && typeof VolumeStudies !== 'undefined') {
+        const opts = { catalogInstruments: app.flowCatalog?.instruments };
         if (typeof app.$nextTick === 'function') {
-          app.$nextTick(() => VolumeStudies.loadTicker(next.ticker));
+          app.$nextTick(() => VolumeStudies.loadTicker(next.ticker, opts));
         } else {
-          VolumeStudies.loadTicker(next.ticker);
+          VolumeStudies.loadTicker(next.ticker, opts);
+        }
+      }
+      if (next.view === 'trough_peak' && typeof TroughPeak !== 'undefined') {
+        const opts = { catalogInstruments: app.flowCatalog?.instruments };
+        if (typeof app.$nextTick === 'function') {
+          app.$nextTick(() => TroughPeak.mount(next.ticker, opts));
+        } else {
+          TroughPeak.mount(next.ticker, opts);
         }
       }
       return next;
@@ -792,7 +806,8 @@
         { key: 'net', label: 'Net Volume', desc: 'Signed daily volume with 21D cumulative rolling sum' },
         { key: 'cmf', label: 'Chaikin Money Flow', desc: '21D Close Location Value accumulation/distribution' },
         { key: 'obv', label: 'On-Balance Volume', desc: 'Re-based cumulative signed volume with 21D MA overlay' },
-        { key: 'pvt', label: 'Price-Volume Trend', desc: 'Price-move weighted cumulative volume with 21D MA overlay' }
+        { key: 'pvt', label: 'Price-Volume Trend', desc: 'Price-move weighted cumulative volume with 21D MA overlay' },
+        { key: 'heatmap', label: 'Volume Heatmap', desc: 'MicroCVI Volume Climax & Drought 18-Column Calendar Grid' }
       ],
       flowBattleMode: 'paired',
       flowShowMarketPulse: true,
@@ -3991,6 +4006,12 @@
             this.vsRange = e.detail.range;
           }
         });
+        window.addEventListener('trough-peak-ticker', (e) => {
+          const tk = e.detail && e.detail.ticker;
+          if (tk && tk !== this.flowTicker) {
+            this.selectFlowTicker(tk, { writeUrl: true, push: true, switchToStudio: false });
+          }
+        });
         this._flowBootstrap();
       },
 
@@ -4097,10 +4118,11 @@
         const initialTicker = this._flowEntryMap[requested] ? requested : (this.flowFeaturedInstruments[0]?.ticker || this.flowPrimaryInstruments[0]?.ticker || '');
         await this.selectFlowTicker(initialTicker, { writeUrl: false, push: false });
         if (this.flowViewMode === 'volume_studies' && typeof VolumeStudies !== 'undefined') {
+          const opts = { catalogInstruments: this.flowCatalog?.instruments };
           if (typeof this.$nextTick === 'function') {
-            this.$nextTick(() => VolumeStudies.loadTicker(initialTicker));
+            this.$nextTick(() => VolumeStudies.loadTicker(initialTicker, opts));
           } else {
-            VolumeStudies.loadTicker(initialTicker);
+            VolumeStudies.loadTicker(initialTicker, opts);
           }
         }
         if (this.flowViewMode === 'macd_strategy' && typeof MACDStrategy !== 'undefined') {
@@ -4108,6 +4130,14 @@
             this.$nextTick(() => MACDStrategy.mount(initialTicker));
           } else {
             MACDStrategy.mount(initialTicker);
+          }
+        }
+        if (this.flowViewMode === 'trough_peak' && typeof TroughPeak !== 'undefined') {
+          const opts = { catalogInstruments: this.flowCatalog?.instruments };
+          if (typeof this.$nextTick === 'function') {
+            this.$nextTick(() => TroughPeak.mount(initialTicker, opts));
+          } else {
+            TroughPeak.mount(initialTicker, opts);
           }
         }
       },
@@ -4344,12 +4374,12 @@
         this.flowSearchOpen = false;
         this.flowSearchQuery = '';
         this.flowSearchActiveIndex = -1;
-        await this._flowLoadTicker(normalized, settings.writeUrl !== false, Boolean(settings.push));
         if (typeof VolumeStudies !== 'undefined' && (this.flowViewMode === 'volume_studies' || VolumeStudies.state.ticker)) {
+          const opts = { catalogInstruments: this.flowCatalog?.instruments };
           if (typeof this.$nextTick === 'function') {
-            this.$nextTick(() => VolumeStudies.loadTicker(normalized));
+            this.$nextTick(() => VolumeStudies.loadTicker(normalized, opts));
           } else {
-            VolumeStudies.loadTicker(normalized);
+            VolumeStudies.loadTicker(normalized, opts);
           }
         }
         if (typeof MACDStrategy !== 'undefined' && (this.flowViewMode === 'macd_strategy' || MACDStrategy.state.activeTicker)) {
@@ -4359,6 +4389,15 @@
             MACDStrategy.setTicker(normalized);
           }
         }
+        if (typeof TroughPeak !== 'undefined' && (this.flowViewMode === 'trough_peak' || TroughPeak.state.activeTicker)) {
+          const opts = { catalogInstruments: this.flowCatalog?.instruments };
+          if (typeof this.$nextTick === 'function') {
+            this.$nextTick(() => TroughPeak.mount(normalized, opts));
+          } else {
+            TroughPeak.mount(normalized, opts);
+          }
+        }
+        await this._flowLoadTicker(normalized, settings.writeUrl !== false, Boolean(settings.push));
       },
 
       async _flowLoadTicker(ticker, writeUrl, push) {
@@ -4691,6 +4730,11 @@
         this.flowRangePreset = state.range;
         this.flowPriceEnabled = state.priceEnabled;
         this.flowChartTab = state.chart;
+        const studyParam = new URLSearchParams(window.location.search || '').get('study');
+        if (studyParam && this.vsStudiesList.some(s => s.key === studyParam)) {
+          this.vsActiveStudy = studyParam;
+          if (typeof VolumeStudies !== 'undefined') VolumeStudies.state.study = studyParam;
+        }
       },
 
       setFlowViewMode(mode) {
@@ -4698,16 +4742,24 @@
         this._flowWriteUrl(false);
         if (mode === 'volume_studies' && typeof VolumeStudies !== 'undefined') {
           const targetTicker = this.flowTicker || (this.flowCatalog?.instruments?.[0]?.ticker || '');
+          const opts = { catalogInstruments: this.flowCatalog?.instruments };
           if (targetTicker) {
             this.$nextTick(() => {
-              VolumeStudies.loadTicker(targetTicker);
+              VolumeStudies.loadTicker(targetTicker, opts);
             });
           }
         }
         if (mode === 'macd_strategy' && typeof MACDStrategy !== 'undefined') {
-          const targetTicker = this.flowTicker || (this.flowCatalog?.instruments?.[0]?.ticker || 'INTW');
+          const targetTicker = this.flowTicker || (this.flowCatalog?.instruments?.[0]?.ticker || '');
           this.$nextTick(() => {
             MACDStrategy.mount(targetTicker);
+          });
+        }
+        if (mode === 'trough_peak' && typeof TroughPeak !== 'undefined') {
+          const targetTicker = this.flowTicker || (this.flowCatalog?.instruments?.[0]?.ticker || '');
+          const opts = { catalogInstruments: this.flowCatalog?.instruments };
+          this.$nextTick(() => {
+            TroughPeak.mount(targetTicker, opts);
           });
         }
       },
@@ -4715,6 +4767,7 @@
       vsSetStudy(studyKey) {
         this.vsActiveStudy = studyKey;
         if (typeof VolumeStudies !== 'undefined') VolumeStudies.setStudy(studyKey);
+        this._flowWriteUrl(false);
       },
 
       vsSetRange(rangeKey) {
@@ -4742,6 +4795,11 @@
         url.searchParams.set('tab', 'flows');
         if (this.flowViewMode && this.flowViewMode !== 'studio') url.searchParams.set('view', this.flowViewMode);
         else url.searchParams.delete('view');
+        if (this.flowViewMode === 'volume_studies' && this.vsActiveStudy && this.vsActiveStudy !== 'vol') {
+          url.searchParams.set('study', this.vsActiveStudy);
+        } else {
+          url.searchParams.delete('study');
+        }
         if (this.flowTicker) url.searchParams.set('flow', this.flowTicker);
         else url.searchParams.delete('flow');
         url.searchParams.delete('ticker');

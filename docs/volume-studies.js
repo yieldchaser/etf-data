@@ -55,6 +55,13 @@
       short: 'PVT',
       desc: 'Volume scaled by proportional price moves, re-based to zero at visible window start.',
       methodology: '<p><strong>Price-Volume Trend (<code>pvt</code>)</strong> weights volume by the proportional percentage magnitude of price changes:</p><p><code>PVT_t = PVT_{t-1} + Volume_t &times; ((Close_t - Close_{t-1}) / Close_{t-1})</code></p><p>Unlike OBV which adds flat volume regardless of whether price moved 0.05% or 5.0%, PVT scales linearly with the severity of price swings, capturing high-conviction tape momentum.</p>'
+    },
+    heatmap: {
+      key: 'heatmap',
+      label: 'Volume Heatmap',
+      short: 'MICROCVI',
+      desc: 'MicroCVI Volume Climax & Drought 18-Column Calendar Grid.',
+      methodology: '<p><strong>MicroCVI Volume Heatmap (<code>heatmap</code>)</strong> evaluates daily tape microstructure across a trailing 756-session buffer using a 21-day trimmed baseline (central 15 of 21 sorted sessions) and Abdi-Ranaldo effective spreads.</p><p><strong>Stage 1 (Smooth Bounded Intensity 0&ndash;100):</strong> <code>PeakScore</code> blends volume elasticity <code>(1 + RVOL)^0.55 - 1</code> with 22-bar range position, downside shock, and lower-wick absorption (<code>&kappa;=1.35</code>). <code>ValleyScore</code> combines low-turnover compression <code>(1/RVOL)^0.60 - 0.85</code>, true-range contraction, and spread widening (<code>&kappa;=1.60</code>). Multi-ETF scopes aggregate with <code>&lambda;=0.75</code> max + <code>0.25</code> &radic;dollar-turnover weighted breadth.</p><p><strong>Stage 2 (Dual-Gated Viewport Spotlight):</strong> Top <code>P99 / P95 / P90</code> sessions in the visible window are ranked deterministically. Cells exceeding structural floors (<code>Peaks: 68 / 52 / 38</code>; <code>Valleys: 64 / 48 / 34</code>) glow solid as <em>Structural Volume Climax</em> or <em>Structural Drought</em>; cells below floors render as hollow rings (<em>Local Peak / Low-Turnover Compression</em>).</p>'
     }
   };
 
@@ -62,7 +69,7 @@
     STUDY_METAS,
     state: {
       ticker: '',
-      study: 'vol',       // 'vol' | 'osc' | 'net' | 'cmf' | 'obv' | 'pvt'
+      study: 'vol',       // 'vol' | 'osc' | 'net' | 'cmf' | 'obv' | 'pvt' | 'heatmap'
       unit: 'shares',     // 'shares' | 'dollar'
       range: '1y',        // '3m' | '6m' | '1y' | '2y' | 'all' | 'year_YYYY' | 'custom'
       customRange: null,  // { startIdx, endIdx }
@@ -1381,6 +1388,9 @@
     async loadTicker(ticker, options = {}) {
       if (!ticker) return;
       this.state.ticker = ticker;
+      if (options.catalogInstruments) {
+        this._catalogInstruments = options.catalogInstruments;
+      }
       this._bindEvents();
       this._initResizeObserver();
 
@@ -1457,23 +1467,48 @@
           const canvas = document.getElementById('vs-canvas');
           if (canvas) {
             const ctx = canvas.getContext('2d');
-            this._drawMessage(ctx, canvas.width, canvas.height, 'Waiting for ticker tape history…');
+            this._drawMessage(ctx, canvas.width, canvas.height, 'Waiting for ticker tape history...');
           }
         }
         return;
       }
 
-      const payload = this.compute(history, this.state.study, this.state.range, {
+      const studyForCompute = this.state.study === 'heatmap' ? 'vol' : this.state.study;
+      const payload = this.compute(history, studyForCompute, this.state.range, {
         unit: this.state.unit,
         customRange: this.state.range === 'custom' ? this.state.customRange : null
       });
 
       this._payload = payload;
       if (payload) {
-        this._syncSlider(payload.fullLength, payload.startIdx, payload.endIdx);
-        this._draw();
         this._updateHUD(null);
         this._updateMethodology(this.state.study);
+      }
+
+      if (this.state.study === 'heatmap') {
+        const hm = typeof VolumeHeatmap !== 'undefined' ? VolumeHeatmap : (typeof window !== 'undefined' ? window.VolumeHeatmap : null);
+        if (hm) {
+          hm.mount({
+            ticker: this.state.ticker,
+            allHistory: this._etfHistoryCache || { [this.state.ticker]: history },
+            catalogInstruments: this._catalogInstruments || [],
+            unit: this.state.unit
+          });
+        }
+        return;
+      }
+
+      if (payload) {
+        this._syncSlider(payload.fullLength, payload.startIdx, payload.endIdx);
+        this._draw();
+        if (typeof requestAnimationFrame !== 'undefined') {
+          requestAnimationFrame(() => {
+            this._draw();
+            if (this._payload) {
+              this._syncSlider(this._payload.fullLength, this._payload.startIdx, this._payload.endIdx);
+            }
+          });
+        }
       }
     },
 
@@ -1506,7 +1541,9 @@
     },
 
     resize() {
-      this._draw();
+      if (this.state.study !== 'heatmap') {
+        this._draw();
+      }
     }
   };
 

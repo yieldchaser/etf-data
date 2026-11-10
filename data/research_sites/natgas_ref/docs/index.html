@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLUE MERIDIAN</title>
+    <style>
+        html, body {
+            background-color: #070a12 !important;
+            background: #070a12 !important;
+            color: #e2e8f0;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><radialGradient id='g' cx='50%' cy='60%' r='50%' fx='50%' fy='65%'><stop offset='0%' style='stop-color:%230033ff;stop-opacity:0.5' /><stop offset='100%' style='stop-color:%23001a4d;stop-opacity:0' /></radialGradient></defs><circle cx='50' cy='60' r='40' fill='url(%23g)' /><path d='M50 92 C30 92 18 75 18 52 C18 30 50 5 50 5 C50 5 82 30 82 52 C82 75 70 92 50 92 Z' fill='%230066ff' /><path d='M50 80 C40 80 32 68 32 50 C32 35 50 18 50 18 C50 18 68 35 68 50 C68 68 60 80 50 80 Z' fill='white' /></svg>">
+    <link rel="stylesheet" href="css/styles.css?v=20261021a">
+    <link rel="stylesheet" href="css/cards.css?v=20261024a">
+    <link rel="stylesheet" href="css/signals.css?v=20261101a">
+    <link rel="stylesheet" href="css/tail-risk.css?v=20261031a">
+    <link rel="stylesheet" href="css/auth.css?v=20261104a">
+    <script src="js/auth.js?v=20261104a"></script>
+</head>
+<body>
+    <template id="bm-dashboard-template">
+    <!-- TOP BAR -->
+    <header id="top-bar">
+        <div class="top-bar-left">
+            <h1>BLUE MERIDIAN</h1>
+            <span class="subtitle">Volume Flow Analytics</span>
+        </div>
+        <div class="top-bar-right">
+            <nav class="page-nav">
+                <a href="index.html" class="nav-link active" data-tooltip="Volume Flow Analytics: volume spike indicators, capitulation metrics, and conviction alert feeds.">Volume Monitor</a>
+                <a href="trough-peak.html" class="nav-link" data-tooltip="Trough-to-Peak Analyzer: recovery cycle metrics, opportunity heatmaps, and historical volatility regimes.">Trough-to-Peak</a>
+                <a href="flows.html" class="nav-link" data-tooltip="Flow Monitor: daily AUM flows, momentum indicators, and price-flow divergence models.">FLOW MONITOR</a>
+                <a href="cvol.html" class="nav-link" data-tooltip="Volatility Intelligence: options surface skew, convexity, backwardation, and VRP state machine.">CVOL</a>
+            </nav>
+            <div class="market-status" id="market-status">
+                <span class="status-dot"></span>
+                <span class="status-text">LOADING...</span>
+            </div>
+            <div class="last-updated" id="last-updated">—</div>
+            <button class="refresh-btn" id="refresh-btn" data-tooltip="Manual Refresh: fetch latest pre-computed signals and live price overlay.">&#x21bb;</button>
+        </div>
+    </header>
+ 
+    <!-- TOP CONVERGENCE FLASH BANNER (hidden unless SWVC converged) -->
+    <div id="convergence-flash" class="convergence-flash" style="display:none"></div>
+ 
+    <!-- MAIN 3-SECTION LAYOUT -->
+    <main id="dashboard">
+        <!-- SECTION A: LONG SIDE -->
+        <section class="dashboard-section section-long" id="section-long">
+            <div class="section-header">
+                <h2 data-tooltip="Bull ETFs: rise when Natural Gas prices rise. Color convention: green for positive inflows.">LONG SIDE</h2>
+                <span class="section-label">2x / 3x Leveraged Long</span>
+            </div>
+            <div class="etf-cards" id="long-cards">
+                <!-- BOIL, HNU, 3NGL cards inserted here -->
+            </div>
+        </section>
+ 
+        <!-- SECTION C: SIGNAL COMMAND CENTER -->
+        <section class="dashboard-section section-signals" id="section-signals">
+            <div class="section-header">
+                <h2 data-tooltip="Synthesizes volume alerts, convergence signals, and correlation matrices.">SIGNAL COMMAND CENTER</h2>
+                <span class="section-label">Volume Intelligence</span>
+            </div>
+ 
+            <!-- NG=F GAS PRICE CONTEXT BAR -->
+            <div class="ng-price-bar-panel" id="ng-price-bar-panel">
+                <div id="ng-price-bar" class="ng-price-bar">
+                    <span class="ng-bar-label">NG=F</span>
+                    <span class="ng-bar-na">Loading gas price context…</span>
+                </div>
+            </div>
+
+            <!-- ALERT FEED -->
+            <div class="signal-panel" id="alert-panel">
+                <h3 data-tooltip="Real-time alert feed displaying recent VCVI, CVI, and MWCA volume spikes.">ACTIVE ALERTS</h3>
+                <div class="alert-feed" id="alert-feed">
+                    <div class="no-alerts">No active alerts</div>
+                </div>
+            </div>
+
+            <!-- VOLUME HEAT CALENDAR -->
+            <div class="signal-panel" id="heat-calendar-panel">
+                <div class="heat-panel-header">
+                    <div class="heat-panel-header-left">
+                        <h3 id="heat-calendar-title" style="margin-bottom:0; font-size:0.78rem; font-weight:800; white-space:nowrap;" data-tooltip="Aggregated heatmap representing the maximum volume pressure across selected ETFs. Outliers are highlighted using Global Historical Percentiles (full 5+ year history). The underlying CVI metric uses a 21-day rolling volume/price percentile, making the baseline stationary and comparable across all years.">VOLUME HEAT MAP</h3>
+                        <!-- Pagination -->
+                        <div class="heat-nav-arrows" style="display:flex; gap:2px; margin-left:2px; margin-right:0; flex-shrink: 0;">
+                            <button class="nav-arrow-btn" id="heat-prev" data-tooltip="View previous 90 days (Days 91–180)">&#8592;</button>
+                            <button class="nav-arrow-btn" id="heat-next" data-tooltip="Currently viewing most recent 90 days (Days 1–90)" disabled>&#8594;</button>
+                        </div>
+                    </div>
+                    
+                    <div class="heat-panel-header-right">
+                        <!-- Spotlight (PEAKS / VALLEYS) Toggle -->
+                        <div class="tab-group" id="heat-spotlight-group">
+                            <button class="tab-btn" id="heat-peaks-toggle" data-spotlight="peaks" data-tooltip="PEAKS Mode: Spotlight climactic volume spikes (top percentiles of CVI).">PEAKS</button>
+                            <button class="tab-btn" id="heat-valleys-toggle" data-spotlight="valleys" data-tooltip="VALLEYS Mode: Spotlight extreme volume droughts (volume dried up to historic minimums).">VALLEYS</button>
+                        </div>
+                        <div class="tab-group heat-peaks-sub" id="heat-peaks-threshold-group" style="display: none;">
+                            <button class="tab-btn" data-threshold="90" data-tooltip="Notable Outliers (Top 10%): Filter to days in top 10% of historical intensity.">p90</button>
+                            <button class="tab-btn active" data-threshold="95" data-tooltip="Significant Outliers (Top 5% - Default): Filter to days in top 5% of historical intensity.">p95</button>
+                            <button class="tab-btn" data-threshold="99" data-tooltip="Extreme Outliers (Top 1%): Filter to days in top 1% of historical intensity.">p99</button>
+                        </div>
+                        <span class="heat-peak-count" id="heat-peak-count" data-tooltip="Count of highlighted outlier days matching active spotlight filter.">0 PEAKS</span>
+                    </div>
+                </div>
+
+                <!-- Filter Toolbar -->
+                <div class="heat-filter-toolbar">
+                    <div class="tab-group" id="heat-side-group">
+                        <button class="tab-btn active" data-side="all" data-tooltip="Analyze all 6 ETFs (BOIL, HNU, 3NGL, KOLD, HND, 3NGS) simultaneously.">ALL</button>
+                        <button class="tab-btn" data-side="long" data-tooltip="Analyze only long-side leveraged ETFs (BOIL, HNU, 3NGL).">LONG</button>
+                        <button class="tab-btn" data-side="short" data-tooltip="Analyze only short-side/inverse ETFs (KOLD, HND, 3NGS).">SHORT</button>
+
+                        <span class="heat-filter-divider"></span>
+
+                        <button class="tab-btn heat-etf-long" data-side="BOIL" data-tooltip="BOIL (ProShares Ultra Bloomberg NG 2x Long — NYSE)">BOIL</button>
+                        <button class="tab-btn heat-etf-long" data-side="HNU.TO" data-tooltip="HNU.TO (BetaPro Natural Gas 2x Bull — TSX Canada)">HNU</button>
+                        <button class="tab-btn heat-etf-long" data-side="3NGL.L" data-tooltip="3NGL.L (WisdomTree NG 3x Daily Long — LSE London)">3NGL</button>
+
+                        <span class="heat-filter-divider"></span>
+
+                        <button class="tab-btn heat-etf-short" data-side="KOLD" data-tooltip="KOLD (ProShares UltraShort Bloomberg NG -2x — NYSE)">KOLD</button>
+                        <button class="tab-btn heat-etf-short" data-side="HND.TO" data-tooltip="HND.TO (BetaPro Natural Gas 2x Bear — TSX Canada)">HND</button>
+                        <button class="tab-btn heat-etf-short" data-side="3NGS.L" data-tooltip="3NGS.L (WisdomTree NG 3x Daily Short — LSE London)">3NGS</button>
+                    </div>
+                    <div class="heat-filter-secondary">
+                        <div class="tab-group" id="heat-days-group">
+                            <button class="tab-btn active" data-days="90" data-tooltip="90-Day View: 5 rows &times; 18 cols (~4.5 months). Standard quarterly lookback.">90D</button>
+                            <button class="tab-btn" data-days="126" data-tooltip="126-Day View: 7 rows &times; 18 cols (6 trading months / 2 financial quarters). Quantitative semi-annual benchmark.">126D</button>
+                            <button class="tab-btn" data-days="180" data-tooltip="180-Day View: 10 rows &times; 18 cols (~8.5 months). Multi-season cycle perspective.">180D</button>
+                            <button class="tab-btn" data-days="252" data-tooltip="252-Day View: 14 rows &times; 18 cols (1 full annual trading year). Comprehensive 12-month commodity cycle.">252D</button>
+                        </div>
+                        <div class="tab-group" id="heat-mode-group">
+                            <button class="tab-btn active" data-mode="share" data-tooltip="CVI (Capitulation Volume Index): Bounded score (0-10,000) representing (Volume Rank 21d) &times; (1 - Price Rank 21d). Highlights share volume spikes at local bottoms/tops.">S</button>
+                            <button class="tab-btn" data-mode="dollar" data-tooltip="DVCVI (Dollar-Volume CVI): Bounded score representing (Dollar Volume Rank 21d) &times; (1 - Price Rank 21d). Adjusts volume pressure for the trading value of assets.">$</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="heat-calendar" id="heat-calendar">
+                    <!-- Filled dynamically -->
+                </div>
+                <div class="heat-legend">
+                    <span class="heat-label" data-tooltip="Low volume pressure relative to historical norm.">Quiet</span>
+                    <span class="heat-swatch" style="background:#1a1a28"></span>
+                    <span class="heat-swatch" style="background:#283848"></span>
+                    <span class="heat-swatch" style="background:#4a6878"></span>
+                    <span class="heat-swatch" style="background:#d4a830"></span>
+                    <span class="heat-swatch" style="background:#c04040"></span>
+                    <span class="heat-swatch" style="background:#8855bb" data-tooltip="Absolute extreme volume pressure (purple)."></span>
+                    <span class="heat-label" data-tooltip="High volume pressure (capitulation/exhaustion spike).">Extreme</span>
+                </div>
+            </div>
+
+            <!-- INVERSE PAIR STRESS MATRIX -->
+            <div class="signal-panel" id="stress-matrix-panel">
+                <h3 data-tooltip="Compares relative volume, capitulation metrics, and stress status side-by-side for long/short pairs.">INVERSE PAIR STRESS MATRIX</h3>
+                <div class="table-scroll-wrap">
+                <table class="stress-matrix" id="stress-matrix">
+                    <thead>
+                        <tr>
+                            <th>PAIR</th>
+                            <th data-tooltip="Long ETF 21-day Relative Volume">LONG RVOL</th>
+                            <th data-tooltip="Short/Inverse ETF 21-day Relative Volume">SHORT RVOL</th>
+                            <th data-tooltip="Long-side VCVI-63d — spikes when long ETF has high volume AND low price. Gas is near a BOTTOM. Favors long/leveraged setup.">L-CAP</th>
+                            <th data-tooltip="Short-side VCVI-63d — spikes when short ETF has high volume AND low price (gas is HIGH). Gas is near a TOP. Favors short/inverse setup.">S-CAP</th>
+                            <th data-tooltip="5d fast-window VCVI (Long/Short) — catches weather event spikes before longer windows. Threshold: 45. Format: L/S">FAST-5d</th>
+                            <th data-tooltip="Sharp Spike flag — fires when 5d VCVI>45 AND move>2×ATR on the same day. Weather event candidate.">SPIKE</th>
+                            <th data-tooltip="Inverse Pair Stress Index — short ETF RVOL ÷ long ETF RVOL. &gt;2x indicates abnormal directional pressure.">IPSI</th>
+                            <th data-tooltip="Current volatility regime — where HV21 sits in its own 252-day history. Signals in LOW/QUIET regimes are most reliable.">VOL REGIME</th>
+                            <th data-tooltip="Pair Stress &amp; Capitulation Status: synthesizes directional IPSI ratio, long-side and short-side VCVI capitulation, and 5-day fast spike flags.">STATUS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stress-matrix-body">
+                        <!-- Filled dynamically -->
+                    </tbody>
+                </table>
+                </div>
+            </div>
+
+            <!-- VDDS CROSS-ETF COMPARISON BAR -->
+            <div class="signal-panel" id="vdds-panel">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:6px;">
+                    <h3 style="margin-bottom:0;" data-tooltip="VDDS (Volume-Dollar Divergence Score) = DV-RVOL-21d ÷ S-RVOL-21d per ETF. Below 1.0: share volume growing faster than dollar volume → price is low per share → capitulation pattern. Above 1.0: dollar value growing faster → price rising per unit → momentum/accumulation. Left of centre = bearish ETF price, right = bullish.">VDDS <span class="panel-subtitle" id="vdds-subtitle">· SHARE VOLUME RELATIVE (RVOL-21D)</span></h3>
+                    <!-- VOL / $ flip toggle — mirrors heatmap mode toggle -->
+                    <div class="tab-group" id="vdds-mode-group" style="margin:0; padding:2px;">
+                        <button class="tab-btn active" data-vdds-mode="vol" id="vdds-btn-vol" data-tooltip="VOL mode: shows S-RVOL-21d (share volume relative to 21-day average) per ETF — pure volume bar.">VOL</button>
+                        <button class="tab-btn" data-vdds-mode="dv" id="vdds-btn-dv" data-tooltip="$ mode: shows VDDS ratio (DV-RVOL-21d ÷ S-RVOL-21d) — dollar vs share volume divergence.">$</button>
+                    </div>
+                </div>
+                <div id="vdds-scale-legend" class="vdds-scale-legend"></div>
+                <div id="vdds-bar" class="vdds-bar">
+                    <span class="vdds-na">Loading VDDS data…</span>
+                </div>
+            </div>
+
+            <!-- PRICE-VOLUME STUDIES (classic volume indicators) -->
+            <div class="signal-panel" id="vs-panel">
+                <div class="vs-head">
+                    <h3 data-tooltip="Price and volume indicators computed from the ETF's full daily history.">PRICE-VOLUME STUDIES <span id="vs-subtitle" class="panel-subtitle">· TECHNICAL INDICATORS</span></h3>
+                    <div class="tab-group" id="vs-range-tabs" style="margin:0; padding:2px;">
+                        <button class="tab-btn" data-range="3m" data-tooltip="Last 3 months">3M</button>
+                        <button class="tab-btn" data-range="6m" data-tooltip="Last 6 months">6M</button>
+                        <button class="tab-btn active" data-range="1y" data-tooltip="Last year">1Y</button>
+                        <button class="tab-btn" data-range="2y" data-tooltip="Last 2 years">2Y</button>
+                        <button class="tab-btn" data-range="5y" data-tooltip="Last 5 years">5Y</button>
+                        <button class="tab-btn" data-range="10y" data-tooltip="Last 10 years">10Y</button>
+                        <button class="tab-btn" data-range="all" data-tooltip="All available history">ALL</button>
+                    </div>
+                </div>
+                <div class="vs-controls">
+                    <div class="vs-control-group vs-suite-group">
+                        <span class="vs-control-label">Suite</span>
+                        <div class="tab-group" id="vs-suite-tabs" style="margin:0; padding:2px;">
+                            <button class="tab-btn active" data-suite="classic" data-tooltip="Classic Technical Studies: Volume, Volume Oscillator, Net Volume, Chaikin Money Flow, OBV, Price-Volume Trend">CLASSIC TECHNICAL (6)</button>
+                            <button class="tab-btn" data-suite="micro" data-tooltip="Institutional Microstructure Suite: BVC-VPIN, Range Amihud ILLIQ-Z, Abdi-Ranaldo ESVD, LMSW Return-Volume Rho, Rolling VWAP-Z, True-Range Klinger TKVF">INSTITUTIONAL MICROSTRUCTURE (6)</button>
+                        </div>
+                    </div>
+                    <div class="vs-control-group">
+                        <span class="vs-control-label">Study</span>
+                        <div class="tab-group" id="vs-study-tabs" style="margin:0; padding:2px;">
+                            <button class="tab-btn active" data-study="vol" data-tooltip="Daily share volume. Green bars are up days, red bars down days, with a 21-day average line.">VOLUME</button>
+                            <button class="tab-btn" data-study="osc" data-tooltip="Volume oscillator: how far the 5-day average volume sits from the 21-day average, in percent. Above zero means volume is expanding.">VOL OSC</button>
+                            <button class="tab-btn" data-study="net" data-tooltip="Daily volume signed by direction: added on up days, subtracted on down days. The line is the 21-day running total.">NET VOL</button>
+                            <button class="tab-btn" data-study="cmf" data-tooltip="Chaikin Money Flow (21-day): measures institutional accumulation/distribution using close location within daily high-low range. Bounded [-1, +1].">CMF</button>
+                            <button class="tab-btn" data-study="obv" data-tooltip="On-balance volume: a running total that adds volume on up days and subtracts it on down days. Above its 21-day average signals accumulation.">OBV</button>
+                            <button class="tab-btn" data-study="pvt" data-tooltip="Price-volume trend: like OBV, but each day's volume is weighted by the size of its price move.">PVT</button>
+                        </div>
+                    </div>
+                    <div class="vs-control-group">
+                        <span class="vs-control-label">ETF</span>
+                        <div id="vs-chips" class="tab-group vs-chips" style="margin:0; padding:2px;"></div>
+                    </div>
+                </div>
+                <div class="vs-canvas-wrap" id="vs-canvas-wrap">
+                    <canvas id="vs-canvas"></canvas>
+                    <div id="vs-tooltip" class="vs-tooltip"></div>
+                </div>
+                <!-- Dual Range Slider (Scrub & Zoom) -->
+                <div class="range-slider-container vs-slider-container" id="vs-slider-container">
+                    <div class="range-slider-wrap">
+                        <div class="range-inputs">
+                            <div class="range-slider-track"></div>
+                            <div id="vs-range-highlight" class="range-slider-highlight"></div>
+                            <input type="range" id="vs-range-start" min="0" max="100" value="0" data-tooltip="Drag to set the start of the visible date range">
+                            <input type="range" id="vs-range-end" min="0" max="100" value="100" data-tooltip="Drag to set the end of the visible date range">
+                        </div>
+                    </div>
+                    <div class="range-labels vs-range-labels-row">
+                        <span class="vs-range-spacer"></span>
+                        <span id="vs-range-active-label" class="vs-range-active-lbl">1Y</span>
+                        <div class="tab-group" id="vs-unit-tabs" style="margin:0; padding:2px;">
+                            <button class="tab-btn active" data-unit="shares" data-tooltip="Measure in raw share volume">S</button>
+                            <button class="tab-btn" data-unit="dollar" data-tooltip="Measure in dollar volume (Price × Shares)">$</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="vs-reading" id="vs-reading"><span class="vs-reading-na">Loading…</span></div>
+            </div>
+
+            <!-- VOLUME PROFILE (volume at price) -->
+            <div class="signal-panel" id="vp-panel">
+                <div class="vp-head">
+                    <div class="vp-head-top">
+                        <h3 data-tooltip="Shares or dollar volume traded at each price level over the selected window. Green/red splits volume by up versus down sessions.">VOLUME PROFILE <span class="panel-subtitle">· PRICE DISTRIBUTION</span></h3>
+                        <div class="vp-header-controls">
+                            <div class="tab-group" id="vp-range-tabs" style="margin:0; padding:2px;">
+                                <button class="tab-btn" data-range="1m" data-tooltip="Last month (30 days)">1M</button>
+                                <button class="tab-btn" data-range="3m" data-tooltip="Last 3 months">3M</button>
+                                <button class="tab-btn" data-range="6m" data-tooltip="Last 6 months">6M</button>
+                                <button class="tab-btn active" data-range="1y" data-tooltip="Last year (default window)">1Y</button>
+                                <button class="tab-btn" data-range="2y" data-tooltip="Last 2 years">2Y</button>
+                                <button class="tab-btn" data-range="5y" data-tooltip="Last 5 years">5Y</button>
+                                <button class="tab-btn" data-range="all" data-tooltip="Full history since inception">ALL</button>
+                                <button class="tab-btn" data-range="custom" data-tooltip="Pick custom start and end dates">CUSTOM</button>
+                            </div>
+                            <div class="tab-group" id="vp-unit-tabs" style="margin:0; padding:2px;">
+                                <button class="tab-btn active" data-unit="shares" data-tooltip="Measure in raw share volume">S</button>
+                                <button class="tab-btn" data-unit="dollar" data-tooltip="Measure in dollar volume (Price × Shares)">$</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="vp-subhead">
+                        <span class="vp-range-label" id="vp-range-label"></span>
+                    </div>
+                </div>
+                <div id="vp-fixed-controls" class="vp-fixed-controls">
+                    <span class="vp-fixed-lbl">FROM</span>
+                    <input type="date" class="vp-date" id="vp-from" data-tooltip="Start of the custom window">
+                    <span class="vp-fixed-arrow">&rarr;</span>
+                    <span class="vp-fixed-lbl">TO</span>
+                    <input type="date" class="vp-date" id="vp-to" data-tooltip="End of the custom window">
+                </div>
+                <div class="vp-controls">
+                    <div class="vp-control-group">
+                        <span class="vp-control-label">ETF</span>
+                        <div id="vp-chips" class="tab-group vp-chips" style="margin:0; padding:2px;"></div>
+                    </div>
+                </div>
+                <div class="vp-canvas-wrap" id="vp-canvas-wrap">
+                    <canvas id="vp-canvas"></canvas>
+                    <div id="vp-tooltip" class="vp-tooltip"></div>
+                </div>
+                <div class="vp-stats" id="vp-stats"><span class="vp-stats-na">Loading…</span></div>
+            </div>
+
+            <!-- SIDE-WIDE VOLUME CONVERGENCE -->
+            <div class="signal-panel" id="swvc-panel">
+                <h3 data-tooltip="Tracks whether all 3 ETFs on the same side (e.g., KOLD + HND.TO + 3NGS.L) each had an RVOL-21d spike ≥2.0× within a 10-day window across the 15-day lookback. Independent cross-market spiking across US, Canadian, and UK markets confirms structural institutional capitulation or accumulation.">SIDE-WIDE CONVERGENCE <span class="panel-subtitle">· TRI-ETF ROLLING WINDOW</span></h3>
+                <div id="swvc-container">
+                    <div class="swvc-loading">Scanning cross-market activity…</div>
+                </div>
+            </div>
+
+            <!-- MULTI-WINDOW CONVERGENCE -->
+            <div class="signal-panel" id="convergence-panel">
+                <h3 data-tooltip="Tracks how many of the 6 lookback windows (5d, 10d, 21d, 63d, 126d, 252d) are simultaneously in the 90th+ volume percentile. All 6 converging triggers the full Multi-Window Convergence Alarm (MWCA).">MULTI-WINDOW CONVERGENCE <span class="panel-subtitle">· 6-WINDOW PERCENTILE ALARM</span></h3>
+                <div class="convergence-gauges" id="convergence-gauges">
+                    <!-- Filled dynamically -->
+                </div>
+            </div>
+
+        </section>
+ 
+        <!-- SECTION B: SHORT SIDE -->
+        <section class="dashboard-section section-short" id="section-short">
+            <div class="section-header">
+                <h2 data-tooltip="Inverse ETFs: rise when Natural Gas prices fall. Color convention: green for outflows (shorts unwinding), red for inflows.">SHORT SIDE</h2>
+                <span class="section-label">2x / 3x Leveraged Short</span>
+            </div>
+            <div class="etf-cards" id="short-cards">
+                <!-- KOLD, HND, 3NGS cards inserted here -->
+            </div>
+        </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="footer-content">
+            <span>Blue Meridian | Data via Yahoo Finance</span>
+            <span>CVI + IPSI + MWCA are proprietary indicators</span>
+        </div>
+    </footer>
+
+    <!-- ETF Card Chart Tooltip -->
+    <div id="card-chart-tooltip"></div>
+
+    <div id="tail-risk-backdrop" class="tail-backdrop" onclick="TailRiskDrawer.close()"></div>
+
+    <aside id="tail-risk-drawer" class="tail-drawer" aria-label="Tail Risk Analysis Drawer">
+        <header class="tail-header">
+            <div class="tail-header-left">
+                <h2 class="tail-title" id="tail-header-title" data-tooltip="<strong>Historical Return Distribution &amp; Tail Risk Engine</strong><br>Non-parametric fat-tail modeling, Value-at-Risk quantiles, Expected Shortfall, and volume-conditioned forward return expectancy.">Tail Risk Engine</h2>
+                <span class="tail-ticker-badge" id="tail-header-badge">BOIL</span>
+                <span class="tail-subtitle" id="tail-header-sub">Historical Empirical Distribution</span>
+            </div>
+            <div class="tail-header-right">
+                <button class="tail-close-btn" onclick="TailRiskDrawer.close()" aria-label="Close Tail Risk Drawer" data-tooltip="Close Tail Risk Engine (Esc)">&times;</button>
+            </div>
+        </header>
+
+        <nav class="tail-ticker-chips" id="tail-ticker-chips" aria-label="Instrument Switcher"></nav>
+
+        <div class="tail-body" id="tail-drawer-body">
+            <div class="tail-controls-row">
+                <div class="tail-control-group">
+                    <span class="tail-control-label">Horizon</span>
+                    <div class="tail-btn-group" id="tail-horizon-tabs">
+                        <button class="tail-tab-btn active" data-horizon="1d" onclick="TailRiskDrawer.setHorizon('1d')" data-tooltip="<strong>1-Day Daily Return Horizon</strong><br>Close-to-close percentage change. Evaluates intraday execution risk, daily jump diffusion, and standard volatility.">1-DAY</button>
+                        <button class="tail-tab-btn" data-horizon="5d" onclick="TailRiskDrawer.setHorizon('5d')" data-tooltip="<strong>5-Day Swing Cycle Horizon</strong><br>Rolling 5-trading-day compound return. Evaluates multi-day momentum persistence, weekend gap risk, and swing trader holding risk.">5-DAY SWING</button>
+                        <button class="tail-tab-btn" data-horizon="21d" onclick="TailRiskDrawer.setHorizon('21d')" data-tooltip="<strong>21-Day Monthly Cycle Horizon</strong><br>Rolling 21-trading-day compound return (~1 calendar month). Measures path-dependent volatility drag, storage cycle risk, and structural drift.">21-DAY MONTHLY</button>
+                    </div>
+                </div>
+                <div class="tail-control-group">
+                    <span class="tail-control-label">Regime</span>
+                    <div class="tail-btn-group" id="tail-regime-tabs">
+                        <button class="tail-tab-btn active" data-regime="trailing_252d" onclick="TailRiskDrawer.setRegime('trailing_252d')" data-tooltip="<strong>Trailing 252-Trading-Day Regime</strong><br>Exactly the past 252 active market sessions (1 calendar year). Calibrated to current volatility baseline and immediate seasonal cycle.">TRAILING 252D</button>
+                        <button class="tail-tab-btn" data-regime="lng_era" onclick="TailRiskDrawer.setRegime('lng_era')" data-tooltip="<strong>Modern LNG Export Era (2023&ndash;Present)</strong><br>Filters data from January 2023 onward. Captures globalized US LNG export market pricing post-Freeport LNG terminal restart.">MODERN LNG ERA (2023+)</button>
+                        <button class="tail-tab-btn" data-regime="full_inception" onclick="TailRiskDrawer.setRegime('full_inception')" data-tooltip="<strong>Full Inception Historical Sample</strong><br>Includes entire recorded trading history back to ETF inception (up to 15 years, 3,780+ sessions). Reveals extreme structural tail shocks.">FULL INCEPTION</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tail-shock-banner" id="tail-shock-banner"></div>
+
+            <div class="tail-kpi-grid" id="tail-kpi-grid"></div>
+
+            <div class="tail-canvas-container">
+                <div class="tail-chart-header">
+                    <span class="tail-chart-title">EMPIRICAL PROBABILITY DENSITY (80-BIN ZERO-ANCHORED HISTOGRAM)</span>
+                    <div class="tail-legend">
+                        <span class="tail-legend-item" data-tooltip="<strong>Loss Tail (Negative Bins)</strong><br>40 zero-anchored crimson bins spanning negative return sessions (R &lt; 0.00%). Height indicates total historical occurrences."><span class="tail-legend-swatch" style="background:#c04040;"></span>Loss Tail</span>
+                        <span class="tail-legend-item" data-tooltip="<strong>Gain Tail (Positive Bins)</strong><br>40 zero-anchored emerald bins spanning positive return sessions (R &ge; 0.00%). Height indicates total historical occurrences."><span class="tail-legend-swatch" style="background:#3db87a;"></span>Gain Tail</span>
+                        <span class="tail-legend-item" data-tooltip="<strong>Empirical Value-at-Risk (95% Confidence)</strong><br>Dashed gold cutoff line at the 5th percentile worst loss. Returns were better than this threshold on 95% of historical sessions."><span class="tail-legend-swatch" style="background:#d4a830; border: 1px dashed #d4a830;"></span>VaR 95%</span>
+                        <span class="tail-legend-item" data-tooltip="<strong>Expected Shortfall / CVaR 95%</strong><br>Dashed crimson cutoff line showing the conditional average loss of all sessions breaching the 95% VaR threshold."><span class="tail-legend-swatch" style="background:#c04040; border: 1px dashed #c04040;"></span>CVaR 95%</span>
+                        <span class="tail-legend-item" data-tooltip="<strong>Session Move Needle</strong><br>Cyan vertical indicator with glowing circular head projecting the current session percentage move directly onto the historical frequency curve."><span class="tail-legend-swatch" style="background:#5090a0;"></span>Session Needle</span>
+                    </div>
+                </div>
+                <div class="tail-canvas-wrap">
+                    <canvas id="tail-risk-canvas"></canvas>
+                    <div id="tail-risk-tooltip"></div>
+                </div>
+            </div>
+
+            <div class="tail-matrix-card">
+                <div class="tail-matrix-title-row">
+                    <span class="tail-matrix-title" data-tooltip="<strong>Volume-Conditioned Forward Return Expectancy Matrix</strong><br>Cross-tabulates price return shocks (|Z| &ge; 1.5&sigma;) against relative trading volume (RVOL-21d &ge; 1.5&times;) to isolate liquidity absorption from momentum continuation.">VOLUME-CONDITIONED FORWARD RETURN EXPECTANCY MATRIX</span>
+                    <span class="tail-matrix-subtitle" data-tooltip="Evaluates subsequent 1-day, 5-day, and 10-day forward return expectations and win rates across 5 distinct market regimes.">Cross-tabulated against Z-Score and Relative Volume (RVOL-21d)</span>
+                </div>
+                <div class="tail-matrix-wrap" id="tail-matrix-wrap"></div>
+            </div>
+        </div>
+    </aside>
+    </template>
+
+    <script>
+        Auth.initIndex();
+    </script>
+</body>
+</html>

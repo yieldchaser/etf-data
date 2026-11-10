@@ -20,6 +20,7 @@
   <link rel="stylesheet" href="flow-ui.css">
   <link rel="stylesheet" href="volume-studies.css">
   <link rel="stylesheet" href="macd-strategy.css">
+  <link rel="stylesheet" href="trough-peak.css">
   <link rel="stylesheet" href="runtime-fallback.css">
   <style>
     :root {
@@ -2041,6 +2042,7 @@
             <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'matrix' ? 'true' : 'false'" @click="setFlowViewMode('matrix')">Category &amp; regime matrix</button>
             <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'volume_studies' ? 'true' : 'false'" @click="setFlowViewMode('volume_studies')">Price-Volume Studies</button>
             <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'macd_strategy' ? 'true' : 'false'" @click="setFlowViewMode('macd_strategy')">MACD Momentum Engine</button>
+            <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'trough_peak' ? 'true' : 'false'" @click="setFlowViewMode('trough_peak')">Trough-to-Peak &amp; Drawdown</button>
           </div>
           <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:0.45rem">
             <h2>ETF estimated net flows</h2>
@@ -3051,7 +3053,7 @@
               <!-- Range Presets, Dynamic Years & Unit Selector -->
               <div class="vs-toolbar-row">
                 <!-- Range Presets (3M, 6M, 1Y, 2Y, ALL) -->
-                <div class="vs-range-group">
+                <div class="vs-range-group" x-show="vsActiveStudy !== 'heatmap'">
                   <span class="flow-eyebrow">Range:</span>
                   <button class="flow-chip" type="button" :class="vsRange === '3m' ? 'flow-chip-active' : ''" @click="vsSetRange('3m')">3M</button>
                   <button class="flow-chip" type="button" :class="vsRange === '6m' ? 'flow-chip-active' : ''" @click="vsSetRange('6m')">6M</button>
@@ -3061,11 +3063,16 @@
                 </div>
 
                 <!-- Dynamic Calendar Year Selector -->
-                <div class="vs-years-group" x-show="vsAvailableYears.length">
+                <div class="vs-years-group" x-show="vsActiveStudy !== 'heatmap' && vsAvailableYears.length">
                   <span class="flow-eyebrow">Year:</span>
                   <template x-for="yr in vsAvailableYears" :key="yr">
                     <button class="flow-chip" type="button" :class="vsRange === `year_${yr}` ? 'flow-chip-active' : ''" @click="vsSetYear(yr)" x-text="`'${yr.slice(2)}`"></button>
                   </template>
+                </div>
+
+                <div class="vs-heat-toolbar-note" x-show="vsActiveStudy === 'heatmap'">
+                  <span class="flow-eyebrow">MicroCVI Index:</span>
+                  <span class="flow-support" x-text="vsUnit === 'dollar' ? 'DVCVI (Dollar Turnover)' : 'CVI (Share Volume)'"></span>
                 </div>
 
                 <!-- Unit Selector (Shares S vs Dollars $) -->
@@ -3080,14 +3087,14 @@
             </div>
 
             <!-- High-DPI Canvas Viewport -->
-            <div class="vs-canvas-viewport" id="vs-canvas-container" style="position:relative;width:100%;min-height:360px">
+            <div class="vs-canvas-viewport" id="vs-canvas-container" x-show="vsActiveStudy !== 'heatmap'" style="position:relative;width:100%;min-height:360px">
               <canvas id="vs-canvas" style="display:block;width:100%;height:360px"></canvas>
               <!-- Floating Glassmorphic Tooltip Card -->
               <div id="vs-tooltip" class="vs-tooltip" style="display:none;position:absolute;pointer-events:none;z-index:20"></div>
             </div>
 
             <!-- Dual-Handle Range Scrubber -->
-            <div class="vs-scrub-panel">
+            <div class="vs-scrub-panel" id="vs-scrub-panel" x-show="vsActiveStudy !== 'heatmap'">
               <div class="vs-scrub-info">
                 <span class="flow-eyebrow" style="color:var(--flow-cyan)">Selected Study Window</span>
                 <span class="flow-support" id="vs-window-dates">—</span>
@@ -3101,7 +3108,7 @@
             </div>
 
             <!-- Live HUD Reading Status Bar -->
-            <div class="vs-reading-bar" id="vs-reading">
+            <div class="vs-reading-bar" id="vs-reading" x-show="vsActiveStudy !== 'heatmap'">
               <div class="vs-reading-metric"><span class="flow-eyebrow">PRICE</span><strong id="vs-hud-price">—</strong></div>
               <div class="vs-reading-divider"></div>
               <div class="vs-reading-metric"><span class="flow-eyebrow">DAILY CHG</span><strong id="vs-hud-chg">—</strong></div>
@@ -3113,6 +3120,58 @@
               <div class="vs-reading-metric"><span class="flow-eyebrow" id="vs-hud-study-label">STUDY VALUE</span><strong id="vs-hud-val" class="flow-cyan">—</strong></div>
               <div class="vs-reading-divider"></div>
               <div class="vs-reading-metric"><span class="flow-eyebrow">REGIME</span><strong id="vs-hud-regime" class="vs-hud-badge">—</strong></div>
+            </div>
+
+            <!-- 7th Study: MicroCVI 18-Column Volume Heatmap Calendar -->
+            <div id="vs-heatmap-container" class="vs-heat-container" x-show="vsActiveStudy === 'heatmap'">
+              <div class="vs-heat-controls-row">
+                <div class="vs-heat-scope-group" role="group" aria-label="Heatmap Universe Scope">
+                  <span class="flow-eyebrow">Scope:</span>
+                  <button type="button" class="vs-heat-btn active" data-heat-scope="active">Active ETF</button>
+                  <button type="button" class="vs-heat-btn" data-heat-scope="underlying">Underlying Complex</button>
+                  <button type="button" class="vs-heat-btn" data-heat-scope="category">Category Basket</button>
+                  <button type="button" class="vs-heat-btn" data-heat-scope="featured">Featured</button>
+                  <button type="button" class="vs-heat-btn" data-heat-scope="universe">All Universe</button>
+                  <span id="vs-heat-side-group" class="vs-heat-scope-group" style="display:none;flex-basis:100%;margin-top:0.2rem">
+                    <button type="button" class="vs-heat-btn active" data-heat-side="all">All</button>
+                    <button type="button" class="vs-heat-btn" data-heat-side="long">Long</button>
+                    <button type="button" class="vs-heat-btn" data-heat-side="short">Short</button>
+                  </span>
+                </div>
+
+                <div class="vs-heat-spotlight-group">
+                  <span class="flow-eyebrow">Spotlight:</span>
+                  <button type="button" id="vs-heat-peaks-btn" class="vs-heat-btn peaks-toggle" title="Highlight Volume Climax and Selloff Exhaustion sessions">PEAKS</button>
+                  <button type="button" id="vs-heat-valleys-btn" class="vs-heat-btn valleys-toggle" title="Highlight Volume Drought and Low-Turnover Compression sessions">VALLEYS</button>
+                  <span id="vs-heat-threshold-group" class="vs-heat-peaks-sub">
+                    <button type="button" class="vs-heat-btn" data-heat-threshold="90">P90</button>
+                    <button type="button" class="vs-heat-btn active" data-heat-threshold="95">P95</button>
+                    <button type="button" class="vs-heat-btn" data-heat-threshold="99">P99</button>
+                  </span>
+                  <span id="vs-heat-peak-count" class="vs-heat-peak-count"></span>
+                </div>
+              </div>
+
+              <div class="vs-heat-meta-row">
+                <span id="vs-heat-scope-label" class="flow-cyan">Single ETF</span>
+                <div class="vs-heat-meta-nav">
+                  <span class="flow-eyebrow">Horizon:</span>
+                  <button type="button" class="flow-chip flow-chip-active" data-heat-days="90">90D</button>
+                  <button type="button" class="flow-chip" data-heat-days="126">126D</button>
+                  <button type="button" class="flow-chip" data-heat-days="180">180D</button>
+                  <button type="button" class="flow-chip" data-heat-days="252">252D</button>
+                  <button type="button" id="vs-heat-prev" class="vs-heat-btn">&larr; Prev</button>
+                  <button type="button" id="vs-heat-next" class="vs-heat-btn">Next &rarr;</button>
+                  <span id="vs-heat-range-label" class="flow-support">—</span>
+                </div>
+              </div>
+
+              <div id="vs-heat-viewport" class="vs-heat-viewport">
+                <div id="vs-heatmap-grid" class="vs-heat-calendar" role="grid" aria-label="18-column MicroCVI Volume Heatmap"></div>
+                <div id="vs-heatmap-tooltip" class="vs-heat-tooltip" style="display:none"></div>
+              </div>
+
+              <div id="vs-heat-legend" class="vs-heat-legend"></div>
             </div>
 
             <!-- Methodology & Technical Interpretation Drawer -->
@@ -3340,6 +3399,228 @@
                 <p>Holding leveraged ETFs during bearish regimes guarantees exponential path decay. All positions must be liquidated into cash immediately upon a 1-Hour Bearish MACD crossover (<code>MACD &lt; Signal</code>) or within a maximum 30-hour holding window.</p>
               </div>
             </details>
+          </div>
+
+          <!-- ─── VIEW 6: TROUGH-TO-PEAK & UNDERWATER DRAWDOWN STUDIO ─── -->
+          <div class="flow-panel-card flow-tp-card" id="tp-studio-root" x-show="flowViewMode === 'trough_peak'">
+            <!-- Header Context Strip -->
+            <div class="tp-header-strip">
+              <div class="tp-title-col">
+                <div class="tp-title-row">
+                  <h3 class="flow-result-symbol" id="tp-active-symbol" style="font-size:1.15rem;margin:0" x-text="flowTicker">—</h3>
+                  <span class="flow-badge" id="tp-active-leverage" data-state="ACCUMULATION">1x</span>
+                  <span class="tp-fund-name" id="tp-active-name" x-text="flowSelectedInstrument?.fund_name"></span>
+                  <span class="mono" id="tp-active-price" style="font-size:1.05rem;font-weight:700;color:#f3f4f6"></span>
+                  <span id="tp-active-chg" style="font-size:0.8rem;color:#a1a1aa"></span>
+                </div>
+                <div class="flow-eyebrow" id="tp-active-category" style="margin-top:0.2rem"></div>
+              </div>
+              <div class="tp-quick-actions">
+                <label class="flow-eyebrow" for="tp-ticker-select" style="margin:0;display:flex;align-items:center;gap:0.35rem">
+                  <span>Switch:</span>
+                  <select id="tp-ticker-select"
+                          class="tp-ticker-select"
+                          aria-label="Switch Trough-to-Peak ETF"
+                          :value="flowTicker"
+                          @change="selectFlowTicker($event.target.value, { writeUrl: true, push: true, switchToStudio: false })">
+                    <template x-for="item in (flowCatalog?.instruments || [])" :key="item.ticker">
+                      <option :value="item.ticker" :selected="item.ticker === flowTicker" x-text="`${item.ticker} — ${item.fund_name} (${item.leverage})`"></option>
+                    </template>
+                  </select>
+                </label>
+                <button class="flow-button" type="button" @click="setFlowViewMode('studio')">&larr; Back to Flow Studio</button>
+              </div>
+            </div>
+
+            <!-- Threshold Slider + Dynamic Comparison Scope -->
+            <div class="tp-controls-grid">
+              <div class="tp-subpanel">
+                <div class="tp-slider-header">
+                  <span class="tp-slider-label">ZigZag Reversal Threshold</span>
+                  <span class="tp-slider-value" id="tp-threshold-display">30%</span>
+                </div>
+                <div id="tp-threshold-rail" class="tp-single-rail" title="Drag to set minimum trough-to-peak reversal percentage (0% to 300%)">
+                  <div class="tp-single-track"></div>
+                  <div class="tp-single-fill" id="tp-threshold-fill" style="width:10%"></div>
+                  <div id="tp-threshold-thumb" class="tp-single-thumb" role="slider" tabindex="0" aria-label="ZigZag Reversal Percentage Threshold" aria-valuemin="0" aria-valuemax="300" aria-valuenow="30" style="left:10%"></div>
+                </div>
+                <div class="tp-thr-presets">
+                  <button type="button" class="tp-pill-btn" data-tp-thr="5">5%</button>
+                  <button type="button" class="tp-pill-btn" data-tp-thr="10">10%</button>
+                  <button type="button" class="tp-pill-btn" data-tp-thr="15">15%</button>
+                  <button type="button" class="tp-pill-btn" data-tp-thr="25">25%</button>
+                  <button type="button" class="tp-pill-btn active" data-tp-thr="30">30%</button>
+                  <button type="button" class="tp-pill-btn" data-tp-thr="50">50%</button>
+                  <button type="button" class="tp-pill-btn" data-tp-thr="100">100%</button>
+                  <button type="button" class="tp-pill-btn" data-tp-thr="150">150%</button>
+                  <button type="button" class="tp-pill-btn" data-tp-thr="200">200%</button>
+                </div>
+              </div>
+
+              <div class="tp-subpanel">
+                <div class="tp-slider-header">
+                  <span class="tp-slider-label">Dynamic Comparison Scope</span>
+                  <select id="tp-compare-add" class="tp-compare-add" aria-label="Add ETF to custom comparison basket">
+                    <option value="">+ Add ETF to Compare...</option>
+                  </select>
+                </div>
+                <div class="tp-compare-bar" role="group" aria-label="Comparison Scope Mode">
+                  <button type="button" class="tp-pill-btn" data-tp-compare="single">Active ETF</button>
+                  <button type="button" class="tp-pill-btn active" data-tp-compare="pair">Long &amp; Short Pair</button>
+                  <button type="button" class="tp-pill-btn" data-tp-compare="underlying">Underlying Complex</button>
+                  <button type="button" class="tp-pill-btn" data-tp-compare="category">Category Peers</button>
+                  <button type="button" class="tp-pill-btn" data-tp-compare="custom">Custom Basket</button>
+                </div>
+                <div class="tp-compare-hint" id="tp-compare-hint">Dynamic comparison derived from catalog</div>
+              </div>
+            </div>
+
+            <!-- Dynamic Responsive KPI Cards -->
+            <div class="tp-kpi-grid" id="tp-kpi-grid"></div>
+
+            <!-- Price + Volume + Cycle Map Canvas -->
+            <div class="tp-section-panel">
+              <div class="tp-panel-head">
+                <div>
+                  <h4 class="tp-panel-title">Price, Volume &amp; ZigZag Cycle Map</h4>
+                  <span class="tp-panel-subtitle">Click and drag directly on the price canvas to measure two-point return, bars, and volume range</span>
+                </div>
+                <div class="tp-toolbar-cluster">
+                  <button type="button" class="flow-chip" data-tp-range="3m">3M</button>
+                  <button type="button" class="flow-chip" data-tp-range="6m">6M</button>
+                  <button type="button" class="flow-chip" data-tp-range="1y">1Y</button>
+                  <button type="button" class="flow-chip" data-tp-range="2y">2Y</button>
+                  <button type="button" class="flow-chip flow-chip-active" data-tp-range="all">ALL</button>
+                  <span id="tp-years-group" class="tp-toolbar-cluster"></span>
+                </div>
+              </div>
+
+              <div class="tp-canvas-wrap" id="tp-canvas-wrap">
+                <canvas id="tp-canvas"></canvas>
+                <div id="tp-tooltip" class="tp-tooltip"></div>
+              </div>
+
+              <div class="tp-brush-panel">
+                <div class="tp-brush-info">
+                  <span class="flow-eyebrow" style="color:var(--flow-cyan)">Price Window Brush</span>
+                  <span class="flow-support" id="tp-window-dates">—</span>
+                </div>
+                <div class="tp-brush-rail" id="tp-brush-rail">
+                  <div class="tp-brush-track"></div>
+                  <div class="tp-brush-highlight" id="tp-brush-highlight" style="left:0%;width:100%"></div>
+                  <div id="tp-brush-thumb-start" class="tp-brush-thumb" role="slider" tabindex="0" aria-label="Price Window Start" style="left:0%"></div>
+                  <div id="tp-brush-thumb-end" class="tp-brush-thumb" role="slider" tabindex="0" aria-label="Price Window End" style="left:100%"></div>
+                </div>
+              </div>
+
+              <div class="tp-chart-footer">
+                <div class="tp-legend-row">
+                  <span class="tp-legend-item"><span class="tp-dot" style="background:#ef4444"></span> Cycle Trough</span>
+                  <span class="tp-legend-item"><span class="tp-dot" style="background:#10b981"></span> Cycle Peak</span>
+                  <span class="tp-legend-item">Shaded Bands = Detected Up-Cycles</span>
+                </div>
+                <div class="tp-toolbar-cluster">
+                  <button type="button" id="tp-download-cycles-csv" class="tp-action-btn">Export Cycles CSV</button>
+                  <button type="button" id="tp-download-ohlcv-csv" class="tp-action-btn">Export OHLCV CSV</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Underwater Drawdown Engine -->
+            <div class="tp-section-panel">
+              <div class="tp-panel-head">
+                <div class="tp-toolbar-cluster">
+                  <h4 class="tp-panel-title">Underwater Drawdown Analysis</h4>
+                  <span class="flow-badge" id="tp-dd-badge">ROLLING 52W · ALL</span>
+                </div>
+                <div class="tp-toolbar-cluster">
+                  <div class="tp-compare-bar" role="group" aria-label="Drawdown Lookback Mode">
+                    <button type="button" class="tp-pill-btn active" data-tp-dd-mode="rolling_52w">Rolling 52W</button>
+                    <button type="button" class="tp-pill-btn" data-tp-dd-mode="rolling_2y">Rolling 2Y</button>
+                    <button type="button" class="tp-pill-btn" data-tp-dd-mode="ath">All-Time High</button>
+                  </div>
+                  <button type="button" class="flow-chip" data-tp-dd-horizon="3m">3M</button>
+                  <button type="button" class="flow-chip" data-tp-dd-horizon="6m">6M</button>
+                  <button type="button" class="flow-chip" data-tp-dd-horizon="1y">1Y</button>
+                  <button type="button" class="flow-chip" data-tp-dd-horizon="3y">3Y</button>
+                  <button type="button" class="flow-chip" data-tp-dd-horizon="5y">5Y</button>
+                  <button type="button" class="flow-chip flow-chip-active" data-tp-dd-horizon="all">ALL</button>
+                  <button type="button" id="tp-download-dd-csv" class="tp-action-btn">Drawdown CSV</button>
+                </div>
+              </div>
+
+              <div class="tp-dd-kpi-grid">
+                <div class="tp-dd-kpi-card" id="tp-dd-kpi-cur">
+                  <div class="tp-dd-kpi-lbl">CURRENT DRAWDOWN</div>
+                  <div class="tp-dd-kpi-val">—</div>
+                  <div class="tp-dd-kpi-sub">Awaiting data</div>
+                </div>
+                <div class="tp-dd-kpi-card" id="tp-dd-kpi-mdd">
+                  <div class="tp-dd-kpi-lbl">MAX DRAWDOWN</div>
+                  <div class="tp-dd-kpi-val">—</div>
+                  <div class="tp-dd-kpi-sub">Awaiting data</div>
+                </div>
+                <div class="tp-dd-kpi-card" id="tp-dd-kpi-peak">
+                  <div class="tp-dd-kpi-lbl">52W PEAK REFERENCE</div>
+                  <div class="tp-dd-kpi-val">—</div>
+                  <div class="tp-dd-kpi-sub">Awaiting data</div>
+                </div>
+                <div class="tp-dd-kpi-card" id="tp-dd-kpi-underwater">
+                  <div class="tp-dd-kpi-lbl">DAYS UNDERWATER</div>
+                  <div class="tp-dd-kpi-val">—</div>
+                  <div class="tp-dd-kpi-sub">Awaiting data</div>
+                </div>
+              </div>
+
+              <div class="tp-dd-chips" id="tp-dd-chips"></div>
+
+              <div class="tp-canvas-wrap tp-dd-canvas-wrap" id="tp-dd-canvas-wrap">
+                <canvas id="tp-dd-canvas"></canvas>
+                <div id="tp-dd-tooltip" class="tp-tooltip"></div>
+              </div>
+
+              <div class="tp-brush-panel">
+                <div class="tp-brush-info">
+                  <span class="flow-eyebrow" style="color:var(--flow-cyan)">Drawdown Window Brush</span>
+                  <span class="flow-support" id="tp-dd-window-dates">—</span>
+                </div>
+                <div class="tp-brush-rail" id="tp-dd-brush-rail">
+                  <div class="tp-brush-track"></div>
+                  <div class="tp-brush-highlight" id="tp-dd-brush-highlight" style="left:0%;width:100%"></div>
+                  <div id="tp-dd-brush-thumb-start" class="tp-brush-thumb" role="slider" tabindex="0" aria-label="Drawdown Window Start" style="left:0%"></div>
+                  <div id="tp-dd-brush-thumb-end" class="tp-brush-thumb" role="slider" tabindex="0" aria-label="Drawdown Window End" style="left:100%"></div>
+                </div>
+              </div>
+
+              <div class="tp-panel-subtitle" id="tp-dd-footer-desc">
+                Tracks percentage decline from each instrument's trailing 52-week (364-day) rolling high. Dashed curves denote inverse ETFs.
+              </div>
+            </div>
+
+            <!-- Cycle Detail Table -->
+            <div class="tp-section-panel">
+              <div class="tp-panel-head">
+                <h4 class="tp-panel-title" id="tp-table-title">Cycle Detail</h4>
+                <div class="tp-compare-bar" role="group" aria-label="Cycle Table Horizon Filter">
+                  <button type="button" class="tp-pill-btn active" data-tp-table-filter="all">All Cycles</button>
+                  <button type="button" class="tp-pill-btn" data-tp-table-filter="1y">Last 1Y</button>
+                  <button type="button" class="tp-pill-btn" data-tp-table-filter="6m">Last 6M</button>
+                </div>
+              </div>
+              <div class="tp-table-wrap" id="tp-table-container"></div>
+            </div>
+
+            <!-- Yearly Opportunity Frequency Matrix -->
+            <div class="tp-section-panel">
+              <div class="tp-panel-head">
+                <h4 class="tp-panel-title">Yearly Cycle Frequency Matrix</h4>
+                <div class="tp-compare-bar" role="group" aria-label="Yearly Matrix View Mode">
+                  <button type="button" class="tp-pill-btn active" data-tp-matrix-mode="basket">Comparison Basket</button>
+                  <button type="button" class="tp-pill-btn" data-tp-matrix-mode="active">Active ETF Breakdown</button>
+                </div>
+              </div>
+              <div class="tp-table-wrap" id="tp-matrix-container"></div>
+            </div>
           </div>
         </div>
       </template>
@@ -7942,7 +8223,9 @@ function marketsApp() {
 }
 </script>
 <script src="macd-strategy.js"></script>
+<script src="volume-heatmap.js"></script>
 <script src="volume-studies.js"></script>
+<script src="trough-peak.js"></script>
 <script src="flow-ui.js"></script>
 <script src="runtime-fallback.js"></script>
 </body>

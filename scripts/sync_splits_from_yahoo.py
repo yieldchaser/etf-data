@@ -22,7 +22,7 @@ import os
 import sys
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -64,7 +64,7 @@ def fetch_yahoo_splits_for_ticker(ticker: str) -> dict[str, Any]:
             splits_raw = result.get("events", {}).get("splits", {})
             splits_list = []
             for ts_key, sinfo in splits_raw.items():
-                split_dt = datetime.fromtimestamp(sinfo.get("date", int(ts_key))).strftime("%Y-%m-%d")
+                split_dt = datetime.fromtimestamp(sinfo.get("date", int(ts_key)), tz=timezone.utc).strftime("%Y-%m-%d")
                 num = float(sinfo.get("numerator", 1))
                 den = float(sinfo.get("denominator", 1))
                 splits_list.append({

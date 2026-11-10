@@ -16,6 +16,8 @@ on:
       - 'scraper.py'
       - 'scripts/build_local_flow_artifacts.py'
       - 'scripts/build_dynf_factor_engine.py'
+      - 'scripts/build_etf_ohlcv.py'
+      - 'scripts/sync_splits_from_yahoo.py'
       - 'FUND_FLOW_ETFS.md'
       - 'config.yaml'
       - 'config.json'
@@ -102,11 +104,14 @@ jobs:
         run: |
           if [ "${{ steps.scope.outputs.full_build }}" = "false" ]; then
             echo "Fast path: running flow dataset and UI tests"
-            python -m pytest tests/test_local_flow_artifacts.py tests/test_flow_ui.py tests/test_flow_ui_metrics.py tests/test_ci_config.py -v
+            python -m pytest tests/test_local_flow_artifacts.py tests/test_flow_ui.py tests/test_flow_ui_metrics.py tests/test_ci_config.py tests/test_etf_ohlcv.py -v
           else
             echo "Full build: running complete test suite"
             python -m pytest tests/ -v
           fi
+          node tests/test_volume_studies.mjs
+          node tests/test_volume_heatmap.mjs
+          node tests/test_trough_peak.mjs
 
       # ── Restore / Cache conviction artifacts ──────────────────────────
       # For frontend-only iterations, data/history_parquet and conviction code
