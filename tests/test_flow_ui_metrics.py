@@ -39,7 +39,7 @@ def test_percentile_uses_midrank_for_ties_and_complete_distribution():
 
 
 def test_prior_only_z_score_excludes_current_observation():
-    values = run_metrics("(()=>{const prior=[1,2,3,4,4];const mean=prior.reduce((a,b)=>a+b,0)/prior.length;const sd=Math.sqrt(prior.reduce((a,b)=>a+(b-mean)**2,0)/prior.length);return [m.priorOnlyZScore([{flow:1},{flow:2},{flow:3},{flow:4},{flow:4},{flow:100}],5,30),(100-mean)/sd,m.priorOnlyZScore([{flow:1},{flow:2},{flow:3},{flow:4},{flow:4},{flow:200}],5,30),(200-mean)/sd,m.priorOnlyZScore([{flow:0},{flow:0},{flow:0},{flow:0},{flow:0},{flow:1}],5,30),m.priorOnlyZScore([{flow:1},{flow:2}],1,30)];})()")
+    values = run_metrics("(()=>{const prior=[1,2,3,4,4];const mean=prior.reduce((a,b)=>a+b,0)/prior.length;const sd=Math.sqrt(prior.reduce((a,b)=>a+(b-mean)**2,0)/(prior.length - 1));return [m.priorOnlyZScore([{flow:1},{flow:2},{flow:3},{flow:4},{flow:4},{flow:100}],5,30),(100-mean)/sd,m.priorOnlyZScore([{flow:1},{flow:2},{flow:3},{flow:4},{flow:4},{flow:200}],5,30),(200-mean)/sd,m.priorOnlyZScore([{flow:0},{flow:0},{flow:0},{flow:0},{flow:0},{flow:1}],5,30),m.priorOnlyZScore([{flow:1},{flow:2}],1,30)];})()")
     assert abs(values[0] - values[1]) < 1e-12
     assert abs(values[2] - values[3]) < 1e-12
     assert values[4] is None

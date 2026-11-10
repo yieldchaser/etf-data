@@ -6,11 +6,13 @@
 
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory();
+    let qc = null;
+    try { qc = require('./quant-core.js'); } catch (_) {}
+    module.exports = factory(qc);
   } else {
-    root.TroughPeak = factory();
+    root.TroughPeak = factory(root.QuantCore);
   }
-})(typeof self !== 'undefined' ? self : this, function () {
+})(typeof self !== 'undefined' ? self : this, function (QuantCore) {
   'use strict';
 
   const LONG_PALETTE = ['#22d3ee', '#34d399', '#60a5fa', '#a78bfa', '#f59e0b', '#2dd4bf'];
@@ -99,10 +101,19 @@
 
   function isInverseInstrument(inst) {
     if (!inst) return false;
+    if (QuantCore && typeof QuantCore.marketBetaPolarity === 'function') {
+      const pol = QuantCore.marketBetaPolarity(inst.ticker, inst.leverage_value);
+      if (pol < 0) return true;
+      if (pol > 0 && ((inst.leverage_value != null && Number(inst.leverage_value) > 0) || inst.direction === 'long')) return false;
+    }
     return (inst.leverage_value != null && Number(inst.leverage_value) < 0) || inst.direction === 'inverse';
   }
 
-  function normalizeUnderlyingKey(raw) {
+  function normalizeUnderlyingKey(raw, ticker) {
+    if (QuantCore && typeof QuantCore.canonicalUnderlyingId === 'function') {
+      const canon = QuantCore.canonicalUnderlyingId(raw, ticker);
+      if (canon) return canon;
+    }
     if (!raw) return '';
     return String(raw)
       .replace(/\s*\([^)]*\)\s*$/g, '')
@@ -146,10 +157,18 @@
 
     if (!active) return [activeTicker];
     const activeInv = isInverseInstrument(active);
-    const activeUndKey = normalizeUnderlyingKey(active.underlying);
+    const activeUndKey = normalizeUnderlyingKey(active.underlying, activeTicker);
+    const activeLev = Math.abs(active.leverage_value || 1);
+
     const sortPeers = (a, b) => {
-      const levDiffA = Math.abs(Math.abs(a.leverage_value || 1) - Math.abs(active.leverage_value || 1));
-      const levDiffB = Math.abs(Math.abs(b.leverage_value || 1) - Math.abs(active.leverage_value || 1));
+      if (QuantCore && typeof QuantCore.classifyPairMatch === 'function') {
+        const matchA = QuantCore.classifyPairMatch(active, a);
+        const matchB = QuantCore.classifyPairMatch(active, b);
+        if (matchA === 'symmetric' && matchB !== 'symmetric') return -1;
+        if (matchB === 'symmetric' && matchA !== 'symmetric') return 1;
+      }
+      const levDiffA = Math.abs(Math.abs(a.leverage_value || 1) - activeLev);
+      const levDiffB = Math.abs(Math.abs(b.leverage_value || 1) - activeLev);
       if (levDiffA !== levDiffB) return levDiffA - levDiffB;
       return (b.aum_m || 0) - (a.aum_m || 0);
     };
@@ -157,7 +176,7 @@
     if (mode === 'pair') {
       if (!activeUndKey) return [activeTicker];
       const oppPeers = list
-        .filter(x => x.ticker !== activeTicker && normalizeUnderlyingKey(x.underlying) === activeUndKey && isInverseInstrument(x) !== activeInv)
+        .filter(x => x.ticker !== activeTicker && normalizeUnderlyingKey(x.underlying, x.ticker) === activeUndKey && isInverseInstrument(x) !== activeInv)
         .sort(sortPeers);
       if (!oppPeers.length) return [activeTicker];
       return [activeTicker, oppPeers[0].ticker];
@@ -166,7 +185,7 @@
     if (mode === 'underlying') {
       if (!activeUndKey) return [activeTicker];
       const peers = list
-        .filter(x => x.ticker !== activeTicker && normalizeUnderlyingKey(x.underlying) === activeUndKey)
+        .filter(x => x.ticker !== activeTicker && normalizeUnderlyingKey(x.underlying, x.ticker) === activeUndKey)
         .sort((a, b) => (b.aum_m || 0) - (a.aum_m || 0));
       return [activeTicker, ...peers.map(x => x.ticker)].slice(0, cap);
     }
@@ -215,46 +234,70 @@
 
   // ── Pure Quantitative Math Engines ──
 
-  function detectCycles(dates, prices, pct) {
-    const thr = Math.max(0, Number(pct) || 0) / 100;
-    if (!prices || prices.length < 2 || !dates || dates.length !== prices.length) return [];
+  function detectCycles(dates, prices, pct, options = {}) {
+    const rawThr = Number(pct) || 0;
+    let thr = Math.max(0, rawThr) / 100;
+    if (options && options.volAdaptive && options.yzVol) {
+      const kappa = options.kappa || 3.0;
+      const tau = options.tau || 10;
+      const adaptivePct = Math.max(2.0, kappa * options.yzVol * Math.sqrt(tau) * 100);
+      thr = adaptivePct / 100;
+    }
+    const h = Math.log1p(thr);
+    if (!prices || prices.length < 2 || !dates || dates.length !== prices.length || h <= 0) return [];
+
+    const x = new Float64Array(prices.length);
+    for (let i = 0; i < prices.length; i++) {
+      x[i] = prices[i] > 0 ? Math.log(prices[i]) : -Infinity;
+    }
+
     const pivots = [];
     let dir = null;
+    let iMin = 0;
+    let iMax = 0;
     let pIdx = 0;
+    let pVal = x[0];
 
     for (let i = 1; i < prices.length; i++) {
-      if (prices[pIdx] <= 0) {
-        pIdx = i;
-        continue;
-      }
-      const chg = (prices[i] - prices[pIdx]) / prices[pIdx];
+      if (!isFinite(x[i])) continue;
+
       if (dir === null) {
-        const upHit = thr > 0 ? chg >= thr : chg > 0;
-        const dnHit = thr > 0 ? chg <= -thr : chg < 0;
-        if (upHit) {
-          pivots.push({ i: pIdx, price: prices[pIdx], date: dates[pIdx], type: 'trough' });
+        if (x[i] > x[iMax]) iMax = i;
+        if (x[i] < x[iMin]) iMin = i;
+
+        const upHit = (x[i] - x[iMin]) >= h;
+        const dnHit = (x[iMax] - x[i]) >= h;
+
+        if (upHit && (!dnHit || iMin < iMax)) {
+          pivots.push({ i: iMin, price: prices[iMin], date: dates[iMin], type: 'trough', status: 'CONFIRMED' });
           dir = 'up';
           pIdx = i;
+          pVal = x[i];
         } else if (dnHit) {
-          pivots.push({ i: pIdx, price: prices[pIdx], date: dates[pIdx], type: 'peak' });
+          pivots.push({ i: iMax, price: prices[iMax], date: dates[iMax], type: 'peak', status: 'CONFIRMED' });
           dir = 'down';
           pIdx = i;
+          pVal = x[i];
         }
       } else if (dir === 'up') {
-        if (prices[i] >= prices[pIdx]) {
+        if (x[i] > pVal) {
           pIdx = i;
-        } else if ((prices[pIdx] - prices[i]) / prices[pIdx] >= thr) {
-          pivots.push({ i: pIdx, price: prices[pIdx], date: dates[pIdx], type: 'peak' });
+          pVal = x[i];
+        } else if ((pVal - x[i]) >= h) {
+          pivots.push({ i: pIdx, price: prices[pIdx], date: dates[pIdx], type: 'peak', status: 'CONFIRMED' });
           dir = 'down';
           pIdx = i;
+          pVal = x[i];
         }
       } else {
-        if (prices[i] <= prices[pIdx]) {
+        if (x[i] < pVal) {
           pIdx = i;
-        } else if ((prices[i] - prices[pIdx]) / prices[pIdx] >= thr) {
-          pivots.push({ i: pIdx, price: prices[pIdx], date: dates[pIdx], type: 'trough' });
+          pVal = x[i];
+        } else if ((x[i] - pVal) >= h) {
+          pivots.push({ i: pIdx, price: prices[pIdx], date: dates[pIdx], type: 'trough', status: 'CONFIRMED' });
           dir = 'up';
           pIdx = i;
+          pVal = x[i];
         }
       }
     }
@@ -264,7 +307,8 @@
         i: pIdx,
         price: prices[pIdx],
         date: dates[pIdx],
-        type: dir === 'up' ? 'peak' : 'trough'
+        type: dir === 'up' ? 'peak' : 'trough',
+        status: 'PROVISIONAL'
       });
     }
 
@@ -273,6 +317,7 @@
       if (pivots[i].type === 'trough' && pivots[i + 1].type === 'peak') {
         const gain = ((pivots[i + 1].price - pivots[i].price) / pivots[i].price) * 100;
         const days = Math.max(0, Math.round((Date.parse(pivots[i + 1].date) - Date.parse(pivots[i].date)) / 86400000));
+        const isProvisional = pivots[i + 1].status === 'PROVISIONAL' || pivots[i].status === 'PROVISIONAL';
         cycles.push({
           num: cycles.length + 1,
           troughDate: pivots[i].date,
@@ -282,7 +327,9 @@
           peakPrice: pivots[i + 1].price,
           peakIdx: pivots[i + 1].i,
           gain,
-          days
+          days,
+          isProvisional,
+          status: isProvisional ? 'PROVISIONAL' : 'CONFIRMED'
         });
       }
     }
@@ -296,11 +343,73 @@
     return `rgba(192,120,40,${a})`;
   }
 
-  function computeCardAnalytics(dates, closes, volumes, cycles) {
+  function computeUlcerIndex(ddArray) {
+    if (!ddArray || !ddArray.length) return 0;
+    let sumSq = 0;
+    for (let i = 0; i < ddArray.length; i++) {
+      const d = Number(ddArray[i]) || 0;
+      sumSq += d * d;
+    }
+    return Math.sqrt(sumSq / ddArray.length);
+  }
+
+  function computeCDaR(ddArray, alpha = 0.95) {
+    if (!ddArray || !ddArray.length) return 0;
+    const sorted = [...ddArray].map(x => Number(x) || 0).sort((a, b) => a - b);
+    const k = Math.max(1, Math.floor((1 - alpha) * sorted.length));
+    let sumTail = 0;
+    for (let i = 0; i < k; i++) {
+      sumTail += Math.abs(sorted[i]);
+    }
+    return sumTail / k;
+  }
+
+  function compute1xEquivalentDD(dd, leverage) {
+    const lev = Math.abs(Number(leverage)) || 1.0;
+    if (dd == null || !isFinite(dd) || lev <= 0) return dd;
+    const ratio = 1 + dd / 100;
+    if (ratio <= 0) return -100;
+    return (Math.pow(ratio, 1 / lev) - 1) * 100;
+  }
+
+  function computeVolScaledDD(dd, yzAnnVol) {
+    if (dd == null || !isFinite(dd) || !yzAnnVol || yzAnnVol <= 0) return null;
+    const annVolPct = yzAnnVol > 1.0 ? yzAnnVol : yzAnnVol * 100;
+    return dd / annVolPct;
+  }
+
+  function computeDragAdjustedReturn(prices, leverage, startIdx, endIdx) {
+    if (!prices || startIdx == null || endIdx == null) return null;
+    const i1 = Math.min(startIdx, endIdx);
+    const i2 = Math.max(startIdx, endIdx);
+    if (i2 <= i1 || i1 < 0 || i2 >= prices.length) return null;
+    const p1 = prices[i1];
+    const p2 = prices[i2];
+    if (p1 <= 0 || p2 <= 0) return null;
+    const lev = Number(leverage) || 1.0;
+    if (Math.abs(lev) < 1e-6) return null;
+
+    let sumRetSq = 0;
+    for (let i = i1 + 1; i <= i2; i++) {
+      if (prices[i] > 0 && prices[i - 1] > 0) {
+        const r = Math.log(prices[i] / prices[i - 1]);
+        sumRetSq += r * r;
+      }
+    }
+    const rvU = sumRetSq / (lev * lev);
+    const varianceDragFactor = 0.5 * lev * (lev - 1) * rvU;
+    const grossReturn = (p2 / p1) * Math.exp(varianceDragFactor);
+    if (grossReturn <= 0) return -100;
+    return (Math.pow(grossReturn, 1 / lev) - 1) * 100;
+  }
+
+  function computeCardAnalytics(dates, closes, volumes, cycles, options = {}) {
     if (!closes || !closes.length) {
       return null;
     }
-    const n = cycles ? cycles.length : 0;
+    const confirmedCycles = (cycles || []).filter(c => !c.isProvisional);
+    const n = confirmedCycles.length;
+    const totalCycles = (cycles || []).length;
     const avg = arr => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
     const maxArr = arr => { let m = -Infinity; for (let i = 0; i < arr.length; i++) if (arr[i] > m) m = arr[i]; return m; };
     const minArr = arr => { let m = Infinity; for (let i = 0; i < arr.length; i++) if (arr[i] < m) m = arr[i]; return m; };
@@ -311,28 +420,41 @@
       return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
     };
 
-    const gains = (cycles || []).map(c => c.gain);
-    const days = (cycles || []).map(c => c.days);
+    const gains = confirmedCycles.map(c => c.gain);
+    const days = confirmedCycles.map(c => c.days);
     const gaps = [];
     for (let i = 0; i < n - 1; i++) {
-      gaps.push(Math.round((Date.parse(cycles[i + 1].troughDate) - Date.parse(cycles[i].peakDate)) / 86400000));
+      gaps.push(Math.round((Date.parse(confirmedCycles[i + 1].troughDate) - Date.parse(confirmedCycles[i].peakDate)) / 86400000));
     }
 
     const lastPrice = closes[closes.length - 1];
 
-    // Cycle Maturity
+    // Cycle Retracement & Maturity
+    let cycRetracement = null;
     let cycPosRaw = null;
     let cycPosPct = 0;
     let cycLabel = '';
     if (n > 0) {
-      const lastC = cycles[n - 1];
-      const range = Math.max(lastC.peakPrice, lastPrice) - lastC.troughPrice;
-      if (range > 0) {
-        const rawPos = (lastPrice - lastC.troughPrice) / range;
-        const pos = Math.max(0, Math.min(1.2, rawPos));
-        cycPosRaw = Math.round(pos * 100);
-        cycPosPct = Math.min(pos * 100, 100);
-        cycLabel = pos <= 0.3 ? 'Early' : (pos <= 0.7 ? 'Mid' : (pos <= 1.0 ? 'Late' : 'Extreme'));
+      const lastConf = confirmedCycles[n - 1];
+      const logGains = confirmedCycles.map(c => (c.peakPrice > 0 && c.troughPrice > 0) ? Math.log(c.peakPrice / c.troughPrice) : 0).filter(g => g > 0);
+      const medianHistLogGain = logGains.length ? median(logGains) : Math.log(1.30);
+      
+      const activeTrough = (cycles && cycles.length && cycles[cycles.length - 1].troughPrice > 0)
+        ? cycles[cycles.length - 1].troughPrice
+        : lastConf.troughPrice;
+
+      if (lastConf.peakPrice > lastConf.troughPrice && lastConf.troughPrice > 0) {
+        const denomRetracement = Math.log(lastConf.peakPrice / lastConf.troughPrice);
+        if (denomRetracement > 1e-6 && lastPrice > 0) {
+          cycRetracement = Math.round((Math.log(lastPrice / lastConf.troughPrice) / denomRetracement) * 100);
+        }
+      }
+
+      if (medianHistLogGain > 1e-6 && activeTrough > 0 && lastPrice > 0) {
+        const rawMaturity = (Math.log(lastPrice / activeTrough) / medianHistLogGain) * 100;
+        cycPosRaw = Math.round(rawMaturity);
+        cycPosPct = Math.min(Math.max(0, cycPosRaw), 100);
+        cycLabel = cycPosRaw <= 30 ? 'Early' : (cycPosRaw <= 70 ? 'Mid' : (cycPosRaw <= 100 ? 'Late' : 'Extreme'));
       }
     }
 
@@ -348,7 +470,7 @@
       if (returns3d.length > 2) {
         const current3d = returns3d[returns3d.length - 1];
         const mean = avg(returns3d);
-        const variance = returns3d.reduce((acc, v) => acc + Math.pow(v - mean, 2), 0) / returns3d.length;
+        const variance = returns3d.reduce((acc, v) => acc + Math.pow(v - mean, 2), 0) / (returns3d.length - 1);
         const std = Math.sqrt(variance);
         stretchZ = std > 0 ? (current3d - mean) / std : 0;
       }
@@ -366,7 +488,7 @@
     let distFromPeakPct = null;
     let distFromTroughPct = null;
     if (n > 0) {
-      const lastC = cycles[n - 1];
+      const lastC = confirmedCycles[n - 1];
       if (lastC.peakPrice > 0) distFromPeakPct = Math.round(((lastPrice / lastC.peakPrice) - 1) * 100);
       if (lastC.troughPrice > 0) distFromTroughPct = Math.round(((lastPrice / lastC.troughPrice) - 1) * 100);
     }
@@ -379,8 +501,23 @@
       if (rMin > 0) range30dPct = Math.round(((rMax - rMin) / rMin) * 100);
     }
 
+    const lev = options.leverage != null ? Number(options.leverage) : 1.0;
+    const ddAth = computeATHDD(dates, closes);
+    const ulcerIndex = computeUlcerIndex(ddAth.dd);
+    const cdar95 = computeCDaR(ddAth.dd, 0.95);
+    const dd1xEq = compute1xEquivalentDD(ddAth.dd[ddAth.dd.length - 1], lev);
+    const maxDD1xEq = compute1xEquivalentDD(minArr(ddAth.dd), lev);
+
+    let underwaterSessions = 0;
+    for (let i = ddAth.dd.length - 1; i >= 0; i--) {
+      if (ddAth.dd[i] < -1e-4) underwaterSessions++;
+      else break;
+    }
+    const dragAdjReturn = computeDragAdjustedReturn(closes, lev, 0, closes.length - 1);
+
     return {
       cyclesCount: n,
+      totalCyclesCount: totalCycles,
       avgGain: n ? avg(gains) : 0,
       medianGain: n ? median(gains) : 0,
       avgDays: n ? avg(days) : 0,
@@ -388,6 +525,7 @@
       maxGain: n ? maxArr(gains) : null,
       minGain: n ? minArr(gains) : null,
       lastPrice,
+      cycRetracement,
       cycPosRaw,
       cycPosPct,
       cycLabel,
@@ -397,7 +535,13 @@
       range6M: getRangePos(126),
       distFromPeakPct,
       distFromTroughPct,
-      range30dPct
+      range30dPct,
+      ulcerIndex,
+      cdar95,
+      underwaterSessions,
+      dd1xEq,
+      maxDD1xEq,
+      dragAdjReturn
     };
   }
 
@@ -500,7 +644,10 @@
         daysUnderwater: 0,
         breakEvenGain: 0,
         maxDDBreakEvenGain: 0,
-        recoveryFromTrough: 0
+        recoveryFromTrough: 0,
+        ulcerIndex: 0,
+        cdar95: 0,
+        tradingSessionsUnderwater: 0
       };
     }
 
@@ -543,6 +690,19 @@
       recoveryFromTrough = ((currentPrice - troughPrice) / troughPrice) * 100;
     }
 
+    const ddArr = pts.map(p => p.dd);
+    const ulcerIndex = computeUlcerIndex(ddArr);
+    const cdar95 = computeCDaR(ddArr, 0.95);
+
+    let tradingSessionsUnderwater = 0;
+    for (let i = pts.length - 1; i >= 0; i--) {
+      if (pts[i].dd < -1e-4) {
+        tradingSessionsUnderwater++;
+      } else {
+        break;
+      }
+    }
+
     return {
       currentDD,
       maxDD,
@@ -555,7 +715,10 @@
       daysUnderwater,
       breakEvenGain,
       maxDDBreakEvenGain,
-      recoveryFromTrough
+      recoveryFromTrough,
+      ulcerIndex,
+      cdar95,
+      tradingSessionsUnderwater
     };
   }
 
@@ -647,6 +810,8 @@
     const dates = [];
     const closes = [];
     const volumes = [];
+    const tri = [];
+    const hasTC = bars.some(b => b && b.tc != null && Number(b.tc) > 0);
     for (let i = 0; i < bars.length; i++) {
       const b = bars[i];
       if (!b) continue;
@@ -657,8 +822,13 @@
       dates.push(d);
       closes.push(Number(c));
       volumes.push(Math.max(0, Number(v)));
+      if (hasTC && b.tc != null && Number(b.tc) > 0) {
+        tri.push(Number(b.tc));
+      } else {
+        tri.push(Number(c));
+      }
     }
-    return dates.length >= 2 ? { dates, closes, volumes } : null;
+    return dates.length >= 2 ? { dates, closes, volumes, tri, rawBars: bars } : null;
   }
 
   function _getWeekNumber(d) {
@@ -873,10 +1043,16 @@
     hexToRgba,
     formatDisplayDate,
     isInverseInstrument,
+    computeUlcerIndex,
+    computeCDaR,
+    compute1xEquivalentDD,
+    computeVolScaledDD,
+    computeDragAdjustedReturn,
 
     state: {
       activeTicker: '',
       threshold: 30,
+      zigzagMode: 'fixed',    // 'fixed' | 'vol_adaptive'
       compareMode: 'pair',    // 'single' | 'pair' | 'underlying' | 'category' | 'custom'
       customPeers: [],        // user-selected comparison tickers in 'custom' mode
       ddVisible: {},          // { ticker: boolean } for drawdown line visibility
@@ -993,11 +1169,26 @@
     },
 
     _getCycles(ticker) {
-      const key = `${ticker}|${this.state.threshold}`;
+      const mode = this.state.zigzagMode || 'fixed';
+      const key = `${ticker}|${this.state.threshold}|${mode}`;
       if (this._cyclesCache[key]) return this._cyclesCache[key];
       const ser = this._getSeries(ticker);
       if (!ser) return [];
-      const cyc = detectCycles(ser.dates, ser.closes, this.state.threshold);
+
+      let yz = null;
+      if (mode === 'vol_adaptive' && QuantCore && typeof QuantCore.yangZhangVolatility === 'function') {
+        const rawBars = ser.rawBars || (this._etfHistoryCache ? this._etfHistoryCache[ticker] : null);
+        if (rawBars && rawBars.length >= 22) {
+          const yzSeries = QuantCore.yangZhangVolatility(rawBars, 21, false);
+          yz = yzSeries[yzSeries.length - 1];
+        }
+      }
+
+      const prices = (ser.tri && ser.tri.length === ser.closes.length) ? ser.tri : ser.closes;
+      const cyc = detectCycles(ser.dates, prices, this.state.threshold, {
+        volAdaptive: mode === 'vol_adaptive',
+        yzVol: yz
+      });
       this._cyclesCache[key] = cyc;
       return cyc;
     },
@@ -1098,6 +1289,17 @@
       this._chartCache = null;
       this._chartCacheKey = null;
       this._syncThresholdUI();
+      this._scheduleThresholdRender();
+    },
+
+    setZigzagMode(mode) {
+      if (!['fixed', 'vol_adaptive'].includes(mode)) return;
+      if (this.state.zigzagMode === mode) return;
+      this.state.zigzagMode = mode;
+      this._cyclesCache = {};
+      this._chartCache = null;
+      this._chartCacheKey = null;
+      this._syncZigzagModeUI();
       this._scheduleThresholdRender();
     },
 
@@ -1275,6 +1477,16 @@
       document.querySelectorAll('[data-tp-thr]').forEach(btn => {
         btn.classList.toggle('active', parseInt(btn.dataset.tpThr, 10) === val);
       });
+      document.querySelectorAll('[data-tp-zz-mode]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tpZzMode === (this.state.zigzagMode || 'fixed'));
+      });
+    },
+
+    _syncZigzagModeUI() {
+      if (typeof document === 'undefined') return;
+      document.querySelectorAll('[data-tp-zz-mode]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tpZzMode === (this.state.zigzagMode || 'fixed'));
+      });
     },
 
     _syncHeaderAndScopeUI() {
@@ -1381,7 +1593,9 @@
         }
 
         const cycles = this._getCycles(tk);
-        const stats = computeCardAnalytics(ser.dates, ser.closes, ser.volumes, cycles);
+        const stats = computeCardAnalytics(ser.dates, ser.closes, ser.volumes, cycles, {
+          leverage: inst.leverage_value
+        });
         const levLabel = inst.leverage || '';
         const removeBtn = (this.state.compareMode === 'custom' && !isActive)
           ? `<button type="button" class="tp-chip-remove" data-tp-remove-peer="${tk}" title="Remove ${tk}">&times;</button>`
@@ -3045,6 +3259,7 @@
         const btn = e.target.closest('button');
         if (!btn) return;
         if (btn.dataset.tpThr) this.setThreshold(btn.dataset.tpThr);
+        else if (btn.dataset.tpZzMode) this.setZigzagMode(btn.dataset.tpZzMode);
         else if (btn.dataset.tpCompare) this.setCompareMode(btn.dataset.tpCompare);
         else if (btn.dataset.tpRange) this.setTimeRange(btn.dataset.tpRange);
         else if (btn.dataset.tpYear) this.setTimeRange(`year_${btn.dataset.tpYear}`);

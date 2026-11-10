@@ -6,11 +6,13 @@
 
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory();
+    let qc = null;
+    try { qc = require('./quant-core.js'); } catch (_) {}
+    module.exports = factory(qc);
   } else {
-    root.VolumeStudies = factory();
+    root.VolumeStudies = factory(root.QuantCore);
   }
-})(typeof self !== 'undefined' ? self : this, function () {
+})(typeof self !== 'undefined' ? self : this, function (QuantCore) {
   'use strict';
 
   const STUDY_METAS = {
@@ -55,6 +57,13 @@
       short: 'PVT',
       desc: 'Volume scaled by proportional price moves, re-based to zero at visible window start.',
       methodology: '<p><strong>Price-Volume Trend (<code>pvt</code>)</strong> weights volume by the proportional percentage magnitude of price changes:</p><p><code>PVT_t = PVT_{t-1} + Volume_t &times; ((Close_t - Close_{t-1}) / Close_{t-1})</code></p><p>Unlike OBV which adds flat volume regardless of whether price moved 0.05% or 5.0%, PVT scales linearly with the severity of price swings, capturing high-conviction tape momentum.</p>'
+    },
+    bvc: {
+      key: 'bvc',
+      label: 'Bulk Volume Classification',
+      short: 'BVC',
+      desc: 'Student-t4 continuous probability order-flow decomposition and cumulative OBV.',
+      methodology: '<p><strong>Bulk Volume Classification (<code>bvc</code>)</strong> decomposes aggregate exchange bar turnover into aggressive buyer versus aggressive seller initiated volume using the exact closed-form Student-t4 cumulative distribution function:</p><p><code>2F_{t_4}(z) - 1 = z(6 + z^2) / (4 + z^2)^{1.5}</code></p><p>Standardized by Yang-Zhang (2000) drift-independent volatility, this continuous classification avoids binary roundoff artifacts and produces robust cumulative buying/selling pressure curves.</p>'
     },
     heatmap: {
       key: 'heatmap',
@@ -184,28 +193,291 @@
       const out = new Array(n).fill(null);
       if (n < len || len <= 0) return out;
 
-      const mfv = new Array(n);
+      const mfv = new Array(n).fill(0);
+      const volWeights = new Array(n).fill(0);
       for (let i = 0; i < n; i++) {
         const h = highs[i], l = lows[i], c = closes[i], v = volumes[i] || 0;
-        const range = h - l;
-        const clv = (range > 0) ? ((2 * c - (h + l)) / range) : 0;
-        // Strict boundary clamp
-        const clampedClv = Math.max(-1, Math.min(1, clv));
-        mfv[i] = clampedClv * v;
+        const prevC = (i > 0 && closes[i - 1] != null) ? closes[i - 1] : c;
+        const hStar = Math.max(h, prevC);
+        const lStar = Math.min(l, prevC);
+        const tr = hStar - lStar;
+        if (tr > 1e-9) {
+          const clv = (2 * c - lStar - hStar) / tr;
+          const clampedClv = Math.max(-1, Math.min(1, clv));
+          mfv[i] = clampedClv * v;
+          volWeights[i] = v;
+        } else {
+          mfv[i] = 0;
+          volWeights[i] = 0;
+        }
       }
 
       let sumMfv = 0;
       let sumVol = 0;
       for (let i = 0; i < len; i++) {
         sumMfv += mfv[i];
-        sumVol += volumes[i] || 0;
+        sumVol += volWeights[i];
       }
       out[len - 1] = sumVol > 0 ? Math.max(-1, Math.min(1, sumMfv / sumVol)) : 0;
 
       for (let i = len; i < n; i++) {
         sumMfv += mfv[i] - mfv[i - len];
-        sumVol += (volumes[i] || 0) - (volumes[i - len] || 0);
+        sumVol += volWeights[i] - volWeights[i - len];
         out[i] = sumVol > 0 ? Math.max(-1, Math.min(1, sumMfv / sumVol)) : 0;
+      }
+      return out;
+    },
+
+    cmfZScore(cmfValues, window = 252) {
+      if (!cmfValues || !cmfValues.length) return [];
+      const out = new Array(cmfValues.length).fill(null);
+      for (let i = 0; i < cmfValues.length; i++) {
+        const cur = cmfValues[i];
+        if (cur === null || !Number.isFinite(cur)) continue;
+        const start = Math.max(0, i - window + 1);
+        const valid = [];
+        for (let j = start; j <= i; j++) {
+          const v = cmfValues[j];
+          if (v !== null && Number.isFinite(v)) valid.push(v);
+        }
+        if (valid.length < 10) continue;
+        const sorted = valid.slice().sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        const median = sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+        const diffs = sorted.map(v => Math.abs(v - median)).sort((a, b) => a - b);
+        const mad = diffs.length % 2 !== 0 ? diffs[mid] : (diffs[mid - 1] + diffs[mid]) / 2;
+        const s = 1.4826 * mad;
+        out[i] = s > 1e-6 ? (cur - median) / s : 0;
+      }
+      return out;
+    },
+
+    yangZhangVol(bars, window = 21) {
+      if (QuantCore && typeof QuantCore.yangZhangVolatility === 'function') {
+        return QuantCore.yangZhangVolatility(bars, window);
+      }
+      if (!bars || bars.length < window) return new Array(bars ? bars.length : 0).fill(null);
+      const out = new Array(bars.length).fill(null);
+      const k = 0.34 / (1.34 + (window + 1) / (window - 1));
+      for (let i = window - 1; i < bars.length; i++) {
+        let sumO = 0, sumC = 0, sumRS = 0;
+        const slice = bars.slice(i - window + 1, i + 1);
+        for (let j = 0; j < slice.length; j++) {
+          const b = slice[j];
+          const pb = j > 0 ? slice[j - 1] : (i >= window ? bars[i - window] : b);
+          const o = b.o ?? b.open;
+          const c = b.c ?? b.close;
+          const h = b.h ?? b.high ?? c;
+          const l = b.l ?? b.low ?? c;
+          const pbc = pb.c ?? pb.close ?? o;
+          const u = Math.log(o / (pbc || o));
+          const d = Math.log(c / o);
+          sumO += u;
+          sumC += d;
+          sumRS += Math.log(h / c) * Math.log(h / o) + Math.log(l / c) * Math.log(l / o);
+        }
+        const meanO = sumO / window;
+        const meanC = sumC / window;
+        let varO = 0, varC = 0;
+        for (let j = 0; j < slice.length; j++) {
+          const b = slice[j];
+          const pb = j > 0 ? slice[j - 1] : (i >= window ? bars[i - window] : b);
+          const o = b.o ?? b.open;
+          const c = b.c ?? b.close;
+          const pbc = pb.c ?? pb.close ?? o;
+          varO += (Math.log(o / (pbc || o)) - meanO) ** 2;
+          varC += (Math.log(c / o) - meanC) ** 2;
+        }
+        varO /= (window - 1);
+        varC /= (window - 1);
+        const varRS = sumRS / window;
+        const sigma2 = varO + k * varC + (1 - k) * varRS;
+        out[i] = sigma2 > 0 ? Math.sqrt(sigma2 * 252) : 0;
+      }
+      return out;
+    },
+
+    bvcFlow(bars, yzVol) {
+      if (!bars || !bars.length) return [];
+      const n = bars.length;
+      const out = new Array(n).fill(0);
+      for (let i = 1; i < n; i++) {
+        const c = bars[i].c != null ? bars[i].c : bars[i].close;
+        const pc = bars[i - 1].c != null ? bars[i - 1].c : bars[i - 1].close;
+        const v = bars[i].v != null ? bars[i].v : (bars[i].volume || 0);
+        if (pc > 0 && c > 0) {
+          const ret = Math.log(c / pc);
+          const volDaily = (yzVol && yzVol[i] && yzVol[i] > 0) ? (yzVol[i] / Math.sqrt(252)) : 0.02;
+          const z = ret / (volDaily + 1e-6);
+          const z2 = z * z;
+          const denom = Math.pow(4 + z2, 1.5);
+          const alpha = denom > 0 ? Math.max(-1, Math.min(1, (z * (6 + z2)) / denom)) : 0;
+          out[i] = v * alpha;
+        }
+      }
+      return out;
+    },
+
+    bvcObv(bars, yzVol) {
+      const flow = this.bvcFlow(bars, yzVol);
+      const out = new Array(flow.length).fill(0);
+      let acc = 0;
+      for (let i = 0; i < flow.length; i++) {
+        acc += flow[i];
+        out[i] = acc;
+      }
+      return out;
+    },
+
+    smaPrior(values, n = 20) {
+      if (!values || n <= 0) return [];
+      const out = new Array(values.length).fill(null);
+      for (let i = 0; i < values.length; i++) {
+        if (i < n) continue;
+        let sum = 0;
+        let count = 0;
+        for (let j = i - n; j < i; j++) {
+          const v = values[j];
+          if (v != null && Number.isFinite(v)) {
+            sum += v;
+            count++;
+          }
+        }
+        if (count === n) out[i] = sum / n;
+      }
+      return out;
+    },
+
+    rvolDow(dates, volumes, window = 63) {
+      if (!dates || !volumes || !dates.length) return [];
+      const n = dates.length;
+      const out = new Array(n).fill(null);
+      for (let i = 0; i < n; i++) {
+        const v = volumes[i];
+        if (v == null || !Number.isFinite(v)) continue;
+        const curDate = new Date(dates[i] + 'T00:00:00Z');
+        const curDow = curDate.getUTCDay();
+        const matched = [];
+        for (let j = i - 1; j >= 0 && matched.length < window; j--) {
+          const d = new Date(dates[j] + 'T00:00:00Z');
+          if (d.getUTCDay() === curDow) {
+            const mv = volumes[j];
+            if (mv != null && Number.isFinite(mv) && mv > 0) matched.push(mv);
+          }
+        }
+        if (matched.length >= 5) {
+          matched.sort((a, b) => a - b);
+          const mid = Math.floor(matched.length / 2);
+          const median = matched.length % 2 !== 0 ? matched[mid] : (matched[mid - 1] + matched[mid]) / 2;
+          if (median > 0) out[i] = v / median;
+        }
+      }
+      return out;
+    },
+
+    amihudIlliq21(bars, leverage = 1) {
+      if (!bars || bars.length < 21) return new Array(bars ? bars.length : 0).fill(null);
+      const absLev = Math.max(0.5, Math.abs(leverage || 1));
+      const dailyIlliq = new Array(bars.length).fill(null);
+      for (let i = 1; i < bars.length; i++) {
+        const c = bars[i].c != null ? bars[i].c : bars[i].close;
+        const pc = bars[i - 1].c != null ? bars[i - 1].c : bars[i - 1].close;
+        const v = bars[i].v != null ? bars[i].v : (bars[i].volume || 0);
+        const dollarVol = c * v;
+        if (pc > 0 && dollarVol > 0) {
+          const ret = Math.abs(Math.log(c / pc));
+          dailyIlliq[i] = (ret / dollarVol) * 1e6 / absLev;
+        }
+      }
+      return this.sma(dailyIlliq, 21);
+    },
+
+    rollSpread21(bars, leverage = 1) {
+      if (!bars || bars.length < 22) return new Array(bars ? bars.length : 0).fill(null);
+      const absLev = Math.max(0.5, Math.abs(leverage || 1));
+      const out = new Array(bars.length).fill(null);
+      const deltaC = new Array(bars.length).fill(null);
+      for (let i = 1; i < bars.length; i++) {
+        const c = bars[i].c != null ? bars[i].c : bars[i].close;
+        const pc = bars[i - 1].c != null ? bars[i - 1].c : bars[i - 1].close;
+        if (c > 0 && pc > 0) deltaC[i] = c - pc;
+      }
+      for (let i = 21; i < bars.length; i++) {
+        let sumX = 0, sumY = 0, sumXY = 0, count = 0;
+        let sumPrice = 0;
+        for (let j = i - 20; j <= i; j++) {
+          const x = deltaC[j];
+          const y = deltaC[j - 1];
+          const p = bars[j].c != null ? bars[j].c : bars[j].close;
+          if (x !== null && y !== null && p > 0) {
+            sumX += x;
+            sumY += y;
+            sumXY += x * y;
+            sumPrice += p;
+            count++;
+          }
+        }
+        if (count >= 15) {
+          const cov = (sumXY - (sumX * sumY) / count) / (count - 1);
+          const meanP = sumPrice / count;
+          if (cov < 0 && meanP > 0) {
+            out[i] = (2 * Math.sqrt(-cov) / meanP) / absLev;
+          } else {
+            out[i] = 0;
+          }
+        }
+      }
+      return out;
+    },
+
+    detectRegressionDivergence(prices, flows, window = 63) {
+      if (!prices || !flows) return [];
+      const n = Math.min(prices.length, flows.length);
+      const out = new Array(n).fill('NEUTRAL');
+      if (n < window) return out;
+
+      for (let i = window - 1; i < n; i++) {
+        const rSlice = [];
+        const fSlice = [];
+        for (let j = i - window + 2; j <= i; j++) {
+          const p = prices[j], pp = prices[j - 1];
+          const f = flows[j], pf = flows[j - 1];
+          if (p > 0 && pp > 0 && f !== null && pf !== null) {
+            rSlice.push(Math.log(p / pp));
+            fSlice.push(f - pf);
+          }
+        }
+        if (rSlice.length < 30) continue;
+        const K = rSlice.length;
+        const meanR = rSlice.reduce((a, b) => a + b, 0) / K;
+        const meanF = fSlice.reduce((a, b) => a + b, 0) / K;
+        let cov = 0, varR = 0;
+        for (let k = 0; k < K; k++) {
+          cov += (rSlice[k] - meanR) * (fSlice[k] - meanF);
+          varR += (rSlice[k] - meanR) ** 2;
+        }
+        if (varR <= 1e-12) continue;
+        const beta = cov / varR;
+        const alpha = meanF - beta * meanR;
+        let sumResidSq = 0;
+        const residuals = [];
+        for (let k = 0; k < K; k++) {
+          const resid = fSlice[k] - (alpha + beta * rSlice[k]);
+          residuals.push(resid);
+          sumResidSq += resid * resid;
+        }
+        const sResid = Math.sqrt(sumResidSq / (K - 2));
+        const lastResid = residuals[residuals.length - 1];
+        const zDiv = sResid > 1e-6 ? lastResid / sResid : 0;
+        if (beta > 0) {
+          if (zDiv <= -2.0) out[i] = 'BULLISH DIVERGENCE';
+          else if (zDiv >= 2.0) out[i] = 'BEARISH DIVERGENCE';
+          else if (zDiv > 0.5) out[i] = 'IN-SYNC ACCUMULATION';
+          else if (zDiv < -0.5) out[i] = 'IN-SYNC DISTRIBUTION';
+          else out[i] = 'NEUTRAL';
+        } else {
+          out[i] = zDiv <= -2.0 ? 'BULLISH DIVERGENCE' : (zDiv >= 2.0 ? 'BEARISH DIVERGENCE' : 'NEUTRAL');
+        }
       }
       return out;
     },
@@ -477,11 +749,29 @@
         const line = this.cmf(highs, lows, closes, volumes, 21);
         const priceRet = this.priceReturn(closes, 21);
         const divergence = this.cmfDivergence(priceRet, line);
+        const cmfZ = this.cmfZScore(line, 252);
         return {
           ...basePayload,
           line: sliceArr(line),
           priceRet: sliceArr(priceRet),
           divergence: sliceArr(divergence),
+          cmfZScore: sliceArr(cmfZ),
+          zeroCentered: true
+        };
+      }
+
+      if (studyKey === 'bvc') {
+        const bars = dates.map((d, i) => ({ d, o: closes[i], h: highs[i], l: lows[i], c: closes[i], v: volumes[i] }));
+        const yz = this.yangZhangVol(bars, 21);
+        const flow = this.bvcFlow(bars, yz);
+        const obv = this.bvcObv(bars, yz);
+        const baseVal = obv[startIdx] || 0;
+        const rebased = obv.map(v => v - baseVal);
+        return {
+          ...basePayload,
+          bars: sliceArr(flow),
+          line: sliceArr(rebased),
+          yzVol: sliceArr(yz),
           zeroCentered: true
         };
       }
@@ -1328,6 +1618,23 @@
         hudRegime.style.color = regimeColor;
         hudRegime.style.background = (regimeColor && regimeColor !== 'inherit') ? `${regimeColor}1a` : 'transparent';
         hudRegime.style.borderColor = (regimeColor && regimeColor !== 'inherit') ? `${regimeColor}44` : 'transparent';
+      }
+
+      const hudDiv = document.getElementById('vs-hud-div-badge');
+      if (hudDiv) {
+        const divInfo = payload.divergence;
+        if (divInfo && divInfo.divergence) {
+          const isBear = divInfo.type === 'bearish';
+          hudDiv.textContent = isBear ? 'BEAR DIV (63D)' : 'BULL DIV (63D)';
+          hudDiv.style.color = isBear ? '#fb7185' : '#34d399';
+          hudDiv.style.background = isBear ? 'rgba(251,113,133,0.15)' : 'rgba(52,211,153,0.15)';
+          hudDiv.style.borderColor = isBear ? 'rgba(251,113,133,0.35)' : 'rgba(52,211,153,0.35)';
+        } else {
+          hudDiv.textContent = 'NEUTRAL (63D)';
+          hudDiv.style.color = '#94a3b8';
+          hudDiv.style.background = 'transparent';
+          hudDiv.style.borderColor = 'rgba(255,255,255,0.1)';
+        }
       }
 
       // Symmetrical top header context updates matching MACD Engine

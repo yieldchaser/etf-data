@@ -19,15 +19,18 @@ import pytest
 
 from scripts.build_macd_scanner import (
     analyze_ticker,
+    calculate_atr,
     calculate_ema,
     calculate_macd,
     calculate_pivots,
+    calculate_v_macd,
+    calculate_yang_zhang_volatility,
     format_institutional_email,
     get_market_session,
 )
 
 
-def _make_mock_data(n_1h: int = 35, n_1d: int = 40, is_green: bool = True):
+def _make_mock_data(n_1h: int = 140, n_1d: int = 70, is_green: bool = True):
     """Build mock dataframes with proper length and columns."""
     closes_1h = [20.0] * n_1h
     opens_1h = [19.0 if is_green else 21.0] * n_1h
@@ -93,7 +96,7 @@ def test_bull_cross_with_red_candle_is_unconfirmed(mock_calc, mock_ticker):
       candle_color_1h == 'RED'
       is_green_candle_1h is False
     """
-    n_1h, n_1d = 35, 40
+    n_1h, n_1d = 140, 70
     df_1h, df_1d = _make_mock_data(n_1h, n_1d, is_green=False)
 
     inst = MagicMock()
@@ -144,7 +147,7 @@ def test_bull_cross_with_green_candle_triggers_subzero_reversal(mock_calc, mock_
       candle_color_1h == 'GREEN'
       is_green_candle_1h is True
     """
-    n_1h, n_1d = 35, 40
+    n_1h, n_1d = 140, 70
     df_1h, df_1d = _make_mock_data(n_1h, n_1d, is_green=True)
 
     inst = MagicMock()
@@ -194,7 +197,7 @@ def test_bear_cross_with_green_candle_is_unconfirmed(mock_calc, mock_ticker):
       bear_cross_fresh is False
       candle_color_1h == 'GREEN'
     """
-    n_1h, n_1d = 35, 40
+    n_1h, n_1d = 140, 70
     df_1h, df_1d = _make_mock_data(n_1h, n_1d, is_green=True)
 
     inst = MagicMock()
@@ -243,7 +246,7 @@ def test_bear_cross_with_red_candle_triggers_bearish_breakdown(mock_calc, mock_t
       bear_cross_fresh is True
       candle_color_1h == 'RED'
     """
-    n_1h, n_1d = 35, 40
+    n_1h, n_1d = 140, 70
     df_1h, df_1d = _make_mock_data(n_1h, n_1d, is_green=False)
 
     inst = MagicMock()
@@ -523,7 +526,7 @@ def test_supra_zero_bullish_cross_formatting():
 @patch("scripts.build_macd_scanner.calculate_macd")
 def test_flat_doji_candle_disambiguation(mock_calc, mock_ticker):
     """Test flat doji candle (Close == Open) disambiguation using bar change and hist delta."""
-    n_1h, n_1d = 35, 40
+    n_1h, n_1d = 140, 70
     # Case A: Close == Open with prior bar lower (chg_1h_pct > 0) -> confirmed GREEN
     closes_1h = [20.0] * (n_1h - 1) + [22.0]
     opens_1h = [20.0] * (n_1h - 1) + [22.0]  # Open == Close == 22.0, but prev close was 20.0
@@ -900,7 +903,7 @@ def test_macd_ui_symmetry_and_dual_slider_contract():
 @patch("scripts.build_macd_scanner.calculate_macd")
 def test_breakout_and_breakdown_detection(mock_calc, mock_ticker):
     """Verify Floor Pivot (R4/R5) and velocity surge breakouts vs (S4/S5) liquidation cascades."""
-    n_1h, n_1d = 60, 60
+    n_1h, n_1d = 140, 70
 
     # Helper to build mock ticker response
     def _run_test(price, prev_h, prev_l, prev_c, chg_1d, is_green, hist_val):
@@ -1087,3 +1090,63 @@ def test_deduplication_state_with_breakouts_and_breakdowns():
     new_breakdowns_3 = set(current_breakdowns_3) - prev_breakdowns
     assert bool(new_breakdowns_3) is True
     assert new_breakdowns_3 == {"SOXL"}
+
+
+def test_atr_and_v_macd_calculation():
+    """Verify ATR and V-MACD mathematical correctness on synthetic data."""
+    n = 60
+    highs = [22.0 + i * 0.2 for i in range(n)]
+    lows = [18.0 + i * 0.2 for i in range(n)]
+    closes = [20.0 + i * 0.2 for i in range(n)]
+
+    atr = calculate_atr(highs, lows, closes, period=14)
+    assert len(atr) == n
+    assert all(a > 0 for a in atr)
+
+    v_res = calculate_v_macd(highs, lows, closes, fast=12, slow=26, signal_period=9, atr_period=14)
+    assert len(v_res["v_macd"]) == n
+    assert len(v_res["v_signal"]) == n
+    assert len(v_res["v_hist"]) == n
+    # In an uptrend, V-MACD should be positive
+    assert v_res["v_macd"][-1] > 0
+
+
+def test_yang_zhang_volatility_calculation():
+    """Verify Yang-Zhang drift-independent volatility computation."""
+    n = 30
+    opens = [100.0] * n
+    highs = [102.0] * n
+    lows = [98.0] * n
+    closes = [100.0] * n
+    sigma = calculate_yang_zhang_volatility(opens, highs, lows, closes, period=21)
+    assert sigma > 0
+    assert sigma < 0.10
+
+
+@patch("yfinance.Ticker")
+def test_warmup_gates_enforcement(mock_ticker):
+    """Verify that insufficient 1H or 1D bar history is rejected unless overridden."""
+    # Under-length series: 50 1h bars, 30 1d bars (below 130 and 60)
+    df_1h, df_1d = _make_mock_data(n_1h=50, n_1d=30, is_green=True)
+    inst = MagicMock()
+    inst.history.side_effect = lambda period, interval, prepost=False: df_1h if interval == "1h" else df_1d
+    inst.fast_info = MagicMock()
+    inst.fast_info.last_price = 20.0
+    mock_ticker.return_value = inst
+
+    # Default gates reject
+    res_default = analyze_ticker("TEST", {"fund_name": "Test ETF", "leverage": "2x"})
+    assert res_default is None
+
+    # Lowered keyword gates accept
+    res_custom = analyze_ticker(
+        "TEST",
+        {"fund_name": "Test ETF", "leverage": "2x"},
+        min_1h_bars=30,
+        min_1d_bars=15,
+    )
+    assert res_custom is not None
+    assert "v_macd" in res_custom
+    assert "yang_zhang_vol" in res_custom
+    assert "rvol_1h_diurnal" in res_custom
+

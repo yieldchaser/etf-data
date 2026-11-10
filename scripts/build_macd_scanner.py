@@ -194,7 +194,111 @@ def clean_category_name(raw_cat: str) -> str:
     return cleaned.strip()
 
 
-def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] | None:
+def calculate_atr(
+    highs: list[float], lows: list[float], closes: list[float], period: int = 14
+) -> list[float]:
+    """Calculate Average True Range (ATR) with exponential smoothing."""
+    n = len(closes)
+    if n == 0 or period <= 0:
+        return [0.0] * n
+    tr = [0.0] * n
+    tr[0] = max(0.0, float(highs[0]) - float(lows[0]))
+    for i in range(1, n):
+        h = float(highs[i])
+        l = float(lows[i])
+        cp = float(closes[i - 1])
+        tr[i] = max(h - l, abs(h - cp), abs(l - cp))
+    return calculate_ema(tr, period)
+
+
+def calculate_yang_zhang_volatility(
+    opens: list[float], highs: list[float], lows: list[float], closes: list[float], period: int = 21
+) -> float:
+    """Compute Yang-Zhang (2000) drift-independent & overnight jump-aware daily volatility."""
+    n = len(closes)
+    if n < 5 or period < 2:
+        return 0.015
+    k_bars = min(period, n - 1)
+    sub_o = opens[-k_bars:]
+    sub_h = highs[-k_bars:]
+    sub_l = lows[-k_bars:]
+    sub_c = closes[-k_bars:]
+    sub_prev_c = closes[-k_bars - 1 : -1]
+
+    o_rets = []
+    c_rets = []
+    rs_vals = []
+    for i in range(k_bars):
+        c_prev = float(sub_prev_c[i])
+        o_val = float(sub_o[i])
+        h_val = float(sub_h[i])
+        l_val = float(sub_l[i])
+        c_val = float(sub_c[i])
+        if c_prev <= 0 or o_val <= 0 or h_val <= 0 or l_val <= 0 or c_val <= 0:
+            continue
+        o_i = math.log(o_val / c_prev)
+        c_i = math.log(c_val / o_val)
+        u_i = math.log(h_val / o_val)
+        d_i = math.log(l_val / o_val)
+        rs_i = u_i * (u_i - c_i) + d_i * (d_i - c_i)
+        o_rets.append(o_i)
+        c_rets.append(c_i)
+        rs_vals.append(rs_i)
+
+    m = len(o_rets)
+    if m < 2:
+        return 0.015
+    mean_o = sum(o_rets) / m
+    s_o2 = sum((x - mean_o) ** 2 for x in o_rets) / (m - 1)
+    mean_c = sum(c_rets) / m
+    s_c2 = sum((x - mean_c) ** 2 for x in c_rets) / (m - 1)
+    mean_rs = sum(rs_vals) / m
+    k = 0.34 / (1.34 + (m + 1.0) / (m - 1.0))
+    var_yz = max(1e-8, s_o2 + k * s_c2 + (1.0 - k) * mean_rs)
+    return math.sqrt(var_yz)
+
+
+def calculate_v_macd(
+    highs: list[float],
+    lows: list[float],
+    closes: list[float],
+    fast: int = 12,
+    slow: int = 26,
+    signal_period: int = 9,
+    atr_period: int = 14,
+) -> dict[str, list[float]]:
+    """Compute ATR-normalized V-MACD Line, Signal Line, and Histogram."""
+    n = len(closes)
+    if n < slow or slow <= 0 or fast <= 0 or signal_period <= 0:
+        return {
+            "v_macd": [0.0] * n,
+            "v_signal": [0.0] * n,
+            "v_hist": [0.0] * n,
+            "v_hist_delta": [0.0] * n,
+        }
+    ema_fast = calculate_ema(closes, fast)
+    ema_slow = calculate_ema(closes, slow)
+    atr = calculate_atr(highs, lows, closes, atr_period)
+    v_macd_line = [(f - s) / (a + 1e-9) if a > 1e-9 else 0.0 for f, s, a in zip(ema_fast, ema_slow, atr)]
+    v_signal_line = calculate_ema(v_macd_line, signal_period)
+    v_hist = [m - s for m, s in zip(v_macd_line, v_signal_line)]
+    v_hist_delta = [0.0] * n
+    for i in range(1, n):
+        v_hist_delta[i] = v_hist[i] - v_hist[i - 1]
+    return {
+        "v_macd": v_macd_line,
+        "v_signal": v_signal_line,
+        "v_hist": v_hist,
+        "v_hist_delta": v_hist_delta,
+    }
+
+
+def analyze_ticker(
+    ticker: str,
+    catalog_meta: dict[str, Any],
+    min_1h_bars: int = 130,
+    min_1d_bars: int = 60,
+) -> dict[str, Any] | None:
     """Fetch 1h (RTH) and 1d bars, compute technical metrics, and classify signals."""
     import yfinance as yf
 
@@ -204,12 +308,30 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
         df_1h = t.history(period="730d", interval="1h", prepost=False)
         df_1d = t.history(period="5y", interval="1d")
 
-        if len(df_1h) < 30 or len(df_1d) < 10:
+        if len(df_1h) < min_1h_bars or len(df_1d) < min_1d_bars:
             return None
 
         # Clean 1H series (sanitize missing/NaN values across all OHLCV columns)
         df_1h = df_1h.dropna(subset=["Open", "High", "Low", "Close", "Volume"])
-        if len(df_1h) < 30:
+
+        # RTH session calendar filter (America/New_York 09:30 - 16:00 ET, DST safe)
+        try:
+            if hasattr(df_1h.index, "tz_convert"):
+                df_1h_ny_idx = df_1h.index.tz_convert(NY_TZ)
+            elif df_1h.index.tz is None:
+                df_1h_ny_idx = df_1h.index.tz_localize(NY_TZ)
+            else:
+                df_1h_ny_idx = df_1h.index.tz_convert(NY_TZ)
+            rth_mask = [
+                bool(9.5 <= (ts.hour + ts.minute / 60.0) <= 16.0)
+                for ts in df_1h_ny_idx
+            ]
+            if sum(rth_mask) >= min_1h_bars:
+                df_1h = df_1h.iloc[rth_mask]
+        except Exception:
+            pass
+
+        if len(df_1h) < min_1h_bars:
             return None
         closes_1h = [float(x) for x in df_1h["Close"]]
         volumes_1h = [float(x) for x in df_1h["Volume"]]
@@ -223,7 +345,7 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
 
         # Clean 1D series
         df_1d = df_1d.dropna(subset=["Open", "High", "Low", "Close", "Volume"])
-        if len(df_1d) < 10:
+        if len(df_1d) < min_1d_bars:
             return None
         closes_1d = [float(x) for x in df_1d["Close"]]
         opens_1d = [float(x) for x in df_1d["Open"]]
@@ -241,9 +363,18 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
         hist_1h = m_1h["hist"]
         hist_delta_1h = m_1h["hist_delta"]
 
-        # Compute 1D MACD
+        # Compute 1H ATR and V-MACD
+        atr_1h = calculate_atr(highs_1h, lows_1h, closes_1h, period=14)
+        v_1h = calculate_v_macd(highs_1h, lows_1h, closes_1h, fast=12, slow=26, signal_period=9, atr_period=14)
+        v_macd_1h = v_1h["v_macd"]
+        v_sig_1h = v_1h["v_signal"]
+        v_hist_1h = v_1h["v_hist"]
+        v_hist_delta_1h = v_1h["v_hist_delta"]
+
+        # Compute 1D MACD and Yang-Zhang Daily Volatility
         m_1d = calculate_macd(closes_1d, fast=12, slow=26, signal_period=9)
         hist_1d = m_1d["hist"]
+        sigma_yz = calculate_yang_zhang_volatility(opens_1d, highs_1d, lows_1d, closes_1d, period=21)
 
         # Reconcile latest price against official exchange last_price if available
         official_last = getattr(t.fast_info, "last_price", None)
@@ -325,10 +456,7 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
             else 0.0
         )
 
-        # Floor Pivots:
-        # During market hours (<16:00 EST), pivots are derived from yesterday's completed session.
-        # After regular close (>=16:00 EST or weekends), today's session has completed,
-        # so upcoming pivots are derived from today's completed session.
+        # Floor Pivots
         is_post_close = (now_ny.weekday() >= 5) or ((now_ny.hour + now_ny.minute / 60.0) >= 16.0)
         pivot_reference_days = (
             df_1d[df_1d.index.map(lambda x: _to_ny_date(x) <= today_date)]
@@ -345,7 +473,7 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
         prev_day_c = float(pivot_bar["Close"])
         pivots = calculate_pivots(prev_day_h, prev_day_l, prev_day_c)
 
-        # Volume Metrics (1H RVOL over 20-bar window)
+        # Volume Metrics: Trailing 20-bar RVOL & Diurnally Deseasonalized Same-Hour RVOL
         recent_vol_20 = volumes_1h[-21:-1]
         vol_sma20 = sum(recent_vol_20) / len(recent_vol_20) if recent_vol_20 else 1.0
         current_vol = float(volumes_1h[-1])
@@ -353,12 +481,34 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
         if math.isnan(rvol_1h) or math.isinf(rvol_1h):
             rvol_1h = 1.0
 
-        # MACD Z-score over rolling 60 bars
-        window_macd = macd_1h[-60:]
-        mean_macd = sum(window_macd) / len(window_macd)
-        var_macd = sum((x - mean_macd) ** 2 for x in window_macd) / len(window_macd)
-        std_macd = math.sqrt(var_macd) if var_macd > 0 else 1e-4
-        z_macd = round((macd_1h[-1] - mean_macd) / std_macd, 2)
+        rvol_1h_diurnal = rvol_1h
+        try:
+            latest_ts_str = timestamps_1h[-1]
+            target_hr = int(latest_ts_str[11:13]) if len(latest_ts_str) >= 13 else -1
+            if target_hr >= 0:
+                same_hr_vols = [
+                    float(volumes_1h[j])
+                    for j in range(max(0, len(volumes_1h) - 140), len(volumes_1h) - 1)
+                    if int(timestamps_1h[j][11:13]) == target_hr
+                ][-20:]
+                if len(same_hr_vols) >= 5:
+                    med_hr = sorted(same_hr_vols)[len(same_hr_vols) // 2]
+                    if med_hr > 0:
+                        rvol_1h_diurnal = round(current_vol / med_hr, 2)
+        except Exception:
+            rvol_1h_diurnal = rvol_1h
+        if math.isnan(rvol_1h_diurnal) or math.isinf(rvol_1h_diurnal):
+            rvol_1h_diurnal = rvol_1h
+
+        # MACD Z-score over strictly prior 60 bars ([-61:-1], excluding current bar to prevent lookahead)
+        window_macd = macd_1h[-61:-1] if len(macd_1h) >= 61 else macd_1h[:-1]
+        if window_macd:
+            mean_macd = sum(window_macd) / len(window_macd)
+            var_macd = sum((x - mean_macd) ** 2 for x in window_macd) / len(window_macd)
+            std_macd = math.sqrt(var_macd) if var_macd > 0 else 1e-4
+            z_macd = round((macd_1h[-1] - mean_macd) / std_macd, 2)
+        else:
+            z_macd = 0.0
         if math.isnan(z_macd) or math.isinf(z_macd):
             z_macd = 0.0
 
@@ -386,16 +536,21 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
                 bear_cross_bars_ago = lookback - 1
                 break
 
-        # Imminent Crossover Check (Spread compression for Pre-Close radar)
+        # Dimensionless ATR Squeeze & Compression Check
+        curr_atr = atr_1h[-1] if atr_1h and atr_1h[-1] > 0 else 1.0
         spread = abs(curr_m - curr_s)
         prev_spread = abs(prev_m - prev_s)
         compression_rate = (
             (prev_spread - spread) / prev_spread if prev_spread > 0 else 0.0
         )
-        is_imminent = (
+        is_imminent = bool(
             (curr_m < curr_s)
             and (compression_rate >= 0.35)
-            and (spread <= 0.05 * abs(curr_s) or spread <= 0.08)
+            and (
+                spread / curr_atr <= max(0.08 * abs(curr_s) / curr_atr, 0.05)
+                or spread <= 0.05 * abs(curr_s)
+                or spread <= 0.08
+            )
         )
 
         # Quantitative Candle Confirmation Enforcement:
@@ -452,18 +607,22 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
             signal_label = "Bearish Momentum Active"
             signal_direction = "BEARISH"
 
-        # Floor Pivot Extension & Extreme Momentum Volatility Triggers:
-        # A Breakout occurs when price pushes beyond key Floor Pivot resistance (R4/R5)
-        # OR experiences an extreme single-day velocity surge (>= +10.0%), confirmed by
-        # a green 1H candle and positive histogram (expanding bullish impulse).
+        # Floor Pivot Extension & Volatility-Scaled Surge/Plunge Triggers:
         r4 = pivots.get("R4", 0.0)
         r5 = pivots.get("R5", 0.0)
+        r2 = pivots.get("R2", 0.0)
         s4 = pivots.get("S4", 0.0)
         s5 = pivots.get("S5", 0.0)
+        s2 = pivots.get("S2", 0.0)
+
+        tau_surge = max(3.0, min(30.0, 2.25 * sigma_yz * 100.0))
 
         is_breakout_r5 = bool(r5 > 0 and latest_price >= r5)
         is_breakout_r4 = bool(r4 > 0 and latest_price >= r4)
-        is_velocity_surge = bool(chg_1d_pct >= 10.0)
+        is_velocity_surge = bool(
+            (chg_1d_pct >= tau_surge and rvol_1h_diurnal >= 1.25)
+            or (chg_1d_pct >= 10.0)
+        )
         is_breakout = bool(
             (is_breakout_r5 or is_breakout_r4 or is_velocity_surge)
             and is_green_candle_1h
@@ -479,12 +638,12 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
             elif is_velocity_surge:
                 breakout_type = f"Velocity Surge ({chg_1d_pct:+.1f}%)"
 
-        # A Breakdown occurs when price collapses below Floor Pivot support (S4/S5)
-        # OR suffers an extreme single-day velocity plunge (<= -10.0%), confirmed by
-        # a red 1H candle and negative histogram (expanding bearish liquidation).
         is_breakdown_s5 = bool(s5 > 0 and latest_price <= s5)
         is_breakdown_s4 = bool(s4 > 0 and latest_price <= s4)
-        is_velocity_plunge = bool(chg_1d_pct <= -10.0)
+        is_velocity_plunge = bool(
+            (chg_1d_pct <= -tau_surge and rvol_1h_diurnal >= 1.25)
+            or (chg_1d_pct <= -10.0)
+        )
         is_breakdown = bool(
             (is_breakdown_s5 or is_breakdown_s4 or is_velocity_plunge)
             and is_red_candle_1h
@@ -500,25 +659,15 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
             elif is_velocity_plunge:
                 breakdown_type = f"Velocity Plunge ({chg_1d_pct:+.1f}%)"
 
-        # Confluence Score (-100 to +100)
-        score = 0
-        if curr_m > curr_s and hist_1h[-1] > 0:
-            score += 35
-        else:
-            score -= 35
-        if hist_1d[-1] > 0:
-            score += 35
-        else:
-            score -= 35
-        if rvol_1h >= 1.25:
-            score += 15 if (curr_m > curr_s and is_green_candle_1h) else -15
-        if curr_m < 0 and curr_m > curr_s and is_green_candle_1h:
-            score += 15  # Sub-zero value premium only awarded if confirmed green candle
-        if is_breakout:
-            score += 15
-        elif is_breakdown:
-            score -= 15
+        # Continuous Confluence Score (-100 to +100) via tanh(w^T z)
+        z1 = 1.0 if (curr_m > curr_s and hist_1h[-1] > 0) else -1.0
+        z2 = 1.0 if hist_1d[-1] > 0 else -1.0
+        z3 = 1.0 if rvol_1h >= 1.25 and (curr_m > curr_s and is_green_candle_1h) else (-1.0 if rvol_1h >= 1.25 and is_red_candle_1h else 0.0)
+        z4 = 1.0 if (curr_m < 0 and curr_m > curr_s and is_green_candle_1h) else 0.0
+        z5 = 1.0 if is_breakout else (-1.0 if is_breakdown else 0.0)
 
+        u = 0.45 * z1 + 0.45 * z2 + 0.25 * z3 + 0.20 * z4 + 0.25 * z5
+        score = int(round(100.0 * math.tanh(u)))
         score = max(-100, min(100, score))
 
         # Full deep 1H bars for LOD on-demand artifact (up to 730d / ~5,000 bars)
@@ -585,8 +734,15 @@ def analyze_ticker(ticker: str, catalog_meta: dict[str, Any]) -> dict[str, Any] 
             "signal_1h": round(curr_s, 4),
             "hist_1h": round(hist_1h[-1], 4),
             "hist_delta_1h": round(hist_delta_1h[-1], 4),
-            "z_macd_1h": z_macd,
+            "v_macd": round(float(v_macd_1h[-1]), 4) if v_macd_1h else round(curr_m, 4),
+            "v_signal": round(float(v_sig_1h[-1]), 4) if v_sig_1h else round(curr_s, 4),
+            "v_hist": round(float(v_hist_1h[-1]), 4) if v_hist_1h else round(hist_1h[-1], 4),
+            "v_hist_delta": round(float(v_hist_delta_1h[-1]), 4) if v_hist_delta_1h else round(hist_delta_1h[-1], 4),
+            "yang_zhang_vol": round(sigma_yz, 4),
             "rvol_1h": rvol_1h,
+            "rvol_1h_diurnal": rvol_1h_diurnal,
+            "atr_1h": round(float(atr_1h[-1]), 4) if atr_1h else 0.0,
+            "z_macd_1h": z_macd,
             "hist_1d": round(hist_1d[-1], 4),
             "daily_trend_bullish": bool(hist_1d[-1] > 0),
             "signal_state": signal_state,
@@ -1430,7 +1586,7 @@ def format_institutional_email(
                   TIER 0: EXTREME MOMENTUM BREAKOUTS &amp; VOLATILITY SURGES
                 </div>
                 <div style="font-size:11px; color:#cbd5e1; margin-bottom:14px; line-height:1.5;">
-                  Price breached traditional Floor Pivot resistance (R4/R5 extension) or registered single-day velocity surge &ge; +10.0% with confirmed 1-Hour Green Candle. Priority institutional momentum breakouts.
+                  Price breached traditional Floor Pivot resistance (R4/R5 extension) or registered single-day velocity surge &ge; +10.0% with confirmed 1-Hour Green Candle. Priority quantitative momentum breakouts.
                 </div>
                 
                 {cards_breakout_block}
@@ -1469,7 +1625,7 @@ def format_institutional_email(
                   TIER 2: PRE-CLOSE SQUEEZE RADAR (15:00 EST SCAN)
                 </div>
                 <div style="font-size:11px; color:#cbd5e1; margin-bottom:12px; line-height:1.5;">
-                  Histogram spread compression &ge; 35% heading into the final market hour (15:00&ndash;16:00 EST). Pre-positioning watch ahead of institutional rebalancing flow auctions.
+                  Histogram spread compression &ge; 35% heading into the final market hour (15:00&ndash;16:00 EST). Pre-positioning watch ahead of benchmark rebalancing flow auctions.
                 </div>
                 
                 <div class="table-scroll" style="width:100%; overflow-x:auto;">
@@ -1497,7 +1653,7 @@ def format_institutional_email(
                   CRITICAL CAPITAL PRESERVATION &middot; SEVERE LIQUIDATION CASCADE
                 </div>
                 <div style="font-size:11px; color:#cbd5e1; margin-bottom:12px; line-height:1.5;">
-                  Price breached Floor Pivot support (S4/S5) or collapsed &le; -10.0% on confirmed Red Candle. Severe institutional liquidation cascade requiring immediate exit to cash.
+                  Price breached Floor Pivot support (S4/S5) or collapsed &le; -10.0% on confirmed Red Candle. Severe structural liquidation cascade requiring immediate exit to cash.
                 </div>
                 
                 <div class="table-scroll" style="width:100%; overflow-x:auto; margin-bottom:18px;">
@@ -1576,6 +1732,10 @@ def format_institutional_email(
 </html>"""
 
     return text_content, html_content
+
+
+# Canonical alias for systematic alert formatting
+format_alert_email = format_institutional_email
 
 
 def send_email_alert(
@@ -1727,7 +1887,10 @@ def main() -> None:
     HISTORY_DIR_MACD.mkdir(parents=True, exist_ok=True)
     HISTORY_DIR_FLOWS.mkdir(parents=True, exist_ok=True)
 
-    flagship_preview_set = {"CONL", "NVDL", "TQQQ", "SOXL", "TSLL", "INTW", "SOXS", "SQQQ"}
+    # Derive flagship preview set dynamically from featured catalog tickers & top confluence
+    catalog_featured = set(catalog.get("featured_tickers", [])) if isinstance(catalog, dict) else set()
+    top_confluence = sorted(results, key=lambda x: abs(x.get("confluence_score", 0)), reverse=True)
+    flagship_preview_set = {it["ticker"] for it in top_confluence[:8]} | set(list(catalog_featured)[:8])
 
     # Write per-ticker deep LOD history files (5Y Daily + 2Y 1H bars)
     for item in results:
@@ -1951,7 +2114,7 @@ def main() -> None:
         print(f"[Scanner Safety] Limited test scan: skipped overwriting {ALERT_OUT_MACD}.")
 
     if should_send:
-        # Dynamic institutional subject with ticker highlights prioritized by absolute % return magnitude
+        # Dynamic alert subject with ticker highlights prioritized by absolute % return magnitude
         sig_map = {s.get("ticker"): s for s in results if isinstance(s, dict)}
 
         def format_lead_tickers(tickers_set: set[str], max_count: int = 4) -> str:

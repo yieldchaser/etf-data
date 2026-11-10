@@ -1,0 +1,332 @@
+{
+  "empirical_falsification_gates": {
+    "hurdle_zero_inflation_gate": {
+      "calibrated_hurdle_sigma": 0.000568,
+      "passed": true,
+      "sigma_floor_enforced": 0.0005
+    },
+    "phantom_ex_dividend_gate": {
+      "ex_dividend_sessions_verified": 96,
+      "passed": true,
+      "phantom_drawdowns_detected": 0
+    },
+    "split_3_2_detection_gate": {
+      "log_step_magnitude": 0.4055,
+      "note": "Excised 0.50 skip gate allows 3:2 and 2:3 splits to execute cleanly.",
+      "passed": true,
+      "ratio_tested": "3:2 forward split (factor 1.5)"
+    },
+    "sub_dollar_spread_finiteness_gate": {
+      "passed": true,
+      "sample_c_log": -0.8675,
+      "sample_eta": -0.8574
+    },
+    "uvxy_svxy_transition_gate": {
+      "passed": true,
+      "svxy_pre_post": [
+        -1.0,
+        -0.5
+      ],
+      "uvxy_pre_post": [
+        2.0,
+        1.5
+      ]
+    }
+  },
+  "fama_macbeth_rank_ic": {
+    "flow_5d": {
+      "1": {
+        "bh_fdr_significant": false,
+        "hlz_hurdle_met": false,
+        "mean_ic": -0.0016,
+        "n_dates": 296,
+        "p_value": 0.80415,
+        "se_hac": 0.0065,
+        "t_stat": -0.25
+      },
+      "20": {
+        "bh_fdr_significant": false,
+        "hlz_hurdle_met": false,
+        "mean_ic": -0.0117,
+        "n_dates": 292,
+        "p_value": 0.23279,
+        "se_hac": 0.0098,
+        "t_stat": -1.19
+      },
+      "5": {
+        "bh_fdr_significant": false,
+        "hlz_hurdle_met": false,
+        "mean_ic": -0.0186,
+        "n_dates": 295,
+        "p_value": 0.03099,
+        "se_hac": 0.0086,
+        "t_stat": -2.16
+      }
+    },
+    "hurdle_z": {
+      "1": {
+        "bh_fdr_significant": false,
+        "hlz_hurdle_met": false,
+        "mean_ic": -0.0132,
+        "n_dates": 296,
+        "p_value": 0.12394,
+        "se_hac": 0.0086,
+        "t_stat": -1.54
+      },
+      "20": {
+        "bh_fdr_significant": false,
+        "hlz_hurdle_met": false,
+        "mean_ic": -0.0105,
+        "n_dates": 292,
+        "p_value": 0.23301,
+        "se_hac": 0.0088,
+        "t_stat": -1.19
+      },
+      "5": {
+        "bh_fdr_significant": false,
+        "hlz_hurdle_met": false,
+        "mean_ic": -0.012,
+        "n_dates": 295,
+        "p_value": 0.13689,
+        "se_hac": 0.0081,
+        "t_stat": -1.49
+      }
+    },
+    "rel_flow": {
+      "1": {
+        "bh_fdr_significant": false,
+        "hlz_hurdle_met": false,
+        "mean_ic": -0.0075,
+        "n_dates": 296,
+        "p_value": 0.34048,
+        "se_hac": 0.0078,
+        "t_stat": -0.95
+      },
+      "20": {
+        "bh_fdr_significant": false,
+        "hlz_hurdle_met": false,
+        "mean_ic": -0.0096,
+        "n_dates": 292,
+        "p_value": 0.28592,
+        "se_hac": 0.009,
+        "t_stat": -1.07
+      },
+      "5": {
+        "bh_fdr_significant": false,
+        "hlz_hurdle_met": false,
+        "mean_ic": -0.0046,
+        "n_dates": 295,
+        "p_value": 0.56569,
+        "se_hac": 0.008,
+        "t_stat": -0.57
+      }
+    }
+  },
+  "generated_utc": "2026-11-10T16:16:17.658086+00:00",
+  "hasbrouck_information_share": {
+    "mean_etp_price_share": 0.5,
+    "sample_size": 10,
+    "status": "complete",
+    "ticker_bounds": [
+      {
+        "is_lower_bound": 0.0,
+        "is_upper_bound": 1.0,
+        "point_midpoint": 0.5,
+        "ticker": "QQQM"
+      },
+      {
+        "is_lower_bound": 0.001,
+        "is_upper_bound": 0.999,
+        "point_midpoint": 0.5,
+        "ticker": "SMH"
+      },
+      {
+        "is_lower_bound": 0.006,
+        "is_upper_bound": 0.994,
+        "point_midpoint": 0.5,
+        "ticker": "IBIT"
+      },
+      {
+        "is_lower_bound": 0.016,
+        "is_upper_bound": 0.984,
+        "point_midpoint": 0.5,
+        "ticker": "TLT"
+      },
+      {
+        "is_lower_bound": 0.001,
+        "is_upper_bound": 0.999,
+        "point_midpoint": 0.5,
+        "ticker": "TQQQ"
+      },
+      {
+        "is_lower_bound": 0.002,
+        "is_upper_bound": 0.998,
+        "point_midpoint": 0.5,
+        "ticker": "SOXL"
+      },
+      {
+        "is_lower_bound": 0.008,
+        "is_upper_bound": 0.992,
+        "point_midpoint": 0.5,
+        "ticker": "SPMO"
+      },
+      {
+        "is_lower_bound": 0.003,
+        "is_upper_bound": 0.997,
+        "point_midpoint": 0.5,
+        "ticker": "COWZ"
+      },
+      {
+        "is_lower_bound": 0.001,
+        "is_upper_bound": 0.999,
+        "point_midpoint": 0.5,
+        "ticker": "SPHQ"
+      },
+      {
+        "is_lower_bound": 0.0,
+        "is_upper_bound": 1.0,
+        "point_midpoint": 0.5,
+        "ticker": "QLD"
+      }
+    ]
+  },
+  "jorda_local_projections": {
+    "1": {
+      "consistent_reversal": false,
+      "horizon_days": 1,
+      "mean_impulse_response": -0.0236,
+      "mean_t_stat": 0.01
+    },
+    "10": {
+      "consistent_reversal": false,
+      "horizon_days": 10,
+      "mean_impulse_response": 0.1206,
+      "mean_t_stat": -0.22
+    },
+    "2": {
+      "consistent_reversal": false,
+      "horizon_days": 2,
+      "mean_impulse_response": -0.031,
+      "mean_t_stat": -0.31
+    },
+    "20": {
+      "consistent_reversal": false,
+      "horizon_days": 20,
+      "mean_impulse_response": 0.3592,
+      "mean_t_stat": -0.11
+    },
+    "3": {
+      "consistent_reversal": false,
+      "horizon_days": 3,
+      "mean_impulse_response": -0.0064,
+      "mean_t_stat": -0.16
+    },
+    "5": {
+      "consistent_reversal": false,
+      "horizon_days": 5,
+      "mean_impulse_response": 0.0329,
+      "mean_t_stat": -0.03
+    }
+  },
+  "methodology": "Pure NumPy/Pandas econometric verification harness (zero scipy/statsmodels/sklearn)",
+  "multiple_testing_and_dsr": {
+    "deflated_sharpe_ratio": 0.0378,
+    "dsr_significant": false,
+    "empirical_annualized_sr": 0.2,
+    "empirical_kurtosis": 10.0,
+    "empirical_skewness": -0.437,
+    "features_tested": 6,
+    "n_eff_independent_trials": 3.61
+  },
+  "stationary_bootstrap_microcvi": {
+    "bootstrap_iterations": 300,
+    "expected_block_length": 10.0,
+    "quantiles": {
+      "IBIT": {
+        "p95_calibrated_score": 52.64,
+        "p95_calibrated_usd_m": 52.64,
+        "p99_calibrated_score": 68.28,
+        "p99_calibrated_usd_m": 68.28,
+        "sensitivity_20pct_sweep": [
+          49.32,
+          56.57
+        ],
+        "sensitivity_20pct_sweep_m": [
+          49.32,
+          56.57
+        ]
+      },
+      "QQQM": {
+        "p95_calibrated_score": 46.46,
+        "p95_calibrated_usd_m": 46.46,
+        "p99_calibrated_score": 65.16,
+        "p99_calibrated_usd_m": 65.16,
+        "sensitivity_20pct_sweep": [
+          44.8,
+          47.94
+        ],
+        "sensitivity_20pct_sweep_m": [
+          44.8,
+          47.94
+        ]
+      },
+      "SMH": {
+        "p95_calibrated_score": 45.71,
+        "p95_calibrated_usd_m": 45.71,
+        "p99_calibrated_score": 61.2,
+        "p99_calibrated_usd_m": 61.2,
+        "sensitivity_20pct_sweep": [
+          45.08,
+          47.18
+        ],
+        "sensitivity_20pct_sweep_m": [
+          45.08,
+          47.18
+        ]
+      },
+      "SOXL": {
+        "p95_calibrated_score": 43.93,
+        "p95_calibrated_usd_m": 43.93,
+        "p99_calibrated_score": 57.32,
+        "p99_calibrated_usd_m": 57.32,
+        "sensitivity_20pct_sweep": [
+          42.71,
+          45.6
+        ],
+        "sensitivity_20pct_sweep_m": [
+          42.71,
+          45.6
+        ]
+      },
+      "TLT": {
+        "p95_calibrated_score": 45.73,
+        "p95_calibrated_usd_m": 45.73,
+        "p99_calibrated_score": 61.9,
+        "p99_calibrated_usd_m": 61.9,
+        "sensitivity_20pct_sweep": [
+          44.87,
+          46.84
+        ],
+        "sensitivity_20pct_sweep_m": [
+          44.87,
+          46.84
+        ]
+      },
+      "TQQQ": {
+        "p95_calibrated_score": 40.83,
+        "p95_calibrated_usd_m": 40.83,
+        "p99_calibrated_score": 54.3,
+        "p99_calibrated_usd_m": 54.3,
+        "sensitivity_20pct_sweep": [
+          39.93,
+          41.73
+        ],
+        "sensitivity_20pct_sweep_m": [
+          39.93,
+          41.73
+        ]
+      }
+    }
+  },
+  "status": "complete"
+}

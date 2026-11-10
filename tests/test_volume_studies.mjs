@@ -222,7 +222,53 @@ console.log('Testing VolumeStudies Mathematical Engine...');
   assert.strictEqual(payload.divergence.length, 30);
   assert.ok(payload.priceRet[25] !== null, 'Day 25 should have valid 21D price return');
   assert.ok(payload.divergence[25] !== null, 'Day 25 should have valid divergence evaluation');
+  assert.ok(payload.cmfZScore !== undefined, 'Payload should include cmfZScore');
   console.log('✔ CMF compute payload contract including divergence validated');
 }
 
-console.log('\nAll 13 mathematical contract tests PASSED successfully.');
+// 14. BVC, Yang-Zhang Volatility & Regression Divergence
+{
+  const history = [];
+  for (let i = 0; i < 40; i++) {
+    history.push({
+      d: `2024-01-${String(i + 1).padStart(2, '0')}`,
+      o: 100 + i * 0.2,
+      h: 102 + i * 0.2,
+      l: 99 + i * 0.2,
+      c: 101 + i * 0.2,
+      v: 25000 + (i % 5) * 5000
+    });
+  }
+  const yz = VolumeStudies.yangZhangVol(history, 21);
+  assert.strictEqual(yz.length, 40);
+  assert.strictEqual(yz[0], null);
+  assert.ok(yz[25] > 0, 'Yang-Zhang volatility should be strictly positive');
+
+  const bvcFlow = VolumeStudies.bvcFlow(history, yz);
+  assert.strictEqual(bvcFlow.length, 40);
+  assert.strictEqual(bvcFlow[0], 0);
+
+  const bvcObv = VolumeStudies.bvcObv(history, yz);
+  assert.strictEqual(bvcObv.length, 40);
+
+  const smaP = VolumeStudies.smaPrior([10, 20, 30, 40, 50], 3);
+  assert.strictEqual(smaP[3], 20); // (10+20+30)/3
+  assert.strictEqual(smaP[4], 30); // (20+30+40)/3
+
+  const dates = history.map(b => b.d);
+  const vols = history.map(b => b.v);
+  const rDow = VolumeStudies.rvolDow(dates, vols, 20);
+  assert.strictEqual(rDow.length, 40);
+
+  const amihud = VolumeStudies.amihudIlliq21(history, 2.0);
+  assert.strictEqual(amihud.length, 40);
+
+  const roll = VolumeStudies.rollSpread21(history, 1.5);
+  assert.strictEqual(roll.length, 40);
+
+  const regDiv = VolumeStudies.detectRegressionDivergence(history.map(b => b.c), history.map(b => b.v), 25);
+  assert.strictEqual(regDiv.length, 40);
+  console.log('✔ BVC, Yang-Zhang Vol, Amihud, Roll, and Regression Divergence validated');
+}
+
+console.log('\nAll 14 mathematical contract tests PASSED successfully.');

@@ -6,11 +6,13 @@
 
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory();
+    let qc = null;
+    try { qc = require('./quant-core.js'); } catch (_) {}
+    module.exports = factory(qc);
   } else {
-    root.VolumeHeatmap = factory();
+    root.VolumeHeatmap = factory(root.QuantCore);
   }
-})(typeof self !== 'undefined' ? self : this, function () {
+})(typeof self !== 'undefined' ? self : this, function (QuantCore) {
   'use strict';
 
   const EPS = 1e-9;
@@ -187,6 +189,7 @@
     const valleyScores = new Float64Array(T);
     const rvolArr = new Float64Array(T);
     const trimDollarTurnover = new Float64Array(T);
+    const climaxDirs = new Int8Array(T);
 
     const scratchTurnover = new Float64Array(WINDOW_LAG);
     const scratchDollar = new Float64Array(WINDOW_LAG);
@@ -201,6 +204,7 @@
         }
         trimDollarTurnover[t] = sumDollar / (t + 1);
         rvolArr[t] = 1.0;
+        climaxDirs[t] = 1;
         continue;
       }
 
@@ -221,36 +225,55 @@
       const rvol = turnover[t] / (trimMeanD + EPS);
       rvolArr[t] = rvol;
 
-      let maxH22 = -Infinity;
-      let minL22 = Infinity;
-      for (let j = t - WINDOW_LAG; j <= t; j++) {
+      let maxH21 = -Infinity;
+      let minL21 = Infinity;
+      for (let j = t - WINDOW_LAG; j < t; j++) {
         const jc = _barClose(bars[j]);
         const jh = _barHigh(bars[j], jc);
         const jl = _barLow(bars[j], jc);
-        if (jh > maxH22) maxH22 = jh;
-        if (jl < minL22) minL22 = jl;
+        if (jh > maxH21) maxH21 = jh;
+        if (jl < minL21) minL21 = jl;
       }
 
       const curC = _barClose(bars[t]);
+      const curH = _barHigh(bars[t], curC);
       const curL = _barLow(bars[t], curC);
+      const rangeSpan = maxH21 - minL21 + EPS;
 
-      // 1. Peak (Volume Climax & Selloff Exhaustion) Intensity
+      // 1. Peak (Volume Climax & Exhaustion) Intensity - Symmetric Bidirectional
       const volElasticity = Math.pow(1.0 + rvol, 0.55) - 1.0;
-      const rangePos = (maxH22 - curC) / (maxH22 - minL22 + EPS);
-      const rawDownShock = Math.max(0.0, typPrice[t - 1] - curL) / (trimMeanTR + EPS);
-      const shockTerm = Math.tanh(0.35 * rawDownShock);
+      let climaxDir = 1;
+      let displacement = 0.0;
+      let isNewExtreme = 0.0;
+      let wickRatio = 0.0;
+      let rawShock = 0.0;
 
-      const isNewLow = curL <= minL22 + EPS ? 1.0 : 0.0;
-      const lowerWickRatio = (curC - curL) / (trueRange[t] + EPS);
-      const absorptionMult = 1.0 + 0.20 * lowerWickRatio * isNewLow;
+      const mid21 = 0.5 * (maxH21 + minL21);
+      if (curC >= mid21) {
+        climaxDir = 1;
+        displacement = (curC - minL21) / rangeSpan;
+        isNewExtreme = curH >= maxH21 - EPS ? 1.0 : 0.0;
+        wickRatio = (curH - curC) / (trueRange[t] + EPS);
+        rawShock = Math.max(0.0, curH - typPrice[t - 1]) / (trimMeanTR + EPS);
+      } else {
+        climaxDir = -1;
+        displacement = (maxH21 - curC) / rangeSpan;
+        isNewExtreme = curL <= minL21 + EPS ? 1.0 : 0.0;
+        wickRatio = (curC - curL) / (trueRange[t] + EPS);
+        rawShock = Math.max(0.0, typPrice[t - 1] - curL) / (trimMeanTR + EPS);
+      }
 
-      const priceDrawdownFactor = (0.70 * Math.pow(Math.max(0.0, rangePos), 1.25) + 0.30 * shockTerm) * absorptionMult;
-      const peakIntensity = volElasticity * priceDrawdownFactor;
+      const shockTerm = Math.tanh(0.35 * rawShock);
+      const absorptionMult = 1.0 + 0.20 * Math.max(0, Math.min(1, wickRatio)) * isNewExtreme;
+      const boundedDisplacement = Math.max(0.0, Math.min(1.25, displacement));
+      const priceFactor = (0.70 * Math.pow(boundedDisplacement, 1.25) + 0.30 * shockTerm) * absorptionMult;
+      const peakIntensity = volElasticity * priceFactor;
       peakScores[t] = (100.0 * peakIntensity) / Math.sqrt(peakIntensity * peakIntensity + KAPPA_PEAK * KAPPA_PEAK);
+      climaxDirs[t] = climaxDir;
 
       // 2. Valley (Volume Drought & Low-Turnover Compression) Intensity
       const rDrought = trimMeanD / (turnover[t] + EPS);
-      const droughtBase = Math.max(0.0, Math.pow(rDrought, 0.60) - 0.85);
+      const droughtBase = Math.max(0.0, Math.pow(rDrought, 0.60) - 1.00);
       const rangeComp = Math.exp(-trueRange[t] / (2.0 * trimMeanTR + EPS));
       const rawSpreadRatio = abdiSpread[t] / (trimMeanSpread + EPS);
       const spreadMult = Math.min(2.0, Math.max(0.75, rawSpreadRatio));
@@ -264,7 +287,8 @@
       peakScores,
       valleyScores,
       rvolArr,
-      trimDollarTurnover
+      trimDollarTurnover,
+      climaxDirs
     };
   }
 
@@ -493,6 +517,11 @@
       const tieKeyPeak = compPeak + 1e-7 * maxRvol + 1e-11 * t;
       const tieKeyValley = compValley + 1e-7 * (1.0 / (safeMinRvol + EPS)) + 1e-11 * t;
 
+      const leadM = leadPeakTicker ? etfMetrics[leadPeakTicker] : null;
+      const leadMap = leadPeakTicker ? indexMaps[leadPeakTicker] : null;
+      const leadIdx = leadMap ? leadMap.get(date) : undefined;
+      const climaxDir = (leadM && leadM.climaxDirs && leadIdx !== undefined) ? leadM.climaxDirs[leadIdx] : 1;
+
       records.push({
         index: t,
         date,
@@ -503,6 +532,7 @@
         activeCount,
         leadPeakTicker,
         leadValleyTicker,
+        climaxDir,
         compositeTieKeyPeak: tieKeyPeak,
         compositeTieKeyValley: tieKeyValley
       });
@@ -583,6 +613,7 @@
         visualTier,
         isHighlighted,
         isStructuralClimax,
+        climaxDir: rec.climaxDir || 1,
         baselineQuantileBin: baselineBins[i]
       };
     }
@@ -884,9 +915,10 @@
             }
           }
 
+          const dirLabel = st.climaxDir === -1 ? 'SELLING EXHAUSTION' : 'BUYING CLIMAX';
           const climaxTag = st.isStructuralClimax
-            ? (isPeaks ? 'STRUCTURAL VOLUME CLIMAX' : 'STRUCTURAL DROUGHT')
-            : (isPeaks ? 'LOCAL PEAK' : 'LOW-TURNOVER COMPRESSION');
+            ? (isPeaks ? ('STRUCTURAL ' + dirLabel) : 'STRUCTURAL DROUGHT')
+            : (isPeaks ? ('LOCAL ' + dirLabel) : 'LOW-TURNOVER COMPRESSION');
           const filterTag = st.visualTier === 'RED_P99' ? 'P99' : (st.visualTier === 'ORANGE_P95' ? 'P95' : 'P90');
           const metricName = isValleys ? 'VOLUME DROUGHT' : label;
 

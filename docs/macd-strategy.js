@@ -2,16 +2,18 @@
  * MACD Momentum Engine & Tactical Quant Radar — Canvas 2D Engine
  * Standard MACD (12, 26, 9 EMA EMA) on 1-Hour & 1-Day Timeframes
  * Floor Pivots (P, R1, S1) + Sub-Zero Reversal Confluence
- * Zero external dependencies · Institutional Quantitative Execution Architecture
+ * Zero external dependencies · Mathematical Quantitative Execution Architecture
  */
 
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory();
+    let qc = null;
+    try { qc = require('./quant-core.js'); } catch (_) {}
+    module.exports = factory(qc);
   } else {
-    root.MACDStrategy = factory();
+    root.MACDStrategy = factory(root.QuantCore);
   }
-})(typeof self !== 'undefined' ? self : this, function () {
+})(typeof self !== 'undefined' ? self : this, function (QuantCore) {
   'use strict';
 
   const MACDStrategy = {
@@ -728,8 +730,11 @@
         }
       });
 
-      // 4. Core Anchors (TQQQ, SOXL)
-      const coreAnchors = ['TQQQ', 'SOXL'];
+      // 4. Dynamic Benchmark Anchors
+      const coreAnchors = signals
+        .filter(s => s && (s.featured || (s.aum_m && s.aum_m >= 1000)))
+        .slice(0, 3)
+        .map(s => s.ticker);
       coreAnchors.forEach(t => {
         if (!pillsMap.has(t)) {
           const s = signals.find(item => item.ticker === t);

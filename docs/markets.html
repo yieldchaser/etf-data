@@ -2451,7 +2451,7 @@
                       <td>
                         <span class="flow-badge" :data-state="(item.leverage_value || 0) < 0 ? 'DISTRIBUTION' : 'ACCUMULATION'" x-text="item.leverage"></span>
                       </td>
-                      <td :class="item.flow_reversal ? 'flow-muted' : item.latest_flow > 0 ? 'flow-positive' : item.latest_flow < 0 ? 'flow-negative' : ''" x-text="formatMoney(item.latest_flow) + (item.flow_reversal || Math.abs(item.flow_pct_aum || 0) >= 50 ? ' ⚠' : '')" :title="item.flow_reversal ? `Undoes the previous day's ${formatMoney(item.flow_reversal.prev_flow)} (${item.flow_reversal.prev_date}); the two net to ${formatMoney(item.flow_reversal.net_2d)}. Almost certainly a source reporting error, not money moving; ranked as zero.` : Math.abs(item.flow_pct_aum || 0) >= 50 ? `${item.flow_pct_aum >= 0 ? '+' : ''}${item.flow_pct_aum.toFixed(0)}% of AUM in one day: a new fund's seed money or a source error more often than a real move. Check before acting on it.` : item.flow_pct_aum != null ? `${item.flow_pct_aum >= 0 ? '+' : ''}${item.flow_pct_aum.toFixed(1)}% AUM` : ''"></td>
+                      <td :class="item.flow_reversal ? 'flow-muted' : item.latest_flow > 0 ? 'flow-positive' : item.latest_flow < 0 ? 'flow-negative' : ''" x-text="formatMoney(item.latest_flow) + (item.flow_reversal || Math.abs(item.flow_pct_aum || 0) >= 50 ? ' *' : '')" :title="item.flow_reversal ? `Undoes the previous day's ${formatMoney(item.flow_reversal.prev_flow)} (${item.flow_reversal.prev_date}); the two net to ${formatMoney(item.flow_reversal.net_2d)}. Almost certainly a source reporting error, not money moving; ranked as zero.` : Math.abs(item.flow_pct_aum || 0) >= 50 ? `${item.flow_pct_aum >= 0 ? '+' : ''}${item.flow_pct_aum.toFixed(0)}% of AUM in one day: a new fund's seed money or a source error more often than a real move. Check before acting on it.` : item.flow_pct_aum != null ? `${item.flow_pct_aum >= 0 ? '+' : ''}${item.flow_pct_aum.toFixed(1)}% AUM` : ''"></td>
                       <td :class="item.flow_5d > 0 ? 'flow-positive' : item.flow_5d < 0 ? 'flow-negative' : ''" x-text="formatMoney(item.flow_5d)"></td>
                       <td :class="item.flow_20d > 0 ? 'flow-positive' : item.flow_20d < 0 ? 'flow-negative' : ''" x-text="formatMoney(item.flow_20d)"></td>
                       <td :class="item.flow_60d > 0 ? 'flow-positive' : item.flow_60d < 0 ? 'flow-negative' : ''" x-text="formatMoney(item.flow_60d)"></td>
@@ -2638,7 +2638,7 @@
                   <span x-text="flowDisplayCategory || 'Not in catalog'"></span>
                   <span x-text="flowSelectedInstrument?.underlying ? `Underlying: ${flowSelectedInstrument.underlying}` : ''"></span>
                   <span x-text="flowSelectedInstrument?.issuer || 'Issuer unavailable'"></span>
-                  <span x-text="flowSelectedInstrument?.aum_m != null ? `AUM ${formatMoney(flowSelectedInstrument.aum_m * 1e6, { signed: false })} · TER ${flowSelectedInstrument.ter || '—'}` : ''"></span>
+                  <span x-text="flowSelectedInstrument?.aum_m != null ? `AUM ${formatMoney(flowSelectedInstrument.aum_m * 1e6, { signed: false })} · TER ${flowSelectedInstrument.ter || '—'}${flowSelectedInstrument.arb_premium_bps != null ? ' · Arb Premium ' + (flowSelectedInstrument.arb_premium_bps >= 0 ? '+' : '') + flowSelectedInstrument.arb_premium_bps.toFixed(1) + ' bps' : ''}` : ''"></span>
                 </div>
                 <div class="flow-support" style="margin-top:0.35rem;font-size:0.6875rem;opacity:0.75" x-show="flowData">
                   <span x-text="flowData ? `${flowData.count.toLocaleString('en-US')} available source observations` : ''"></span>
@@ -2827,7 +2827,7 @@
                     <span>Dollar Vol: <strong style="color:#94a3b8" x-text="(flowMeasureResult?.totalDollarVol ?? flowMeasureResult?.totDollarVol) ? formatMoney(flowMeasureResult?.totalDollarVol ?? flowMeasureResult?.totDollarVol) : '—'"></strong></span>
                     <span>|</span>
                     <span>Conviction: <strong class="flow-cyan" x-text="(flowMeasureResult?.convictionRatio ?? flowMeasureResult?.convictionPenetration) != null ? `${((flowMeasureResult?.convictionRatio ?? flowMeasureResult?.convictionPenetration)).toFixed(1)}%` : '—'"></strong></span>
-                    <button class="flow-chip" type="button" @click="flowResetMeasurement()" style="margin-left:0.5rem;padding:2px 6px;font-size:0.65rem">✕ Clear</button>
+                    <button class="flow-chip" type="button" @click="flowResetMeasurement()" style="margin-left:0.5rem;padding:2px 6px;font-size:0.65rem">Clear</button>
                   </div>
 
                   <div class="flow-workbench-chart"
@@ -3120,6 +3120,8 @@
               <div class="vs-reading-metric"><span class="flow-eyebrow" id="vs-hud-study-label">STUDY VALUE</span><strong id="vs-hud-val" class="flow-cyan">—</strong></div>
               <div class="vs-reading-divider"></div>
               <div class="vs-reading-metric"><span class="flow-eyebrow">REGIME</span><strong id="vs-hud-regime" class="vs-hud-badge">—</strong></div>
+              <div class="vs-reading-divider"></div>
+              <div class="vs-reading-metric" id="vs-hud-div-wrap"><span class="flow-eyebrow">63D DIV</span><strong id="vs-hud-div-badge" class="vs-hud-badge">—</strong></div>
             </div>
 
             <!-- 7th Study: MicroCVI 18-Column Volume Heatmap Calendar -->
@@ -3437,6 +3439,10 @@
               <div class="tp-subpanel">
                 <div class="tp-slider-header">
                   <span class="tp-slider-label">ZigZag Reversal Threshold</span>
+                  <div class="tp-zz-mode-group" style="display:inline-flex;gap:4px;margin-left:auto;margin-right:8px;">
+                    <button type="button" class="tp-pill-btn active" data-tp-zz-mode="fixed" style="padding:2px 7px;font-size:10px;">Fixed %</button>
+                    <button type="button" class="tp-pill-btn" data-tp-zz-mode="vol_adaptive" style="padding:2px 7px;font-size:10px;">Vol-Adaptive (YZ)</button>
+                  </div>
                   <span class="tp-slider-value" id="tp-threshold-display">30%</span>
                 </div>
                 <div id="tp-threshold-rail" class="tp-single-rail" title="Drag to set minimum trough-to-peak reversal percentage (0% to 300%)">
@@ -8222,6 +8228,7 @@ function marketsApp() {
   };
 }
 </script>
+<script src="quant-core.js"></script>
 <script src="macd-strategy.js"></script>
 <script src="volume-heatmap.js"></script>
 <script src="volume-studies.js"></script>

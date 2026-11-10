@@ -228,4 +228,53 @@ console.log('Testing TroughPeak ZigZag Cycle & Underwater Drawdown Engine...');
   console.log('  [PASS] Zero emojis and zero banned terminology verified');
 }
 
+// 8. Leverage Drag, Ulcer Index, CDaR, 1x-Equivalent Drawdown & Extreme Cycle Position
+{
+  // 8.1 Ulcer Index & CDaR(0.95)
+  const ddSample = [0, -10, -20, -30, 0];
+  const ui = TroughPeak.computeUlcerIndex(ddSample);
+  assert.ok(ui > 0, 'Ulcer Index must be positive for underwater path');
+  // sumSq = 0 + 100 + 400 + 900 + 0 = 1400 / 5 = 280 -> sqrt(280) = 16.733
+  assert.ok(Math.abs(ui - Math.sqrt(280)) < 1e-6);
+
+  const cdar = TroughPeak.computeCDaR(ddSample, 0.80);
+  assert.ok(cdar >= 20, 'CDaR must average the worst tail drawdowns');
+
+  // 8.2 1x-Equivalent Drawdown
+  // For a 3x ETF, a -50% drawdown: ratio = 1 - 0.50 = 0.50. (0.50)^(1/3) - 1 = 0.7937 - 1 = -20.63%
+  const dd3x = -50;
+  const dd1x = TroughPeak.compute1xEquivalentDD(dd3x, 3.0);
+  assert.ok(Math.abs(dd1x - ((Math.pow(0.5, 1 / 3) - 1) * 100)) < 1e-4);
+  assert.ok(dd1x > dd3x, '1x-equivalent drawdown should be less severe than 3x drawdown');
+
+  // 8.3 Volatility-Scaled Drawdown
+  const volScaled = TroughPeak.computeVolScaledDD(-30, 0.45); // 45% ann vol
+  assert.ok(Math.abs(volScaled - (-30 / 45)) < 1e-6);
+
+  // 8.4 Avellaneda-Zhang Drag-Adjusted Return
+  const pricesFlat = [100, 110, 99, 110, 100]; // volatile round-trip
+  const dragAdj = TroughPeak.computeDragAdjustedReturn(pricesFlat, 3.0, 0, 4);
+  assert.ok(dragAdj !== null);
+  // Due to variance drag, drag-adjusted underlying-equivalent return is > nominal flat return
+  assert.ok(dragAdj > 0, 'Variance drag adjustment restores volatility decay');
+
+  // 8.5 Cycle Maturity & Extreme (>100%) Reachability
+  const dCyc = ['2025-01-01', '2025-01-02', '2025-01-03', '2025-01-04'];
+  const pCyc = [50, 100, 60, 150]; // Cycle 1: 50 -> 100. Then pullback to 60, then breakout to 150
+  const cycles = TroughPeak.detectCycles(dCyc, pCyc, 30);
+  // Last price is 150, which is > prior confirmed peak 100
+  const cardAnalytics = TroughPeak.computeCardAnalytics(dCyc, pCyc, [100, 100, 100, 100], cycles, { leverage: 2.0 });
+  assert.ok(cardAnalytics.cycPosRaw > 100, `Expected cycPosRaw > 100 for breakout beyond peak (got ${cardAnalytics.cycPosRaw})`);
+  assert.strictEqual(cardAnalytics.cycLabel, 'Extreme', `Expected cycLabel Extreme for breakout (got ${cardAnalytics.cycLabel})`);
+  assert.ok(cardAnalytics.ulcerIndex >= 0);
+  assert.ok(cardAnalytics.dd1xEq !== null);
+
+  // 8.6 Vol-Adaptive ZigZag
+  const cycFixed = TroughPeak.detectCycles(dCyc, pCyc, 30);
+  const cycAdaptive = TroughPeak.detectCycles(dCyc, pCyc, 30, { volAdaptive: true, yzVol: 0.05, kappa: 3.0, tau: 10 });
+  assert.ok(Array.isArray(cycAdaptive), 'Vol-adaptive ZigZag returns valid cycle array');
+
+  console.log('  [PASS] Leverage drag, Ulcer Index, CDaR, 1x-eq DD & Extreme cycle label verified');
+}
+
 console.log('\nAll TroughPeak tests PASSED successfully.');

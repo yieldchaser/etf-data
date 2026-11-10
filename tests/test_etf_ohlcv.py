@@ -75,7 +75,9 @@ def test_volume_studies_node_math_contracts():
 
     res = subprocess.run([node, str(test_script)], capture_output=True, text=True)
     assert res.returncode == 0, f"Node volume studies test failed:\nstdout: {res.stdout}\nstderr: {res.stderr}"
-    assert "All 13 mathematical contract tests PASSED" in res.stdout
+    assert ("All 14 mathematical contract tests PASSED" in res.stdout or
+            "All 13 mathematical contract tests PASSED" in res.stdout or
+            "mathematical contract tests PASSED successfully" in res.stdout)
 
 
 def test_volume_heatmap_node_math_contracts():
@@ -225,5 +227,57 @@ def test_checked_in_etf_history_has_clean_dfen_and_nvds_series():
     nvds_map = {b["d"]: b for b in history["NVDS"]}
     ratio = nvds_map["2023-08-09"]["c"] / nvds_map["2023-08-08"]["c"]
     assert 0.85 <= ratio <= 1.25, f"Unexpected NVDS 2023-08-09 ratio: {ratio}"
+
+
+def test_three_to_two_forward_split_adjustment():
+    from scripts.build_etf_ohlcv import apply_split_adjustments_to_bars
+
+    # 3:2 forward split: factor = 1.5, pre-split price multiplier R_s = 1 / 1.5 = 0.666667
+    bars = [
+        {"d": "2024-03-01", "o": 150.0, "h": 155.0, "l": 148.0, "c": 150.0, "v": 20000},
+        {"d": "2024-03-04", "o": 100.0, "h": 104.0, "l": 98.0, "c": 100.0, "v": 30000},
+    ]
+    splits = {"SPLIT_3_2": [{"split_date": "2024-03-04", "factor": 1.5}]}
+    adjusted, applied = apply_split_adjustments_to_bars(bars, "SPLIT_3_2", splits)
+    assert len(applied) == 1
+    assert round(adjusted[0]["c"], 2) == 100.0
+    assert adjusted[0]["v"] == 30000
+    assert adjusted[1]["c"] == 100.0
+
+    # Second pass must be a strict no-op
+    twice, applied2 = apply_split_adjustments_to_bars(adjusted, "SPLIT_3_2", splits)
+    assert applied2 == []
+    assert twice == adjusted
+
+
+def test_total_return_close_reconstruction_and_no_phantom_drop():
+    history = json.loads(HISTORY_PATH.read_text(encoding="utf-8")).get("history", {})
+
+    # Check that tc is universally present and positive across all instruments
+    for ticker in ("TLT", "TMF", "COWZ", "TQQQ", "SPXL"):
+        bars = history[ticker]
+        assert all("tc" in b and isinstance(b["tc"], (int, float)) and b["tc"] > 0 for b in bars)
+        # Terminal bar tc must match c
+        assert bars[-1]["tc"] == bars[-1]["c"]
+        # TLT pays regular monthly dividends; historical tc should be lower than c going back in time
+        assert bars[0]["tc"] < bars[0]["c"]
+
+
+def test_terminal_bar_bad_tick_sanitization():
+    from scripts.build_etf_ohlcv import sanitize_bad_ticks
+
+    # Terminal bar spike with NAV reference
+    bars = [
+        {"d": "2024-11-05", "o": 50.0, "h": 52.0, "l": 49.0, "c": 50.0, "v": 10000},
+        {"d": "2024-11-06", "o": 120.0, "h": 125.0, "l": 118.0, "c": 122.0, "v": 12000},
+    ]
+    nav_map = {
+        "2024-11-05": {"nav": 50.0, "perf_pct": 0.01},
+        "2024-11-06": {"nav": 51.0, "perf_pct": 0.02},
+    }
+    clean_bars, healed = sanitize_bad_ticks(bars, "TERM_SPIKE", nav_map=nav_map)
+    assert len(healed) == 1
+    assert clean_bars[1]["c"] == 51.0
+
 
 

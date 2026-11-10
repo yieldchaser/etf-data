@@ -1,6 +1,9 @@
 (function (root) {
   'use strict';
 
+  const QuantCore = (typeof root !== 'undefined' && root.QuantCore)
+    || (typeof require === 'function' ? (function () { try { return require('./quant-core.js'); } catch (e) { return null; } })() : null);
+
   const MARKET_TABS = new Set(['matrix', 'pricelog', 'yields', 'periodic', 'drawdown', 'holdingperiod', 'seasonality', 'correlation', 'volatility', 'flows']);
 
   const RANGE_PRESETS = [
@@ -269,7 +272,7 @@
     return percentileAgainstSorted(sorted, value);
   }
 
-  function priorOnlyZScore(records, index, windowSize) {
+  function priorOnlyZScore(records, index, windowSize, bessel) {
     const size = Math.max(5, Math.trunc(windowSize || 30));
     const current = finiteNumber(records[index] && records[index].flow);
     if (current === null) return null;
@@ -282,7 +285,8 @@
     if (prior.length < 5) return null;
     const n = prior.length;
     const mean = prior.reduce((sum, value) => sum + value, 0) / n;
-    const variance = prior.reduce((sum, value) => sum + ((value - mean) ** 2), 0) / n;
+    const denom = bessel === false ? n : (n - 1);
+    const variance = prior.reduce((sum, value) => sum + ((value - mean) ** 2), 0) / denom;
     const standardDeviation = Math.sqrt(variance);
     if (!Number.isFinite(standardDeviation) || standardDeviation <= 1e-9) return null;
     return (current - mean) / standardDeviation;
@@ -306,36 +310,46 @@
       if (value !== null) prior.push(value);
     }
     if (prior.length < 5) return null;
-    const sorted = [...prior].sort((a, b) => a - b);
-    const median = _calcMedian(sorted);
-    if (median === null) return null;
-    const absDevs = prior.map(v => Math.abs(v - median)).sort((a, b) => a - b);
-    const mad = _calcMedian(absDevs);
-    if (mad !== null && mad > 1e-4) {
-      return (0.6745 * (current - median)) / mad;
+
+    const maxAbs = Math.max(...prior.map(Math.abs));
+    const isNormalized = maxAbs < 0.20;
+    const tau_dust = isNormalized ? 1e-4 : Math.max(1e-4, maxAbs * 1e-4);
+    const sigma_floor = isNormalized ? 5e-4 : Math.max(1e-4, maxAbs * 5e-4);
+
+    const active = prior.filter(x => Math.abs(x) > tau_dust);
+    const pAct = active.length / prior.length;
+
+    if (active.length === 0) {
+      return current / sigma_floor;
     }
-    const meanDev = absDevs.reduce((a, b) => a + b, 0) / absDevs.length;
-    if (meanDev > 1e-4) {
-      return (0.7979 * (current - median)) / meanDev;
-    }
-    const n = prior.length;
-    const mean = prior.reduce((sum, value) => sum + value, 0) / n;
-    const variance = prior.reduce((sum, value) => sum + ((value - mean) ** 2), 0) / (n - 1);
-    const sd = Math.sqrt(variance);
-    return (Number.isFinite(sd) && sd > 1e-4) ? (current - mean) / sd : null;
+
+    const sortedActive = [...active].sort((a, b) => a - b);
+    const medianActive = _calcMedian(sortedActive) || 0;
+    const absDevs = active.map(v => Math.abs(v - medianActive)).sort((a, b) => a - b);
+    const madActive = _calcMedian(absDevs) || 0;
+
+    const mStar = pAct * medianActive;
+    const term1 = pAct * ((1.4826 * madActive) ** 2);
+    const term2 = pAct * (1 - pAct) * (medianActive ** 2);
+    const hurdleVariance = term1 + term2 + (sigma_floor ** 2);
+    const sigmaHurdle = Math.sqrt(hurdleVariance);
+
+    if (!Number.isFinite(sigmaHurdle) || sigmaHurdle <= 1e-9) return null;
+    return (current - mStar) / sigmaHurdle;
   }
 
-  function volumeAdjustedZScore(records, index, volumes, windowSize) {
+  function volumeAdjustedZScore(records, index, volumes, windowSize, prices) {
     const size = Math.max(5, Math.trunc(windowSize || 30));
     const currentFlow = finiteNumber(records[index] && records[index].flow);
     if (currentFlow === null || index < 5) return null;
     const getIntensity = (i) => {
       const f = finiteNumber(records[i] && records[i].flow);
       const nav = finiteNumber(records[i] && records[i].nav);
-      if (f === null || nav === null || nav <= 0) return null;
+      const p = (prices && prices[i]) || finiteNumber(records[i] && (records[i].close ?? records[i].c ?? nav));
+      if (f === null || p === null || p <= 0) return null;
       const vol = (volumes && volumes[i]) || null;
       if (!vol || vol <= 0) return null;
-      const dVol = vol * nav;
+      const dVol = vol * p;
       if (dVol <= 0) return null;
       return f / dVol;
     };
@@ -349,76 +363,173 @@
     }
     if (prior.length < 5) return null;
     const n = prior.length;
-    const mean = prior.reduce((a, b) => a + b, 0) / n;
+    const mean = prior.reduce((sum, value) => sum + value, 0) / n;
     const variance = prior.reduce((sum, value) => sum + ((value - mean) ** 2), 0) / (n - 1);
     const sd = Math.sqrt(variance);
     return (Number.isFinite(sd) && sd > 1e-6) ? (curInt - mean) / sd : null;
   }
 
   function momentum5DZScore(records, index, rollingFive, windowSize) {
-    const size = Math.max(5, Math.trunc(windowSize || 30));
     const cur5 = finiteNumber(rollingFive && rollingFive[index]);
     if (cur5 === null || index < 10) return null;
-    const prior = [];
-    const start = Math.max(4, index - size - 4);
-    const end = index - 5;
-    for (let offset = start; offset <= end; offset += 1) {
-      const val = finiteNumber(rollingFive[offset]);
-      if (val !== null) prior.push(val);
+
+    // Disjoint 5-day blocks (Option A):
+    const blocks = [];
+    for (let m = 1; m <= 6; m++) {
+      const blockIdx = index - 5 * m;
+      if (blockIdx >= 4) {
+        const val = finiteNumber(rollingFive[blockIdx]);
+        if (val !== null) blocks.push(val);
+      }
     }
-    if (prior.length < 5) return null;
-    const n = prior.length;
-    const mean = prior.reduce((a, b) => a + b, 0) / n;
-    const variance = prior.reduce((sum, value) => sum + ((value - mean) ** 2), 0) / (n - 1);
-    const sd = Math.sqrt(variance);
-    return (Number.isFinite(sd) && sd > 0) ? (cur5 - mean) / sd : null;
+
+    if (blocks.length < 2) return null;
+    const K = blocks.length;
+    const mean = blocks.reduce((a, b) => a + b, 0) / K;
+    const variance = blocks.reduce((sum, b) => sum + ((b - mean) ** 2), 0) / (K - 1);
+    const sB = Math.sqrt(variance);
+    if (!Number.isFinite(sB) || sB <= 1e-9) return null;
+
+    const se = sB * Math.sqrt(1 + 1 / K);
+    const tStat = (cur5 - mean) / se;
+
+    const t5CDF = (typeof QuantCore !== 'undefined' && QuantCore && QuantCore.studentT5CDF)
+      ? QuantCore.studentT5CDF
+      : (t) => {
+          const theta = Math.atan(t / Math.sqrt(5));
+          const cos = Math.cos(theta);
+          const sin = Math.sin(theta);
+          return 0.5 + (1 / Math.PI) * (theta + sin * cos * (1 + (2 / 3) * cos * cos));
+        };
+    const normQuantile = (typeof QuantCore !== 'undefined' && QuantCore && QuantCore.normalQuantile)
+      ? QuantCore.normalQuantile
+      : (p) => {
+          if (p <= 0.0) return -6.0;
+          if (p >= 1.0) return 6.0;
+          const q = p < 0.5 ? p : 1.0 - p;
+          const t = Math.sqrt(-2.0 * Math.log(q));
+          const x = t - (2.515517 + 0.802853 * t + 0.010328 * t * t) / (1.0 + 1.432788 * t + 0.189269 * t * t + 0.001308 * t * t * t);
+          return p < 0.5 ? -x : x;
+        };
+
+    const pVal = Math.max(1e-7, Math.min(1 - 1e-7, t5CDF(tStat)));
+    const zEq = normQuantile(pVal);
+    return Number.isFinite(zEq) ? zEq : (cur5 - mean) / se;
   }
 
-  function flowMetricRows(records, volumeMap) {
+  function neweyWest5DZScore(records, index, rollingFive, windowSize) {
+    const cur5 = finiteNumber(rollingFive && rollingFive[index]);
+    if (cur5 === null || index < 10) return null;
+    const size = Math.max(10, Math.trunc(windowSize || 30));
+    const start = Math.max(0, index - size - 4);
+    const end = index - 5;
+    const flows = [];
+    for (let i = start; i <= end; i++) {
+      const f = finiteNumber(records[i] && records[i].flow);
+      if (f !== null) flows.push(f);
+    }
+    const N = flows.length;
+    if (N < 10) return null;
+    const meanF = flows.reduce((a, b) => a + b, 0) / N;
+
+    const gammas = [0, 0, 0, 0, 0];
+    for (let h = 0; h <= 4; h++) {
+      let sum = 0;
+      for (let j = h; j < N; j++) {
+        sum += (flows[j] - meanF) * (flows[j - h] - meanF);
+      }
+      gammas[h] = sum / (N - h);
+    }
+
+    const varS5 = 5 * gammas[0] + 8 * gammas[1] + 6 * gammas[2] + 4 * gammas[3] + 2 * gammas[4];
+    const floorVar = Math.max(1e-6, 2.5 * Math.max(0, gammas[0]));
+    const se = Math.sqrt(Math.max(varS5, floorVar));
+    if (!Number.isFinite(se) || se <= 1e-9) return null;
+    return (cur5 - 5 * meanF) / se;
+  }
+
+  function causalPercentile10(rollingTen, index, minHistory = 1) {
+    const cur = rollingTen && rollingTen[index];
+    if (cur === null || cur === undefined || !Number.isFinite(cur)) return null;
+    let less = 0;
+    let equal = 0;
+    let validCount = 0;
+    for (let j = 0; j <= index; j++) {
+      const val = rollingTen[j];
+      if (val !== null && val !== undefined && Number.isFinite(val)) {
+        validCount++;
+        if (val < cur) less++;
+        else if (val === cur) equal++;
+      }
+    }
+    if (validCount < minHistory) return null;
+    return ((less + 0.5 * equal) / validCount) * 100;
+  }
+
+  function flowMetricRows(records, volumeMap, priceMap) {
     const source = Array.isArray(records) ? records : [];
     const rollingTwenty = source.map((record, index) => completeRollingMean(source, index, 20));
     const rollingFive = completeRollingSums(source, 5);
     const rollingTen = completeRollingSums(source, 10);
     const rollingTwentySum = completeRollingSums(source, 20);
     const rollingSixtySum = completeRollingSums(source, 60);
-    const sortedTen = rollingTen.filter(Number.isFinite).sort((left, right) => left - right);
+
     const volumes = source.map(record => {
       const v = (volumeMap && volumeMap[record.date]) ?? finiteNumber(record.volume);
       if (v !== null && v !== undefined && v > 0) return v;
-      if (record.nav && record.flow !== null && record.flow !== undefined) {
-        return Math.round(Math.abs(record.flow) / record.nav);
-      }
       return null;
     });
+
     const rollingVolTwenty = volumes.map((_, index) => {
       const slice = volumes.slice(Math.max(0, index - 19), index + 1).filter(v => v !== null);
       return slice.length ? slice.reduce((a, b) => a + b, 0) / slice.length : null;
     });
 
+    const prices = source.map(record => {
+      return (priceMap && priceMap[record.date]) ?? finiteNumber(record.close) ?? finiteNumber(record.c) ?? finiteNumber(record.nav);
+    });
+
     return source.map((record, index) => {
       const vol = volumes[index];
-      const dollarVol = (vol && record.nav) ? vol * record.nav : null;
+      const p = prices[index];
+      const dollarVol = (vol !== null && vol > 0 && p !== null && p > 0) ? vol * p : null;
       const f = finiteNumber(record.flow);
+
+      let flowShareOfTurnover = null;
+      if (f !== null && dollarVol !== null && dollarVol > 0) {
+        const prevVol = index > 0 ? volumes[index - 1] : null;
+        const prevP = index > 0 ? prices[index - 1] : null;
+        const prevD = (prevVol && prevP && prevP > 0) ? prevVol * prevP : dollarVol;
+        const maxD = Math.max(prevD || 0, dollarVol);
+        if (maxD > 0) {
+          flowShareOfTurnover = (f / maxD) * 100;
+        }
+      }
+
       const conviction = (f !== null && dollarVol && dollarVol > 0) ? (Math.abs(f) / dollarVol) * 100 : null;
+
       return {
         date: record.date,
         flow: f,
         nav: finiteNumber(record.nav),
+        close: p,
         performance: finiteNumber(record.performance),
         volume: vol,
         dollarVolume: dollarVol,
         convictionRatio: conviction,
+        flowShareOfTurnover,
         rollingMean20: rollingTwenty[index],
         rollingVolume20: rollingVolTwenty[index],
         rollingSum5: rollingFive[index],
         rollingSum10: rollingTen[index],
         rollingSum20: rollingTwentySum[index],
         rollingSum60: rollingSixtySum[index],
-        percentile10: percentileAgainstSorted(sortedTen, rollingTen[index]),
+        percentile10: causalPercentile10(rollingTen, index, 1),
         priorOnlyZScore: priorOnlyZScore(source, index, 30),
         robustZScore: robustPriorZScore(source, index, 30),
-        volumeZScore: volumeAdjustedZScore(source, index, volumes, 30),
+        volumeZScore: volumeAdjustedZScore(source, index, volumes, 30, prices),
         momentumZScore5D: momentum5DZScore(source, index, rollingFive, 30),
+        neweyWestZScore5D: neweyWest5DZScore(source, index, rollingFive, 30),
         selectedCumulative: null
       };
     });
@@ -852,7 +963,7 @@
       flowTableOpen: false,
 
       flowCycleZModel() {
-        const models = ['standard', 'robust', 'volume', 'momentum'];
+        const models = ['standard', 'robust', 'volume', 'momentum', 'newey_west'];
         const curIdx = models.indexOf(this.flowZModel);
         this.flowZModel = models[(curIdx + 1) % models.length];
         this.flowWorkbenchZScoreEnabled = true;
@@ -861,9 +972,10 @@
 
       get flowZModelLabel() {
         switch (this.flowZModel) {
-          case 'robust': return 'Robust MAD';
+          case 'robust': return 'Hurdle Robust';
           case 'volume': return 'Vol-Adj';
-          case 'momentum': return '5D Mom';
+          case 'momentum': return '5D Block';
+          case 'newey_west': return 'NW MA(4)';
           default: return '30D Std';
         }
       },
@@ -871,11 +983,13 @@
       get flowZModelTooltip() {
         switch (this.flowZModel) {
           case 'robust':
-            return 'Active Model: Robust MAD (Median Absolute Deviation). Outlier-resistant modified Z-Score that prevents giant single-day prints from suppressing subsequent flow shocks. Click to cycle.';
+            return 'Active Model: Hurdle Robust. Outlier-resistant zero-inflated MAD score that prevents giant single-day prints from suppressing subsequent flow shocks. Click to cycle.';
           case 'volume':
             return 'Active Model: Turnover-Normalized Volume Z-Score. Measures daily net flow as a fraction of trading dollar volume to reveal market order imbalance urgency. Click to cycle.';
           case 'momentum':
-            return 'Active Model: 5-Day Cumulative Flow Momentum Z-Score. Identifies persistent multi-day capital accumulation campaigns against prior 30-session distribution. Click to cycle.';
+            return 'Active Model: 5-Day Block Cumulative Flow Momentum Z-Score. Identifies persistent multi-day capital accumulation campaigns. Click to cycle.';
+          case 'newey_west':
+            return 'Active Model: Newey-West HAC MA(4) Z-Score. Autocorrelation-consistent standardized flow residuals. Click to cycle.';
           default:
             return 'Active Model: 30D Gaussian Prior-Only Z-Score. Evaluates daily net flow against preceding 30 sessions (excluding current day). Click to cycle.';
         }
@@ -886,6 +1000,7 @@
         if (this.flowZModel === 'robust') return finiteNumber(row.robustZScore);
         if (this.flowZModel === 'volume') return finiteNumber(row.volumeZScore);
         if (this.flowZModel === 'momentum') return finiteNumber(row.momentumZScore5D);
+        if (this.flowZModel === 'newey_west') return finiteNumber(row.nwZScore != null ? row.nwZScore : row.robustZScore);
         return finiteNumber(row.priorOnlyZScore);
       },
       _flowWorkbenchBaseKey: '',
@@ -2276,6 +2391,7 @@
           if (!byUnderlying[u]) {
             byUnderlying[u] = {
               underlying: u,
+              underlying_id: QuantCore.canonicalUnderlyingId(item.underlying, item.ticker),
               tickers: [],
               bullTickers: [],
               bearTickers: [],
@@ -2477,6 +2593,49 @@
       get flowWindowMetrics() {
         const records = this.flowData?.records || [];
         const ticker = this.flowTicker;
+        if (!this.flowVolumeCache && typeof require === 'function') {
+          try {
+            const h = require('./data/flows/etf_history.json');
+            if (h && h.history) {
+              const series = {};
+              for (const [k, bars] of Object.entries(h.history)) {
+                if (Array.isArray(bars)) {
+                  const vm = {};
+                  for (const b of bars) {
+                    if (b.d && b.v !== undefined) vm[b.d] = b.v;
+                  }
+                  series[k] = vm;
+                }
+              }
+              this.flowVolumeCache = { series };
+            }
+          } catch (_) {
+            try {
+              const h = require('./docs/data/flows/etf_history.json');
+              if (h && h.history) {
+                const series = {};
+                for (const [k, bars] of Object.entries(h.history)) {
+                  if (Array.isArray(bars)) {
+                    const vm = {};
+                    for (const b of bars) {
+                      if (b.d && b.v !== undefined) vm[b.d] = b.v;
+                    }
+                    series[k] = vm;
+                  }
+                }
+                this.flowVolumeCache = { series };
+              }
+            } catch (__) {
+              try {
+                this.flowVolumeCache = require('./data/flows/volume.json');
+              } catch (___) {
+                try {
+                  this.flowVolumeCache = require('./docs/data/flows/volume.json');
+                } catch (____) {}
+              }
+            }
+          }
+        }
         const volMap = this.flowVolumeCache?.series?.[ticker] || null;
         const key = `${this.flowData?.revision || 'none'}:${this.flowStartIndex}:${this.flowEndIndex}:${Boolean(volMap)}`;
         if (this._flowMetricCacheKey === key && this._flowMetricCache) return this._flowMetricCache;
@@ -3150,6 +3309,12 @@
         const acceleration = (s20 !== null && b60 !== null) ? s20 - b60 : null;
         const latestZ = this.flowActiveZScore ? this.flowActiveZScore(last) : finiteNumber(last.priorOnlyZScore);
         const curFlow = finiteNumber(last.flow);
+        const closeP = finiteNumber(last.close);
+        const logArbPremiumBps = (closeP !== null && p2 !== null && closeP > 0 && p2 > 0)
+          ? Math.round(Math.log(closeP / p2) * 10000 * 10) / 10
+          : null;
+        const flowShareTurnover = finiteNumber(last.flowShareOfTurnover);
+        const relativeFlowRate = (aum > 0 && curFlow !== null) ? (curFlow / aum) * 100 : null;
         return {
           count: rows.length,
           startDate: first.date,
@@ -3163,7 +3328,10 @@
           acceleration,
           latestZ,
           curFlow,
-          lastPrice: p2
+          lastPrice: p2,
+          logArbPremiumBps,
+          flowShareTurnover,
+          relativeFlowRate
         };
       },
 
@@ -4878,6 +5046,7 @@
     RANGE_PRESETS,
     buildWindowMetrics,
     cacheKey,
+    causalPercentile10,
     completeRollingMeans: (records, windowSize) => (records || []).map((record, index) => completeRollingMean(records, index, windowSize)),
     completeRollingSums,
     empiricalPercentile,
@@ -4893,6 +5062,7 @@
     robustPriorZScore,
     volumeAdjustedZScore,
     momentum5DZScore,
+    neweyWest5DZScore,
     reconcileFlowHistory,
     statusFromManifest,
     statusLabel

@@ -121,12 +121,20 @@ def apply_split_adjustments_to_bars(
     bars: list[dict[str, Any]],
     ticker: str,
     known_splits: dict[str, list[dict[str, Any]]],
+    nav_map: dict[str, dict[str, float]] | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Idempotently apply missing known split adjustments in log-space.
 
-    Inspects the boundary price ratio around each split_date using signed log
-    distances to verify whether the bar series is already adjusted (~1.0) or
-    exhibits an unadjusted / over-adjusted step matching `1/factor` or `factor`.
+    Stage 2 Split State Machine:
+    Canonical R_s = 1.0 / factor (since splits.json stores factor = post / pre).
+    Removes legacy abs(log_obs) < 0.50 skip gate so 3:2 splits work.
+    When nav_map is present:
+      - Computes delta_t = ln(C_t / C_{t-1}) - r^{ref}_t
+      - Anti-crash guard: requires |delta_t| > 0.18 before engaging any mutation
+      - 3-state classifier: m*_t in {R_s, 1.0, R_s^2} within 0.08 tolerance
+    When nav_map is empty (e.g. synthetic unit tests):
+      - 3-state classifier against log_obs in {R_s, 1.0, R_s^2} with tolerance 0.25
+    Preserves v = 0 without max(1, ...) clamping when v == 0.
     """
     events = known_splits.get(ticker)
     if not events or len(bars) < 2:
@@ -160,22 +168,61 @@ def apply_split_adjustments_to_bars(
 
         observed_ratio = c_after / c_before
         log_obs = math.log(observed_ratio)
-        # Skip normal daily fluctuations well below any 2:1 / 1:2 split jump
-        if abs(log_obs) < 0.50:
+
+        r_s = 1.0 / factor
+        ln_rs = math.log(r_s)
+
+        # Check for authoritative reference return from nav_map
+        split_d = out[boundary + 1]["d"]
+        prev_d = out[boundary]["d"]
+        nav_entry = nav_map.get(split_d) if nav_map else None
+        prev_nav_entry = nav_map.get(prev_d) if nav_map else None
+
+        r_ref: float | None = None
+        if nav_entry:
+            perf_pct = nav_entry.get("perf_pct")
+            if perf_pct is not None and perf_pct > -1.0:
+                r_ref = math.log1p(perf_pct)
+            elif nav_entry.get("nav", 0) > 0 and prev_nav_entry and prev_nav_entry.get("nav", 0) > 0:
+                r_ref = math.log(nav_entry["nav"] / prev_nav_entry["nav"])
+
+        best_ratio: float | None = None
+
+        # Check if already adjusted across the split boundary
+        if abs(log_obs) < 0.15:
             continue
 
-        # Standard Yahoo unadjusted jump is 1/factor; also check `factor` to
-        # heal cases where Yahoo over-applied an extra factor to pre-split bars.
-        candidates = [1.0 / factor, factor]
-        best_ratio = None
-        best_err = float("inf")
-        for cand in candidates:
-            err = abs(log_obs - math.log(cand))
-            if err < best_err:
-                best_err = err
-                best_ratio = cand
+        if r_ref is not None:
+            # If r_ref itself does not contain an unadjusted raw split jump
+            if abs(r_ref) < 0.25 or (abs(r_ref - ln_rs) > 0.15 and abs(r_ref + ln_rs) > 0.15):
+                delta = log_obs - r_ref
+                # Anti-crash guard: genuine market crashes give |delta| <= 0.18
+                if abs(delta) <= 0.18:
+                    continue
 
-        if best_ratio is not None and best_err < 0.35 and best_err < abs(log_obs):
+                if abs(delta - ln_rs) < 0.08:
+                    best_ratio = r_s
+                elif abs(delta) < 0.08:
+                    best_ratio = 1.0
+                elif abs(delta - 2.0 * ln_rs) < 0.08:
+                    best_ratio = r_s * r_s
+                elif abs(delta + ln_rs) < 0.08:
+                    best_ratio = factor
+
+        if best_ratio is None:
+            # Fallback based on log_obs against candidate ratios {R_s, factor, R_s^2}
+            candidates = [r_s, factor, r_s * r_s]
+            best_cand = None
+            min_err = float("inf")
+            for cand in candidates:
+                err = abs(log_obs - math.log(cand))
+                if err < min_err:
+                    min_err = err
+                    best_cand = cand
+            if best_cand is not None and min_err < 0.25 and min_err < abs(log_obs):
+                best_ratio = best_cand
+
+        if best_ratio is not None and abs(best_ratio - 1.0) > 1e-4:
             for i in range(boundary + 1):
                 b = out[i]
                 b["o"] = float(b["o"]) * best_ratio
@@ -183,7 +230,7 @@ def apply_split_adjustments_to_bars(
                 b["l"] = float(b["l"]) * best_ratio
                 b["c"] = float(b["c"]) * best_ratio
                 if b["v"] and float(b["v"]) > 0:
-                    b["v"] = max(1, int(round(float(b["v"]) / best_ratio)))
+                    b["v"] = int(round(float(b["v"]) / best_ratio))
                 out[i] = _normalize_bar_geometry(b)
 
             applied.append({
@@ -201,68 +248,140 @@ def sanitize_bad_ticks(
     ticker: str,
     nav_map: dict[str, dict[str, float]] | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    """Heal 3-bar V-shaped single-day CTA bad ticks without affecting real splits.
+    """Heal single-day bad ticks and clamp anomalous High/Low wicks.
 
-    A bar at index `t` is a single-day bad tick when `close[t]` jumps >= 2.2x
-    away from `close[t-1]` and `close[t+1]` immediately reverts within 25% of
-    `close[t-1]` in log-space. When available, `nav_map` provides the exact
-    authoritative replacement price; otherwise midpoint interpolation is used.
+    Checks closes on ALL t in [1, N-1] (including the terminal bar N-1!).
+    Uses nav_map (c_prev * (1 + perf_pct) or continuous nav) or exact geometric
+    bridge math.sqrt(c_prev * c_next) instead of biased arithmetic midpoint.
+    Clamps intraday High/Low wicks at max(4.5 * median_Parkinson_21, 0.15)
+    to exp(+-2.0 * median_Parkinson_21).
     """
-    if len(bars) < 3:
+    if len(bars) < 2:
         return [dict(b) for b in bars], []
 
     out = [dict(b) for b in bars]
     healed: list[dict[str, Any]] = []
+    n = len(out)
 
-    for i in range(1, len(out) - 1):
+    # Stage 3A: Close sanitization across all t in [1, n - 1]
+    for i in range(1, n):
         c_prev = float(out[i - 1]["c"])
         c_curr = float(out[i]["c"])
-        c_next = float(out[i + 1]["c"])
-        if c_prev <= 0 or c_curr <= 0 or c_next <= 0:
+        if c_prev <= 0 or c_curr <= 0:
             continue
 
         jump = max(c_curr / c_prev, c_prev / c_curr)
         if jump < BAD_TICK_JUMP_THRESHOLD:
             continue
-        if abs(math.log(c_next / c_prev)) >= BAD_TICK_REVERT_LOG_TOL:
-            continue
 
-        # Determine authoritative replacement close
         d_curr = out[i]["d"]
         nav_entry = nav_map.get(d_curr) if nav_map else None
-        nav_val = nav_entry.get("nav") if nav_entry else None
-        if (
-            nav_val
-            and nav_val > 0
-            and abs(math.log(nav_val / c_prev)) < 0.20
-            and abs(math.log(nav_val / c_next)) < 0.20
-        ):
-            target_c = float(nav_val)
-            method = "nav"
+
+        # Case 1: Intermediate bar with revert at i + 1
+        if i < n - 1:
+            c_next = float(out[i + 1]["c"])
+            if c_next <= 0:
+                continue
+            if abs(math.log(c_next / c_prev)) >= BAD_TICK_REVERT_LOG_TOL:
+                continue
+
+            target_c: float | None = None
+            method = "geometric_bridge"
+
+            if nav_entry:
+                nav_val = nav_entry.get("nav")
+                perf_val = nav_entry.get("perf_pct")
+                if (
+                    nav_val
+                    and nav_val > 0
+                    and abs(math.log(nav_val / c_prev)) < 0.20
+                    and abs(math.log(nav_val / c_next)) < 0.20
+                ):
+                    target_c = float(nav_val)
+                    method = "nav"
+                elif perf_val is not None and perf_val > -1.0:
+                    cand_c = c_prev * (1.0 + perf_val)
+                    if cand_c > 0 and abs(math.log(cand_c / c_prev)) < 0.20:
+                        target_c = round_price(cand_c)
+                        method = "perf_pct"
+
+            if target_c is None:
+                target_c = round_price(math.sqrt(c_prev * c_next))
+                method = "geometric_bridge"
+
+            b = dict(out[i])
+            def _clean_comp(val: float, fallback: float) -> float:
+                if val <= 0 or abs(math.log(val / target_c)) > 0.25:
+                    return fallback
+                return val
+
+            b["c"] = target_c
+            b["o"] = _clean_comp(float(b["o"]), target_c)
+            b["h"] = _clean_comp(float(b["h"]), max(b["o"], target_c))
+            b["l"] = _clean_comp(float(b["l"]), min(b["o"], target_c))
+            out[i] = _normalize_bar_geometry(b)
+
+            healed.append({
+                "ticker": ticker,
+                "date": d_curr,
+                "old_close": c_curr,
+                "new_close": out[i]["c"],
+                "method": method,
+            })
+
+        # Case 2: Terminal bar i == n - 1 (checked via nav_map)
         else:
-            target_c = (c_prev + c_next) / 2.0
-            method = "midpoint"
+            if nav_entry:
+                perf_val = nav_entry.get("perf_pct")
+                if perf_val is not None and perf_val > -1.0:
+                    r_ref = math.log1p(perf_val)
+                    log_jump = math.log(c_curr / c_prev)
+                    if abs(log_jump - r_ref) > 0.18:
+                        target_c = round_price(c_prev * (1.0 + perf_val))
+                        b = dict(out[i])
+                        b["c"] = target_c
+                        b["o"] = target_c if abs(math.log(float(b["o"]) / target_c)) > 0.25 else float(b["o"])
+                        b["h"] = max(b["o"], target_c)
+                        b["l"] = min(b["o"], target_c)
+                        out[i] = _normalize_bar_geometry(b)
+                        healed.append({
+                            "ticker": ticker,
+                            "date": d_curr,
+                            "old_close": c_curr,
+                            "new_close": out[i]["c"],
+                            "method": "terminal_nav_perf",
+                        })
 
-        b = dict(out[i])
-        # Preserve clean O/H/L fields if consistent with target_c, replace outliers
-        def _clean_component(val: float, fallback: float) -> float:
-            if val <= 0 or abs(math.log(val / target_c)) > 0.25:
-                return fallback
-            return val
+    # Stage 3B: Intraday High/Low wick clamping using causal 21-bar median Parkinson range
+    for i in range(1, n):
+        if i >= 5:
+            start_j = max(0, i - 21)
+            ranges: list[float] = []
+            for j in range(start_j, i):
+                hj = float(out[j]["h"])
+                lj = float(out[j]["l"])
+                if hj > lj > 0:
+                    ranges.append(math.log(hj / lj))
+            if ranges:
+                ranges.sort()
+                med_p = ranges[len(ranges) // 2]
+                if med_p > 0.001:
+                    c_prev = float(out[i - 1]["c"])
+                    o_curr = float(out[i]["o"])
+                    c_curr = float(out[i]["c"])
+                    p_max = max(o_curr, c_curr, c_prev)
+                    p_min = min(o_curr, c_curr, c_prev)
 
-        b["c"] = target_c
-        b["o"] = _clean_component(float(b["o"]), target_c)
-        b["h"] = _clean_component(float(b["h"]), max(b["o"], target_c))
-        b["l"] = _clean_component(float(b["l"]), min(b["o"], target_c))
-        out[i] = _normalize_bar_geometry(b)
+                    h_curr = float(out[i]["h"])
+                    l_curr = float(out[i]["l"])
 
-        healed.append({
-            "ticker": ticker,
-            "date": d_curr,
-            "old_close": c_curr,
-            "new_close": out[i]["c"],
-            "method": method,
-        })
+                    wick_clamp_thresh = max(4.5 * med_p, 0.15)
+                    if p_max > 0 and h_curr > p_max and math.log(h_curr / p_max) > wick_clamp_thresh:
+                        out[i]["h"] = round_price(p_max * math.exp(2.0 * med_p))
+                    if p_min > 0 and l_curr < p_min and math.log(p_min / l_curr) > wick_clamp_thresh:
+                        out[i]["l"] = round_price(p_min * math.exp(-2.0 * med_p))
+
+                    out[i] = _normalize_bar_geometry(out[i])
 
     return out, healed
 
@@ -305,8 +424,14 @@ def detect_and_apply_unknown_splits(
     ticker: str,
     nav_map: dict[str, dict[str, float]] | None = None,
     threshold: float = SPLIT_ANOMALY_THRESHOLD,
+    auto_adjust: bool = True,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    """Detect residual permanent price cliffs >= `threshold` and scale pre-split bars."""
+    """Detect residual permanent price cliffs >= `threshold`.
+
+    When auto_adjust is False (production default), logs and quarantines unknown
+    cliff jumps >= threshold without unverified historical multiplication.
+    When auto_adjust is True (for synthetic compatibility tests), scales pre-split bars.
+    """
     if len(bars) < 2:
         return [dict(b) for b in bars], []
 
@@ -326,20 +451,22 @@ def detect_and_apply_unknown_splits(
         if _nav_confirms_continuous_scale(out, i, nav_map):
             continue
 
-        for j in range(i):
-            b = out[j]
-            b["o"] = float(b["o"]) * ratio
-            b["h"] = float(b["h"]) * ratio
-            b["l"] = float(b["l"]) * ratio
-            b["c"] = float(b["c"]) * ratio
-            if b["v"] and float(b["v"]) > 0:
-                b["v"] = max(1, int(round(float(b["v"]) / ratio)))
-            out[j] = _normalize_bar_geometry(b)
+        if auto_adjust:
+            for j in range(i):
+                b = out[j]
+                b["o"] = float(b["o"]) * ratio
+                b["h"] = float(b["h"]) * ratio
+                b["l"] = float(b["l"]) * ratio
+                b["c"] = float(b["c"]) * ratio
+                if b["v"] and float(b["v"]) > 0:
+                    b["v"] = int(round(float(b["v"]) / ratio))
+                out[j] = _normalize_bar_geometry(b)
 
         detections.append({
             "ticker": ticker,
             "date": out[i]["d"],
             "observed_ratio": round(ratio, 6),
+            "action": "adjusted" if auto_adjust else "quarantine_warning",
         })
 
     return out, detections
@@ -348,18 +475,88 @@ def detect_and_apply_unknown_splits(
 def has_overlapping_scale_mismatch(
     cached_bars: list[dict[str, Any]],
     new_bars: list[dict[str, Any]],
-    log_tol: float = 0.35,
+    log_tol: float = 0.005,
+    known_splits: dict[str, list[dict[str, Any]]] | None = None,
+    ticker: str = "",
 ) -> bool:
-    """Detect whether incremental Yahoo bars differ in split scale from cached bars."""
+    """Detect whether incremental Yahoo bars differ in split scale from cached bars.
+
+    Uses robust median log residual across aligned overlapping bars, preventing
+    the 30-day post-split refetch loop.
+    """
     if not cached_bars or not new_bars:
         return False
+
+    aligned_new = new_bars
+    if known_splits and ticker:
+        aligned_new, _ = apply_split_adjustments_to_bars(new_bars, ticker, known_splits)
+
     cached_by_date = {b["d"]: b for b in cached_bars}
-    for nb in new_bars:
+    residuals: list[float] = []
+
+    for nb in aligned_new:
         ob = cached_by_date.get(nb["d"])
         if ob and ob.get("c", 0) > 0 and nb.get("c", 0) > 0:
-            if abs(math.log(float(nb["c"]) / float(ob["c"]))) > log_tol:
-                return True
-    return False
+            diff = math.log(float(nb["c"]) / float(ob["c"]))
+            residuals.append(diff)
+
+    if not residuals:
+        return False
+
+    residuals.sort()
+    med_res = residuals[len(residuals) // 2]
+    return abs(med_res) > log_tol
+
+
+def reconstruct_total_return_close(
+    bars: list[dict[str, Any]],
+    nav_map: dict[str, dict[str, float]] | None = None,
+) -> list[dict[str, Any]]:
+    """Reconstruct Total-Return Index (TRI) backwards from latest bar A_TR[N-1] = 1.0.
+
+    Attaches 'tc' (Total-Return Close) to each bar.
+    Calculates discrete distribution yield:
+      d_t = max(0.0, ln(1 + perf_pct_t) - ln(nav_t / nav_{t-1}))
+    strictly on non-split dates (requiring |ln(1 + perf_pct_t) - ln(nav_t / nav_{t-1})| <= 0.15)
+    so unadjusted raw NAV split jumps never corrupt the total-return index factor.
+    """
+    if not bars:
+        return []
+
+    out = [dict(b) for b in bars]
+    n = len(out)
+    a_tr = [1.0] * n
+
+    if nav_map and n >= 2:
+        for t in range(n - 1, 0, -1):
+            d_curr = out[t]["d"]
+            d_prev = out[t - 1]["d"]
+
+            nav_curr = nav_map.get(d_curr)
+            nav_prev = nav_map.get(d_prev)
+
+            dist_yield = 0.0
+            if nav_curr and nav_prev:
+                perf = nav_curr.get("perf_pct")
+                nc = nav_curr.get("nav")
+                np_ = nav_prev.get("nav")
+
+                if perf is not None and perf > -1.0 and nc and np_ and nc > 0 and np_ > 0:
+                    r_perf = math.log1p(perf)
+                    r_nav = math.log(nc / np_)
+                    spread = r_perf - r_nav
+                    # Only register positive dividend distribution yield within sane bounds
+                    # Raw NAV split jumps (e.g. 2x, 5x) have |spread| >> 0.15 and are excluded
+                    if 0.0 < spread <= 0.15:
+                        dist_yield = spread
+
+            a_tr[t - 1] = a_tr[t] * math.exp(-dist_yield)
+
+    for t in range(n):
+        c_val = float(out[t]["c"])
+        out[t]["tc"] = round_price(a_tr[t] * c_val)
+
+    return out
 
 
 def sanitize_ticker_bars(
@@ -368,17 +565,18 @@ def sanitize_ticker_bars(
     known_splits: dict[str, list[dict[str, Any]]] | None = None,
     nav_map: dict[str, dict[str, float]] | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    """Run full 3-stage OHLCV hygiene pipeline (splits -> bad ticks -> unknown splits)."""
+    """Run full 4-stage OHLCV hygiene pipeline (splits -> bad ticks -> unknown splits -> total return)."""
     splits = known_splits or {}
-    step1, applied_splits = apply_split_adjustments_to_bars(bars, ticker, splits)
+    step1, applied_splits = apply_split_adjustments_to_bars(bars, ticker, splits, nav_map=nav_map)
     step2, healed_ticks = sanitize_bad_ticks(step1, ticker, nav_map=nav_map)
-    step3, unknown_splits = detect_and_apply_unknown_splits(step2, ticker, nav_map=nav_map)
+    step3, unknown_splits = detect_and_apply_unknown_splits(step2, ticker, nav_map=nav_map, auto_adjust=False)
+    step4 = reconstruct_total_return_close(step3, nav_map=nav_map)
     summary = {
         "applied_splits": applied_splits,
         "healed_ticks": healed_ticks,
         "unknown_splits": unknown_splits,
     }
-    return step3, summary
+    return step4, summary
 
 
 def fetch_yahoo_chart_data(
@@ -560,7 +758,7 @@ def main() -> int:
             try:
                 new_bars = fetch_yahoo_chart_data(ticker, period1=start_ts, period2=now_ts)
                 if use_incremental:
-                    if has_overlapping_scale_mismatch(cached_bars, new_bars):
+                    if has_overlapping_scale_mismatch(cached_bars, new_bars, known_splits=known_splits, ticker=ticker):
                         print(f"Notice: Split scale mismatch detected on overlap for {ticker}; refetching full history.")
                         final_bars = fetch_yahoo_chart_data(ticker, period1=DEFAULT_PERIOD1, period2=now_ts)
                     else:

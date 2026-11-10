@@ -18,6 +18,16 @@ from pathlib import Path
 from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.etf_taxonomy import (
+    get_leverage_schedule,
+    get_taxonomy_record,
+    get_underlying_id,
+    get_underlying_label,
+    market_beta_polarity,
+)
 DEFAULT_SOURCE_DIR = REPO_ROOT / "data" / "flows"
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "docs" / "data" / "flows"
 DEFAULT_UNIVERSE_DOC = REPO_ROOT / "FUND_FLOW_ETFS.md"
@@ -783,7 +793,24 @@ def _setup_for(zp: float, zf: float, loose: bool = False) -> str | None:
     return None
 
 
-def _compute_behavior_dna(rows: list[dict[str, Any]]) -> dict[str, Any]:
+_HISTORY_CACHE: dict[str, list[dict[str, Any]]] | None = None
+
+
+def _get_history_cache() -> dict[str, list[dict[str, Any]]]:
+    global _HISTORY_CACHE
+    if _HISTORY_CACHE is None:
+        path = DEFAULT_OUTPUT_DIR / "etf_history.json"
+        if path.is_file():
+            try:
+                _HISTORY_CACHE = json.loads(path.read_text(encoding="utf-8")).get("history", {})
+            except Exception:
+                _HISTORY_CACHE = {}
+        else:
+            _HISTORY_CACHE = {}
+    return _HISTORY_CACHE
+
+
+def _compute_behavior_dna(rows: list[dict[str, Any]], aum_m: float = 100.0) -> dict[str, Any]:
     n = len(rows)
     empty_prof = {f"{k}_{m}": (0 if m == "episodes" else None)
                   for k in _SETUPS for m in ("episodes", "beat_rate", "avg_excess")}
@@ -791,6 +818,9 @@ def _compute_behavior_dna(rows: list[dict[str, Any]]) -> dict[str, Any]:
         return {
             "z_price_20d": 0.0,
             "z_flow_5d": 0.0,
+            "hurdle_zscore": 0.0,
+            "block5d_zscore": 0.0,
+            "nw5d_zscore": 0.0,
             "volatility_20d_pct": 0.0,
             "flow_variance_m": 0.0,
             "behavior_profiles": {"all": empty_prof},
@@ -850,13 +880,65 @@ def _compute_behavior_dna(rows: list[dict[str, Any]]) -> dict[str, Any]:
     df = flows_60_std[-1] * math.sqrt(5)
     z_flow_5d = round(max(-5.0, min(5.0, flows_5d_sum[-1] / df if df > 1e-6 else 0.0)), 2)
 
-    # This fund's own record in each setup (whole history). Each episode's
-    # next 20 days (entered the day after the signal) is compared with this
-    # fund's typical 20 days, so a bull fund's drift doesn't read as an edge.
-    # Episodes are >= 20 trading days apart so their windows don't overlap,
-    # and a record needs >= _MIN_EPISODES episodes to be shown at all.
-    # Pooled across funds and eras, only "inflows after a drop" kept a
-    # consistent (small) edge: docs/SIGNALS_STUDY.md, "Fund flows".
+    # Closed-form Hurdle Robust Z-score normalized by causal AUM
+    aum_usd = max(1_000_000.0, aum_m * 1_000_000.0)
+    rel_flows = [f / aum_usd for f in flows]
+    w_prior = rel_flows[-31:-1] if len(rel_flows) >= 31 else rel_flows[:-1]
+    hurdle_z = 0.0
+    if len(w_prior) >= 10:
+        tau_dust = 1e-4
+        active = [x for x in w_prior if abs(x) > tau_dust]
+        p_act = len(active) / len(w_prior)
+        if p_act > 0:
+            active.sort()
+            med_p = active[len(active) // 2]
+            mad_p = sorted([abs(x - med_p) for x in active])[len(active) // 2]
+            sigma_floor = 5e-4
+            hurdle_sigma = math.sqrt(
+                p_act * (1.4826 * mad_p) ** 2 + p_act * (1.0 - p_act) * (med_p ** 2) + sigma_floor ** 2
+            )
+            m_star = p_act * med_p
+            hurdle_z = round(max(-5.0, min(5.0, (rel_flows[-1] - m_star) / hurdle_sigma)), 2)
+        else:
+            hurdle_z = round(max(-5.0, min(5.0, rel_flows[-1] / 5e-4)), 2)
+    else:
+        hurdle_z = z_flow_5d
+
+    # Non-overlapping 5-day block Z-score (disjoint K=6 blocks covering [t-34..t-5])
+    block5d_z = 0.0
+    if len(rel_flows) >= 35:
+        b0 = sum(rel_flows[-5:])
+        prior_blocks = [
+            sum(rel_flows[len(rel_flows) - 5 * m - 5 : len(rel_flows) - 5 * m])
+            for m in range(1, 7)
+        ]
+        mean_b = sum(prior_blocks) / 6.0
+        var_b = sum((b - mean_b) ** 2 for b in prior_blocks) / 5.0
+        s_b = math.sqrt(max(1e-12, var_b))
+        t_stat = (b0 - mean_b) / (s_b * math.sqrt(1.0 + 1.0 / 6.0))
+        block5d_z = round(max(-5.0, min(5.0, t_stat)), 2)
+    else:
+        block5d_z = z_flow_5d
+
+    # Newey-West MA(4) daily flow Z-score over prior 30 relative flows
+    nw5d_z = 0.0
+    if len(rel_flows) >= 35:
+        w30 = rel_flows[-35:-5]
+        mean_f = sum(w30) / 30.0
+        centered = [x - mean_f for x in w30]
+        gammas = [0.0] * 5
+        for h in range(5):
+            gammas[h] = sum(centered[j] * centered[j - h] for j in range(h, 30)) / (30.0 - h)
+        var_nw = 5.0 * gammas[0] + 8.0 * gammas[1] + 6.0 * gammas[2] + 4.0 * gammas[3] + 2.0 * gammas[4]
+        sigma_nw = math.sqrt(max(var_nw, 2.5 * gammas[0] + 1e-8))
+        if sigma_nw > 1e-8:
+            nw5d_z = round(max(-5.0, min(5.0, (sum(rel_flows[-5:]) - 5.0 * mean_f) / sigma_nw)), 2)
+        else:
+            nw5d_z = z_flow_5d
+    else:
+        nw5d_z = z_flow_5d
+
+    # This fund's own record in each setup (whole history).
     fwd = [None] * n
     for t in range(60, n - 21):
         if navs[t + 1] > 0:
@@ -884,6 +966,9 @@ def _compute_behavior_dna(rows: list[dict[str, Any]]) -> dict[str, Any]:
     return {
         "z_price_20d": z_price,
         "z_flow_5d": z_flow_5d,
+        "hurdle_zscore": hurdle_z,
+        "block5d_zscore": block5d_z,
+        "nw5d_zscore": nw5d_z,
         "volatility_20d_pct": vol_20d,
         "flow_variance_m": flow_var_m,
         "behavior_profiles": {"all": prof},
@@ -933,7 +1018,31 @@ def _instrument_entry(ticker: str, report: dict[str, Any]) -> dict[str, Any]:
         else 0.0
     )
     sparkline_20d = [round(float(r["usd_flow"]) / 1_000_000.0, 2) for r in rows[-20:]]
-    dna = _compute_behavior_dna(rows)
+    aum_m_val = float(summary.get("aum_m", 100.0))
+    dna = _compute_behavior_dna(rows, aum_m_val)
+
+    # Canonical taxonomy integration
+    tax = get_taxonomy_record(ticker)
+    uid = tax["underlying_id"]
+    ulabel = tax["underlying_label"]
+    sched = tax["leverage_schedule"]
+    polarity = market_beta_polarity(ticker, leverage_value)
+
+    # TRI return and arbitrage premium from etf_history.json
+    hist_cache = _get_history_cache()
+    tri_return_20d = nav_return_20d_pct
+    arb_premium_bps = 0.0
+    if hist_cache and ticker in hist_cache:
+        h_bars = hist_cache[ticker]
+        if len(h_bars) >= 20 and "tc" in h_bars[-1] and "tc" in h_bars[-20]:
+            p_prev = float(h_bars[-20]["tc"])
+            p_curr = float(h_bars[-1]["tc"])
+            if p_prev > 0:
+                tri_return_20d = round((p_curr / p_prev - 1.0) * 100.0, 2)
+        if h_bars and float(last["nav"]) > 0:
+            c_raw = float(h_bars[-1]["c"])
+            arb_premium_bps = round(math.log(c_raw / float(last["nav"])) * 10000.0, 1)
+
     return {
         "ticker": ticker,
         "trackinsight_key": summary["trackinsight_key"],
@@ -941,6 +1050,10 @@ def _instrument_entry(ticker: str, report: dict[str, Any]) -> dict[str, Any]:
         "fund_name": summary["fund_name"],
         "issuer": summary["issuer"],
         "underlying": summary["underlying"],
+        "underlying_id": uid,
+        "underlying_label": ulabel,
+        "market_beta_polarity": polarity,
+        "leverage_schedule": sched,
         "leverage": leverage_text,
         "leverage_value": leverage_value,
         "aum_m": summary["aum_m"],
@@ -956,9 +1069,14 @@ def _instrument_entry(ticker: str, report: dict[str, Any]) -> dict[str, Any]:
         "flow_60d": flow_60d,
         "flow_ytd": flow_ytd,
         "nav_return_20d_pct": nav_return_20d_pct,
+        "tri_return_20d_pct": tri_return_20d,
+        "arb_premium_bps": arb_premium_bps,
         "sparkline_20d": sparkline_20d,
         "latest_cumulative_flow": last["cumulative_flow"],
         "flow_zscore": last["flow_zscore"],
+        "hurdle_zscore": dna.get("hurdle_zscore", last["flow_zscore"]),
+        "block5d_zscore": dna.get("block5d_zscore", dna["z_flow_5d"]),
+        "nw5d_zscore": dna.get("nw5d_zscore", dna["z_flow_5d"]),
         "flow_reversal": _flow_reversal(rows),
         "volatility_20d_pct": dna["volatility_20d_pct"],
         "flow_variance_m": dna["flow_variance_m"],

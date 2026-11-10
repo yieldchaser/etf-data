@@ -201,4 +201,24 @@ console.log('Testing VolumeHeatmap MicroCVI & Stage 2 Spotlight Engine...');
   console.log('  [PASS] Zero emojis and zero banned terminology verified');
 }
 
+// 7. Symmetric Bidirectional Climax: +25% Breakout PeakScore > 80
+{
+  const baselineBars = Array.from({ length: 25 }, (_, i) => ({
+    d: `2026-01-${String(i + 1).padStart(2, '0')}`,
+    o: 100, h: 102, l: 98, c: 100, v: 10000
+  }));
+  // Add a +25% breakout session with high volume (4x RVOL)
+  baselineBars.push({
+    d: '2026-01-26',
+    o: 102, h: 126, l: 101, c: 125, v: 45000
+  });
+  const res = VolumeHeatmap.computeEtfMicrostructure(baselineBars, 'share');
+  const breakoutIdx = baselineBars.length - 1;
+  const breakoutScore = res.peakScores[breakoutIdx];
+  const breakoutDir = res.climaxDirs ? res.climaxDirs[breakoutIdx] : 1;
+  assert.ok(breakoutScore > 80, `Expected +25% breakout peakScore > 80, got ${breakoutScore}`);
+  assert.strictEqual(breakoutDir, 1, 'Expected breakout direction to be +1 (Buying Climax)');
+  console.log(`  [PASS] +25% breakout symmetric climax verified (score: ${breakoutScore.toFixed(2)}, dir: +1)`);
+}
+
 console.log('\nAll VolumeHeatmap tests PASSED successfully.');
