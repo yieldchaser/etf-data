@@ -1,6 +1,6 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-IFV,FLN,First Trust Latin America AlphaDEX® Fund,0.2039,2026-11-06,2026-11-10
-IFV,FPA,First Trust Asia Pacific ex-Japan AlphaDEX® Fund,0.1998,2026-11-06,2026-11-10
-IFV,FEUZ,First Trust Eurozone AlphaDEX® ETF,0.1997,2026-11-06,2026-11-10
-IFV,FEP,First Trust Europe AlphaDEX® Fund,0.19870000000000002,2026-11-06,2026-11-10
-IFV,FDT,First Trust Developed Markets ex-US AlphaDEX® Fund,0.19649999999999998,2026-11-06,2026-11-10
+IFV,FLN,First Trust Latin America AlphaDEX® Fund,0.2028,2026-11-09,2026-11-10
+IFV,FEUZ,First Trust Eurozone AlphaDEX® ETF,0.20190000000000002,2026-11-09,2026-11-10
+IFV,FEP,First Trust Europe AlphaDEX® Fund,0.20120000000000002,2026-11-09,2026-11-10
+IFV,FDT,First Trust Developed Markets ex-US AlphaDEX® Fund,0.19690000000000002,2026-11-09,2026-11-10
+IFV,FPA,First Trust Asia Pacific ex-Japan AlphaDEX® Fund,0.19579999999999997,2026-11-09,2026-11-10

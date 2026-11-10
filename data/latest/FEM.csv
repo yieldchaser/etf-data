@@ -1,152 +1,152 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-FEM,TBBB,BBB Foods Inc. (Class A),0.0149,2026-11-06,2026-11-10
-FEM,FUNO11.MM,"Fibra Uno Administracion, S.A. de C.V.",0.0144,2026-11-06,2026-11-10
-FEM,KALYANKJ.IS,Kalyan Jewellers India Limited,0.0131,2026-11-06,2026-11-10
-FEM,ASII.IJ,PT Astra International Tbk,0.0129,2026-11-06,2026-11-10
-FEM,KOFUBL.MM,"Coca-Cola FEMSA, S.A.B. de C.V.",0.0126,2026-11-06,2026-11-10
-FEM,ONGC.IS,Oil and Natural Gas Corporation Limited,0.0126,2026-11-06,2026-11-10
-FEM,TMPV.IS,Tata Motors Passenger Vehicles Ltd.,0.0126,2026-11-06,2026-11-10
-FEM,ATHERENE.IS,Ather Energy Limited,0.0124,2026-11-06,2026-11-10
-FEM,THYAO.TI,Turk Hava Yollari Aonim Ortakligi (THY),0.0124,2026-11-06,2026-11-10
-FEM,PGE.PW,PGE Polska Grupa Energetyczna S.A.,0.012199999999999999,2026-11-06,2026-11-10
-FEM,788.HK,China Tower Corporation Limited (Class H),0.0121,2026-11-06,2026-11-10
-FEM,COPEC.CI,Empresas Copec S.A.,0.0121,2026-11-06,2026-11-10
-FEM,PTTEP.TB,PTT Exploration and Production Pcl,0.011899999999999999,2026-11-06,2026-11-10
-FEM,SWB.MK,Sunway Bhd,0.0118,2026-11-06,2026-11-10
-FEM,1099.HK,Sinopharm Group Co. Ltd. (Class H),0.0111,2026-11-06,2026-11-10
-FEM,AADI.IJ,PT Adaro Andalan Indonesia Tbk,0.011000000000000001,2026-11-06,2026-11-10
-FEM,2615.TT,Wan Hai Lines Ltd.,0.011000000000000001,2026-11-06,2026-11-10
-FEM,SUZB3.BZ,Suzano SA,0.0109,2026-11-06,2026-11-10
-FEM,SM.PM,SM Investments Corporation,0.010700000000000001,2026-11-06,2026-11-10
-FEM,2887.TT,"TS Financial Holding Co., Ltd.",0.010700000000000001,2026-11-06,2026-11-10
-FEM,AC.PM,Ayala Corporation,0.0106,2026-11-06,2026-11-10
-FEM,IMP.SJ,Impala Platinum Holdings Limited,0.0106,2026-11-06,2026-11-10
-FEM,PINFRA*.MM,"Promotora y Operadora de Infraestructura, S.A.B. de C.V.",0.0105,2026-11-06,2026-11-10
-FEM,TUPRS.TI,Turkiye Petrol Rafinerileri A.S.,0.0105,2026-11-06,2026-11-10
-FEM,2357.TT,Asustek Computer Inc.,0.0104,2026-11-06,2026-11-10
-FEM,BIMAS.TI,BIM Birlesik Magazalar A.S.,0.0104,2026-11-06,2026-11-10
-FEM,PETR4.BZ,Petroleo Brasileiro S.A. (Petrobras) (Preference Shares),0.0104,2026-11-06,2026-11-10
-FEM,1919.HK,"Cosco Shipping Holdings Company, Ltd. (Class H)",0.0103,2026-11-06,2026-11-10
-FEM,857.HK,PetroChina Company Limited (Class H),0.0103,2026-11-06,2026-11-10
-FEM,SOL.SJ,Sasol Limited,0.0102,2026-11-06,2026-11-10
-FEM,2883.TT,KGI Financial Holdings Co. Ltd.,0.0101,2026-11-06,2026-11-10
-FEM,3231.TT,Wistron Corporation,0.0101,2026-11-06,2026-11-10
-FEM,TIMS3.BZ,TIM S.A.,0.0098,2026-11-06,2026-11-10
-FEM,2603.TT,Evergreen Marine Corp. (Taiwan) Ltd.,0.0096,2026-11-06,2026-11-10
-FEM,1508.HK,China Reinsurance (Group) Corporation (Class H),0.009399999999999999,2026-11-06,2026-11-10
-FEM,MOL.HB,MOL Hungarian Oil and Gas Plc,0.0092,2026-11-06,2026-11-10
-FEM,3702.TT,WPG Holdings Limited,0.0092,2026-11-06,2026-11-10
-FEM,2883.HK,China Oilfield Services Limited (Class H),0.0091,2026-11-06,2026-11-10
-FEM,2885.TT,"Yuanta Financial Holding Co., Ltd.",0.0091,2026-11-06,2026-11-10
-FEM,3443.TT,Global Unichip Corporation,0.009000000000000001,2026-11-06,2026-11-10
-FEM,HAR.SJ,Harmony Gold Mining Company Limited,0.009000000000000001,2026-11-06,2026-11-10
-FEM,PTT.TB,PTT Pcl,0.009000000000000001,2026-11-06,2026-11-10
-FEM,UGPA3.BZ,Ultrapar Participacoes S.A.,0.0089,2026-11-06,2026-11-10
-FEM,LAURUS.IS,Laurus Labs Limited,0.0087,2026-11-06,2026-11-10
-FEM,VBBR3.BZ,Vibra Energia SA,0.0087,2026-11-06,2026-11-10
-FEM,6669.TT,Wiwynn Corporation,0.0087,2026-11-06,2026-11-10
-FEM,PKN.PW,ORLEN SA,0.0083,2026-11-06,2026-11-10
-FEM,2347.TT,Synnex Technology International Corp.,0.0083,2026-11-06,2026-11-10
-FEM,XTB.PW,X-Trade Brokers Dom Maklerski SA,0.008199999999999999,2026-11-06,2026-11-10
-FEM,914.HK,Anhui Conch Cement Company Limited (Class H),0.008,2026-11-06,2026-11-10
-FEM,SONACOMS.IS,SONA BLW Precision Forgings Limited,0.008,2026-11-06,2026-11-10
-FEM,PAYTM.IS,One 97 Communications Limited,0.0079,2026-11-06,2026-11-10
-FEM,PTTGC.TB,PTT Global Chemical Pcl,0.0079,2026-11-06,2026-11-10
-FEM,3017.TT,"Asia Vital Components Co., Ltd.",0.0078000000000000005,2026-11-06,2026-11-10
-FEM,2376.TT,"Gigabyte Technology Co., Ltd.",0.0078000000000000005,2026-11-06,2026-11-10
-FEM,KGH.PW,KGHM Polska Miedz S.A.,0.0078000000000000005,2026-11-06,2026-11-10
-FEM,MCX.IS,Multi Commodity Exchange of India Limited,0.0078000000000000005,2026-11-06,2026-11-10
-FEM,NPN.SJ,Naspers Limited (Class N),0.0077,2026-11-06,2026-11-10
-FEM,GFI.SJ,Gold Fields Limited,0.0075,2026-11-06,2026-11-10
-FEM,2328.HK,PICC Property and Casualty Company Limited (Class H),0.0075,2026-11-06,2026-11-10
-FEM,6213.TT,ITEQ Corporation,0.0074,2026-11-06,2026-11-10
-FEM,POWF.IS,Power Finance Corporation,0.0074,2026-11-06,2026-11-10
-FEM,2884.TT,"E.SUN Financial Holding Co., Ltd.",0.0073,2026-11-06,2026-11-10
-FEM,VIVT3.BZ,Telefonica Brasil S.A.,0.0072,2026-11-06,2026-11-10
-FEM,2395.TT,"Advantech Co., Ltd.",0.0070999999999999995,2026-11-06,2026-11-10
-FEM,2618.TT,EVA Airways Corp.,0.0070999999999999995,2026-11-06,2026-11-10
-FEM,FROTO.TI,Ford Otomotiv Sanayi A.S.,0.006999999999999999,2026-11-06,2026-11-10
-FEM,KCHOL.TI,Koc Holding A.S.,0.006999999999999999,2026-11-06,2026-11-10
-FEM,2881.TT,"Fubon Financial Holding Co., Ltd.",0.0069,2026-11-06,2026-11-10
-FEM,2600.HK,Aluminum Corporation of China Limited (Class H),0.0068000000000000005,2026-11-06,2026-11-10
-FEM,NPH.SJ,Northam Platinum Holdings Limited,0.0067,2026-11-06,2026-11-10
-FEM,2609.TT,Yang Ming Marine Transport Corp.,0.0067,2026-11-06,2026-11-10
-FEM,2301.TT,Lite-On Technology Corporation,0.0066,2026-11-06,2026-11-10
-FEM,1303.TT,Nan Ya Plastics Corporation,0.0066,2026-11-06,2026-11-10
-FEM,SSW.SJ,Sibanye Stillwater Ltd.,0.006500000000000001,2026-11-06,2026-11-10
-FEM,6805.TT,Fositek Corp.,0.0064,2026-11-06,2026-11-10
-FEM,3396.HK,Legend Holdings Corporation (Class H),0.0064,2026-11-06,2026-11-10
-FEM,CMIG4.BZ,Companhia Energetica de Minas Gerais-CEMIG (Preference),0.0063,2026-11-06,2026-11-10
-FEM,1326.TT,Formosa Chemicals & Fibre Corp.,0.0063,2026-11-06,2026-11-10
-FEM,2245.HK,"Lygend Resources & Technology Co., Ltd. (Class H)",0.0063,2026-11-06,2026-11-10
-FEM,2317.TT,"Hon Hai Precision Industry Co., Ltd. (Foxconn)",0.0062,2026-11-06,2026-11-10
-FEM,2408.TT,Nanya Technology Corporation,0.0062,2026-11-06,2026-11-10
-FEM,ITSA4.BZ,Itausa S.A. (Preference Shares),0.006,2026-11-06,2026-11-10
-FEM,UNTR.IJ,PT United Tractors Tbk,0.006,2026-11-06,2026-11-10
-FEM,2059.TT,"King Slide Works Co., Ltd.",0.0059,2026-11-06,2026-11-10
-FEM,ALE.PW,Allegro.eu SA,0.0055000000000000005,2026-11-06,2026-11-10
-FEM,DIVI.IS,Divi's Laboratories Limited,0.0054,2026-11-06,2026-11-10
-FEM,3653.TT,Jentech Precision Industrial Company Ltd.,0.0054,2026-11-06,2026-11-10
-FEM,SMPH.PM,"SM Prime Holdings, Inc.",0.0053,2026-11-06,2026-11-10
-FEM,386.HK,China Petroleum & Chemical Corporation (Sinopec) (Class H),0.0052,2026-11-06,2026-11-10
-FEM,LPP.PW,LPP SA,0.0052,2026-11-06,2026-11-10
-FEM,8996.TT,"Kaori Heat Treatment Co., Ltd.",0.0051,2026-11-06,2026-11-10
-FEM,1071.HK,Huadian Power International Corp. Ltd. (Class H),0.005,2026-11-06,2026-11-10
-FEM,ENELCHIL.CI,Enel Chile SA,0.0049,2026-11-06,2026-11-10
-FEM,RICHT.HB,Gedeon Richter Nyrt,0.0049,2026-11-06,2026-11-10
-FEM,VEDL.IS,Vedanta Limited,0.0049,2026-11-06,2026-11-10
-FEM,2409.TT,AU Optronics Corp.,0.0048,2026-11-06,2026-11-10
-FEM,3665.TT,BizLink Holding Inc.,0.0048,2026-11-06,2026-11-10
-FEM,390.HK,China Railway Group Ltd. (Class H),0.004699999999999999,2026-11-06,2026-11-10
-FEM,EMBJ3.BZ,Embraer SA,0.004699999999999999,2026-11-06,2026-11-10
-FEM,ITAUCL.CI,Banco Itau Chile SA,0.0046,2026-11-06,2026-11-10
-FEM,COAL.IS,Coal India Limited,0.0046,2026-11-06,2026-11-10
-FEM,1402.TT,Far Eastern New Century Corporation,0.0046,2026-11-06,2026-11-10
-FEM,8046.TT,Nan Ya Printed Circuit Board Corporation,0.0046,2026-11-06,2026-11-10
-FEM,1339.HK,The People's Insurance Company (Group) of China Limited (Class H),0.0046,2026-11-06,2026-11-10
-FEM,CPF.TB,Charoen Pokphand Foods Pcl,0.0045000000000000005,2026-11-06,2026-11-10
-FEM,1898.HK,China Coal Energy Company Limited (Class H),0.0045000000000000005,2026-11-06,2026-11-10
-FEM,GGBR4.BZ,Gerdau S.A. (Preferred Shares),0.0045000000000000005,2026-11-06,2026-11-10
-FEM,2890.TT,"SinoPac Financial Holdings Co., Ltd.",0.0044,2026-11-06,2026-11-10
-FEM,THAI.TB,Thai Airways International Pcl,0.0043,2026-11-06,2026-11-10
-FEM,2359.HK,"WuXi AppTec Co., Ltd. (Class H)",0.0043,2026-11-06,2026-11-10
-FEM,900948.CH,"Inner Mongolia Yitai Coal Co., Ltd. (Class B)",0.0042,2026-11-06,2026-11-10
-FEM,TLKM.IJ,PT Telekomunikasi Indonesia (Persero) Tbk,0.0040999999999999995,2026-11-06,2026-11-10
-FEM,BPAC11.BZ,Banco BTG Pactual SA (Unit),0.0039000000000000003,2026-11-06,2026-11-10
-FEM,1605.TT,Walsin Lihwa Corporation,0.0038,2026-11-06,2026-11-10
-FEM,3189.TT,Kinsus Interconnect Technology Corp.,0.0032,2026-11-06,2026-11-10
-FEM,2404.TT,"United Integrated Services Co., Ltd.",0.0032,2026-11-06,2026-11-10
-FEM,3037.TT,Unimicron Technology Corporation,0.0029,2026-11-06,2026-11-10
-FEM,2315.HK,"Biocytogen Pharmaceuticals Beijing Co., Ltd. (Class H)",0.0028000000000000004,2026-11-06,2026-11-10
-FEM,ETERNAL.IS,Eternal Limited,0.0028000000000000004,2026-11-06,2026-11-10
-FEM,6655.HK,"Huaxin Building Materials Group Co., Ltd. (Class H)",0.0028000000000000004,2026-11-06,2026-11-10
-FEM,MTELEKOM.HB,Magyar Telekom Telecommunications Plc,0.0027,2026-11-06,2026-11-10
-FEM,CRC.TB,Central Retail Corporation Pcl,0.0026,2026-11-06,2026-11-10
-FEM,GRUMAB.MM,"GRUMA, S.A.B. de C.V.",0.0026,2026-11-06,2026-11-10
-FEM,6936.HK,"S. F. Holding Co., Ltd. (Class H)",0.0026,2026-11-06,2026-11-10
-FEM,598.HK,Sinotrans Limited (Class H),0.0026,2026-11-06,2026-11-10
-FEM,ISCTR.TI,Turkiye Is Bankasi A.S. (Isbank) (Class C),0.0026,2026-11-06,2026-11-10
-FEM,BHEL.IS,Bharat Heavy Electricals Limited (BHEL),0.0025,2026-11-06,2026-11-10
-FEM,3532.TT,Formosa Sumco Technology Corporation,0.0025,2026-11-06,2026-11-10
-FEM,PCO.PW,Pepco Group NV,0.0025,2026-11-06,2026-11-10
-FEM,6963.HK,Sunshine Insurance Group Company Limited (Class H),0.0025,2026-11-06,2026-11-10
-FEM,2601.HK,"China Pacific Insurance (Group) Co., Ltd. (Class H)",0.0024,2026-11-06,2026-11-10
-FEM,6446.TT,PharmaEssentia Corporation,0.0024,2026-11-06,2026-11-10
-FEM,SAIL.IS,Steel Authority of India Limited,0.0023,2026-11-06,2026-11-10
-FEM,2799.HK,China CITIC Financial Asset Management Co. Ltd.,0.0022,2026-11-06,2026-11-10
-FEM,3996.HK,China Energy Engineering Corp Limited (Class H),0.0022,2026-11-06,2026-11-10
-FEM,2628.HK,"China Life Insurance Co., Limited (Class H)",0.0022,2026-11-06,2026-11-10
-FEM,PE&OLES*.MM,"Industrias Penoles, S.A.B. de C.V.",0.0022,2026-11-06,2026-11-10
-FEM,6181.HK,"Laopu Gold Co., Ltd. (Class H)",0.0022,2026-11-06,2026-11-10
-FEM,PRIO3.BZ,Petro Rio S.A.,0.0022,2026-11-06,2026-11-10
-FEM,3759.HK,"Pharmaron Beijing Co., Ltd. (Class H)",0.0022,2026-11-06,2026-11-10
-FEM,2356.TT,Inventec Corporation,0.0021,2026-11-06,2026-11-10
-FEM,1336.HK,New China Life Insurance Company Ltd. (Class H),0.0021,2026-11-06,2026-11-10
-FEM,3036.TT,"WT Microelectronics Co., Ltd.",0.0021,2026-11-06,2026-11-10
-FEM,2382.TT,Quanta Computer Inc.,0.002,2026-11-06,2026-11-10
-FEM,3008.TT,Largan Precision Co. Ltd.,0.0018,2026-11-06,2026-11-10
-FEM,3044.TT,Tripod Technology Corporation,0.0018,2026-11-06,2026-11-10
-FEM,3711.TT,"ASE Technology Holding Co., Ltd.",0.0017000000000000001,2026-11-06,2026-11-10
-FEM,6139.TT,"L&K Engineering Co., Ltd.",0.0017000000000000001,2026-11-06,2026-11-10
-FEM,2344.TT,Winbond Electronics Corporation,0.0016,2026-11-06,2026-11-10
-FEM,2543628D.MK,YTL Power International Bhd (Warrants),0.0002,2026-11-06,2026-11-10
+FEM,TBBB,BBB Foods Inc. (Class A),0.015,2026-11-09,2026-11-10
+FEM,FUNO11.MM,"Fibra Uno Administracion, S.A. de C.V.",0.013999999999999999,2026-11-09,2026-11-10
+FEM,KALYANKJ.IS,Kalyan Jewellers India Limited,0.0132,2026-11-09,2026-11-10
+FEM,ASII.IJ,PT Astra International Tbk,0.013000000000000001,2026-11-09,2026-11-10
+FEM,KOFUBL.MM,"Coca-Cola FEMSA, S.A.B. de C.V.",0.0126,2026-11-09,2026-11-10
+FEM,THYAO.TI,Turk Hava Yollari Aonim Ortakligi (THY),0.0125,2026-11-09,2026-11-10
+FEM,ATHERENE.IS,Ather Energy Limited,0.0124,2026-11-09,2026-11-10
+FEM,TMPV.IS,Tata Motors Passenger Vehicles Ltd.,0.0124,2026-11-09,2026-11-10
+FEM,ONGC.IS,Oil and Natural Gas Corporation Limited,0.0123,2026-11-09,2026-11-10
+FEM,PGE.PW,PGE Polska Grupa Energetyczna S.A.,0.012,2026-11-09,2026-11-10
+FEM,COPEC.CI,Empresas Copec S.A.,0.011899999999999999,2026-11-09,2026-11-10
+FEM,788.HK,China Tower Corporation Limited (Class H),0.0118,2026-11-09,2026-11-10
+FEM,PTTEP.TB,PTT Exploration and Production Pcl,0.0115,2026-11-09,2026-11-10
+FEM,SWB.MK,Sunway Bhd,0.0115,2026-11-09,2026-11-10
+FEM,IMP.SJ,Impala Platinum Holdings Limited,0.0111,2026-11-09,2026-11-10
+FEM,2887.TT,"TS Financial Holding Co., Ltd.",0.0109,2026-11-09,2026-11-10
+FEM,AADI.IJ,PT Adaro Andalan Indonesia Tbk,0.0108,2026-11-09,2026-11-10
+FEM,1099.HK,Sinopharm Group Co. Ltd. (Class H),0.0108,2026-11-09,2026-11-10
+FEM,SUZB3.BZ,Suzano SA,0.010700000000000001,2026-11-09,2026-11-10
+FEM,2615.TT,Wan Hai Lines Ltd.,0.0106,2026-11-09,2026-11-10
+FEM,3231.TT,Wistron Corporation,0.0105,2026-11-09,2026-11-10
+FEM,BIMAS.TI,BIM Birlesik Magazalar A.S.,0.0104,2026-11-09,2026-11-10
+FEM,2357.TT,Asustek Computer Inc.,0.0103,2026-11-09,2026-11-10
+FEM,AC.PM,Ayala Corporation,0.0102,2026-11-09,2026-11-10
+FEM,PINFRA*.MM,"Promotora y Operadora de Infraestructura, S.A.B. de C.V.",0.0102,2026-11-09,2026-11-10
+FEM,2883.TT,KGI Financial Holdings Co. Ltd.,0.0101,2026-11-09,2026-11-10
+FEM,PETR4.BZ,Petroleo Brasileiro S.A. (Petrobras) (Preference Shares),0.0101,2026-11-09,2026-11-10
+FEM,SM.PM,SM Investments Corporation,0.0101,2026-11-09,2026-11-10
+FEM,TUPRS.TI,Turkiye Petrol Rafinerileri A.S.,0.0101,2026-11-09,2026-11-10
+FEM,857.HK,PetroChina Company Limited (Class H),0.01,2026-11-09,2026-11-10
+FEM,1919.HK,"Cosco Shipping Holdings Company, Ltd. (Class H)",0.0098,2026-11-09,2026-11-10
+FEM,3443.TT,Global Unichip Corporation,0.0098,2026-11-09,2026-11-10
+FEM,TIMS3.BZ,TIM S.A.,0.0097,2026-11-09,2026-11-10
+FEM,2603.TT,Evergreen Marine Corp. (Taiwan) Ltd.,0.009300000000000001,2026-11-09,2026-11-10
+FEM,HAR.SJ,Harmony Gold Mining Company Limited,0.009300000000000001,2026-11-09,2026-11-10
+FEM,2885.TT,"Yuanta Financial Holding Co., Ltd.",0.009300000000000001,2026-11-09,2026-11-10
+FEM,SOL.SJ,Sasol Limited,0.0092,2026-11-09,2026-11-10
+FEM,6669.TT,Wiwynn Corporation,0.0092,2026-11-09,2026-11-10
+FEM,MOL.HB,MOL Hungarian Oil and Gas Plc,0.0091,2026-11-09,2026-11-10
+FEM,3702.TT,WPG Holdings Limited,0.0091,2026-11-09,2026-11-10
+FEM,1508.HK,China Reinsurance (Group) Corporation (Class H),0.009000000000000001,2026-11-09,2026-11-10
+FEM,2883.HK,China Oilfield Services Limited (Class H),0.0089,2026-11-09,2026-11-10
+FEM,LAURUS.IS,Laurus Labs Limited,0.0089,2026-11-09,2026-11-10
+FEM,PTT.TB,PTT Pcl,0.0088,2026-11-09,2026-11-10
+FEM,UGPA3.BZ,Ultrapar Participacoes S.A.,0.0088,2026-11-09,2026-11-10
+FEM,3017.TT,"Asia Vital Components Co., Ltd.",0.0087,2026-11-09,2026-11-10
+FEM,VBBR3.BZ,Vibra Energia SA,0.0085,2026-11-09,2026-11-10
+FEM,KGH.PW,KGHM Polska Miedz S.A.,0.008100000000000001,2026-11-09,2026-11-10
+FEM,XTB.PW,X-Trade Brokers Dom Maklerski SA,0.008100000000000001,2026-11-09,2026-11-10
+FEM,6213.TT,ITEQ Corporation,0.008,2026-11-09,2026-11-10
+FEM,SONACOMS.IS,SONA BLW Precision Forgings Limited,0.008,2026-11-09,2026-11-10
+FEM,2376.TT,"Gigabyte Technology Co., Ltd.",0.0079,2026-11-09,2026-11-10
+FEM,GFI.SJ,Gold Fields Limited,0.0079,2026-11-09,2026-11-10
+FEM,PKN.PW,ORLEN SA,0.0079,2026-11-09,2026-11-10
+FEM,PTTGC.TB,PTT Global Chemical Pcl,0.0078000000000000005,2026-11-09,2026-11-10
+FEM,2347.TT,Synnex Technology International Corp.,0.0078000000000000005,2026-11-09,2026-11-10
+FEM,914.HK,Anhui Conch Cement Company Limited (Class H),0.0077,2026-11-09,2026-11-10
+FEM,MCX.IS,Multi Commodity Exchange of India Limited,0.0077,2026-11-09,2026-11-10
+FEM,NPN.SJ,Naspers Limited (Class N),0.0077,2026-11-09,2026-11-10
+FEM,PAYTM.IS,One 97 Communications Limited,0.0077,2026-11-09,2026-11-10
+FEM,2328.HK,PICC Property and Casualty Company Limited (Class H),0.0075,2026-11-09,2026-11-10
+FEM,2395.TT,"Advantech Co., Ltd.",0.0074,2026-11-09,2026-11-10
+FEM,POWF.IS,Power Finance Corporation,0.0074,2026-11-09,2026-11-10
+FEM,2884.TT,"E.SUN Financial Holding Co., Ltd.",0.0072,2026-11-09,2026-11-10
+FEM,2301.TT,Lite-On Technology Corporation,0.0072,2026-11-09,2026-11-10
+FEM,1303.TT,Nan Ya Plastics Corporation,0.0072,2026-11-09,2026-11-10
+FEM,6805.TT,Fositek Corp.,0.0070999999999999995,2026-11-09,2026-11-10
+FEM,VIVT3.BZ,Telefonica Brasil S.A.,0.0070999999999999995,2026-11-09,2026-11-10
+FEM,2618.TT,EVA Airways Corp.,0.006999999999999999,2026-11-09,2026-11-10
+FEM,2881.TT,"Fubon Financial Holding Co., Ltd.",0.006999999999999999,2026-11-09,2026-11-10
+FEM,KCHOL.TI,Koc Holding A.S.,0.006999999999999999,2026-11-09,2026-11-10
+FEM,FROTO.TI,Ford Otomotiv Sanayi A.S.,0.0069,2026-11-09,2026-11-10
+FEM,NPH.SJ,Northam Platinum Holdings Limited,0.0069,2026-11-09,2026-11-10
+FEM,1326.TT,Formosa Chemicals & Fibre Corp.,0.0068000000000000005,2026-11-09,2026-11-10
+FEM,2408.TT,Nanya Technology Corporation,0.0068000000000000005,2026-11-09,2026-11-10
+FEM,SSW.SJ,Sibanye Stillwater Ltd.,0.0067,2026-11-09,2026-11-10
+FEM,2600.HK,Aluminum Corporation of China Limited (Class H),0.0066,2026-11-09,2026-11-10
+FEM,2317.TT,"Hon Hai Precision Industry Co., Ltd. (Foxconn)",0.0066,2026-11-09,2026-11-10
+FEM,2609.TT,Yang Ming Marine Transport Corp.,0.0066,2026-11-09,2026-11-10
+FEM,2245.HK,"Lygend Resources & Technology Co., Ltd. (Class H)",0.0064,2026-11-09,2026-11-10
+FEM,CMIG4.BZ,Companhia Energetica de Minas Gerais-CEMIG (Preference),0.0063,2026-11-09,2026-11-10
+FEM,3396.HK,Legend Holdings Corporation (Class H),0.0063,2026-11-09,2026-11-10
+FEM,2059.TT,"King Slide Works Co., Ltd.",0.0062,2026-11-09,2026-11-10
+FEM,ITSA4.BZ,Itausa S.A. (Preference Shares),0.006,2026-11-09,2026-11-10
+FEM,UNTR.IJ,PT United Tractors Tbk,0.006,2026-11-09,2026-11-10
+FEM,DIVI.IS,Divi's Laboratories Limited,0.0059,2026-11-09,2026-11-10
+FEM,3653.TT,Jentech Precision Industrial Company Ltd.,0.0058,2026-11-09,2026-11-10
+FEM,8996.TT,"Kaori Heat Treatment Co., Ltd.",0.005600000000000001,2026-11-09,2026-11-10
+FEM,ALE.PW,Allegro.eu SA,0.0055000000000000005,2026-11-09,2026-11-10
+FEM,2409.TT,AU Optronics Corp.,0.0051,2026-11-09,2026-11-10
+FEM,3665.TT,BizLink Holding Inc.,0.0051,2026-11-09,2026-11-10
+FEM,386.HK,China Petroleum & Chemical Corporation (Sinopec) (Class H),0.0051,2026-11-09,2026-11-10
+FEM,LPP.PW,LPP SA,0.0051,2026-11-09,2026-11-10
+FEM,SMPH.PM,"SM Prime Holdings, Inc.",0.005,2026-11-09,2026-11-10
+FEM,ENELCHIL.CI,Enel Chile SA,0.0049,2026-11-09,2026-11-10
+FEM,RICHT.HB,Gedeon Richter Nyrt,0.0049,2026-11-09,2026-11-10
+FEM,8046.TT,Nan Ya Printed Circuit Board Corporation,0.0049,2026-11-09,2026-11-10
+FEM,EMBJ3.BZ,Embraer SA,0.0048,2026-11-09,2026-11-10
+FEM,1071.HK,Huadian Power International Corp. Ltd. (Class H),0.0048,2026-11-09,2026-11-10
+FEM,VEDL.IS,Vedanta Limited,0.0048,2026-11-09,2026-11-10
+FEM,ITAUCL.CI,Banco Itau Chile SA,0.0046,2026-11-09,2026-11-10
+FEM,1898.HK,China Coal Energy Company Limited (Class H),0.0046,2026-11-09,2026-11-10
+FEM,390.HK,China Railway Group Ltd. (Class H),0.0046,2026-11-09,2026-11-10
+FEM,GGBR4.BZ,Gerdau S.A. (Preferred Shares),0.0046,2026-11-09,2026-11-10
+FEM,CPF.TB,Charoen Pokphand Foods Pcl,0.0045000000000000005,2026-11-09,2026-11-10
+FEM,COAL.IS,Coal India Limited,0.0045000000000000005,2026-11-09,2026-11-10
+FEM,1402.TT,Far Eastern New Century Corporation,0.0044,2026-11-09,2026-11-10
+FEM,1339.HK,The People's Insurance Company (Group) of China Limited (Class H),0.0044,2026-11-09,2026-11-10
+FEM,2890.TT,"SinoPac Financial Holdings Co., Ltd.",0.0043,2026-11-09,2026-11-10
+FEM,THAI.TB,Thai Airways International Pcl,0.0043,2026-11-09,2026-11-10
+FEM,2359.HK,"WuXi AppTec Co., Ltd. (Class H)",0.0043,2026-11-09,2026-11-10
+FEM,TLKM.IJ,PT Telekomunikasi Indonesia (Persero) Tbk,0.0042,2026-11-09,2026-11-10
+FEM,1605.TT,Walsin Lihwa Corporation,0.004,2026-11-09,2026-11-10
+FEM,BPAC11.BZ,Banco BTG Pactual SA (Unit),0.0039000000000000003,2026-11-09,2026-11-10
+FEM,900948.CH,"Inner Mongolia Yitai Coal Co., Ltd. (Class B)",0.0039000000000000003,2026-11-09,2026-11-10
+FEM,3189.TT,Kinsus Interconnect Technology Corp.,0.0034000000000000002,2026-11-09,2026-11-10
+FEM,2404.TT,"United Integrated Services Co., Ltd.",0.0033,2026-11-09,2026-11-10
+FEM,3037.TT,Unimicron Technology Corporation,0.0031,2026-11-09,2026-11-10
+FEM,2315.HK,"Biocytogen Pharmaceuticals Beijing Co., Ltd. (Class H)",0.0028000000000000004,2026-11-09,2026-11-10
+FEM,3532.TT,Formosa Sumco Technology Corporation,0.0028000000000000004,2026-11-09,2026-11-10
+FEM,ETERNAL.IS,Eternal Limited,0.0027,2026-11-09,2026-11-10
+FEM,MTELEKOM.HB,Magyar Telekom Telecommunications Plc,0.0027,2026-11-09,2026-11-10
+FEM,GRUMAB.MM,"GRUMA, S.A.B. de C.V.",0.0026,2026-11-09,2026-11-10
+FEM,6655.HK,"Huaxin Building Materials Group Co., Ltd. (Class H)",0.0026,2026-11-09,2026-11-10
+FEM,6446.TT,PharmaEssentia Corporation,0.0026,2026-11-09,2026-11-10
+FEM,6936.HK,"S. F. Holding Co., Ltd. (Class H)",0.0026,2026-11-09,2026-11-10
+FEM,ISCTR.TI,Turkiye Is Bankasi A.S. (Isbank) (Class C),0.0026,2026-11-09,2026-11-10
+FEM,CRC.TB,Central Retail Corporation Pcl,0.0025,2026-11-09,2026-11-10
+FEM,PCO.PW,Pepco Group NV,0.0025,2026-11-09,2026-11-10
+FEM,598.HK,Sinotrans Limited (Class H),0.0025,2026-11-09,2026-11-10
+FEM,BHEL.IS,Bharat Heavy Electricals Limited (BHEL),0.0024,2026-11-09,2026-11-10
+FEM,6963.HK,Sunshine Insurance Group Company Limited (Class H),0.0024,2026-11-09,2026-11-10
+FEM,2601.HK,"China Pacific Insurance (Group) Co., Ltd. (Class H)",0.0023,2026-11-09,2026-11-10
+FEM,2356.TT,Inventec Corporation,0.0022,2026-11-09,2026-11-10
+FEM,6181.HK,"Laopu Gold Co., Ltd. (Class H)",0.0022,2026-11-09,2026-11-10
+FEM,3759.HK,"Pharmaron Beijing Co., Ltd. (Class H)",0.0022,2026-11-09,2026-11-10
+FEM,SAIL.IS,Steel Authority of India Limited,0.0022,2026-11-09,2026-11-10
+FEM,2799.HK,China CITIC Financial Asset Management Co. Ltd.,0.0021,2026-11-09,2026-11-10
+FEM,3996.HK,China Energy Engineering Corp Limited (Class H),0.0021,2026-11-09,2026-11-10
+FEM,2628.HK,"China Life Insurance Co., Limited (Class H)",0.0021,2026-11-09,2026-11-10
+FEM,PE&OLES*.MM,"Industrias Penoles, S.A.B. de C.V.",0.0021,2026-11-09,2026-11-10
+FEM,PRIO3.BZ,Petro Rio S.A.,0.0021,2026-11-09,2026-11-10
+FEM,1336.HK,New China Life Insurance Company Ltd. (Class H),0.002,2026-11-09,2026-11-10
+FEM,2382.TT,Quanta Computer Inc.,0.002,2026-11-09,2026-11-10
+FEM,3044.TT,Tripod Technology Corporation,0.002,2026-11-09,2026-11-10
+FEM,3036.TT,"WT Microelectronics Co., Ltd.",0.002,2026-11-09,2026-11-10
+FEM,3711.TT,"ASE Technology Holding Co., Ltd.",0.0019,2026-11-09,2026-11-10
+FEM,3008.TT,Largan Precision Co. Ltd.,0.0019,2026-11-09,2026-11-10
+FEM,6139.TT,"L&K Engineering Co., Ltd.",0.0018,2026-11-09,2026-11-10
+FEM,2344.TT,Winbond Electronics Corporation,0.0017000000000000001,2026-11-09,2026-11-10
+FEM,2543628D.MK,YTL Power International Bhd (Warrants),0.0002,2026-11-09,2026-11-10
