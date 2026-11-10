@@ -3,14 +3,16 @@
  */
 
 import assert from 'node:assert';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.resolve(__dirname, '..');
 
-const VolumeStudies = require(path.join(__dirname, '..', 'docs', 'volume-studies.js'));
+const VolumeStudies = require(path.join(ROOT, 'docs', 'volume-studies.js'));
 
 console.log('Testing VolumeStudies Mathematical Engine...');
 
@@ -271,4 +273,92 @@ console.log('Testing VolumeStudies Mathematical Engine...');
   console.log('✔ BVC, Yang-Zhang Vol, Amihud, Roll, and Regression Divergence validated');
 }
 
-console.log('\nAll 14 mathematical contract tests PASSED successfully.');
+// 15. Upgraded Econometric Pipeline Contracts (causal Prior-20, Osc, Leverage-Neutral ILLIQ, TR-CMF, BVC-OBV/vPVT, 63D OLS Divergence)
+{
+  const history = [];
+  for (let i = 0; i < 80; i++) {
+    const base = 100 * Math.exp(0.002 * i + 0.015 * Math.sin(i * 0.6));
+    const prev = i > 0 ? history[i - 1].c : base;
+    history.push({
+      d: new Date(Date.UTC(2025, 0, 2 + i)).toISOString().slice(0, 10),
+      o: prev * (i % 7 === 0 ? 0.97 : 1.001),
+      h: base * 1.02,
+      l: base * 0.985,
+      c: base,
+      v: 10000
+    });
+  }
+  // Bar 25 spikes 10x in volume while closing down mildly
+  history[25].v = 100000;
+  history[25].c = history[24].c * 0.99;
+
+  // vol: causal smaPrior must NOT include bar 25 in ma[25]
+  const vol1x = VolumeStudies.compute(history, 'vol', 'all', { leverage: 1 });
+  const vol3x = VolumeStudies.compute(history, 'vol', 'all', { leverage: 3 });
+  assert.strictEqual(vol1x.ma[25], 10000, 'Causal Prior SMA-20 at bar 25 must exclude bar 25 spike');
+  assert.strictEqual(vol1x.ma[26], 14500, 'Causal Prior SMA-20 at bar 26 must include bar 25');
+  assert.ok(vol1x.illiq[40] > 0 && vol3x.illiq[40] > 0);
+  assert.ok(Math.abs((vol1x.illiq[40] / vol3x.illiq[40]) - 3) < 1e-9, 'Amihud illiquidity must scale inversely by |leverage|');
+
+  // osc: compute('osc') compares SMA(5) vs causal Prior SMA(20)
+  const oscPayload = VolumeStudies.compute(history, 'osc', 'all', { leverage: 1 });
+  // At bar 25: SMA(5) = (4*10000 + 100000)/5 = 28000, Prior20 = 10000 -> +180%
+  assert.strictEqual(Math.round(oscPayload.line[25]), 180);
+
+  // obv & pvt: no lagging MA overlay
+  const obvPayload = VolumeStudies.compute(history, 'obv', 'all', { leverage: 1 });
+  const pvtPayload = VolumeStudies.compute(history, 'pvt', 'all', { leverage: 1 });
+  assert.strictEqual(obvPayload.ma, null, 'BVC-OBV must omit lagging SMA overlay');
+  assert.strictEqual(pvtPayload.ma, null, 'vPVT must omit lagging SMA overlay');
+  assert.strictEqual(obvPayload.line[0], 0);
+  assert.strictEqual(pvtPayload.line[0], 0);
+  assert.ok(obvPayload.buyPct.every(p => p >= 0 && p <= 100));
+
+  // cmf: TR-CMF accounts for overnight gaps & produces CMF Z-score and divergence
+  const cmfPayload = VolumeStudies.compute(history, 'cmf', 'all', { leverage: 1 });
+  assert.ok(cmfPayload.cmfZScore.some(v => v != null && isFinite(v)), 'TR-CMF must populate Z_CMF when valid window >= 10');
+  assert.strictEqual(cmfPayload.divergence.length, 80);
+
+  // detectRegressionDivergence sign contract: positive flow surprise on positive-beta pair => BULLISH DIVERGENCE
+  const nDiv = 65;
+  const pSeries = [];
+  const fBull = [];
+  let cum = 0;
+  for (let i = 0; i < nDiv; i++) {
+    const p = i === 0 ? 100 : pSeries[i - 1] * Math.exp(i === nDiv - 1 ? -0.02 : (i % 2 === 0 ? 0.015 : -0.01));
+    pSeries.push(p);
+    const step = i === nDiv - 1
+      ? 5000 // strong positive absorption flow despite negative return!
+      : (i > 0 ? 1000 * Math.log(p / pSeries[i - 1]) / 0.015 + ((i % 3) - 1) * 5 : 0);
+    cum += step;
+    fBull.push(cum);
+  }
+  const bullRes = VolumeStudies.detectRegressionDivergence(pSeries, fBull, 63);
+  assert.strictEqual(bullRes[nDiv - 1], 'BULLISH DIVERGENCE', 'Unexpected positive flow surprise must classify as BULLISH DIVERGENCE');
+
+  // Negative flow surprise on an up day => BEARISH DIVERGENCE
+  const fBear = fBull.slice(0, -1);
+  pSeries[nDiv - 1] = pSeries[nDiv - 2] * Math.exp(0.02);
+  fBear.push(fBear[fBear.length - 1] - 5000);
+  const bearRes = VolumeStudies.detectRegressionDivergence(pSeries, fBear, 63);
+  assert.strictEqual(bearRes[nDiv - 1], 'BEARISH DIVERGENCE', 'Unexpected negative flow deficit must classify as BEARISH DIVERGENCE');
+
+  console.log('✔ Upgraded econometric compute() contracts and OLS divergence signs validated');
+}
+
+// 16. Zero Emojis & Zero Banned Terminology in Upgraded Assets
+{
+  const emojiRegex = /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u;
+  const banned = ['institutional', 'retail', 'fomo', 'capitulation', 'verified', 'creations', 'statistically significant', 'localstorage', 'watch_tier', 'watchTier', '15,000', '15K', 'TQQQ'];
+  for (const rel of ['docs/volume-studies.js', 'docs/macd-strategy.css']) {
+    const content = fs.readFileSync(path.join(ROOT, rel), 'utf8');
+    assert.strictEqual(emojiRegex.test(content), false, `Emoji found in ${rel}`);
+    const lower = content.toLowerCase();
+    for (const word of banned) {
+      assert.strictEqual(lower.includes(word.toLowerCase()), false, `Banned term "${word}" found in ${rel}`);
+    }
+  }
+  console.log('✔ Zero emojis and zero banned terminology in VolumeStudies & MACD CSS validated');
+}
+
+console.log('\nAll 16 mathematical contract tests PASSED successfully.');

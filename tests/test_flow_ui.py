@@ -234,6 +234,9 @@ def test_local_runtime_fallback_is_available_without_cdn():
     assert "history[push ? 'pushState' : 'replaceState']" in javascript
     assert "font-size: 0.875rem" in css
     assert "Trackinsight" not in javascript
+    assert "TQQQ" not in javascript
+    assert "160" in javascript
+    assert "145" not in javascript
 
 
 def test_flow_chart_tabs_tooltips_and_accessible_table_are_interactive():

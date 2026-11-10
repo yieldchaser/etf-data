@@ -312,15 +312,18 @@
     if (prior.length < 5) return null;
 
     const maxAbs = Math.max(...prior.map(Math.abs));
-    const isNormalized = maxAbs < 0.20;
-    const tau_dust = isNormalized ? 1e-4 : Math.max(1e-4, maxAbs * 1e-4);
-    const sigma_floor = isNormalized ? 5e-4 : Math.max(1e-4, maxAbs * 5e-4);
+    const scaleProbe = maxAbs > 0 ? maxAbs : Math.abs(current);
+    const isNormalized = scaleProbe < 0.20;
+    const tau_dust = isNormalized ? 1e-4 : Math.max(1e-4, scaleProbe * 1e-4);
+    const sigma_floor = isNormalized ? 5e-4 : Math.max(1e-4, scaleProbe * 5e-4);
 
     const active = prior.filter(x => Math.abs(x) > tau_dust);
     const pAct = active.length / prior.length;
 
     if (active.length === 0) {
-      return current / sigma_floor;
+      if (Math.abs(current) <= 1e-12) return 0;
+      const rawZeroZ = current / sigma_floor;
+      return maxAbs === 0 && !isNormalized ? Math.max(-5, Math.min(5, rawZeroZ)) : rawZeroZ;
     }
 
     const sortedActive = [...active].sort((a, b) => a - b);
@@ -912,14 +915,15 @@
       vsUnit: 'shares',
       vsAvailableYears: [],
       vsStudiesList: [
-        { key: 'vol', label: 'Daily Volume', desc: 'Daily trading volume with 21D SMA and RVOL surge classification' },
-        { key: 'osc', label: 'Volume Oscillator', desc: '5D vs 21D volume SMA percentage spread' },
-        { key: 'net', label: 'Net Volume', desc: 'Signed daily volume with 21D cumulative rolling sum' },
-        { key: 'cmf', label: 'Chaikin Money Flow', desc: '21D Close Location Value accumulation/distribution' },
-        { key: 'obv', label: 'On-Balance Volume', desc: 'Re-based cumulative signed volume with 21D MA overlay' },
-        { key: 'pvt', label: 'Price-Volume Trend', desc: 'Price-move weighted cumulative volume with 21D MA overlay' },
+        { key: 'vol', label: 'Daily Volume', desc: 'Daily trading volume with causal Prior SMA-20, DoW-63 RVOL, and Amihud illiquidity' },
+        { key: 'osc', label: 'Volume Oscillator', desc: '5D vs causal Prior SMA-20 volume pace spread (%)' },
+        { key: 'net', label: 'Net Volume', desc: 'Bulk Volume Classification (BVC) signed flow with 21D cumulative rolling sum & 63D OLS divergence' },
+        { key: 'cmf', label: 'Chaikin Money Flow', desc: 'True-Range CLV Chaikin Money Flow (21D) with 252D expanding Z-score & 63D OLS divergence' },
+        { key: 'obv', label: 'On-Balance Volume', desc: 'BVC-weighted cumulative volume flow re-based to 0 with 63D OLS divergence' },
+        { key: 'pvt', label: 'Price-Volume Trend', desc: 'Yang-Zhang volatility-normalized cumulative PVT re-based to 0 with 63D OLS divergence' },
         { key: 'heatmap', label: 'Volume Heatmap', desc: 'MicroCVI Volume Climax & Drought 18-Column Calendar Grid' }
       ],
+      flowSwitcherSort: 'aum',
       flowBattleMode: 'paired',
       flowShowMarketPulse: true,
       flowShowOutliers: true,
@@ -1000,7 +1004,7 @@
         if (this.flowZModel === 'robust') return finiteNumber(row.robustZScore);
         if (this.flowZModel === 'volume') return finiteNumber(row.volumeZScore);
         if (this.flowZModel === 'momentum') return finiteNumber(row.momentumZScore5D);
-        if (this.flowZModel === 'newey_west') return finiteNumber(row.nwZScore != null ? row.nwZScore : row.robustZScore);
+        if (this.flowZModel === 'newey_west') return finiteNumber(row.neweyWestZScore5D ?? row.nwZScore ?? row.robustZScore);
         return finiteNumber(row.priorOnlyZScore);
       },
       _flowWorkbenchBaseKey: '',
@@ -1049,6 +1053,64 @@
 
       get flowPrimaryInstruments() {
         return Array.isArray(this.flowCatalog?.instruments) ? this.flowCatalog.instruments : [];
+      },
+
+      get flowSwitcherInstruments() {
+        const list = Array.isArray(this.flowCatalog?.instruments) ? [...this.flowCatalog.instruments] : [];
+        if (this.flowSwitcherSort === 'alpha') {
+          return list.sort((a, b) => String(a.ticker || '').localeCompare(String(b.ticker || '')));
+        }
+        if (this.flowSwitcherSort === 'zscore') {
+          return list.sort((a, b) => {
+            const za = Math.abs(finiteNumber(a.flow_zscore) || 0);
+            const zb = Math.abs(finiteNumber(b.flow_zscore) || 0);
+            if (zb !== za) return zb - za;
+            return (finiteNumber(b.aum_m) || 0) - (finiteNumber(a.aum_m) || 0);
+          });
+        }
+        return list.sort((a, b) => {
+          const aa = finiteNumber(a.aum_m) || 0;
+          const ab = finiteNumber(b.aum_m) || 0;
+          if (ab !== aa) return ab - aa;
+          return String(a.ticker || '').localeCompare(String(b.ticker || ''));
+        });
+      },
+
+      _syncSwitcherSelects() {
+        const tk = this.flowTicker;
+        const apply = () => {
+          if (typeof document === 'undefined' || !tk) return;
+          for (const id of ['vs-ticker-select', 'macd-ticker-select', 'tp-ticker-select']) {
+            const sel = document.getElementById(id);
+            if (sel && sel.value !== tk) {
+              sel.value = tk;
+            }
+          }
+        };
+        if (typeof this.$nextTick === 'function') {
+          this.$nextTick(apply);
+        } else {
+          apply();
+        }
+      },
+
+      setFlowSwitcherSort(mode) {
+        const valid = ['aum', 'alpha', 'zscore'].includes(mode) ? mode : 'aum';
+        this.flowSwitcherSort = valid;
+        if (typeof TroughPeak !== 'undefined' && typeof TroughPeak.refreshPicker === 'function') {
+          TroughPeak.refreshPicker(valid);
+        }
+        this._syncSwitcherSelects();
+      },
+
+      formatSwitcherOption(item) {
+        if (!item) return '';
+        const aumM = finiteNumber(item.aum_m);
+        let aumTag = '';
+        if (aumM !== null && aumM > 0) {
+          aumTag = aumM >= 1000 ? ` · $${(aumM / 1000).toFixed(1)}B` : ` · $${Math.round(aumM)}M`;
+        }
+        return `${item.ticker} (${item.leverage || '1x'}${aumTag}) — ${item.fund_name || item.ticker}`;
       },
 
       get flowFeaturedInstruments() {
@@ -4542,6 +4604,7 @@
         this.flowSearchOpen = false;
         this.flowSearchQuery = '';
         this.flowSearchActiveIndex = -1;
+        this._syncSwitcherSelects();
         if (typeof VolumeStudies !== 'undefined' && (this.flowViewMode === 'volume_studies' || VolumeStudies.state.ticker)) {
           const opts = { catalogInstruments: this.flowCatalog?.instruments };
           if (typeof this.$nextTick === 'function') {

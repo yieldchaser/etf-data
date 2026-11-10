@@ -47,9 +47,9 @@
       "20": {
         "bh_fdr_significant": false,
         "hlz_hurdle_met": false,
-        "mean_ic": -0.0117,
-        "n_dates": 292,
-        "p_value": 0.23279,
+        "mean_ic": -0.0116,
+        "n_dates": 293,
+        "p_value": 0.23451,
         "se_hac": 0.0098,
         "t_stat": -1.19
       },
@@ -57,8 +57,8 @@
         "bh_fdr_significant": false,
         "hlz_hurdle_met": false,
         "mean_ic": -0.0186,
-        "n_dates": 295,
-        "p_value": 0.03099,
+        "n_dates": 296,
+        "p_value": 0.03075,
         "se_hac": 0.0086,
         "t_stat": -2.16
       }
@@ -67,62 +67,62 @@
       "1": {
         "bh_fdr_significant": false,
         "hlz_hurdle_met": false,
-        "mean_ic": -0.0132,
+        "mean_ic": -0.0107,
         "n_dates": 296,
-        "p_value": 0.12394,
-        "se_hac": 0.0086,
-        "t_stat": -1.54
+        "p_value": 0.19841,
+        "se_hac": 0.0083,
+        "t_stat": -1.29
       },
       "20": {
         "bh_fdr_significant": false,
         "hlz_hurdle_met": false,
-        "mean_ic": -0.0105,
-        "n_dates": 292,
-        "p_value": 0.23301,
+        "mean_ic": -0.007,
+        "n_dates": 293,
+        "p_value": 0.42751,
         "se_hac": 0.0088,
-        "t_stat": -1.19
+        "t_stat": -0.79
       },
       "5": {
         "bh_fdr_significant": false,
         "hlz_hurdle_met": false,
-        "mean_ic": -0.012,
-        "n_dates": 295,
-        "p_value": 0.13689,
-        "se_hac": 0.0081,
-        "t_stat": -1.49
+        "mean_ic": -0.0071,
+        "n_dates": 296,
+        "p_value": 0.36553,
+        "se_hac": 0.0079,
+        "t_stat": -0.9
       }
     },
     "rel_flow": {
       "1": {
         "bh_fdr_significant": false,
         "hlz_hurdle_met": false,
-        "mean_ic": -0.0075,
+        "mean_ic": -0.0121,
         "n_dates": 296,
-        "p_value": 0.34048,
-        "se_hac": 0.0078,
-        "t_stat": -0.95
+        "p_value": 0.1377,
+        "se_hac": 0.0082,
+        "t_stat": -1.48
       },
       "20": {
         "bh_fdr_significant": false,
         "hlz_hurdle_met": false,
-        "mean_ic": -0.0096,
-        "n_dates": 292,
-        "p_value": 0.28592,
-        "se_hac": 0.009,
-        "t_stat": -1.07
+        "mean_ic": -0.0046,
+        "n_dates": 293,
+        "p_value": 0.61914,
+        "se_hac": 0.0093,
+        "t_stat": -0.5
       },
       "5": {
         "bh_fdr_significant": false,
         "hlz_hurdle_met": false,
-        "mean_ic": -0.0046,
-        "n_dates": 295,
-        "p_value": 0.56569,
-        "se_hac": 0.008,
-        "t_stat": -0.57
+        "mean_ic": -0.0049,
+        "n_dates": 296,
+        "p_value": 0.52614,
+        "se_hac": 0.0078,
+        "t_stat": -0.63
       }
     }
   },
-  "generated_utc": "2026-11-10T16:16:17.658086+00:00",
+  "generated_utc": "2026-11-10T19:47:59.361191+00:00",
   "hasbrouck_information_share": {
     "mean_etp_price_share": 0.5,
     "sample_size": 10,
@@ -194,136 +194,136 @@
     "1": {
       "consistent_reversal": false,
       "horizon_days": 1,
-      "mean_impulse_response": -0.0236,
-      "mean_t_stat": 0.01
+      "mean_impulse_response": -0.0036,
+      "mean_t_stat": 0.22
     },
     "10": {
       "consistent_reversal": false,
       "horizon_days": 10,
-      "mean_impulse_response": 0.1206,
-      "mean_t_stat": -0.22
+      "mean_impulse_response": 0.1652,
+      "mean_t_stat": 0.02
     },
     "2": {
       "consistent_reversal": false,
       "horizon_days": 2,
-      "mean_impulse_response": -0.031,
-      "mean_t_stat": -0.31
+      "mean_impulse_response": -0.0166,
+      "mean_t_stat": -0.13
     },
     "20": {
       "consistent_reversal": false,
       "horizon_days": 20,
-      "mean_impulse_response": 0.3592,
+      "mean_impulse_response": 0.4243,
       "mean_t_stat": -0.11
     },
     "3": {
       "consistent_reversal": false,
       "horizon_days": 3,
-      "mean_impulse_response": -0.0064,
-      "mean_t_stat": -0.16
+      "mean_impulse_response": 0.0085,
+      "mean_t_stat": 0.1
     },
     "5": {
       "consistent_reversal": false,
       "horizon_days": 5,
-      "mean_impulse_response": 0.0329,
-      "mean_t_stat": -0.03
+      "mean_impulse_response": 0.0488,
+      "mean_t_stat": 0.2
     }
   },
   "methodology": "Pure NumPy/Pandas econometric verification harness (zero scipy/statsmodels/sklearn)",
   "multiple_testing_and_dsr": {
-    "deflated_sharpe_ratio": 0.0378,
+    "deflated_sharpe_ratio": 0.0039,
     "dsr_significant": false,
     "empirical_annualized_sr": 0.2,
     "empirical_kurtosis": 10.0,
-    "empirical_skewness": -0.437,
+    "empirical_skewness": -0.424,
     "features_tested": 6,
-    "n_eff_independent_trials": 3.61
+    "n_eff_independent_trials": 4.22
   },
   "stationary_bootstrap_microcvi": {
     "bootstrap_iterations": 300,
     "expected_block_length": 10.0,
     "quantiles": {
       "IBIT": {
-        "p95_calibrated_score": 52.64,
-        "p95_calibrated_usd_m": 52.64,
-        "p99_calibrated_score": 68.28,
-        "p99_calibrated_usd_m": 68.28,
+        "p95_calibrated_score": 52.59,
+        "p95_calibrated_usd_m": 52.59,
+        "p99_calibrated_score": 71.03,
+        "p99_calibrated_usd_m": 71.03,
         "sensitivity_20pct_sweep": [
-          49.32,
-          56.57
+          49.06,
+          56.41
         ],
         "sensitivity_20pct_sweep_m": [
-          49.32,
-          56.57
+          49.06,
+          56.41
         ]
       },
       "QQQM": {
-        "p95_calibrated_score": 46.46,
-        "p95_calibrated_usd_m": 46.46,
-        "p99_calibrated_score": 65.16,
-        "p99_calibrated_usd_m": 65.16,
+        "p95_calibrated_score": 46.59,
+        "p95_calibrated_usd_m": 46.59,
+        "p99_calibrated_score": 65.17,
+        "p99_calibrated_usd_m": 65.17,
         "sensitivity_20pct_sweep": [
-          44.8,
-          47.94
+          44.79,
+          48.09
         ],
         "sensitivity_20pct_sweep_m": [
-          44.8,
-          47.94
+          44.79,
+          48.09
         ]
       },
       "SMH": {
-        "p95_calibrated_score": 45.71,
-        "p95_calibrated_usd_m": 45.71,
+        "p95_calibrated_score": 45.7,
+        "p95_calibrated_usd_m": 45.7,
         "p99_calibrated_score": 61.2,
         "p99_calibrated_usd_m": 61.2,
         "sensitivity_20pct_sweep": [
-          45.08,
-          47.18
+          45.11,
+          47.17
         ],
         "sensitivity_20pct_sweep_m": [
-          45.08,
-          47.18
+          45.11,
+          47.17
         ]
       },
       "SOXL": {
-        "p95_calibrated_score": 43.93,
-        "p95_calibrated_usd_m": 43.93,
-        "p99_calibrated_score": 57.32,
-        "p99_calibrated_usd_m": 57.32,
+        "p95_calibrated_score": 44.02,
+        "p95_calibrated_usd_m": 44.02,
+        "p99_calibrated_score": 57.31,
+        "p99_calibrated_usd_m": 57.31,
         "sensitivity_20pct_sweep": [
-          42.71,
-          45.6
+          42.79,
+          45.41
         ],
         "sensitivity_20pct_sweep_m": [
-          42.71,
-          45.6
+          42.79,
+          45.41
         ]
       },
       "TLT": {
-        "p95_calibrated_score": 45.73,
-        "p95_calibrated_usd_m": 45.73,
-        "p99_calibrated_score": 61.9,
-        "p99_calibrated_usd_m": 61.9,
+        "p95_calibrated_score": 45.69,
+        "p95_calibrated_usd_m": 45.69,
+        "p99_calibrated_score": 61.87,
+        "p99_calibrated_usd_m": 61.87,
         "sensitivity_20pct_sweep": [
-          44.87,
-          46.84
+          44.85,
+          46.87
         ],
         "sensitivity_20pct_sweep_m": [
-          44.87,
-          46.84
+          44.85,
+          46.87
         ]
       },
       "TQQQ": {
-        "p95_calibrated_score": 40.83,
-        "p95_calibrated_usd_m": 40.83,
+        "p95_calibrated_score": 40.85,
+        "p95_calibrated_usd_m": 40.85,
         "p99_calibrated_score": 54.3,
         "p99_calibrated_usd_m": 54.3,
         "sensitivity_20pct_sweep": [
-          39.93,
-          41.73
+          39.86,
+          41.75
         ],
         "sensitivity_20pct_sweep_m": [
-          39.93,
-          41.73
+          39.86,
+          41.75
         ]
       }
     }

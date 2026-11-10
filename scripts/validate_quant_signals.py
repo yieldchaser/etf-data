@@ -192,12 +192,32 @@ def load_dataset() -> tuple[dict[str, pd.DataFrame], dict[str, Any], dict[str, l
     return dfs_by_ticker, catalog, history_cache
 
 
+def _compute_dynamic_aum_series(
+    navs: np.ndarray, flows: np.ndarray, aum_m: float
+) -> np.ndarray:
+    """Reconstruct backward flow-adjusted AUM series in USD from latest catalog AUM."""
+    n = len(navs)
+    aum_end = float(aum_m or 100.0) * 1_000_000.0
+    if aum_end <= 0 or not math.isfinite(aum_end):
+        aum_end = 100_000_000.0
+    aum_t = np.empty(n, dtype=float)
+    aum_t[-1] = max(1_000_000.0, aum_end)
+    for i in range(n - 2, -1, -1):
+        nav_ret = (float(navs[i + 1]) / float(navs[i])) - 1.0 if float(navs[i]) > 0 else 0.0
+        prev_aum = (aum_t[i + 1] - float(flows[i + 1])) / max(1e-4, 1.0 + nav_ret)
+        aum_t[i] = max(1_000_000.0, prev_aum)
+    return aum_t
+
+
 def run_fama_macbeth_rank_ic(
-    dfs: dict[str, pd.DataFrame], history: dict[str, list[dict[str, Any]]]
+    dfs: dict[str, pd.DataFrame],
+    history: dict[str, list[dict[str, Any]]],
+    catalog: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Execute Purged & Embargoed Fama-MacBeth Rank-IC across deduplicated underlying complexes."""
     horizons = [1, 5, 20]
     underlying_by_ticker = {t: get_taxonomy_record(t)["underlying_id"] for t in dfs}
+    inst_by_ticker = {i["ticker"]: i for i in catalog.get("instruments", [])} if catalog else {}
 
     # Vectorize metrics per dataframe
     processed: dict[str, pd.DataFrame] = {}
@@ -208,10 +228,12 @@ def run_fama_macbeth_rank_ic(
             continue
         navs = sub["nav"].values
         flows = sub["usd_flow"].values
-        sub["rel_flow"] = flows / 100_000_000.0
+        aum_m_val = float(inst_by_ticker.get(ticker, {}).get("aum_m", 100.0) or 100.0)
+        aum_t = _compute_dynamic_aum_series(navs, flows, aum_m_val)
+        sub["rel_flow"] = flows / aum_t
 
-        # Vectorized hurdle Z approximation
-        roll_std = sub["rel_flow"].rolling(30, min_periods=10).std().fillna(0.001).values
+        # Causal prior-only hurdle Z approximation (strictly shifted by 1 bar)
+        roll_std = sub["rel_flow"].shift(1).rolling(30, min_periods=10).std().fillna(0.001).values
         sub["hurdle_z"] = np.clip(sub["rel_flow"].values / (roll_std + 5e-4), -5.0, 5.0)
 
         # Forward total returns
@@ -447,6 +469,7 @@ def run_multiple_testing_and_dsr(
     daily_strategy_returns: list[float] = []
 
     if dfs:
+        inst_by_ticker = {i["ticker"]: i for i in catalog.get("instruments", [])} if catalog else {}
         for ticker, df in dfs.items():
             if len(df) < 60:
                 continue
@@ -455,8 +478,10 @@ def run_multiple_testing_and_dsr(
             flows = sub["usd_flow"].values
             n = len(sub)
 
-            rel_flow = flows / 100_000_000.0
-            roll_std = pd.Series(rel_flow).rolling(30, min_periods=10).std().fillna(0.001).values
+            aum_m_val = float(inst_by_ticker.get(ticker, {}).get("aum_m", 100.0) or 100.0)
+            aum_t = _compute_dynamic_aum_series(navs, flows, aum_m_val)
+            rel_flow = flows / aum_t
+            roll_std = pd.Series(rel_flow).shift(1).rolling(30, min_periods=10).std().fillna(0.001).values
             hurdle_z = np.clip(rel_flow / (roll_std + 5e-4), -5.0, 5.0)
 
             pct_ret = np.zeros(n)
@@ -701,16 +726,18 @@ def run_empirical_falsification_gates(
                 b_curr = bars[i]
                 c_p, c_c = float(b_prev["c"]), float(b_curr["c"])
                 tc_p, tc_c = float(b_prev.get("tc", c_p)), float(b_curr.get("tc", c_c))
-                if c_p > 0 and tc_p > 0:
-                    ret_c = c_c / c_p - 1.0
-                    ret_tc = tc_c / tc_p - 1.0
-                    if ret_tc > ret_c + 0.003:
-                        checked_div_dates += 1
-                        if ret_tc < ret_c:
-                            phantom_drops_detected += 1
+                if tc_c <= 0 or tc_p <= 0 or c_c <= 0 or c_p <= 0:
+                    phantom_drops_detected += 1
+                    continue
+                ret_c = c_c / c_p - 1.0
+                ret_tc = tc_c / tc_p - 1.0
+                if abs(ret_tc - ret_c) > 0.003:
+                    checked_div_dates += 1
+                    if ret_tc < ret_c - 1e-5:
+                        phantom_drops_detected += 1
 
     results["phantom_ex_dividend_gate"] = {
-        "passed": bool(phantom_drops_detected == 0),
+        "passed": bool(phantom_drops_detected == 0 and checked_div_dates > 0),
         "ex_dividend_sessions_verified": checked_div_dates,
         "phantom_drawdowns_detected": phantom_drops_detected,
     }
@@ -779,7 +806,7 @@ def main() -> int:
     dfs, catalog, history = load_dataset()
     print(f"Loaded {len(dfs)} flow timeseries, {len(history)} history series from cache.", flush=True)
 
-    fama_macbeth = run_fama_macbeth_rank_ic(dfs, history)
+    fama_macbeth = run_fama_macbeth_rank_ic(dfs, history, catalog)
     print("Fama-MacBeth Rank-IC with Newey-West HAC complete.", flush=True)
 
     jorda_irf = run_jorda_local_projections(dfs, catalog)

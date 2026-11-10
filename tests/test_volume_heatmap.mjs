@@ -221,4 +221,52 @@ console.log('Testing VolumeHeatmap MicroCVI & Stage 2 Spotlight Engine...');
   console.log(`  [PASS] +25% breakout symmetric climax verified (score: ${breakoutScore.toFixed(2)}, dir: +1)`);
 }
 
+// 8. EOD focusClose Tracking, Focus Peer Override & Invalid-Bar Fallback
+{
+  const synthCat = [
+    { ticker: 'BULLX', underlying: 'Widget Index', direction: 'long', leverage_value: 3 },
+    { ticker: 'BEARX', underlying: 'Widget Index', direction: 'inverse', leverage_value: -3 }
+  ];
+  const hBull = [];
+  const hBear = [];
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(Date.UTC(2026, 0, 1 + i)).toISOString().slice(0, 10);
+    const bc = 40 + i * 0.5;
+    const sc = 25 - i * 0.2;
+    hBull.push({ d, o: bc - 0.3, h: bc + 0.5, l: bc - 0.5, c: bc, v: 100000 });
+    hBear.push({ d, o: sc + 0.2, h: sc + 0.4, l: sc - 0.4, c: i === 29 ? 0 : sc, v: 80000 });
+  }
+  hBull[29].c = 55.5;
+
+  const micro = VolumeHeatmap.computeEtfMicrostructure(hBull, 'share');
+  assert.strictEqual(micro.closes.length, hBull.length);
+  assert.strictEqual(micro.closes[29], 55.5);
+
+  const aggFocusBull = VolumeHeatmap.computeHeatAggregate(
+    { BULLX: hBull, BEARX: hBear }, 'share', 'all', synthCat,
+    { isMarketOpen: false, focusTicker: 'BULLX' }
+  );
+  const lastBull = aggFocusBull.series[aggFocusBull.series.length - 1];
+  assert.strictEqual(lastBull.priceTicker, 'BULLX');
+  assert.strictEqual(lastBull.focusClose, 55.5);
+
+  const aggPeerBear = VolumeHeatmap.computeHeatAggregate(
+    { BULLX: hBull, BEARX: hBear }, 'share', 'BEARX', synthCat,
+    { isMarketOpen: false, focusTicker: 'BULLX' }
+  );
+  const prevRow = aggPeerBear.series[aggPeerBear.series.length - 2];
+  assert.strictEqual(prevRow.priceTicker, 'BEARX');
+  assert.ok(Math.abs(prevRow.focusClose - hBear[28].c) < 1e-9);
+
+  const aggFallback = VolumeHeatmap.computeHeatAggregate(
+    { BULLX: hBull, BEARX: hBear }, 'share', 'all', synthCat,
+    { isMarketOpen: false, focusTicker: 'BEARX' }
+  );
+  const lastFallback = aggFallback.series[aggFallback.series.length - 1];
+  assert.strictEqual(lastFallback.priceTicker, 'BULLX', 'Invalid/zero close on focusTicker must fall back cleanly to active peer');
+  assert.strictEqual(lastFallback.focusClose, 55.5);
+
+  console.log('  [PASS] EOD focusClose tracking, peer override, and fallback verified');
+}
+
 console.log('\nAll VolumeHeatmap tests PASSED successfully.');

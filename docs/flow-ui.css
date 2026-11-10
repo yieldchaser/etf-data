@@ -55,6 +55,8 @@
 .flow-research,
 .flow-research .flow-shell,
 .flow-research .flow-main,
+.flow-research .flow-panel-card,
+.flow-research .flow-panel-card > *,
 .flow-research .flow-header,
 .flow-research .flow-catalog,
 .flow-research .flow-range-panel,
@@ -629,6 +631,7 @@
 /* Main workspace container */
 .flow-research .flow-main {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.85rem;
 }
 
@@ -1275,6 +1278,9 @@
 
 .flow-research .flow-panel-card {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  max-width: 100%;
   gap: 0.65rem;
   padding: 0.85rem 0.95rem;
   border: 1px solid var(--flow-line);

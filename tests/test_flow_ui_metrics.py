@@ -350,6 +350,36 @@ def test_dual_variance_scatter_and_continuous_behavior_scanner():
     assert result["catalogEnriched"] is True
 
 
+def test_robust_prior_zero_inflation_and_newey_west_selection():
+    result = run_metrics(
+        """(()=>{
+            const zerosPos = Array.from({length: 30}, (_, i) => ({date: `2026-01-${String(i+1).padStart(2,'0')}`, flow: 0, nav: 25}))
+                .concat([{date: '2026-02-01', flow: 1000000, nav: 25}]);
+            const zerosNeg = Array.from({length: 30}, (_, i) => ({date: `2026-01-${String(i+1).padStart(2,'0')}`, flow: 0, nav: 25}))
+                .concat([{date: '2026-02-01', flow: -1000000, nav: 25}]);
+            const zPos = m.robustPriorZScore(zerosPos, 30, 30);
+            const zNeg = m.robustPriorZScore(zerosNeg, 30, 30);
+
+            const app = m.flowResearchApp();
+            const records = Array.from({length: 45}, (_, i) => ({
+                date: `2026-03-${String(i+1).padStart(2,'0')}`,
+                flow: (i % 5 === 0 ? 5e6 : -2e6) + i * 1e5,
+                nav: 40 + i * 0.1
+            }));
+            const rows = m.flowMetricRows(records);
+            const last = rows[rows.length - 1];
+            app.flowZModel = 'newey_west';
+            const activeNw = app.flowActiveZScore(last);
+            return { zPos, zNeg, nwField: last.neweyWestZScore5D, activeNw, label: app.flowZModelLabel };
+        })()"""
+    )
+    assert 0 < result["zPos"] <= 5
+    assert -5 <= result["zNeg"] < 0
+    assert result["nwField"] is not None
+    assert abs(result["activeNw"] - result["nwField"]) < 1e-12
+    assert result["label"] == "NW MA(4)"
+
+
 
 
 

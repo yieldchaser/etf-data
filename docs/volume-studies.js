@@ -20,43 +20,43 @@
       key: 'vol',
       label: 'Daily Volume',
       short: 'VOL',
-      desc: 'Daily trading volume with 21-day SMA baseline and RVOL surge classification.',
-      methodology: '<p><strong>Daily Volume (<code>vol</code>)</strong> displays daily trading volume (in shares or USD equivalent) overlaid with a 21-day simple moving average (<code>SMA-21</code>) baseline.</p><p>Relative Volume (<code>RVOL-21 = Volume / SMA-21</code>) highlights anomalous liquidity: sessions with <code>RVOL &ge; 2.0&times;</code> are flagged as <em>Climax Surge</em>; sessions with <code>1.2&times; &le; RVOL &lt; 2.0&times;</code> indicate <em>Elevated Volume</em>; sessions with <code>RVOL &lt; 0.8&times;</code> reflect <em>Muted Volume</em>.</p>'
+      desc: 'Daily volume vs causal prior-20D baseline, DoW-63 RVOL, and leverage-neutral Amihud liquidity.',
+      methodology: '<p><strong>Daily Volume (<code>vol</code>)</strong> pairs daily volume (shares or USD) with a strictly <em>causal</em> prior-20-session simple moving average (<code>Prior SMA-20</code>, excluding the current session so volume spikes never dilute their own baseline).</p><p>Seasonal <strong>Day-of-Week Relative Volume</strong> (<code>RVOL DoW-63</code>) compares each session against the median of up to 63 matching weekdays, eliminating weekday calendar seasonality. Sessions with <code>RVOL &ge; 2.0&times;</code> trigger <em>Climax Surge</em>; <code>1.2&times;&ndash;2.0&times;</code> marks <em>Elevated Volume</em>. Hover readout also reports leverage-neutral <strong>Amihud Illiquidity-21</strong>, <strong>Roll Effective Spread</strong>, and <strong>Yang-Zhang 21D Volatility</strong>.</p>'
     },
     osc: {
       key: 'osc',
       label: 'Volume Oscillator',
       short: 'VOL OSC',
-      desc: 'Percentage spread between 5-day fast SMA and 21-day slow SMA of volume.',
-      methodology: '<p><strong>Volume Oscillator (<code>osc</code>)</strong> calculates the percentage difference between a fast 5-day and slow 21-day simple moving average of volume:</p><p><code>VolOsc = ((SMA_5 - SMA_21) / SMA_21) &times; 100%</code></p><p>Readings above zero indicate <em>Pace Expansion</em> (increasing volume velocity), shaded in green. Readings below zero reflect <em>Pace Contraction</em> (drying volume momentum), shaded in rose.</p>'
+      desc: 'Percentage spread between fast 5-day volume SMA and causal prior 20-day baseline.',
+      methodology: '<p><strong>Volume Oscillator (<code>osc</code>)</strong> measures short-term volume acceleration by comparing the 5-day volume SMA (<code>t-4..t</code>) against the causal prior 20-day baseline <code>Prior_20 = mean(V_{t-20..t-1})</code> (excluding current session <em>t</em>):</p><p><code>VolOsc = ((SMA_5 - Prior_20) / Prior_20) &times; 100%</code></p><p>Readings above zero mark <em>Pace Expansion</em> (green); readings below zero mark <em>Pace Contraction</em> (rose). Removing current-session self-inclusion sharpens inflection timing relative to contemporaneous 5v21 spreads.</p>'
     },
     net: {
       key: 'net',
-      label: 'Net Volume',
-      short: 'NET VOL',
-      desc: 'Signed daily volume with 21-day rolling cumulative accumulation balance curve.',
-      methodology: '<p><strong>Net Volume (<code>net</code>)</strong> assigns directional sign to daily volume based on price close relative to prior close (positive for green sessions, negative for red sessions).</p><p>A solid continuous curve tracks the 21-day cumulative rolling sum (<code>NetVol-21</code>), illustrating whether recent exchange tape turnover has been dominated by <em>Net Inflow</em> or <em>Net Outflow</em>.</p>'
+      label: 'Net Volume (BVC)',
+      short: 'NET BVC',
+      desc: 'Continuous Student-t4 BVC signed order flow with 21D rolling balance and 63D OLS divergence.',
+      methodology: '<p><strong>Net Volume (<code>net</code>)</strong> applies continuous <strong>Bulk Volume Classification (Student-<em>t</em><sub>4</sub> BVC)</strong> standardized by 21-day Yang-Zhang volatility instead of binary up/down signs:</p><p><code>z_t = ln(C_t / C_{t-1}) / (&sigma;_{YZ,daily,t} + &epsilon;)</code><br/><code>BVC_t = V_t &times; z_t(6 + z_t^2) / (4 + z_t^2)^{1.5}</code></p><p>A continuous cyan curve tracks the 21-day cumulative BVC balance (<code>NetBVC-21</code>), while <strong>63-day OLS regression residuals</strong> (<code>z &ge; &plusmn;2.0&sigma;</code>) flag statistically anomalous price-vs-flow divergences.</p>'
     },
     cmf: {
       key: 'cmf',
-      label: 'Chaikin Money Flow',
-      short: 'CMF-21',
-      desc: 'Volume-weighted accumulation/distribution using Close Location Value over 21 sessions.',
-      methodology: '<p><strong>Chaikin Money Flow (<code>cmf</code>)</strong> measures volume-weighted accumulation and distribution pressure over a 21-day lookback window.</p><p>1. <code>CLV = ((Close - Low) - (High - Close)) / (High - Low) = (2 &times; Close - (High + Low)) / (High - Low)</code><br/>2. <code>Money Flow Volume (MFV) = CLV &times; Volume</code><br/>3. <code>CMF-21 = &sum;(MFV, 21) / &sum;(Volume, 21)</code></p><p>Factual regime thresholds: <code>CMF &ge; +0.10</code> indicates <em>Strong Accumulation</em>; <code>0 &lt; CMF &lt; +0.10</code> indicates <em>Accumulation</em>; <code>-0.10 &lt; CMF &lt; 0</code> reflects <em>Distribution</em>; <code>CMF &le; -0.10</code> reflects <em>Strong Distribution</em>. Contrasting 21-day price return against CMF direction detects bullish and bearish divergences.</p>'
+      label: 'Money Flow (TR-CMF)',
+      short: 'TR-CMF',
+      desc: 'True-Range 21D Chaikin Money Flow with 252D robust MAD Z-Score and 63D OLS divergence.',
+      methodology: '<p><strong>True-Range Chaikin Money Flow (<code>cmf</code>)</strong> gap-adjusts Close Location Value using True Range high/low anchors (<code>H* = max(H_t, C_{t-1})</code>, <code>L* = min(L_t, C_{t-1})</code>) so overnight ETF gaps are properly captured:</p><p><code>CLV*_t = (2C_t - L*_t - H*_t) / (H*_t - L*_t)</code>, &nbsp; <code>TR-CMF-21 = &sum;(CLV* &times; V, 21) / &sum;(V, 21)</code></p><p>Alongside fixed thresholds (<code>&ge; +0.10</code> <em>Strong Accumulation</em>, <code>&le; -0.10</code> <em>Strong Distribution</em>), the engine computes a trailing 252-day <strong>Robust Median/MAD Z-Score</strong> (<code>Z_CMF</code>) and <strong>63-day OLS flow-vs-return residual divergence</strong>.</p>'
     },
     obv: {
       key: 'obv',
-      label: 'On-Balance Volume',
-      short: 'OBV',
-      desc: 'Running cumulative signed volume re-based to zero at visible window start with 21D MA.',
-      methodology: '<p><strong>On-Balance Volume (<code>obv</code>)</strong> calculates running cumulative signed volume: adding daily volume on up sessions and subtracting volume on down sessions.</p><p>To provide high-resolution local tape analysis regardless of inception age, the series is re-based to 0 at the visible window start (<code>OBV*_t = OBV_t - OBV_start</code>). A 21-day moving average overlay confirms whether local accumulation trend remains intact.</p>'
+      label: 'On-Balance Vol (BVC)',
+      short: 'BVC-OBV',
+      desc: 'Continuous Student-t4 BVC cumulative order-flow line re-based to zero with 63D OLS divergence.',
+      methodology: '<p><strong>BVC On-Balance Volume (<code>obv</code>)</strong> integrates continuous Student-<em>t</em><sub>4</sub> Bulk Volume Classification flow rather than coarse &plusmn;1 close-to-close signs, preventing noise flips on flat days:</p><p><code>BVC-OBV_t = &sum; V_k &times; [2F_{t_4}(z_k) - 1]</code>, re-based cleanly to <code>0</code> at the visible window start.</p><p>Because trailing moving averages of unbounded cumulative sums add pure phase lag without decision value, redundant SMA overlays are removed in favor of <strong>63-day OLS regression divergence</strong> and aggressive buy-share telemetry (<code>Buy %</code>).</p>'
     },
     pvt: {
       key: 'pvt',
-      label: 'Price-Volume Trend',
-      short: 'PVT',
-      desc: 'Volume scaled by proportional price moves, re-based to zero at visible window start.',
-      methodology: '<p><strong>Price-Volume Trend (<code>pvt</code>)</strong> weights volume by the proportional percentage magnitude of price changes:</p><p><code>PVT_t = PVT_{t-1} + Volume_t &times; ((Close_t - Close_{t-1}) / Close_{t-1})</code></p><p>Unlike OBV which adds flat volume regardless of whether price moved 0.05% or 5.0%, PVT scales linearly with the severity of price swings, capturing high-conviction tape momentum.</p>'
+      label: 'Price-Vol Trend (YZ)',
+      short: 'YZ-PVT',
+      desc: 'Yang-Zhang volatility-normalized log-return PVT re-based to zero with 63D OLS divergence.',
+      methodology: '<p><strong>Yang-Zhang Normalized Price-Volume Trend (<code>pvt</code>)</strong> scales daily turnover by standardized log-return intensity instead of raw unadjusted returns, making accumulation magnitude comparable across 1x, 2x, and 3x leveraged ETFs:</p><p><code>vPVT_t = vPVT_{t-1} + V_t &times; clamp(ln(C_t / C_{t-1}) / &sigma;_{YZ,daily,t}, -5, +5)</code></p><p>Series are re-based to <code>0</code> at visible window start and evaluated with <strong>63-day OLS regression divergence</strong>, <strong>Amihud Illiquidity-21</strong>, and <strong>Roll Effective Spread</strong>.</p>'
     },
     bvc: {
       key: 'bvc',
@@ -94,7 +94,6 @@
       ma: '#fbbf24',          // --flow-warning (amber)
       grid: 'rgba(255, 255, 255, 0.06)',
       label: '#8d9aaa',       // --flow-subtle
-      crosshair: 'rgba(255, 255, 255, 0.35)',
       climax: '#22d3ee'       // cyan highlight for RVOL >= 2.0x
     },
 
@@ -254,7 +253,7 @@
 
     yangZhangVol(bars, window = 21) {
       if (QuantCore && typeof QuantCore.yangZhangVolatility === 'function') {
-        return QuantCore.yangZhangVolatility(bars, window);
+        return QuantCore.yangZhangVolatility(bars, window, true);
       }
       if (!bars || bars.length < window) return new Array(bars ? bars.length : 0).fill(null);
       const out = new Array(bars.length).fill(null);
@@ -324,6 +323,26 @@
       let acc = 0;
       for (let i = 0; i < flow.length; i++) {
         acc += flow[i];
+        out[i] = acc;
+      }
+      return out;
+    },
+
+    volNormalizedPvt(bars, yzVol) {
+      if (!bars || !bars.length) return [];
+      const n = bars.length;
+      const out = new Array(n).fill(0);
+      let acc = 0;
+      for (let i = 1; i < n; i++) {
+        const c = bars[i].c != null ? bars[i].c : bars[i].close;
+        const pc = bars[i - 1].c != null ? bars[i - 1].c : bars[i - 1].close;
+        const v = bars[i].v != null ? bars[i].v : (bars[i].volume || 0);
+        if (pc > 0 && c > 0) {
+          const ret = Math.log(c / pc);
+          const volDaily = (yzVol && yzVol[i] && yzVol[i] > 0) ? (yzVol[i] / Math.sqrt(252)) : 0.02;
+          const zMove = Math.max(-5, Math.min(5, ret / Math.max(0.0025, volDaily)));
+          acc += v * zMove;
+        }
         out[i] = acc;
       }
       return out;
@@ -468,15 +487,15 @@
         }
         const sResid = Math.sqrt(sumResidSq / (K - 2));
         const lastResid = residuals[residuals.length - 1];
-        const zDiv = sResid > 1e-6 ? lastResid / sResid : 0;
+        const zDiv = sResid > 1e-12 ? lastResid / sResid : 0;
         if (beta > 0) {
-          if (zDiv <= -2.0) out[i] = 'BULLISH DIVERGENCE';
-          else if (zDiv >= 2.0) out[i] = 'BEARISH DIVERGENCE';
+          if (zDiv >= 2.0) out[i] = 'BULLISH DIVERGENCE';
+          else if (zDiv <= -2.0) out[i] = 'BEARISH DIVERGENCE';
           else if (zDiv > 0.5) out[i] = 'IN-SYNC ACCUMULATION';
           else if (zDiv < -0.5) out[i] = 'IN-SYNC DISTRIBUTION';
           else out[i] = 'NEUTRAL';
         } else {
-          out[i] = zDiv <= -2.0 ? 'BULLISH DIVERGENCE' : (zDiv >= 2.0 ? 'BEARISH DIVERGENCE' : 'NEUTRAL');
+          out[i] = zDiv >= 2.0 ? 'BULLISH DIVERGENCE' : (zDiv <= -2.0 ? 'BEARISH DIVERGENCE' : 'NEUTRAL');
         }
       }
       return out;
@@ -580,6 +599,14 @@
       return (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
     },
 
+    fmtIlliqBps(v) {
+      if (v == null || !isFinite(v)) return '—';
+      const bps = v * 1e4;
+      if (bps >= 10) return `${bps.toFixed(1)} bps/$M`;
+      if (bps >= 0.1) return `${bps.toFixed(2)} bps/$M`;
+      return `${bps.toFixed(3)} bps/$M`;
+    },
+
     fmtPrice(p) {
       if (p == null || !isFinite(p)) return '—';
       if (p >= 1000) return '$' + p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -655,6 +682,7 @@
       const unit = opts.unit || this.state.unit || 'shares';
 
       const dates = [];
+      const opens = [];
       const closes = [];
       const highs = [];
       const lows = [];
@@ -666,12 +694,14 @@
         if (!b) continue;
         const d = b.d || b.date;
         const c = b.c != null ? b.c : b.close;
+        const o = b.o != null ? b.o : (b.open != null ? b.open : c);
         const h = b.h != null ? b.h : (b.high != null ? b.high : c);
         const l = b.l != null ? b.l : (b.low != null ? b.low : c);
         const v = b.v != null ? b.v : (b.volume != null ? b.volume : 0);
 
         if (!d || c == null || c <= 0) continue;
         dates.push(d);
+        opens.push(o > 0 ? o : c);
         closes.push(c);
         highs.push(h);
         lows.push(l);
@@ -681,6 +711,13 @@
 
       if (dates.length < 2) return null;
 
+      let leverage = (opts.leverage != null && isFinite(opts.leverage)) ? Number(opts.leverage) : null;
+      if (leverage == null && this.state.ticker && Array.isArray(this._catalogInstruments)) {
+        const found = this._catalogInstruments.find(x => x && x.ticker === this.state.ticker);
+        if (found && found.leverage_value != null) leverage = Number(found.leverage_value);
+      }
+      if (!leverage || !isFinite(leverage)) leverage = 1;
+
       const volumes = (unit === 'dollar') ? dollarVolumes : rawVolumes;
       const range = this._resolveRangeIndices(dates, rangeKey, opts.customRange || this.state.customRange);
       const startIdx = range.startIdx;
@@ -689,9 +726,29 @@
       const maLen = 21;
       const sliceArr = arr => arr ? arr.slice(startIdx, endIdx + 1) : null;
 
+      // Shared econometric microstructure pipeline across full ticker history
+      const rawBars = dates.map((d, i) => ({ d, o: opens[i], h: highs[i], l: lows[i], c: closes[i], v: rawVolumes[i] }));
+      const unitBars = dates.map((d, i) => ({ d, o: opens[i], h: highs[i], l: lows[i], c: closes[i], v: volumes[i] }));
+
+      const yzFull = this.yangZhangVol(rawBars, 21);
+      const bvcFlowFull = this.bvcFlow(unitBars, yzFull);
+      const buyPctFull = volumes.map((v, i) => (i > 0 && v > 0)
+        ? Math.max(0, Math.min(100, (0.5 + 0.5 * (bvcFlowFull[i] / v)) * 100))
+        : 50);
+
+      const prior20Full = this.smaPrior(volumes, 20);
+      const rvolDowFull = this.rvolDow(dates, volumes, 63);
+      const rvolFull = volumes.map((v, i) => {
+        if (rvolDowFull[i] != null && isFinite(rvolDowFull[i])) return rvolDowFull[i];
+        return (prior20Full[i] && prior20Full[i] > 0) ? (v / prior20Full[i]) : null;
+      });
+      const illiqFull = this.amihudIlliq21(rawBars, leverage);
+      const rollFull = this.rollSpread21(rawBars, leverage);
+
       const basePayload = {
         study: studyKey,
         unit,
+        leverage,
         startIdx,
         endIdx,
         fullLength: dates.length,
@@ -705,26 +762,32 @@
         ma: null,
         colorSigns: null,
         zeroCentered: false,
-        rvol: null
+        rvol: sliceArr(rvolFull),
+        yzVol: sliceArr(yzFull),
+        illiq: sliceArr(illiqFull),
+        rollSpread: sliceArr(rollFull),
+        buyPct: sliceArr(buyPctFull),
+        divergence: null
       };
 
       if (studyKey === 'vol') {
-        const ma = this.sma(volumes, maLen);
         const signs = this.signSeries(closes);
-        const rvolFull = volumes.map((v, i) => (ma[i] && ma[i] > 0) ? (v / ma[i]) : null);
-
         return {
           ...basePayload,
           bars: sliceArr(volumes),
-          ma: sliceArr(ma),
+          ma: sliceArr(prior20Full),
           colorSigns: sliceArr(signs),
-          rvol: sliceArr(rvolFull),
           zeroCentered: false
         };
       }
 
       if (studyKey === 'osc') {
-        const line = this.volumeOscillator(volumes, 5, 21);
+        const fast5 = this.sma(volumes, 5);
+        const line = volumes.map((_, i) => {
+          if (fast5[i] == null || prior20Full[i] == null) return null;
+          if (prior20Full[i] === 0) return fast5[i] === 0 ? 0 : 100;
+          return ((fast5[i] - prior20Full[i]) / prior20Full[i]) * 100;
+        });
         return {
           ...basePayload,
           line: sliceArr(line),
@@ -733,14 +796,21 @@
       }
 
       if (studyKey === 'net') {
-        const signed = this.signedVolume(closes, volumes);
-        const line = this.rollingSum(signed, maLen);
-        const signs = this.signSeries(closes);
+        const line = this.rollingSum(bvcFlowFull, maLen);
+        const signs = bvcFlowFull.map(v => (v > 1e-9 ? 1 : (v < -1e-9 ? -1 : 0)));
+        const cumBvc = new Array(bvcFlowFull.length).fill(0);
+        let acc = 0;
+        for (let i = 0; i < bvcFlowFull.length; i++) {
+          acc += bvcFlowFull[i];
+          cumBvc[i] = acc;
+        }
+        const regDiv = this.detectRegressionDivergence(closes, cumBvc, 63);
         return {
           ...basePayload,
-          bars: sliceArr(signed),
+          bars: sliceArr(bvcFlowFull),
           line: sliceArr(line),
           colorSigns: sliceArr(signs),
+          divergence: sliceArr(regDiv),
           zeroCentered: true
         };
       }
@@ -748,45 +818,71 @@
       if (studyKey === 'cmf') {
         const line = this.cmf(highs, lows, closes, volumes, 21);
         const priceRet = this.priceReturn(closes, 21);
-        const divergence = this.cmfDivergence(priceRet, line);
         const cmfZ = this.cmfZScore(line, 252);
+        const cumTrFlow = new Array(closes.length).fill(0);
+        let accTr = 0;
+        for (let i = 0; i < closes.length; i++) {
+          const prevC = (i > 0 && closes[i - 1] != null) ? closes[i - 1] : closes[i];
+          const hStar = Math.max(highs[i], prevC);
+          const lStar = Math.min(lows[i], prevC);
+          const tr = hStar - lStar;
+          if (tr > 1e-9) {
+            const clv = Math.max(-1, Math.min(1, (2 * closes[i] - lStar - hStar) / tr));
+            accTr += clv * (volumes[i] || 0);
+          }
+          cumTrFlow[i] = accTr;
+        }
+        const regDiv = this.detectRegressionDivergence(closes, cumTrFlow, 63);
         return {
           ...basePayload,
           line: sliceArr(line),
           priceRet: sliceArr(priceRet),
-          divergence: sliceArr(divergence),
+          divergence: sliceArr(regDiv),
           cmfZScore: sliceArr(cmfZ),
           zeroCentered: true
         };
       }
 
       if (studyKey === 'bvc') {
-        const bars = dates.map((d, i) => ({ d, o: closes[i], h: highs[i], l: lows[i], c: closes[i], v: volumes[i] }));
-        const yz = this.yangZhangVol(bars, 21);
-        const flow = this.bvcFlow(bars, yz);
-        const obv = this.bvcObv(bars, yz);
+        const obv = this.bvcObv(unitBars, yzFull);
         const baseVal = obv[startIdx] || 0;
         const rebased = obv.map(v => v - baseVal);
+        const signs = bvcFlowFull.map(v => (v > 1e-9 ? 1 : (v < -1e-9 ? -1 : 0)));
+        const regDiv = this.detectRegressionDivergence(closes, obv, 63);
         return {
           ...basePayload,
-          bars: sliceArr(flow),
+          bars: sliceArr(bvcFlowFull),
           line: sliceArr(rebased),
-          yzVol: sliceArr(yz),
+          colorSigns: sliceArr(signs),
+          divergence: sliceArr(regDiv),
           zeroCentered: true
         };
       }
 
-      if (studyKey === 'obv' || studyKey === 'pvt') {
-        const full = studyKey === 'obv' ? this.obv(closes, volumes) : this.pvt(closes, volumes);
+      if (studyKey === 'obv') {
+        const full = this.bvcObv(unitBars, yzFull);
         const baseVal = full[startIdx] || 0;
         const rebased = full.map(v => v - baseVal);
-        const maFull = this.sma(full, maLen);
-        const maRebased = maFull.map(v => v == null ? null : v - baseVal);
-
+        const regDiv = this.detectRegressionDivergence(closes, full, 63);
         return {
           ...basePayload,
           line: sliceArr(rebased),
-          ma: sliceArr(maRebased),
+          ma: null,
+          divergence: sliceArr(regDiv),
+          zeroCentered: false
+        };
+      }
+
+      if (studyKey === 'pvt') {
+        const full = this.volNormalizedPvt(unitBars, yzFull);
+        const baseVal = full[startIdx] || 0;
+        const rebased = full.map(v => v - baseVal);
+        const regDiv = this.detectRegressionDivergence(closes, full, 63);
+        return {
+          ...basePayload,
+          line: sliceArr(rebased),
+          ma: null,
+          divergence: sliceArr(regDiv),
           zeroCentered: false
         };
       }
@@ -940,14 +1036,14 @@
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // Small indicator labels on right edge
-        ctx.fillStyle = 'rgba(52, 211, 153, 0.6)';
+        // Indicator labels on right edge (>= 10.5px readable contrast)
+        ctx.fillStyle = 'rgba(52, 211, 153, 0.72)';
         ctx.textAlign = 'left';
-        ctx.font = '9px ui-monospace, "SF Mono", "JetBrains Mono", monospace';
-        ctx.fillText('+0.10 ACCUM', pad.left + chartW - 74, yPlus10 - 3);
+        ctx.font = '10.5px ui-monospace, "SF Mono", "JetBrains Mono", monospace';
+        ctx.fillText('+0.10 ACCUM', pad.left + chartW - 86, yPlus10 - 4);
 
-        ctx.fillStyle = 'rgba(251, 113, 133, 0.6)';
-        ctx.fillText('-0.10 DISTRIB', pad.left + chartW - 78, yMinus10 + 10);
+        ctx.fillStyle = 'rgba(251, 113, 133, 0.72)';
+        ctx.fillText('-0.10 DISTRIB', pad.left + chartW - 92, yMinus10 + 11);
       }
 
       // ── X-Axis Date Labels ──
@@ -1404,14 +1500,21 @@
         }
       } else if (payload.study === 'net') {
         if (studyValue != null) {
-          regimeText = studyValue > 0 ? 'NET INFLOW' : (studyValue < 0 ? 'NET OUTFLOW' : 'FLAT');
+          regimeText = studyValue > 0 ? 'BVC NET INFLOW' : (studyValue < 0 ? 'BVC NET OUTFLOW' : 'FLAT');
           regimeColor = studyValue > 0 ? this.COLORS.up : (studyValue < 0 ? this.COLORS.down : this.COLORS.flat);
         }
       } else {
-        const maVal = payload.ma ? payload.ma[idx] : null;
-        if (studyValue != null && maVal != null) {
-          regimeText = studyValue >= maVal ? 'ACCUMULATION' : 'DISTRIBUTION';
-          regimeColor = studyValue >= maVal ? this.COLORS.up : this.COLORS.down;
+        const div = Array.isArray(payload.divergence) ? payload.divergence[idx] : null;
+        if (div && div !== 'NEUTRAL') {
+          regimeText = div;
+          regimeColor = div.includes('BULLISH') || div.includes('ACCUMULATION') ? this.COLORS.up : this.COLORS.down;
+        } else if (payload.line && idx >= 1) {
+          const prevBase = payload.line[Math.max(0, idx - 21)];
+          const curVal = payload.line[idx];
+          if (curVal != null && prevBase != null) {
+            regimeText = curVal >= prevBase ? 'NET ACCUMULATION' : 'NET DISTRIBUTION';
+            regimeColor = curVal >= prevBase ? this.COLORS.up : this.COLORS.down;
+          }
         }
       }
 
@@ -1431,18 +1534,28 @@
           : (payload.unit === 'dollar' ? this.fmtSigned(maVal, 'dollar') : this.fmtSigned(maVal, 'shares', { withSuffix: true }));
         extraRows += `
           <div class="vs-tt-row">
-            <span class="vs-tt-lbl">21D SMA</span>
+            <span class="vs-tt-lbl">PRIOR 20D BASE</span>
             <span class="vs-tt-val" style="color:${this.COLORS.ma}">${maFmt}</span>
           </div>`;
       }
 
-      if (payload.study === 'vol' && payload.rvol && payload.rvol[idx] != null) {
+      if (payload.rvol && payload.rvol[idx] != null) {
         const rvol = payload.rvol[idx];
         const rColor = rvol >= 2.0 ? this.COLORS.climax : (rvol >= 1.2 ? this.COLORS.line : 'inherit');
         extraRows += `
           <div class="vs-tt-row">
-            <span class="vs-tt-lbl">RVOL-21</span>
+            <span class="vs-tt-lbl">RVOL (DoW-63)</span>
             <span class="vs-tt-val" style="color:${rColor}">${rvol.toFixed(2)}&times;</span>
+          </div>`;
+      }
+
+      if ((payload.study === 'net' || payload.study === 'obv') && payload.buyPct && payload.buyPct[idx] != null) {
+        const bp = payload.buyPct[idx];
+        const bpColor = bp >= 55 ? this.COLORS.up : (bp <= 45 ? this.COLORS.down : '#e4e4e7');
+        extraRows += `
+          <div class="vs-tt-row">
+            <span class="vs-tt-lbl">BVC BUY SHARE</span>
+            <span class="vs-tt-val" style="color:${bpColor}">${bp.toFixed(1)}%</span>
           </div>`;
       }
 
@@ -1453,14 +1566,23 @@
           : this.fmtSigned(r21, 'shares', { withSuffix: true });
         extraRows += `
           <div class="vs-tt-row">
-            <span class="vs-tt-lbl">NET 21D SUM</span>
+            <span class="vs-tt-lbl">BVC 21D SUM</span>
             <span class="vs-tt-val">${r21Fmt}</span>
           </div>`;
       }
 
       if (payload.study === 'cmf') {
         const pr = payload.priceRet ? payload.priceRet[idx] : null;
-        const div = payload.divergence ? payload.divergence[idx] : null;
+        const zc = payload.cmfZScore ? payload.cmfZScore[idx] : null;
+        if (zc != null && isFinite(zc)) {
+          const zSign = zc > 0 ? '+' : '';
+          const zColor = zc >= 1.5 ? this.COLORS.up : (zc <= -1.5 ? this.COLORS.down : '#e4e4e7');
+          extraRows += `
+          <div class="vs-tt-row">
+            <span class="vs-tt-lbl">CMF Z-SCORE (252D)</span>
+            <span class="vs-tt-val" style="color:${zColor}">${zSign}${zc.toFixed(2)}&sigma;</span>
+          </div>`;
+        }
         if (pr != null && isFinite(pr)) {
           const prSign = pr > 0 ? '+' : '';
           const prColor = pr > 0 ? this.COLORS.up : (pr < 0 ? this.COLORS.down : this.COLORS.flat);
@@ -1470,14 +1592,40 @@
             <span class="vs-tt-val" style="color:${prColor}">${prSign}${pr.toFixed(2)}%</span>
           </div>`;
         }
-        if (div && div !== 'NEUTRAL') {
-          const divColor = div.includes('BULLISH') ? this.COLORS.up : (div.includes('BEARISH') ? this.COLORS.down : this.COLORS.line);
-          extraRows += `
+      }
+
+      if ((payload.study === 'vol' || payload.study === 'pvt') && payload.illiq && payload.illiq[idx] != null) {
+        extraRows += `
           <div class="vs-tt-row">
-            <span class="vs-tt-lbl">DIVERGENCE</span>
-            <span class="vs-tt-val" style="color:${divColor}">${div}</span>
+            <span class="vs-tt-lbl">AMIHUD ILLIQ-21</span>
+            <span class="vs-tt-val">${this.fmtIlliqBps(payload.illiq[idx])}</span>
           </div>`;
-        }
+      }
+
+      if (payload.study === 'pvt' && payload.rollSpread && payload.rollSpread[idx] != null) {
+        extraRows += `
+          <div class="vs-tt-row">
+            <span class="vs-tt-lbl">ROLL SPREAD</span>
+            <span class="vs-tt-val">${(payload.rollSpread[idx] * 10000).toFixed(1)} bps</span>
+          </div>`;
+      }
+
+      if (payload.yzVol && payload.yzVol[idx] != null) {
+        extraRows += `
+          <div class="vs-tt-row">
+            <span class="vs-tt-lbl">YZ VOL (21D ANN)</span>
+            <span class="vs-tt-val">${(payload.yzVol[idx] * 100).toFixed(1)}%</span>
+          </div>`;
+      }
+
+      const regDiv = Array.isArray(payload.divergence) ? payload.divergence[idx] : null;
+      if (regDiv && regDiv !== 'NEUTRAL') {
+        const divColor = regDiv.includes('BULLISH') || regDiv.includes('ACCUMULATION') ? this.COLORS.up : this.COLORS.down;
+        extraRows += `
+          <div class="vs-tt-row">
+            <span class="vs-tt-lbl">63D OLS DIV</span>
+            <span class="vs-tt-val" style="color:${divColor}">${regDiv}</span>
+          </div>`;
       }
 
       tooltip.innerHTML = `
@@ -1579,14 +1727,21 @@
         }
       } else if (payload.study === 'net') {
         if (studyValue != null) {
-          regimeText = studyValue > 0 ? 'NET INFLOW' : (studyValue < 0 ? 'NET OUTFLOW' : 'FLAT');
+          regimeText = studyValue > 0 ? 'BVC NET INFLOW' : (studyValue < 0 ? 'BVC NET OUTFLOW' : 'FLAT');
           regimeColor = studyValue > 0 ? this.COLORS.up : (studyValue < 0 ? this.COLORS.down : this.COLORS.flat);
         }
       } else {
-        const maVal = payload.ma ? payload.ma[idx] : null;
-        if (studyValue != null && maVal != null) {
-          regimeText = studyValue >= maVal ? 'ACCUMULATION' : 'DISTRIBUTION';
-          regimeColor = studyValue >= maVal ? this.COLORS.up : this.COLORS.down;
+        const div = Array.isArray(payload.divergence) ? payload.divergence[idx] : null;
+        if (div && div !== 'NEUTRAL') {
+          regimeText = div;
+          regimeColor = div.includes('BULLISH') || div.includes('ACCUMULATION') ? this.COLORS.up : this.COLORS.down;
+        } else if (payload.line && idx >= 1) {
+          const prevBase = payload.line[Math.max(0, idx - 21)];
+          const curVal = payload.line[idx];
+          if (curVal != null && prevBase != null) {
+            regimeText = curVal >= prevBase ? 'NET ACCUMULATION' : 'NET DISTRIBUTION';
+            regimeColor = curVal >= prevBase ? this.COLORS.up : this.COLORS.down;
+          }
         }
       }
 
@@ -1620,15 +1775,57 @@
         hudRegime.style.borderColor = (regimeColor && regimeColor !== 'inherit') ? `${regimeColor}44` : 'transparent';
       }
 
+      const hudMicroLbl = document.getElementById('vs-hud-micro-label');
+      const hudMicroVal = document.getElementById('vs-hud-micro-val');
+      if (hudMicroLbl && hudMicroVal) {
+        if (payload.study === 'cmf' && payload.cmfZScore && payload.cmfZScore[idx] != null) {
+          const zc = payload.cmfZScore[idx];
+          hudMicroLbl.textContent = 'Z_CMF (252D)';
+          hudMicroVal.textContent = `${zc >= 0 ? '+' : ''}${zc.toFixed(2)}σ`;
+          hudMicroVal.style.color = zc >= 1.5 ? this.COLORS.up : (zc <= -1.5 ? this.COLORS.down : '#e4e4e7');
+        } else if ((payload.study === 'net' || payload.study === 'obv') && payload.buyPct && payload.buyPct[idx] != null) {
+          const bp = payload.buyPct[idx];
+          hudMicroLbl.textContent = 'BVC BUY %';
+          hudMicroVal.textContent = `${bp.toFixed(1)}%`;
+          hudMicroVal.style.color = bp >= 55 ? this.COLORS.up : (bp <= 45 ? this.COLORS.down : '#e4e4e7');
+        } else if (payload.illiq && payload.illiq[idx] != null && (payload.study === 'vol' || payload.study === 'pvt')) {
+          hudMicroLbl.textContent = 'AMIHUD ILLIQ';
+          hudMicroVal.textContent = this.fmtIlliqBps(payload.illiq[idx]);
+          hudMicroVal.style.color = '#e4e4e7';
+        } else if (payload.yzVol && payload.yzVol[idx] != null) {
+          hudMicroLbl.textContent = 'YZ VOL (21D)';
+          hudMicroVal.textContent = `${(payload.yzVol[idx] * 100).toFixed(1)}%`;
+          hudMicroVal.style.color = '#e4e4e7';
+        } else {
+          hudMicroLbl.textContent = 'YZ VOL (21D)';
+          hudMicroVal.textContent = '—';
+          hudMicroVal.style.color = '#8d9aaa';
+        }
+      }
+
       const hudDiv = document.getElementById('vs-hud-div-badge');
       if (hudDiv) {
-        const divInfo = payload.divergence;
-        if (divInfo && divInfo.divergence) {
-          const isBear = divInfo.type === 'bearish';
-          hudDiv.textContent = isBear ? 'BEAR DIV (63D)' : 'BULL DIV (63D)';
-          hudDiv.style.color = isBear ? '#fb7185' : '#34d399';
-          hudDiv.style.background = isBear ? 'rgba(251,113,133,0.15)' : 'rgba(52,211,153,0.15)';
-          hudDiv.style.borderColor = isBear ? 'rgba(251,113,133,0.35)' : 'rgba(52,211,153,0.35)';
+        const div = Array.isArray(payload.divergence) ? payload.divergence[idx] : null;
+        if (div && div.includes('BEARISH')) {
+          hudDiv.textContent = 'BEAR DIV (63D)';
+          hudDiv.style.color = '#fb7185';
+          hudDiv.style.background = 'rgba(251,113,133,0.15)';
+          hudDiv.style.borderColor = 'rgba(251,113,133,0.35)';
+        } else if (div && div.includes('BULLISH')) {
+          hudDiv.textContent = 'BULL DIV (63D)';
+          hudDiv.style.color = '#34d399';
+          hudDiv.style.background = 'rgba(52,211,153,0.15)';
+          hudDiv.style.borderColor = 'rgba(52,211,153,0.35)';
+        } else if (div && div.includes('ACCUMULATION')) {
+          hudDiv.textContent = 'IN-SYNC ACC';
+          hudDiv.style.color = '#22d3ee';
+          hudDiv.style.background = 'rgba(34,211,238,0.12)';
+          hudDiv.style.borderColor = 'rgba(34,211,238,0.3)';
+        } else if (div && div.includes('DISTRIBUTION')) {
+          hudDiv.textContent = 'IN-SYNC DIST';
+          hudDiv.style.color = '#fb923c';
+          hudDiv.style.background = 'rgba(251,146,60,0.12)';
+          hudDiv.style.borderColor = 'rgba(251,146,60,0.3)';
         } else {
           hudDiv.textContent = 'NEUTRAL (63D)';
           hudDiv.style.color = '#94a3b8';
@@ -1781,9 +1978,13 @@
       }
 
       const studyForCompute = this.state.study === 'heatmap' ? 'vol' : this.state.study;
+      const catEntry = Array.isArray(this._catalogInstruments)
+        ? this._catalogInstruments.find(x => x && x.ticker === this.state.ticker)
+        : null;
       const payload = this.compute(history, studyForCompute, this.state.range, {
         unit: this.state.unit,
-        customRange: this.state.range === 'custom' ? this.state.customRange : null
+        customRange: this.state.range === 'custom' ? this.state.customRange : null,
+        leverage: catEntry && catEntry.leverage_value != null ? catEntry.leverage_value : 1
       });
 
       this._payload = payload;

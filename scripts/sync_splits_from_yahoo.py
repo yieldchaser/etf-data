@@ -2,7 +2,7 @@
 """Automated ongoing corporate action and split-adjustment sync from Yahoo Finance.
 
 This script:
-1. Probes Yahoo Finance corporate actions (`events=splits`) for all 145 ETFs in parallel.
+1. Probes Yahoo Finance corporate actions (`events=splits`) for all 160 ETFs in parallel.
 2. Compares against the canonical registry in `data/flows/splits.json`.
 3. Detects any new forward split or reverse split (combine).
 4. When a new split occurs:

@@ -1168,6 +1168,51 @@
       return Array.from(dateSet).sort();
     },
 
+    _activePriceSeries(ser) {
+      if (!ser) return [];
+      return (ser.tri && ser.tri.length === ser.closes.length) ? ser.tri : (ser.closes || []);
+    },
+
+    _getLatestYangZhangVol(ticker) {
+      const ser = this._getSeries(ticker);
+      if (!ser || !QuantCore || typeof QuantCore.yangZhangVolatility !== 'function') return null;
+      const rawBars = ser.rawBars || (this._etfHistoryCache ? this._etfHistoryCache[ticker] : null);
+      if (!rawBars || rawBars.length < 22) return null;
+      const yzSeries = QuantCore.yangZhangVolatility(rawBars, 21, false);
+      for (let i = yzSeries.length - 1; i >= 0; i--) {
+        const v = yzSeries[i];
+        if (v != null && isFinite(v) && v > 0) return v;
+      }
+      return null;
+    },
+
+    _getEffectiveThresholdInfo(ticker) {
+      const mode = this.state.zigzagMode || 'fixed';
+      const fixedPct = this.state.threshold;
+      if (mode === 'vol_adaptive') {
+        const yzVol = this._getLatestYangZhangVol(ticker);
+        if (yzVol != null && yzVol > 0) {
+          const adaptivePct = Math.max(2.0, 3.0 * yzVol * Math.sqrt(10) * 100);
+          return {
+            mode,
+            fixedPct,
+            effectivePct: adaptivePct,
+            yzVol,
+            label: `~${adaptivePct.toFixed(1)}% (YZ)`,
+            shortTag: `${adaptivePct.toFixed(1)}pct_yz`
+          };
+        }
+      }
+      return {
+        mode: 'fixed',
+        fixedPct,
+        effectivePct: fixedPct,
+        yzVol: null,
+        label: `${fixedPct}%`,
+        shortTag: `${fixedPct}pct`
+      };
+    },
+
     _getCycles(ticker) {
       const mode = this.state.zigzagMode || 'fixed';
       const key = `${ticker}|${this.state.threshold}|${mode}`;
@@ -1175,18 +1220,10 @@
       const ser = this._getSeries(ticker);
       if (!ser) return [];
 
-      let yz = null;
-      if (mode === 'vol_adaptive' && QuantCore && typeof QuantCore.yangZhangVolatility === 'function') {
-        const rawBars = ser.rawBars || (this._etfHistoryCache ? this._etfHistoryCache[ticker] : null);
-        if (rawBars && rawBars.length >= 22) {
-          const yzSeries = QuantCore.yangZhangVolatility(rawBars, 21, false);
-          yz = yzSeries[yzSeries.length - 1];
-        }
-      }
-
-      const prices = (ser.tri && ser.tri.length === ser.closes.length) ? ser.tri : ser.closes;
+      const yz = mode === 'vol_adaptive' ? this._getLatestYangZhangVol(ticker) : null;
+      const prices = this._activePriceSeries(ser);
       const cyc = detectCycles(ser.dates, prices, this.state.threshold, {
-        volAdaptive: mode === 'vol_adaptive',
+        volAdaptive: mode === 'vol_adaptive' && yz != null,
         yzVol: yz
       });
       this._cyclesCache[key] = cyc;
@@ -1299,7 +1336,7 @@
       this._cyclesCache = {};
       this._chartCache = null;
       this._chartCacheKey = null;
-      this._syncZigzagModeUI();
+      this._syncThresholdUI();
       this._scheduleThresholdRender();
     },
 
@@ -1465,17 +1502,29 @@
       if (typeof document === 'undefined') return;
       const val = this.state.threshold;
       const pct = (val / 300) * 100;
+      const info = this._getEffectiveThresholdInfo(this.state.activeTicker);
+      const isVol = info.mode === 'vol_adaptive';
       const disp = document.getElementById('tp-threshold-display');
       const fill = document.getElementById('tp-threshold-fill');
       const thumb = document.getElementById('tp-threshold-thumb');
-      if (disp) disp.textContent = `${val}%`;
+      const rail = document.getElementById('tp-threshold-rail');
+      if (disp) disp.textContent = info.label;
       if (fill) fill.style.width = `${pct.toFixed(2)}%`;
       if (thumb) {
         thumb.style.left = `${pct.toFixed(2)}%`;
         thumb.setAttribute('aria-valuenow', String(val));
+        thumb.setAttribute('aria-disabled', isVol ? 'true' : 'false');
+        thumb.tabIndex = isVol ? -1 : 0;
+      }
+      if (rail) {
+        rail.style.opacity = isVol ? '0.45' : '';
+        rail.style.pointerEvents = isVol ? 'none' : '';
+        rail.setAttribute('aria-disabled', isVol ? 'true' : 'false');
       }
       document.querySelectorAll('[data-tp-thr]').forEach(btn => {
-        btn.classList.toggle('active', parseInt(btn.dataset.tpThr, 10) === val);
+        btn.classList.toggle('active', !isVol && parseInt(btn.dataset.tpThr, 10) === val);
+        btn.disabled = isVol;
+        btn.style.opacity = isVol ? '0.45' : '';
       });
       document.querySelectorAll('[data-tp-zz-mode]').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.tpZzMode === (this.state.zigzagMode || 'fixed'));
@@ -1484,9 +1533,7 @@
 
     _syncZigzagModeUI() {
       if (typeof document === 'undefined') return;
-      document.querySelectorAll('[data-tp-zz-mode]').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.tpZzMode === (this.state.zigzagMode || 'fixed'));
-      });
+      this._syncThresholdUI();
     },
 
     _syncHeaderAndScopeUI() {
@@ -1535,9 +1582,9 @@
 
       // Dynamic Comparison Scope buttons
       const list = this._catalog;
-      const activeUndKey = normalizeUnderlyingKey(inst.underlying);
-      const hasUnderlyingPeers = Boolean(activeUndKey && list.some(x => x.ticker !== tk && normalizeUnderlyingKey(x.underlying) === activeUndKey));
-      const hasOppositePair = Boolean(activeUndKey && list.some(x => x.ticker !== tk && normalizeUnderlyingKey(x.underlying) === activeUndKey && isInverseInstrument(x) !== isInverseInstrument(inst)));
+      const activeUndKey = normalizeUnderlyingKey(inst.underlying, tk);
+      const hasUnderlyingPeers = Boolean(activeUndKey && list.some(x => x.ticker !== tk && normalizeUnderlyingKey(x.underlying, x.ticker) === activeUndKey));
+      const hasOppositePair = Boolean(activeUndKey && list.some(x => x.ticker !== tk && normalizeUnderlyingKey(x.underlying, x.ticker) === activeUndKey && isInverseInstrument(x) !== isInverseInstrument(inst)));
 
       document.querySelectorAll('[data-tp-compare]').forEach(btn => {
         const mode = btn.dataset.tpCompare;
@@ -1554,9 +1601,35 @@
 
       const addPicker = document.getElementById('tp-compare-add');
       if (addPicker && addPicker.options.length <= 1 && this._catalog.length) {
-        addPicker.innerHTML = '<option value="">+ Add ETF to Compare...</option>' +
-          this._catalog.map(x => `<option value="${_escapeHtml(x.ticker)}">${_escapeHtml(x.ticker)} — ${_escapeHtml(x.fund_name)} (${_escapeHtml(x.leverage)})</option>`).join('');
+        this.refreshPicker(this._pickerSort || 'aum');
       }
+    },
+
+    refreshPicker(sortMode = 'aum') {
+      this._pickerSort = ['aum', 'alpha', 'zscore'].includes(sortMode) ? sortMode : 'aum';
+      if (typeof document === 'undefined') return;
+      const addPicker = document.getElementById('tp-compare-add');
+      if (!addPicker || !this._catalog.length) return;
+      const sorted = [...this._catalog].sort((a, b) => {
+        if (this._pickerSort === 'alpha') return String(a.ticker || '').localeCompare(String(b.ticker || ''));
+        if (this._pickerSort === 'zscore') {
+          const za = Math.abs(Number(a.flow_zscore) || 0);
+          const zb = Math.abs(Number(b.flow_zscore) || 0);
+          if (zb !== za) return zb - za;
+        }
+        const aa = Number(a.aum_m) || 0;
+        const ab = Number(b.aum_m) || 0;
+        if (ab !== aa) return ab - aa;
+        return String(a.ticker || '').localeCompare(String(b.ticker || ''));
+      });
+      addPicker.innerHTML = '<option value="">Add ETF to Compare</option>' +
+        sorted.map(x => {
+          const aumM = Number(x.aum_m);
+          const aumTag = Number.isFinite(aumM) && aumM > 0
+            ? (aumM >= 1000 ? ` · $${(aumM / 1000).toFixed(1)}B` : ` · $${Math.round(aumM)}M`)
+            : '';
+          return `<option value="${_escapeHtml(x.ticker)}">${_escapeHtml(x.ticker)} (${_escapeHtml(x.leverage || '1x')}${_escapeHtml(aumTag)}) — ${_escapeHtml(x.fund_name)}</option>`;
+        }).join('');
     },
 
     renderCards() {
@@ -1569,10 +1642,14 @@
       const colors = assignSeriesColors(tickers, this._catalogMap);
 
       if (scopeHint) {
+        const effInfo = this._getEffectiveThresholdInfo(this.state.activeTicker);
+        const thrTxt = effInfo.mode === 'vol_adaptive'
+          ? `Vol-Adaptive YZ (~${effInfo.effectivePct.toFixed(1)}% active)`
+          : `>= ${this.state.threshold}% fixed ZigZag threshold`;
         if (this.state.compareMode === 'pair' && tickers.length === 1) {
-          scopeHint.textContent = `Showing ${tickers[0]} (no opposite-direction peer on same underlying)`;
+          scopeHint.textContent = `Showing ${tickers[0]} (no opposite-direction peer on same underlying) · ${thrTxt}`;
         } else {
-          scopeHint.textContent = `Comparing ${tickers.length} ${tickers.length === 1 ? 'instrument' : 'instruments'} at >= ${this.state.threshold}% ZigZag threshold`;
+          scopeHint.textContent = `Comparing ${tickers.length} ${tickers.length === 1 ? 'instrument' : 'instruments'} at ${thrTxt}`;
         }
       }
 
@@ -1581,11 +1658,12 @@
         const inst = this._catalogMap[tk] || {};
         const ser = this._getSeries(tk);
         const isActive = tk === this.state.activeTicker;
+        const safeTk = _escapeHtml(tk);
 
         if (!ser) {
-          return `<div class="tp-kpi-card ${isActive ? 'is-active' : ''}" data-tp-card="${tk}">
+          return `<div class="tp-kpi-card ${isActive ? 'is-active' : ''}" data-tp-card="${safeTk}">
             <div class="tp-kpi-header">
-              <span class="tp-kpi-ticker" style="color:${color}">${tk}</span>
+              <span class="tp-kpi-ticker" style="color:${color}">${safeTk}</span>
               <span class="tp-kpi-cycles">NO HISTORY</span>
             </div>
             <div class="tp-kpi-empty">OHLCV history unavailable</div>
@@ -1593,19 +1671,23 @@
         }
 
         const cycles = this._getCycles(tk);
-        const stats = computeCardAnalytics(ser.dates, ser.closes, ser.volumes, cycles, {
-          leverage: inst.leverage_value
+        const activePrices = this._activePriceSeries(ser);
+        const effLev = (QuantCore && typeof QuantCore.leverageAtDate === 'function' && ser.dates.length)
+          ? QuantCore.leverageAtDate(tk, ser.dates[ser.dates.length - 1], inst.leverage_value)
+          : inst.leverage_value;
+        const stats = computeCardAnalytics(ser.dates, activePrices, ser.volumes, cycles, {
+          leverage: effLev
         });
-        const levLabel = inst.leverage || '';
+        const levLabel = _escapeHtml(inst.leverage || '');
         const removeBtn = (this.state.compareMode === 'custom' && !isActive)
-          ? `<button type="button" class="tp-chip-remove" data-tp-remove-peer="${tk}" title="Remove ${tk}">&times;</button>`
+          ? `<button type="button" class="tp-chip-remove" data-tp-remove-peer="${safeTk}" title="Remove ${safeTk}">&times;</button>`
           : '';
 
         if (!stats || stats.cyclesCount === 0) {
-          return `<div class="tp-kpi-card ${isActive ? 'is-active' : ''}" data-tp-card="${tk}">
+          return `<div class="tp-kpi-card ${isActive ? 'is-active' : ''}" data-tp-card="${safeTk}">
             <div class="tp-kpi-header">
               <div class="tp-kpi-title-wrap">
-                <span class="tp-kpi-ticker" style="color:${color}">${tk}</span>
+                <span class="tp-kpi-ticker" style="color:${color}">${safeTk}</span>
                 <span class="tp-kpi-lev">${levLabel}</span>
               </div>
               <div class="tp-kpi-right">
@@ -1613,13 +1695,18 @@
                 ${removeBtn}
               </div>
             </div>
-            <div class="tp-kpi-main-metric">
-              <div class="tp-kpi-lbl">AVG GAIN</div>
-              <div class="tp-kpi-val tp-muted">0%</div>
+            <div class="tp-kpi-hero-row">
+              <div class="tp-kpi-hero-left">
+                <span class="tp-kpi-lbl">AVG GAIN</span>
+                <span class="tp-kpi-val tp-muted">0%</span>
+              </div>
+              <span class="tp-kpi-median">MED: 0%</span>
             </div>
-            <div class="tp-kpi-stats-row">
+            <div class="tp-kpi-stats-4">
               <div class="tp-stat-item"><div class="tp-stat-lbl">AVG DAYS</div><div class="tp-stat-val">—</div></div>
+              <div class="tp-stat-item"><div class="tp-stat-lbl">AVG GAP</div><div class="tp-stat-val">—</div></div>
               <div class="tp-stat-item"><div class="tp-stat-lbl">MAX GAIN</div><div class="tp-stat-val">—</div></div>
+              <div class="tp-stat-item"><div class="tp-stat-lbl">MIN GAIN</div><div class="tp-stat-val">—</div></div>
             </div>
           </div>`;
         }
@@ -1649,10 +1736,10 @@
           : '&uarr;Tr: —';
         const rng30Str = stats.range30dPct != null ? `Rng: ${stats.range30dPct}%` : 'Rng: —';
 
-        return `<div class="tp-kpi-card ${isActive ? 'is-active' : ''}" data-tp-card="${tk}">
+        return `<div class="tp-kpi-card ${isActive ? 'is-active' : ''}" data-tp-card="${safeTk}">
           <div class="tp-kpi-header">
             <div class="tp-kpi-title-wrap">
-              <span class="tp-kpi-ticker" style="color:${color}">${tk}</span>
+              <span class="tp-kpi-ticker" style="color:${color}">${safeTk}</span>
               <span class="tp-kpi-lev">${levLabel}</span>
             </div>
             <div class="tp-kpi-right">
@@ -1660,16 +1747,16 @@
               ${removeBtn}
             </div>
           </div>
-          <div class="tp-kpi-main-metric" title="Mean and median % gain across detected trough-to-peak cycles">
-            <div class="tp-kpi-lbl">AVG GAIN</div>
-            <div class="tp-kpi-val" style="color:${color}">${Math.round(stats.avgGain)}%</div>
-            <div class="tp-kpi-median">MED: ${Math.round(stats.medianGain)}%</div>
+          <div class="tp-kpi-hero-row" title="Mean and median % gain across detected trough-to-peak cycles">
+            <div class="tp-kpi-hero-left">
+              <span class="tp-kpi-lbl">AVG GAIN</span>
+              <span class="tp-kpi-val" style="color:${color}">${Math.round(stats.avgGain)}%</span>
+            </div>
+            <span class="tp-kpi-median">MED: ${Math.round(stats.medianGain)}%</span>
           </div>
-          <div class="tp-kpi-stats-row">
+          <div class="tp-kpi-stats-4">
             <div class="tp-stat-item"><div class="tp-stat-lbl">AVG DAYS</div><div class="tp-stat-val">${Math.round(stats.avgDays)}D</div></div>
             <div class="tp-stat-item"><div class="tp-stat-lbl">AVG GAP</div><div class="tp-stat-val">${avgGapStr}</div></div>
-          </div>
-          <div class="tp-kpi-stats-row tp-stats-no-border">
             <div class="tp-stat-item"><div class="tp-stat-lbl">MAX GAIN</div><div class="tp-stat-val" style="color:${color}">${Math.round(stats.maxGain)}%</div></div>
             <div class="tp-stat-item"><div class="tp-stat-lbl">MIN GAIN</div><div class="tp-stat-val" style="color:${color}">${Math.round(stats.minGain)}%</div></div>
           </div>
@@ -1781,7 +1868,7 @@
       }
 
       const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
-      const cacheKey = `${this.state.activeTicker}|${this.state.timeRange}|${this.state.zoom.startIdx}|${this.state.zoom.endIdx}|${this.state.threshold}|${Math.round(rect.width)}|${Math.round(rect.height)}|${dpr}`;
+      const cacheKey = `${this.state.activeTicker}|${this.state.timeRange}|${this.state.zoom.startIdx}|${this.state.zoom.endIdx}|${this.state.threshold}|${this.state.zigzagMode || 'fixed'}|${Math.round(rect.width)}|${Math.round(rect.height)}|${dpr}`;
 
       if (overlayOnly && this._chartCache && this._chartCacheKey === cacheKey) {
         const ctx = canvas.getContext('2d');
@@ -1820,8 +1907,9 @@
       if (chartW < 20 || chartH < 20) return;
 
       const { startIndex, endIndex } = this._getVisibleRange(ser);
+      const activePrices = this._activePriceSeries(ser);
       const visDates = ser.dates.slice(startIndex, endIndex + 1);
-      const visCloses = ser.closes.slice(startIndex, endIndex + 1);
+      const visCloses = activePrices.slice(startIndex, endIndex + 1);
       const visVols = ser.volumes.slice(startIndex, endIndex + 1);
       const n = visDates.length;
 
@@ -2143,7 +2231,7 @@
 
       const { startIndex, endIndex } = this._getVisibleRange(ser);
       const visDates = ser.dates.slice(startIndex, endIndex + 1);
-      const visCloses = ser.closes.slice(startIndex, endIndex + 1);
+      const visCloses = this._activePriceSeries(ser).slice(startIndex, endIndex + 1);
       const visVols = ser.volumes.slice(startIndex, endIndex + 1);
       const n = visDates.length;
       if (n < 2) return;
@@ -2263,22 +2351,13 @@
         }
       }
 
-      // 2. Live Crosshair
+      // 2. Hover Point Marker (Zero Crosshairs)
       if (this.state.hover.index != null && this.state.hover.index >= 0 && this.state.hover.index < n) {
         const x = getX(this.state.hover.index);
         const py = getY(visCloses[this.state.hover.index]);
         ctx.save();
-        ctx.setLineDash([4, 4]);
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(x, pad.top);
-        ctx.lineTo(x, pad.top + chartH);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        ctx.beginPath();
-        ctx.arc(x, py, 4, 0, Math.PI * 2);
+        ctx.arc(x, py, 4.5, 0, Math.PI * 2);
         ctx.fillStyle = tickerColor;
         ctx.fill();
         ctx.strokeStyle = '#ffffff';
@@ -2298,16 +2377,17 @@
       for (const tk of peers) {
         const ser = this._getSeries(tk);
         if (!ser || !ser.closes.length) continue;
+        const activePrices = this._activePriceSeries(ser);
         let res;
         if (this.state.ddMode === 'rolling_2y') {
-          res = computeRolling2YDD(ser.dates, ser.closes);
+          res = computeRolling2YDD(ser.dates, activePrices);
         } else if (this.state.ddMode === 'ath') {
-          res = computeATHDD(ser.dates, ser.closes);
+          res = computeATHDD(ser.dates, activePrices);
         } else {
-          res = computeRolling52WDD(ser.dates, ser.closes);
+          res = computeRolling52WDD(ser.dates, activePrices);
         }
         if (res.ts.length && res.ts[res.ts.length - 1] > lastTs) lastTs = res.ts[res.ts.length - 1];
-        full.push({ ticker: tk, ...res, closes: ser.closes });
+        full.push({ ticker: tk, ...res, closes: activePrices });
       }
 
       if (!full.length || !isFinite(lastTs)) return null;
@@ -2549,7 +2629,7 @@
       }
 
       const m = s.metrics;
-      curEl.querySelector('.tp-dd-kpi-lbl').innerHTML = `<span style="color:${tickerColor}">${tk}</span> &middot; ${curTitle}`;
+      curEl.querySelector('.tp-dd-kpi-lbl').innerHTML = `<span style="color:${tickerColor}">${_escapeHtml(tk)}</span> &middot; ${curTitle}`;
       const curValEl = curEl.querySelector('.tp-dd-kpi-val');
       curValEl.textContent = `${m.currentDD.toFixed(1)}%`;
       curValEl.style.color = m.currentDD < -0.01 ? '#fb7185' : '#34d399';
@@ -2839,25 +2919,19 @@
 
       if (!view || !this._ddMap.ready || this._ddHover.t == null) return;
       const colors = assignSeriesColors(peers, this._catalogMap);
-      const hx = this._ddMap.xOf(this._ddHover.t);
 
       ctx.save();
-      ctx.strokeStyle = 'rgba(251, 113, 133, 0.45)';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([4, 4]);
-      ctx.beginPath();
-      ctx.moveTo(hx, this._ddMap.top);
-      ctx.lineTo(hx, this._ddMap.top + this._ddMap.chartH);
-      ctx.stroke();
-      ctx.setLineDash([]);
       for (const s of view.series) {
         if (this.state.ddVisible[s.ticker] === false) continue;
         const p = _nearestDDPoint(s.pts, this._ddHover.t);
         if (Math.abs(p.t - this._ddHover.t) > DD_TIP_GAP_MS) continue;
         ctx.fillStyle = colors[s.ticker] || '#22d3ee';
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.25;
         ctx.beginPath();
-        ctx.arc(this._ddMap.xOf(p.t), this._ddMap.yOf(p.dd), 3.5, 0, Math.PI * 2);
+        ctx.arc(this._ddMap.xOf(p.t), this._ddMap.yOf(p.dd), 4, 0, Math.PI * 2);
         ctx.fill();
+        ctx.stroke();
       }
       ctx.restore();
     },
@@ -2880,9 +2954,13 @@
     renderTable() {
       if (typeof document === 'undefined') return;
       const tk = this.state.activeTicker;
+      const effInfo = this._getEffectiveThresholdInfo(tk);
       const titleEl = document.getElementById('tp-table-title');
       const container = document.getElementById('tp-table-container');
-      if (titleEl) titleEl.textContent = `${tk} Cycle Detail (>= ${this.state.threshold}%)`;
+      const thrLabel = effInfo.mode === 'vol_adaptive'
+        ? `Vol-Adaptive YZ (~${effInfo.effectivePct.toFixed(1)}%)`
+        : `>= ${this.state.threshold}%`;
+      if (titleEl) titleEl.textContent = `${tk} Cycle Detail (${thrLabel})`;
       if (!container) return;
 
       document.querySelectorAll('[data-tp-table-filter]').forEach(btn => {
@@ -3068,18 +3146,21 @@
 
       const bodyHtml = sortedYears.map(yr => {
         const cells = tickers.map(tk => {
+          const safeTk = _escapeHtml(tk);
           const hadBarsInYear = activeYearsByTicker[tk] && activeYearsByTicker[tk].has(yr);
           if (!hadBarsInYear) {
-            return `<td class="tp-matrix-no-data" title="${tk} ${yr}: Pre-inception (0 trading bars)">—</td>`;
+            return `<td class="tp-matrix-no-data" title="${safeTk} ${yr}: Pre-inception (0 trading bars)">—</td>`;
           }
           const st = freq[tk][yr];
           if (!st || !st.count) {
-            return `<td class="tp-matrix-no-data" title="${tk} ${yr}: 0 cycles >= ${this.state.threshold}%">0</td>`;
+            const eff = this._getEffectiveThresholdInfo(tk);
+            const thrDesc = eff.mode === 'vol_adaptive' ? `~${eff.effectivePct.toFixed(1)}% YZ` : `>= ${this.state.threshold}%`;
+            return `<td class="tp-matrix-no-data" title="${safeTk} ${yr}: 0 cycles (${thrDesc})">0</td>`;
           }
           const avgG = st.sumGain / st.count;
           const ratio = maxAvg === minAvg ? 0.5 : (avgG - minAvg) / (maxAvg - minAvg);
           const bg = hexToRgba(colors[tk] || '#22d3ee', 0.08 + ratio * 0.24);
-          return `<td style="background:${bg}" title="${tk} ${yr}: ${st.count} cycles, avg +${Math.round(avgG)}%">
+          return `<td style="background:${bg}" title="${safeTk} ${yr}: ${st.count} cycles, avg +${Math.round(avgG)}%">
             <strong>${st.count}</strong> <span class="tp-matrix-pct">(+${Math.round(avgG)}%)</span>
           </td>`;
         }).join('');
@@ -3096,7 +3177,7 @@
       container.innerHTML = `<table class="tp-matrix-table">
         <thead><tr>
           <th class="tp-matrix-year">YEAR</th>
-          ${tickers.map(tk => `<th style="color:${colors[tk] || '#22d3ee'}">${tk}</th>`).join('')}
+          ${tickers.map(tk => `<th style="color:${colors[tk] || '#22d3ee'}">${_escapeHtml(tk)}</th>`).join('')}
         </tr></thead>
         <tbody>${bodyHtml}</tbody>
         <tfoot><tr class="tp-matrix-totals"><td class="tp-matrix-year">TOTAL</td>${totalsCells}</tr></tfoot>
@@ -3162,7 +3243,8 @@
         ].join(',');
       });
 
-      this._triggerDownload(`${tk}_cycles_${this.state.threshold}pct.csv`, [headers.join(','), ...rows].join('\n'));
+      const effInfo = this._getEffectiveThresholdInfo(tk);
+      this._triggerDownload(`${tk}_cycles_${effInfo.shortTag}.csv`, [headers.join(','), ...rows].join('\n'));
     },
 
     downloadOHLCVCSV() {
@@ -3287,7 +3369,9 @@
         document.getElementById('tp-threshold-rail'),
         document.getElementById('tp-threshold-thumb'),
         () => ({ min: 0, max: 300, step: 1, val: this.state.threshold }),
-        val => this.setThreshold(val)
+        val => {
+          if (this.state.zigzagMode !== 'vol_adaptive') this.setThreshold(val);
+        }
       );
 
       // 3. Custom Price Chart Dual-Handle Brush
@@ -3389,9 +3473,11 @@
             tpTooltip.style.display = 'none';
           } else {
             const date = ser.dates[absIdx];
-            const price = ser.closes[absIdx];
+            const activePrices = this._activePriceSeries(ser);
+            const price = activePrices[absIdx];
+            const rawClose = ser.closes[absIdx];
             const vol = ser.volumes[absIdx] || 0;
-            const prev = absIdx > 0 ? ser.closes[absIdx - 1] : null;
+            const prev = absIdx > 0 ? activePrices[absIdx - 1] : null;
             const diff = prev != null ? price - prev : null;
             const pct = prev != null && prev > 0 ? (diff / prev) * 100 : null;
             const cyc = this._getCycles(this.state.activeTicker);
@@ -3400,13 +3486,18 @@
               if (c.troughDate === date) { pivotBadge = `<div class="tp-tt-badge tp-tt-trough">CYCLE #${c.num} TROUGH</div>`; break; }
               if (c.peakDate === date) { pivotBadge = `<div class="tp-tt-badge tp-tt-peak">CYCLE #${c.num} PEAK (+${c.gain.toFixed(1)}%)</div>`; break; }
             }
+            const rawRow = (rawClose != null && Math.abs(rawClose - price) > 0.01)
+              ? `<div class="tp-tt-row"><span class="tp-tt-lbl">RAW CLOSE</span><span class="tp-tt-val">${fmtPrice(rawClose)}</span></div>`
+              : '';
+            const priceLbl = rawRow ? 'TRI CLOSE' : 'CLOSE';
             const chgRow = diff != null
               ? `<div class="tp-tt-row"><span class="tp-tt-lbl">CHG</span><span class="tp-tt-val" style="color:${diff >= 0 ? '#34d399' : '#fb7185'}">${diff >= 0 ? '+' : '-'}${fmtPrice(Math.abs(diff))} (${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%)</span></div>`
               : '';
             tpTooltip.innerHTML = `
               <div class="tp-tt-date">${formatDisplayDate(date)}</div>
               ${pivotBadge}
-              <div class="tp-tt-row"><span class="tp-tt-lbl">CLOSE</span><span class="tp-tt-val">${fmtPrice(price)}</span></div>
+              <div class="tp-tt-row"><span class="tp-tt-lbl">${priceLbl}</span><span class="tp-tt-val">${fmtPrice(price)}</span></div>
+              ${rawRow}
               ${chgRow}
               <div class="tp-tt-row"><span class="tp-tt-lbl">VOL</span><span class="tp-tt-val">${fmtVol(vol)}</span></div>
             `;
@@ -3549,7 +3640,7 @@
                 const isAct = s.ticker === this.state.activeTicker;
                 const c = colors[s.ticker] || '#22d3ee';
                 return `<div class="tp-tt-row" style="${isAct ? 'font-weight:700;' : ''}">
-                  <span class="tp-tt-lbl" style="color:${c}">${s.ticker}${isAct ? ' *' : ''}</span>
+                  <span class="tp-tt-lbl" style="color:${c}">${_escapeHtml(s.ticker)}${isAct ? ' *' : ''}</span>
                   <span class="tp-tt-val" style="color:${c}">${near ? p.dd.toFixed(2) + '%' : '—'}</span>
                 </div>`;
               }).join('') + (visRows.length > 10 ? `<div class="tp-tt-row"><span class="tp-tt-lbl">+${visRows.length - 10} more peers</span><span class="tp-tt-val"></span></div>` : '');

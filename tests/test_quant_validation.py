@@ -113,3 +113,21 @@ def test_quant_validation_report_file_integrity():
     assert "stationary_bootstrap_microcvi" in report
     assert "empirical_falsification_gates" in report
     assert report["empirical_falsification_gates"]["phantom_ex_dividend_gate"]["passed"] is True
+    assert report["empirical_falsification_gates"]["phantom_ex_dividend_gate"]["ex_dividend_sessions_verified"] > 0
+
+
+def test_phantom_ex_dividend_gate_is_falsifiable():
+    """Verify Gate 1 rejects empty history and corrupted ex-dividend drops."""
+    empty_gates = run_empirical_falsification_gates(dfs={}, history={}, catalog={})
+    assert empty_gates["phantom_ex_dividend_gate"]["passed"] is False
+    assert empty_gates["phantom_ex_dividend_gate"]["ex_dividend_sessions_verified"] == 0
+
+    corrupt_history = {
+        "TLT": [
+            {"d": "2026-01-02", "c": 100.0, "tc": 100.0},
+            {"d": "2026-01-05", "c": 99.0, "tc": 97.5},
+        ]
+    }
+    corrupt_gates = run_empirical_falsification_gates(dfs={}, history=corrupt_history, catalog={})
+    assert corrupt_gates["phantom_ex_dividend_gate"]["passed"] is False
+    assert corrupt_gates["phantom_ex_dividend_gate"]["phantom_drawdowns_detected"] >= 1

@@ -1028,20 +1028,23 @@ def _instrument_entry(ticker: str, report: dict[str, Any]) -> dict[str, Any]:
     sched = tax["leverage_schedule"]
     polarity = market_beta_polarity(ticker, leverage_value)
 
-    # TRI return and arbitrage premium from etf_history.json
+    # TRI return and arbitrage premium from etf_history.json (strictly aligned to CSV latest_date)
     hist_cache = _get_history_cache()
     tri_return_20d = nav_return_20d_pct
     arb_premium_bps = 0.0
     if hist_cache and ticker in hist_cache:
         h_bars = hist_cache[ticker]
-        if len(h_bars) >= 20 and "tc" in h_bars[-1] and "tc" in h_bars[-20]:
-            p_prev = float(h_bars[-20]["tc"])
-            p_curr = float(h_bars[-1]["tc"])
-            if p_prev > 0:
-                tri_return_20d = round((p_curr / p_prev - 1.0) * 100.0, 2)
-        if h_bars and float(last["nav"]) > 0:
-            c_raw = float(h_bars[-1]["c"])
-            arb_premium_bps = round(math.log(c_raw / float(last["nav"])) * 10000.0, 1)
+        idx_match = next((idx for idx, b in enumerate(h_bars) if b.get("d") == last["date"]), None)
+        if idx_match is not None:
+            if idx_match >= 19 and "tc" in h_bars[idx_match] and "tc" in h_bars[idx_match - 19]:
+                p_prev = float(h_bars[idx_match - 19]["tc"])
+                p_curr = float(h_bars[idx_match]["tc"])
+                if p_prev > 0:
+                    tri_return_20d = round((p_curr / p_prev - 1.0) * 100.0, 2)
+            if float(last["nav"]) > 0 and h_bars[idx_match].get("c") is not None:
+                c_raw = float(h_bars[idx_match]["c"])
+                if c_raw > 0:
+                    arb_premium_bps = round(math.log(c_raw / float(last["nav"])) * 10000.0, 1)
 
     return {
         "ticker": ticker,

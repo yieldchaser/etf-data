@@ -575,7 +575,7 @@ def update_daily_flows(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Stealthy incremental daily updater for 160-ETF flow catalog.")
     parser.add_argument("--lookback-days", type=int, default=21, help="Calendar days of tail overlap to query (default: 21)")
-    parser.add_argument("--force-all", action="store_true", help="Query all 145 tickers even if lead probe has not advanced")
+    parser.add_argument("--force-all", action="store_true", help="Query all 160 tickers even if lead probe has not advanced")
     parser.add_argument("--dry-run", action="store_true", help="Check upstream without writing files")
     args = parser.parse_args(argv)
 

@@ -145,6 +145,7 @@
     const normMode = _normalizeMode(mode);
     const T = Array.isArray(bars) ? bars.length : 0;
     const dates = new Array(T);
+    const closes = new Float64Array(T);
     const turnover = new Float64Array(T);
     const dollarTurnover = new Float64Array(T);
     const trueRange = new Float64Array(T);
@@ -155,6 +156,7 @@
       const b = bars[t];
       dates[t] = _barDate(b);
       const c = _barClose(b);
+      closes[t] = c;
       const h = _barHigh(b, c);
       const l = _barLow(b, c);
       const v = _barVol(b);
@@ -284,6 +286,7 @@
 
     return {
       dates,
+      closes,
       peakScores,
       valleyScores,
       rvolArr,
@@ -522,9 +525,36 @@
       const leadIdx = leadMap ? leadMap.get(date) : undefined;
       const climaxDir = (leadM && leadM.climaxDirs && leadIdx !== undefined) ? leadM.climaxDirs[leadIdx] : 1;
 
+      let priceTicker = allTickers.includes(side)
+        ? side
+        : ((opts.focusTicker && activeTickers.includes(opts.focusTicker)) ? opts.focusTicker : leadPeakTicker);
+      let priceM = priceTicker ? etfMetrics[priceTicker] : null;
+      let priceMap = priceTicker ? indexMaps[priceTicker] : null;
+      let priceIdx = priceMap ? priceMap.get(date) : undefined;
+      if (priceIdx === undefined || priceIdx < 0 || !priceM || !priceM.closes || !(priceM.closes[priceIdx] > 0)) {
+        const candidates = [leadPeakTicker, leadValleyTicker, ...activeTickers];
+        for (const cand of candidates) {
+          if (!cand) continue;
+          const cm = etfMetrics[cand];
+          const cmap = indexMaps[cand];
+          const cidx = cmap ? cmap.get(date) : undefined;
+          if (cidx !== undefined && cidx >= 0 && cm && cm.closes && cm.closes[cidx] > 0) {
+            priceTicker = cand;
+            priceM = cm;
+            priceIdx = cidx;
+            break;
+          }
+        }
+      }
+      const focusClose = (priceM && priceM.closes && priceIdx !== undefined && priceM.closes[priceIdx] > 0)
+        ? priceM.closes[priceIdx]
+        : null;
+
       records.push({
         index: t,
         date,
+        focusClose,
+        priceTicker: priceTicker || '',
         peakScore: compPeak,
         valleyScore: compValley,
         maxRvol,
@@ -687,7 +717,7 @@
       else if (scope === 'universe') scopeId = 'universe';
 
       const normSide = scope === 'active' ? 'all' : side;
-      const cacheKey = `${scope}|${scopeId}|${unit}|${normSide}`;
+      const cacheKey = `${scope}|${scopeId}|${unit}|${normSide}|${ticker}`;
       if (this._aggCache.has(cacheKey)) {
         return this._aggCache.get(cacheKey);
       }
@@ -700,7 +730,7 @@
         }
       }
 
-      const payload = computeHeatAggregate(subset, unit === 'dollar' ? 'dollar' : 'share', normSide, this._catalogMap);
+      const payload = computeHeatAggregate(subset, unit === 'dollar' ? 'dollar' : 'share', normSide, this._catalogMap, { focusTicker: ticker });
       this._aggCache.set(cacheKey, payload);
       return payload;
     },
@@ -890,12 +920,19 @@
         cell.style.background = BASELINE_COLORS[colorIdx];
 
         const dateFmt = formatDisplayDate(day.date);
+        const priceStr = (day.focusClose != null && day.focusClose > 0) ? `$${day.focusClose.toFixed(1)}` : '';
         const rvolVal = isValleys
           ? (day.minRvol != null ? day.minRvol : (day.maxRvol != null ? day.maxRvol : 1.0))
           : (day.maxRvol != null ? day.maxRvol : 1.0);
         const leadTk = isValleys ? day.leadValleyTicker : day.leadPeakTicker;
-        const basketNote = (day.activeCount > 1 && leadTk) ? ` · Lead: ${leadTk} (${day.activeCount} ETFs)` : '';
+        const basketLead = (day.activeCount > 1 && leadTk) ? `Lead: ${leadTk} (${day.activeCount} ETFs)` : '';
         const rvolText = `RVOL ${rvolVal.toFixed(2)}x`;
+        const rankText = `Rank #${st.windowRank} / ${N}`;
+
+        cell.dataset.price = priceStr;
+        cell.dataset.date = dateFmt;
+        cell.dataset.rank = rankText;
+        cell.dataset.rvol = rvolText;
 
         if (isSpotlight) {
           if (!st.isHighlighted) {
@@ -922,18 +959,14 @@
           const filterTag = st.visualTier === 'RED_P99' ? 'P99' : (st.visualTier === 'ORANGE_P95' ? 'P95' : 'P90');
           const metricName = isValleys ? 'VOLUME DROUGHT' : label;
 
-          cell.dataset.date = dateFmt;
           cell.dataset.metric = metricName;
           cell.dataset.score = score.toFixed(1);
-          cell.dataset.rvol = rvolText;
-          cell.dataset.tag = `${climaxTag} · ${filterTag} #${st.windowRank}/${N}${basketNote}`;
+          cell.dataset.tag = `${filterTag} · ${climaxTag}${basketLead ? ' · ' + basketLead : ''}`;
           cell.dataset.tier = st.isHighlighted ? (st.isStructuralClimax ? 'structural' : 'local') : 'dim';
         } else {
-          cell.dataset.date = dateFmt;
           cell.dataset.metric = label;
           cell.dataset.score = score.toFixed(1);
-          cell.dataset.rvol = rvolText;
-          cell.dataset.tag = `Rank #${st.windowRank}/${N}${basketNote}`;
+          cell.dataset.tag = basketLead;
           cell.dataset.tier = 'baseline';
         }
 
@@ -980,7 +1013,7 @@
         if (this.state.scope === 'active') {
           sideGroup.style.display = 'none';
         } else {
-          sideGroup.style.display = 'inline-flex';
+          sideGroup.style.display = 'flex';
           const allTickersInScope = resolveScopeTickers(this.state.ticker, this._catalog, this.state.scope, 'all');
           const sortedConstituents = allTickersInScope.slice().sort((a, b) => {
             if (a === this.state.ticker) return -1;
@@ -999,10 +1032,10 @@
           const dirDisabledShort = activeScopeMeta.shortCount === 0 || activeScopeMeta.hasShort === false;
 
           let html = `
-            <span class="vs-heat-side-divider"></span>
-            <button type="button" class="vs-heat-btn ${this.state.side === 'all' ? 'active' : ''}" data-heat-side="all" title="Aggregate all ${allTickersInScope.length} ETFs in scope">All (${allTickersInScope.length})</button>
-            <button type="button" class="vs-heat-btn ${this.state.side === 'long' ? 'active' : ''}" data-heat-side="long" ${dirDisabledLong ? 'disabled' : ''} title="${dirDisabledLong ? 'No long ETFs in selected scope' : 'Filter to long ETFs'}">Long (${activeScopeMeta.longCount || 0})</button>
-            <button type="button" class="vs-heat-btn ${this.state.side === 'short' ? 'active' : ''}" data-heat-side="short" ${dirDisabledShort ? 'disabled' : ''} title="${dirDisabledShort ? 'No inverse ETFs in selected scope' : 'Filter to inverse/short ETFs'}">Short (${activeScopeMeta.shortCount || 0})</button>
+            <span class="flow-eyebrow vs-heat-row-lbl">Focus:</span>
+            <button type="button" class="vs-heat-btn ${this.state.side === 'all' ? 'active' : ''}" data-heat-side="all" title="Aggregate all ${allTickersInScope.length} ETFs in basket">All (${allTickersInScope.length})</button>
+            <button type="button" class="vs-heat-btn ${this.state.side === 'long' ? 'active' : ''}" data-heat-side="long" ${dirDisabledLong ? 'disabled' : ''} title="${dirDisabledLong ? 'No long ETFs in selected basket' : 'Filter to long ETFs'}">Long (${activeScopeMeta.longCount || 0})</button>
+            <button type="button" class="vs-heat-btn ${this.state.side === 'short' ? 'active' : ''}" data-heat-side="short" ${dirDisabledShort ? 'disabled' : ''} title="${dirDisabledShort ? 'No inverse ETFs in selected basket' : 'Filter to inverse/short ETFs'}">Short (${activeScopeMeta.shortCount || 0})</button>
           `;
 
           for (const tk of visibleTickers) {
@@ -1163,12 +1196,17 @@
             tooltip.style.display = 'none';
             return;
           }
+          const priceHtml = cell.dataset.price ? `<div class="vs-heat-tt-price">${cell.dataset.price}</div>` : '';
+          const rankHtml = cell.dataset.rank ? `<div class="vs-heat-tt-rank">${cell.dataset.rank}</div>` : '';
+          const tagHtml = cell.dataset.tag ? `<div class="vs-heat-tt-tag">${cell.dataset.tag}</div>` : '';
           tooltip.innerHTML = `
+            ${priceHtml}
             <div class="vs-heat-tt-date">${cell.dataset.date || ''}</div>
-            <div class="vs-heat-tt-main">${cell.dataset.metric || 'CVI'}: <strong>${cell.dataset.score || '0.0'}</strong> · ${cell.dataset.rvol || ''}</div>
-            <div class="vs-heat-tt-tag">${cell.dataset.tag || ''}</div>
+            ${rankHtml}
+            <div class="vs-heat-tt-main">${cell.dataset.metric || 'CVI'}: <strong>${cell.dataset.score || '0.0'}</strong> &middot; ${cell.dataset.rvol || ''}</div>
+            ${tagHtml}
           `;
-          tooltip.style.display = 'block';
+          tooltip.style.display = 'flex';
 
           const vpRect = viewport.getBoundingClientRect();
           const cRect = cell.getBoundingClientRect();

@@ -868,14 +868,16 @@ def test_macd_ui_symmetry_and_dual_slider_contract():
     assert 'id="macd-nav-chart"' in html
     assert 'id="macd-nav-screener"' in html
 
-    # 3. Symmetrical 2-Column Header layout
+    # 3. Symmetrical Header & Toolbar Switcher layout
     assert 'class="macd-title-col"' in html
     assert 'class="macd-quick-actions"' in html
     assert 'class="vs-title-col"' in html
-    assert 'class="vs-quick-actions"' in html
+    assert 'class="vs-switcher-cluster"' in html
+    assert 'id="vs-ticker-select"' in html
     assert 'id="vs-header-price"' in html
     assert 'id="vs-header-chg"' in html
     assert 'id="vs-header-regime-badge"' in html
+    assert 'Back to Flow Studio' not in html
 
     # 4. CSS Slider and Deck Rules
     assert '.macd-scrub-panel' in macd_css
@@ -885,6 +887,7 @@ def test_macd_ui_symmetry_and_dual_slider_contract():
     assert '.macd-title-col' in macd_css
     assert '.macd-quick-actions' in macd_css
     assert '.vs-fund-name' in vs_css
+    assert '.vs-switcher-cluster' in vs_css
 
     # 5. JavaScript Slider Mechanics
     assert '_initSlider()' in macd_js
@@ -1346,5 +1349,98 @@ def test_format_institutional_email_includes_upgraded_quant_metrics():
     assert "V: +0.68" in html_body
     assert "YZ 4.8%" in html_body
     assert "+10.0%" not in html_body
+
+
+def test_format_institutional_email_escapes_html_injection():
+    """Verify dynamic ticker, fund_name, underlying, and session fields are HTML-escaped."""
+    xss_signals = [
+        {
+            "ticker": "X<script>",
+            "fund_name": 'Bull & "Bear" <img src=x onerror=alert(1)> ETF',
+            "leverage": "2x&",
+            "underlying": "<svg onload=alert(1)>",
+            "latest_price": 42.5,
+            "chg_1h_pct": 1.2,
+            "chg_1d_pct": 6.5,
+            "candle_color_1h": "GREEN",
+            "macd_1h": -0.25,
+            "signal_1h": -0.35,
+            "hist_1h": 0.10,
+            "hist_delta_1h": 0.05,
+            "v_macd": 0.40,
+            "rvol_1h": 1.5,
+            "rvol_1h_diurnal": 1.8,
+            "yang_zhang_vol": 0.03,
+            "atr_1h": 0.4,
+            "z_macd_1h": -1.1,
+            "confluence_score": 65,
+            "is_breakout": True,
+            "breakout_type": "Breakout <b onmouseover=alert(1)>R4</b>",
+            "is_breakdown": False,
+            "signal_state": "SUB_ZERO_BOUNCE",
+            "is_subzero": True,
+            "bull_cross_fresh": True,
+            "daily_trend_bullish": True,
+            "pivots": {"P": 40.0, "S1": 39.0, "S2": 38.0, "R1": 41.0, "R3": 42.0, "R4": 42.4, "R5": 43.0},
+        }
+    ]
+    _, html_body = format_institutional_email(
+        xss_signals,
+        "2026-11-10 <script>12:00</script>",
+        ("INTRADAY", "SCAN", 'RADAR" <tag>'),
+    )
+    assert "<script>" not in html_body
+    assert "<img " not in html_body
+    assert "<svg " not in html_body
+    assert "<b onmouseover" not in html_body
+    assert "&lt;script&gt;" in html_body
+    assert "Bull &amp; &quot;Bear&quot;" in html_body
+
+
+@patch("yfinance.Ticker")
+def test_analyze_ticker_converts_utc_1h_timestamps_to_eastern_rth(mock_ticker):
+    """Verify naive/UTC 1H bars are normalized to America/New_York and post-16:00 bars dropped."""
+    # 14:30Z -> 09:30 EST/EDT; 21:30Z -> 16:30/17:30 ET (outside RTH 09:30-15:59)
+    n_1h = 150
+    utc_idx = pd.date_range("2026-10-01 14:30:00", periods=n_1h, freq="h", tz="UTC")
+    # Build alternating valid RTH hours in UTC (14:30..20:30 UTC -> 10:30..16:30 EDT -> keep 14..19) plus post-close bars
+    rth_dates = pd.bdate_range("2026-09-01", periods=30)
+    slots = []
+    for d in rth_dates:
+        for hr in (14, 15, 16, 17, 18, 19, 21):  # 21:30 UTC = 17:30 EDT (after close)
+            slots.append(pd.Timestamp(f"{d.strftime('%Y-%m-%d')} {hr:02d}:30:00", tz="UTC"))
+    df_1h = pd.DataFrame(
+        {
+            "Open": [20.0] * len(slots),
+            "High": [21.0] * len(slots),
+            "Low": [19.0] * len(slots),
+            "Close": [20.5] * len(slots),
+            "Volume": [5000] * len(slots),
+        },
+        index=pd.DatetimeIndex(slots),
+    )
+    df_1d = pd.DataFrame(
+        {
+            "Open": [20.0] * 70,
+            "High": [21.0] * 70,
+            "Low": [19.0] * 70,
+            "Close": [20.0] * 70,
+            "Volume": [10000] * 70,
+        },
+        index=pd.date_range("2026-07-01", periods=70, freq="D"),
+    )
+
+    inst = MagicMock()
+    inst.history.side_effect = lambda period, interval, prepost=False: df_1h if interval == "1h" else df_1d
+    inst.fast_info = MagicMock()
+    inst.fast_info.last_price = 20.5
+    mock_ticker.return_value = inst
+
+    res = analyze_ticker("TZTEST", {"fund_name": "TZ Test ETF", "leverage": "2x"})
+    assert res is not None
+    # Every emitted 1H bar timestamp must be in Eastern RTH [09, 15]
+    for bar in res["chart_bars_1h"]:
+        hh = int(bar["dt"][11:13])
+        assert 9 <= hh <= 15, f"Non-RTH hour leaked into Eastern 1H bars: {bar['dt']}"
 
 

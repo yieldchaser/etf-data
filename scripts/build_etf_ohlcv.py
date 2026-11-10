@@ -340,7 +340,12 @@ def sanitize_bad_ticks(
                         target_c = round_price(c_prev * (1.0 + perf_val))
                         b = dict(out[i])
                         b["c"] = target_c
-                        b["o"] = target_c if abs(math.log(float(b["o"]) / target_c)) > 0.25 else float(b["o"])
+                        b_open = float(b["o"])
+                        b["o"] = (
+                            target_c
+                            if (b_open <= 0 or target_c <= 0 or abs(math.log(b_open / target_c)) > 0.25)
+                            else b_open
+                        )
                         b["h"] = max(b["o"], target_c)
                         b["l"] = min(b["o"], target_c)
                         out[i] = _normalize_bar_geometry(b)
@@ -378,7 +383,7 @@ def sanitize_bad_ticks(
                     wick_clamp_thresh = max(4.5 * med_p, 0.15)
                     if p_max > 0 and h_curr > p_max and math.log(h_curr / p_max) > wick_clamp_thresh:
                         out[i]["h"] = round_price(p_max * math.exp(2.0 * med_p))
-                    if p_min > 0 and l_curr < p_min and math.log(p_min / l_curr) > wick_clamp_thresh:
+                    if p_min > 0 and l_curr < p_min and (l_curr <= 0 or math.log(p_min / l_curr) > wick_clamp_thresh):
                         out[i]["l"] = round_price(p_min * math.exp(-2.0 * med_p))
 
                     out[i] = _normalize_bar_geometry(out[i])

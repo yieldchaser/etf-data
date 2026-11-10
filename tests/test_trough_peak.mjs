@@ -277,4 +277,48 @@ console.log('Testing TroughPeak ZigZag Cycle & Underwater Drawdown Engine...');
   console.log('  [PASS] Leverage drag, Ulcer Index, CDaR, 1x-eq DD & Extreme cycle label verified');
 }
 
+// 9. Active TRI Series Selection, YZ Backward Scan & Vol-Adaptive Threshold Readout
+{
+  const synthBars = [];
+  const startMs = Date.UTC(2026, 0, 2);
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(startMs + i * 86400000).toISOString().slice(0, 10);
+    const base = 100 + i * 0.8;
+    synthBars.push({
+      d,
+      o: base * 0.99,
+      h: base * 1.03,
+      l: base * 0.97,
+      c: base,
+      tc: base * (1 + i * 0.002),
+      v: 100000 + i * 1000
+    });
+  }
+  // Trailing degenerate zero-range bar must not wipe out backward Yang-Zhang lookup
+  synthBars.push({ d: '2026-02-05', o: 124, h: 124, l: 124, c: 124, tc: 132, v: 50000 });
+
+  TroughPeak._etfHistoryCache = { SYNTH_DIV: synthBars };
+  TroughPeak._seriesCache = {};
+  TroughPeak._cyclesCache = {};
+  const ser = TroughPeak._getSeries('SYNTH_DIV');
+  assert.ok(ser, 'Expected normalized series for SYNTH_DIV');
+  const activePrices = TroughPeak._activePriceSeries(ser);
+  assert.deepStrictEqual(activePrices, ser.tri, '_activePriceSeries selects total-return index when present');
+  assert.notStrictEqual(activePrices[10], ser.closes[10], 'Expected TRI to differ from unadjusted close when tc != c');
+
+  TroughPeak.state.zigzagMode = 'vol_adaptive';
+  TroughPeak.state.threshold = 30;
+  const effVol = TroughPeak._getEffectiveThresholdInfo('SYNTH_DIV');
+  assert.strictEqual(effVol.mode, 'vol_adaptive');
+  assert.ok(effVol.effectivePct > 0 && effVol.label.includes('(YZ)'), `Expected YZ label, got ${effVol.label}`);
+  const cycVol = TroughPeak._getCycles('SYNTH_DIV');
+  assert.ok(Array.isArray(cycVol));
+
+  TroughPeak.state.zigzagMode = 'fixed';
+  const effFixed = TroughPeak._getEffectiveThresholdInfo('SYNTH_DIV');
+  assert.strictEqual(effFixed.mode, 'fixed');
+  assert.strictEqual(effFixed.effectivePct, 30);
+  console.log('  [PASS] TRI active price selection, YZ backward scan & Vol-Adaptive threshold readout verified');
+}
+
 console.log('\nAll TroughPeak tests PASSED successfully.');

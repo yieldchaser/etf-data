@@ -1,7 +1,7 @@
 /* ==========================================================================
    MACD Momentum Engine & Tactical Screener Stylesheet — etf-data Fund Flows
    Dual-Pane Canvas 2D Quantitative Interface & Tactical Radar
-   Institutional Quantitative Execution Architecture · Systematic Multi-Horizon Model
+   Systematic Multi-Horizon Execution Architecture
    ========================================================================== */
 
 .flow-macd-card {
@@ -16,6 +16,7 @@
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Inter", sans-serif;
   box-sizing: border-box;
   width: 100%;
+  min-width: 0;
   max-width: 100%;
 }
 
@@ -28,15 +29,18 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 1rem;
   padding-bottom: 0.85rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .macd-title-col {
   min-width: 0;
-  flex: 1 1 auto;
+  max-width: 100%;
+  flex: 1 1 260px;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -48,6 +52,7 @@
   gap: 0.45rem;
   flex-wrap: wrap;
   min-width: 0;
+  max-width: 100%;
 }
 
 .macd-fund-name {
@@ -73,13 +78,22 @@
 .macd-quick-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.65rem;
-  flex-shrink: 0;
+  min-width: 0;
+  max-width: 100%;
   margin-left: auto;
 }
 
+.macd-switch-label {
+  min-width: 0;
+  max-width: 100%;
+  flex: 1 1 auto;
+}
+
 .macd-header-select {
-  max-width: 210px;
+  min-width: 245px;
+  max-width: 340px;
   text-overflow: ellipsis;
 }
 
@@ -248,18 +262,26 @@
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 6px;
   padding: 0.5rem 0.75rem;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .macd-tf-group {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.35rem;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .macd-range-group {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.3rem;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .macd-tf-btn,
@@ -794,6 +816,37 @@
     padding: 0.85rem;
     gap: 0.85rem;
   }
+  .macd-fund-name {
+    max-width: 100%;
+    white-space: normal;
+  }
+  #macd-active-category {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+  }
+  .macd-quick-actions {
+    width: 100%;
+    margin-left: 0;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+  .macd-switch-label {
+    width: 100%;
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+  .macd-header-select {
+    flex: 1 1 0;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+  .macd-nav-switch {
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
   .macd-canvas-viewport {
     min-height: 420px;
   }
@@ -802,7 +855,8 @@
   }
   .macd-search-box {
     width: 100%;
-    min-width: 100%;
+    min-width: 0;
+    flex: 1 1 180px;
   }
   .macd-screener-toolbar {
     flex-direction: column;
@@ -811,6 +865,7 @@
   .macd-ticker-row {
     overflow-x: auto;
     flex-wrap: nowrap;
+    max-width: 100%;
     scrollbar-width: thin;
     -webkit-overflow-scrolling: touch;
   }

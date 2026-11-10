@@ -31,6 +31,7 @@ import datetime as dt
 import email.mime.multipart
 import email.mime.text
 import email.utils
+import html as html_lib
 import json
 import math
 import os
@@ -188,7 +189,6 @@ def clean_category_name(raw_cat: str) -> str:
     """Strip leading numbers and maintenance notes from category string."""
     if not raw_cat:
         return "Unclassified"
-    import re
     cleaned = re.sub(r"^\d+\.\s*", "", str(raw_cat))
     cleaned = re.sub(r"\s*\(Pruned to Key Anchors Only\)", "", cleaned, flags=re.IGNORECASE)
     return cleaned.strip()
@@ -323,6 +323,7 @@ def analyze_ticker(
         df_1h = df_1h.dropna(subset=["Open", "High", "Low", "Close", "Volume"])
 
         # RTH session calendar filter (America/New_York 09:30 - 16:00 ET, DST safe)
+        ts_1h_seq = df_1h.index
         try:
             if hasattr(df_1h.index, "tz_convert"):
                 df_1h_ny_idx = df_1h.index.tz_convert(NY_TZ)
@@ -336,8 +337,10 @@ def analyze_ticker(
             ]
             if sum(rth_mask) >= min_1h_bars:
                 df_1h = df_1h.iloc[rth_mask]
+                df_1h_ny_idx = df_1h_ny_idx[rth_mask]
+            ts_1h_seq = df_1h_ny_idx
         except Exception:
-            pass
+            ts_1h_seq = df_1h.index
 
         if len(df_1h) < min_1h_bars:
             return None
@@ -348,7 +351,7 @@ def analyze_ticker(
         opens_1h = [float(x) for x in df_1h["Open"]]
         timestamps_1h = [
             ts.strftime("%Y-%m-%d %H:%M") if hasattr(ts, "strftime") else str(ts)[:16]
-            for ts in df_1h.index
+            for ts in ts_1h_seq
         ]
 
         # Clean 1D series
@@ -497,7 +500,7 @@ def analyze_ticker(
                 same_hr_vols = [
                     float(volumes_1h[j])
                     for j in range(max(0, len(volumes_1h) - 140), len(volumes_1h) - 1)
-                    if int(timestamps_1h[j][11:13]) == target_hr
+                    if len(timestamps_1h[j]) >= 13 and timestamps_1h[j][11:13].isdigit() and int(timestamps_1h[j][11:13]) == target_hr
                 ][-20:]
                 if len(same_hr_vols) >= 5:
                     med_hr = sorted(same_hr_vols)[len(same_hr_vols) // 2]
@@ -999,17 +1002,23 @@ def format_institutional_email(
             chg_badge = f" ({pm_chg:+.2f}%)" if pm_chg is not None else ""
             pm_display_html = f'<div style="font-size:10px; color:{pm_color}; font-weight:700; margin-top:2px;">Pre-Mkt: ${it["live_premarket_price"]:.2f}{chg_badge}</div>'
 
+        safe_ticker = html_lib.escape(str(it["ticker"]), quote=True)
+        safe_lev = html_lib.escape(str(it.get("leverage", "1x")), quote=True)
+        safe_breakout = html_lib.escape(str(it.get("breakout_type", "VOLATILITY BREAKOUT")), quote=True)
+        safe_name = html_lib.escape(str(it.get("fund_name", it["ticker"])), quote=True)
+        safe_und = html_lib.escape(str(it.get("underlying", "—")), quote=True)
+
         card = f"""
-        <!-- CARD: {it['ticker']} BREAKOUT -->
+        <!-- CARD: {safe_ticker} BREAKOUT -->
         <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#140e1f; border:1px solid #3b2054; border-left:4px solid #c084fc; border-radius:6px; margin-bottom:14px; overflow:hidden;">
           <tr>
             <td style="padding:14px 16px;">
               <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
                 <tr>
                   <td style="vertical-align:middle;">
-                    <span style="font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:19px; font-weight:800; color:#c084fc; letter-spacing:0.03em;">{it['ticker']}</span>
-                    <span style="display:inline-block; margin:2px 2px 2px 6px; background-color:#2e1065; color:#e9d5ff; padding:2px 7px; border-radius:3px; font-size:10.5px; font-weight:700; font-family:ui-monospace, monospace;">{it.get('leverage', '1x')}</span>
-                    <span style="display:inline-block; margin:2px 2px 2px 4px; background-color:rgba(192,132,252,0.2); color:#c084fc; border:1px solid rgba(192,132,252,0.45); padding:2px 7px; border-radius:3px; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:0.04em;">{it.get('breakout_type', 'VOLATILITY BREAKOUT')}</span>
+                    <span style="font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:19px; font-weight:800; color:#c084fc; letter-spacing:0.03em;">{safe_ticker}</span>
+                    <span style="display:inline-block; margin:2px 2px 2px 6px; background-color:#2e1065; color:#e9d5ff; padding:2px 7px; border-radius:3px; font-size:10.5px; font-weight:700; font-family:ui-monospace, monospace;">{safe_lev}</span>
+                    <span style="display:inline-block; margin:2px 2px 2px 4px; background-color:rgba(192,132,252,0.2); color:#c084fc; border:1px solid rgba(192,132,252,0.45); padding:2px 7px; border-radius:3px; font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:0.04em;">{safe_breakout}</span>
                     <span style="display:inline-block; margin:2px 2px 2px 4px; background-color:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(52,211,153,0.4); padding:2px 7px; border-radius:3px; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">1H CANDLE: GREEN</span>
                   </td>
                   <td style="text-align:right; vertical-align:middle; white-space:nowrap; padding-left:12px;">
@@ -1019,7 +1028,7 @@ def format_institutional_email(
                 </tr>
                 <tr>
                   <td style="padding-top:4px; font-size:11.5px; color:#cbd5e1;">
-                    {it.get('fund_name', it['ticker'])} &middot; <span style="color:#94a3b8;">Underlying: {it.get('underlying', '—')}</span>
+                    {safe_name} &middot; <span style="color:#94a3b8;">Underlying: {safe_und}</span>
                   </td>
                   <td style="padding-top:4px; text-align:right; font-family:ui-monospace, monospace; font-size:11.5px;">
                     <span style="color:{chg_1h_color}; font-weight:700;">1H: {chg_1h:+.2f}%</span>
@@ -1134,8 +1143,13 @@ def format_institutional_email(
             chg_badge = f" ({pm_chg:+.2f}%)" if pm_chg is not None else ""
             pm_display_html = f'<div style="font-size:10px; color:{pm_color}; font-weight:700; margin-top:2px;">Pre-Mkt: ${it["live_premarket_price"]:.2f}{chg_badge}</div>'
 
+        safe_ticker = html_lib.escape(str(it["ticker"]), quote=True)
+        safe_lev = html_lib.escape(str(it.get("leverage", "1x")), quote=True)
+        safe_name = html_lib.escape(str(it.get("fund_name", it["ticker"])), quote=True)
+        safe_und = html_lib.escape(str(it.get("underlying", "—")), quote=True)
+
         card = f"""
-        <!-- CARD: {it['ticker']} -->
+        <!-- CARD: {safe_ticker} -->
         <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#111622; border:1px solid #1e2638; border-left:4px solid #38bdf8; border-radius:6px; margin-bottom:14px; overflow:hidden;">
           <tr>
             <td style="padding:14px 16px;">
@@ -1143,8 +1157,8 @@ def format_institutional_email(
               <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
                 <tr>
                   <td style="vertical-align:middle;">
-                    <span style="font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:19px; font-weight:800; color:#38bdf8; letter-spacing:0.03em;">{it['ticker']}</span>
-                    <span style="display:inline-block; margin:2px 2px 2px 6px; background-color:#1e2638; color:#cbd5e1; padding:2px 7px; border-radius:3px; font-size:10.5px; font-weight:700; font-family:ui-monospace, monospace;">{it.get('leverage', '1x')}</span>
+                    <span style="font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:19px; font-weight:800; color:#38bdf8; letter-spacing:0.03em;">{safe_ticker}</span>
+                    <span style="display:inline-block; margin:2px 2px 2px 6px; background-color:#1e2638; color:#cbd5e1; padding:2px 7px; border-radius:3px; font-size:10.5px; font-weight:700; font-family:ui-monospace, monospace;">{safe_lev}</span>
                     <span style="display:inline-block; margin:2px 2px 2px 4px; background-color:rgba(16,185,129,0.15); color:#34d399; border:1px solid rgba(52,211,153,0.35); padding:2px 7px; border-radius:3px; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">SUB-ZERO REVERSAL</span>
                     <span style="display:inline-block; margin:2px 2px 2px 4px; background-color:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(52,211,153,0.4); padding:2px 7px; border-radius:3px; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">1H CANDLE: GREEN (CONFIRMED)</span>
                   </td>
@@ -1155,7 +1169,7 @@ def format_institutional_email(
                 </tr>
                 <tr>
                   <td style="padding-top:4px; font-size:11.5px; color:#cbd5e1;">
-                    {it.get('fund_name', it['ticker'])} &middot; <span style="color:#94a3b8;">Underlying: {it.get('underlying', '—')}</span>
+                    {safe_name} &middot; <span style="color:#94a3b8;">Underlying: {safe_und}</span>
                   </td>
                   <td style="padding-top:4px; text-align:right; font-family:ui-monospace, monospace; font-size:11.5px;">
                     <span style="color:{chg_1h_color}; font-weight:700;">1H: {chg_1h:+.2f}%</span>
@@ -1286,8 +1300,13 @@ def format_institutional_email(
             chg_badge = f" ({pm_chg:+.2f}%)" if pm_chg is not None else ""
             pm_display_html = f'<div style="font-size:10px; color:{pm_color}; font-weight:700; margin-top:2px;">Pre-Mkt: ${it["live_premarket_price"]:.2f}{chg_badge}</div>'
 
+        safe_ticker = html_lib.escape(str(it["ticker"]), quote=True)
+        safe_lev = html_lib.escape(str(it.get("leverage", "1x")), quote=True)
+        safe_name = html_lib.escape(str(it.get("fund_name", it["ticker"])), quote=True)
+        safe_und = html_lib.escape(str(it.get("underlying", "—")), quote=True)
+
         card = f"""
-        <!-- CARD: {it['ticker']} -->
+        <!-- CARD: {safe_ticker} -->
         <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#111622; border:1px solid #1e2638; border-left:4px solid #10b981; border-radius:6px; margin-bottom:14px; overflow:hidden;">
           <tr>
             <td style="padding:14px 16px;">
@@ -1295,8 +1314,8 @@ def format_institutional_email(
               <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
                 <tr>
                   <td style="vertical-align:middle;">
-                    <span style="font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:19px; font-weight:800; color:#34d399; letter-spacing:0.03em;">{it['ticker']}</span>
-                    <span style="display:inline-block; margin:2px 2px 2px 6px; background-color:#1e2638; color:#cbd5e1; padding:2px 7px; border-radius:3px; font-size:10.5px; font-weight:700; font-family:ui-monospace, monospace;">{it.get('leverage', '1x')}</span>
+                    <span style="font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:19px; font-weight:800; color:#34d399; letter-spacing:0.03em;">{safe_ticker}</span>
+                    <span style="display:inline-block; margin:2px 2px 2px 6px; background-color:#1e2638; color:#cbd5e1; padding:2px 7px; border-radius:3px; font-size:10.5px; font-weight:700; font-family:ui-monospace, monospace;">{safe_lev}</span>
                     <span style="display:inline-block; margin:2px 2px 2px 4px; background-color:rgba(16,185,129,0.15); color:#34d399; border:1px solid rgba(52,211,153,0.35); padding:2px 7px; border-radius:3px; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">SUPRA-ZERO CROSS</span>
                     <span style="display:inline-block; margin:2px 2px 2px 4px; background-color:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(52,211,153,0.4); padding:2px 7px; border-radius:3px; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">1H CANDLE: GREEN (CONFIRMED)</span>
                   </td>
@@ -1307,7 +1326,7 @@ def format_institutional_email(
                 </tr>
                 <tr>
                   <td style="padding-top:4px; font-size:11.5px; color:#cbd5e1;">
-                    {it.get('fund_name', it['ticker'])} &middot; <span style="color:#94a3b8;">Underlying: {it.get('underlying', '—')}</span>
+                    {safe_name} &middot; <span style="color:#94a3b8;">Underlying: {safe_und}</span>
                   </td>
                   <td style="padding-top:4px; text-align:right; font-family:ui-monospace, monospace; font-size:11.5px;">
                     <span style="color:{chg_1h_color}; font-weight:700;">1H: {chg_1h:+.2f}%</span>
@@ -1417,11 +1436,14 @@ def format_institutional_email(
         atr_val = it.get("atr_1h", 0.0)
         spread_disp = f"{spread:.4f} ({spread / atr_val:.2f} ATR)" if atr_val > 0 else f"{spread:.4f}"
         diurnal_rvol = it.get("rvol_1h_diurnal", it.get("rvol_1h", 1.0))
+        safe_ticker = html_lib.escape(str(it["ticker"]), quote=True)
+        safe_name = html_lib.escape(str(it.get("fund_name", it["ticker"])), quote=True)
+        safe_lev = html_lib.escape(str(it.get("leverage", "1x")), quote=True)
         row = f"""
         <tr style="border-bottom:1px solid #1e2638;">
-          <td style="padding:9px 10px; font-family:ui-monospace, monospace; font-weight:700; color:#38bdf8; font-size:12px;">{it['ticker']}</td>
+          <td style="padding:9px 10px; font-family:ui-monospace, monospace; font-weight:700; color:#38bdf8; font-size:12px;">{safe_ticker}</td>
           <td style="padding:9px 10px; color:#e2e8f0; font-size:11.5px;">
-            {it['fund_name']} <span style="font-size:10px; color:#94a3b8;">({it['leverage']})</span>
+            {safe_name} <span style="font-size:10px; color:#94a3b8;">({safe_lev})</span>
           </td>
           <td style="padding:9px 10px; font-family:ui-monospace, monospace; text-align:right; color:#ffffff; font-weight:700; font-size:12px;">${it['latest_price']:.2f}</td>
           <td style="padding:9px 10px; font-family:ui-monospace, monospace; text-align:right; color:#facc15; font-weight:700; font-size:12px;">{spread_disp}</td>
@@ -1447,11 +1469,14 @@ def format_institutional_email(
         piv = it.get("pivots", {})
         s4 = piv.get("S4", 0.0)
         s5 = piv.get("S5", 0.0)
+        safe_ticker = html_lib.escape(str(it["ticker"]), quote=True)
+        safe_name = html_lib.escape(str(it.get("fund_name", it["ticker"])), quote=True)
+        safe_lev = html_lib.escape(str(it.get("leverage", "1x")), quote=True)
         row = f"""
         <tr style="border-bottom:1px solid #2d151d;">
-          <td style="padding:9px 10px; font-family:ui-monospace, monospace; font-weight:800; color:#fda4af; font-size:12px;">{it['ticker']}</td>
+          <td style="padding:9px 10px; font-family:ui-monospace, monospace; font-weight:800; color:#fda4af; font-size:12px;">{safe_ticker}</td>
           <td style="padding:9px 10px; color:#cbd5e1; font-size:11.5px;">
-            {it['fund_name']} <span style="font-size:10px; color:#94a3b8;">({it['leverage']})</span>
+            {safe_name} <span style="font-size:10px; color:#94a3b8;">({safe_lev})</span>
           </td>
           <td style="padding:9px 10px; font-family:ui-monospace, monospace; text-align:right; color:#ffffff; font-weight:700; font-size:12px;">${it['latest_price']:.2f}</td>
           <td style="padding:9px 10px; font-family:ui-monospace, monospace; text-align:right; color:#fb7185; font-weight:800; font-size:12px;">{it['chg_1d_pct']:+.2f}%</td>
@@ -1474,11 +1499,14 @@ def format_institutional_email(
     # 4. Tier 3: Bearish Breakdown Table Rows (High Contrast!)
     bear_rows = []
     for it in tier_bear[:8]:
+        safe_ticker = html_lib.escape(str(it["ticker"]), quote=True)
+        safe_name = html_lib.escape(str(it.get("fund_name", it["ticker"])), quote=True)
+        safe_lev = html_lib.escape(str(it.get("leverage", "1x")), quote=True)
         row = f"""
         <tr style="border-bottom:1px solid #1e2638;">
-          <td style="padding:9px 10px; font-family:ui-monospace, monospace; font-weight:800; color:#fda4af; font-size:12px;">{it['ticker']}</td>
+          <td style="padding:9px 10px; font-family:ui-monospace, monospace; font-weight:800; color:#fda4af; font-size:12px;">{safe_ticker}</td>
           <td style="padding:9px 10px; color:#cbd5e1; font-size:11.5px;">
-            {it['fund_name']} <span style="font-size:10px; color:#94a3b8;">({it['leverage']})</span>
+            {safe_name} <span style="font-size:10px; color:#94a3b8;">({safe_lev})</span>
           </td>
           <td style="padding:9px 10px; font-family:ui-monospace, monospace; text-align:right; color:#ffffff; font-weight:700; font-size:12px;">${it['latest_price']:.2f}</td>
           <td style="padding:9px 10px; font-family:ui-monospace, monospace; text-align:center; color:#fb7185; font-weight:700; font-size:11px;">RED</td>
@@ -1498,6 +1526,9 @@ def format_institutional_email(
     <tr><td colspan="7" style="padding:14px; text-align:center; color:#94a3b8;">No fresh bearish breakdowns detected in this scan.</td></tr>
     """
     )
+
+    safe_session_badge = html_lib.escape(str(session_badge), quote=True)
+    safe_scan_time_str = html_lib.escape(str(scan_time_str), quote=True)
 
     # 5. Master HTML Template
     html_content = f"""<!DOCTYPE html>
@@ -1556,13 +1587,13 @@ def format_institutional_email(
                   </td>
                   <td style="text-align:right; vertical-align:middle;">
                     <span style="display:inline-block; background-color:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.35); padding:3px 9px; border-radius:4px; font-size:10px; font-weight:800; letter-spacing:0.04em; text-transform:uppercase;">
-                      {session_badge}
+                      {safe_session_badge}
                     </span>
                   </td>
                 </tr>
               </table>
               <div style="font-size:11px; color:#cbd5e1; margin-top:8px;">
-                Scan Window: <strong style="color:#ffffff;">{scan_time_str}</strong>
+                Scan Window: <strong style="color:#ffffff;">{safe_scan_time_str}</strong>
               </div>
             </td>
           </tr>
