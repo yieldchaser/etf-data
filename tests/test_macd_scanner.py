@@ -906,9 +906,11 @@ def test_breakout_and_breakdown_detection(mock_calc, mock_ticker):
     n_1h, n_1d = 140, 70
 
     # Helper to build mock ticker response
-    def _run_test(price, prev_h, prev_l, prev_c, chg_1d, is_green, hist_val):
+    def _run_test(price, prev_h, prev_l, prev_c, chg_1d, is_green, hist_val, last_vol=1000):
         df_1h, df_1d = _make_mock_data(n_1h, n_1d, is_green=is_green)
-        # Set daily bars so pivot derivation and prior day close match test inputs
+        df_1h.iloc[-1, df_1h.columns.get_loc("Volume")] = last_vol
+        # Set daily bars so pivot derivation, YZ volatility, and prior day close match test inputs
+        df_1d["Open"] = prev_c
         df_1d["High"] = prev_h
         df_1d["Low"] = prev_l
         df_1d["Close"] = prev_c
@@ -941,9 +943,9 @@ def test_breakout_and_breakdown_detection(mock_calc, mock_ticker):
     assert res_r4["is_breakout"] is True
     assert res_r4["breakout_type"] == "R4 Floor Pivot Breakout"
 
-    # Case 3: Velocity Surge (+15.0% 24H move without hitting R4/R5, confirmed green candle, hist > 0)
-    # H=100, L=50, C=75 -> diff=50, R4=225. Price=86.25 (+15% vs 75), well below R4
-    res_surge = _run_test(price=86.25, prev_h=100.0, prev_l=50.0, prev_c=75.0, chg_1d=15.0, is_green=True, hist_val=0.2)
+    # Case 3: Volume-confirmed YZ Velocity Surge (+15.0% 24H move < R4=90.0 with RVOL=2.0x)
+    # H=78, L=72, C=75 -> P=75, diff=6, R3=84, R4=90. Price=86.25 (+15% vs 75), well below R4
+    res_surge = _run_test(price=86.25, prev_h=78.0, prev_l=72.0, prev_c=75.0, chg_1d=15.0, is_green=True, hist_val=0.2, last_vol=2000)
     assert res_surge is not None
     assert res_surge["is_breakout"] is True
     assert "Velocity Surge" in res_surge["breakout_type"]
@@ -966,8 +968,8 @@ def test_breakout_and_breakdown_detection(mock_calc, mock_ticker):
     assert res_s4["is_breakdown"] is True
     assert res_s4["breakdown_type"] == "S4 Floor Pivot Breakdown"
 
-    # Case 7: Velocity Plunge (-15.0% 24H move, confirmed red candle, hist < 0)
-    res_plunge = _run_test(price=63.75, prev_h=100.0, prev_l=50.0, prev_c=75.0, chg_1d=-15.0, is_green=False, hist_val=-0.2)
+    # Case 7: Volume-confirmed YZ Velocity Plunge (-15.0% 24H move > S4=60.0 with RVOL=2.0x)
+    res_plunge = _run_test(price=63.75, prev_h=78.0, prev_l=72.0, prev_c=75.0, chg_1d=-15.0, is_green=False, hist_val=-0.2, last_vol=2000)
     assert res_plunge is not None
     assert res_plunge["is_breakdown"] is True
     assert "Velocity Plunge" in res_plunge["breakdown_type"]
@@ -1149,4 +1151,200 @@ def test_warmup_gates_enforcement(mock_ticker):
     assert "v_macd" in res_custom
     assert "yang_zhang_vol" in res_custom
     assert "rvol_1h_diurnal" in res_custom
+
+
+@patch("yfinance.Ticker")
+def test_yahoo_730d_fallback_rescues_empty_history(mock_ticker):
+    """Verify explicit start=(now-715d) fallback rescues ETFs where period='730d' returns empty."""
+    df_1h, df_1d = _make_mock_data(n_1h=140, n_1d=70, is_green=True)
+    calls = []
+
+    def _hist(*args, **kwargs):
+        calls.append(kwargs)
+        interval = kwargs.get("interval")
+        if interval == "1h":
+            if kwargs.get("period") == "730d":
+                return pd.DataFrame()
+            if "start" in kwargs:
+                return df_1h
+        return df_1d
+
+    inst = MagicMock()
+    inst.history.side_effect = _hist
+    inst.fast_info = MagicMock()
+    inst.fast_info.last_price = 20.0
+    mock_ticker.return_value = inst
+
+    res = analyze_ticker("PTIR", {"fund_name": "Direxion Daily PLTR Bull 2X", "leverage": "2x"})
+    assert res is not None
+    assert res["ticker"] == "PTIR"
+    assert any(c.get("period") == "730d" and c.get("interval") == "1h" for c in calls)
+    assert any("start" in c and c.get("interval") == "1h" for c in calls)
+
+
+@patch("yfinance.Ticker")
+@patch("scripts.build_macd_scanner.calculate_macd")
+def test_velocity_surge_rejects_unconfirmed_routine_10pct_move(mock_calc, mock_ticker):
+    """Verify static >= +10.0% bypass is removed for high-vol ETFs lacking RVOL confirmation."""
+    df_1h, df_1d = _make_mock_data(n_1h=140, n_1d=70, is_green=True)
+    df_1h.iloc[-1, df_1h.columns.get_loc("Volume")] = 900  # 0.9x RVOL (< 1.25x required)
+    df_1d["Open"] = 75.0
+    df_1d["High"] = 81.0
+    df_1d["Low"] = 69.0
+    df_1d["Close"] = 75.0
+
+    inst = MagicMock()
+    inst.history.side_effect = lambda period, interval, prepost=False: df_1h if interval == "1h" else df_1d
+    inst.fast_info = MagicMock()
+    inst.fast_info.last_price = 82.88  # +10.5% vs 75.0, well below R4 (~99.0) and < 2.25*YZ
+    mock_ticker.return_value = inst
+
+    mock_calc.side_effect = lambda closes, fast=12, slow=26, signal_period=9: {
+        "macd": [0.5] * len(closes),
+        "signal": [0.3] * len(closes),
+        "hist": [0.2] * len(closes),
+        "hist_delta": [0.05] * len(closes),
+    }
+
+    res = analyze_ticker("CONL", {"fund_name": "GraniteShares 2x Long COIN", "leverage": "2x"})
+    assert res is not None
+    assert res["is_breakout"] is False
+
+
+@patch("yfinance.Ticker")
+@patch("scripts.build_macd_scanner.calculate_macd")
+def test_squeeze_detection_is_price_scale_invariant(mock_calc, mock_ticker):
+    """Verify removing static $0.08 dollar check makes squeeze detection invariant to price scaling."""
+
+    def _run_scaled(scale: float):
+        df_1h, df_1d = _make_mock_data(n_1h=140, n_1d=70, is_green=True)
+        for col in ("Open", "High", "Low", "Close"):
+            df_1h[col] = df_1h[col] * scale
+            df_1d[col] = df_1d[col] * scale
+        # ATR with H=22*scale, L=18*scale -> ATR = 4.0*scale.
+        # Set spread = 0.04*scale at scale=0.1 -> spread=$0.004 (< $0.08),
+        # and at scale=1.0 -> spread=$0.04 (< $0.08), and scale=10.0 -> spread=$0.40 (> $0.08).
+        # Wait: set spread = 0.40 / 4.0 = 0.10 ATR (> 0.05 ATR threshold!) with Signal = -0.20*scale
+        # so 0.08*|Signal| = 0.016*scale < spread=0.04*scale -> MUST BE FALSE AT ALL SCALES!
+        inst = MagicMock()
+        inst.history.side_effect = lambda period, interval, prepost=False: df_1h if interval == "1h" else df_1d
+        inst.fast_info = MagicMock()
+        inst.fast_info.last_price = 20.0 * scale
+        mock_ticker.return_value = inst
+
+        def _scaled_macd(closes, fast=12, slow=26, signal_period=9):
+            n = len(closes)
+            if abs(closes[-1] - 20.0 * scale) < 1e-6 and n == 140:
+                macd = [-0.20 * scale] * n
+                sig = [-0.10 * scale] * n
+                # 60% compression from -2 bar to -1 bar, final spread = 0.40*scale vs ATR = 4.0*scale -> 0.10x ATR (> 0.05)
+                macd[-2], sig[-2] = -1.20 * scale, -0.20 * scale
+                macd[-1], sig[-1] = -0.60 * scale, -0.20 * scale
+                return {
+                    "macd": macd,
+                    "signal": sig,
+                    "hist": [m - s for m, s in zip(macd, sig)],
+                    "hist_delta": [0.0] * n,
+                }
+            return {"macd": [0.1] * n, "signal": [0.05] * n, "hist": [0.05] * n, "hist_delta": [0.01] * n}
+
+        mock_calc.side_effect = _scaled_macd
+        return analyze_ticker("SCALE", {"fund_name": "Scale Test ETF", "leverage": "2x"})
+
+    res_low = _run_scaled(0.1)    # spread = $0.04 < $0.08 (old hardcoded hack falsely triggered!)
+    res_high = _run_scaled(10.0)  # spread = $4.00 > $0.08
+    assert res_low is not None and res_high is not None
+    assert res_low["signal_state"] != "IMMINENT_SQUEEZE"
+    assert res_high["signal_state"] != "IMMINENT_SQUEEZE"
+    assert res_low["signal_state"] == res_high["signal_state"]
+
+
+def test_format_institutional_email_includes_upgraded_quant_metrics():
+    """Verify email templates surface V-MACD, Diurnal RVOL, YZ Vol, and volatility-scaled wording."""
+    mock_signals = [
+        {
+            "ticker": "NVD",
+            "fund_name": "GraniteShares 2x Short NVDA",
+            "leverage": "-2x",
+            "category": "Semiconductors",
+            "underlying": "NVDA",
+            "latest_price": 12.50,
+            "chg_1h_pct": 2.4,
+            "chg_1d_pct": 14.2,
+            "candle_color_1h": "GREEN",
+            "is_green_candle_1h": True,
+            "is_red_candle_1h": False,
+            "macd_1h": 0.31,
+            "signal_1h": 0.19,
+            "hist_1h": 0.12,
+            "hist_delta_1h": 0.04,
+            "v_macd": 0.68,
+            "rvol_1h": 1.65,
+            "rvol_1h_diurnal": 2.45,
+            "yang_zhang_vol": 0.048,
+            "atr_1h": 0.35,
+            "z_macd_1h": 1.9,
+            "confluence_score": 82,
+            "is_breakout": True,
+            "breakout_type": "Velocity Surge (+14.2% vs 10.8% YZ)",
+            "is_breakdown": False,
+            "breakdown_type": "",
+            "signal_state": "SUB_ZERO_BOUNCE",
+            "is_subzero": True,
+            "bull_cross_fresh": True,
+            "daily_trend_bullish": True,
+            "pivots": {"P": 11.2, "S1": 10.6, "S2": 10.1, "R1": 11.8, "R3": 12.9, "R4": 13.5, "R5": 14.1},
+        },
+        {
+            "ticker": "BITX",
+            "fund_name": "2x Bitcoin Strategy ETF",
+            "leverage": "2x",
+            "category": "Crypto",
+            "underlying": "Bitcoin Futures",
+            "latest_price": 32.00,
+            "chg_1h_pct": 0.5,
+            "chg_1d_pct": 1.2,
+            "candle_color_1h": "GREEN",
+            "is_green_candle_1h": True,
+            "is_red_candle_1h": False,
+            "macd_1h": -0.15,
+            "signal_1h": -0.14,
+            "hist_1h": -0.01,
+            "hist_delta_1h": 0.02,
+            "v_macd": -0.25,
+            "rvol_1h": 1.10,
+            "rvol_1h_diurnal": 1.55,
+            "yang_zhang_vol": 0.042,
+            "atr_1h": 0.50,
+            "z_macd_1h": -0.4,
+            "confluence_score": 25,
+            "is_breakout": False,
+            "is_breakdown": False,
+            "signal_state": "IMMINENT_SQUEEZE",
+            "daily_trend_bullish": False,
+            "pivots": {"P": 31.8, "S1": 31.0, "S2": 30.2, "R1": 32.6, "R4": 34.5, "R5": 35.5},
+        },
+    ]
+
+    session_info = ("INTRADAY", "INTRADAY HOURLY MOMENTUM SCAN", "INTRADAY RADAR")
+    text_body, html_body = format_institutional_email(
+        mock_signals, "2026-11-10 12:30:00 EST", session_info
+    )
+
+    assert "V-MACD: +0.680" in text_body
+    assert "Diurnal RVOL: 2.45x" in text_body
+    assert "Diurnal RVOL: 1.6x" in text_body  # BITX squeeze row formatted to 1 decimal
+    assert "0.020x ATR" in text_body
+    assert "YZ Vol: 4.80%" in text_body
+    assert "2.25 sigma_YZ" in text_body
+    assert "+10.0%" not in text_body
+
+    assert "DIURNAL RVOL" in html_body
+    assert "2.45x" in html_body
+    assert "1.55x" in html_body
+    assert "0.0100 (0.02 ATR)" in html_body
+    assert "V: +0.68" in html_body
+    assert "YZ 4.8%" in html_body
+    assert "+10.0%" not in html_body
+
 

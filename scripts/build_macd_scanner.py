@@ -306,9 +306,17 @@ def analyze_ticker(
         t = yf.Ticker(ticker)
         # Fetch up to 730d of 1h RTH bars (max Yahoo intraday depth) and up to 5y of 1d bars
         df_1h = t.history(period="730d", interval="1h", prepost=False)
+        if df_1h is None or getattr(df_1h, "empty", True):
+            # Yahoo Finance errors on period="730d" when ETF inception is ~2.0-2.2 years ago
+            # because it resolves period relative to firstTradeDate. Anchor explicitly at now-715d.
+            start_715d = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=715)).strftime("%Y-%m-%d")
+            try:
+                df_1h = t.history(start=start_715d, interval="1h", prepost=False)
+            except TypeError:
+                pass
         df_1d = t.history(period="5y", interval="1d")
 
-        if len(df_1h) < min_1h_bars or len(df_1d) < min_1d_bars:
+        if df_1h is None or df_1d is None or len(df_1h) < min_1h_bars or len(df_1d) < min_1d_bars:
             return None
 
         # Clean 1H series (sanitize missing/NaN values across all OHLCV columns)
@@ -536,7 +544,7 @@ def analyze_ticker(
                 bear_cross_bars_ago = lookback - 1
                 break
 
-        # Dimensionless ATR Squeeze & Compression Check
+        # Dimensionless ATR Squeeze & Compression Check (purely scale-invariant)
         curr_atr = atr_1h[-1] if atr_1h and atr_1h[-1] > 0 else 1.0
         spread = abs(curr_m - curr_s)
         prev_spread = abs(prev_m - prev_s)
@@ -546,11 +554,7 @@ def analyze_ticker(
         is_imminent = bool(
             (curr_m < curr_s)
             and (compression_rate >= 0.35)
-            and (
-                spread / curr_atr <= max(0.08 * abs(curr_s) / curr_atr, 0.05)
-                or spread <= 0.05 * abs(curr_s)
-                or spread <= 0.08
-            )
+            and (spread / curr_atr <= max(0.08 * abs(curr_s) / curr_atr, 0.05))
         )
 
         # Quantitative Candle Confirmation Enforcement:
@@ -615,13 +619,14 @@ def analyze_ticker(
         s5 = pivots.get("S5", 0.0)
         s2 = pivots.get("S2", 0.0)
 
-        tau_surge = max(3.0, min(30.0, 2.25 * sigma_yz * 100.0))
+        tau_surge = max(3.5, min(30.0, 2.25 * sigma_yz * 100.0))
+        tau_extreme = max(10.0, min(40.0, 3.0 * sigma_yz * 100.0))
 
         is_breakout_r5 = bool(r5 > 0 and latest_price >= r5)
         is_breakout_r4 = bool(r4 > 0 and latest_price >= r4)
         is_velocity_surge = bool(
             (chg_1d_pct >= tau_surge and rvol_1h_diurnal >= 1.25)
-            or (chg_1d_pct >= 10.0)
+            or (chg_1d_pct >= tau_extreme)
         )
         is_breakout = bool(
             (is_breakout_r5 or is_breakout_r4 or is_velocity_surge)
@@ -636,13 +641,13 @@ def analyze_ticker(
             elif is_breakout_r4:
                 breakout_type = "R4 Floor Pivot Breakout"
             elif is_velocity_surge:
-                breakout_type = f"Velocity Surge ({chg_1d_pct:+.1f}%)"
+                breakout_type = f"Velocity Surge ({chg_1d_pct:+.1f}% vs {tau_surge:.1f}% YZ)"
 
         is_breakdown_s5 = bool(s5 > 0 and latest_price <= s5)
         is_breakdown_s4 = bool(s4 > 0 and latest_price <= s4)
         is_velocity_plunge = bool(
             (chg_1d_pct <= -tau_surge and rvol_1h_diurnal >= 1.25)
-            or (chg_1d_pct <= -10.0)
+            or (chg_1d_pct <= -tau_extreme)
         )
         is_breakdown = bool(
             (is_breakdown_s5 or is_breakdown_s4 or is_velocity_plunge)
@@ -657,12 +662,12 @@ def analyze_ticker(
             elif is_breakdown_s4:
                 breakdown_type = "S4 Floor Pivot Breakdown"
             elif is_velocity_plunge:
-                breakdown_type = f"Velocity Plunge ({chg_1d_pct:+.1f}%)"
+                breakdown_type = f"Velocity Plunge ({chg_1d_pct:+.1f}% vs -{tau_surge:.1f}% YZ)"
 
         # Continuous Confluence Score (-100 to +100) via tanh(w^T z)
         z1 = 1.0 if (curr_m > curr_s and hist_1h[-1] > 0) else -1.0
         z2 = 1.0 if hist_1d[-1] > 0 else -1.0
-        z3 = 1.0 if rvol_1h >= 1.25 and (curr_m > curr_s and is_green_candle_1h) else (-1.0 if rvol_1h >= 1.25 and is_red_candle_1h else 0.0)
+        z3 = 1.0 if rvol_1h_diurnal >= 1.25 and (curr_m > curr_s and is_green_candle_1h) else (-1.0 if rvol_1h_diurnal >= 1.25 and is_red_candle_1h else 0.0)
         z4 = 1.0 if (curr_m < 0 and curr_m > curr_s and is_green_candle_1h) else 0.0
         z5 = 1.0 if is_breakout else (-1.0 if is_breakdown else 0.0)
 
@@ -823,7 +828,7 @@ def format_institutional_email(
         "=" * 80,
         "",
         f"[TIER 0: EXTREME MOMENTUM BREAKOUTS & VOLATILITY SURGES] (Active: {len(tier0_breakouts)})",
-        "Trigger: Price >= R4/R5 Floor Pivot Extension or 24H Velocity >= +10.0% with Confirmed 1H Green Candle",
+        "Trigger: Price >= R4/R5 Floor Pivot Extension or YZ Vol-Scaled Surge (>= 2.25 sigma_YZ & Diurnal RVOL >= 1.25x) with Confirmed 1H Green Candle",
         "-" * 80,
     ]
 
@@ -835,14 +840,16 @@ def format_institutional_email(
                 pm_chg = it.get("live_premarket_chg_pct")
                 chg_str = f" | {pm_chg:+.2f}%" if pm_chg is not None else ""
                 px_display += f" (Pre-Market: ${it['live_premarket_price']:.2f}{chg_str})"
+            diurnal_rvol = it.get("rvol_1h_diurnal", it["rvol_1h"])
+            yz_pct = it.get("yang_zhang_vol", 0.015) * 100.0
             pt_lines.extend(
                 [
                     f"TICKER: {it['ticker']:<6} | {it['fund_name']} ({it['leverage']})",
                     f"  Price: {px_display} (1H: {it['chg_1h_pct']:+.2f}% | 24H: {it['chg_1d_pct']:+.2f}%)",
                     f"  Trigger: {it.get('breakout_type', 'Breakout')} | Score: {it.get('confluence_score', 0)}/100",
                     f"  1H Candle: {it.get('candle_color_1h', 'GREEN')} (Confirmed Green: O=${it.get('open_1h', 0):.2f} -> C=${it.get('latest_price', 0):.2f})",
-                    f"  1H MACD: {it['macd_1h']:+.4f} | Signal: {it['signal_1h']:+.4f} | Hist: {it['hist_1h']:+.4f} (GREEN)",
-                    f"  RVOL: {it['rvol_1h']:.2f}x | Z-Score: {it['z_macd_1h']:.2f} sigma",
+                    f"  1H MACD: {it['macd_1h']:+.4f} (V-MACD: {it.get('v_macd', 0.0):+.3f}) | Signal: {it['signal_1h']:+.4f} | Hist: {it['hist_1h']:+.4f} (GREEN)",
+                    f"  Diurnal RVOL: {diurnal_rvol:.2f}x (20B: {it['rvol_1h']:.2f}x) | YZ Vol: {yz_pct:.2f}% | Z-Score: {it['z_macd_1h']:.2f} sigma",
                     f"  Floor Pivots: P=${piv.get('P', 0):.2f} R3=${piv.get('R3', 0):.2f} R4=${piv.get('R4', 0):.2f} R5=${piv.get('R5', 0):.2f}",
                     "",
                 ]
@@ -866,13 +873,15 @@ def format_institutional_email(
             pm_chg = it.get('live_premarket_chg_pct')
             chg_str = f" | {pm_chg:+.2f}%" if pm_chg is not None else ""
             px_display += f" (Pre-Market: ${it['live_premarket_price']:.2f}{chg_str})"
+        diurnal_rvol = it.get("rvol_1h_diurnal", it["rvol_1h"])
+        yz_pct = it.get("yang_zhang_vol", 0.015) * 100.0
         pt_lines.extend(
             [
                 f"TICKER: {it['ticker']:<6} | {it['fund_name']} ({it['leverage']})",
                 f"  Price: {px_display} (1H: {it['chg_1h_pct']:+.2f}% | 24H: {it['chg_1d_pct']:+.2f}%)",
                 f"  1H Candle: {it.get('candle_color_1h', 'GREEN')} (Confirmed Green: O=${it.get('open_1h', 0):.2f} -> C=${it.get('latest_price', 0):.2f})",
-                f"  1H MACD: {it['macd_1h']:+.4f} | Signal: {it['signal_1h']:+.4f} | Hist: {it['hist_1h']:+.4f} (GREEN)",
-                f"  RVOL: {it['rvol_1h']:.2f}x | Z-Score: {it['z_macd_1h']:.2f} sigma | Score: {it['confluence_score']}/100",
+                f"  1H MACD: {it['macd_1h']:+.4f} (V-MACD: {it.get('v_macd', 0.0):+.3f}) | Signal: {it['signal_1h']:+.4f} | Hist: {it['hist_1h']:+.4f} (GREEN)",
+                f"  Diurnal RVOL: {diurnal_rvol:.2f}x | YZ Vol: {yz_pct:.2f}% | Z-Score: {it['z_macd_1h']:.2f} sigma | Score: {it['confluence_score']}/100",
                 f"  Floor Pivots: S2=${piv.get('S2', 0):.2f} S1=${piv.get('S1', 0):.2f} P=${piv.get('P', 0):.2f} R1=${piv.get('R1', 0):.2f}",
                 f"  1D Trend: {'BULLISH' if it['daily_trend_bullish'] else 'BEARISH'}",
                 "",
@@ -895,13 +904,15 @@ def format_institutional_email(
             pm_chg = it.get('live_premarket_chg_pct')
             chg_str = f" | {pm_chg:+.2f}%" if pm_chg is not None else ""
             px_display += f" (Pre-Market: ${it['live_premarket_price']:.2f}{chg_str})"
+        diurnal_rvol = it.get("rvol_1h_diurnal", it["rvol_1h"])
+        yz_pct = it.get("yang_zhang_vol", 0.015) * 100.0
         pt_lines.extend(
             [
                 f"TICKER: {it['ticker']:<6} | {it['fund_name']} ({it['leverage']})",
                 f"  Price: {px_display} (1H: {it['chg_1h_pct']:+.2f}% | 24H: {it['chg_1d_pct']:+.2f}%)",
                 f"  1H Candle: {it.get('candle_color_1h', 'GREEN')} (Confirmed Green: O=${it.get('open_1h', 0):.2f} -> C=${it.get('latest_price', 0):.2f})",
-                f"  1H MACD: {it['macd_1h']:+.4f} | Signal: {it['signal_1h']:+.4f} | Hist: {it['hist_1h']:+.4f} (GREEN)",
-                f"  RVOL: {it['rvol_1h']:.2f}x | Z-Score: {it['z_macd_1h']:.2f} sigma | Score: {it['confluence_score']}/100",
+                f"  1H MACD: {it['macd_1h']:+.4f} (V-MACD: {it.get('v_macd', 0.0):+.3f}) | Signal: {it['signal_1h']:+.4f} | Hist: {it['hist_1h']:+.4f} (GREEN)",
+                f"  Diurnal RVOL: {diurnal_rvol:.2f}x | YZ Vol: {yz_pct:.2f}% | Z-Score: {it['z_macd_1h']:.2f} sigma | Score: {it['confluence_score']}/100",
                 f"  Floor Pivots: S2=${piv.get('S2', 0):.2f} S1=${piv.get('S1', 0):.2f} P=${piv.get('P', 0):.2f} R1=${piv.get('R1', 0):.2f}",
                 f"  1D Trend: {'BULLISH' if it['daily_trend_bullish'] else 'BEARISH'}",
                 "",
@@ -912,14 +923,17 @@ def format_institutional_email(
         [
             "",
             f"[TIER 2: PRE-CLOSE SQUEEZE RADAR] (Impending: {len(tier2_imminent)})",
-            "Trigger: Histogram spread compression >= 35% heading into closing rebalancing hour",
+            "Trigger: Histogram spread compression >= 35% within ATR-scaled convergence tolerance",
             "-" * 80,
         ]
     )
     for it in tier2_imminent[:8]:
         spread = abs(it["macd_1h"] - it["signal_1h"])
+        atr_val = it.get("atr_1h", 0.0)
+        atr_str = f" ({spread / atr_val:.3f}x ATR)" if atr_val > 0 else ""
+        diurnal_rvol = it.get("rvol_1h_diurnal", it["rvol_1h"])
         pt_lines.append(
-            f"{it['ticker']:<6} | Px: ${it['latest_price']:<7.2f} | Spread: {spread:.4f} | RVOL: {it['rvol_1h']:3.1f}x | {it['fund_name']}"
+            f"{it['ticker']:<6} | Px: ${it['latest_price']:<7.2f} | Spread: {spread:.4f}{atr_str} | Diurnal RVOL: {diurnal_rvol:3.1f}x | {it['fund_name']}"
         )
 
     if tier_breakdowns:
@@ -927,7 +941,7 @@ def format_institutional_email(
             [
                 "",
                 f"[CRITICAL CAPITAL PRESERVATION: SEVERE BREAKDOWNS & LIQUIDATIONS] (Active: {len(tier_breakdowns)})",
-                "Trigger: Price <= S4/S5 Floor Pivot Support or 24H Velocity <= -10.0% with Confirmed 1H Red Candle",
+                "Trigger: Price <= S4/S5 Floor Pivot Support or YZ Vol-Scaled Plunge (<= -2.25 sigma_YZ & Diurnal RVOL >= 1.25x) with Confirmed 1H Red Candle",
                 "-" * 80,
             ]
         )
@@ -1023,7 +1037,7 @@ def format_institutional_email(
                       {it.get('macd_1h', 0):+.3f}
                     </div>
                     <div style="font-family:ui-monospace, monospace; font-size:9.5px; color:#94a3b8; margin-top:1px;">
-                      Sig: {it.get('signal_1h', 0):+.3f}
+                      Sig: {it.get('signal_1h', 0):+.3f} &middot; V: {it.get('v_macd', 0.0):+.2f}
                     </div>
                   </td>
                   <td style="padding:8px 8px; border-right:1px solid #3b2054; width:25%;">
@@ -1036,12 +1050,12 @@ def format_institutional_email(
                     </div>
                   </td>
                   <td style="padding:8px 8px; border-right:1px solid #3b2054; width:25%;">
-                    <div style="font-size:9px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; font-weight:700;">RVOL (20-BAR)</div>
+                    <div style="font-size:9px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; font-weight:700;">DIURNAL RVOL</div>
                     <div style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#e2e8f0; margin-top:2px;">
-                      {it.get('rvol_1h', 1.0):.2f}x
+                      {it.get('rvol_1h_diurnal', it.get('rvol_1h', 1.0)):.2f}x
                     </div>
                     <div style="font-family:ui-monospace, monospace; font-size:9.5px; color:#94a3b8; margin-top:1px;">
-                      Vol Pace
+                      20B: {it.get('rvol_1h', 1.0):.2f}x &middot; YZ {it.get('yang_zhang_vol', 0.015) * 100:.1f}%
                     </div>
                   </td>
                   <td style="padding:8px 8px; width:25%;">
@@ -1160,7 +1174,7 @@ def format_institutional_email(
                       {it.get('macd_1h', 0):+.3f}
                     </div>
                     <div style="font-family:ui-monospace, monospace; font-size:9.5px; color:#94a3b8; margin-top:1px;">
-                      Sig: {it.get('signal_1h', 0):+.3f}
+                      Sig: {it.get('signal_1h', 0):+.3f} &middot; V: {it.get('v_macd', 0.0):+.2f}
                     </div>
                   </td>
                   <td style="padding:8px 8px; border-right:1px solid #1e2638; width:25%;">
@@ -1173,12 +1187,12 @@ def format_institutional_email(
                     </div>
                   </td>
                   <td style="padding:8px 8px; border-right:1px solid #1e2638; width:25%;">
-                    <div style="font-size:9px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; font-weight:700;">RVOL (20-BAR)</div>
+                    <div style="font-size:9px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; font-weight:700;">DIURNAL RVOL</div>
                     <div style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#e2e8f0; margin-top:2px;">
-                      {it.get('rvol_1h', 1.0):.2f}x
+                      {it.get('rvol_1h_diurnal', it.get('rvol_1h', 1.0)):.2f}x
                     </div>
                     <div style="font-family:ui-monospace, monospace; font-size:9.5px; color:#94a3b8; margin-top:1px;">
-                      Vol Pace
+                      20B: {it.get('rvol_1h', 1.0):.2f}x &middot; YZ {it.get('yang_zhang_vol', 0.015) * 100:.1f}%
                     </div>
                   </td>
                   <td style="padding:8px 8px; width:25%;">
@@ -1312,7 +1326,7 @@ def format_institutional_email(
                       {it.get('macd_1h', 0):+.3f}
                     </div>
                     <div style="font-family:ui-monospace, monospace; font-size:9.5px; color:#94a3b8; margin-top:1px;">
-                      Sig: {it.get('signal_1h', 0):+.3f}
+                      Sig: {it.get('signal_1h', 0):+.3f} &middot; V: {it.get('v_macd', 0.0):+.2f}
                     </div>
                   </td>
                   <td style="padding:8px 8px; border-right:1px solid #1e2638; width:25%;">
@@ -1325,12 +1339,12 @@ def format_institutional_email(
                     </div>
                   </td>
                   <td style="padding:8px 8px; border-right:1px solid #1e2638; width:25%;">
-                    <div style="font-size:9px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; font-weight:700;">RVOL (20-BAR)</div>
+                    <div style="font-size:9px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; font-weight:700;">DIURNAL RVOL</div>
                     <div style="font-family:ui-monospace, monospace; font-size:13px; font-weight:700; color:#e2e8f0; margin-top:2px;">
-                      {it.get('rvol_1h', 1.0):.2f}x
+                      {it.get('rvol_1h_diurnal', it.get('rvol_1h', 1.0)):.2f}x
                     </div>
                     <div style="font-family:ui-monospace, monospace; font-size:9.5px; color:#94a3b8; margin-top:1px;">
-                      Vol Pace
+                      20B: {it.get('rvol_1h', 1.0):.2f}x &middot; YZ {it.get('yang_zhang_vol', 0.015) * 100:.1f}%
                     </div>
                   </td>
                   <td style="padding:8px 8px; width:25%;">
@@ -1400,6 +1414,9 @@ def format_institutional_email(
     squeeze_rows = []
     for it in tier2_imminent[:8]:
         spread = abs(it["macd_1h"] - it["signal_1h"])
+        atr_val = it.get("atr_1h", 0.0)
+        spread_disp = f"{spread:.4f} ({spread / atr_val:.2f} ATR)" if atr_val > 0 else f"{spread:.4f}"
+        diurnal_rvol = it.get("rvol_1h_diurnal", it.get("rvol_1h", 1.0))
         row = f"""
         <tr style="border-bottom:1px solid #1e2638;">
           <td style="padding:9px 10px; font-family:ui-monospace, monospace; font-weight:700; color:#38bdf8; font-size:12px;">{it['ticker']}</td>
@@ -1407,8 +1424,8 @@ def format_institutional_email(
             {it['fund_name']} <span style="font-size:10px; color:#94a3b8;">({it['leverage']})</span>
           </td>
           <td style="padding:9px 10px; font-family:ui-monospace, monospace; text-align:right; color:#ffffff; font-weight:700; font-size:12px;">${it['latest_price']:.2f}</td>
-          <td style="padding:9px 10px; font-family:ui-monospace, monospace; text-align:right; color:#facc15; font-weight:700; font-size:12px;">{spread:.4f}</td>
-          <td style="padding:9px 10px; font-family:ui-monospace, monospace; text-align:right; color:#cbd5e1; font-size:11.5px;">{it['rvol_1h']:.2f}x</td>
+          <td style="padding:9px 10px; font-family:ui-monospace, monospace; text-align:right; color:#facc15; font-weight:700; font-size:12px;">{spread_disp}</td>
+          <td style="padding:9px 10px; font-family:ui-monospace, monospace; text-align:right; color:#cbd5e1; font-size:11.5px;">{diurnal_rvol:.2f}x</td>
           <td style="padding:9px 10px; text-align:center;">
             <span style="background-color:rgba(250,204,21,0.15); color:#facc15; border:1px solid rgba(250,204,21,0.35); padding:2px 7px; border-radius:3px; font-size:9.5px; font-weight:700; letter-spacing:0.03em;">PRE-CLOSE SQUEEZE</span>
           </td>
@@ -1420,7 +1437,7 @@ def format_institutional_email(
         "\n".join(squeeze_rows)
         if squeeze_rows
         else """
-    <tr><td colspan="6" style="padding:14px; text-align:center; color:#94a3b8;">No pending crossovers within spread compression tolerance.</td></tr>
+    <tr><td colspan="6" style="padding:14px; text-align:center; color:#94a3b8;">No pending crossovers within ATR-scaled spread compression tolerance.</td></tr>
     """
     )
 
@@ -1450,7 +1467,7 @@ def format_institutional_email(
         "\n".join(breakdown_rows)
         if breakdown_rows
         else """
-    <tr><td colspan="6" style="padding:14px; text-align:center; color:#94a3b8;">No severe liquidation breakdowns (S4/S5 or &le; -10%) detected.</td></tr>
+    <tr><td colspan="6" style="padding:14px; text-align:center; color:#94a3b8;">No severe liquidation breakdowns (S4/S5 or &le; -2.25&sigma; YZ) detected.</td></tr>
     """
     )
 
@@ -1586,7 +1603,7 @@ def format_institutional_email(
                   TIER 0: EXTREME MOMENTUM BREAKOUTS &amp; VOLATILITY SURGES
                 </div>
                 <div style="font-size:11px; color:#cbd5e1; margin-bottom:14px; line-height:1.5;">
-                  Price breached traditional Floor Pivot resistance (R4/R5 extension) or registered single-day velocity surge &ge; +10.0% with confirmed 1-Hour Green Candle. Priority quantitative momentum breakouts.
+                  Price breached traditional Floor Pivot resistance (R4/R5 extension) or registered Yang-Zhang volatility-scaled surge (&ge; 2.25&sigma;<sub>YZ</sub> with Diurnal RVOL &ge; 1.25x, or &ge; 3&sigma;<sub>YZ</sub> shock) with confirmed 1-Hour Green Candle. Priority quantitative momentum breakouts.
                 </div>
                 
                 {cards_breakout_block}
@@ -1625,7 +1642,7 @@ def format_institutional_email(
                   TIER 2: PRE-CLOSE SQUEEZE RADAR (15:00 EST SCAN)
                 </div>
                 <div style="font-size:11px; color:#cbd5e1; margin-bottom:12px; line-height:1.5;">
-                  Histogram spread compression &ge; 35% heading into the final market hour (15:00&ndash;16:00 EST). Pre-positioning watch ahead of benchmark rebalancing flow auctions.
+                  Histogram spread compression &ge; 35% within ATR-scaled convergence tolerance heading into the final market hour (15:00&ndash;16:00 EST). Pre-positioning watch ahead of benchmark rebalancing flow auctions.
                 </div>
                 
                 <div class="table-scroll" style="width:100%; overflow-x:auto;">
@@ -1636,7 +1653,7 @@ def format_institutional_email(
                         <th style="padding:8px 10px; text-align:left;">Instrument</th>
                         <th style="padding:8px 10px; text-align:right;">Price</th>
                         <th style="padding:8px 10px; text-align:right;">Spread</th>
-                        <th style="padding:8px 10px; text-align:right;">RVOL</th>
+                        <th style="padding:8px 10px; text-align:right;">Diurnal RVOL</th>
                         <th style="padding:8px 10px; text-align:center;">Status</th>
                       </tr>
                     </thead>
@@ -1653,7 +1670,7 @@ def format_institutional_email(
                   CRITICAL CAPITAL PRESERVATION &middot; SEVERE LIQUIDATION CASCADE
                 </div>
                 <div style="font-size:11px; color:#cbd5e1; margin-bottom:12px; line-height:1.5;">
-                  Price breached Floor Pivot support (S4/S5) or collapsed &le; -10.0% on confirmed Red Candle. Severe structural liquidation cascade requiring immediate exit to cash.
+                  Price breached Floor Pivot support (S4/S5) or suffered Yang-Zhang volatility-scaled plunge (&le; -2.25&sigma;<sub>YZ</sub> with Diurnal RVOL &ge; 1.25x, or &le; -3&sigma;<sub>YZ</sub> shock) on confirmed Red Candle. Severe structural liquidation cascade requiring immediate exit to cash.
                 </div>
                 
                 <div class="table-scroll" style="width:100%; overflow-x:auto; margin-bottom:18px;">
