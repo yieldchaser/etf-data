@@ -686,9 +686,17 @@ def clean_dataframe(df, ticker, h_date=TODAY, weight_unit=None):
                 q = pd.to_numeric(df[q_col].astype(str).str.replace(',', '', regex=False), errors='coerce').fillna(0.0)
                 p = pd.to_numeric(df[p_col].astype(str).str.replace(',', '', regex=False), errors='coerce').fillna(0.0)
                 mv = q * p
-                mv_sum = mv.sum()
+                # In funds with large cash collateral liabilities (e.g. IJR small caps with -$103B cash row),
+                # only calculate equity weights from positive equity assets, not negative cash lines.
+                asset_col = next((c for c in df.columns if 'asset' in c), None)
+                if asset_col:
+                    is_eq = (df[asset_col].astype(str).str.lower() == 'equity') & (mv > 0)
+                else:
+                    is_eq = mv > 0
+                mv_sum = mv[is_eq].sum()
                 if mv_sum > 0:
-                    df['weight'] = (mv / mv_sum) * 100.0  # Put in percent form so subsequent division normalizes to fraction
+                    df['weight'] = 0.0
+                    df.loc[is_eq, 'weight'] = (mv[is_eq] / mv_sum) * 100.0  # Put in percent form so subsequent division normalizes to fraction
 
         if weight_unit == 'percent':
             # Diversified index funds (e.g. IWM, IEMG, SIZE) legitimately have max weight <= 1.0 (e.g. 0.32% or 0.61%).
@@ -737,11 +745,12 @@ def clean_dataframe(df, ticker, h_date=TODAY, weight_unit=None):
         keep &= ~flagged
 
     df = df[keep]
-    if len(df) < before:
+    if len(df) < before and os.environ.get("BACKFILL_QUIET") != "1":
         print(f"      -> dropped {before - len(df)} placeholder row(s) "
               f"(non-positive weight / cash lines)")
     if df.empty:
-        print(f"      -> 0 equity rows after placeholder filter")
+        if os.environ.get("BACKFILL_QUIET") != "1":
+            print(f"      -> 0 equity rows after placeholder filter")
         return None
     return df[['ETF_Ticker', 'ticker', 'name', 'weight', 'Holdings_As_Of', 'Date_Scraped']]
 
