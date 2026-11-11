@@ -22,6 +22,7 @@ on:
       - 'scripts/flow_reversal.py'
       - 'scripts/etf_taxonomy.py'
       - 'scripts/validate_quant_signals.py'
+      - 'scripts/build_macd_scanner.py'
       - 'FUND_FLOW_ETFS.md'
       - 'config.yaml'
       - 'config.json'

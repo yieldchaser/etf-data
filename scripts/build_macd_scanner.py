@@ -2308,24 +2308,28 @@ def main() -> None:
         format_lead_tickers = lambda s: format_alert_subject_lead_tickers(s, sig_map, is_premarket=is_premarket)
 
         uncat_crossovers = new_crossovers - new_bear
-        if new_breakouts:
-            lead_tickers = format_lead_tickers(new_breakouts)
-            subject = f"[Conviction Labs] VOLATILITY BREAKOUT: {lead_tickers} · {session_badge} · {scan_time_str}"
-        elif new_breakdowns and not new_breakouts and not new_subzero:
-            lead_tickers = format_lead_tickers(new_breakdowns)
-            subject = f"[Conviction Labs] CRITICAL BREAKDOWN: {lead_tickers} · {session_badge} · {scan_time_str}"
-        elif new_subzero:
-            lead_tickers = format_lead_tickers(new_subzero)
-            subject = f"[Conviction Labs] SUB-ZERO REVERSAL: {lead_tickers} · {session_badge} · {scan_time_str}"
-        elif new_bear and not new_subzero and not uncat_crossovers:
-            lead_tickers = format_lead_tickers(new_bear)
-            subject = f"[Conviction Labs] BEARISH EXIT: {lead_tickers} · {session_badge} · {scan_time_str}"
-        elif new_crossovers:
-            lead_tickers = format_lead_tickers(new_crossovers)
-            subject = f"[Conviction Labs] 1H MOMENTUM CROSS: {lead_tickers} · {session_badge} · {scan_time_str}"
-        elif is_pre_close_time:
-            subject = f"[Conviction Labs] PRE-CLOSE SQUEEZE RADAR · {session_badge} · {scan_time_str}"
-        else:
+        try:
+            if new_breakouts:
+                lead_tickers = format_lead_tickers(new_breakouts)
+                subject = f"[Conviction Labs] VOLATILITY BREAKOUT: {lead_tickers} · {session_badge} · {scan_time_str}"
+            elif new_breakdowns and not new_breakouts and not new_subzero:
+                lead_tickers = format_lead_tickers(new_breakdowns)
+                subject = f"[Conviction Labs] CRITICAL BREAKDOWN: {lead_tickers} · {session_badge} · {scan_time_str}"
+            elif new_subzero:
+                lead_tickers = format_lead_tickers(new_subzero)
+                subject = f"[Conviction Labs] SUB-ZERO REVERSAL: {lead_tickers} · {session_badge} · {scan_time_str}"
+            elif new_bear and not new_subzero and not uncat_crossovers:
+                lead_tickers = format_lead_tickers(new_bear)
+                subject = f"[Conviction Labs] BEARISH EXIT: {lead_tickers} · {session_badge} · {scan_time_str}"
+            elif new_crossovers:
+                lead_tickers = format_lead_tickers(new_crossovers)
+                subject = f"[Conviction Labs] 1H MOMENTUM CROSS: {lead_tickers} · {session_badge} · {scan_time_str}"
+            elif is_pre_close_time:
+                subject = f"[Conviction Labs] PRE-CLOSE SQUEEZE RADAR · {session_badge} · {scan_time_str}"
+            else:
+                subject = f"[Conviction Labs] 1H MACD Momentum Radar · {session_badge} · {scan_time_str}"
+        except Exception as ex_subj:
+            print(f"[Alert Engine Warning] Subject formatting fallback triggered: {ex_subj}")
             subject = f"[Conviction Labs] 1H MACD Momentum Radar · {session_badge} · {scan_time_str}"
 
         print(f"[Alert Engine] Dispatching email ({send_reason})...")
