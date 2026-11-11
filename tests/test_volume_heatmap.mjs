@@ -189,7 +189,7 @@ console.log('Testing VolumeHeatmap MicroCVI & Stage 2 Spotlight Engine...');
 // 6. Zero Emojis, Zero Banned Words, Zero Legacy References
 {
   const emojiRegex = /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u;
-  const banned = ['institutional', 'retail', 'fomo', 'capitulation', 'verified', 'creations', 'statistically significant', 'localstorage', 'cloud', '15,000', '15K'];
+  const banned = ['institutional', 'retail', 'fomo', 'capitulation', 'verified', 'creations', 'statistically significant', 'localstorage', 'cloud', '15,000', '15K', 'bloodbath'];
   for (const rel of ['docs/volume-heatmap.js', 'docs/volume-studies.css']) {
     const content = fs.readFileSync(path.join(ROOT, rel), 'utf8');
     assert.strictEqual(emojiRegex.test(content), false, `Emoji found in ${rel}`);
@@ -197,6 +197,15 @@ console.log('Testing VolumeHeatmap MicroCVI & Stage 2 Spotlight Engine...');
     for (const word of banned) {
       assert.strictEqual(lower.includes(word.toLowerCase()), false, `Banned term "${word}" found in ${rel}`);
     }
+  }
+  const marketsHtml = fs.readFileSync(path.join(ROOT, 'docs/markets.html'), 'utf8');
+  const hmStart = marketsHtml.indexOf('id="vs-heatmap-container"');
+  const hmEnd = marketsHtml.indexOf('</details>', hmStart);
+  assert.ok(hmStart > 0 && hmEnd > hmStart, 'markets.html must contain vs-heatmap-container');
+  const hmSnippet = marketsHtml.slice(hmStart, hmEnd);
+  assert.strictEqual(emojiRegex.test(hmSnippet), false, 'Emoji found in heatmap HTML snippet');
+  for (const word of banned) {
+    assert.strictEqual(hmSnippet.toLowerCase().includes(word.toLowerCase()), false, `Banned term "${word}" found in heatmap HTML`);
   }
   console.log('  [PASS] Zero emojis and zero banned terminology verified');
 }
@@ -267,6 +276,173 @@ console.log('Testing VolumeHeatmap MicroCVI & Stage 2 Spotlight Engine...');
   assert.strictEqual(lastFallback.focusClose, 55.5);
 
   console.log('  [PASS] EOD focusClose tracking, peer override, and fallback verified');
+}
+
+// 9. Monotonic Deque rollingWindowMax & rollingWindowMin vs O(N*W) Brute-Force Oracle
+{
+  const oracleMax = (arr, w) => arr.map((_, i) => {
+    let best = -Infinity;
+    for (let j = Math.max(0, i - w + 1); j <= i; j++) {
+      const v = Number(arr[j]);
+      if (Number.isFinite(v) && v > 0 && v > best) best = v;
+    }
+    return best === -Infinity ? null : best;
+  });
+  const oracleMin = (arr, w) => arr.map((_, i) => {
+    let best = Infinity;
+    for (let j = Math.max(0, i - w + 1); j <= i; j++) {
+      const v = Number(arr[j]);
+      if (Number.isFinite(v) && v > 0 && v < best) best = v;
+    }
+    return best === Infinity ? null : best;
+  });
+
+  // Deterministic pseudo-random wave with invalid 0 / NaN gaps
+  let seed = 42;
+  const randSeries = Array.from({ length: 320 }, (_, i) => {
+    if (i === 0 || i === 77 || i === 190) return 0;
+    if (i === 191) return NaN;
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return 10 + (seed % 9000) / 100;
+  });
+
+  for (const w of [1, 5, 21, 63, 252]) {
+    assert.deepStrictEqual(VolumeHeatmap.rollingWindowMax(randSeries, w), oracleMax(randSeries, w), `rollingWindowMax mismatch at w=${w}`);
+    assert.deepStrictEqual(VolumeHeatmap.rollingWindowMin(randSeries, w), oracleMin(randSeries, w), `rollingWindowMin mismatch at w=${w}`);
+  }
+  assert.deepStrictEqual(VolumeHeatmap.rollingWindowMax([], 63), []);
+  console.log('  [PASS] Monotonic deque rollingWindowMax/Min exact O(N*W) oracle parity verified');
+}
+
+// 10. Pre-Slice Causal 252D Context, TRI tc Drawdown Immunity & Short-History Labels
+{
+  // Build 1050 bars: maxBars=756 starts at global index 294; index 294..314 warmup -> first series row is global 315.
+  // Place a major peak at global index 94 (within 252 bars BEFORE global 315, i.e., before the 756-bar cut!)
+  const nTotal = 1050;
+  const paddedBars = [];
+  for (let i = 0; i < nTotal; i++) {
+    const d = new Date(Date.UTC(2022, 0, 1 + i)).toISOString().slice(0, 10);
+    const px = i === 94 ? 200 : 100;
+    paddedBars.push({ d, o: px, h: px * 1.01, l: px * 0.99, c: px, tc: px, v: 50000 });
+  }
+  const agg = VolumeHeatmap.computeHeatAggregate({ PADX: paddedBars }, 'share', 'all', [], { isMarketOpen: false });
+  assert.ok(agg.series.length > 0);
+  const firstRec = agg.series[0]; // corresponds to global index 1050 - 756 + 21 = 315 (distance from 94 is 221 <= 252)
+  assert.ok(firstRec.focusCtx && firstRec.focusCtx.dd252Pct != null, 'First heatmap row must carry focusCtx.dd252Pct');
+  assert.ok(Math.abs(firstRec.focusCtx.dd252Pct - (-50.0)) < 1e-6, `Expected -50.0% pre-slice 252D DD, got ${firstRec.focusCtx.dd252Pct}`);
+  assert.strictEqual(firstRec.focusCtx.win252, 252);
+
+  // Real dividend ETF (TLT): headline close tracks c, drawdowns track tc (no phantom dividend drop)
+  const tltBars = etfHistory.TLT || etfHistory[Object.keys(etfHistory)[0]];
+  const tltCtxMap = VolumeHeatmap.computeTickerCloseContext(tltBars);
+  const lastTltBar = tltBars[tltBars.length - 1];
+  const lastTltCtx = tltCtxMap.get(lastTltBar.d);
+  assert.strictEqual(lastTltCtx.close, lastTltBar.c);
+  assert.strictEqual(lastTltCtx.trClose, lastTltBar.tc);
+  assert.ok(lastTltCtx.dd63Pct <= 0 && lastTltCtx.dd252Pct <= 0);
+  assert.ok(lastTltCtx.ru63Pct >= 0 && lastTltCtx.ru252Pct >= 0);
+
+  // Dynamically pick any short-history ETF (< 220 bars) to check win252 < 252 accuracy
+  const shortEntry = Object.entries(etfHistory).find(([, b]) => Array.isArray(b) && b.length >= 63 && b.length < 220);
+  assert.ok(shortEntry, 'Dataset should contain at least one short-history ETF for window-length guard test');
+  const shortMap = VolumeHeatmap.computeTickerCloseContext(shortEntry[1]);
+  const lastShortCtx = shortMap.get(shortEntry[1][shortEntry[1].length - 1].d);
+  assert.strictEqual(lastShortCtx.win252, shortEntry[1].length);
+  console.log('  [PASS] Pre-slice 252D causal padding, TRI context & short-history win252 verified');
+}
+
+// 11. Causal No-Lookahead Invariance for computeCausalDailySigmaSeries
+{
+  const makeBars = () => Array.from({ length: 50 }, (_, i) => {
+    const px = 50 + Math.sin(i * 0.4) * 2;
+    return {
+      d: new Date(Date.UTC(2026, 0, 1 + i)).toISOString().slice(0, 10),
+      o: px * 0.995, h: px * 1.015, l: px * 0.985, c: px, tc: px, v: 10000
+    };
+  });
+  const barsA = makeBars();
+  const barsB = makeBars();
+  // Mutate bar t=35 dramatically in barsB
+  barsB[35].o = 70;
+  barsB[35].h = 75;
+  barsB[35].l = 65;
+  barsB[35].c = 68;
+  barsB[35].tc = 68;
+
+  const sigA = VolumeHeatmap.computeCausalDailySigmaSeries(barsA, barsA.map(b => b.tc));
+  const sigB = VolumeHeatmap.computeCausalDailySigmaSeries(barsB, barsB.map(b => b.tc));
+  assert.strictEqual(sigA[35], sigB[35], 'Causal sigma[t] must NOT be altered by mutating bar t');
+  assert.notStrictEqual(sigA[36], sigB[36], 'Causal sigma[t+1] MUST incorporate bar t');
+  console.log('  [PASS] Strict causal no-lookahead invariance on prior-21D YZ sigma verified');
+}
+
+// 12. Dynamic DD Threshold Scaling, Monotonicity, 252D Bear Guard & Price Formatting
+{
+  for (const sig of [null, 0, 0.0001, 0.5, 0.77, 1.5, 2.5, 4.6, 8.0, 12.0, 20.0]) {
+    const t = VolumeHeatmap.getDdThresholds(sig);
+    assert.ok(t.pullPct > 0 && t.pullPct < t.deepPct && t.deepPct < t.severePct, `Non-monotonic DD cutoffs for sig=${sig}`);
+    assert.ok(t.pullPct < t.bear252Pct, `bear252Pct must exceed pullPct for sig=${sig}`);
+    assert.ok(t.drop1dPct > 0 && t.drop1dPct < t.drop1dSevPct, `Non-monotonic 1D cutoffs for sig=${sig}`);
+  }
+
+  const lo = VolumeHeatmap.getDdThresholds(0.8);
+  const mid = VolumeHeatmap.getDdThresholds(2.5);
+  const hi = VolumeHeatmap.getDdThresholds(5.0);
+  assert.ok(lo.pullPct < mid.pullPct && mid.pullPct < hi.pullPct);
+  assert.ok(lo.drop1dPct < mid.drop1dPct && mid.drop1dPct < hi.drop1dPct);
+
+  assert.strictEqual(VolumeHeatmap.getDdSeverity(-2.0, -5.0, 2.5, 252).cls, 'dd-near-high');
+  assert.strictEqual(VolumeHeatmap.getDdSeverity(-2.0, -5.0, 2.5, 252).label, 'NEAR HIGH');
+
+  const bearGuard = VolumeHeatmap.getDdSeverity(-1.5, -42.0, 2.5, 252);
+  assert.strictEqual(bearGuard.cls, 'dd-bear-high');
+  assert.strictEqual(bearGuard.label, '63D HI · 252D BEAR');
+
+  const shortBearGuard = VolumeHeatmap.getDdSeverity(-1.5, -42.0, 2.5, 139);
+  assert.strictEqual(shortBearGuard.label, '63D HI · 139D BEAR');
+
+  assert.strictEqual(VolumeHeatmap.getDdSeverity(-10.0, -10.0, 2.5, 252).cls, 'dd-pullback');
+  assert.strictEqual(VolumeHeatmap.getDdSeverity(-25.0, -25.0, 2.5, 252).cls, 'dd-deep');
+  assert.strictEqual(VolumeHeatmap.getDdSeverity(-45.0, -45.0, 2.5, 252).cls, 'dd-severe');
+  assert.strictEqual(VolumeHeatmap.getDdSeverity(-45.0, -45.0, 2.5, 252).label, 'SEVERE DD');
+  assert.strictEqual(VolumeHeatmap.getDdSeverity(null, null, 2.5, 252).cls, 'dd-unknown');
+
+  assert.strictEqual(VolumeHeatmap.formatHeatPrice(12345.6), '$12,346');
+  assert.strictEqual(VolumeHeatmap.formatHeatPrice(1234.5), '$1,234.50');
+  assert.strictEqual(VolumeHeatmap.formatHeatPrice(25.14), '$25.14');
+  assert.strictEqual(VolumeHeatmap.formatHeatPrice(0.4521), '$0.4521');
+  assert.strictEqual(VolumeHeatmap.formatHeatPrice(0), '');
+  assert.strictEqual(VolumeHeatmap.formatHeatPrice(null), '');
+  console.log('  [PASS] Volatility-calibrated DD thresholds, Bear Guard & price formatting verified');
+}
+
+// 13. Scope Switching Contract: Exiting Isolated Ticker Pill Into Multi-ETF Basket Resets Side to 'all'
+{
+  const byUnd = new Map();
+  for (const inst of catalog.instruments) {
+    const key = VolumeHeatmap.normalizeUnderlyingKey(inst.underlying);
+    if (!key) continue;
+    if (!byUnd.has(key)) byUnd.set(key, []);
+    byUnd.get(key).push(inst);
+  }
+  const paired = Array.from(byUnd.values()).find(arr => arr.length >= 2);
+  const startTk = paired[0].ticker;
+  VolumeHeatmap.mount({ ticker: startTk, allHistory: etfHistory, catalogInstruments: catalog.instruments });
+  assert.strictEqual(VolumeHeatmap.state.scope, 'underlying');
+  assert.strictEqual(VolumeHeatmap.state.side, startTk);
+
+  // Switching to All 160 / Category / Featured from isolated ticker pill must show full basket ('all')
+  VolumeHeatmap.setScope('universe');
+  assert.strictEqual(VolumeHeatmap.state.scope, 'universe');
+  assert.strictEqual(VolumeHeatmap.state.side, 'all', 'Switching to universe basket from isolated ticker must reset side to all');
+
+  // Directional filter ('long') persists across macro basket transitions
+  VolumeHeatmap.setSide('long');
+  VolumeHeatmap.setScope('featured');
+  assert.strictEqual(VolumeHeatmap.state.scope, 'featured');
+  assert.strictEqual(VolumeHeatmap.state.side, 'long');
+  VolumeHeatmap._userPinnedMacroScope = false;
+  console.log('  [PASS] Scope switching resets isolated ticker focus to full target basket while preserving directional filter');
 }
 
 console.log('\nAll VolumeHeatmap tests PASSED successfully.');

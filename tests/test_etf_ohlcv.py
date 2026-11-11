@@ -280,4 +280,38 @@ def test_terminal_bar_bad_tick_sanitization():
     assert clean_bars[1]["c"] == 51.0
 
 
+def test_volume_heatmap_drawdown_ui_and_clean_terminology():
+    """Verify Volume Heatmap DD% overlay HTML/CSS contracts and absence of forbidden terms."""
+    html = (ROOT / "docs" / "markets.html").read_text(encoding="utf-8")
+    css = (ROOT / "docs" / "volume-studies.css").read_text(encoding="utf-8")
+    js = (ROOT / "docs" / "volume-heatmap.js").read_text(encoding="utf-8")
+
+    # Required HTML hooks
+    assert 'id="vs-heat-dd-toggle"' in html
+    assert 'id="vs-heat-dd-legend"' in html
+    assert 'class="vs-heat-legend-bar"' in html
+    assert 'id="vs-heatmap-tooltip" class="vs-heat-tooltip" role="tooltip" aria-hidden="true"' in html
+
+    # Required CSS contracts for DD% tracks, fixed tooltip & responsive legend bar
+    for token in (
+        ".vs-heat-dd-track",
+        ".vs-heat-dd-fill.dd-pullback",
+        ".vs-heat-dd-fill.dd-deep",
+        ".vs-heat-dd-fill.dd-severe",
+        ".vs-heat-dd-drop",
+        ".vs-heat-legend-bar",
+        ".vs-heat-dd-legend",
+        ".vs-hm-tt-dd-grid",
+        "position: fixed;",
+    ):
+        assert token in css, f"Missing CSS rule token {token}"
+
+    # No banned terms anywhere in heatmap layer
+    for forbidden in ("bloodbath", "capitulation", "fomo"):
+        assert forbidden not in css.lower()
+        assert forbidden not in js.lower()
+    assert "crosshair" not in js.lower()
+
+
+
 

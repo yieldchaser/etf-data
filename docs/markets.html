@@ -3188,10 +3188,21 @@
 
               <div id="vs-heat-viewport" class="vs-heat-viewport">
                 <div id="vs-heatmap-grid" class="vs-heat-calendar" role="grid" aria-label="18-column MicroCVI Volume Heatmap"></div>
-                <div id="vs-heatmap-tooltip" class="vs-heat-tooltip" style="display:none"></div>
+                <div id="vs-heatmap-tooltip" class="vs-heat-tooltip" role="tooltip" aria-hidden="true" style="display:none"></div>
               </div>
 
-              <div id="vs-heat-legend" class="vs-heat-legend"></div>
+              <div class="vs-heat-legend-bar">
+                <div class="vs-heat-legend-spacer" aria-hidden="true"></div>
+                <div id="vs-heat-legend" class="vs-heat-legend"></div>
+                <div id="vs-heat-dd-group" class="vs-heat-dd-group">
+                  <button type="button"
+                          id="vs-heat-dd-toggle"
+                          class="vs-heat-btn vs-heat-dd-btn"
+                          aria-pressed="false"
+                          title="Overlay causal 63-day rolling peak drawdown severity (volatility-calibrated Pullback / Deep DD / Severe DD, 252D Bear Guard on 63D highs) and &ge;2&sigma; single-day selloff pips.">DD%</button>
+                </div>
+              </div>
+              <div id="vs-heat-dd-legend" class="vs-heat-dd-legend" aria-hidden="true"></div>
             </div>
 
             <!-- Methodology & Technical Interpretation Drawer -->

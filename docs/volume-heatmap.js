@@ -136,9 +136,296 @@
     return (Number.isFinite(c) && c > 0) ? c : 0;
   }
 
+  function _barTotalReturnClose(b) {
+    if (!b) return 0;
+    const tc = b.tc != null ? Number(b.tc) : NaN;
+    if (Number.isFinite(tc) && tc > 0) return tc;
+    return _barClose(b);
+  }
+
   function _barVol(b) {
     const v = b.v != null ? Number(b.v) : (b.volume != null ? Number(b.volume) : 0);
     return Number.isFinite(v) ? Math.max(0, v) : 0;
+  }
+
+  function _escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function _clamp(x, lo, hi) {
+    return Math.max(lo, Math.min(hi, x));
+  }
+
+  function formatHeatPrice(price) {
+    if (price == null || !Number.isFinite(Number(price)) || Number(price) <= 0) return '';
+    const p = Number(price);
+    if (p >= 10000) return `$${Math.round(p).toLocaleString('en-US')}`;
+    if (p >= 1000) return `$${p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (p >= 1) return `$${p.toFixed(2)}`;
+    return `$${p.toFixed(4)}`;
+  }
+
+  // ── Causal Rolling Peak/Trough, Volatility Calibration & DD Classification ──
+
+  function rollingWindowMax(values, windowLen) {
+    const n = (Array.isArray(values) || ArrayBuffer.isView(values)) ? values.length : 0;
+    const w = Math.max(1, Math.trunc(windowLen || 1));
+    const out = new Array(n).fill(null);
+    const deque = [];
+    let head = 0;
+    for (let i = 0; i < n; i++) {
+      const v = Number(values[i]);
+      while (head < deque.length && deque[head] <= i - w) {
+        head++;
+      }
+      if (Number.isFinite(v) && v > 0) {
+        while (deque.length > head && Number(values[deque[deque.length - 1]]) <= v) {
+          deque.pop();
+        }
+        deque.push(i);
+      }
+      if (head > 64 && head * 2 >= deque.length) {
+        deque.splice(0, head);
+        head = 0;
+      }
+      out[i] = deque.length > head ? Number(values[deque[head]]) : null;
+    }
+    return out;
+  }
+
+  function rollingWindowMin(values, windowLen) {
+    const n = (Array.isArray(values) || ArrayBuffer.isView(values)) ? values.length : 0;
+    const w = Math.max(1, Math.trunc(windowLen || 1));
+    const out = new Array(n).fill(null);
+    const deque = [];
+    let head = 0;
+    for (let i = 0; i < n; i++) {
+      const v = Number(values[i]);
+      while (head < deque.length && deque[head] <= i - w) {
+        head++;
+      }
+      if (Number.isFinite(v) && v > 0) {
+        while (deque.length > head && Number(values[deque[deque.length - 1]]) >= v) {
+          deque.pop();
+        }
+        deque.push(i);
+      }
+      if (head > 64 && head * 2 >= deque.length) {
+        deque.splice(0, head);
+        head = 0;
+      }
+      out[i] = deque.length > head ? Number(values[deque[head]]) : null;
+    }
+    return out;
+  }
+
+  function _localYangZhangDaily(bars, windowSize = 21) {
+    const N = Array.isArray(bars) ? bars.length : 0;
+    const n = Math.max(5, Math.trunc(windowSize || 21));
+    const result = new Array(N).fill(null);
+    if (N < n + 1) return result;
+    const k = 0.34 / (1.34 + (n + 1) / (n - 1));
+    const oArr = new Float64Array(n);
+    const cArr = new Float64Array(n);
+
+    for (let t = n; t < N; t++) {
+      let sumO = 0;
+      let sumC = 0;
+      let sumRS = 0;
+      let ok = true;
+      for (let j = 0; j < n; j++) {
+        const idx = t - n + 1 + j;
+        const curr = bars[idx];
+        const prev = bars[idx - 1];
+        const o = _barOpen(curr, _barClose(curr));
+        const c = _barClose(curr);
+        const h = _barHigh(curr, c);
+        const l = _barLow(curr, c);
+        const cPrev = _barClose(prev);
+        if (o <= 0 || h <= 0 || l <= 0 || c <= 0 || cPrev <= 0) {
+          ok = false;
+          break;
+        }
+        const logO = Math.log(o / cPrev);
+        const logC = Math.log(c / o);
+        const logU = Math.log(h / o);
+        const logD = Math.log(l / o);
+        oArr[j] = logO;
+        cArr[j] = logC;
+        sumO += logO;
+        sumC += logC;
+        sumRS += logU * (logU - logC) + logD * (logD - logC);
+      }
+      if (!ok) continue;
+      const meanO = sumO / n;
+      const meanC = sumC / n;
+      let varO = 0;
+      let varC = 0;
+      for (let j = 0; j < n; j++) {
+        const dO = oArr[j] - meanO;
+        const dC = cArr[j] - meanC;
+        varO += dO * dO;
+        varC += dC * dC;
+      }
+      varO /= (n - 1);
+      varC /= (n - 1);
+      const yzVar = varO + k * varC + (1 - k) * (sumRS / n);
+      const vol = Math.sqrt(Math.max(1e-12, yzVar));
+      result[t] = Number.isFinite(vol) ? vol : null;
+    }
+    return result;
+  }
+
+  function computeCausalDailySigmaSeries(bars, trCloses) {
+    const N = Array.isArray(bars) ? bars.length : 0;
+    const out = new Array(N).fill(null);
+    if (N < 3) return out;
+    const yzWin = WINDOW_LAG;
+    const yzRaw = (QuantCore && typeof QuantCore.yangZhangVolatility === 'function')
+      ? QuantCore.yangZhangVolatility(bars, yzWin, false)
+      : _localYangZhangDaily(bars, yzWin);
+
+    for (let t = 1; t < N; t++) {
+      const prevYz = yzRaw ? yzRaw[t - 1] : null;
+      if (prevYz != null && Number.isFinite(prevYz) && prevYz > 0) {
+        out[t] = prevYz * 100.0;
+        continue;
+      }
+      const sStart = Math.max(1, t - yzWin);
+      const rets = [];
+      for (let s = sStart; s < t; s++) {
+        const c0 = trCloses[s - 1];
+        const c1 = trCloses[s];
+        if (c0 > 0 && c1 > 0) {
+          rets.push(Math.log(c1 / c0));
+        }
+      }
+      if (rets.length >= 2) {
+        let mean = 0;
+        for (let i = 0; i < rets.length; i++) mean += rets[i];
+        mean /= rets.length;
+        let ss = 0;
+        for (let i = 0; i < rets.length; i++) {
+          const d = rets[i] - mean;
+          ss += d * d;
+        }
+        out[t] = Math.sqrt(Math.max(1e-12, ss / (rets.length - 1))) * 100.0;
+      }
+    }
+    return out;
+  }
+
+  function getDdThresholds(sigmaDailyPct) {
+    const sig = (sigmaDailyPct != null && Number.isFinite(Number(sigmaDailyPct)) && Number(sigmaDailyPct) > 0)
+      ? Number(sigmaDailyPct)
+      : 2.0;
+    const scale = Math.pow(Math.max(0.25, sig) / 2.5, 0.65);
+    const pullPct = _clamp(8.0 * scale, 4.5, 12.0);
+    const deepPct = _clamp(20.0 * scale, 11.0, 26.0);
+    const severePct = _clamp(35.0 * scale, 20.0, 42.0);
+    const bear252Pct = _clamp(28.0 * scale, 15.0, 40.0);
+    const drop1dPct = _clamp(2.0 * sig, 1.5, 22.0);
+    const drop1dSevPct = _clamp(3.25 * sig, 2.5, 35.0);
+    return {
+      sigmaDailyPct: sig,
+      pullPct,
+      deepPct,
+      severePct,
+      bear252Pct,
+      drop1dPct,
+      drop1dSevPct
+    };
+  }
+
+  function getDdSeverity(dd63Pct, dd252Pct = null, sigmaDailyPct = null, win252 = 252) {
+    const thr = getDdThresholds(sigmaDailyPct);
+    if (dd63Pct == null || !Number.isFinite(dd63Pct)) {
+      return { cls: 'dd-unknown', label: 'N/A', fillPct: 0, thresholds: thr };
+    }
+    const mag = Math.max(0, -dd63Pct);
+    if (mag < thr.pullPct) {
+      if (dd252Pct != null && Number.isFinite(dd252Pct) && dd252Pct <= -thr.bear252Pct) {
+        const wLbl = (win252 && win252 < 252) ? `${win252}D` : '252D';
+        return { cls: 'dd-bear-high', label: `63D HI \u00b7 ${wLbl} BEAR`, fillPct: 0, thresholds: thr };
+      }
+      return { cls: 'dd-near-high', label: 'NEAR HIGH', fillPct: 0, thresholds: thr };
+    }
+    if (mag < thr.deepPct) {
+      const pct = Math.round(25 + ((mag - thr.pullPct) / (thr.deepPct - thr.pullPct)) * 30);
+      return { cls: 'dd-pullback', label: 'PULLBACK', fillPct: pct, thresholds: thr };
+    }
+    if (mag < thr.severePct) {
+      const pct = Math.round(55 + ((mag - thr.deepPct) / (thr.severePct - thr.deepPct)) * 30);
+      return { cls: 'dd-deep', label: 'DEEP DD', fillPct: pct, thresholds: thr };
+    }
+    const rampSpan = Math.max(10.0, thr.severePct * 0.6);
+    const pct = Math.min(100, Math.round(85 + ((mag - thr.severePct) / rampSpan) * 15));
+    return { cls: 'dd-severe', label: 'SEVERE DD', fillPct: pct, thresholds: thr };
+  }
+
+  function computeTickerCloseContext(bars) {
+    const map = new Map();
+    if (!Array.isArray(bars) || !bars.length) return map;
+    const N = bars.length;
+    const trCloses = new Float64Array(N);
+    const closes = new Float64Array(N);
+    const validPrefix = new Int32Array(N + 1);
+
+    for (let i = 0; i < N; i++) {
+      const c = _barClose(bars[i]);
+      const tr = _barTotalReturnClose(bars[i]);
+      closes[i] = c;
+      trCloses[i] = tr;
+      validPrefix[i + 1] = validPrefix[i] + (tr > 0 ? 1 : 0);
+    }
+
+    const peak63 = rollingWindowMax(trCloses, 63);
+    const peak252 = rollingWindowMax(trCloses, 252);
+    const trough63 = rollingWindowMin(trCloses, 63);
+    const trough252 = rollingWindowMin(trCloses, 252);
+    const sigmaDaily = computeCausalDailySigmaSeries(bars, trCloses);
+
+    for (let i = 0; i < N; i++) {
+      const d = _barDate(bars[i]);
+      if (!d) continue;
+      const c = closes[i] > 0 ? closes[i] : null;
+      const tr = trCloses[i] > 0 ? trCloses[i] : null;
+      const prevTr = (i > 0 && trCloses[i - 1] > 0) ? trCloses[i - 1] : null;
+      const chg1dPct = (tr != null && prevTr != null) ? ((tr - prevTr) / prevTr) * 100.0 : null;
+
+      const p63 = peak63[i];
+      const p252 = peak252[i];
+      const t63 = trough63[i];
+      const t252 = trough252[i];
+
+      const dd63Pct = (tr != null && p63 != null && p63 > 0) ? Math.min(0.0, ((tr - p63) / p63) * 100.0) : null;
+      const dd252Pct = (tr != null && p252 != null && p252 > 0) ? Math.min(0.0, ((tr - p252) / p252) * 100.0) : null;
+      const ru63Pct = (tr != null && t63 != null && t63 > 0) ? Math.max(0.0, ((tr - t63) / t63) * 100.0) : null;
+      const ru252Pct = (tr != null && t252 != null && t252 > 0) ? Math.max(0.0, ((tr - t252) / t252) * 100.0) : null;
+
+      const win63 = validPrefix[i + 1] - validPrefix[Math.max(0, i + 1 - 63)];
+      const win252 = validPrefix[i + 1] - validPrefix[Math.max(0, i + 1 - 252)];
+
+      map.set(d, {
+        close: c,
+        trClose: tr,
+        chg1dPct,
+        dd63Pct,
+        dd252Pct,
+        ru63Pct,
+        ru252Pct,
+        win63,
+        win252,
+        sigmaDailyPct: sigmaDaily[i]
+      });
+    }
+    return map;
   }
 
   function computeEtfMicrostructure(bars, mode = 'share') {
@@ -439,12 +726,19 @@
     }
 
     const etfMetrics = {};
+    const closeCtxMaps = {};
     const indexMaps = {};
     const unionDateSet = new Set();
     const maxBars = opts.maxBars || HEATMAP_MAX_BARS;
+    const ctxPadBars = 260;
 
     for (const t of activeTickers) {
       const stripped = stripLivePartialSession(historiesByTicker[t], opts.isMarketOpen, opts.nowDate);
+      if (!stripped.length) continue;
+      // Preserve >= 260 pre-slice bars so 252D peak/trough and 21D YZ vol stay strictly causal from bar 0 of hist
+      const ctxSlice = stripped.length > (maxBars + ctxPadBars) ? stripped.slice(-(maxBars + ctxPadBars)) : stripped;
+      closeCtxMaps[t] = computeTickerCloseContext(ctxSlice);
+
       const hist = stripped.length > maxBars ? stripped.slice(-maxBars) : stripped;
       if (!hist.length) continue;
 
@@ -464,6 +758,22 @@
     const allDates = sortedUnion.length > maxBars ? sortedUnion.slice(-maxBars) : sortedUnion;
     const T = allDates.length;
     const records = [];
+    const toLead = c => c ? {
+      ticker: c.ticker,
+      side: c.side,
+      close: c.close,
+      chg1dPct: c.chg1dPct,
+      dd63Pct: c.dd63Pct,
+      dd252Pct: c.dd252Pct,
+      ru63Pct: c.ru63Pct,
+      ru252Pct: c.ru252Pct,
+      win63: c.win63,
+      win252: c.win252,
+      sigmaDailyPct: c.sigmaDailyPct,
+      peakScore: c.peakScore,
+      valleyScore: c.valleyScore,
+      rvol: c.rvol
+    } : null;
 
     for (let t = 0; t < T; t++) {
       const date = allDates[t];
@@ -475,8 +785,9 @@
       let weightedValleySum = 0.0;
       let weightSum = 0.0;
       let activeCount = 0;
-      let leadPeakTicker = '';
-      let leadValleyTicker = '';
+      let bestPeak = null;
+      let bestValley = null;
+      const candByTicker = {};
 
       for (const ticker of activeTickers) {
         const map = indexMaps[ticker];
@@ -491,16 +802,56 @@
         const rv = m.rvolArr[idx];
         const w = Math.sqrt(Math.max(0.0, m.trimDollarTurnover[idx]));
 
-        if (pScore > maxPeak || !leadPeakTicker) {
-          maxPeak = pScore;
-          leadPeakTicker = ticker;
-        }
-        if (vScore > maxValley || !leadValleyTicker) {
-          maxValley = vScore;
-          leadValleyTicker = ticker;
-        }
+        if (pScore > maxPeak) maxPeak = pScore;
+        if (vScore > maxValley) maxValley = vScore;
         if (rv > maxRvol) maxRvol = rv;
         if (rv < minRvol) minRvol = rv;
+
+        const ctx = closeCtxMaps[ticker] ? closeCtxMaps[ticker].get(date) : null;
+        const candClose = (ctx && ctx.close != null && ctx.close > 0)
+          ? ctx.close
+          : ((m.closes && m.closes[idx] > 0) ? m.closes[idx] : null);
+
+        const cand = {
+          ticker,
+          side: isInverseInstrument(catalogMap[ticker]) ? 'short' : 'long',
+          close: candClose,
+          chg1dPct: ctx ? ctx.chg1dPct : null,
+          dd63Pct: ctx ? ctx.dd63Pct : null,
+          dd252Pct: ctx ? ctx.dd252Pct : null,
+          ru63Pct: ctx ? ctx.ru63Pct : null,
+          ru252Pct: ctx ? ctx.ru252Pct : null,
+          win63: ctx ? ctx.win63 : null,
+          win252: ctx ? ctx.win252 : null,
+          sigmaDailyPct: ctx ? ctx.sigmaDailyPct : null,
+          peakScore: pScore,
+          valleyScore: vScore,
+          rvol: rv,
+          weight: w
+        };
+        candByTicker[ticker] = cand;
+
+        if (
+          !bestPeak ||
+          pScore > bestPeak.peakScore + 1e-12 ||
+          (Math.abs(pScore - bestPeak.peakScore) <= 1e-12 && (
+            rv > bestPeak.rvol + 1e-12 ||
+            (Math.abs(rv - bestPeak.rvol) <= 1e-12 && w > bestPeak.weight)
+          ))
+        ) {
+          bestPeak = cand;
+        }
+
+        if (
+          !bestValley ||
+          vScore > bestValley.valleyScore + 1e-12 ||
+          (Math.abs(vScore - bestValley.valleyScore) <= 1e-12 && (
+            rv < bestValley.rvol - 1e-12 ||
+            (Math.abs(rv - bestValley.rvol) <= 1e-12 && w > bestValley.weight)
+          ))
+        ) {
+          bestValley = cand;
+        }
 
         weightedPeakSum += w * pScore;
         weightedValleySum += w * vScore;
@@ -509,6 +860,9 @@
       }
 
       if (activeCount === 0) continue;
+
+      const leadPeakTicker = bestPeak ? bestPeak.ticker : '';
+      const leadValleyTicker = bestValley ? bestValley.ticker : '';
 
       const meanPeak = weightSum > 0.0 ? (weightedPeakSum / weightSum) : maxPeak;
       const meanValley = weightSum > 0.0 ? (weightedValleySum / weightSum) : maxValley;
@@ -562,6 +916,9 @@
         activeCount,
         leadPeakTicker,
         leadValleyTicker,
+        leadPeak: toLead(bestPeak),
+        leadValley: toLead(bestValley),
+        focusCtx: priceTicker && candByTicker[priceTicker] ? toLead(candByTicker[priceTicker]) : null,
         climaxDir,
         compositeTieKeyPeak: tieKeyPeak,
         compositeTieKeyValley: tieKeyValley
@@ -674,6 +1031,13 @@
     isInverseInstrument,
     normalizeUnderlyingKey,
     formatDisplayDate,
+    formatHeatPrice,
+    rollingWindowMax,
+    rollingWindowMin,
+    computeCausalDailySigmaSeries,
+    computeTickerCloseContext,
+    getDdThresholds,
+    getDdSeverity,
 
     state: {
       ticker: '',
@@ -683,7 +1047,8 @@
       days: 90,             // 90 | 126 | 180 | 252
       offset: 0,
       spotlight: false,     // false | 'peaks' | 'valleys'
-      threshold: 95         // 90 | 95 | 99
+      threshold: 95,        // 90 | 95 | 99
+      ddOverlay: false      // boolean toggle for DD63 severity & 1D selloff overlay
     },
 
     _allHistory: null,
@@ -692,6 +1057,9 @@
     _aggCache: new Map(),
     _userPinnedMacroScope: false,
     _bound: false,
+    _globalBound: false,
+    _activeHeatCell: null,
+    _lastTouchAt: 0,
 
     _invalidateCacheIfHistoryChanged(allHistory) {
       if (this._allHistory !== allHistory) {
@@ -777,6 +1145,7 @@
       if (!valid.includes(scopeKey)) return;
       const scopes = getAvailableScopes(this.state.ticker, this._catalog);
       if (scopeKey === 'underlying' && scopes.underlying.total < 2) return;
+      const scopeChanged = this.state.scope !== scopeKey;
       this.state.scope = scopeKey;
       this._userPinnedMacroScope = ['category', 'featured', 'universe'].includes(scopeKey);
       this.state.offset = 0;
@@ -784,14 +1153,21 @@
       if (scopeKey === 'active') {
         this.state.side = 'all';
       } else {
-        const scopeTickers = resolveScopeTickers(this.state.ticker, this._catalog, scopeKey, 'all');
         const activeScopeMeta = scopes[scopeKey] || scopes.active;
-        if (this.state.side === 'short' && activeScopeMeta.shortCount === 0) {
+        if (!['all', 'long', 'short'].includes(this.state.side)) {
+          if (scopeChanged) {
+            // Switching baskets (e.g. Underlying -> Category / Featured / All 160) shows the full target basket
+            this.state.side = 'all';
+          } else {
+            const scopeTickers = resolveScopeTickers(this.state.ticker, this._catalog, scopeKey, 'all');
+            if (!scopeTickers.includes(this.state.side)) {
+              this.state.side = scopeTickers.includes(this.state.ticker) ? this.state.ticker : 'all';
+            }
+          }
+        } else if (this.state.side === 'short' && activeScopeMeta.shortCount === 0) {
           this.state.side = 'all';
         } else if (this.state.side === 'long' && activeScopeMeta.longCount === 0) {
           this.state.side = 'all';
-        } else if (!['all', 'long', 'short'].includes(this.state.side) && !scopeTickers.includes(this.state.side)) {
-          this.state.side = scopeTickers.includes(this.state.ticker) ? this.state.ticker : 'all';
         }
       }
       this.render();
@@ -850,6 +1226,142 @@
       this.render();
     },
 
+    toggleDdOverlay() {
+      this.state.ddOverlay = !this.state.ddOverlay;
+      this.render();
+    },
+
+    _hideHeatTooltip() {
+      if (typeof document === 'undefined') return;
+      const tooltip = document.getElementById('vs-heatmap-tooltip');
+      if (tooltip) {
+        tooltip.classList.remove('visible');
+        tooltip.setAttribute('aria-hidden', 'true');
+        tooltip.style.display = 'none';
+      }
+      this._activeHeatCell = null;
+    },
+
+    _showHeatTooltip(cell) {
+      if (!cell || !cell._heatMeta || typeof document === 'undefined') {
+        this._hideHeatTooltip();
+        return;
+      }
+      const tooltip = document.getElementById('vs-heatmap-tooltip');
+      if (!tooltip) return;
+
+      const m = cell._heatMeta;
+      this._activeHeatCell = cell;
+
+      const leadLabel = m.leadTicker
+        ? (m.isBasket ? `Lead ${m.leadTicker}` : m.leadTicker)
+        : '';
+
+      let chgHtml = '';
+      if (m.chg1dPct != null && Number.isFinite(m.chg1dPct)) {
+        const dispChg = (m.chg1dPct > -0.05 && m.chg1dPct < 0.05) ? 0.0 : m.chg1dPct;
+        const sign = dispChg > 0 ? '+' : '';
+        const chgCls = dispChg > 0.05 ? 'pos' : (dispChg < -0.05 ? 'neg' : 'flat');
+        chgHtml = `<span class="vs-hm-tt-chg ${chgCls}">${sign}${dispChg.toFixed(1)}%</span>`;
+      }
+
+      let priceRowHtml = '';
+      if (leadLabel || m.priceStr || chgHtml) {
+        priceRowHtml = `<div class="vs-hm-tt-price-row">`
+          + (leadLabel ? `<span class="vs-hm-tt-asset">${_escapeHtml(leadLabel)}</span>` : '')
+          + (m.priceStr ? `<span class="vs-hm-tt-price">${_escapeHtml(m.priceStr)}</span>` : '')
+          + chgHtml
+          + `</div>`;
+      }
+
+      const pctTop = m.totalN > 0 ? Math.max(1, Math.round((m.windowRank / m.totalN) * 100)) : 100;
+      const fmtDd = v => (v > -0.05 && v <= 0) ? '0.0%' : `${v.toFixed(1)}%`;
+      const fmtRu = v => (v >= 0 && v < 0.05) ? '0.0%' : `+${v.toFixed(1)}%`;
+
+      const buildDdRow = (winLabel, ddVal, ruVal) => {
+        if (ddVal == null || !Number.isFinite(ddVal)) return '';
+        const hasRu = ruVal != null && Number.isFinite(ruVal);
+        return `<span class="vs-hm-tt-dd-win">${_escapeHtml(winLabel)}</span>`
+          + `<span class="vs-hm-tt-dd-pk">${fmtDd(ddVal)} <span class="vs-hm-tt-dd-unit">pk</span></span>`
+          + (hasRu
+            ? `<span class="vs-hm-tt-dd-sep">&middot;</span><span class="vs-hm-tt-dd-low">${fmtRu(ruVal)} <span class="vs-hm-tt-dd-unit">low</span></span>`
+            : `<span class="vs-hm-tt-dd-sep"></span><span class="vs-hm-tt-dd-low"></span>`);
+      };
+
+      let ddRowHtml = '';
+      if (m.dd63Pct != null && Number.isFinite(m.dd63Pct)) {
+        const w63Label = (m.win63 && m.win63 < 63) ? `${m.win63}D` : '63D';
+        const row63 = buildDdRow(w63Label, m.dd63Pct, m.ru63Pct);
+        const showLongWin = m.dd252Pct != null && Number.isFinite(m.dd252Pct) && (!m.win252 || !m.win63 || m.win252 > m.win63);
+        const w252Label = (m.win252 && m.win252 < 252) ? `${m.win252}D` : '252D';
+        const row252 = showLongWin ? buildDdRow(w252Label, m.dd252Pct, m.ru252Pct) : '';
+        const thr = m.thresholds;
+        const scaleNote = (m.sigmaDailyPct != null && Number.isFinite(m.sigmaDailyPct) && thr)
+          ? `<div class="vs-hm-tt-dd-scale">YZ &sigma;<sub>21</sub> ${m.sigmaDailyPct.toFixed(1)}% &middot; Pull &le;-${thr.pullPct.toFixed(1)}% &middot; 1D &le;-${thr.drop1dPct.toFixed(1)}%</div>`
+          : '';
+
+        ddRowHtml = `<div class="vs-hm-tt-dd ${_escapeHtml(m.ddTierCls)}${m.ddOverlay ? ' overlay-active' : ''}">`
+          + `<div class="vs-hm-tt-dd-grid">${row63}${row252}</div>`
+          + `<span class="vs-hm-tt-dd-pill ${_escapeHtml(m.ddTierCls)}">${_escapeHtml(m.ddSeverityLabel)}</span>`
+          + scaleNote
+          + `</div>`;
+      }
+
+      let tagHtml = '';
+      if (m.isSpotlight) {
+        const basketSuffix = (m.isBasket && m.activeCount > 1) ? ` &middot; ${m.activeCount} ETFs` : '';
+        if (m.isHighlighted) {
+          const regimeCls = m.isValleys ? 'is-valley' : 'is-peak';
+          tagHtml = `<div class="vs-heat-tt-tag ${regimeCls}">${_escapeHtml(m.filterTag)} &middot; ${_escapeHtml(m.climaxTag)}${basketSuffix}</div>`;
+        } else {
+          const tierNote = (m.filterTag && m.filterTag !== 'BASE') ? ` &middot; Tier ${_escapeHtml(m.filterTag)}` : '';
+          tagHtml = `<div class="vs-heat-tt-tag is-dim">DIMMED &middot; Below P${m.threshold} cutoff${tierNote}${basketSuffix}</div>`;
+        }
+      } else if (m.isBasket && m.activeCount > 1) {
+        tagHtml = `<div class="vs-heat-tt-tag">Basket: ${m.activeCount} ETFs &middot; ${_escapeHtml(m.modeWord)}</div>`;
+      }
+
+      tooltip.innerHTML = priceRowHtml
+        + `<div class="vs-heat-tt-date">${_escapeHtml(m.dateFormatted)}</div>`
+        + `<div class="vs-heat-tt-rank">Rank #${m.windowRank} / ${m.totalN} &middot; Top ${pctTop}%</div>`
+        + `<div class="vs-heat-tt-main"><span class="vs-hm-tt-lbl">${_escapeHtml(m.metricLabel)}:</span> <strong>${_escapeHtml(m.scoreStr)}</strong> &middot; <span class="vs-hm-tt-rvol">RVOL ${_escapeHtml(m.rvolStr)}</span></div>`
+        + ddRowHtml
+        + tagHtml;
+
+      tooltip.style.visibility = 'hidden';
+      tooltip.style.display = 'flex';
+
+      const cRect = cell.getBoundingClientRect();
+      const viewport = document.getElementById('vs-heat-viewport');
+      const panelEl = cell.closest('.flow-volume-studies-card') || viewport;
+      const panelRect = panelEl ? panelEl.getBoundingClientRect() : null;
+      const tw = tooltip.offsetWidth || 226;
+      const th = tooltip.offsetHeight || 136;
+      const pad = 8;
+      const GAP = 8;
+      const vw = typeof window !== 'undefined' ? window.innerWidth : 1200;
+      const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+
+      const minLeft = panelRect ? Math.max(pad, panelRect.left + 6) : pad;
+      const maxRight = panelRect ? Math.min(vw - pad, panelRect.right - 6) : (vw - pad);
+      const maxLeft = Math.max(minLeft, maxRight - tw);
+
+      let left = cRect.left + (cRect.width / 2) - (tw / 2);
+      left = Math.max(minLeft, Math.min(maxLeft, left));
+
+      let top = cRect.top - th - GAP;
+      if (top < pad) {
+        top = cRect.bottom + GAP;
+      }
+      top = Math.max(pad, Math.min(vh - th - pad, top));
+
+      tooltip.style.left = `${Math.round(left)}px`;
+      tooltip.style.top = `${Math.round(top)}px`;
+      tooltip.style.visibility = 'visible';
+      tooltip.classList.add('visible');
+      tooltip.setAttribute('aria-hidden', 'false');
+    },
+
     render() {
       if (typeof document === 'undefined') return;
       const grid = document.getElementById('vs-heatmap-grid');
@@ -882,15 +1394,18 @@
 
     renderCalendar(container, visibleSlice) {
       if (!container) return 0;
+      this._hideHeatTooltip();
       container.innerHTML = '';
 
       const spotlight = this.state.spotlight;
       const isPeaks = spotlight === 'peaks';
       const isValleys = spotlight === 'valleys';
       const isSpotlight = isPeaks || isValleys;
+      const ddOverlay = Boolean(this.state.ddOverlay);
 
       container.classList.toggle('vs-heat-peaks-mode', isPeaks);
       container.classList.toggle('vs-heat-valleys-mode', isValleys);
+      container.classList.toggle('vs-heat-dd-mode', ddOverlay);
 
       if (!visibleSlice || !visibleSlice.length) {
         const empty = document.createElement('div');
@@ -919,20 +1434,33 @@
         const colorIdx = Math.min(BASELINE_COLORS.length - 1, Math.max(0, Math.floor((score / 100) * BASELINE_COLORS.length)));
         cell.style.background = BASELINE_COLORS[colorIdx];
 
-        const dateFmt = formatDisplayDate(day.date);
-        const priceStr = (day.focusClose != null && day.focusClose > 0) ? `$${day.focusClose.toFixed(1)}` : '';
-        const rvolVal = isValleys
-          ? (day.minRvol != null ? day.minRvol : (day.maxRvol != null ? day.maxRvol : 1.0))
-          : (day.maxRvol != null ? day.maxRvol : 1.0);
-        const leadTk = isValleys ? day.leadValleyTicker : day.leadPeakTicker;
-        const basketLead = (day.activeCount > 1 && leadTk) ? `Lead: ${leadTk} (${day.activeCount} ETFs)` : '';
-        const rvolText = `RVOL ${rvolVal.toFixed(2)}x`;
-        const rankText = `Rank #${st.windowRank} / ${N}`;
+        const lead = isValleys ? (day.leadValley || day.leadPeak) : (day.leadPeak || day.leadValley);
+        const isBasket = day.activeCount > 1;
+        const activeCtx = isBasket ? lead : (day.focusCtx || lead);
+        const leadTicker = activeCtx && activeCtx.ticker
+          ? activeCtx.ticker
+          : (day.priceTicker || (isValleys ? day.leadValleyTicker : day.leadPeakTicker) || '');
 
-        cell.dataset.price = priceStr;
-        cell.dataset.date = dateFmt;
-        cell.dataset.rank = rankText;
-        cell.dataset.rvol = rvolText;
+        const dateFormatted = formatDisplayDate(day.date);
+        const rawClose = (activeCtx && activeCtx.close != null) ? activeCtx.close : day.focusClose;
+        const priceStr = formatHeatPrice(rawClose);
+        const chg1dPct = activeCtx ? activeCtx.chg1dPct : null;
+        const dd63Pct = activeCtx ? activeCtx.dd63Pct : null;
+        const dd252Pct = activeCtx ? activeCtx.dd252Pct : null;
+        const ru63Pct = activeCtx ? activeCtx.ru63Pct : null;
+        const ru252Pct = activeCtx ? activeCtx.ru252Pct : null;
+        const win63 = activeCtx ? activeCtx.win63 : null;
+        const win252 = activeCtx ? activeCtx.win252 : null;
+        const sigmaDailyPct = activeCtx ? activeCtx.sigmaDailyPct : null;
+        const ddInfo = getDdSeverity(dd63Pct, dd252Pct, sigmaDailyPct, win252);
+
+        const rvolVal = isValleys
+          ? ((activeCtx && activeCtx.rvol != null) ? activeCtx.rvol : (day.minRvol != null ? day.minRvol : (day.maxRvol != null ? day.maxRvol : 1.0)))
+          : ((activeCtx && activeCtx.rvol != null) ? activeCtx.rvol : (day.maxRvol != null ? day.maxRvol : 1.0));
+        const rvolStr = `${rvolVal.toFixed(2)}x`;
+
+        let climaxTag = '';
+        let filterTag = 'BASE';
 
         if (isSpotlight) {
           if (!st.isHighlighted) {
@@ -953,21 +1481,65 @@
           }
 
           const dirLabel = st.climaxDir === -1 ? 'SELLING EXHAUSTION' : 'BUYING CLIMAX';
-          const climaxTag = st.isStructuralClimax
-            ? (isPeaks ? ('STRUCTURAL ' + dirLabel) : 'STRUCTURAL DROUGHT')
-            : (isPeaks ? ('LOCAL ' + dirLabel) : 'LOW-TURNOVER COMPRESSION');
-          const filterTag = st.visualTier === 'RED_P99' ? 'P99' : (st.visualTier === 'ORANGE_P95' ? 'P95' : 'P90');
-          const metricName = isValleys ? 'VOLUME DROUGHT' : label;
+          climaxTag = st.isStructuralClimax
+            ? (isPeaks ? `STRUCTURAL ${dirLabel}` : 'STRUCTURAL DROUGHT')
+            : (isPeaks ? `LOCAL ${dirLabel}` : 'LOW-TURNOVER COMPRESSION');
+          filterTag = st.visualTier === 'RED_P99' ? 'P99' : (st.visualTier === 'ORANGE_P95' ? 'P95' : (st.visualTier === 'AMBER_P90' ? 'P90' : 'BASE'));
+        }
 
-          cell.dataset.metric = metricName;
-          cell.dataset.score = score.toFixed(1);
-          cell.dataset.tag = `${filterTag} · ${climaxTag}${basketLead ? ' · ' + basketLead : ''}`;
-          cell.dataset.tier = st.isHighlighted ? (st.isStructuralClimax ? 'structural' : 'local') : 'dim';
-        } else {
-          cell.dataset.metric = label;
-          cell.dataset.score = score.toFixed(1);
-          cell.dataset.tag = basketLead;
-          cell.dataset.tier = 'baseline';
+        const metricLabel = isValleys ? 'VOLUME DROUGHT' : label;
+        cell._heatMeta = {
+          dateFormatted,
+          leadTicker,
+          isBasket,
+          activeCount: day.activeCount || 1,
+          priceStr,
+          chg1dPct,
+          metricLabel,
+          modeWord: this.state.unit === 'dollar' ? 'Dollar Vol' : 'Share Vol',
+          scoreStr: score.toFixed(1),
+          rvolStr,
+          windowRank: st.windowRank,
+          totalN: N,
+          dd63Pct,
+          dd252Pct,
+          ru63Pct,
+          ru252Pct,
+          win63,
+          win252,
+          sigmaDailyPct,
+          thresholds: ddInfo.thresholds,
+          ddSeverityLabel: ddInfo.label,
+          ddTierCls: ddInfo.cls,
+          ddOverlay,
+          isSpotlight,
+          isPeaks,
+          isValleys,
+          isHighlighted: st.isHighlighted,
+          threshold: this.state.threshold,
+          climaxTag,
+          filterTag
+        };
+
+        if (ddOverlay) {
+          if (ddInfo.cls) cell.classList.add(ddInfo.cls);
+          const track = document.createElement('span');
+          track.className = 'vs-heat-dd-track';
+          if (ddInfo.fillPct > 0) {
+            const fill = document.createElement('span');
+            fill.className = `vs-heat-dd-fill ${ddInfo.cls}`;
+            fill.style.width = `${ddInfo.fillPct}%`;
+            track.appendChild(fill);
+          }
+          cell.appendChild(track);
+
+          if (chg1dPct != null && Number.isFinite(chg1dPct) && chg1dPct <= -ddInfo.thresholds.drop1dPct) {
+            const pip = document.createElement('span');
+            pip.className = chg1dPct <= -ddInfo.thresholds.drop1dSevPct
+              ? 'vs-heat-dd-drop severe'
+              : 'vs-heat-dd-drop';
+            cell.appendChild(pip);
+          }
         }
 
         frag.appendChild(cell);
@@ -1082,6 +1654,104 @@
         const thr = parseInt(btn.getAttribute('data-heat-threshold'), 10);
         btn.classList.toggle('active', thr === this.state.threshold);
       });
+
+      // DD% overlay toggle button & collapsible legend visibility
+      const ddBtn = document.getElementById('vs-heat-dd-toggle');
+      const ddLegend = document.getElementById('vs-heat-dd-legend');
+      const ddActive = Boolean(this.state.ddOverlay);
+      if (ddBtn) {
+        ddBtn.classList.toggle('active', ddActive);
+        ddBtn.setAttribute('aria-pressed', String(ddActive));
+      }
+      if (ddLegend) {
+        ddLegend.classList.toggle('visible', ddActive);
+        ddLegend.setAttribute('aria-hidden', String(!ddActive));
+      }
+    },
+
+    _updateDdLegend(visibleSlice) {
+      if (typeof document === 'undefined') return;
+      const ddLegend = document.getElementById('vs-heat-dd-legend');
+      if (!ddLegend) return;
+
+      const isValleys = this.state.spotlight === 'valleys';
+      const tickersSeen = new Set();
+      let maxWin252 = 0;
+      let latestCtx = null;
+      let pullMin = Infinity, pullMax = -Infinity;
+      let deepMin = Infinity, deepMax = -Infinity;
+      let sevMin = Infinity, sevMax = -Infinity;
+      let bearMin = Infinity, bearMax = -Infinity;
+      let dropMin = Infinity, dropMax = -Infinity;
+
+      for (const day of (visibleSlice || [])) {
+        const lead = isValleys ? (day.leadValley || day.leadPeak) : (day.leadPeak || day.leadValley);
+        const ctx = day.activeCount > 1 ? lead : (day.focusCtx || lead);
+        if (!ctx) continue;
+        if (ctx.ticker) tickersSeen.add(ctx.ticker);
+        if (ctx.win252 && ctx.win252 > maxWin252) maxWin252 = ctx.win252;
+        const thr = getDdThresholds(ctx.sigmaDailyPct);
+        pullMin = Math.min(pullMin, thr.pullPct);
+        pullMax = Math.max(pullMax, thr.pullPct);
+        deepMin = Math.min(deepMin, thr.deepPct);
+        deepMax = Math.max(deepMax, thr.deepPct);
+        sevMin = Math.min(sevMin, thr.severePct);
+        sevMax = Math.max(sevMax, thr.severePct);
+        bearMin = Math.min(bearMin, thr.bear252Pct);
+        bearMax = Math.max(bearMax, thr.bear252Pct);
+        dropMin = Math.min(dropMin, thr.drop1dPct);
+        dropMax = Math.max(dropMax, thr.drop1dPct);
+        latestCtx = ctx;
+      }
+
+      if (!latestCtx || !isFinite(pullMin)) {
+        const defThr = getDdThresholds(null);
+        pullMin = pullMax = defThr.pullPct;
+        deepMin = deepMax = defThr.deepPct;
+        sevMin = sevMax = defThr.severePct;
+        bearMin = bearMax = defThr.bear252Pct;
+        dropMin = dropMax = defThr.drop1dPct;
+      }
+
+      const isSingle = tickersSeen.size <= 1;
+      const refThr = (isSingle && latestCtx) ? getDdThresholds(latestCtx.sigmaDailyPct) : null;
+      const winLbl = (maxWin252 > 0 && maxWin252 < 252) ? `${maxWin252}D` : '252D';
+
+      const fmtNum = v => v.toFixed(1);
+      const fmtRng = (lo, hi) => (Math.abs(hi - lo) < 0.25) ? `${fmtNum(hi)}%` : `${fmtNum(lo)}..${fmtNum(hi)}%`;
+
+      const titleText = (isSingle && latestCtx && latestCtx.ticker && latestCtx.sigmaDailyPct != null)
+        ? `DD63 (${latestCtx.ticker} &middot; &sigma;<sub>21</sub> ${latestCtx.sigmaDailyPct.toFixed(1)}%):`
+        : 'DD63 Overlay (YZ &sigma;-Scaled):';
+
+      const nearLbl = refThr
+        ? `Near High (&lt;${fmtNum(refThr.pullPct)}% &middot; 63D &amp; ${winLbl})`
+        : `Near High (63D &amp; ${winLbl})`;
+      const bearLbl = refThr
+        ? `63D Hi &middot; ${winLbl} Bear (&le;-${fmtNum(refThr.bear252Pct)}%)`
+        : `63D Hi &middot; ${winLbl} Bear (&le;-${fmtRng(bearMin, bearMax)})`;
+      const pullLbl = refThr
+        ? `Pullback (-${fmtNum(refThr.pullPct)}% to -${fmtNum(refThr.deepPct)}%)`
+        : `Pullback (-${fmtRng(pullMin, pullMax)} to -${fmtRng(deepMin, deepMax)})`;
+      const deepLbl = refThr
+        ? `Deep DD (-${fmtNum(refThr.deepPct)}% to -${fmtNum(refThr.severePct)}%)`
+        : `Deep DD (-${fmtRng(deepMin, deepMax)} to -${fmtRng(sevMin, sevMax)})`;
+      const sevLbl = refThr
+        ? `Severe DD (-${fmtNum(refThr.severePct)}%+)`
+        : `Severe DD (-${fmtRng(sevMin, sevMax)}+)`;
+      const dropLbl = refThr
+        ? `-${fmtNum(refThr.drop1dPct)}%+ 1D Drop`
+        : `&ge;2&sigma; 1D Drop (-${fmtRng(dropMin, dropMax)}+)`;
+
+      ddLegend.innerHTML = `
+        <span class="vs-heat-dd-legend-title">${titleText}</span>
+        <span class="vs-heat-dd-legend-item"><span class="vs-heat-dd-swatch dd-near-high"></span>${nearLbl}</span>
+        <span class="vs-heat-dd-legend-item"><span class="vs-heat-dd-swatch dd-bear-high"></span>${bearLbl}</span>
+        <span class="vs-heat-dd-legend-item"><span class="vs-heat-dd-swatch dd-pullback"></span>${pullLbl}</span>
+        <span class="vs-heat-dd-legend-item"><span class="vs-heat-dd-swatch dd-deep"></span>${deepLbl}</span>
+        <span class="vs-heat-dd-legend-item"><span class="vs-heat-dd-swatch dd-severe"></span>${sevLbl}</span>
+        <span class="vs-heat-dd-legend-item"><span class="vs-heat-dd-pip-sample"></span>${dropLbl}</span>
+      `;
     },
 
     _updateSummaryAndLegend(visibleSlice, totalLen, highlightCount, scopes) {
@@ -1158,6 +1828,8 @@
           `;
         }
       }
+
+      this._updateDdLegend(visibleSlice);
     },
 
     _bindDOMEvents() {
@@ -1184,51 +1856,53 @@
           this.toggleSpotlight('valleys');
         } else if (target.dataset.heatThreshold) {
           this.setThreshold(target.dataset.heatThreshold);
+        } else if (target.id === 'vs-heat-dd-toggle') {
+          this.toggleDdOverlay();
         }
       });
 
       const grid = document.getElementById('vs-heatmap-grid');
-      const tooltip = document.getElementById('vs-heatmap-tooltip');
-      const viewport = document.getElementById('vs-heat-viewport');
-      if (grid && tooltip && viewport) {
-        const showCellTip = cell => {
-          if (!cell || !cell.classList.contains('vs-heat-cell')) {
-            tooltip.style.display = 'none';
-            return;
+      if (grid) {
+        grid.addEventListener('mouseover', e => {
+          const cell = e.target.closest('.vs-heat-cell');
+          if (cell && grid.contains(cell)) {
+            this._showHeatTooltip(cell);
           }
-          const priceHtml = cell.dataset.price ? `<div class="vs-heat-tt-price">${cell.dataset.price}</div>` : '';
-          const rankHtml = cell.dataset.rank ? `<div class="vs-heat-tt-rank">${cell.dataset.rank}</div>` : '';
-          const tagHtml = cell.dataset.tag ? `<div class="vs-heat-tt-tag">${cell.dataset.tag}</div>` : '';
-          tooltip.innerHTML = `
-            ${priceHtml}
-            <div class="vs-heat-tt-date">${cell.dataset.date || ''}</div>
-            ${rankHtml}
-            <div class="vs-heat-tt-main">${cell.dataset.metric || 'CVI'}: <strong>${cell.dataset.score || '0.0'}</strong> &middot; ${cell.dataset.rvol || ''}</div>
-            ${tagHtml}
-          `;
-          tooltip.style.display = 'flex';
-
-          const vpRect = viewport.getBoundingClientRect();
-          const cRect = cell.getBoundingClientRect();
-          const tw = tooltip.offsetWidth || 220;
-          const th = tooltip.offsetHeight || 64;
-
-          let left = (cRect.left - vpRect.left) + (cRect.width / 2) - (tw / 2);
-          left = Math.max(4, Math.min(vpRect.width - tw - 4, left));
-
-          let top = (cRect.top - vpRect.top) - th - 8;
-          if (top < 4) {
-            top = (cRect.bottom - vpRect.top) + 8;
-          }
-          tooltip.style.left = `${Math.round(left)}px`;
-          tooltip.style.top = `${Math.round(top)}px`;
-        };
-
-        grid.addEventListener('mouseover', e => showCellTip(e.target.closest('.vs-heat-cell')));
-        grid.addEventListener('mouseleave', () => {
-          tooltip.style.display = 'none';
         });
-        grid.addEventListener('click', e => showCellTip(e.target.closest('.vs-heat-cell')));
+        grid.addEventListener('mouseleave', () => {
+          this._hideHeatTooltip();
+        });
+        grid.addEventListener('click', e => {
+          if (Date.now() - (this._lastTouchAt || 0) < 450) return;
+          const cell = e.target.closest('.vs-heat-cell');
+          if (cell && grid.contains(cell)) {
+            this._showHeatTooltip(cell);
+          }
+        });
+      }
+
+      if (!this._globalBound && typeof document.addEventListener === 'function') {
+        document.addEventListener('touchstart', e => {
+          this._lastTouchAt = Date.now();
+          const curGrid = document.getElementById('vs-heatmap-grid');
+          const cell = (curGrid && e.target && typeof e.target.closest === 'function')
+            ? e.target.closest('.vs-heat-cell')
+            : null;
+          if (cell && curGrid.contains(cell)) {
+            if (this._activeHeatCell === cell) {
+              this._hideHeatTooltip();
+            } else {
+              this._showHeatTooltip(cell);
+            }
+          } else {
+            this._hideHeatTooltip();
+          }
+        }, { passive: true });
+        if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+          window.addEventListener('scroll', () => this._hideHeatTooltip(), { passive: true });
+          window.addEventListener('resize', () => this._hideHeatTooltip(), { passive: true });
+        }
+        this._globalBound = true;
       }
 
       this._bound = true;
