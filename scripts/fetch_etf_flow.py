@@ -510,8 +510,9 @@ def load_catalog(path: str | Path = CATALOG_PATH) -> dict[str, Any]:
             actual = actual_counts.get(category, 0)
         if actual != expected:
             raise CatalogError(f"{category} count is {actual}, expected {expected}")
-    if sum(bool(item["featured"]) for item in instruments) != 24:
-        raise CatalogError("catalog must define exactly 24 featured primary instruments")
+    expected_featured = int(payload.get("expected_featured_count", 24))
+    if sum(bool(item["featured"]) for item in instruments) != expected_featured:
+        raise CatalogError(f"catalog must define exactly {expected_featured} featured primary instruments")
     if not all(item["canonical"] for item in instruments):
         raise CatalogError("every primary row must be canonical")
     for item in instruments:
@@ -732,28 +733,17 @@ def _regime(z_score: float) -> str:
 
 
 def apply_derived_metrics(df: pd.DataFrame) -> pd.DataFrame:
-    if df.empty:
-        return df.copy()
-    result = df.copy()
-    flow = pd.to_numeric(result["usd_flow"], errors="coerce").astype(float)
-    filled = flow.fillna(0.0)
-    result["cumulative_flow"] = filled.cumsum()
-    result["daily_inflow"] = flow.clip(lower=0)
-    result["daily_outflow"] = flow.clip(upper=0)
-    mean_30d = flow.rolling(30, min_periods=5).mean()
-    std_30d = flow.rolling(30, min_periods=5).std()
-    z_score = ((flow - mean_30d) / std_30d).where(std_30d > 0)
-    result["flow_zscore"] = z_score
-    result["flow_5d"] = flow.rolling(5, min_periods=1).sum()
-    result["flow_20d"] = flow.rolling(20, min_periods=1).sum()
-    result["regime"] = z_score.map(_regime)
-    signs = np.sign(filled)
-    streaks = signs.groupby((signs != signs.shift()).cumsum()).cumsum()
-    momentum_bonus = np.where(result["flow_5d"] > 0, 10.0, np.where(result["flow_5d"] < 0, -10.0, 0.0))
-    streak_bonus = np.minimum(streaks.abs() * 2, 20) * np.sign(streaks)
-    pressure = z_score * 25 + momentum_bonus + streak_bonus
-    result["pressure"] = pressure.clip(-100, 100)
-    return result.drop(columns=["mean_30d", "std_30d"], errors="ignore")
+    script_dir = str(Path(__file__).resolve().parent)
+    if script_dir not in sys.path:
+        sys.path.insert(0, script_dir)
+    from flow_reversal import apply_derived_metrics as _shared_apply_derived_metrics
+
+    return _shared_apply_derived_metrics(
+        df,
+        preserve_na=True,
+        net_reversals=True,
+        round_decimals=None,
+    )
 
 
 def _history_frame(data: list[dict[str, Any]], context: str) -> pd.DataFrame:
@@ -1559,7 +1549,7 @@ def build_manifest(
 
 def validate_manifest(
     path: str | Path = MANIFEST_PATH,
-    min_available: int = 118,
+    min_available: int | None = None,
     require_complete: bool = True,
     unavailable_allowlist: list[str] | None = None,
     catalog: dict[str, Any] | None = None,
@@ -1646,15 +1636,17 @@ def validate_manifest(
                 break
     if errors:
         raise FlowError("manifest failed recomputation: " + ", ".join(errors[:12]))
-    if len(actual_entries) != 118:
-        raise FlowError("recomputed catalog must contain exactly 118 primary rows")
+    expected_primary = int(active_catalog.get("expected_primary_count", len(actual_entries)))
+    if len(actual_entries) != expected_primary:
+        raise FlowError(f"recomputed catalog must contain exactly {expected_primary} primary rows")
     allowlist = set(unavailable_allowlist or manifest.get("unavailable_allowlist", []))
     if not allowlist.issubset(set(actual_entries)):
         raise FlowError("unavailable allowlist contains an unknown ticker")
+    required_min = expected_primary if min_available is None else int(min_available)
     available = int(manifest.get("available_etfs", 0))
-    if available < min_available:
+    if available < required_min:
         raise FlowError(
-            f"manifest is incomplete: availability {available} is below {min_available}"
+            f"manifest is incomplete: availability {available} is below {required_min}"
         )
     if require_complete and available + len(allowlist) < len(actual_entries):
         raise FlowError(
@@ -2616,7 +2608,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--require-complete", dest="require_complete", action="store_true")
     parser.add_argument("--allow-partial", dest="require_complete", action="store_false")
     parser.set_defaults(require_complete=True)
-    parser.add_argument("--min-available", type=int, default=118)
+    parser.add_argument("--min-available", type=int, default=None)
     parser.add_argument("--max-tickers", type=int, default=DEFAULT_MAX_TICKERS)
     parser.add_argument("--max-requests", type=int, default=DEFAULT_MAX_REQUESTS)
     parser.add_argument("--max-windows", type=int, default=DEFAULT_MAX_WINDOWS)

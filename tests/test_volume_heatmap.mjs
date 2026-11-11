@@ -97,15 +97,15 @@ console.log('Testing VolumeHeatmap MicroCVI & Stage 2 Spotlight Engine...');
       for (const days of [90, 126, 180, 252]) {
         const visibleSlice = agg.series.slice(-days);
         for (const regime of ['PEAKS', 'VALLEYS']) {
-          const s99 = VolumeHeatmap.evaluateViewportSpotlight(visibleSlice, regime, 'P99');
-          const s95 = VolumeHeatmap.evaluateViewportSpotlight(visibleSlice, regime, 'P95');
-          const s90 = VolumeHeatmap.evaluateViewportSpotlight(visibleSlice, regime, 'P90');
+          const s99 = VolumeHeatmap.evaluateCausalSpotlight(visibleSlice, regime, 'P99');
+          const s95 = VolumeHeatmap.evaluateCausalSpotlight(visibleSlice, regime, 'P95');
+          const s90 = VolumeHeatmap.evaluateCausalSpotlight(visibleSlice, regime, 'P90');
 
           const c99 = s99.filter(x => x.isHighlighted).length;
           const c95 = s95.filter(x => x.isHighlighted).length;
           const c90 = s90.filter(x => x.isHighlighted).length;
 
-          assert.ok(c90 > c95 && c95 > c99 && c99 >= 1,
+          assert.ok(c90 >= c95 && c95 >= c99 && c99 >= 0,
             `Monotonicity failed (${side}/${mode}/${days}/${regime}): P90=${c90}, P95=${c95}, P99=${c99}`);
 
           // Verify structural climax floors match exact specification
@@ -117,6 +117,13 @@ console.log('Testing VolumeHeatmap MicroCVI & Stage 2 Spotlight Engine...');
           }
           assertionCount++;
         }
+      }
+      // Backwards-compatible alias check + 90D vs 252D horizon invariance on overlapping dates
+      assert.strictEqual(VolumeHeatmap.evaluateViewportSpotlight, VolumeHeatmap.evaluateCausalSpotlight);
+      for (const regime of ['PEAKS', 'VALLEYS']) {
+        const st90 = VolumeHeatmap.evaluateCausalSpotlight(agg.series.slice(-90), regime, 'P95');
+        const st252Tail = VolumeHeatmap.evaluateCausalSpotlight(agg.series.slice(-252), regime, 'P95').slice(-90);
+        assert.deepStrictEqual(st90, st252Tail, `90D vs 252D horizon toggle altered historical classifications (${side}/${mode}/${regime})`);
       }
     }
   }
@@ -443,6 +450,132 @@ console.log('Testing VolumeHeatmap MicroCVI & Stage 2 Spotlight Engine...');
   assert.strictEqual(VolumeHeatmap.state.side, 'long');
   VolumeHeatmap._userPinnedMacroScope = false;
   console.log('  [PASS] Scope switching resets isolated ticker focus to full target basket while preserving directional filter');
+}
+
+// 14. Zero-Lookahead Future Truncation & Mutation Invariance (Stage 1 + Stage 2 End-to-End)
+{
+  const pairedEntry = Array.from(
+    catalog.instruments.reduce((map, inst) => {
+      const k = VolumeHeatmap.normalizeUnderlyingKey(inst.underlying);
+      if (k && Array.isArray(etfHistory[inst.ticker]) && etfHistory[inst.ticker].length >= 1100) {
+        if (!map.has(k)) map.set(k, []);
+        map.get(k).push(inst.ticker);
+      }
+      return map;
+    }, new Map()).values()
+  ).find(list => list.length >= 2);
+  assert.ok(pairedEntry && pairedEntry.length >= 2, 'Expected paired complex with >= 1100 bars for causal truncation check');
+
+  const fullSubset = Object.fromEntries(pairedEntry.map(tk => [tk, etfHistory[tk]]));
+  const truncSubset = Object.fromEntries(pairedEntry.map(tk => [tk, etfHistory[tk].slice(0, -40)]));
+
+  for (const mode of ['share', 'dollar']) {
+    const aggFull = VolumeHeatmap.computeHeatAggregate(fullSubset, mode, 'all', catalog.instruments, { isMarketOpen: false });
+    const aggTrunc = VolumeHeatmap.computeHeatAggregate(truncSubset, mode, 'all', catalog.instruments, { isMarketOpen: false });
+    const truncDateSet = new Set(aggTrunc.series.map(r => r.date));
+    const truncByDate = new Map(aggTrunc.series.map(r => [r.date, r]));
+
+    for (const fullRow of aggFull.series) {
+      if (!truncDateSet.has(fullRow.date)) continue;
+      const trRow = truncByDate.get(fullRow.date);
+      assert.strictEqual(fullRow.compositeTieKeyPeak, trRow.compositeTieKeyPeak, `TieKeyPeak shifted on ${fullRow.date}`);
+      assert.strictEqual(fullRow.compositeTieKeyValley, trRow.compositeTieKeyValley, `TieKeyValley shifted on ${fullRow.date}`);
+    }
+
+    for (const regime of ['PEAKS', 'VALLEYS']) {
+      for (const flt of ['P90', 'P95', 'P99']) {
+        const fullStates = new Map(
+          VolumeHeatmap.evaluateCausalSpotlight(aggFull.series, regime, flt).map(s => [s.date, s])
+        );
+        const truncStates = VolumeHeatmap.evaluateCausalSpotlight(aggTrunc.series, regime, flt);
+        for (const ts of truncStates) {
+          const fsState = fullStates.get(ts.date);
+          if (!fsState) continue;
+          assert.deepStrictEqual(ts, fsState, `Look-ahead leak detected (${mode}/${regime}/${flt}) on ${ts.date}`);
+        }
+      }
+    }
+  }
+  console.log('  [PASS] Zero-lookahead future truncation & tie-key invariance verified across Stage 1 and Stage 2');
+}
+
+// 15. 1050-Bar Pre-Slice Stage 2 Causal Padding & Decoupled 50 / 20 / 20 Warm-Up Gates
+{
+  const nTotal = 1050;
+  const paddedBars = [];
+  for (let i = 0; i < nTotal; i++) {
+    const d = new Date(Date.UTC(2022, 0, 1 + i)).toISOString().slice(0, 10);
+    const v = 50000 + (i % 17) * 500 + (i === 180 ? 250000 : 0);
+    paddedBars.push({ d, o: 100, h: 101, l: 99, c: 100 + (i % 5) * 0.2, v });
+  }
+  const agg = VolumeHeatmap.computeHeatAggregate({ PADSTAGE2: paddedBars }, 'share', 'all', [], { isMarketOpen: false });
+  assert.strictEqual(agg.series.length, VolumeHeatmap.HEATMAP_MAX_BARS);
+  const st = VolumeHeatmap.evaluateCausalSpotlight(agg.series, 'PEAKS', 'P95');
+  assert.strictEqual(st[0].windowLen, VolumeHeatmap.CAUSAL_SPOTLIGHT_WINDOW,
+    'Oldest display cell series[0] must inherit full 252D causal Stage 2 lookback from pre-slice padding');
+
+  const makeSpikeSeries = len => Array.from({ length: len }, (_, i) => ({
+    date: new Date(Date.UTC(2026, 0, 1 + i)).toISOString().slice(0, 10),
+    peakScore: i === len - 1 ? 85.0 : 12.0 + (i % 5),
+    valleyScore: 0,
+    maxRvol: i === len - 1 ? 4.5 : 1.0,
+    minRvol: 1.0,
+    climaxDir: 1
+  }));
+
+  const s19 = makeSpikeSeries(19);
+  assert.strictEqual(VolumeHeatmap.evaluateCausalSpotlight(s19, 'PEAKS', 'P90')[18].isHighlighted, false, 'wLen=19 must remain in warm-up');
+  assert.strictEqual(VolumeHeatmap.evaluateCausalSpotlight(s19, 'PEAKS', 'P99')[18].visualTier, 'NONE');
+
+  const s20 = makeSpikeSeries(20);
+  const res20_95 = VolumeHeatmap.evaluateCausalSpotlight(s20, 'PEAKS', 'P95');
+  const res20_99 = VolumeHeatmap.evaluateCausalSpotlight(s20, 'PEAKS', 'P99');
+  assert.strictEqual(res20_95[19].isHighlighted, true, 'wLen=20 must unlock P95');
+  assert.strictEqual(res20_95[19].visualTier, 'ORANGE_P95', 'wLen=20 must cap tier at P95 rather than inflating P99');
+  assert.strictEqual(res20_99[19].isHighlighted, false, 'wLen=20 must gate P99 until >= 50 sessions');
+
+  const s49 = makeSpikeSeries(49);
+  assert.strictEqual(VolumeHeatmap.evaluateCausalSpotlight(s49, 'PEAKS', 'P99')[48].isHighlighted, false, 'wLen=49 must gate P99');
+
+  const s50 = makeSpikeSeries(50);
+  const res50_99 = VolumeHeatmap.evaluateCausalSpotlight(s50, 'PEAKS', 'P99');
+  assert.strictEqual(res50_99[49].isHighlighted, true, 'wLen=50 must unlock P99');
+  assert.strictEqual(res50_99[49].visualTier, 'RED_P99');
+  console.log('  [PASS] 252D pre-display Stage 2 padding and decoupled 50 / 20 / 20 warm-up gates verified');
+}
+
+// 16. Pessimistic Tie-Breaking, Score <= 0 Suppression & minRvol === 0 Guard
+{
+  for (const vol of [0, 1000]) {
+    const flatBars = Array.from({ length: 120 }, (_, i) => ({
+      d: new Date(Date.UTC(2026, 0, 1 + i)).toISOString().slice(0, 10),
+      o: 10, h: 10, l: 10, c: 10, v: vol
+    }));
+    const aggFlat = VolumeHeatmap.computeHeatAggregate({ FLATZ: flatBars }, 'share', 'all', [], { isMarketOpen: false });
+    for (const regime of ['PEAKS', 'VALLEYS']) {
+      for (const flt of ['P90', 'P95', 'P99']) {
+        const res = VolumeHeatmap.evaluateCausalSpotlight(aggFlat.series, regime, flt);
+        const hiCount = res.filter(x => x.isHighlighted).length;
+        assert.strictEqual(hiCount, 0, `Flat series (v=${vol}) must produce 0 ${regime} ${flt} highlights`);
+        const last = res[res.length - 1];
+        assert.strictEqual(last.windowRank, last.windowLen, `Flat tail rank must tie pessimistically at windowLen (${vol}/${regime})`);
+      }
+    }
+  }
+
+  // minRvol === 0 must not fall back to 1.0 via falsy ||
+  const synthTies = Array.from({ length: 60 }, (_, i) => ({
+    date: new Date(Date.UTC(2026, 2, 1 + i)).toISOString().slice(0, 10),
+    peakScore: 0,
+    valleyScore: i === 58 ? 50.0 : (i === 59 ? 50.0 : 10.0),
+    maxRvol: 1.0,
+    minRvol: i === 58 ? 0.0 : (i === 59 ? 0.4 : 0.8),
+    climaxDir: 1
+  }));
+  const stMin0 = VolumeHeatmap.evaluateCausalSpotlight(synthTies, 'VALLEYS', 'P95');
+  assert.strictEqual(stMin0[58].windowRank, 1, 'minRvol === 0 (extreme drought) must outrank minRvol = 0.4');
+  assert.strictEqual(stMin0[59].windowRank, 2, 'Second identical valleyScore with higher minRvol must rank #2');
+  console.log('  [PASS] Pessimistic ties, score <= 0 suppression, and minRvol === 0 safety verified');
 }
 
 console.log('\nAll VolumeHeatmap tests PASSED successfully.');

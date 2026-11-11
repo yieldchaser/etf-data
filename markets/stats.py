@@ -47,10 +47,10 @@ def series_stats(df: pd.DataFrame, value_col: str = "Close") -> dict:
             return None
         return (current - base) / abs(base)
 
-    # Day, week, month, YTD pct changes
+    # Day, week, month, YTD pct changes — anchored to the last valid observation date
     day_pct = _pct(close_today, close_yesterday) if close_yesterday is not None else None
 
-    today_dt = df["Date"].iloc[-1]
+    today_dt = df.loc[vals.index[-1], "Date"]
 
     def _closest_before_days(n_days: int):
         cutoff = today_dt - pd.Timedelta(days=n_days)
@@ -136,32 +136,32 @@ def log_rows(df: pd.DataFrame, value_col: str = "Close", n: int = 200) -> list[d
     Each row: {d, close, pct, streak, level}
       - d      : date string YYYY-MM-DD
       - close  : close price (float, rounded to 4 dp)
-      - pct    : day-over-day change % (float, rounded to 4 dp)
+      - pct    : day-over-day change decimal ratio (float, rounded to 6 dp)
       - streak : running streak at that date (signed int)
       - level  : percentile of close in the all-time distribution (0–1)
     """
     if df is None or df.empty:
         return []
 
-    df = df.copy()
-    df["Date"] = pd.to_datetime(df["Date"])
-    df = df.sort_values("Date").reset_index(drop=True)
-    df["_ret"] = (
-        df[value_col]
+    work = df.copy()
+    work["Date"] = pd.to_datetime(work["Date"])
+    work = work.sort_values("Date").dropna(subset=[value_col]).reset_index(drop=True)
+    if work.empty:
+        return []
+    work["_ret"] = (
+        work[value_col]
         .pct_change()
         .replace([float("inf"), float("-inf")], float("nan"))
     )
 
-    all_vals = df[value_col].dropna().tolist()
+    all_vals = work[value_col].tolist()
     all_vals_sorted = sorted(all_vals)  # for O(log n) bisect percentile
     n_total = len(all_vals)
 
     rows = []
     streak = 0
-    for i, row in df.iterrows():
+    for _, row in work.iterrows():
         close_val = row[value_col]
-        if pd.isna(close_val):
-            continue
         ret = row["_ret"]
         if pd.isna(ret):
             day_pct = None

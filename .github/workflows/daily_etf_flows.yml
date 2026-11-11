@@ -80,7 +80,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/flows docs/data/flows scripts/build_local_flow_artifacts.py scripts/sync_splits_from_yahoo.py scripts/build_etf_ohlcv.py scripts/apply_split_adjustments.py FUND_FLOW_ETFS.md README.md tests/test_local_flow_artifacts.py tests/test_flow_ui.py tests/test_flow_ui_metrics.py tests/test_etf_ohlcv.py
+          git add data/flows docs/data/flows scripts/build_local_flow_artifacts.py scripts/sync_splits_from_yahoo.py scripts/build_etf_ohlcv.py scripts/apply_split_adjustments.py scripts/flow_reversal.py scripts/etf_taxonomy.py scripts/update_daily_flows.py FUND_FLOW_ETFS.md README.md tests/test_local_flow_artifacts.py tests/test_flow_ui.py tests/test_flow_ui_metrics.py tests/test_etf_ohlcv.py
           if git diff --staged --quiet; then
             echo "No new ETF flow observations to commit."
             echo "pushed=false" >> "$GITHUB_OUTPUT"

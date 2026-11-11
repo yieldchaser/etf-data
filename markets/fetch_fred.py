@@ -1,7 +1,7 @@
 """
 markets/fetch_fred.py — Incremental FRED data fetcher.
 
-Requires FRED_API_KEY environment variable. Silently skips if not set.
+Requires FRED_API_KEY environment variable. Exits with code 1 if not set.
 
 Usage:
     FRED_API_KEY=xxx python -m markets.fetch_fred --out data/markets
@@ -9,32 +9,42 @@ Usage:
 """
 from __future__ import annotations
 import argparse
+import json
+import math
 import os
 import sys
-from pathlib import Path
+import time
+import urllib.error
 import urllib.request
-import json
+from pathlib import Path
 import pandas as pd
 
+from .metadata import FRED_SERIES
 
-SERIES: dict[str, str] = {
-    "VIXCLS": "CBOE VIX (1-month implied vol)",
-    "VXNCLS": "CBOE Nasdaq VIX",
-    "VIX9D":  "9-day VIX",
-    "VIX3M":  "3-month VIX",
-    "VIX6M":  "6-month VIX",
-    "VVIX":   "VIX of VIX (vol of vol)",
-    "MOVE":   "ICE BofA MOVE (treasury vol)",
-    "DGS10":  "10Y Treasury constant maturity rate",
-    "DGS2":   "2Y Treasury",
-    "T10Y2Y": "10Y–2Y spread",
-    "SOFR":   "Secured Overnight Financing Rate",
-    "DFF":    "Effective Fed Funds Rate",
-    "DEXINUS": "India–US exchange rate",
-    "DEXSIUS": "Singapore–US exchange rate",
-}
+# Re-exported alias for backwards compatibility
+SERIES: dict[str, str] = FRED_SERIES
 
 FRED_BASE = "https://api.stlouisfed.org/fred/series/observations"
+
+
+def _fetch_json_with_retry(url: str, max_attempts: int = 3) -> dict:
+    req = urllib.request.Request(url, headers={"Accept": "application/json"})
+    last_exc: Exception | None = None
+    for attempt in range(max_attempts):
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                return json.loads(resp.read())
+        except urllib.error.HTTPError as exc:
+            last_exc = exc
+            if exc.code not in (429, 500, 502, 503, 504) or attempt == max_attempts - 1:
+                raise
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+            last_exc = exc
+            if attempt == max_attempts - 1:
+                raise
+        time.sleep(2 ** attempt)
+    assert last_exc is not None
+    raise last_exc
 
 
 def fetch_one(series_id: str, api_key: str, out_dir: Path) -> None:
@@ -45,17 +55,16 @@ def fetch_one(series_id: str, api_key: str, out_dir: Path) -> None:
 
     if target.exists():
         existing = pd.read_parquet(target)
-        if not existing.empty:
-            last = pd.to_datetime(existing["Date"]).max()
-            start_date = (last + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
+        if not existing.empty and "Date" in existing.columns:
+            last = pd.to_datetime(existing["Date"], errors="coerce").dropna().max()
+            if not pd.isna(last):
+                start_date = (last + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
 
     url = (
         f"{FRED_BASE}?series_id={series_id}&api_key={api_key}"
         f"&file_type=json&observation_start={start_date}"
     )
-    req = urllib.request.Request(url, headers={"Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        payload = json.loads(resp.read())
+    payload = _fetch_json_with_retry(url)
 
     obs = payload.get("observations", [])
     if not obs:
@@ -68,8 +77,11 @@ def fetch_one(series_id: str, api_key: str, out_dir: Path) -> None:
         if v == ".":
             continue  # FRED uses "." for missing values
         try:
-            rows.append({"Date": o["date"], "value": float(v)})
-        except (ValueError, KeyError):
+            val = float(v)
+            if not math.isfinite(val):
+                continue
+            rows.append({"Date": o["date"], "value": val})
+        except (TypeError, ValueError, KeyError):
             continue
 
     if not rows:
@@ -91,7 +103,7 @@ def fetch_one(series_id: str, api_key: str, out_dir: Path) -> None:
     print(f"    → {len(combined)} total rows (+{added} new)")
 
 
-def main() -> None:
+def main() -> int:
     ap = argparse.ArgumentParser(description="Fetch FRED series data")
     ap.add_argument("--out", default="data/markets")
     ap.add_argument("--only", nargs="*", default=None, help="Restrict to these series IDs")
@@ -107,15 +119,20 @@ def main() -> None:
 
     series = {k: v for k, v in SERIES.items() if args.only is None or k in args.only}
     print(f"Fetching {len(series)} FRED series into {out_dir}/")
+    failed = 0
     for sid, desc in series.items():
         print(f"  {sid} ({desc})…")
         try:
             fetch_one(sid, api_key, out_dir)
         except Exception as e:
+            failed += 1
             print(f"    ERROR: {e}")
 
-    print("Done.")
+    print(f"Done. ({len(series) - failed}/{len(series)} succeeded)")
+    if series and failed == len(series):
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

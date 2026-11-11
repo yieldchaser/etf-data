@@ -3,25 +3,30 @@ name: Quantitative MACD Momentum Radar & Pre-Close Alert
 on:
   schedule:
     # Institutional Trading Decision Windows & 30-Minute Intraday Heartbeat (Mon-Fri):
-    # Pre-Market & Open Confirmation (offset from top-of-5m cron congestion spikes):
-    - cron: '28 13 * * 1-5' # 08:28 EST (Pre-Market Indicative Radar)
-    - cron: '37 14 * * 1-5' # 09:37 EST (Opening Session Confirmation - Captures Open Gaps & Surges)
-    # Continuous 30-Min Intraday Volatility & Momentum Radar (10:07 to 14:37 EST = 15:07 to 19:37 UTC):
-    - cron: '7 15 * * 1-5'  # 10:07 EST
-    - cron: '37 15 * * 1-5' # 10:37 EST
-    - cron: '7 16 * * 1-5'  # 11:07 EST
-    - cron: '37 16 * * 1-5' # 11:37 EST
-    - cron: '7 17 * * 1-5'  # 12:07 EST
-    - cron: '37 17 * * 1-5' # 12:37 EST
-    - cron: '7 18 * * 1-5'  # 13:07 EST
-    - cron: '37 18 * * 1-5' # 13:37 EST
+    # Dual EDT (UTC-4) & EST (UTC-5) cron slots, filtered at runtime by America/New_York
+    # clock check (08:20-16:20 ET) so pre-market, open, 15:03 pre-close, and settlement
+    # never drift by 1 hour across DST transitions.
+    - cron: '28 12 * * 1-5' # 08:28 EDT (skipped during EST by NY clock gate)
+    - cron: '28 13 * * 1-5' # 08:28 EST / 09:28 EDT
+    - cron: '37 13 * * 1-5' # 09:37 EDT (skipped if outside gate; allows post-open confirmation)
+    - cron: '37 14 * * 1-5' # 09:37 EST / 10:37 EDT
+    # Continuous 30-Min Intraday Volatility & Momentum Radar (10:07 to 14:37 ET):
+    - cron: '7 15 * * 1-5'  # 10:07 EST / 11:07 EDT
+    - cron: '37 15 * * 1-5' # 10:37 EST / 11:37 EDT
+    - cron: '7 16 * * 1-5'  # 11:07 EST / 12:07 EDT
+    - cron: '37 16 * * 1-5' # 11:37 EST / 12:37 EDT
+    - cron: '7 17 * * 1-5'  # 12:07 EST / 13:07 EDT
+    - cron: '37 17 * * 1-5' # 12:37 EST / 13:37 EDT
+    - cron: '7 18 * * 1-5'  # 13:07 EST / 14:07 EDT
+    - cron: '37 18 * * 1-5' # 13:37 EST / 14:37 EDT
     - cron: '7 19 * * 1-5'  # 14:07 EST
-    - cron: '37 19 * * 1-5' # 14:37 EST
-    # Pre-Close Golden Hour & Closing Auction Scan (15:03 & 15:37 EST = 20:03 & 20:37 UTC):
-    - cron: '3 20 * * 1-5'  # 15:03 EST (Pre-Close Golden Hour Scan)
-    - cron: '37 20 * * 1-5' # 15:37 EST (Closing Auction Momentum)
+    - cron: '3 19 * * 1-5'  # 15:03 EDT (Pre-Close Golden Hour Scan during EDT)
+    - cron: '37 19 * * 1-5' # 14:37 EST / 15:37 EDT
+    # Pre-Close Golden Hour & Closing Auction Scan (15:03 & 15:37 EST / 16:03 EDT Settlement):
+    - cron: '3 20 * * 1-5'  # 15:03 EST / 16:03 EDT
+    - cron: '37 20 * * 1-5' # 15:37 EST (skipped in EDT by NY clock gate)
     # Post-Close Official Settlement & Pivot Derivation (16:07 EST = 21:07 UTC):
-    - cron: '7 21 * * 1-5'  # 16:07 EST (Post-Close Official Settlement)
+    - cron: '7 21 * * 1-5'  # 16:07 EST (skipped in EDT by NY clock gate)
   workflow_dispatch:
     inputs:
       force_send:
@@ -58,18 +63,42 @@ jobs:
         with:
           ref: main
 
+      - name: Check US market window (DST-safe ET gate)
+        id: market_window
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "in_window=true" >> "$GITHUB_OUTPUT"
+            echo "Non-schedule trigger (${{ github.event_name }}) -> bypassing ET clock gate."
+            exit 0
+          fi
+          python3 - <<'PY'
+          import os
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+
+          now_et = datetime.now(ZoneInfo("America/New_York"))
+          mins = now_et.hour * 60 + now_et.minute
+          in_win = (now_et.weekday() < 5) and (8 * 60 + 20 <= mins <= 16 * 60 + 20)
+          print(f"Current ET: {now_et.strftime('%Y-%m-%d %H:%M:%S %Z')} -> in_window={in_win}")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+              fh.write(f"in_window={'true' if in_win else 'false'}\n")
+          PY
+
       - name: Setup Python
+        if: steps.market_window.outputs.in_window == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
           cache: pip
 
       - name: Install dependencies
+        if: steps.market_window.outputs.in_window == 'true'
         run: |
           python -m pip install --upgrade pip
           pip install yfinance pandas numpy
 
       - name: Run 1-Hour & 1-Day MACD Momentum Scanner
+        if: steps.market_window.outputs.in_window == 'true'
         env:
           ALERT_EMAIL_SENDER: ${{ secrets.ALERT_EMAIL_SENDER }}
           ALERT_EMAIL_PASSWORD: ${{ secrets.ALERT_EMAIL_PASSWORD }}
@@ -91,7 +120,7 @@ jobs:
 
       - name: Commit and push updated MACD signals to GitHub Pages
         id: commit_macd
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.limit == '' || inputs.limit == '0' }}
+        if: ${{ steps.market_window.outputs.in_window == 'true' && (github.event_name != 'workflow_dispatch' || inputs.limit == '' || inputs.limit == '0') }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

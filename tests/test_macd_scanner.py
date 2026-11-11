@@ -983,6 +983,49 @@ def test_breakout_and_breakdown_detection(mock_calc, mock_ticker):
     assert res_unconfirmed_green["is_breakdown"] is False
 
 
+@patch("yfinance.Ticker")
+@patch("scripts.build_macd_scanner.calculate_macd")
+def test_premarket_gap_surge_breakout(mock_calc, mock_ticker):
+    """Verify that an ETF surging >= +10% or >= +15% in pre-market triggers a pre-market breakout alert."""
+    import pandas as pd
+    n_1h, n_1d = 140, 70
+    df_1h, df_1d = _make_mock_data(n_1h, n_1d, is_green=False)
+    # 1-minute pre-market tick dataframe showing +15.27% pre-market gap up from $56.06 to $64.62
+    df_1m = pd.DataFrame(
+        {
+            "Open": [64.50],
+            "High": [64.80],
+            "Low": [64.20],
+            "Close": [64.62],
+            "Volume": [250000],
+        },
+        index=pd.date_range("2026-11-11 07:00:00", periods=1, freq="min"),
+    )
+
+    inst = MagicMock()
+    inst.history.side_effect = lambda period, interval, prepost=False: (
+        df_1m if interval == "1m" else (df_1h if interval == "1h" else df_1d)
+    )
+    inst.fast_info = MagicMock()
+    inst.fast_info.last_price = 56.06
+    mock_ticker.return_value = inst
+
+    mock_calc.side_effect = lambda closes, fast=12, slow=26, signal_period=9: {
+        "macd": [0.5] * len(closes),
+        "signal": [0.3] * len(closes),
+        "hist": [0.2] * len(closes),
+        "hist_delta": [0.05] * len(closes),
+    }
+
+    res = analyze_ticker("SOXL", {"fund_name": "Direxion Daily Semiconductor Bull 3X Shares", "leverage": "3x"})
+    assert res is not None
+    assert res["live_premarket_price"] == 64.62
+    assert res["live_premarket_chg_pct"] == 15.27
+    assert res["is_breakout"] is True
+    assert "Pre-Market Velocity Surge" in res["breakout_type"]
+    assert "+15.3%" in res["breakout_type"]
+
+
 def test_format_institutional_email_with_breakouts_and_breakdowns():
     """Verify institutional email formatting displays Tier 0 Breakouts and Critical Breakdowns."""
     mock_signals = [

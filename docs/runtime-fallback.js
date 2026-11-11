@@ -18,6 +18,8 @@
   var current = null;
   var currentTicker = '';
   var currentRange = '1y';
+  var currentStart = '';
+  var currentEnd = '';
   var activeTab = 'matrix';
   var tabsBound = false;
   var controller = null;
@@ -48,13 +50,26 @@
     return {
       tab: tabs.indexOf(requestedTab) >= 0 ? requestedTab : 'matrix',
       ticker: String(params.get('flow') || params.get('ticker') || '').toUpperCase(),
-      range: params.get('range') || '1y'
+      range: params.get('range') || '1y',
+      start: params.get('start') || '',
+      end: params.get('end') || ''
     };
   }
 
   function writeMainUrl(tab) {
     var url = new URL(window.location.href);
     url.searchParams.set('tab', tab);
+    if (tab !== 'flows') {
+      url.searchParams.delete('flow');
+      url.searchParams.delete('ticker');
+      url.searchParams.delete('range');
+      url.searchParams.delete('chart');
+      url.searchParams.delete('view');
+      url.searchParams.delete('study');
+      url.searchParams.delete('start');
+      url.searchParams.delete('end');
+      url.searchParams.delete('price');
+    }
     window.history.replaceState({}, '', url);
   }
 
@@ -64,6 +79,9 @@
     url.searchParams.set('flow', ticker);
     url.searchParams.set('range', range);
     url.searchParams.delete('ticker');
+    url.searchParams.delete('view');
+    url.searchParams.delete('study');
+    url.searchParams.delete('chart');
     url.searchParams.delete('start');
     url.searchParams.delete('end');
     url.searchParams.delete('price');
@@ -108,22 +126,28 @@
         }
       });
     });
-    tickerSelect.addEventListener('change', function () {
-      loadTicker(tickerSelect.value, true);
-    });
-    rangeSelect.addEventListener('change', function () {
-      currentRange = rangeSelect.value;
-      if (currentTicker) {
-        writeFlowUrl(currentTicker, currentRange, false);
-        render();
-      }
-    });
+    if (tickerSelect) {
+      tickerSelect.addEventListener('change', function () {
+        loadTicker(tickerSelect.value, true);
+      });
+    }
+    if (rangeSelect) {
+      rangeSelect.addEventListener('change', function () {
+        currentRange = rangeSelect.value;
+        currentStart = '';
+        currentEnd = '';
+        if (currentTicker) {
+          writeFlowUrl(currentTicker, currentRange, false);
+          render();
+        }
+      });
+    }
     window.addEventListener('popstate', function () {
-      if (window.Alpine) return;
+      if (alpineInitialized()) return;
       var state = queryState();
       applyTab(state.tab);
       if (state.tab === 'flows') {
-        if (catalog) loadTicker(state.ticker || currentTicker || defaultCatalogTicker(), false, state.range);
+        if (catalog) loadTicker(state.ticker || currentTicker || defaultCatalogTicker(), false, state.range, state.start, state.end);
         else loadCatalog(state).catch(function () {});
       }
     });
@@ -150,8 +174,15 @@
   function render() {
     if (!current) return;
     var records = current.records || [];
-    var count = currentRange === 'max' ? records.length : ({ '3m': 66, '6m': 130, '1y': 252, '3y': 756, '5y': 1260 }[currentRange] || 252);
-    var selected = records.slice(Math.max(0, records.length - count));
+    var selected;
+    if (currentStart && currentEnd && currentStart <= currentEnd) {
+      selected = records.filter(function (row) {
+        return row && row.date >= currentStart && row.date <= currentEnd;
+      });
+    } else {
+      var count = currentRange === 'max' ? records.length : ({ '1m': 22, '3m': 66, '6m': 130, '1y': 252, '3y': 756, '5y': 1260 }[currentRange] || 252);
+      selected = records.slice(Math.max(0, records.length - count));
+    }
     var available = manifest && manifest.etfs && manifest.etfs[currentTicker];
     var coverage = available ? (available.records || 0) : records.length;
     if (summary) {
@@ -183,16 +214,19 @@
     });
   }
 
-  function loadTicker(ticker, push, requestedRange) {
+  function loadTicker(ticker, push, requestedRange, requestedStart, requestedEnd) {
     if (!catalog) return;
     var normalizedTicker = String(ticker || '').toUpperCase();
     var item = itemMap[normalizedTicker];
-    if (!item) normalizedTicker = catalog.instruments[0].ticker;
+    if (!item) normalizedTicker = defaultCatalogTicker();
     item = itemMap[normalizedTicker];
+    if (!item) return;
     currentTicker = normalizedTicker;
-    currentRange = requestedRange || rangeSelect.value || '1y';
-    rangeSelect.value = currentRange;
-    tickerSelect.value = normalizedTicker;
+    currentRange = requestedRange || (rangeSelect ? rangeSelect.value : '') || '1y';
+    currentStart = requestedStart || '';
+    currentEnd = requestedEnd || '';
+    if (rangeSelect) rangeSelect.value = currentRange;
+    if (tickerSelect) tickerSelect.value = normalizedTicker;
     if (controller) controller.abort();
     controller = typeof AbortController === 'function' ? new AbortController() : null;
     setStatus('Loading ' + normalizedTicker + ' from its local static file…');
@@ -238,19 +272,21 @@
       var uniqueTickers = new Set(catalog.instruments.map(function (item) { return item.ticker; }));
       if (uniqueTickers.size !== 160 || catalog.instruments.filter(function (item) { return item.featured; }).length !== 24) throw new Error('Local catalog cardinality check failed.');
       itemMap = Object.fromEntries(catalog.instruments.map(function (item) { return [item.ticker, item]; }));
-      tickerSelect.replaceChildren();
-      tickerSelect.disabled = false;
-      catalog.instruments.forEach(function (item) {
-        var option = document.createElement('option');
-        option.value = item.ticker;
-        option.textContent = item.ticker;
-        option.title = item.fund_name;
-        option.setAttribute('aria-label', item.ticker + ' ' + item.fund_name);
-        tickerSelect.appendChild(option);
-      });
+      if (tickerSelect) {
+        tickerSelect.replaceChildren();
+        tickerSelect.disabled = false;
+        catalog.instruments.forEach(function (item) {
+          var option = document.createElement('option');
+          option.value = item.ticker;
+          option.textContent = item.ticker;
+          option.title = item.fund_name;
+          option.setAttribute('aria-label', item.ticker + ' ' + item.fund_name);
+          tickerSelect.appendChild(option);
+        });
+      }
       setStatus('160-instrument local catalog loaded · local manifest: ' + (manifest.status || 'unknown') + '.');
       var ticker = state && state.ticker && itemMap[state.ticker] ? state.ticker : defaultCatalogTicker();
-      return loadTicker(ticker, false, state && state.range);
+      return loadTicker(ticker, false, state && state.range, state && state.start, state && state.end);
     }).catch(function (error) {
       catalogPromise = null;
       setStatus(error && error.message ? error.message : 'Local catalog is unavailable.');

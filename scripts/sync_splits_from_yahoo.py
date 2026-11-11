@@ -16,10 +16,12 @@ This script:
 from __future__ import annotations
 
 import argparse
-import glob
+import csv
 import json
+import math
 import os
 import sys
+import tempfile
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
@@ -80,8 +82,26 @@ def fetch_yahoo_splits_for_ticker(ticker: str) -> dict[str, Any]:
         return {"ticker": ticker, "status": "error", "error": str(exc), "splits": []}
 
 
-def scan_all_splits(tickers: list[str], max_workers: int = 15) -> dict[str, list[dict[str, Any]]]:
+def _atomic_write_text(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    tmp_path = Path(tmp_name)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as handle:
+            handle.write(text)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp_path, path)
+    except Exception:
+        tmp_path.unlink(missing_ok=True)
+        raise
+
+
+def scan_all_splits(
+    tickers: list[str], max_workers: int = 15
+) -> tuple[dict[str, list[dict[str, Any]]], dict[str, str]]:
     live_splits: dict[str, list[dict[str, Any]]] = {}
+    live_errors: dict[str, str] = {}
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {executor.submit(fetch_yahoo_splits_for_ticker, t): t for t in tickers}
         for fut in as_completed(futures):
@@ -90,10 +110,15 @@ def scan_all_splits(tickers: list[str], max_workers: int = 15) -> dict[str, list
                 live_splits[res["ticker"]] = res["splits"]
             else:
                 live_splits[res["ticker"]] = []
-    return live_splits
+                live_errors[res["ticker"]] = str(res.get("error", "unknown error"))
+    return live_splits, live_errors
 
 
-def is_known_event(s_date_str: str, known_events: list[dict[str, Any]]) -> bool:
+def is_known_event(
+    s_date_str: str,
+    known_events: list[dict[str, Any]],
+    factor: float | None = None,
+) -> bool:
     try:
         s_dt = datetime.strptime(s_date_str, "%Y-%m-%d")
     except ValueError:
@@ -101,10 +126,23 @@ def is_known_event(s_date_str: str, known_events: list[dict[str, Any]]) -> bool:
     for ke in known_events:
         try:
             k_dt = datetime.strptime(ke["split_date"], "%Y-%m-%d")
-            if abs((s_dt - k_dt).days) <= 7:
+        except (ValueError, KeyError, TypeError):
+            continue
+        day_gap = abs((s_dt - k_dt).days)
+        if day_gap <= 3:
+            return True
+        if day_gap <= 7:
+            k_factor = ke.get("factor")
+            if factor is None or k_factor is None:
                 return True
-        except ValueError:
-            pass
+            try:
+                kf = float(k_factor)
+                if kf > 0 and factor > 0 and (
+                    abs(factor - kf) < 0.05 or abs(math.log(factor / kf)) < 0.08
+                ):
+                    return True
+            except (TypeError, ValueError):
+                return True
     return False
 
 
@@ -122,24 +160,31 @@ def detect_new_splits(
         if not csv_path.is_file():
             continue
 
-        # Read date range from CSV
-        with csv_path.open("r", encoding="utf-8") as f:
-            lines = [l.strip() for l in f if l.strip()]
-        if len(lines) < 2:
+        dates: list[str] = []
+        with csv_path.open("r", encoding="utf-8-sig", newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                d_val = str(row.get("date", "")).strip()[:10]
+                if d_val:
+                    dates.append(d_val)
+        if not dates:
             continue
-        first_date = lines[1].split(",")[0]
-        last_date = lines[-1].split(",")[0]
+        first_date = min(dates)
+        last_date = max(dates)
 
         ticker_live = live_splits.get(ticker, [])
         for ls in ticker_live:
             s_date = ls["split_date"]
+            factor = float(ls["factor"])
             # Must fall inside our active dataset range and be previously unknown
-            if first_date <= s_date <= last_date and not is_known_event(s_date, known_events):
+            if first_date <= s_date <= last_date and not is_known_event(s_date, known_events, factor=factor):
                 new_events.append({
                     "ticker": ticker,
                     "split_date": s_date,
                     "split_ratio": ls["split_ratio"],
-                    "factor": ls["factor"],
+                    "numerator": ls.get("numerator"),
+                    "denominator": ls.get("denominator"),
+                    "factor": factor,
                 })
 
     return new_events
@@ -148,19 +193,28 @@ def detect_new_splits(
 def sync_and_adjust(force: bool = False, apply_changes: bool = True) -> dict[str, Any]:
     individual_files = sorted(INDIVIDUAL_DIR.glob("*_flows.csv"))
     tickers = [f.name.replace("_flows.csv", "") for f in individual_files]
-    
+
     canonical_splits = load_canonical_splits()
     print(f"[splits] Querying Yahoo Finance corporate actions for {len(tickers)} ETFs...", flush=True)
-    live_splits = scan_all_splits(tickers)
-    
+    live_splits, live_errors = scan_all_splits(tickers)
+    if live_errors:
+        print(
+            f"[splits] Warning: Yahoo corporate-action fetch failed for {len(live_errors)}/{len(tickers)} ETFs: "
+            + ", ".join(sorted(live_errors)[:8]),
+            file=sys.stderr,
+            flush=True,
+        )
+
     new_events = detect_new_splits(canonical_splits, live_splits, tickers)
-    
+
     if not new_events and not force:
         print(f"[splits] All {len(tickers)} ETFs are up to date. Zero new splits detected.", flush=True)
         return {
-            "status": "up_to_date",
+            "status": "up_to_date" if not live_errors else "up_to_date_with_fetch_warnings",
             "new_splits_count": 0,
             "new_splits": [],
+            "live_error_count": len(live_errors),
+            "live_errors": live_errors,
             "total_canonical_tickers": len(canonical_splits),
         }
 
@@ -168,37 +222,55 @@ def sync_and_adjust(force: bool = False, apply_changes: bool = True) -> dict[str
         print(f"[splits] Detected {len(new_events)} NEW corporate actions:", flush=True)
         for ev in new_events:
             print(f"  -> {ev['ticker']}: {ev['split_date']} ({ev['split_ratio']})", flush=True)
-            # Add to canonical splits
-            if ev["ticker"] not in canonical_splits:
-                canonical_splits[ev["ticker"]] = []
-            canonical_splits[ev["ticker"]].append(ev)
-            canonical_splits[ev["ticker"]].sort(key=lambda x: x["split_date"])
+            if apply_changes:
+                stored_ev = {
+                    "split_date": ev["split_date"],
+                    "split_ratio": ev["split_ratio"],
+                    "factor": ev["factor"],
+                }
+                if ev.get("numerator") is not None:
+                    stored_ev["numerator"] = ev["numerator"]
+                if ev.get("denominator") is not None:
+                    stored_ev["denominator"] = ev["denominator"]
+                canonical_splits.setdefault(ev["ticker"], []).append(stored_ev)
+                canonical_splits[ev["ticker"]].sort(key=lambda x: x["split_date"])
 
-    if apply_changes:
-        # Save updated splits.json
-        print(f"[splits] Saving updated registry to {SPLITS_JSON_PATH}...", flush=True)
-        SPLITS_JSON_PATH.write_text(json.dumps(canonical_splits, indent=2), encoding="utf-8")
-        
-        # Run apply_split_adjustments
-        from scripts.apply_split_adjustments import apply_split_adjustments
-        print("[splits] Applying retroactive adjustments across data sources...", flush=True)
-        apply_split_adjustments(dry_run=False)
-        
-        # Rebuild local artifacts
-        print("[splits] Rebuilding static flow artifacts...", flush=True)
-        from scripts.build_local_flow_artifacts import build_local_artifacts
-        build_res = build_local_artifacts(
-            source_dir=DATA_DIR,
-            output_dir=REPO_ROOT / "docs" / "data" / "flows",
-            validate_workbook=True,
-            validate_markdown=True,
-        )
-        print(f"[splits] Rebuild complete: {build_res.get('ticker_artifacts')} artifacts updated.", flush=True)
+    if not apply_changes:
+        return {
+            "status": "splits_detected" if new_events else "checked",
+            "new_splits_count": len(new_events),
+            "new_splits": new_events,
+            "live_error_count": len(live_errors),
+            "live_errors": live_errors,
+            "total_canonical_tickers": len(canonical_splits),
+        }
+
+    # Save updated splits.json atomically
+    print(f"[splits] Saving updated registry to {SPLITS_JSON_PATH}...", flush=True)
+    _atomic_write_text(SPLITS_JSON_PATH, json.dumps(canonical_splits, indent=2) + "\n")
+
+    # Run apply_split_adjustments
+    from scripts.apply_split_adjustments import apply_split_adjustments
+    print("[splits] Applying retroactive adjustments across data sources...", flush=True)
+    apply_split_adjustments(dry_run=False)
+
+    # Rebuild local artifacts
+    print("[splits] Rebuilding static flow artifacts...", flush=True)
+    from scripts.build_local_flow_artifacts import build_local_artifacts
+    build_res = build_local_artifacts(
+        source_dir=DATA_DIR,
+        output_dir=REPO_ROOT / "docs" / "data" / "flows",
+        validate_workbook=True,
+        validate_markdown=True,
+    )
+    print(f"[splits] Rebuild complete: {build_res.get('ticker_artifacts')} artifacts updated.", flush=True)
 
     return {
         "status": "updated",
         "new_splits_count": len(new_events),
         "new_splits": new_events,
+        "live_error_count": len(live_errors),
+        "live_errors": live_errors,
         "total_canonical_tickers": len(canonical_splits),
     }
 

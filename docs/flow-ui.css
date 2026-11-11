@@ -955,7 +955,7 @@
 
 .flow-research .flow-chip-preset {
   padding: 0.15rem 0.45rem;
-  font-size: 0.65rem;
+  font-size: 0.6875rem;
   min-height: 22px;
 }
 
@@ -979,8 +979,8 @@
 }
 
 .flow-research .flow-studio-stat-label {
-  color: #64748b;
-  font-size: 0.6rem;
+  color: var(--flow-subtle);
+  font-size: 0.6875rem;
   letter-spacing: 0.08em;
   font-weight: 600;
   text-transform: uppercase;
@@ -1443,18 +1443,22 @@
   }
 
   .flow-research .flow-command-row {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 
 @media (max-width: 900px) {
+  .flow-research .flow-workbench-toolbar {
+    flex-wrap: wrap;
+  }
+
   .flow-research .flow-kpis,
   .flow-research .flow-pulse-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .flow-research .flow-kpi:last-child,
-  .flow-research .flow-pulse-card:last-child {
+  .flow-research .flow-kpi:last-child {
     grid-column: 1 / -1;
   }
 
@@ -1492,8 +1496,7 @@
     grid-template-columns: 1fr;
   }
 
-  .flow-research .flow-kpi:last-child,
-  .flow-research .flow-pulse-card:last-child {
+  .flow-research .flow-kpi:last-child {
     grid-column: auto;
   }
 
@@ -1517,7 +1520,7 @@
 }
 
 
-/* ── Category Navigation Tabs & 145 Grid ── */
+/* ── Category Navigation Tabs & Curated Grid ── */
 .flow-research .flow-category-bar {
   display: grid;
   gap: 0.65rem;
@@ -1630,7 +1633,7 @@
   color: #ffffff;
 }
 
-/* ── 145 Universe Drawer ── */
+/* ── Curated Universe Drawer ── */
 .flow-research .flow-universe-drawer {
   padding: 0.85rem;
   border: 1px solid rgba(34, 211, 238, 0.25);
@@ -2151,7 +2154,7 @@
   background: rgba(56, 189, 248, 0.12);
   border: 1px solid rgba(56, 189, 248, 0.28);
   font-family: ui-monospace, 'SF Mono', monospace;
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   padding: 0.1rem 0.35rem;
   border-radius: 3px;
   font-weight: 700;
@@ -2165,7 +2168,7 @@
   background: rgba(148, 163, 184, 0.10);
   border: 1px solid rgba(148, 163, 184, 0.20);
   font-family: ui-monospace, 'SF Mono', monospace;
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   padding: 0.1rem 0.35rem;
   border-radius: 3px;
   font-weight: 600;

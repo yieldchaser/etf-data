@@ -3,9 +3,9 @@
 **Total Instruments:** 160 Curated ETFs across 10 professional categories.
 
 > **Selection Thesis & Architecture:**
-> 1. **Aggressively Long-Biased (136 Bull vs 14 Tactical Short Anchors)**: Recognizes the multi-decade structural upward drift of US equity markets. Pruned out decaying low-conviction inverse ETFs while preserving high-conviction directional leaders.
-> 2. **Comprehensive AI, Semiconductor & Tech Hardware Coverage**: Full coverage of the AI hardware supply chain from foundries, memory/storage, and capital equipment to optical networking and power semiconductors (**PLTU/PTIR** Palantir, **NVDL/NVDX/NVDU** NVIDIA, **MUU** Micron, **AVGX** Broadcom, **RKLX** Rocket Lab, **SOFX** SoFi, **APPX** AppLovin, **METU** Meta, **AMZU** Amazon, **MSFU** Microsoft, **GOOX** Google, **LITX** Lumentum, **COHX** Coherent, **TSLL** Tesla, **MSTU/MSTX/SMST** MicroStrategy, **CONL** Coinbase).
-> 3. **Selective Hedging Anchors Only (14 ETFs)**: Retained only the highest-liquidity benchmark shorts for tracking large-scale panic hedging and extreme market bottoms (SQQQ, SPXS, TZA, SOXS, SCO, TMV, YANG, NVD, TSLZ, MSTZ, PLTD, TSLQ, NVDS).
+> 1. **Aggressively Long-Biased (135 Bull vs 15 Tactical Short Anchors)**: Recognizes the multi-decade structural upward drift of US equity markets. Pruned out decaying low-conviction inverse ETFs while preserving high-conviction directional leaders.
+> 2. **Comprehensive AI, Semiconductor & Tech Hardware Coverage**: Full coverage of the AI hardware supply chain from foundries, memory/storage, and capital equipment to optical networking and power semiconductors (**PLTU/PTIR** Palantir, **NVDL/NVDX/NVDU** NVIDIA, **MUU** Micron, **AVGX** Broadcom, **RKLX** Rocket Lab, **SOFX** SoFi, **APPX** AppLovin, **METU** Meta, **AMZU** Amazon, **MSFU** Microsoft, **GOOX** Google, **LITX** Lumentum, **COHX** Coherent, **TSLL** Tesla, **MSTU/MSTX** MicroStrategy, **CONL** Coinbase).
+> 3. **Selective Hedging Anchors Only (15 ETFs)**: Retained only the highest-liquidity benchmark shorts for tracking large-scale panic hedging and extreme market bottoms (SQQQ, SPXS, TZA, SOXS, SCO, TMV, YANG, NVD, TSLZ, MSTZ, PLTD, TSLQ, NVDS, CONI, SMST).
 > 4. **Historical Local Source**: The 160 rows below are the authoritative local universe. Historical flow, NAV, and derived fields are Trackinsight-reported values already stored in the local dataset; this document does not assert a live fetch or current API status.
 
 ---
@@ -18,11 +18,11 @@
 | 2 | 2. Technology, Semiconductor & Thematic (Bull) | 16 | Bull (+2x / +3x) | Semiconductors, Technology Select, Dow Jones Internet, High Beta... |
 | 3 | 3. Sector Specific Leveraged (Bull) | 11 | Bull (+2x / +3x) | Financials Select, Regional Banking, Aerospace & Defense, Retail... |
 | 4 | 4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech | 44 | Bull (+2x / +3x) | Palantir, NVIDIA, Micron, Broadcom, Rocket Lab, AppLovin, SanDisk... |
-| 5 | 5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer | 31 | Bull (+2x / +3x) | Apple, Tesla, Meta, Amazon, Microsoft, Alphabet, MicroStrategy, Netflix, SoFi... |
+| 5 | 5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer | 30 | Bull (+2x / +3x) | Apple, Tesla, Meta, Amazon, Microsoft, Alphabet, MicroStrategy, Netflix, SoFi... |
 | 6 | 6. Commodities, Energy & Volatility (Bull) | 10 | Bull (+2x / +3x) | Crude Oil, Gold, Gold Miners, Silver... |
 | 7 | 7. Fixed Income, Currencies & Crypto (Bull) | 7 | Bull (+2x / +3x) | Bitcoin, Ether, 20+ Year Treasury, 7-10 Year Treasury... |
 | 8 | 8. International / Country (Bull) | 8 | Bull (+2x / +3x) | Brazil, China 50, India, South Korea, Emerging Markets... |
-| 9 | 9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only) | 14 | Tactical Short | NASDAQ-100, Russell 2000, Semiconductors, Palantir Bear, Tesla Bear, NVIDIA Bear... |
+| 9 | 9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only) | 15 | Tactical Short | NASDAQ-100, Russell 2000, Semiconductors, Palantir Bear, Tesla Bear, NVIDIA Bear, MicroStrategy Bear... |
 | 10 | 10. Core Benchmarks, Factor Rotation & High-Beta Anchors | 10 | Core / Factor (1x) | QQQM, SPMO, COWZ, SPHQ, SMH, ARKK, XBI, IBIT, TLT, MAGS... |
 
 ---
@@ -137,7 +137,7 @@ There is no long-only catalog, watch tier, or missing-underlying watchlist in th
 | **TSMU** | `TSMU` | +2x | GraniteShares 2x Long TSM Daily ETF | GraniteShares | Taiwan Semi (TSM) | $45.7M | 2.45% |
 | **WDCX** | `WDCX` | +2x | Tradr 2X Long WDC Daily ETF | AXS Investments | Western Digital (WDC) | $99.2M | 1.49% |
 
-## 5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer (31)
+## 5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer (30)
 
 | Ticker | Trackinsight Key | Leverage | Fund Name | Issuer | Underlying | AUM ($M) | TER |
 |---|---|---|---|---|---|---|---|
@@ -163,7 +163,6 @@ There is no long-only catalog, watch tier, or missing-underlying watchlist in th
 | **MSTX** | `MSTX` | +2x | Defiance Daily Target 2X Long MSTR ETF | Defiance ETFs | MicroStrategy (MSTR) | $403.6M | 1.31% |
 | **NFXL** | `NFXL` | +2x | Direxion Daily NFLX Bull 2X Shares | Direxion | Netflix | $42.0M | 0.95% |
 | **SHPU** | `XNMS:SHPU` | +2x | Direxion Daily SHOP Bull 2X ETF | Direxion | Shopify (SHOP) | $10.9M | 2.07% |
-| **SMST** | `SMST` | +2x | T-Rex 2X Long MSTR Daily Target ETF | T-Rex | MicroStrategy | $210.0M | 1.05% |
 | **SMU** | `SMU` | +2x | Tradr 2X Long SMR Daily ETF | AXS Investments | NuScale Power (SMR) | $59.3M | 1.30% |
 | **SOFX** | `SOFX` | +2x | Defiance Daily Target 2X Long SOFI ETF | Defiance ETFs | SoFi Technologies (SOFI) | $55.2M | 1.33% |
 | **TSLL** | `TSLL` | +2x | Direxion Daily TSLA Bull 2X Shares | Direxion | Tesla (TSLA) | $4,008.0M | 0.95% |
@@ -213,7 +212,7 @@ There is no long-only catalog, watch tier, or missing-underlying watchlist in th
 | **MEXX** | `MEXX` | +3x | Direxion Daily MSCI Mexico Bull 3X Shares | Direxion | Mexico | $32.0M | 0.95% |
 | **YINN** | `YINN` | +3x | Direxion Daily China Bull 3x Shares ETF - USD | Direxion | China 50 | $617.9M | 1.34% |
 
-## 9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only) (14)
+## 9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only) (15)
 
 | Ticker | Trackinsight Key | Leverage | Fund Name | Issuer | Underlying | AUM ($M) | TER |
 |---|---|---|---|---|---|---|---|
@@ -223,6 +222,7 @@ There is no long-only catalog, watch tier, or missing-underlying watchlist in th
 | **NVDS** | `NVDS` | -1.25x | AXS 1.25X NVDA Bear Daily ETF | AXS Investments | NVIDIA | $64.2M | 1.15% |
 | **PLTD** | `PLTD` | -1x | Direxion Daily PLTR Bear 1X Shares | Direxion | Palantir Technologies | $85.0M | 0.95% |
 | **SCO** | `ARCX:SCO` | -2x | ProShares UltraShort Bloomberg Crude Oil ETF | ProShares | Crude Oil (Bearish Commodity) | $1,075.8M | 1.10% |
+| **SMST** | `SMST` | -2x | Defiance Daily Target 2X Short MSTR ETF | Defiance ETFs | MicroStrategy (MSTR) | $210.0M | 1.05% |
 | **SOXS** | `ARCX:SOXS` | -3x | Direxion Daily Semiconductor Bear 3X Shares ETF - USD | Direxion | Semiconductors (Cycle Downturn) | $1,672.8M | 1.00% |
 | **SPXS** | `ARCX:SPXS` | -3x | Direxion Daily S&P 500 Bear 3X Shares | Direxion | S&P 500 (Primary Market Hedge) | $346.1M | 1.04% |
 | **SQQQ** | `XNMS:SQQQ` | -3x | ProShares UltraPro Short QQQ ETF - USD | ProShares | NASDAQ-100 (Primary Tech Hedge) | $1,863.0M | 0.99% |

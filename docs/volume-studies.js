@@ -70,7 +70,7 @@
       label: 'Volume Heatmap',
       short: 'MICROCVI',
       desc: 'MicroCVI Volume Climax & Drought 18-Column Calendar Grid.',
-      methodology: '<p><strong>MicroCVI Volume Heatmap (<code>heatmap</code>)</strong> evaluates daily tape microstructure across a trailing 756-session buffer using a 21-day trimmed baseline (central 15 of 21 sorted sessions) and Abdi-Ranaldo effective spreads.</p><p><strong>Stage 1 (Smooth Bounded Intensity 0&ndash;100):</strong> <code>PeakScore</code> blends volume elasticity <code>(1 + RVOL)^0.55 - 1</code> with 22-bar range position, downside shock, and lower-wick absorption (<code>&kappa;=1.35</code>). <code>ValleyScore</code> combines low-turnover compression <code>(1/RVOL)^0.60 - 0.85</code>, true-range contraction, and spread widening (<code>&kappa;=1.60</code>). Multi-ETF scopes aggregate with <code>&lambda;=0.75</code> max + <code>0.25</code> &radic;dollar-turnover weighted breadth.</p><p><strong>Stage 2 (Dual-Gated Viewport Spotlight):</strong> Top <code>P99 / P95 / P90</code> sessions in the visible window are ranked deterministically. Cells exceeding structural floors (<code>Peaks: 68 / 52 / 38</code>; <code>Valleys: 64 / 48 / 34</code>) glow solid as <em>Structural Volume Climax</em> or <em>Structural Drought</em>; cells below floors render as hollow rings (<em>Local Peak / Low-Turnover Compression</em>).</p><p><strong>Causal Drawdown Context &amp; <code>DD%</code> Overlay:</strong> Total-return adjusted closes (<code>tc</code>, eliminating ex-dividend drop artifacts) track strictly causal rolling <code>63D</code> and <code>252D</code> peak drawdowns and trough run-ups, calibrated dynamically against causal prior-21D Yang-Zhang daily volatility (<code>&sigma;<sub>21</sub></code>) via bounded power scaling <code>s = (&sigma;<sub>21</sub> / 2.5)<sup>0.65</sup></code> across <em>Pullback</em>, <em>Deep DD</em>, and <em>Severe DD</em> regimes, with a <em>252D Bear Guard</em> preventing extended bear rallies at <code>63D</code> highs from reading as healthy highs and a corner pip flagging single-day drops exceeding <code>&ge;2&sigma;<sub>21</sub></code>.</p>'
+      methodology: '<p><strong>MicroCVI Volume Heatmap (<code>heatmap</code>)</strong> evaluates daily tape microstructure across a trailing 756-session display buffer (pre-padded up to 252 prior sessions plus 21-day lag) using a strictly causal 21-day trimmed baseline (central 15 of 21 sorted sessions) and Abdi-Ranaldo effective spreads.</p><p><strong>Stage 1 (Smooth Bounded Intensity 0&ndash;100):</strong> <code>PeakScore</code> blends volume elasticity <code>(1 + RVOL)^0.55 - 1</code> with 22-bar range position, downside shock, and lower-wick absorption (<code>&kappa;=1.35</code>). <code>ValleyScore</code> combines low-turnover compression <code>(1/RVOL)^0.60 - 1.00</code>, true-range contraction, and spread widening (<code>&kappa;=1.60</code>). Multi-ETF scopes aggregate with <code>&lambda;=0.75</code> max + <code>0.25</code> &radic;dollar-turnover weighted breadth.</p><p><strong>Stage 2 (Point-in-Time Causal 252D Spotlight):</strong> Each session <code>t</code> is ranked strictly against its own trailing <code>252</code> confirmed sessions <code>[t &minus; 251 .. t]</code> with zero look-ahead (requiring <code>score &gt; 0</code>, pessimistic tie handling, and decoupled <code>&ge;20D</code> P90/P95 and <code>&ge;50D</code> P99 warm-up gates), so historical classifications never shift as future bars arrive or when zooming between <code>90D</code> and <code>252D</code> horizons. Cells exceeding structural floors (<code>Peaks: 68 / 52 / 38</code>; <code>Valleys: 64 / 48 / 34</code>) glow solid as <em>Structural Volume Climax</em> or <em>Structural Drought</em>; cells below floors render as hollow rings (<em>Local Peak / Low-Turnover Compression</em>).</p><p><strong>Causal Drawdown Context &amp; <code>DD%</code> Overlay:</strong> Total-return adjusted closes (<code>tc</code>, eliminating ex-dividend drop artifacts) track strictly causal rolling <code>63D</code> and <code>252D</code> peak drawdowns and trough run-ups, calibrated dynamically against causal prior-21D Yang-Zhang daily volatility (<code>&sigma;<sub>21</sub></code>) via bounded power scaling <code>s = (&sigma;<sub>21</sub> / 2.5)<sup>0.65</sup></code> across <em>Pullback</em>, <em>Deep DD</em>, and <em>Severe DD</em> regimes, with a <em>252D Bear Guard</em> preventing extended bear rallies at <code>63D</code> highs from reading as healthy highs and a corner pip flagging single-day drops exceeding <code>&ge;2&sigma;<sub>21</sub></code>.</p>'
     }
   };
 
@@ -177,7 +177,7 @@
       return (volumes || []).map((v, i) => signs[i] * (v || 0));
     },
 
-    volumeOscillator(volumes, fast = 5, slow = 21) {
+    volumeOscillator(volumes, fast = 5, slow = 20) {
       const f = this.sma(volumes, fast);
       const s = this.sma(volumes, slow);
       return (volumes || []).map((_, i) => {
@@ -195,8 +195,18 @@
       const mfv = new Array(n).fill(0);
       const volWeights = new Array(n).fill(0);
       for (let i = 0; i < n; i++) {
-        const h = highs[i], l = lows[i], c = closes[i], v = volumes[i] || 0;
-        const prevC = (i > 0 && closes[i - 1] != null) ? closes[i - 1] : c;
+        const h = Number(highs[i]);
+        const l = Number(lows[i]);
+        const c = Number(closes[i]);
+        const vRaw = volumes[i] != null ? Number(volumes[i]) : 0;
+        const v = Number.isFinite(vRaw) && vRaw > 0 ? vRaw : 0;
+        if (!Number.isFinite(h) || !Number.isFinite(l) || !Number.isFinite(c) || c <= 0 || v <= 0) {
+          mfv[i] = 0;
+          volWeights[i] = 0;
+          continue;
+        }
+        const prevCRaw = i > 0 && closes[i - 1] != null ? Number(closes[i - 1]) : NaN;
+        const prevC = Number.isFinite(prevCRaw) && prevCRaw > 0 ? prevCRaw : c;
         const hStar = Math.max(h, prevC);
         const lStar = Math.min(l, prevC);
         const tr = hStar - lStar;
@@ -233,9 +243,10 @@
       for (let i = 0; i < cmfValues.length; i++) {
         const cur = cmfValues[i];
         if (cur === null || !Number.isFinite(cur)) continue;
-        const start = Math.max(0, i - window + 1);
+        // Strictly causal baseline: exclude current observation j === i
+        const start = Math.max(0, i - window);
         const valid = [];
-        for (let j = start; j <= i; j++) {
+        for (let j = start; j < i; j++) {
           const v = cmfValues[j];
           if (v !== null && Number.isFinite(v)) valid.push(v);
         }
@@ -258,40 +269,79 @@
       if (!bars || bars.length < window) return new Array(bars ? bars.length : 0).fill(null);
       const out = new Array(bars.length).fill(null);
       const k = 0.34 / (1.34 + (window + 1) / (window - 1));
-      for (let i = window - 1; i < bars.length; i++) {
+      for (let i = window; i < bars.length; i++) {
+        const uArr = new Array(window);
+        const dArr = new Array(window);
         let sumO = 0, sumC = 0, sumRS = 0;
-        const slice = bars.slice(i - window + 1, i + 1);
-        for (let j = 0; j < slice.length; j++) {
-          const b = slice[j];
-          const pb = j > 0 ? slice[j - 1] : (i >= window ? bars[i - window] : b);
-          const o = b.o ?? b.open;
-          const c = b.c ?? b.close;
-          const h = b.h ?? b.high ?? c;
-          const l = b.l ?? b.low ?? c;
-          const pbc = pb.c ?? pb.close ?? o;
-          const u = Math.log(o / (pbc || o));
+        let valid = true;
+        for (let j = 0; j < window; j++) {
+          const idx = i - window + 1 + j;
+          const b = bars[idx];
+          const pb = bars[idx - 1];
+          const o = Number(b.o ?? b.open);
+          const c = Number(b.c ?? b.close);
+          const h = Number(b.h ?? b.high ?? c);
+          const l = Number(b.l ?? b.low ?? c);
+          const pbc = Number(pb.c ?? pb.close);
+          if (!(o > 0 && c > 0 && h > 0 && l > 0 && pbc > 0 && Number.isFinite(o) && Number.isFinite(c) && Number.isFinite(h) && Number.isFinite(l) && Number.isFinite(pbc))) {
+            valid = false;
+            break;
+          }
+          const u = Math.log(o / pbc);
           const d = Math.log(c / o);
+          uArr[j] = u;
+          dArr[j] = d;
           sumO += u;
           sumC += d;
           sumRS += Math.log(h / c) * Math.log(h / o) + Math.log(l / c) * Math.log(l / o);
         }
+        if (!valid) continue;
         const meanO = sumO / window;
         const meanC = sumC / window;
         let varO = 0, varC = 0;
-        for (let j = 0; j < slice.length; j++) {
-          const b = slice[j];
-          const pb = j > 0 ? slice[j - 1] : (i >= window ? bars[i - window] : b);
-          const o = b.o ?? b.open;
-          const c = b.c ?? b.close;
-          const pbc = pb.c ?? pb.close ?? o;
-          varO += (Math.log(o / (pbc || o)) - meanO) ** 2;
-          varC += (Math.log(c / o) - meanC) ** 2;
+        for (let j = 0; j < window; j++) {
+          varO += (uArr[j] - meanO) ** 2;
+          varC += (dArr[j] - meanC) ** 2;
         }
         varO /= (window - 1);
         varC /= (window - 1);
         const varRS = sumRS / window;
         const sigma2 = varO + k * varC + (1 - k) * varRS;
-        out[i] = sigma2 > 0 ? Math.sqrt(sigma2 * 252) : 0;
+        if (Number.isFinite(sigma2) && sigma2 >= 0) {
+          out[i] = Math.sqrt(sigma2 * 252);
+        }
+      }
+      return out;
+    },
+
+    _causalDailyVol(bars, yzVol) {
+      const n = bars ? bars.length : 0;
+      const out = new Array(n).fill(0.02);
+      if (n < 2) return out;
+      const rets = new Array(n).fill(null);
+      for (let i = 1; i < n; i++) {
+        const c = Number(bars[i].c != null ? bars[i].c : bars[i].close);
+        const pc = Number(bars[i - 1].c != null ? bars[i - 1].c : bars[i - 1].close);
+        if (Number.isFinite(c) && Number.isFinite(pc) && c > 0 && pc > 0) {
+          rets[i] = Math.log(c / pc);
+        }
+      }
+      for (let i = 1; i < n; i++) {
+        if (yzVol && yzVol[i - 1] != null && Number.isFinite(yzVol[i - 1]) && yzVol[i - 1] > 0) {
+          out[i] = yzVol[i - 1] / Math.sqrt(252);
+          continue;
+        }
+        const priorRets = [];
+        for (let j = Math.max(1, i - 21); j < i; j++) {
+          if (rets[j] != null && Number.isFinite(rets[j])) priorRets.push(rets[j]);
+        }
+        if (priorRets.length >= 5) {
+          const mean = priorRets.reduce((a, b) => a + b, 0) / priorRets.length;
+          const varR = priorRets.reduce((a, b) => a + (b - mean) ** 2, 0) / (priorRets.length - 1);
+          out[i] = Math.max(0.0025, Math.sqrt(varR));
+        } else {
+          out[i] = 0.02;
+        }
       }
       return out;
     },
@@ -300,13 +350,15 @@
       if (!bars || !bars.length) return [];
       const n = bars.length;
       const out = new Array(n).fill(0);
+      const dailyVols = this._causalDailyVol(bars, yzVol);
       for (let i = 1; i < n; i++) {
-        const c = bars[i].c != null ? bars[i].c : bars[i].close;
-        const pc = bars[i - 1].c != null ? bars[i - 1].c : bars[i - 1].close;
-        const v = bars[i].v != null ? bars[i].v : (bars[i].volume || 0);
-        if (pc > 0 && c > 0) {
+        const c = Number(bars[i].c != null ? bars[i].c : bars[i].close);
+        const pc = Number(bars[i - 1].c != null ? bars[i - 1].c : bars[i - 1].close);
+        const rawV = bars[i].v != null ? Number(bars[i].v) : Number(bars[i].volume);
+        const v = Number.isFinite(rawV) && rawV > 0 ? rawV : 0;
+        if (Number.isFinite(pc) && Number.isFinite(c) && pc > 0 && c > 0 && v > 0) {
           const ret = Math.log(c / pc);
-          const volDaily = (yzVol && yzVol[i] && yzVol[i] > 0) ? (yzVol[i] / Math.sqrt(252)) : 0.02;
+          const volDaily = dailyVols[i] || 0.02;
           const z = ret / (volDaily + 1e-6);
           const z2 = z * z;
           const denom = Math.pow(4 + z2, 1.5);
@@ -332,14 +384,16 @@
       if (!bars || !bars.length) return [];
       const n = bars.length;
       const out = new Array(n).fill(0);
+      const dailyVols = this._causalDailyVol(bars, yzVol);
       let acc = 0;
       for (let i = 1; i < n; i++) {
-        const c = bars[i].c != null ? bars[i].c : bars[i].close;
-        const pc = bars[i - 1].c != null ? bars[i - 1].c : bars[i - 1].close;
-        const v = bars[i].v != null ? bars[i].v : (bars[i].volume || 0);
-        if (pc > 0 && c > 0) {
+        const c = Number(bars[i].c != null ? bars[i].c : bars[i].close);
+        const pc = Number(bars[i - 1].c != null ? bars[i - 1].c : bars[i - 1].close);
+        const rawV = bars[i].v != null ? Number(bars[i].v) : Number(bars[i].volume);
+        const v = Number.isFinite(rawV) && rawV > 0 ? rawV : 0;
+        if (Number.isFinite(pc) && Number.isFinite(c) && pc > 0 && c > 0 && v > 0) {
           const ret = Math.log(c / pc);
-          const volDaily = (yzVol && yzVol[i] && yzVol[i] > 0) ? (yzVol[i] / Math.sqrt(252)) : 0.02;
+          const volDaily = dailyVols[i] || 0.02;
           const zMove = Math.max(-5, Math.min(5, ret / Math.max(0.0025, volDaily)));
           acc += v * zMove;
         }
@@ -399,16 +453,33 @@
       const absLev = Math.max(0.5, Math.abs(leverage || 1));
       const dailyIlliq = new Array(bars.length).fill(null);
       for (let i = 1; i < bars.length; i++) {
-        const c = bars[i].c != null ? bars[i].c : bars[i].close;
-        const pc = bars[i - 1].c != null ? bars[i - 1].c : bars[i - 1].close;
-        const v = bars[i].v != null ? bars[i].v : (bars[i].volume || 0);
-        const dollarVol = c * v;
-        if (pc > 0 && dollarVol > 0) {
+        const c = Number(bars[i].tc != null ? bars[i].tc : (bars[i].c != null ? bars[i].c : bars[i].close));
+        const pc = Number(bars[i - 1].tc != null ? bars[i - 1].tc : (bars[i - 1].c != null ? bars[i - 1].c : bars[i - 1].close));
+        const nomC = Number(bars[i].c != null ? bars[i].c : bars[i].close);
+        const rawV = bars[i].v != null ? Number(bars[i].v) : Number(bars[i].volume);
+        const v = Number.isFinite(rawV) && rawV > 0 ? rawV : 0;
+        const dollarVol = bars[i].dv != null ? Number(bars[i].dv) : (nomC * v);
+        if (Number.isFinite(c) && Number.isFinite(pc) && c > 0 && pc > 0 && Number.isFinite(dollarVol) && dollarVol > 0) {
           const ret = Math.abs(Math.log(c / pc));
           dailyIlliq[i] = (ret / dollarVol) * 1e6 / absLev;
         }
       }
-      return this.sma(dailyIlliq, 21);
+      const out = new Array(bars.length).fill(null);
+      for (let i = 20; i < bars.length; i++) {
+        let sum = 0;
+        let validCount = 0;
+        for (let j = i - 20; j <= i; j++) {
+          const val = dailyIlliq[j];
+          if (val != null && Number.isFinite(val)) {
+            sum += val;
+            validCount++;
+          }
+        }
+        if (validCount >= 15) {
+          out[i] = sum / validCount;
+        }
+      }
+      return out;
     },
 
     rollSpread21(bars, leverage = 1) {
@@ -417,9 +488,9 @@
       const out = new Array(bars.length).fill(null);
       const deltaC = new Array(bars.length).fill(null);
       for (let i = 1; i < bars.length; i++) {
-        const c = bars[i].c != null ? bars[i].c : bars[i].close;
-        const pc = bars[i - 1].c != null ? bars[i - 1].c : bars[i - 1].close;
-        if (c > 0 && pc > 0) deltaC[i] = c - pc;
+        const c = Number(bars[i].c != null ? bars[i].c : bars[i].close);
+        const pc = Number(bars[i - 1].c != null ? bars[i - 1].c : bars[i - 1].close);
+        if (Number.isFinite(c) && Number.isFinite(pc) && c > 0 && pc > 0) deltaC[i] = c - pc;
       }
       for (let i = 21; i < bars.length; i++) {
         let sumX = 0, sumY = 0, sumXY = 0, count = 0;
@@ -427,8 +498,8 @@
         for (let j = i - 20; j <= i; j++) {
           const x = deltaC[j];
           const y = deltaC[j - 1];
-          const p = bars[j].c != null ? bars[j].c : bars[j].close;
-          if (x !== null && y !== null && p > 0) {
+          const p = Number(bars[j].c != null ? bars[j].c : bars[j].close);
+          if (x !== null && y !== null && Number.isFinite(p) && p > 0) {
             sumX += x;
             sumY += y;
             sumXY += x * y;
@@ -456,14 +527,24 @@
       if (n < window) return out;
 
       for (let i = window - 1; i < n; i++) {
+        const pNow = Number(prices[i]);
+        const ppNow = Number(prices[i - 1]);
+        const fNowRaw = flows[i];
+        const pfNowRaw = flows[i - 1];
+        if (!Number.isFinite(pNow) || !Number.isFinite(ppNow) || pNow <= 0 || ppNow <= 0 ||
+            fNowRaw == null || pfNowRaw == null || !Number.isFinite(Number(fNowRaw)) || !Number.isFinite(Number(pfNowRaw))) {
+          continue;
+        }
         const rSlice = [];
         const fSlice = [];
-        for (let j = i - window + 2; j <= i; j++) {
-          const p = prices[j], pp = prices[j - 1];
-          const f = flows[j], pf = flows[j - 1];
-          if (p > 0 && pp > 0 && f !== null && pf !== null) {
+        // Strictly causal OLS training set: j < i
+        for (let j = Math.max(1, i - window + 1); j < i; j++) {
+          const p = Number(prices[j]), pp = Number(prices[j - 1]);
+          const fRaw = flows[j], pfRaw = flows[j - 1];
+          if (Number.isFinite(p) && Number.isFinite(pp) && p > 0 && pp > 0 &&
+              fRaw != null && pfRaw != null && Number.isFinite(Number(fRaw)) && Number.isFinite(Number(pfRaw))) {
             rSlice.push(Math.log(p / pp));
-            fSlice.push(f - pf);
+            fSlice.push(Number(fRaw) - Number(pfRaw));
           }
         }
         if (rSlice.length < 30) continue;
@@ -479,15 +560,16 @@
         const beta = cov / varR;
         const alpha = meanF - beta * meanR;
         let sumResidSq = 0;
-        const residuals = [];
         for (let k = 0; k < K; k++) {
           const resid = fSlice[k] - (alpha + beta * rSlice[k]);
-          residuals.push(resid);
           sumResidSq += resid * resid;
         }
         const sResid = Math.sqrt(sumResidSq / (K - 2));
-        const lastResid = residuals[residuals.length - 1];
-        const zDiv = sResid > 1e-12 ? lastResid / sResid : 0;
+        if (!Number.isFinite(sResid) || sResid <= 1e-12) continue;
+        const rNow = Math.log(pNow / ppNow);
+        const fNow = Number(fNowRaw) - Number(pfNowRaw);
+        const outResid = fNow - (alpha + beta * rNow);
+        const zDiv = outResid / sResid;
         if (beta > 0) {
           if (zDiv >= 2.0) out[i] = 'BULLISH DIVERGENCE';
           else if (zDiv <= -2.0) out[i] = 'BEARISH DIVERGENCE';
@@ -635,7 +717,9 @@
     sliceStartForDays(dates, days, nowMs) {
       if (!dates || !dates.length) return 0;
       if (days == null) return 0;
-      const now = (nowMs == null) ? Date.now() : nowMs;
+      const lastDateStr = dates[dates.length - 1];
+      const anchorMs = lastDateStr ? Date.parse(lastDateStr + 'T00:00:00Z') : NaN;
+      const now = (nowMs == null) ? (Number.isFinite(anchorMs) ? anchorMs : Date.now()) : nowMs;
       const cutoff = new Date(now - days * 864e5).toISOString().slice(0, 10);
       let idx = 0;
       while (idx < dates.length && dates[idx] < cutoff) idx++;
@@ -686,6 +770,10 @@
       const closes = [];
       const highs = [];
       const lows = [];
+      const trOpens = [];
+      const trCloses = [];
+      const trHighs = [];
+      const trLows = [];
       const rawVolumes = [];
       const dollarVolumes = [];
 
@@ -693,18 +781,31 @@
         const b = history[i];
         if (!b) continue;
         const d = b.d || b.date;
-        const c = b.c != null ? b.c : b.close;
-        const o = b.o != null ? b.o : (b.open != null ? b.open : c);
-        const h = b.h != null ? b.h : (b.high != null ? b.high : c);
-        const l = b.l != null ? b.l : (b.low != null ? b.low : c);
-        const v = b.v != null ? b.v : (b.volume != null ? b.volume : 0);
+        const c = Number(b.c != null ? b.c : b.close);
+        if (!d || !Number.isFinite(c) || c <= 0) continue;
 
-        if (!d || c == null || c <= 0) continue;
+        const oRaw = b.o != null ? Number(b.o) : (b.open != null ? Number(b.open) : c);
+        const hRaw = b.h != null ? Number(b.h) : (b.high != null ? Number(b.high) : c);
+        const lRaw = b.l != null ? Number(b.l) : (b.low != null ? Number(b.low) : c);
+        const vRaw = b.v != null ? Number(b.v) : (b.volume != null ? Number(b.volume) : 0);
+        const tcRaw = b.tc != null ? Number(b.tc) : c;
+
+        const o = (Number.isFinite(oRaw) && oRaw > 0) ? oRaw : c;
+        const h = (Number.isFinite(hRaw) && hRaw > 0) ? hRaw : c;
+        const l = (Number.isFinite(lRaw) && lRaw > 0) ? lRaw : c;
+        const v = (Number.isFinite(vRaw) && vRaw > 0) ? vRaw : 0;
+        const tc = (Number.isFinite(tcRaw) && tcRaw > 0) ? tcRaw : c;
+        const triFactor = tc / c;
+
         dates.push(d);
-        opens.push(o > 0 ? o : c);
+        opens.push(o);
         closes.push(c);
         highs.push(h);
         lows.push(l);
+        trOpens.push(o * triFactor);
+        trCloses.push(tc);
+        trHighs.push(h * triFactor);
+        trLows.push(l * triFactor);
         rawVolumes.push(v);
         dollarVolumes.push(c * v);
       }
@@ -726,12 +827,28 @@
       const maLen = 21;
       const sliceArr = arr => arr ? arr.slice(startIdx, endIdx + 1) : null;
 
-      // Shared econometric microstructure pipeline across full ticker history
-      const rawBars = dates.map((d, i) => ({ d, o: opens[i], h: highs[i], l: lows[i], c: closes[i], v: rawVolumes[i] }));
-      const unitBars = dates.map((d, i) => ({ d, o: opens[i], h: highs[i], l: lows[i], c: closes[i], v: volumes[i] }));
+      // Shared econometric microstructure pipeline across full ticker history (using total-return adjusted OHLC for return-based metrics)
+      const trRawBars = dates.map((d, i) => ({
+        d,
+        o: trOpens[i],
+        h: trHighs[i],
+        l: trLows[i],
+        c: trCloses[i],
+        tc: trCloses[i],
+        v: rawVolumes[i],
+        dv: dollarVolumes[i]
+      }));
+      const trUnitBars = dates.map((d, i) => ({
+        d,
+        o: trOpens[i],
+        h: trHighs[i],
+        l: trLows[i],
+        c: trCloses[i],
+        v: volumes[i]
+      }));
 
-      const yzFull = this.yangZhangVol(rawBars, 21);
-      const bvcFlowFull = this.bvcFlow(unitBars, yzFull);
+      const yzFull = this.yangZhangVol(trRawBars, 21);
+      const bvcFlowFull = this.bvcFlow(trUnitBars, yzFull);
       const buyPctFull = volumes.map((v, i) => (i > 0 && v > 0)
         ? Math.max(0, Math.min(100, (0.5 + 0.5 * (bvcFlowFull[i] / v)) * 100))
         : 50);
@@ -742,8 +859,8 @@
         if (rvolDowFull[i] != null && isFinite(rvolDowFull[i])) return rvolDowFull[i];
         return (prior20Full[i] && prior20Full[i] > 0) ? (v / prior20Full[i]) : null;
       });
-      const illiqFull = this.amihudIlliq21(rawBars, leverage);
-      const rollFull = this.rollSpread21(rawBars, leverage);
+      const illiqFull = this.amihudIlliq21(trRawBars, leverage);
+      const rollFull = this.rollSpread21(trRawBars, leverage);
 
       const basePayload = {
         study: studyKey,
@@ -754,6 +871,7 @@
         fullLength: dates.length,
         dates: dates.slice(startIdx, endIdx + 1),
         closes: closes.slice(startIdx, endIdx + 1),
+        trCloses: trCloses.slice(startIdx, endIdx + 1),
         volumes: volumes.slice(startIdx, endIdx + 1),
         rawVolumes: rawVolumes.slice(startIdx, endIdx + 1),
         dollarVolumes: dollarVolumes.slice(startIdx, endIdx + 1),
@@ -771,7 +889,7 @@
       };
 
       if (studyKey === 'vol') {
-        const signs = this.signSeries(closes);
+        const signs = this.signSeries(trCloses);
         return {
           ...basePayload,
           bars: sliceArr(volumes),
@@ -804,7 +922,7 @@
           acc += bvcFlowFull[i];
           cumBvc[i] = acc;
         }
-        const regDiv = this.detectRegressionDivergence(closes, cumBvc, 63);
+        const regDiv = this.detectRegressionDivergence(trCloses, cumBvc, 63);
         return {
           ...basePayload,
           bars: sliceArr(bvcFlowFull),
@@ -816,23 +934,23 @@
       }
 
       if (studyKey === 'cmf') {
-        const line = this.cmf(highs, lows, closes, volumes, 21);
-        const priceRet = this.priceReturn(closes, 21);
+        const line = this.cmf(trHighs, trLows, trCloses, volumes, 21);
+        const priceRet = this.priceReturn(trCloses, 21);
         const cmfZ = this.cmfZScore(line, 252);
-        const cumTrFlow = new Array(closes.length).fill(0);
+        const cumTrFlow = new Array(trCloses.length).fill(0);
         let accTr = 0;
-        for (let i = 0; i < closes.length; i++) {
-          const prevC = (i > 0 && closes[i - 1] != null) ? closes[i - 1] : closes[i];
-          const hStar = Math.max(highs[i], prevC);
-          const lStar = Math.min(lows[i], prevC);
+        for (let i = 0; i < trCloses.length; i++) {
+          const prevC = (i > 0 && trCloses[i - 1] != null) ? trCloses[i - 1] : trCloses[i];
+          const hStar = Math.max(trHighs[i], prevC);
+          const lStar = Math.min(trLows[i], prevC);
           const tr = hStar - lStar;
           if (tr > 1e-9) {
-            const clv = Math.max(-1, Math.min(1, (2 * closes[i] - lStar - hStar) / tr));
+            const clv = Math.max(-1, Math.min(1, (2 * trCloses[i] - lStar - hStar) / tr));
             accTr += clv * (volumes[i] || 0);
           }
           cumTrFlow[i] = accTr;
         }
-        const regDiv = this.detectRegressionDivergence(closes, cumTrFlow, 63);
+        const regDiv = this.detectRegressionDivergence(trCloses, cumTrFlow, 63);
         return {
           ...basePayload,
           line: sliceArr(line),
@@ -844,11 +962,11 @@
       }
 
       if (studyKey === 'bvc') {
-        const obv = this.bvcObv(unitBars, yzFull);
+        const obv = this.bvcObv(trUnitBars, yzFull);
         const baseVal = obv[startIdx] || 0;
         const rebased = obv.map(v => v - baseVal);
         const signs = bvcFlowFull.map(v => (v > 1e-9 ? 1 : (v < -1e-9 ? -1 : 0)));
-        const regDiv = this.detectRegressionDivergence(closes, obv, 63);
+        const regDiv = this.detectRegressionDivergence(trCloses, obv, 63);
         return {
           ...basePayload,
           bars: sliceArr(bvcFlowFull),
@@ -860,10 +978,10 @@
       }
 
       if (studyKey === 'obv') {
-        const full = this.bvcObv(unitBars, yzFull);
+        const full = this.bvcObv(trUnitBars, yzFull);
         const baseVal = full[startIdx] || 0;
         const rebased = full.map(v => v - baseVal);
-        const regDiv = this.detectRegressionDivergence(closes, full, 63);
+        const regDiv = this.detectRegressionDivergence(trCloses, full, 63);
         return {
           ...basePayload,
           line: sliceArr(rebased),
@@ -874,10 +992,10 @@
       }
 
       if (studyKey === 'pvt') {
-        const full = this.volNormalizedPvt(unitBars, yzFull);
+        const full = this.volNormalizedPvt(trUnitBars, yzFull);
         const baseVal = full[startIdx] || 0;
         const rebased = full.map(v => v - baseVal);
-        const regDiv = this.detectRegressionDivergence(closes, full, 63);
+        const regDiv = this.detectRegressionDivergence(trCloses, full, 63);
         return {
           ...basePayload,
           line: sliceArr(rebased),
@@ -1100,7 +1218,9 @@
 
             const avgVal = sum / count;
             const sign = netSign > 0 ? 1 : (netSign < 0 ? -1 : 0);
-            const color = hasClimax ? this.COLORS.climax : (sign > 0 ? this.COLORS.up : (sign < 0 ? this.COLORS.down : this.COLORS.flat));
+            const color = (hasClimax && (!payload.zeroCentered || sign >= 0))
+              ? this.COLORS.climax
+              : (sign > 0 ? this.COLORS.up : (sign < 0 ? this.COLORS.down : this.COLORS.flat));
             const yv = clampY(avgVal);
             const bx = pad.left + b * stepW + (stepW - pixelBarW) / 2;
 
@@ -1386,21 +1506,25 @@
 
       let left = x + 16;
       if (left + tw > vw - 12) left = x - tw - 16;
-      left = Math.max(10, Math.min(vw - tw - 10, left));
+      left = Math.max(6, Math.min(Math.max(6, vw - tw - 6), left));
 
       let top = y + 12;
       if (top + th > vh - 10) top = y - th - 12;
-      top = Math.max(10, Math.min(vh - th - 10, top));
+      top = th <= vh - 12 ? Math.max(6, Math.min(vh - th - 6, top)) : 6;
 
       tooltip.style.left = left + 'px';
       tooltip.style.top = top + 'px';
       tooltip.style.display = 'block';
     },
 
-    _onPointerLeave() {
-      this.state.hoverIdx = null;
+    _hideTooltip() {
       const tooltip = document.getElementById('vs-tooltip');
       if (tooltip) tooltip.style.display = 'none';
+    },
+
+    _onPointerLeave() {
+      this.state.hoverIdx = null;
+      this._hideTooltip();
 
       this._scheduleDraw();
       this._updateHUD(null);
@@ -1433,9 +1557,11 @@
 
       const date = payload.dates[idx];
       const close = payload.closes[idx];
-      const prevClose = idx > 0 ? payload.closes[idx - 1] : close;
-      const priceChg = close - prevClose;
-      const pricePct = prevClose > 0 ? (priceChg / prevClose) * 100 : 0;
+      const trSrc = payload.trCloses || payload.closes;
+      const trClose = trSrc[idx];
+      const prevTrClose = idx > 0 ? trSrc[idx - 1] : trClose;
+      const priceChg = trClose - prevTrClose;
+      const pricePct = prevTrClose > 0 ? (priceChg / prevTrClose) * 100 : 0;
       const chgColor = priceChg > 0 ? this.COLORS.up : (priceChg < 0 ? this.COLORS.down : this.COLORS.flat);
       const chgSign = priceChg > 0 ? '+' : '';
 
@@ -1670,9 +1796,11 @@
         : payload.dates.length - 1;
 
       const close = payload.closes[idx];
-      const prevClose = idx > 0 ? payload.closes[idx - 1] : close;
-      const priceChg = close - prevClose;
-      const pricePct = prevClose > 0 ? (priceChg / prevClose) * 100 : 0;
+      const trSrc = payload.trCloses || payload.closes;
+      const trClose = trSrc[idx];
+      const prevTrClose = idx > 0 ? trSrc[idx - 1] : trClose;
+      const priceChg = trClose - prevTrClose;
+      const pricePct = prevTrClose > 0 ? (priceChg / prevTrClose) * 100 : 0;
       const chgColor = priceChg > 0 ? this.COLORS.up : (priceChg < 0 ? this.COLORS.down : this.COLORS.flat);
       const chgSign = priceChg > 0 ? '+' : '';
 
@@ -1826,11 +1954,16 @@
           hudDiv.style.color = '#fb923c';
           hudDiv.style.background = 'rgba(251,146,60,0.12)';
           hudDiv.style.borderColor = 'rgba(251,146,60,0.3)';
-        } else {
+        } else if (Array.isArray(payload.divergence)) {
           hudDiv.textContent = 'NEUTRAL (63D)';
           hudDiv.style.color = '#94a3b8';
           hudDiv.style.background = 'transparent';
           hudDiv.style.borderColor = 'rgba(255,255,255,0.1)';
+        } else {
+          hudDiv.textContent = '—';
+          hudDiv.style.color = '#8d9aaa';
+          hudDiv.style.background = 'transparent';
+          hudDiv.style.borderColor = 'rgba(255,255,255,0.08)';
         }
       }
 
@@ -1865,6 +1998,66 @@
 
     // ── Data Loading & State Management ──
 
+    _clearHUD() {
+      if (typeof document === 'undefined') return;
+      const resetIds = ['vs-hud-price', 'vs-hud-chg', 'vs-hud-vol', 'vs-hud-rvol', 'vs-hud-val', 'vs-hud-micro-val', 'vs-hud-div-badge', 'vs-window-dates', 'vs-header-price', 'vs-header-chg'];
+      for (const id of resetIds) {
+        const el = document.getElementById(id);
+        if (el) {
+          el.textContent = '—';
+          el.style.color = '';
+        }
+      }
+      const hudRegime = document.getElementById('vs-hud-regime');
+      if (hudRegime) {
+        hudRegime.textContent = '—';
+        hudRegime.style.color = '';
+        hudRegime.style.background = 'transparent';
+        hudRegime.style.borderColor = 'transparent';
+      }
+      const hdrRegime = document.getElementById('vs-header-regime-badge');
+      if (hdrRegime) hdrRegime.style.display = 'none';
+    },
+
+    _updateHeaderFromHistory(history) {
+      if (typeof document === 'undefined' || !history || !history.length) return;
+      const last = history[history.length - 1];
+      const prev = history.length >= 2 ? history[history.length - 2] : last;
+      const c = Number(last?.c != null ? last.c : last?.close);
+      const tc = Number(last?.tc != null ? last.tc : c);
+      const ptc = Number(prev?.tc != null ? prev.tc : (prev?.c != null ? prev.c : prev?.close));
+      const chg = Number.isFinite(tc) && Number.isFinite(ptc) && ptc > 0 ? ((tc - ptc) / ptc) * 100 : 0;
+      const hdrPrice = document.getElementById('vs-header-price');
+      const hdrChg = document.getElementById('vs-header-chg');
+      const hdrRegime = document.getElementById('vs-header-regime-badge');
+      if (hdrPrice && Number.isFinite(c) && c > 0) hdrPrice.textContent = this.fmtPrice(c);
+      if (hdrChg) {
+        hdrChg.textContent = `${chg > 0 ? '+' : ''}${chg.toFixed(2)}%`;
+        hdrChg.style.color = chg > 0 ? this.COLORS.up : (chg < 0 ? this.COLORS.down : this.COLORS.flat);
+      }
+      if (hdrRegime) hdrRegime.style.display = 'none';
+    },
+
+    _drawMessageSized(text) {
+      if (typeof document === 'undefined') return;
+      const canvas = document.getElementById('vs-canvas');
+      if (!canvas) return;
+      const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+      const rect = canvas.getBoundingClientRect();
+      const w = Math.floor(rect.width);
+      const h = Math.floor(rect.height);
+      if (w < 40 || h < 40) return;
+      const targetW = Math.round(w * dpr);
+      const targetH = Math.round(h * dpr);
+      if (canvas.width !== targetW || canvas.height !== targetH) {
+        canvas.width = targetW;
+        canvas.height = targetH;
+      }
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      this._drawMessage(ctx, w, h, text);
+    },
+
     async fetchETFHistory() {
       if (this._etfHistoryCache) return this._etfHistoryCache;
       if (this._historyPromise) return this._historyPromise;
@@ -1876,22 +2069,41 @@
             const resp = await fetch(url);
             if (resp.ok) {
               const data = await resp.json();
-              this._etfHistoryCache = data.history || {};
-              return this._etfHistoryCache;
+              if (data && data.history && Object.keys(data.history).length > 0) {
+                this._etfHistoryCache = data.history;
+                return this._etfHistoryCache;
+              }
             }
           } catch (e) {
             // try next
           }
         }
-        return {};
+        return null;
       })();
 
-      return this._historyPromise;
+      const result = await this._historyPromise;
+      if (!result) {
+        this._historyPromise = null;
+        return {};
+      }
+      return result;
     },
 
     async loadTicker(ticker, options = {}) {
       if (!ticker) return;
+      const tickerChanged = this.state.ticker !== ticker;
       this.state.ticker = ticker;
+      this.state.hoverIdx = null;
+      this._hideTooltip();
+      if (tickerChanged) {
+        this.state.customRange = null;
+        if (this.state.range === 'custom') {
+          this.state.range = '1y';
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('volume-studies-range', { detail: { range: '1y' } }));
+          }
+        }
+      }
       if (options.catalogInstruments) {
         this._catalogInstruments = options.catalogInstruments;
       }
@@ -1967,33 +2179,14 @@
       const history = historyParam || (this._etfHistoryCache && this.state.ticker ? this._etfHistoryCache[this.state.ticker] : []);
       if (!history || !history.length) {
         this._payload = null;
-        if (typeof document !== 'undefined') {
-          const canvas = document.getElementById('vs-canvas');
-          if (canvas) {
-            const ctx = canvas.getContext('2d');
-            this._drawMessage(ctx, canvas.width, canvas.height, 'Waiting for ticker tape history...');
-          }
-        }
+        this._clearHUD();
+        this._drawMessageSized('No tape observations available for ticker');
         return;
       }
 
-      const studyForCompute = this.state.study === 'heatmap' ? 'vol' : this.state.study;
-      const catEntry = Array.isArray(this._catalogInstruments)
-        ? this._catalogInstruments.find(x => x && x.ticker === this.state.ticker)
-        : null;
-      const payload = this.compute(history, studyForCompute, this.state.range, {
-        unit: this.state.unit,
-        customRange: this.state.range === 'custom' ? this.state.customRange : null,
-        leverage: catEntry && catEntry.leverage_value != null ? catEntry.leverage_value : 1
-      });
-
-      this._payload = payload;
-      if (payload) {
-        this._updateHUD(null);
-        this._updateMethodology(this.state.study);
-      }
-
       if (this.state.study === 'heatmap') {
+        this._updateHeaderFromHistory(history);
+        this._updateMethodology('heatmap');
         const hm = typeof VolumeHeatmap !== 'undefined' ? VolumeHeatmap : (typeof window !== 'undefined' ? window.VolumeHeatmap : null);
         if (hm) {
           hm.mount({
@@ -2006,17 +2199,34 @@
         return;
       }
 
-      if (payload) {
-        this._syncSlider(payload.fullLength, payload.startIdx, payload.endIdx);
-        this._draw();
-        if (typeof requestAnimationFrame !== 'undefined') {
-          requestAnimationFrame(() => {
-            this._draw();
-            if (this._payload) {
-              this._syncSlider(this._payload.fullLength, this._payload.startIdx, this._payload.endIdx);
-            }
-          });
-        }
+      const catEntry = Array.isArray(this._catalogInstruments)
+        ? this._catalogInstruments.find(x => x && x.ticker === this.state.ticker)
+        : null;
+      const payload = this.compute(history, this.state.study, this.state.range, {
+        unit: this.state.unit,
+        customRange: this.state.range === 'custom' ? this.state.customRange : null,
+        leverage: catEntry && catEntry.leverage_value != null ? catEntry.leverage_value : 1
+      });
+
+      this._payload = payload;
+      if (!payload) {
+        this._clearHUD();
+        this._updateMethodology(this.state.study);
+        this._drawMessageSized('Insufficient tape observations (minimum 2 sessions)');
+        return;
+      }
+
+      this._updateHUD(null);
+      this._updateMethodology(this.state.study);
+      this._syncSlider(payload.fullLength, payload.startIdx, payload.endIdx);
+      this._draw();
+      if (typeof requestAnimationFrame !== 'undefined') {
+        requestAnimationFrame(() => {
+          this._draw();
+          if (this._payload) {
+            this._syncSlider(this._payload.fullLength, this._payload.startIdx, this._payload.endIdx);
+          }
+        });
       }
     },
 

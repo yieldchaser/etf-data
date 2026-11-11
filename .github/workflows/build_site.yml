@@ -18,6 +18,10 @@ on:
       - 'scripts/build_dynf_factor_engine.py'
       - 'scripts/build_etf_ohlcv.py'
       - 'scripts/sync_splits_from_yahoo.py'
+      - 'scripts/apply_split_adjustments.py'
+      - 'scripts/flow_reversal.py'
+      - 'scripts/etf_taxonomy.py'
+      - 'scripts/validate_quant_signals.py'
       - 'FUND_FLOW_ETFS.md'
       - 'config.yaml'
       - 'config.json'
@@ -112,6 +116,7 @@ jobs:
           node tests/test_volume_studies.mjs
           node tests/test_volume_heatmap.mjs
           node tests/test_trough_peak.mjs
+          node tests/test_markets_runtime_contracts.mjs
 
       # ── Restore / Cache conviction artifacts ──────────────────────────
       # For frontend-only iterations, data/history_parquet and conviction code

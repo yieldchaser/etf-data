@@ -2,20 +2,20 @@
 """Quantitative MACD Momentum Scanner and Email Alert Engine for Leveraged ETFs.
 
 This script:
-1. Ingests the 160 curated instruments from `docs/data/flows/catalog.json`.
+1. Ingests the curated instruments from `docs/data/flows/catalog.json`.
 2. Fetches intraday 1-hour OHLCV and daily OHLCV bars via Yahoo Finance Chart API:
    - Uses Regular Trading Hours (RTH, prepost=False) for canonical 1H MACD (12, 26, 9 EMA).
-   - In pre-market (04:00 - 09:30 EST), captures live pre-market price to compute indicated gap.
+   - In pre-market (04:00 - 09:30 ET), captures live pre-market price to compute indicated gap.
    - Computes traditional Auto Floor Trader Pivots (P, S1-S5, R1-R5) from the last COMPLETED
      regular trading session (strictly session date < today's date during market/premarket).
 3. Detects signals across all market sessions:
    - Tier 1A: Confirmed Sub-Zero Bullish Reversals (high convexity value turnarounds).
    - Tier 1B: Confirmed Supra-Zero Bullish Crossovers (momentum continuation).
-   - Tier 2: Pre-Close Squeeze Watch (histogram compression >= 35% heading into 15:00-16:00 EST).
+   - Tier 2: Pre-Close Squeeze Watch (histogram compression >= 35% heading into 15:00-16:00 ET).
    - Tier 3: Bearish Breakdowns / Mandatory Cash Parking (long de-grossing exits).
 4. Dispatches tactical alerts to configured recipients:
    - "Whenever or as soon as data triggers": event-driven dispatch upon fresh crossovers.
-   - Scheduled Pre-Close Golden Hour briefing at 15:00 EST.
+   - Scheduled Pre-Close Golden Hour briefing at 15:00 ET.
    - Deduplication engine tracks state in `latest_macd_alert.json` to prevent inbox spam.
    - Responsive High-DPI formatting: optimized for Phone + Laptop, zero emojis.
 5. Saves real-time artifacts:
@@ -63,6 +63,15 @@ ALERT_OUT = ALERT_OUT_MACD
 NY_TZ = ZoneInfo("America/New_York")
 
 
+def _atomic_write_json(path: Path, payload: Any, **dump_kwargs: Any) -> None:
+    """Write JSON atomically via sibling temp file + os.replace."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, **dump_kwargs)
+    os.replace(tmp_path, path)
+
+
 def get_market_session(now_ny: dt.datetime) -> tuple[str, str, str]:
     """Detect current US market session: returns (session_code, session_name, badge_text)."""
     weekday = now_ny.weekday()  # 0=Mon, 4=Fri, 5=Sat, 6=Sun
@@ -70,6 +79,7 @@ def get_market_session(now_ny: dt.datetime) -> tuple[str, str, str]:
         return "WEEKEND", "WEEKEND QUANTITATIVE AUDIT", "WEEKEND SCAN"
 
     time_float = now_ny.hour + now_ny.minute / 60.0
+    tz_abbr = now_ny.tzname() or "ET"
 
     if time_float < 4.0:
         return "OVERNIGHT", "OVERNIGHT OFF-HOURS RADAR", "OVERNIGHT SCAN"
@@ -80,7 +90,7 @@ def get_market_session(now_ny: dt.datetime) -> tuple[str, str, str]:
     elif 10.5 <= time_float < 14.75:
         return "INTRADAY", "INTRADAY HOURLY MOMENTUM SCAN", "INTRADAY RADAR"
     elif 14.75 <= time_float < 16.0:
-        return "PRE_CLOSE", "PRE-MARKET-CLOSE GOLDEN HOUR SCAN", "15:00 EST PRE-CLOSE"
+        return "PRE_CLOSE", "PRE-MARKET-CLOSE GOLDEN HOUR SCAN", f"15:00 {tz_abbr} PRE-CLOSE"
     elif 16.0 <= time_float < 20.0:
         return "POST_MARKET", "POST-MARKET CLOSING AUDIT", "POST-MARKET SCAN"
     else:
@@ -88,15 +98,24 @@ def get_market_session(now_ny: dt.datetime) -> tuple[str, str, str]:
 
 
 def calculate_ema(series: list[float], period: int) -> list[float]:
-    """Calculate Exponential Moving Average with smoothing alpha = 2 / (period + 1)."""
+    """Calculate strictly causal Exponential Moving Average with smoothing alpha = 2 / (period + 1)."""
     n = len(series)
     out = [0.0] * n
     if n == 0 or period <= 0:
         return out
 
-    # Sanitize inputs (forward-fill non-finite or missing values)
+    # Locate first finite value to avoid zero-seed bias on leading NaNs
+    first_valid: float | None = None
+    for val in series:
+        if val is not None and not math.isnan(val) and not math.isinf(val):
+            first_valid = float(val)
+            break
+    if first_valid is None:
+        return out
+
+    # Sanitize inputs (forward-fill non-finite values without mutating past observations)
     clean: list[float] = []
-    last_valid = 0.0
+    last_valid = first_valid
     for val in series:
         if val is not None and not math.isnan(val) and not math.isinf(val):
             last_valid = float(val)
@@ -104,14 +123,13 @@ def calculate_ema(series: list[float], period: int) -> list[float]:
 
     alpha = 2.0 / (period + 1)
     seed_len = min(period, n)
-    sma = sum(clean[:seed_len]) / seed_len if seed_len > 0 else 0.0
-    out[seed_len - 1] = sma
+    running_sum = 0.0
+    for i in range(seed_len):
+        running_sum += clean[i]
+        out[i] = running_sum / (i + 1)
 
     for i in range(seed_len, n):
         out[i] = clean[i] * alpha + out[i - 1] * (1.0 - alpha)
-
-    for i in range(seed_len - 1):
-        out[i] = out[seed_len - 1]
 
     return out
 
@@ -322,17 +340,18 @@ def analyze_ticker(
         # Clean 1H series (sanitize missing/NaN values across all OHLCV columns)
         df_1h = df_1h.dropna(subset=["Open", "High", "Low", "Close", "Volume"])
 
-        # RTH session calendar filter (America/New_York 09:30 - 16:00 ET, DST safe)
+        # RTH session calendar filter (America/New_York 09:30 <= t < 16:00 ET, DST safe)
+        now_ny = dt.datetime.now(dt.timezone.utc).astimezone(NY_TZ)
+        now_time_float = now_ny.hour + now_ny.minute / 60.0
         ts_1h_seq = df_1h.index
         try:
-            if hasattr(df_1h.index, "tz_convert"):
-                df_1h_ny_idx = df_1h.index.tz_convert(NY_TZ)
-            elif df_1h.index.tz is None:
+            idx_tz = getattr(df_1h.index, "tz", None)
+            if idx_tz is None:
                 df_1h_ny_idx = df_1h.index.tz_localize(NY_TZ)
             else:
                 df_1h_ny_idx = df_1h.index.tz_convert(NY_TZ)
             rth_mask = [
-                bool(9.5 <= (ts.hour + ts.minute / 60.0) <= 16.0)
+                bool(9.5 <= (ts.hour + ts.minute / 60.0) < 16.0)
                 for ts in df_1h_ny_idx
             ]
             if sum(rth_mask) >= min_1h_bars:
@@ -341,6 +360,25 @@ def analyze_ticker(
             ts_1h_seq = df_1h_ny_idx
         except Exception:
             ts_1h_seq = df_1h.index
+
+        # Drop still-forming live 1H candle during today's RTH session so intra-bar
+        # noise never triggers premature crossover signals before the hour settles.
+        if (
+            now_ny.weekday() < 5
+            and 9.5 <= now_time_float < 16.0
+            and len(df_1h) > min_1h_bars
+            and len(ts_1h_seq) == len(df_1h)
+            and hasattr(ts_1h_seq[-1], "hour")
+        ):
+            last_ts_ny = ts_1h_seq[-1]
+            if hasattr(last_ts_ny, "date") and last_ts_ny.date() == now_ny.date():
+                if last_ts_ny.hour == 15 and last_ts_ny.minute >= 30:
+                    bar_end_ny = last_ts_ny.replace(hour=16, minute=0, second=0, microsecond=0)
+                else:
+                    bar_end_ny = last_ts_ny + dt.timedelta(hours=1)
+                if bar_end_ny > now_ny:
+                    df_1h = df_1h.iloc[:-1]
+                    ts_1h_seq = ts_1h_seq[:-1]
 
         if len(df_1h) < min_1h_bars:
             return None
@@ -354,17 +392,32 @@ def analyze_ticker(
             for ts in ts_1h_seq
         ]
 
-        # Clean 1D series
+        # Clean 1D series (raw full history for pivots/prior close lookup, settled 1D for indicators)
         df_1d = df_1d.dropna(subset=["Open", "High", "Low", "Close", "Volume"])
         if len(df_1d) < min_1d_bars:
             return None
-        closes_1d = [float(x) for x in df_1d["Close"]]
-        opens_1d = [float(x) for x in df_1d["Open"]]
-        highs_1d = [float(x) for x in df_1d["High"]]
-        lows_1d = [float(x) for x in df_1d["Low"]]
+
+        def _to_ny_date(ts: Any) -> dt.date:
+            if hasattr(ts, "tz") and ts.tz is not None:
+                return ts.tz_convert(NY_TZ).date()
+            elif hasattr(ts, "date"):
+                return ts.date()
+            return dt.date.fromisoformat(str(ts)[:10])
+
+        today_date = now_ny.date()
+        is_post_close = (now_ny.weekday() >= 5) or (now_time_float >= 16.0)
+        df_1d_settled = df_1d
+        if not is_post_close and len(df_1d) > min_1d_bars and _to_ny_date(df_1d.index[-1]) == today_date:
+            df_1d_settled = df_1d.iloc[:-1]
+
+        closes_1d = [float(x) for x in df_1d_settled["Close"]]
+        opens_1d = [float(x) for x in df_1d_settled["Open"]]
+        highs_1d = [float(x) for x in df_1d_settled["High"]]
+        lows_1d = [float(x) for x in df_1d_settled["Low"]]
+        volumes_1d = [float(x) for x in df_1d_settled["Volume"]]
         timestamps_1d = [
             ts.strftime("%Y-%m-%d") if hasattr(ts, "strftime") else str(ts)[:10]
-            for ts in df_1d.index
+            for ts in df_1d_settled.index
         ]
 
         # Compute 1H MACD
@@ -395,8 +448,7 @@ def analyze_ticker(
             latest_price = round(float(closes_1h[-1]), 2)
 
         # Check for Live Pre-Market Tick (1m resolution for real-time accuracy)
-        now_ny = dt.datetime.now(dt.timezone.utc).astimezone(NY_TZ)
-        is_premarket = 4.0 <= (now_ny.hour + now_ny.minute / 60.0) < 9.5
+        is_premarket = now_ny.weekday() < 5 and 4.0 <= now_time_float < 9.5
         live_premarket_price: float | None = None
         live_premarket_chg_pct: float | None = None
         if is_premarket:
@@ -409,19 +461,19 @@ def analyze_ticker(
                         live_premarket_chg_pct = round(((last_ext_px - latest_price) / latest_price) * 100.0, 2)
             except Exception:
                 pass
-        prev_close_1h = float(closes_1h[-2]) if len(closes_1h) >= 2 else latest_price
+        # Compute 1H candle metrics strictly from canonical settled 1H bar closes
+        latest_open_1h = float(opens_1h[-1])
+        latest_close_1h = float(closes_1h[-1])
+        latest_high_1h = float(highs_1h[-1])
+        latest_low_1h = float(lows_1h[-1])
+        prev_close_1h = float(closes_1h[-2]) if len(closes_1h) >= 2 else latest_close_1h
         chg_1h_pct = (
-            round(((latest_price - prev_close_1h) / prev_close_1h) * 100.0, 2)
+            round(((latest_close_1h - prev_close_1h) / prev_close_1h) * 100.0, 2)
             if prev_close_1h > 0
             else 0.0
         )
 
         # 1H Candle Confirmation (TradingView Rule)
-        latest_open_1h = float(opens_1h[-1])
-        latest_close_1h = float(closes_1h[-1])
-        latest_high_1h = float(highs_1h[-1])
-        latest_low_1h = float(lows_1h[-1])
-
         if latest_close_1h > latest_open_1h:
             is_green_candle_1h = True
             is_red_candle_1h = False
@@ -444,15 +496,6 @@ def analyze_ticker(
         candle_color_1h = "GREEN" if is_green_candle_1h else "RED"
 
         # 24H Price change vs prior completed day close (strictly session before today)
-        today_date = now_ny.date()
-
-        def _to_ny_date(ts: Any) -> dt.date:
-            if hasattr(ts, "tz") and ts.tz is not None:
-                return ts.tz_convert(NY_TZ).date()
-            elif hasattr(ts, "date"):
-                return ts.date()
-            return dt.date.fromisoformat(str(ts)[:10])
-
         prior_session_days = df_1d[df_1d.index.map(lambda x: _to_ny_date(x) < today_date)]
         if not prior_session_days.empty:
             prior_day_bar = prior_session_days.iloc[-1]
@@ -468,7 +511,6 @@ def analyze_ticker(
         )
 
         # Floor Pivots
-        is_post_close = (now_ny.weekday() >= 5) or ((now_ny.hour + now_ny.minute / 60.0) >= 16.0)
         pivot_reference_days = (
             df_1d[df_1d.index.map(lambda x: _to_ny_date(x) <= today_date)]
             if is_post_close
@@ -615,47 +657,69 @@ def analyze_ticker(
             signal_direction = "BEARISH"
 
         # Floor Pivot Extension & Volatility-Scaled Surge/Plunge Triggers:
-        r4 = pivots.get("R4", 0.0)
         r5 = pivots.get("R5", 0.0)
+        r4 = pivots.get("R4", 0.0)
+        r3 = pivots.get("R3", 0.0)
         r2 = pivots.get("R2", 0.0)
-        s4 = pivots.get("S4", 0.0)
         s5 = pivots.get("S5", 0.0)
+        s4 = pivots.get("S4", 0.0)
+        s3 = pivots.get("S3", 0.0)
         s2 = pivots.get("S2", 0.0)
 
         tau_surge = max(3.5, min(30.0, 2.25 * sigma_yz * 100.0))
         tau_extreme = max(10.0, min(40.0, 3.0 * sigma_yz * 100.0))
 
-        is_breakout_r5 = bool(r5 > 0 and latest_price >= r5)
-        is_breakout_r4 = bool(r4 > 0 and latest_price >= r4)
+        has_pm_price = bool(is_premarket and live_premarket_price is not None and live_premarket_price > 0)
+        has_pm_surge = bool(is_premarket and live_premarket_chg_pct is not None and live_premarket_chg_pct >= 10.0)
+        has_pm_plunge = bool(is_premarket and live_premarket_chg_pct is not None and live_premarket_chg_pct <= -10.0)
+
+        is_breakout_r5 = bool(r5 > 0 and (latest_price >= r5 or (has_pm_price and live_premarket_price >= r5)))
+        is_breakout_r4 = bool(r4 > 0 and (latest_price >= r4 or (has_pm_price and live_premarket_price >= r4)))
+        is_breakout_r3 = bool(has_pm_price and r3 > 0 and live_premarket_price >= r3 and (live_premarket_chg_pct or 0) >= 8.0)
         is_velocity_surge = bool(
             (chg_1d_pct >= tau_surge and rvol_1h_diurnal >= 1.25)
             or (chg_1d_pct >= tau_extreme)
+            or has_pm_surge
         )
+        is_green = bool(is_green_candle_1h or (has_pm_price and (live_premarket_chg_pct or 0) >= 5.0))
         is_breakout = bool(
-            (is_breakout_r5 or is_breakout_r4 or is_velocity_surge)
-            and is_green_candle_1h
-            and hist_1h[-1] > 0
+            (is_breakout_r5 or is_breakout_r4 or is_breakout_r3 or is_velocity_surge)
+            and is_green
+            and (hist_1h[-1] > 0 or has_pm_surge)
         )
 
         breakout_type = ""
         if is_breakout:
-            if is_breakout_r5:
+            if has_pm_surge:
+                pm_chg = live_premarket_chg_pct if live_premarket_chg_pct is not None else chg_1d_pct
+                if is_breakout_r5:
+                    breakout_type = f"Pre-Market Velocity Surge ({pm_chg:+.1f}%) · R5 Pivot Extension"
+                elif is_breakout_r4:
+                    breakout_type = f"Pre-Market Velocity Surge ({pm_chg:+.1f}%) · R4 Pivot Extension"
+                else:
+                    breakout_type = f"Pre-Market Velocity Surge ({pm_chg:+.1f}%)"
+            elif is_breakout_r5:
                 breakout_type = "R5 Floor Pivot Expansion"
             elif is_breakout_r4:
                 breakout_type = "R4 Floor Pivot Breakout"
+            elif is_breakout_r3:
+                breakout_type = "R3 Pre-Market Extension"
             elif is_velocity_surge:
                 breakout_type = f"Velocity Surge ({chg_1d_pct:+.1f}% vs {tau_surge:.1f}% YZ)"
 
-        is_breakdown_s5 = bool(s5 > 0 and latest_price <= s5)
-        is_breakdown_s4 = bool(s4 > 0 and latest_price <= s4)
+        is_breakdown_s5 = bool(s5 > 0 and (latest_price <= s5 or (has_pm_price and live_premarket_price <= s5)))
+        is_breakdown_s4 = bool(s4 > 0 and (latest_price <= s4 or (has_pm_price and live_premarket_price <= s4)))
+        is_breakdown_s3 = bool(has_pm_price and s3 > 0 and live_premarket_price <= s3 and (live_premarket_chg_pct or 0) <= -8.0)
         is_velocity_plunge = bool(
             (chg_1d_pct <= -tau_surge and rvol_1h_diurnal >= 1.25)
             or (chg_1d_pct <= -tau_extreme)
+            or has_pm_plunge
         )
+        is_red = bool(is_red_candle_1h or (has_pm_price and (live_premarket_chg_pct or 0) <= -5.0))
         is_breakdown = bool(
-            (is_breakdown_s5 or is_breakdown_s4 or is_velocity_plunge)
-            and is_red_candle_1h
-            and hist_1h[-1] < 0
+            (is_breakdown_s5 or is_breakdown_s4 or is_breakdown_s3 or is_velocity_plunge)
+            and is_red
+            and (hist_1h[-1] < 0 or has_pm_plunge)
         )
 
         breakdown_type = ""
@@ -664,8 +728,15 @@ def analyze_ticker(
                 breakdown_type = "S5 Floor Pivot Liquidation"
             elif is_breakdown_s4:
                 breakdown_type = "S4 Floor Pivot Breakdown"
+            elif is_breakdown_s3:
+                breakdown_type = "S3 Pre-Market Breakdown"
             elif is_velocity_plunge:
-                breakdown_type = f"Velocity Plunge ({chg_1d_pct:+.1f}% vs -{tau_surge:.1f}% YZ)"
+                pm_chg = live_premarket_chg_pct if (is_premarket and live_premarket_chg_pct is not None) else chg_1d_pct
+                breakdown_type = (
+                    f"Pre-Market Velocity Plunge ({pm_chg:+.1f}%)"
+                    if has_pm_plunge
+                    else f"Velocity Plunge ({chg_1d_pct:+.1f}% vs -{tau_surge:.1f}% YZ)"
+                )
 
         # Continuous Confluence Score (-100 to +100) via tanh(w^T z)
         z1 = 1.0 if (curr_m > curr_s and hist_1h[-1] > 0) else -1.0
@@ -719,6 +790,25 @@ def analyze_ticker(
         # Retain trailing 252 bars for preview/tests
         chart_bars_1d = deep_bars_1d[-252:] if len(deep_bars_1d) > 252 else deep_bars_1d
 
+        # Parallel volume arrays (kept separate so 8-key OHLC+MACD bar schema remains invariant)
+        deep_v_1h = [
+            int(round(max(0.0, float(v)))) if (v is not None and math.isfinite(float(v))) else 0
+            for v in volumes_1h
+        ]
+        deep_v_1d = [
+            int(round(max(0.0, float(v)))) if (v is not None and math.isfinite(float(v))) else 0
+            for v in volumes_1d
+        ]
+        chart_v_1h = deep_v_1h[-120:] if len(deep_v_1h) > 120 else deep_v_1h
+        chart_v_1d = deep_v_1d[-252:] if len(deep_v_1d) > 252 else deep_v_1d
+
+        last_ts = ts_1h_seq[-1]
+        as_of_et = timestamps_1h[-1]
+        if hasattr(last_ts, "tzinfo") and last_ts.tzinfo is not None:
+            as_of_utc = last_ts.astimezone(dt.timezone.utc).strftime("%Y-%m-%d %H:%M")
+        else:
+            as_of_utc = as_of_et
+
         return {
             "ticker": ticker,
             "fund_name": catalog_meta.get("fund_name", ticker),
@@ -765,11 +855,16 @@ def analyze_ticker(
             "breakdown_type": breakdown_type,
             "confluence_score": score,
             "pivots": pivots,
-            "as_of_utc": timestamps_1h[-1],
+            "as_of_utc": as_of_utc,
+            "as_of_et": as_of_et,
             "chart_bars_1h": chart_bars_1h,
             "chart_bars_1d": chart_bars_1d,
+            "chart_v_1h": chart_v_1h,
+            "chart_v_1d": chart_v_1d,
             "deep_bars_1h": deep_bars_1h,
             "deep_bars_1d": deep_bars_1d,
+            "deep_v_1h": deep_v_1h,
+            "deep_v_1d": deep_v_1d,
         }
     except Exception:
         return None
@@ -779,9 +874,11 @@ def format_institutional_email(
     signals_data: list[dict[str, Any]],
     scan_time_str: str,
     session_info: tuple[str, str, str],
+    universe_count: int | None = None,
 ) -> tuple[str, str]:
     """Build high-DPI responsive HTML & Plain Text alert without emojis or fluff."""
     session_code, session_name, session_badge = session_info
+    resolved_universe_count = universe_count if universe_count and universe_count > 0 else len(signals_data)
 
     tier0_breakouts = [
         s
@@ -850,7 +947,7 @@ def format_institutional_email(
                     f"TICKER: {it['ticker']:<6} | {it['fund_name']} ({it['leverage']})",
                     f"  Price: {px_display} (1H: {it['chg_1h_pct']:+.2f}% | 24H: {it['chg_1d_pct']:+.2f}%)",
                     f"  Trigger: {it.get('breakout_type', 'Breakout')} | Score: {it.get('confluence_score', 0)}/100",
-                    f"  1H Candle: {it.get('candle_color_1h', 'GREEN')} (Confirmed Green: O=${it.get('open_1h', 0):.2f} -> C=${it.get('latest_price', 0):.2f})",
+                    f"  1H Candle: {it.get('candle_color_1h', 'GREEN')} (Confirmed Green: O=${it.get('open_1h', 0):.2f} -> C=${it.get('close_1h', it.get('latest_price', 0)):.2f})",
                     f"  1H MACD: {it['macd_1h']:+.4f} (V-MACD: {it.get('v_macd', 0.0):+.3f}) | Signal: {it['signal_1h']:+.4f} | Hist: {it['hist_1h']:+.4f} (GREEN)",
                     f"  Diurnal RVOL: {diurnal_rvol:.2f}x (20B: {it['rvol_1h']:.2f}x) | YZ Vol: {yz_pct:.2f}% | Z-Score: {it['z_macd_1h']:.2f} sigma",
                     f"  Floor Pivots: P=${piv.get('P', 0):.2f} R3=${piv.get('R3', 0):.2f} R4=${piv.get('R4', 0):.2f} R5=${piv.get('R5', 0):.2f}",
@@ -882,7 +979,7 @@ def format_institutional_email(
             [
                 f"TICKER: {it['ticker']:<6} | {it['fund_name']} ({it['leverage']})",
                 f"  Price: {px_display} (1H: {it['chg_1h_pct']:+.2f}% | 24H: {it['chg_1d_pct']:+.2f}%)",
-                f"  1H Candle: {it.get('candle_color_1h', 'GREEN')} (Confirmed Green: O=${it.get('open_1h', 0):.2f} -> C=${it.get('latest_price', 0):.2f})",
+                f"  1H Candle: {it.get('candle_color_1h', 'GREEN')} (Confirmed Green: O=${it.get('open_1h', 0):.2f} -> C=${it.get('close_1h', it.get('latest_price', 0)):.2f})",
                 f"  1H MACD: {it['macd_1h']:+.4f} (V-MACD: {it.get('v_macd', 0.0):+.3f}) | Signal: {it['signal_1h']:+.4f} | Hist: {it['hist_1h']:+.4f} (GREEN)",
                 f"  Diurnal RVOL: {diurnal_rvol:.2f}x | YZ Vol: {yz_pct:.2f}% | Z-Score: {it['z_macd_1h']:.2f} sigma | Score: {it['confluence_score']}/100",
                 f"  Floor Pivots: S2=${piv.get('S2', 0):.2f} S1=${piv.get('S1', 0):.2f} P=${piv.get('P', 0):.2f} R1=${piv.get('R1', 0):.2f}",
@@ -913,7 +1010,7 @@ def format_institutional_email(
             [
                 f"TICKER: {it['ticker']:<6} | {it['fund_name']} ({it['leverage']})",
                 f"  Price: {px_display} (1H: {it['chg_1h_pct']:+.2f}% | 24H: {it['chg_1d_pct']:+.2f}%)",
-                f"  1H Candle: {it.get('candle_color_1h', 'GREEN')} (Confirmed Green: O=${it.get('open_1h', 0):.2f} -> C=${it.get('latest_price', 0):.2f})",
+                f"  1H Candle: {it.get('candle_color_1h', 'GREEN')} (Confirmed Green: O=${it.get('open_1h', 0):.2f} -> C=${it.get('close_1h', it.get('latest_price', 0)):.2f})",
                 f"  1H MACD: {it['macd_1h']:+.4f} (V-MACD: {it.get('v_macd', 0.0):+.3f}) | Signal: {it['signal_1h']:+.4f} | Hist: {it['hist_1h']:+.4f} (GREEN)",
                 f"  Diurnal RVOL: {diurnal_rvol:.2f}x | YZ Vol: {yz_pct:.2f}% | Z-Score: {it['z_macd_1h']:.2f} sigma | Score: {it['confluence_score']}/100",
                 f"  Floor Pivots: S2=${piv.get('S2', 0):.2f} S1=${piv.get('S1', 0):.2f} P=${piv.get('P', 0):.2f} R1=${piv.get('R1', 0):.2f}",
@@ -1670,10 +1767,10 @@ def format_institutional_email(
               <!-- SECTION 2: TIER 2 PRE-CLOSE SQUEEZE RADAR -->
               <div style="margin-top:24px; margin-bottom:20px;">
                 <div style="font-size:12px; font-weight:800; color:#facc15; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">
-                  TIER 2: PRE-CLOSE SQUEEZE RADAR (15:00 EST SCAN)
+                  TIER 2: PRE-CLOSE SQUEEZE RADAR (15:00 ET SCAN)
                 </div>
                 <div style="font-size:11px; color:#cbd5e1; margin-bottom:12px; line-height:1.5;">
-                  Histogram spread compression &ge; 35% within ATR-scaled convergence tolerance heading into the final market hour (15:00&ndash;16:00 EST). Pre-positioning watch ahead of benchmark rebalancing flow auctions.
+                  Histogram spread compression &ge; 35% within ATR-scaled convergence tolerance heading into the final market hour (15:00&ndash;16:00 ET). Pre-positioning watch ahead of benchmark rebalancing flow auctions.
                 </div>
                 
                 <div class="table-scroll" style="width:100%; overflow-x:auto;">
@@ -1767,7 +1864,7 @@ def format_institutional_email(
           <!-- Footer -->
           <tr>
             <td style="padding:14px 20px; background-color:#090d15; border-top:1px solid #1e2638; font-size:10.5px; color:#94a3b8; text-align:center;">
-              Conviction Labs &middot; 160 Curated Leveraged &amp; Inverse ETF Universe &middot; Quantitative Research Engine
+              Conviction Labs &middot; {resolved_universe_count} Curated Leveraged &amp; Inverse ETF Universe &middot; Quantitative Research Engine
             </td>
           </tr>
 
@@ -1815,6 +1912,7 @@ def send_email_alert(
 
     try:
         ssl_ctx = ssl.create_default_context()
+        all_sent = True
         # Send individual message per recipient to ensure maximum deliverability (1-on-1 inbox classification)
         for target_email in recipients_list:
             msg = email.mime.multipart.MIMEMultipart("alternative")
@@ -1833,6 +1931,7 @@ def send_email_alert(
                     refused = server.sendmail(sender, [target_email], msg.as_string())
                     if refused:
                         print(f"[SMTP Engine] Refused by server for {target_email}: {refused}")
+                        all_sent = False
             else:
                 with smtplib.SMTP(smtp_host, smtp_port, timeout=20) as server:
                     server.ehlo()
@@ -1842,9 +1941,13 @@ def send_email_alert(
                     refused = server.sendmail(sender, [target_email], msg.as_string())
                     if refused:
                         print(f"[SMTP Engine] Refused by server for {target_email}: {refused}")
+                        all_sent = False
 
-        print(f"[SMTP Engine] Successfully dispatched individual email alerts to {recipients_list} via {smtp_host}:{smtp_port}!")
-        return True
+        if all_sent:
+            print(f"[SMTP Engine] Successfully dispatched individual email alerts to {recipients_list} via {smtp_host}:{smtp_port}!")
+        else:
+            print(f"[SMTP Engine] One or more recipients were refused during dispatch via {smtp_host}:{smtp_port}.")
+        return all_sent
     except Exception as ex:
         print(f"[SMTP Engine] Error dispatching email: {ex}")
         return False
@@ -1858,7 +1961,7 @@ def main() -> None:
         "--limit",
         type=int,
         default=0,
-        help="Limit number of tickers scanned (0 = full 160)",
+        help="Limit number of tickers scanned (0 = full catalog)",
     )
     parser.add_argument(
         "--send-email",
@@ -1889,10 +1992,18 @@ def main() -> None:
     with open(CATALOG_PATH, "r", encoding="utf-8") as f:
         catalog = json.load(f)
 
-    # Full curated universe: exactly the 160 ETFs from the fund flow side (catalog.json)
+    # Full curated universe loaded dynamically from catalog.json
     all_instruments = catalog.get("instruments", [])
     total_catalog_count = len(all_instruments)
     instruments = all_instruments[: args.limit] if args.limit > 0 else all_instruments
+    ticker_aum: dict[str, float] = {}
+    for inst in all_instruments:
+        tk = str(inst.get("ticker", "")).strip()
+        try:
+            aum_v = float(inst.get("aum_m") or 0.0)
+        except (TypeError, ValueError):
+            aum_v = 0.0
+        ticker_aum[tk] = aum_v if math.isfinite(aum_v) else 0.0
 
     now_utc = dt.datetime.now(dt.timezone.utc)
     now_ny = now_utc.astimezone(NY_TZ)
@@ -1903,6 +2014,7 @@ def main() -> None:
         f"Scanning MACD momentum across {len(instruments)} instruments in session [{session_name}] at {now_ny.strftime('%Y-%m-%d %H:%M:%S %Z')}..."
     )
     results: list[dict[str, Any]] = []
+    failed_tickers: list[str] = []
 
     def _worker(inst: dict[str, Any]) -> dict[str, Any] | None:
         ticker = inst["ticker"]
@@ -1923,11 +2035,22 @@ def main() -> None:
                 res = future.result()
                 if res:
                     results.append(res)
+                else:
+                    failed_tickers.append(ticker)
             except Exception as e:
                 print(f"Error scanning {ticker}: {e}")
+                failed_tickers.append(ticker)
 
     results.sort(key=lambda x: (-x.get("confluence_score", 0), x.get("ticker", "")))
-    print(f"Successfully processed {len(results)} active ETF instruments.")
+    if failed_tickers:
+        sample_failed = ", ".join(sorted(failed_tickers)[:10])
+        suffix = f" (+{len(failed_tickers) - 10} more)" if len(failed_tickers) > 10 else ""
+        print(
+            f"Successfully processed {len(results)}/{len(instruments)} ETF instruments "
+            f"(skipped/failed: {len(failed_tickers)}: {sample_failed}{suffix})."
+        )
+    else:
+        print(f"Successfully processed {len(results)} active ETF instruments.")
 
     scan_time_str = now_ny.strftime("%Y-%m-%d %H:%M:%S %Z")
 
@@ -1935,36 +2058,53 @@ def main() -> None:
     HISTORY_DIR_MACD.mkdir(parents=True, exist_ok=True)
     HISTORY_DIR_FLOWS.mkdir(parents=True, exist_ok=True)
 
-    # Derive flagship preview set dynamically from featured catalog tickers & top confluence
-    catalog_featured = set(catalog.get("featured_tickers", [])) if isinstance(catalog, dict) else set()
+    # Derive flagship preview set deterministically by descending AUM & top confluence
+    featured_ordered = [
+        str(tk).strip()
+        for tk in (catalog.get("featured_tickers", []) if isinstance(catalog, dict) else [])
+        if str(tk).strip()
+    ]
+    if not featured_ordered:
+        featured_ordered = [
+            str(inst.get("ticker", "")).strip()
+            for inst in all_instruments
+            if inst.get("featured")
+        ]
+    featured_by_aum = sorted(featured_ordered, key=lambda tk: (-ticker_aum.get(tk, 0.0), tk))
     top_confluence = sorted(results, key=lambda x: abs(x.get("confluence_score", 0)), reverse=True)
-    flagship_preview_set = {it["ticker"] for it in top_confluence[:8]} | set(list(catalog_featured)[:8])
+    flagship_preview_set = {it["ticker"] for it in top_confluence[:8]} | set(featured_by_aum[:8])
 
-    # Write per-ticker deep LOD history files (5Y Daily + 2Y 1H bars)
+    # Write per-ticker deep LOD history files atomically (5Y Daily + 2Y 1H bars)
     for item in results:
         tick = item["ticker"]
         deep_1d = item.pop("deep_bars_1d", [])
         deep_1h = item.pop("deep_bars_1h", [])
+        deep_v_1d = item.pop("deep_v_1d", [])
+        deep_v_1h = item.pop("deep_v_1h", [])
 
         hist_payload = {
             "ticker": tick,
             "updated_utc": now_utc.isoformat(),
             "bars_1d": deep_1d,
             "bars_1h": deep_1h,
+            "v_1d": deep_v_1d,
+            "v_1h": deep_v_1h,
         }
         for hdir in (HISTORY_DIR_MACD, HISTORY_DIR_FLOWS):
-            out_file = hdir / f"{tick}.json"
-            with open(out_file, "w", encoding="utf-8") as f:
-                json.dump(hist_payload, f, separators=(",", ":"))
+            _atomic_write_json(hdir / f"{tick}.json", hist_payload, separators=(",", ":"))
 
         # Compact signals.json: preserve 60 preview bars for top flagship tickers,
-        # and clear for others so signals.json is lightning fast (~95 KB total)
+        # and clear for others so signals.json stays lightweight
         if tick not in flagship_preview_set:
             item["chart_bars_1h"] = []
             item["chart_bars_1d"] = []
+            item["chart_v_1h"] = []
+            item["chart_v_1d"] = []
         else:
             item["chart_bars_1h"] = item.get("chart_bars_1h", [])[-60:]
             item["chart_bars_1d"] = item.get("chart_bars_1d", [])[-60:]
+            item["chart_v_1h"] = item.get("chart_v_1h", [])[-60:]
+            item["chart_v_1d"] = item.get("chart_v_1d", [])[-60:]
 
     # Structure payload for Web Dashboard (Tier 0 Screener Radar)
     payload = {
@@ -1972,15 +2112,20 @@ def main() -> None:
         "scan_time_str": scan_time_str,
         "session": session_code,
         "session_name": session_name,
+        "universe_count": total_catalog_count,
         "total_scanned": len(results),
+        "failed_count": len(failed_tickers),
         "signals": results,
     }
 
-    is_full_universe = (args.limit == 0 and len(results) >= int(total_catalog_count * 0.5))
+    is_full_universe = (
+        total_catalog_count > 0
+        and args.limit == 0
+        and len(results) >= int(total_catalog_count * 0.5)
+    )
 
-    # Save to JSON (both dedicated macd/ directory and flows/ fallback)
+    # Save to JSON atomically (both dedicated macd/ directory and flows/ fallback)
     # INVARIANT: Only overwrite production signal artifacts when scanning full universe.
-    # Partial / limited test runs (e.g. --limit 5) must never truncate the production 160-instrument dataset!
     if not is_full_universe:
         print(
             f"[Scanner Safety] Limited test scan active ({len(results)} of {total_catalog_count} instruments). "
@@ -1988,9 +2133,7 @@ def main() -> None:
         )
     else:
         for p in (SIGNALS_OUT_MACD, SIGNALS_OUT_FLOWS):
-            p.parent.mkdir(parents=True, exist_ok=True)
-            with open(p, "w", encoding="utf-8") as f:
-                json.dump(payload, f, separators=(",", ":"))
+            _atomic_write_json(p, payload, separators=(",", ":"))
         print(f"Saved signals artifact to {SIGNALS_OUT_MACD} ({SIGNALS_OUT_MACD.stat().st_size:,} bytes)")
 
     # Identify active signal sets for this run (Confirmed Candle Rules)
@@ -2043,7 +2186,7 @@ def main() -> None:
     )
 
     # Load prior alert state for deduplication
-    prior_state = {}
+    prior_state: dict[str, Any] = {}
     alert_read_path = ALERT_OUT_MACD if ALERT_OUT_MACD.is_file() else ALERT_OUT_FLOWS
     if alert_read_path.is_file():
         try:
@@ -2089,7 +2232,9 @@ def main() -> None:
     )
 
     # Build Email Alert Text and HTML
-    text_alert, html_alert = format_institutional_email(results, scan_time_str, session_info)
+    text_alert, html_alert = format_institutional_email(
+        results, scan_time_str, session_info, universe_count=total_catalog_count
+    )
 
     should_send = False
     send_reason = ""
@@ -2118,71 +2263,42 @@ def main() -> None:
         elif is_pre_close_time:
             if last_preclose != today_ny:
                 should_send = True
-                send_reason = "Pre-Close Golden Hour Scheduled Scan (15:00 EST)"
+                send_reason = f"Pre-Close Golden Hour Scheduled Scan (15:00 {now_ny.tzname() or 'ET'})"
             else:
                 print("[Alert Engine] Pre-Close Golden Hour diagnostic already dispatched today.")
         else:
             print("[Alert Engine] No fresh trigger changes detected. Email suppressed to preserve recipient inbox.")
 
-    # Save Alert payload for inspection and state tracking
-    alert_payload = {
-        "timestamp_utc": now_utc.isoformat(),
-        "scan_time_str": scan_time_str,
-        "session": session_code,
-        "active_breakouts": current_breakouts,
-        "active_breakdowns": current_breakdowns,
-        "active_subzero": current_subzero_tickers,
-        "active_bear": current_bear_tickers,
-        "active_squeeze": current_squeeze_tickers,
-        "active_crossovers": current_crossovers,
-        "sent_breakouts": current_breakouts if should_send else list(prev_breakouts),
-        "sent_breakdowns": current_breakdowns if should_send else list(prev_breakdowns),
-        "sent_subzero": current_subzero_tickers if should_send else list(prev_subzero),
-        "sent_bear": current_bear_tickers if should_send else list(prev_bear),
-        "sent_squeeze": current_squeeze_tickers if should_send else list(prev_squeeze),
-        "sent_crossovers": current_crossovers if should_send else list(prev_crossovers),
-        "new_breakouts": sorted(list(new_breakouts)),
-        "new_breakdowns": sorted(list(new_breakdowns)),
-        "new_subzero": sorted(list(new_subzero)),
-        "new_bear": sorted(list(new_bear)),
-        "new_squeeze": sorted(list(new_squeeze)),
-        "new_crossovers": sorted(list(new_crossovers)),
-        "last_preclose_date": today_ny if (should_send and is_pre_close_time) else last_preclose,
-        "text_content": text_alert,
-        "html_content": html_alert,
-    }
-
-    if is_full_universe:
-        for p in (ALERT_OUT_MACD, ALERT_OUT_FLOWS):
-            p.parent.mkdir(parents=True, exist_ok=True)
-            with open(p, "w", encoding="utf-8") as f:
-                json.dump(alert_payload, f, indent=2)
-        print(f"Saved latest alert artifact to {ALERT_OUT_MACD}")
-    else:
-        print(f"[Scanner Safety] Limited test scan: skipped overwriting {ALERT_OUT_MACD}.")
-
+    # Dispatch email BEFORE persisting sent_* state so transient SMTP failures never suppress alerts
+    dispatched = False
     if should_send:
         # Dynamic alert subject with ticker highlights prioritized by absolute % return magnitude
         sig_map = {s.get("ticker"): s for s in results if isinstance(s, dict)}
 
         def format_lead_tickers(tickers_set: set[str], max_count: int = 4) -> str:
-            sorted_t = sorted(
-                list(tickers_set),
-                key=lambda t: abs(sig_map.get(t, {}).get("chg_1d_pct") or sig_map.get(t, {}).get("chg_1h_pct") or 0.0),
-                reverse=True
-            )
+            def _sort_key(tk: str) -> float:
+                rec = sig_map.get(tk, {})
+                if is_premarket and rec.get("live_premarket_chg_pct") is not None:
+                    return abs(float(rec["live_premarket_chg_pct"]))
+                c1d = rec.get("chg_1d_pct")
+                val = c1d if c1d is not None else (rec.get("chg_1h_pct") or 0.0)
+                return abs(float(val))
+
+            sorted_t = sorted(list(tickers_set), key=_sort_key, reverse=True)
             parts = []
-            for t in sorted_t[:max_count]:
-                chg = sig_map.get(t, {}).get("chg_1d_pct")
+            for tk in sorted_t[:max_count]:
+                rec = sig_map.get(tk, {})
+                chg = rec.get("live_premarket_chg_pct") if (is_premarket and rec.get("live_premarket_chg_pct") is not None) else rec.get("chg_1d_pct")
                 if chg is not None:
-                    parts.append(f"{t} ({chg:+.1f}%)")
+                    parts.append(f"{tk} ({chg:+.1f}%)")
                 else:
-                    parts.append(t)
+                    parts.append(tk)
             out = ", ".join(parts)
             if len(sorted_t) > max_count:
                 out += f" (+{len(sorted_t) - max_count} more)"
             return out
 
+        uncat_crossovers = new_crossovers - new_bear
         if new_breakouts:
             lead_tickers = format_lead_tickers(new_breakouts)
             subject = f"[Conviction Labs] VOLATILITY BREAKOUT: {lead_tickers} · {session_badge} · {scan_time_str}"
@@ -2192,7 +2308,7 @@ def main() -> None:
         elif new_subzero:
             lead_tickers = format_lead_tickers(new_subzero)
             subject = f"[Conviction Labs] SUB-ZERO REVERSAL: {lead_tickers} · {session_badge} · {scan_time_str}"
-        elif new_bear and not new_crossovers:
+        elif new_bear and not new_subzero and not uncat_crossovers:
             lead_tickers = format_lead_tickers(new_bear)
             subject = f"[Conviction Labs] BEARISH EXIT: {lead_tickers} · {session_badge} · {scan_time_str}"
         elif new_crossovers:
@@ -2205,7 +2321,51 @@ def main() -> None:
 
         print(f"[Alert Engine] Dispatching email ({send_reason})...")
         print(f"[Alert Engine] Subject: {subject}")
-        send_email_alert(subject, text_alert, html_alert, recipient)
+        dispatched = send_email_alert(subject, text_alert, html_alert, recipient)
+
+    def _next_sent_state(current_list: list[str], prev_set: set[str]) -> list[str]:
+        if dispatched:
+            return current_list
+        if args.send_email or args.force_send:
+            # Prune tickers that exited active state so subsequent fresh re-entries alert properly
+            return sorted(prev_set & set(current_list))
+        return sorted(prev_set)
+
+    # Save Alert payload for inspection and deduplication tracking atomically
+    alert_payload = {
+        "timestamp_utc": now_utc.isoformat(),
+        "scan_time_str": scan_time_str,
+        "session": session_code,
+        "dispatched": dispatched,
+        "active_breakouts": current_breakouts,
+        "active_breakdowns": current_breakdowns,
+        "active_subzero": current_subzero_tickers,
+        "active_bear": current_bear_tickers,
+        "active_squeeze": current_squeeze_tickers,
+        "active_crossovers": current_crossovers,
+        "sent_breakouts": _next_sent_state(current_breakouts, prev_breakouts),
+        "sent_breakdowns": _next_sent_state(current_breakdowns, prev_breakdowns),
+        "sent_subzero": _next_sent_state(current_subzero_tickers, prev_subzero),
+        "sent_bear": _next_sent_state(current_bear_tickers, prev_bear),
+        "sent_squeeze": _next_sent_state(current_squeeze_tickers, prev_squeeze),
+        "sent_crossovers": _next_sent_state(current_crossovers, prev_crossovers),
+        "new_breakouts": sorted(list(new_breakouts)),
+        "new_breakdowns": sorted(list(new_breakdowns)),
+        "new_subzero": sorted(list(new_subzero)),
+        "new_bear": sorted(list(new_bear)),
+        "new_squeeze": sorted(list(new_squeeze)),
+        "new_crossovers": sorted(list(new_crossovers)),
+        "last_preclose_date": today_ny if (dispatched and is_pre_close_time) else last_preclose,
+        "text_content": text_alert,
+        "html_content": html_alert,
+    }
+
+    if is_full_universe:
+        for p in (ALERT_OUT_MACD, ALERT_OUT_FLOWS):
+            _atomic_write_json(p, alert_payload, indent=2)
+        print(f"Saved latest alert artifact to {ALERT_OUT_MACD}")
+    else:
+        print(f"[Scanner Safety] Limited test scan: skipped overwriting {ALERT_OUT_MACD}.")
 
 
 if __name__ == "__main__":

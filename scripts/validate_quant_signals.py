@@ -22,7 +22,10 @@ from __future__ import annotations
 
 import json
 import math
+import os
+import statistics
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -134,19 +137,26 @@ def benjamini_hochberg_fdr(p_values: list[float], q: float = 0.05) -> list[bool]
 def deflated_sharpe_ratio(
     est_sr: float, num_trials: int, var_sr: float, skewness: float, kurtosis: float, t_obs: int
 ) -> float:
-    """Bailey & Lopez de Prado (2014) Deflated Sharpe Ratio."""
-    if num_trials <= 1 or var_sr <= 1e-12 or t_obs <= 2:
+    """Bailey & Lopez de Prado (2014) Deflated Sharpe Ratio.
+
+    Computes PSR against the expected maximum false Sharpe ratio SR*:
+      SR* = sqrt(var_sr) * [(1 - gamma) * Phi^{-1}(1 - 1/N) + gamma * Phi^{-1}(1 - 1/(N*e))]
+    """
+    if t_obs <= 2 or not (math.isfinite(est_sr) and math.isfinite(skewness) and math.isfinite(kurtosis)):
         return 0.5
-    euler_mascheroni = 0.5772156649
-    z_max = (1.0 - euler_mascheroni) * math.sqrt(2.0 * math.log(num_trials)) + math.sqrt(
-        2.0 * math.log(num_trials)
-    )
+    nd = statistics.NormalDist()
+    denom_sq = max(1e-6, 1.0 - skewness * est_sr + ((kurtosis - 1.0) / 4.0) * (est_sr ** 2))
+    denom = math.sqrt(denom_sq)
+    if num_trials <= 1 or var_sr <= 1e-12:
+        t_stat = est_sr * math.sqrt(t_obs - 1) / denom
+        return float(nd.cdf(t_stat))
+    euler_mascheroni = 0.5772156649015329
+    p1 = min(1.0 - 1e-12, max(0.5 + 1e-9, 1.0 - 1.0 / float(num_trials)))
+    p2 = min(1.0 - 1e-12, max(0.5 + 1e-9, 1.0 - 1.0 / (float(num_trials) * math.e)))
+    z_max = (1.0 - euler_mascheroni) * nd.inv_cdf(p1) + euler_mascheroni * nd.inv_cdf(p2)
     sr_star = math.sqrt(var_sr) * z_max
-    denom = math.sqrt(1.0 - skewness * est_sr + ((kurtosis - 1.0) / 4.0) * (est_sr ** 2))
-    if denom <= 1e-6:
-        return 0.5
     t_stat = (est_sr - sr_star) * math.sqrt(t_obs - 1) / denom
-    return 0.5 * (1.0 + math.erf(t_stat / math.sqrt(2.0)))
+    return float(nd.cdf(t_stat))
 
 
 def stationary_bootstrap_indices(n: int, num_paths: int = 300, mean_block_len: float = 10.0) -> list[np.ndarray]:
@@ -192,21 +202,72 @@ def load_dataset() -> tuple[dict[str, pd.DataFrame], dict[str, Any], dict[str, l
     return dfs_by_ticker, catalog, history_cache
 
 
-def _compute_dynamic_aum_series(
-    navs: np.ndarray, flows: np.ndarray, aum_m: float
-) -> np.ndarray:
-    """Reconstruct backward flow-adjusted AUM series in USD from latest catalog AUM."""
-    n = len(navs)
-    aum_end = float(aum_m or 100.0) * 1_000_000.0
-    if aum_end <= 0 or not math.isfinite(aum_end):
-        aum_end = 100_000_000.0
-    aum_t = np.empty(n, dtype=float)
-    aum_t[-1] = max(1_000_000.0, aum_end)
-    for i in range(n - 2, -1, -1):
-        nav_ret = (float(navs[i + 1]) / float(navs[i])) - 1.0 if float(navs[i]) > 0 else 0.0
-        prev_aum = (aum_t[i + 1] - float(flows[i + 1])) / max(1e-4, 1.0 + nav_ret)
-        aum_t[i] = max(1_000_000.0, prev_aum)
-    return aum_t
+def _compute_causal_flow_scale_series(
+    df: pd.DataFrame,
+    history_bars: list[dict[str, Any]] | None = None,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return strictly point-in-time causal (dollar_scale, tri_price) arrays aligned to `df` dates.
+
+    Zero lookahead: never backward-propagates future terminal AUM. Uses prior-60d
+    median daily dollar volume D_adv(t-1) from OHLCV history when available, or
+    trailing 60d RMS of prior flow magnitudes as causal scale fallback. Also attaches
+    split- and distribution-adjusted Trackinsight NAV (using tc/c from OHLCV history).
+    """
+    n = len(df)
+    dates = df["date"].dt.strftime("%Y-%m-%d").tolist()
+    navs = pd.to_numeric(df["nav"], errors="coerce").to_numpy(dtype=float)
+    flows = pd.to_numeric(df["usd_flow"], errors="coerce").fillna(0.0).to_numpy(dtype=float)
+
+    adv_by_date: dict[str, float] = {}
+    tri_factor_by_date: dict[str, float] = {}
+    if history_bars:
+        dv_series: list[float] = []
+        bar_dates: list[str] = []
+        for b in history_bars:
+            d = str(b.get("d", ""))
+            c = float(b.get("c") or 0.0)
+            tc = float(b.get("tc") or c)
+            v = float(b.get("v") or 0.0)
+            if d and c > 0:
+                if tc > 0:
+                    tri_factor_by_date[d] = tc / c
+                bar_dates.append(d)
+                dv_series.append(max(0.0, c * v))
+        if dv_series:
+            adv_s = (
+                pd.Series(dv_series, dtype=float)
+                .shift(1)
+                .rolling(60, min_periods=10)
+                .median()
+            )
+            for d_str, adv_val in zip(bar_dates, adv_s.tolist()):
+                if pd.notna(adv_val) and adv_val > 100_000.0:
+                    adv_by_date[d_str] = float(adv_val)
+
+    causal_flow_rms = (
+        pd.Series(flows * flows, dtype=float)
+        .shift(1)
+        .rolling(60, min_periods=10)
+        .mean()
+        .apply(lambda x: math.sqrt(x) if pd.notna(x) and x > 0 else float("nan"))
+        .to_numpy()
+    )
+
+    scale = np.empty(n, dtype=float)
+    tri_nav = np.empty(n, dtype=float)
+    last_factor = 1.0
+    for i, d_str in enumerate(dates):
+        if d_str in tri_factor_by_date:
+            last_factor = tri_factor_by_date[d_str]
+        tri_nav[i] = max(1e-4, navs[i] * last_factor) if math.isfinite(navs[i]) and navs[i] > 0 else np.nan
+        if d_str in adv_by_date:
+            scale[i] = adv_by_date[d_str]
+        elif math.isfinite(causal_flow_rms[i]) and causal_flow_rms[i] > 100_000.0:
+            scale[i] = max(1_000_000.0, causal_flow_rms[i])
+        else:
+            scale[i] = np.nan
+
+    return scale, tri_nav
 
 
 def run_fama_macbeth_rank_ic(
@@ -217,48 +278,51 @@ def run_fama_macbeth_rank_ic(
     """Execute Purged & Embargoed Fama-MacBeth Rank-IC across deduplicated underlying complexes."""
     horizons = [1, 5, 20]
     underlying_by_ticker = {t: get_taxonomy_record(t)["underlying_id"] for t in dfs}
-    inst_by_ticker = {i["ticker"]: i for i in catalog.get("instruments", [])} if catalog else {}
 
-    # Vectorize metrics per dataframe
     processed: dict[str, pd.DataFrame] = {}
     for ticker, df in dfs.items():
         sub = df.copy()
         n = len(sub)
         if n < 60:
             continue
-        navs = sub["nav"].values
-        flows = sub["usd_flow"].values
-        aum_m_val = float(inst_by_ticker.get(ticker, {}).get("aum_m", 100.0) or 100.0)
-        aum_t = _compute_dynamic_aum_series(navs, flows, aum_m_val)
-        sub["rel_flow"] = flows / aum_t
+        flows = pd.to_numeric(sub["usd_flow"], errors="coerce").fillna(0.0).to_numpy(dtype=float)
+        scale_t, tri_navs = _compute_causal_flow_scale_series(sub, history.get(ticker) if history else None)
+        rel_flow = np.where(np.isfinite(scale_t) & (scale_t > 0), flows / scale_t, np.nan)
+        sub["rel_flow"] = rel_flow
 
         # Causal prior-only hurdle Z approximation (strictly shifted by 1 bar)
-        roll_std = sub["rel_flow"].shift(1).rolling(30, min_periods=10).std().fillna(0.001).values
-        sub["hurdle_z"] = np.clip(sub["rel_flow"].values / (roll_std + 5e-4), -5.0, 5.0)
+        roll_std = pd.Series(rel_flow).shift(1).rolling(30, min_periods=10).std().to_numpy()
+        sub["hurdle_z"] = np.where(
+            np.isfinite(rel_flow) & np.isfinite(roll_std),
+            np.clip(rel_flow / np.maximum(roll_std, 5e-4), -5.0, 5.0),
+            np.nan,
+        )
 
-        # Forward total returns
+        # Forward total returns over TRI-adjusted price
         for h in horizons:
             fwd = np.full(n, np.nan)
-            fwd[:-h] = navs[h:] / np.maximum(navs[:-h], 1e-4) - 1.0
+            valid_base = np.isfinite(tri_navs[:-h]) & (tri_navs[:-h] > 0) & np.isfinite(tri_navs[h:])
+            fwd[:-h] = np.where(valid_base, tri_navs[h:] / np.maximum(tri_navs[:-h], 1e-4) - 1.0, np.nan)
             sub[f"fwd_ret_{h}"] = fwd
 
         sub["underlying_id"] = underlying_by_ticker.get(ticker, ticker)
         sub["ticker"] = ticker
         processed[ticker] = sub[["date", "ticker", "underlying_id", "flow_5d", "hurdle_z", "rel_flow", *[f"fwd_ret_{h}" for h in horizons]]]
 
+    if not processed:
+        return {}
+
     all_data = pd.concat(processed.values(), ignore_index=True)
-    all_data = all_data[all_data["date"] >= pd.to_datetime("2021-01-01")]
-    unique_dates = sorted(all_data["date"].unique())
-    eval_dates = unique_dates[::5]  # 5-day embargo spacing
+    # Dynamically retain dates with sufficient cross-sectional breadth (>= 15 funds)
+    date_counts = all_data.groupby("date")["ticker"].nunique()
+    eligible_dates = sorted(date_counts[date_counts >= 15].index.tolist())
+    eval_dates = eligible_dates[::5]  # 5-day embargo spacing
 
     signals = ["flow_5d", "hurdle_z", "rel_flow"]
     ic_series: dict[str, dict[int, list[float]]] = {sig: {h: [] for h in horizons} for sig in signals}
 
     for dt_eval in eval_dates:
         slice_df = all_data[all_data["date"] == dt_eval]
-        if len(slice_df) < 15:
-            continue
-        # Deduplicate across underlying_id by mean aggregation
         agg_df = slice_df.groupby("underlying_id").mean(numeric_only=True)
         if len(agg_df) < 12:
             continue
@@ -312,12 +376,13 @@ def run_fama_macbeth_rank_ic(
 
 
 def run_jorda_local_projections(
-    dfs: dict[str, pd.DataFrame], catalog: dict[str, Any] | None = None
+    dfs: dict[str, pd.DataFrame],
+    catalog: dict[str, Any] | None = None,
+    history: dict[str, list[dict[str, Any]]] | None = None,
 ) -> dict[str, Any]:
-    """Estimate Jorda (2005) multi-horizon impulse response functions via OLS."""
+    """Estimate Jorda (2005) multi-horizon impulse response functions via causal OLS."""
     horizons = [1, 2, 3, 5, 10, 20]
 
-    # Derive eligible instruments dynamically from catalog and dfs (min depth >= 120, sorted by AUM)
     inst_by_ticker = {i["ticker"]: i for i in catalog.get("instruments", [])} if catalog else {}
     eligible = [t for t, df in dfs.items() if len(df) >= 120]
     eligible.sort(
@@ -337,33 +402,25 @@ def run_jorda_local_projections(
         if n < 120:
             continue
 
-        navs = df["nav"].values
-        flows = df["usd_flow"].values
-
-        # Real catalog AUM & backward flow-adjusted AUM recursion
-        aum_end = float(inst_by_ticker.get(ticker, {}).get("aum_m", 100.0) or 100.0) * 1_000_000.0
-        aum_t = np.empty(n)
-        aum_t[-1] = max(1_000_000.0, aum_end)
-        for i in range(n - 2, -1, -1):
-            nav_ret = (navs[i + 1] / navs[i]) - 1.0 if navs[i] > 0 else 0.0
-            prev_aum = (aum_t[i + 1] - flows[i + 1]) / max(1e-4, 1.0 + nav_ret)
-            aum_t[i] = max(1_000_000.0, prev_aum)
-
-        rel_flow = flows / aum_t
+        flows = pd.to_numeric(df["usd_flow"], errors="coerce").fillna(0.0).to_numpy(dtype=float)
+        scale_t, tri_navs = _compute_causal_flow_scale_series(df, history.get(ticker) if history else None)
+        rel_flow = np.where(np.isfinite(scale_t) & (scale_t > 0), flows / scale_t, np.nan)
 
         for h in horizons:
             if n <= h + 20:
                 continue
-            y = np.log(np.maximum(navs[h:], 1e-4) / np.maximum(navs[:-h], 1e-4))
+            y = np.log(np.maximum(tri_navs[h:], 1e-4) / np.maximum(tri_navs[:-h], 1e-4))
             x_flow = rel_flow[:-h]
             ret_lag = np.zeros(n - h)
-            ret_lag[1:] = np.log(np.maximum(navs[1:-h], 1e-4) / np.maximum(navs[:-h - 1], 1e-4))
-            ones = np.ones(n - h)
-
-            x_mat = np.column_stack([ones, x_flow, ret_lag])
+            ret_lag[1:] = np.log(np.maximum(tri_navs[1:-h], 1e-4) / np.maximum(tri_navs[:-h - 1], 1e-4))
+            valid_mask = np.isfinite(y) & np.isfinite(x_flow) & np.isfinite(ret_lag)
+            if int(np.sum(valid_mask)) < 60:
+                continue
+            y_v = y[valid_mask]
+            x_mat = np.column_stack([np.ones(int(np.sum(valid_mask))), x_flow[valid_mask], ret_lag[valid_mask]])
             try:
-                beta = np.linalg.pinv(x_mat.T @ x_mat) @ (x_mat.T @ y)
-                resids = y - x_mat @ beta
+                beta = np.linalg.pinv(x_mat.T @ x_mat) @ (x_mat.T @ y_v)
+                resids = y_v - x_mat @ beta
                 se = newey_west_hac_se(resids, x_mat)
                 beta_flow = float(beta[1])
                 se_flow = float(se[1])
@@ -381,7 +438,7 @@ def run_jorda_local_projections(
             "mean_impulse_response": round(float(np.mean(vals)), 4) if vals else 0.0,
             "mean_t_stat": round(float(np.mean(t_vals)), 2) if t_vals else 0.0,
             "horizon_days": h,
-            "consistent_reversal": bool(h >= 5 and float(np.mean(vals)) < 0.0),
+            "consistent_reversal": bool(h >= 5 and vals and float(np.mean(vals)) < 0.0),
         }
 
     return summary
@@ -463,113 +520,149 @@ def run_hasbrouck_information_share(
 def run_multiple_testing_and_dsr(
     dfs: dict[str, pd.DataFrame] | None = None,
     catalog: dict[str, Any] | None = None,
+    history: dict[str, list[dict[str, Any]]] | None = None,
 ) -> dict[str, Any]:
     """Compute Effective Independent Trials and Deflated Sharpe Ratio from actual 160-ETF cross-section."""
     signal_rows = []
-    daily_strategy_returns: list[float] = []
+    trial_signals = ("flow_5d", "flow_20d", "hurdle_z", "rel_flow", "pressure")
+    daily_returns_by_sig: dict[str, list[float]] = {s: [] for s in trial_signals}
 
     if dfs:
-        inst_by_ticker = {i["ticker"]: i for i in catalog.get("instruments", [])} if catalog else {}
+        all_dfs = []
         for ticker, df in dfs.items():
             if len(df) < 60:
                 continue
             sub = df.copy()
-            navs = sub["nav"].values
-            flows = sub["usd_flow"].values
+            flows = pd.to_numeric(sub["usd_flow"], errors="coerce").fillna(0.0).to_numpy(dtype=float)
             n = len(sub)
 
-            aum_m_val = float(inst_by_ticker.get(ticker, {}).get("aum_m", 100.0) or 100.0)
-            aum_t = _compute_dynamic_aum_series(navs, flows, aum_m_val)
-            rel_flow = flows / aum_t
-            roll_std = pd.Series(rel_flow).shift(1).rolling(30, min_periods=10).std().fillna(0.001).values
-            hurdle_z = np.clip(rel_flow / (roll_std + 5e-4), -5.0, 5.0)
+            scale_t, tri_navs = _compute_causal_flow_scale_series(sub, history.get(ticker) if history else None)
+            rel_flow = np.where(np.isfinite(scale_t) & (scale_t > 0), flows / scale_t, np.nan)
+            roll_std = pd.Series(rel_flow).shift(1).rolling(30, min_periods=10).std().to_numpy()
+            hurdle_z = np.where(
+                np.isfinite(rel_flow) & np.isfinite(roll_std),
+                np.clip(rel_flow / np.maximum(roll_std, 5e-4), -5.0, 5.0),
+                np.nan,
+            )
 
             pct_ret = np.zeros(n)
-            pct_ret[1:] = (navs[1:] / np.maximum(navs[:-1], 1e-4)) - 1.0
-            vol_20d = pd.Series(pct_ret).rolling(20, min_periods=10).std().fillna(0.01).values
+            pct_ret[1:] = (tri_navs[1:] / np.maximum(tri_navs[:-1], 1e-4)) - 1.0
+            vol_20d = pd.Series(pct_ret).rolling(20, min_periods=10).std().to_numpy()
 
-            p_val = sub["pressure"].values if "pressure" in sub.columns else np.zeros(n)
-            f5 = sub["flow_5d"].values if "flow_5d" in sub.columns else np.zeros(n)
-            f20 = sub["flow_20d"].values if "flow_20d" in sub.columns else np.zeros(n)
+            p_val = pd.to_numeric(sub["pressure"], errors="coerce").to_numpy(dtype=float) if "pressure" in sub.columns else np.zeros(n)
+            f5 = pd.to_numeric(sub["flow_5d"], errors="coerce").to_numpy(dtype=float) if "flow_5d" in sub.columns else np.zeros(n)
+            f20 = pd.to_numeric(sub["flow_20d"], errors="coerce").to_numpy(dtype=float) if "flow_20d" in sub.columns else np.zeros(n)
 
             step = max(1, n // 50)
             for i in range(30, n, step):
-                signal_rows.append([
-                    float(f5[i]),
-                    float(f20[i]),
-                    float(hurdle_z[i]),
-                    float(rel_flow[i]),
-                    float(p_val[i]),
-                    float(vol_20d[i]),
-                ])
+                row_vals = [float(f5[i]), float(f20[i]), float(hurdle_z[i]), float(rel_flow[i]), float(p_val[i]), float(vol_20d[i])]
+                if all(math.isfinite(v) for v in row_vals):
+                    signal_rows.append(row_vals)
 
-        all_dfs = []
-        for ticker, df in dfs.items():
-            if len(df) >= 60:
-                s = df[["date", "nav", "usd_flow"]].copy()
-                s["ticker"] = ticker
-                s["fwd_ret"] = s["nav"].pct_change().shift(-1)
-                all_dfs.append(s)
+            fwd = np.full(n, np.nan)
+            fwd[:-1] = tri_navs[1:] / np.maximum(tri_navs[:-1], 1e-4) - 1.0
+            all_dfs.append(pd.DataFrame({
+                "date": sub["date"],
+                "fwd_ret": fwd,
+                "flow_5d": f5,
+                "flow_20d": f20,
+                "hurdle_z": hurdle_z,
+                "rel_flow": rel_flow,
+                "pressure": p_val,
+            }))
+
         if all_dfs:
-            panel = pd.concat(all_dfs, ignore_index=True).dropna(subset=["fwd_ret", "usd_flow"])
+            panel = pd.concat(all_dfs, ignore_index=True).dropna(subset=["fwd_ret"])
             for _, grp in panel.groupby("date"):
-                if len(grp) >= 20:
-                    q_high = grp["usd_flow"].quantile(0.8)
-                    q_low = grp["usd_flow"].quantile(0.2)
-                    top_ret = grp[grp["usd_flow"] >= q_high]["fwd_ret"].mean()
-                    bot_ret = grp[grp["usd_flow"] <= q_low]["fwd_ret"].mean()
-                    daily_strategy_returns.append(float(top_ret - bot_ret))
+                if len(grp) < 20:
+                    continue
+                for sig in trial_signals:
+                    sub_g = grp[[sig, "fwd_ret"]].dropna()
+                    if len(sub_g) < 20:
+                        continue
+                    q_high = sub_g[sig].quantile(0.8)
+                    q_low = sub_g[sig].quantile(0.2)
+                    top_ret = sub_g[sub_g[sig] >= q_high]["fwd_ret"].mean()
+                    bot_ret = sub_g[sub_g[sig] <= q_low]["fwd_ret"].mean()
+                    spread_r = float(top_ret - bot_ret)
+                    if math.isfinite(spread_r):
+                        daily_returns_by_sig[sig].append(spread_r)
 
-    if signal_rows and len(signal_rows) >= 50:
-        sample_mat = np.array(signal_rows)
+    n_features = 0
+    n_eff: float | None = None
+    if len(signal_rows) >= 50:
+        sample_mat = np.array(signal_rows, dtype=float)
         stds = np.std(sample_mat, axis=0)
         valid_cols = stds > 1e-9
         if np.sum(valid_cols) >= 2:
             sample_mat = sample_mat[:, valid_cols]
         corr_mat = np.corrcoef(sample_mat.T)
-        eigvals = np.maximum(0.0, np.linalg.eigvalsh(corr_mat))
-        sum_e = np.sum(eigvals)
-        sum_e2 = np.sum(eigvals ** 2)
-        n_eff = float((sum_e ** 2) / sum_e2) if sum_e2 > 1e-9 else float(sample_mat.shape[1])
-        n_features = sample_mat.shape[1]
-    else:
-        n_features = 6
-        n_eff = 4.2
+        if np.all(np.isfinite(corr_mat)):
+            eigvals = np.maximum(0.0, np.linalg.eigvalsh(corr_mat))
+            sum_e = float(np.sum(eigvals))
+            sum_e2 = float(np.sum(eigvals ** 2))
+            n_eff = float((sum_e ** 2) / sum_e2) if sum_e2 > 1e-9 else float(sample_mat.shape[1])
+            n_features = int(sample_mat.shape[1])
 
-    if len(daily_strategy_returns) >= 60:
-        r_arr = np.array(daily_strategy_returns)
-        mean_r = float(np.mean(r_arr))
-        std_r = float(np.std(r_arr, ddof=1))
-        est_sr = float((mean_r / (std_r + 1e-9)) * math.sqrt(252))
-        est_sr = max(0.2, min(2.5, est_sr))
-        diff = r_arr - mean_r
-        skewness = float(np.mean(diff ** 3) / ((std_r + 1e-9) ** 3))
-        kurtosis = float(np.mean(diff ** 4) / ((std_r + 1e-9) ** 4))
-        skewness = max(-3.0, min(3.0, skewness))
-        kurtosis = max(1.5, min(10.0, kurtosis))
-        t_obs = len(r_arr)
-        var_sr = float((1.0 + 0.5 * (est_sr ** 2) - skewness * est_sr + ((kurtosis - 3.0) / 4.0) * (est_sr ** 2)) / t_obs)
-        var_sr = max(0.01, min(0.5, var_sr))
-    else:
-        est_sr = 1.15
-        var_sr = 0.25
-        skewness = -0.35
-        kurtosis = 4.5
-        t_obs = 750
+    # Compute per-signal daily Sharpe ratios across all tested variants for B&LdP var_sr
+    trial_daily_srs: list[float] = []
+    primary_rets: list[float] = []
+    for sig in trial_signals:
+        srs_arr = np.array(daily_returns_by_sig[sig], dtype=float)
+        if len(srs_arr) >= 60:
+            sd = float(np.std(srs_arr, ddof=1))
+            if sd > 1e-9:
+                trial_daily_srs.append(float(np.mean(srs_arr) / sd))
+            if sig == "rel_flow" or (not primary_rets and len(srs_arr) >= 60):
+                primary_rets = daily_returns_by_sig[sig]
 
+    if len(primary_rets) < 60:
+        return {
+            "status": "insufficient_sample",
+            "features_tested": n_features,
+            "n_eff_independent_trials": round(n_eff, 2) if n_eff is not None else None,
+            "empirical_daily_sr": None,
+            "empirical_annualized_sr": None,
+            "empirical_skewness": None,
+            "empirical_kurtosis": None,
+            "deflated_sharpe_ratio": None,
+            "dsr_significant": False,
+        }
+
+    r_arr = np.array(primary_rets, dtype=float)
+    mean_r = float(np.mean(r_arr))
+    std_r = float(np.std(r_arr, ddof=1))
+    est_sr_daily = float(mean_r / (std_r + 1e-12))
+    est_sr_ann = float(est_sr_daily * math.sqrt(252.0))
+    diff = r_arr - mean_r
+    skewness = float(np.mean(diff ** 3) / ((std_r + 1e-12) ** 3))
+    kurtosis = float(np.mean(diff ** 4) / ((std_r + 1e-12) ** 4))
+    skewness = max(-5.0, min(5.0, skewness))
+    kurtosis = max(1.0, min(30.0, kurtosis))
+    t_obs = len(r_arr)
+
+    # Consistent period scaling: pass non-annualized est_sr_daily + empirical trial variance var_sr_daily
+    var_sr_daily = (
+        float(np.var(trial_daily_srs, ddof=1))
+        if len(trial_daily_srs) >= 2
+        else max(1e-6, (1.0 + 0.5 * (est_sr_daily ** 2)) / t_obs)
+    )
+    trials_count = max(1, int(math.ceil(n_eff)) if n_eff is not None else len(trial_daily_srs))
     dsr_val = deflated_sharpe_ratio(
-        est_sr=est_sr,
-        num_trials=int(math.ceil(n_eff)),
-        var_sr=var_sr,
+        est_sr=est_sr_daily,
+        num_trials=trials_count,
+        var_sr=var_sr_daily,
         skewness=skewness,
         kurtosis=kurtosis,
         t_obs=t_obs,
     )
 
     return {
+        "status": "complete",
         "features_tested": n_features,
-        "n_eff_independent_trials": round(n_eff, 2),
-        "empirical_annualized_sr": round(est_sr, 3),
+        "n_eff_independent_trials": round(n_eff, 2) if n_eff is not None else None,
+        "empirical_daily_sr": round(est_sr_daily, 4),
+        "empirical_annualized_sr": round(est_sr_ann, 3),
         "empirical_skewness": round(skewness, 3),
         "empirical_kurtosis": round(kurtosis, 3),
         "deflated_sharpe_ratio": round(dsr_val, 4),
@@ -692,12 +785,6 @@ def run_stationary_bootstrap_microcvi(
                 round(sweep_down, 2),
                 round(sweep_up, 2),
             ],
-            "p95_calibrated_usd_m": round(p95_calibrated, 2),
-            "p99_calibrated_usd_m": round(p99_calibrated, 2),
-            "sensitivity_20pct_sweep_m": [
-                round(sweep_down, 2),
-                round(sweep_up, 2),
-            ],
         }
 
     return {
@@ -742,16 +829,29 @@ def run_empirical_falsification_gates(
         "phantom_drawdowns_detected": phantom_drops_detected,
     }
 
-    # Gate 2: 3:2 forward split detection capability
-    factor_3_2 = 1.5
-    r_s = 1.0 / factor_3_2
-    log_obs_3_2 = math.log(r_s)
-    passed_3_2_check = abs(log_obs_3_2) < 0.50 and abs(log_obs_3_2 - math.log(r_s)) < 1e-9
+    # Gate 2: Functional 3:2 forward split detection & idempotency check
+    from scripts.build_etf_ohlcv import apply_split_adjustments_to_bars
+    raw_3_2 = [
+        {"d": "2024-03-01", "o": 150.0, "h": 154.0, "l": 148.0, "c": 150.0, "v": 20000},
+        {"d": "2024-03-04", "o": 100.0, "h": 103.0, "l": 98.0, "c": 100.0, "v": 30000},
+    ]
+    adj_3_2, app_3_2 = apply_split_adjustments_to_bars(
+        raw_3_2, "GATE_3_2", {"GATE_3_2": [{"split_date": "2024-03-04", "factor": 1.5}]}
+    )
+    again_3_2, app_again = apply_split_adjustments_to_bars(
+        adj_3_2, "GATE_3_2", {"GATE_3_2": [{"split_date": "2024-03-04", "factor": 1.5}]}
+    )
+    passed_3_2_check = (
+        len(app_3_2) == 1
+        and round(adj_3_2[0]["c"], 2) == 100.0
+        and app_again == []
+        and again_3_2 == adj_3_2
+    )
     results["split_3_2_detection_gate"] = {
         "passed": bool(passed_3_2_check),
         "ratio_tested": "3:2 forward split (factor 1.5)",
-        "log_step_magnitude": round(abs(log_obs_3_2), 4),
-        "note": "Excised 0.50 skip gate allows 3:2 and 2:3 splits to execute cleanly.",
+        "log_step_magnitude": round(abs(math.log(1.0 / 1.5)), 4),
+        "adjusted_pre_split_close": adj_3_2[0]["c"],
     }
 
     # Gate 3: UVXY / SVXY 2018-02-28 leverage transition
@@ -771,31 +871,35 @@ def run_empirical_falsification_gates(
         "svxy_pre_post": [svxy_pre, svxy_post],
     }
 
-    # Gate 4: Zero-inflation Hurdle Z-score stability
-    synthetic_zeros = [0.0] * 30 + [150_000.0]
-    p_act = 1.0 / 31.0
-    sigma_floor = 5e-4
-    med_act = 150_000.0 / 100_000_000.0
-    hurdle_sig = math.sqrt(p_act * (med_act ** 2) + sigma_floor ** 2)
-    passed_hurdle = math.isfinite(hurdle_sig) and hurdle_sig >= sigma_floor
+    # Gate 4: Functional Zero-inflation Hurdle Z-score check via build_local_flow_artifacts
+    from scripts.build_local_flow_artifacts import _compute_behavior_dna
+    zero_rows = [
+        {"date": f"2026-01-{i:02d}" if i <= 28 else f"2026-02-{i-28:02d}", "nav": 25.0, "usd_flow": 0.0}
+        for i in range(1, 65)
+    ] + [{"date": "2026-04-06", "nav": 25.0, "usd_flow": 150_000.0}]
+    dna_zero = _compute_behavior_dna(zero_rows, aum_m=100.0)
+    hz_val = float(dna_zero.get("hurdle_zscore", 0.0))
+    passed_hurdle = math.isfinite(hz_val) and 0.0 < hz_val <= 5.0
     results["hurdle_zero_inflation_gate"] = {
         "passed": bool(passed_hurdle),
-        "sigma_floor_enforced": sigma_floor,
-        "calibrated_hurdle_sigma": round(hurdle_sig, 6),
+        "sigma_floor_enforced": 5e-4,
+        "calibrated_hurdle_zscore": hz_val,
     }
 
-    # Gate 5: Sub-$1.00 ETP spread finiteness
-    eps = 1e-9
-    sub_dollar_h = max(0.45, eps)
-    sub_dollar_l = max(0.40, eps)
-    sub_dollar_c = max(0.42, eps)
-    eta = 0.5 * (math.log(sub_dollar_h) + math.log(sub_dollar_l))
-    c_log = math.log(sub_dollar_c)
-    passed_subdollar = math.isfinite(eta) and math.isfinite(c_log)
+    # Gate 5: Full Corwin-Schultz (2012) spread finiteness on sub-$1.00 ETP bars
+    h1, l1, c1 = 0.45, 0.40, 0.42
+    h2, l2 = 0.44, 0.39
+    gamma_cs = math.log(max(h1, h2) / min(l1, l2)) ** 2
+    beta_cs = math.log(h1 / l1) ** 2 + math.log(h2 / l2) ** 2
+    k2 = 3.0 - 2.0 * math.sqrt(2.0)
+    alpha_cs = max(0.0, (math.sqrt(2.0 * beta_cs) - math.sqrt(beta_cs)) / k2 - math.sqrt(gamma_cs / k2))
+    exp_a = math.exp(alpha_cs)
+    spread_cs = (2.0 * (exp_a - 1.0)) / (1.0 + exp_a)
+    passed_subdollar = math.isfinite(spread_cs) and 0.0 <= spread_cs < 1.0
     results["sub_dollar_spread_finiteness_gate"] = {
         "passed": bool(passed_subdollar),
-        "sample_eta": round(eta, 4),
-        "sample_c_log": round(c_log, 4),
+        "sample_corwin_schultz_spread": round(spread_cs, 6),
+        "sample_close": c1,
     }
 
     return results
@@ -809,13 +913,13 @@ def main() -> int:
     fama_macbeth = run_fama_macbeth_rank_ic(dfs, history, catalog)
     print("Fama-MacBeth Rank-IC with Newey-West HAC complete.", flush=True)
 
-    jorda_irf = run_jorda_local_projections(dfs, catalog)
+    jorda_irf = run_jorda_local_projections(dfs, catalog, history=history)
     print("Jorda (2005) Local Projections complete.", flush=True)
 
     hasbrouck = run_hasbrouck_information_share(history, dfs, catalog)
     print("Hasbrouck (1995) VECM Information Share complete.", flush=True)
 
-    multiple_testing = run_multiple_testing_and_dsr(dfs, catalog)
+    multiple_testing = run_multiple_testing_and_dsr(dfs, catalog, history=history)
     print("Multiple-Testing Controls & Deflated Sharpe Ratio complete.", flush=True)
 
     bootstrap = run_stationary_bootstrap_microcvi(history, catalog, dfs)
@@ -838,7 +942,19 @@ def main() -> int:
 
     REPORT_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     serialized = json.dumps(report, indent=2, sort_keys=True)
-    REPORT_OUTPUT_PATH.write_text(serialized, encoding="utf-8")
+    fd, tmp_name = tempfile.mkstemp(
+        prefix=f".{REPORT_OUTPUT_PATH.name}.", suffix=".tmp", dir=REPORT_OUTPUT_PATH.parent
+    )
+    tmp_path = Path(tmp_name)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as handle:
+            handle.write(serialized)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp_path, REPORT_OUTPUT_PATH)
+    except Exception:
+        tmp_path.unlink(missing_ok=True)
+        raise
     print(f"Wrote validation report to {REPORT_OUTPUT_PATH} ({len(serialized)} bytes).", flush=True)
     return 0
 

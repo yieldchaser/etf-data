@@ -16,17 +16,6 @@
 })(typeof self !== 'undefined' ? self : this, function (QuantCore) {
   'use strict';
 
-  const CANONICAL_OVERRIDES = {
-    SMST: {
-      fund_name: 'Defiance Daily Target 2X Short MSTR ETF',
-      issuer: 'Defiance ETFs',
-      leverage: '-2x',
-      leverage_value: -2.0,
-      direction: 'inverse',
-      category: '9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only)'
-    }
-  };
-
   function _escapeHtml(s) {
     return String(s == null ? '' : s)
       .replaceAll('&', '&amp;')
@@ -39,6 +28,7 @@
   const MACDStrategy = {
     state: {
       signalsData: null,
+      dataLoadError: '',
       activeTicker: '',
       activeTimeframe: '1h', // '1h' | '1d'
       range1H: '1M',         // '1W' | '2W' | '1M' | '3M' | '1Y' | 'ALL'
@@ -54,7 +44,8 @@
       hoverIndex: null,
       lastMouse: { x: 0, y: 0 },
       isHovering: false,
-      isMounted: false
+      isMounted: false,
+      _historySeq: 0
     },
 
     /** Initialize and mount UI */
@@ -69,20 +60,21 @@
       if (initTicker) {
         this.state.activeTicker = initTicker.toUpperCase();
       }
+      this.bindEvents();
       await this.loadData();
       if (!this.state.activeTicker && this.state.signalsData && Array.isArray(this.state.signalsData.signals) && this.state.signalsData.signals.length) {
         const featuredSig = this.state.signalsData.signals.find(s => s && s.featured);
         this.state.activeTicker = (featuredSig || this.state.signalsData.signals[0]).ticker || '';
       }
       this.loadHistory(this.state.activeTicker);
-      this.bindEvents();
       this.render();
       this.state.isMounted = true;
     },
 
-    /** Fetch pre-computed 160-instrument dataset */
+    /** Fetch pre-computed MACD signals dataset dynamically */
     async loadData(force = false) {
       if (this.state.signalsData && !force) return;
+      this.state.dataLoadError = '';
       try {
         const fetchWithFallback = async (primary, fallback) => {
           try {
@@ -99,26 +91,23 @@
         const sigRes = await fetchWithFallback('data/macd/signals.json', 'data/flows/macd_signals.json');
         if (sigRes && sigRes.ok) {
           this.state.signalsData = await sigRes.json();
-          if (this.state.signalsData && Array.isArray(this.state.signalsData.signals)) {
-            for (const sig of this.state.signalsData.signals) {
-              if (sig && CANONICAL_OVERRIDES[sig.ticker]) {
-                Object.assign(sig, CANONICAL_OVERRIDES[sig.ticker]);
-              }
-            }
-          }
+        } else {
+          this.state.dataLoadError = 'Unable to load MACD momentum signals dataset.';
         }
       } catch (err) {
         console.warn('[MACDStrategy] Error loading signals data:', err);
+        this.state.dataLoadError = 'Error loading MACD momentum signals dataset.';
       }
     },
 
-    /** Asynchronously fetch and cache Tier 1 LOD deep history for ticker */
+    /** Asynchronously fetch and cache Tier 1 LOD deep history for ticker (monotonic token prevents races) */
     async loadHistory(ticker) {
       if (!ticker) return;
       const t = ticker.toUpperCase();
+      const seq = ++this.state._historySeq;
       if (!this.state.historyCache) this.state.historyCache = {};
       if (this.state.historyCache[t]) {
-        if (this.state.activeTicker === t) {
+        if (seq === this.state._historySeq && this.state.activeTicker === t) {
           this.drawChart();
           this.updateHUD(null);
         }
@@ -142,16 +131,23 @@
           `data/macd/history/${t}.json`,
           `data/flows/history/${t}.json`
         );
+        if (seq !== this.state._historySeq || this.state.activeTicker !== t) return;
         if (res && res.ok) {
           const hist = await res.json();
+          if (seq !== this.state._historySeq || this.state.activeTicker !== t) return;
           this.state.historyCache[t] = hist;
-          if (this.state.activeTicker === t) {
-            this.drawChart();
-            this.updateHUD(null);
-          }
+          this.drawChart();
+          this.updateHUD(null);
+        } else {
+          this.drawChart();
+          this.updateHUD(null);
         }
       } catch (err) {
         console.warn(`[MACDStrategy] Deep history unavailable for ${t}:`, err);
+        if (seq === this.state._historySeq && this.state.activeTicker === t) {
+          this.drawChart();
+          this.updateHUD(null);
+        }
       }
     },
 
@@ -183,6 +179,37 @@
       return (hist && hist.bars_1d && hist.bars_1d.length)
         ? hist.bars_1d
         : ((this.getActiveSignal() && this.getActiveSignal().chart_bars_1d) || []);
+    },
+
+    /** Get parallel volume series corresponding to getAllBarsForActiveTimeframe() */
+    getAllVolumesForActiveTimeframe() {
+      const t = this.state.activeTicker;
+      const hist = this.state.historyCache && this.state.historyCache[t];
+      if (this.state.activeTimeframe === '1h') {
+        if (hist && hist.bars_1h && hist.bars_1h.length) {
+          return Array.isArray(hist.v_1h) ? hist.v_1h : [];
+        }
+        const sig = this.getActiveSignal();
+        return (sig && Array.isArray(sig.chart_v_1h)) ? sig.chart_v_1h : [];
+      }
+      if (hist && hist.bars_1d && hist.bars_1d.length) {
+        return Array.isArray(hist.v_1d) ? hist.v_1d : [];
+      }
+      const sig = this.getActiveSignal();
+      return (sig && Array.isArray(sig.chart_v_1d)) ? sig.chart_v_1d : [];
+    },
+
+    /** Resolve volume for a bar using inline bar.v or aligned parallel volume series */
+    _getBarVolume(bar, allIdx, allVols) {
+      if (!bar) return null;
+      if (bar.v != null && Number.isFinite(Number(bar.v))) {
+        return Number(bar.v);
+      }
+      if (Array.isArray(allVols) && allIdx != null && allIdx >= 0 && allIdx < allVols.length) {
+        const v = Number(allVols[allIdx]);
+        return Number.isFinite(v) ? v : null;
+      }
+      return null;
     },
 
     /** Get bars for active timeframe & selected range */
@@ -374,9 +401,36 @@
         this._canvasEventsBound = true;
         canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
         canvas.addEventListener('mouseleave', () => this.handleMouseLeave());
-        canvas.addEventListener('touchstart', (e) => this.handleTouch(e), { passive: false });
-        canvas.addEventListener('touchmove', (e) => this.handleTouch(e), { passive: false });
+        canvas.addEventListener('touchstart', (e) => this.handleTouch(e), { passive: true });
+        canvas.addEventListener('touchmove', (e) => this.handleTouch(e), { passive: true });
         canvas.addEventListener('touchend', () => this.handleMouseLeave());
+      }
+
+      const pillsContainer = document.getElementById('macd-flagship-pills');
+      if (pillsContainer && !this._pillsBound) {
+        this._pillsBound = true;
+        pillsContainer.addEventListener('click', (e) => {
+          const btn = e.target && e.target.closest ? e.target.closest('.macd-ticker-pill[data-ticker]') : null;
+          if (btn && btn.dataset.ticker) {
+            this.setTicker(btn.dataset.ticker);
+          }
+        });
+      }
+
+      const screenerBody = document.getElementById('macd-screener-tbody');
+      if (screenerBody && !this._screenerBound) {
+        this._screenerBound = true;
+        screenerBody.addEventListener('click', (e) => {
+          const row = e.target && e.target.closest ? e.target.closest('tr[data-ticker]') : null;
+          if (row && row.dataset.ticker) {
+            this.setTicker(row.dataset.ticker);
+            this.setView('chart');
+            const p = document.getElementById('macd-chart-view-panel');
+            if (p && typeof p.scrollIntoView === 'function') {
+              p.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+          }
+        });
       }
 
       this._initSlider();
@@ -430,6 +484,7 @@
         document.querySelectorAll('.macd-range-btn, .macd-range-btn-1h').forEach(b => b.classList.remove('active'));
 
         this.drawChart();
+        this.updateHUD(null);
       };
 
       const elevateThumb = e => {
@@ -498,10 +553,9 @@
       this.drawChart();
     },
 
-    /** Touch movement over Canvas for Mobile Devices */
+    /** Touch movement over Canvas for Mobile Devices (passive vertical scroll preserved) */
     handleTouch(e) {
       if (!e.touches || e.touches.length === 0) return;
-      e.preventDefault();
       const touch = e.touches[0];
       const canvas = document.getElementById('macd-canvas');
       if (!canvas) return;
@@ -529,6 +583,7 @@
       if (!signal) return;
 
       const allBars = this.getAllBarsForActiveTimeframe();
+      const allVols = this.getAllVolumesForActiveTimeframe();
       const bars = this.getActiveBars();
       const targetBar = bar || (bars && bars[bars.length - 1]);
       if (!targetBar) return;
@@ -543,7 +598,11 @@
           barIdx = bars.findIndex(x => x && x.dt === targetBar.dt);
         }
       }
-      const isLatest = !bar || barIdx === bars.length - 1;
+
+      const latestFullBar = allBars && allBars.length ? allBars[allBars.length - 1] : null;
+      const isLatest = latestFullBar
+        ? (targetBar === latestFullBar || Boolean(targetBar.dt && latestFullBar.dt && targetBar.dt === latestFullBar.dt))
+        : (!bar && !this.state.customRange);
 
       const elPrice = document.getElementById('macd-hud-price');
       const elChg = document.getElementById('macd-hud-chg');
@@ -564,7 +623,7 @@
       }
 
       if (elCandle) {
-        const isUp = targetBar.c >= targetBar.o;
+        const isUp = Number(targetBar.c) >= Number(targetBar.o);
         elCandle.textContent = isUp ? 'GREEN (Bullish)' : 'RED (Bearish)';
         elCandle.style.color = isUp ? '#10b981' : '#f43f5e';
       }
@@ -597,18 +656,33 @@
       }
       if (elRvol) {
         let rv = null;
-        if (isLatest && this.state.activeTimeframe === '1h') {
-          rv = Number(signal.rvol_1h || 1.0);
-        } else if (allBars && allBars.length) {
+        if (isLatest && this.state.activeTimeframe === '1h' && signal.rvol_1h != null) {
+          const parsedRv = Number(signal.rvol_1h);
+          if (Number.isFinite(parsedRv) && parsedRv > 0) rv = parsedRv;
+        }
+        if (rv == null && allBars && allBars.length) {
           let allIdx = allBars.indexOf(targetBar);
           if (allIdx < 0 && targetBar.dt) allIdx = allBars.findIndex(x => x && x.dt === targetBar.dt);
           if (allIdx < 0 && barIdx >= 0) allIdx = Math.max(0, allBars.length - bars.length + barIdx);
-          const curVol = Number(targetBar.v || 0);
-          if (allIdx >= 5 && curVol > 0) {
+          const curVol = this._getBarVolume(targetBar, allIdx, allVols);
+          if (allIdx >= 5 && curVol != null && Number.isFinite(curVol) && curVol > 0) {
             const priorVols = [];
-            for (let j = Math.max(0, allIdx - 20); j < allIdx; j++) {
-              const v = Number(allBars[j] && allBars[j].v);
-              if (Number.isFinite(v) && v > 0) priorVols.push(v);
+            if (this.state.activeTimeframe === '1h' && targetBar.dt && targetBar.dt.length >= 16) {
+              const slot = targetBar.dt.slice(11, 16);
+              for (let j = allIdx - 1; j >= 0 && priorVols.length < 20; j--) {
+                const bj = allBars[j];
+                if (bj && bj.dt && bj.dt.slice(11, 16) === slot) {
+                  const v = this._getBarVolume(bj, j, allVols);
+                  if (Number.isFinite(v) && v > 0) priorVols.push(v);
+                }
+              }
+            }
+            if (priorVols.length < 5) {
+              priorVols.length = 0;
+              for (let j = Math.max(0, allIdx - 20); j < allIdx; j++) {
+                const v = this._getBarVolume(allBars[j], j, allVols);
+                if (Number.isFinite(v) && v > 0) priorVols.push(v);
+              }
             }
             if (priorVols.length >= 5) {
               const meanVol = priorVols.reduce((a, b) => a + b, 0) / priorVols.length;
@@ -616,7 +690,7 @@
             }
           }
         }
-        if (rv != null && Number.isFinite(rv)) {
+        if (rv != null && Number.isFinite(rv) && rv > 0) {
           elRvol.textContent = `${rv.toFixed(2)}x`;
           elRvol.style.color = rv >= 1.5 ? '#22d3ee' : '#9ca3af';
         } else {
@@ -624,34 +698,76 @@
           elRvol.style.color = '#9ca3af';
         }
       }
-      if (elPivots && signal.pivots) {
-        const p = targetBar.c;
-        // Key structural pivots: P, R1, S1
-        const keyPivots = {
-          'P': signal.pivots.P,
-          'R1': signal.pivots.R1,
-          'S1': signal.pivots.S1
-        };
-        let closestKey = 'P';
-        let minDist = Infinity;
-        for (const [k, v] of Object.entries(keyPivots)) {
-          if (!v) continue;
-          const dist = Math.abs(p - v);
-          if (dist < minDist) {
-            minDist = dist;
-            closestKey = k;
+      if (elPivots) {
+        const latestDay = latestFullBar && latestFullBar.dt ? String(latestFullBar.dt).slice(0, 10) : '';
+        const targetDay = targetBar.dt ? String(targetBar.dt).slice(0, 10) : '';
+        const isCurrentSession = !latestDay || targetDay === latestDay || isLatest;
+        if (signal.pivots && isCurrentSession) {
+          const p = Number(targetBar.c);
+          const keyPivots = {
+            'P': Number(signal.pivots.P),
+            'R1': Number(signal.pivots.R1),
+            'S1': Number(signal.pivots.S1)
+          };
+          let closestKey = '';
+          let minDist = Infinity;
+          for (const [k, v] of Object.entries(keyPivots)) {
+            if (!Number.isFinite(v) || v <= 0) continue;
+            const dist = Math.abs(p - v);
+            if (dist < minDist) {
+              minDist = dist;
+              closestKey = k;
+            }
           }
+          const refVal = closestKey ? keyPivots[closestKey] : NaN;
+          if (closestKey && Number.isFinite(refVal) && refVal > 0 && Number.isFinite(p)) {
+            const pctDist = ((p - refVal) / refVal) * 100;
+            elPivots.textContent = `${closestKey} ($${refVal.toFixed(2)}) · ${pctDist >= 0 ? '+' : ''}${pctDist.toFixed(1)}%`;
+          } else {
+            elPivots.textContent = '—';
+          }
+        } else {
+          elPivots.textContent = signal.pivots ? 'Current Session Only' : '—';
         }
-        const refVal = keyPivots[closestKey];
-        const pctDist = refVal ? ((p - refVal) / refVal * 100).toFixed(1) : '0.0';
-        elPivots.textContent = `${closestKey} ($${refVal}) · ${Number(pctDist) >= 0 ? '+' : ''}${pctDist}%`;
       }
     },
 
     /** Render main UI components */
     render() {
+      const totalUniverse = (this.state.signalsData && Array.isArray(this.state.signalsData.signals))
+        ? this.state.signalsData.signals.length
+        : 0;
+      const navScreenerBtn = document.getElementById('macd-nav-screener');
+      if (navScreenerBtn && totalUniverse > 0) {
+        navScreenerBtn.textContent = `${totalUniverse}-ETF Radar`;
+      }
+      const allFilterBtn = document.querySelector('.macd-filter-btn[data-filter="all"]');
+      if (allFilterBtn && totalUniverse > 0) {
+        allFilterBtn.textContent = `All Universe (${totalUniverse})`;
+      }
+
       const signal = this.getActiveSignal();
-      if (!signal) return;
+      if (!signal) {
+        const elSymbol = document.getElementById('macd-active-symbol');
+        const elFundName = document.getElementById('macd-active-name');
+        const elRegimeBadge = document.getElementById('macd-active-regime-badge');
+        const elCategory = document.getElementById('macd-active-category');
+        const tbody = document.getElementById('macd-screener-tbody');
+        if (this.state.dataLoadError) {
+          if (elSymbol) elSymbol.textContent = this.state.activeTicker || '—';
+          if (elFundName) elFundName.textContent = this.state.dataLoadError;
+          if (elRegimeBadge) {
+            elRegimeBadge.textContent = 'DATASET UNAVAILABLE';
+            elRegimeBadge.className = 'flow-badge macd-badge-neutral';
+          }
+          if (elCategory) elCategory.textContent = 'Verify signals artifact availability or retry later.';
+          if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="14" style="text-align:center;padding:2.5rem 1rem;color:#fb7185">${_escapeHtml(this.state.dataLoadError)}</td></tr>`;
+          }
+          this.drawChart();
+        }
+        return;
+      }
 
       // Update Header context strip
       const elSymbol = document.getElementById('macd-active-symbol');
@@ -675,9 +791,9 @@
         if (signal.live_premarket_price) {
           const pmChg = signal.live_premarket_chg_pct != null ? signal.live_premarket_chg_pct : 0;
           const pmColor = pmChg >= 0 ? '#10b981' : '#f43f5e';
-          elPrice.innerHTML = `$${Number(signal.latest_price).toFixed(2)} <span style="font-size:0.75rem;color:${pmColor};font-weight:700;margin-left:6px;">Pre: $${Number(signal.live_premarket_price).toFixed(2)} (${pmChg >= 0 ? '+' : ''}${pmChg.toFixed(2)}%)</span>`;
+          elPrice.innerHTML = `$${Number(signal.latest_price || 0).toFixed(2)} <span style="font-size:0.75rem;color:${pmColor};font-weight:700;margin-left:6px;">Pre: $${Number(signal.live_premarket_price).toFixed(2)} (${pmChg >= 0 ? '+' : ''}${Number(pmChg).toFixed(2)}%)</span>`;
         } else {
-          elPrice.textContent = `$${Number(signal.latest_price).toFixed(2)}`;
+          elPrice.textContent = `$${Number(signal.latest_price || 0).toFixed(2)}`;
         }
       }
       if (elChg) {
@@ -686,19 +802,21 @@
         elChg.innerHTML = `1H: <span style="color:${c1h >= 0 ? '#10b981' : '#f43f5e'}">${c1h >= 0 ? '+' : ''}${c1h.toFixed(2)}%</span> · 24H: <span style="color:${c1d >= 0 ? '#10b981' : '#f43f5e'}">${c1d >= 0 ? '+' : ''}${c1d.toFixed(2)}%</span>`;
       }
 
-      // Update Dynamic Regime Header Badge
+      // Update Dynamic Regime Header Badge (consistent green/red candle checks)
       const elRegimeBadge = document.getElementById('macd-active-regime-badge');
       if (elRegimeBadge) {
-        if (signal.signal_state === 'SUB_ZERO_BOUNCE' || (signal.bull_cross_fresh && signal.is_subzero)) {
+        const sigGreen = signal.candle_color_1h === 'GREEN' || signal.is_green_candle_1h === true;
+        const sigRed = signal.candle_color_1h === 'RED' || signal.is_red_candle_1h === true;
+        if (signal.signal_state === 'SUB_ZERO_BOUNCE' || (signal.bull_cross_fresh && signal.is_subzero && sigGreen)) {
           elRegimeBadge.textContent = 'SUB-ZERO REVERSAL (CONFIRMED GREEN)';
           elRegimeBadge.className = 'flow-badge macd-badge-subzero';
         } else if (signal.signal_state === 'UNCONFIRMED_CROSS') {
           elRegimeBadge.textContent = 'UNCONFIRMED CROSS (AWAITING GREEN CANDLE)';
           elRegimeBadge.className = 'flow-badge macd-badge-unconfirmed';
-        } else if (signal.signal_state === 'BULLISH_CROSS' || signal.bull_cross_fresh) {
+        } else if (signal.signal_state === 'BULLISH_CROSS' || (signal.bull_cross_fresh && sigGreen)) {
           elRegimeBadge.textContent = 'BULLISH MOMENTUM CROSS (CONFIRMED GREEN)';
           elRegimeBadge.className = 'flow-badge macd-badge-bull';
-        } else if (signal.signal_state === 'BEARISH_CROSS' || signal.bear_cross_fresh) {
+        } else if (signal.signal_state === 'BEARISH_CROSS' || (signal.bear_cross_fresh && sigRed)) {
           elRegimeBadge.textContent = 'BEARISH EXIT TO CASH (CONFIRMED RED)';
           elRegimeBadge.className = 'flow-badge macd-badge-bear';
         } else if (signal.signal_state === 'UNCONFIRMED_BEAR_CROSS') {
@@ -716,15 +834,18 @@
         }
       }
 
-      // Update Ticker Selector Dropdown
+      // Update Ticker Selector Dropdown (preserve Alpine <template> when present)
       const select = document.getElementById('macd-ticker-select');
       if (select) {
-        if (select.options.length <= 1 && this.state.signalsData?.signals) {
+        const hasAlpineTemplate = Boolean(select.querySelector('template'));
+        if (!hasAlpineTemplate && select.options.length <= 1 && this.state.signalsData?.signals) {
           select.innerHTML = this.state.signalsData.signals.map(s =>
             `<option value="${_escapeHtml(s.ticker)}">${_escapeHtml(s.ticker)} — ${_escapeHtml(s.fund_name)} (${_escapeHtml(s.leverage)})</option>`
           ).join('');
         }
-        select.value = signal.ticker;
+        if (Array.from(select.options).some(opt => opt.value === signal.ticker)) {
+          select.value = signal.ticker;
+        }
       }
 
       // Populate Dynamic Flagship Pills
@@ -757,22 +878,23 @@
 
       // 1. Top 2 Bullish Reversals (highest confluence score)
       const topReversals = [...signals]
-        .filter(s => (s.confluence_score || 0) > 0 || s.signal_direction === 'BULLISH' || s.bull_cross_fresh)
-        .sort((a, b) => (b.confluence_score || 0) - (a.confluence_score || 0))
+        .filter(s => (Number(s.confluence_score || 0) > 0) || s.signal_direction === 'BULLISH' || s.bull_cross_fresh)
+        .sort((a, b) => Number(b.confluence_score || 0) - Number(a.confluence_score || 0))
         .slice(0, 2);
 
       topReversals.forEach(s => {
+        const sc = Number(s.confluence_score || 0);
         pillsMap.set(s.ticker, {
           ticker: s.ticker,
-          badge: `Rev ${s.confluence_score > 0 ? '+' : ''}${s.confluence_score}`,
+          badge: `Rev ${sc > 0 ? '+' : ''}${sc}`,
           metricClass: 'pill-reversal',
-          title: `Momentum Reversal: Score ${s.confluence_score}`
+          title: `Momentum Reversal: Score ${sc}`
         });
       });
 
       // 2. Top 2 Gainers (highest 24H return)
       const topGainers = [...signals]
-        .sort((a, b) => (b.chg_1d_pct || 0) - (a.chg_1d_pct || 0))
+        .sort((a, b) => Number(b.chg_1d_pct || 0) - Number(a.chg_1d_pct || 0))
         .slice(0, 2);
 
       topGainers.forEach(s => {
@@ -787,14 +909,15 @@
         }
       });
 
-      // 3. Top 2 Volume Surges (highest RVOL)
+      // 3. Top 2 Volume Surges (highest RVOL; only finite positive RVOL)
       const topRvol = [...signals]
-        .sort((a, b) => (b.rvol_1h || 0) - (a.rvol_1h || 0))
+        .filter(s => s && s.rvol_1h != null && Number.isFinite(Number(s.rvol_1h)) && Number(s.rvol_1h) > 0)
+        .sort((a, b) => Number(b.rvol_1h) - Number(a.rvol_1h))
         .slice(0, 2);
 
       topRvol.forEach(s => {
         if (!pillsMap.has(s.ticker)) {
-          const rv = Number(s.rvol_1h || 1.0);
+          const rv = Number(s.rvol_1h);
           pillsMap.set(s.ticker, {
             ticker: s.ticker,
             badge: `${rv.toFixed(1)}x Vol`,
@@ -829,7 +952,7 @@
       pillsList.forEach(item => {
         const isActive = this.state.activeTicker === item.ticker;
         const safeTk = _escapeHtml(item.ticker);
-        html += `<button type="button" class="macd-ticker-pill ${isActive ? 'active' : ''}" data-ticker="${safeTk}" onclick="window.MACDStrategy.setTicker(this.dataset.ticker)" title="${_escapeHtml(item.title)}">
+        html += `<button type="button" class="macd-ticker-pill ${isActive ? 'active' : ''}" data-ticker="${safeTk}" title="${_escapeHtml(item.title)}">
           <span class="macd-pill-ticker">${safeTk}</span>
           <span class="macd-pill-badge ${item.metricClass}">${_escapeHtml(item.badge)}</span>
         </button>`;
@@ -895,38 +1018,7 @@
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      const signal = this.getActiveSignal();
-      if (!signal) return;
-
-      const bars = this.getActiveBars();
-
-      if (!bars || bars.length < 2) {
-        ctx.fillStyle = '#090a0f';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#9ca3af';
-        ctx.font = '12px ui-monospace, "SF Mono", Menlo, monospace';
-        const msg = (this.state.historyCache && this.state.historyCache[this.state.activeTicker])
-          ? 'Insufficient bar history for selected timeframe / range'
-          : `Loading deep historical candlestick data for ${this.state.activeTicker}...`;
-        ctx.fillText(msg, 24, 40);
-        return;
-      }
-
-      // Synchronize dual-handle range scrubber with active window
-      const allBars = this.getAllBarsForActiveTimeframe();
-      if (allBars && allBars.length >= 2) {
-        let sIdx, eIdx;
-        if (this.state.customRange) {
-          sIdx = Math.max(0, Math.min(allBars.length - 1, this.state.customRange.startIdx));
-          eIdx = Math.max(sIdx, Math.min(allBars.length - 1, this.state.customRange.endIdx));
-        } else {
-          sIdx = Math.max(0, allBars.length - bars.length);
-          eIdx = allBars.length - 1;
-        }
-        this._syncSlider(allBars.length, sIdx, eIdx, bars);
-      }
-
-      // Setup High-DPI
+      // Setup High-DPI first so empty/error states also render crisply
       const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
       if (!rect || rect.width <= 0 || rect.height <= 0) {
@@ -953,6 +1045,43 @@
       ctx.fillStyle = '#090a0f';
       ctx.fillRect(0, 0, w, h);
 
+      const signal = this.getActiveSignal();
+      if (!signal) {
+        ctx.fillStyle = this.state.dataLoadError ? '#fb7185' : '#9ca3af';
+        ctx.font = '12px ui-monospace, "SF Mono", Menlo, monospace';
+        const msg = this.state.dataLoadError || 'Loading MACD momentum signals dataset...';
+        ctx.fillText(msg, 24, 40, Math.max(80, w - 48));
+        ctx.restore();
+        return;
+      }
+
+      const bars = this.getActiveBars();
+      if (!bars || bars.length < 2) {
+        ctx.fillStyle = '#9ca3af';
+        ctx.font = '12px ui-monospace, "SF Mono", Menlo, monospace';
+        const msg = (this.state.historyCache && this.state.historyCache[this.state.activeTicker])
+          ? 'Insufficient bar history for selected timeframe / range'
+          : `Loading deep historical candlestick data for ${this.state.activeTicker}...`;
+        ctx.fillText(msg, 24, 40, Math.max(80, w - 48));
+        ctx.restore();
+        return;
+      }
+
+      // Synchronize dual-handle range scrubber with active window
+      const allBars = this.getAllBarsForActiveTimeframe();
+      const allVols = this.getAllVolumesForActiveTimeframe();
+      if (allBars && allBars.length >= 2) {
+        let sIdx, eIdx;
+        if (this.state.customRange) {
+          sIdx = Math.max(0, Math.min(allBars.length - 1, this.state.customRange.startIdx));
+          eIdx = Math.max(sIdx, Math.min(allBars.length - 1, this.state.customRange.endIdx));
+        } else {
+          sIdx = Math.max(0, allBars.length - bars.length);
+          eIdx = allBars.length - 1;
+        }
+        this._syncSlider(allBars.length, sIdx, eIdx, bars);
+      }
+
       // Layout geometry
       const paddingLeft = 12;
       const paddingRight = 72; // Clean dedicated right Y-axis margin
@@ -969,15 +1098,92 @@
       const bottomY0 = topY1 + splitGap;
       const bottomY1 = bottomY0 + bottomPaneHeight;
 
-      const chartW = w - paddingLeft - paddingRight;
+      const chartW = Math.max(40, w - paddingLeft - paddingRight);
+
+      // Decimate into clean OHLC buckets when density < 1.5px per bar (e.g. 5,000 1H bars)
+      let drawBars = bars;
+      let isDecimated = false;
+      const allOffset = Math.max(0, allBars.length - bars.length);
+      const minSpacingPx = 1.5;
+      if (bars.length > 0 && (chartW / bars.length) < minSpacingPx) {
+        const maxBuckets = Math.max(20, Math.floor(chartW / 2));
+        const bucketSize = Math.ceil(bars.length / maxBuckets);
+        if (bucketSize > 1) {
+          isDecimated = true;
+          const bucketed = [];
+          for (let start = 0; start < bars.length; start += bucketSize) {
+            const end = Math.min(bars.length, start + bucketSize);
+            let bOpen = null, bClose = null, bHigh = -Infinity, bLow = Infinity;
+            let bMacd = null, bSig = null, bHist = null, bDt = '';
+            let volSum = 0, hasVol = false;
+            let repBar = bars[end - 1];
+            for (let k = start; k < end; k++) {
+              const item = bars[k];
+              if (!item) continue;
+              const io = Number(item.o), ih = Number(item.h), il = Number(item.l), ic = Number(item.c);
+              if (Number.isFinite(io) && io > 0 && Number.isFinite(ic) && ic > 0 && Number.isFinite(ih) && Number.isFinite(il)) {
+                if (bOpen == null) bOpen = io;
+                bClose = ic;
+                if (ih > bHigh) bHigh = ih;
+                if (il < bLow) bLow = il;
+                repBar = item;
+              }
+              if (item.dt) bDt = item.dt;
+              if (Number.isFinite(Number(item.macd))) bMacd = Number(item.macd);
+              if (Number.isFinite(Number(item.sig))) bSig = Number(item.sig);
+              if (Number.isFinite(Number(item.hist))) bHist = Number(item.hist);
+              const iv = this._getBarVolume(item, allOffset + k, allVols);
+              if (iv != null && Number.isFinite(iv)) {
+                volSum += iv;
+                hasVol = true;
+              }
+            }
+            if (bOpen != null && bClose != null && Number.isFinite(bHigh) && Number.isFinite(bLow)) {
+              bucketed.push({
+                dt: bDt,
+                o: bOpen,
+                h: bHigh,
+                l: bLow,
+                c: bClose,
+                macd: bMacd,
+                sig: bSig,
+                hist: bHist,
+                v: hasVol ? volSum : null,
+                _repBar: repBar
+              });
+            }
+          }
+          if (bucketed.length >= 2) drawBars = bucketed;
+          else isDecimated = false;
+        }
+      }
 
       // ── TOP PANE: CANDLESTICKS + PIVOTS ──
-      let minP = Math.min(...bars.map(b => b.l));
-      let maxP = Math.max(...bars.map(b => b.h));
+      let minP = Infinity;
+      let maxP = -Infinity;
+      for (let i = 0; i < drawBars.length; i++) {
+        const b = drawBars[i];
+        if (!b) continue;
+        const bl = Number(b.l), bh = Number(b.h);
+        if (Number.isFinite(bl) && bl > 0 && bl < minP) minP = bl;
+        if (Number.isFinite(bh) && bh > 0 && bh > maxP) maxP = bh;
+      }
+      if (!Number.isFinite(minP) || !Number.isFinite(maxP)) {
+        ctx.fillStyle = '#9ca3af';
+        ctx.font = '12px ui-monospace, "SF Mono", Menlo, monospace';
+        ctx.fillText('No finite price bars available for selected window', 24, 40, Math.max(80, w - 48));
+        ctx.restore();
+        return;
+      }
 
-      // Include structural pivots (P, R1, S1) in bounds only if enabled
-      if (this.state.showPivots && signal.pivots) {
-        const keyPivots = [signal.pivots.P, signal.pivots.R1, signal.pivots.S1].filter(v => v > 0);
+      const latestFullBar = allBars && allBars.length ? allBars[allBars.length - 1] : null;
+      const includesLatestSession = !latestFullBar || bars.some(b => b === latestFullBar || (b && latestFullBar && b.dt === latestFullBar.dt));
+
+      // Include structural pivots (P, R1, S1) only if enabled & viewing latest session window
+      if (this.state.showPivots && signal.pivots && includesLatestSession) {
+        const keyPivots = [signal.pivots.P, signal.pivots.R1, signal.pivots.S1]
+          .map(Number)
+          .filter(v => Number.isFinite(v) && v > 0);
         const nearPivots = keyPivots.filter(v => v >= minP * 0.85 && v <= maxP * 1.15);
         if (nearPivots.length > 0) {
           minP = Math.min(minP, ...nearPivots);
@@ -986,7 +1192,7 @@
       }
 
       // Pad bounds
-      const pRange = (maxP - minP) || 1;
+      const pRange = (maxP - minP) || Math.max(1e-4, Math.abs(maxP) * 0.02);
       minP -= pRange * 0.05;
       maxP += pRange * 0.05;
 
@@ -998,7 +1204,6 @@
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
       ctx.lineWidth = 1;
 
-      // Compute number of ticks with minTickSpacing of ~36px to prevent collisions
       const yTicks = Math.max(3, Math.min(6, Math.floor(topPaneHeight / 36)));
       ctx.font = '10px ui-monospace, "SF Mono", Menlo, monospace';
       ctx.fillStyle = '#71717a';
@@ -1012,22 +1217,20 @@
         ctx.lineTo(w - paddingRight, y);
         ctx.stroke();
 
-        // Right Y-axis price label: clean, round, never collides with pivots
         ctx.fillText(`$${val.toFixed(2)}`, w - paddingRight + 8, y + 3.5);
       }
 
       // Draw Structural Floor Pivots (P, R1, S1 only)
-      // Labels are drawn on the LEFT side of canvas to avoid Y-axis collisions
-      if (this.state.showPivots && signal.pivots) {
+      if (this.state.showPivots && signal.pivots && includesLatestSession) {
         const piv = signal.pivots;
         const pivotDefs = [
-          { key: 'R1', val: piv.R1, color: '#34d399', dash: [4, 4] },
-          { key: 'P',  val: piv.P,  color: '#f59e0b', dash: [] },
-          { key: 'S1', val: piv.S1, color: '#fb7185', dash: [4, 4] },
+          { key: 'R1', val: Number(piv.R1), color: '#34d399', dash: [4, 4] },
+          { key: 'P',  val: Number(piv.P),  color: '#f59e0b', dash: [] },
+          { key: 'S1', val: Number(piv.S1), color: '#fb7185', dash: [4, 4] },
         ];
 
         pivotDefs.forEach(pDef => {
-          if (pDef.val && pDef.val >= minP && pDef.val <= maxP) {
+          if (Number.isFinite(pDef.val) && pDef.val > 0 && pDef.val >= minP && pDef.val <= maxP) {
             const py = Math.round(getYTop(pDef.val)) + 0.5;
             ctx.save();
             ctx.strokeStyle = pDef.color;
@@ -1038,7 +1241,6 @@
             ctx.lineTo(w - paddingRight, py);
             ctx.stroke();
 
-            // Left-aligned subtle badge inside plot area (no collision with right price ticks)
             ctx.setLineDash([]);
             const labelText = `${pDef.key} $${pDef.val.toFixed(2)}`;
             ctx.font = '9px ui-monospace, "SF Mono", Menlo, monospace';
@@ -1059,23 +1261,27 @@
       }
 
       // Draw Candlesticks with dynamic sizing
-      const nBars = bars.length;
-      const barSpacing = chartW / nBars;
+      const nDraw = drawBars.length;
+      const barSpacing = chartW / nDraw;
       const candleWidth = Math.max(1, Math.min(18, Math.floor(barSpacing * 0.72)));
 
       let hoverBar = null;
       let hoverX = 0;
 
-      for (let i = 0; i < nBars; i++) {
-        const b = bars[i];
+      for (let i = 0; i < nDraw; i++) {
+        const b = drawBars[i];
+        if (!b) continue;
+        const bo = Number(b.o), bh = Number(b.h), bl = Number(b.l), bc = Number(b.c);
+        if (!Number.isFinite(bo) || !Number.isFinite(bh) || !Number.isFinite(bl) || !Number.isFinite(bc)) continue;
+
         const cx = paddingLeft + i * barSpacing + barSpacing / 2;
-        const isUp = b.c >= b.o;
+        const isUp = bc >= bo;
         const candleColor = isUp ? '#10b981' : '#f43f5e';
 
-        const yOpen = getYTop(b.o);
-        const yClose = getYTop(b.c);
-        const yHigh = getYTop(b.h);
-        const yLow = getYTop(b.l);
+        const yOpen = getYTop(bo);
+        const yClose = getYTop(bc);
+        const yHigh = getYTop(bh);
+        const yLow = getYTop(bl);
 
         // Wick
         ctx.strokeStyle = candleColor;
@@ -1091,93 +1297,125 @@
         const bodyHeight = Math.max(1.5, Math.abs(yClose - yOpen));
         ctx.fillRect(Math.round(cx - candleWidth / 2), Math.round(bodyTop), candleWidth, Math.round(bodyHeight));
 
-        // Directional Crossover Markers on candles (only on 1H interval or when spacing allows)
-        if (i >= 1 && barSpacing >= 6) {
-          const prev = bars[i - 1];
-          const isBullCross = (b.macd > b.sig) && (prev.macd <= prev.sig);
-          const isBearCross = (b.macd < b.sig) && (prev.macd >= prev.sig);
+        // Directional Crossover Markers (suppress seeded flat warm-up edges & decimated mode)
+        if (!isDecimated && i >= 1 && barSpacing >= 6) {
+          const prev = drawBars[i - 1];
+          const prevPrev = i >= 2 ? drawBars[i - 2] : null;
+          if (
+            prev
+            && Number.isFinite(Number(b.macd)) && Number.isFinite(Number(b.sig))
+            && Number.isFinite(Number(prev.macd)) && Number.isFinite(Number(prev.sig))
+          ) {
+            const bm = Number(b.macd), bs = Number(b.sig);
+            const pm = Number(prev.macd), ps = Number(prev.sig);
+            const ppValid = prevPrev && Number.isFinite(Number(prevPrev.macd)) && Number.isFinite(Number(prevPrev.sig));
+            const fromBelow = pm < ps || (pm === ps && ppValid && Number(prevPrev.macd) < Number(prevPrev.sig));
+            const fromAbove = pm > ps || (pm === ps && ppValid && Number(prevPrev.macd) > Number(prevPrev.sig));
+            const isBullCross = (bm > bs) && fromBelow;
+            const isBearCross = (bm < bs) && fromAbove;
 
-          if (isBullCross) {
-            const my = yLow + 8;
-            if (isUp) {
-              // Confirmed Green Candle Crossover
-              ctx.fillStyle = b.macd < 0 ? '#22d3ee' : '#10b981';
-              ctx.beginPath();
-              ctx.moveTo(cx, my);
-              ctx.lineTo(cx - 4, my + 7);
-              ctx.lineTo(cx + 4, my + 7);
-              ctx.closePath();
-              ctx.fill();
-
-              if (b.macd < 0) {
-                // Sub-Zero halo ring
-                ctx.strokeStyle = 'rgba(34, 211, 238, 0.45)';
-                ctx.lineWidth = 1;
+            if (isBullCross) {
+              const my = yLow + 8;
+              if (isUp) {
+                ctx.fillStyle = bm < 0 ? '#22d3ee' : '#10b981';
                 ctx.beginPath();
-                ctx.arc(cx, my + 3.5, 6, 0, Math.PI * 2);
+                ctx.moveTo(cx, my);
+                ctx.lineTo(cx - 4, my + 7);
+                ctx.lineTo(cx + 4, my + 7);
+                ctx.closePath();
+                ctx.fill();
+
+                if (bm < 0) {
+                  ctx.strokeStyle = 'rgba(34, 211, 238, 0.45)';
+                  ctx.lineWidth = 1;
+                  ctx.beginPath();
+                  ctx.arc(cx, my + 3.5, 6, 0, Math.PI * 2);
+                  ctx.stroke();
+                }
+              } else {
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 1.25;
+                ctx.beginPath();
+                ctx.moveTo(cx, my);
+                ctx.lineTo(cx - 4, my + 7);
+                ctx.lineTo(cx + 4, my + 7);
+                ctx.closePath();
                 ctx.stroke();
               }
-            } else {
-              // Unconfirmed: Bullish cross with Red Candle
-              ctx.strokeStyle = '#f59e0b';
-              ctx.lineWidth = 1.25;
-              ctx.beginPath();
-              ctx.moveTo(cx, my);
-              ctx.lineTo(cx - 4, my + 7);
-              ctx.lineTo(cx + 4, my + 7);
-              ctx.closePath();
-              ctx.stroke();
-            }
-          } else if (isBearCross) {
-            const my = yHigh - 8;
-            if (!isUp) {
-              // Confirmed Red Candle Crossover
-              ctx.fillStyle = '#f43f5e';
-              ctx.beginPath();
-              ctx.moveTo(cx, my);
-              ctx.lineTo(cx - 4, my - 7);
-              ctx.lineTo(cx + 4, my - 7);
-              ctx.closePath();
-              ctx.fill();
-            } else {
-              // Unconfirmed: Bearish cross with Green Candle
-              ctx.strokeStyle = '#f59e0b';
-              ctx.lineWidth = 1.25;
-              ctx.beginPath();
-              ctx.moveTo(cx, my);
-              ctx.lineTo(cx - 4, my - 7);
-              ctx.lineTo(cx + 4, my - 7);
-              ctx.closePath();
-              ctx.stroke();
+            } else if (isBearCross) {
+              const my = yHigh - 8;
+              if (!isUp) {
+                ctx.fillStyle = '#f43f5e';
+                ctx.beginPath();
+                ctx.moveTo(cx, my);
+                ctx.lineTo(cx - 4, my - 7);
+                ctx.lineTo(cx + 4, my - 7);
+                ctx.closePath();
+                ctx.fill();
+              } else {
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 1.25;
+                ctx.beginPath();
+                ctx.moveTo(cx, my);
+                ctx.lineTo(cx - 4, my - 7);
+                ctx.lineTo(cx + 4, my - 7);
+                ctx.closePath();
+                ctx.stroke();
+              }
             }
           }
         }
       }
 
-      if (this.state.isHovering && nBars > 0 && this.state.lastMouse.x >= paddingLeft && this.state.lastMouse.x <= w - paddingRight) {
-        const hIdx = Math.max(0, Math.min(nBars - 1, Math.floor((this.state.lastMouse.x - paddingLeft) / barSpacing)));
-        this.state.hoverIndex = hIdx;
-        hoverBar = bars[hIdx];
+      if (this.state.isHovering && nDraw > 0 && this.state.lastMouse.x >= paddingLeft && this.state.lastMouse.x <= w - paddingRight) {
+        const hIdx = Math.max(0, Math.min(nDraw - 1, Math.floor((this.state.lastMouse.x - paddingLeft) / barSpacing)));
+        this.state.hoverIndex = isDecimated
+          ? bars.indexOf(drawBars[hIdx]._repBar)
+          : hIdx;
+        hoverBar = drawBars[hIdx];
+        if (hoverBar && hoverBar.v == null && !isDecimated) {
+          const resolvedV = this._getBarVolume(hoverBar, allOffset + hIdx, allVols);
+          if (resolvedV != null) hoverBar = { ...hoverBar, v: resolvedV };
+        }
         hoverX = paddingLeft + hIdx * barSpacing + barSpacing / 2;
       } else {
         this.state.hoverIndex = null;
       }
 
-      // Pane Top Header label
+      // Pane Top Header label (clamped to chart width)
       ctx.fillStyle = '#9ca3af';
       ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.textAlign = 'left';
       const rangeTag = this.state.activeTimeframe === '1d' ? ` · ${this.state.range1D}` : '';
-      ctx.fillText(`${signal.ticker} · ${this.state.activeTimeframe.toUpperCase()}${rangeTag} Price Candles${this.state.showPivots ? ' & Structural Pivots' : ''}`, paddingLeft + 4, topY0 - 9);
+      ctx.fillText(
+        `${signal.ticker} · ${this.state.activeTimeframe.toUpperCase()}${rangeTag} Price Candles${this.state.showPivots ? ' & Structural Pivots' : ''}`,
+        paddingLeft + 4,
+        topY0 - 9,
+        Math.max(60, chartW - 8)
+      );
 
       // ── BOTTOM PANE: MACD (12, 26, 9) + 4-COLOR HISTOGRAM ──
-      let minM = Math.min(...bars.map(b => Math.min(b.macd, b.sig, b.hist)));
-      let maxM = Math.max(...bars.map(b => Math.max(b.macd, b.sig, b.hist)));
+      let minM = Infinity;
+      let maxM = -Infinity;
+      for (let i = 0; i < drawBars.length; i++) {
+        const b = drawBars[i];
+        if (!b) continue;
+        for (const val of [b.macd, b.sig, b.hist]) {
+          const nv = Number(val);
+          if (Number.isFinite(nv)) {
+            if (nv < minM) minM = nv;
+            if (nv > maxM) maxM = nv;
+          }
+        }
+      }
+      if (!Number.isFinite(minM) || !Number.isFinite(maxM)) {
+        minM = -0.1;
+        maxM = 0.1;
+      }
       const mRange = (maxM - minM) || 0.1;
       minM -= mRange * 0.1;
       maxM += mRange * 0.1;
 
-      // Ensure zero line is comfortably visible
       if (minM > 0) minM = -mRange * 0.1;
       if (maxM < 0) maxM = mRange * 0.1;
 
@@ -1212,11 +1450,13 @@
       ctx.fillText('0.00', w - paddingRight + 8, Math.round(yZero) + 3.5);
 
       // Draw 4-Color Histogram Bars
-      for (let i = 0; i < nBars; i++) {
-        const b = bars[i];
+      for (let i = 0; i < nDraw; i++) {
+        const b = drawBars[i];
+        if (!b || !Number.isFinite(Number(b.hist))) continue;
         const cx = paddingLeft + i * barSpacing + barSpacing / 2;
-        const hVal = b.hist || 0;
-        const prevH = i > 0 ? (bars[i - 1].hist || 0) : hVal;
+        const hVal = Number(b.hist);
+        const prevRaw = i > 0 && drawBars[i - 1] ? Number(drawBars[i - 1].hist) : hVal;
+        const prevH = Number.isFinite(prevRaw) ? prevRaw : hVal;
         const yH = getYBottom(hVal);
 
         let hColor;
@@ -1236,10 +1476,13 @@
       ctx.strokeStyle = '#38bdf8';
       ctx.lineWidth = 1.75;
       ctx.beginPath();
-      for (let i = 0; i < nBars; i++) {
+      let startedM = false;
+      for (let i = 0; i < nDraw; i++) {
+        const mv = drawBars[i] ? Number(drawBars[i].macd) : NaN;
+        if (!Number.isFinite(mv)) { startedM = false; continue; }
         const cx = paddingLeft + i * barSpacing + barSpacing / 2;
-        const my = getYBottom(bars[i].macd);
-        if (i === 0) ctx.moveTo(cx, my);
+        const my = getYBottom(mv);
+        if (!startedM) { ctx.moveTo(cx, my); startedM = true; }
         else ctx.lineTo(cx, my);
       }
       ctx.stroke();
@@ -1248,52 +1491,55 @@
       ctx.strokeStyle = '#f59e0b';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      for (let i = 0; i < nBars; i++) {
+      let startedS = false;
+      for (let i = 0; i < nDraw; i++) {
+        const sv = drawBars[i] ? Number(drawBars[i].sig) : NaN;
+        if (!Number.isFinite(sv)) { startedS = false; continue; }
         const cx = paddingLeft + i * barSpacing + barSpacing / 2;
-        const sy = getYBottom(bars[i].sig);
-        if (i === 0) ctx.moveTo(cx, sy);
+        const sy = getYBottom(sv);
+        if (!startedS) { ctx.moveTo(cx, sy); startedS = true; }
         else ctx.lineTo(cx, sy);
       }
       ctx.stroke();
 
-      // Bottom Pane Header label
+      // Bottom Pane Header label (clamped to chart width)
       ctx.fillStyle = '#9ca3af';
       ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.textAlign = 'left';
       const bottomLabel = w < 640
         ? 'MACD (12, 26, 9) · Momentum Histogram'
         : 'MACD (12, 26, close, 9 EMA) · Sky: MACD | Amber: Signal | 4-Color Histogram';
-      ctx.fillText(bottomLabel, paddingLeft + 4, bottomY0 - 7);
+      ctx.fillText(bottomLabel, paddingLeft + 4, bottomY0 - 7, Math.max(60, chartW - 8));
 
-      // Draw Date/Time X-Axis Ticks (clamped within plot bounds)
+      // Draw Date/Time X-Axis Ticks (collision-aware spacing + clamped within plot bounds)
       ctx.fillStyle = '#64748b';
       ctx.font = '9px ui-monospace, "SF Mono", Menlo, monospace';
       ctx.textAlign = 'center';
-      const tickStep = Math.max(1, Math.floor(nBars / 6));
-      for (let i = 0; i < nBars; i += tickStep) {
-        const b = bars[i];
+      const maxTicks = Math.max(2, Math.floor(chartW / 76));
+      const tickStep = Math.max(1, Math.ceil(nDraw / maxTicks));
+      let lastRight = -Infinity;
+      for (let i = 0; i < nDraw; i += tickStep) {
+        const b = drawBars[i];
         const cx = paddingLeft + i * barSpacing + barSpacing / 2;
-        const rawDt = b.dt || '';
+        const rawDt = (b && b.dt) || '';
         let dtLabel = rawDt;
         if (this.state.activeTimeframe === '1d') {
-          // If viewing multi-year, display YYYY-MM
-          dtLabel = nBars > 300 ? rawDt.slice(0, 7) : rawDt;
+          dtLabel = bars.length > 300 ? rawDt.slice(0, 7) : rawDt;
         } else {
-          // 1H view: if >= 1000 bars show YYYY-MM-DD, else MM-DD HH:MM
-          dtLabel = nBars > 1000 ? rawDt.slice(0, 10) : (rawDt.length > 10 ? rawDt.slice(5) : rawDt);
+          dtLabel = bars.length > 1000 ? rawDt.slice(0, 10) : (rawDt.length > 10 ? rawDt.slice(5) : rawDt);
         }
         const halfTickW = ctx.measureText(dtLabel).width / 2;
         const clampedX = Math.max(paddingLeft + halfTickW, Math.min(w - paddingRight - halfTickW, cx));
+        if (clampedX - halfTickW < lastRight + 8) continue;
+        lastRight = clampedX + halfTickW;
         ctx.fillText(dtLabel, clampedX, bottomY1 + 15);
       }
 
       // ── SUBTLE HOVER & TOOLTIP (NO CROSSHAIRS) ──
       if (this.state.isHovering && hoverBar && hoverX > 0) {
-        // Subtle vertical column highlight over active bar (without crosshair hairlines)
         ctx.fillStyle = 'rgba(255, 255, 255, 0.035)';
         ctx.fillRect(Math.round(hoverX - barSpacing / 2), topY0, Math.max(1, Math.round(barSpacing)), bottomY1 - topY0);
 
-        // Active Date Tag on X-Axis (clamped within plot bounds)
         const hDt = hoverBar.dt || '';
         const hDtLabel = hDt.length > 10 ? hDt.slice(5) : hDt;
         ctx.font = '9px ui-monospace, "SF Mono", Menlo, monospace';
@@ -1308,9 +1554,9 @@
         ctx.textAlign = 'center';
         ctx.fillText(hDtLabel, badgeCenterX, bottomY1 + 15);
 
-        // Update Floating Tooltip & HUD
-        this.renderTooltip(hoverBar, hoverX, rect.top);
-        this.updateHUD(hoverBar);
+        const repBar = hoverBar._repBar || hoverBar;
+        this.renderTooltip(hoverBar, hoverX, this.state.lastMouse.y);
+        this.updateHUD(repBar);
       } else {
         const tooltip = document.getElementById('macd-tooltip');
         if (tooltip && tooltip.style.display !== 'none') {
@@ -1323,28 +1569,28 @@
     },
 
     /** Render Floating Tooltip */
-    renderTooltip(bar, hoverX, rectTop) {
+    renderTooltip(bar, hoverX, pointerY) {
       const tooltip = document.getElementById('macd-tooltip');
       if (!tooltip) return;
 
-      const isSubZero = bar.macd < 0;
-      const spread = (bar.macd || 0) - (bar.sig || 0);
-      const isUp = bar.c >= bar.o;
+      const isSubZero = Number(bar.macd) < 0;
+      const spread = Number(bar.macd || 0) - Number(bar.sig || 0);
+      const isUp = Number(bar.c) >= Number(bar.o);
       const candleLabel = isUp ? '<strong style="color:#10b981">GREEN (Bullish)</strong>' : '<strong style="color:#f43f5e">RED (Bearish)</strong>';
 
       tooltip.innerHTML = `
         <div style="font-weight:700;color:#22d3ee;margin-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:4px;display:flex;justify-content:space-between">
           <span>${_escapeHtml(bar.dt || 'Bar Data')}</span>
-          <span style="color:#a1a1aa;font-weight:500;font-size:0.65rem">${this.state.activeTimeframe.toUpperCase()} Interval</span>
+          <span style="color:#a1a1aa;font-weight:500;font-size:0.6875rem">${this.state.activeTimeframe.toUpperCase()} Interval</span>
         </div>
         <div style="display:grid;grid-template-columns:auto auto;gap:4px 14px;font-size:0.72rem;font-variant-numeric:tabular-nums">
           <span style="color:#9ca3af">Price:</span> <strong style="color:#ffffff">$${Number(bar.c || 0).toFixed(2)}</strong>
           <span style="color:#9ca3af">O / H / L:</span> <span>$${Number(bar.o || 0).toFixed(2)} / $${Number(bar.h || 0).toFixed(2)} / $${Number(bar.l || 0).toFixed(2)}</span>
           <span style="color:#9ca3af">Candle:</span> <span>${candleLabel}</span>
-          ${bar.v ? `<span style="color:#9ca3af">Volume:</span> <span>${Number(bar.v || 0).toLocaleString()}</span>` : ''}
+          ${bar.v != null && Number(bar.v) > 0 ? `<span style="color:#9ca3af">Volume:</span> <span>${Number(bar.v).toLocaleString()}</span>` : ''}
           <span style="color:#38bdf8">MACD (12,26):</span> <strong style="color:#38bdf8">${Number(bar.macd || 0).toFixed(4)}</strong>
           <span style="color:#f59e0b">Signal (9):</span> <strong style="color:#f59e0b">${Number(bar.sig || 0).toFixed(4)}</strong>
-          <span style="color:#34d399">Histogram:</span> <strong style="color:${(bar.hist || 0) >= 0 ? '#10b981' : '#f43f5e'}">${(bar.hist || 0) >= 0 ? '+' : ''}${Number(bar.hist || 0).toFixed(4)}</strong>
+          <span style="color:#34d399">Histogram:</span> <strong style="color:${Number(bar.hist || 0) >= 0 ? '#10b981' : '#f43f5e'}">${Number(bar.hist || 0) >= 0 ? '+' : ''}${Number(bar.hist || 0).toFixed(4)}</strong>
           <span style="color:#9ca3af">Spread:</span> <span>${spread >= 0 ? '+' : ''}${Number(spread).toFixed(4)}</span>
           <span style="color:#9ca3af">Regime:</span> <span style="color:${isSubZero ? '#34d399' : '#38bdf8'}">${isSubZero ? 'Sub-Zero (Convex)' : 'Supra-Zero'}</span>
         </div>
@@ -1353,22 +1599,38 @@
       tooltip.style.display = 'block';
       const container = document.getElementById('macd-canvas-container');
       const containerW = container ? container.clientWidth : 800;
+      const containerH = container ? container.clientHeight : 480;
       const tooltipW = tooltip.offsetWidth || 230;
+      const tooltipH = tooltip.offsetHeight || 180;
 
       let left = hoverX + 16;
-      if (left + tooltipW > containerW - 14) {
+      if (left + tooltipW > containerW - 10) {
         left = hoverX - tooltipW - 16;
       }
-      if (left < 10) left = 10;
+      left = Math.max(8, Math.min(Math.max(8, containerW - tooltipW - 8), left));
+
+      let top = Number.isFinite(pointerY) ? (pointerY - Math.round(tooltipH * 0.45)) : 28;
+      if (top + tooltipH > containerH - 8) {
+        top = containerH - tooltipH - 8;
+      }
+      top = Math.max(8, top);
+
       tooltip.style.left = `${Math.round(left)}px`;
-      tooltip.style.top = '38px';
+      tooltip.style.top = `${Math.round(top)}px`;
     },
 
-    /** Render 160-Instrument Screener Table */
+    /** Render Universe Screener Table */
     renderScreenerTable() {
       const tbody = document.getElementById('macd-screener-tbody');
       const countEl = document.getElementById('macd-screener-count');
-      if (!tbody || !this.state.signalsData || !this.state.signalsData.signals) return;
+      if (!tbody) return;
+      if (!this.state.signalsData || !Array.isArray(this.state.signalsData.signals)) {
+        if (this.state.dataLoadError) {
+          tbody.innerHTML = `<tr><td colspan="14" style="text-align:center;padding:2.5rem 1rem;color:#fb7185">${_escapeHtml(this.state.dataLoadError)}</td></tr>`;
+          if (countEl) countEl.textContent = 'Dataset unavailable';
+        }
+        return;
+      }
 
       let list = [...this.state.signalsData.signals];
 
@@ -1397,18 +1659,27 @@
         );
       }
 
-      // Sort
+      // Sort (missing values placed consistently at bottom)
       const key = this.state.sortKey;
       const asc = this.state.sortAsc;
       list.sort((a, b) => {
-        let va = a[key] !== undefined ? a[key] : 0;
-        let vb = b[key] !== undefined ? b[key] : 0;
+        let va = a[key];
+        let vb = b[key];
+        const aMissing = va == null || (typeof va === 'number' && !Number.isFinite(va));
+        const bMissing = vb == null || (typeof vb === 'number' && !Number.isFinite(vb));
+        if (aMissing && bMissing) return 0;
+        if (aMissing) return 1;
+        if (bMissing) return -1;
         if (key === 'leverage') {
           va = parseFloat(String(va).replace('x', '')) || 0;
           vb = parseFloat(String(vb).replace('x', '')) || 0;
         }
+        if (typeof va === 'boolean' || typeof vb === 'boolean') {
+          va = va ? 1 : 0;
+          vb = vb ? 1 : 0;
+        }
         if (typeof va === 'string' || typeof vb === 'string') {
-          return asc ? String(va || '').localeCompare(String(vb || '')) : String(vb || '').localeCompare(String(va || ''));
+          return asc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
         }
         return asc ? va - vb : vb - va;
       });
@@ -1438,18 +1709,22 @@
       let html = '';
       list.forEach(s => {
         const isActive = s.ticker === this.state.activeTicker;
-        const candleColor = s.candle_color_1h || (s.chg_1h_pct >= 0 ? 'GREEN' : 'RED');
+        const candleColor = s.candle_color_1h
+          || ((s.close_1h != null && s.open_1h != null)
+            ? (Number(s.close_1h) >= Number(s.open_1h) ? 'GREEN' : 'RED')
+            : (Number(s.chg_1h_pct || 0) >= 0 ? 'GREEN' : 'RED'));
         const isGreenCandle = candleColor === 'GREEN';
+        const isRedCandle = candleColor === 'RED';
         const candlePill = `<span class="macd-candle-pill ${isGreenCandle ? 'green' : 'red'}">${candleColor}</span>`;
 
         let badgeHtml = '';
-        if (s.signal_state === 'SUB_ZERO_BOUNCE' || (s.bull_cross_fresh && s.is_subzero)) {
+        if (s.signal_state === 'SUB_ZERO_BOUNCE' || (s.bull_cross_fresh && s.is_subzero && isGreenCandle)) {
           badgeHtml = '<span class="macd-badge macd-badge-subzero">Sub-Zero (Confirmed)</span>';
         } else if (s.signal_state === 'UNCONFIRMED_CROSS') {
           badgeHtml = '<span class="macd-badge macd-badge-unconfirmed">Cross (Unconfirmed)</span>';
-        } else if (s.signal_state === 'BULLISH_CROSS' || s.bull_cross_fresh) {
+        } else if (s.signal_state === 'BULLISH_CROSS' || (s.bull_cross_fresh && isGreenCandle)) {
           badgeHtml = '<span class="macd-badge macd-badge-bull">Bull Cross (Confirmed)</span>';
-        } else if (s.signal_state === 'BEARISH_CROSS' || s.bear_cross_fresh) {
+        } else if (s.signal_state === 'BEARISH_CROSS' || (s.bear_cross_fresh && isRedCandle)) {
           badgeHtml = '<span class="macd-badge macd-badge-bear">Bear Exit (Confirmed)</span>';
         } else if (s.signal_state === 'UNCONFIRMED_BEAR_CROSS') {
           badgeHtml = '<span class="macd-badge macd-badge-neutral">Bear Cross (Unconf)</span>';
@@ -1468,19 +1743,20 @@
         const m1h = Number(s.macd_1h || 0);
         const s1h = Number(s.signal_1h || 0);
         const h1h = Number(s.hist_1h || 0);
-        const rv1h = Number(s.rvol_1h || 1.0);
+        const rawRv1h = s.rvol_1h != null ? Number(s.rvol_1h) : NaN;
+        const hasRv1h = Number.isFinite(rawRv1h) && rawRv1h > 0;
         const safeTk = _escapeHtml(s.ticker);
         const safeName = _escapeHtml(s.fund_name);
         const safeLev = _escapeHtml(s.leverage);
 
         html += `
-          <tr class="${isActive ? 'active-row' : ''}" data-ticker="${safeTk}" onclick="window.MACDStrategy.setTicker(this.dataset.ticker); window.MACDStrategy.setView('chart'); const p = document.getElementById('macd-chart-view-panel'); if (p) p.scrollIntoView({behavior:'smooth',block:'nearest'});">
+          <tr class="${isActive ? 'active-row' : ''}" data-ticker="${safeTk}">
             <td><strong style="color:#22d3ee">${safeTk}</strong></td>
             <td style="color:#f3f4f6;max-width:240px;overflow:hidden;text-overflow:ellipsis">${safeName}</td>
             <td><span class="macd-badge macd-badge-neutral">${safeLev}</span></td>
             <td style="text-align:right">
               $${Number(s.latest_price || 0).toFixed(2)}
-              ${s.live_premarket_price ? `<div style="font-size:9.5px;color:${(s.live_premarket_chg_pct || 0) >= 0 ? '#10b981' : '#f43f5e'};font-weight:700">Pre: $${Number(s.live_premarket_price).toFixed(2)} (${(s.live_premarket_chg_pct || 0) >= 0 ? '+' : ''}${Number(s.live_premarket_chg_pct || 0).toFixed(1)}%)</div>` : ''}
+              ${s.live_premarket_price ? `<div style="font-size:0.6875rem;color:${(s.live_premarket_chg_pct || 0) >= 0 ? '#10b981' : '#f43f5e'};font-weight:700">Pre: $${Number(s.live_premarket_price).toFixed(2)} (${(s.live_premarket_chg_pct || 0) >= 0 ? '+' : ''}${Number(s.live_premarket_chg_pct || 0).toFixed(1)}%)</div>` : ''}
             </td>
             <td style="text-align:center">${candlePill}</td>
             <td style="text-align:right;color:${c1h >= 0 ? '#10b981' : '#f43f5e'}">${c1h >= 0 ? '+' : ''}${c1h.toFixed(2)}%</td>
@@ -1488,7 +1764,7 @@
             <td style="text-align:right;color:#38bdf8">${m1h.toFixed(3)}</td>
             <td style="text-align:right;color:#f59e0b">${s1h.toFixed(3)}</td>
             <td style="text-align:right;color:${h1h >= 0 ? '#10b981' : '#f43f5e'}">${h1h >= 0 ? '+' : ''}${h1h.toFixed(3)}</td>
-            <td style="text-align:right;color:${rv1h >= 1.5 ? '#22d3ee' : '#9ca3af'}">${rv1h.toFixed(2)}x</td>
+            <td style="text-align:right;color:${hasRv1h && rawRv1h >= 1.5 ? '#22d3ee' : '#9ca3af'}">${hasRv1h ? `${rawRv1h.toFixed(2)}x` : '—'}</td>
             <td style="text-align:center">${s.daily_trend_bullish ? '<span style="color:#10b981">UP</span>' : '<span style="color:#f43f5e">DOWN</span>'}</td>
             <td style="text-align:right"><strong style="color:${scoreColor}">${score > 0 ? '+' : ''}${score}</strong></td>
             <td style="text-align:center">${badgeHtml}</td>

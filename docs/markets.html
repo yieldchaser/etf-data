@@ -125,7 +125,7 @@
 <!-- Singleton tooltip -->
 <div id="tt"></div>
 
-<div id="markets-app" x-data="marketsApp()" x-init="load(); $watch('activeTab', t => _ensureSecondaryLoaded(t))" x-cloak class="max-w-[1600px] mx-auto px-3 sm:px-5 py-4 sm:py-6">
+<div id="markets-app" x-data="marketsApp()" x-init="load()" x-cloak class="max-w-[1600px] mx-auto px-3 sm:px-5 py-4 sm:py-6">
 
   <!-- HEADER -->
   <header class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5 pb-4 border-b" style="border-color: var(--border)">
@@ -293,9 +293,9 @@
               :class="activeTab === 'flows' ? 'tab-active' : ''"
               class="px-3 py-1.5 rounded-md border font-medium tracking-wider uppercase text-xs transition shrink-0"
               :style="activeTab === 'flows' ? '' : 'color: var(--text-2); border-color: var(--border)'"
-               @mouseenter="showTt($event, 'ETF estimated net flows - 160 curated ETFs across 10 categories')"
+               @mouseenter="showTt($event, 'ETF estimated net flows - leveraged & inverse ETF universe')"
               @mouseleave="hideTt()"
-               @focus="showTt($event, 'ETF estimated net flows - 160 curated ETFs across 10 categories')"
+               @focus="showTt($event, 'ETF estimated net flows - leveraged & inverse ETF universe')"
               @blur="hideTt()">
         Fund Flows
       </button>
@@ -698,7 +698,7 @@
               </div>
               <div x-html="assetReturnsBarSvg"
                    @mousemove="detailBarHover($event)"
-                   @mouseleave="detailBarHoverInfo = null"
+                   @mouseleave="detailBarHoverInfo = null; const g = $event.currentTarget.querySelector('#detail-bar-guide'); if (g) g.setAttribute('opacity', '0')"
                    style="width:100%;overflow-x:auto;background:#111;"></div>
               <!-- Hover info bar -->
               <div x-show="detailBarHoverInfo" class="px-4 py-2 flex items-center gap-6 text-xs num font-mono"
@@ -710,7 +710,7 @@
                   <span class="text-[10px] font-mono" style="color: var(--amber)"
                         x-text="'vs ' + (detailBarHoverInfo.compareRet >= 0 ? '+' : '') + (detailBarHoverInfo.compareRet * 100).toFixed(2) + '%'"></span>
                 </template>
-                <span x-show="detailBarHoverInfo?.partial" class="text-[9px]" style="color: var(--amber)">⚠ partial year</span>
+                <span x-show="detailBarHoverInfo?.partial" class="text-[9px]" style="color: var(--amber)">partial year</span>
                 <span class="ml-auto text-[9px]" style="color: var(--text-3)"
                       x-text="activeCcy !== 'Local' ? 'Priced in ' + activeCcy : (activeReal ? 'Real (CPI-adj)' : 'Local currency')"></span>
               </div>
@@ -770,7 +770,7 @@
 
             <!-- Monthly Heatmap - year × month, colored by monthly return -->
             <div x-show="detailChartMode === 'heatmap'" class="overflow-auto scrollbar" style="max-height: 60vh;">
-              <div x-html="assetMonthlyHeatmapHtml" x-effect="if (assetMonthlyHeatmapHtml) $nextTick(() => _initDecadeObserver())" style="min-width: 500px;"></div>
+              <div x-html="assetMonthlyHeatmapHtml" @click="const btn = $event.target.closest('button.decade-btn[data-decade]'); if (btn) _scrollToDecade(parseInt(btn.dataset.decade));" x-effect="if (assetMonthlyHeatmapHtml) $nextTick(() => _initDecadeObserver())" style="min-width: 500px;"></div>
             </div>
 
             <!-- Multi-Currency Table - all 5 lenses at once -->
@@ -1227,7 +1227,7 @@
 
       <!-- Periodic table grid -->
       <div class="overflow-x-auto scrollbar rounded-lg border" style="background: var(--bg); border-color: var(--border)">
-        <div x-html="periodicTableHtml" style="min-width: 600px;"></div>
+        <div x-html="periodicTableHtml" @mouseover="_onPeriodicHover($event)" @mouseleave="_clearPeriodicHover()" style="min-width: 600px;"></div>
       </div>
 
       <!-- Legend -->
@@ -1268,7 +1268,7 @@
           <span class="label" style="font-size:9px;">SHOW</span>
           <div class="flex gap-1">
             <template x-for="r in ['All','50Y','30Y','20Y','10Y']" :key="r">
-              <button @click="ddTimeRange = r; if (r !== 'All') trcSetPreset(r.toLowerCase().replace('y','y')); else trcSetPreset('max')"
+              <button @click="ddTimeRange = r"
                       :class="ddTimeRange === r ? 'tab-active' : ''"
                       class="px-2.5 py-1 rounded-md border font-medium text-xs transition"
                       :style="ddTimeRange === r ? '' : 'color: var(--text-2); border-color: var(--border)'"
@@ -1313,7 +1313,7 @@
                           :style="activeDrawdownAssets.has(a.key) ? `color: ${a.color}` : 'color: var(--text-3)'">
                     <span class="w-2 h-2 rounded-sm flex-shrink-0" :style="`background: ${activeDrawdownAssets.has(a.key) ? a.color : '#3f3f46'}`"></span>
                     <span class="truncate" x-text="a.shortName"></span>
-                    <span x-show="activeDrawdownAssets.has(a.key)" class="ml-auto text-[8px] opacity-60">✓</span>
+                    <span x-show="activeDrawdownAssets.has(a.key)" class="ml-auto text-[9px] font-mono opacity-65">ON</span>
                   </button>
                 </template>
               </div>
@@ -1329,7 +1329,7 @@
           <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
             <div x-html="drawdownChartSvg"
                  @mousemove="drawdownHover($event)"
-                 @mouseleave="ddHoverInfo = null"
+                 @mouseleave="ddHoverInfo = null; const g = $event.currentTarget.querySelector('#dd-guide'); if (g) g.setAttribute('opacity', '0')"
                  style="width: 100%; overflow-x: auto;"></div>
             <!-- Hover bar -->
             <div class="px-4 py-2 flex justify-center items-center gap-6 text-xs num font-mono"
@@ -1337,7 +1337,7 @@
               <template x-if="ddHoverInfo">
                 <div class="flex flex-wrap justify-center gap-x-6 gap-y-1">
                   <span style="color: var(--text-3)" x-text="ddHoverInfo?.date || ''"></span>
-                  <template x-for="item in (ddHoverInfo?.values || []).filter(v => v.dd !== null && v.dd < 0)" :key="item.key">
+                  <template x-for="item in (ddHoverInfo?.values || []).filter(v => v.dd !== null)" :key="item.key">
                     <span :style="`color: ${item.color}`"
                           x-text="`${item.name}: ${(item.dd * 100).toFixed(1)}%`"></span>
                   </template>
@@ -1490,7 +1490,7 @@
                  : `ROLLING ${hpHorizon}Y ANNUALISED RETURN - ${hpAssetName}`"></div>
         <div x-html="hpChartSvg"
              @mousemove="hpChartHover($event)"
-             @mouseleave="hpHoverInfo = null"
+             @mouseleave="hpHoverInfo = null; const g = $event.currentTarget.querySelector('#hp-guide'); if (g) g.setAttribute('opacity', '0')"
              style="width:100%;overflow-x:auto;"></div>
         <div class="px-4 py-2 flex justify-center items-center gap-6 text-xs num font-mono"
              style="border-top: 1px solid var(--border); background: var(--surface-2); min-height: 32px;">
@@ -1502,7 +1502,7 @@
             </div>
           </template>
           <template x-if="!hpHoverInfo">
-            <span style="color: var(--text-3)" x-text="`Hover over the chart to see rolling ${hpHorizon}Y returns`"></span>
+            <span style="color: var(--text-3)" x-text="hpMode === 'trailing' ? 'Hover over the chart to see trailing 1Y returns' : `Hover over the chart to see rolling ${hpHorizon}Y returns`"></span>
           </template>
         </div>
       </div>
@@ -1575,7 +1575,7 @@
               <template x-for="m in ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']" :key="m">
                 <th class="matrix-sticky-header"
                     style="height:24px;text-align:center;font-size:10px;font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--text-3);border-bottom:1px solid var(--border-2);"
-                    :style="(new Date().getMonth() + 1) === (['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(m) + 1) ? 'color:var(--cyan);border-bottom:2px solid var(--cyan);height:24px;text-align:center;font-size:10px;font-family:ui-monospace,Menlo,Consolas,monospace;' : ''"
+                    :style="_activeAsofMonth === (['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(m) + 1) ? 'color:var(--cyan);border-bottom:2px solid var(--cyan);height:24px;text-align:center;font-size:10px;font-family:ui-monospace,Menlo,Consolas,monospace;' : ''"
                     x-text="m"></th>
               </template>
               <th class="matrix-sticky-header" style="width:60px;height:24px;text-align:center;font-size:10px;font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--cyan);border-bottom:1px solid var(--border-2);">Best</th>
@@ -1595,8 +1595,8 @@
                          table. Hit rate still drives opacity (0.4..1.0). Low-sample cells
                          (n<10) get an italic underline as a visual caveat. -->
                     <div style="height:30px;display:flex;align-items:center;justify-content:center;font-size:10px;font-family:ui-monospace,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;cursor:default;border:1px solid rgba(0,0,0,0.3);"
-                         :style="`background:${seasonalityCellColor(cell.avg)};color:${seasonalityCellText(cell.avg)};opacity:${cell.avg !== null ? (0.45 + (cell.hitRate || 0.5) * 0.55) : 1};outline:${(new Date().getMonth()) === mi ? '2px solid var(--cyan)' : 'none'};outline-offset:-1px;text-decoration:${cell.n > 0 && cell.n < 10 ? 'underline dotted' : 'none'};`"
-                         @mouseenter="showTt($event, `${row.name}\n${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][mi]}: avg ${cell.avg !== null ? ((cell.avg>=0?'+':'')+(cell.avg*100).toFixed(1)+'%') : '—'}\nHit rate: ${cell.hitRate !== null ? (cell.hitRate*100).toFixed(0)+'%' : '—'} (n=${cell.n} years)${cell.n > 0 && cell.n < 10 ? '\n⚠ Low sample size' : ''}`)"
+                         :style="`background:${seasonalityCellColor(cell.avg)};color:${seasonalityCellText(cell.avg)};opacity:${cell.avg !== null ? (0.45 + (cell.hitRate || 0.5) * 0.55) : 1};outline:${(_activeAsofMonth - 1) === mi ? '2px solid var(--cyan)' : 'none'};outline-offset:-1px;text-decoration:${cell.n > 0 && cell.n < 10 ? 'underline dotted' : 'none'};`"
+                         @mouseenter="showTt($event, `${row.name}\n${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][mi]}: avg ${cell.avg !== null ? ((cell.avg>=0?'+':'')+(cell.avg*100).toFixed(1)+'%') : '—'}\nHit rate: ${cell.hitRate !== null ? (cell.hitRate*100).toFixed(0)+'%' : '—'} (n=${cell.n} years)${cell.n > 0 && cell.n < 10 ? '\nLow sample size' : ''}`)"
                          @mouseleave="hideTt()"
                          x-text="cell.avg !== null ? (cell.avg>=0?'+':'')+(cell.avg*100).toFixed(1)+'%' : ''">
                     </div>
@@ -1671,7 +1671,7 @@
         <div class="px-3 py-2 label" style="border-bottom:1px solid var(--border);color:var(--cyan)">GROWTH OF $100 (LOG SCALE)</div>
         <div x-html="growthChartSvg"
              @mousemove="growthHover($event)"
-             @mouseleave="growthHoverInfo = null; if ($event.currentTarget.querySelector('#growth-crosshair')) $event.currentTarget.querySelector('#growth-crosshair').setAttribute('opacity', '0')"
+             @mouseleave="growthHoverInfo = null; const g = $event.currentTarget.querySelector('#growth-guide'); if (g) g.setAttribute('opacity', '0')"
              style="width:100%;overflow-x:auto;"></div>
         <div class="px-4 py-2 flex justify-center flex-wrap gap-x-6 gap-y-1 text-xs num font-mono"
              style="border-top:1px solid var(--border);background:var(--surface-2);min-height:32px;">
@@ -1713,7 +1713,7 @@
         </div>
         <div x-html="rollingCorrChartSvg"
              @mousemove="rollingCorrHover($event)"
-             @mouseleave="rollingCorrHoverInfo = null; if ($event.currentTarget.querySelector('#rolling-crosshair')) $event.currentTarget.querySelector('#rolling-crosshair').setAttribute('opacity', '0')"
+             @mouseleave="rollingCorrHoverInfo = null; const g = $event.currentTarget.querySelector('#rolling-guide'); if (g) g.setAttribute('opacity', '0')"
              style="width:100%;overflow-x:auto;"></div>
         <div class="px-4 py-2 flex justify-center flex-wrap gap-x-6 gap-y-1 text-xs num font-mono"
              style="border-top:1px solid var(--border);background:var(--surface-2);min-height:32px;">
@@ -1744,7 +1744,7 @@
               </div>
               <div x-html="ratio.svg"
                    @mousemove="ratioHover($event, ratio.id)"
-                   @mouseleave="ratioHoverInfo[ratio.id] = null; if ($event.currentTarget.querySelector('#ratio-crosshair-' + ratio.id)) $event.currentTarget.querySelector('#ratio-crosshair-' + ratio.id).setAttribute('opacity', '0')"
+                   @mouseleave="ratioHoverInfo[ratio.id] = null; const g = $event.currentTarget.querySelector('#ratio-guide-' + ratio.id); if (g) g.setAttribute('opacity', '0')"
                    style="width:100%;overflow-x:auto;"></div>
               <div class="px-4 py-2 flex justify-center items-center gap-6 text-xs num font-mono"
                    style="border-top:1px solid var(--border);background:var(--surface-2);min-height:32px;">
@@ -1900,7 +1900,7 @@
       <div x-show="volSubPanel === 'History'" class="mt-5">
         <div class="text-xs mb-2" style="color: var(--text-3)">MONTHLY Z-SCORE HEATMAP - rows = vol indices · columns = months · cell = z-score of monthly average vs full history</div>
         <div class="rounded-lg border overflow-auto scrollbar" style="max-height: 60vh; background: var(--bg); border-color: var(--border)">
-          <div x-html="volMonthlyZHeatmapHtml"></div>
+          <div x-html="volMonthlyZHeatmapHtml" @mouseover="_onTipTargetHover($event)" @mouseleave="hideTt()"></div>
         </div>
         <!-- Color legend - bound to _zCellColor() so what you see in the heatmap is what's documented here. -->
         <div class="flex items-center gap-2 mt-3 text-[10px] font-mono flex-wrap" style="color: var(--text-3)">
@@ -1943,7 +1943,7 @@
         <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
           <div x-html="volLevelChartSvg"
                @mousemove="volChartHover($event)"
-               @mouseleave="volHoverInfo = null; if ($event.currentTarget.querySelector('#vol-crosshair')) $event.currentTarget.querySelector('#vol-crosshair').setAttribute('opacity', '0')"
+               @mouseleave="volHoverInfo = null; const g = $event.currentTarget.querySelector('#vol-guide'); if (g) g.setAttribute('opacity', '0')"
                style="width: 100%; overflow-x: auto;"></div>
           <!-- Hover info bar (centered & always visible) -->
           <div class="px-4 py-2 flex justify-center flex-wrap gap-x-6 gap-y-1 text-xs num font-mono"
@@ -1968,7 +1968,7 @@
       <div x-show="volSubPanel === 'Levels'" class="mt-6">
         <div class="text-xs mb-2" style="color: var(--text-3)">CROSS-ASSET COMPARISON - percentile rank of all 7 vol indices vs own history. Comparable across indices regardless of raw level.</div>
         <div class="rounded-lg border overflow-hidden flex justify-center" style="background: var(--surface); border-color: var(--border); padding: 12px 0;">
-          <div x-html="volZBarHtml" style="width:100%;max-width:780px;"></div>
+          <div x-html="volZBarHtml" @mouseover="_onTipTargetHover($event)" @mouseleave="hideTt()" style="width:100%;max-width:780px;"></div>
         </div>
         <!-- Z-score table -->
         <div class="mt-4 rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
@@ -2037,7 +2037,7 @@
       <header class="flow-header">
         <div class="flow-header-title-wrap">
           <div style="display:flex;flex-wrap:wrap;gap:0.35rem;align-items:center">
-            <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'scanner' ? 'true' : 'false'" @click="setFlowViewMode('scanner')" x-text="`Cross-ETF leaderboard (${flowCatalog ? flowCatalog.counts.instruments : 160})`"></button>
+            <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'scanner' ? 'true' : 'false'" @click="setFlowViewMode('scanner')" x-text="flowCatalog ? `Cross-ETF leaderboard (${flowCatalog.counts.instruments})` : 'Cross-ETF leaderboard'"></button>
             <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'studio' ? 'true' : 'false'" @click="setFlowViewMode('studio')">Instrument studio</button>
             <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'matrix' ? 'true' : 'false'" @click="setFlowViewMode('matrix')">Category &amp; regime matrix</button>
             <button class="flow-button" type="button" :aria-pressed="flowViewMode === 'volume_studies' ? 'true' : 'false'" @click="setFlowViewMode('volume_studies')">Price-Volume Studies</button>
@@ -2052,7 +2052,7 @@
         <div class="flow-status-grid" aria-label="Catalog and source status">
           <div class="flow-status-cell">
             <span class="flow-eyebrow">Universe</span>
-            <span class="flow-status-value flow-cyan" x-text="flowCatalog ? `${flowCatalog.counts.instruments} Tracked ETFs` : '160 Tracked ETFs'"></span>
+            <span class="flow-status-value flow-cyan" x-text="flowCatalog ? `${flowCatalog.counts.instruments} Tracked ETFs` : 'Tracked ETFs'"></span>
           </div>
           <span class="flow-eyebrow">·</span>
           <div class="flow-status-cell">
@@ -2062,12 +2062,12 @@
           <span class="flow-eyebrow">·</span>
           <div class="flow-status-cell">
             <span class="flow-eyebrow">Coverage</span>
-            <span class="flow-status-value" x-text="flowManifest ? `${flowCoverage.covered} of ${flowCoverage.primary} · ${flowCoverage.pending} pending` : '160 active funds'"></span>
+            <span class="flow-status-value" x-text="flowManifest ? `${flowCoverage.covered} of ${flowCoverage.primary} · ${flowCoverage.pending} pending` : '— active funds'"></span>
           </div>
           <span class="flow-eyebrow">·</span>
           <div class="flow-status-cell">
             <span class="flow-eyebrow">As of</span>
-            <span class="flow-status-value" x-text="flowCoverage.sourceAsOf || 'Latest session'"></span>
+            <span class="flow-status-value" x-text="flowCoverage.sourceAsOf || '—'"></span>
           </div>
         </div>
       </header>
@@ -2102,7 +2102,7 @@
             <div class="flow-pulse-card">
               <div class="flow-kpi-label">20D Regime Breadth</div>
               <div class="flow-pulse-value" style="font-size:0.95rem;color:var(--flow-text);font-weight:600" x-text="flowUniversePulse.macroRegimeLabel"></div>
-              <div class="flow-pulse-sub" x-text="`${flowUniversePulse.distributionCount} Distribution · ${flowUniversePulse.balancedCount} Balanced · ${flowUniversePulse.accumulationCount} Accumulation (${flowCatalog ? flowCatalog.counts.instruments : 160} funds)`"></div>
+              <div class="flow-pulse-sub" x-text="`${flowUniversePulse.distributionCount} Distribution · ${flowUniversePulse.balancedCount} Balanced · ${flowUniversePulse.accumulationCount} Accumulation (${flowCatalog?.counts?.instruments ?? '—'} funds)`"></div>
             </div>
           </div>
 
@@ -2111,7 +2111,7 @@
             <div class="flow-outliers-header">
               <div class="flow-outliers-title">
                 <span class="flow-chart-kicker">Extreme flow moves</span>
-                <span class="flow-eyebrow" x-text="`|z| ≥ 1.8σ with material capital flow vs prior 30 sessions across ${flowCatalog?.instruments?.length || 160} funds`">|z| ≥ 1.8σ with material capital flow vs prior 30 sessions across 160 funds</span>
+                <span class="flow-eyebrow" x-text="`|z| ≥ 1.8σ with material capital flow vs prior 30 sessions across ${flowCatalog?.instruments?.length ?? '—'} funds`">|z| ≥ 1.8σ with material capital flow vs prior 30 sessions</span>
               </div>
               <div style="display:flex;align-items:center;gap:0.65rem">
                 <span class="flow-eyebrow" x-text="`showing top 6 conviction shocks`"></span>
@@ -2192,7 +2192,7 @@
               <button class="flow-chip" type="button"
                       :aria-pressed="flowTierFilter === 'all' ? 'true' : 'false'"
                       @click="flowTierFilter = 'all'">
-                <span>All (<span x-text="flowCatalog ? flowCatalog.counts.instruments : 160">160</span>)</span>
+                <span>All (<span x-text="flowCatalog?.counts?.instruments ?? '—'">—</span>)</span>
               </button>
               <button class="flow-chip" type="button"
                       :aria-pressed="flowTierFilter === 'featured' ? 'true' : 'false'"
@@ -2226,7 +2226,7 @@
               <span class="flow-eyebrow" x-text="`${flowActiveCategoryInstruments.length} instruments`"></span>
               <button class="flow-chip" type="button" @click="flowUniverseDrawerOpen = !flowUniverseDrawerOpen">
                 <svg class="flow-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                <span x-text="flowUniverseDrawerOpen ? 'Close Universe' : `Grouped ${flowCatalog ? flowCatalog.counts.instruments : 160} Universe`"></span>
+                <span x-text="flowUniverseDrawerOpen ? 'Close Universe' : (flowCatalog ? `Grouped ${flowCatalog.counts.instruments} Universe` : 'Grouped Universe')"></span>
               </button>
             </div>
           </div>
@@ -2247,7 +2247,7 @@
           <!-- Collapsible Universe Grouped Drawer -->
           <div class="flow-universe-drawer" x-show="flowUniverseDrawerOpen" x-transition>
             <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:0.4rem;border-bottom:1px solid rgba(34,211,238,0.2)">
-              <h3 style="color:var(--flow-cyan);font-size:0.8125rem">Full <span x-text="`${flowCatalog ? flowCatalog.counts.instruments : 160}-Instrument`">160-Instrument</span> Leveraged &amp; Inverse Universe (Grouped by Category)</h3>
+              <h3 style="color:var(--flow-cyan);font-size:0.8125rem">Full <span x-text="flowCatalog ? `${flowCatalog.counts.instruments}-Instrument` : 'Universe'">Universe</span> Leveraged &amp; Inverse Universe (Grouped by Category)</h3>
               <button class="flow-chip" type="button" @click="flowUniverseDrawerOpen = false">Close [×]</button>
             </div>
             <div style="display:grid;gap:0.85rem">
@@ -2337,15 +2337,15 @@
                       <button class="flow-pill" type="button" :class="flowScatterMode === 'vol_adjusted' ? 'active' : ''" @click="flowScatterMode = 'vol_adjusted'">Vol-Adjusted σ</button>
                     </div>
                   </div>
-                  <p class="flow-chart-description" style="font-size:0.6875rem;margin:0.25rem 0 0 0" x-text="flowScatterMode === 'vol_adjusted' ? 'Normalized 20-session price displacement (Z_price σ) versus 5-day flow thrust variance (Z_flow 5D σ) across 160 funds. Reference bands at ±1.5σ.' : '20-session NAV return versus 1D flow z-score across 160 funds. Hover points for details, click any dot to open Studio.'">20-session NAV return versus 1D flow z-score across 160 funds. Hover points for details, click any dot to open Studio.</p>
+                  <p class="flow-chart-description" style="font-size:0.6875rem;margin:0.25rem 0 0 0" x-text="flowScatterMode === 'vol_adjusted' ? `Normalized 20-session price displacement (Z_price σ) versus 5-day flow thrust variance (Z_flow 5D σ) across ${flowScatterCounts.all} funds. Reference bands at ±1.5σ.` : `20-session NAV return versus 1D flow z-score across ${flowScatterCounts.all} funds. Hover points for details, click any dot to open Studio.`">20-session NAV return versus 1D flow z-score. Hover points for details, click any dot to open Studio.</p>
                 </div>
                 <div style="display:flex;flex-wrap:wrap;gap:0.25rem;align-items:center">
-                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'all' ? 'true' : 'false'" @click="flowScatterFilter = 'all'">All (<span x-text="flowScatterCounts.all">160</span>)</button>
-                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'momentum' ? 'true' : 'false'" @click="flowScatterFilter = 'momentum'">Price ↑ · inflows (<span x-text="flowScatterCounts.momentum">17</span>)</button>
-                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'dipAccum' ? 'true' : 'false'" @click="flowScatterFilter = 'dipAccum'">Price ↓ · inflows (<span x-text="flowScatterCounts.dipAccum">18</span>)</button>
-                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'washout' ? 'true' : 'false'" @click="flowScatterFilter = 'washout'">Price ↓ · outflows (<span x-text="flowScatterCounts.washout">11</span>)</button>
-                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'distribution' ? 'true' : 'false'" @click="flowScatterFilter = 'distribution'">Price ↑ · outflows (<span x-text="flowScatterCounts.distribution">16</span>)</button>
-                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'neutral' ? 'true' : 'false'" @click="flowScatterFilter = 'neutral'">Neutral (<span x-text="flowScatterCounts.neutral">88</span>)</button>
+                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'all' ? 'true' : 'false'" @click="flowScatterFilter = 'all'">All (<span x-text="flowScatterCounts.all">0</span>)</button>
+                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'momentum' ? 'true' : 'false'" @click="flowScatterFilter = 'momentum'">Price ↑ · inflows (<span x-text="flowScatterCounts.momentum">0</span>)</button>
+                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'dipAccum' ? 'true' : 'false'" @click="flowScatterFilter = 'dipAccum'">Price ↓ · inflows (<span x-text="flowScatterCounts.dipAccum">0</span>)</button>
+                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'washout' ? 'true' : 'false'" @click="flowScatterFilter = 'washout'">Price ↓ · outflows (<span x-text="flowScatterCounts.washout">0</span>)</button>
+                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'distribution' ? 'true' : 'false'" @click="flowScatterFilter = 'distribution'">Price ↑ · outflows (<span x-text="flowScatterCounts.distribution">0</span>)</button>
+                  <button class="flow-chip" type="button" :aria-pressed="flowScatterFilter === 'neutral' ? 'true' : 'false'" @click="flowScatterFilter = 'neutral'">Neutral (<span x-text="flowScatterCounts.neutral">0</span>)</button>
                 </div>
               </div>
               <div class="flow-scatter-svg-wrap"
@@ -2402,7 +2402,7 @@
             <div class="flow-chart-heading">
               <div>
                 <p class="flow-chart-kicker">Cross-ETF Flow Scanner</p>
-                <h3><span x-text="`${flowCatalog ? flowCatalog.counts.instruments : 160}-Instrument`">160-Instrument</span> Multi-Horizon Net Flow Leaderboard</h3>
+                <h3><span x-text="flowCatalog ? `${flowCatalog.counts.instruments}-Instrument` : 'Multi-Instrument'">Multi-Instrument</span> Multi-Horizon Net Flow Leaderboard</h3>
                 <p class="flow-chart-description">Click any column header to sort or click any ETF row to open its full historical studio. All figures are source-reported aggregate net flows.</p>
               </div>
               <div style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center">
@@ -2478,7 +2478,7 @@
             <div class="flow-chart-heading">
               <div>
                 <p class="flow-chart-kicker">Multi-Horizon Heatmap</p>
-                <h3>9-Category Net Flow Density Heatmap</h3>
+                <h3><span x-text="flowCategoryHeatmapRows.length ? `${flowCategoryHeatmapRows.length}-Category` : 'Category'">Category</span> Net Flow Density Heatmap</h3>
                 <p class="flow-chart-description">Aggregate net flows across 1D, 5D, 20D, 60D, YTD, and cumulative horizons. Cell heat intensity is calibrated to relative flow velocity per horizon. Green denotes net accumulation; coral denotes net distribution.</p>
               </div>
             </div>
@@ -2530,7 +2530,7 @@
                 <template x-if="flowCategoryUniverseTotals">
                   <tfoot>
                     <tr style="border-top:2px solid var(--flow-line);background:rgba(255,255,255,0.03);font-weight:600">
-                      <td style="color:var(--flow-cyan);font-weight:700"><span x-text="`Universe Total (${flowCategoryHeatmapRows.length} Categories)`">Universe Total (10 Categories)</span></td>
+                      <td style="color:var(--flow-cyan);font-weight:700"><span x-text="`Universe Total (${flowCategoryHeatmapRows.length} Categories)`">Universe Total</span></td>
                       <td style="text-align:right;font-family:ui-monospace,monospace" x-text="flowCategoryUniverseTotals.count"></td>
                       <td style="text-align:right;font-family:ui-monospace,monospace" x-text="`$${(flowCategoryUniverseTotals.aum_m / 1000).toFixed(1)}B`"></td>
                       <td style="text-align:right;font-family:ui-monospace,monospace" :class="flowCategoryUniverseTotals.flow_1d > 0 ? 'flow-positive' : flowCategoryUniverseTotals.flow_1d < 0 ? 'flow-negative' : ''" x-text="formatMoney(flowCategoryUniverseTotals.flow_1d)"></td>
@@ -2545,7 +2545,7 @@
                         <span style="color:var(--flow-subtle)"> · </span>
                         <span class="flow-negative font-medium" x-text="`${flowCategoryUniverseTotals.distribution} Dist`"></span>
                       </td>
-                      <td style="color:var(--flow-subtle);font-size:0.6875rem"><span x-text="`${flowCatalog ? flowCatalog.counts.instruments : 160} Tracked Funds`">160 Tracked Funds</span></td>
+                      <td style="color:var(--flow-subtle);font-size:0.6875rem"><span x-text="flowCatalog ? `${flowCatalog.counts.instruments} Tracked Funds` : 'Tracked Funds'">Tracked Funds</span></td>
                     </tr>
                   </tfoot>
                 </template>
@@ -2561,10 +2561,10 @@
               </div>
               <div style="display:flex;align-items:center;gap:0.35rem">
                 <button class="flow-button" type="button" :aria-pressed="flowBattleMode === 'paired' ? 'true' : 'false'" @click="setFlowBattleMode('paired')">
-                  <span x-text="`Paired Battles (${flowBattleCounts?.paired ?? 13})`">Paired Battles (13)</span>
+                  <span x-text="`Paired Battles (${flowBattleCounts?.paired ?? 0})`">Paired Battles (0)</span>
                 </button>
                 <button class="flow-button" type="button" :aria-pressed="flowBattleMode === 'all' ? 'true' : 'false'" @click="setFlowBattleMode('all')">
-                  <span x-text="`All Major Underlyings (${flowBattleCounts?.major ?? 20})`">All Major Underlyings</span>
+                  <span x-text="`All Major Underlyings (${flowBattleCounts?.major ?? 0})`">All Major Underlyings</span>
                 </button>
               </div>
             </div>
@@ -2775,6 +2775,14 @@
                     <button class="flow-chip" type="button" @click="flowScaleMode = flowScaleMode === 'usd' ? 'pct_aum' : 'usd'" title="Switch between Dollar Flow ($) and Net Flow as % of AUM">
                       <span x-text="flowScaleMode === 'usd' ? '$ USD' : '% AUM'"></span>
                     </button>
+                    <button class="flow-chip"
+                            :class="flowMeasureActive ? 'flow-chip-active' : ''"
+                            :aria-pressed="flowMeasureActive ? 'true' : 'false'"
+                            type="button"
+                            @click="flowMeasureActive ? flowResetMeasurement() : (flowMeasureActive = true)"
+                            title="Measure two-point return, net flow, and volume range (click &amp; drag on chart)">
+                      Measure
+                    </button>
                   </div>
                 </div>
 
@@ -2834,9 +2842,9 @@
                        :class="flowMeasureActive ? 'flow-measuring' : ''"
                        tabindex="0"
                        @mousedown="flowChartMeasureStart($event)"
-                       @mousemove="flowChartPointerMove($event); flowChartMeasureMove($event)"
+                       @mousemove="flowMeasureActive ? flowChartMeasureMove($event) : flowChartPointerMove($event)"
                        @mouseup="flowChartMeasureEnd()"
-                       @mouseleave="flowChartPointerLeave()"
+                       @mouseleave="flowChartPointerLeave(); flowChartMeasureEnd()"
                        @focus="flowChartFocus($event)"
                        @blur="flowChartPointerLeave()"
                        x-html="flowWorkbenchSvg">
@@ -3160,8 +3168,8 @@
                   </div>
                   <div class="vs-heat-spotlight-group">
                     <span class="flow-eyebrow">Spotlight:</span>
-                    <button type="button" id="vs-heat-peaks-btn" class="vs-heat-btn peaks-toggle" title="Highlight Volume Climax and Selloff Exhaustion sessions">PEAKS</button>
-                    <button type="button" id="vs-heat-valleys-btn" class="vs-heat-btn valleys-toggle" title="Highlight Volume Drought and Low-Turnover Compression sessions">VALLEYS</button>
+                    <button type="button" id="vs-heat-peaks-btn" class="vs-heat-btn peaks-toggle" title="Highlight point-in-time Volume Climax and Selloff Exhaustion sessions (ranked causally over trailing 252D)">PEAKS</button>
+                    <button type="button" id="vs-heat-valleys-btn" class="vs-heat-btn valleys-toggle" title="Highlight point-in-time Volume Drought and Low-Turnover Compression sessions (ranked causally over trailing 252D)">VALLEYS</button>
                     <span id="vs-heat-threshold-group" class="vs-heat-peaks-sub">
                       <button type="button" class="vs-heat-btn" data-heat-threshold="90">P90</button>
                       <button type="button" class="vs-heat-btn active" data-heat-threshold="95">P95</button>
@@ -3220,15 +3228,15 @@
             <div class="macd-header-strip">
               <div class="macd-title-col">
                 <div class="macd-title-row">
-                  <h3 class="flow-result-symbol" style="font-size:1.15rem;margin:0" id="macd-active-symbol">INTW</h3>
-                  <span class="flow-badge" id="macd-active-leverage" data-state="ACCUMULATION">+2x</span>
-                  <span class="macd-fund-name" id="macd-active-name">GraniteShares 2x Long INTC Daily ETF</span>
+                  <h3 class="flow-result-symbol" style="font-size:1.15rem;margin:0" id="macd-active-symbol">—</h3>
+                  <span class="flow-badge" id="macd-active-leverage" data-state="NEUTRAL">—</span>
+                  <span class="macd-fund-name" id="macd-active-name">Loading instrument…</span>
                   <span class="mono" id="macd-active-price" style="font-size:1.05rem;font-weight:700;color:#f3f4f6"></span>
                   <span id="macd-active-chg" style="font-size:0.8rem;color:#a1a1aa"></span>
-                  <span class="flow-badge macd-badge-subzero" id="macd-active-regime-badge">SUB-ZERO REVERSAL CONFLUENCE</span>
+                  <span class="flow-badge macd-badge-subzero" id="macd-active-regime-badge">Awaiting signal…</span>
                 </div>
                 <div class="flow-eyebrow" id="macd-active-category" style="margin-top:0.25rem;">
-                  Single-Stock Leveraged (Bull) · Underlying: Intel Corporation (INTC)
+                  Loading category &amp; underlying…
                 </div>
               </div>
 
@@ -3260,8 +3268,8 @@
               </div>
 
               <div class="macd-nav-switch" role="tablist" aria-label="MACD View Switcher">
-                <button type="button" class="macd-nav-btn active" id="macd-nav-chart" onclick="window.MACDStrategy.setView('chart')">Dual-Pane Chart</button>
-                <button type="button" class="macd-nav-btn" id="macd-nav-screener" onclick="window.MACDStrategy.setView('screener')">160-ETF Radar</button>
+                <button type="button" class="macd-nav-btn active" id="macd-nav-chart" onclick="window.MACDStrategy?.setView('chart')">Dual-Pane Chart</button>
+                <button type="button" class="macd-nav-btn" id="macd-nav-screener" onclick="window.MACDStrategy?.setView('screener')">ETF Radar</button>
               </div>
             </div>
 
@@ -3271,32 +3279,32 @@
               <div class="macd-controls-bar">
                 <div class="macd-tf-group">
                   <span class="flow-eyebrow">Timeframe:</span>
-                  <button type="button" class="macd-tf-btn active" id="macd-tf-1h" onclick="window.MACDStrategy.setTimeframe('1h')" title="1-Hour Intraday Tactical Timing Bar">1-Hour (1H)</button>
-                  <button type="button" class="macd-tf-btn" id="macd-tf-1d" onclick="window.MACDStrategy.setTimeframe('1d')" title="1-Day Macro Trend Filter">1-Day (1D)</button>
+                  <button type="button" class="macd-tf-btn active" id="macd-tf-1h" onclick="window.MACDStrategy?.setTimeframe('1h')" title="1-Hour Intraday Tactical Timing Bar">1-Hour (1H)</button>
+                  <button type="button" class="macd-tf-btn" id="macd-tf-1d" onclick="window.MACDStrategy?.setTimeframe('1d')" title="1-Day Macro Trend Filter">1-Day (1D)</button>
                 </div>
 
                 <div class="macd-range-group" id="macd-range-group-1h" style="display:flex;align-items:center;gap:0.35rem">
                   <span class="flow-eyebrow">Intraday:</span>
-                  <button type="button" class="macd-range-btn-1h" data-range="1W" onclick="window.MACDStrategy.setRange1H('1W')" title="1 Week (~35 Trading Hours)">1W</button>
-                  <button type="button" class="macd-range-btn-1h active" data-range="1M" onclick="window.MACDStrategy.setRange1H('1M')" title="1 Month (~140 Trading Hours)">1M</button>
-                  <button type="button" class="macd-range-btn-1h" data-range="3M" onclick="window.MACDStrategy.setRange1H('3M')" title="3 Months (~420 Trading Hours)">3M</button>
-                  <button type="button" class="macd-range-btn-1h" data-range="1Y" onclick="window.MACDStrategy.setRange1H('1Y')" title="1 Year (~1,750 Trading Hours)">1Y</button>
-                  <button type="button" class="macd-range-btn-1h" data-range="ALL" onclick="window.MACDStrategy.setRange1H('ALL')" title="Full 2-Year Intraday Depth (~5,000 Hours)">ALL (2Y)</button>
+                  <button type="button" class="macd-range-btn-1h" data-range="1W" onclick="window.MACDStrategy?.setRange1H('1W')" title="1 Week (~35 Trading Hours)">1W</button>
+                  <button type="button" class="macd-range-btn-1h active" data-range="1M" onclick="window.MACDStrategy?.setRange1H('1M')" title="1 Month (~140 Trading Hours)">1M</button>
+                  <button type="button" class="macd-range-btn-1h" data-range="3M" onclick="window.MACDStrategy?.setRange1H('3M')" title="3 Months (~420 Trading Hours)">3M</button>
+                  <button type="button" class="macd-range-btn-1h" data-range="1Y" onclick="window.MACDStrategy?.setRange1H('1Y')" title="1 Year (~1,750 Trading Hours)">1Y</button>
+                  <button type="button" class="macd-range-btn-1h" data-range="ALL" onclick="window.MACDStrategy?.setRange1H('ALL')" title="Full 2-Year Intraday Depth (~5,000 Hours)">ALL (2Y)</button>
                 </div>
 
                 <div class="macd-range-group" id="macd-range-group" style="display:none;align-items:center;gap:0.35rem">
                   <span class="flow-eyebrow">Range:</span>
-                  <button type="button" class="macd-range-btn" data-range="1M" onclick="window.MACDStrategy.setRange('1M')" title="1 Month (~22 Trading Days)">1M</button>
-                  <button type="button" class="macd-range-btn" data-range="3M" onclick="window.MACDStrategy.setRange('3M')" title="3 Months (~65 Trading Days)">3M</button>
-                  <button type="button" class="macd-range-btn" data-range="6M" onclick="window.MACDStrategy.setRange('6M')" title="6 Months (~130 Trading Days)">6M</button>
-                  <button type="button" class="macd-range-btn" data-range="1Y" onclick="window.MACDStrategy.setRange('1Y')" title="1 Year (~252 Trading Days)">1Y</button>
-                  <button type="button" class="macd-range-btn" data-range="2Y" onclick="window.MACDStrategy.setRange('2Y')" title="2 Years (~504 Trading Days)">2Y</button>
-                  <button type="button" class="macd-range-btn" data-range="5Y" onclick="window.MACDStrategy.setRange('5Y')" title="5 Years (~1260 Trading Days)">5Y</button>
-                  <button type="button" class="macd-range-btn active" data-range="ALL" onclick="window.MACDStrategy.setRange('ALL')" title="All Available History">ALL</button>
+                  <button type="button" class="macd-range-btn" data-range="1M" onclick="window.MACDStrategy?.setRange('1M')" title="1 Month (~22 Trading Days)">1M</button>
+                  <button type="button" class="macd-range-btn" data-range="3M" onclick="window.MACDStrategy?.setRange('3M')" title="3 Months (~65 Trading Days)">3M</button>
+                  <button type="button" class="macd-range-btn" data-range="6M" onclick="window.MACDStrategy?.setRange('6M')" title="6 Months (~130 Trading Days)">6M</button>
+                  <button type="button" class="macd-range-btn" data-range="1Y" onclick="window.MACDStrategy?.setRange('1Y')" title="1 Year (~252 Trading Days)">1Y</button>
+                  <button type="button" class="macd-range-btn" data-range="2Y" onclick="window.MACDStrategy?.setRange('2Y')" title="2 Years (~504 Trading Days)">2Y</button>
+                  <button type="button" class="macd-range-btn" data-range="5Y" onclick="window.MACDStrategy?.setRange('5Y')" title="5 Years (~1260 Trading Days)">5Y</button>
+                  <button type="button" class="macd-range-btn active" data-range="ALL" onclick="window.MACDStrategy?.setRange('ALL')" title="All Available History">ALL</button>
                 </div>
 
                 <div style="display:flex;align-items:center;gap:0.5rem">
-                  <button type="button" class="macd-toggle-btn" id="macd-toggle-pivots" onclick="window.MACDStrategy.togglePivots()" title="Toggle Structural Floor Pivots (P, R1, S1)">Pivots (P, R1, S1)</button>
+                  <button type="button" class="macd-toggle-btn" id="macd-toggle-pivots" onclick="window.MACDStrategy?.togglePivots()" title="Toggle Structural Floor Pivots (P, R1, S1)">Pivots (P, R1, S1)</button>
                 </div>
               </div>
 
@@ -3370,20 +3378,20 @@
               </div>
             </div>
 
-            <!-- VIEW B: 160-INSTRUMENT SCREENER & RADAR PANEL -->
+            <!-- VIEW B: INSTRUMENT SCREENER & RADAR PANEL -->
             <div id="macd-screener-view-panel" class="macd-screener-container" style="display:none">
               <div class="macd-screener-toolbar">
                 <div class="macd-filter-group">
-                  <button type="button" class="macd-filter-btn active" data-filter="all" onclick="window.MACDStrategy.setFilter('all')">All Universe (160)</button>
-                  <button type="button" class="macd-filter-btn" data-filter="subzero" onclick="window.MACDStrategy.setFilter('subzero')">Sub-Zero Reversals</button>
-                  <button type="button" class="macd-filter-btn" data-filter="bull" onclick="window.MACDStrategy.setFilter('bull')">All Bullish Crossovers</button>
-                  <button type="button" class="macd-filter-btn" data-filter="imminent" onclick="window.MACDStrategy.setFilter('imminent')">Pre-Close Squeeze Watch (15:00 EST)</button>
-                  <button type="button" class="macd-filter-btn" data-filter="bear" onclick="window.MACDStrategy.setFilter('bear')">Bearish Exits / Cash Parking</button>
-                  <button type="button" class="macd-filter-btn" data-filter="macro_bull" onclick="window.MACDStrategy.setFilter('macro_bull')">Macro Trend Confirmed (1D MACD > 0)</button>
+                  <button type="button" class="macd-filter-btn active" data-filter="all" onclick="window.MACDStrategy?.setFilter('all')">All Universe</button>
+                  <button type="button" class="macd-filter-btn" data-filter="subzero" onclick="window.MACDStrategy?.setFilter('subzero')">Sub-Zero Reversals</button>
+                  <button type="button" class="macd-filter-btn" data-filter="bull" onclick="window.MACDStrategy?.setFilter('bull')">All Bullish Crossovers</button>
+                  <button type="button" class="macd-filter-btn" data-filter="imminent" onclick="window.MACDStrategy?.setFilter('imminent')">Pre-Close Squeeze Watch (15:00 ET)</button>
+                  <button type="button" class="macd-filter-btn" data-filter="bear" onclick="window.MACDStrategy?.setFilter('bear')">Bearish Exits / Cash Parking</button>
+                  <button type="button" class="macd-filter-btn" data-filter="macro_bull" onclick="window.MACDStrategy?.setFilter('macro_bull')">Macro Trend Confirmed (1D MACD > 0)</button>
                 </div>
                 <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;min-width:0;max-width:100%">
-                  <input type="text" class="macd-search-box" placeholder="Filter ticker, fund, underlying, leverage…" oninput="window.MACDStrategy.handleSearch(this.value)">
-                  <span class="flow-eyebrow" id="macd-screener-count" style="white-space:nowrap;color:#22d3ee">160 Instruments</span>
+                  <input type="text" class="macd-search-box" placeholder="Filter ticker, fund, underlying, leverage…" oninput="window.MACDStrategy?.handleSearch(this.value)">
+                  <span class="flow-eyebrow" id="macd-screener-count" style="white-space:nowrap;color:#22d3ee">— Instruments</span>
                 </div>
               </div>
 
@@ -3391,19 +3399,19 @@
                 <table class="macd-table">
                   <thead>
                     <tr>
-                      <th data-sort-col="ticker" onclick="window.MACDStrategy.sortBy('ticker')">Ticker &uarr;&darr;</th>
-                      <th data-sort-col="fund_name" onclick="window.MACDStrategy.sortBy('fund_name')">Fund Name &uarr;&darr;</th>
-                      <th data-sort-col="leverage" onclick="window.MACDStrategy.sortBy('leverage')">Mult &uarr;&darr;</th>
-                      <th data-sort-col="latest_price" style="text-align:right" onclick="window.MACDStrategy.sortBy('latest_price')">Price &uarr;&darr;</th>
-                      <th data-sort-col="candle_color_1h" style="text-align:center" onclick="window.MACDStrategy.sortBy('candle_color_1h')">1H Candle &uarr;&darr;</th>
-                      <th data-sort-col="chg_1h_pct" style="text-align:right" onclick="window.MACDStrategy.sortBy('chg_1h_pct')">1H % &uarr;&darr;</th>
-                      <th data-sort-col="chg_1d_pct" style="text-align:right" onclick="window.MACDStrategy.sortBy('chg_1d_pct')">24H % &uarr;&darr;</th>
-                      <th data-sort-col="macd_1h" style="text-align:right" onclick="window.MACDStrategy.sortBy('macd_1h')">MACD &uarr;&darr;</th>
-                      <th data-sort-col="signal_1h" style="text-align:right" onclick="window.MACDStrategy.sortBy('signal_1h')">Signal &uarr;&darr;</th>
-                      <th data-sort-col="hist_1h" style="text-align:right" onclick="window.MACDStrategy.sortBy('hist_1h')">Hist &uarr;&darr;</th>
-                      <th data-sort-col="rvol_1h" style="text-align:right" onclick="window.MACDStrategy.sortBy('rvol_1h')">RVOL &uarr;&darr;</th>
-                      <th data-sort-col="daily_trend_bullish" style="text-align:center" onclick="window.MACDStrategy.sortBy('daily_trend_bullish')">1D Macro &uarr;&darr;</th>
-                      <th data-sort-col="confluence_score" style="text-align:right" onclick="window.MACDStrategy.sortBy('confluence_score')">Score &uarr;&darr;</th>
+                      <th data-sort-col="ticker" onclick="window.MACDStrategy?.sortBy('ticker')">Ticker &uarr;&darr;</th>
+                      <th data-sort-col="fund_name" onclick="window.MACDStrategy?.sortBy('fund_name')">Fund Name &uarr;&darr;</th>
+                      <th data-sort-col="leverage" onclick="window.MACDStrategy?.sortBy('leverage')">Mult &uarr;&darr;</th>
+                      <th data-sort-col="latest_price" style="text-align:right" onclick="window.MACDStrategy?.sortBy('latest_price')">Price &uarr;&darr;</th>
+                      <th data-sort-col="candle_color_1h" style="text-align:center" onclick="window.MACDStrategy?.sortBy('candle_color_1h')">1H Candle &uarr;&darr;</th>
+                      <th data-sort-col="chg_1h_pct" style="text-align:right" onclick="window.MACDStrategy?.sortBy('chg_1h_pct')">1H % &uarr;&darr;</th>
+                      <th data-sort-col="chg_1d_pct" style="text-align:right" onclick="window.MACDStrategy?.sortBy('chg_1d_pct')">24H % &uarr;&darr;</th>
+                      <th data-sort-col="macd_1h" style="text-align:right" onclick="window.MACDStrategy?.sortBy('macd_1h')">MACD &uarr;&darr;</th>
+                      <th data-sort-col="signal_1h" style="text-align:right" onclick="window.MACDStrategy?.sortBy('signal_1h')">Signal &uarr;&darr;</th>
+                      <th data-sort-col="hist_1h" style="text-align:right" onclick="window.MACDStrategy?.sortBy('hist_1h')">Hist &uarr;&darr;</th>
+                      <th data-sort-col="rvol_1h" style="text-align:right" onclick="window.MACDStrategy?.sortBy('rvol_1h')">RVOL &uarr;&darr;</th>
+                      <th data-sort-col="daily_trend_bullish" style="text-align:center" onclick="window.MACDStrategy?.sortBy('daily_trend_bullish')">1D Macro &uarr;&darr;</th>
+                      <th data-sort-col="confluence_score" style="text-align:right" onclick="window.MACDStrategy?.sortBy('confluence_score')">Score &uarr;&darr;</th>
                       <th style="text-align:center">Signal State</th>
                     </tr>
                   </thead>
@@ -3416,18 +3424,18 @@
 
             
 
-            <!-- Methodology & Quantitative Verification Drawer -->
+            <!-- Methodology & Quantitative Evaluation Drawer -->
             <details class="macd-methodology">
-              <summary>Quantitative MACD Strategy Specification, Volatility Drag Proofs &amp; Backtest Findings</summary>
+              <summary>Quantitative MACD Strategy Specification, Volatility Drag Proofs &amp; Empirical Design</summary>
               <div class="macd-methodology-body">
                 <h4>1. Mathematical Mechanics &amp; Multi-Timeframe Architecture</h4>
                 <p>Standard MACD utilizes dual exponential moving averages: <code>MACD Line = EMA(Close, 12) - EMA(Close, 26)</code> with a 9-period signal trigger: <code>Signal = EMA(MACD, 9)</code> and <code>Histogram = MACD - Signal</code>. On intraday 1-hour intervals, unconstrained crossovers suffer from severe whipsaw and mechanical decay due to the constant leverage reset volatility penalty: <code>&Delta;V = -&frac12;(k&sup2; - k)&sigma;&sup2;&Delta;t</code>.</p>
 
                 <h4>2. Tactical Sub-Zero Reversal Confluence Architecture</h4>
-                <p>When evaluated strictly during extreme mean-reversion conditions where <code>MACD &lt; 0</code> (Z-Score &le; -1.0&sigma;), <code>RVOL &ge; 1.25&times;</code>, and price tests Floor Support (S3, S4, or S5), the probability of positive convexity increases significantly. On <strong>INTW</strong> (GraniteShares 2x Long INTC), this confluence produced a <strong>+139.0% total return</strong> (vs +9.9% unconstrained) and slashed Maximum Drawdown from 66.5% to 24.7%. On <strong>SNDU</strong>, confirmed setups yielded a <strong>100% win rate</strong> with only 12.1% MaxDD.</p>
+                <p>When evaluated strictly during extreme mean-reversion conditions where <code>MACD &lt; 0</code> (Z-Score &le; -1.0&sigma;), <code>RVOL &ge; 1.25&times;</code>, and price tests Floor Support (S3, S4, or S5), upside convexity improves while avoiding extended overbought chase entries. Filtering crossovers with negative-zone confirmation and elevated relative volume reduces whipsaw signals relative to unconstrained 1-hour crossovers; inspect live signal scores and per-instrument behavior in the Radar table.</p>
 
-                <h4>3. 15:00 EST Pre-Close Rebalance Auction Scan</h4>
-                <p>Leveraged ETF Authorized Participants (APs) mechanically rebalance exposure between 15:45 and 16:00 EST to realign target daily beta multiples. Triggering alerts on the closed 14:00–15:00 EST 1-hour bar provides systematic entry visibility ahead of the closing rebalancing auction liquidity surge.</p>
+                <h4>3. 15:00 ET Pre-Close Rebalance Auction Scan</h4>
+                <p>Leveraged ETF Authorized Participants (APs) mechanically rebalance exposure between 15:45 and 16:00 ET to realign target daily beta multiples. Triggering alerts on the closed 14:00–15:00 ET 1-hour bar provides systematic entry visibility ahead of the closing rebalancing auction liquidity surge.</p>
 
                 <h4>4. Exit Protocol &amp; Cash Parking Imperative</h4>
                 <p>Holding leveraged ETFs during bearish regimes guarantees exponential path decay. All positions must be liquidated into cash immediately upon a 1-Hour Bearish MACD crossover (<code>MACD &lt; Signal</code>) or within a maximum 30-hour holding window.</p>
@@ -3442,7 +3450,7 @@
               <div class="tp-title-col">
                 <div class="tp-title-row">
                   <h3 class="flow-result-symbol" id="tp-active-symbol" style="font-size:1.15rem;margin:0" x-text="flowTicker">—</h3>
-                  <span class="flow-badge" id="tp-active-leverage" data-state="ACCUMULATION">1x</span>
+                  <span class="flow-badge" id="tp-active-leverage" data-state="NEUTRAL">—</span>
                   <span class="tp-fund-name" id="tp-active-name" x-text="flowSelectedInstrument?.fund_name"></span>
                   <span class="mono" id="tp-active-price" style="font-size:1.05rem;font-weight:700;color:#f3f4f6"></span>
                   <span id="tp-active-chg" style="font-size:0.8rem;color:#a1a1aa"></span>
@@ -3741,15 +3749,49 @@
 <script>
 // ─── Singleton tooltip engine ────────────────────────────────────────────────
 const tt = document.getElementById('tt');
-let _ttLastEl = null, _ttLastHtml = '', _ttTouchOpen = false;
-function _showTt(el, html) {
-  _ttLastEl = el; _ttLastHtml = html;
-  tt.innerHTML = html;
+function _escHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+let _ttLastEl = null, _ttLastText = '', _ttLastKind = 'text', _ttLastPeriodic = null, _ttTouchOpen = false;
+function _renderLastTt() {
+  if (_ttLastKind === 'periodic' && _ttLastPeriodic) {
+    const { name, yr, ret } = _ttLastPeriodic;
+    const sign = ret >= 0 ? '+' : '';
+    const valColor = ret >= 0 ? 'var(--up)' : 'var(--down)';
+    const pct = (ret * 100).toFixed(1);
+    const titleDiv = document.createElement('div');
+    titleDiv.style.fontWeight = '600';
+    titleDiv.style.marginBottom = '2px';
+    titleDiv.textContent = name;
+    const rowDiv = document.createElement('div');
+    rowDiv.appendChild(document.createTextNode(`${yr}: `));
+    const valSpan = document.createElement('span');
+    valSpan.style.fontWeight = '600';
+    valSpan.style.color = valColor;
+    valSpan.textContent = `${sign}${pct}%`;
+    rowDiv.appendChild(valSpan);
+    tt.replaceChildren(titleDiv, rowDiv);
+  } else {
+    tt.textContent = _ttLastText;
+  }
+}
+function _showTt(el, text) {
+  _ttLastEl = el;
+  _ttLastKind = 'text';
+  _ttLastText = String(text ?? '');
+  _ttLastPeriodic = null;
+  _renderLastTt();
   tt.style.opacity = '1';
   _posTt(el);
 }
 function _posTt(el) {
   if (el && typeof el.getBoundingClientRect !== 'function') el = el.currentTarget || el.target;
+  if (!el || typeof el.getBoundingClientRect !== 'function') return;
   const r = el.getBoundingClientRect();
   const tw = tt.offsetWidth || 200, th = tt.offsetHeight || 40;
   let x = r.left + r.width / 2 - tw / 2;
@@ -3768,7 +3810,7 @@ function _hideTt() { tt.style.opacity = '0'; }
 // Hover behaviour is untouched - this only adds input paths, no new UI.
 document.addEventListener('focusin', (e) => {
   if (_ttLastEl && (e.target === _ttLastEl || (_ttLastEl.contains && _ttLastEl.contains(e.target)))) {
-    tt.innerHTML = _ttLastHtml;
+    _renderLastTt();
     tt.style.opacity = '1';
     _posTt(e.target);
   }
@@ -3778,7 +3820,7 @@ document.addEventListener('touchstart', (e) => {
   if (_ttLastEl && (e.target === _ttLastEl || (_ttLastEl.contains && _ttLastEl.contains(e.target)))) {
     if (!_ttTouchOpen) {
       _ttTouchOpen = true;
-      tt.innerHTML = _ttLastHtml;
+      _renderLastTt();
       tt.style.opacity = '1';
       _posTt(e.target);
     }
@@ -3789,11 +3831,12 @@ document.addEventListener('touchstart', (e) => {
 }, { passive: true });
 
 function _showPeriodicTt(el, name, yr, ret) {
-  const sign = ret >= 0 ? '+' : '';
-  const valColor = ret >= 0 ? 'var(--up)' : 'var(--down)';
-  const pct = (ret * 100).toFixed(1);
-  const html = `<div style="font-weight:600;margin-bottom:2px">${name}</div><div>${yr}: <span style="font-weight:600;color:${valColor}">${sign}${pct}%</span></div>`;
-  _showTt(el, html);
+  _ttLastEl = el;
+  _ttLastKind = 'periodic';
+  _ttLastPeriodic = { name: String(name ?? ''), yr: String(yr ?? ''), ret: Number(ret) };
+  _renderLastTt();
+  tt.style.opacity = '1';
+  _posTt(el);
 }
 
 // ─── §2.2 Asset-identity color system ────────────────────────────────────────
@@ -3994,6 +4037,7 @@ function marketsApp() {
     // ── Data loading ──────────────────────────────────────────────────────
     _priceLogStarted: false,
     _volStarted: false,
+    _returnsPromise: null,
     _secondaryLoadsStarted: false,
     _marketsPopstateHandler: null,
 
@@ -4078,7 +4122,7 @@ function marketsApp() {
       const tabParam = params.get('tab');
       if (assetParam && this.returnsData?.assets?.[assetParam.toLowerCase()]) {
         this.selectedAsset = assetParam.toLowerCase();
-        this.activeTab = 'matrix';
+        if (!tabParam) this.activeTab = 'matrix';
         // Wait for Alpine to flush reactive updates before initialising the
         // time-range chart - returnsData must be fully rendered first (H1 fix).
         this.$nextTick(() => this._trcInit(this.selectedAsset));
@@ -4234,61 +4278,82 @@ function marketsApp() {
       if (this._priceLogStarted) return; // single-flight guard
       this._priceLogStarted = true;
       try {
-        const data = await fetch('data/markets.json').then(r => r.json());
+        const r = await fetch('data/markets.json');
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data = await r.json();
         this.meta = { generated_at_utc: data.generated_at_utc };
         this.series = Object.freeze(data.series || []);
       } catch (e) {
         console.warn('Price log load error:', e);
+        this._priceLogStarted = false;
       } finally {
         this.loading = false;
       }
     },
 
     async _loadReturns() {
-      // Use a stable cache-bust tied to the page load session (not Date.now() per call)
-      // so repeated calls within the same session don't re-fetch unnecessarily.
-      const bust = this._sessionBust || (this._sessionBust = Date.now());
-      for (let attempt = 0; attempt < 2; attempt++) {
-        try {
-          const r = await fetch(`data/market_returns.json?v=${bust}`);
-          if (!r.ok) { this.returnsData = null; break; }
-          this.returnsData = Object.freeze(await r.json());
-          // Fresh payload landed - drop every cache derived from the previous
-          // one so a mid-session reload can never show stale numbers.
-          this._partialMonthSet = null;
-          this._annualCache = {};
-          this._zscoreCache = {};
-          this._statsCache = {};
-          this._adjustedCloseCache = {};
-          this._underwaterCurveCache = {};
-          this._growthSeriesCache = null;
-          this._growthSeriesCacheKey = '';
-          this._corrMatrixCache = null;
-          this._corrMatrixCacheKey = '';
-          this._yieldRateMapKey = '';
-          this._yieldCellMapSig = '';
-          if (this.returnsData?.asof) {
-            this.marketState.asof = this.returnsData.asof;
-          }
-          break; // success
-        } catch (e) {
-          if (attempt === 0) {
-            // One retry after 1.5s before giving up
-            await new Promise(res => setTimeout(res, 1500));
-          } else {
-            console.warn('Returns data not available after retry:', e);
-            this.returnsData = null;
+      if (this.returnsData) {
+        this.loadingReturns = false;
+        return;
+      }
+      if (this._returnsPromise) return this._returnsPromise;
+      this._returnsPromise = (async () => {
+        // Use a stable cache-bust tied to the page load session (not Date.now() per call)
+        // so repeated calls within the same session don't re-fetch unnecessarily.
+        const bust = this._sessionBust || (this._sessionBust = Date.now());
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            const r = await fetch(`data/market_returns.json?v=${bust}`);
+            if (!r.ok) { this.returnsData = null; break; }
+            this.returnsData = Object.freeze(await r.json());
+            // Fresh payload landed - drop every cache derived from the previous
+            // one so a mid-session reload can never show stale numbers.
+            this._partialMonthSet = null;
+            this._fxLookupCache = {};
+            this._annualCache = {};
+            this._zscoreCache = {};
+            this._statsCache = {};
+            this._adjustedCloseCache = {};
+            this._underwaterCurveCache = {};
+            this._ddMonthsCache = null;
+            this._ddMonthsCacheKey = '';
+            this._hpRollsCache = null;
+            this._hpRollsCacheKey = '';
+            this._growthSeriesCache = null;
+            this._growthSeriesCacheKey = '';
+            this._corrMatrixCache = null;
+            this._corrMatrixCacheKey = '';
+            this._yieldRateMapKey = '';
+            this._yieldCellMapSig = '';
+            if (this.returnsData?.asof) {
+              this.marketState.asof = this.returnsData.asof;
+              const asofYr = parseInt(this.returnsData.asof.slice(0, 4), 10);
+              if (Number.isFinite(asofYr) && this.matrixWindowYears > 0) {
+                this.matrixStartYear = asofYr - this.matrixWindowYears;
+              }
+            }
+            break; // success
+          } catch (e) {
+            if (attempt === 0) {
+              // One retry after 1.5s before giving up
+              await new Promise(res => setTimeout(res, 1500));
+            } else {
+              console.warn('Returns data not available after retry:', e);
+              this.returnsData = null;
+            }
           }
         }
-      }
-      this.loadingReturns = false;
-      // §3 If user previously selected a lens that's no longer available
-      // (e.g. INR before fx was wired up), or Real with no CPI, fall back gracefully.
-      if (this.returnsData) {
-        const allowed = this.lensesAvailable;
-        if (!allowed.includes(this.activeCcy)) this.activeCcy = 'Local';
-        if (this.activeReal && !this.hasCpiData) this.activeReal = false;
-      }
+        this.loadingReturns = false;
+        // §3 If user previously selected a lens that's no longer available
+        // (e.g. INR before fx was wired up), or Real with no CPI, fall back gracefully.
+        if (this.returnsData) {
+          const allowed = this.lensesAvailable;
+          if (!allowed.includes(this.activeCcy)) this.activeCcy = 'Local';
+          if (this.activeReal && !this.hasCpiData) this.activeReal = false;
+        }
+        this._returnsPromise = null;
+      })();
+      return this._returnsPromise;
     },
 
     async _loadVol() {
@@ -4298,13 +4363,14 @@ function marketsApp() {
         // Session-stable cache-bust (same convention as _loadReturns)
         const bust = this._sessionBust || (this._sessionBust = Date.now());
         const r = await fetch(`data/vol_history.json?v=${bust}`);
-        if (!r.ok) { this.volData = null; return; }
+        if (!r.ok) { this.volData = null; this._volStarted = false; return; }
         this.volData = Object.freeze(await r.json());
         this._volZCache = {};
         this._volSparkCache = {};
       } catch (e) {
         console.warn('Vol history data not available:', e);
         this.volData = null;
+        this._volStarted = false;
       } finally {
         this.loadingVol = false;
       }
@@ -4726,7 +4792,9 @@ function marketsApp() {
           let r = nomRet;
           if (this.activeReal && cpiRet[ym] !== undefined) {
             // Real return: (1 + nominal) / (1 + inflation) - 1
-            r = (1 + nomRet) / (1 + cpiRet[ym]) - 1;
+            const denom = 1 + cpiRet[ym];
+            if (!(denom > 0) || !Number.isFinite(denom)) continue;
+            r = (1 + nomRet) / denom - 1;
           }
           if (!Number.isFinite(r)) continue;
           compound *= (1 + r);
@@ -4943,7 +5011,8 @@ function marketsApp() {
           const cpiPrev = cpiVals[prevYm];
           if (cpiM != null && cpiPrev != null && cpiPrev > 0) {
             const inf = cpiM / cpiPrev - 1;
-            ret = (1 + ret) / (1 + inf) - 1;
+            const denom = 1 + inf;
+            ret = (denom > 0 && Number.isFinite(denom)) ? (1 + ret) / denom - 1 : null;
           }
         }
         result.push({ month: MONTHS[m - 1], ym, ret, partial: this.isPartialMonth(ym) });
@@ -5169,7 +5238,8 @@ function marketsApp() {
       if (years === 0) {
         this.matrixStartYear = 1833;
       } else {
-        this.matrixStartYear = new Date().getFullYear() - years;
+        const baseYear = parseInt((this.returnsData?.asof || '').slice(0, 4), 10) || new Date().getFullYear();
+        this.matrixStartYear = baseYear - years;
       }
       // Reset asset-detail TRC if it's open so the year bars also re-window
       if (this.selectedAsset) {
@@ -5441,7 +5511,7 @@ function marketsApp() {
         const pct = (ret * 100).toFixed(1);
         const sign = ret >= 0 ? '+' : '';
         // data attributes for hover
-        bars += `<rect x="${x}" y="${barTop.toFixed(1)}" width="${barW}" height="${Math.max(1, barH).toFixed(1)}" fill="${color}" opacity="${opacity}" rx="1" data-year="${yr}" data-ret="${ret}" data-partial="${partial ? 1 : 0}" style="cursor:crosshair"/>`;
+        bars += `<rect x="${x}" y="${barTop.toFixed(1)}" width="${barW}" height="${Math.max(1, barH).toFixed(1)}" fill="${color}" opacity="${opacity}" rx="1" data-year="${yr}" data-ret="${ret}" data-partial="${partial ? 1 : 0}" style="cursor:pointer"/>`;
         // Value label on tall bars (>20px)
         if (barH > 22 && barW >= 8) {
           const labelY = ret >= 0 ? barTop - 3 : barTop + barH + 10;
@@ -5449,8 +5519,8 @@ function marketsApp() {
         }
       }
 
-      // Crosshair line (updated by JS on hover)
-      const crosshair = `<line id="detail-bar-crosshair" x1="0" y1="${PT}" x2="0" y2="${H - PB}" stroke="rgba(255,255,255,0.3)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
+      // Guide line (updated by JS on hover)
+      const guideLine = `<line id="detail-bar-guide" x1="0" y1="${PT}" x2="0" y2="${H - PB}" stroke="rgba(255,255,255,0.3)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
 
       // CAGR reference line
       const stats = this.computeStats(this.selectedAsset);
@@ -5480,11 +5550,11 @@ function marketsApp() {
         if (pts.length >= 2) {
           const compareName = this.returnsData.assets[this.detailCompareAsset]?.meta?.name || this.detailCompareAsset;
           compareLine = `<polyline points="${pts.join(' ')}" fill="none" stroke="${compareColor}" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.8"/>`;
-          compareLine += `<text x="${W - PR}" y="${PT - 6}" text-anchor="end" style="font-size:8px;fill:${compareColor};font-family:ui-monospace,Menlo,Consolas,monospace;opacity:0.8">— ${compareName}</text>`;
+          compareLine += `<text x="${W - PR}" y="${PT - 6}" text-anchor="end" style="font-size:8px;fill:${compareColor};font-family:ui-monospace,Menlo,Consolas,monospace;opacity:0.8">— ${_escHtml(compareName)}</text>`;
         }
       }
 
-      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block;background:#111" preserveAspectRatio="none">${yTicks}${xLabels}${cagrLine}${bars}${compareLine}${crosshair}</svg>`;
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block;background:#111" preserveAspectRatio="none">${yTicks}${xLabels}${cagrLine}${bars}${compareLine}${guideLine}</svg>`;
     },
 
     detailBarHover(e) {
@@ -5506,20 +5576,20 @@ function marketsApp() {
           partial: el.dataset.partial === '1',
           compareRet,
         };
-        // Move crosshair
+        // Move vertical guide line
         const rect = svg.getBoundingClientRect();
-        const crosshair = svg.getElementById('detail-bar-crosshair');
-        if (crosshair) {
+        const guide = svg.getElementById('detail-bar-guide');
+        if (guide) {
           const x = e.clientX - rect.left;
           const scaleX = parseFloat(svg.getAttribute('viewBox').split(' ')[2]) / rect.width;
-          crosshair.setAttribute('x1', (x * scaleX).toFixed(1));
-          crosshair.setAttribute('x2', (x * scaleX).toFixed(1));
-          crosshair.setAttribute('opacity', '1');
+          guide.setAttribute('x1', (x * scaleX).toFixed(1));
+          guide.setAttribute('x2', (x * scaleX).toFixed(1));
+          guide.setAttribute('opacity', '1');
         }
       } else {
         this.detailBarHoverInfo = null;
-        const crosshair = svg?.getElementById('detail-bar-crosshair');
-        if (crosshair) crosshair.setAttribute('opacity', '0');
+        const guide = svg?.getElementById('detail-bar-guide');
+        if (guide) guide.setAttribute('opacity', '0');
       }
     },
 
@@ -5529,12 +5599,10 @@ function marketsApp() {
       const asset = this.returnsData.assets[this.selectedAsset];
       if (!asset) return '';
 
-      // Support both new format (monthly array) and old format (close dict)
-      let rawClose = {};
-      if (Array.isArray(asset.monthly)) {
-        for (const [ym, val] of asset.monthly) rawClose[ym] = val;
-      } else {
-        rawClose = asset.close || {};
+      const adjusted = this._getAdjustedClose(this.selectedAsset);
+      const rawClose = {};
+      for (const { ym, close } of adjusted) {
+        if (close != null && Number.isFinite(close) && close > 0) rawClose[ym] = close;
       }
 
       // §2.5 Apply time-range window filter
@@ -5558,9 +5626,10 @@ function marketsApp() {
       let yS;
       if (useLog) {
         const logMin = Math.log10(minV * 0.95), logMax = Math.log10(maxV * 1.05);
-        yS = (v) => v > 0 ? PT + chartH - ((Math.log10(v) - logMin) / (logMax - logMin)) * chartH : H - PB;
+        const logDenom = (logMax - logMin) || 1;
+        yS = (v) => v > 0 ? PT + chartH - ((Math.log10(v) - logMin) / logDenom) * chartH : H - PB;
       } else {
-        const pad = (maxV - minV) * 0.05 || 1;
+        const pad = (maxV - minV) * 0.05 || (minV * 0.05 || 1);
         const lo = minV - pad, hi = maxV + pad;
         yS = (v) => PT + chartH - ((v - lo) / (hi - lo)) * chartH;
       }
@@ -5570,10 +5639,13 @@ function marketsApp() {
       const tickVals = useLog
         ? [0.01,0.05,0.1,0.5,1,2,5,10,20,50,100,200,500,1000,2000,5000,10000,50000,100000,500000,1000000].filter(v => v >= minV * 0.5 && v <= maxV * 2)
         : (() => {
-            const range = maxV - minV; const step = Math.pow(10, Math.floor(Math.log10(range / 5)));
+            const range = maxV - minV;
+            if (!(range > 0 && Number.isFinite(range))) return [minV];
+            const step = Math.pow(10, Math.floor(Math.log10(range / 5)));
+            if (!(step > 0 && Number.isFinite(step))) return [minV];
             const lo2 = Math.ceil(minV / step) * step; const hi2 = Math.floor(maxV / step) * step;
             const arr = []; for (let v = lo2; v <= hi2 + step * 0.01; v += step) arr.push(parseFloat(v.toPrecision(6)));
-            return arr;
+            return arr.length ? arr : [minV, maxV];
           })();
       for (const v of tickVals) {
         const y = yS(v); if (y < PT - 5 || y > H - PB + 5) continue;
@@ -5606,7 +5678,7 @@ function marketsApp() {
 
       const scaleLabel = useLog ? ' (log)' : '';
       const nameLabel = asset.meta?.name || this.selectedAsset;
-      const title = `<text x="${PL}" y="13" style="font-size:10px;fill:#71717a;font-family:ui-monospace,Menlo,Consolas,monospace">${nameLabel}${scaleLabel}</text>`;
+      const title = `<text x="${PL}" y="13" style="font-size:10px;fill:#71717a;font-family:ui-monospace,Menlo,Consolas,monospace">${_escHtml(nameLabel)}${scaleLabel}</text>`;
 
       return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block">${title}${ticks}${xLabels}<path d="${d.trim()}" fill="none" stroke="var(--cyan)" stroke-width="1.5" opacity="0.9"/></svg>`;
     },
@@ -5716,7 +5788,7 @@ function marketsApp() {
         const decades = [...new Set(years.map(y => Math.floor(y / 10) * 10))].sort((a, b) => b - a);
         let decadeNav = `<div class="heatmap-decade-nav flex gap-1 flex-wrap mb-2 sticky top-0 z-10 py-1" style="background:var(--surface)">`;
         for (const d of decades) {
-          decadeNav += `<button class="decade-btn px-2 py-0.5 rounded border text-[10px] font-mono" style="color:var(--text-3);border-color:var(--border)" data-decade="${d}" onclick="Alpine.$data(this.closest('[x-data]'))._scrollToDecade(${d})">${d}s</button>`;
+          decadeNav += `<button type="button" class="decade-btn px-2 py-0.5 rounded border text-[10px] font-mono" style="color:var(--text-3);border-color:var(--border)" data-decade="${d}">${d}s</button>`;
         }
         decadeNav += `</div>`;
         html = decadeNav + html;
@@ -5915,8 +5987,11 @@ function marketsApp() {
       for (const lens of lenses) {
         let adjusted;
         if (lens === 'real') {
-          // Real = local + CPI deflation
-          adjusted = this._getAdjustedClose(this.selectedAsset);
+          // Real = local + CPI deflation (independent of activeCcy selector)
+          adjusted = Array.isArray(asset.monthly)
+            ? asset.monthly.filter(([, v]) => v != null && Number.isFinite(v)).map(([ym, v]) => ({ ym, close: v }))
+            : Object.keys(asset.close || {}).sort().filter(ym => asset.close[ym] != null && Number.isFinite(asset.close[ym])).map(ym => ({ ym, close: asset.close[ym] }));
+          if (!adjusted.length) { annualByLens[lens] = {}; continue; }
           // Apply CPI deflation
           const cpiVals = this._cpiValues();
           const cpiMonths = Object.keys(cpiVals).sort();
@@ -5960,12 +6035,14 @@ function marketsApp() {
               const nom = monthlyRet[ym];
               if (nom === undefined) continue;
               const inf = cpiRet[ym] || 0;
-              compound *= (1 + nom) / (1 + inf);
+              const denom = 1 + inf;
+              if (!(denom > 0) || !Number.isFinite(denom)) continue;
+              compound *= (1 + nom) / denom;
               count++;
             }
             const monthsExpected = (yr < asofYear) ? 12 : asofMonth;
             const partial = (count < monthsExpected) || (yr === firstYr && count < 12);
-            if (count > 0) result[yr] = { ret: compound - 1, partial };
+            if (count > 0 && Number.isFinite(compound)) result[yr] = { ret: compound - 1, partial };
           }
           annualByLens[lens] = result;
         } else {
@@ -6071,6 +6148,34 @@ function marketsApp() {
     // ── Tooltip helpers ───────────────────────────────────────────────────
     showTt(el, text) { _showTt(el, text); },
     hideTt() { _hideTt(); },
+
+    get _activeAsofMonth() {
+      const m = parseInt((this.returnsData?.asof || this.marketState?.asof || '').slice(5, 7), 10);
+      return Number.isFinite(m) && m >= 1 && m <= 12 ? m : (new Date().getMonth() + 1);
+    },
+    _onPeriodicHover(e) {
+      const td = e.target.closest('td[data-pkey]');
+      if (!td) { this._clearPeriodicHover(); return; }
+      const k = td.dataset.pkey;
+      const tbl = e.currentTarget.querySelector('#periodic-tbl');
+      if (tbl) {
+        tbl.querySelectorAll('td[data-pkey]').forEach(c => {
+          c.style.opacity = c.dataset.pkey === k ? '1' : '0.20';
+        });
+      }
+      _showPeriodicTt(td, td.dataset.pname || k, td.dataset.yr || '', parseFloat(td.dataset.ret || '0'));
+    },
+    _clearPeriodicHover() {
+      document.querySelectorAll('#periodic-tbl td[data-pkey]').forEach(c => {
+        c.style.opacity = '1';
+      });
+      _hideTt();
+    },
+    _onTipTargetHover(e) {
+      const el = e.target.closest('[data-tip]');
+      if (!el) { _hideTt(); return; }
+      _showTt(el, el.dataset.tip || '');
+    },
 
     showCellTt(el, asset, year, cellData) {
       if (!cellData) return;
@@ -6419,10 +6524,10 @@ function marketsApp() {
         }
       }
 
-      // Hover crosshair placeholder (updated via JS)
-      const crosshair = `<line id="yield-crosshair" x1="0" y1="${PT}" x2="0" y2="${H - PB}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
+      // Vertical guide placeholder (updated via JS)
+      const guideLine = `<line id="yield-guide" x1="0" y1="${PT}" x2="0" y2="${H - PB}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
 
-      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block" preserveAspectRatio="none">${yTicks}${xLabels}${zeroLine}${lines}${crosshair}</svg>`;
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block" preserveAspectRatio="none">${yTicks}${xLabels}${zeroLine}${lines}${guideLine}</svg>`;
     },
 
     yieldChartHover(e) {
@@ -6450,13 +6555,13 @@ function marketsApp() {
 
       this.yieldHoverInfo = { date: month, values };
 
-      // Move crosshair
-      const crosshair = svg.getElementById('yield-crosshair');
-      if (crosshair) {
+      // Move guide line
+      const guide = svg.getElementById('yield-guide');
+      if (guide) {
         const xPos = PL + (filteredMonths.indexOf(month) / Math.max(filteredMonths.length - 1, 1)) * chartW;
-        crosshair.setAttribute('x1', xPos);
-        crosshair.setAttribute('x2', xPos);
-        crosshair.setAttribute('opacity', '1');
+        guide.setAttribute('x1', xPos);
+        guide.setAttribute('x2', xPos);
+        guide.setAttribute('opacity', '1');
       }
     },
 
@@ -6473,7 +6578,7 @@ function marketsApp() {
       const idx = Math.max(0, Math.min(rolls.length - 1, Math.round(frac * (rolls.length - 1))));
       const pt = rolls[idx];
       this.hpHoverInfo = { date: pt.ym, val: pt.ret };
-      const ch = svg.getElementById('hp-crosshair');
+      const ch = svg.getElementById('hp-guide');
       if (ch) {
         const x = PL + (idx / Math.max(rolls.length - 1, 1)) * chartW;
         ch.setAttribute('x1', x);
@@ -6584,11 +6689,11 @@ function marketsApp() {
           const textColor = contrastText(bg);
           const fullName = this.returnsData?.assets?.[a.key]?.meta?.name || a.key;
           html += `<td style="width:${CW}px;height:${RH}px;background:${bg};border:1px solid rgba(255,255,255,0.06);border-radius:3px;cursor:pointer;vertical-align:middle;padding:1px 3px;overflow:hidden;text-align:center;transition:opacity 0.15s ease-in-out;"
-                       onmouseenter="(function(el){var k='${a.key}';document.querySelectorAll('[data-pkey]').forEach(function(c){c.style.opacity=c.dataset.pkey===k?'1':'0.20'});el.style.opacity='1';_showPeriodicTt(el,'${fullName.replace(/'/g, "\\\\'")}', '${yr}', ${a.ret})})(this)"
-                       onmouseleave="(function(){document.querySelectorAll('[data-pkey]').forEach(function(c){c.style.opacity='1'});_hideTt()})()"
-
-                       data-pkey="${a.key}">
-                    <div style="color:${textColor};font-weight:500;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.shortName.slice(0, 7)}</div>
+                       data-pkey="${_escHtml(a.key)}"
+                       data-pname="${_escHtml(fullName)}"
+                       data-yr="${yr}"
+                       data-ret="${a.ret}">
+                    <div style="color:${textColor};font-weight:500;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_escHtml(a.shortName.slice(0, 7))}</div>
                     <div style="color:${textColor};font-weight:500;font-size:9px;opacity:0.85">${sign}${pct}%</div>
                   </td>`;
         }
@@ -6695,10 +6800,13 @@ function marketsApp() {
       if (this.ddTimeRange === 'All') {
         return points.filter(p => p.ym >= '1850-01');
       }
-      const years = parseInt(this.ddTimeRange);
-      const cutoff = new Date();
-      cutoff.setFullYear(cutoff.getFullYear() - years);
-      const cutoffYm = cutoff.toISOString().slice(0, 7);
+      const years = parseInt(this.ddTimeRange, 10);
+      if (!Number.isFinite(years) || years <= 0) return points;
+      const lastYm = points[points.length - 1].ym || '';
+      const lastYear = parseInt(lastYm.slice(0, 4), 10);
+      const lastMo = lastYm.slice(5, 7) || '01';
+      if (!Number.isFinite(lastYear)) return points;
+      const cutoffYm = `${lastYear - years}-${lastMo}`;
       return points.filter(p => p.ym >= cutoffYm);
     },
 
@@ -6754,42 +6862,57 @@ function marketsApp() {
         xLabels += `<line x1="${x.toFixed(1)}" y1="${PT}" x2="${x.toFixed(1)}" y2="${H - PB}" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>`;
       }
 
-      // Filled area + line per asset - reference style: dark fill, bright line on top
+      // Filled area + line per asset - close each contiguous segment back to y0
       let areas = '';
-      const y0 = yScale(0);
+      const y0Str = yScale(0).toFixed(1);
       for (const a of assetDefs) {
         const curve = curves[a.key];
         if (!curve.length) continue;
         const curveMap = Object.fromEntries(curve.map(p => [p.ym, p.dd]));
 
-        let areaPath = `M${PL},${y0.toFixed(1)} `;
+        let areaPath = '';
         let linePath = '';
         let inSeg = false;
+        let segLastX = null;
         for (const m of months) {
           const dd = curveMap[m] ?? null;
-          if (dd === null) { inSeg = false; continue; }
+          if (dd === null) {
+            if (inSeg && segLastX !== null) {
+              areaPath += `L${segLastX},${y0Str} Z `;
+            }
+            inSeg = false;
+            segLastX = null;
+            continue;
+          }
           const x = xScale(m).toFixed(1);
           const y = yScale(dd).toFixed(1);
-          areaPath += `L${x},${y} `;
-          if (!inSeg) { linePath += `M${x},${y} `; inSeg = true; }
-          else { linePath += `L${x},${y} `; }
+          if (!inSeg) {
+            areaPath += `M${x},${y0Str} L${x},${y} `;
+            linePath += `M${x},${y} `;
+            inSeg = true;
+          } else {
+            areaPath += `L${x},${y} `;
+            linePath += `L${x},${y} `;
+          }
+          segLastX = x;
         }
-        const lastM = months[months.length - 1];
-        areaPath += `L${xScale(lastM).toFixed(1)},${y0.toFixed(1)} Z`;
+        if (inSeg && segLastX !== null) {
+          areaPath += `L${segLastX},${y0Str} Z`;
+        }
 
         // Dark fill (like the reference: solid dark fill from line down to 0%)
-        areas += `<path d="${areaPath}" fill="${a.color}" opacity="0.35"/>`;
+        if (areaPath) areas += `<path d="${areaPath.trim()}" fill="${a.color}" opacity="0.35"/>`;
         // Bright line on top (thicker, fully opaque - matches reference style)
-        areas += `<path d="${linePath.trim()}" fill="none" stroke="${a.color}" stroke-width="2" opacity="1" data-series="${a.key}"/>`;
+        if (linePath) areas += `<path d="${linePath.trim()}" fill="none" stroke="${a.color}" stroke-width="2" opacity="1" data-series="${a.key}"/>`;
       }
 
-      const crosshair = `<line id="dd-crosshair" x1="0" y1="${PT}" x2="0" y2="${H - PB}" stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
+      const guideLine = `<line id="dd-guide" x1="0" y1="${PT}" x2="0" y2="${H - PB}" stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
 
       // Explicit axis lines (consistency pass - Requirement 5.1)
       const yAxis = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H - PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
       const xAxis = `<line x1="${PL}" y1="${H - PB}" x2="${W - PR}" y2="${H - PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
 
-      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block;background:#111" preserveAspectRatio="none">${yTicks}${xLabels}${areas}${yAxis}${xAxis}${crosshair}</svg>`;
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block;background:#111" preserveAspectRatio="none">${yTicks}${xLabels}${areas}${yAxis}${xAxis}${guideLine}</svg>`;
     },
 
     drawdownHover(e) {
@@ -6818,12 +6941,12 @@ function marketsApp() {
 
       this.ddHoverInfo = { date: month, values };
 
-      const crosshair = svg.getElementById('dd-crosshair');
-      if (crosshair) {
+      const guide = svg.getElementById('dd-guide');
+      if (guide) {
         const xPos = PL + frac * chartW;
-        crosshair.setAttribute('x1', xPos);
-        crosshair.setAttribute('x2', xPos);
-        crosshair.setAttribute('opacity', '1');
+        guide.setAttribute('x1', xPos);
+        guide.setAttribute('x2', xPos);
+        guide.setAttribute('opacity', '1');
       }
     },
 
@@ -6831,11 +6954,11 @@ function marketsApp() {
       const assetDefs = this.drawdownAssets;
       return assetDefs.map(a => {
         const adjusted = this._getAdjustedClose(a.key);
-        if (!adjusted.length) return { ...a, maxDd: null, peakDate: null, troughDate: null, recoveryDate: null, monthsToRecover: null, currentDd: null };
+        if (!adjusted.length) return { ...a, maxDd: null, peakDate: null, troughDate: null, recoveryDate: null, monthsToRecover: null, currentDd: null, ulcerIndex: null, currentDdPctile: null };
 
         // Apply time range filter
         const data = this._applyTimeRange(adjusted);
-        if (!data.length) return { ...a, maxDd: null, peakDate: null, troughDate: null, recoveryDate: null, monthsToRecover: null, currentDd: null };
+        if (!data.length) return { ...a, maxDd: null, peakDate: null, troughDate: null, recoveryDate: null, monthsToRecover: null, currentDd: null, ulcerIndex: null, currentDdPctile: null };
 
         // Find the worst drawdown event using correct logic
         let worstDd = 0;       // most negative value seen
@@ -6849,8 +6972,8 @@ function marketsApp() {
 
         for (const { ym, close } of data) {
           if (close >= runningPeak) {
-            // New peak - if we were in a drawdown, it just recovered
-            if (currentDdStart !== null && currentDdDepth < worstDd) {
+            // New peak - if we were in the worst drawdown, record its recovery date
+            if (currentDdStart !== null && (currentDdDepth < worstDd || (currentDdStart === worstPeakDate && worstRecoveryDate === null))) {
               worstDd = currentDdDepth;
               worstPeakDate = currentDdStart;
               worstTroughDate = currentDdTroughYm;
@@ -6883,12 +7006,14 @@ function marketsApp() {
         const allTimeHigh = Math.max(...data.map(p => p.close));
         const currentDd = allTimeHigh > 0 ? lastClose / allTimeHigh - 1 : null;
 
-        // Months to recover
+        // Exact calendar months to recover (peak YYYY-MM to recovery YYYY-MM)
         let monthsToRecover = null;
         if (worstPeakDate && worstTroughDate && worstRecoveryDate) {
-          const p = new Date(worstPeakDate + '-01');
-          const r = new Date(worstRecoveryDate + '-01');
-          monthsToRecover = Math.round((r - p) / (1000 * 60 * 60 * 24 * 30.5));
+          const [pY, pM] = worstPeakDate.split('-').map(Number);
+          const [rY, rM] = worstRecoveryDate.split('-').map(Number);
+          if (Number.isFinite(pY) && Number.isFinite(pM) && Number.isFinite(rY) && Number.isFinite(rM)) {
+            monthsToRecover = (rY - pY) * 12 + (rM - pM);
+          }
         }
 
         // §5.5 Ulcer Index = √mean(DD²) - captures depth × duration
@@ -7024,7 +7149,7 @@ function marketsApp() {
         // "Never Lost" label should say 1Y (not the user's hpHorizon, which
         // is a rolling-mode setting that's inert here).
         const label = this.hpMode === 'trailing' ? '1Y' : (this.hpHorizon + 'Y');
-        kpis.push({ label: '✓ Never Lost', value: label, color: 'var(--up)' });
+        kpis.push({ label: 'Never Lost', value: label, color: 'var(--up)' });
       }
       return kpis;
     },
@@ -7086,10 +7211,10 @@ function marketsApp() {
       area += `L${xS(rolls.length-1).toFixed(1)},${y0.toFixed(1)} Z`;
       const fc = rolls[rolls.length-1].ret >= 0 ? '#34d399' : '#fb7185';
 
-      // Crosshair placeholder (controlled by hpChartHover)
-      const crosshair = `<line id="hp-crosshair" x1="0" y1="${PT}" x2="0" y2="${H-PB}" stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
+      // Vertical guide placeholder (controlled by hpChartHover)
+      const guideLine = `<line id="hp-guide" x1="0" y1="${PT}" x2="0" y2="${H-PB}" stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
 
-      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block" preserveAspectRatio="none">${yTicks}${zl}${xLabels}${yAxis}${xAxis}<path d="${area}" fill="${fc}" opacity="0.15"/><path d="${line.trim()}" fill="none" stroke="${fc}" stroke-width="1.5"/>${crosshair}</svg>`;
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block" preserveAspectRatio="none">${yTicks}${zl}${xLabels}${yAxis}${xAxis}<path d="${area}" fill="${fc}" opacity="0.15"/><path d="${line.trim()}" fill="none" stroke="${fc}" stroke-width="1.5"/>${guideLine}</svg>`;
     },
 
     get hpDistSvg() {
@@ -7265,7 +7390,7 @@ function marketsApp() {
         }
         if (d) lines += `<path d="${d.trim()}" fill="none" stroke="${a.color}" stroke-width="1.5" opacity="0.85"/>`;
       }
-      const ch = `<line id="growth-crosshair" x1="0" y1="${PT}" x2="0" y2="${H-PB}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
+      const ch = `<line id="growth-guide" x1="0" y1="${PT}" x2="0" y2="${H-PB}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
       // Explicit axis lines (consistency pass - Requirement 5.4)
       const yAxis = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
       const xAxis = `<line x1="${PL}" y1="${H-PB}" x2="${W-PR}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
@@ -7336,7 +7461,7 @@ function marketsApp() {
         val: growth[a.key]?.[month] ?? null,
       }));
       this.growthHoverInfo = { date: month, values };
-      const ch = svg.getElementById('growth-crosshair');
+      const ch = svg.getElementById('growth-guide');
       if (ch) { const x = PL + frac * (W - PL - PR); ch.setAttribute('x1', x); ch.setAttribute('x2', x); ch.setAttribute('opacity', '1'); }
     },
 
@@ -7380,10 +7505,10 @@ function marketsApp() {
       }
       const CELL = 52;
       let html = `<table style="border-collapse:separate;border-spacing:4px;margin:12px auto;"><tr><td style="width:120px;"></td>`;
-      for (const a of assetDefs) html += `<td style="width:${CELL}px;text-align:center;font-size:9px;font-family:ui-monospace,Menlo,Consolas,monospace;color:#52525b;padding:2px;">${a.shortName.slice(0,6)}</td>`;
+      for (const a of assetDefs) html += `<td style="width:${CELL}px;text-align:center;font-size:9px;font-family:ui-monospace,Menlo,Consolas,monospace;color:#52525b;padding:2px;">${_escHtml(a.shortName.slice(0,6))}</td>`;
       html += `</tr>`;
       for (let i = 0; i < n; i++) {
-        html += `<tr><td style="font-size:10px;color:var(--text-2);padding:2px 6px;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis;">${assetDefs[i].shortName}</td>`;
+        html += `<tr><td style="font-size:10px;color:var(--text-2);padding:2px 6px;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis;">${_escHtml(assetDefs[i].shortName)}</td>`;
         for (let j = 0; j < n; j++) {
           const c = corr[i][j];
           // Calm aggregate palette matching the returns matrix /
@@ -7401,7 +7526,7 @@ function marketsApp() {
             else                bg = _hsl2hex( 18/360, 0.45, 0.40);   // deep muted red-orange
           }
           const tc = c !== null && Math.abs(c) > 0.3 ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.6)';
-          html += `<td style="width:${CELL}px;height:28px;text-align:center;font-size:10px;font-family:ui-monospace,Menlo,Consolas,monospace;background:${bg};color:${tc};border-radius:2px;" title="${assetDefs[i].shortName} vs ${assetDefs[j].shortName}: ${c !== null ? c.toFixed(2) : '-'}">${c !== null ? c.toFixed(2) : '—'}</td>`;
+          html += `<td style="width:${CELL}px;height:28px;text-align:center;font-size:10px;font-family:ui-monospace,Menlo,Consolas,monospace;background:${bg};color:${tc};border-radius:2px;" title="${_escHtml(assetDefs[i].shortName)} vs ${_escHtml(assetDefs[j].shortName)}: ${c !== null ? c.toFixed(2) : '-'}">${c !== null ? c.toFixed(2) : '—'}</td>`;
         }
         html += `</tr>`;
       }
@@ -7451,22 +7576,30 @@ function marketsApp() {
         const aRets = assetRets[a.key];
         if (!aRets) continue;
         const pts = [];
-        for (let i = WINDOW; i < allMonths.length; i++) {
-          const window = allMonths.slice(i - WINDOW, i);
-          const bVals = window.map(m => baseRets[m]).filter(v => v != null);
-          const aVals = window.map(m => aRets[m]).filter(v => v != null);
-          const n = Math.min(bVals.length, aVals.length);
+        for (let i = WINDOW - 1; i < allMonths.length; i++) {
+          const winMonths = allMonths.slice(i - WINDOW + 1, i + 1);
+          const paired = [];
+          for (const m of winMonths) {
+            const bv = baseRets[m], av = aRets[m];
+            if (bv != null && av != null && Number.isFinite(bv) && Number.isFinite(av)) {
+              paired.push([bv, av]);
+            }
+          }
+          const n = paired.length;
           if (n < 6) continue;
-          const bSlice = bVals.slice(0, n), aSlice = aVals.slice(0, n);
-          const bMean = bSlice.reduce((s, v) => s + v, 0) / n;
-          const aMean = aSlice.reduce((s, v) => s + v, 0) / n;
+          let bSum = 0, aSum = 0;
+          for (let j = 0; j < n; j++) { bSum += paired[j][0]; aSum += paired[j][1]; }
+          const bMean = bSum / n, aMean = aSum / n;
           let cov = 0, bVar = 0, aVar = 0;
           for (let j = 0; j < n; j++) {
-            cov += (bSlice[j] - bMean) * (aSlice[j] - aMean);
-            bVar += (bSlice[j] - bMean) ** 2;
-            aVar += (aSlice[j] - aMean) ** 2;
+            const db = paired[j][0] - bMean;
+            const da = paired[j][1] - aMean;
+            cov += db * da;
+            bVar += db * db;
+            aVar += da * da;
           }
-          const corr = (bVar > 0 && aVar > 0) ? cov / Math.sqrt(bVar * aVar) : 0;
+          if (!(bVar > 0 && aVar > 0)) continue;
+          const corr = cov / Math.sqrt(bVar * aVar);
           pts.push({ ym: allMonths[i], corr: Math.max(-1, Math.min(1, corr)) });
         }
         if (pts.length >= 2) series[a.key] = { pts, color: a.color, name: a.name };
@@ -7522,11 +7655,11 @@ function marketsApp() {
         lines += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="1.5" opacity="0.85"/>`;
         // Label at end
         const last = pts[pts.length - 1];
-        lines += `<text x="${(xS(last.ym) + 4).toFixed(1)}" y="${(yS(last.corr) + 3).toFixed(1)}" style="font-size:8px;fill:${s.color};font-family:ui-monospace,Menlo,Consolas,monospace">${s.name.split(' ').slice(0,2).join(' ')}</text>`;
+        lines += `<text x="${(xS(last.ym) + 4).toFixed(1)}" y="${(yS(last.corr) + 3).toFixed(1)}" style="font-size:8px;fill:${s.color};font-family:ui-monospace,Menlo,Consolas,monospace">${_escHtml(s.name.split(' ').slice(0,2).join(' '))}</text>`;
       }
 
-      const ch = `<line id="rolling-crosshair" x1="0" y1="${PT}" x2="0" y2="${H-PB}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
-      const title = `<text x="${PL}" y="12" style="font-size:9px;fill:#71717a;font-family:ui-monospace,Menlo,Consolas,monospace">12M rolling corr vs ${baseName}</text>`;
+      const ch = `<line id="rolling-guide" x1="0" y1="${PT}" x2="0" y2="${H-PB}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
+      const title = `<text x="${PL}" y="12" style="font-size:9px;fill:#71717a;font-family:ui-monospace,Menlo,Consolas,monospace">12M rolling corr vs ${_escHtml(baseName)}</text>`;
       
       const yAxis = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
       const xAxis = `<line x1="${PL}" y1="${H-PB}" x2="${W-PR}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
@@ -7555,7 +7688,7 @@ function marketsApp() {
       });
 
       this.rollingCorrHoverInfo = { date: month, values };
-      const ch = svg.getElementById('rolling-crosshair');
+      const ch = svg.getElementById('rolling-guide');
       if (ch) {
         const x = PL + frac * (W - PL - PR);
         ch.setAttribute('x1', x);
@@ -7650,7 +7783,7 @@ function marketsApp() {
         const lastVal = ratioSeries[ratioSeries.length - 1].val;
         const color = assetColor(r.num);
 
-        const ch = `<line id="ratio-crosshair-${r.id}" x1="0" y1="${PT}" x2="0" y2="${H-PB}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
+        const ch = `<line id="ratio-guide-${r.id}" x1="0" y1="${PT}" x2="0" y2="${H-PB}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
         
         const yAxis = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
         const xAxis = `<line x1="${PL}" y1="${H-PB}" x2="${W-PR}" y2="${H-PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
@@ -7672,7 +7805,7 @@ function marketsApp() {
       if (!pt) return;
       
       this.ratioHoverInfo[ratioId] = { date: pt.ym, val: pt.val };
-      const ch = svg.getElementById(`ratio-crosshair-${ratioId}`);
+      const ch = svg.getElementById(`ratio-guide-${ratioId}`);
       if (ch) {
         const x = PL + (idx / Math.max(ratio.points.length - 1, 1)) * (W - PL - PR);
         ch.setAttribute('x1', x);
@@ -7761,11 +7894,13 @@ function marketsApp() {
       // Determine lookback window
       let windowDates = dates;
       if (lookback !== 'All') {
-        const years = parseInt(lookback);
-        const cutoff = new Date(dates[dates.length - 1]);
-        cutoff.setFullYear(cutoff.getFullYear() - years);
-        const cutoffStr = cutoff.toISOString().slice(0, 10);
-        windowDates = dates.filter(d => d >= cutoffStr);
+        const years = parseInt(lookback, 10);
+        const lastStr = dates[dates.length - 1] || '';
+        const lastYr = parseInt(lastStr.slice(0, 4), 10);
+        if (Number.isFinite(years) && Number.isFinite(lastYr)) {
+          const cutoffStr = `${lastYr - years}${lastStr.slice(4)}`;
+          windowDates = dates.filter(d => d >= cutoffStr);
+        }
       }
 
       if (windowDates.length < 2) return { z: null, mean: null, stdev: null, current };
@@ -7857,10 +7992,10 @@ function marketsApp() {
       if (!dates.length) return '';
 
       // Get trailing 12 months of daily data
-      const cutoff = new Date(dates[dates.length - 1]);
-      cutoff.setFullYear(cutoff.getFullYear() - 1);
-      const cutoffStr = cutoff.toISOString().slice(0, 10);
-      const recent = dates.filter(d => d >= cutoffStr);
+      const lastStr = dates[dates.length - 1] || '';
+      const lastYr = parseInt(lastStr.slice(0, 4), 10);
+      const cutoffStr = Number.isFinite(lastYr) ? `${lastYr - 1}${lastStr.slice(4)}` : '';
+      const recent = cutoffStr ? dates.filter(d => d >= cutoffStr) : dates;
       if (recent.length < 2) return '';
 
       const vals = recent.map(d => daily[d]).filter(v => v != null);
@@ -7898,14 +8033,14 @@ function marketsApp() {
           const pct = t.percentile !== null ? Math.round(t.percentile * 100) : null;
           const regime = t.regime || 'Elevated';
           const pctStr = pct !== null ? ` (${pct}th percentile)` : '';
-          parts.push(`<span style="color:var(--down)">${t.description} (${t.name}) is in <strong>${regime}</strong> territory at ${t.z >= 0 ? '+' : ''}${t.z.toFixed(2)}σ${pctStr}.</span>`);
+          parts.push(`<span style="color:var(--down)">${_escHtml(t.description)} (${_escHtml(t.name)}) is in <strong>${_escHtml(regime)}</strong> territory at ${t.z >= 0 ? '+' : ''}${t.z.toFixed(2)}σ${pctStr}.</span>`);
         }
       }
       if (calm.length > 0) {
         for (const t of calm.slice(0, 1)) {
           const pct = t.percentile !== null ? Math.round(t.percentile * 100) : null;
           const pctStr = pct !== null ? ` (${pct}th percentile)` : '';
-          parts.push(`<span style="color:var(--up)">${t.description} (${t.name}) is <strong>Calm</strong>${pctStr}.</span>`);
+          parts.push(`<span style="color:var(--up)">${_escHtml(t.description)} (${_escHtml(t.name)}) is <strong>Calm</strong>${pctStr}.</span>`);
         }
       }
       if (parts.length === 0) {
@@ -8041,8 +8176,8 @@ function marketsApp() {
           const bg = this._zCellColor(z);
           const tc = this._zCellTextColor(z);
           const zText = z !== null ? (z >= 0 ? '+' : '') + z.toFixed(1) : '';
-          const tip = rawVal !== null ? `${s.name}\\n${m}\\nAvg: ${rawVal.toFixed(1)}\\nZ: ${z !== null ? z.toFixed(2) : '—'}` : `${s.name}\\n${m}\\nNo data`;
-          html += `<td style="width:${CELL_W}px;min-width:${CELL_W}px;height:${CELL_H}px;text-align:center;font-size:9px;font-family:ui-monospace,Menlo,Consolas,monospace;background:${bg};color:${tc};border:1px solid rgba(0,0,0,0.3);cursor:pointer;" onmouseenter="document.getElementById('tt').innerHTML='${tip.replace(/'/g, '&#39;')}';document.getElementById('tt').style.opacity='1';_posTt(this)" onmouseleave="document.getElementById('tt').style.opacity='0'">${zText}</td>`;
+          const tip = rawVal !== null ? `${s.name}\n${m}\nAvg: ${rawVal.toFixed(1)}\nZ: ${z !== null ? z.toFixed(2) : '—'}` : `${s.name}\n${m}\nNo data`;
+          html += `<td style="width:${CELL_W}px;min-width:${CELL_W}px;height:${CELL_H}px;text-align:center;font-size:9px;font-family:ui-monospace,Menlo,Consolas,monospace;background:${bg};color:${tc};border:1px solid rgba(0,0,0,0.3);cursor:pointer;" data-tip="${_escHtml(tip).replace(/\n/g, '&#10;')}">${zText}</td>`;
         }
         html += `</tr>`;
       }
@@ -8065,11 +8200,12 @@ function marketsApp() {
       const W = 1200, H = 340, PL = 52, PR = 20, PT = 20, PB = 40;
       const chartW = W - PL - PR, chartH = H - PT - PB;
 
-      // Value range
+      // Value range (scoped strictly to visible dates)
       let minV = Infinity, maxV = -Infinity;
       for (const s of seriesDefs) {
         const vals = this._volValues(s.key);
-        for (const v of Object.values(vals)) {
+        for (const date of dates) {
+          const v = vals[date];
           if (v != null && isFinite(v)) { minV = Math.min(minV, v); maxV = Math.max(maxV, v); }
         }
       }
@@ -8104,14 +8240,16 @@ function marketsApp() {
         xLabels += `<line x1="${x.toFixed(1)}" y1="${PT}" x2="${x.toFixed(1)}" y2="${H - PB}" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>`;
       }
 
-      // Event annotations
+      // Event annotations (only within visible date bounds)
       const events = [
         { d: useDaily ? '2008-09-15' : '2008-09', label: 'GFC' },
         { d: useDaily ? '2020-03-16' : '2020-03', label: 'COVID' },
         { d: useDaily ? '2022-01-24' : '2022-01', label: 'Rate shock' },
       ];
       let annotations = '';
+      const firstDate = dates[0], lastDate = dates[dates.length - 1];
       for (const ev of events) {
+        if (ev.d < firstDate || ev.d > lastDate) continue;
         const closest = dates.find(x => x >= ev.d);
         if (!closest) continue;
         const x = xScale(closest);
@@ -8146,12 +8284,12 @@ function marketsApp() {
         legend += `<text x="${lx + 16}" y="${H - PB + 22}" style="font-size:9px;fill:${s.color};font-family:ui-monospace,Menlo,Consolas,monospace">${s.name}</text>`;
       }
 
-      const crosshair = `<line id="vol-crosshair" x1="0" y1="${PT}" x2="0" y2="${H - PB}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
+      const guideLine = `<line id="vol-guide" x1="0" y1="${PT}" x2="0" y2="${H - PB}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3,3" opacity="0"/>`;
       
       const yAxis = `<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${H - PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
       const xAxis = `<line x1="${PL}" y1="${H - PB}" x2="${W - PR}" y2="${H - PB}" stroke="#52525b" stroke-width="1" opacity="0.6"/>`;
 
-      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block" preserveAspectRatio="none">${yTicks}${xLabels}${annotations}${lines}${legend}${yAxis}${xAxis}${crosshair}</svg>`;
+      return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:600px;height:${H}px;display:block" preserveAspectRatio="none">${yTicks}${xLabels}${annotations}${lines}${legend}${yAxis}${xAxis}${guideLine}</svg>`;
     },
 
     volChartHover(e) {
@@ -8179,13 +8317,13 @@ function marketsApp() {
 
       this.volHoverInfo = { date, values };
 
-      const crosshair = svg.getElementById('vol-crosshair');
-      if (crosshair) {
-        // Snap crosshair to the exact date index
+      const guide = svg.getElementById('vol-guide');
+      if (guide) {
+        // Snap vertical guide line to the exact date index
         const xPos = PL + (idx / Math.max(dates.length - 1, 1)) * chartW;
-        crosshair.setAttribute('x1', xPos);
-        crosshair.setAttribute('x2', xPos);
-        crosshair.setAttribute('opacity', '1');
+        guide.setAttribute('x1', xPos);
+        guide.setAttribute('x2', xPos);
+        guide.setAttribute('opacity', '1');
       }
     },
 
@@ -8239,18 +8377,16 @@ function marketsApp() {
         // Calmer 4-stop palette - same semantics as the tiles (calm/stress/crisis)
         const color = z < -1 ? '#34d399' : z < 1 ? '#94a3b8' : z < 2 ? '#f59e0b' : '#fb7185';
 
-        bars += `<rect x="${slotX.toFixed(1)}" y="${barTop.toFixed(1)}" width="${barW}" height="${barH.toFixed(1)}" fill="${color}" opacity="0.85" rx="2"
-                       onmouseenter="document.getElementById('tt').innerHTML='${t.name}\\nZ-score: ${z >= 0 ? '+' : ''}${z.toFixed(2)}σ\\nLevel: ${t.current !== null ? t.current.toFixed(1) : '—'}\\n${t.interpretation}';document.getElementById('tt').style.opacity='1';_posTt(this)"
-                       onmouseleave="document.getElementById('tt').style.opacity='0'"
-                       style="cursor:pointer"/>`;
+        const barTip = `${t.name}\nZ-score: ${z >= 0 ? '+' : ''}${z.toFixed(2)}σ\nLevel: ${t.current !== null ? t.current.toFixed(1) : '—'}\n${t.interpretation}`;
+        bars += `<rect x="${slotX.toFixed(1)}" y="${barTop.toFixed(1)}" width="${barW}" height="${barH.toFixed(1)}" fill="${color}" opacity="0.85" rx="2" data-tip="${_escHtml(barTip).replace(/\n/g, '&#10;')}" style="cursor:pointer"/>`;
 
         // σ value: always at the top label band - single line of values across the chart
         const sigmaLabel = (z >= 0 ? '+' : '') + z.toFixed(1) + 'σ';
         bars += `<text x="${(slotX + barW / 2).toFixed(1)}" y="${labelBandY.toFixed(1)}" text-anchor="middle" style="font-size:9px;font-weight:500;fill:${color};font-family:ui-monospace,Menlo,Consolas,monospace">${sigmaLabel}</text>`;
 
         // Index name: under the chart in a consistent label band
-        bars += `<text x="${(slotX + barW / 2).toFixed(1)}" y="${(H - PB + 16).toFixed(1)}" text-anchor="middle" style="font-size:10px;font-weight:600;fill:#e4e4e7;font-family:ui-monospace,Menlo,Consolas,monospace">${t.name}</text>`;
-        bars += `<text x="${(slotX + barW / 2).toFixed(1)}" y="${(H - PB + 30).toFixed(1)}" text-anchor="middle" style="font-size:8px;fill:#71717a;font-family:ui-monospace,Menlo,Consolas,monospace">${t.regime}</text>`;
+        bars += `<text x="${(slotX + barW / 2).toFixed(1)}" y="${(H - PB + 16).toFixed(1)}" text-anchor="middle" style="font-size:10px;font-weight:600;fill:#e4e4e7;font-family:ui-monospace,Menlo,Consolas,monospace">${_escHtml(t.name)}</text>`;
+        bars += `<text x="${(slotX + barW / 2).toFixed(1)}" y="${(H - PB + 30).toFixed(1)}" text-anchor="middle" style="font-size:8px;fill:#71717a;font-family:ui-monospace,Menlo,Consolas,monospace">${_escHtml(t.regime)}</text>`;
       }
 
       const title = `<text x="${W / 2}" y="16" text-anchor="middle" style="font-size:10px;fill:#a1a1aa;font-family:ui-sans-serif">Current Z-Scores vs ${this.volLookback} History · ${this.volGranularity}</text>`;

@@ -210,69 +210,109 @@ LEVERAGE_SCHEDULES: dict[str, list[dict[str, Any]]] = {
         {"until": "2018-02-27", "leverage": -1.0},
         {"since": "2018-02-28", "leverage": -0.5},
     ],
+    "SMST": [
+        {"until": "2024-10-28", "leverage": -1.5},
+        {"since": "2024-10-29", "leverage": -2.0},
+    ],
 }
+
+
+_CATALOG_LEVERAGE_CACHE: dict[str, float] | None = None
+
+
+def _load_catalog_leverage_map() -> dict[str, float]:
+    global _CATALOG_LEVERAGE_CACHE
+    if _CATALOG_LEVERAGE_CACHE is not None:
+        return _CATALOG_LEVERAGE_CACHE
+    mapping: dict[str, float] = {}
+    if CATALOG_PATH.exists():
+        try:
+            payload = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
+            for item in payload.get("instruments", []):
+                tk = str(item.get("ticker", "")).strip().upper()
+                lv = item.get("leverage_value")
+                if tk and lv is not None:
+                    mapping[tk] = float(lv)
+        except Exception:
+            pass
+    _CATALOG_LEVERAGE_CACHE = mapping
+    return mapping
 
 
 def get_underlying_id(ticker: str) -> str:
     """Return the canonical underlying ID for an instrument."""
-    entry = TAXONOMY_MAP.get(ticker)
+    tk = str(ticker or "").strip().upper()
+    entry = TAXONOMY_MAP.get(tk)
     if entry:
         return entry[0]
-    return ticker
+    return tk
 
 
 def get_underlying_label(ticker: str) -> str:
     """Return the descriptive underlying label for an instrument."""
-    entry = TAXONOMY_MAP.get(ticker)
+    tk = str(ticker or "").strip().upper()
+    entry = TAXONOMY_MAP.get(tk)
     if entry:
         return entry[1]
-    return ticker
+    return tk
 
 
 def get_taxonomy_record(ticker: str) -> dict[str, Any]:
     """Return full taxonomy record for an instrument."""
-    entry = TAXONOMY_MAP.get(ticker)
-    uid = entry[0] if entry else ticker
-    lbl = entry[1] if entry else ticker
+    tk = str(ticker or "").strip().upper()
+    entry = TAXONOMY_MAP.get(tk)
+    uid = entry[0] if entry else tk
+    lbl = entry[1] if entry else tk
     return {
         "underlying_id": uid,
         "underlying_label": lbl,
-        "leverage_schedule": LEVERAGE_SCHEDULES.get(ticker),
+        "leverage_schedule": LEVERAGE_SCHEDULES.get(tk),
     }
 
 
 def leverage_at_date(ticker: str, date_str: str = "", default_lev: float = 1.0) -> float:
     """Return time-versioned stated leverage for a ticker on a given date.
 
-    Handles the Feb 28, 2018 Volmageddon transition:
-    - UVXY: +2.0x pre-2018-02-28, +1.5x on/after.
-    - SVXY: -1.0x pre-2018-02-28, -0.5x on/after.
+    Resolves schedules dynamically from LEVERAGE_SCHEDULES (e.g., UVXY/SVXY on
+    2018-02-28, SMST -1.5x -> -2.0x on 2024-10-29). When `date_str` is empty,
+    returns the latest active schedule entry if one exists, else `default_lev`.
     """
-    if ticker == "UVXY":
-        if date_str and date_str < VOLMAGEDDON_CUTOFF:
-            return 2.0
-        return 1.5
-    if ticker == "SVXY":
-        if date_str and date_str < VOLMAGEDDON_CUTOFF:
-            return -1.0
-        return -0.5
+    tk = str(ticker or "").strip().upper()
+    sched = LEVERAGE_SCHEDULES.get(tk)
+    if sched:
+        d = str(date_str or "").strip()[:10]
+        if not d:
+            return float(sched[-1]["leverage"])
+        for rule in sched:
+            until_d = rule.get("until")
+            since_d = rule.get("since")
+            if until_d and d <= until_d and not since_d:
+                return float(rule["leverage"])
+            if since_d and d >= since_d and (not until_d or d <= until_d):
+                return float(rule["leverage"])
+        return float(sched[-1]["leverage"])
     return default_lev
 
 
-def market_beta_polarity(ticker: str, leverage_value: float = 1.0) -> int:
+def market_beta_polarity(ticker: str, leverage_value: float | None = None) -> int:
     """Return signed economic market beta polarity (+1 or -1).
 
-    Long VIX products (UVIX, UVXY) have positive leverage on the VIX futures
-    index, but represent SHORT market beta (-1).
-    Short VIX products (SVIX, SVXY) have negative leverage on the VIX futures
-    index, but represent LONG market beta carry (+1).
-    All other ETFs: +1 if bull (leverage_value > 0), else -1.
+    Short-term VIX futures products (`underlying_id == "VIX_ST_FUTURES"`)
+    carry opposite equity market beta: positive-leverage VIX products represent
+    SHORT equity beta (-1), while inverse VIX products represent LONG equity
+    beta (+1). All other ETFs return +1 when `leverage_value >= 0`, else -1.
     """
-    if ticker in ("UVIX", "UVXY"):
-        return -1
-    if ticker in ("SVIX", "SVXY"):
-        return +1
-    return 1 if leverage_value > 0 else -1
+    tk = str(ticker or "").strip().upper()
+    if leverage_value is None:
+        if tk in LEVERAGE_SCHEDULES:
+            lev = float(LEVERAGE_SCHEDULES[tk][-1]["leverage"])
+        else:
+            lev = _load_catalog_leverage_map().get(tk, 1.0)
+    else:
+        lev = float(leverage_value)
+    if get_underlying_id(tk) == "VIX_ST_FUTURES":
+        return -1 if lev > 0 else 1
+    return 1 if lev >= 0 else -1
 
 
 def classify_pair(

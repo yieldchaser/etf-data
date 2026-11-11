@@ -334,13 +334,14 @@
   background: #090a0f;
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 6px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 #macd-canvas {
   display: block;
   width: 100%;
   height: 480px;
+  border-radius: 5px;
   cursor: default;
 }
 
@@ -523,6 +524,7 @@
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.7);
   z-index: 30;
   min-width: 210px;
+  max-width: calc(100% - 16px);
 }
 
 /* ── Screener & Radar View ── */
@@ -812,6 +814,10 @@
 }
 
 @media (max-width: 640px) {
+  .macd-tooltip {
+    min-width: 0;
+    padding: 0.55rem 0.7rem;
+  }
   .flow-macd-card {
     padding: 0.85rem;
     gap: 0.85rem;

@@ -18,6 +18,8 @@ import math
 import os
 import ssl
 import sys
+import tempfile
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -25,6 +27,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
+
+NY_TZ = ZoneInfo("America/New_York")
 
 if sys.platform == "win32":
     try:
@@ -89,12 +94,12 @@ def load_known_splits(splits_path: Path = DEFAULT_SPLITS_PATH) -> dict[str, list
 def load_ticker_nav_map(
     ticker: str,
     individual_dir: Path = DEFAULT_INDIVIDUAL_DIR,
-) -> dict[str, dict[str, float]]:
+) -> dict[str, dict[str, float | None]]:
     """Load authoritative daily NAV and perf_pct cross-check map for a ticker."""
     csv_path = individual_dir / f"{ticker}_flows.csv"
     if not csv_path.is_file():
         return {}
-    nav_map: dict[str, dict[str, float]] = {}
+    nav_map: dict[str, dict[str, float | None]] = {}
     try:
         with csv_path.open("r", encoding="utf-8", newline="") as handle:
             for row in csv.DictReader(handle):
@@ -105,12 +110,17 @@ def load_ticker_nav_map(
                     nav_val = float(row.get("nav", "") or 0)
                 except ValueError:
                     continue
-                if nav_val <= 0:
+                if not math.isfinite(nav_val) or nav_val <= 0:
                     continue
-                try:
-                    perf_val = float(row.get("perf_pct", "") or 0)
-                except ValueError:
-                    perf_val = 0.0
+                raw_perf = str(row.get("perf_pct", "") or "").strip()
+                perf_val: float | None = None
+                if raw_perf:
+                    try:
+                        parsed_perf = float(raw_perf)
+                        if math.isfinite(parsed_perf):
+                            perf_val = parsed_perf
+                    except ValueError:
+                        perf_val = None
                 nav_map[date_str] = {"nav": nav_val, "perf_pct": perf_val}
     except Exception:
         return {}
@@ -121,20 +131,19 @@ def apply_split_adjustments_to_bars(
     bars: list[dict[str, Any]],
     ticker: str,
     known_splits: dict[str, list[dict[str, Any]]],
-    nav_map: dict[str, dict[str, float]] | None = None,
+    nav_map: dict[str, dict[str, float | None]] | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Idempotently apply missing known split adjustments in log-space.
 
     Stage 2 Split State Machine:
     Canonical R_s = 1.0 / factor (since splits.json stores factor = post / pre).
-    Removes legacy abs(log_obs) < 0.50 skip gate so 3:2 splits work.
     When nav_map is present:
-      - Computes delta_t = ln(C_t / C_{t-1}) - r^{ref}_t
+      - Computes delta_t = ln(C_t / C_{t-1}) - r^{ref}_t BEFORE any magnitude skip
       - Anti-crash guard: requires |delta_t| > 0.18 before engaging any mutation
-      - 3-state classifier: m*_t in {R_s, 1.0, R_s^2} within 0.08 tolerance
-    When nav_map is empty (e.g. synthetic unit tests):
-      - 3-state classifier against log_obs in {R_s, 1.0, R_s^2} with tolerance 0.25
-    Preserves v = 0 without max(1, ...) clamping when v == 0.
+      - 3-state classifier: m*_t in {R_s, 1.0, R_s^2, factor} within 0.08 tolerance
+    When nav_map is empty or unadjusted:
+      - 3-state classifier against log_obs in {R_s, factor, R_s^2} with tolerance 0.25
+    Preserves v = 0 without max(1, ...) clamping.
     """
     events = known_splits.get(ticker)
     if not events or len(bars) < 2:
@@ -183,20 +192,24 @@ def apply_split_adjustments_to_bars(
             perf_pct = nav_entry.get("perf_pct")
             if perf_pct is not None and perf_pct > -1.0:
                 r_ref = math.log1p(perf_pct)
-            elif nav_entry.get("nav", 0) > 0 and prev_nav_entry and prev_nav_entry.get("nav", 0) > 0:
-                r_ref = math.log(nav_entry["nav"] / prev_nav_entry["nav"])
+            elif (
+                nav_entry.get("nav")
+                and float(nav_entry["nav"]) > 0
+                and prev_nav_entry
+                and prev_nav_entry.get("nav")
+                and float(prev_nav_entry["nav"]) > 0
+            ):
+                r_ref = math.log(float(nav_entry["nav"]) / float(prev_nav_entry["nav"]))
 
         best_ratio: float | None = None
-
-        # Check if already adjusted across the split boundary
-        if abs(log_obs) < 0.15:
-            continue
+        r_ref_checked = False
 
         if r_ref is not None:
-            # If r_ref itself does not contain an unadjusted raw split jump
+            # Verify r_ref is clean economic return (not an unadjusted Trackinsight NAV jump)
             if abs(r_ref) < 0.25 or (abs(r_ref - ln_rs) > 0.15 and abs(r_ref + ln_rs) > 0.15):
+                r_ref_checked = True
                 delta = log_obs - r_ref
-                # Anti-crash guard: genuine market crashes give |delta| <= 0.18
+                # Anti-crash / already-adjusted guard evaluated strictly against residual delta
                 if abs(delta) <= 0.18:
                     continue
 
@@ -209,8 +222,13 @@ def apply_split_adjustments_to_bars(
                 elif abs(delta + ln_rs) < 0.08:
                     best_ratio = factor
 
+        if not r_ref_checked:
+            # Skip only when r_ref is unavailable/unadjusted and observed jump itself is tiny
+            if abs(log_obs) < 0.15:
+                continue
+
         if best_ratio is None:
-            # Fallback based on log_obs against candidate ratios {R_s, factor, R_s^2}
+            # Fallback when r_ref didn't match an exact state (or wasn't clean)
             candidates = [r_s, factor, r_s * r_s]
             best_cand = None
             min_err = float("inf")
@@ -515,15 +533,17 @@ def has_overlapping_scale_mismatch(
 
 def reconstruct_total_return_close(
     bars: list[dict[str, Any]],
-    nav_map: dict[str, dict[str, float]] | None = None,
+    nav_map: dict[str, dict[str, float | None]] | None = None,
+    div_map: dict[str, float] | None = None,
 ) -> list[dict[str, Any]]:
     """Reconstruct Total-Return Index (TRI) backwards from latest bar A_TR[N-1] = 1.0.
 
     Attaches 'tc' (Total-Return Close) to each bar.
     Calculates discrete distribution yield:
       d_t = max(0.0, ln(1 + perf_pct_t) - ln(nav_t / nav_{t-1}))
-    strictly on non-split dates (requiring |ln(1 + perf_pct_t) - ln(nav_t / nav_{t-1})| <= 0.15)
-    so unadjusted raw NAV split jumps never corrupt the total-return index factor.
+    on non-split dates, supplemented by explicit Yahoo dividend cash flows when
+    available so >15% special year-end distributions or lagged Trackinsight NAVs
+    never leave phantom ex-dividend drops in ``tc``.
     """
     if not bars:
         return []
@@ -532,13 +552,13 @@ def reconstruct_total_return_close(
     n = len(out)
     a_tr = [1.0] * n
 
-    if nav_map and n >= 2:
+    if (nav_map or div_map) and n >= 2:
         for t in range(n - 1, 0, -1):
             d_curr = out[t]["d"]
             d_prev = out[t - 1]["d"]
 
-            nav_curr = nav_map.get(d_curr)
-            nav_prev = nav_map.get(d_prev)
+            nav_curr = nav_map.get(d_curr) if nav_map else None
+            nav_prev = nav_map.get(d_prev) if nav_map else None
 
             dist_yield = 0.0
             if nav_curr and nav_prev:
@@ -550,10 +570,16 @@ def reconstruct_total_return_close(
                     r_perf = math.log1p(perf)
                     r_nav = math.log(nc / np_)
                     spread = r_perf - r_nav
-                    # Only register positive dividend distribution yield within sane bounds
-                    # Raw NAV split jumps (e.g. 2x, 5x) have |spread| >> 0.15 and are excluded
-                    if 0.0 < spread <= 0.15:
+                    has_explicit_div = bool(div_map and div_map.get(d_curr, 0.0) > 0)
+                    max_dist = 0.60 if has_explicit_div else 0.15
+                    if 0.0 < spread <= max_dist:
                         dist_yield = spread
+
+            if dist_yield <= 0.0 and div_map and d_curr in div_map:
+                cash_div = float(div_map[d_curr])
+                c_prev = float(out[t - 1].get("c") or 0.0)
+                if cash_div > 0 and c_prev > cash_div and cash_div / c_prev <= 0.60:
+                    dist_yield = -math.log1p(-cash_div / c_prev)
 
             a_tr[t - 1] = a_tr[t] * math.exp(-dist_yield)
 
@@ -568,14 +594,15 @@ def sanitize_ticker_bars(
     bars: list[dict[str, Any]],
     ticker: str,
     known_splits: dict[str, list[dict[str, Any]]] | None = None,
-    nav_map: dict[str, dict[str, float]] | None = None,
+    nav_map: dict[str, dict[str, float | None]] | None = None,
+    div_map: dict[str, float] | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Run full 4-stage OHLCV hygiene pipeline (splits -> bad ticks -> unknown splits -> total return)."""
     splits = known_splits or {}
     step1, applied_splits = apply_split_adjustments_to_bars(bars, ticker, splits, nav_map=nav_map)
     step2, healed_ticks = sanitize_bad_ticks(step1, ticker, nav_map=nav_map)
     step3, unknown_splits = detect_and_apply_unknown_splits(step2, ticker, nav_map=nav_map, auto_adjust=False)
-    step4 = reconstruct_total_return_close(step3, nav_map=nav_map)
+    step4 = reconstruct_total_return_close(step3, nav_map=nav_map, div_map=div_map)
     summary = {
         "applied_splits": applied_splits,
         "healed_ticks": healed_ticks,
@@ -584,17 +611,17 @@ def sanitize_ticker_bars(
     return step4, summary
 
 
-def fetch_yahoo_chart_data(
+def fetch_yahoo_chart_with_dividends(
     ticker: str,
     period1: int,
     period2: int,
     retries: int = 3,
     backoff: float = 2.0,
-) -> list[dict[str, Any]]:
-    """Fetch and parse daily OHLCV bars for a single ticker with exponential backoff."""
+) -> tuple[list[dict[str, Any]], dict[str, float]]:
+    """Fetch and parse daily OHLCV bars and dividend events for a single ticker."""
     url = (
         f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}"
-        f"?period1={period1}&period2={period2}&interval=1d&includePrePost=false"
+        f"?period1={period1}&period2={period2}&interval=1d&includePrePost=false&events=div"
     )
     req = urllib.request.Request(url, headers=HEADERS)
     ctx = ssl.create_default_context()
@@ -619,6 +646,19 @@ def fetch_yahoo_chart_data(
                 closes = quotes.get("close", [])
                 volumes = quotes.get("volume", [])
 
+                div_map: dict[str, float] = {}
+                raw_divs = chart_obj.get("events", {}).get("dividends", {}) or {}
+                if isinstance(raw_divs, dict):
+                    for ts_key, dinfo in raw_divs.items():
+                        try:
+                            d_ts = int(dinfo.get("date", int(ts_key)))
+                            amt = float(dinfo.get("amount", 0.0))
+                            if math.isfinite(amt) and amt > 0:
+                                div_dt = datetime.fromtimestamp(d_ts, tz=NY_TZ).strftime("%Y-%m-%d")
+                                div_map[div_dt] = div_map.get(div_dt, 0.0) + amt
+                        except (TypeError, ValueError):
+                            continue
+
                 bars_by_date: dict[str, dict[str, Any]] = {}
                 for idx, ts in enumerate(timestamps):
                     if ts is None:
@@ -629,7 +669,7 @@ def fetch_yahoo_chart_data(
                     c = closes[idx] if idx < len(closes) else None
                     v = volumes[idx] if idx < len(volumes) else None
 
-                    # Strict null / non-finite / non-positive checks
+                    # Allow v == 0; reject missing, non-finite, non-positive close, or negative volume
                     if (
                         c is None
                         or v is None
@@ -638,7 +678,7 @@ def fetch_yahoo_chart_data(
                         or not math.isfinite(c)
                         or not math.isfinite(v)
                         or c <= 0
-                        or v <= 0
+                        or v < 0
                     ):
                         continue
 
@@ -651,7 +691,7 @@ def fetch_yahoo_chart_data(
                     real_high = max(h, o, c, l)
                     real_low = min(l, o, c, h)
 
-                    date_str = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d")
+                    date_str = datetime.fromtimestamp(ts, tz=NY_TZ).strftime("%Y-%m-%d")
                     bars_by_date[date_str] = {
                         "d": date_str,
                         "o": round_price(o),
@@ -661,9 +701,8 @@ def fetch_yahoo_chart_data(
                         "v": int(round(v)),
                     }
 
-                # Return sorted chronologically
                 clean_bars = sorted(bars_by_date.values(), key=lambda x: x["d"])
-                return clean_bars
+                return clean_bars, div_map
 
         except Exception as exc:
             last_exc = exc
@@ -671,6 +710,18 @@ def fetch_yahoo_chart_data(
                 time.sleep(backoff * attempt)
 
     raise RuntimeError(f"Failed to fetch {ticker} after {retries} attempts: {last_exc}")
+
+
+def fetch_yahoo_chart_data(
+    ticker: str,
+    period1: int,
+    period2: int,
+    retries: int = 3,
+    backoff: float = 2.0,
+) -> list[dict[str, Any]]:
+    """Fetch and parse daily OHLCV bars for a single ticker with exponential backoff."""
+    bars, _ = fetch_yahoo_chart_with_dividends(ticker, period1=period1, period2=period2, retries=retries, backoff=backoff)
+    return bars
 
 
 def load_catalog_tickers(catalog_path: Path) -> list[str]:
@@ -683,18 +734,6 @@ def load_catalog_tickers(catalog_path: Path) -> list[str]:
     if not tickers:
         raise ValueError(f"No instruments found in catalog at {catalog_path}")
     return tickers
-
-
-def load_existing_history(output_path: Path) -> dict[str, list[dict[str, Any]]]:
-    """Load existing history cache if present."""
-    if not output_path.is_file():
-        return {}
-    try:
-        content = json.loads(output_path.read_text(encoding="utf-8"))
-        return content.get("history", {})
-    except Exception as exc:
-        print(f"Notice: Could not parse existing cache ({exc}), will rebuild from scratch.")
-        return {}
 
 
 def _has_recent_split(ticker: str, known_splits: dict[str, list[dict[str, Any]]], cutoff_date: str) -> bool:
@@ -735,10 +774,12 @@ def main() -> int:
     results: dict[str, list[dict[str, Any]]] = {}
     errors: dict[str, str] = {}
     repair_logs: list[str] = []
+    repair_lock = threading.Lock()
 
     def process_ticker(ticker: str) -> tuple[str, list[dict[str, Any]], str | None]:
         cached_bars = existing_history.get(ticker, [])
         nav_map = load_ticker_nav_map(ticker, args.individual_dir)
+        div_map: dict[str, float] | None = None
 
         if args.repair_cache:
             if not cached_bars:
@@ -761,11 +802,11 @@ def main() -> int:
                 start_ts = DEFAULT_PERIOD1
 
             try:
-                new_bars = fetch_yahoo_chart_data(ticker, period1=start_ts, period2=now_ts)
+                new_bars, div_map = fetch_yahoo_chart_with_dividends(ticker, period1=start_ts, period2=now_ts)
                 if use_incremental:
                     if has_overlapping_scale_mismatch(cached_bars, new_bars, known_splits=known_splits, ticker=ticker):
                         print(f"Notice: Split scale mismatch detected on overlap for {ticker}; refetching full history.")
-                        final_bars = fetch_yahoo_chart_data(ticker, period1=DEFAULT_PERIOD1, period2=now_ts)
+                        final_bars, div_map = fetch_yahoo_chart_with_dividends(ticker, period1=DEFAULT_PERIOD1, period2=now_ts)
                     else:
                         merged: dict[str, dict[str, Any]] = {b["d"]: b for b in cached_bars}
                         for b in new_bars:
@@ -780,20 +821,29 @@ def main() -> int:
                 else:
                     return ticker, [], str(exc)
 
-            final_bars, summary = sanitize_ticker_bars(final_bars, ticker, known_splits, nav_map=nav_map)
+            final_bars, summary = sanitize_ticker_bars(
+                final_bars, ticker, known_splits, nav_map=nav_map, div_map=div_map
+            )
 
+        if len(final_bars) < args.min_bars:
+            return ticker, [], f"Insufficient OHLCV history ({len(final_bars)} < min_bars={args.min_bars})"
+
+        local_logs: list[str] = []
         for ev in summary["applied_splits"]:
-            repair_logs.append(
+            local_logs.append(
                 f"SPLIT {ev['ticker']} {ev['split_date']} mult={ev['applied_multiplier']} (obs={ev['observed_ratio']})"
             )
         for tk in summary["healed_ticks"]:
-            repair_logs.append(
+            local_logs.append(
                 f"BAD_TICK {tk['ticker']} {tk['date']} {tk['old_close']}->{tk['new_close']} ({tk['method']})"
             )
         for uk in summary["unknown_splits"]:
-            repair_logs.append(
+            local_logs.append(
                 f"UNKNOWN_SPLIT {uk['ticker']} {uk['date']} obs={uk['observed_ratio']}"
             )
+        if local_logs:
+            with repair_lock:
+                repair_logs.extend(local_logs)
         return ticker, final_bars, None
 
     t0 = time.time()
@@ -843,7 +893,19 @@ def main() -> int:
 
     args.output_path.parent.mkdir(parents=True, exist_ok=True)
     serialized = json.dumps(payload, separators=(",", ":"))
-    args.output_path.write_text(serialized, encoding="utf-8")
+    fd, tmp_name = tempfile.mkstemp(
+        prefix=f".{args.output_path.name}.", suffix=".tmp", dir=args.output_path.parent
+    )
+    tmp_path = Path(tmp_name)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as handle:
+            handle.write(serialized)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp_path, args.output_path)
+    except Exception:
+        tmp_path.unlink(missing_ok=True)
+        raise
     file_size_mb = args.output_path.stat().st_size / (1024 * 1024)
     print(f"Wrote {len(ordered_results)} instrument histories to {args.output_path} ({file_size_mb:.2f} MB)")
 

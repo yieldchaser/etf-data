@@ -27,10 +27,12 @@ import csv
 import datetime as dt
 import io
 import json
+import os
 import random
 import re
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 from typing import Any
@@ -39,6 +41,14 @@ import numpy as np
 import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.flow_reversal import (
+    apply_derived_metrics as _shared_apply_derived_metrics,
+    net_reversal_pairs as _net_reversal_pairs,
+)
+
 FLOWS_DIR = REPO_ROOT / "data" / "flows"
 INDIVIDUAL_DIR = FLOWS_DIR / "individual"
 SUMMARY_PATH = FLOWS_DIR / "curated_catalog_summary.json"
@@ -47,7 +57,6 @@ WORKBOOK_PATH = FLOWS_DIR / "Leveraged_ETF_Flows_Master.xlsx"
 DOCS_FLOWS_DIR = REPO_ROOT / "docs" / "data" / "flows"
 
 ENDPOINT = "https://www.trackinsight.com/search-api/snapshot/get_snapshots"
-WARMUP_URL = "https://www.trackinsight.com/en/fund/TQQQ/flows"
 
 REQUIRED_COLUMNS = [
     "date",
@@ -144,91 +153,46 @@ def _parse_snapshot_item(item: Any) -> list[dict[str, Any]]:
     return rows
 
 
-def _net_reversal_pairs(flow: pd.Series) -> pd.Series:
-    """Flows with source reversal pairs netted onto the second day.
+def _atomic_write_bytes(path: Path, data: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    tmp_path = Path(tmp_name)
+    try:
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(data)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp_path, path)
+    except Exception:
+        tmp_path.unlink(missing_ok=True)
+        raise
 
-    The source sometimes reports a large creation and a near-equal
-    redemption on consecutive days (NVDL 2026-10-19 +$1.02B, 10-20 -$0.99B):
-    a shares-outstanding reporting error. A pair qualifies when the two days
-    have opposite signs, each is >= 5x the fund's typical (median absolute,
-    prior 60 days) daily flow, and they cancel to within 20%. The pair's net
-    goes on the second day and the first becomes 0, so running totals are
-    unchanged. Used for the derived metrics only; usd_flow stays as reported.
-    """
-    c = flow.fillna(0.0).to_numpy(dtype=float).copy()
-    typical = flow.abs().rolling(60, min_periods=20).median().shift(2).to_numpy()
-    for i in range(1, len(c)):
-        a, b, t = c[i - 1], c[i], typical[i]
-        if not np.isfinite(t) or a * b >= 0:
-            continue
-        if min(abs(a), abs(b)) >= 5 * max(t, 1.0) and abs(a + b) <= 0.2 * max(abs(a), abs(b)):
-            c[i], c[i - 1] = a + b, 0.0
-    return pd.Series(c, index=flow.index)
+
+def _select_probe_entries(summary_rows: list[dict[str, Any]], max_local_date: str, count: int = 4) -> list[dict[str, Any]]:
+    """Dynamically pick top-AUM active liquid ETFs at `max_local_date` for session probing."""
+    at_latest = [
+        item for item in summary_rows if str(item.get("latest_date", "")) == max_local_date
+    ]
+    pool = at_latest or list(summary_rows)
+    ranked = sorted(
+        pool,
+        key=lambda item: (float(item.get("aum_m") or 0.0), str(item.get("ticker", ""))),
+        reverse=True,
+    )
+    return ranked[:count]
 
 
 def _apply_derived_metrics(df: pd.DataFrame) -> pd.DataFrame:
-    flows_filled = df["usd_flow"].fillna(0.0)
-    df["cumulative_flow"] = flows_filled.cumsum()
-    df["daily_inflow"] = df["usd_flow"].clip(lower=0)
-    df["daily_outflow"] = df["usd_flow"].clip(upper=0)
-
-    # z, 5/20-day sums, regime and pressure use flows with source reversal
-    # pairs netted, so a reporting error can't fake a flow shock.
-    net = _net_reversal_pairs(df["usd_flow"])
-    window = 30
-    mean_30d = net.rolling(window, min_periods=5).mean()
-    std_30d = net.rolling(window, min_periods=5).std()
-    raw_z = np.where(std_30d > 0, (net - mean_30d) / std_30d, 0.0)
-    raw_z = pd.Series(raw_z, index=df.index).fillna(0.0)
-    df["flow_zscore"] = raw_z
-
-    df["flow_5d"] = net.rolling(5, min_periods=1).sum()
-    df["flow_20d"] = net.rolling(20, min_periods=1).sum()
-
-    df["regime"] = np.where(
-        raw_z > 1.5,
-        "ACCUMULATION",
-        np.where(raw_z < -1.5, "DISTRIBUTION", "BALANCED"),
-    )
-
-    sign = np.sign(net)
-    streak = sign.groupby((sign != sign.shift()).cumsum()).cumsum()
-
-    mom_factor = np.where(
-        df["flow_5d"] > 0, 10.0, np.where(df["flow_5d"] < 0, -10.0, 0.0)
-    )
-    streak_bonus = np.minimum(streak.abs() * 2, 20) * np.where(streak > 0, 1, -1)
-    raw_p = (raw_z * 25.0) + mom_factor + streak_bonus
-    df["pressure"] = np.clip(raw_p, -100.0, 100.0)
-
-    for col in ["flow_zscore", "flow_5d", "flow_20d", "pressure"]:
-        df[col] = df[col].fillna(0.0)
-
-    for col in [
-        "usd_flow",
-        "daily_inflow",
-        "daily_outflow",
-        "cumulative_flow",
-        "nav",
-        "perf_pct",
-        "flow_zscore",
-        "flow_5d",
-        "flow_20d",
-        "pressure",
-    ]:
-        if col in df.columns:
-            df[col] = df[col].round(4)
-
-    return df
+    return _shared_apply_derived_metrics(df, preserve_na=False, net_reversals=True, round_decimals=4)
 
 
 def _sync_codebase_counts(old_rows: int, new_rows: int, old_dates: int, new_dates: int, old_date: str, new_date: str) -> None:
-    """Keep EXPECTED_TOTAL_ROWS, EXPECTED_WORKBOOK_DATE_ROWS, docs, and tests in sync when rows grow."""
+    """Keep anchored EXPECTED_* counts, docs, and local artifact tests in sync without corrupting prose dates."""
     build_script = REPO_ROOT / "scripts" / "build_local_flow_artifacts.py"
     text = build_script.read_text(encoding="utf-8")
     text = re.sub(r"EXPECTED_TOTAL_ROWS\s*=\s*\d+", f"EXPECTED_TOTAL_ROWS = {new_rows}", text)
     text = re.sub(r"EXPECTED_WORKBOOK_DATE_ROWS\s*=\s*\d+", f"EXPECTED_WORKBOOK_DATE_ROWS = {new_dates}", text)
-    build_script.write_text(text, encoding="utf-8")
+    _atomic_write_bytes(build_script, text.encode("utf-8"))
 
     old_fmt = f"{old_rows:,}"
     new_fmt = f"{new_rows:,}"
@@ -239,21 +203,25 @@ def _sync_codebase_counts(old_rows: int, new_rows: int, old_dates: int, new_date
             dtext = doc_path.read_text(encoding="utf-8")
             dtext = dtext.replace(old_fmt, new_fmt)
             if new_date > old_date:
-                dtext = dtext.replace(old_date, new_date)
-            doc_path.write_text(dtext, encoding="utf-8")
+                dtext = re.sub(
+                    rf"(Latest(?: Observation)? Date\*?\*?:\s*`?){re.escape(old_date)}(`?)",
+                    rf"\g<1>{new_date}\g<2>",
+                    dtext,
+                )
+            _atomic_write_bytes(doc_path, dtext.encode("utf-8"))
 
-    for test_rel in (
-        "tests/test_local_flow_artifacts.py",
-        "tests/test_flow_ui.py",
-        "tests/test_flow_ui_metrics.py",
-    ):
-        tpath = REPO_ROOT / test_rel
-        if tpath.exists():
-            ttext = tpath.read_text(encoding="utf-8")
-            ttext = ttext.replace(str(old_rows), str(new_rows))
-            if new_date > old_date:
-                ttext = ttext.replace(old_date, new_date)
-            tpath.write_text(ttext, encoding="utf-8")
+    tpath = REPO_ROOT / "tests" / "test_local_flow_artifacts.py"
+    if tpath.exists():
+        ttext = tpath.read_text(encoding="utf-8")
+        ttext = re.sub(rf'("rows":\s*){old_rows}\b', rf"\g<1>{new_rows}", ttext)
+        ttext = re.sub(rf'("total_rows":\s*){old_rows}\b', rf"\g<1>{new_rows}", ttext)
+        if new_date > old_date:
+            ttext = re.sub(
+                rf'(actual\["latest_date"\]\s*==\s*"){re.escape(old_date)}(")',
+                rf"\g<1>{new_date}\g<2>",
+                ttext,
+            )
+        _atomic_write_bytes(tpath, ttext.encode("utf-8"))
 
 
 def _evaluate_batch(page: Any, batch_entries: list[dict[str, Any]], start_date: str, end_date: str) -> dict[str, list[dict[str, Any]]]:
@@ -302,6 +270,10 @@ def update_daily_flows(
 
     delta_map: dict[str, list[dict[str, Any]]] = {}
 
+    probe_entries = _select_probe_entries(summary_rows, max_local_date, count=4)
+    warmup_ticker = probe_entries[0]["ticker"] if probe_entries else summary_rows[0]["ticker"]
+    warmup_url = f"https://www.trackinsight.com/en/fund/{warmup_ticker}/flows"
+
     with sync_playwright() as p:
         browser = p.chromium.launch(
             headless=True,
@@ -320,16 +292,10 @@ def update_daily_flows(
         )
         page = ctx.new_page()
         page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-        page.goto(WARMUP_URL, wait_until="domcontentloaded", timeout=60000)
+        page.goto(warmup_url, wait_until="domcontentloaded", timeout=60000)
         time.sleep(random.uniform(1.8, 2.6))
 
-        # Step 1: Cohort-aware freshness probe on 4 liquid benchmark ETFs
-        probe_entries = [
-            summary_by_ticker[t]
-            for t in ("TQQQ", "SOXL", "UPRO", "NVDL")
-            if t in summary_by_ticker and str(summary_by_ticker[t]["latest_date"]) == max_local_date
-        ] or summary_rows[:4]
-
+        # Step 1: Cohort-aware freshness probe on top-AUM liquid ETFs at local max date
         probe_results = _evaluate_batch(page, probe_entries, start_date, end_date)
         delta_map.update(probe_results)
 
@@ -417,36 +383,60 @@ def update_daily_flows(
         orig_text = ind_path.read_text(encoding="utf-8", errors="replace")
         orig_lines = orig_text.splitlines()
         df_orig = pd.read_csv(ind_path)
-        for d in df_orig["date"].astype(str).tolist():
+        df_orig["date"] = df_orig["date"].astype(str).str.slice(0, 10)
+        df_orig = df_orig.sort_values("date").drop_duplicates(subset=["date"], keep="last").reset_index(drop=True)
+        for d in df_orig["date"].tolist():
             old_dates_set.add(d)
         orig_cols = list(df_orig.columns)
         max_existing_date = str(df_orig["date"].iloc[-1])
 
-        new_delta_rows = [
-            r for r in delta_map.get(ticker, []) if r["date"] > max_existing_date
-        ]
+        new_delta_rows = sorted(
+            (r for r in delta_map.get(ticker, []) if r["date"] > max_existing_date),
+            key=lambda r: r["date"],
+        )
         if new_delta_rows:
             df_new_raw = pd.DataFrame(new_delta_rows)
             df_new_raw["ticker"] = ticker
             df_new_raw["trackinsight_key"] = ti_key
-            if "category" in orig_cols:
-                df_new_raw["category"] = df_orig["category"].iloc[-1]
-                df_new_raw["underlying"] = df_orig["underlying"].iloc[-1]
-                df_new_raw["leverage"] = df_orig["leverage"].iloc[-1]
+            for col in ("category", "underlying", "leverage"):
+                if col in orig_cols:
+                    df_new_raw[col] = df_orig[col].iloc[-1]
 
             base_cols = ["date", "ticker", "trackinsight_key", "usd_flow", "nav", "perf_pct"] + [
                 c for c in ["category", "underlying", "leverage"] if c in orig_cols
             ]
             df_combined = pd.concat([df_orig[base_cols], df_new_raw], ignore_index=True)
+            df_combined = df_combined.sort_values("date").drop_duplicates(subset=["date"], keep="last").reset_index(drop=True)
             df_combined = _apply_derived_metrics(df_combined)
             df_combined = df_combined[orig_cols]
 
-            appended_df = df_combined.iloc[len(df_orig) :]
+            # Find earliest historical row whose derived metrics changed (e.g. T-1 netted
+            # by a consecutive-day reversal pair on T) and rewrite from that row onwards.
+            n_orig = len(df_orig)
+            rewrite_from = n_orig
+            for check_idx in range(max(0, n_orig - 3), n_orig):
+                changed = False
+                for col in ("flow_zscore", "flow_5d", "flow_20d", "regime", "pressure"):
+                    a_val = df_orig.iloc[check_idx][col]
+                    b_val = df_combined.iloc[check_idx][col]
+                    if col == "regime":
+                        if str(a_val) != str(b_val):
+                            changed = True
+                            break
+                    elif abs(float(a_val) - float(b_val)) > 1e-4:
+                        changed = True
+                        break
+                if changed:
+                    rewrite_from = check_idx
+                    break
+
+            rewrite_df = df_combined.iloc[rewrite_from:]
             buf = io.StringIO()
-            appended_df.to_csv(buf, index=False, header=False, lineterminator="\n")
-            appended_lines = [line for line in buf.getvalue().splitlines() if line.strip()]
-            final_lines = orig_lines + appended_lines
-            ind_path.write_bytes(("\r\n".join(final_lines) + "\r\n").encode("utf-8"))
+            rewrite_df.to_csv(buf, index=False, header=False, lineterminator="\n")
+            rewritten_lines = [line for line in buf.getvalue().splitlines() if line.strip()]
+            prefix_end = min(len(orig_lines), 1 + rewrite_from)
+            final_lines = orig_lines[:prefix_end] + rewritten_lines
+            _atomic_write_bytes(ind_path, ("\r\n".join(final_lines) + "\r\n").encode("utf-8"))
             df_final = pd.read_csv(ind_path)
         else:
             df_final = df_orig
@@ -479,12 +469,16 @@ def update_daily_flows(
                 aggregate_out_rows.append(out_r)
 
     summary_json_str = json.dumps(summary_rows, indent=2, ensure_ascii=False)
-    SUMMARY_PATH.write_bytes(summary_json_str.replace("\r\n", "\n").replace("\n", "\r\n").encode("utf-8"))
+    _atomic_write_bytes(
+        SUMMARY_PATH,
+        summary_json_str.replace("\r\n", "\n").replace("\n", "\r\n").encode("utf-8"),
+    )
 
-    with AGGREGATE_PATH.open("w", encoding="utf-8", newline="") as f:
-        writer = csv.writer(f, lineterminator="\r\n")
-        writer.writerow(AGGREGATE_COLUMNS)
-        writer.writerows(aggregate_out_rows)
+    agg_buf = io.StringIO()
+    writer = csv.writer(agg_buf, lineterminator="\r\n")
+    writer.writerow(AGGREGATE_COLUMNS)
+    writer.writerows(aggregate_out_rows)
+    _atomic_write_bytes(AGGREGATE_PATH, agg_buf.getvalue().encode("utf-8"))
 
     universe_df = pd.DataFrame(summary_rows)
     summary_latest_cols = [
@@ -530,12 +524,20 @@ def update_daily_flows(
         axis=1,
     )
 
-    with pd.ExcelWriter(WORKBOOK_PATH, engine="openpyxl") as writer:
-        universe_df.to_excel(writer, sheet_name="Universe_Catalog", index=False)
-        summary_latest_df.to_excel(writer, sheet_name="Summary_Latest", index=False)
-        daily_wide.to_excel(writer, sheet_name="Daily_Flows_Wide", index=False)
-        cum_wide.to_excel(writer, sheet_name="Cumulative_Flows_Wide", index=False)
-        nav_wide.to_excel(writer, sheet_name="NAV_Wide", index=False)
+    fd, tmp_xlsx = tempfile.mkstemp(prefix=f".{WORKBOOK_PATH.name}.", suffix=".tmp.xlsx", dir=WORKBOOK_PATH.parent)
+    os.close(fd)
+    tmp_xlsx_path = Path(tmp_xlsx)
+    try:
+        with pd.ExcelWriter(tmp_xlsx_path, engine="openpyxl") as writer:
+            universe_df.to_excel(writer, sheet_name="Universe_Catalog", index=False)
+            summary_latest_df.to_excel(writer, sheet_name="Summary_Latest", index=False)
+            daily_wide.to_excel(writer, sheet_name="Daily_Flows_Wide", index=False)
+            cum_wide.to_excel(writer, sheet_name="Cumulative_Flows_Wide", index=False)
+            nav_wide.to_excel(writer, sheet_name="NAV_Wide", index=False)
+        os.replace(tmp_xlsx_path, WORKBOOK_PATH)
+    except Exception:
+        tmp_xlsx_path.unlink(missing_ok=True)
+        raise
 
     new_total_rows = len(aggregate_out_rows)
     new_unique_dates = len(all_dates)

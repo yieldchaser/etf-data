@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import pandas as pd
 
-from .fetch_yf import SYMBOLS as YF_SYMBOLS  # noqa: F401 (used for reference)
+from .metadata import FRED_META, LEVERAGED_UNDERLYINGS, YF_META
 from .stats import series_stats, log_rows
 
 
@@ -58,54 +58,10 @@ def _dumps(obj, **kw) -> str:
     return json.dumps(obj, **kw)
 
 
-# ── Series metadata ───────────────────────────────────────────────────────────
-YF_META: dict[str, dict] = {
-    "SPX":    {"label": "S&P 500 (SPX)",            "kind": "indices"},
-    "NDX":    {"label": "Nasdaq 100 (NDX)",          "kind": "indices"},
-    "DJI":    {"label": "Dow Jones (DJI)",           "kind": "indices"},
-    "RUT":    {"label": "Russell 2000 (RUT)",        "kind": "indices"},
-    "NIKKEI": {"label": "Nikkei 225 (NIKKEI)",      "kind": "indices"},
-    "DAX":    {"label": "DAX (DAX)",                 "kind": "indices"},
-    "FTSE":   {"label": "FTSE 100 (FTSE)",           "kind": "indices"},
-    "SENSEX": {"label": "BSE Sensex (SENSEX)",       "kind": "indices"},
-    "NIFTY":  {"label": "Nifty 50 (NIFTY)",         "kind": "indices"},
-    "HSI":    {"label": "Hang Seng (HSI)",           "kind": "indices"},
-    "GLD":    {"label": "Gold (GC=F)",               "kind": "commodities"},
-    "SLV":    {"label": "Silver (SI=F)",             "kind": "commodities"},
-    "PL":     {"label": "Platinum (PL=F)",           "kind": "commodities"},
-    "PA":     {"label": "Palladium (PA=F)",          "kind": "commodities"},
-    "CL":     {"label": "WTI Crude (CL=F)",         "kind": "commodities"},
-    "BZ":     {"label": "Brent Crude (BZ=F)",       "kind": "commodities"},
-    "NG":     {"label": "Natural Gas (NG=F)",        "kind": "commodities"},
-    "HG":     {"label": "Copper (HG=F)",             "kind": "commodities"},
-    "USDINR": {"label": "USD/INR (INR=X)",           "kind": "fx"},
-    "USDSGD": {"label": "USD/SGD (SGD=X)",           "kind": "fx"},
-    "EURUSD": {"label": "EUR/USD (EURUSD=X)",        "kind": "fx"},
-    "BTC":    {"label": "Bitcoin (BTC-USD)",         "kind": "crypto"},
-    "ETH":    {"label": "Ethereum (ETH-USD)",        "kind": "crypto"},
-}
-
-FRED_META: dict[str, dict] = {
-    "VIXCLS":  {"label": "VIX (1M implied vol)",     "kind": "vol"},
-    "VXNCLS":  {"label": "Nasdaq VIX",               "kind": "vol"},
-    "VIX9D":   {"label": "VIX 9-day",                "kind": "vol"},
-    "VIX3M":   {"label": "VIX 3-month",              "kind": "vol"},
-    "VIX6M":   {"label": "VIX 6-month",              "kind": "vol"},
-    "VVIX":    {"label": "VVIX (vol of vol)",         "kind": "vol"},
-    "MOVE":    {"label": "MOVE Index (Treasury vol)", "kind": "vol"},
-    "DGS10":   {"label": "10Y Treasury Yield",        "kind": "rates"},
-    "DGS2":    {"label": "2Y Treasury Yield",         "kind": "rates"},
-    "T10Y2Y":  {"label": "10Y–2Y Spread",             "kind": "rates"},
-    "SOFR":    {"label": "SOFR",                      "kind": "rates"},
-    "DFF":     {"label": "Effective Fed Funds Rate",  "kind": "rates"},
-    "DEXINUS": {"label": "India–US FX (DEXINUS)",     "kind": "rates"},
-    "DEXSIUS": {"label": "Singapore–US FX (DEXSIUS)", "kind": "rates"},
-}
-
-LEVERAGED_UNDERLYINGS = ["NVDA", "AAPL", "TSLA", "GOOG", "GOOGL", "MSFT", "AMZN", "META", "SPX", "NDX"]
+# Metadata imported from .metadata (YF_META, FRED_META, LEVERAGED_UNDERLYINGS)
 
 
-def build(source: Path, output: Path) -> None:
+def build(source: Path, output: Path) -> dict[str, int]:
     output.mkdir(parents=True, exist_ok=True)
     series_list = []
 
@@ -164,19 +120,21 @@ def build(source: Path, output: Path) -> None:
     }
 
     out_path = output / "markets.json"
-    # Only overwrite if we got at least as many series as before (prevents CI partial-fetch from wiping good data)
+    write_markets = True
+    # Only overwrite if we got at least 90% as many series as before (prevents CI partial-fetch from wiping good data)
     if out_path.exists():
         try:
             existing_count = len(json.loads(out_path.read_text(encoding="utf-8")).get("series", []))
             if len(series_list) < existing_count * 0.9:
                 print(f"\n⚠ Skipping markets.json write — new series count ({len(series_list)}) < 90% of existing ({existing_count}). Keeping existing file.")
-                return
+                write_markets = False
         except Exception:
             pass
-    text = _dumps(markets_json, separators=(",", ":"))
-    _write_atomic(out_path, text)
-    size_mb = len(text.encode()) / 1_048_576
-    print(f"\n✓ markets.json: {len(series_list)} series · {size_mb:.2f} MB")
+    if write_markets:
+        text = _dumps(markets_json, separators=(",", ":"))
+        _write_atomic(out_path, text)
+        size_mb = len(text.encode()) / 1_048_576
+        print(f"\n✓ markets.json: {len(series_list)} series · {size_mb:.2f} MB")
 
     # ── sim_underlyings.json (Phase 4) ────────────────────────────────────────
     print("\nBuilding sim_underlyings.json…")
@@ -188,7 +146,9 @@ def build(source: Path, output: Path) -> None:
             continue
         try:
             df = pd.read_parquet(p)[["Date", "Close"]].copy()
-            df = df.dropna(subset=["Close"])
+            df["Date"] = pd.to_datetime(df["Date"], errors="coerce").dt.strftime("%Y-%m-%d")
+            df = df.dropna(subset=["Date", "Close"]).sort_values("Date")
+            df = df[df["Close"].apply(lambda v: isinstance(v, (int, float)) and math.isfinite(float(v)))]
             df = df.tail(2520)   # last 10 years (~252 trading days/year × 10)
             sim_inputs[sym] = [
                 {"d": str(d)[:10], "c": round(float(c), 4)}
@@ -199,17 +159,21 @@ def build(source: Path, output: Path) -> None:
             print(f"  {sym}: ERROR — {e}")
 
     sim_out = output / "sim_underlyings.json"
+    write_sim = True
     if sim_out.exists():
         try:
             existing_sim_count = len(json.loads(sim_out.read_text(encoding="utf-8")))
             if len(sim_inputs) < existing_sim_count * 0.8:
                 print(f"\n⚠ Skipping sim_underlyings.json write — new count ({len(sim_inputs)}) < 80% of existing ({existing_sim_count}). Keeping existing file.")
-                return
+                write_sim = False
         except Exception:
             pass
-    _write_atomic(sim_out, _dumps(sim_inputs, separators=(",", ":")))
-    sim_size_kb = sim_out.stat().st_size / 1024
-    print(f"✓ sim_underlyings.json: {len(sim_inputs)} underlyings · {sim_size_kb:.0f} KB")
+    if write_sim:
+        _write_atomic(sim_out, _dumps(sim_inputs, separators=(",", ":")))
+        sim_size_kb = sim_out.stat().st_size / 1024
+        print(f"✓ sim_underlyings.json: {len(sim_inputs)} underlyings · {sim_size_kb:.0f} KB")
+
+    return {"markets_series": len(series_list), "sim_underlyings": len(sim_inputs)}
 
 
 def main(argv=None) -> int:
@@ -217,7 +181,9 @@ def main(argv=None) -> int:
     ap.add_argument("--source", default="data/markets", help="Directory containing parquet files")
     ap.add_argument("--output", default="docs/data",   help="Output directory for JSON files")
     args = ap.parse_args(argv)
-    build(Path(args.source), Path(args.output))
+    summary = build(Path(args.source), Path(args.output))
+    if summary["markets_series"] == 0 and summary["sim_underlyings"] == 0:
+        return 1
     return 0
 
 

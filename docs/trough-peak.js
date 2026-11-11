@@ -101,10 +101,11 @@
 
   function isInverseInstrument(inst) {
     if (!inst) return false;
+    if (inst.market_beta_polarity != null && Number.isFinite(Number(inst.market_beta_polarity))) {
+      return Number(inst.market_beta_polarity) < 0;
+    }
     if (QuantCore && typeof QuantCore.marketBetaPolarity === 'function') {
-      const pol = QuantCore.marketBetaPolarity(inst.ticker, inst.leverage_value);
-      if (pol < 0) return true;
-      if (pol > 0 && ((inst.leverage_value != null && Number(inst.leverage_value) > 0) || inst.direction === 'long')) return false;
+      return QuantCore.marketBetaPolarity(inst.ticker, inst.leverage_value) < 0;
     }
     return (inst.leverage_value != null && Number(inst.leverage_value) < 0) || inst.direction === 'inverse';
   }
@@ -157,7 +158,7 @@
 
     if (!active) return [activeTicker];
     const activeInv = isInverseInstrument(active);
-    const activeUndKey = normalizeUnderlyingKey(active.underlying, activeTicker);
+    const activeUndKey = active.underlying_id || normalizeUnderlyingKey(active.underlying, activeTicker);
     const activeLev = Math.abs(active.leverage_value || 1);
 
     const sortPeers = (a, b) => {
@@ -176,7 +177,7 @@
     if (mode === 'pair') {
       if (!activeUndKey) return [activeTicker];
       const oppPeers = list
-        .filter(x => x.ticker !== activeTicker && normalizeUnderlyingKey(x.underlying, x.ticker) === activeUndKey && isInverseInstrument(x) !== activeInv)
+        .filter(x => x.ticker !== activeTicker && (x.underlying_id || normalizeUnderlyingKey(x.underlying, x.ticker)) === activeUndKey && isInverseInstrument(x) !== activeInv)
         .sort(sortPeers);
       if (!oppPeers.length) return [activeTicker];
       return [activeTicker, oppPeers[0].ticker];
@@ -185,7 +186,7 @@
     if (mode === 'underlying') {
       if (!activeUndKey) return [activeTicker];
       const peers = list
-        .filter(x => x.ticker !== activeTicker && normalizeUnderlyingKey(x.underlying, x.ticker) === activeUndKey)
+        .filter(x => x.ticker !== activeTicker && (x.underlying_id || normalizeUnderlyingKey(x.underlying, x.ticker)) === activeUndKey)
         .sort((a, b) => (b.aum_m || 0) - (a.aum_m || 0));
       return [activeTicker, ...peers.map(x => x.ticker)].slice(0, cap);
     }
@@ -247,19 +248,27 @@
     if (!prices || prices.length < 2 || !dates || dates.length !== prices.length || h <= 0) return [];
 
     const x = new Float64Array(prices.length);
+    let firstValid = -1;
     for (let i = 0; i < prices.length; i++) {
-      x[i] = prices[i] > 0 ? Math.log(prices[i]) : -Infinity;
+      const p = Number(prices[i]);
+      if (Number.isFinite(p) && p > 0) {
+        x[i] = Math.log(p);
+        if (firstValid === -1) firstValid = i;
+      } else {
+        x[i] = NaN;
+      }
     }
+    if (firstValid === -1) return [];
 
     const pivots = [];
     let dir = null;
-    let iMin = 0;
-    let iMax = 0;
-    let pIdx = 0;
-    let pVal = x[0];
+    let iMin = firstValid;
+    let iMax = firstValid;
+    let pIdx = firstValid;
+    let pVal = x[firstValid];
 
-    for (let i = 1; i < prices.length; i++) {
-      if (!isFinite(x[i])) continue;
+    for (let i = firstValid + 1; i < prices.length; i++) {
+      if (!Number.isFinite(x[i])) continue;
 
       if (dir === null) {
         if (x[i] > x[iMax]) iMax = i;
@@ -458,21 +467,21 @@
       }
     }
 
-    // 3D Stretch Z-Score over trailing 60 periods
+    // 3D Stretch Z-Score over causal prior 60 periods (excluding current session from baseline)
     let stretchZ = null;
-    if (closes.length > 63) {
-      const returns3d = [];
-      for (let i = closes.length - 61; i < closes.length; i++) {
-        if (closes[i - 3] > 0) {
-          returns3d.push((closes[i] / closes[i - 3]) - 1);
+    if (closes.length > 63 && closes[closes.length - 1] > 0 && closes[closes.length - 4] > 0) {
+      const current3d = (closes[closes.length - 1] / closes[closes.length - 4]) - 1;
+      const prior3d = [];
+      for (let i = closes.length - 61; i < closes.length - 1; i++) {
+        if (Number.isFinite(closes[i]) && Number.isFinite(closes[i - 3]) && closes[i] > 0 && closes[i - 3] > 0) {
+          prior3d.push((closes[i] / closes[i - 3]) - 1);
         }
       }
-      if (returns3d.length > 2) {
-        const current3d = returns3d[returns3d.length - 1];
-        const mean = avg(returns3d);
-        const variance = returns3d.reduce((acc, v) => acc + Math.pow(v - mean, 2), 0) / (returns3d.length - 1);
+      if (prior3d.length > 2 && Number.isFinite(current3d)) {
+        const mean = avg(prior3d);
+        const variance = prior3d.reduce((acc, v) => acc + Math.pow(v - mean, 2), 0) / (prior3d.length - 1);
         const std = Math.sqrt(variance);
-        stretchZ = std > 0 ? (current3d - mean) / std : 0;
+        stretchZ = std > 1e-12 ? (current3d - mean) / std : 0;
       }
     }
 
@@ -510,7 +519,7 @@
 
     let underwaterSessions = 0;
     for (let i = ddAth.dd.length - 1; i >= 0; i--) {
-      if (ddAth.dd[i] < -1e-4) underwaterSessions++;
+      if (ddAth.dd[i] < -0.01) underwaterSessions++;
       else break;
     }
     const dragAdjReturn = computeDragAdjustedReturn(closes, lev, 0, closes.length - 1);
@@ -671,7 +680,7 @@
     const troughDate = troughPt.t;
 
     let daysUnderwater = 0;
-    if (currentDD < -0.001) {
+    if (currentDD < -0.01) {
       daysUnderwater = Math.max(0, Math.round((lastPt.t - peakDate) / 86400000));
     }
 
@@ -696,7 +705,7 @@
 
     let tradingSessionsUnderwater = 0;
     for (let i = pts.length - 1; i >= 0; i--) {
-      if (pts[i].dd < -1e-4) {
+      if (pts[i].dd < -0.01) {
         tradingSessionsUnderwater++;
       } else {
         break;
@@ -811,24 +820,34 @@
     const closes = [];
     const volumes = [];
     const tri = [];
-    const hasTC = bars.some(b => b && b.tc != null && Number(b.tc) > 0);
+    const validRaw = [];
+    const hasTC = bars.some(b => b && b.tc != null && Number.isFinite(Number(b.tc)) && Number(b.tc) > 0);
+    let lastTriScale = 1.0;
     for (let i = 0; i < bars.length; i++) {
       const b = bars[i];
       if (!b) continue;
       const d = b.d || b.date;
-      const c = b.c != null ? b.c : b.close;
-      const v = b.v != null ? b.v : (b.volume != null ? b.volume : 0);
-      if (!d || c == null || c <= 0) continue;
-      dates.push(d);
-      closes.push(Number(c));
-      volumes.push(Math.max(0, Number(v)));
-      if (hasTC && b.tc != null && Number(b.tc) > 0) {
-        tri.push(Number(b.tc));
-      } else {
-        tri.push(Number(c));
+      const c = Number(b.c != null ? b.c : b.close);
+      const vNum = Number(b.v != null ? b.v : (b.volume != null ? b.volume : 0));
+      if (!d || !Number.isFinite(c) || c <= 0) continue;
+      const v = Number.isFinite(vNum) && vNum > 0 ? vNum : 0;
+      let tcVal = c;
+      if (hasTC) {
+        const rawTc = b.tc != null ? Number(b.tc) : NaN;
+        if (Number.isFinite(rawTc) && rawTc > 0) {
+          tcVal = rawTc;
+          lastTriScale = tcVal / c;
+        } else {
+          tcVal = c * lastTriScale;
+        }
       }
+      dates.push(d);
+      closes.push(c);
+      volumes.push(v);
+      tri.push(tcVal);
+      validRaw.push(b);
     }
-    return dates.length >= 2 ? { dates, closes, volumes, tri, rawBars: bars } : null;
+    return dates.length >= 2 ? { dates, closes, volumes, tri, rawBars: validRaw } : null;
   }
 
   function _getWeekNumber(d) {
@@ -1099,16 +1118,28 @@
             const resp = await fetch(url);
             if (resp.ok) {
               const data = await resp.json();
-              this._etfHistoryCache = data.history || {};
-              this._seriesCache = {};
-              return this._etfHistoryCache;
+              if (data && data.history && Object.keys(data.history).length > 0) {
+                this._etfHistoryCache = data.history;
+                this._seriesCache = {};
+                this._cyclesCache = {};
+                this._chartCache = null;
+                this._chartCacheKey = null;
+                this._ddBaseKey = null;
+                this._ddViewCache.key = null;
+                return this._etfHistoryCache;
+              }
             }
           } catch (_) {}
         }
-        return {};
+        return null;
       })();
 
-      return this._historyPromise;
+      const result = await this._historyPromise;
+      if (!result) {
+        this._historyPromise = null;
+        return {};
+      }
+      return result;
     },
 
     setCatalog(catalogInstruments) {
@@ -1237,6 +1268,11 @@
       if (options.allHistory) {
         this._etfHistoryCache = options.allHistory;
         this._seriesCache = {};
+        this._cyclesCache = {};
+        this._chartCache = null;
+        this._chartCacheKey = null;
+        this._ddBaseKey = null;
+        this._ddViewCache.key = null;
       }
       await this.fetchETFHistory();
 
@@ -1249,10 +1285,20 @@
       if (tickerChanged) {
         this.state.drag = { active: false, locked: false, startIdx: null, currentIdx: null };
         this.state.hover = { x: null, index: null };
+        if (this.state.timeRange === 'custom') this.state.timeRange = '1y';
+        if (this.state.ddHorizon === 'custom') this.state.ddHorizon = 'all';
         this._chartCache = null;
         this._chartCacheKey = null;
         this._ddBaseKey = null;
         this._ddViewCache.key = null;
+      }
+
+      const activeSer = this._getSeries(targetTicker);
+      if (activeSer && this.state.timeRange && this.state.timeRange.startsWith('year_')) {
+        const yr = this.state.timeRange.replace('year_', '');
+        if (!activeSer.dates.some(d => d && d.startsWith(yr))) {
+          this.state.timeRange = '1y';
+        }
       }
 
       const peers = this._getComparisonTickers();
@@ -1419,11 +1465,16 @@
         endIndex = Math.max(startIndex + 1, Math.min(this.state.zoom.endIdx || maxIdx, maxIdx));
       } else if (this.state.timeRange && this.state.timeRange.startsWith('year_')) {
         const yr = this.state.timeRange.replace('year_', '');
-        startIndex = ser.dates.findIndex(d => d.slice(0, 4) >= yr);
-        if (startIndex === -1) startIndex = 0;
-        let e = startIndex;
-        while (e < n && ser.dates[e].slice(0, 4) <= yr) e++;
-        endIndex = Math.max(startIndex + 1, Math.min(maxIdx, e - 1));
+        const idx = ser.dates.findIndex(d => d.slice(0, 4) === yr);
+        if (idx === -1) {
+          startIndex = 0;
+          endIndex = maxIdx;
+        } else {
+          startIndex = idx;
+          let e = idx;
+          while (e < n && ser.dates[e].slice(0, 4) <= yr) e++;
+          endIndex = Math.max(startIndex + 1, Math.min(maxIdx, e - 1));
+        }
       } else if (this.state.timeRange !== 'all') {
         const daysMap = { '3m': 90, '6m': 180, '1y': 365, '2y': 730 };
         const days = daysMap[this.state.timeRange];
@@ -1572,9 +1623,11 @@
       }
 
       if (ser && ser.closes.length && priceEl && chgEl) {
+        const activePrices = this._activePriceSeries(ser);
         const last = ser.closes[ser.closes.length - 1];
-        const prev = ser.closes.length > 1 ? ser.closes[ser.closes.length - 2] : last;
-        const pct = prev > 0 ? ((last - prev) / prev) * 100 : 0;
+        const trLast = activePrices[activePrices.length - 1];
+        const trPrev = activePrices.length > 1 ? activePrices[activePrices.length - 2] : trLast;
+        const pct = trPrev > 0 ? ((trLast - trPrev) / trPrev) * 100 : 0;
         priceEl.textContent = fmtPrice(last);
         chgEl.textContent = `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
         chgEl.style.color = pct >= 0 ? '#34d399' : '#fb7185';
@@ -1582,9 +1635,9 @@
 
       // Dynamic Comparison Scope buttons
       const list = this._catalog;
-      const activeUndKey = normalizeUnderlyingKey(inst.underlying, tk);
-      const hasUnderlyingPeers = Boolean(activeUndKey && list.some(x => x.ticker !== tk && normalizeUnderlyingKey(x.underlying, x.ticker) === activeUndKey));
-      const hasOppositePair = Boolean(activeUndKey && list.some(x => x.ticker !== tk && normalizeUnderlyingKey(x.underlying, x.ticker) === activeUndKey && isInverseInstrument(x) !== isInverseInstrument(inst)));
+      const activeUndKey = inst.underlying_id || normalizeUnderlyingKey(inst.underlying, tk);
+      const hasUnderlyingPeers = Boolean(activeUndKey && list.some(x => x.ticker !== tk && (x.underlying_id || normalizeUnderlyingKey(x.underlying, x.ticker)) === activeUndKey));
+      const hasOppositePair = Boolean(activeUndKey && list.some(x => x.ticker !== tk && (x.underlying_id || normalizeUnderlyingKey(x.underlying, x.ticker)) === activeUndKey && isInverseInstrument(x) !== isInverseInstrument(inst)));
 
       document.querySelectorAll('[data-tp-compare]').forEach(btn => {
         const mode = btn.dataset.tpCompare;
@@ -2312,13 +2365,14 @@
           const w3 = ctx.measureText(line3).width;
           const w4 = ctx.measureText(line4).width;
 
-          const cardW = Math.max(w1, w2, w3, w4) + 24;
+          const cardW = Math.min(Math.max(120, chartW - 8), Math.max(w1, w2, w3, w4) + 24);
           const cardH = 74;
           const cardR = 6;
           let cardX = x1 + (x2 - x1) / 2 - cardW / 2;
           cardX = Math.max(pad.left + 4, Math.min(pad.left + chartW - cardW - 4, cardX));
           const cardY = pad.top + 10;
 
+          ctx.save();
           ctx.beginPath();
           ctx.moveTo(cardX + cardR, cardY);
           ctx.lineTo(cardX + cardW - cardR, cardY);
@@ -2335,18 +2389,20 @@
           ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
           ctx.lineWidth = 1;
           ctx.stroke();
+          ctx.clip();
 
+          const maxTextW = Math.max(80, cardW - 20);
           ctx.textAlign = 'left';
           ctx.font = 'bold 12.5px ui-monospace, monospace';
           ctx.fillStyle = accent;
-          ctx.fillText(line1, cardX + 12, cardY + 18);
+          ctx.fillText(line1, cardX + 12, cardY + 18, maxTextW);
           ctx.font = '10.5px ui-monospace, monospace';
           ctx.fillStyle = '#cbd5e1';
-          ctx.fillText(line2, cardX + 12, cardY + 35);
+          ctx.fillText(line2, cardX + 12, cardY + 35, maxTextW);
           ctx.fillStyle = '#94a3b8';
-          ctx.fillText(line3, cardX + 12, cardY + 50);
+          ctx.fillText(line3, cardX + 12, cardY + 50, maxTextW);
           ctx.fillStyle = '#22d3ee';
-          ctx.fillText(line4, cardX + 12, cardY + 65);
+          ctx.fillText(line4, cardX + 12, cardY + 65, maxTextW);
           ctx.restore();
         }
       }
@@ -2372,7 +2428,8 @@
     _buildDDView() {
       const peers = this._getComparisonTickers();
       const full = [];
-      let lastTs = -Infinity;
+      let lastTsVis = -Infinity;
+      let lastTsAll = -Infinity;
 
       for (const tk of peers) {
         const ser = this._getSeries(tk);
@@ -2386,10 +2443,15 @@
         } else {
           res = computeRolling52WDD(ser.dates, activePrices);
         }
-        if (res.ts.length && res.ts[res.ts.length - 1] > lastTs) lastTs = res.ts[res.ts.length - 1];
+        if (res.ts.length) {
+          const endTs = res.ts[res.ts.length - 1];
+          if (endTs > lastTsAll) lastTsAll = endTs;
+          if (this.state.ddVisible[tk] !== false && endTs > lastTsVis) lastTsVis = endTs;
+        }
         full.push({ ticker: tk, ...res, closes: activePrices });
       }
 
+      const lastTs = isFinite(lastTsVis) ? lastTsVis : lastTsAll;
       if (!full.length || !isFinite(lastTs)) return null;
 
       let tMinCutoff = -Infinity;
@@ -2945,7 +3007,7 @@
         return { cycles, filtered: cycles };
       }
       const lastDateMs = Date.parse(ser.dates[ser.dates.length - 1]);
-      const daysBack = this.state.tableFilter === '6m' ? 183 : 365;
+      const daysBack = this.state.tableFilter === '6m' ? 180 : 365;
       const cutoffStr = new Date(lastDateMs - daysBack * 86400000).toISOString().slice(0, 10);
       const filtered = cycles.filter(c => c.troughDate >= cutoffStr);
       return { cycles, filtered };
@@ -3251,11 +3313,24 @@
       const tk = this.state.activeTicker;
       const raw = this._etfHistoryCache ? this._etfHistoryCache[tk] : null;
       if (!raw || !raw.length) return;
-      const headers = ['Date', 'Ticker', 'Open', 'High', 'Low', 'Close', 'Volume', 'Dollar Volume'];
-      const rows = raw.map(b => [
-        b.d, tk, Number(b.o).toFixed(4), Number(b.h).toFixed(4), Number(b.l).toFixed(4),
-        Number(b.c).toFixed(4), Math.round(b.v || 0), (Number(b.c) * (b.v || 0)).toFixed(2)
-      ].join(','));
+      const headers = ['Date', 'Ticker', 'Open', 'High', 'Low', 'Close', 'Adj_Close_TR', 'Volume', 'Dollar_Volume'];
+      const rows = [];
+      for (const b of raw) {
+        if (!b || !b.d) continue;
+        const c = Number(b.c != null ? b.c : b.close);
+        if (!Number.isFinite(c) || c <= 0) continue;
+        const o = Number.isFinite(Number(b.o)) ? Number(b.o) : c;
+        const h = Number.isFinite(Number(b.h)) ? Number(b.h) : c;
+        const l = Number.isFinite(Number(b.l)) ? Number(b.l) : c;
+        const tc = (b.tc != null && Number.isFinite(Number(b.tc)) && Number(b.tc) > 0) ? Number(b.tc) : c;
+        const vRaw = Number(b.v != null ? b.v : (b.volume || 0));
+        const v = Number.isFinite(vRaw) && vRaw > 0 ? vRaw : 0;
+        rows.push([
+          b.d, tk, o.toFixed(4), h.toFixed(4), l.toFixed(4),
+          c.toFixed(4), tc.toFixed(4), Math.round(v), (c * v).toFixed(2)
+        ].join(','));
+      }
+      if (!rows.length) return;
       this._triggerDownload(`${tk}_ohlcv_history.csv`, [headers.join(','), ...rows].join('\n'));
     },
 
@@ -3266,7 +3341,7 @@
       const records = [];
       for (const s of visible) {
         for (const p of s.pts) {
-          const daysUnder = p.dd < -0.001 ? Math.max(0, Math.round((p.t - p.peakTs) / 86400000)) : 0;
+          const daysUnder = p.dd < -0.01 ? Math.max(0, Math.round((p.t - p.peakTs) / 86400000)) : 0;
           records.push({
             t: p.t,
             date: new Date(p.t).toISOString().slice(0, 10),
@@ -3279,7 +3354,7 @@
         }
       }
       records.sort((a, b) => a.t - b.t || a.ticker.localeCompare(b.ticker));
-      const headers = ['Date', 'Ticker', 'Close', 'Peak', 'Drawdown_Pct', 'Days_Underwater'];
+      const headers = ['Date', 'Ticker', 'Adj_Close_TR', 'Peak_TR', 'Drawdown_Pct', 'Days_Underwater'];
       const rows = records.map(r => [r.date, r.ticker, r.close, r.peak, r.dd, r.daysUnder].join(','));
       this._triggerDownload(`${this.state.activeTicker}_drawdown_${this.state.ddMode}_${this.state.ddHorizon}.csv`, [headers.join(','), ...rows].join('\n'));
     },
@@ -3556,33 +3631,22 @@
           this.renderChart(true);
         });
 
-        // Mobile touch 2-point drag support
+        // Passive touch inspection without trapping mobile vertical scroll
         tpCanvas.addEventListener('touchstart', e => {
           if (!e.touches || !e.touches.length) return;
-          const hit = idxFromClientX(e.touches[0].clientX);
-          if (!hit) return;
-          e.preventDefault();
-          this.state.drag = { active: true, locked: false, startIdx: hit.idx, currentIdx: hit.idx };
-          this.state.hover = { x: hit.x, index: hit.idx };
-          this.renderChart(true);
-        }, { passive: false });
+          handleHoverMove(e.touches[0].clientX, e.touches[0].clientY);
+        }, { passive: true });
 
         tpCanvas.addEventListener('touchmove', e => {
-          if (!e.touches || !e.touches.length || !this.state.drag.active) return;
-          e.preventDefault();
+          if (!e.touches || !e.touches.length) return;
           handleHoverMove(e.touches[0].clientX, e.touches[0].clientY);
-        }, { passive: false });
+        }, { passive: true });
 
         tpCanvas.addEventListener('touchend', () => {
-          if (!this.state.drag.active) return;
-          this.state.drag.active = false;
-          if (this.state.drag.startIdx != null && this.state.drag.currentIdx != null && this.state.drag.startIdx !== this.state.drag.currentIdx) {
-            this.state.drag.locked = true;
-          } else {
-            this.state.drag = { active: false, locked: false, startIdx: null, currentIdx: null };
-          }
+          this.state.hover = { x: null, index: null };
+          tpTooltip.style.display = 'none';
           this.renderChart(true);
-        });
+        }, { passive: true });
       }
 
       // Escape key clears locked 2-point measurement
@@ -3651,7 +3715,8 @@
           const tw = ddTooltip.offsetWidth || 160;
           const th = ddTooltip.offsetHeight || 70;
           ddTooltip.style.left = `${Math.round((x + 14 + tw > rect.width - 8) ? Math.max(8, x - tw - 12) : x + 14)}px`;
-          ddTooltip.style.top = `${Math.round(Math.max(6, Math.min(rect.height - th - 6, y - 16)))}px`;
+          const topPos = th <= rect.height - 12 ? Math.max(6, Math.min(rect.height - th - 6, y - 16)) : 6;
+          ddTooltip.style.top = `${Math.round(topPos)}px`;
           this.renderDrawdownChart();
         };
 
@@ -3667,6 +3732,22 @@
             updateDDHover();
           }
         });
+
+        const handleDDTouch = e => {
+          if (!e.touches || !e.touches.length) return;
+          const rect = ddCanvas.getBoundingClientRect();
+          this._ddLastXY = { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+          updateDDHover();
+        };
+
+        ddCanvas.addEventListener('touchstart', handleDDTouch, { passive: true });
+        ddCanvas.addEventListener('touchmove', handleDDTouch, { passive: true });
+        ddCanvas.addEventListener('touchend', () => {
+          this._ddHover.t = null;
+          this._ddTipT = null;
+          ddTooltip.style.display = 'none';
+          this.renderDrawdownChart();
+        }, { passive: true });
 
         ddCanvas.addEventListener('mouseleave', () => {
           this._ddHover.t = null;

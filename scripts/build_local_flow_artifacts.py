@@ -28,6 +28,7 @@ from scripts.etf_taxonomy import (
     get_underlying_label,
     market_beta_polarity,
 )
+from scripts.flow_reversal import net_reversal_pairs
 DEFAULT_SOURCE_DIR = REPO_ROOT / "data" / "flows"
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "docs" / "data" / "flows"
 DEFAULT_UNIVERSE_DOC = REPO_ROOT / "FUND_FLOW_ETFS.md"
@@ -253,7 +254,7 @@ def _normalise_leverage(value: Any, context: str) -> tuple[str, float]:
     return text, number
 
 
-def _read_csv(path: Path, required: tuple[str, ...], allowed: tuple[str, ...]) -> tuple[list[str], list[dict[str, str]]]:
+def _iter_csv(path: Path, required: tuple[str, ...], allowed: tuple[str, ...]):
     try:
         handle = path.open(newline="", encoding="utf-8-sig")
     except OSError as exc:
@@ -271,11 +272,19 @@ def _read_csv(path: Path, required: tuple[str, ...], allowed: tuple[str, ...]) -
             raise _error(f"CSV source {path} is missing required columns: {', '.join(missing)}")
         if unknown:
             raise _error(f"CSV source {path} has unknown columns: {', '.join(unknown)}")
-        rows: list[dict[str, str]] = []
         for index, row in enumerate(reader, start=2):
             if None in row:
                 raise _error(f"CSV source {path} has an over-wide row at line {index}")
-            rows.append(row)
+            yield index, headers, row
+
+
+def _read_csv(path: Path, required: tuple[str, ...], allowed: tuple[str, ...]) -> tuple[list[str], list[dict[str, str]]]:
+    rows: list[dict[str, str]] = []
+    headers: list[str] = []
+    for _, hdrs, row in _iter_csv(path, required, allowed):
+        if not headers:
+            headers = hdrs
+        rows.append(row)
     return headers, rows
 
 
@@ -337,14 +346,21 @@ def _load_summary(path: Path, expected_count: int) -> tuple[list[dict[str, Any]]
     return rows, by_ticker
 
 
-def _parse_markdown_tickers(path: Path) -> set[str]:
+def _parse_markdown_tickers(path: Path, expected_count: int | None = None) -> set[str]:
     try:
         text = path.read_text(encoding="utf-8")
     except OSError as exc:
         raise _error(f"could not read universe document {path}: {exc}") from exc
     tickers = set(re.findall(r"^\|\s*\*\*([A-Z0-9]+)\*\*\s*\|", text, re.MULTILINE))
-    if "Total Instruments:** 160" not in text:
-        raise _error(f"universe document does not declare the authoritative 160-instrument universe: {path}")
+    declared_match = re.search(r"Total Instruments:\*\*\s*(\d+)", text)
+    if not declared_match:
+        raise _error(f"universe document is missing Total Instruments declaration: {path}")
+    declared_count = int(declared_match.group(1))
+    if declared_count != len(tickers) or (expected_count is not None and declared_count != expected_count):
+        raise _error(
+            f"universe document count mismatch: declared={declared_count}, parsed={len(tickers)}, "
+            f"expected={expected_count}: {path}"
+        )
     return tickers
 
 
@@ -466,11 +482,7 @@ def _validate_aggregate(
     expected_total_rows: int,
 ) -> dict[str, Any]:
     path = source_dir / "all_leveraged_etf_flows.csv"
-    headers, raw_rows = _read_csv(path, AGGREGATE_COLUMNS, AGGREGATE_COLUMNS)
-    if len(raw_rows) != expected_total_rows:
-        raise _error(f"aggregate source has {len(raw_rows)} rows; expected {expected_total_rows}")
-    if headers != list(AGGREGATE_COLUMNS):
-        raise _error(f"aggregate source columns are not in the required order: {headers}")
+    headers: list[str] = []
     source_by_key = {
         (ticker, row["date"]): row
         for ticker, info in files.items()
@@ -478,7 +490,13 @@ def _validate_aggregate(
     }
     seen: set[tuple[str, str]] = set()
     dates: set[str] = set()
-    for index, raw in enumerate(raw_rows, start=2):
+    row_count = 0
+    for index, hdrs, raw in _iter_csv(path, AGGREGATE_COLUMNS, AGGREGATE_COLUMNS):
+        if not headers:
+            headers = hdrs
+            if headers != list(AGGREGATE_COLUMNS):
+                raise _error(f"aggregate source columns are not in the required order: {headers}")
+        row_count += 1
         context = f"aggregate source row {index}"
         row = _normalise_row(raw, headers, context)
         ticker = row["ticker"]
@@ -507,6 +525,9 @@ def _validate_aggregate(
                     raise _error(f"{context} differs from catalog summary in {field}")
             elif row[field] != summary[field]:
                 raise _error(f"{context} differs from catalog summary in {field}")
+
+    if row_count != expected_total_rows:
+        raise _error(f"aggregate source has {row_count} rows; expected {expected_total_rows}")
     if seen != set(source_by_key):
         missing = sorted(set(source_by_key) - seen)
         raise _error(f"aggregate source is missing {len(missing)} individual rows")
@@ -515,7 +536,7 @@ def _validate_aggregate(
         "relative_path": "data/flows/all_leveraged_etf_flows.csv",
         "sha256": _sha256_file(path),
         "headers": headers,
-        "row_count": len(raw_rows),
+        "row_count": row_count,
         "unique_ticker_count": len({row[0] for row in seen}),
         "date_count": len(dates),
         "earliest_date": min(dates),
@@ -702,7 +723,7 @@ def validate_local_dataset(
     if set(FEATURED_TICKERS) - set(summary_by_ticker) or len(FEATURED_TICKERS) != 24 or len(set(FEATURED_TICKERS)) != 24:
         raise _error("featured ticker subset must contain exactly 24 tickers from the local universe")
     if validate_markdown:
-        markdown_tickers = _parse_markdown_tickers(_resolved(universe_doc_path))
+        markdown_tickers = _parse_markdown_tickers(_resolved(universe_doc_path), expected_count=expected_count)
         if markdown_tickers != set(summary_by_ticker):
             raise _error(
                 "universe document identity mismatch; "
@@ -793,24 +814,69 @@ def _setup_for(zp: float, zf: float, loose: bool = False) -> str | None:
     return None
 
 
-_HISTORY_CACHE: dict[str, list[dict[str, Any]]] | None = None
+_HISTORY_CACHE_STORE: dict[tuple[str, int], dict[str, list[dict[str, Any]]]] = {}
 
 
-def _get_history_cache() -> dict[str, list[dict[str, Any]]]:
-    global _HISTORY_CACHE
-    if _HISTORY_CACHE is None:
-        path = DEFAULT_OUTPUT_DIR / "etf_history.json"
-        if path.is_file():
-            try:
-                _HISTORY_CACHE = json.loads(path.read_text(encoding="utf-8")).get("history", {})
-            except Exception:
-                _HISTORY_CACHE = {}
-        else:
-            _HISTORY_CACHE = {}
-    return _HISTORY_CACHE
+def _get_history_cache(output_dir: Path | None = None) -> dict[str, list[dict[str, Any]]]:
+    candidate: Path | None = None
+    if output_dir is not None:
+        custom_path = _resolved(output_dir) / "etf_history.json"
+        if custom_path.is_file():
+            candidate = custom_path
+    if candidate is None:
+        default_path = DEFAULT_OUTPUT_DIR / "etf_history.json"
+        if default_path.is_file():
+            candidate = default_path
+    if candidate is None:
+        return {}
+    try:
+        stat = candidate.stat()
+        cache_key = (str(candidate), int(stat.st_mtime_ns))
+    except OSError:
+        return {}
+    if cache_key not in _HISTORY_CACHE_STORE:
+        try:
+            loaded = json.loads(candidate.read_text(encoding="utf-8")).get("history", {})
+            _HISTORY_CACHE_STORE[cache_key] = loaded if isinstance(loaded, dict) else {}
+        except Exception:
+            _HISTORY_CACHE_STORE[cache_key] = {}
+    return _HISTORY_CACHE_STORE[cache_key]
 
 
-def _compute_behavior_dna(rows: list[dict[str, Any]], aum_m: float = 100.0) -> dict[str, Any]:
+def _align_tri_nav_series(
+    rows: list[dict[str, Any]],
+    hist_bars: list[dict[str, Any]] | None = None,
+) -> list[float]:
+    """Compute Trackinsight NAV adjusted by cumulative distribution factor (tc / c) when available."""
+    navs = [float(r["nav"]) for r in rows]
+    if not hist_bars:
+        return navs
+    factor_by_date: dict[str, float] = {}
+    for bar in hist_bars:
+        d = bar.get("d")
+        c = bar.get("c")
+        tc = bar.get("tc")
+        if d and isinstance(c, (int, float)) and isinstance(tc, (int, float)) and c > 0 and tc > 0:
+            factor_by_date[str(d)] = float(tc) / float(c)
+    if not factor_by_date:
+        return navs
+    out: list[float] = []
+    last_factor = 1.0
+    for row, nav_val in zip(rows, navs):
+        d = str(row.get("date", ""))
+        if d in factor_by_date:
+            last_factor = factor_by_date[d]
+        out.append(nav_val * last_factor)
+    return out
+
+
+def _compute_behavior_dna(
+    rows: list[dict[str, Any]],
+    aum_m: float = 100.0,
+    hist_bars: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    import pandas as pd
+
     n = len(rows)
     empty_prof = {f"{k}_{m}": (0 if m == "episodes" else None)
                   for k in _SETUPS for m in ("episodes", "beat_rate", "avg_excess")}
@@ -827,8 +893,9 @@ def _compute_behavior_dna(rows: list[dict[str, Any]], aum_m: float = 100.0) -> d
             "opportunity_tag": "NEUTRAL",
         }
 
-    navs = [float(r["nav"]) for r in rows]
-    flows = [float(r["usd_flow"]) for r in rows]
+    navs = _align_tri_nav_series(rows, hist_bars)
+    raw_flows = [float(r["usd_flow"]) for r in rows]
+    flows = net_reversal_pairs(pd.Series(raw_flows, dtype=float)).fillna(0.0).tolist()
 
     daily_rets = [0.0] * n
     for i in range(1, n):
@@ -873,14 +940,15 @@ def _compute_behavior_dna(rows: list[dict[str, Any]], aum_m: float = 100.0) -> d
     vol_20d = round(rets_60_std[-1] * math.sqrt(20) * 100.0, 2)
     flow_var_m = round(flows_60_std[-1] / 1_000_000.0, 2)
 
-    ret_20d = (navs[-1] / navs[-20] - 1.0) if navs[-20] > 0 else 0.0
+    ref_20_nav = navs[-21] if n > 20 else navs[0]
+    ret_20d = (navs[-1] / ref_20_nav - 1.0) if ref_20_nav > 0 else 0.0
     dp = rets_60_std[-1] * math.sqrt(20)
     z_price = round(max(-5.0, min(5.0, ret_20d / dp if dp > 1e-6 else 0.0)), 2)
 
     df = flows_60_std[-1] * math.sqrt(5)
     z_flow_5d = round(max(-5.0, min(5.0, flows_5d_sum[-1] / df if df > 1e-6 else 0.0)), 2)
 
-    # Closed-form Hurdle Robust Z-score normalized by causal AUM
+    # Closed-form Hurdle Robust Z-score normalized by AUM scale
     aum_usd = max(1_000_000.0, aum_m * 1_000_000.0)
     rel_flows = [f / aum_usd for f in flows]
     w_prior = rel_flows[-31:-1] if len(rel_flows) >= 31 else rel_flows[:-1]
@@ -928,7 +996,7 @@ def _compute_behavior_dna(rows: list[dict[str, Any]], aum_m: float = 100.0) -> d
         centered = [x - mean_f for x in w30]
         gammas = [0.0] * 5
         for h in range(5):
-            gammas[h] = sum(centered[j] * centered[j - h] for j in range(h, 30)) / (30.0 - h)
+            gammas[h] = sum(centered[j] * centered[j - h] for j in range(h, 30)) / 30.0
         var_nw = 5.0 * gammas[0] + 8.0 * gammas[1] + 6.0 * gammas[2] + 4.0 * gammas[3] + 2.0 * gammas[4]
         sigma_nw = math.sqrt(max(var_nw, 2.5 * gammas[0] + 1e-8))
         if sigma_nw > 1e-8:
@@ -980,7 +1048,7 @@ def _flow_reversal(rows: list[dict[str, Any]]) -> dict[str, Any] | None:
     """Flag a latest 1-day flow that undoes the previous day's.
 
     The source sometimes reports a large creation one day and an almost
-    equal redemption the next (e.g. MULL 2026-10-19 +$297M, 10-20 −$289M):
+    equal redemption the next (e.g. MULL 2026-10-19 +$297M, 10-20 -$289M):
     a shares-outstanding reporting error, not money moving. 5- and 20-day
     sums net it out, but the 1-day number and 1-day z would rank such a fund
     as a top mover. Returns the pair's net when the last two flows have
@@ -1000,26 +1068,37 @@ def _flow_reversal(rows: list[dict[str, Any]]) -> dict[str, Any] | None:
     return {"net_2d": round(f_prev + f_last, 2), "prev_date": rows[-2]["date"], "prev_flow": f_prev}
 
 
-def _instrument_entry(ticker: str, report: dict[str, Any]) -> dict[str, Any]:
+def _instrument_entry(
+    ticker: str,
+    report: dict[str, Any],
+    output_dir: Path | None = None,
+) -> dict[str, Any]:
     info = report["files"][ticker]
     summary = report["summary"][ticker]
     last = info["latest"]
     rows = info["data"]
     leverage_text, leverage_value = _normalise_leverage(summary["leverage"], f"catalog {ticker}")
-    flow_5d = round(sum(float(r["usd_flow"]) for r in rows[-5:]), 2)
-    flow_20d = round(sum(float(r["usd_flow"]) for r in rows[-20:]), 2)
-    flow_60d = round(sum(float(r["usd_flow"]) for r in rows[-60:]), 2)
+    netted_flows = net_reversal_pairs([float(r["usd_flow"]) for r in rows]).fillna(0.0).tolist()
+    flow_5d = round(sum(netted_flows[-5:]), 2)
+    flow_20d = round(sum(netted_flows[-20:]), 2)
+    flow_60d = round(sum(netted_flows[-60:]), 2)
     latest_year = str(last["date"])[:4]
-    flow_ytd = round(sum(float(r["usd_flow"]) for r in rows if str(r["date"]).startswith(latest_year)), 2)
-    ref_20 = rows[-20] if len(rows) >= 20 else rows[0]
+    flow_ytd = round(
+        sum(nf for r, nf in zip(rows, netted_flows) if str(r["date"]).startswith(latest_year)),
+        2,
+    )
+    ref_20 = rows[-21] if len(rows) > 20 else rows[0]
     nav_return_20d_pct = (
         round((float(last["nav"]) / float(ref_20["nav"]) - 1.0) * 100.0, 2)
         if float(ref_20["nav"]) > 0
         else 0.0
     )
-    sparkline_20d = [round(float(r["usd_flow"]) / 1_000_000.0, 2) for r in rows[-20:]]
+    sparkline_20d = [round(nf / 1_000_000.0, 2) for nf in netted_flows[-20:]]
     aum_m_val = float(summary.get("aum_m", 100.0))
-    dna = _compute_behavior_dna(rows, aum_m_val)
+
+    hist_cache = _get_history_cache(output_dir)
+    h_bars = hist_cache.get(ticker) if hist_cache else None
+    dna = _compute_behavior_dna(rows, aum_m_val, hist_bars=h_bars)
 
     # Canonical taxonomy integration
     tax = get_taxonomy_record(ticker)
@@ -1029,15 +1108,13 @@ def _instrument_entry(ticker: str, report: dict[str, Any]) -> dict[str, Any]:
     polarity = market_beta_polarity(ticker, leverage_value)
 
     # TRI return and arbitrage premium from etf_history.json (strictly aligned to CSV latest_date)
-    hist_cache = _get_history_cache()
     tri_return_20d = nav_return_20d_pct
     arb_premium_bps = 0.0
-    if hist_cache and ticker in hist_cache:
-        h_bars = hist_cache[ticker]
+    if h_bars:
         idx_match = next((idx for idx, b in enumerate(h_bars) if b.get("d") == last["date"]), None)
         if idx_match is not None:
-            if idx_match >= 19 and "tc" in h_bars[idx_match] and "tc" in h_bars[idx_match - 19]:
-                p_prev = float(h_bars[idx_match - 19]["tc"])
+            if idx_match >= 20 and "tc" in h_bars[idx_match] and "tc" in h_bars[idx_match - 20]:
+                p_prev = float(h_bars[idx_match - 20]["tc"])
                 p_curr = float(h_bars[idx_match]["tc"])
                 if p_prev > 0:
                     tri_return_20d = round((p_curr / p_prev - 1.0) * 100.0, 2)
@@ -1110,11 +1187,11 @@ def _instrument_entry(ticker: str, report: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _flow_evidence(report: dict[str, Any]) -> dict[str, Any]:
+def _flow_evidence(report: dict[str, Any], output_dir: Path | None = None) -> dict[str, Any]:
     """Pooled evidence behind the scanner setups, recomputed on every build
     (same method as scripts/flow_study.py; docs/SIGNALS_STUDY.md section 5).
 
-    Every long-side fund's next-20-day return (entered the day after) is
+    Every long-side directional fund's next-20-day return (entered the day after) is
     compared with all funds in the same 20-day price state on the same date,
     so each number is what the flow added beyond the price move itself.
     Reported per era so a setup that only worked in one market shows as such.
@@ -1122,13 +1199,27 @@ def _flow_evidence(report: dict[str, Any]) -> dict[str, Any]:
     import numpy as np
     import pandas as pd
 
+    hist_cache = _get_history_cache(output_dir)
     frames = []
     for ticker, info in report["files"].items():
-        if "Short" in str(report["summary"][ticker].get("category", "")):
+        summary_row = report["summary"][ticker]
+        try:
+            _, lev_val = _normalise_leverage(summary_row.get("leverage", ""), f"evidence {ticker}")
+        except LocalFlowValidationError:
             continue
-        g = pd.DataFrame(info["data"], columns=["date", "nav", "usd_flow"])
-        g["nav"] = pd.to_numeric(g["nav"], errors="coerce")
-        g["usd_flow"] = pd.to_numeric(g["usd_flow"], errors="coerce")
+        polarity = market_beta_polarity(ticker, lev_val)
+        # Exclude tactical short / inverse funds and VIX volatility-futures products
+        if lev_val <= 0 or polarity <= 0 or get_underlying_id(ticker) == "VIX_ST_FUTURES":
+            continue
+        rows = info["data"]
+        tri_navs = _align_tri_nav_series(rows, hist_cache.get(ticker) if hist_cache else None)
+        g = pd.DataFrame({
+            "date": [r["date"] for r in rows],
+            "nav": pd.to_numeric(tri_navs, errors="coerce"),
+            "usd_flow": net_reversal_pairs(
+                pd.to_numeric([r["usd_flow"] for r in rows], errors="coerce")
+            ).fillna(0.0),
+        })
         g = g[g["nav"] > 0]
         if len(g) < 200:
             continue
@@ -1179,9 +1270,9 @@ def _flow_evidence(report: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _build_catalog(report: dict[str, Any]) -> dict[str, Any]:
+def _build_catalog(report: dict[str, Any], output_dir: Path | None = None) -> dict[str, Any]:
     instruments = [
-        _instrument_entry(ticker, report)
+        _instrument_entry(ticker, report, output_dir=output_dir)
         for ticker in sorted(report["summary"])
     ]
     payload: dict[str, Any] = {
@@ -1201,15 +1292,15 @@ def _build_catalog(report: dict[str, Any]) -> dict[str, Any]:
         },
         "category_counts": report["category_counts"],
         "featured_tickers": list(FEATURED_TICKERS),
-        "flow_evidence": _flow_evidence(report),
+        "flow_evidence": _flow_evidence(report, output_dir=output_dir),
         "instruments": instruments,
     }
     return _with_content_hash(payload)
 
 
-def _build_ticker_payload(ticker: str, report: dict[str, Any]) -> dict[str, Any]:
+def _build_ticker_payload(ticker: str, report: dict[str, Any], output_dir: Path | None = None) -> dict[str, Any]:
     info = report["files"][ticker]
-    entry = _instrument_entry(ticker, report)
+    entry = _instrument_entry(ticker, report, output_dir=output_dir)
     payload: dict[str, Any] = {
         "schema_version": DATA_SCHEMA_VERSION,
         "artifact_version": ARTIFACT_SCHEMA_VERSION,
@@ -1237,7 +1328,7 @@ def _build_ticker_payload(ticker: str, report: dict[str, Any]) -> dict[str, Any]
     return _with_content_hash(payload)
 
 
-def _build_manifest(report: dict[str, Any]) -> dict[str, Any]:
+def _build_manifest(report: dict[str, Any], output_dir: Path | None = None) -> dict[str, Any]:
     entries: dict[str, Any] = {}
     for ticker in sorted(report["files"]):
         info = report["files"][ticker]
@@ -1252,7 +1343,7 @@ def _build_manifest(report: dict[str, Any]) -> dict[str, Any]:
             "availability": "available",
             "data_status": "complete",
             "data_quality": "complete",
-            "content_sha256": _payload_hash(_build_ticker_payload(ticker, report)),
+            "content_sha256": _payload_hash(_build_ticker_payload(ticker, report, output_dir=output_dir)),
         }
     payload: dict[str, Any] = {
         "schema_version": DATA_SCHEMA_VERSION,
@@ -1360,10 +1451,10 @@ def _verify_generated_output(output_dir: Path, report: dict[str, Any]) -> None:
         raise _error("generated manifest is not complete")
     if manifest.get("counts", {}).get("rows") != report["actual"]["individual_rows"]:
         raise _error("generated manifest row count is inconsistent")
-    expected_catalog = _build_catalog(report)
+    expected_catalog = _build_catalog(report, output_dir=output_dir)
     if catalog != expected_catalog:
         raise _error("generated catalog does not match deterministic source projection")
-    expected_manifest = _build_manifest(report)
+    expected_manifest = _build_manifest(report, output_dir=output_dir)
     if manifest != expected_manifest:
         raise _error("generated manifest does not match deterministic source projection")
     for ticker in tickers:
@@ -1372,7 +1463,7 @@ def _verify_generated_output(output_dir: Path, report: dict[str, Any]) -> None:
             raise _error(f"generated artifact for {ticker} is not an object")
         if payload.get("content_sha256") != _payload_hash(payload):
             raise _error(f"generated artifact hash is invalid for {ticker}")
-        expected_payload = _build_ticker_payload(ticker, report)
+        expected_payload = _build_ticker_payload(ticker, report, output_dir=output_dir)
         if payload != expected_payload:
             raise _error(f"generated artifact does not match source data for {ticker}")
 
@@ -1419,10 +1510,10 @@ def build_local_artifacts(
                 shutil.copy2(output / aux_name, staging / aux_name)
         if (output / "history").is_dir():
             shutil.copytree(output / "history", staging / "history")
-        _atomic_write_json(staging / "catalog.json", _build_catalog(report))
+        _atomic_write_json(staging / "catalog.json", _build_catalog(report, output_dir=staging))
         for ticker in sorted(report["files"]):
-            _atomic_write_json(staging / f"{ticker}.json", _build_ticker_payload(ticker, report))
-        _atomic_write_json(staging / "manifest.json", _build_manifest(report))
+            _atomic_write_json(staging / f"{ticker}.json", _build_ticker_payload(ticker, report, output_dir=staging))
+        _atomic_write_json(staging / "manifest.json", _build_manifest(report, output_dir=staging))
         _verify_generated_output(staging, report)
         _publish_staging(staging, output)
     except Exception:

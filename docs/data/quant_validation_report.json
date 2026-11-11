@@ -1,7 +1,7 @@
 {
   "empirical_falsification_gates": {
     "hurdle_zero_inflation_gate": {
-      "calibrated_hurdle_sigma": 0.000568,
+      "calibrated_hurdle_zscore": 3.0,
       "passed": true,
       "sigma_floor_enforced": 0.0005
     },
@@ -11,15 +11,15 @@
       "phantom_drawdowns_detected": 0
     },
     "split_3_2_detection_gate": {
+      "adjusted_pre_split_close": 100.0,
       "log_step_magnitude": 0.4055,
-      "note": "Excised 0.50 skip gate allows 3:2 and 2:3 splits to execute cleanly.",
       "passed": true,
       "ratio_tested": "3:2 forward split (factor 1.5)"
     },
     "sub_dollar_spread_finiteness_gate": {
       "passed": true,
-      "sample_c_log": -0.8675,
-      "sample_eta": -0.8574
+      "sample_close": 0.42,
+      "sample_corwin_schultz_spread": 0.061527
     },
     "uvxy_svxy_transition_gate": {
       "passed": true,
@@ -38,91 +38,91 @@
       "1": {
         "bh_fdr_significant": false,
         "hlz_hurdle_met": false,
-        "mean_ic": -0.0016,
-        "n_dates": 296,
-        "p_value": 0.80415,
-        "se_hac": 0.0065,
-        "t_stat": -0.25
+        "mean_ic": -0.0126,
+        "n_dates": 547,
+        "p_value": 0.09661,
+        "se_hac": 0.0076,
+        "t_stat": -1.66
       },
       "20": {
         "bh_fdr_significant": false,
         "hlz_hurdle_met": false,
-        "mean_ic": -0.0116,
-        "n_dates": 293,
-        "p_value": 0.23451,
-        "se_hac": 0.0098,
-        "t_stat": -1.19
+        "mean_ic": -0.0083,
+        "n_dates": 543,
+        "p_value": 0.32112,
+        "se_hac": 0.0084,
+        "t_stat": -0.99
       },
       "5": {
         "bh_fdr_significant": false,
         "hlz_hurdle_met": false,
-        "mean_ic": -0.0186,
-        "n_dates": 296,
-        "p_value": 0.03075,
-        "se_hac": 0.0086,
-        "t_stat": -2.16
+        "mean_ic": -0.0129,
+        "n_dates": 546,
+        "p_value": 0.0802,
+        "se_hac": 0.0074,
+        "t_stat": -1.75
       }
     },
     "hurdle_z": {
       "1": {
         "bh_fdr_significant": false,
         "hlz_hurdle_met": false,
-        "mean_ic": -0.0107,
-        "n_dates": 296,
-        "p_value": 0.19841,
-        "se_hac": 0.0083,
-        "t_stat": -1.29
+        "mean_ic": -0.0045,
+        "n_dates": 543,
+        "p_value": 0.52843,
+        "se_hac": 0.0072,
+        "t_stat": -0.63
       },
       "20": {
         "bh_fdr_significant": false,
         "hlz_hurdle_met": false,
-        "mean_ic": -0.007,
-        "n_dates": 293,
-        "p_value": 0.42751,
-        "se_hac": 0.0088,
-        "t_stat": -0.79
+        "mean_ic": -0.0064,
+        "n_dates": 539,
+        "p_value": 0.37537,
+        "se_hac": 0.0072,
+        "t_stat": -0.89
       },
       "5": {
         "bh_fdr_significant": false,
         "hlz_hurdle_met": false,
-        "mean_ic": -0.0071,
-        "n_dates": 296,
-        "p_value": 0.36553,
-        "se_hac": 0.0079,
-        "t_stat": -0.9
+        "mean_ic": -0.0065,
+        "n_dates": 542,
+        "p_value": 0.35938,
+        "se_hac": 0.0071,
+        "t_stat": -0.92
       }
     },
     "rel_flow": {
       "1": {
         "bh_fdr_significant": false,
         "hlz_hurdle_met": false,
-        "mean_ic": -0.0121,
-        "n_dates": 296,
-        "p_value": 0.1377,
-        "se_hac": 0.0082,
-        "t_stat": -1.48
+        "mean_ic": -0.0059,
+        "n_dates": 545,
+        "p_value": 0.4091,
+        "se_hac": 0.0072,
+        "t_stat": -0.83
       },
       "20": {
         "bh_fdr_significant": false,
         "hlz_hurdle_met": false,
-        "mean_ic": -0.0046,
-        "n_dates": 293,
-        "p_value": 0.61914,
-        "se_hac": 0.0093,
-        "t_stat": -0.5
+        "mean_ic": -0.0051,
+        "n_dates": 541,
+        "p_value": 0.4747,
+        "se_hac": 0.0071,
+        "t_stat": -0.71
       },
       "5": {
         "bh_fdr_significant": false,
         "hlz_hurdle_met": false,
-        "mean_ic": -0.0049,
-        "n_dates": 296,
-        "p_value": 0.52614,
-        "se_hac": 0.0078,
-        "t_stat": -0.63
+        "mean_ic": -0.0072,
+        "n_dates": 544,
+        "p_value": 0.29357,
+        "se_hac": 0.0068,
+        "t_stat": -1.05
       }
     }
   },
-  "generated_utc": "2026-11-10T19:47:59.361191+00:00",
+  "generated_utc": "2026-11-11T11:43:44.717172+00:00",
   "hasbrouck_information_share": {
     "mean_etp_price_share": 0.5,
     "sample_size": 10,
@@ -194,49 +194,51 @@
     "1": {
       "consistent_reversal": false,
       "horizon_days": 1,
-      "mean_impulse_response": -0.0036,
-      "mean_t_stat": 0.22
+      "mean_impulse_response": 0.0003,
+      "mean_t_stat": 0.37
     },
     "10": {
       "consistent_reversal": false,
       "horizon_days": 10,
-      "mean_impulse_response": 0.1652,
-      "mean_t_stat": 0.02
+      "mean_impulse_response": 0.0009,
+      "mean_t_stat": 0.01
     },
     "2": {
       "consistent_reversal": false,
       "horizon_days": 2,
-      "mean_impulse_response": -0.0166,
-      "mean_t_stat": -0.13
+      "mean_impulse_response": -0.0009,
+      "mean_t_stat": -0.19
     },
     "20": {
       "consistent_reversal": false,
       "horizon_days": 20,
-      "mean_impulse_response": 0.4243,
-      "mean_t_stat": -0.11
+      "mean_impulse_response": 0.007,
+      "mean_t_stat": 0.0
     },
     "3": {
       "consistent_reversal": false,
       "horizon_days": 3,
-      "mean_impulse_response": 0.0085,
-      "mean_t_stat": 0.1
+      "mean_impulse_response": -0.0013,
+      "mean_t_stat": -0.11
     },
     "5": {
       "consistent_reversal": false,
       "horizon_days": 5,
-      "mean_impulse_response": 0.0488,
-      "mean_t_stat": 0.2
+      "mean_impulse_response": 0.0012,
+      "mean_t_stat": 0.11
     }
   },
   "methodology": "Pure NumPy/Pandas econometric verification harness (zero scipy/statsmodels/sklearn)",
   "multiple_testing_and_dsr": {
-    "deflated_sharpe_ratio": 0.0039,
+    "deflated_sharpe_ratio": 0.1441,
     "dsr_significant": false,
-    "empirical_annualized_sr": 0.2,
-    "empirical_kurtosis": 10.0,
-    "empirical_skewness": -0.424,
+    "empirical_annualized_sr": -0.251,
+    "empirical_daily_sr": -0.0158,
+    "empirical_kurtosis": 30.0,
+    "empirical_skewness": -0.948,
     "features_tested": 6,
-    "n_eff_independent_trials": 4.22
+    "n_eff_independent_trials": 3.98,
+    "status": "complete"
   },
   "stationary_bootstrap_microcvi": {
     "bootstrap_iterations": 300,
@@ -244,84 +246,48 @@
     "quantiles": {
       "IBIT": {
         "p95_calibrated_score": 52.59,
-        "p95_calibrated_usd_m": 52.59,
         "p99_calibrated_score": 71.03,
-        "p99_calibrated_usd_m": 71.03,
         "sensitivity_20pct_sweep": [
-          49.06,
-          56.41
-        ],
-        "sensitivity_20pct_sweep_m": [
           49.06,
           56.41
         ]
       },
       "QQQM": {
         "p95_calibrated_score": 46.59,
-        "p95_calibrated_usd_m": 46.59,
         "p99_calibrated_score": 65.17,
-        "p99_calibrated_usd_m": 65.17,
         "sensitivity_20pct_sweep": [
-          44.79,
-          48.09
-        ],
-        "sensitivity_20pct_sweep_m": [
           44.79,
           48.09
         ]
       },
       "SMH": {
         "p95_calibrated_score": 45.7,
-        "p95_calibrated_usd_m": 45.7,
         "p99_calibrated_score": 61.2,
-        "p99_calibrated_usd_m": 61.2,
         "sensitivity_20pct_sweep": [
-          45.11,
-          47.17
-        ],
-        "sensitivity_20pct_sweep_m": [
           45.11,
           47.17
         ]
       },
       "SOXL": {
         "p95_calibrated_score": 44.02,
-        "p95_calibrated_usd_m": 44.02,
         "p99_calibrated_score": 57.31,
-        "p99_calibrated_usd_m": 57.31,
         "sensitivity_20pct_sweep": [
-          42.79,
-          45.41
-        ],
-        "sensitivity_20pct_sweep_m": [
           42.79,
           45.41
         ]
       },
       "TLT": {
         "p95_calibrated_score": 45.69,
-        "p95_calibrated_usd_m": 45.69,
         "p99_calibrated_score": 61.87,
-        "p99_calibrated_usd_m": 61.87,
         "sensitivity_20pct_sweep": [
-          44.85,
-          46.87
-        ],
-        "sensitivity_20pct_sweep_m": [
           44.85,
           46.87
         ]
       },
       "TQQQ": {
         "p95_calibrated_score": 40.85,
-        "p95_calibrated_usd_m": 40.85,
         "p99_calibrated_score": 54.3,
-        "p99_calibrated_usd_m": 54.3,
         "sensitivity_20pct_sweep": [
-          39.86,
-          41.75
-        ],
-        "sensitivity_20pct_sweep_m": [
           39.86,
           41.75
         ]

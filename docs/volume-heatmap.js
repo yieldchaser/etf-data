@@ -1,5 +1,5 @@
 /**
- * Volume Heatmap — MicroCVI Stage 1 Microstructure & Stage 2 Viewport Spotlight
+ * Volume Heatmap — MicroCVI Stage 1 Microstructure & Stage 2 Causal 252D Spotlight
  * Dual-gated 18-column OHLCV climax/drought calendar engine for etf-data.
  * Zero external dependencies. Zero hardcoded ticker names. Factual quantitative terminology.
  */
@@ -21,6 +21,7 @@
   const KAPPA_VALLEY = 1.60;
   const LAMBDA = 0.75;
   const HEATMAP_MAX_BARS = 756;
+  const CAUSAL_SPOTLIGHT_WINDOW = 252;
 
   const STRUCTURAL_FLOORS = {
     PEAKS: { P99: 68.0, P95: 52.0, P90: 38.0 },
@@ -90,6 +91,12 @@
     const dNum = parseInt(parts[2].slice(0, 2), 10);
     if (isNaN(mIdx) || isNaN(dNum) || mIdx < 0 || mIdx > 11) return iso;
     return `${months[mIdx]} ${dNum}, ${parts[0]}`;
+  }
+
+  function _dateToEpochDays(dateStr) {
+    if (!dateStr || typeof dateStr !== 'string') return 0;
+    const ms = Date.parse(`${dateStr.slice(0, 10)}T00:00:00Z`);
+    return Number.isFinite(ms) ? Math.round(ms / 86400000) : 0;
   }
 
   // ── Stage 1: Trimmed Baseline & Single-ETF Microstructure ──
@@ -433,10 +440,15 @@
     const T = Array.isArray(bars) ? bars.length : 0;
     const dates = new Array(T);
     const closes = new Float64Array(T);
+    const adjOpens = new Float64Array(T);
+    const adjHighs = new Float64Array(T);
+    const adjLows = new Float64Array(T);
+    const adjCloses = new Float64Array(T);
     const turnover = new Float64Array(T);
     const dollarTurnover = new Float64Array(T);
     const trueRange = new Float64Array(T);
     const typPrice = new Float64Array(T);
+    const adjTypPrice = new Float64Array(T);
     const abdiSpread = new Float64Array(T);
 
     for (let t = 0; t < T; t++) {
@@ -444,6 +456,7 @@
       dates[t] = _barDate(b);
       const c = _barClose(b);
       closes[t] = c;
+      const o = _barOpen(b, c);
       const h = _barHigh(b, c);
       const l = _barLow(b, c);
       const v = _barVol(b);
@@ -452,20 +465,32 @@
       dollarTurnover[t] = v * tp;
       turnover[t] = normMode === 'dollar' ? dollarTurnover[t] : v;
 
-      const prevClose = t > 0 ? _barClose(bars[t - 1]) : _barOpen(b, c);
-      const trHigh = Math.max(h, prevClose);
-      const trLow = Math.min(l, prevClose);
+      // Scale microstructure OHLC/TR/Abdi-Ranaldo by TRI factor (tc / c) so ex-dividend drops do not inflate selling climax scores
+      const tc = _barTotalReturnClose(b);
+      const trScale = (c > 0 && tc > 0) ? (tc / c) : 1.0;
+      const aO = o * trScale;
+      const aH = h * trScale;
+      const aL = l * trScale;
+      const aC = c * trScale;
+      adjOpens[t] = aO;
+      adjHighs[t] = aH;
+      adjLows[t] = aL;
+      adjCloses[t] = aC;
+      adjTypPrice[t] = (aH + aL + 2.0 * aC) * 0.25;
+
+      const prevAdjC = t > 0 ? adjCloses[t - 1] : aO;
+      const trHigh = Math.max(aH, prevAdjC);
+      const trLow = Math.min(aL, prevAdjC);
       trueRange[t] = Math.max(0.0, trHigh - trLow);
 
       if (t > 0) {
-        const prevB = bars[t - 1];
-        const prevC = _barClose(prevB);
-        const prevH = _barHigh(prevB, prevC);
-        const prevL = _barLow(prevB, prevC);
-        if (prevC > 0 && prevH > 0 && prevL > 0 && c > 0 && h > 0 && l > 0) {
+        const prevC = adjCloses[t - 1];
+        const prevH = adjHighs[t - 1];
+        const prevL = adjLows[t - 1];
+        if (prevC > 0 && prevH > 0 && prevL > 0 && aC > 0 && aH > 0 && aL > 0) {
           const cPrev = Math.log(prevC);
           const etaPrev = 0.5 * (Math.log(prevH) + Math.log(prevL));
-          const etaCurr = 0.5 * (Math.log(h) + Math.log(l));
+          const etaCurr = 0.5 * (Math.log(aH) + Math.log(aL));
           const s2 = 4.0 * (cPrev - etaPrev) * (cPrev - etaCurr);
           abdiSpread[t] = s2 > 0.0 ? Math.sqrt(s2) : 0.0;
         } else {
@@ -517,16 +542,15 @@
       let maxH21 = -Infinity;
       let minL21 = Infinity;
       for (let j = t - WINDOW_LAG; j < t; j++) {
-        const jc = _barClose(bars[j]);
-        const jh = _barHigh(bars[j], jc);
-        const jl = _barLow(bars[j], jc);
+        const jh = adjHighs[j];
+        const jl = adjLows[j];
         if (jh > maxH21) maxH21 = jh;
         if (jl < minL21) minL21 = jl;
       }
 
-      const curC = _barClose(bars[t]);
-      const curH = _barHigh(bars[t], curC);
-      const curL = _barLow(bars[t], curC);
+      const curC = adjCloses[t];
+      const curH = adjHighs[t];
+      const curL = adjLows[t];
       const rangeSpan = maxH21 - minL21 + EPS;
 
       // 1. Peak (Volume Climax & Exhaustion) Intensity - Symmetric Bidirectional
@@ -543,13 +567,13 @@
         displacement = (curC - minL21) / rangeSpan;
         isNewExtreme = curH >= maxH21 - EPS ? 1.0 : 0.0;
         wickRatio = (curH - curC) / (trueRange[t] + EPS);
-        rawShock = Math.max(0.0, curH - typPrice[t - 1]) / (trimMeanTR + EPS);
+        rawShock = Math.max(0.0, curH - adjTypPrice[t - 1]) / (trimMeanTR + EPS);
       } else {
         climaxDir = -1;
         displacement = (maxH21 - curC) / rangeSpan;
         isNewExtreme = curL <= minL21 + EPS ? 1.0 : 0.0;
         wickRatio = (curC - curL) / (trueRange[t] + EPS);
-        rawShock = Math.max(0.0, typPrice[t - 1] - curL) / (trimMeanTR + EPS);
+        rawShock = Math.max(0.0, adjTypPrice[t - 1] - curL) / (trimMeanTR + EPS);
       }
 
       const shockTerm = Math.tanh(0.35 * rawShock);
@@ -586,10 +610,29 @@
 
   function isInverseInstrument(inst) {
     if (!inst) return false;
-    return (inst.leverage_value != null && Number(inst.leverage_value) < 0) || inst.direction === 'inverse';
+    if (inst.market_beta_polarity != null && Number.isFinite(Number(inst.market_beta_polarity))) {
+      return Number(inst.market_beta_polarity) < 0;
+    }
+    const lev = (inst.leverage_value != null && Number.isFinite(Number(inst.leverage_value)))
+      ? Number(inst.leverage_value)
+      : (inst.direction === 'inverse' ? -1.0 : 1.0);
+    if (QuantCore && typeof QuantCore.marketBetaPolarity === 'function') {
+      return QuantCore.marketBetaPolarity(inst.ticker, lev) < 0;
+    }
+    return lev < 0 || inst.direction === 'inverse';
   }
 
-  function normalizeUnderlyingKey(raw) {
+  function normalizeUnderlyingKey(raw, instOrTicker) {
+    if (instOrTicker && typeof instOrTicker === 'object' && instOrTicker.underlying_id) {
+      return String(instOrTicker.underlying_id);
+    }
+    const tk = typeof instOrTicker === 'string'
+      ? instOrTicker
+      : (instOrTicker && typeof instOrTicker === 'object' ? instOrTicker.ticker : '');
+    if (QuantCore && typeof QuantCore.canonicalUnderlyingId === 'function') {
+      const cid = QuantCore.canonicalUnderlyingId(raw, tk);
+      if (cid && cid !== 'UNKNOWN') return cid;
+    }
     if (!raw) return '';
     return String(raw)
       .replace(/\s*\([^)]*\)\s*$/g, '')
@@ -598,7 +641,8 @@
       .toLowerCase();
   }
 
-  function _cleanUnderlyingLabel(raw) {
+  function _cleanUnderlyingLabel(raw, inst) {
+    if (inst && inst.underlying_label) return String(inst.underlying_label);
     if (!raw) return 'Underlying';
     return String(raw)
       .replace(/\s*\([^)]*\)\s*$/g, '')
@@ -622,12 +666,12 @@
     const list = Array.isArray(catalogInstruments) ? catalogInstruments : Object.values(catalogInstruments || {});
     const map = _buildCatalogMap(list);
     const active = map[activeTicker] || null;
-    const activeUndKey = active ? normalizeUnderlyingKey(active.underlying) : '';
-    const underlyingLabel = active ? _cleanUnderlyingLabel(active.underlying) : 'Underlying';
+    const activeUndKey = active ? normalizeUnderlyingKey(active.underlying, active) : '';
+    const underlyingLabel = active ? _cleanUnderlyingLabel(active.underlying, active) : 'Underlying';
     const category = active ? active.category : null;
 
     const underlyingPeers = activeUndKey
-      ? list.filter(x => normalizeUnderlyingKey(x.underlying) === activeUndKey)
+      ? list.filter(x => normalizeUnderlyingKey(x.underlying, x) === activeUndKey)
       : (active ? [active] : []);
     const categoryPeers = category ? list.filter(x => x.category === category) : (active ? [active] : []);
     const featuredPeers = list.filter(x => x.featured);
@@ -655,11 +699,11 @@
     const list = Array.isArray(catalogInstruments) ? catalogInstruments : Object.values(catalogInstruments || {});
     const map = _buildCatalogMap(list);
     const active = map[activeTicker] || null;
-    const activeUndKey = active ? normalizeUnderlyingKey(active.underlying) : '';
+    const activeUndKey = active ? normalizeUnderlyingKey(active.underlying, active) : '';
 
     let base = [];
     if (scope === 'underlying' && active && activeUndKey) {
-      base = list.filter(x => normalizeUnderlyingKey(x.underlying) === activeUndKey);
+      base = list.filter(x => normalizeUnderlyingKey(x.underlying, x) === activeUndKey);
     } else if (scope === 'category' && active && active.category) {
       base = list.filter(x => x.category === active.category);
     } else if (scope === 'featured') {
@@ -726,20 +770,30 @@
     }
 
     const etfMetrics = {};
+    const ctxSlicesByTicker = {};
     const closeCtxMaps = {};
+    const getCloseCtxMap = tk => {
+      if (!tk) return null;
+      if (Object.prototype.hasOwnProperty.call(closeCtxMaps, tk)) return closeCtxMaps[tk];
+      const sl = ctxSlicesByTicker[tk];
+      const computed = sl ? computeTickerCloseContext(sl) : null;
+      closeCtxMaps[tk] = computed;
+      return computed;
+    };
     const indexMaps = {};
     const unionDateSet = new Set();
-    const maxBars = opts.maxBars || HEATMAP_MAX_BARS;
+    const maxBars = Math.max(1, Math.trunc(opts.maxBars || HEATMAP_MAX_BARS));
+    const evalMaxBars = maxBars + CAUSAL_SPOTLIGHT_WINDOW;
     const ctxPadBars = 260;
 
     for (const t of activeTickers) {
       const stripped = stripLivePartialSession(historiesByTicker[t], opts.isMarketOpen, opts.nowDate);
       if (!stripped.length) continue;
-      // Preserve >= 260 pre-slice bars so 252D peak/trough and 21D YZ vol stay strictly causal from bar 0 of hist
-      const ctxSlice = stripped.length > (maxBars + ctxPadBars) ? stripped.slice(-(maxBars + ctxPadBars)) : stripped;
-      closeCtxMaps[t] = computeTickerCloseContext(ctxSlice);
+      // Preserve >= 260 pre-slice bars so 252D peak/trough and 21D YZ vol stay strictly causal from bar 0 of visible series
+      ctxSlicesByTicker[t] = stripped.length > (maxBars + ctxPadBars) ? stripped.slice(-(maxBars + ctxPadBars)) : stripped;
 
-      const hist = stripped.length > maxBars ? stripped.slice(-maxBars) : stripped;
+      // Preserve >= CAUSAL_SPOTLIGHT_WINDOW (252) pre-display Stage 1 bars so bar 0 of series has full 252D causal lookback
+      const hist = stripped.length > (evalMaxBars + WINDOW_LAG) ? stripped.slice(-(evalMaxBars + WINDOW_LAG)) : stripped;
       if (!hist.length) continue;
 
       etfMetrics[t] = computeEtfMicrostructure(hist, normMode);
@@ -748,35 +802,49 @@
         const d = _barDate(hist[i]);
         if (d) {
           map.set(d, i);
-          unionDateSet.add(d);
+          if (i >= WINDOW_LAG) unionDateSet.add(d);
         }
       }
       indexMaps[t] = map;
     }
 
     const sortedUnion = Array.from(unionDateSet).sort();
-    const allDates = sortedUnion.length > maxBars ? sortedUnion.slice(-maxBars) : sortedUnion;
+    const allDates = sortedUnion.length > evalMaxBars ? sortedUnion.slice(-evalMaxBars) : sortedUnion;
     const T = allDates.length;
-    const records = [];
-    const toLead = c => c ? {
-      ticker: c.ticker,
-      side: c.side,
-      close: c.close,
-      chg1dPct: c.chg1dPct,
-      dd63Pct: c.dd63Pct,
-      dd252Pct: c.dd252Pct,
-      ru63Pct: c.ru63Pct,
-      ru252Pct: c.ru252Pct,
-      win63: c.win63,
-      win252: c.win252,
-      sigmaDailyPct: c.sigmaDailyPct,
-      peakScore: c.peakScore,
-      valleyScore: c.valleyScore,
-      rvol: c.rvol
-    } : null;
+    const dispDateStart = Math.max(0, T - maxBars);
+    const paddedRecords = [];
+
+    const buildLeadObj = (tk, pScore, vScore, rv, date) => {
+      if (!tk) return null;
+      const m = etfMetrics[tk];
+      const map = indexMaps[tk];
+      const idx = map ? map.get(date) : undefined;
+      const ctxMap = getCloseCtxMap(tk);
+      const ctx = ctxMap ? ctxMap.get(date) : null;
+      const candClose = (ctx && ctx.close != null && ctx.close > 0)
+        ? ctx.close
+        : ((m && m.closes && idx !== undefined && m.closes[idx] > 0) ? m.closes[idx] : null);
+      return {
+        ticker: tk,
+        side: isInverseInstrument(catalogMap[tk]) ? 'short' : 'long',
+        close: candClose,
+        chg1dPct: ctx ? ctx.chg1dPct : null,
+        dd63Pct: ctx ? ctx.dd63Pct : null,
+        dd252Pct: ctx ? ctx.dd252Pct : null,
+        ru63Pct: ctx ? ctx.ru63Pct : null,
+        ru252Pct: ctx ? ctx.ru252Pct : null,
+        win63: ctx ? ctx.win63 : null,
+        win252: ctx ? ctx.win252 : null,
+        sigmaDailyPct: ctx ? ctx.sigmaDailyPct : null,
+        peakScore: pScore,
+        valleyScore: vScore,
+        rvol: rv
+      };
+    };
 
     for (let t = 0; t < T; t++) {
       const date = allDates[t];
+      const isPadRow = t < dispDateStart;
       let maxPeak = 0.0;
       let maxValley = 0.0;
       let maxRvol = 0.0;
@@ -787,7 +855,6 @@
       let activeCount = 0;
       let bestPeak = null;
       let bestValley = null;
-      const candByTicker = {};
 
       for (const ticker of activeTickers) {
         const map = indexMaps[ticker];
@@ -807,50 +874,28 @@
         if (rv > maxRvol) maxRvol = rv;
         if (rv < minRvol) minRvol = rv;
 
-        const ctx = closeCtxMaps[ticker] ? closeCtxMaps[ticker].get(date) : null;
-        const candClose = (ctx && ctx.close != null && ctx.close > 0)
-          ? ctx.close
-          : ((m.closes && m.closes[idx] > 0) ? m.closes[idx] : null);
+        if (!isPadRow) {
+          if (
+            !bestPeak ||
+            pScore > bestPeak.peakScore + 1e-12 ||
+            (Math.abs(pScore - bestPeak.peakScore) <= 1e-12 && (
+              rv > bestPeak.rvol + 1e-12 ||
+              (Math.abs(rv - bestPeak.rvol) <= 1e-12 && w > bestPeak.weight)
+            ))
+          ) {
+            bestPeak = { ticker, peakScore: pScore, valleyScore: vScore, rvol: rv, weight: w };
+          }
 
-        const cand = {
-          ticker,
-          side: isInverseInstrument(catalogMap[ticker]) ? 'short' : 'long',
-          close: candClose,
-          chg1dPct: ctx ? ctx.chg1dPct : null,
-          dd63Pct: ctx ? ctx.dd63Pct : null,
-          dd252Pct: ctx ? ctx.dd252Pct : null,
-          ru63Pct: ctx ? ctx.ru63Pct : null,
-          ru252Pct: ctx ? ctx.ru252Pct : null,
-          win63: ctx ? ctx.win63 : null,
-          win252: ctx ? ctx.win252 : null,
-          sigmaDailyPct: ctx ? ctx.sigmaDailyPct : null,
-          peakScore: pScore,
-          valleyScore: vScore,
-          rvol: rv,
-          weight: w
-        };
-        candByTicker[ticker] = cand;
-
-        if (
-          !bestPeak ||
-          pScore > bestPeak.peakScore + 1e-12 ||
-          (Math.abs(pScore - bestPeak.peakScore) <= 1e-12 && (
-            rv > bestPeak.rvol + 1e-12 ||
-            (Math.abs(rv - bestPeak.rvol) <= 1e-12 && w > bestPeak.weight)
-          ))
-        ) {
-          bestPeak = cand;
-        }
-
-        if (
-          !bestValley ||
-          vScore > bestValley.valleyScore + 1e-12 ||
-          (Math.abs(vScore - bestValley.valleyScore) <= 1e-12 && (
-            rv < bestValley.rvol - 1e-12 ||
-            (Math.abs(rv - bestValley.rvol) <= 1e-12 && w > bestValley.weight)
-          ))
-        ) {
-          bestValley = cand;
+          if (
+            !bestValley ||
+            vScore > bestValley.valleyScore + 1e-12 ||
+            (Math.abs(vScore - bestValley.valleyScore) <= 1e-12 && (
+              rv < bestValley.rvol - 1e-12 ||
+              (Math.abs(rv - bestValley.rvol) <= 1e-12 && w > bestValley.weight)
+            ))
+          ) {
+            bestValley = { ticker, peakScore: pScore, valleyScore: vScore, rvol: rv, weight: w };
+          }
         }
 
         weightedPeakSum += w * pScore;
@@ -861,18 +906,31 @@
 
       if (activeCount === 0) continue;
 
-      const leadPeakTicker = bestPeak ? bestPeak.ticker : '';
-      const leadValleyTicker = bestValley ? bestValley.ticker : '';
-
       const meanPeak = weightSum > 0.0 ? (weightedPeakSum / weightSum) : maxPeak;
       const meanValley = weightSum > 0.0 ? (weightedValleySum / weightSum) : maxValley;
 
       const compPeak = LAMBDA * maxPeak + (1.0 - LAMBDA) * meanPeak;
       const compValley = LAMBDA * maxValley + (1.0 - LAMBDA) * meanValley;
-
       const safeMinRvol = isFinite(minRvol) ? minRvol : maxRvol;
-      const tieKeyPeak = compPeak + 1e-7 * maxRvol + 1e-11 * t;
-      const tieKeyValley = compValley + 1e-7 * (1.0 / (safeMinRvol + EPS)) + 1e-11 * t;
+
+      if (isPadRow) {
+        paddedRecords.push({
+          date,
+          peakScore: compPeak,
+          valleyScore: compValley,
+          maxRvol,
+          minRvol: safeMinRvol
+        });
+        continue;
+      }
+
+      const leadPeakTicker = bestPeak ? bestPeak.ticker : '';
+      const leadValleyTicker = bestValley ? bestValley.ticker : '';
+
+      // Immutable date-based tie-breaker preserves strict per-date uniqueness while remaining 100% truncation invariant
+      const epochOffset = _dateToEpochDays(date) * 1e-12;
+      const tieKeyPeak = compPeak + 1e-7 * Math.min(100, Math.max(0, maxRvol)) + epochOffset;
+      const tieKeyValley = compValley + 1e-7 * Math.min(20, 1.0 / Math.max(safeMinRvol, 0.05)) + epochOffset;
 
       const leadM = leadPeakTicker ? etfMetrics[leadPeakTicker] : null;
       const leadMap = leadPeakTicker ? indexMaps[leadPeakTicker] : null;
@@ -904,8 +962,18 @@
         ? priceM.closes[priceIdx]
         : null;
 
-      records.push({
-        index: t,
+      let focusCtx = null;
+      if (priceTicker && priceIdx !== undefined && priceIdx >= WINDOW_LAG && priceM) {
+        focusCtx = buildLeadObj(
+          priceTicker,
+          priceM.peakScores[priceIdx],
+          priceM.valleyScores[priceIdx],
+          priceM.rvolArr[priceIdx],
+          date
+        );
+      }
+
+      paddedRecords.push({
         date,
         focusClose,
         priceTicker: priceTicker || '',
@@ -916,14 +984,29 @@
         activeCount,
         leadPeakTicker,
         leadValleyTicker,
-        leadPeak: toLead(bestPeak),
-        leadValley: toLead(bestValley),
-        focusCtx: priceTicker && candByTicker[priceTicker] ? toLead(candByTicker[priceTicker]) : null,
+        leadPeak: bestPeak ? buildLeadObj(bestPeak.ticker, bestPeak.peakScore, bestPeak.valleyScore, bestPeak.rvol, date) : null,
+        leadValley: bestValley ? buildLeadObj(bestValley.ticker, bestValley.peakScore, bestValley.valleyScore, bestValley.rvol, date) : null,
+        focusCtx,
         climaxDir,
         compositeTieKeyPeak: tieKeyPeak,
         compositeTieKeyValley: tieKeyValley
       });
     }
+
+    const peakCausal = _computeCausalWindowRanksForSeries(paddedRecords, 'PEAKS', CAUSAL_SPOTLIGHT_WINDOW);
+    const valleyCausal = _computeCausalWindowRanksForSeries(paddedRecords, 'VALLEYS', CAUSAL_SPOTLIGHT_WINDOW);
+    const dispStart = Math.max(0, paddedRecords.length - maxBars);
+    const records = paddedRecords.slice(dispStart).map((rec, idx) => {
+      const pIdx = dispStart + idx;
+      return {
+        ...rec,
+        index: idx,
+        causalPeakRank: peakCausal.ranks[pIdx],
+        causalPeakN: peakCausal.windowLens[pIdx],
+        causalValleyRank: valleyCausal.ranks[pIdx],
+        causalValleyN: valleyCausal.windowLens[pIdx]
+      };
+    });
 
     return {
       p90: STRUCTURAL_FLOORS.PEAKS.P90,
@@ -932,81 +1015,165 @@
       peaks: STRUCTURAL_FLOORS.PEAKS,
       valleys: STRUCTURAL_FLOORS.VALLEYS,
       series: records,
-      rawDateCount: T
+      rawDateCount: records.length,
+      paddedDateCount: paddedRecords.length
     };
   }
 
-  // ── Stage 2: Adaptive Viewport Spotlight ──
+  // ── Stage 2: Strictly Causal Trailing 252D Spotlight ──
 
-  function evaluateViewportSpotlight(visibleSlice, mode = 'PEAKS', activeFilter = 'NONE') {
-    const N = Array.isArray(visibleSlice) ? visibleSlice.length : 0;
-    if (N === 0) return [];
+  function _getCausalSpotlightCutoffs(wLen) {
+    const n = Math.max(0, Math.trunc(wLen || 0));
+    const k99 = n >= 50 ? Math.max(1, Math.round(0.01 * n)) : 0;
+    const k95 = n >= 20 ? Math.max(1, Math.round(0.05 * n)) : 0;
+    const k90 = n >= 20 ? Math.max(k95 + 1, Math.round(0.10 * n)) : 0;
+    return { k99, k95, k90 };
+  }
 
-    const k99 = Math.max(1, Math.round(0.01 * N));
-    const k95 = Math.max(k99 + 1, Math.round(0.05 * N));
-    const k90 = Math.max(k95 + 1, Math.round(0.10 * N));
+  function _secondaryTieMetric(rec, mode) {
+    if (!rec) return 0;
+    if (mode === 'PEAKS') {
+      const rv = rec.maxRvol;
+      return (rv != null && Number.isFinite(rv)) ? Math.min(100, Math.max(0, rv)) : 0;
+    }
+    const rv = rec.minRvol;
+    const safeRv = (rv != null && Number.isFinite(rv)) ? rv : 1.0;
+    return Math.min(20, 1.0 / Math.max(safeRv, 0.05));
+  }
 
-    const sortedIndices = Array.from({ length: N }, (_, i) => i);
-    sortedIndices.sort((a, b) => {
-      const keyA = mode === 'PEAKS' ? visibleSlice[a].compositeTieKeyPeak : visibleSlice[a].compositeTieKeyValley;
-      const keyB = mode === 'PEAKS' ? visibleSlice[b].compositeTieKeyPeak : visibleSlice[b].compositeTieKeyValley;
-      return keyB - keyA;
-    });
-
+  function _computeCausalWindowRanksForSeries(series, mode, windowLen = CAUSAL_SPOTLIGHT_WINDOW) {
+    const N = Array.isArray(series) ? series.length : 0;
+    const W = Math.max(1, Math.trunc(windowLen || CAUSAL_SPOTLIGHT_WINDOW));
     const ranks = new Int32Array(N);
-    const baselineBins = new Uint8Array(N);
-    for (let rankZero = 0; rankZero < N; rankZero++) {
-      const origIdx = sortedIndices[rankZero];
-      ranks[origIdx] = rankZero + 1;
-      baselineBins[origIdx] = Math.min(4, Math.floor(((N - 1 - rankZero) / N) * 5));
+    const windowLens = new Int32Array(N);
+
+    for (let i = 0; i < N; i++) {
+      const start = Math.max(0, i - W + 1);
+      const n = i - start + 1;
+      windowLens[i] = n;
+      const rec = series[i];
+      const score = rec ? (mode === 'PEAKS' ? Number(rec.peakScore) : Number(rec.valleyScore)) : 0;
+      if (!(Number.isFinite(score) && score > 0)) {
+        ranks[i] = n;
+        continue;
+      }
+      const sec = _secondaryTieMetric(rec, mode);
+      let gt = 0;
+      let eq = 0;
+      for (let s = start; s <= i; s++) {
+        const sr = series[s];
+        const scS = sr ? (mode === 'PEAKS' ? Number(sr.peakScore) : Number(sr.valleyScore)) : 0;
+        if (!Number.isFinite(scS)) continue;
+        if (scS > score) {
+          gt++;
+        } else if (scS === score) {
+          const secS = _secondaryTieMetric(sr, mode);
+          if (secS > sec) gt++;
+          else if (secS === sec) eq++;
+        }
+      }
+      ranks[i] = gt + eq;
     }
 
-    const floors = STRUCTURAL_FLOORS[mode] || STRUCTURAL_FLOORS.PEAKS;
+    return { ranks, windowLens };
+  }
+
+  function evaluateCausalSpotlight(seriesOrSlice, mode = 'PEAKS', activeFilter = 'NONE', opts = {}) {
+    const N = Array.isArray(seriesOrSlice) ? seriesOrSlice.length : 0;
+    if (N === 0) return [];
+
+    const normMode = mode === 'VALLEYS' ? 'VALLEYS' : 'PEAKS';
+    const windowLenOpt = (opts && opts.windowLen != null && Number.isFinite(Number(opts.windowLen)))
+      ? Math.max(1, Math.trunc(Number(opts.windowLen)))
+      : CAUSAL_SPOTLIGHT_WINDOW;
+    const forceRecompute = Boolean(opts && opts.forceRecompute);
+    const rankKey = normMode === 'PEAKS' ? 'causalPeakRank' : 'causalValleyRank';
+    const nKey = normMode === 'PEAKS' ? 'causalPeakN' : 'causalValleyN';
+
+    let fallbackCausal = null;
+    const ensureFallback = () => {
+      if (!fallbackCausal) {
+        fallbackCausal = _computeCausalWindowRanksForSeries(seriesOrSlice, normMode, windowLenOpt);
+      }
+      return fallbackCausal;
+    };
+
+    const floors = STRUCTURAL_FLOORS[normMode] || STRUCTURAL_FLOORS.PEAKS;
     const output = new Array(N);
 
     for (let i = 0; i < N; i++) {
-      const rec = visibleSlice[i];
-      const score = mode === 'PEAKS' ? rec.peakScore : rec.valleyScore;
-      const r = ranks[i];
+      const rec = seriesOrSlice[i];
+      const rawScore = rec ? (normMode === 'PEAKS' ? Number(rec.peakScore) : Number(rec.valleyScore)) : 0;
+      const score = Number.isFinite(rawScore) ? rawScore : 0;
+
+      const hasPrecomputed = !forceRecompute
+        && windowLenOpt === CAUSAL_SPOTLIGHT_WINDOW
+        && rec
+        && rec[rankKey] != null
+        && rec[nKey] != null
+        && Number.isFinite(Number(rec[rankKey]))
+        && Number.isFinite(Number(rec[nKey]));
+
+      let r;
+      let wLen;
+      if (hasPrecomputed) {
+        r = Math.max(1, Math.trunc(Number(rec[rankKey])));
+        wLen = Math.max(1, Math.trunc(Number(rec[nKey])));
+      } else {
+        const fb = ensureFallback();
+        r = fb.ranks[i];
+        wLen = fb.windowLens[i];
+      }
+
+      const { k99, k95, k90 } = _getCausalSpotlightCutoffs(wLen);
 
       let visualTier = 'NONE';
       let isStructuralClimax = false;
 
-      if (r <= k99) {
-        visualTier = 'RED_P99';
-        isStructuralClimax = score >= floors.P99;
-      } else if (r <= k95) {
-        visualTier = 'ORANGE_P95';
-        isStructuralClimax = score >= floors.P95;
-      } else if (r <= k90) {
-        visualTier = 'AMBER_P90';
-        isStructuralClimax = score >= floors.P90;
+      if (score > 0) {
+        if (k99 > 0 && r <= k99) {
+          visualTier = 'RED_P99';
+          isStructuralClimax = score >= floors.P99;
+        } else if (k95 > 0 && r <= k95) {
+          visualTier = 'ORANGE_P95';
+          isStructuralClimax = score >= floors.P95;
+        } else if (k90 > 0 && r <= k90) {
+          visualTier = 'AMBER_P90';
+          isStructuralClimax = score >= floors.P90;
+        }
       }
 
       let isHighlighted = true;
       if (activeFilter === 'P99') {
-        isHighlighted = r <= k99;
+        isHighlighted = score > 0 && k99 > 0 && r <= k99;
       } else if (activeFilter === 'P95') {
-        isHighlighted = r <= k95;
+        isHighlighted = score > 0 && k95 > 0 && r <= k95;
       } else if (activeFilter === 'P90') {
-        isHighlighted = r <= k90;
+        isHighlighted = score > 0 && k90 > 0 && r <= k90;
       }
 
+      const baselineQuantileBin = score > 0
+        ? Math.min(4, Math.max(0, Math.floor(((wLen - r) / wLen) * 5)))
+        : 0;
+
       output[i] = {
-        date: rec.date,
+        date: rec ? rec.date : '',
         score,
-        maxRvol: rec.maxRvol,
+        maxRvol: rec ? rec.maxRvol : 0,
         windowRank: r,
+        windowLen: wLen,
         visualTier,
         isHighlighted,
         isStructuralClimax,
-        climaxDir: rec.climaxDir || 1,
-        baselineQuantileBin: baselineBins[i]
+        climaxDir: (rec && rec.climaxDir) || 1,
+        baselineQuantileBin
       };
     }
 
     return output;
   }
+
+  const evaluateViewportSpotlight = evaluateCausalSpotlight;
 
   // ── DOM Controller & 18-Column Grid Renderer ──
 
@@ -1017,6 +1184,7 @@
     KAPPA_VALLEY,
     LAMBDA,
     HEATMAP_MAX_BARS,
+    CAUSAL_SPOTLIGHT_WINDOW,
     STRUCTURAL_FLOORS,
     BASELINE_COLORS,
     HORIZONS,
@@ -1024,6 +1192,7 @@
     computeTrimmedMean21,
     computeEtfMicrostructure,
     computeHeatAggregate,
+    evaluateCausalSpotlight,
     evaluateViewportSpotlight,
     stripLivePartialSession,
     resolveScopeTickers,
@@ -1054,6 +1223,7 @@
     _allHistory: null,
     _catalog: [],
     _catalogMap: {},
+    _catalogVersion: 0,
     _aggCache: new Map(),
     _userPinnedMacroScope: false,
     _bound: false,
@@ -1071,21 +1241,30 @@
     setCatalog(catalogInstruments) {
       this._catalog = Array.isArray(catalogInstruments) ? catalogInstruments : [];
       this._catalogMap = _buildCatalogMap(this._catalog);
+      this._catalogVersion += 1;
+      this._aggCache.clear();
     },
 
     _getAggregatePayload() {
       const { ticker, scope, side, unit } = this.state;
       const allHistory = this._allHistory || {};
       const activeInst = this._catalogMap[ticker] || null;
+      const et = getEasternDateParts();
 
       let scopeId = ticker;
-      if (scope === 'underlying' && activeInst?.underlying) scopeId = normalizeUnderlyingKey(activeInst.underlying) || activeInst.underlying;
-      else if (scope === 'category' && activeInst?.category) scopeId = activeInst.category;
-      else if (scope === 'featured') scopeId = 'featured';
-      else if (scope === 'universe') scopeId = 'universe';
+      if (scope === 'underlying' && activeInst?.underlying) {
+        scopeId = normalizeUnderlyingKey(activeInst.underlying, activeInst) || activeInst.underlying;
+      } else if (scope === 'category' && activeInst?.category) {
+        scopeId = activeInst.category;
+      } else if (scope === 'featured') {
+        scopeId = 'featured';
+      } else if (scope === 'universe') {
+        scopeId = 'universe';
+      }
 
       const normSide = scope === 'active' ? 'all' : side;
-      const cacheKey = `${scope}|${scopeId}|${unit}|${normSide}|${ticker}`;
+      const histCount = Array.isArray(allHistory[ticker]) ? allHistory[ticker].length : 0;
+      const cacheKey = `${this._catalogVersion}|${et.dateStr}|${et.isMarketOpen ? 1 : 0}|${scope}|${scopeId}|${unit}|${normSide}|${ticker}|${histCount}`;
       if (this._aggCache.has(cacheKey)) {
         return this._aggCache.get(cacheKey);
       }
@@ -1274,7 +1453,7 @@
           + `</div>`;
       }
 
-      const pctTop = m.totalN > 0 ? Math.max(1, Math.round((m.windowRank / m.totalN) * 100)) : 100;
+      const pctTop = m.totalN > 0 ? Math.max(1, Math.min(100, Math.round((m.windowRank / m.totalN) * 100))) : 100;
       const fmtDd = v => (v > -0.05 && v <= 0) ? '0.0%' : `${v.toFixed(1)}%`;
       const fmtRu = v => (v >= 0 && v < 0.05) ? '0.0%' : `+${v.toFixed(1)}%`;
 
@@ -1314,16 +1493,25 @@
           const regimeCls = m.isValleys ? 'is-valley' : 'is-peak';
           tagHtml = `<div class="vs-heat-tt-tag ${regimeCls}">${_escapeHtml(m.filterTag)} &middot; ${_escapeHtml(m.climaxTag)}${basketSuffix}</div>`;
         } else {
-          const tierNote = (m.filterTag && m.filterTag !== 'BASE') ? ` &middot; Tier ${_escapeHtml(m.filterTag)}` : '';
-          tagHtml = `<div class="vs-heat-tt-tag is-dim">DIMMED &middot; Below P${m.threshold} cutoff${tierNote}${basketSuffix}</div>`;
+          const reqN = m.threshold === 99 ? 50 : 20;
+          if (m.totalN < reqN) {
+            tagHtml = `<div class="vs-heat-tt-tag is-dim">DIMMED &middot; Warm-up (${m.totalN}/${reqN}D)${basketSuffix}</div>`;
+          } else if (!(m.rawScore > 0)) {
+            const zeroReason = m.isValleys ? 'No drought signal (0.0)' : 'No climax signal (0.0)';
+            tagHtml = `<div class="vs-heat-tt-tag is-dim">DIMMED &middot; ${zeroReason}${basketSuffix}</div>`;
+          } else {
+            const tierNote = (m.filterTag && m.filterTag !== 'BASE') ? ` &middot; Tier ${_escapeHtml(m.filterTag)}` : '';
+            tagHtml = `<div class="vs-heat-tt-tag is-dim">DIMMED &middot; Below P${m.threshold} cutoff${tierNote}${basketSuffix}</div>`;
+          }
         }
       } else if (m.isBasket && m.activeCount > 1) {
         tagHtml = `<div class="vs-heat-tt-tag">Basket: ${m.activeCount} ETFs &middot; ${_escapeHtml(m.modeWord)}</div>`;
       }
 
+      const rankScopeLbl = m.totalN > 0 ? `Causal ${m.totalN}D` : 'Causal';
       tooltip.innerHTML = priceRowHtml
         + `<div class="vs-heat-tt-date">${_escapeHtml(m.dateFormatted)}</div>`
-        + `<div class="vs-heat-tt-rank">Rank #${m.windowRank} / ${m.totalN} &middot; Top ${pctTop}%</div>`
+        + `<div class="vs-heat-tt-rank">${rankScopeLbl} Rank #${m.windowRank} / ${m.totalN} &middot; Top ${pctTop}%</div>`
         + `<div class="vs-heat-tt-main"><span class="vs-hm-tt-lbl">${_escapeHtml(m.metricLabel)}:</span> <strong>${_escapeHtml(m.scoreStr)}</strong> &middot; <span class="vs-hm-tt-rvol">RVOL ${_escapeHtml(m.rvolStr)}</span></div>`
         + ddRowHtml
         + tagHtml;
@@ -1419,7 +1607,7 @@
       const N = visibleSlice.length;
       const regimeMode = isValleys ? 'VALLEYS' : 'PEAKS';
       const activeFilter = isSpotlight ? ('P' + this.state.threshold) : 'NONE';
-      const cellStates = evaluateViewportSpotlight(visibleSlice, regimeMode, activeFilter);
+      const cellStates = evaluateCausalSpotlight(visibleSlice, regimeMode, activeFilter);
 
       let highlightCount = 0;
       const frag = document.createDocumentFragment();
@@ -1497,10 +1685,11 @@
           chg1dPct,
           metricLabel,
           modeWord: this.state.unit === 'dollar' ? 'Dollar Vol' : 'Share Vol',
+          rawScore: score,
           scoreStr: score.toFixed(1),
           rvolStr,
           windowRank: st.windowRank,
-          totalN: N,
+          totalN: st.windowLen || N,
           dd63Pct,
           dd252Pct,
           ru63Pct,
@@ -1615,7 +1804,9 @@
             const inv = isInverseInstrument(inst);
             const isSel = this.state.side === tk;
             const levTag = inst.leverage ? ` ${inst.leverage}` : '';
-            html += `<button type="button" class="vs-heat-btn vs-heat-etf-pill ${inv ? 'is-inverse' : 'is-long'} ${isSel ? 'active' : ''}" data-heat-side="${tk}" title="Isolate ${tk}${inst.fund_name ? ' — ' + inst.fund_name : ''}">${tk}${levTag}</button>`;
+            const safeTk = _escapeHtml(tk);
+            const safeTitle = _escapeHtml(`Isolate ${tk}${inst.fund_name ? ' — ' + inst.fund_name : ''}`);
+            html += `<button type="button" class="vs-heat-btn vs-heat-etf-pill ${inv ? 'is-inverse' : 'is-long'} ${isSel ? 'active' : ''}" data-heat-side="${safeTk}" title="${safeTitle}">${safeTk}${_escapeHtml(levTag)}</button>`;
           }
           if (extraCount > 0) {
             html += `<span class="vs-heat-more-badge" title="${sortedConstituents.length} total ETFs in this basket">+${extraCount} more</span>`;
@@ -1721,7 +1912,7 @@
       const fmtRng = (lo, hi) => (Math.abs(hi - lo) < 0.25) ? `${fmtNum(hi)}%` : `${fmtNum(lo)}..${fmtNum(hi)}%`;
 
       const titleText = (isSingle && latestCtx && latestCtx.ticker && latestCtx.sigmaDailyPct != null)
-        ? `DD63 (${latestCtx.ticker} &middot; &sigma;<sub>21</sub> ${latestCtx.sigmaDailyPct.toFixed(1)}%):`
+        ? `DD63 (${_escapeHtml(latestCtx.ticker)} &middot; &sigma;<sub>21</sub> ${latestCtx.sigmaDailyPct.toFixed(1)}%):`
         : 'DD63 Overlay (YZ &sigma;-Scaled):';
 
       const nearLbl = refThr
@@ -1805,7 +1996,7 @@
       if (legendEl) {
         if (this.state.spotlight === 'peaks') {
           legendEl.innerHTML = `
-            <span class="vs-heat-legend-lbl">Selloff Exhaustion Tiers:</span>
+            <span class="vs-heat-legend-lbl">Climax &amp; Exhaustion Tiers:</span>
             <span class="vs-heat-swatch" style="background:#c8922a"></span><span class="vs-heat-legend-lbl">P90</span>
             <span class="vs-heat-swatch" style="background:#d96030"></span><span class="vs-heat-legend-lbl">P95</span>
             <span class="vs-heat-swatch" style="background:#ff4d4d"></span><span class="vs-heat-legend-lbl">P99 Climax</span>
@@ -1864,6 +2055,7 @@
       const grid = document.getElementById('vs-heatmap-grid');
       if (grid) {
         grid.addEventListener('mouseover', e => {
+          if (Date.now() - (this._lastTouchAt || 0) < 450) return;
           const cell = e.target.closest('.vs-heat-cell');
           if (cell && grid.contains(cell)) {
             this._showHeatTooltip(cell);
