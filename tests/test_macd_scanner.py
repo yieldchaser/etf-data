@@ -1487,3 +1487,30 @@ def test_analyze_ticker_converts_utc_1h_timestamps_to_eastern_rth(mock_ticker):
         assert 9 <= hh <= 15, f"Non-RTH hour leaked into Eastern 1H bars: {bar['dt']}"
 
 
+def test_format_alert_subject_lead_tickers_premarket_and_rth():
+    from scripts.build_macd_scanner import format_alert_subject_lead_tickers
+
+    sig_map = {
+        "SOXL": {"ticker": "SOXL", "live_premarket_chg_pct": 15.4, "chg_1d_pct": 2.1},
+        "NVDA": {"ticker": "NVDA", "live_premarket_chg_pct": 3.2, "chg_1d_pct": -1.0},
+        "TSLA": {"ticker": "TSLA", "live_premarket_chg_pct": -8.5, "chg_1d_pct": 0.5},
+        "TQQQ": {"ticker": "TQQQ", "live_premarket_chg_pct": 1.1, "chg_1d_pct": 12.0},
+        "CONL": {"ticker": "CONL", "live_premarket_chg_pct": 22.0, "chg_1d_pct": 5.0},
+    }
+    tickers = {"SOXL", "NVDA", "TSLA", "TQQQ", "CONL"}
+
+    # In pre-market, should sort by absolute premarket % return (CONL 22%, SOXL 15.4%, TSLA -8.5%, NVDA 3.2%)
+    pm_subject = format_alert_subject_lead_tickers(tickers, sig_map, is_premarket=True, max_count=3)
+    assert "CONL (+22.0%)" in pm_subject
+    assert "SOXL (+15.4%)" in pm_subject
+    assert "TSLA (-8.5%)" in pm_subject
+    assert "(+2 more)" in pm_subject
+
+    # In regular session, should sort by 1D return (TQQQ 12%, CONL 5%, SOXL 2.1%)
+    rth_subject = format_alert_subject_lead_tickers(tickers, sig_map, is_premarket=False, max_count=2)
+    assert "TQQQ (+12.0%)" in rth_subject
+    assert "CONL (+5.0%)" in rth_subject
+    assert "(+3 more)" in rth_subject
+
+
+

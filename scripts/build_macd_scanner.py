@@ -1953,6 +1953,36 @@ def send_email_alert(
         return False
 
 
+def format_alert_subject_lead_tickers(
+    tickers_set: set[str],
+    sig_map: dict[str, Any],
+    is_premarket: bool = False,
+    max_count: int = 4,
+) -> str:
+    """Format top leader tickers for email alert subject lines, sorted by absolute return magnitude."""
+    def _sort_key(tk: str) -> float:
+        rec = sig_map.get(tk, {})
+        if is_premarket and rec.get("live_premarket_chg_pct") is not None:
+            return abs(float(rec["live_premarket_chg_pct"]))
+        c1d = rec.get("chg_1d_pct")
+        val = c1d if c1d is not None else (rec.get("chg_1h_pct") or 0.0)
+        return abs(float(val))
+
+    sorted_t = sorted(list(tickers_set), key=_sort_key, reverse=True)
+    parts = []
+    for tk in sorted_t[:max_count]:
+        rec = sig_map.get(tk, {})
+        chg = rec.get("live_premarket_chg_pct") if (is_premarket and rec.get("live_premarket_chg_pct") is not None) else rec.get("chg_1d_pct")
+        if chg is not None:
+            parts.append(f"{tk} ({chg:+.1f}%)")
+        else:
+            parts.append(tk)
+    out = ", ".join(parts)
+    if len(sorted_t) > max_count:
+        out += f" (+{len(sorted_t) - max_count} more)"
+    return out
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Run 1H/1D MACD Momentum Scanner across ETF Universe."
@@ -2274,29 +2304,8 @@ def main() -> None:
     if should_send:
         # Dynamic alert subject with ticker highlights prioritized by absolute % return magnitude
         sig_map = {s.get("ticker"): s for s in results if isinstance(s, dict)}
-
-        def format_lead_tickers(tickers_set: set[str], max_count: int = 4) -> str:
-            def _sort_key(tk: str) -> float:
-                rec = sig_map.get(tk, {})
-                if is_premarket and rec.get("live_premarket_chg_pct") is not None:
-                    return abs(float(rec["live_premarket_chg_pct"]))
-                c1d = rec.get("chg_1d_pct")
-                val = c1d if c1d is not None else (rec.get("chg_1h_pct") or 0.0)
-                return abs(float(val))
-
-            sorted_t = sorted(list(tickers_set), key=_sort_key, reverse=True)
-            parts = []
-            for tk in sorted_t[:max_count]:
-                rec = sig_map.get(tk, {})
-                chg = rec.get("live_premarket_chg_pct") if (is_premarket and rec.get("live_premarket_chg_pct") is not None) else rec.get("chg_1d_pct")
-                if chg is not None:
-                    parts.append(f"{tk} ({chg:+.1f}%)")
-                else:
-                    parts.append(tk)
-            out = ", ".join(parts)
-            if len(sorted_t) > max_count:
-                out += f" (+{len(sorted_t) - max_count} more)"
-            return out
+        is_premarket = (session_code == "PRE_MARKET")
+        format_lead_tickers = lambda s: format_alert_subject_lead_tickers(s, sig_map, is_premarket=is_premarket)
 
         uncat_crossovers = new_crossovers - new_bear
         if new_breakouts:

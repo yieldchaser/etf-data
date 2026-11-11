@@ -676,12 +676,26 @@ def clean_dataframe(df, ticker, h_date=TODAY, weight_unit=None):
     if 'weight' in df.columns:
         df['weight'] = df['weight'].astype(str).str.replace('%', '', regex=False).str.replace(',', '', regex=False)
         df['weight'] = pd.to_numeric(df['weight'], errors='coerce').fillna(0.0)
+
+        # If weight column was missing or non-positive (e.g. '-' in older BlackRock S&P 500 files),
+        # calculate weight from Quantity * Price if available.
+        if df['weight'].max() <= 0.0:
+            q_col = next((c for c in df.columns if any(k in c for k in ['quantity', 'shares'])), None)
+            p_col = next((c for c in df.columns if 'price' in c), None)
+            if q_col and p_col:
+                q = pd.to_numeric(df[q_col].astype(str).str.replace(',', '', regex=False), errors='coerce').fillna(0.0)
+                p = pd.to_numeric(df[p_col].astype(str).str.replace(',', '', regex=False), errors='coerce').fillna(0.0)
+                mv = q * p
+                mv_sum = mv.sum()
+                if mv_sum > 0:
+                    df['weight'] = (mv / mv_sum) * 100.0  # Put in percent form so subsequent division normalizes to fraction
+
         if weight_unit == 'percent':
-            if df['weight'].max() <= 1.0 and df['weight'].max() > 0:
-                # Already fraction-looking data with an explicit percent
-                # declaration is suspicious — say so rather than guessing.
-                print(f"      -> ⚠️ weight_unit=percent but max weight ≤ 1.0 "
-                      f"({df['weight'].max():.4f}) — dividing anyway per config")
+            # Diversified index funds (e.g. IWM, IEMG, SIZE) legitimately have max weight <= 1.0 (e.g. 0.32% or 0.61%).
+            # Only warn if the total SUM of weights is also <= 1.5, suggesting pre-scaled decimals.
+            if df['weight'].max() <= 1.0 and df['weight'].max() > 0 and df['weight'].sum() <= 1.5:
+                print(f"      -> ⚠️ weight_unit=percent but sum of weights <= 1.5 "
+                      f"(sum={df['weight'].sum():.4f}, max={df['weight'].max():.4f}) — dividing anyway per config")
             df['weight'] = df['weight'] / 100.0
         elif weight_unit == 'fraction':
             pass
@@ -702,8 +716,8 @@ def clean_dataframe(df, ticker, h_date=TODAY, weight_unit=None):
     # tickers); scoring-side sanitizer blocklist covers those.
     before = len(df)
     w_num = pd.to_numeric(df['weight'], errors='coerce').fillna(0.0)
-    t_str = df['ticker'].astype(str)
-    keep = (w_num > 0) & (~t_str.str.startswith('$')) & (t_str != 'Cash&Other')
+    t_str = df['ticker'].astype(str).str.strip()
+    keep = (w_num > 0) & (~t_str.str.startswith('$')) & (t_str != 'Cash&Other') & (t_str != '-') & (t_str != '') & (t_str.str.lower() != 'nan')
 
     # Money-market sweep rows (2026-09 audit): issuers that publish a
     # MoneyMarketFlag column mark cash instruments with 'Y'. Pacer ships
