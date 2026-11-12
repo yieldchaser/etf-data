@@ -1017,7 +1017,7 @@ def test_premarket_gap_surge_breakout(mock_calc, mock_ticker):
         "hist_delta": [0.05] * len(closes),
     }
 
-    res = analyze_ticker("SOXL", {"fund_name": "Direxion Daily Semiconductor Bull 3X Shares", "leverage": "3x"})
+    res = analyze_ticker("SOXL", {"fund_name": "Direxion Daily Semiconductor Bull 3X Shares", "leverage": "3x"}, is_premarket=True)
     assert res is not None
     assert res["live_premarket_price"] == 64.62
     assert res["live_premarket_chg_pct"] == 15.27

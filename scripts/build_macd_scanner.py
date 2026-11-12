@@ -316,6 +316,7 @@ def analyze_ticker(
     catalog_meta: dict[str, Any],
     min_1h_bars: int = 130,
     min_1d_bars: int = 60,
+    is_premarket: bool | None = None,
 ) -> dict[str, Any] | None:
     """Fetch 1h (RTH) and 1d bars, compute technical metrics, and classify signals."""
     import yfinance as yf
@@ -343,6 +344,8 @@ def analyze_ticker(
         # RTH session calendar filter (America/New_York 09:30 <= t < 16:00 ET, DST safe)
         now_ny = dt.datetime.now(dt.timezone.utc).astimezone(NY_TZ)
         now_time_float = now_ny.hour + now_ny.minute / 60.0
+        if is_premarket is None:
+            is_premarket = now_ny.weekday() < 5 and 4.0 <= now_time_float < 9.5
         ts_1h_seq = df_1h.index
         try:
             idx_tz = getattr(df_1h.index, "tz", None)
@@ -448,7 +451,6 @@ def analyze_ticker(
             latest_price = round(float(closes_1h[-1]), 2)
 
         # Check for Live Pre-Market Tick (1m resolution for real-time accuracy)
-        is_premarket = now_ny.weekday() < 5 and 4.0 <= now_time_float < 9.5
         live_premarket_price: float | None = None
         live_premarket_chg_pct: float | None = None
         if is_premarket:
