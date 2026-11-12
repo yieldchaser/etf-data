@@ -59,10 +59,35 @@ def _clamp_to_prev_biz_day(date_str: str) -> str:
     if d > today:
         d = today
     if _HOLIDAYS_CACHE is None:
-        from pandas.tseries.holiday import USFederalHolidayCalendar
+        from pandas.tseries.holiday import (
+            AbstractHolidayCalendar,
+            Holiday,
+            nearest_workday,
+            USMartinLutherKingJr,
+            USPresidentsDay,
+            USMemorialDay,
+            USLaborDay,
+            USThanksgivingDay,
+            GoodFriday,
+        )
+
+        class USEquityHolidayCalendar(AbstractHolidayCalendar):
+            rules = [
+                Holiday("New Years Day", month=1, day=1, observance=nearest_workday),
+                USMartinLutherKingJr,
+                USPresidentsDay,
+                GoodFriday,
+                USMemorialDay,
+                Holiday("Juneteenth", month=6, day=19, start_date="2021-06-18", observance=nearest_workday),
+                Holiday("Independence Day", month=7, day=4, observance=nearest_workday),
+                USLaborDay,
+                USThanksgivingDay,
+                Holiday("Christmas", month=12, day=25, observance=nearest_workday),
+            ]
+
         _HOLIDAYS_CACHE = frozenset(
-            USFederalHolidayCalendar()
-            .holidays(start='2020-01-01', end='2035-12-31')
+            USEquityHolidayCalendar()
+            .holidays(start='2010-01-01', end='2040-12-31')
             .strftime('%Y-%m-%d')
             .tolist()
         )

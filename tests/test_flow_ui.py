@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+from scripts import build_local_flow_artifacts as build
+
 
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG_JSON = ROOT / "docs" / "data" / "flows" / "catalog.json"
@@ -24,7 +26,7 @@ def test_exported_catalog_matches_local_dataset_cardinality():
     exported = json.loads(CATALOG_JSON.read_text(encoding="utf-8"))
     assert exported["schema_version"] == 1
     assert exported["catalog_version"] == "local-authoritative-117-v1"
-    assert exported["counts"] == {"featured": 24, "instruments": 160, "rows": 217883}
+    assert exported["counts"] == {"featured": 24, "instruments": 160, "rows": build.EXPECTED_TOTAL_ROWS}
     assert "watch_tier" not in exported
     assert exported["source"]["network_fetch"] is False
     assert exported["source"]["name"] == "Local authoritative dataset"
@@ -39,7 +41,7 @@ def test_exported_catalog_matches_local_dataset_cardinality():
     assert all(row["source_provider"] == "Trackinsight" for row in exported["instruments"])
     assert all(row["source_mode"] == "historical_local" for row in exported["instruments"])
     assert "watch" not in exported["category_counts"]
-    assert sum(row["row_count"] for row in exported["instruments"]) == 217883
+    assert sum(row["row_count"] for row in exported["instruments"]) == build.EXPECTED_TOTAL_ROWS
 
 
 def test_manifest_agrees_with_catalog_and_forbids_network_fetch():
@@ -48,7 +50,7 @@ def test_manifest_agrees_with_catalog_and_forbids_network_fetch():
     assert manifest["schema_version"] == 2
     assert manifest["complete"] is True
     assert manifest["status"] == "complete"
-    assert manifest["counts"] == {"featured": 24, "files": 160, "instruments": 160, "rows": 217883}
+    assert manifest["counts"] == {"featured": 24, "files": 160, "instruments": 160, "rows": build.EXPECTED_TOTAL_ROWS}
     assert manifest["source"]["network_fetch"] is False
     assert len(manifest["etfs"]) == 160
     assert manifest["counts"]["instruments"] == catalog["counts"]["instruments"]

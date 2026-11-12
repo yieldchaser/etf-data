@@ -2,6 +2,8 @@ import json
 import subprocess
 from pathlib import Path
 
+from scripts import build_local_flow_artifacts as build
+
 
 ROOT = Path(__file__).resolve().parents[1]
 FLOW_MODULE = "./docs/flow-ui.js"
@@ -84,7 +86,7 @@ def test_search_scopes_cover_all_primary_and_featured_rows_without_watch_tier():
     assert result["featuredPrimary"] is True
     assert result["watchTiers"] == ["primary"]
     assert result["hasWatchTierKey"] is False
-    assert result["counts"] == {"featured": 24, "instruments": 160, "rows": 217883}
+    assert result["counts"] == {"featured": 24, "instruments": 160, "rows": build.EXPECTED_TOTAL_ROWS}
 
 
 def test_history_reconciliation_updates_flow_state_and_clears_missing_selection():

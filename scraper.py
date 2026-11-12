@@ -53,10 +53,40 @@ TODAY = datetime.now().strftime('%Y-%m-%d')
 # ── US trading-day helper ─────────────────────────────────────────────────────
 # Build the holiday set once at import time so every caller shares the same
 # object (no repeated calendar construction inside hot loops).
+# IMPORTANT: Use US Equity (NYSE/NASDAQ) market holiday rules, NOT generic
+# federal bank holidays. In particular:
+# - Columbus Day and Veterans Day are federal holidays, but US stock exchanges are OPEN.
+# - Good Friday is a stock exchange closure, but not a federal bank holiday.
 import datetime as _dt
-from pandas.tseries.holiday import USFederalHolidayCalendar as _USCal
+from pandas.tseries.holiday import (
+    AbstractHolidayCalendar,
+    Holiday,
+    nearest_workday,
+    USMartinLutherKingJr,
+    USPresidentsDay,
+    USMemorialDay,
+    USLaborDay,
+    USThanksgivingDay,
+    GoodFriday,
+)
+
+class USEquityHolidayCalendar(AbstractHolidayCalendar):
+    rules = [
+        Holiday("New Years Day", month=1, day=1, observance=nearest_workday),
+        USMartinLutherKingJr,
+        USPresidentsDay,
+        GoodFriday,
+        USMemorialDay,
+        Holiday("Juneteenth", month=6, day=19, start_date="2021-06-18", observance=nearest_workday),
+        Holiday("Independence Day", month=7, day=4, observance=nearest_workday),
+        USLaborDay,
+        USThanksgivingDay,
+        Holiday("Christmas", month=12, day=25, observance=nearest_workday),
+    ]
+
 _US_HOLIDAYS: frozenset = frozenset(
-    _USCal().holidays(start='2010-01-01', end='2040-12-31')
+    USEquityHolidayCalendar()
+    .holidays(start='2010-01-01', end='2040-12-31')
     .strftime('%Y-%m-%d')
     .tolist()
 )
@@ -64,7 +94,7 @@ _US_HOLIDAYS: frozenset = frozenset(
 def roll_to_prev_biz_day(d_str: str) -> str:
     """Return the most recent US business day <= d_str.
 
-    Rolls back through weekends and US federal holidays.  Safe to call
+    Rolls back through weekends and US equity market holidays. Safe to call
     on already-valid trading days (returns the input unchanged).
     """
     try:

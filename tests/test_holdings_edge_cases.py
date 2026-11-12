@@ -32,11 +32,13 @@ def test_roll_to_prev_biz_day_weekends():
     assert roll_to_prev_biz_day("2026-11-05") == "2026-11-05"
 
 def test_roll_to_prev_biz_day_holidays():
-    """Verify US federal holidays roll back to the preceding business day."""
+    """Verify US equity market holidays roll back to the preceding business day."""
     # New Year's Day 2026-01-01 (Thursday) -> 2025-12-31 (Wednesday)
     assert roll_to_prev_biz_day("2026-01-01") == "2025-12-31"
     # MLK Day 2026-01-19 (Monday) -> 2026-01-16 (Friday)
     assert roll_to_prev_biz_day("2026-01-19") == "2026-01-16"
+    # Good Friday 2026-04-03 (Friday) -> 2026-04-02 (Thursday)
+    assert roll_to_prev_biz_day("2026-04-03") == "2026-04-02"
     # Memorial Day 2026-05-25 (Monday) -> 2026-05-22 (Friday)
     assert roll_to_prev_biz_day("2026-05-25") == "2026-05-22"
     # Juneteenth 2026-06-19 (Friday) -> 2026-06-18 (Thursday)
@@ -47,6 +49,13 @@ def test_roll_to_prev_biz_day_holidays():
     assert roll_to_prev_biz_day("2026-11-26") == "2026-11-25"
     # Christmas Day 2026-12-25 (Friday) -> 2026-12-24 (Thursday)
     assert roll_to_prev_biz_day("2026-12-25") == "2026-12-24"
+
+def test_roll_to_prev_biz_day_open_on_veterans_and_columbus_day():
+    """US stock markets are OPEN on Veterans Day (Nov 11) and Columbus Day."""
+    # Veterans Day 2026-11-11 (Wednesday) -> remains 2026-11-11 (trading session open)
+    assert roll_to_prev_biz_day("2026-11-11") == "2026-11-11"
+    # Columbus Day 2026-10-12 (Monday) -> remains 2026-10-12 (trading session open)
+    assert roll_to_prev_biz_day("2026-10-12") == "2026-10-12"
 
 def test_clean_dataframe_placeholder_and_cash_filter():
     """Verify non-positive weights, cash items, and $-tickers are excluded."""
