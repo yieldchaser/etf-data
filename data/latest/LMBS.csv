@@ -1,5 +1,5 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-LMBS,MGOV,First Trust Intermediate Government Opportunities ETF,0.0003,2026-11-10,2026-11-11
-LMBS,LGOV,First Trust Long Duration Opportunities ETF,0.0002,2026-11-10,2026-11-11
-LMBS,CAAA,First Trust AAA CMBS ETF,0.0001,2026-11-10,2026-11-11
-LMBS,SCIO,First Trust Structured Credit Income Opportunities ETF,0.0001,2026-11-10,2026-11-11
+LMBS,MGOV,First Trust Intermediate Government Opportunities ETF,0.0003,2026-11-10,2026-11-12
+LMBS,LGOV,First Trust Long Duration Opportunities ETF,0.0002,2026-11-10,2026-11-12
+LMBS,CAAA,First Trust AAA CMBS ETF,0.0001,2026-11-10,2026-11-12
+LMBS,SCIO,First Trust Structured Credit Income Opportunities ETF,0.0001,2026-11-10,2026-11-12
