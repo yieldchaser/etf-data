@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-12T03:02:36+00:00",
+  "generated_at": "2026-11-12T10:10:41+00:00",
   "generated_utc": "2026-09-27T06:18:43+00:00",
   "partitions": {
     "2019": {
@@ -67,11 +67,11 @@
     },
     "2026": {
       "etfs": 551,
-      "file_size": 8560058,
+      "file_size": 8567051,
       "first_date": "2026-01-02",
       "last_date": "2026-11-12",
-      "rows": 1650074,
-      "sha256": "a0b46032f104dfb4aebea44ad9d447d480436b815f0575f9c90d4738f4bae2d0",
+      "rows": 1651551,
+      "sha256": "bb4ffdbe29784ce1331b7ab2946ee7b1eb3cc63329bcc8d620c1e80dc8446a27",
       "year": 2026
     }
   },
