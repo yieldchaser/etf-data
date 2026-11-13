@@ -1,51 +1,51 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-FCA,1919.HK,"Cosco Shipping Holdings Company, Ltd. (Class H)",0.046900000000000004,2026-11-11,2026-11-13
-FCA,2688.HK,ENN Energy Holdings Limited,0.0437,2026-11-11,2026-11-13
-FCA,857.HK,PetroChina Company Limited (Class H),0.0424,2026-11-11,2026-11-13
-FCA,788.HK,China Tower Corporation Limited (Class H),0.0368,2026-11-11,2026-11-13
-FCA,3808.HK,Sinotruk (Hong Kong) Limited,0.0327,2026-11-11,2026-11-13
-FCA,2628.HK,"China Life Insurance Co., Limited (Class H)",0.0326,2026-11-11,2026-11-13
-FCA,2883.HK,China Oilfield Services Limited (Class H),0.0323,2026-11-11,2026-11-13
-FCA,1530.HK,"3SBio, Inc.",0.0316,2026-11-11,2026-11-13
-FCA,1508.HK,China Reinsurance (Group) Corporation (Class H),0.031200000000000002,2026-11-11,2026-11-13
-FCA,992.HK,Lenovo Group Limited,0.0302,2026-11-11,2026-11-13
-FCA,914.HK,Anhui Conch Cement Company Limited (Class H),0.0294,2026-11-11,2026-11-13
-FCA,1378.HK,China Hongqiao Group Ltd.,0.028300000000000002,2026-11-11,2026-11-13
-FCA,2359.HK,"WuXi AppTec Co., Ltd. (Class H)",0.0274,2026-11-11,2026-11-13
-FCA,2018.HK,AAC Technologies Holdings Inc.,0.0259,2026-11-11,2026-11-13
-FCA,2618.HK,"JD Logistics, Inc.",0.0258,2026-11-11,2026-11-13
-FCA,386.HK,China Petroleum & Chemical Corporation (Sinopec) (Class H),0.0253,2026-11-11,2026-11-13
-FCA,1071.HK,Huadian Power International Corp. Ltd. (Class H),0.025,2026-11-11,2026-11-13
-FCA,2338.HK,"Weichai Power Co., Ltd. (Class H)",0.0241,2026-11-11,2026-11-13
-FCA,200725.CH,"BOE Technology Group Co., Ltd. (Class B)",0.022799999999999997,2026-11-11,2026-11-13
-FCA,1099.HK,Sinopharm Group Co. Ltd. (Class H),0.0225,2026-11-11,2026-11-13
-FCA,285.HK,"BYD Electronic International Co., Ltd.",0.0219,2026-11-11,2026-11-13
-FCA,1898.HK,China Coal Energy Company Limited (Class H),0.0218,2026-11-11,2026-11-13
-FCA,2269.HK,WuXi Biologics (Cayman) Inc.,0.0202,2026-11-11,2026-11-13
-FCA,3323.HK,China National Building Material Company Ltd. (Class H),0.0189,2026-11-11,2026-11-13
-FCA,9866.HK,NIO Inc. (Class A),0.0189,2026-11-11,2026-11-13
-FCA,2328.HK,PICC Property and Casualty Company Limited (Class H),0.0174,2026-11-11,2026-11-13
-FCA,6030.HK,"CITIC Securities Co., Ltd. (Class H)",0.0166,2026-11-11,2026-11-13
-FCA,1339.HK,The People's Insurance Company (Group) of China Limited (Class H),0.0159,2026-11-11,2026-11-13
-FCA,921.HK,"Hisense Home Appliances Group Co., Ltd. (Class H)",0.0158,2026-11-11,2026-11-13
-FCA,3750.HK,"Contemporary Amperex Technology Co., Ltd. (Class H)",0.015700000000000002,2026-11-11,2026-11-13
-FCA,6099.HK,"China Merchants Securities Company, Ltd (Class H)",0.015600000000000001,2026-11-11,2026-11-13
-FCA,2313.HK,Shenzhou International Group Holdings Limited,0.015300000000000001,2026-11-11,2026-11-13
-FCA,2799.HK,China CITIC Financial Asset Management Co. Ltd.,0.0146,2026-11-11,2026-11-13
-FCA,2601.HK,"China Pacific Insurance (Group) Co., Ltd. (Class H)",0.0144,2026-11-11,2026-11-13
-FCA,6818.HK,China Everbright Bank Co. Ltd. (Class H),0.013999999999999999,2026-11-11,2026-11-13
-FCA,2607.HK,"Shanghai Pharmaceuticals Holding Co., Ltd. (Class H)",0.0138,2026-11-11,2026-11-13
-FCA,1336.HK,New China Life Insurance Company Ltd. (Class H),0.011899999999999999,2026-11-11,2026-11-13
-FCA,1347.HK,Hua Hong Grace Semiconductor Limited (Class H),0.0098,2026-11-11,2026-11-13
-FCA,2268.HK,WuXi XDC Cayman Inc.,0.009000000000000001,2026-11-11,2026-11-13
-FCA,900948.CH,"Inner Mongolia Yitai Coal Co., Ltd. (Class B)",0.0087,2026-11-11,2026-11-13
-FCA,300.HK,"Midea Group Co., Ltd. (Class H)",0.0087,2026-11-11,2026-11-13
-FCA,3931.HK,"CALB Group Co., Ltd. (Class H)",0.0086,2026-11-11,2026-11-13
-FCA,6869.HK,Yangtze Optical Fibre and Cable Joint Stock Limited Company (Class H),0.0086,2026-11-11,2026-11-13
-FCA,6963.HK,Sunshine Insurance Group Company Limited (Class H),0.0078000000000000005,2026-11-11,2026-11-13
-FCA,991.HK,Datang International Power Generation Company Limited (Class H),0.0075,2026-11-11,2026-11-13
-FCA,1988.HK,"China Minsheng Banking Corp., Ltd. (Class H)",0.0072,2026-11-11,2026-11-13
-FCA,3908.HK,China International Capital Corporation Ltd. (Class H),0.0062,2026-11-11,2026-11-13
-FCA,6066.HK,"CSC Financial Co., Ltd. (Class H)",0.006,2026-11-11,2026-11-13
-FCA,1024.HK,Kuaishou Technology,0.0049,2026-11-11,2026-11-13
-FCA,2577.HK,"InnoScience (Suzhou) Technology Holding Co., Ltd. (Class H)",0.0031,2026-11-11,2026-11-13
+FCA,1919.HK,"Cosco Shipping Holdings Company, Ltd. (Class H)",0.0471,2026-11-12,2026-11-13
+FCA,2688.HK,ENN Energy Holdings Limited,0.0438,2026-11-12,2026-11-13
+FCA,857.HK,PetroChina Company Limited (Class H),0.042699999999999995,2026-11-12,2026-11-13
+FCA,788.HK,China Tower Corporation Limited (Class H),0.037000000000000005,2026-11-12,2026-11-13
+FCA,3808.HK,Sinotruk (Hong Kong) Limited,0.0323,2026-11-12,2026-11-13
+FCA,2628.HK,"China Life Insurance Co., Limited (Class H)",0.0322,2026-11-12,2026-11-13
+FCA,2883.HK,China Oilfield Services Limited (Class H),0.0319,2026-11-12,2026-11-13
+FCA,1530.HK,"3SBio, Inc.",0.0318,2026-11-12,2026-11-13
+FCA,1508.HK,China Reinsurance (Group) Corporation (Class H),0.0313,2026-11-12,2026-11-13
+FCA,914.HK,Anhui Conch Cement Company Limited (Class H),0.029500000000000002,2026-11-12,2026-11-13
+FCA,992.HK,Lenovo Group Limited,0.0294,2026-11-12,2026-11-13
+FCA,1378.HK,China Hongqiao Group Ltd.,0.0287,2026-11-12,2026-11-13
+FCA,2359.HK,"WuXi AppTec Co., Ltd. (Class H)",0.028399999999999998,2026-11-12,2026-11-13
+FCA,2618.HK,"JD Logistics, Inc.",0.0258,2026-11-12,2026-11-13
+FCA,2018.HK,AAC Technologies Holdings Inc.,0.0254,2026-11-12,2026-11-13
+FCA,386.HK,China Petroleum & Chemical Corporation (Sinopec) (Class H),0.0253,2026-11-12,2026-11-13
+FCA,1071.HK,Huadian Power International Corp. Ltd. (Class H),0.025099999999999997,2026-11-12,2026-11-13
+FCA,2338.HK,"Weichai Power Co., Ltd. (Class H)",0.0245,2026-11-12,2026-11-13
+FCA,200725.CH,"BOE Technology Group Co., Ltd. (Class B)",0.023,2026-11-12,2026-11-13
+FCA,1099.HK,Sinopharm Group Co. Ltd. (Class H),0.022799999999999997,2026-11-12,2026-11-13
+FCA,1898.HK,China Coal Energy Company Limited (Class H),0.0219,2026-11-12,2026-11-13
+FCA,285.HK,"BYD Electronic International Co., Ltd.",0.021400000000000002,2026-11-12,2026-11-13
+FCA,2269.HK,WuXi Biologics (Cayman) Inc.,0.0204,2026-11-12,2026-11-13
+FCA,3323.HK,China National Building Material Company Ltd. (Class H),0.018500000000000003,2026-11-12,2026-11-13
+FCA,9866.HK,NIO Inc. (Class A),0.0184,2026-11-12,2026-11-13
+FCA,2328.HK,PICC Property and Casualty Company Limited (Class H),0.0174,2026-11-12,2026-11-13
+FCA,6030.HK,"CITIC Securities Co., Ltd. (Class H)",0.0166,2026-11-12,2026-11-13
+FCA,1339.HK,The People's Insurance Company (Group) of China Limited (Class H),0.0161,2026-11-12,2026-11-13
+FCA,6099.HK,"China Merchants Securities Company, Ltd (Class H)",0.015600000000000001,2026-11-12,2026-11-13
+FCA,921.HK,"Hisense Home Appliances Group Co., Ltd. (Class H)",0.0155,2026-11-12,2026-11-13
+FCA,2313.HK,Shenzhou International Group Holdings Limited,0.0155,2026-11-12,2026-11-13
+FCA,3750.HK,"Contemporary Amperex Technology Co., Ltd. (Class H)",0.0154,2026-11-12,2026-11-13
+FCA,2799.HK,China CITIC Financial Asset Management Co. Ltd.,0.0147,2026-11-12,2026-11-13
+FCA,2601.HK,"China Pacific Insurance (Group) Co., Ltd. (Class H)",0.014499999999999999,2026-11-12,2026-11-13
+FCA,6818.HK,China Everbright Bank Co. Ltd. (Class H),0.0141,2026-11-12,2026-11-13
+FCA,2607.HK,"Shanghai Pharmaceuticals Holding Co., Ltd. (Class H)",0.0139,2026-11-12,2026-11-13
+FCA,1336.HK,New China Life Insurance Company Ltd. (Class H),0.0118,2026-11-12,2026-11-13
+FCA,1347.HK,Hua Hong Grace Semiconductor Limited (Class H),0.0102,2026-11-12,2026-11-13
+FCA,2268.HK,WuXi XDC Cayman Inc.,0.0091,2026-11-12,2026-11-13
+FCA,300.HK,"Midea Group Co., Ltd. (Class H)",0.0088,2026-11-12,2026-11-13
+FCA,900948.CH,"Inner Mongolia Yitai Coal Co., Ltd. (Class B)",0.0085,2026-11-12,2026-11-13
+FCA,3931.HK,"CALB Group Co., Ltd. (Class H)",0.0084,2026-11-12,2026-11-13
+FCA,6869.HK,Yangtze Optical Fibre and Cable Joint Stock Limited Company (Class H),0.008100000000000001,2026-11-12,2026-11-13
+FCA,6963.HK,Sunshine Insurance Group Company Limited (Class H),0.0079,2026-11-12,2026-11-13
+FCA,991.HK,Datang International Power Generation Company Limited (Class H),0.0075,2026-11-12,2026-11-13
+FCA,1988.HK,"China Minsheng Banking Corp., Ltd. (Class H)",0.0073,2026-11-12,2026-11-13
+FCA,3908.HK,China International Capital Corporation Ltd. (Class H),0.0062,2026-11-12,2026-11-13
+FCA,6066.HK,"CSC Financial Co., Ltd. (Class H)",0.006,2026-11-12,2026-11-13
+FCA,1024.HK,Kuaishou Technology,0.004699999999999999,2026-11-12,2026-11-13
+FCA,2577.HK,"InnoScience (Suzhou) Technology Holding Co., Ltd. (Class H)",0.0031,2026-11-12,2026-11-13
