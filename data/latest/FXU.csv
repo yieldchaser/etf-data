@@ -1,41 +1,41 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-FXU,ED,"Consolidated Edison, Inc.",0.0438,2026-11-11,2026-11-12
-FXU,DUK,Duke Energy Corporation,0.0424,2026-11-11,2026-11-12
-FXU,EXC,Exelon Corporation,0.0424,2026-11-11,2026-11-12
-FXU,EIX,Edison International,0.0418,2026-11-11,2026-11-12
-FXU,ES,Eversource Energy,0.041299999999999996,2026-11-11,2026-11-12
-FXU,PCG,PG&E Corporation,0.0401,2026-11-11,2026-11-12
-FXU,UGI,UGI Corporation,0.0395,2026-11-11,2026-11-12
-FXU,NFG,National Fuel Gas Company,0.0374,2026-11-11,2026-11-12
-FXU,PNW,Pinnacle West Capital Corporation,0.0348,2026-11-11,2026-11-12
-FXU,XEL,Xcel Energy Inc.,0.0345,2026-11-11,2026-11-12
-FXU,AEE,Ameren Corporation,0.0342,2026-11-11,2026-11-12
-FXU,EVRG,"Evergy, Inc.",0.0338,2026-11-11,2026-11-12
-FXU,OGE,OGE Energy Corp.,0.0338,2026-11-11,2026-11-12
-FXU,ATO,Atmos Energy Corporation,0.0337,2026-11-11,2026-11-12
-FXU,PPL,PPL Corporation,0.0323,2026-11-11,2026-11-12
-FXU,MDU,"MDU Resources Group, Inc.",0.0315,2026-11-11,2026-11-12
-FXU,CWEN,"Clearway Energy, Inc. (Class C)",0.0264,2026-11-11,2026-11-12
-FXU,NI,NiSource Inc.,0.0263,2026-11-11,2026-11-12
-FXU,LNT,Alliant Energy Corporation,0.0262,2026-11-11,2026-11-12
-FXU,DTE,DTE Energy Company,0.0258,2026-11-11,2026-11-12
-FXU,CMS,CMS Energy Corporation,0.0248,2026-11-11,2026-11-12
-FXU,PEG,Public Service Enterprise Group Incorporated,0.0248,2026-11-11,2026-11-12
-FXU,AEP,"American Electric Power Company, Inc.",0.0245,2026-11-11,2026-11-12
-FXU,CLH,"Clean Harbors, Inc.",0.021,2026-11-11,2026-11-12
-FXU,WEC,"WEC Energy Group, Inc.",0.0175,2026-11-11,2026-11-12
-FXU,NEE,"NextEra Energy, Inc.",0.017,2026-11-11,2026-11-12
-FXU,SO,The Southern Company,0.017,2026-11-11,2026-11-12
-FXU,D,"Dominion Energy, Inc.",0.0169,2026-11-11,2026-11-12
-FXU,IDA,"IDACORP, Inc.",0.0169,2026-11-11,2026-11-12
-FXU,CNP,"CenterPoint Energy, Inc.",0.0167,2026-11-11,2026-11-12
-FXU,FE,FirstEnergy Corp.,0.0161,2026-11-11,2026-11-12
-FXU,SRE,Sempra,0.0151,2026-11-11,2026-11-12
-FXU,TLN,Talen Energy Corporation,0.0091,2026-11-11,2026-11-12
-FXU,RSG,"Republic Services, Inc.",0.0089,2026-11-11,2026-11-12
-FXU,WM,"Waste Management, Inc.",0.0088,2026-11-11,2026-11-12
-FXU,AWK,"American Water Works Company, Inc.",0.0087,2026-11-11,2026-11-12
-FXU,ETR,Entergy Corporation,0.0085,2026-11-11,2026-11-12
-FXU,CEG,Constellation Energy Corporation,0.008100000000000001,2026-11-11,2026-11-12
-FXU,GFL,GFL Environmental Inc. (Subordinate Voting Shares),0.0078000000000000005,2026-11-11,2026-11-12
-FXU,NRG,"NRG Energy, Inc.",0.0077,2026-11-11,2026-11-12
+FXU,ED,"Consolidated Edison, Inc.",0.0438,2026-11-11,2026-11-13
+FXU,DUK,Duke Energy Corporation,0.0424,2026-11-11,2026-11-13
+FXU,EXC,Exelon Corporation,0.0424,2026-11-11,2026-11-13
+FXU,EIX,Edison International,0.0418,2026-11-11,2026-11-13
+FXU,ES,Eversource Energy,0.041299999999999996,2026-11-11,2026-11-13
+FXU,PCG,PG&E Corporation,0.0401,2026-11-11,2026-11-13
+FXU,UGI,UGI Corporation,0.0395,2026-11-11,2026-11-13
+FXU,NFG,National Fuel Gas Company,0.0374,2026-11-11,2026-11-13
+FXU,PNW,Pinnacle West Capital Corporation,0.0348,2026-11-11,2026-11-13
+FXU,XEL,Xcel Energy Inc.,0.0345,2026-11-11,2026-11-13
+FXU,AEE,Ameren Corporation,0.0342,2026-11-11,2026-11-13
+FXU,EVRG,"Evergy, Inc.",0.0338,2026-11-11,2026-11-13
+FXU,OGE,OGE Energy Corp.,0.0338,2026-11-11,2026-11-13
+FXU,ATO,Atmos Energy Corporation,0.0337,2026-11-11,2026-11-13
+FXU,PPL,PPL Corporation,0.0323,2026-11-11,2026-11-13
+FXU,MDU,"MDU Resources Group, Inc.",0.0315,2026-11-11,2026-11-13
+FXU,CWEN,"Clearway Energy, Inc. (Class C)",0.0264,2026-11-11,2026-11-13
+FXU,NI,NiSource Inc.,0.0263,2026-11-11,2026-11-13
+FXU,LNT,Alliant Energy Corporation,0.0262,2026-11-11,2026-11-13
+FXU,DTE,DTE Energy Company,0.0258,2026-11-11,2026-11-13
+FXU,CMS,CMS Energy Corporation,0.0248,2026-11-11,2026-11-13
+FXU,PEG,Public Service Enterprise Group Incorporated,0.0248,2026-11-11,2026-11-13
+FXU,AEP,"American Electric Power Company, Inc.",0.0245,2026-11-11,2026-11-13
+FXU,CLH,"Clean Harbors, Inc.",0.021,2026-11-11,2026-11-13
+FXU,WEC,"WEC Energy Group, Inc.",0.0175,2026-11-11,2026-11-13
+FXU,NEE,"NextEra Energy, Inc.",0.017,2026-11-11,2026-11-13
+FXU,SO,The Southern Company,0.017,2026-11-11,2026-11-13
+FXU,D,"Dominion Energy, Inc.",0.0169,2026-11-11,2026-11-13
+FXU,IDA,"IDACORP, Inc.",0.0169,2026-11-11,2026-11-13
+FXU,CNP,"CenterPoint Energy, Inc.",0.0167,2026-11-11,2026-11-13
+FXU,FE,FirstEnergy Corp.,0.0161,2026-11-11,2026-11-13
+FXU,SRE,Sempra,0.0151,2026-11-11,2026-11-13
+FXU,TLN,Talen Energy Corporation,0.0091,2026-11-11,2026-11-13
+FXU,RSG,"Republic Services, Inc.",0.0089,2026-11-11,2026-11-13
+FXU,WM,"Waste Management, Inc.",0.0088,2026-11-11,2026-11-13
+FXU,AWK,"American Water Works Company, Inc.",0.0087,2026-11-11,2026-11-13
+FXU,ETR,Entergy Corporation,0.0085,2026-11-11,2026-11-13
+FXU,CEG,Constellation Energy Corporation,0.008100000000000001,2026-11-11,2026-11-13
+FXU,GFL,GFL Environmental Inc. (Subordinate Voting Shares),0.0078000000000000005,2026-11-11,2026-11-13
+FXU,NRG,"NRG Energy, Inc.",0.0077,2026-11-11,2026-11-13

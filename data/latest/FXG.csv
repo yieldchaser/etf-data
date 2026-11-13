@@ -1,41 +1,41 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-FXG,CAH,"Cardinal Health, Inc.",0.047400000000000005,2026-11-11,2026-11-12
-FXG,FRPT,"Freshpet, Inc.",0.0426,2026-11-11,2026-11-12
-FXG,POST,"Post Holdings, Inc.",0.042199999999999994,2026-11-11,2026-11-12
-FXG,PPC,Pilgrim's Pride Corporation,0.0397,2026-11-11,2026-11-12
-FXG,SFD,"Smithfield Foods, Inc.",0.038900000000000004,2026-11-11,2026-11-12
-FXG,STZ,"Constellation Brands, Inc. (Class A)",0.0388,2026-11-11,2026-11-12
-FXG,MKC,"McCormick & Company, Incorporated",0.0385,2026-11-11,2026-11-12
-FXG,MCK,McKesson Corporation,0.0385,2026-11-11,2026-11-12
-FXG,INGR,Ingredion Incorporated,0.0368,2026-11-11,2026-11-12
-FXG,SEB,Seaboard Corporation,0.0361,2026-11-11,2026-11-12
-FXG,REYN,Reynolds Consumer Products Inc.,0.0349,2026-11-11,2026-11-12
-FXG,CPB,The Campbell's Company,0.0342,2026-11-11,2026-11-12
-FXG,COKE,"Coca-Cola Consolidated, Inc.",0.034,2026-11-11,2026-11-12
-FXG,JBS,JBS N.V. (Class A),0.0335,2026-11-11,2026-11-12
-FXG,LW,"Lamb Weston Holdings, Inc.",0.0311,2026-11-11,2026-11-12
-FXG,DAR,Darling Ingredients Inc.,0.0271,2026-11-11,2026-11-12
-FXG,TSN,"Tyson Foods, Inc. (Class A)",0.027000000000000003,2026-11-11,2026-11-12
-FXG,COR,"Cencora, Inc.",0.026600000000000002,2026-11-11,2026-11-12
-FXG,BF/B,Brown-Forman Corporation,0.0262,2026-11-11,2026-11-12
-FXG,KO,The Coca-Cola Company,0.0259,2026-11-11,2026-11-12
-FXG,CVS,CVS Health Corporation,0.023799999999999998,2026-11-11,2026-11-12
-FXG,SFM,"Sprouts Farmers Market, Inc.",0.0232,2026-11-11,2026-11-12
-FXG,BG,Bunge Global S.A.,0.021400000000000002,2026-11-11,2026-11-12
-FXG,ADM,Archer-Daniels-Midland Company,0.0204,2026-11-11,2026-11-12
-FXG,PRMB,Primo Brands Corporation (Class A),0.0192,2026-11-11,2026-11-12
-FXG,MDLZ,"Mondelez International, Inc.",0.0175,2026-11-11,2026-11-12
-FXG,PG,The Procter & Gamble Company,0.0175,2026-11-11,2026-11-12
-FXG,PEP,"PepsiCo, Inc.",0.0173,2026-11-11,2026-11-12
-FXG,ACI,"Albertsons Companies, Inc. (Class A)",0.017,2026-11-11,2026-11-12
-FXG,HRL,Hormel Foods Corporation,0.0167,2026-11-11,2026-11-12
-FXG,MNST,Monster Beverage Corporation,0.0166,2026-11-11,2026-11-12
-FXG,SYY,Sysco Corporation,0.015,2026-11-11,2026-11-12
-FXG,CLX,The Clorox Company,0.01,2026-11-11,2026-11-12
-FXG,KDP,Keurig Dr Pepper Inc.,0.0096,2026-11-11,2026-11-12
-FXG,PFGC,Performance Food Group Company,0.0092,2026-11-11,2026-11-12
-FXG,KR,The Kroger Co.,0.009000000000000001,2026-11-11,2026-11-12
-FXG,CASY,"Casey's General Stores, Inc.",0.0089,2026-11-11,2026-11-12
-FXG,MO,"Altria Group, Inc.",0.0087,2026-11-11,2026-11-12
-FXG,KMB,Kimberly-Clark Corporation,0.0085,2026-11-11,2026-11-12
-FXG,HSY,The Hershey Company,0.0085,2026-11-11,2026-11-12
+FXG,CAH,"Cardinal Health, Inc.",0.047400000000000005,2026-11-11,2026-11-13
+FXG,FRPT,"Freshpet, Inc.",0.0426,2026-11-11,2026-11-13
+FXG,POST,"Post Holdings, Inc.",0.042199999999999994,2026-11-11,2026-11-13
+FXG,PPC,Pilgrim's Pride Corporation,0.0397,2026-11-11,2026-11-13
+FXG,SFD,"Smithfield Foods, Inc.",0.038900000000000004,2026-11-11,2026-11-13
+FXG,STZ,"Constellation Brands, Inc. (Class A)",0.0388,2026-11-11,2026-11-13
+FXG,MKC,"McCormick & Company, Incorporated",0.0385,2026-11-11,2026-11-13
+FXG,MCK,McKesson Corporation,0.0385,2026-11-11,2026-11-13
+FXG,INGR,Ingredion Incorporated,0.0368,2026-11-11,2026-11-13
+FXG,SEB,Seaboard Corporation,0.0361,2026-11-11,2026-11-13
+FXG,REYN,Reynolds Consumer Products Inc.,0.0349,2026-11-11,2026-11-13
+FXG,CPB,The Campbell's Company,0.0342,2026-11-11,2026-11-13
+FXG,COKE,"Coca-Cola Consolidated, Inc.",0.034,2026-11-11,2026-11-13
+FXG,JBS,JBS N.V. (Class A),0.0335,2026-11-11,2026-11-13
+FXG,LW,"Lamb Weston Holdings, Inc.",0.0311,2026-11-11,2026-11-13
+FXG,DAR,Darling Ingredients Inc.,0.0271,2026-11-11,2026-11-13
+FXG,TSN,"Tyson Foods, Inc. (Class A)",0.027000000000000003,2026-11-11,2026-11-13
+FXG,COR,"Cencora, Inc.",0.026600000000000002,2026-11-11,2026-11-13
+FXG,BF/B,Brown-Forman Corporation,0.0262,2026-11-11,2026-11-13
+FXG,KO,The Coca-Cola Company,0.0259,2026-11-11,2026-11-13
+FXG,CVS,CVS Health Corporation,0.023799999999999998,2026-11-11,2026-11-13
+FXG,SFM,"Sprouts Farmers Market, Inc.",0.0232,2026-11-11,2026-11-13
+FXG,BG,Bunge Global S.A.,0.021400000000000002,2026-11-11,2026-11-13
+FXG,ADM,Archer-Daniels-Midland Company,0.0204,2026-11-11,2026-11-13
+FXG,PRMB,Primo Brands Corporation (Class A),0.0192,2026-11-11,2026-11-13
+FXG,MDLZ,"Mondelez International, Inc.",0.0175,2026-11-11,2026-11-13
+FXG,PG,The Procter & Gamble Company,0.0175,2026-11-11,2026-11-13
+FXG,PEP,"PepsiCo, Inc.",0.0173,2026-11-11,2026-11-13
+FXG,ACI,"Albertsons Companies, Inc. (Class A)",0.017,2026-11-11,2026-11-13
+FXG,HRL,Hormel Foods Corporation,0.0167,2026-11-11,2026-11-13
+FXG,MNST,Monster Beverage Corporation,0.0166,2026-11-11,2026-11-13
+FXG,SYY,Sysco Corporation,0.015,2026-11-11,2026-11-13
+FXG,CLX,The Clorox Company,0.01,2026-11-11,2026-11-13
+FXG,KDP,Keurig Dr Pepper Inc.,0.0096,2026-11-11,2026-11-13
+FXG,PFGC,Performance Food Group Company,0.0092,2026-11-11,2026-11-13
+FXG,KR,The Kroger Co.,0.009000000000000001,2026-11-11,2026-11-13
+FXG,CASY,"Casey's General Stores, Inc.",0.0089,2026-11-11,2026-11-13
+FXG,MO,"Altria Group, Inc.",0.0087,2026-11-11,2026-11-13
+FXG,KMB,Kimberly-Clark Corporation,0.0085,2026-11-11,2026-11-13
+FXG,HSY,The Hershey Company,0.0085,2026-11-11,2026-11-13
