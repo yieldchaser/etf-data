@@ -2,31 +2,16 @@ name: Quantitative MACD Momentum Radar & Pre-Close Alert
 
 on:
   schedule:
-    # Institutional Trading Decision Windows & 30-Minute Intraday Heartbeat (Mon-Fri):
-    # Dual EDT (UTC-4) & EST (UTC-5) cron slots, filtered at runtime by America/New_York
-    # clock check (08:20-16:20 ET) so pre-market, open, 15:03 pre-close, and settlement
-    # never drift by 1 hour across DST transitions.
-    - cron: '28 12 * * 1-5' # 08:28 EDT (skipped during EST by NY clock gate)
-    - cron: '28 13 * * 1-5' # 08:28 EST / 09:28 EDT
-    - cron: '37 13 * * 1-5' # 09:37 EDT (skipped if outside gate; allows post-open confirmation)
-    - cron: '37 14 * * 1-5' # 09:37 EST / 10:37 EDT
-    # Continuous 30-Min Intraday Volatility & Momentum Radar (10:07 to 14:37 ET):
-    - cron: '7 15 * * 1-5'  # 10:07 EST / 11:07 EDT
-    - cron: '37 15 * * 1-5' # 10:37 EST / 11:37 EDT
-    - cron: '7 16 * * 1-5'  # 11:07 EST / 12:07 EDT
-    - cron: '37 16 * * 1-5' # 11:37 EST / 12:37 EDT
-    - cron: '7 17 * * 1-5'  # 12:07 EST / 13:07 EDT
-    - cron: '37 17 * * 1-5' # 12:37 EST / 13:37 EDT
-    - cron: '7 18 * * 1-5'  # 13:07 EST / 14:07 EDT
-    - cron: '37 18 * * 1-5' # 13:37 EST / 14:37 EDT
-    - cron: '7 19 * * 1-5'  # 14:07 EST
-    - cron: '3 19 * * 1-5'  # 15:03 EDT (Pre-Close Golden Hour Scan during EDT)
-    - cron: '37 19 * * 1-5' # 14:37 EST / 15:37 EDT
-    # Pre-Close Golden Hour & Closing Auction Scan (15:03 & 15:37 EST / 16:03 EDT Settlement):
-    - cron: '3 20 * * 1-5'  # 15:03 EST / 16:03 EDT
-    - cron: '37 20 * * 1-5' # 15:37 EST (skipped in EDT by NY clock gate)
-    # Post-Close Official Settlement & Pivot Derivation (16:07 EST = 21:07 UTC):
-    - cron: '7 21 * * 1-5'  # 16:07 EST (skipped in EDT by NY clock gate)
+    # Institutional Trading Decision Windows & Continuous Volatility Radar (Mon-Fri):
+    # Filtered at runtime by America/New_York clock check (08:00-20:30 ET) so pre-market,
+    # open, regular trading, pre-close golden hour, and post-market settlement are all covered
+    # resiliently even across severe GitHub Actions schedule congestion delays.
+    - cron: '28 12,13 * * 1-5'             # 08:28 EDT / 08:28 EST (Pre-Market Indicative Radar)
+    - cron: '37 13,14 * * 1-5'             # 09:37 EDT / 09:37 EST (Opening Session Confirmation)
+    - cron: '7,37 15,16,17,18,19 * * 1-5'  # Continuous 30-Min Intraday Volatility & Momentum Radar
+    - cron: '3,37 19,20 * * 1-5'           # 15:03 & 15:37 EDT/EST (Pre-Close Golden Hour & Closing Auction)
+    - cron: '7,37 20,21 * * 1-5'           # 16:07 & 16:37 EDT/EST (Official Market Close & Settlement)
+    - cron: '15 22,23 * * 1-5'             # 17:15 & 18:15 EST / 18:15 & 19:15 EDT (Reconciliation & Fail-Safe Catch-Up)
   workflow_dispatch:
     inputs:
       force_send:
@@ -78,7 +63,7 @@ jobs:
 
           now_et = datetime.now(ZoneInfo("America/New_York"))
           mins = now_et.hour * 60 + now_et.minute
-          in_win = (now_et.weekday() < 5) and (8 * 60 + 20 <= mins <= 16 * 60 + 20)
+          in_win = (now_et.weekday() < 5) and (8 * 60 <= mins <= 20 * 60 + 30)
           print(f"Current ET: {now_et.strftime('%Y-%m-%d %H:%M:%S %Z')} -> in_window={in_win}")
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
               fh.write(f"in_window={'true' if in_win else 'false'}\n")

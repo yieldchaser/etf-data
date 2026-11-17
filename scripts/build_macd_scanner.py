@@ -668,8 +668,8 @@ def analyze_ticker(
         s3 = pivots.get("S3", 0.0)
         s2 = pivots.get("S2", 0.0)
 
-        tau_surge = max(3.5, min(30.0, 2.25 * sigma_yz * 100.0))
-        tau_extreme = max(10.0, min(40.0, 3.0 * sigma_yz * 100.0))
+        tau_surge = max(3.5, min(12.0, 1.25 * sigma_yz * 100.0))
+        tau_extreme = max(7.0, min(15.0, 2.0 * sigma_yz * 100.0))
 
         has_pm_price = bool(is_premarket and live_premarket_price is not None and live_premarket_price > 0)
         has_pm_surge = bool(is_premarket and live_premarket_chg_pct is not None and live_premarket_chg_pct >= 10.0)
@@ -679,7 +679,7 @@ def analyze_ticker(
         is_breakout_r4 = bool(r4 > 0 and (latest_price >= r4 or (has_pm_price and live_premarket_price >= r4)))
         is_breakout_r3 = bool(has_pm_price and r3 > 0 and live_premarket_price >= r3 and (live_premarket_chg_pct or 0) >= 8.0)
         is_velocity_surge = bool(
-            (chg_1d_pct >= tau_surge and rvol_1h_diurnal >= 1.25)
+            (chg_1d_pct >= tau_surge and rvol_1h_diurnal >= 1.15)
             or (chg_1d_pct >= tau_extreme)
             or has_pm_surge
         )
@@ -713,7 +713,7 @@ def analyze_ticker(
         is_breakdown_s4 = bool(s4 > 0 and (latest_price <= s4 or (has_pm_price and live_premarket_price <= s4)))
         is_breakdown_s3 = bool(has_pm_price and s3 > 0 and live_premarket_price <= s3 and (live_premarket_chg_pct or 0) <= -8.0)
         is_velocity_plunge = bool(
-            (chg_1d_pct <= -tau_surge and rvol_1h_diurnal >= 1.25)
+            (chg_1d_pct <= -tau_surge and rvol_1h_diurnal >= 1.15)
             or (chg_1d_pct <= -tau_extreme)
             or has_pm_plunge
         )
@@ -2227,12 +2227,28 @@ def main() -> None:
         except Exception:
             prior_state = {}
 
-    prev_subzero = set(prior_state.get("sent_subzero", prior_state.get("active_subzero", [])))
-    prev_bear = set(prior_state.get("sent_bear", prior_state.get("active_bear", [])))
-    prev_squeeze = set(prior_state.get("sent_squeeze", prior_state.get("active_squeeze", [])))
-    prev_crossovers = set(prior_state.get("sent_crossovers", prior_state.get("active_crossovers", [])))
-    prev_breakouts = set(prior_state.get("sent_breakouts", prior_state.get("active_breakouts", [])))
-    prev_breakdowns = set(prior_state.get("sent_breakdowns", prior_state.get("active_breakdowns", [])))
+    today_ny = now_ny.strftime("%Y-%m-%d")
+    prior_date = prior_state.get("scan_date") or prior_state.get("last_daily_close_date") or prior_state.get("last_preclose_date", "")
+    is_new_day = bool(prior_date and prior_date != today_ny)
+
+    if is_new_day:
+        print(
+            f"[Alert Engine] New trading day detected ({today_ny} vs prior {prior_date}). "
+            f"Resetting daily sent-alert tracking state for new session."
+        )
+        prev_subzero: set[str] = set()
+        prev_bear: set[str] = set()
+        prev_squeeze: set[str] = set()
+        prev_crossovers: set[str] = set()
+        prev_breakouts: set[str] = set()
+        prev_breakdowns: set[str] = set()
+    else:
+        prev_subzero = set(prior_state.get("sent_subzero", prior_state.get("active_subzero", [])))
+        prev_bear = set(prior_state.get("sent_bear", prior_state.get("active_bear", [])))
+        prev_squeeze = set(prior_state.get("sent_squeeze", prior_state.get("active_squeeze", [])))
+        prev_crossovers = set(prior_state.get("sent_crossovers", prior_state.get("active_crossovers", [])))
+        prev_breakouts = set(prior_state.get("sent_breakouts", prior_state.get("active_breakouts", [])))
+        prev_breakdowns = set(prior_state.get("sent_breakdowns", prior_state.get("active_breakdowns", [])))
 
     new_subzero = set(current_subzero_tickers) - prev_subzero
     new_bear = set(current_bear_tickers) - prev_bear
@@ -2241,8 +2257,36 @@ def main() -> None:
     new_breakouts = set(current_breakouts) - prev_breakouts
     new_breakdowns = set(current_breakdowns) - prev_breakdowns
 
-    has_fresh_trigger = bool(new_breakouts or new_breakdowns or new_subzero or new_bear or new_crossovers)
-    is_pre_close_time = session_code == "PRE_CLOSE"
+    # Market Drawdown & Liquidation Shock Analysis
+    severe_drawdowns = [
+        s["ticker"]
+        for s in results
+        if s.get("chg_1d_pct") is not None
+        and s["chg_1d_pct"] <= -5.0
+        and (s.get("is_red_candle_1h") or s.get("hist_1d", 0) < 0 or s.get("macd_1h", 0) < s.get("signal_1h", 0))
+    ]
+    benchmark_crash = any(
+        s.get("ticker") in {"TQQQ", "SOXL"} and (s.get("chg_1d_pct") or 0) <= -5.0
+        for s in results
+    ) or any(
+        s.get("ticker") in {"SPY", "QQQ"} and (s.get("chg_1d_pct") or 0) <= -2.0
+        for s in results
+    )
+    is_market_drawdown_shock = bool(
+        len(severe_drawdowns) >= 5 or (len(results) > 0 and len(severe_drawdowns) / len(results) >= 0.10) or benchmark_crash
+    )
+    market_shock_already_sent = False if is_new_day else bool(prior_state.get("market_shock_sent_today"))
+
+    has_fresh_trigger = bool(
+        new_breakouts
+        or new_breakdowns
+        or new_subzero
+        or new_bear
+        or new_crossovers
+        or (is_market_drawdown_shock and not market_shock_already_sent)
+    )
+    is_closing_window = session_code in ("PRE_CLOSE", "POST_MARKET")
+    last_daily_close_date = prior_state.get("last_daily_close_date") or prior_state.get("last_preclose_date", "")
 
     print(
         f"[Trigger Evaluation] Active Breakouts (R4/R5/Velocity): {len(current_breakouts)} (New: {len(new_breakouts)}: {sorted(list(new_breakouts))})"
@@ -2262,6 +2306,10 @@ def main() -> None:
     print(
         f"[Trigger Evaluation] Active Crossovers: {len(current_crossovers)} (New: {len(new_crossovers)}: {sorted(list(new_crossovers))})"
     )
+    if is_market_drawdown_shock:
+        print(
+            f"[Trigger Evaluation] Systemic Market Drawdown Shock Active ({len(severe_drawdowns)} instruments down <= -5.0%, Benchmark Crash: {benchmark_crash})."
+        )
 
     # Build Email Alert Text and HTML
     text_alert, html_alert = format_institutional_email(
@@ -2270,8 +2318,6 @@ def main() -> None:
 
     should_send = False
     send_reason = ""
-    today_ny = now_ny.strftime("%Y-%m-%d")
-    last_preclose = prior_state.get("last_preclose_date", "")
 
     if args.force_send:
         should_send = True
@@ -2290,14 +2336,16 @@ def main() -> None:
             uncat = new_crossovers - new_subzero - new_bear
             if uncat:
                 triggers_summary.append(f"New Crosses: {sorted(list(uncat))}")
+            if is_market_drawdown_shock and not market_shock_already_sent:
+                triggers_summary.append(f"Market Liquidation Shock ({len(severe_drawdowns)} down <= -5%)")
             should_send = True
             send_reason = f"Fresh Trigger Detected ({', '.join(triggers_summary)})"
-        elif is_pre_close_time:
-            if last_preclose != today_ny:
+        elif is_closing_window:
+            if last_daily_close_date != today_ny:
                 should_send = True
-                send_reason = f"Pre-Close Golden Hour Scheduled Scan (15:00 {now_ny.tzname() or 'ET'})"
+                send_reason = f"Daily Closing Radar Summary ({session_name} - {now_ny.strftime('%H:%M')} {now_ny.tzname() or 'ET'})"
             else:
-                print("[Alert Engine] Pre-Close Golden Hour diagnostic already dispatched today.")
+                print(f"[Alert Engine] Daily Closing summary already dispatched today ({today_ny}).")
         else:
             print("[Alert Engine] No fresh trigger changes detected. Email suppressed to preserve recipient inbox.")
 
@@ -2307,16 +2355,23 @@ def main() -> None:
         # Dynamic alert subject with ticker highlights prioritized by absolute % return magnitude
         sig_map = {s.get("ticker"): s for s in results if isinstance(s, dict)}
         is_premarket = (session_code == "PRE_MARKET")
-        format_lead_tickers = lambda s: format_alert_subject_lead_tickers(s, sig_map, is_premarket=is_premarket)
+        format_lead_tickers = lambda s, max_count=4: format_alert_subject_lead_tickers(s, sig_map, is_premarket=is_premarket, max_count=max_count)
 
         uncat_crossovers = new_crossovers - new_bear
         try:
-            if new_breakouts:
-                lead_tickers = format_lead_tickers(new_breakouts)
-                subject = f"[Conviction Labs] VOLATILITY BREAKOUT: {lead_tickers} · {session_badge} · {scan_time_str}"
-            elif new_breakdowns and not new_breakouts and not new_subzero:
+            if new_breakouts and new_breakdowns:
+                lead_bouts = format_lead_tickers(new_breakouts, max_count=2)
+                lead_bdowns = format_lead_tickers(new_breakdowns, max_count=2)
+                subject = f"[Conviction Labs] MARKET VOLATILITY SHOCK: {lead_bdowns} | Surges: {lead_bouts} · {session_badge} · {scan_time_str}"
+            elif new_breakdowns:
                 lead_tickers = format_lead_tickers(new_breakdowns)
                 subject = f"[Conviction Labs] CRITICAL BREAKDOWN: {lead_tickers} · {session_badge} · {scan_time_str}"
+            elif new_breakouts:
+                lead_tickers = format_lead_tickers(new_breakouts)
+                subject = f"[Conviction Labs] VOLATILITY BREAKOUT: {lead_tickers} · {session_badge} · {scan_time_str}"
+            elif is_market_drawdown_shock and not market_shock_already_sent:
+                lead_drawdowns = format_lead_tickers(set(severe_drawdowns[:4]))
+                subject = f"[Conviction Labs] SEVERE MARKET DRAWDOWN: {lead_drawdowns} · {session_badge} · {scan_time_str}"
             elif new_subzero:
                 lead_tickers = format_lead_tickers(new_subzero)
                 subject = f"[Conviction Labs] SUB-ZERO REVERSAL: {lead_tickers} · {session_badge} · {scan_time_str}"
@@ -2326,8 +2381,8 @@ def main() -> None:
             elif new_crossovers:
                 lead_tickers = format_lead_tickers(new_crossovers)
                 subject = f"[Conviction Labs] 1H MOMENTUM CROSS: {lead_tickers} · {session_badge} · {scan_time_str}"
-            elif is_pre_close_time:
-                subject = f"[Conviction Labs] PRE-CLOSE SQUEEZE RADAR · {session_badge} · {scan_time_str}"
+            elif is_closing_window:
+                subject = f"[Conviction Labs] DAILY CLOSING RADAR SUMMARY · {session_badge} · {scan_time_str}"
             else:
                 subject = f"[Conviction Labs] 1H MACD Momentum Radar · {session_badge} · {scan_time_str}"
         except Exception as ex_subj:
@@ -2350,6 +2405,7 @@ def main() -> None:
     alert_payload = {
         "timestamp_utc": now_utc.isoformat(),
         "scan_time_str": scan_time_str,
+        "scan_date": today_ny,
         "session": session_code,
         "dispatched": dispatched,
         "active_breakouts": current_breakouts,
@@ -2370,7 +2426,9 @@ def main() -> None:
         "new_bear": sorted(list(new_bear)),
         "new_squeeze": sorted(list(new_squeeze)),
         "new_crossovers": sorted(list(new_crossovers)),
-        "last_preclose_date": today_ny if (dispatched and is_pre_close_time) else last_preclose,
+        "last_daily_close_date": today_ny if (dispatched and is_closing_window) else last_daily_close_date,
+        "last_preclose_date": today_ny if (dispatched and is_closing_window) else last_daily_close_date,
+        "market_shock_sent_today": True if (dispatched and is_market_drawdown_shock) else (False if is_new_day else prior_state.get("market_shock_sent_today", False)),
         "text_content": text_alert,
         "html_content": html_alert,
     }

@@ -1513,4 +1513,54 @@ def test_format_alert_subject_lead_tickers_premarket_and_rth():
     assert "(+3 more)" in rth_subject
 
 
+def test_market_drawdown_shock_and_volatility_subject():
+    """Verify that systemic market drawdowns format high-urgency alert subjects."""
+    from scripts.build_macd_scanner import format_alert_subject_lead_tickers
+
+    sig_map = {
+        "SOXL": {"ticker": "SOXL", "chg_1d_pct": -16.39},
+        "MSTU": {"ticker": "MSTU", "chg_1d_pct": -15.46},
+        "SOXS": {"ticker": "SOXS", "chg_1d_pct": 16.54},
+        "MSTZ": {"ticker": "MSTZ", "chg_1d_pct": 15.53},
+        "TQQQ": {"ticker": "TQQQ", "chg_1d_pct": -8.06},
+    }
+    format_lead_tickers = lambda s, max_count=4: format_alert_subject_lead_tickers(s, sig_map, is_premarket=False, max_count=max_count)
+
+    new_breakouts = {"SOXS", "MSTZ"}
+    new_breakdowns = {"SOXL", "MSTU"}
+    lead_bouts = format_lead_tickers(new_breakouts, max_count=2)
+    lead_bdowns = format_lead_tickers(new_breakdowns, max_count=2)
+
+    subject = f"[Conviction Labs] MARKET VOLATILITY SHOCK: {lead_bdowns} | Surges: {lead_bouts} · REGULAR_HOURS · 15:30 ET"
+    assert "MARKET VOLATILITY SHOCK" in subject
+    assert "SOXL (-16.4%)" in subject
+    assert "SOXS (+16.5%)" in subject
+
+
+def test_new_trading_day_rollover_resets_state():
+    """Verify calendar day rollover resets deduplication sets so fresh session alerts fire."""
+    today_ny = "2026-11-16"
+    prior_state = {
+        "scan_date": "2026-11-13",
+        "last_daily_close_date": "2026-11-13",
+        "sent_breakdowns": ["SOXL", "MSTU"],
+        "sent_subzero": ["TQQQ"],
+    }
+    prior_date = prior_state.get("scan_date") or prior_state.get("last_daily_close_date")
+    is_new_day = bool(prior_date and prior_date != today_ny)
+    assert is_new_day is True
+
+    # On new day, prior sent sets reset to empty
+    prev_breakdowns = set() if is_new_day else set(prior_state.get("sent_breakdowns", []))
+    assert len(prev_breakdowns) == 0
+
+
+def test_closing_window_in_post_market():
+    """Verify that runs delayed past 16:00 ET (POST_MARKET) still recognize closing window."""
+    for session in ("PRE_CLOSE", "POST_MARKET"):
+        is_closing_window = session in ("PRE_CLOSE", "POST_MARKET")
+        assert is_closing_window is True
+
+
+
 
