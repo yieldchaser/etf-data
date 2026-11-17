@@ -264,7 +264,7 @@ def test_macd_momentum_alerts_workflow_contract():
     # Timeout
     job = MACD_YML["jobs"]["scan-and-alert"]
     tm = job.get("timeout-minutes")
-    assert isinstance(tm, int) and 0 < tm <= 30, f"Invalid timeout-minutes: {tm}"
+    assert isinstance(tm, int) and 0 < tm <= 50, f"Invalid timeout-minutes: {tm}"
 
     # Secrets mapping (strictly via secrets context)
     steps = job["steps"]

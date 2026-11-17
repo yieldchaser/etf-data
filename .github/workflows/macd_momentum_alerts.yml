@@ -163,11 +163,15 @@ jobs:
           from zoneinfo import ZoneInfo
           now = datetime.now(ZoneInfo("America/New_York"))
           mins = now.hour * 60 + now.minute
-          if now.weekday() >= 5 or mins >= 16 * 60 + 40:
+          nxt = 7 if now.minute < 7 else 37 if now.minute < 37 else 67
+          target = now.hour * 60 + nxt  # next :07/:37 slot, minutes since midnight ET
+          target = max(target, 8 * 60 + 7)  # never dispatch before the 08:00 ET window opens
+          wait = (target - mins) * 60 - now.second
+          # stay inside the 08:00-16:40 ET window and the job timeout
+          if now.weekday() >= 5 or target > 16 * 60 + 40 or wait > 40 * 60:
               print(-1)
           else:
-              nxt = 7 if now.minute < 7 else 37 if now.minute < 37 else 67
-              print(max(60, (nxt - now.minute) * 60 - now.second))
+              print(max(60, wait))
           PY
           )
           if [ "$wait_s" -lt 0 ]; then echo "After close / weekend: no chain."; exit 0; fi
