@@ -41,7 +41,7 @@ concurrency:
 jobs:
   scan-and-alert:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 50
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -148,3 +148,28 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh workflow run build_site.yml --ref main || true
+
+      # GitHub drops scheduled runs under load (all of 2026-11-17's intraday crons were skipped),
+      # so each run re-dispatches the next scan itself during market hours. The concurrency group
+      # keeps at most one running + one pending run, so cron runs and chain dispatches collapse
+      # into a single chain; email dedup prevents repeat sends.
+      - name: Chain next scan (fallback for dropped cron runs)
+        if: ${{ always() && (github.event_name != 'workflow_dispatch' || inputs.limit == '' || inputs.limit == '0') }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          wait_s=$(python3 - <<'PY'
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          now = datetime.now(ZoneInfo("America/New_York"))
+          mins = now.hour * 60 + now.minute
+          if now.weekday() >= 5 or mins >= 16 * 60 + 40:
+              print(-1)
+          else:
+              nxt = 7 if now.minute < 7 else 37 if now.minute < 37 else 67
+              print(max(60, (nxt - now.minute) * 60 - now.second))
+          PY
+          )
+          if [ "$wait_s" -lt 0 ]; then echo "After close / weekend: no chain."; exit 0; fi
+          echo "Next scan in ${wait_s}s"; sleep "$wait_s"
+          gh workflow run macd_momentum_alerts.yml --ref main
