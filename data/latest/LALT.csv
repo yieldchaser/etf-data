@@ -1,8 +1,8 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-LALT,FAAR,First Trust Alternative Absolute Return Strategy ETF,0.2138,2026-11-16,2026-11-18
-LALT,FMF,First Trust Managed Futures Strategy Fund,0.2132,2026-11-16,2026-11-18
-LALT,FTLS,First Trust Long/Short Equity ETF,0.212,2026-11-16,2026-11-18
-LALT,LMBS,First Trust Low Duration Opportunities ETF,0.1075,2026-11-16,2026-11-18
-LALT,FLSP,Franklin Systematic Style Premia ETF,0.09949999999999999,2026-11-16,2026-11-18
-LALT,IEF,iShares 7-10 Year Treasury Bond ETF,0.07719999999999999,2026-11-16,2026-11-18
-LALT,FTGC,First Trust Global Tactical Commodity Strategy Fund,0.0754,2026-11-16,2026-11-18
+LALT,FAAR,First Trust Alternative Absolute Return Strategy ETF,0.2137,2026-11-17,2026-11-18
+LALT,FMF,First Trust Managed Futures Strategy Fund,0.2133,2026-11-17,2026-11-18
+LALT,FTLS,First Trust Long/Short Equity ETF,0.2112,2026-11-17,2026-11-18
+LALT,LMBS,First Trust Low Duration Opportunities ETF,0.1079,2026-11-17,2026-11-18
+LALT,FLSP,Franklin Systematic Style Premia ETF,0.09910000000000001,2026-11-17,2026-11-18
+LALT,IEF,iShares 7-10 Year Treasury Bond ETF,0.0775,2026-11-17,2026-11-18
+LALT,FTGC,First Trust Global Tactical Commodity Strategy Fund,0.0757,2026-11-17,2026-11-18
