@@ -1,20 +1,20 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-FCVT,GOOGM,"Alphabet Inc., Series A, Convertible, 6.25%, Due 05/15/2029",0.039599999999999996,2026-11-16,2026-11-17
-FCVT,METAM,"Meta Platforms, Inc., Series A, Convertible, 6.50%, Due 08/15/2029",0.0333,2026-11-16,2026-11-17
-FCVT,BA.A,"The Boeing Company, Convertible, 6.00%, Due 10/15/2027",0.0226,2026-11-16,2026-11-17
-FCVT,HPE.C,"Hewlett Packard Enterprise Company, Convertible, 7.625%, Due 09/01/2027",0.018600000000000002,2026-11-16,2026-11-17
-FCVT,WFC.L,"Wells Fargo & Company, Series L, 7.500%",0.011699999999999999,2026-11-16,2026-11-17
-FCVT,BAC.L,"Bank of America Corporation, Series L, 7.25%",0.0105,2026-11-16,2026-11-17
-FCVT,SMCIP,"Super Micro Computer, Inc., Convertible, 7.00%, Due 06/01/2029",0.0097,2026-11-16,2026-11-17
-FCVT,MCHPP,"Microchip Technology Incorporated, 7.50%, Due 03/15/2028",0.0092,2026-11-16,2026-11-17
-FCVT,GOOGN,"Alphabet Inc., Series B, Convertible, 6.25%, Due 05/15/2029",0.0091,2026-11-16,2026-11-17
-FCVT,ORCL.D,"Oracle Corporation, Series D, Convertible, 6.50%, Due 01/15/2029",0.0087,2026-11-16,2026-11-17
-FCVT,BTSGU,"BrightSpring Health Services, Inc., Convertible, 6.75%, Due 02/01/2027",0.008199999999999999,2026-11-16,2026-11-17
-FCVT,SOMN,"The Southern Company, Series A, Convertible, 7.125%, Due 12/15/2028",0.0068000000000000005,2026-11-16,2026-11-17
-FCVT,NEE.V,"NextEra Energy, Inc., Convertible, 7.375%, Due 02/15/2029",0.0067,2026-11-16,2026-11-17
-FCVT,ARES.B,"Ares Management Corporation, Convertible, Series B, 6.75%, Due 10/01/2027",0.0051,2026-11-16,2026-11-17
-FCVT,BRKRP,"Bruker Corporation, Convertible, 6.375%, Due 09/01/2028",0.004699999999999999,2026-11-16,2026-11-17
-FCVT,KKR.D,"KKR & Co. Inc., Series D, 6.25%, Due 03/01/2028",0.004699999999999999,2026-11-16,2026-11-17
-FCVT,LITE,Lumentum Holdings Inc.,0.0042,2026-11-16,2026-11-17
-FCVT,VSECU,"VSE Corporation, Convertible, 5.75%, Due 02/01/2029",0.0034000000000000002,2026-11-16,2026-11-17
-FCVT,ALB.A,"Albemarle Corp, Convertible, 7.25%, Due 03/01/2027",0.0023,2026-11-16,2026-11-17
+FCVT,GOOGM,"Alphabet Inc., Series A, Convertible, 6.25%, Due 05/15/2029",0.039599999999999996,2026-11-16,2026-11-18
+FCVT,METAM,"Meta Platforms, Inc., Series A, Convertible, 6.50%, Due 08/15/2029",0.0333,2026-11-16,2026-11-18
+FCVT,BA.A,"The Boeing Company, Convertible, 6.00%, Due 10/15/2027",0.0226,2026-11-16,2026-11-18
+FCVT,HPE.C,"Hewlett Packard Enterprise Company, Convertible, 7.625%, Due 09/01/2027",0.018600000000000002,2026-11-16,2026-11-18
+FCVT,WFC.L,"Wells Fargo & Company, Series L, 7.500%",0.011699999999999999,2026-11-16,2026-11-18
+FCVT,BAC.L,"Bank of America Corporation, Series L, 7.25%",0.0105,2026-11-16,2026-11-18
+FCVT,SMCIP,"Super Micro Computer, Inc., Convertible, 7.00%, Due 06/01/2029",0.0097,2026-11-16,2026-11-18
+FCVT,MCHPP,"Microchip Technology Incorporated, 7.50%, Due 03/15/2028",0.0092,2026-11-16,2026-11-18
+FCVT,GOOGN,"Alphabet Inc., Series B, Convertible, 6.25%, Due 05/15/2029",0.0091,2026-11-16,2026-11-18
+FCVT,ORCL.D,"Oracle Corporation, Series D, Convertible, 6.50%, Due 01/15/2029",0.0087,2026-11-16,2026-11-18
+FCVT,BTSGU,"BrightSpring Health Services, Inc., Convertible, 6.75%, Due 02/01/2027",0.008199999999999999,2026-11-16,2026-11-18
+FCVT,SOMN,"The Southern Company, Series A, Convertible, 7.125%, Due 12/15/2028",0.0068000000000000005,2026-11-16,2026-11-18
+FCVT,NEE.V,"NextEra Energy, Inc., Convertible, 7.375%, Due 02/15/2029",0.0067,2026-11-16,2026-11-18
+FCVT,ARES.B,"Ares Management Corporation, Convertible, Series B, 6.75%, Due 10/01/2027",0.0051,2026-11-16,2026-11-18
+FCVT,BRKRP,"Bruker Corporation, Convertible, 6.375%, Due 09/01/2028",0.004699999999999999,2026-11-16,2026-11-18
+FCVT,KKR.D,"KKR & Co. Inc., Series D, 6.25%, Due 03/01/2028",0.004699999999999999,2026-11-16,2026-11-18
+FCVT,LITE,Lumentum Holdings Inc.,0.0042,2026-11-16,2026-11-18
+FCVT,VSECU,"VSE Corporation, Convertible, 5.75%, Due 02/01/2029",0.0034000000000000002,2026-11-16,2026-11-18
+FCVT,ALB.A,"Albemarle Corp, Convertible, 7.25%, Due 03/01/2027",0.0023,2026-11-16,2026-11-18
