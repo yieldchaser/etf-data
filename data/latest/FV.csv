@@ -1,6 +1,6 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-FV,FTXN,First Trust Nasdaq Oil & Gas ETF,0.20559999999999998,2026-11-17,2026-11-19
-FV,FXN,First Trust Energy AlphaDEX® Fund,0.20120000000000002,2026-11-17,2026-11-19
-FV,FBT,First Trust NYSE® Arca® Biotechnology Index Fund,0.1991,2026-11-17,2026-11-19
-FV,FTXH,First Trust Nasdaq Pharmaceuticals ETF,0.19820000000000002,2026-11-17,2026-11-19
-FV,FXL,First Trust Technology AlphaDEX® Fund,0.195,2026-11-17,2026-11-19
+FV,FTXN,First Trust Nasdaq Oil & Gas ETF,0.2016,2026-11-18,2026-11-19
+FV,FBT,First Trust NYSE® Arca® Biotechnology Index Fund,0.20149999999999998,2026-11-18,2026-11-19
+FV,FTXH,First Trust Nasdaq Pharmaceuticals ETF,0.1989,2026-11-18,2026-11-19
+FV,FXN,First Trust Energy AlphaDEX® Fund,0.19879999999999998,2026-11-18,2026-11-19
+FV,FXL,First Trust Technology AlphaDEX® Fund,0.1984,2026-11-18,2026-11-19

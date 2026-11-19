@@ -1,9 +1,9 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-LDSF,LMBS,First Trust Low Duration Opportunities ETF,0.33039999999999997,2026-11-17,2026-11-19
-LDSF,FSIG,First Trust Limited Duration Investment Grade Corporate ETF,0.29059999999999997,2026-11-17,2026-11-19
-LDSF,HYLS,First Trust Tactical High Yield ETF,0.1197,2026-11-17,2026-11-19
-LDSF,FTSL,First Trust Senior Loan Fund,0.0943,2026-11-17,2026-11-19
-LDSF,FTSM,First Trust Enhanced Short Maturity ETF,0.0596,2026-11-17,2026-11-19
-LDSF,SCIO,First Trust Structured Credit Income Opportunities ETF,0.0501,2026-11-17,2026-11-19
-LDSF,FEMB,First Trust Emerging Markets Local Currency Bond ETF,0.029300000000000003,2026-11-17,2026-11-19
-LDSF,FPEI,First Trust Institutional Preferred Securities and Income ETF,0.024900000000000002,2026-11-17,2026-11-19
+LDSF,LMBS,First Trust Low Duration Opportunities ETF,0.3306,2026-11-18,2026-11-19
+LDSF,FSIG,First Trust Limited Duration Investment Grade Corporate ETF,0.29059999999999997,2026-11-18,2026-11-19
+LDSF,HYLS,First Trust Tactical High Yield ETF,0.1198,2026-11-18,2026-11-19
+LDSF,FTSL,First Trust Senior Loan Fund,0.0943,2026-11-18,2026-11-19
+LDSF,FTSM,First Trust Enhanced Short Maturity ETF,0.059500000000000004,2026-11-18,2026-11-19
+LDSF,SCIO,First Trust Structured Credit Income Opportunities ETF,0.0501,2026-11-18,2026-11-19
+LDSF,FEMB,First Trust Emerging Markets Local Currency Bond ETF,0.0291,2026-11-18,2026-11-19
+LDSF,FPEI,First Trust Institutional Preferred Securities and Income ETF,0.0248,2026-11-18,2026-11-19
