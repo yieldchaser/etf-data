@@ -801,6 +801,13 @@
       "prev_nav": 118.36,
       "curr_nav": 55.68,
       "actual_ratio": 0.4704
+    },
+    {
+      "split_date": "2026-11-19",
+      "split_ratio": "3:1",
+      "factor": 3.0,
+      "numerator": 3.0,
+      "denominator": 1.0
     }
   ],
   "SCO": [
@@ -1373,6 +1380,13 @@
       "prev_nav": 133.63,
       "curr_nav": 67.42,
       "actual_ratio": 0.5045
+    },
+    {
+      "split_date": "2026-11-19",
+      "split_ratio": "1:2",
+      "factor": 0.5,
+      "numerator": 1.0,
+      "denominator": 2.0
     }
   ],
   "UCO": [
@@ -1851,6 +1865,15 @@
       "split_date": "2026-07-01",
       "split_ratio": "1:20",
       "factor": 0.05
+    }
+  ],
+  "BIB": [
+    {
+      "split_date": "2026-11-19",
+      "split_ratio": "2:1",
+      "factor": 2.0,
+      "numerator": 2.0,
+      "denominator": 1.0
     }
   ]
 }
