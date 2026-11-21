@@ -1,8 +1,8 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-DALI,FYC,First Trust Small Cap Growth AlphaDEX® Fund,0.17800000000000002,2026-11-19,2026-11-21
-DALI,FTC,First Trust Large Cap Growth AlphaDEX® Fund,0.17370000000000002,2026-11-19,2026-11-21
-DALI,FTXN,First Trust Nasdaq Oil & Gas ETF,0.1318,2026-11-19,2026-11-21
-DALI,FBT,First Trust NYSE® Arca® Biotechnology Index Fund,0.1306,2026-11-19,2026-11-21
-DALI,FXN,First Trust Energy AlphaDEX® Fund,0.1294,2026-11-19,2026-11-21
-DALI,FTXH,First Trust Nasdaq Pharmaceuticals ETF,0.128,2026-11-19,2026-11-21
-DALI,FXL,First Trust Technology AlphaDEX® Fund,0.128,2026-11-19,2026-11-21
+DALI,FYC,First Trust Small Cap Growth AlphaDEX® Fund,0.1773,2026-11-20,2026-11-21
+DALI,FTC,First Trust Large Cap Growth AlphaDEX® Fund,0.1704,2026-11-20,2026-11-21
+DALI,FTXN,First Trust Nasdaq Oil & Gas ETF,0.13419999999999999,2026-11-20,2026-11-21
+DALI,FBT,First Trust NYSE® Arca® Biotechnology Index Fund,0.13140000000000002,2026-11-20,2026-11-21
+DALI,FXN,First Trust Energy AlphaDEX® Fund,0.1306,2026-11-20,2026-11-21
+DALI,FTXH,First Trust Nasdaq Pharmaceuticals ETF,0.1306,2026-11-20,2026-11-21
+DALI,FXL,First Trust Technology AlphaDEX® Fund,0.125,2026-11-20,2026-11-21

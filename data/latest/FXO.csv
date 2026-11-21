@@ -1,105 +1,105 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-FXO,ALL,The Allstate Corporation,0.0192,2026-11-19,2026-11-21
-FXO,CINF,Cincinnati Financial Corporation,0.018799999999999997,2026-11-19,2026-11-21
-FXO,ACGL,Arch Capital Group Ltd.,0.0187,2026-11-19,2026-11-21
-FXO,CHYM,"Chime Financial, Inc. (Class A)",0.018500000000000003,2026-11-19,2026-11-21
-FXO,EG,"Everest Group, Ltd.",0.018500000000000003,2026-11-19,2026-11-21
-FXO,BRK/B,Berkshire Hathaway Inc. (Class B),0.0183,2026-11-19,2026-11-21
-FXO,MKL,Markel Group Inc,0.0182,2026-11-19,2026-11-21
-FXO,AXS,Axis Capital Holdings Limited,0.0179,2026-11-19,2026-11-21
-FXO,HIG,"The Hartford Insurance Group, Inc.",0.0177,2026-11-19,2026-11-21
-FXO,WTM,White Mountains Insurance Group Ltd.,0.0177,2026-11-19,2026-11-21
-FXO,AGO,Assured Guaranty Ltd.,0.0175,2026-11-19,2026-11-21
-FXO,RNR,RenaissanceRe Holdings Ltd.,0.0172,2026-11-19,2026-11-21
-FXO,AIG,"American International Group, Inc.",0.0171,2026-11-19,2026-11-21
-FXO,ORI,Old Republic International Corporation,0.017,2026-11-19,2026-11-21
-FXO,OZK,Bank OZK,0.0168,2026-11-19,2026-11-21
-FXO,FAF,First American Financial Corporation,0.0168,2026-11-19,2026-11-21
-FXO,MTG,MGIC Investment Corporation,0.0165,2026-11-19,2026-11-21
-FXO,TROW,"T. Rowe Price Group, Inc.",0.0161,2026-11-19,2026-11-21
-FXO,CBC,"Central Bancompany, Inc.",0.014499999999999999,2026-11-19,2026-11-21
-FXO,NLY,"Annaly Capital Management, Inc.",0.0143,2026-11-19,2026-11-21
-FXO,AGNC,AGNC Investment Corp.,0.0138,2026-11-19,2026-11-21
-FXO,THG,"The Hanover Insurance Group, Inc.",0.0138,2026-11-19,2026-11-21
-FXO,PGR,The Progressive Corporation,0.013500000000000002,2026-11-19,2026-11-21
-FXO,TRV,"The Travelers Companies, Inc.",0.013300000000000001,2026-11-19,2026-11-21
-FXO,CNA,CNA Financial Corporation,0.0129,2026-11-19,2026-11-21
-FXO,L,Loews Corporation,0.0128,2026-11-19,2026-11-21
-FXO,AMG,"Affiliated Managers Group, Inc.",0.0126,2026-11-19,2026-11-21
-FXO,COLB,"Columbia Banking System, Inc.",0.0124,2026-11-19,2026-11-21
-FXO,LNC,Lincoln National Corporation,0.0124,2026-11-19,2026-11-21
-FXO,TFC,Truist Financial Corporation,0.0123,2026-11-19,2026-11-21
-FXO,OMF,"OneMain Holdings, Inc.",0.012199999999999999,2026-11-19,2026-11-21
-FXO,SSB,SouthState Bank Corporation,0.012199999999999999,2026-11-19,2026-11-21
-FXO,FNB,F.N.B. Corporation,0.0121,2026-11-19,2026-11-21
-FXO,ZION,"Zions Bancorporation, National Association",0.012,2026-11-19,2026-11-21
-FXO,ALLY,Ally Financial Inc.,0.011899999999999999,2026-11-19,2026-11-21
-FXO,MTB,M&T Bank Corporation,0.0118,2026-11-19,2026-11-21
-FXO,RLI,RLI Corp.,0.011699999999999999,2026-11-19,2026-11-21
-FXO,WAL,Western Alliance Bancorporation,0.011200000000000002,2026-11-19,2026-11-21
-FXO,KNSL,"Kinsale Capital Group, Inc.",0.0111,2026-11-19,2026-11-21
-FXO,IBKR,"Interactive Brokers Group, Inc. (Class A)",0.0108,2026-11-19,2026-11-21
-FXO,JEF,Jefferies Financial Group Inc.,0.0108,2026-11-19,2026-11-21
-FXO,LPLA,LPL Financial Holdings Inc.,0.0108,2026-11-19,2026-11-21
-FXO,FDS,FactSet Research Systems Inc.,0.0104,2026-11-19,2026-11-21
-FXO,CB,Chubb Limited,0.0103,2026-11-19,2026-11-21
-FXO,AFL,Aflac Incorporated,0.0101,2026-11-19,2026-11-21
-FXO,EVR,Evercore Inc.,0.0101,2026-11-19,2026-11-21
-FXO,FNF,"Fidelity National Financial, Inc.",0.0101,2026-11-19,2026-11-21
-FXO,PB,"Prosperity Bancshares, Inc.",0.0097,2026-11-19,2026-11-21
-FXO,FCNCA,"First Citizens BancShares, Inc. (Class A)",0.0095,2026-11-19,2026-11-21
-FXO,PNFP,"Pinnacle Financial Partners, Inc.",0.0092,2026-11-19,2026-11-21
-FXO,RF,Regions Financial Corporation,0.0092,2026-11-19,2026-11-21
-FXO,SEIC,SEI Investments Company,0.0092,2026-11-19,2026-11-21
-FXO,AMP,"Ameriprise Financial, Inc.",0.0091,2026-11-19,2026-11-21
-FXO,BOKF,BOK Financial Corporation,0.0091,2026-11-19,2026-11-21
-FXO,HLNE,Hamilton Lane Incorporated (Class A),0.0089,2026-11-19,2026-11-21
-FXO,NTRS,Northern Trust Corporation,0.0089,2026-11-19,2026-11-21
-FXO,FHN,First Horizon Corporation,0.0088,2026-11-19,2026-11-21
-FXO,FHB,"First Hawaiian, Inc.",0.0087,2026-11-19,2026-11-21
-FXO,SLM,SLM Corporation,0.0086,2026-11-19,2026-11-21
-FXO,GL,Globe Life Inc.,0.0084,2026-11-19,2026-11-21
-FXO,RITM,Rithm Capital Corp.,0.0084,2026-11-19,2026-11-21
-FXO,C,Citigroup Inc.,0.008100000000000001,2026-11-19,2026-11-21
-FXO,RYAN,"Ryan Specialty Holdings, Inc. (Class A)",0.0076,2026-11-19,2026-11-21
-FXO,MORN,"Morningstar, Inc.",0.0074,2026-11-19,2026-11-21
-FXO,AIZ,"Assurant, Inc.",0.0073,2026-11-19,2026-11-21
-FXO,BR,"Broadridge Financial Solutions, Inc.",0.0068000000000000005,2026-11-19,2026-11-21
-FXO,RGA,"Reinsurance Group of America, Incorporated",0.0066,2026-11-19,2026-11-21
-FXO,PRI,"Primerica, Inc.",0.0064,2026-11-19,2026-11-21
-FXO,PRU,"Prudential Financial, Inc.",0.0064,2026-11-19,2026-11-21
-FXO,VIRT,"Virtu Financial, Inc. (Class A)",0.0064,2026-11-19,2026-11-21
-FXO,WTFC,Wintrust Financial Corporation,0.0063,2026-11-19,2026-11-21
-FXO,CRBG,"Corebridge Financial, Inc.",0.0060999999999999995,2026-11-19,2026-11-21
-FXO,BNY,The Bank of New York Mellon Corporation,0.0060999999999999995,2026-11-19,2026-11-21
-FXO,WFC,Wells Fargo & Company,0.0060999999999999995,2026-11-19,2026-11-21
-FXO,KEY,KeyCorp,0.006,2026-11-19,2026-11-21
-FXO,SF,Stifel Financial Corp.,0.006,2026-11-19,2026-11-21
-FXO,USB,U.S. Bancorp,0.006,2026-11-19,2026-11-21
-FXO,PNC,"The PNC Financial Services Group, Inc.",0.0059,2026-11-19,2026-11-21
-FXO,BPOP,"Popular, Inc.",0.0058,2026-11-19,2026-11-21
-FXO,FRHC,Freedom Holding Corp.,0.005600000000000001,2026-11-19,2026-11-21
-FXO,BAC,Bank of America Corporation,0.0054,2026-11-19,2026-11-21
-FXO,CACC,Credit Acceptance Corporation,0.0054,2026-11-19,2026-11-21
-FXO,CBOE,"Cboe Global Markets, Inc.",0.0039000000000000003,2026-11-19,2026-11-21
-FXO,TW,Tradeweb Markets Inc. (Class A),0.0038,2026-11-19,2026-11-21
-FXO,HOOD,"Robinhood Markets, Inc. (Class A)",0.0037,2026-11-19,2026-11-21
-FXO,AON,Aon Plc (Class A),0.0036,2026-11-19,2026-11-21
-FXO,BRO,"Brown & Brown, Inc.",0.0036,2026-11-19,2026-11-21
-FXO,AFG,"American Financial Group, Inc.",0.0034999999999999996,2026-11-19,2026-11-21
-FXO,WRB,W.R. Berkley Corporation,0.0034999999999999996,2026-11-19,2026-11-21
-FXO,WTW,Willis Towers Watson Plc,0.0034999999999999996,2026-11-19,2026-11-21
-FXO,SPGI,S&P Global Inc.,0.0034000000000000002,2026-11-19,2026-11-21
-FXO,HLI,"Houlihan Lokey, Inc.",0.0033,2026-11-19,2026-11-21
-FXO,ARES,Ares Management Corporation (Class A),0.0032,2026-11-19,2026-11-21
-FXO,BEN,"Franklin Templeton, Inc.",0.0031,2026-11-19,2026-11-21
-FXO,LAZ,"Lazard, Inc. (Class A)",0.0031,2026-11-19,2026-11-21
-FXO,CBSH,"Commerce Bancshares, Inc.",0.003,2026-11-19,2026-11-21
-FXO,EWBC,"East West Bancorp, Inc.",0.003,2026-11-19,2026-11-21
-FXO,RJF,"Raymond James Financial, Inc.",0.003,2026-11-19,2026-11-21
-FXO,CFG,"Citizens Financial Group, Inc.",0.0029,2026-11-19,2026-11-21
-FXO,HBAN,Huntington Bancshares Incorporated,0.0029,2026-11-19,2026-11-21
-FXO,SCHW,The Charles Schwab Corporation,0.0029,2026-11-19,2026-11-21
-FXO,STT,State Street Corporation,0.0028000000000000004,2026-11-19,2026-11-21
-FXO,UNM,Unum Group,0.0027,2026-11-19,2026-11-21
-FXO,XP,XP Inc. (Class A),0.002,2026-11-19,2026-11-21
+FXO,ALL,The Allstate Corporation,0.0195,2026-11-20,2026-11-21
+FXO,ACGL,Arch Capital Group Ltd.,0.019,2026-11-20,2026-11-21
+FXO,CINF,Cincinnati Financial Corporation,0.0189,2026-11-20,2026-11-21
+FXO,EG,"Everest Group, Ltd.",0.0187,2026-11-20,2026-11-21
+FXO,BRK/B,Berkshire Hathaway Inc. (Class B),0.018500000000000003,2026-11-20,2026-11-21
+FXO,CHYM,"Chime Financial, Inc. (Class A)",0.0184,2026-11-20,2026-11-21
+FXO,AXS,Axis Capital Holdings Limited,0.0183,2026-11-20,2026-11-21
+FXO,MKL,Markel Group Inc,0.0183,2026-11-20,2026-11-21
+FXO,HIG,"The Hartford Insurance Group, Inc.",0.0181,2026-11-20,2026-11-21
+FXO,AGO,Assured Guaranty Ltd.,0.0177,2026-11-20,2026-11-21
+FXO,WTM,White Mountains Insurance Group Ltd.,0.0177,2026-11-20,2026-11-21
+FXO,RNR,RenaissanceRe Holdings Ltd.,0.0175,2026-11-20,2026-11-21
+FXO,AIG,"American International Group, Inc.",0.0173,2026-11-20,2026-11-21
+FXO,ORI,Old Republic International Corporation,0.0173,2026-11-20,2026-11-21
+FXO,FAF,First American Financial Corporation,0.0172,2026-11-20,2026-11-21
+FXO,OZK,Bank OZK,0.0169,2026-11-20,2026-11-21
+FXO,MTG,MGIC Investment Corporation,0.0167,2026-11-20,2026-11-21
+FXO,TROW,"T. Rowe Price Group, Inc.",0.015700000000000002,2026-11-20,2026-11-21
+FXO,CBC,"Central Bancompany, Inc.",0.014499999999999999,2026-11-20,2026-11-21
+FXO,NLY,"Annaly Capital Management, Inc.",0.0144,2026-11-20,2026-11-21
+FXO,THG,"The Hanover Insurance Group, Inc.",0.013999999999999999,2026-11-20,2026-11-21
+FXO,AGNC,AGNC Investment Corp.,0.0138,2026-11-20,2026-11-21
+FXO,PGR,The Progressive Corporation,0.0137,2026-11-20,2026-11-21
+FXO,TRV,"The Travelers Companies, Inc.",0.013600000000000001,2026-11-20,2026-11-21
+FXO,CNA,CNA Financial Corporation,0.0132,2026-11-20,2026-11-21
+FXO,L,Loews Corporation,0.0129,2026-11-20,2026-11-21
+FXO,AMG,"Affiliated Managers Group, Inc.",0.0124,2026-11-20,2026-11-21
+FXO,COLB,"Columbia Banking System, Inc.",0.0124,2026-11-20,2026-11-21
+FXO,SSB,SouthState Bank Corporation,0.0123,2026-11-20,2026-11-21
+FXO,TFC,Truist Financial Corporation,0.012199999999999999,2026-11-20,2026-11-21
+FXO,LNC,Lincoln National Corporation,0.0121,2026-11-20,2026-11-21
+FXO,OMF,"OneMain Holdings, Inc.",0.0121,2026-11-20,2026-11-21
+FXO,FNB,F.N.B. Corporation,0.012,2026-11-20,2026-11-21
+FXO,ZION,"Zions Bancorporation, National Association",0.012,2026-11-20,2026-11-21
+FXO,ALLY,Ally Financial Inc.,0.011899999999999999,2026-11-20,2026-11-21
+FXO,RLI,RLI Corp.,0.011899999999999999,2026-11-20,2026-11-21
+FXO,MTB,M&T Bank Corporation,0.0118,2026-11-20,2026-11-21
+FXO,KNSL,"Kinsale Capital Group, Inc.",0.011399999999999999,2026-11-20,2026-11-21
+FXO,WAL,Western Alliance Bancorporation,0.0111,2026-11-20,2026-11-21
+FXO,FDS,FactSet Research Systems Inc.,0.010700000000000001,2026-11-20,2026-11-21
+FXO,LPLA,LPL Financial Holdings Inc.,0.010700000000000001,2026-11-20,2026-11-21
+FXO,CB,Chubb Limited,0.0106,2026-11-20,2026-11-21
+FXO,JEF,Jefferies Financial Group Inc.,0.0105,2026-11-20,2026-11-21
+FXO,FNF,"Fidelity National Financial, Inc.",0.0104,2026-11-20,2026-11-21
+FXO,AFL,Aflac Incorporated,0.0103,2026-11-20,2026-11-21
+FXO,IBKR,"Interactive Brokers Group, Inc. (Class A)",0.0103,2026-11-20,2026-11-21
+FXO,EVR,Evercore Inc.,0.0097,2026-11-20,2026-11-21
+FXO,PB,"Prosperity Bancshares, Inc.",0.0097,2026-11-20,2026-11-21
+FXO,FCNCA,"First Citizens BancShares, Inc. (Class A)",0.009300000000000001,2026-11-20,2026-11-21
+FXO,BOKF,BOK Financial Corporation,0.0091,2026-11-20,2026-11-21
+FXO,PNFP,"Pinnacle Financial Partners, Inc.",0.0091,2026-11-20,2026-11-21
+FXO,RF,Regions Financial Corporation,0.0091,2026-11-20,2026-11-21
+FXO,SEIC,SEI Investments Company,0.0091,2026-11-20,2026-11-21
+FXO,AMP,"Ameriprise Financial, Inc.",0.009000000000000001,2026-11-20,2026-11-21
+FXO,NTRS,Northern Trust Corporation,0.0088,2026-11-20,2026-11-21
+FXO,FHB,"First Hawaiian, Inc.",0.0087,2026-11-20,2026-11-21
+FXO,FHN,First Horizon Corporation,0.0087,2026-11-20,2026-11-21
+FXO,HLNE,Hamilton Lane Incorporated (Class A),0.0086,2026-11-20,2026-11-21
+FXO,SLM,SLM Corporation,0.0086,2026-11-20,2026-11-21
+FXO,GL,Globe Life Inc.,0.0085,2026-11-20,2026-11-21
+FXO,RITM,Rithm Capital Corp.,0.0083,2026-11-20,2026-11-21
+FXO,C,Citigroup Inc.,0.0079,2026-11-20,2026-11-21
+FXO,RYAN,"Ryan Specialty Holdings, Inc. (Class A)",0.0078000000000000005,2026-11-20,2026-11-21
+FXO,MORN,"Morningstar, Inc.",0.0075,2026-11-20,2026-11-21
+FXO,AIZ,"Assurant, Inc.",0.0074,2026-11-20,2026-11-21
+FXO,BR,"Broadridge Financial Solutions, Inc.",0.0069,2026-11-20,2026-11-21
+FXO,RGA,"Reinsurance Group of America, Incorporated",0.0067,2026-11-20,2026-11-21
+FXO,PRI,"Primerica, Inc.",0.006500000000000001,2026-11-20,2026-11-21
+FXO,PRU,"Prudential Financial, Inc.",0.0064,2026-11-20,2026-11-21
+FXO,WTFC,Wintrust Financial Corporation,0.0063,2026-11-20,2026-11-21
+FXO,VIRT,"Virtu Financial, Inc. (Class A)",0.0062,2026-11-20,2026-11-21
+FXO,CRBG,"Corebridge Financial, Inc.",0.0060999999999999995,2026-11-20,2026-11-21
+FXO,KEY,KeyCorp,0.006,2026-11-20,2026-11-21
+FXO,BNY,The Bank of New York Mellon Corporation,0.006,2026-11-20,2026-11-21
+FXO,USB,U.S. Bancorp,0.006,2026-11-20,2026-11-21
+FXO,WFC,Wells Fargo & Company,0.006,2026-11-20,2026-11-21
+FXO,SF,Stifel Financial Corp.,0.0059,2026-11-20,2026-11-21
+FXO,PNC,"The PNC Financial Services Group, Inc.",0.0059,2026-11-20,2026-11-21
+FXO,FRHC,Freedom Holding Corp.,0.005699999999999999,2026-11-20,2026-11-21
+FXO,BPOP,"Popular, Inc.",0.005699999999999999,2026-11-20,2026-11-21
+FXO,CACC,Credit Acceptance Corporation,0.0054,2026-11-20,2026-11-21
+FXO,BAC,Bank of America Corporation,0.0053,2026-11-20,2026-11-21
+FXO,CBOE,"Cboe Global Markets, Inc.",0.004,2026-11-20,2026-11-21
+FXO,TW,Tradeweb Markets Inc. (Class A),0.0038,2026-11-20,2026-11-21
+FXO,AON,Aon Plc (Class A),0.0037,2026-11-20,2026-11-21
+FXO,BRO,"Brown & Brown, Inc.",0.0037,2026-11-20,2026-11-21
+FXO,WRB,W.R. Berkley Corporation,0.0036,2026-11-20,2026-11-21
+FXO,AFG,"American Financial Group, Inc.",0.0034999999999999996,2026-11-20,2026-11-21
+FXO,WTW,Willis Towers Watson Plc,0.0034999999999999996,2026-11-20,2026-11-21
+FXO,HOOD,"Robinhood Markets, Inc. (Class A)",0.0034000000000000002,2026-11-20,2026-11-21
+FXO,SPGI,S&P Global Inc.,0.0034000000000000002,2026-11-20,2026-11-21
+FXO,ARES,Ares Management Corporation (Class A),0.0033,2026-11-20,2026-11-21
+FXO,HLI,"Houlihan Lokey, Inc.",0.0032,2026-11-20,2026-11-21
+FXO,BEN,"Franklin Templeton, Inc.",0.0031,2026-11-20,2026-11-21
+FXO,CBSH,"Commerce Bancshares, Inc.",0.003,2026-11-20,2026-11-21
+FXO,EWBC,"East West Bancorp, Inc.",0.003,2026-11-20,2026-11-21
+FXO,LAZ,"Lazard, Inc. (Class A)",0.003,2026-11-20,2026-11-21
+FXO,RJF,"Raymond James Financial, Inc.",0.003,2026-11-20,2026-11-21
+FXO,HBAN,Huntington Bancshares Incorporated,0.0029,2026-11-20,2026-11-21
+FXO,CFG,"Citizens Financial Group, Inc.",0.0028000000000000004,2026-11-20,2026-11-21
+FXO,SCHW,The Charles Schwab Corporation,0.0028000000000000004,2026-11-20,2026-11-21
+FXO,STT,State Street Corporation,0.0027,2026-11-20,2026-11-21
+FXO,UNM,Unum Group,0.0027,2026-11-20,2026-11-21
+FXO,XP,XP Inc. (Class A),0.0019,2026-11-20,2026-11-21
