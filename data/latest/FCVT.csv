@@ -1,20 +1,20 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-FCVT,GOOGM,"Alphabet Inc., Series A, Convertible, 6.25%, Due 05/15/2029",0.04,2026-11-20,2026-11-21
-FCVT,METAM,"Meta Platforms, Inc., Series A, Convertible, 6.50%, Due 08/15/2029",0.0325,2026-11-20,2026-11-21
-FCVT,BA.A,"The Boeing Company, Convertible, 6.00%, Due 10/15/2027",0.022799999999999997,2026-11-20,2026-11-21
-FCVT,HPE.C,"Hewlett Packard Enterprise Company, Convertible, 7.625%, Due 09/01/2027",0.0172,2026-11-20,2026-11-21
-FCVT,WFC.L,"Wells Fargo & Company, Series L, 7.500%",0.0124,2026-11-20,2026-11-21
-FCVT,BAC.L,"Bank of America Corporation, Series L, 7.25%",0.0109,2026-11-20,2026-11-21
-FCVT,GOOGN,"Alphabet Inc., Series B, Convertible, 6.25%, Due 05/15/2029",0.0092,2026-11-20,2026-11-21
-FCVT,MCHPP,"Microchip Technology Incorporated, 7.50%, Due 03/15/2028",0.0092,2026-11-20,2026-11-21
-FCVT,SMCIP,"Super Micro Computer, Inc., Convertible, 7.00%, Due 06/01/2029",0.009000000000000001,2026-11-20,2026-11-21
-FCVT,ORCL.D,"Oracle Corporation, Series D, Convertible, 6.50%, Due 01/15/2029",0.008100000000000001,2026-11-20,2026-11-21
-FCVT,BTSGU,"BrightSpring Health Services, Inc., Convertible, 6.75%, Due 02/01/2027",0.0077,2026-11-20,2026-11-21
-FCVT,SOMN,"The Southern Company, Series A, Convertible, 7.125%, Due 12/15/2028",0.0072,2026-11-20,2026-11-21
-FCVT,NEE.V,"NextEra Energy, Inc., Convertible, 7.375%, Due 02/15/2029",0.0069,2026-11-20,2026-11-21
-FCVT,ARES.B,"Ares Management Corporation, Convertible, Series B, 6.75%, Due 10/01/2027",0.0051,2026-11-20,2026-11-21
-FCVT,BRKRP,"Bruker Corporation, Convertible, 6.375%, Due 09/01/2028",0.004699999999999999,2026-11-20,2026-11-21
-FCVT,KKR.D,"KKR & Co. Inc., Series D, 6.25%, Due 03/01/2028",0.004699999999999999,2026-11-20,2026-11-21
-FCVT,LITE,Lumentum Holdings Inc.,0.0038,2026-11-20,2026-11-21
-FCVT,VSECU,"VSE Corporation, Convertible, 5.75%, Due 02/01/2029",0.0034000000000000002,2026-11-20,2026-11-21
-FCVT,ALB.A,"Albemarle Corp, Convertible, 7.25%, Due 03/01/2027",0.0023,2026-11-20,2026-11-21
+FCVT,GOOGM,"Alphabet Inc., Series A, Convertible, 6.25%, Due 05/15/2029",0.04,2026-11-20,2026-11-22
+FCVT,METAM,"Meta Platforms, Inc., Series A, Convertible, 6.50%, Due 08/15/2029",0.0325,2026-11-20,2026-11-22
+FCVT,BA.A,"The Boeing Company, Convertible, 6.00%, Due 10/15/2027",0.022799999999999997,2026-11-20,2026-11-22
+FCVT,HPE.C,"Hewlett Packard Enterprise Company, Convertible, 7.625%, Due 09/01/2027",0.0172,2026-11-20,2026-11-22
+FCVT,WFC.L,"Wells Fargo & Company, Series L, 7.500%",0.0124,2026-11-20,2026-11-22
+FCVT,BAC.L,"Bank of America Corporation, Series L, 7.25%",0.0109,2026-11-20,2026-11-22
+FCVT,GOOGN,"Alphabet Inc., Series B, Convertible, 6.25%, Due 05/15/2029",0.0092,2026-11-20,2026-11-22
+FCVT,MCHPP,"Microchip Technology Incorporated, 7.50%, Due 03/15/2028",0.0092,2026-11-20,2026-11-22
+FCVT,SMCIP,"Super Micro Computer, Inc., Convertible, 7.00%, Due 06/01/2029",0.009000000000000001,2026-11-20,2026-11-22
+FCVT,ORCL.D,"Oracle Corporation, Series D, Convertible, 6.50%, Due 01/15/2029",0.008100000000000001,2026-11-20,2026-11-22
+FCVT,BTSGU,"BrightSpring Health Services, Inc., Convertible, 6.75%, Due 02/01/2027",0.0077,2026-11-20,2026-11-22
+FCVT,SOMN,"The Southern Company, Series A, Convertible, 7.125%, Due 12/15/2028",0.0072,2026-11-20,2026-11-22
+FCVT,NEE.V,"NextEra Energy, Inc., Convertible, 7.375%, Due 02/15/2029",0.0069,2026-11-20,2026-11-22
+FCVT,ARES.B,"Ares Management Corporation, Convertible, Series B, 6.75%, Due 10/01/2027",0.0051,2026-11-20,2026-11-22
+FCVT,BRKRP,"Bruker Corporation, Convertible, 6.375%, Due 09/01/2028",0.004699999999999999,2026-11-20,2026-11-22
+FCVT,KKR.D,"KKR & Co. Inc., Series D, 6.25%, Due 03/01/2028",0.004699999999999999,2026-11-20,2026-11-22
+FCVT,LITE,Lumentum Holdings Inc.,0.0038,2026-11-20,2026-11-22
+FCVT,VSECU,"VSE Corporation, Convertible, 5.75%, Due 02/01/2029",0.0034000000000000002,2026-11-20,2026-11-22
+FCVT,ALB.A,"Albemarle Corp, Convertible, 7.25%, Due 03/01/2027",0.0023,2026-11-20,2026-11-22
