@@ -99,6 +99,11 @@
     .range-inputs input[type=range]::-webkit-slider-runnable-track { background: none !important; border: none !important; }
     .range-inputs input[type=range]::-moz-range-track { background: none !important; border: none !important; }
 
+    @media (max-width: 640px) {
+      /* Phone: keep the ticker visible while the wide leaderboard scrolls sideways. */
+      .lb-table th:nth-child(3), .lb-table td:nth-child(3) { position: sticky; left: 0; z-index: 2; background: var(--surface); box-shadow: 1px 0 0 var(--border); }
+      .lb-table thead th:nth-child(3) { background: #050505; z-index: 3; }
+    }
     html, body { background: var(--bg); color: var(--text); overflow-x: hidden; width: 100%; max-width: 100%; }
     body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Inter", sans-serif; }
     .num, table td, .mono { font-variant-numeric: tabular-nums; }
@@ -706,15 +711,15 @@
     <!-- Main table -->
     <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
       <div class="overflow-x-auto scrollbar">
-        <table class="w-full text-sm">
+        <table class="w-full text-sm lb-table">
           <thead class="text-[10px] uppercase tracking-wider" style="background: #050505; color: var(--text-3)">
             <tr style="border-bottom: 1px solid var(--border)">
               <th class="text-center px-2 py-2" x-tooltip="'Pin to watchlist'">★</th>
               <th class="text-left px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('leaderboard_rank')" :class="sortClass('leaderboard_rank')" x-tooltip="'Rank by Conviction Score (1 = highest conviction) — the single canonical rank'">#</th>
               <th class="text-left px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('ticker')" :class="sortClass('ticker')" x-tooltip="'Stock ticker. Click to open per-stock detail page.'">Ticker</th>
-              <th class="text-left px-3 py-2 hidden sm:table-cell cursor-pointer hover:text-zinc-300" @click="sort('company')" :class="sortClass('company')" x-tooltip="'Issuer\'s legal name as reported by the ETF.'">Company</th>
+              <th class="text-left px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('company')" :class="sortClass('company')" x-tooltip="'Issuer\'s legal name as reported by the ETF.'">Company</th>
               <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300" @click="sort('final_score')" :class="sortClass('final_score')" x-tooltip="'Conviction Score (v4) = Σ tier points × conviction² across holding ETFs, shaped by concentration, strategy-breadth and universe multipliers. Conviction = overweight vs equal-weight × rank in book; squaring it keeps filler positions from adding up to a high score. Hover a cell for percentile.'">Score</th>
-              <th class="text-center px-2 py-2 hidden lg:table-cell select-none" style="vertical-align: top;">
+              <th class="text-center px-2 py-2 select-none" style="vertical-align: top;">
                 <div class="cursor-pointer hover:text-zinc-300 inline-block align-middle"
                      @click="sort('score_delta_pct')"
                      :class="sortClass('score_delta_pct')"
@@ -733,19 +738,19 @@
                 </div>
               </th>
               <th @click="sort('etf_count_delta_30d')" :class="sortClass('etf_count_delta_30d')"
-                  class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell whitespace-nowrap"
+                  class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 whitespace-nowrap"
                   x-tooltip="'Net ETF positions added or lost over the last 30 days - breadth of conviction flow.'">Δ Funds</th>
               <th @click="sort('burst_score')" :class="sortClass('burst_score')"
-                  class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell whitespace-nowrap"
+                  class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 whitespace-nowrap"
                   x-tooltip="'Burst - rank positions gained in the climb (smoothed). ✓ and bright = a fund bought in; dim = price-driven. Blank when not bursting.'">Burst</th>
               <th @click="sort('crater_score')" :class="sortClass('crater_score')"
-                  class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell whitespace-nowrap"
+                  class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 whitespace-nowrap"
                   x-tooltip="'Crater - rank positions lost in the fall (smoothed). ✓ and bright = a fund sold out; dim = price-driven. Blank when not cratering.'">Crater</th>
-              <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden md:table-cell" @click="sort('etf_count')" :class="sortClass('etf_count')" x-tooltip="'Count of ETFs holding this ticker. Suffix shows net ETFs added/lost in 30d.'">ETFs</th>
-              <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell" @click="sort('total_weight')" :class="sortClass('total_weight')" x-tooltip="'Sum of position weights across all ETFs holding this name.'">Weight</th>
-              <th @click="sort('tier_count')" :class="sortClass('tier_count')" class="cursor-pointer hover:text-zinc-300 text-left px-2 py-2 hidden xl:table-cell" x-tooltip="{html:'Tiers represented. <b>Scout</b>=spinoffs/IPOs · <b>Quant</b>=factor momentum · <b>Quality</b>=FCF/profit · <b>Trend</b>=momentum · <b>Core</b>=mega-cap'}">Strategies</th>
-              <th @click="sort('score_streak')" :class="sortClass('score_streak')" class="cursor-pointer hover:text-zinc-300 text-center px-3 py-2 hidden md:table-cell" x-tooltip="'Consecutive days the score moved in the same direction (▲ up · ▼ down).'">Streak</th>
-              <th @click="sort('score_percentile')" :class="sortClass('score_percentile')" class="cursor-pointer hover:text-zinc-300 text-left px-3 py-2 hidden xl:table-cell" x-tooltip="'Today\'s score as a percentile of this ticker\'s own score history in the past 60 days.'">Level</th>
+              <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300" @click="sort('etf_count')" :class="sortClass('etf_count')" x-tooltip="'Count of ETFs holding this ticker. Suffix shows net ETFs added/lost in 30d.'">ETFs</th>
+              <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300" @click="sort('total_weight')" :class="sortClass('total_weight')" x-tooltip="'Sum of position weights across all ETFs holding this name.'">Weight</th>
+              <th @click="sort('tier_count')" :class="sortClass('tier_count')" class="cursor-pointer hover:text-zinc-300 text-left px-2 py-2" x-tooltip="{html:'Tiers represented. <b>Scout</b>=spinoffs/IPOs · <b>Quant</b>=factor momentum · <b>Quality</b>=FCF/profit · <b>Trend</b>=momentum · <b>Core</b>=mega-cap'}">Strategies</th>
+              <th @click="sort('score_streak')" :class="sortClass('score_streak')" class="cursor-pointer hover:text-zinc-300 text-center px-3 py-2" x-tooltip="'Consecutive days the score moved in the same direction (▲ up · ▼ down).'">Streak</th>
+              <th @click="sort('score_percentile')" :class="sortClass('score_percentile')" class="cursor-pointer hover:text-zinc-300 text-left px-3 py-2" x-tooltip="'Today\'s score as a percentile of this ticker\'s own score history in the past 60 days.'">Level</th>
               <th @click="sort('flag_rank')" :class="sortClass('flag_rank')" class="cursor-pointer hover:text-zinc-300 text-left px-2 py-2" x-tooltip="{html:'Priority-ordered signal stack (top 2 shown, +n = hover for full list)<br><b>HC</b> = 4+ ETFs, 2+ overweight, 2+ tiers · <b>BURST / CRATER</b> = climbing / falling fast in the rankings; solid = a fund bought in / sold out, dashed = price-driven · <b>FUNDS ↓/↑</b> = top-200 name lost a fund in 14d / gained one in 30d · <b>PRE-HC</b> = one step from HC, improving · <b>STEALTH</b> = a 2nd fund just joined · <b>Q+</b> = Quality fund added in 30d · <b>CONC</b> = rests on one fund · <b>NEW</b> = first appearance within 14d'}">Flag</th>
             </tr>
           </thead>
@@ -768,32 +773,32 @@
                        class="hover:text-cyan-300 transition" style="color: inherit; text-decoration: none;"
                        x-text="row.ticker"></a>
                   </td>
-                  <td class="px-3 py-2 hidden sm:table-cell truncate max-w-[220px]" :title="row.company || row.ticker" style="color: var(--text-2)" x-text="row.company || row.ticker"></td>
+                  <td class="px-3 py-2 truncate max-w-[110px] sm:max-w-[220px]" :title="row.company || row.ticker" style="color: var(--text-2)" x-text="row.company || row.ticker"></td>
                   <td class="px-2 py-2 text-right num font-mono font-medium"
                       x-tooltip="`Score: ${fmt1(row.final_score)}<br>Percentile of own history: ${row.score_percentile != null ? Math.round(row.score_percentile * 100) + '%' : '-'}<br>Top fund: ${row.concentration_score != null ? row.concentration_score : '-'}% of conviction mass<br>${row.concentration_score == null ? 'No data' : row.concentration_score >= 85 ? 'CONCENTRATED - the score rests on one fund' : row.concentration_score >= 60 ? 'Led by one fund' : 'Spread across funds'}`"
                       x-text="fmt1(row.final_score)"></td>
-                  <td class="px-2 py-2 text-center num font-mono hidden lg:table-cell" :style="`color: ${flowColor(activeDeltaValue(row))}`" x-text="fmtPct(activeDeltaValue(row))"></td>
-                  <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell"
+                  <td class="px-2 py-2 text-center num font-mono" :style="`color: ${flowColor(activeDeltaValue(row))}`" x-text="fmtPct(activeDeltaValue(row))"></td>
+                  <td class="px-2 py-2 text-right num font-mono"
                       x-tooltip="`Net ETF positions added/lost over 30d: ${(row.etf_count_delta_30d || 0) > 0 ? '+' : ''}${row.etf_count_delta_30d || 0}`">
                     <span x-text="`${(row.etf_count_delta_30d || 0) > 0 ? '+' : ''}${row.etf_count_delta_30d || 0}`"
                           :style="`color: ${(row.etf_count_delta_30d || 0) > 0 ? 'var(--up)' : (row.etf_count_delta_30d || 0) < 0 ? 'var(--down)' : 'var(--text-3)'}`"></span>
                   </td>
-                  <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell"
+                  <td class="px-2 py-2 text-right num font-mono"
                       x-tooltip="burstTip(row)">
                     <span x-show="row.burst_30d || row.surge_10d" class="font-mono text-[10px]" :class="row.burst_30d ? 'font-semibold' : ''" :style="row.burst_30d ? 'color: #c084fc' : 'color: rgba(192,132,252,0.6)'" x-text="`+${row.burst_rank_gain}${row.burst_30d ? ' ✓' : ''}`"></span>
                     <span x-show="!row.burst_30d && !row.surge_10d" class="text-[10px]" style="color: var(--text-3)">–</span>
                   </td>
-                  <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell"
+                  <td class="px-2 py-2 text-right num font-mono"
                       x-tooltip="craterTip(row)">
                     <span x-show="row.crater_30d || row.slide_10d" class="font-mono text-[10px]" :class="row.crater_30d ? 'font-semibold' : ''" :style="row.crater_30d ? 'color: #f87171' : 'color: rgba(248,113,113,0.6)'" x-text="`-${row.crater_rank_loss}${row.crater_30d ? ' ✓' : ''}`"></span>
                     <span x-show="!row.crater_30d && !row.slide_10d" class="text-[10px]" style="color: var(--text-3)">–</span>
                   </td>
-                  <td class="px-2 py-2 text-right num font-mono hidden md:table-cell"
+                  <td class="px-2 py-2 text-right num font-mono"
                       x-tooltip="(row.etf_count_delta_30d || 0) !== 0 ? 'Net ETFs added/lost in 30d' : ''">
                     <span x-text="row.etf_count"></span><span x-show="(row.etf_count_delta_30d || 0) > 0" class="ml-1 text-[10px]" style="color: var(--up)" x-text="`↑${row.etf_count_delta_30d}`"></span><span x-show="(row.etf_count_delta_30d || 0) < 0" class="ml-1 text-[10px]" style="color: var(--down)" x-text="`↓${Math.abs(row.etf_count_delta_30d)}`"></span>
                   </td>
-                  <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell" style="color: var(--text-2)" x-text="fmtWeight(row.total_weight)"></td>
-                  <td class="px-2 py-2 hidden xl:table-cell">
+                  <td class="px-2 py-2 text-right num font-mono" style="color: var(--text-2)" x-text="fmtWeight(row.total_weight)"></td>
+                  <td class="px-2 py-2">
                     <div class="flex gap-1 items-center">
                       <template x-if="(row.tiers || '').split(' + ').filter(Boolean).length > 0">
                         <span class="chip" :style="tierChipStyle((row.tiers || '').split(' + ').filter(Boolean)[0])"
@@ -806,10 +811,10 @@
                             x-text="`+${(row.tiers || '').split(' + ').filter(Boolean).length - 1}`"></span>
                     </div>
                   </td>
-                  <td class="px-3 py-2 text-center hidden md:table-cell">
+                  <td class="px-3 py-2 text-center">
                     <span class="num font-mono text-xs" :style="`color: ${streakColor(row.score_streak)}`" x-text="fmtStreak(row.score_streak)"></span>
                   </td>
-                  <td class="px-3 py-2 hidden xl:table-cell">
+                  <td class="px-3 py-2">
                     <div class="flex items-center gap-2">
                       <div class="pct-bar" :class="row.score_percentile >= 0.66 ? 'hi' : (row.score_percentile >= 0.33 ? 'mid' : '')">
                         <i :style="`width: ${(row.score_percentile || 0) * 100}%`"></i>
@@ -1307,15 +1312,15 @@
       <!-- Main table (same structure as leaderboard) -->
       <div class="rounded-lg border overflow-hidden" style="background: var(--surface); border-color: var(--border)">
         <div class="overflow-x-auto scrollbar">
-          <table class="w-full text-sm">
+          <table class="w-full text-sm lb-table">
             <thead class="text-[10px] uppercase tracking-wider" style="background: #050505; color: var(--text-3)">
               <tr style="border-bottom: 1px solid var(--border)">
                 <th class="text-center px-2 py-2" x-tooltip="'Pin to watchlist'">★</th>
                 <th class="text-left px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('leaderboard_rank')" :class="sortClass('leaderboard_rank')" x-tooltip="'Rank by Conviction Score (1 = highest conviction) — the single canonical rank'">#</th>
                 <th class="text-left px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('ticker')" :class="sortClass('ticker')" x-tooltip="'Stock ticker. Click to open per-stock detail page.'">Ticker</th>
-                <th class="text-left px-3 py-2 hidden sm:table-cell cursor-pointer hover:text-zinc-300" @click="sort('company')" :class="sortClass('company')" x-tooltip="'Issuer\'s legal name as reported by the ETF.'">Company</th>
+                <th class="text-left px-3 py-2 cursor-pointer hover:text-zinc-300" @click="sort('company')" :class="sortClass('company')" x-tooltip="'Issuer\'s legal name as reported by the ETF.'">Company</th>
                 <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300" @click="sort('final_score')" :class="sortClass('final_score')" x-tooltip="'Conviction Score (v4) = Σ tier points × conviction² across holding ETFs, shaped by concentration, strategy-breadth and universe multipliers. Conviction = overweight vs equal-weight × rank in book; squaring it keeps filler positions from adding up to a high score. Hover a cell for percentile.'">Score</th>
-                <th class="text-center px-2 py-2 hidden lg:table-cell select-none" style="vertical-align: top;">
+                <th class="text-center px-2 py-2 select-none" style="vertical-align: top;">
                   <div class="cursor-pointer hover:text-zinc-300 inline-block align-middle"
                        @click="sort('score_delta_pct')"
                        :class="sortClass('score_delta_pct')"
@@ -1334,19 +1339,19 @@
                   </div>
                 </th>
                 <th @click="sort('etf_count_delta_30d')" :class="sortClass('etf_count_delta_30d')"
-                    class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell whitespace-nowrap"
+                    class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 whitespace-nowrap"
                     x-tooltip="'Net ETF positions added or lost over the last 30 days - breadth of conviction flow.'">Δ Funds</th>
                 <th @click="sort('burst_score')" :class="sortClass('burst_score')"
-                    class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell whitespace-nowrap"
+                    class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 whitespace-nowrap"
                     x-tooltip="'Burst - rank positions gained in the climb (smoothed). ✓ and bright = a fund bought in; dim = price-driven. Blank when not bursting.'">Burst</th>
                 <th @click="sort('crater_score')" :class="sortClass('crater_score')"
-                    class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell whitespace-nowrap"
+                    class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 whitespace-nowrap"
                     x-tooltip="'Crater - rank positions lost in the fall (smoothed). ✓ and bright = a fund sold out; dim = price-driven. Blank when not cratering.'">Crater</th>
-                <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden md:table-cell" @click="sort('etf_count')" :class="sortClass('etf_count')" x-tooltip="'Count of ETFs holding this ticker. Suffix shows net ETFs added/lost in 30d.'">ETFs</th>
-                <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300 hidden lg:table-cell" @click="sort('total_weight')" :class="sortClass('total_weight')" x-tooltip="'Sum of position weights across all ETFs holding this name.'">Weight</th>
-                <th @click="sort('tier_count')" :class="sortClass('tier_count')" class="cursor-pointer hover:text-zinc-300 text-left px-2 py-2 hidden xl:table-cell" x-tooltip="{html:'Tiers represented. <b>Scout</b>=spinoffs/IPOs · <b>Quant</b>=factor momentum · <b>Quality</b>=FCF/profit · <b>Trend</b>=momentum · <b>Core</b>=mega-cap'}">Strategies</th>
-                <th @click="sort('score_streak')" :class="sortClass('score_streak')" class="cursor-pointer hover:text-zinc-300 text-center px-3 py-2 hidden md:table-cell" x-tooltip="'Consecutive days the score moved in the same direction (▲ up · ▼ down).'">Streak</th>
-                <th @click="sort('score_percentile')" :class="sortClass('score_percentile')" class="cursor-pointer hover:text-zinc-300 text-left px-3 py-2 hidden xl:table-cell" x-tooltip="'Today\'s score as a percentile of this ticker\'s own score history in the past 60 days.'">Level</th>
+                <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300" @click="sort('etf_count')" :class="sortClass('etf_count')" x-tooltip="'Count of ETFs holding this ticker. Suffix shows net ETFs added/lost in 30d.'">ETFs</th>
+                <th class="text-right px-2 py-2 cursor-pointer hover:text-zinc-300" @click="sort('total_weight')" :class="sortClass('total_weight')" x-tooltip="'Sum of position weights across all ETFs holding this name.'">Weight</th>
+                <th @click="sort('tier_count')" :class="sortClass('tier_count')" class="cursor-pointer hover:text-zinc-300 text-left px-2 py-2" x-tooltip="{html:'Tiers represented. <b>Scout</b>=spinoffs/IPOs · <b>Quant</b>=factor momentum · <b>Quality</b>=FCF/profit · <b>Trend</b>=momentum · <b>Core</b>=mega-cap'}">Strategies</th>
+                <th @click="sort('score_streak')" :class="sortClass('score_streak')" class="cursor-pointer hover:text-zinc-300 text-center px-3 py-2" x-tooltip="'Consecutive days the score moved in the same direction (▲ up · ▼ down).'">Streak</th>
+                <th @click="sort('score_percentile')" :class="sortClass('score_percentile')" class="cursor-pointer hover:text-zinc-300 text-left px-3 py-2" x-tooltip="'Today\'s score as a percentile of this ticker\'s own score history in the past 60 days.'">Level</th>
                 <th @click="sort('flag_rank')" :class="sortClass('flag_rank')" class="cursor-pointer hover:text-zinc-300 text-left px-2 py-2" x-tooltip="{html:'Priority-ordered signal stack (top 2 shown, +n = hover for full list)<br><b>HC</b> = 4+ ETFs, 2+ overweight, 2+ tiers · <b>BURST / CRATER</b> = climbing / falling fast in the rankings; solid = a fund bought in / sold out, dashed = price-driven · <b>FUNDS ↓/↑</b> = top-200 name lost a fund in 14d / gained one in 30d · <b>PRE-HC</b> = one step from HC, improving · <b>STEALTH</b> = a 2nd fund just joined · <b>Q+</b> = Quality fund added in 30d · <b>CONC</b> = rests on one fund · <b>NEW</b> = first appearance within 14d'}">Flag</th>
               </tr>
             </thead>
@@ -1369,32 +1374,32 @@
                          class="hover:text-cyan-300 transition" style="color: inherit; text-decoration: none;"
                          x-text="row.ticker"></a>
                     </td>
-                    <td class="px-3 py-2 hidden sm:table-cell truncate max-w-[220px]" :title="row.company || row.ticker" style="color: var(--text-2)" x-text="row.company || row.ticker"></td>
+                    <td class="px-3 py-2 truncate max-w-[110px] sm:max-w-[220px]" :title="row.company || row.ticker" style="color: var(--text-2)" x-text="row.company || row.ticker"></td>
                     <td class="px-2 py-2 text-right num font-mono font-medium"
                         x-tooltip="`Score: ${fmt1(row.final_score)}<br>Percentile of own history: ${row.score_percentile != null ? Math.round(row.score_percentile * 100) + '%' : '-'}<br>Top fund: ${row.concentration_score != null ? row.concentration_score : '-'}% of conviction mass<br>${row.concentration_score == null ? 'No data' : row.concentration_score >= 85 ? 'CONCENTRATED - the score rests on one fund' : row.concentration_score >= 60 ? 'Led by one fund' : 'Spread across funds'}`"
                         x-text="fmt1(row.final_score)"></td>
-                    <td class="px-2 py-2 text-center num font-mono hidden lg:table-cell" :style="`color: ${flowColor(activeDeltaValue(row))}`" x-text="fmtPct(activeDeltaValue(row))"></td>
-                    <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell"
+                    <td class="px-2 py-2 text-center num font-mono" :style="`color: ${flowColor(activeDeltaValue(row))}`" x-text="fmtPct(activeDeltaValue(row))"></td>
+                    <td class="px-2 py-2 text-right num font-mono"
                         x-tooltip="`Net ETF positions added/lost over 30d: ${(row.etf_count_delta_30d || 0) > 0 ? '+' : ''}${row.etf_count_delta_30d || 0}`">
                       <span x-text="`${(row.etf_count_delta_30d || 0) > 0 ? '+' : ''}${row.etf_count_delta_30d || 0}`"
                             :style="`color: ${(row.etf_count_delta_30d || 0) > 0 ? 'var(--up)' : (row.etf_count_delta_30d || 0) < 0 ? 'var(--down)' : 'var(--text-3)'}`"></span>
                     </td>
-                    <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell"
+                    <td class="px-2 py-2 text-right num font-mono"
                         x-tooltip="burstTip(row)">
                       <span x-show="row.burst_30d || row.surge_10d" class="font-mono text-[10px]" :class="row.burst_30d ? 'font-semibold' : ''" :style="row.burst_30d ? 'color: #c084fc' : 'color: rgba(192,132,252,0.6)'" x-text="`+${row.burst_rank_gain}${row.burst_30d ? ' ✓' : ''}`"></span>
                       <span x-show="!row.burst_30d && !row.surge_10d" class="text-[10px]" style="color: var(--text-3)">–</span>
                     </td>
-                    <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell"
+                    <td class="px-2 py-2 text-right num font-mono"
                         x-tooltip="craterTip(row)">
                       <span x-show="row.crater_30d || row.slide_10d" class="font-mono text-[10px]" :class="row.crater_30d ? 'font-semibold' : ''" :style="row.crater_30d ? 'color: #f87171' : 'color: rgba(248,113,113,0.6)'" x-text="`-${row.crater_rank_loss}${row.crater_30d ? ' ✓' : ''}`"></span>
                       <span x-show="!row.crater_30d && !row.slide_10d" class="text-[10px]" style="color: var(--text-3)">–</span>
                     </td>
-                    <td class="px-2 py-2 text-right num font-mono hidden md:table-cell"
+                    <td class="px-2 py-2 text-right num font-mono"
                         x-tooltip="(row.etf_count_delta_30d || 0) !== 0 ? 'Net ETFs added/lost in 30d' : ''">
                       <span x-text="row.etf_count"></span><span x-show="(row.etf_count_delta_30d || 0) > 0" class="ml-1 text-[10px]" style="color: var(--up)" x-text="`↑${row.etf_count_delta_30d}`"></span><span x-show="(row.etf_count_delta_30d || 0) < 0" class="ml-1 text-[10px]" style="color: var(--down)" x-text="`↓${Math.abs(row.etf_count_delta_30d)}`"></span>
                     </td>
-                    <td class="px-2 py-2 text-right num font-mono hidden lg:table-cell" style="color: var(--text-2)" x-text="fmtWeight(row.total_weight)"></td>
-                    <td class="px-2 py-2 hidden xl:table-cell">
+                    <td class="px-2 py-2 text-right num font-mono" style="color: var(--text-2)" x-text="fmtWeight(row.total_weight)"></td>
+                    <td class="px-2 py-2">
                       <div class="flex gap-1 items-center">
                         <template x-if="(row.tiers || '').split(' + ').filter(Boolean).length > 0">
                           <span class="chip" :style="tierChipStyle((row.tiers || '').split(' + ').filter(Boolean)[0])"
@@ -1407,10 +1412,10 @@
                               x-text="`+${(row.tiers || '').split(' + ').filter(Boolean).length - 1}`"></span>
                       </div>
                     </td>
-                    <td class="px-2 py-2 text-center hidden md:table-cell">
+                    <td class="px-2 py-2 text-center">
                       <span class="num font-mono text-xs" :style="`color: ${streakColor(row.score_streak)}`" x-text="fmtStreak(row.score_streak)"></span>
                     </td>
-                    <td class="px-3 py-2 hidden xl:table-cell">
+                    <td class="px-3 py-2">
                       <div class="flex items-center gap-2">
                         <div class="pct-bar" :class="row.score_percentile >= 0.66 ? 'hi' : (row.score_percentile >= 0.33 ? 'mid' : '')">
                           <i :style="`width: ${(row.score_percentile || 0) * 100}%`"></i>
@@ -2165,23 +2170,23 @@
               <div class="flex items-center justify-between gap-1 mb-1.5">
                 <div class="flex items-center gap-1.5 min-w-0">
                   <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="`background: ${dynfFactorColor(fKey)}`"></span>
-                  <span class="text-xs font-semibold truncate text-zinc-100" x-text="dynfEngine.current_factors?.[fKey]?.label || dynfFactorLabel(fKey)"></span>
+                  <span class="text-xs font-semibold truncate text-zinc-100" x-text="dynfEngine?.current_factors?.[fKey]?.label || dynfFactorLabel(fKey)"></span>
                 </div>
                 <span class="chip sig-badge font-mono shrink-0 uppercase text-[8.5px]"
-                      :style="dynfEngine.current_factors?.[fKey]?.badge === 'up'
+                      :style="dynfEngine?.current_factors?.[fKey]?.badge === 'up'
                         ? 'background: rgba(52, 211, 153, 0.12); color: var(--up); border: 1px solid rgba(52, 211, 153, 0.25);'
-                        : dynfEngine.current_factors?.[fKey]?.badge === 'down'
+                        : dynfEngine?.current_factors?.[fKey]?.badge === 'down'
                         ? 'background: rgba(251, 113, 133, 0.12); color: var(--down); border: 1px solid rgba(251, 113, 133, 0.25);'
                         : 'background: rgba(161, 161, 170, 0.12); color: var(--text-2); border: 1px solid rgba(161, 161, 170, 0.25);'"
-                      x-text="dynfEngine.current_factors?.[fKey]?.status || '-'"></span>
+                      x-text="dynfEngine?.current_factors?.[fKey]?.status || '-'"></span>
               </div>
               <div class="flex items-baseline justify-between gap-1 mb-1">
                 <span class="text-lg font-mono font-bold tracking-tight tabular-nums text-zinc-100"
-                      x-text="dynfHoverIdx !== null && dynfFilteredTimeline[dynfHoverIdx] ? `${(dynfFilteredTimeline[dynfHoverIdx][fKey] || 0).toFixed(1)}%` : `${(dynfEngine.current_factors?.[fKey]?.current_weight || 0).toFixed(1)}%`"></span>
+                      x-text="dynfHoverIdx !== null && dynfFilteredTimeline[dynfHoverIdx] ? `${(dynfFilteredTimeline[dynfHoverIdx][fKey] || 0).toFixed(1)}%` : `${(dynfEngine?.current_factors?.[fKey]?.current_weight || 0).toFixed(1)}%`"></span>
                 <template x-if="dynfHoverIdx === null">
                   <span class="text-[11px] font-mono tabular-nums font-semibold"
-                        :style="`color: ${(dynfEngine.current_factors?.[fKey]?.delta_30d || 0) > 0 ? 'var(--up)' : (dynfEngine.current_factors?.[fKey]?.delta_30d || 0) < 0 ? 'var(--down)' : 'var(--text-3)'}`"
-                        x-text="`${(dynfEngine.current_factors?.[fKey]?.delta_30d || 0) > 0 ? '+' : ''}${(dynfEngine.current_factors?.[fKey]?.delta_30d || 0).toFixed(1)}% 30d`"></span>
+                        :style="`color: ${(dynfEngine?.current_factors?.[fKey]?.delta_30d || 0) > 0 ? 'var(--up)' : (dynfEngine?.current_factors?.[fKey]?.delta_30d || 0) < 0 ? 'var(--down)' : 'var(--text-3)'}`"
+                        x-text="`${(dynfEngine?.current_factors?.[fKey]?.delta_30d || 0) > 0 ? '+' : ''}${(dynfEngine?.current_factors?.[fKey]?.delta_30d || 0).toFixed(1)}% 30d`"></span>
                 </template>
                 <template x-if="dynfHoverIdx !== null && dynfFilteredTimeline[dynfHoverIdx]">
                   <span class="text-[9.5px] font-mono text-cyan-400 font-semibold"
@@ -2189,11 +2194,11 @@
                 </template>
               </div>
               <div class="text-[9px] font-mono mb-1.5 flex items-center justify-between" style="color: var(--text-3)">
-                <span>Trade: <span :style="(dynfEngine.current_factors?.[fKey]?.flow_active_30d || 0) > 0 ? 'color: var(--up)' : (dynfEngine.current_factors?.[fKey]?.flow_active_30d || 0) < 0 ? 'color: var(--down)' : ''" x-text="`${(dynfEngine.current_factors?.[fKey]?.flow_active_30d || 0) > 0 ? '+' : ''}${(dynfEngine.current_factors?.[fKey]?.flow_active_30d || 0).toFixed(1)}%`"></span></span>
-                <span>Drift: <span :style="(dynfEngine.current_factors?.[fKey]?.drift_30d || 0) > 0 ? 'color: var(--up)' : (dynfEngine.current_factors?.[fKey]?.drift_30d || 0) < 0 ? 'color: var(--down)' : ''" x-text="`${(dynfEngine.current_factors?.[fKey]?.drift_30d || 0) > 0 ? '+' : ''}${(dynfEngine.current_factors?.[fKey]?.drift_30d || 0).toFixed(1)}%`"></span></span>
+                <span>Trade: <span :style="(dynfEngine?.current_factors?.[fKey]?.flow_active_30d || 0) > 0 ? 'color: var(--up)' : (dynfEngine?.current_factors?.[fKey]?.flow_active_30d || 0) < 0 ? 'color: var(--down)' : ''" x-text="`${(dynfEngine?.current_factors?.[fKey]?.flow_active_30d || 0) > 0 ? '+' : ''}${(dynfEngine?.current_factors?.[fKey]?.flow_active_30d || 0).toFixed(1)}%`"></span></span>
+                <span>Drift: <span :style="(dynfEngine?.current_factors?.[fKey]?.drift_30d || 0) > 0 ? 'color: var(--up)' : (dynfEngine?.current_factors?.[fKey]?.drift_30d || 0) < 0 ? 'color: var(--down)' : ''" x-text="`${(dynfEngine?.current_factors?.[fKey]?.drift_30d || 0) > 0 ? '+' : ''}${(dynfEngine?.current_factors?.[fKey]?.drift_30d || 0).toFixed(1)}%`"></span></span>
               </div>
               <div class="text-[9.5px] line-clamp-2 mb-2 leading-relaxed" style="color: var(--text-3)"
-                   x-text="dynfEngine.current_factors?.[fKey]?.description || ''"></div>
+                   x-text="dynfEngine?.current_factors?.[fKey]?.description || ''"></div>
             </div>
             <div class="pt-2 border-t" style="border-color: rgba(255,255,255,0.04)" @click.stop>
               <div class="flex items-center justify-between text-[8.5px] uppercase tracking-wider font-semibold mb-1" style="color: var(--text-3)">
@@ -2368,7 +2373,7 @@
                           : `background: rgba(255,255,255,0.01); border-color: transparent; color: var(--text-3); opacity: 0.45;`">
                 <span class="w-2 h-2 rounded-full inline-block" :style="`background: ${dynfFactorColor(fKey)}`"></span>
                 <span x-text="dynfFactorLabel(fKey)"></span>
-                <span class="tabular-nums font-semibold" :style="dynfActiveFactor === fKey ? '' : 'color: var(--text-3)'" x-text="`${(dynfEngine.current_factors?.[fKey]?.current_weight || 0).toFixed(1)}%`"></span>
+                <span class="tabular-nums font-semibold" :style="dynfActiveFactor === fKey ? '' : 'color: var(--text-3)'" x-text="`${(dynfEngine?.current_factors?.[fKey]?.current_weight || 0).toFixed(1)}%`"></span>
               </button>
             </template>
             <button x-show="dynfActiveFactor !== null"
@@ -2598,7 +2603,7 @@
                 <thead>
                   <tr>
                     <th class="pl-3 cursor-pointer" @click="sortChangesTable(P.id, 'ticker')" :class="changesSortClass(P.id, 'ticker')">Ticker</th>
-                    <th class="hidden sm:table-cell">Company</th>
+                    <th class="">Company</th>
                     <th class="text-right cursor-pointer" @click="sortChangesTable(P.id, 'rank')" :class="[changesSortClass(P.id, 'rank'), P.metric === 'rank' ? 'chg-key' : '']">Rank</th>
                     <th class="text-right cursor-pointer" @click="sortChangesTable(P.id, 'funds')" :class="[changesSortClass(P.id, 'funds'), P.metric === 'funds' ? 'chg-key' : '']">Funds</th>
                     <th class="text-right pr-3 cursor-pointer" @click="sortChangesTable(P.id, 'score')" :class="changesSortClass(P.id, 'score')">Score</th>
@@ -2616,7 +2621,7 @@
                           </template>
                         </div>
                       </td>
-                      <td class="hidden sm:table-cell truncate max-w-[200px]" style="color: var(--text-2)" x-text="r.company || '—'"></td>
+                      <td class=" truncate max-w-[200px]" style="color: var(--text-2)" x-text="r.company || '—'"></td>
                       <td class="text-right font-mono whitespace-nowrap">
                         <span style="color: var(--text-3)" x-text="r.rank_then != null ? '#' + r.rank_then : '—'"></span>
                         <span class="chg-arrow">→</span>
@@ -5023,12 +5028,16 @@ document.addEventListener('alpine:init', () => {
     el.addEventListener('mouseleave', hide);
     el.addEventListener('focus', show);
     el.addEventListener('blur', hide);
-    // Touch: first tap shows the tooltip, tapping elsewhere hides it.
-    el.addEventListener('touchstart', (ev) => {
-      if (window.activeTooltipEl === el) return;
+    // Touch: a tap (no drag) shows the tooltip; a second tap runs the element's action.
+    // Never preventDefault on touchstart, so swipes still scroll tab bars/tables.
+    let tx = 0, ty = 0, moved = false;
+    el.addEventListener('touchstart', (ev) => { const t = ev.touches[0]; tx = t.clientX; ty = t.clientY; moved = false; }, { passive: true });
+    el.addEventListener('touchmove', (ev) => { const t = ev.touches[0]; if (Math.abs(t.clientX - tx) > 8 || Math.abs(t.clientY - ty) > 8) moved = true; }, { passive: true });
+    el.addEventListener('touchend', (ev) => {
+      if (moved || window.activeTooltipEl === el) return;
       ev.preventDefault();
       show();
-    }, { passive: false });
+    });
     el.addEventListener('click', hide);
     cleanup(() => {
       el.removeEventListener('mouseenter', show); el.removeEventListener('mouseleave', hide);

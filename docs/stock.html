@@ -2065,6 +2065,16 @@ document.addEventListener('alpine:init', () => {
     };
     el.addEventListener('mouseenter', show);
     el.addEventListener('mouseleave', hide);
+    // Touch: a tap (no drag) shows the tooltip; a second tap runs the element's action.
+    // Never preventDefault on touchstart, so swipes still scroll tab bars/tables.
+    let tx = 0, ty = 0, moved = false;
+    el.addEventListener('touchstart', (ev) => { const t = ev.touches[0]; tx = t.clientX; ty = t.clientY; moved = false; }, { passive: true });
+    el.addEventListener('touchmove', (ev) => { const t = ev.touches[0]; if (Math.abs(t.clientX - tx) > 8 || Math.abs(t.clientY - ty) > 8) moved = true; }, { passive: true });
+    el.addEventListener('touchend', (ev) => {
+      if (moved || window.activeTooltipEl === el) return;
+      ev.preventDefault();
+      show();
+    });
     el.addEventListener('click', hide);
     cleanup(() => { el.removeEventListener('mouseenter', show); el.removeEventListener('mouseleave', hide); el.removeEventListener('click', hide); });
   });
