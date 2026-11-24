@@ -29,6 +29,11 @@ on:
         required: false
         default: "0"
         type: string
+      chain:
+        description: "Internal: dispatched by the chain step (applies the ET gate)"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -51,7 +56,7 @@ jobs:
       - name: Check US market window (DST-safe ET gate)
         id: market_window
         run: |
-          if [ "${{ github.event_name }}" != "schedule" ]; then
+          if [ "${{ github.event_name }}" != "schedule" ] && [ "${{ inputs.chain }}" != "true" ]; then
             echo "in_window=true" >> "$GITHUB_OUTPUT"
             echo "Non-schedule trigger (${{ github.event_name }}) -> bypassing ET clock gate."
             exit 0
@@ -167,13 +172,14 @@ jobs:
           target = now.hour * 60 + nxt  # next :07/:37 slot, minutes since midnight ET
           target = max(target, 8 * 60 + 7)  # never dispatch before the 08:00 ET window opens
           wait = (target - mins) * 60 - now.second
-          # stay inside the 08:00-16:40 ET window and the job timeout
-          if now.weekday() >= 5 or target > 16 * 60 + 40 or wait > 40 * 60:
+          # Stop on weekends / after close. Pre-market, hop every <=40 min (job timeout);
+          # chained runs apply the ET gate, so hops before 08:00 skip the scan.
+          if now.weekday() >= 5 or target > 16 * 60 + 40:
               print(-1)
           else:
-              print(max(60, wait))
+              print(max(60, min(wait, 40 * 60)))
           PY
           )
           if [ "$wait_s" -lt 0 ]; then echo "After close / weekend: no chain."; exit 0; fi
           echo "Next scan in ${wait_s}s"; sleep "$wait_s"
-          gh workflow run macd_momentum_alerts.yml --ref main
+          gh workflow run macd_momentum_alerts.yml --ref main -f chain=true

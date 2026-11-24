@@ -5,6 +5,11 @@ on:
     # Run once daily Tue-Sat at 11:23 UTC (after US T+1 creation/redemption settlement;
     # off-minute schedule avoids top-of-hour burst traffic).
     - cron: '23 11 * * 2-6'
+    # Fallbacks: GitHub often delays/drops scheduled runs; the updater is incremental and
+    # commits only new rows, so extra runs are no-ops once the day's data is in.
+    - cron: '47 14 * * 2-6'
+    - cron: '17 18 * * 2-6'
+    - cron: '43 22 * * 2-6'
   workflow_dispatch:
     inputs:
       force_all:
