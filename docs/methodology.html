@@ -32,7 +32,8 @@
     .label-cyan { color: var(--cyan); }
     code, pre { font-family: ui-monospace, monospace; font-size: 12.5px; background: var(--surface-2); border-radius: 4px; }
     pre { padding: 10px 12px; overflow-x: auto; border: 1px solid var(--border); }
-    code:not(pre code) { padding: 1px 6px; border: 1px solid var(--border); }
+    code:not(pre code) { padding: 1px 6px; border: 1px solid var(--border); overflow-wrap: anywhere; }
+    pre { overflow-x: auto; max-width: 100%; }
     h2 { font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cyan); font-weight: 500; margin-top: 2.5rem; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
     h3 { font-size: 13px; color: var(--text); font-weight: 500; margin-top: 1.5rem; margin-bottom: 0.5rem; }
     p, li { color: var(--text-2); font-size: 13.5px; }

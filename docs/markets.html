@@ -2406,13 +2406,13 @@
                 <p class="flow-chart-description">Click any column header to sort or click any ETF row to open its full historical studio. All figures are source-reported aggregate net flows.</p>
               </div>
               <div style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center">
-                <div style="display:flex;align-items:center;gap:0.3rem">
+                <div style="display:flex;align-items:center;gap:0.3rem;flex-wrap:wrap">
                   <span class="flow-eyebrow">Direction:</span>
                   <button class="flow-chip" type="button" :aria-pressed="flowScannerDirection === 'all' ? 'true' : 'false'" @click="flowScannerDirection = 'all'">All</button>
                   <button class="flow-chip" type="button" :aria-pressed="flowScannerDirection === 'bull' ? 'true' : 'false'" @click="flowScannerDirection = flowScannerDirection === 'bull' ? 'all' : 'bull'">Bull only</button>
                   <button class="flow-chip" type="button" :aria-pressed="flowScannerDirection === 'bear' ? 'true' : 'false'" @click="flowScannerDirection = flowScannerDirection === 'bear' ? 'all' : 'bear'">Bear only</button>
                 </div>
-                <div style="display:flex;align-items:center;gap:0.3rem">
+                <div style="display:flex;align-items:center;gap:0.3rem;flex-wrap:wrap">
                   <span class="flow-eyebrow">Regime:</span>
                   <button class="flow-chip" type="button" :aria-pressed="flowScannerRegime === 'all' ? 'true' : 'false'" @click="flowScannerRegime = 'all'">All</button>
                   <button class="flow-chip" type="button" :aria-pressed="flowScannerRegime === 'ACCUMULATION' ? 'true' : 'false'" @click="flowScannerRegime = 'ACCUMULATION'">Accumulation</button>

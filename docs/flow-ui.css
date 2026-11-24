@@ -2218,3 +2218,20 @@
 .flow-research .flow-twin-card:hover {
   border-color: rgba(34, 211, 238, 0.35);
 }
+
+/* ── Mobile fit (iPhone-width audit) ─────────────────────────────── */
+.flow-research .flow-chip { white-space: nowrap; }
+.flow-research .flow-scatter-svg-wrap { max-width: 100%; overflow: hidden; }
+.flow-research .flow-scatter-svg-wrap svg { max-width: 100%; height: auto; display: block; }
+@media (max-width: 640px) {
+  /* Keep every scanner column; pin the ticker and cap the long name so numbers stay reachable. */
+  .flow-research .flow-scanner-wrap .flow-table th:first-child,
+  .flow-research .flow-scanner-wrap .flow-table td:first-child {
+    position: sticky; left: 0; z-index: 4; background: #050505;
+  }
+  .flow-research .flow-scanner-wrap .flow-table th:first-child { z-index: 6; background: #080d16; }
+  .flow-research .flow-scanner-wrap .flow-table td:nth-child(2),
+  .flow-research .flow-scanner-wrap .flow-table th:nth-child(2) {
+    max-width: 8.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+}

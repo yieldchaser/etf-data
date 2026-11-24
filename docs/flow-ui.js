@@ -1688,25 +1688,26 @@
         const qBgSqueeze = `<rect x="${xZero.toFixed(1)}" y="${yZero.toFixed(1)}" width="${(pad.left + chartW - xZero).toFixed(1)}" height="${(pad.top + chartH - yZero).toFixed(1)}" fill="rgba(167,139,250,0.02)" stroke="rgba(167,139,250,0.06)" stroke-width="0.5"/>`;
 
         // Compact quadrant headers hugging the origin so corners remain unobstructed for outliers
+        const qn = width < 500; const qW = qn ? 92 : 162; const qL = (full, short) => qn ? short : full;
         const lblTrap = `
           <g pointer-events="none">
-            <rect x="${(xZero - 170).toFixed(1)}" y="${pad.top + 6}" width="162" height="22" rx="3" fill="rgba(8,12,18,0.72)" stroke="rgba(251,146,60,0.3)" stroke-width="0.8"/>
-            <text x="${(xZero - 8).toFixed(1)}" y="${pad.top + 20}" text-anchor="end" fill="#fb923c" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.03em">PRICE ↓ · INFLOWS (${counts.dipAccum})</text>
+            <rect x="${(xZero - 8 - qW).toFixed(1)}" y="${pad.top + 6}" width="${qW}" height="22" rx="3" fill="rgba(8,12,18,0.72)" stroke="rgba(251,146,60,0.3)" stroke-width="0.8"/>
+            <text x="${(xZero - 8).toFixed(1)}" y="${pad.top + 20}" text-anchor="end" fill="#fb923c" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.03em">${qL('PRICE ↓ · INFLOWS', 'P↓ · IN')} (${counts.dipAccum})</text>
           </g>`;
         const lblMomentum = `
           <g pointer-events="none">
-            <rect x="${(xZero + 8).toFixed(1)}" y="${pad.top + 6}" width="162" height="22" rx="3" fill="rgba(8,12,18,0.72)" stroke="rgba(34,211,238,0.3)" stroke-width="0.8"/>
-            <text x="${(xZero + 16).toFixed(1)}" y="${pad.top + 20}" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.03em">PRICE ↑ · INFLOWS (${counts.momentum})</text>
+            <rect x="${(xZero + 8).toFixed(1)}" y="${pad.top + 6}" width="${qW}" height="22" rx="3" fill="rgba(8,12,18,0.72)" stroke="rgba(34,211,238,0.3)" stroke-width="0.8"/>
+            <text x="${(xZero + 16).toFixed(1)}" y="${pad.top + 20}" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.03em">${qL('PRICE ↑ · INFLOWS', 'P↑ · IN')} (${counts.momentum})</text>
           </g>`;
         const lblWashout = `
           <g pointer-events="none">
-            <rect x="${(xZero - 170).toFixed(1)}" y="${(pad.top + chartH - 28).toFixed(1)}" width="162" height="22" rx="3" fill="rgba(8,12,18,0.72)" stroke="rgba(52,211,153,0.3)" stroke-width="0.8"/>
-            <text x="${(xZero - 8).toFixed(1)}" y="${(pad.top + chartH - 14).toFixed(1)}" text-anchor="end" fill="#34d399" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.03em">PRICE ↓ · OUTFLOWS (${counts.washout})</text>
+            <rect x="${(xZero - 8 - qW).toFixed(1)}" y="${(pad.top + chartH - 28).toFixed(1)}" width="${qW}" height="22" rx="3" fill="rgba(8,12,18,0.72)" stroke="rgba(52,211,153,0.3)" stroke-width="0.8"/>
+            <text x="${(xZero - 8).toFixed(1)}" y="${(pad.top + chartH - 14).toFixed(1)}" text-anchor="end" fill="#34d399" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.03em">${qL('PRICE ↓ · OUTFLOWS', 'P↓ · OUT')} (${counts.washout})</text>
           </g>`;
         const lblSqueeze = `
           <g pointer-events="none">
-            <rect x="${(xZero + 8).toFixed(1)}" y="${(pad.top + chartH - 28).toFixed(1)}" width="172" height="22" rx="3" fill="rgba(8,12,18,0.72)" stroke="rgba(167,139,250,0.3)" stroke-width="0.8"/>
-            <text x="${(xZero + 16).toFixed(1)}" y="${(pad.top + chartH - 14).toFixed(1)}" fill="#a78bfa" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.03em">PRICE ↑ · OUTFLOWS (${counts.distribution})</text>
+            <rect x="${(xZero + 8).toFixed(1)}" y="${(pad.top + chartH - 28).toFixed(1)}" width="${qn ? qW : 172}" height="22" rx="3" fill="rgba(8,12,18,0.72)" stroke="rgba(167,139,250,0.3)" stroke-width="0.8"/>
+            <text x="${(xZero + 16).toFixed(1)}" y="${(pad.top + chartH - 14).toFixed(1)}" fill="#a78bfa" font-family="ui-monospace, monospace" font-size="9" font-weight="700" letter-spacing="0.03em">${qL('PRICE ↑ · OUTFLOWS', 'P↑ · OUT')} (${counts.distribution})</text>
           </g>`;
 
         // Axes and zero guidelines
