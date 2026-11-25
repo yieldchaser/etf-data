@@ -137,7 +137,7 @@
       </div>
       <div class="flex items-baseline gap-3 mt-1 flex-wrap">
         <h1 class="text-base font-medium" style="color: var(--cyan)" x-text="({ flows: 'FUND FLOWS', volatility: 'VOLATILITY', yields: 'RATES & YIELDS', pricelog: 'PRICE LOG', correlation: 'CORRELATION', seasonality: 'SEASONALITY', holdingperiod: 'HOLDING-PERIOD LAB', drawdown: 'DRAWDOWNS', periodic: 'PERIODIC TABLE' })[activeTab] || 'LONG-HORIZON RETURNS'">LONG-HORIZON RETURNS</h1>
-        <span class="label" x-text="returnsData ? `Returns data: ${returnsData.asof || (returnsData.generated_utc||'').slice(0,10)}` : (meta.generated_at_utc ? `Price log: ${meta.generated_at_utc.slice(0,10)}` : 'Loading…')"></span>
+        <span class="label" x-show="activeTab !== 'flows'" x-text="returnsData ? `Returns data: ${returnsData.asof || (returnsData.generated_utc||'').slice(0,10)}` : (meta.generated_at_utc ? `Price log: ${meta.generated_at_utc.slice(0,10)}` : 'Loading…')"></span>
         <!-- Live-merge verdict chip - charter v2 Part 2 -->
         <template x-if="freshness && freshness.self_living_check">
           <span class="chip text-[10px] font-mono"
@@ -4862,7 +4862,8 @@ function marketsApp() {
         const r = curr / prev - 1;
         if (!Number.isFinite(r)) continue;
         monthlyRet[adjusted[i].ym] = r;
-        if (assetClass !== 'equity' && Math.abs(r) > 0.50) {
+        // Leveraged ETFs move >50% in a month as a matter of course: shown as reported, never dimmed.
+        if (assetClass !== 'equity' && assetClass !== 'lev_etf' && Math.abs(r) > 0.50) {
           monthlyAnomaly[adjusted[i].ym] = true;
         }
       }
