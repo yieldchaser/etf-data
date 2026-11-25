@@ -96,7 +96,7 @@ def test_cache_fallback_in_output(asset_key, cached_monthly):
         # Build a pandas Series from the monthly pairs and write it to tmp_path
         # using the same parquet schema that _write_cache uses.
         series = _build_series_from_monthly(cached_monthly)
-        cache_file = tmp_path / f"{asset_key}.parquet"
+        cache_file = tmp_path / f"{asset_key}.{mh.CACHE_VERSION}.parquet"
         df = pd.DataFrame({"value": series})
         df.to_parquet(cache_file)
 

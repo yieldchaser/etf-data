@@ -30,6 +30,14 @@ from scripts.build_macd_scanner import (
 )
 
 
+# Mock bars always end in the past relative to the run, so tests never depend on the calendar date
+# (fixed 2026-11 indexes started failing once the wall clock reached the last mock bar).
+# The scanner reads naive timestamps as America/New_York, so anchor in New York time.
+_MOCK_NOW_NY = pd.Timestamp.now(tz="America/New_York").tz_localize(None)
+_MOCK_LAST_1H = _MOCK_NOW_NY.floor("h") - pd.Timedelta(hours=3)
+_MOCK_LAST_1D = _MOCK_NOW_NY.normalize() - pd.Timedelta(days=1)
+
+
 def _make_mock_data(n_1h: int = 140, n_1d: int = 70, is_green: bool = True):
     """Build mock dataframes with proper length and columns."""
     closes_1h = [20.0] * n_1h
@@ -42,7 +50,7 @@ def _make_mock_data(n_1h: int = 140, n_1d: int = 70, is_green: bool = True):
             "Close": closes_1h,
             "Volume": [1000] * n_1h,
         },
-        index=pd.date_range("2026-11-01", periods=n_1h, freq="h"),
+        index=pd.date_range(end=_MOCK_LAST_1H, periods=n_1h, freq="h"),
     )
     df_1d = pd.DataFrame(
         {
@@ -52,7 +60,7 @@ def _make_mock_data(n_1h: int = 140, n_1d: int = 70, is_green: bool = True):
             "Close": [20.0] * n_1d,
             "Volume": [1000] * n_1d,
         },
-        index=pd.date_range("2026-09-01", periods=n_1d, freq="D"),
+        index=pd.date_range(end=_MOCK_LAST_1D, periods=n_1d, freq="D"),
     )
     return df_1h, df_1d
 
@@ -538,7 +546,7 @@ def test_flat_doji_candle_disambiguation(mock_calc, mock_ticker):
             "Close": closes_1h,
             "Volume": [1000] * n_1h,
         },
-        index=pd.date_range("2026-11-01", periods=n_1h, freq="h"),
+        index=pd.date_range(end=_MOCK_LAST_1H, periods=n_1h, freq="h"),
     )
     df_1d = pd.DataFrame(
         {
@@ -548,7 +556,7 @@ def test_flat_doji_candle_disambiguation(mock_calc, mock_ticker):
             "Close": [20.0] * n_1d,
             "Volume": [1000] * n_1d,
         },
-        index=pd.date_range("2026-09-01", periods=n_1d, freq="D"),
+        index=pd.date_range(end=_MOCK_LAST_1D, periods=n_1d, freq="D"),
     )
 
     inst = MagicMock()

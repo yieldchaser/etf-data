@@ -374,6 +374,10 @@ def analyze_ticker(
             and hasattr(ts_1h_seq[-1], "hour")
         ):
             last_ts_ny = ts_1h_seq[-1]
+            # A naive timestamp here means New York time (same convention as the RTH filter above);
+            # comparing it with the aware `now_ny` raised TypeError and silently dropped the ticker.
+            if getattr(last_ts_ny, "tzinfo", None) is None and hasattr(last_ts_ny, "tz_localize"):
+                last_ts_ny = last_ts_ny.tz_localize(NY_TZ)
             if hasattr(last_ts_ny, "date") and last_ts_ny.date() == now_ny.date():
                 if last_ts_ny.hour == 15 and last_ts_ny.minute >= 30:
                     bar_end_ny = last_ts_ny.replace(hour=16, minute=0, second=0, microsecond=0)

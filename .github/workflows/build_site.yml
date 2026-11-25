@@ -168,6 +168,12 @@ jobs:
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
 
+      # Every commodity month is checked against the World Bank CMO reference (and FRED's own
+      # values): a unit splice or wrong value fails the build, so the site keeps its last good data
+      # instead of publishing a -100% cell. Real outliers match the reference and pass.
+      - name: Verify market returns against independent sources
+        run: python scripts/verify_market_returns.py --file docs/data/market_returns.json --report docs/data/market_verification.json
+
       - name: Build site artifacts (conviction)
         if: steps.scope.outputs.full_build == 'true' || steps.cache_conviction.outputs.cache-hit != 'true'
         run: python -m conviction.build --source data/all_history.csv --output docs/data --config config.yaml
