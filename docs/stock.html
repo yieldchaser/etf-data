@@ -745,13 +745,13 @@
     <div class="rounded-lg border mb-5" style="background: var(--surface); border-color: var(--border)">
       <div class="px-3 py-2" style="border-bottom: 1px solid var(--border)">
         <div class="label-cyan label">ETF holdings timeline</div>
-        <div class="text-xs mt-0.5" style="color: var(--text-3)">Rank and weight per snapshot within the 60-day window</div>
+        <div class="text-xs mt-0.5" style="color: var(--text-3)">Rank and weight inside each fund, newest first · latest 10 shown per fund</div>
       </div>
 
       <div x-show="!holdingsHistory || Object.keys(holdingsHistory).length === 0" class="px-3 py-6 text-center text-xs" style="color: var(--text-3)">No holdings history available for this ticker</div>
 
       <template x-for="[etf, rows] in etfEntries" :key="etf">
-        <div class="border rounded-lg mb-4 overflow-hidden" style="background: var(--surface); border-color: var(--border)">
+        <div class="border rounded-lg mb-4 overflow-hidden" x-data="{ showAll: false }" style="background: var(--surface); border-color: var(--border)">
           <div class="px-4 py-2.5 flex items-center gap-2 border-b" style="background: rgba(255,255,255,0.015); border-color: var(--border)">
             <span class="font-mono font-medium text-sm text-cyan-400" x-text="etf"></span>
             <span class="chip text-[10px]" :style="tierChipStyle(etfTier(etf))" x-text="etfTier(etf)"></span>
@@ -767,12 +767,12 @@
                   <th class="text-right px-4 py-2 text-[10px] font-semibold">Weight</th>
                   <th class="text-right px-4 py-2 text-[10px] font-semibold">Weight Δ</th>
                   <th class="text-left px-4 py-2 text-[10px] font-semibold cursor-help"
-                      x-tooltip="{html: '<b>STATUS</b> column:<br><b>NEW</b> = first appeared in this ETF within 14 days<br><b>HC</b> = held by 4+ ETFs overall<br><b>-</b> = no special flag'}">
+                      x-tooltip="{html: '<b>STATUS</b> column:<br><b>NEW</b> = first appeared in this ETF within 14 days<br><b>-</b> = no special flag'}">
                     Status ⓘ</th>
                 </tr>
               </thead>
               <tbody>
-                <template x-for="(row, i) in rows.slice().reverse()" :key="row.d">
+                <template x-for="(row, i) in (showAll ? rows.slice().reverse() : rows.slice().reverse().slice(0, 10))" :key="row.d">
                   <tr class="row-hover" style="border-bottom: 1px solid rgba(255,255,255,0.02)">
                     <td class="px-4 py-2 font-mono text-zinc-300" x-text="row.d"></td>
                     <td class="px-4 py-2 text-right num font-mono font-medium" style="color: var(--text)" x-text="row.r"></td>
@@ -784,12 +784,8 @@
                       <span x-show="row.is_new" class="chip"
                             style="background: rgba(96,165,250,0.12); color: #60a5fa; border: 1px solid rgba(96,165,250,0.3)"
                             x-tooltip="'First appearance in this ETF within the last 14 days'">NEW</span>
-                      <!-- HC chip when stock is High Conviction overall -->
-                      <span x-show="!row.is_new && leaderboardRow?.flag === 'HIGH_CONVICTION'" class="chip"
-                            style="background: rgba(52,211,153,0.10); color: var(--up); border: 1px solid rgba(52,211,153,0.25)"
-                            x-tooltip="`Held by ${leaderboardRow?.etf_count} ETFs · HC streak ${leaderboardRow?.hc_streak || 0} days`">HC</span>
                       <!-- em-dash fallback - never empty -->
-                      <span x-show="!row.is_new && leaderboardRow?.flag !== 'HIGH_CONVICTION'"
+                      <span x-show="!row.is_new"
                             class="text-xs text-zinc-600" style="margin-left: 2px">—</span>
                     </td>
                   </tr>
@@ -797,6 +793,10 @@
               </tbody>
             </table>
           </div>
+          <button type="button" x-show="rows.length > 10" @click="showAll = !showAll"
+                  class="w-full py-2 text-[11px] font-mono uppercase tracking-wider border-t transition hover:text-cyan-300"
+                  style="color: var(--text-3); border-color: var(--border); background: rgba(255,255,255,0.01)"
+                  x-text="showAll ? 'Show latest 10' : `Show all ${rows.length} snapshots`"></button>
         </div>
       </template>
     </div>
