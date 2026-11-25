@@ -3868,7 +3868,7 @@ document.addEventListener('focusin', (e) => {
   }
 });
 document.addEventListener('focusout', () => { _hideTt(); });
-window.addEventListener('scroll', () => { _ttTouchOpen = false; _hideTt(); }, { passive: true });
+if (typeof window.addEventListener === 'function') window.addEventListener('scroll', () => { _ttTouchOpen = false; _hideTt(); }, { passive: true });
 document.addEventListener('touchstart', (e) => {
   if (_ttLastEl && (e.target === _ttLastEl || (_ttLastEl.contains && _ttLastEl.contains(e.target)))) {
     if (!_ttTouchOpen) {
