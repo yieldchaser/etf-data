@@ -938,9 +938,13 @@
           <div class="label mb-2" style="color: var(--cyan)">INTERPRETATION</div>
           <div class="text-xs space-y-1" style="color: var(--text-2)">
             <div>Full Kelly: <span class="font-mono font-medium" style="color: var(--cyan)"
-                 x-text="kellyResult ? (kellyResult.fStar*100).toFixed(0)+'% of capital per position' : '—'"></span></div>
+                 x-text="kellyResult ? (kellyResult.fStar*100).toFixed(0)+'% of capital in this portfolio' : '—'"></span></div>
             <div>Half Kelly (recommended): <span class="font-mono font-medium" style="color: var(--up)"
-                 x-text="kellyResult ? (kellyResult.fStar/2*100).toFixed(0)+'% of capital per position' : '—'"></span></div>
+                 x-text="kellyResult ? (kellyResult.fStar/2*100).toFixed(0)+'% of capital in this portfolio' : '—'"></span></div>
+            <div x-show="kellyResult && kellyResult.fStar / 2 > 1" class="mt-1" style="color: var(--amber)">
+              Above 100% means borrowing. Kelly assumes the historical mean and volatility hold exactly, so
+              estimation error alone makes this optimistic; a cap of 100% (no leverage) is the practical ceiling.
+            </div>
             <div>Growth at f*: <span class="font-mono" style="color: var(--text)"
                  x-text="kellyResult ? (kellyResult.gStar*100).toFixed(2)+'%/yr' : '—'"></span></div>
             <div>Growth at 2f* (overbetting): <span class="font-mono" style="color: var(--amber)"
@@ -1823,6 +1827,13 @@ function labApp() {
         }
       }
       this.loading = false;
+      // Tabs that used to open on an empty "click to run" state now draw themselves on first visit.
+      this.$watch('activeTab', (t) => {
+        this.$nextTick(() => {
+          if (t === 'montecarlo' && !this.mcResult && this.backtestResult) this.runMonteCarlo();
+          if (t === 'leverage' && !this.etnResult) this.runEtn();
+        });
+      });
       // Set default end date to latest available
       if (this.pricesData?.asof) {
         this.endDate = this.pricesData.asof;

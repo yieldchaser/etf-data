@@ -3041,8 +3041,9 @@ function app() {
     },
 
     get _changesTodayCount() {
-      // Day-over-day events: fund adds/exits and HC transitions.
-      const c = this.changelog?.periods?.['1']?.counts || {};
+      // Fund adds/exits and HC transitions for the period selected in the Changes tab, so the tab
+      // count matches the panel (it used to count only day-over-day and read 0 next to 44 adds).
+      const c = this.changelog?.periods?.[String(this._changesPeriodActive ?? 30)]?.counts || {};
       return (c.funds_added || 0) + (c.funds_lost || 0) + (c.hc_entered || 0) + (c.hc_exited || 0);
     },
 
