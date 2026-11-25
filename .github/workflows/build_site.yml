@@ -109,7 +109,7 @@ jobs:
         run: |
           if [ "${{ steps.scope.outputs.full_build }}" = "false" ]; then
             echo "Fast path: running flow dataset and UI tests"
-            python -m pytest tests/test_local_flow_artifacts.py tests/test_flow_ui.py tests/test_flow_ui_metrics.py tests/test_ci_config.py tests/test_etf_ohlcv.py -v
+            python -m pytest tests/test_local_flow_artifacts.py tests/test_flow_source_fidelity.py tests/test_flow_ui.py tests/test_flow_ui_metrics.py tests/test_ci_config.py tests/test_etf_ohlcv.py -v
           else
             echo "Full build: running complete test suite"
             python -m pytest tests/ -v

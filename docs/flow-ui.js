@@ -4680,6 +4680,14 @@
             line3 += `\n20D Pace ${formatMoney(s20)}${paceTag}${accStr}`;
           }
         }
+        // Factual context, not a judgement: when a large print is followed by a large print the
+        // other way, say what the next day reported. Values are always shown as the source reports.
+        const nextRow = this.flowSelectedRows[this.flowChartTooltip.index + 1];
+        const f0 = finiteNumber(row.flow), f1 = nextRow ? finiteNumber(nextRow.flow) : null;
+        const typical = Math.abs(finiteNumber(row.rollingMean20) || 0);
+        if (f0 !== null && f1 !== null && f0 * f1 < 0 && Math.abs(f1) >= 0.5 * Math.abs(f0) && Math.abs(f0) >= Math.max(3 * typical, 1e6)) {
+          line3 += `\nNext day (${nextRow.date}): ${formatMoney(f1)}`;
+        }
         return `${line1}\n${line2}\n${line3}`;
       },
 

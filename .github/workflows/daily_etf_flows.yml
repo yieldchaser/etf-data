@@ -78,7 +78,7 @@ jobs:
 
       - name: Run flow dataset and UI contract tests
         run: |
-          python -m pytest tests/test_local_flow_artifacts.py tests/test_flow_ui.py tests/test_flow_ui_metrics.py tests/test_ci_config.py tests/test_etf_ohlcv.py -v
+          python -m pytest tests/test_local_flow_artifacts.py tests/test_flow_source_fidelity.py tests/test_flow_ui.py tests/test_flow_ui_metrics.py tests/test_ci_config.py tests/test_etf_ohlcv.py -v
 
       - name: Commit and push updated flow dataset
         id: commit_flows
