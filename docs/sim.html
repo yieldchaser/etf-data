@@ -66,6 +66,8 @@
           font-size: 11px; box-shadow: 0 4px 20px rgba(0,0,0,0.7); white-space: pre-line; }
     .metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
     .portfolio-row { display: grid; grid-template-columns: 80px 1fr 80px 80px 40px; gap: 6px; align-items: center; }
+    /* Wide result tables live in clipping cards: let them scroll sideways on phones instead of being cut. */
+    div.rounded-lg.border:has(> table) { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   </style>
 </head>
 <body>

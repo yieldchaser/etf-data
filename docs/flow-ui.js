@@ -1102,6 +1102,7 @@
       flowRangePreset: '1y',
       flowPriceEnabled: true,
       flowViewportWidth: typeof window === 'undefined' ? 1000 : window.innerWidth,
+      flowChartHostWidth: 0,
       flowAbortController: null,
       flowBootstrapControllers: [],
       flowRequestId: 0,
@@ -2838,7 +2839,20 @@
 
       get flowChartWidth() {
         const viewport = finiteNumber(this.flowViewportWidth) || 1000;
-        return Math.max(280, Math.min(1180, Math.round(viewport - 48)));
+        const fromViewport = Math.max(280, Math.min(1180, Math.round(viewport - 48)));
+        // Draw at the real container width when it is narrower (phones), so charts neither
+        // overflow their card nor get scaled down into unreadably small text.
+        const host = finiteNumber(this.flowChartHostWidth);
+        return host && host >= 200 ? Math.min(fromViewport, Math.round(host)) : fromViewport;
+      },
+
+      _flowMeasureChartHost() {
+        if (typeof document === 'undefined') return;
+        const el = [...document.querySelectorAll('.flow-research .flow-workbench-chart, .flow-research .flow-scatter-svg-wrap')]
+          .find(node => node.offsetParent && node.clientWidth > 0);
+        if (!el) return;
+        const width = el.clientWidth;
+        if (Math.abs(width - (this.flowChartHostWidth || 0)) > 1) this.flowChartHostWidth = width;
       },
 
       get flowDailyChartSvg() {
@@ -3752,7 +3766,7 @@
                 const volMaPoints = rows.map((r, i) => ({ x: xScale(i), y: finiteScale(yVol, r.rollingVolume20) }));
                 volBarsSvg += `<path d="${linePath(volMaPoints)}" fill="none" stroke="#64748b" stroke-width="1.2" stroke-dasharray="2 2" opacity="0.6"/>`;
               } else {
-                t2Grid += `<text x="${width - padRight + 8}" y="${(t2Bottom - 6).toFixed(1)}" text-anchor="start" fill="#64748b" font-family="ui-monospace, monospace" font-size="8.5">Vol unavailable</text>`;
+                t2Grid += `<text x="${width < 450 ? width - 2 : width - padRight + 8}" y="${(t2Bottom - 6).toFixed(1)}" text-anchor="${width < 450 ? 'end' : 'start'}" fill="#64748b" font-family="ui-monospace, monospace" font-size="8.5">${width < 450 ? 'No vol' : 'Vol unavailable'}</text>`;
               }
             }
 
@@ -3810,13 +3824,13 @@
             t3Grid += `<line x1="${padLeft}" y1="${zeroVelY.toFixed(1)}" x2="${width - padRight}" y2="${zeroVelY.toFixed(1)}" stroke="rgba(255,255,255,0.22)" stroke-width="1.1"/>`;
 
             // Subtitle & Axis Labels
-            t3Grid += `<text x="${padLeft}" y="${(t3Top - 2).toFixed(1)}" text-anchor="start" fill="rgba(255,255,255,0.4)" font-family="ui-monospace, monospace" font-size="8.5" font-weight="700" letter-spacing="0.04em">${width < 550 ? 'VELOCITY &amp; ACCEL' : 'FLOW VELOCITY (20D vs 60D BASELINE) &amp; ACCELERATION'}</text>`;
+            t3Grid += `<text x="${padLeft}" y="${(t3Top - 2).toFixed(1)}" text-anchor="start" fill="rgba(255,255,255,0.4)" font-family="ui-monospace, monospace" font-size="8.5" font-weight="700" letter-spacing="0.04em">${width < 450 ? '' : width < 550 ? 'VELOCITY &amp; ACCEL' : 'FLOW VELOCITY (20D vs 60D BASELINE) &amp; ACCELERATION'}</text>`;
             t3Grid += `<text x="${padLeft - 8}" y="${(zeroVelY + 3).toFixed(1)}" text-anchor="end" fill="${COLORS.subtle}" font-family="ui-monospace, monospace" font-size="9">${isPctAum ? '0.0%' : '$0'}</text>`;
             t3Grid += `<text x="${padLeft - 8}" y="${(t3Top + 10).toFixed(1)}" text-anchor="end" fill="#34d399" font-family="ui-monospace, monospace" font-size="8.5">${isPctAum ? `+${maxVelAbs.toFixed(1)}%` : axisNumber(maxVelAbs)}</text>`;
             t3Grid += `<text x="${padLeft - 8}" y="${(t3Bottom - 3).toFixed(1)}" text-anchor="end" fill="#fb7185" font-family="ui-monospace, monospace" font-size="8.5">${isPctAum ? `−${maxVelAbs.toFixed(1)}%` : axisNumber(-maxVelAbs)}</text>`;
 
             // Legend in top-right of Tier 3
-            t3Grid += `<g transform="translate(${(width - padRight - 210).toFixed(1)}, ${(t3Top - 2).toFixed(1)})" font-family="ui-monospace, monospace" font-size="8.5" pointer-events="none">
+            t3Grid += `<g transform="translate(${(width < 450 ? padLeft : width - padRight - 210).toFixed(1)}, ${(t3Top - 2).toFixed(1)})" font-family="ui-monospace, monospace" font-size="8.5" pointer-events="none">
               <line x1="0" y1="-3" x2="7" y2="-3" stroke="#34d399" stroke-width="2"/>
               <line x1="7" y1="-3" x2="14" y2="-3" stroke="#fb7185" stroke-width="2"/>
               <text x="18" y="0" fill="#cbd5e1">20D Pace</text>
@@ -3951,8 +3965,8 @@
             t4Grid += `<text x="${padLeft - 8}" y="${(yNeg10 + 3).toFixed(1)}" text-anchor="end" fill="rgba(255,255,255,0.45)" font-family="ui-monospace, monospace" font-size="8.5">−1.0σ</text>`;
             t4Grid += `<text x="${padLeft - 8}" y="${(yNeg20 + 3).toFixed(1)}" text-anchor="end" fill="#fb7185" font-family="ui-monospace, monospace" font-size="9" font-weight="700">−2.0σ</text>`;
 
-            t4Grid += `<text x="${(width - padRight - 8).toFixed(1)}" y="${(yPos20 - 4).toFixed(1)}" text-anchor="end" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="8.5" font-weight="700" letter-spacing="0.04em">+2.0σ SHOCK ACCUMULATION</text>`;
-            t4Grid += `<text x="${(width - padRight - 8).toFixed(1)}" y="${(yNeg20 + 10).toFixed(1)}" text-anchor="end" fill="#fb7185" font-family="ui-monospace, monospace" font-size="8.5" font-weight="700" letter-spacing="0.04em">−2.0σ DRAIN DISTRIBUTION</text>`;
+            t4Grid += `<text x="${(width - padRight - 8).toFixed(1)}" y="${(yPos20 - 4).toFixed(1)}" text-anchor="end" fill="#22d3ee" font-family="ui-monospace, monospace" font-size="8.5" font-weight="700" letter-spacing="0.04em">${width < 450 ? '+2σ SHOCK' : '+2.0σ SHOCK ACCUMULATION'}</text>`;
+            t4Grid += `<text x="${(width - padRight - 8).toFixed(1)}" y="${(yNeg20 + 10).toFixed(1)}" text-anchor="end" fill="#fb7185" font-family="ui-monospace, monospace" font-size="8.5" font-weight="700" letter-spacing="0.04em">${width < 450 ? '−2σ DRAIN' : '−2.0σ DRAIN DISTRIBUTION'}</text>`;
 
             // Daily shock impulse stems / micro-bars with distinct regime color-coding
             const stemW = Math.max(1.2, Math.min(5.0, slot * 0.45));
@@ -4339,6 +4353,18 @@
 
       async init() {
         this.flowDestroyed = false;
+        this._flowHostTimer = null;
+        const remeasure = () => { clearTimeout(this._flowHostTimer); this._flowHostTimer = setTimeout(() => this._flowMeasureChartHost(), 60); };
+        if (typeof ResizeObserver !== 'undefined' && this.$el) {
+          this._flowHostObserver = new ResizeObserver(remeasure);
+          this._flowHostObserver.observe(this.$el);
+        }
+        if (this.$watch) { this.$watch('flowViewMode', remeasure); this.$watch('flowInitialLoading', remeasure); }
+        // Touch has no mouseleave: drop chart tooltips on scroll or a tap outside the chart.
+        this._flowTipDismiss = () => { if (this.flowChartTooltip?.visible) this.flowChartPointerLeave(); };
+        this._flowTipTouch = (e) => { if (!e.target.closest?.('.flow-workbench-chart, .flow-chart, svg')) this._flowTipDismiss(); };
+        window.addEventListener('scroll', this._flowTipDismiss, { passive: true });
+        document.addEventListener('touchstart', this._flowTipTouch, { passive: true });
         this._flowReadUrl();
         this.flowHistoryHandler = event => reconcileFlowHistory(this, event.detail?.search || window.location.search);
         this._vsYearsHandler = (e) => {
@@ -4363,6 +4389,9 @@
       },
 
       destroy() {
+        this._flowHostObserver?.disconnect();
+        if (this._flowTipDismiss) window.removeEventListener('scroll', this._flowTipDismiss);
+        if (this._flowTipTouch) document.removeEventListener('touchstart', this._flowTipTouch);
         this.flowDestroyed = true;
         if (this.flowHistoryHandler) window.removeEventListener('flow-historychange', this.flowHistoryHandler);
         if (this._vsYearsHandler) window.removeEventListener('volume-studies-years', this._vsYearsHandler);
