@@ -533,6 +533,9 @@ Correlation matrix + Growth of $100 log-scale chart for selected assets.
 - Markets has a **Universe** switch (Markets · Leveraged ETFs (160) · All) for Return Matrix, Periodic Table, Drawdowns, Hold Lab and Seasonality; ETFs are grouped by their Fund Flows category. Deep link: `markets.html?universe=etfs`.
 - Hold Lab adds a **holding-period ladder** (1M to 20Y): median and annualised median, % positive, bad-10%, worst, best and the share of windows that lost half or more, which is where leveraged-ETF decay shows up.
 - Portfolio Lab can backtest any of the 160 ETFs by ticker (e.g. TQQQ/TMF), alongside the existing assets.
+#### Commodity history: sourced and checked against independent data
+- Each commodity is built from **FRED/IMF monthly prices** in one unit (converted once via the registry `scale`). History before FRED starts comes from the **World Bank CMO "Pink Sheet"** (`data/reference/wb_cmo_monthly.json`, refreshed with `scripts/vendor_wb_cmo.py`), rescaled to FRED's level over overlapping months. Futures only extend past FRED's last month, level-matched; no hard-coded unit guesses.
+- `scripts/verify_market_returns.py` checks every commodity month and calendar year against the World Bank reference and runs in the site build: a unit splice or wrong value fails the build, so the site keeps its last good data. Real outliers (cocoa +145% in 2024) match the reference and are shown as data, never dimmed.
 ---
 
 ## ETF Flow Data Runbook

@@ -202,10 +202,14 @@ class TestFredAgricultureScaling:
             assert "fallback_scale" in asset
             assert abs(asset["fallback_scale"] - 0.022046226) < 0.001
 
-        # Cocoa: scale factor converts FRED USD/kg to USD/MT
+        # FRED native units, verified against the World Bank CMO reference (FRED/WB ratio):
+        # PCOCOUSDM is USD/mt (1000x WB $/kg) -> label USD/kg needs x0.001;
+        # PCOTTINDUSDM / PSUGAISAUSDM / PCOFFOTMUSDM are US cents/lb (45.36x WB $/kg) -> x0.0220462262.
         cocoa = registry_by_key["cocoa"]
         assert "scale" in cocoa
-        assert abs(cocoa["scale"] - 1000.0) < 0.01
+        assert abs(cocoa["scale"] - 0.001) < 1e-9
+        for key in ("sugar", "cotton", "coffee"):
+            assert abs(registry_by_key[key]["scale"] - 0.0220462262) < 1e-9
 
         # Rice: fallback_scale converts ZR=F cwt to USD/MT
         rice = registry_by_key["rice"]

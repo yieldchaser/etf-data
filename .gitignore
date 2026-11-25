@@ -133,6 +133,9 @@ docs/data/history/
 *.csv
 *.json
 
+# Independent World Bank CMO reference used to build and verify Markets commodity history
+!data/reference/wb_cmo_monthly.json
+
 # Whitelist Fund Flows data assets
 !docs/data/dynf_factor_engine.json
 !docs/data/quant_validation_report.json

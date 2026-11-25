@@ -241,22 +241,22 @@ ASSET_REGISTRY: list[dict[str, str]] = [
     {
         "key": "cotton", "name": "Cotton (USD/kg)", "category": "agriculture",
         "native_ccy": "USD", "source_type": "fred", "series_id": "PCOTTINDUSDM", "fallback_series_id": "CT=F",
-        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 1.0, "fallback_scale": 0.022046226,
+        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 0.0220462262, "fallback_scale": 0.022046226,
     },
     {
         "key": "sugar", "name": "Sugar (USD/kg)", "category": "agriculture",
         "native_ccy": "USD", "source_type": "fred", "series_id": "PSUGAISAUSDM", "fallback_series_id": "SB=F",
-        "return_type": "price", "notes": "ISA price, IMF monthly", "scale": 1.0, "fallback_scale": 0.022046226,
+        "return_type": "price", "notes": "ISA price, IMF monthly", "scale": 0.0220462262, "fallback_scale": 0.022046226,
     },
     {
         "key": "coffee", "name": "Coffee Arabica (USD/kg)", "category": "agriculture",
         "native_ccy": "USD", "source_type": "fred", "series_id": "PCOFFOTMUSDM", "fallback_series_id": "KC=F",
-        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 1.0, "fallback_scale": 0.022046226,
+        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 0.0220462262, "fallback_scale": 0.022046226,
     },
     {
         "key": "cocoa", "name": "Cocoa (USD/kg)", "category": "agriculture",
         "native_ccy": "USD", "source_type": "fred", "series_id": "PCOCOUSDM", "fallback_series_id": "CC=F",
-        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 1000.0, "fallback_scale": 1.0,
+        "return_type": "price", "notes": "IMF/World Bank monthly", "scale": 0.001, "fallback_scale": 1.0,
     },
     {
         "key": "rice", "name": "Rice (USD/mt)", "category": "agriculture",
@@ -412,6 +412,12 @@ ALL_SERIES = ASSET_REGISTRY + AUX_REGISTRY + RATES_REGISTRY
 
 # Cache directory for parquet files
 CACHE_DIR = Path(__file__).resolve().parent.parent / "data" / "markets_history"
+# v2: commodity series are stored in their labelled unit (see spec "scale"); older caches mixed
+# units across sources and must never be read back.
+CACHE_VERSION = "v2"
+# Independent World Bank CMO monthly reference (scripts/vendor_wb_cmo.py): supplies verified
+# pre-FRED history for commodities and is used by scripts/verify_market_returns.py.
+REFERENCE_PATH = Path(__file__).resolve().parent.parent / "data" / "reference" / "wb_cmo_monthly.json"
 # Output path
 OUTPUT_PATH = Path(__file__).resolve().parent.parent / "docs" / "data" / "market_returns.json"
 # Trailing months to refetch on incremental runs.
@@ -647,11 +653,139 @@ def _fetch_yfinance_series(
     return close
 
 
+# ─── Source splicing helpers ─────────────────────────────────────────────────
+
+def _to_month_end_series(data: pd.Series) -> pd.Series:
+    """Collapse any daily/monthly series to one value per month (the last), indexed at month-end."""
+    if data is None or data.empty:
+        return pd.Series(dtype=float)
+    s = data.dropna()
+    s = s[~s.index.duplicated(keep="last")].sort_index()
+    idx = pd.DatetimeIndex(s.index)
+    out = s.groupby(idx.to_period("M")).last()
+    out.index = out.index.to_timestamp("M")
+    return out.astype(float)
+
+
+def _fetch_fred_csv(series_id: str, scale: float = 1.0) -> pd.Series:
+    """Public FRED CSV (no API key). Used when the API is unavailable so FRED stays the authority."""
+    url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={urllib.parse.quote(series_id)}"
+    try:
+        try:
+            import requests  # noqa: PLC0415 - FRED disconnects plain urllib clients
+            resp = requests.get(url, timeout=60, headers={"User-Agent": "conviction-labs-markets/1.0"})
+            resp.raise_for_status()
+            text = resp.text
+        except ImportError:
+            with urllib.request.urlopen(url, timeout=60) as r:  # noqa: S310 - fixed https host
+                text = r.read().decode("utf-8")
+    except Exception as exc:  # network failure -> caller falls back to cache
+        print(f"    FRED CSV unavailable for {series_id}: {type(exc).__name__}")
+        return pd.Series(dtype=float)
+    rows = []
+    for line in text.splitlines()[1:]:
+        parts = line.split(",")
+        if len(parts) == 2 and parts[1] not in ("", "."):
+            try:
+                rows.append((pd.Timestamp(parts[0]), float(parts[1])))
+            except ValueError:
+                continue
+    if not rows:
+        return pd.Series(dtype=float)
+    data = pd.Series(dict(rows)).sort_index()
+    return data * scale if scale != 1.0 else data
+
+
+def _level_matched_extension(core: pd.Series, ext: pd.Series, key: str = "") -> pd.Series:
+    """Append months after the core's last month from `ext`, rescaled to the core's level.
+
+    The factor is the median core/ext ratio over up to 12 overlapping months; it must be stable
+    (max/min <= 1.15) or the extension is skipped. No hard-coded unit constants: a futures quote in
+    cents, $/lb or $/bu lands on the core's unit automatically, and a wrong unit can't slip in.
+    """
+    if core is None or core.empty or ext is None or ext.empty:
+        return core
+    ext = _to_month_end_series(ext)
+    overlap = core.index.intersection(ext.index)
+    overlap = overlap[-12:]
+    if len(overlap) < 3:
+        print(f"    extension skipped for {key}: only {len(overlap)} overlapping months")
+        return core
+    ratios = (core.loc[overlap] / ext.loc[overlap]).replace([float("inf"), -float("inf")], float("nan")).dropna()
+    ratios = ratios[ratios > 0]
+    if len(ratios) < 3 or ratios.max() / ratios.min() > 1.15:
+        print(f"    extension skipped for {key}: unstable level ratio ({ratios.min():.4g}..{ratios.max():.4g})")
+        return core
+    k = float(ratios.median())
+    tail = ext[ext.index > core.index.max()] * k
+    if tail.empty:
+        return core
+    print(f"    extended {key} by {len(tail)} month(s) to {tail.index.max().strftime('%Y-%m')} (level factor {k:.6g})")
+    return pd.concat([core, tail]).sort_index()
+
+
+_REFERENCE_CACHE: dict | None = None
+
+
+def _reference_series() -> dict:
+    global _REFERENCE_CACHE
+    if _REFERENCE_CACHE is None:
+        try:
+            _REFERENCE_CACHE = json.loads(REFERENCE_PATH.read_text(encoding="utf-8")).get("series", {})
+        except Exception:
+            _REFERENCE_CACHE = {}
+    return _REFERENCE_CACHE
+
+
+def apply_reference_history(key: str, merged: list[list], core: list[list]) -> list[list]:
+    """Replace history before the live core with the independent World Bank series.
+
+    `core` is this run's authoritative series (FRED / futures). Every month before the core's
+    first month is rebuilt from the World Bank CMO reference, rescaled to the core's level by the
+    median ratio over the first 24 overlapping months (must be stable: p90/p10 <= 1.35, else the
+    older months are dropped rather than guessed). Anything older than the reference (e.g. gold
+    before 1960) is kept from the existing deep history only if it joins the reference smoothly.
+    """
+    ref = _reference_series().get(key)
+    if not ref or not core:
+        return merged
+    refm = {ym: float(v) for ym, v in ref.get("monthly", []) if v}
+    coremap = {ym: float(v) for ym, v in core if v}
+    core_start = min(coremap)
+    overlap = [ym for ym in sorted(coremap) if ym in refm][:24]
+    if len(overlap) < 12:
+        return merged
+    ratios = sorted(coremap[ym] / refm[ym] for ym in overlap)
+    k = ratios[len(ratios) // 2]
+    if ratios[int(0.9 * (len(ratios) - 1))] / ratios[int(0.1 * (len(ratios) - 1))] > 1.35:
+        print(f"  REFERENCE: {key} level ratio vs World Bank unstable; dropping pre-{core_start} history")
+        return [m for m in merged if m[0] >= core_start]
+    ref_pre = [[ym, round(refm[ym] * k, 6)] for ym in sorted(refm) if ym < core_start]
+    ref_start = min(refm)
+    older = [m for m in merged if m[0] < ref_start and m[1]]
+    if older:
+        merged_map = {ym: v for ym, v in merged if v}
+        joint = [ym for ym in sorted(refm) if ym < core_start and ym in merged_map][:24]
+        if len(joint) >= 6:
+            jr = sorted(merged_map[ym] / (refm[ym] * k) for ym in joint)
+            jk = jr[len(jr) // 2]
+            if jr[-1] / jr[0] <= 1.35:
+                older = [[ym, round(v / jk, 6)] for ym, v in older]
+            else:
+                older = []
+        else:
+            older = []
+    out = older + ref_pre + [m for m in merged if m[0] >= core_start]
+    print(f"  REFERENCE: {key} history before {core_start} from World Bank CMO "
+          f"({len(ref_pre)} months, level factor {k:.6g}){' + ' + str(len(older)) + ' older months' if older else ''}")
+    return out
+
+
 # ─── Cache (Parquet) ─────────────────────────────────────────────────────────
 
 def _read_cache(key: str) -> pd.Series | None:
     """Read cached parquet for a series. Returns None if not found."""
-    path = CACHE_DIR / f"{key}.parquet"
+    path = CACHE_DIR / f"{key}.{CACHE_VERSION}.parquet"
     if not path.exists():
         return None
     try:
@@ -669,7 +803,7 @@ def _write_cache(key: str, data: pd.Series) -> None:
     """Write series to parquet cache."""
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     df = pd.DataFrame({"value": data})
-    df.to_parquet(CACHE_DIR / f"{key}.parquet")
+    df.to_parquet(CACHE_DIR / f"{key}.{CACHE_VERSION}.parquet")
 
 
 # ─── Series → YYYY-MM dict ──────────────────────────────────────────────────
@@ -774,26 +908,25 @@ def fetch_all(
         try:
             fallback_scale = spec.get("fallback_scale", 1.0)
             if source_type == "fred":
-                if fred is None:
+                # FRED is the authority for every month it covers, in one unit (spec "scale").
+                # API first; if the API is unavailable, the public CSV; never a futures series
+                # with a guessed unit constant in its place.
+                fred_scale = spec.get("scale", 1.0)
+                if fred is not None:
+                    data = _fetch_fred_series(fred, series_id, full_refresh, existing, scale=fred_scale)
+                if data is None or data.empty:
+                    print(f"    FRED API unavailable for {series_id}; trying public CSV")
+                    data = _fetch_fred_csv(series_id, scale=fred_scale)
+                    if data is not None and not data.empty and existing is not None and not existing.empty and not full_refresh:
+                        data = pd.concat([existing, data])
+                        data = data[~data.index.duplicated(keep="last")].sort_index()
+                if data is not None and not data.empty:
+                    data = _to_month_end_series(data)
+                    # Freshness: extend past FRED's last month with the futures series, rescaled to
+                    # FRED's level over the overlap (no hard-coded unit factors).
                     if spec.get("fallback_series_id"):
-                        print(f"    Fallback to yfinance:{spec['fallback_series_id']} (no FRED client)")
-                        data = _fetch_yfinance_series(spec["fallback_series_id"], full_refresh, existing, fallback_scale=fallback_scale)
-                    else:
-                        print(f"    SKIP fetch (no FRED client) — will use cache if available")
-                else:
-                    data = _fetch_fred_series(fred, series_id, full_refresh, existing, scale=spec.get("scale", 1.0))
-                    # Freshness-First Priority: extend FRED series with yfinance trailing daily bars
-                    # so that current trailing months update to today even if FRED lags.
-                    if spec.get("fallback_series_id"):
-                        yf_data = _fetch_yfinance_series(spec["fallback_series_id"], full_refresh=False, existing=data, fallback_scale=fallback_scale)
-                        if yf_data is not None and not yf_data.empty:
-                            if data is None or data.empty:
-                                data = yf_data
-                            else:
-                                combined = pd.concat([data, yf_data])
-                                combined = combined[~combined.index.duplicated(keep="last")]
-                                data = combined.sort_index()
-                                print(f"    extended FRED series with yfinance:{spec['fallback_series_id']} (latest: {pd.Timestamp(data.index.max()).strftime('%Y-%m')})")
+                        yf_data = _fetch_yfinance_series(spec["fallback_series_id"], full_refresh=True, existing=None, fallback_scale=1.0)
+                        data = _level_matched_extension(data, yf_data, key)
             elif source_type == "yfinance":
                 data = _fetch_yfinance_series(series_id, full_refresh, existing, fallback_scale=fallback_scale)
             else:
@@ -877,16 +1010,13 @@ def sanitize_monthly_series(monthly: list[list[Any]], key: str = "") -> list[lis
     if len(monthly) < 2:
         return monthly
 
-    unit_scales = {
-        'cocoa': (lambda p: p * 1000.0 if p < 100 else p),
-        'sugar': (lambda p: p * 45.359237 if p < 2.0 else p),
-        'coffee': (lambda p: p * 45.359237 if p < 15.0 else p),
-        'cotton': (lambda p: p * 45.359237 if p < 5.0 else p),
-        'copper': (lambda p: round(p * 0.00045359237, 4) if p > 100 else p),
-        'wheat': (lambda p: round(p * 2.72155, 2) if p < 350 else p),
-        'corn': (lambda p: round(p * 2.54012, 2) if p < 250 else p),
-        'soybeans': (lambda p: round(p * 3.04814, 2) if p < 600 else p),
-    }
+    # Unit conversion now happens exactly once, at fetch time (spec "scale"), and pre-FRED history
+    # comes from the World Bank reference. The old per-commodity guesses ("x1000 if below 100")
+    # re-scaled correct values whenever a unit changed, so they are retired.
+    unit_scales: dict = {}
+    # Single-month glitches (a point off by a unit factor that BOTH neighbours contradict) are still
+    # repaired for these commodities; a real move doesn't revert the next month, so it is kept.
+    repair_keys = {"cocoa", "sugar", "coffee", "cotton", "copper", "wheat", "corn", "soybeans"}
 
     scale_fn = unit_scales.get(key)
     fixed = []
@@ -902,7 +1032,7 @@ def sanitize_monthly_series(monthly: list[list[Any]], key: str = "") -> list[lis
         prev_ym, prev_p = sanitized[-1]
         if prev_p and prev_p > 0 and p and p > 0:
             ratio = p / prev_p
-            if (ratio > 3.0 or ratio < 0.33) and key in unit_scales:
+            if (ratio > 3.0 or ratio < 0.33) and key in repair_keys:
                 # Shock-preserving guard: a candidate factor is only accepted
                 # when BOTH neighbours agree it was a unit error, not a real
                 # move. A genuine >3x commodity jump has next-month prices at
@@ -1071,6 +1201,8 @@ def build_output(
             merged = new_monthly
 
         merged = sanitize_monthly_series(merged, key=key)
+        # History before this run's authoritative core comes from the World Bank reference.
+        merged = apply_reference_history(key, merged, new_monthly)
 
         sorted_months = [m[0] for m in merged]
         assets_out[key] = {

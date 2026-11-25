@@ -5077,10 +5077,9 @@ function marketsApp() {
       if (this.KNOWN_REAL_EVENTS[key]) {
         return { ok: true };
       }
-      const cd = this.getCellData(assetId, year);
-      if (cd && cd.boundaryAnomaly) {
-        return { ok: false, reason: 'boundary_anomaly' };
-      }
+      // Every commodity month is now checked against independent sources at build time
+      // (scripts/verify_market_returns.py vs FRED + World Bank), so real outliers are shown as
+      // data, never dimmed or marked. Partial years keep their own factual marker.
       return { ok: true };
     },
 
@@ -6307,9 +6306,8 @@ function marketsApp() {
         ? `\n⚠ Partial year (${monthsPresent}/${monthsExpected} months) - not a full-year return`
         : '';
       const isKnown        = this.KNOWN_REAL_EVENTS[`${asset.key}:${year}`] || false;
-      const anomalyLine    = (cellData.boundaryAnomaly && !isKnown)
-        ? '\n⚠ Boundary anomaly (one monthly return >50% on a non-equity series - likely Excel↔FRED unit mismatch)'
-        : '';
+      // Data is checked at build time, so no anomaly wording on real values.
+      const anomalyLine    = '';
       let extremeLine = '';
       const v = this.validateExtreme(cellData.ret, year, asset.key, cellData.count, cellData.monthsExpected);
       if (!v.ok) {
