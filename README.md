@@ -523,11 +523,16 @@ Correlation matrix + Growth of $100 log-scale chart for selected assets.
 - Provides an optional two-axis price-and-flow view, an accessible selected-window data table, status definitions, and catalog alternative metadata.
 - **Flow setups today** (scanner): funds whose 20-day price move and 5-day flow are both unusual for that fund, in four setups (inflows / outflows after a drop / rally). Under each column, the pooled evidence for the setup (`catalog.json` → `flow_evidence`, recomputed on every build: next-20-day return vs funds with the same price move, per era) and a verdict worded from those numbers, and each fund shows its own record (next 20 days vs its typical 20 days, episodes ≥ 20 days apart) only when it has ≥ 8 episodes. Flows are context, not a trade signal: only inflows after a drop kept a small, consistent edge (`scripts/flow_study.py`, `docs/SIGNALS_STUDY.md` §5).
 - **Studio cards** describe price vs flow plainly ("Inflows near low", "Down with inflows"); the flow-spike card compares each spike's next 5 days with the fund's typical 5 days (≥ 8 spikes, ≥ 5 days apart). **Bull vs bear** nets bear-fund inflows against bull-fund inflows (`20D Net Bull` = bull − bear) and names the fund with the biggest 20-day flow.
-- **Reversal pairs:** when a fund's latest 1-day flow undoes the previous day's (opposite sign, both ≥ 5× its typical daily flow, netting to within 20%), the catalog flags it (`flow_reversal`). These are source reporting errors, e.g. NVDL +$1.02B then −$0.99B. The leaderboard marks them ⚠ and ranks them as zero, and 1-day totals and the top-mover lists leave them out. The 5- and 20-day sums net them out on their own. Upstream, `update_daily_flows.py` nets these pairs before computing z, 5/20-day sums, regime and pressure (raw `usd_flow` kept). A 1-day flow of ≥ 50% of AUM is also marked ⚠ (seed money or a source error more often than a real move).
+- **Source data as reported:** flows are shown exactly as the source reports them. Reversal-pair netting (`scripts/flow_reversal.py`) is kept but switched off (`NETTING_ENABLED = False`), so z-scores, 5/20/60D sums, regime and pressure use raw flows, and no "suspect" labels are applied.
 - Keeps legacy, stale, pending, empty, unavailable, loading, and error states explicit; missing observations are never rendered as zero.
 - Keeps ticker, range, and optional price state in the URL and responds to browser history navigation. The browser cannot start a source refresh.
 - Uses optional CDN enhancement with a local static-data fallback; the fallback removes `x-cloak`, loads the local catalog/history files, and exposes an accessible table when enhancement is unavailable.
 
+#### Leveraged-ETF universe in Markets and Portfolio Lab
+- `scripts/build_etf_returns.py` turns each Fund Flows ETF's daily NAV into month-end prices (`docs/data/etf_returns.json`, same schema as `market_returns.json`); the site build runs it after the flow artifacts.
+- Markets has a **Universe** switch (Markets · Leveraged ETFs (160) · All) for Return Matrix, Periodic Table, Drawdowns, Hold Lab and Seasonality; ETFs are grouped by their Fund Flows category. Deep link: `markets.html?universe=etfs`.
+- Hold Lab adds a **holding-period ladder** (1M to 20Y): median and annualised median, % positive, bad-10%, worst, best and the share of windows that lost half or more, which is where leveraged-ETF decay shows up.
+- Portfolio Lab can backtest any of the 160 ETFs by ticker (e.g. TQQQ/TMF), alongside the existing assets.
 ---
 
 ## ETF Flow Data Runbook

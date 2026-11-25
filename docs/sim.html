@@ -81,7 +81,7 @@
 <!-- Datalist for ticker suggestions -->
 <datalist id="available-tickers">
   <template x-for="t in Object.keys(pricesData?.tickers || {})" :key="t">
-    <option :value="t"></option>
+    <option :value="t" x-text="pricesData?.tickers?.[t]?.name || t"></option>
   </template>
 </datalist>
 
@@ -1720,6 +1720,7 @@ function labApp() {
     // ── State ──────────────────────────────────────────────────────────────
     pricesData: null,
     marketData: null,   // market_returns.json (for CPI, rates)
+    etfData: null,      // etf_returns.json (160 Fund Flows ETFs, month-end NAV)
     simData: null,      // sim_underlyings.json (for ETN)
     loading: true,
 
@@ -1817,6 +1818,7 @@ function labApp() {
         this._loadPrices(),
         this._loadMarketData(),
         this._loadSimData(),
+        this._loadEtfData(),
       ]);
       if (!this.pricesData) {
         this.pricesData = this._buildFallbackPricesData();
@@ -1914,6 +1916,14 @@ function labApp() {
       } catch (e) { /* optional */ }
     },
 
+    // The 160 Fund Flows ETFs (month-end NAV), so leveraged/inverse ETFs can be backtested too.
+    async _loadEtfData() {
+      try {
+        const r = await fetch(`data/etf_returns.json?v=${Date.now()}`);
+        if (r.ok) this.etfData = await r.json();
+      } catch (e) { /* optional */ }
+    },
+
     async _loadSimData() {
       try {
         const r = await fetch(`data/sim_underlyings.json?v=${Date.now()}`);
@@ -1972,6 +1982,12 @@ function labApp() {
       addTicker('DIA', 'Dow Jones ETF proxy (DIA)', marketAssets.djia?.monthly, 'equity');
       addTicker('EWJ', 'Nikkei 225 proxy · JPY unhedged (EWJ)', marketAssets.nikkei?.monthly, 'equity');
       addTicker('GLD', 'Gold ETF proxy (GLD)', marketAssets.gold?.monthly, 'commodity');
+
+      for (const asset of Object.values(this.etfData?.assets || {})) {
+        const m = asset.meta || {};
+        if (!m.ticker || tickers[m.ticker]) continue;
+        addTicker(m.ticker, `${m.fund_name || m.ticker}${m.leverage ? ' · ' + m.leverage : ''}`, asset.monthly, 'lev_etf');
+      }
 
       const last = Object.values(tickers)
         .map(t => t.monthly[t.monthly.length - 1]?.[0])
