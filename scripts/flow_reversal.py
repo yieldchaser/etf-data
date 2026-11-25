@@ -30,10 +30,17 @@ def regime_label(z_score: Any) -> str:
     return "BALANCED"
 
 
-def net_reversal_pairs(flow: Any) -> pd.Series:
+# Owner decision (2026-11-25): show source data exactly as reported. Reversal-pair netting is
+# kept available but OFF, so every derived metric (z-score, 5/20/60D sums, regime, pressure)
+# is computed from the raw source flows.
+NETTING_ENABLED = False
+
+
+def net_reversal_pairs(flow: Any, enabled: bool | None = None) -> pd.Series:
     """Return flow series with consecutive-day source reversal pairs netted onto day T.
 
-    Preserves missing (NaN) entries at their original positions.
+    When netting is disabled (the default, see ``NETTING_ENABLED``) the raw series is
+    returned unchanged. Preserves missing (NaN) entries at their original positions.
     """
     if isinstance(flow, pd.Series):
         series = flow
@@ -42,6 +49,8 @@ def net_reversal_pairs(flow: Any) -> pd.Series:
     else:
         series = pd.Series(list(flow))
     numeric = pd.to_numeric(series, errors="coerce").astype(float)
+    if not (NETTING_ENABLED if enabled is None else enabled):
+        return numeric.copy()
     arr = numeric.to_numpy(dtype=float).copy()
     valid_abs = numeric.abs()
     typical = valid_abs.rolling(60, min_periods=20).median().shift(2).to_numpy()

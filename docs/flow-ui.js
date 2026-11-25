@@ -74,18 +74,6 @@
     return finiteNumber(item.latest_flow);
   }
 
-  // One-day prints this large are a new fund's seed money or a source error far more often than real
-  // money moving (e.g. a $4B "inflow" = 42% of a $9.6B fund). Returns % of AUM when suspect, else null.
-  const SUSPECT_PCT_AUM = 25;
-  function suspectPctAum(item) {
-    if (!item || item.flow_reversal) return null;
-    const aum = finiteNumber(item.aum_m);
-    const f1 = finiteNumber(item.latest_flow);
-    if (!aum || aum <= 0 || f1 === null) return null;
-    const pct = (f1 / (aum * 1e6)) * 100;
-    return Math.abs(pct) >= SUSPECT_PCT_AUM ? pct : null;
-  }
-
   function effectiveZScore(item) {
     if (!item || item.flow_reversal) return 0;
     return finiteNumber(item.flow_zscore) || 0;
@@ -1297,14 +1285,6 @@
         return this.flowHoverIndex !== null;
       },
 
-      flowSuspectPct(item) {
-        return suspectPctAum(item);
-      },
-
-      flowSuspectTitle(pct) {
-        return pct == null ? '' : `${pct >= 0 ? '+' : ''}${pct.toFixed(0)}% of AUM in one day: a new fund's seed money or a source error far more often than real money moving. Check before acting on it.`;
-      },
-
       get flowUniversePulse() {
         const items = this.flowPrimaryInstruments;
         if (!items.length) {
@@ -1343,8 +1323,6 @@
         let shockOutflows = 0;
         let extremeOutlierCount = 0;
         let totalAumM = 0;
-        let suspectFlow1d = 0;
-        let suspectCount = 0;
         let topInflowTicker = '—';
         let topInflowVal = -Infinity;
         let topOutflowTicker = '—';
@@ -1357,7 +1335,6 @@
           const lev = finiteNumber(item.leverage_value) || 0;
           const aum = finiteNumber(item.aum_m) || 0;
           totalFlow1d += f1;
-          if (suspectPctAum(item) !== null) { suspectFlow1d += f1; suspectCount += 1; }
           totalFlow20d += f20;
           totalAumM += aum;
           if (lev < 0) {
@@ -1396,8 +1373,6 @@
         const macroRegimeLabel = distributionCount > accumulationCount ? '20D De-Risking Bias' : '20D Accumulation Expansion';
 
         return {
-          suspectFlow1d,
-          suspectCount,
           totalFlow1d,
           bullFlow1d,
           bearFlow1d,
@@ -1493,7 +1468,6 @@
             flow1d: it.latest_flow,
             flow5d: it.flow_5d,
             zscore: it.flow_zscore,
-            suspect: suspectPctAum(it),
             regime: it.regime || 'BALANCED'
           })),
           outflows: sortedAsc.slice(0, 3).map(it => ({
@@ -1503,7 +1477,6 @@
             flow1d: it.latest_flow,
             flow5d: it.flow_5d,
             zscore: it.flow_zscore,
-            suspect: suspectPctAum(it),
             regime: it.regime || 'BALANCED'
           }))
         };
