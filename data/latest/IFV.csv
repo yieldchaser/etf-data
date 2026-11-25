@@ -1,6 +1,6 @@
 ETF_Ticker,ticker,name,weight,Holdings_As_Of,Date_Scraped
-IFV,FKU,First Trust United Kingdom AlphaDEX® Fund,0.2016,2026-11-23,2026-11-24
-IFV,FEUZ,First Trust Eurozone AlphaDEX® ETF,0.2003,2026-11-23,2026-11-24
-IFV,FDT,First Trust Developed Markets ex-US AlphaDEX® Fund,0.2002,2026-11-23,2026-11-24
-IFV,FEP,First Trust Europe AlphaDEX® Fund,0.1989,2026-11-23,2026-11-24
-IFV,FLN,First Trust Latin America AlphaDEX® Fund,0.19820000000000002,2026-11-23,2026-11-24
+IFV,FEUZ,First Trust Eurozone AlphaDEX® ETF,0.20199999999999999,2026-11-24,2026-11-25
+IFV,FKU,First Trust United Kingdom AlphaDEX® Fund,0.2014,2026-11-24,2026-11-25
+IFV,FEP,First Trust Europe AlphaDEX® Fund,0.19920000000000002,2026-11-24,2026-11-25
+IFV,FDT,First Trust Developed Markets ex-US AlphaDEX® Fund,0.1991,2026-11-24,2026-11-25
+IFV,FLN,First Trust Latin America AlphaDEX® Fund,0.1974,2026-11-24,2026-11-25
