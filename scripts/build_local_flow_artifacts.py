@@ -1055,6 +1055,8 @@ def _flow_reversal(rows: list[dict[str, Any]]) -> dict[str, Any] | None:
     opposite signs, are each >= 5x the fund's typical (median absolute)
     daily flow, and cancel to within 20%; otherwise None.
     """
+    # Owner decision (2026-11-25): no reversal labelling; the site shows source data as reported.
+    return None
     if len(rows) < 30:
         return None
     f_prev, f_last = float(rows[-2]["usd_flow"]), float(rows[-1]["usd_flow"])

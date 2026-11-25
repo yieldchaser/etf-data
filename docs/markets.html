@@ -2083,8 +2083,6 @@
                 <span :class="flowUniversePulse.totalFlow1d >= 0 ? 'flow-positive' : 'flow-negative'" style="font-size:1.05rem;font-weight:700" x-text="formatMoney(flowUniversePulse.totalFlow1d)"></span>
               </div>
               <div class="flow-pulse-sub" x-text="`Bull ${formatMoney(flowUniversePulse.bullFlow1d)} vs Bear ${formatMoney(flowUniversePulse.bearFlow1d)} (Spread: ${formatMoney(flowUniversePulse.netSpread1d)} · ${flowUniversePulse.inflowCount1d} In / ${flowUniversePulse.outflowCount1d} Out / ${flowUniversePulse.flatCount1d} Flat)`"></div>
-              <div class="flow-pulse-sub flow-amber" x-show="flowUniversePulse.suspectCount" :title="'Funds whose one-day flow is 25% or more of their AUM. Usually seed money or a source error, so treat the total with care.'"
-                   x-text="`⚠ ${formatMoney(flowUniversePulse.suspectFlow1d)} of this from ${flowUniversePulse.suspectCount} print${flowUniversePulse.suspectCount > 1 ? 's' : ''} ≥25% of AUM · ex-these ${formatMoney(flowUniversePulse.totalFlow1d - flowUniversePulse.suspectFlow1d)}`"></div>
             </div>
             <div class="flow-pulse-card">
               <div class="flow-kpi-label">20D Universe Net Flow</div>
@@ -2134,7 +2132,7 @@
                   </div>
                   <div class="flow-outlier-meta">
                     <span class="flow-no-case" :class="card.zscore >= 1.8 ? 'flow-cyan' : card.zscore <= -1.8 ? 'flow-amber' : ''" x-text="`${card.zscore >= 0 ? '+' : ''}${card.zscore.toFixed(2)}σ`"></span>
-                    <span :class="card.flowPctAum != null && Math.abs(card.flowPctAum) >= 25 ? 'flow-amber' : ''" :title="card.flowPctAum != null && Math.abs(card.flowPctAum) >= 25 ? flowSuspectTitle(card.flowPctAum) : ''" x-text="card.flowPctAum != null ? `${Math.abs(card.flowPctAum) >= 25 ? '⚠ ' : ''}${card.flowPctAum >= 0 ? '+' : ''}${card.flowPctAum.toFixed(1)}% AUM · AUM ${formatMoney(card.aum_m * 1e6, { signed: false })}` : `20D ${formatMoney(card.flow20d)} · AUM ${formatMoney(card.aum_m * 1e6, { signed: false })}`"></span>
+                    <span x-text="card.flowPctAum != null ? `${card.flowPctAum >= 0 ? '+' : ''}${card.flowPctAum.toFixed(1)}% AUM · AUM ${formatMoney(card.aum_m * 1e6, { signed: false })}` : `20D ${formatMoney(card.flow20d)} · AUM ${formatMoney(card.aum_m * 1e6, { signed: false })}`"></span>
                   </div>
                 </button>
               </template>
@@ -2305,7 +2303,6 @@
                       <button class="flow-chip" type="button" @click="selectFlowTicker(item.ticker, { writeUrl: true, push: true, switchToStudio: true })">
                         <strong class="flow-result-symbol" x-text="item.ticker"></strong>
                         <span class="flow-positive" x-text="formatMoney(item.flow1d)"></span>
-                        <span x-show="item.suspect != null" class="flow-amber" :title="flowSuspectTitle(item.suspect)">⚠</span>
                         <span class="flow-no-case" style="font-family:ui-monospace, monospace;font-size:0.6875rem;color:var(--flow-subtle)" x-text="`${(item.zscore || 0) >= 0 ? '+' : ''}${(item.zscore || 0).toFixed(2)}σ`"></span>
                       </button>
                     </template>
@@ -2320,7 +2317,6 @@
                       <button class="flow-chip" type="button" @click="selectFlowTicker(item.ticker, { writeUrl: true, push: true, switchToStudio: true })">
                         <strong class="flow-result-symbol" x-text="item.ticker"></strong>
                         <span class="flow-negative" x-text="formatMoney(item.flow1d)"></span>
-                        <span x-show="item.suspect != null" class="flow-amber" :title="flowSuspectTitle(item.suspect)">⚠</span>
                         <span class="flow-no-case" style="font-family:ui-monospace, monospace;font-size:0.6875rem;color:var(--flow-subtle)" x-text="`${(item.zscore || 0) >= 0 ? '+' : ''}${(item.zscore || 0).toFixed(2)}σ`"></span>
                       </button>
                     </template>
@@ -2455,7 +2451,7 @@
                       <td>
                         <span class="flow-badge" :data-state="(item.leverage_value || 0) < 0 ? 'DISTRIBUTION' : 'ACCUMULATION'" x-text="item.leverage"></span>
                       </td>
-                      <td :class="item.flow_reversal ? 'flow-muted' : item.latest_flow > 0 ? 'flow-positive' : item.latest_flow < 0 ? 'flow-negative' : ''" x-text="formatMoney(item.latest_flow) + (item.flow_reversal || Math.abs(item.flow_pct_aum || 0) >= 25 ? ' *' : '')" :title="item.flow_reversal ? `Undoes the previous day's ${formatMoney(item.flow_reversal.prev_flow)} (${item.flow_reversal.prev_date}); the two net to ${formatMoney(item.flow_reversal.net_2d)}. Almost certainly a source reporting error, not money moving; ranked as zero.` : Math.abs(item.flow_pct_aum || 0) >= 25 ? `${item.flow_pct_aum >= 0 ? '+' : ''}${item.flow_pct_aum.toFixed(0)}% of AUM in one day: a new fund's seed money or a source error far more often than real money moving. Check before acting on it.` : item.flow_pct_aum != null ? `${item.flow_pct_aum >= 0 ? '+' : ''}${item.flow_pct_aum.toFixed(1)}% AUM` : ''"></td>
+                      <td :class="item.flow_reversal ? 'flow-muted' : item.latest_flow > 0 ? 'flow-positive' : item.latest_flow < 0 ? 'flow-negative' : ''" x-text="formatMoney(item.latest_flow) + (item.flow_reversal ? ' *' : '')" :title="item.flow_reversal ? `Undoes the previous day's ${formatMoney(item.flow_reversal.prev_flow)} (${item.flow_reversal.prev_date}); the two net to ${formatMoney(item.flow_reversal.net_2d)}. Almost certainly a source reporting error, not money moving; ranked as zero.` : item.flow_pct_aum != null ? `${item.flow_pct_aum >= 0 ? '+' : ''}${item.flow_pct_aum.toFixed(1)}% AUM` : ''"></td>
                       <td :class="item.flow_5d > 0 ? 'flow-positive' : item.flow_5d < 0 ? 'flow-negative' : ''" x-text="formatMoney(item.flow_5d)"></td>
                       <td :class="item.flow_20d > 0 ? 'flow-positive' : item.flow_20d < 0 ? 'flow-negative' : ''" x-text="formatMoney(item.flow_20d)"></td>
                       <td :class="item.flow_60d > 0 ? 'flow-positive' : item.flow_60d < 0 ? 'flow-negative' : ''" x-text="formatMoney(item.flow_60d)"></td>

@@ -183,7 +183,7 @@ def _select_probe_entries(summary_rows: list[dict[str, Any]], max_local_date: st
 
 
 def _apply_derived_metrics(df: pd.DataFrame) -> pd.DataFrame:
-    return _shared_apply_derived_metrics(df, preserve_na=False, net_reversals=True, round_decimals=4)
+    return _shared_apply_derived_metrics(df, preserve_na=False, net_reversals=False, round_decimals=4)
 
 
 def _sync_codebase_counts(old_rows: int, new_rows: int, old_dates: int, new_dates: int, old_date: str, new_date: str) -> None:
