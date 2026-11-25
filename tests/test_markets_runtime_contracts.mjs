@@ -305,8 +305,10 @@ console.log('Testing docs/markets.html runtime contracts...');
 {
   let fetchCount = 0;
   let shouldFail = false;
-  const { sandbox } = loadMarketsRuntime(async () => {
-    fetchCount++;
+  const { sandbox } = loadMarketsRuntime(async (url) => {
+    // Count the returns payload itself; the optional ETF-universe file (etf_returns.json) is a
+    // separate request and is not a duplicate load.
+    if (String(url).includes('market_returns')) fetchCount++;
     if (shouldFail) throw new Error('network error');
     return {
       ok: true,
