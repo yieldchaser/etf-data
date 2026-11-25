@@ -136,7 +136,7 @@
         <span class="label-cyan label">MARKETS</span>
       </div>
       <div class="flex items-baseline gap-3 mt-1 flex-wrap">
-        <h1 class="text-base font-medium" style="color: var(--cyan)">LONG-HORIZON RETURNS</h1>
+        <h1 class="text-base font-medium" style="color: var(--cyan)" x-text="({ flows: 'FUND FLOWS', volatility: 'VOLATILITY', yields: 'RATES & YIELDS', pricelog: 'PRICE LOG', correlation: 'CORRELATION', seasonality: 'SEASONALITY', holdingperiod: 'HOLDING-PERIOD LAB', drawdown: 'DRAWDOWNS', periodic: 'PERIODIC TABLE' })[activeTab] || 'LONG-HORIZON RETURNS'">LONG-HORIZON RETURNS</h1>
         <span class="label" x-text="returnsData ? `Returns data: ${returnsData.asof || (returnsData.generated_utc||'').slice(0,10)}` : (meta.generated_at_utc ? `Price log: ${meta.generated_at_utc.slice(0,10)}` : 'Loading…')"></span>
         <!-- Live-merge verdict chip - charter v2 Part 2 -->
         <template x-if="freshness && freshness.self_living_check">
@@ -188,7 +188,7 @@
       </div>
     </div>
     <div class="text-xs flex gap-4 items-center" style="color: var(--text-3)">
-      <span x-show="returnsData" x-text="`${Object.keys(returnsData?.assets||{}).length} assets`"></span>
+      <span x-show="returnsData" x-text="`${universeEntries.length} assets`"></span>
       <span x-show="series.length" x-text="`${series.length} price series`"></span>
       <a href="methodology.html" class="label hover:text-zinc-400 transition" style="text-decoration: none;"
          title="How Conviction Labs works - scoring, motion signals, methodology, and limitations">How it works ↗</a>
@@ -299,6 +299,19 @@
               @blur="hideTt()">
         Fund Flows
       </button>
+    </div>
+    <!-- Asset universe: 35 long-horizon markets, the 160 leveraged ETFs from Fund Flows, or both -->
+    <div x-show="['matrix','periodic','drawdown','holdingperiod','seasonality'].includes(activeTab) && etfUniverseCount"
+         class="flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider shrink-0" role="group" aria-label="Asset universe">
+      <span style="color: var(--text-3)">Universe</span>
+      <template x-for="u in [{k:'markets',l:'Markets'},{k:'etfs',l:'Leveraged ETFs'},{k:'all',l:'All'}]" :key="u.k">
+        <button type="button" @click="setUniverse(u.k)"
+                class="px-2 py-1 rounded border transition"
+                :style="assetUniverse === u.k ? 'color: var(--cyan); border-color: rgba(34,211,238,0.4); background: rgba(34,211,238,0.08)' : 'color: var(--text-2); border-color: var(--border)'"
+                :aria-pressed="assetUniverse === u.k ? 'true' : 'false'"
+                :title="u.k === 'etfs' ? `${etfUniverseCount} leveraged & inverse ETFs from Fund Flows · month-end NAV · data to ${etfReturnsAsof}` : ''"
+                x-text="u.k === 'etfs' ? `${u.l} (${etfUniverseCount})` : u.l"></button>
+      </template>
     </div>
     <!-- Divider -->
     <div class="w-px h-5 mx-1" style="background: var(--border-2)"></div>
@@ -483,7 +496,7 @@
               <tr>
                 <td class="matrix-sticky-col" colspan="1"
                     style="padding: 4px 8px; background: var(--surface-2); border-top: 2px solid rgba(255,255,255,0.08); border-right: 1px solid var(--border-2);">
-                  <span class="label" style="font-size:9px; color: var(--cyan)" x-text="group.category.toUpperCase()"></span>
+                  <span class="label" style="font-size:9px; color: var(--cyan)" x-text="assetCatLabel(group.category).toUpperCase()"></span>
                 </td>
                 <template x-for="yr in matrixYears" :key="yr">
                   <td style="background: var(--surface-2); border-top: 2px solid rgba(255,255,255,0.08);"></td>
@@ -559,7 +572,7 @@
             <div class="flex items-center justify-between px-4 py-3" style="border-bottom: 1px solid var(--border); background: var(--surface-2)">
               <div class="flex items-center gap-3">
                 <span class="text-sm font-medium" style="color: var(--cyan)" x-text="returnsData.assets[selectedAsset]?.meta?.name || selectedAsset"></span>
-                <span class="chip text-[9px]" :style="categoryChipStyle(returnsData.assets[selectedAsset]?.meta?.category)" x-text="returnsData.assets[selectedAsset]?.meta?.category"></span>
+                <span class="chip text-[9px]" :style="categoryChipStyle(returnsData.assets[selectedAsset]?.meta?.category)" x-text="assetCatLabel(assetCat(returnsData.assets[selectedAsset]?.meta))"></span>
                 <span class="label" style="font-size:9px;" x-text="returnsData.assets[selectedAsset]?.meta?.native_ccy"></span>
                 <!-- Currency lens indicator (≈USD when a non-USD-native
                      asset is shown converted at monthly FX) -->
@@ -791,7 +804,7 @@
         <template x-for="group in matrixGroups" :key="group.category">
           <div class="mb-6">
             <div class="label mb-3" style="color: var(--text-3); font-size: 9px; border-bottom: 1px solid var(--border); padding-bottom: 4px;">
-              <span x-text="group.category.toUpperCase()"></span>
+              <span x-text="assetCatLabel(group.category).toUpperCase()"></span>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
               <template x-for="asset in group.assets" :key="asset.key">
@@ -802,7 +815,7 @@
                       <div class="text-sm font-medium" style="color: var(--text)" x-text="asset.meta.name"></div>
                       <div class="text-[10px] font-mono mt-0.5" style="color: var(--text-3)" x-text="asset.meta.source"></div>
                     </div>
-                    <span class="chip text-[9px]" :style="categoryChipStyle(asset.meta.category)" x-text="asset.meta.category"></span>
+                    <span class="chip text-[9px]" :style="categoryChipStyle(asset.meta.category)" x-text="asset.meta.category === 'lev_etf' ? (asset.meta.leverage || 'ETF') : assetCatLabel(asset.meta.category)"></span>
                   </div>
                   <!-- Stats grid -->
                   <div>
@@ -1197,7 +1210,7 @@
           <div class="text-xs mt-0.5" style="color: var(--text-3)">Each column = a year. Assets stacked best → worst. Color = asset identity.</div>
         </div>
         <!-- Category filter -->
-        <div class="flex flex-wrap gap-1">
+        <div class="flex flex-wrap gap-1 min-w-0 max-w-full">
           <button @click="periodicCatFilter = ''"
                   :class="periodicCatFilter === '' ? 'tab-active' : ''"
                   class="chip border px-2 py-1 text-[10px] transition"
@@ -1205,7 +1218,8 @@
           <template x-for="cat in periodicCategories" :key="cat.key">
             <button @click="periodicCatFilter = periodicCatFilter === cat.key ? '' : cat.key"
                     :class="periodicCatFilter === cat.key ? 'tab-active' : ''"
-                    class="chip border px-2 py-1 text-[10px] transition"
+                    class="chip border px-2 py-1 text-[10px] transition max-w-full truncate"
+                    :title="cat.label"
                     :style="periodicCatFilter === cat.key ? '' : 'color: var(--text-3); border-color: var(--border)'"
                     x-text="cat.label">
             </button>
@@ -1291,7 +1305,7 @@
                       class="text-[9px] px-1.5 py-0.5 rounded border transition"
                       style="color: var(--text-3); border-color: var(--border)"
                       @mouseenter="showTt($event, 'Select all')" @mouseleave="hideTt()">All</button>
-              <button @click="activeDrawdownAssets = new Set(['sp500','gold','wti_crude','sensex'])"
+              <button @click="assetUniverse === 'etfs' ? _universeDefaults() : (activeDrawdownAssets = new Set(['sp500','gold','wti_crude','sensex']))"
                       class="text-[9px] px-1.5 py-0.5 rounded border transition"
                       style="color: var(--text-3); border-color: var(--border)"
                       @mouseenter="showTt($event, 'Reset to defaults')" @mouseleave="hideTt()">Reset</button>
@@ -1306,7 +1320,7 @@
             <template x-for="group in drawdownAssetGroups" :key="group.category">
               <div>
                 <div class="label mb-1" style="font-size:8px; color: var(--text-3); border-bottom: 1px solid var(--border); padding-bottom: 2px;"
-                     x-text="group.category.toUpperCase().replace('_',' ')"></div>
+                     x-text="assetCatLabel(group.category).toUpperCase()"></div>
                 <template x-for="a in group.assets" :key="a.key">
                   <button @click="toggleDrawdownAsset(a.key)"
                           class="w-full flex items-center gap-2 px-1.5 py-1 rounded text-left text-[10px] transition hover:bg-white/5"
@@ -1439,8 +1453,8 @@
              options after the initial select sync. -->
         <select x-model="hpAsset"
                 @change="hpAsset = $event.target.value"
-                class="bg-transparent border rounded px-2 py-1 text-xs"
-                style="border-color: var(--border-2); color: var(--text)">
+                class="bg-transparent border rounded px-2 py-1 text-xs max-w-full"
+                style="border-color: var(--border-2); color: var(--text); min-width: 0; text-overflow: ellipsis">
           <template x-for="a in hpAssetList" :key="a.key">
             <option :value="a.key" :selected="a.key === hpAsset" x-text="a.name" style="background:#111"></option>
           </template>
@@ -1478,6 +1492,42 @@
             <div class="text-xl font-medium num font-mono mt-0.5 text-center" :style="`color: ${kpi.color}`" x-text="kpi.value"></div>
           </div>
         </template>
+      </div>
+
+      <!-- Horizon ladder: every holding period side by side -->
+      <div x-show="hpLadder.length" class="rounded-lg border overflow-hidden mb-5" style="background: var(--surface); border-color: var(--border)">
+        <div class="px-3 py-2 flex flex-wrap items-baseline gap-x-3 gap-y-1" style="border-bottom: 1px solid var(--border)">
+          <span class="label" style="color: var(--cyan)" x-text="`Holding-period ladder - ${hpAssetName}`"></span>
+          <span class="text-[11px]" style="color: var(--text-3)">Every start month, every horizon. Returns are total for the window; annualised shown from 1Y.</span>
+        </div>
+        <div class="overflow-x-auto scrollbar">
+          <table class="w-full text-xs num font-mono">
+            <thead style="color: var(--text-3)">
+              <tr class="text-[10px] uppercase tracking-wider" style="border-bottom: 1px solid var(--border)">
+                <th class="text-left px-3 py-2">Hold</th><th class="text-right px-3 py-2">Windows</th>
+                <th class="text-right px-3 py-2">Median</th><th class="text-right px-3 py-2">Median /yr</th>
+                <th class="text-right px-3 py-2">% positive</th><th class="text-right px-3 py-2">Bad 10%</th>
+                <th class="text-right px-3 py-2">Worst</th><th class="text-right px-3 py-2">Best</th>
+                <th class="text-right px-3 py-2" title="Share of windows that lost half or more">Lost ≥50%</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="r in hpLadder" :key="r.label">
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.03)">
+                  <td class="text-left px-3 py-1.5" style="color: var(--text)" x-text="r.label"></td>
+                  <td class="text-right px-3 py-1.5" style="color: var(--text-3)" x-text="r.n"></td>
+                  <td class="text-right px-3 py-1.5" :style="`color: ${r.median >= 0 ? 'var(--up)' : 'var(--down)'}`" x-text="(r.median >= 0 ? '+' : '') + (r.median * 100).toFixed(1) + '%'"></td>
+                  <td class="text-right px-3 py-1.5" :style="`color: ${r.medianAnn == null ? 'var(--text-3)' : r.medianAnn >= 0 ? 'var(--up)' : 'var(--down)'}`" x-text="r.medianAnn == null ? '-' : (r.medianAnn >= 0 ? '+' : '') + (r.medianAnn * 100).toFixed(1) + '%'"></td>
+                  <td class="text-right px-3 py-1.5" style="color: var(--text)" x-text="Math.round(r.pctPos * 100) + '%'"></td>
+                  <td class="text-right px-3 py-1.5" :style="`color: ${r.p10 >= 0 ? 'var(--up)' : 'var(--down)'}`" x-text="(r.p10 >= 0 ? '+' : '') + (r.p10 * 100).toFixed(0) + '%'"></td>
+                  <td class="text-right px-3 py-1.5" style="color: var(--down)" x-text="(r.worst * 100).toFixed(0) + '%'"></td>
+                  <td class="text-right px-3 py-1.5" style="color: var(--up)" x-text="'+' + (r.best * 100).toFixed(0) + '%'"></td>
+                  <td class="text-right px-3 py-1.5" :style="`color: ${r.halved > 0 ? 'var(--amber)' : 'var(--text-3)'}`" x-text="r.halved > 0 ? Math.round(r.halved * 100) + '%' : '0%'"></td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- Rolling / Trailing return chart. Title and hover label adapt to hpMode
@@ -1555,7 +1605,8 @@
           <template x-for="cat in periodicCategories" :key="cat.key">
             <button @click="seasonCatFilter = seasonCatFilter === cat.key ? '' : cat.key"
                     :class="seasonCatFilter === cat.key ? 'tab-active' : ''"
-                    class="chip border px-2 py-1 text-[10px] transition"
+                    class="chip border px-2 py-1 text-[10px] transition max-w-full truncate"
+                    :title="cat.label"
                     :style="seasonCatFilter === cat.key ? '' : 'color: var(--text-3); border-color: var(--border)'"
                     x-text="cat.label">
             </button>
@@ -1635,7 +1686,8 @@
         <div class="flex flex-wrap gap-1">
           <template x-for="a in corrAssetList" :key="a.key">
             <button @click="toggleCorrAsset(a.key)"
-                    class="chip border px-2 py-1 text-[10px] transition"
+                    class="chip border px-2 py-1 text-[10px] transition max-w-full truncate"
+                    :title="a.name"
                     :style="activeCorrAssets.has(a.key)
                       ? `background:${a.color}22;color:${a.color};border-color:${a.color}55;`
                       : 'color:var(--text-3);border-color:var(--border);opacity:0.5;'"
@@ -4008,6 +4060,56 @@ function marketsApp() {
     activeCcy: 'Local',   // 'Local' | 'USD' | 'INR' | 'Gold' | 'Silver'
     activeReal: false,    // true = CPI-adjusted
     selectedAsset: null,  // asset key for detail panel, null = closed
+    // Which asset universe the list-style tabs show: the 35 long-horizon markets, the 160
+    // leveraged ETFs from Fund Flows, or both.
+    assetUniverse: 'markets',
+    etfReturnsAsof: '',
+    isEtfMeta(meta) { return (meta?.category || '') === 'lev_etf'; },
+    inUniverse(meta) {
+      if (this.assetUniverse === 'all') return true;
+      return this.assetUniverse === 'etfs' ? this.isEtfMeta(meta) : !this.isEtfMeta(meta);
+    },
+    // Category key used for grouping/filtering: ETFs group by their Fund Flows category.
+    assetCat(meta) {
+      return this.isEtfMeta(meta) ? `etf:${meta.group || 'Other'}` : (meta?.category || 'other').toLowerCase();
+    },
+    assetCatLabel(key) {
+      if (String(key).startsWith('etf:')) return String(key).slice(4);
+      const labels = { equity: 'Equity', precious_metals: 'Metals', energy: 'Energy', commodities: 'Commodities',
+        base_metals: 'Base Metals', agriculture: 'Agriculture', fx: 'FX', real_estate: 'Real Estate' };
+      return labels[key] || String(key).replace(/_/g, ' ');
+    },
+    get universeEntries() {
+      if (!this.returnsData) return [];
+      return Object.entries(this.returnsData.assets || {}).filter(([, v]) => this.inUniverse(v.meta));
+    },
+    get etfUniverseCount() {
+      if (!this.returnsData) return 0;
+      return Object.values(this.returnsData.assets || {}).filter(v => this.isEtfMeta(v.meta)).length;
+    },
+    _universeDefaults() {
+      const has = k => !!this.returnsData?.assets?.[k];
+      if (this.assetUniverse === 'etfs') {
+        const picks = ['etf_tqqq', 'etf_soxl', 'etf_upro', 'etf_tna'].filter(has);
+        if (picks.length) this.activeDrawdownAssets = new Set(picks);
+        if (has('etf_tqqq') && !this.isEtfMeta(this.returnsData.assets[this.hpAsset]?.meta)) this.hpAsset = 'etf_tqqq';
+      } else if (this.assetUniverse === 'markets') {
+        if (this.isEtfMeta(this.returnsData?.assets?.[this.hpAsset]?.meta)) this.hpAsset = 'sp500';
+        const keep = [...(this.activeDrawdownAssets || [])].filter(k => !k.startsWith('etf_'));
+        this.activeDrawdownAssets = new Set(keep.length ? keep : ['sp500', 'gold', 'wti_crude', 'sensex']);
+      }
+    },
+    setUniverse(u) {
+      this.assetUniverse = u;
+      this.periodicCatFilter = '';
+      this.seasonCatFilter = '';
+      this._universeDefaults();
+      try {
+        const url = new URL(window.location.href);
+        if (u === 'markets') url.searchParams.delete('universe'); else url.searchParams.set('universe', u);
+        history.replaceState(history.state, '', url);
+      } catch (_) {}
+    },
     detailLogScale: true, // log scale toggle for detail panel chart
     detailChartMode: 'returns', // 'returns' | 'price' | 'heatmap' | 'multiccy'
     detailBarHoverInfo: null,   // { year, ret, partial, compareRet }
@@ -4119,6 +4221,8 @@ function marketsApp() {
     _applyDeepLink() {
       const params = new URLSearchParams(window.location.search);
       const assetParam = params.get('asset');
+      const universeParam = params.get('universe');
+      if (['markets', 'etfs', 'all'].includes(universeParam)) { this.assetUniverse = universeParam; this._universeDefaults(); }
       const lensParam = params.get('lens');
       const tabParam = params.get('tab');
       if (assetParam && this.returnsData?.assets?.[assetParam.toLowerCase()]) {
@@ -4306,7 +4410,17 @@ function marketsApp() {
           try {
             const r = await fetch(`data/market_returns.json?v=${bust}`);
             if (!r.ok) { this.returnsData = null; break; }
-            this.returnsData = Object.freeze(await r.json());
+            const base = await r.json();
+            // Merge the 160 Fund Flows ETFs (month-end NAV, same schema) so every tab can use them.
+            try {
+              const er = await fetch(`data/etf_returns.json?v=${bust}`);
+              if (er.ok) {
+                const ej = await er.json();
+                base.assets = { ...(base.assets || {}), ...(ej.assets || {}) };
+                this.etfReturnsAsof = ej.asof || '';
+              }
+            } catch (_) { /* ETF universe is optional; Markets assets still render */ }
+            this.returnsData = Object.freeze(base);
             // Fresh payload landed - drop every cache derived from the previous
             // one so a mid-session reload can never show stale numbers.
             this._partialMonthSet = null;
@@ -4398,11 +4512,10 @@ function marketsApp() {
 
     get matrixGroups() {
       if (!this.returnsData) return [];
-      const assets = this.returnsData.assets || {};
       // Group by category - only pass key + meta (NOT close) to keep Alpine reactive objects small
       const groups = {};
-      for (const [key, val] of Object.entries(assets)) {
-        const cat = (val.meta?.category || 'other').toLowerCase();
+      for (const [key, val] of this.universeEntries) {
+        const cat = this.assetCat(val.meta);
         if (!groups[cat]) groups[cat] = [];
         groups[cat].push({ key, meta: val.meta });
       }
@@ -4416,22 +4529,22 @@ function marketsApp() {
       for (const cat of order) {
         if (groups[cat]) result.push({ category: cat, assets: groups[cat] });
       }
-      // Any remaining categories not in order
-      for (const cat of Object.keys(groups)) {
-        if (!order.includes(cat)) result.push({ category: cat, assets: groups[cat] });
-      }
+      // Any remaining categories (incl. ETF groups, in Fund Flows category order)
+      const rest = Object.keys(groups).filter(cat => !order.includes(cat));
+      rest.sort((a, b) => (groups[a][0]?.meta?.group_order ?? 99) - (groups[b][0]?.meta?.group_order ?? 99) || a.localeCompare(b));
+      for (const cat of rest) result.push({ category: cat, assets: groups[cat] });
       return result;
     },
 
     get matrixYears() {
       if (!this.returnsData) return [];
       // Memoize - only recompute when returnsData or matrixStartYear changes
-      if (this._matrixYearsCache && this._matrixYearsCacheData === this.returnsData && this._matrixYearsCacheStartYear === this.matrixStartYear) {
+      if (this._matrixYearsCache && this._matrixYearsCacheData === this.returnsData && this._matrixYearsCacheStartYear === this.matrixStartYear && this._matrixYearsCacheUniverse === this.assetUniverse) {
         return this._matrixYearsCache;
       }
-      const assets = this.returnsData.assets || {};
+      // Only years the current universe actually has data for (ETFs start in 2016, so no empty columns).
       const yearSet = new Set();
-      for (const val of Object.values(assets)) {
+      for (const [, val] of this.universeEntries) {
         // Support both new format (monthly array) and old format (close dict)
         const monthly = val.monthly;
         if (Array.isArray(monthly)) {
@@ -4448,6 +4561,7 @@ function marketsApp() {
       this._matrixYearsCache = sortedYears.filter(y => y >= this.matrixStartYear);
       this._matrixYearsCacheData = this.returnsData;
       this._matrixYearsCacheStartYear = this.matrixStartYear;
+      this._matrixYearsCacheUniverse = this.assetUniverse;
       return this._matrixYearsCache;
     },
     _matrixYearsCache: null,
@@ -5175,10 +5289,9 @@ function marketsApp() {
     get eventStudyRows() {
       if (!this.returnsData) return [];
       const yr = this.eventStudyEvent;
-      const assets = this.returnsData.assets || {};
       const rows = [];
 
-      for (const [key, asset] of Object.entries(assets)) {
+      for (const [key, asset] of this.universeEntries) {
         const adjusted = this._getAdjustedClose(key);
         if (adjusted.length < 2) continue;
 
@@ -6143,6 +6256,7 @@ function marketsApp() {
       if (c === 'agriculture')                  return 'background: rgba(52,211,153,0.10); color: var(--up); border: 1px solid rgba(52,211,153,0.25);';
       if (c === 'fx')                           return 'background: rgba(168,85,247,0.10); color: #c084fc; border: 1px solid rgba(168,85,247,0.25);';
       if (c === 'real_estate')                  return 'background: rgba(251,146,60,0.10); color: #fb923c; border: 1px solid rgba(251,146,60,0.25);';
+      if (c === 'lev_etf' || c.startsWith('etf:')) return 'background: rgba(45,212,191,0.10); color: #2dd4bf; border: 1px solid rgba(45,212,191,0.25);';
       return 'background: rgba(161,161,170,0.10); color: var(--text-2); border: 1px solid rgba(161,161,170,0.20);';
     },
 
@@ -6604,13 +6718,10 @@ function marketsApp() {
       if (!this.returnsData) return [];
       const assets = this.returnsData.assets || {};
       const cat = this.periodicCatFilter;
-      const keys = Object.keys(assets).filter(k => {
-        if (!cat) return true;
-        return (assets[k].meta?.category || '').toLowerCase() === cat;
-      });
+      const keys = this.universeEntries.map(([k]) => k).filter(k => !cat || this.assetCat(assets[k].meta) === cat);
       return keys.map((k, i) => ({
         key: k,
-        shortName: assets[k].meta?.name?.split(' ').slice(0, 2).join(' ') || k,
+        shortName: this.isEtfMeta(assets[k].meta) ? assets[k].meta.ticker : (assets[k].meta?.name?.split(' ').slice(0, 2).join(' ') || k),
         color: assetColor(k),
         category: assets[k].meta?.category || '',
       }));
@@ -6619,15 +6730,8 @@ function marketsApp() {
     get periodicCategories() {
       if (!this.returnsData) return [];
       const cats = new Set();
-      for (const a of Object.values(this.returnsData.assets || {})) {
-        const c = (a.meta?.category || '').toLowerCase();
-        if (c) cats.add(c);
-      }
-      const labels = {
-        equity: 'Equity', precious_metals: 'Metals', energy: 'Energy',
-        base_metals: 'Base Metals', agriculture: 'Agriculture', fx: 'FX', real_estate: 'Real Estate',
-      };
-      return Array.from(cats).map(c => ({ key: c, label: labels[c] || c }));
+      for (const [, a] of this.universeEntries) cats.add(this.assetCat(a.meta));
+      return Array.from(cats).map(c => ({ key: c, label: this.assetCatLabel(c) }));
     },
 
     // §5.4 Periodic Table - fixed overflow, responsive cells, sticky header
@@ -6733,11 +6837,11 @@ function marketsApp() {
     get drawdownAllAssets() {
       if (!this.returnsData) return [];
       const assets = this.returnsData.assets || {};
-      return Object.keys(assets).map((k, i) => ({
+      return this.universeEntries.map(([k]) => k).map((k, i) => ({
         key: k,
-        shortName: assets[k].meta?.name?.split(' ').slice(0, 3).join(' ') || k,
+        shortName: this.isEtfMeta(assets[k].meta) ? assets[k].meta.ticker : (assets[k].meta?.name?.split(' ').slice(0, 3).join(' ') || k),
         name: assets[k].meta?.name || k,
-        category: (assets[k].meta?.category || 'other').toLowerCase(),
+        category: this.assetCat(assets[k].meta),
         color: assetColor(k),
       }));
     },
@@ -7077,9 +7181,12 @@ function marketsApp() {
 
     get hpAssetList() {
       if (!this.returnsData) return [];
-      return Object.entries(this.returnsData.assets || {}).map(([k, v]) => ({
-        key: k, name: v.meta?.name || k,
-      }));
+      const list = this.universeEntries.map(([k, v]) => ({ key: k, name: v.meta?.name || k, group: this.assetCatLabel(this.assetCat(v.meta)) }));
+      if (this.hpAsset && !list.some(a => a.key === this.hpAsset) && this.returnsData.assets?.[this.hpAsset]) {
+        const v = this.returnsData.assets[this.hpAsset];
+        list.unshift({ key: this.hpAsset, name: v.meta?.name || this.hpAsset, group: this.assetCatLabel(this.assetCat(v.meta)) });
+      }
+      return list;
     },
 
     get hpAssetName() {
@@ -7124,6 +7231,37 @@ function marketsApp() {
       this._hpRollsCache = results;
       this._hpRollsCacheKey = ck;
       return results;
+    },
+
+    // Every holding period at once: how outcomes change the longer you hold. For leveraged ETFs this
+    // is where volatility decay shows up (median annualised return falling, worst case widening).
+    get hpLadder() {
+      if (!this.returnsData || !this.hpAsset) return [];
+      const adjusted = this._getAdjustedClose(this.hpAsset);
+      if (adjusted.length < 3) return [];
+      const horizons = [[1, '1M'], [3, '3M'], [6, '6M'], [12, '1Y'], [24, '2Y'], [36, '3Y'], [60, '5Y'], [120, '10Y'], [240, '20Y']];
+      const out = [];
+      for (const [m, label] of horizons) {
+        const tot = [];
+        for (let i = m; i < adjusted.length; i++) {
+          const a = adjusted[i - m].close, b = adjusted[i].close;
+          if (a > 0 && b != null && b >= 0) tot.push(b / a - 1);
+        }
+        if (tot.length < 6) continue;
+        tot.sort((x, y) => x - y);
+        const n = tot.length;
+        const med = n % 2 ? tot[(n - 1) / 2] : (tot[n / 2 - 1] + tot[n / 2]) / 2;
+        const ann = r => m >= 12 ? Math.pow(1 + r, 12 / m) - 1 : null;
+        out.push({
+          label, months: m, n,
+          median: med, medianAnn: ann(med),
+          pctPos: tot.filter(r => r > 0).length / n,
+          worst: tot[0], best: tot[n - 1],
+          p10: tot[Math.floor(0.1 * (n - 1))],
+          halved: tot.filter(r => r <= -0.5).length / n,
+        });
+      }
+      return out;
     },
 
     get hpKpis() {
@@ -7281,11 +7419,10 @@ function marketsApp() {
 
     get seasonalityRows() {
       if (!this.returnsData) return [];
-      const assets = this.returnsData.assets || {};
       const cat = this.seasonCatFilter;
       const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      return Object.entries(assets)
-        .filter(([, v]) => !cat || (v.meta?.category || '').toLowerCase() === cat)
+      return this.universeEntries
+        .filter(([, v]) => !cat || this.assetCat(v.meta) === cat)
         .map(([key, asset]) => {
           const adjusted = this._getAdjustedClose(key);
           const monthlyRet = {};
@@ -7315,12 +7452,12 @@ function marketsApp() {
     // default included 'us_home_prices' which is not in the asset dataset, leaving the
     // user with only 4 valid assets and giving the panel a half-empty look on first load.
     // copper_lb is industrial-cycle exposure and complements sp500/gold/sensex/wti_crude.
-    activeCorrAssets: new Set(['sp500', 'gold']),
+    activeCorrAssets: new Set(['sp500', 'nasdaq', 'gold', 'silver', 'wti_crude', 'copper', 'sensex', 'nikkei', 'dax', 'us_home_prices', 'wheat']),  // whole picture by default
     growthHoverInfo: null,
     rollingCorrHoverInfo: null,
     ratioHoverInfo: { gold_silver: null, copper_gold: null, oil_gold: null, sp500_gold: null },
     rollingCorrBase: 'sp500',  // §5.8 base asset for rolling correlation
-    corrSubTab: 'growth',      // 'growth' | 'matrix' | 'rolling' | 'ratios'
+    corrSubTab: 'matrix',      // 'growth' | 'matrix' | 'rolling' | 'ratios' - matrix first: the whole picture at a glance
 
     get corrAssetList() {
       if (!this.returnsData) return [];

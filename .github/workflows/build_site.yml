@@ -364,6 +364,11 @@ jobs:
           "
           test -f docs/data/flows/etf_history.json
 
+      - name: Build leveraged-ETF monthly returns (Markets + Portfolio Lab universe)
+        run: |
+          python scripts/build_etf_returns.py
+          python -c "import json; d=json.load(open('docs/data/etf_returns.json')); assert d['count'] >= 150, d['count']; print('etf_returns.json OK:', d['count'], 'ETFs, asof', d['asof'])"
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
