@@ -10,13 +10,13 @@
     "aum_m": 248.1,
     "ter": "1.49%",
     "earliest_date": "2026-03-24",
-    "latest_date": "2026-11-24",
-    "rows_count": 173,
-    "latest_nav": 0.93,
-    "total_cumulative_flow_m": 839.0,
-    "flow_zscore_latest": -0.3,
+    "latest_date": "2026-11-26",
+    "rows_count": 175,
+    "latest_nav": 0.86,
+    "total_cumulative_flow_m": 838.57,
+    "flow_zscore_latest": -0.4,
     "regime_latest": "BALANCED",
-    "pressure_latest": 4.5
+    "pressure_latest": 0.1
   },
   {
     "ticker": "AAPU",
@@ -105,13 +105,13 @@
     "aum_m": 64.1,
     "ter": "1.30%",
     "earliest_date": "2025-09-10",
-    "latest_date": "2026-11-24",
-    "rows_count": 308,
-    "latest_nav": 1.28,
-    "total_cumulative_flow_m": 106.48,
-    "flow_zscore_latest": -1.0,
+    "latest_date": "2026-11-26",
+    "rows_count": 310,
+    "latest_nav": 1.29,
+    "total_cumulative_flow_m": 107.11,
+    "flow_zscore_latest": -0.02,
     "regime_latest": "BALANCED",
-    "pressure_latest": -37.0
+    "pressure_latest": -10.5
   },
   {
     "ticker": "APPX",
@@ -124,13 +124,13 @@
     "aum_m": 68.8,
     "ter": "1.30%",
     "earliest_date": "2025-04-25",
-    "latest_date": "2026-11-24",
-    "rows_count": 399,
-    "latest_nav": 16.08,
+    "latest_date": "2026-11-26",
+    "rows_count": 401,
+    "latest_nav": 15.89,
     "total_cumulative_flow_m": -49.4,
     "flow_zscore_latest": 0.18,
     "regime_latest": "BALANCED",
-    "pressure_latest": -5.4
+    "pressure_latest": -5.5
   },
   {
     "ticker": "ARKK",
@@ -200,13 +200,13 @@
     "aum_m": 258.8,
     "ter": "1.30%",
     "earliest_date": "2025-07-14",
-    "latest_date": "2026-11-24",
-    "rows_count": 348,
-    "latest_nav": 1.2,
-    "total_cumulative_flow_m": 664.76,
-    "flow_zscore_latest": -0.35,
+    "latest_date": "2026-11-26",
+    "rows_count": 350,
+    "latest_nav": 1.44,
+    "total_cumulative_flow_m": 665.16,
+    "flow_zscore_latest": -0.06,
     "regime_latest": "BALANCED",
-    "pressure_latest": -0.9
+    "pressure_latest": 8.5
   },
   {
     "ticker": "AVGX",
@@ -238,13 +238,13 @@
     "aum_m": 180.2,
     "ter": "1.49%",
     "earliest_date": "2026-04-24",
-    "latest_date": "2026-11-24",
-    "rows_count": 153,
-    "latest_nav": 3.68,
-    "total_cumulative_flow_m": 625.0,
-    "flow_zscore_latest": -0.51,
+    "latest_date": "2026-11-26",
+    "rows_count": 155,
+    "latest_nav": 3.77,
+    "total_cumulative_flow_m": 624.21,
+    "flow_zscore_latest": -0.23,
     "regime_latest": "BALANCED",
-    "pressure_latest": -4.8
+    "pressure_latest": 4.2
   },
   {
     "ticker": "BABX",
@@ -276,13 +276,13 @@
     "aum_m": 218.2,
     "ter": "1.30%",
     "earliest_date": "2025-11-13",
-    "latest_date": "2026-11-24",
-    "rows_count": 261,
-    "latest_nav": 8.97,
-    "total_cumulative_flow_m": 242.17,
-    "flow_zscore_latest": -0.4,
+    "latest_date": "2026-11-26",
+    "rows_count": 263,
+    "latest_nav": 8.57,
+    "total_cumulative_flow_m": 246.58,
+    "flow_zscore_latest": -0.31,
     "regime_latest": "BALANCED",
-    "pressure_latest": -4.0
+    "pressure_latest": 2.3
   },
   {
     "ticker": "BIB",
@@ -390,13 +390,13 @@
     "aum_m": 129.1,
     "ter": "1.49%",
     "earliest_date": "2026-02-19",
-    "latest_date": "2026-11-24",
-    "rows_count": 196,
+    "latest_date": "2026-11-26",
+    "rows_count": 198,
     "latest_nav": 8.1,
     "total_cumulative_flow_m": 188.07,
-    "flow_zscore_latest": -1.97,
-    "regime_latest": "DISTRIBUTION",
-    "pressure_latest": -41.4
+    "flow_zscore_latest": -0.26,
+    "regime_latest": "BALANCED",
+    "pressure_latest": -16.4
   },
   {
     "ticker": "CONI",
@@ -485,13 +485,13 @@
     "aum_m": 144.9,
     "ter": "1.30%",
     "earliest_date": "2025-09-17",
-    "latest_date": "2026-11-24",
-    "rows_count": 301,
-    "latest_nav": 2.0,
-    "total_cumulative_flow_m": 57.06,
-    "flow_zscore_latest": -0.05,
+    "latest_date": "2026-11-26",
+    "rows_count": 303,
+    "latest_nav": 2.01,
+    "total_cumulative_flow_m": 55.31,
+    "flow_zscore_latest": -0.14,
     "regime_latest": "BALANCED",
-    "pressure_latest": 12.7
+    "pressure_latest": 6.5
   },
   {
     "ticker": "CRML",
@@ -542,13 +542,13 @@
     "aum_m": 16.6,
     "ter": "1.30%",
     "earliest_date": "2025-11-13",
-    "latest_date": "2026-11-24",
-    "rows_count": 261,
-    "latest_nav": 3.78,
+    "latest_date": "2026-11-26",
+    "rows_count": 263,
+    "latest_nav": 3.6,
     "total_cumulative_flow_m": 26.89,
-    "flow_zscore_latest": -0.23,
+    "flow_zscore_latest": -0.52,
     "regime_latest": "BALANCED",
-    "pressure_latest": -13.6
+    "pressure_latest": -23.0
   },
   {
     "ticker": "CURE",
@@ -599,13 +599,13 @@
     "aum_m": 97.9,
     "ter": "1.30%",
     "earliest_date": "2025-07-14",
-    "latest_date": "2026-11-24",
-    "rows_count": 350,
-    "latest_nav": 2.68,
-    "total_cumulative_flow_m": 147.89,
-    "flow_zscore_latest": 0.18,
+    "latest_date": "2026-11-26",
+    "rows_count": 352,
+    "latest_nav": 2.67,
+    "total_cumulative_flow_m": 146.82,
+    "flow_zscore_latest": -0.27,
     "regime_latest": "BALANCED",
-    "pressure_latest": 22.5
+    "pressure_latest": 3.3
   },
   {
     "ticker": "DFEN",
@@ -846,13 +846,13 @@
     "aum_m": 36.8,
     "ter": "1.30%",
     "earliest_date": "2025-07-14",
-    "latest_date": "2026-11-24",
-    "rows_count": 348,
-    "latest_nav": 9.07,
+    "latest_date": "2026-11-26",
+    "rows_count": 350,
+    "latest_nav": 8.93,
     "total_cumulative_flow_m": 25.31,
-    "flow_zscore_latest": -0.58,
+    "flow_zscore_latest": -0.21,
     "regime_latest": "BALANCED",
-    "pressure_latest": -26.6
+    "pressure_latest": -15.2
   },
   {
     "ticker": "GGLL",
@@ -903,13 +903,13 @@
     "aum_m": 64.7,
     "ter": "1.05%",
     "earliest_date": "2024-01-11",
-    "latest_date": "2026-11-24",
-    "rows_count": 720,
-    "latest_nav": 44.28,
-    "total_cumulative_flow_m": -0.32,
-    "flow_zscore_latest": -0.01,
+    "latest_date": "2026-11-26",
+    "rows_count": 722,
+    "latest_nav": 42.45,
+    "total_cumulative_flow_m": -3.29,
+    "flow_zscore_latest": 0.02,
     "regime_latest": "BALANCED",
-    "pressure_latest": -10.2
+    "pressure_latest": -9.6
   },
   {
     "ticker": "HIBL",
@@ -1017,13 +1017,13 @@
     "aum_m": 65.2,
     "ter": "1.30%",
     "earliest_date": "2025-10-23",
-    "latest_date": "2026-11-24",
-    "rows_count": 278,
-    "latest_nav": 0.92,
-    "total_cumulative_flow_m": 152.22,
-    "flow_zscore_latest": -0.27,
+    "latest_date": "2026-11-26",
+    "rows_count": 280,
+    "latest_nav": 0.9,
+    "total_cumulative_flow_m": 152.82,
+    "flow_zscore_latest": -0.19,
     "regime_latest": "BALANCED",
-    "pressure_latest": 1.4
+    "pressure_latest": 5.3
   },
   {
     "ticker": "JNUG",
@@ -1093,13 +1093,13 @@
     "aum_m": 89.5,
     "ter": "1.30%",
     "earliest_date": "2025-08-12",
-    "latest_date": "2026-11-24",
-    "rows_count": 327,
-    "latest_nav": 3.21,
+    "latest_date": "2026-11-26",
+    "rows_count": 329,
+    "latest_nav": 3.18,
     "total_cumulative_flow_m": 25.61,
-    "flow_zscore_latest": -0.43,
+    "flow_zscore_latest": -0.08,
     "regime_latest": "BALANCED",
-    "pressure_latest": -22.7
+    "pressure_latest": -11.9
   },
   {
     "ticker": "LITX",
@@ -1112,13 +1112,13 @@
     "aum_m": 207.8,
     "ter": "1.49%",
     "earliest_date": "2026-01-27",
-    "latest_date": "2026-11-24",
-    "rows_count": 212,
-    "latest_nav": 6.21,
-    "total_cumulative_flow_m": 50.64,
-    "flow_zscore_latest": -0.24,
+    "latest_date": "2026-11-26",
+    "rows_count": 214,
+    "latest_nav": 5.94,
+    "total_cumulative_flow_m": 50.82,
+    "flow_zscore_latest": -0.27,
     "regime_latest": "BALANCED",
-    "pressure_latest": 6.0
+    "pressure_latest": 3.3
   },
   {
     "ticker": "LLYX",
@@ -1150,13 +1150,13 @@
     "aum_m": 38.9,
     "ter": "1.30%",
     "earliest_date": "2025-08-20",
-    "latest_date": "2026-11-24",
-    "rows_count": 323,
-    "latest_nav": 16.7,
-    "total_cumulative_flow_m": 45.66,
-    "flow_zscore_latest": -0.65,
+    "latest_date": "2026-11-26",
+    "rows_count": 325,
+    "latest_nav": 14.8,
+    "total_cumulative_flow_m": 46.18,
+    "flow_zscore_latest": -0.21,
     "regime_latest": "BALANCED",
-    "pressure_latest": -30.3
+    "pressure_latest": -15.3
   },
   {
     "ticker": "LULG",
@@ -1473,13 +1473,13 @@
     "aum_m": 181.9,
     "ter": "1.30%",
     "earliest_date": "2025-09-10",
-    "latest_date": "2026-11-24",
-    "rows_count": 308,
-    "latest_nav": 2.58,
-    "total_cumulative_flow_m": 147.51,
-    "flow_zscore_latest": -0.21,
+    "latest_date": "2026-11-26",
+    "rows_count": 310,
+    "latest_nav": 2.44,
+    "total_cumulative_flow_m": 153.58,
+    "flow_zscore_latest": -0.34,
     "regime_latest": "BALANCED",
-    "pressure_latest": 0.8
+    "pressure_latest": 1.5
   },
   {
     "ticker": "NFXL",
@@ -1625,13 +1625,13 @@
     "aum_m": 495.8,
     "ter": "1.05%",
     "earliest_date": "2023-10-19",
-    "latest_date": "2026-11-24",
-    "rows_count": 777,
-    "latest_nav": 8.27,
-    "total_cumulative_flow_m": -14.69,
-    "flow_zscore_latest": 0.44,
+    "latest_date": "2026-11-26",
+    "rows_count": 779,
+    "latest_nav": 7.62,
+    "total_cumulative_flow_m": -0.06,
+    "flow_zscore_latest": -0.26,
     "regime_latest": "BALANCED",
-    "pressure_latest": 23.0
+    "pressure_latest": 3.4
   },
   {
     "ticker": "NVTX",
@@ -1644,13 +1644,13 @@
     "aum_m": 33.4,
     "ter": "1.30%",
     "earliest_date": "2025-09-10",
-    "latest_date": "2026-11-24",
-    "rows_count": 306,
-    "latest_nav": 3.67,
-    "total_cumulative_flow_m": 79.88,
-    "flow_zscore_latest": -0.29,
+    "latest_date": "2026-11-26",
+    "rows_count": 308,
+    "latest_nav": 4.0,
+    "total_cumulative_flow_m": 79.85,
+    "flow_zscore_latest": -0.26,
     "regime_latest": "BALANCED",
-    "pressure_latest": -13.1
+    "pressure_latest": -16.4
   },
   {
     "ticker": "ORCX",
@@ -1777,13 +1777,13 @@
     "aum_m": 74.7,
     "ter": "1.30%",
     "earliest_date": "2025-04-28",
-    "latest_date": "2026-11-24",
-    "rows_count": 400,
-    "latest_nav": 3.05,
-    "total_cumulative_flow_m": 181.26,
+    "latest_date": "2026-11-26",
+    "rows_count": 402,
+    "latest_nav": 3.28,
+    "total_cumulative_flow_m": 181.73,
     "flow_zscore_latest": -0.21,
     "regime_latest": "BALANCED",
-    "pressure_latest": 4.9
+    "pressure_latest": 4.8
   },
   {
     "ticker": "QCML",
@@ -1891,13 +1891,13 @@
     "aum_m": 9.8,
     "ter": "1.30%",
     "earliest_date": "2025-06-24",
-    "latest_date": "2026-11-24",
-    "rows_count": 363,
-    "latest_nav": 2.0,
-    "total_cumulative_flow_m": 41.25,
-    "flow_zscore_latest": -0.15,
+    "latest_date": "2026-11-26",
+    "rows_count": 365,
+    "latest_nav": 2.13,
+    "total_cumulative_flow_m": 41.45,
+    "flow_zscore_latest": -0.16,
     "regime_latest": "BALANCED",
-    "pressure_latest": -3.7
+    "pressure_latest": 6.0
   },
   {
     "ticker": "RKLX",
@@ -2062,13 +2062,13 @@
     "aum_m": 59.3,
     "ter": "1.30%",
     "earliest_date": "2025-07-11",
-    "latest_date": "2026-11-24",
-    "rows_count": 351,
-    "latest_nav": 2.3,
-    "total_cumulative_flow_m": 419.99,
-    "flow_zscore_latest": 0.07,
+    "latest_date": "2026-11-26",
+    "rows_count": 353,
+    "latest_nav": 2.22,
+    "total_cumulative_flow_m": 419.93,
+    "flow_zscore_latest": 0.22,
     "regime_latest": "BALANCED",
-    "pressure_latest": 11.9
+    "pressure_latest": 15.6
   },
   {
     "ticker": "SNOU",
@@ -2100,13 +2100,13 @@
     "aum_m": 1972.5,
     "ter": "1.49%",
     "earliest_date": "2026-01-27",
-    "latest_date": "2026-11-24",
-    "rows_count": 212,
-    "latest_nav": 1.64,
-    "total_cumulative_flow_m": 1834.07,
-    "flow_zscore_latest": -0.53,
+    "latest_date": "2026-11-26",
+    "rows_count": 214,
+    "latest_nav": 1.46,
+    "total_cumulative_flow_m": 1857.33,
+    "flow_zscore_latest": -0.27,
     "regime_latest": "BALANCED",
-    "pressure_latest": -5.2
+    "pressure_latest": 3.2
   },
   {
     "ticker": "SOFX",
@@ -2290,13 +2290,13 @@
     "aum_m": 13.9,
     "ter": "1.49%",
     "earliest_date": "2026-04-24",
-    "latest_date": "2026-11-24",
-    "rows_count": 153,
-    "latest_nav": 10.47,
+    "latest_date": "2026-11-26",
+    "rows_count": 155,
+    "latest_nav": 10.02,
     "total_cumulative_flow_m": 27.28,
-    "flow_zscore_latest": -0.05,
+    "flow_zscore_latest": 0.06,
     "regime_latest": "BALANCED",
-    "pressure_latest": 8.8
+    "pressure_latest": 11.4
   },
   {
     "ticker": "SVIX",
@@ -2347,13 +2347,13 @@
     "aum_m": 16.4,
     "ter": "1.39%",
     "earliest_date": "2022-05-03",
-    "latest_date": "2026-11-24",
-    "rows_count": 1143,
-    "latest_nav": 29.25,
+    "latest_date": "2026-11-26",
+    "rows_count": 1145,
+    "latest_nav": 29.16,
     "total_cumulative_flow_m": -40.43,
-    "flow_zscore_latest": -0.21,
+    "flow_zscore_latest": 0.04,
     "regime_latest": "BALANCED",
-    "pressure_latest": 2.6
+    "pressure_latest": 11.1
   },
   {
     "ticker": "TECL",
@@ -2385,13 +2385,13 @@
     "aum_m": 46.4,
     "ter": "1.30%",
     "earliest_date": "2025-05-14",
-    "latest_date": "2026-11-24",
-    "rows_count": 388,
-    "latest_nav": 14.98,
-    "total_cumulative_flow_m": 23.97,
-    "flow_zscore_latest": 0.65,
+    "latest_date": "2026-11-26",
+    "rows_count": 390,
+    "latest_nav": 14.93,
+    "total_cumulative_flow_m": 24.64,
+    "flow_zscore_latest": 0.56,
     "regime_latest": "BALANCED",
-    "pressure_latest": 30.3
+    "pressure_latest": 24.0
   },
   {
     "ticker": "TLT",
@@ -2518,13 +2518,13 @@
     "aum_m": 32.4,
     "ter": "1.15%",
     "earliest_date": "2022-07-14",
-    "latest_date": "2026-11-24",
-    "rows_count": 1097,
-    "latest_nav": 14.23,
-    "total_cumulative_flow_m": 69.95,
-    "flow_zscore_latest": 0.33,
+    "latest_date": "2026-11-26",
+    "rows_count": 1099,
+    "latest_nav": 14.57,
+    "total_cumulative_flow_m": 62.59,
+    "flow_zscore_latest": -0.02,
     "regime_latest": "BALANCED",
-    "pressure_latest": 2.2
+    "pressure_latest": -10.5
   },
   {
     "ticker": "TSLR",
@@ -2556,13 +2556,13 @@
     "aum_m": 151.5,
     "ter": "1.05%",
     "earliest_date": "2023-10-19",
-    "latest_date": "2026-11-24",
-    "rows_count": 777,
-    "latest_nav": 13.77,
-    "total_cumulative_flow_m": -182.06,
-    "flow_zscore_latest": 0.66,
+    "latest_date": "2026-11-26",
+    "rows_count": 779,
+    "latest_nav": 13.44,
+    "total_cumulative_flow_m": -183.14,
+    "flow_zscore_latest": 0.28,
     "regime_latest": "BALANCED",
-    "pressure_latest": 8.4
+    "pressure_latest": -2.9
   },
   {
     "ticker": "TSLZ",
@@ -2575,13 +2575,13 @@
     "aum_m": 27.9,
     "ter": "1.05%",
     "earliest_date": "2023-10-19",
-    "latest_date": "2026-11-24",
-    "rows_count": 777,
-    "latest_nav": 8.93,
+    "latest_date": "2026-11-26",
+    "rows_count": 779,
+    "latest_nav": 9.14,
     "total_cumulative_flow_m": 203.54,
-    "flow_zscore_latest": -0.28,
+    "flow_zscore_latest": 0.04,
     "regime_latest": "BALANCED",
-    "pressure_latest": -18.9
+    "pressure_latest": -8.9
   },
   {
     "ticker": "TSMU",
@@ -2765,9 +2765,9 @@
     "aum_m": 17.9,
     "ter": "1.30%",
     "earliest_date": "2025-06-11",
-    "latest_date": "2026-11-24",
-    "rows_count": 371,
-    "latest_nav": 4.14,
+    "latest_date": "2026-11-26",
+    "rows_count": 373,
+    "latest_nav": 4.38,
     "total_cumulative_flow_m": 116.5,
     "flow_zscore_latest": 0.34,
     "regime_latest": "BALANCED",
@@ -2917,13 +2917,13 @@
     "aum_m": 99.2,
     "ter": "1.49%",
     "earliest_date": "2026-01-27",
-    "latest_date": "2026-11-24",
-    "rows_count": 214,
-    "latest_nav": 5.18,
-    "total_cumulative_flow_m": 213.29,
-    "flow_zscore_latest": 0.31,
+    "latest_date": "2026-11-26",
+    "rows_count": 216,
+    "latest_nav": 5.13,
+    "total_cumulative_flow_m": 213.32,
+    "flow_zscore_latest": 0.45,
     "regime_latest": "BALANCED",
-    "pressure_latest": -2.3
+    "pressure_latest": 1.2
   },
   {
     "ticker": "WEBL",
@@ -2955,13 +2955,13 @@
     "aum_m": 24.1,
     "ter": "1.30%",
     "earliest_date": "2025-10-23",
-    "latest_date": "2026-11-24",
-    "rows_count": 278,
-    "latest_nav": 4.5,
+    "latest_date": "2026-11-26",
+    "rows_count": 280,
+    "latest_nav": 4.51,
     "total_cumulative_flow_m": 51.36,
-    "flow_zscore_latest": -0.19,
+    "flow_zscore_latest": -0.14,
     "regime_latest": "BALANCED",
-    "pressure_latest": -14.8
+    "pressure_latest": -13.6
   },
   {
     "ticker": "XBI",

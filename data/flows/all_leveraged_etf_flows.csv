@@ -172,6 +172,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-20,AAOX,AAOX,760000.0,0.7,-0.3316,838448000.0,760000.0,0.0,-0.4118,2615000.0,16118000.0,BALANCED,7.706,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Applied Optoelectronics (AAOI),+2x
 2026-11-23,AAOX,AAOX,-1313000.0,0.94,0.3485,837135000.0,0.0,-1313000.0,-0.6737,2682000.0,21454000.0,BALANCED,-8.8425,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Applied Optoelectronics (AAOI),+2x
 2026-11-24,AAOX,AAOX,1864000.0,0.93,-0.0161,838999000.0,1864000.0,0.0,-0.2994,3156000.0,23342000.0,BALANCED,4.5145,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Applied Optoelectronics (AAOI),+2x
+2026-11-25,AAOX,AAOX,-431000.0,0.86,-0.0725,838568000.0,0.0,-431000.0,-0.497,885000.0,24176000.0,BALANCED,-4.4242,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Applied Optoelectronics (AAOI),+2x
+2026-11-26,AAOX,AAOX,0.0,0.86,0.0,838568000.0,0.0,0.0,-0.3976,880000.0,25016000.0,BALANCED,0.0597,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Applied Optoelectronics (AAOI),+2x
 2022-08-09,AAPU,XNMS:AAPU,2500000.0,25.0,0.0,2500000.0,2500000.0,0.0,0.0,2500000.0,2500000.0,BALANCED,12.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Apple (AAPL),+2x
 2022-08-10,AAPU,XNMS:AAPU,0.0,25.98,0.0391,2500000.0,0.0,0.0,0.0,2500000.0,2500000.0,BALANCED,10.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Apple (AAPL),+2x
 2022-08-11,AAPU,XNMS:AAPU,0.0,25.81,-0.0068,2500000.0,0.0,0.0,0.0,2500000.0,2500000.0,BALANCED,10.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Apple (AAPL),+2x
@@ -6016,6 +6018,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-20,APLX,APLX,366000.0,1.18,-0.3587,107492000.0,366000.0,0.0,0.2824,-732000.0,-1840000.0,BALANCED,3.0598,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Applied Digital (APLD),+2x
 2026-11-23,APLX,APLX,405000.0,1.66,0.4068,107897000.0,405000.0,0.0,0.2546,1305000.0,874000.0,BALANCED,24.3655,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Applied Digital (APLD),+2x
 2026-11-24,APLX,APLX,-1412000.0,1.28,-0.2289,106485000.0,0.0,-1412000.0,-0.9994,-92000.0,-1475000.0,BALANCED,-36.9858,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Applied Digital (APLD),+2x
+2026-11-25,APLX,APLX,625000.0,1.29,0.0078,107110000.0,625000.0,0.0,0.425,528000.0,-869000.0,BALANCED,22.6238,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Applied Digital (APLD),+2x
+2026-11-26,APLX,APLX,0.0,1.29,0.0,107110000.0,0.0,0.0,-0.0183,-16000.0,-457000.0,BALANCED,-10.4563,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Applied Digital (APLD),+2x
 2025-04-25,APPX,APPX,1000.0,26.732,0.0,1000.0,1000.0,0.0,0.0,1000.0,1000.0,BALANCED,12.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",AppLovin (APP),+2x
 2025-04-28,APPX,APPX,20000.0,28.291,0.0583,21000.0,20000.0,0.0,0.0,21000.0,21000.0,BALANCED,14.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",AppLovin (APP),+2x
 2025-04-29,APPX,APPX,-2000.0,29.056,0.027,19000.0,0.0,-2000.0,0.0,19000.0,19000.0,BALANCED,8.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",AppLovin (APP),+2x
@@ -6415,6 +6419,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-20,APPX,APPX,-203000.0,13.51,-0.1624,-43440000.0,0.0,-203000.0,0.1461,-14738000.0,-50624000.0,BALANCED,-18.3483,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",AppLovin (APP),+2x
 2026-11-23,APPX,APPX,-5963000.0,15.49,0.1464,-49403000.0,0.0,-5963000.0,-0.3806,-12344000.0,-54373000.0,BALANCED,-33.5148,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",AppLovin (APP),+2x
 2026-11-24,APPX,APPX,0.0,16.08,0.0381,-49403000.0,0.0,0.0,0.1823,-10195000.0,-54157000.0,BALANCED,-5.4435,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",AppLovin (APP),+2x
+2026-11-25,APPX,APPX,0.0,15.89,-0.0116,-49403000.0,0.0,0.0,0.1823,-7618000.0,-54157000.0,BALANCED,-5.4435,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",AppLovin (APP),+2x
+2026-11-26,APPX,APPX,0.0,15.89,0.0,-49403000.0,0.0,0.0,0.1805,-6166000.0,-54157000.0,BALANCED,-5.4874,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",AppLovin (APP),+2x
 2016-01-04,ARKK,ARKK,0.0,20.04,-0.0194,0.0,0.0,0.0,0.0,0.0,0.0,BALANCED,0.0,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",Disruptive Innovation Strategy,1x
 2016-01-05,ARKK,ARKK,0.0,20.09,0.0023,0.0,0.0,0.0,0.0,0.0,0.0,BALANCED,0.0,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",Disruptive Innovation Strategy,1x
 2016-01-06,ARKK,ARKK,0.0,19.76,-0.0161,0.0,0.0,0.0,0.0,0.0,0.0,BALANCED,0.0,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",Disruptive Innovation Strategy,1x
@@ -10447,6 +10453,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-20,ASTX,BATS:ASTX,879000.0,1.19,-0.1793,665100000.0,879000.0,0.0,-0.1022,2988000.0,8771000.0,BALANCED,27.4439,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",AST SpaceMobile (ASTS),+2x
 2026-11-23,ASTX,BATS:ASTX,165000.0,1.43,0.2043,665265000.0,165000.0,0.0,-0.1355,3007000.0,11562000.0,BALANCED,26.6124,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",AST SpaceMobile (ASTS),+2x
 2026-11-24,ASTX,BATS:ASTX,-504000.0,1.2,-0.1618,664761000.0,0.0,-504000.0,-0.3548,1321000.0,12694000.0,BALANCED,-0.8696,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",AST SpaceMobile (ASTS),+2x
+2026-11-25,ASTX,BATS:ASTX,397000.0,1.44,0.2043,665158000.0,397000.0,0.0,0.0476,1639000.0,18281000.0,BALANCED,13.191,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",AST SpaceMobile (ASTS),+2x
+2026-11-26,ASTX,BATS:ASTX,0.0,1.44,0.0,665158000.0,0.0,0.0,-0.0603,937000.0,18281000.0,BALANCED,8.4935,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",AST SpaceMobile (ASTS),+2x
 2024-08-22,AVGX,AVGX,3000.0,19.23,0.0,3000.0,3000.0,0.0,0.0,3000.0,3000.0,BALANCED,12.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Broadcom (AVGO),+2x
 2024-08-23,AVGX,AVGX,0.0,20.039,0.0421,3000.0,0.0,0.0,0.0,3000.0,3000.0,BALANCED,10.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Broadcom (AVGO),+2x
 2024-08-26,AVGX,AVGX,-3000.0,18.378,-0.0829,0.0,0.0,-3000.0,0.0,0.0,0.0,BALANCED,-2.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Broadcom (AVGO),+2x
@@ -11168,6 +11176,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-20,AXTX,AXTX,4708000.0,3.75,-0.2457,623425000.0,4708000.0,0.0,0.0788,4944000.0,32391000.0,BALANCED,13.9702,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",AXT Inc (AXTI),+2x
 2026-11-23,AXTX,AXTX,3455000.0,5.57,0.4855,626880000.0,3455000.0,0.0,-0.0339,13732000.0,35438000.0,BALANCED,13.1535,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",AXT Inc (AXTI),+2x
 2026-11-24,AXTX,AXTX,-1877000.0,3.68,-0.3396,625003000.0,0.0,-1877000.0,-0.5109,8288000.0,31989000.0,BALANCED,-4.7721,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",AXT Inc (AXTI),+2x
+2026-11-25,AXTX,AXTX,-791000.0,3.77,0.0242,624212000.0,0.0,-791000.0,-0.3513,5495000.0,30352000.0,BALANCED,-2.7828,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",AXT Inc (AXTI),+2x
+2026-11-26,AXTX,AXTX,0.0,3.77,0.0,624212000.0,0.0,0.0,-0.2318,5495000.0,29033000.0,BALANCED,4.2055,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",AXT Inc (AXTI),+2x
 2022-12-14,BABX,BABX,771000.0,25.69,0.0,771000.0,771000.0,0.0,0.0,771000.0,771000.0,BALANCED,12.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Alibaba (BABA),+2x
 2022-12-15,BABX,BABX,0.0,23.36,-0.0907,771000.0,0.0,0.0,0.0,771000.0,771000.0,BALANCED,10.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Alibaba (BABA),+2x
 2022-12-16,BABX,BABX,0.0,23.62,0.0109,771000.0,0.0,0.0,0.0,771000.0,771000.0,BALANCED,10.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Alibaba (BABA),+2x
@@ -12420,6 +12430,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-20,BEX,BEX,1534000.0,7.67,-0.3063,246479000.0,1534000.0,0.0,-0.1205,11202000.0,27978000.0,BALANCED,14.9877,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Bloom Energy (BE),+2x
 2026-11-23,BEX,BEX,-1930000.0,10.43,0.3604,244549000.0,0.0,-1930000.0,-0.3888,10443000.0,11602000.0,BALANCED,-1.7194,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Bloom Energy (BE),+2x
 2026-11-24,BEX,BEX,-2378000.0,8.97,-0.14,242171000.0,0.0,-2378000.0,-0.4018,6474000.0,6613000.0,BALANCED,-4.0448,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Bloom Energy (BE),+2x
+2026-11-25,BEX,BEX,4411000.0,8.57,-0.0453,246582000.0,4411000.0,0.0,0.2945,2245000.0,15227000.0,BALANCED,19.3633,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Bloom Energy (BE),+2x
+2026-11-26,BEX,BEX,0.0,8.57,0.0,246582000.0,0.0,0.0,-0.3065,1637000.0,11454000.0,BALANCED,2.3363,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Bloom Energy (BE),+2x
 2016-01-04,BIB,BIB,-3341000.0,33.41,-0.0645,-3341000.0,0.0,-3341000.0,0.0,-3341000.0,-3341000.0,BALANCED,-12.0,"2. Technology, Semiconductor & Thematic (Bull)",Biotech,+2x
 2016-01-05,BIB,BIB,0.0,33.305,-0.0031,-3341000.0,0.0,0.0,0.0,-3341000.0,-3341000.0,BALANCED,-10.0,"2. Technology, Semiconductor & Thematic (Bull)",Biotech,+2x
 2016-01-06,BIB,BIB,0.0,32.11,-0.0359,-3341000.0,0.0,0.0,0.0,-3341000.0,-3341000.0,BALANCED,-10.0,"2. Technology, Semiconductor & Thematic (Bull)",Biotech,+2x
@@ -21313,6 +21325,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-20,COHX,COHX,-1747000.0,7.59,-0.2582,192984000.0,0.0,-1747000.0,-1.0606,5244000.0,8753000.0,BALANCED,-18.5154,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Coherent Corp (COHR),+2x
 2026-11-23,COHX,COHX,149000.0,9.91,0.3045,193133000.0,149000.0,0.0,-0.3831,5945000.0,12319000.0,BALANCED,2.4218,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Coherent Corp (COHR),+2x
 2026-11-24,COHX,COHX,-5065000.0,8.1,-0.182,188068000.0,0.0,-5065000.0,-1.9746,1472000.0,7254000.0,DISTRIBUTION,-41.364,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Coherent Corp (COHR),+2x
+2026-11-25,COHX,COHX,0.0,8.1,-0.0009,188068000.0,0.0,0.0,-0.2988,-6663000.0,5904000.0,BALANCED,-17.4706,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Coherent Corp (COHR),+2x
+2026-11-26,COHX,COHX,0.0,8.1,0.0,188068000.0,0.0,0.0,-0.2574,-6663000.0,4999000.0,BALANCED,-16.4347,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Coherent Corp (COHR),+2x
 2024-09-04,CONI,CONI,0.0,517.56,0.0,0.0,0.0,0.0,0.0,0.0,0.0,BALANCED,0.0,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),Coinbase Global,-2x
 2024-09-05,CONI,CONI,2000.0,529.36,0.0228,2000.0,2000.0,0.0,0.0,2000.0,2000.0,BALANCED,12.0,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),Coinbase Global,-2x
 2024-09-06,CONI,CONI,2000.0,570.44,0.0776,4000.0,2000.0,0.0,0.0,4000.0,4000.0,BALANCED,14.0,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),Coinbase Global,-2x
@@ -26051,6 +26065,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-20,CRDU,CRDU,-95000.0,1.87,-0.3022,55000000.0,0.0,-95000.0,-0.1581,1202000.0,21368000.0,BALANCED,4.0486,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Credo Technology (CRDO),+2x
 2026-11-23,CRDU,CRDU,1350000.0,2.71,0.4492,56350000.0,1350000.0,0.0,0.0424,2474000.0,11207000.0,BALANCED,13.0596,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Credo Technology (CRDO),+2x
 2026-11-24,CRDU,CRDU,708000.0,2.0,-0.262,57058000.0,708000.0,0.0,-0.0524,1986000.0,32803000.0,BALANCED,12.6898,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Credo Technology (CRDO),+2x
+2026-11-25,CRDU,CRDU,-1743000.0,2.01,0.005,55315000.0,0.0,-1743000.0,-0.3969,254000.0,4416000.0,BALANCED,-1.9236,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Credo Technology (CRDO),+2x
+2026-11-26,CRDU,CRDU,0.0,2.01,0.0,55315000.0,0.0,0.0,-0.141,220000.0,4465000.0,BALANCED,6.4753,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Credo Technology (CRDO),+2x
 2022-02-07,CRML,CRML,0.0,9.938,0.0,0.0,0.0,0.0,0.0,0.0,0.0,BALANCED,0.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Salesforce,+2x
 2022-02-08,CRML,CRML,2000.0,9.923,-0.0015,2000.0,2000.0,0.0,0.0,2000.0,2000.0,BALANCED,12.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Salesforce,+2x
 2022-02-09,CRML,CRML,-2000.0,9.91,-0.0013,0.0,0.0,-2000.0,0.0,0.0,0.0,BALANCED,-2.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Salesforce,+2x
@@ -27995,6 +28011,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-20,CSEX,CSEX,0.0,4.03,-0.3202,26889000.0,0.0,0.0,-0.5175,0.0,5253000.0,BALANCED,-12.9383,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Celestica (CLS),+2x
 2026-11-23,CSEX,CSEX,-135000.0,4.49,0.1134,26754000.0,0.0,-135000.0,-0.8003,-135000.0,4777000.0,BALANCED,-32.0069,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Celestica (CLS),+2x
 2026-11-24,CSEX,CSEX,132000.0,3.78,-0.1571,26886000.0,132000.0,0.0,-0.2251,-3000.0,4315000.0,BALANCED,-13.6282,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Celestica (CLS),+2x
+2026-11-25,CSEX,CSEX,0.0,3.6,-0.048,26886000.0,0.0,0.0,-0.5215,-3000.0,2235000.0,BALANCED,-23.0374,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Celestica (CLS),+2x
+2026-11-26,CSEX,CSEX,0.0,3.6,0.0,26886000.0,0.0,0.0,-0.5215,-3000.0,2235000.0,BALANCED,-23.0374,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Celestica (CLS),+2x
 2016-01-04,CURE,ARCX:CURE,0.0,31.46,-0.058,0.0,0.0,0.0,0.0,0.0,0.0,BALANCED,0.0,3. Sector Specific Leveraged (Bull),Health Care Select,+3x
 2016-01-05,CURE,ARCX:CURE,0.0,32.0,0.0173,0.0,0.0,0.0,0.0,0.0,0.0,BALANCED,0.0,3. Sector Specific Leveraged (Bull),Health Care Select,+3x
 2016-01-06,CURE,ARCX:CURE,0.0,31.22,-0.0246,0.0,0.0,0.0,0.0,0.0,0.0,BALANCED,0.0,3. Sector Specific Leveraged (Bull),Health Care Select,+3x
@@ -32795,6 +32813,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-20,CWVX,CWVX,2965000.0,2.43,-0.2409,143902000.0,2965000.0,0.0,0.1538,2638000.0,-4944000.0,BALANCED,17.8448,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",CoreWeave (CRWV),+2x
 2026-11-23,CWVX,CWVX,773000.0,3.51,0.4451,144675000.0,773000.0,0.0,-0.1444,2874000.0,-1645000.0,BALANCED,12.3901,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",CoreWeave (CRWV),+2x
 2026-11-24,CWVX,CWVX,3215000.0,2.68,-0.2371,147890000.0,3215000.0,0.0,0.1815,5632000.0,3756000.0,BALANCED,22.5363,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",CoreWeave (CRWV),+2x
+2026-11-25,CWVX,CWVX,-1069000.0,2.67,-0.0022,146821000.0,0.0,-1069000.0,-0.3634,6204000.0,808000.0,BALANCED,-1.0844,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",CoreWeave (CRWV),+2x
+2026-11-26,CWVX,CWVX,0.0,2.67,0.0,146821000.0,0.0,0.0,-0.2668,5884000.0,8766000.0,BALANCED,3.3302,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",CoreWeave (CRWV),+2x
 2017-05-03,DFEN,ARCX:DFEN,2470000.0,24.7,0.0,2470000.0,2470000.0,0.0,0.0,2470000.0,2470000.0,BALANCED,12.0,"2. Technology, Semiconductor & Thematic (Bull)",Aerospace & Defense,+3x
 2017-05-04,DFEN,ARCX:DFEN,0.0,24.74,0.0016,2470000.0,0.0,0.0,0.0,2470000.0,2470000.0,BALANCED,10.0,"2. Technology, Semiconductor & Thematic (Bull)",Aerospace & Defense,+3x
 2017-05-05,DFEN,ARCX:DFEN,0.0,25.4,0.0267,2470000.0,0.0,0.0,0.0,2470000.0,2470000.0,BALANCED,10.0,"2. Technology, Semiconductor & Thematic (Bull)",Aerospace & Defense,+3x
@@ -57080,6 +57100,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-20,GEVX,GEVX,0.0,8.62,-0.1508,25488000.0,0.0,0.0,-0.175,0.0,1899000.0,BALANCED,-4.3751,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",GE Vernova (GEV),+2x
 2026-11-23,GEVX,GEVX,0.0,10.03,0.1637,25488000.0,0.0,0.0,-0.2199,0.0,1899000.0,BALANCED,-5.4986,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",GE Vernova (GEV),+2x
 2026-11-24,GEVX,GEVX,-181000.0,9.07,-0.0958,25307000.0,0.0,-181000.0,-0.5828,-181000.0,1718000.0,BALANCED,-26.5702,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",GE Vernova (GEV),+2x
+2026-11-25,GEVX,GEVX,0.0,8.93,-0.0159,25307000.0,0.0,0.0,-0.2062,-181000.0,1505000.0,BALANCED,-15.1561,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",GE Vernova (GEV),+2x
+2026-11-26,GEVX,GEVX,0.0,8.93,0.0,25307000.0,0.0,0.0,-0.2062,-181000.0,53000.0,BALANCED,-15.1561,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",GE Vernova (GEV),+2x
 2022-09-07,GGLL,GGLL,2592000.0,25.92,0.0,2592000.0,2592000.0,0.0,0.0,2592000.0,2592000.0,BALANCED,12.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Alphabet (GOOGL),+2x
 2022-09-08,GGLL,GGLL,0.0,25.54,-0.0148,2592000.0,0.0,0.0,0.0,2592000.0,2592000.0,BALANCED,10.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Alphabet (GOOGL),+2x
 2022-09-09,GGLL,GGLL,0.0,26.33,0.031,2592000.0,0.0,0.0,0.0,2592000.0,2592000.0,BALANCED,10.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Alphabet (GOOGL),+2x
@@ -59046,6 +59068,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-19,GOOX,GOOX,0.0,42.75,-0.0589,1042000.0,0.0,0.0,0.0101,-7272000.0,10595000.0,BALANCED,-9.7463,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Alphabet (GOOGL),+2x
 2026-11-23,GOOX,GOOX,-1357000.0,45.25,0.0584,-315000.0,0.0,-1357000.0,-0.332,-3628000.0,10451000.0,BALANCED,-20.299,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Alphabet (GOOGL),+2x
 2026-11-24,GOOX,GOOX,0.0,44.28,-0.0215,-315000.0,0.0,0.0,-0.0085,-3628000.0,10451000.0,BALANCED,-10.2137,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Alphabet (GOOGL),+2x
+2026-11-25,GOOX,GOOX,-2972000.0,42.45,-0.0412,-3287000.0,0.0,-2972000.0,-0.7001,-6600000.0,1435000.0,BALANCED,-29.5031,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Alphabet (GOOGL),+2x
+2026-11-26,GOOX,GOOX,0.0,42.45,0.0,-3287000.0,0.0,0.0,0.0154,-4329000.0,1435000.0,BALANCED,-9.6156,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Alphabet (GOOGL),+2x
 2019-11-07,HIBL,HIBL,2536000.0,36.2286,0.0,2536000.0,2536000.0,0.0,0.0,2536000.0,2536000.0,BALANCED,12.0,"2. Technology, Semiconductor & Thematic (Bull)",S&P 500 High Beta,+3x
 2019-11-08,HIBL,HIBL,0.0,36.7,0.0131,2536000.0,0.0,0.0,0.0,2536000.0,2536000.0,BALANCED,10.0,"2. Technology, Semiconductor & Thematic (Bull)",S&P 500 High Beta,+3x
 2019-11-11,HIBL,HIBL,0.0,36.3571,-0.0095,2536000.0,0.0,0.0,0.0,2536000.0,2536000.0,BALANCED,10.0,"2. Technology, Semiconductor & Thematic (Bull)",S&P 500 High Beta,+3x
@@ -65393,6 +65417,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-20,IREX,IREX,1344000.0,0.81,-0.36,151930000.0,1344000.0,0.0,0.0902,2912000.0,1063000.0,BALANCED,16.2556,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",IREN (IREN),+2x
 2026-11-23,IREX,IREX,437000.0,1.2,0.4739,152367000.0,437000.0,0.0,-0.1089,4655000.0,6264000.0,BALANCED,13.2771,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",IREN (IREN),+2x
 2026-11-24,IREX,IREX,-143000.0,0.92,-0.2314,152224000.0,0.0,-143000.0,-0.2656,1826000.0,6121000.0,BALANCED,1.3611,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",IREN (IREN),+2x
+2026-11-25,IREX,IREX,592000.0,0.9,-0.0169,152816000.0,592000.0,0.0,-0.0815,3137000.0,6713000.0,BALANCED,9.9627,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",IREN (IREN),+2x
+2026-11-26,IREX,IREX,0.0,0.9,0.0,152816000.0,0.0,0.0,-0.1888,2230000.0,8083000.0,BALANCED,5.2793,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",IREN (IREN),+2x
 2016-01-04,JNUG,JNUG,0.0,679.8,0.092,0.0,0.0,0.0,0.0,0.0,0.0,BALANCED,0.0,"6. Commodities, Energy & Volatility (Bull)",Junior Gold Miners,+2x
 2016-01-05,JNUG,JNUG,-3419000.0,683.8,0.006,-3419000.0,0.0,-3419000.0,0.0,-3419000.0,-3419000.0,BALANCED,-12.0,"6. Commodities, Energy & Volatility (Bull)",Junior Gold Miners,+2x
 2016-01-06,JNUG,JNUG,0.0,719.0,0.0513,-3419000.0,0.0,0.0,0.0,-3419000.0,-3419000.0,BALANCED,-10.0,"6. Commodities, Energy & Volatility (Bull)",Junior Gold Miners,+2x
@@ -73880,6 +73906,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-20,LABX,LABX,1719000.0,3.04,-0.2957,27620000.0,1719000.0,0.0,0.154,2169000.0,14638000.0,BALANCED,15.8505,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Astera Labs (ALAB),+2x
 2026-11-23,LABX,LABX,556000.0,4.45,0.4624,28176000.0,556000.0,0.0,-0.0175,3241000.0,17315000.0,BALANCED,13.5637,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Astera Labs (ALAB),+2x
 2026-11-24,LABX,LABX,-2571000.0,3.21,-0.278,25605000.0,0.0,-2571000.0,-0.4267,-478000.0,14286000.0,BALANCED,-22.6679,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Astera Labs (ALAB),+2x
+2026-11-25,LABX,LABX,0.0,3.18,-0.0105,25605000.0,0.0,0.0,-0.0767,-296000.0,-16875000.0,BALANCED,-11.9173,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Astera Labs (ALAB),+2x
+2026-11-26,LABX,LABX,0.0,3.18,0.0,25605000.0,0.0,0.0,-0.0767,-296000.0,6552000.0,BALANCED,-11.9173,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Astera Labs (ALAB),+2x
 2026-01-27,LITX,LITX,307000.0,10.2467,0.0,307000.0,307000.0,0.0,0.0,307000.0,307000.0,BALANCED,12.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Lumentum Holdings (LITE),+2x
 2026-01-28,LITX,LITX,1324000.0,11.0367,0.077,1631000.0,1324000.0,0.0,0.0,1631000.0,1631000.0,BALANCED,14.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Lumentum Holdings (LITE),+2x
 2026-01-29,LITX,LITX,22418000.0,10.83,-0.0186,24049000.0,22418000.0,0.0,0.0,24049000.0,24049000.0,BALANCED,16.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Lumentum Holdings (LITE),+2x
@@ -74092,6 +74120,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-20,LITX,LITX,2774000.0,5.78,-0.2792,52395000.0,2774000.0,0.0,-0.1016,-84000.0,-16515000.0,BALANCED,-10.5402,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Lumentum Holdings (LITE),+2x
 2026-11-23,LITX,LITX,-2127000.0,7.88,0.363,50268000.0,0.0,-2127000.0,-0.4207,-1667000.0,-20767000.0,BALANCED,-22.5179,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Lumentum Holdings (LITE),+2x
 2026-11-24,LITX,LITX,373000.0,6.21,-0.2111,50641000.0,373000.0,0.0,-0.2388,1829000.0,-13022000.0,BALANCED,6.0295,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Lumentum Holdings (LITE),+2x
+2026-11-25,LITX,LITX,178000.0,5.94,-0.0438,50819000.0,178000.0,0.0,-0.1706,1198000.0,-8129000.0,BALANCED,9.7349,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Lumentum Holdings (LITE),+2x
+2026-11-26,LITX,LITX,0.0,5.94,0.0,50819000.0,0.0,0.0,-0.2664,1198000.0,-1253000.0,BALANCED,3.3409,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Lumentum Holdings (LITE),+2x
 2024-08-08,LLYX,LLYX,1189000.0,23.77,0.0,1189000.0,1189000.0,0.0,0.0,1189000.0,1189000.0,BALANCED,12.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Eli Lilly (LLY),+2x
 2024-08-09,LLYX,LLYX,0.0,26.34,0.108,1189000.0,0.0,0.0,0.0,1189000.0,1189000.0,BALANCED,10.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Eli Lilly (LLY),+2x
 2024-08-12,LLYX,LLYX,0.0,25.89,-0.0168,1189000.0,0.0,0.0,0.0,1189000.0,1189000.0,BALANCED,10.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Eli Lilly (LLY),+2x
@@ -74993,6 +75023,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-20,LRCU,LRCU,298000.0,14.9,-0.2007,47015000.0,298000.0,0.0,-0.0077,-503000.0,-784000.0,BALANCED,-8.1936,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Lam Research (LRCX),+2x
 2026-11-23,LRCU,LRCU,-767000.0,19.19,0.2879,46248000.0,0.0,-767000.0,-0.8144,-469000.0,-1551000.0,BALANCED,-32.3611,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Lam Research (LRCX),+2x
 2026-11-24,LRCU,LRCU,-584000.0,16.7,-0.1297,45664000.0,0.0,-584000.0,-0.6528,-1053000.0,-4259000.0,BALANCED,-30.321,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Lam Research (LRCX),+2x
+2026-11-25,LRCU,LRCU,518000.0,14.8,-0.1139,46182000.0,518000.0,0.0,0.1834,-535000.0,-3741000.0,BALANCED,-3.4144,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Lam Research (LRCX),+2x
+2026-11-26,LRCU,LRCU,0.0,14.8,0.0,46182000.0,0.0,0.0,-0.2109,-535000.0,-3741000.0,BALANCED,-15.2713,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Lam Research (LRCX),+2x
 2025-11-05,LULG,LULG,407000.0,16.28,0.0,407000.0,407000.0,0.0,0.0,407000.0,407000.0,BALANCED,12.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Lululemon (LULU),+2x
 2025-11-06,LULG,LULG,0.0,15.49,-0.0485,407000.0,0.0,0.0,0.0,407000.0,407000.0,BALANCED,10.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Lululemon (LULU),+2x
 2025-11-07,LULG,LULG,0.0,15.97,0.0306,407000.0,0.0,0.0,0.0,407000.0,407000.0,BALANCED,10.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Lululemon (LULU),+2x
@@ -89882,6 +89914,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-20,NEBX,NEBX,6221000.0,2.34,-0.3237,150780000.0,6221000.0,0.0,0.2288,8091000.0,15552000.0,BALANCED,17.7188,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Nebius Group (NBIS),+2x
 2026-11-23,NEBX,NEBX,-2641000.0,3.29,0.406,148139000.0,0.0,-2641000.0,-0.3416,1417000.0,18530000.0,BALANCED,-0.5405,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Nebius Group (NBIS),+2x
 2026-11-24,NEBX,NEBX,-628000.0,2.58,-0.2158,147511000.0,0.0,-628000.0,-0.2089,2810000.0,20369000.0,BALANCED,0.777,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Nebius Group (NBIS),+2x
+2026-11-25,NEBX,NEBX,6069000.0,2.44,-0.0543,153580000.0,6069000.0,0.0,0.6094,7999000.0,27336000.0,BALANCED,27.236,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Nebius Group (NBIS),+2x
+2026-11-26,NEBX,NEBX,0.0,2.44,0.0,153580000.0,0.0,0.0,-0.3411,9021000.0,28782000.0,BALANCED,1.4732,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Nebius Group (NBIS),+2x
 2024-10-03,NFXL,NFXL,-0.0,24.677,0.0,-0.0,-0.0,-0.0,0.0,-0.0,-0.0,BALANCED,0.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Netflix,+2x
 2024-10-04,NFXL,NFXL,3000.0,25.593,0.0371,3000.0,3000.0,0.0,0.0,3000.0,3000.0,BALANCED,12.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Netflix,+2x
 2024-10-07,NFXL,NFXL,1000.0,24.278,-0.0514,4000.0,1000.0,0.0,0.0,4000.0,4000.0,BALANCED,14.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Netflix,+2x
@@ -97900,6 +97934,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-19,NVDX,NVDX,800000.0,8.0,-0.0664,-22351000.0,800000.0,0.0,-0.1453,48782000.0,119447000.0,BALANCED,26.3664,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",NVIDIA (NVDA),+2x
 2026-11-23,NVDX,NVDX,-2343000.0,9.37,0.1722,-24694000.0,0.0,-2343000.0,-0.377,29324000.0,125614000.0,BALANCED,-1.4247,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",NVIDIA (NVDA),+2x
 2026-11-24,NVDX,NVDX,10008000.0,8.27,-0.1175,-14686000.0,10008000.0,0.0,0.4418,15099000.0,135622000.0,BALANCED,23.0462,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",NVIDIA (NVDA),+2x
+2026-11-25,NVDX,NVDX,14627000.0,7.62,-0.079,-59000.0,14627000.0,0.0,0.7224,23178000.0,107860000.0,BALANCED,32.0605,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",NVIDIA (NVDA),+2x
+2026-11-26,NVDX,NVDX,0.0,7.62,0.0,-59000.0,0.0,0.0,-0.2629,23092000.0,107860000.0,BALANCED,3.4281,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",NVIDIA (NVDA),+2x
 2025-09-10,NVTX,NVTX,877000.0,25.05,0.0,877000.0,877000.0,0.0,0.0,877000.0,877000.0,BALANCED,12.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Navitas Semiconductor (NVTS),+2x
 2025-09-11,NVTX,NVTX,0.0,28.92,0.1544,877000.0,0.0,0.0,0.0,877000.0,877000.0,BALANCED,10.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Navitas Semiconductor (NVTS),+2x
 2025-09-12,NVTX,NVTX,594000.0,29.72,0.0278,1471000.0,594000.0,0.0,0.0,1471000.0,1471000.0,BALANCED,12.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Navitas Semiconductor (NVTS),+2x
@@ -98206,6 +98242,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-20,NVTX,NVTX,-17000.0,3.37,-0.3037,79844000.0,0.0,-17000.0,-0.4132,-795000.0,1746000.0,BALANCED,-24.3292,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Navitas Semiconductor (NVTS),+2x
 2026-11-23,NVTX,NVTX,20000.0,4.74,0.4065,79864000.0,20000.0,0.0,-0.3292,-219000.0,1676000.0,BALANCED,-16.2306,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Navitas Semiconductor (NVTS),+2x
 2026-11-24,NVTX,NVTX,18000.0,3.67,-0.2257,79882000.0,18000.0,0.0,-0.2859,-435000.0,1700000.0,BALANCED,-13.1473,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Navitas Semiconductor (NVTS),+2x
+2026-11-25,NVTX,NVTX,-30000.0,4.0,0.0899,79852000.0,0.0,-30000.0,-0.3701,-478000.0,1694000.0,BALANCED,-21.2513,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Navitas Semiconductor (NVTS),+2x
+2026-11-26,NVTX,NVTX,0.0,4.0,0.0,79852000.0,0.0,0.0,-0.2574,-9000.0,1685000.0,BALANCED,-16.4355,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Navitas Semiconductor (NVTS),+2x
 2025-02-07,ORCX,ORCX,1023000.0,61.38,0.0,1023000.0,1023000.0,0.0,0.0,1023000.0,1023000.0,BALANCED,12.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Oracle (ORCL),+2x
 2025-02-10,ORCX,ORCX,0.0,64.5,0.0509,1023000.0,0.0,0.0,0.0,1023000.0,1023000.0,BALANCED,10.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Oracle (ORCL),+2x
 2025-02-11,ORCX,ORCX,0.0,63.24,-0.0197,1023000.0,0.0,0.0,0.0,1023000.0,1023000.0,BALANCED,10.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Oracle (ORCL),+2x
@@ -102724,6 +102762,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-20,QBTX,QBTX,656000.0,2.92,-0.2168,181348000.0,656000.0,0.0,0.6867,821000.0,2513000.0,BALANCED,29.1679,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",D-Wave Quantum (QBTS),+2x
 2026-11-23,QBTX,QBTX,-90000.0,3.62,0.24,181258000.0,0.0,-90000.0,-0.3064,731000.0,3260000.0,BALANCED,0.3391,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",D-Wave Quantum (QBTS),+2x
 2026-11-24,QBTX,QBTX,0.0,3.05,-0.1567,181258000.0,0.0,0.0,-0.2057,731000.0,3260000.0,BALANCED,4.8582,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",D-Wave Quantum (QBTS),+2x
+2026-11-25,QBTX,QBTX,476000.0,3.28,0.0763,181734000.0,476000.0,0.0,0.4233,1042000.0,2869000.0,BALANCED,22.582,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",D-Wave Quantum (QBTS),+2x
+2026-11-26,QBTX,QBTX,0.0,3.28,0.0,181734000.0,0.0,0.0,-0.2062,1042000.0,2347000.0,BALANCED,4.8462,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",D-Wave Quantum (QBTS),+2x
 2025-02-13,QCML,QCML,766000.0,25.54,0.0,766000.0,766000.0,0.0,0.0,766000.0,766000.0,BALANCED,12.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Qualcomm (QCOM),+2x
 2025-02-14,QCML,QCML,0.0,25.52,-0.0005,766000.0,0.0,0.0,0.0,766000.0,766000.0,BALANCED,10.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Qualcomm (QCOM),+2x
 2025-02-18,QCML,QCML,0.0,25.93,0.0161,766000.0,0.0,0.0,0.0,766000.0,766000.0,BALANCED,10.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Qualcomm (QCOM),+2x
@@ -110202,6 +110242,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-20,RGTU,RGTU,0.0,1.81,-0.2239,41246000.0,0.0,0.0,-0.1631,90000.0,-135000.0,BALANCED,5.9221,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Rigetti Computing (RGTI),+2x
 2026-11-23,RGTU,RGTU,0.0,2.28,0.2589,41246000.0,0.0,0.0,-0.1631,90000.0,131000.0,BALANCED,5.9221,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Rigetti Computing (RGTI),+2x
 2026-11-24,RGTU,RGTU,0.0,2.0,-0.1254,41246000.0,0.0,0.0,-0.1489,0.0,131000.0,BALANCED,-3.7233,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Rigetti Computing (RGTI),+2x
+2026-11-25,RGTU,RGTU,203000.0,2.13,0.0679,41449000.0,203000.0,0.0,1.0691,203000.0,-7000.0,BALANCED,38.7283,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Rigetti Computing (RGTI),+2x
+2026-11-26,RGTU,RGTU,0.0,2.13,0.0,41449000.0,0.0,0.0,-0.1618,203000.0,169000.0,BALANCED,5.9542,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Rigetti Computing (RGTI),+2x
 2025-03-13,RKLX,RKLX,0.0,6.0533,0.0,0.0,0.0,0.0,0.0,0.0,0.0,BALANCED,0.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Rocket Lab (RKLB),+2x
 2025-03-14,RKLX,RKLX,5000.0,6.864,0.1339,5000.0,5000.0,0.0,0.0,5000.0,5000.0,BALANCED,12.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Rocket Lab (RKLB),+2x
 2025-03-17,RKLX,RKLX,5000.0,7.0927,0.0333,10000.0,5000.0,0.0,0.0,10000.0,10000.0,BALANCED,14.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Rocket Lab (RKLB),+2x
@@ -121179,6 +121221,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-20,SMU,SMU,96000.0,2.41,-0.2368,419829000.0,96000.0,0.0,0.2155,-203000.0,-2096000.0,BALANCED,-2.6122,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",NuScale Power (SMR),+2x
 2026-11-23,SMU,SMU,159000.0,2.64,0.098,419988000.0,159000.0,0.0,0.1967,255000.0,1410000.0,BALANCED,18.9177,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",NuScale Power (SMR),+2x
 2026-11-24,SMU,SMU,0.0,2.3,-0.1307,419988000.0,0.0,0.0,0.0745,255000.0,1410000.0,BALANCED,11.8618,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",NuScale Power (SMR),+2x
+2026-11-25,SMU,SMU,-56000.0,2.22,-0.0316,419932000.0,0.0,-56000.0,0.0727,199000.0,149000.0,BALANCED,9.8186,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",NuScale Power (SMR),+2x
+2026-11-26,SMU,SMU,0.0,2.22,0.0,419932000.0,0.0,0.0,0.2247,199000.0,-781000.0,BALANCED,15.6166,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",NuScale Power (SMR),+2x
 2025-04-24,SNOU,SNOU,1000.0,28.866,0.0,1000.0,1000.0,0.0,0.0,1000.0,1000.0,BALANCED,12.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Snowflake,+2x
 2025-04-25,SNOU,SNOU,0.0,28.722,-0.005,1000.0,0.0,0.0,0.0,1000.0,1000.0,BALANCED,10.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Snowflake,+2x
 2025-04-28,SNOU,SNOU,-0.0,29.028,0.0107,1000.0,-0.0,-0.0,0.0,1000.0,1000.0,BALANCED,10.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Snowflake,+2x
@@ -121792,6 +121836,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-20,SNXX,SNXX,6613000.0,1.74,-0.3216,1772895000.0,6613000.0,0.0,-0.0593,36536000.0,227144000.0,BALANCED,16.5185,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",SanDisk (SNDK),+2x
 2026-11-23,SNXX,SNXX,69732000.0,2.11,0.2127,1842627000.0,69732000.0,0.0,1.562,114010000.0,355911000.0,ACCUMULATION,59.0508,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",SanDisk (SNDK),+2x
 2026-11-24,SNXX,SNXX,-8562000.0,1.64,-0.2237,1834065000.0,0.0,-8562000.0,-0.5287,92273000.0,360512000.0,BALANCED,-5.2166,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",SanDisk (SNDK),+2x
+2026-11-25,SNXX,SNXX,23260000.0,1.46,-0.1121,1857325000.0,23260000.0,0.0,0.3415,105710000.0,362825000.0,BALANCED,20.5382,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",SanDisk (SNDK),+2x
+2026-11-26,SNXX,SNXX,0.0,1.46,0.0,1857325000.0,0.0,0.0,-0.2726,91043000.0,330984000.0,BALANCED,3.1844,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",SanDisk (SNDK),+2x
 2025-01-16,SOFX,SOFX,2000.0,22.037,0.0,2000.0,2000.0,0.0,0.0,2000.0,2000.0,BALANCED,12.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",SoFi Technologies (SOFI),+2x
 2025-01-17,SOFX,SOFX,-6000.0,22.524,0.0221,-4000.0,0.0,-6000.0,0.0,-4000.0,-4000.0,BALANCED,-12.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",SoFi Technologies (SOFI),+2x
 2025-01-21,SOFX,SOFX,29000.0,26.367,0.1706,25000.0,29000.0,0.0,0.0,25000.0,25000.0,BALANCED,12.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",SoFi Technologies (SOFI),+2x
@@ -144294,6 +144340,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-20,STXX,STXX,0.0,9.6,-0.2473,26300000.0,0.0,0.0,-0.1119,0.0,-1413000.0,BALANCED,-2.7984,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Seagate Technology (STX),+2x
 2026-11-23,STXX,STXX,980000.0,12.25,0.2758,27280000.0,980000.0,0.0,1.8523,980000.0,-433000.0,ACCUMULATION,58.3079,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Seagate Technology (STX),+2x
 2026-11-24,STXX,STXX,0.0,10.47,-0.1453,27280000.0,0.0,0.0,-0.048,980000.0,140000.0,BALANCED,8.8,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Seagate Technology (STX),+2x
+2026-11-25,STXX,STXX,0.0,10.02,-0.0424,27280000.0,0.0,0.0,-0.048,980000.0,140000.0,BALANCED,8.8,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Seagate Technology (STX),+2x
+2026-11-26,STXX,STXX,0.0,10.02,0.0,27280000.0,0.0,0.0,0.0551,980000.0,140000.0,BALANCED,11.3781,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Seagate Technology (STX),+2x
 2022-03-30,SVIX,SVIX,1470000.0,14.7,0.0,1470000.0,1470000.0,0.0,0.0,1470000.0,1470000.0,BALANCED,12.0,"6. Commodities, Energy & Volatility (Bull)",S&P 500 VIX (Long Vol Compression),-1x
 2022-03-31,SVIX,SVIX,1416000.0,14.16,-0.0371,2886000.0,1416000.0,0.0,0.0,2886000.0,2886000.0,BALANCED,14.0,"6. Commodities, Energy & Volatility (Bull)",S&P 500 VIX (Long Vol Compression),-1x
 2022-04-01,SVIX,SVIX,2613000.0,14.52,0.0255,5499000.0,2613000.0,0.0,0.0,5499000.0,5499000.0,BALANCED,16.0,"6. Commodities, Energy & Volatility (Bull)",S&P 500 VIX (Long Vol Compression),-1x
@@ -149321,6 +149369,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-20,TARK,TARK,400000.0,26.69,-0.1368,-40138000.0,400000.0,0.0,0.0095,73000.0,-1029000.0,BALANCED,12.2374,"2. Technology, Semiconductor & Thematic (Bull)",ARKK Innovation,+2x
 2026-11-23,TARK,TARK,0.0,30.96,0.1597,-40138000.0,0.0,0.0,-0.1185,73000.0,-1029000.0,BALANCED,7.0371,"2. Technology, Semiconductor & Thematic (Bull)",ARKK Innovation,+2x
 2026-11-24,TARK,TARK,-292000.0,29.25,-0.0552,-40430000.0,0.0,-292000.0,-0.2145,108000.0,-1321000.0,BALANCED,2.6382,"2. Technology, Semiconductor & Thematic (Bull)",ARKK Innovation,+2x
+2026-11-25,TARK,TARK,0.0,29.16,-0.0032,-40430000.0,0.0,0.0,0.0646,108000.0,-1818000.0,BALANCED,11.6158,"2. Technology, Semiconductor & Thematic (Bull)",ARKK Innovation,+2x
+2026-11-26,TARK,TARK,0.0,29.16,0.0,-40430000.0,0.0,0.0,0.0445,108000.0,-1075000.0,BALANCED,11.1133,"2. Technology, Semiconductor & Thematic (Bull)",ARKK Innovation,+2x
 2016-01-04,TECL,TECL,0.0,3.488,-0.0425,0.0,0.0,0.0,0.0,0.0,0.0,BALANCED,0.0,"2. Technology, Semiconductor & Thematic (Bull)",Technology Select,+3x
 2016-01-05,TECL,TECL,1730000.0,3.46,-0.0081,1730000.0,1730000.0,0.0,0.0,1730000.0,1730000.0,BALANCED,12.0,"2. Technology, Semiconductor & Thematic (Bull)",Technology Select,+3x
 2016-01-06,TECL,TECL,-1668000.0,3.336,-0.0358,62000.0,0.0,-1668000.0,0.0,62000.0,62000.0,BALANCED,8.0,"2. Technology, Semiconductor & Thematic (Bull)",Technology Select,+3x
@@ -152426,6 +152476,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-20,TEMT,TEMT,0.0,14.64,-0.1874,23732000.0,0.0,0.0,0.5759,0.0,-11755000.0,BALANCED,14.3981,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Tempus AI (TEM),+2x
 2026-11-23,TEMT,TEMT,163000.0,16.26,0.1103,23895000.0,163000.0,0.0,0.7071,163000.0,-9863000.0,BALANCED,29.6776,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Tempus AI (TEM),+2x
 2026-11-24,TEMT,TEMT,75000.0,14.98,-0.0784,23970000.0,75000.0,0.0,0.6525,238000.0,-9788000.0,BALANCED,30.3124,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Tempus AI (TEM),+2x
+2026-11-25,TEMT,TEMT,672000.0,14.93,-0.0037,24642000.0,672000.0,0.0,1.1235,910000.0,-8001000.0,BALANCED,44.0878,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Tempus AI (TEM),+2x
+2026-11-26,TEMT,TEMT,0.0,14.93,0.0,24642000.0,0.0,0.0,0.5599,910000.0,-7015000.0,BALANCED,23.9981,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Tempus AI (TEM),+2x
 2016-01-04,TLT,TLT,-36405000.0,121.35,0.0051,-36405000.0,0.0,-36405000.0,0.0,-36405000.0,-36405000.0,BALANCED,-12.0,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",ICE U.S. Treasury 20+ Year Bond Index,1x
 2016-01-05,TLT,TLT,36249000.0,120.83,-0.0043,-156000.0,36249000.0,0.0,0.0,-156000.0,-156000.0,BALANCED,-8.0,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",ICE U.S. Treasury 20+ Year Bond Index,1x
 2016-01-06,TLT,TLT,12250000.0,122.5,0.0138,12094000.0,12250000.0,0.0,0.0,12094000.0,12094000.0,BALANCED,14.0,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",ICE U.S. Treasury 20+ Year Bond Index,1x
@@ -168229,6 +168281,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-20,TSLQ,TSLQ,-6340000.0,18.38,0.1529,63769000.0,0.0,-6340000.0,-0.5596,-4192000.0,-74000.0,BALANCED,-31.9899,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),Tesla,-1x
 2026-11-23,TSLQ,TSLQ,2976000.0,14.17,-0.2289,66745000.0,2976000.0,0.0,0.3403,-18744000.0,-17990000.0,BALANCED,0.5071,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),Tesla,-1x
 2026-11-24,TSLQ,TSLQ,3203000.0,14.23,0.0046,69948000.0,3203000.0,0.0,0.3268,-7255000.0,-24463000.0,BALANCED,2.1696,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),Tesla,-1x
+2026-11-25,TSLQ,TSLQ,-7359000.0,14.57,0.0237,62589000.0,0.0,-7359000.0,-0.6654,-9751000.0,-48523000.0,BALANCED,-28.6346,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),Tesla,-1x
+2026-11-26,TSLQ,TSLQ,0.0,14.57,0.0,62589000.0,0.0,0.0,-0.0198,-7520000.0,-41186000.0,BALANCED,-10.4944,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),Tesla,-1x
 2023-08-28,TSLR,TSLR,0.0,26.38,0.0,0.0,0.0,0.0,0.0,0.0,0.0,BALANCED,0.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Tesla,+2x
 2023-08-29,TSLR,TSLR,0.0,29.698,0.1258,0.0,0.0,0.0,0.0,0.0,0.0,BALANCED,0.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Tesla,+2x
 2023-08-30,TSLR,TSLR,3000.0,29.781,0.0028,3000.0,3000.0,0.0,0.0,3000.0,3000.0,BALANCED,12.0,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Tesla,+2x
@@ -169822,6 +169876,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-19,TSLT,TSLT,0.0,13.3,-0.0489,-181088000.0,0.0,0.0,0.2473,-2245000.0,-28399000.0,BALANCED,-3.8165,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Tesla (TSLA),+2x
 2026-11-23,TSLT,TSLT,-2075000.0,13.84,0.04,-183163000.0,0.0,-2075000.0,-0.4448,-2871000.0,-28974000.0,BALANCED,-23.1203,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Tesla (TSLA),+2x
 2026-11-24,TSLT,TSLT,1102000.0,13.77,-0.0044,-182061000.0,1102000.0,0.0,0.6577,-535000.0,-27872000.0,BALANCED,8.4422,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Tesla (TSLA),+2x
+2026-11-25,TSLT,TSLT,-1075000.0,13.44,-0.0244,-183136000.0,0.0,-1075000.0,-0.0922,-649000.0,-26995000.0,BALANCED,-14.3061,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Tesla (TSLA),+2x
+2026-11-26,TSLT,TSLT,0.0,13.44,0.0,-183136000.0,0.0,0.0,0.2847,-2048000.0,-25875000.0,BALANCED,-2.8836,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Tesla (TSLA),+2x
 2023-10-19,TSLZ,TSLZ,1068000.0,711.8,0.0,1068000.0,1068000.0,0.0,0.0,1068000.0,1068000.0,BALANCED,12.0,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),Tesla (Single-Stock Tactical Short),-2x
 2023-10-20,TSLZ,TSLZ,0.0,711.8,0.0,1068000.0,0.0,0.0,0.0,1068000.0,1068000.0,BALANCED,10.0,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),Tesla (Single-Stock Tactical Short),-2x
 2023-10-23,TSLZ,TSLZ,0.0,764.4,0.0739,1068000.0,0.0,0.0,0.0,1068000.0,1068000.0,BALANCED,10.0,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),Tesla (Single-Stock Tactical Short),-2x
@@ -170599,6 +170655,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-19,TSLZ,TSLZ,-900000.0,10.0,0.0486,203811000.0,0.0,-900000.0,-0.9161,-3574000.0,245000.0,BALANCED,-38.9028,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),Tesla (Single-Stock Tactical Short),-2x
 2026-11-23,TSLZ,TSLZ,0.0,8.89,-0.1105,203811000.0,0.0,0.0,-0.0099,-2927000.0,-516000.0,BALANCED,-10.2468,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),Tesla (Single-Stock Tactical Short),-2x
 2026-11-24,TSLZ,TSLZ,-268000.0,8.93,0.0041,203543000.0,0.0,-268000.0,-0.2768,-3195000.0,-784000.0,BALANCED,-18.9211,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),Tesla (Single-Stock Tactical Short),-2x
+2026-11-25,TSLZ,TSLZ,0.0,9.14,0.0236,203543000.0,0.0,0.0,0.0627,-1835000.0,-1769000.0,BALANCED,-8.4335,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),Tesla (Single-Stock Tactical Short),-2x
+2026-11-26,TSLZ,TSLZ,0.0,9.14,0.0,203543000.0,0.0,0.0,0.0422,-1168000.0,-3497000.0,BALANCED,-8.944,9. Selective Benchmark Hedging / Tactical Shorts (Pruned to Key Anchors Only),Tesla (Single-Stock Tactical Short),-2x
 2024-11-11,TSMU,TSMU,749000.0,24.97,0.0,749000.0,749000.0,0.0,0.0,749000.0,749000.0,BALANCED,12.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Taiwan Semi (TSM),+2x
 2024-11-12,TSMU,TSMU,0.0,24.34,-0.0251,749000.0,0.0,0.0,0.0,749000.0,749000.0,BALANCED,10.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Taiwan Semi (TSM),+2x
 2024-11-13,TSMU,TSMU,0.0,23.03,-0.0538,749000.0,0.0,0.0,0.0,749000.0,749000.0,BALANCED,10.0,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Taiwan Semi (TSM),+2x
@@ -191062,6 +191120,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-20,UPSX,UPSX,419000.0,3.64,-0.1584,116708000.0,419000.0,0.0,1.8579,-720000.0,-1704000.0,ACCUMULATION,38.4484,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Upstart Holdings (UPST),+2x
 2026-11-23,UPSX,UPSX,-212000.0,4.25,0.1674,116496000.0,0.0,-212000.0,-0.4067,-1180000.0,-1747000.0,BALANCED,-22.1672,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Upstart Holdings (UPST),+2x
 2026-11-24,UPSX,UPSX,0.0,4.14,-0.0263,116496000.0,0.0,0.0,0.335,56000.0,-1389000.0,BALANCED,18.3739,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Upstart Holdings (UPST),+2x
+2026-11-25,UPSX,UPSX,0.0,4.38,0.0579,116496000.0,0.0,0.0,0.335,56000.0,-1111000.0,BALANCED,18.3739,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Upstart Holdings (UPST),+2x
+2026-11-26,UPSX,UPSX,0.0,4.38,0.0,116496000.0,0.0,0.0,0.335,207000.0,-1111000.0,BALANCED,18.3739,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",Upstart Holdings (UPST),+2x
 2016-01-04,URE,URE,-5112000.0,51.12,-0.0212,-5112000.0,0.0,-5112000.0,0.0,-5112000.0,-5112000.0,BALANCED,-12.0,3. Sector Specific Leveraged (Bull),U.S. Real Estate,+2x
 2016-01-05,URE,URE,5296000.0,52.96,0.036,184000.0,5296000.0,0.0,0.0,184000.0,184000.0,BALANCED,12.0,3. Sector Specific Leveraged (Bull),U.S. Real Estate,+2x
 2016-01-06,URE,URE,0.0,52.465,-0.0093,184000.0,0.0,0.0,0.0,184000.0,184000.0,BALANCED,10.0,3. Sector Specific Leveraged (Bull),U.S. Real Estate,+2x
@@ -207746,6 +207806,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-20,WDCX,WDCX,-1542000.0,4.82,-0.2406,215842000.0,0.0,-1542000.0,-0.0882,-2046000.0,-25825000.0,BALANCED,-14.2053,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Western Digital (WDC),+2x
 2026-11-23,WDCX,WDCX,-2551000.0,6.15,0.2755,213291000.0,0.0,-2551000.0,-0.3178,-3514000.0,-30394000.0,BALANCED,-21.9456,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Western Digital (WDC),+2x
 2026-11-24,WDCX,WDCX,0.0,5.18,-0.1568,213291000.0,0.0,0.0,0.3064,-4093000.0,-29647000.0,BALANCED,-2.3408,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Western Digital (WDC),+2x
+2026-11-25,WDCX,WDCX,26000.0,5.13,-0.0113,213317000.0,26000.0,0.0,0.4907,-4067000.0,-27447000.0,BALANCED,4.2682,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Western Digital (WDC),+2x
+2026-11-26,WDCX,WDCX,0.0,5.13,0.0,213317000.0,0.0,0.0,0.4469,-4067000.0,-23987000.0,BALANCED,1.1721,"4. Single-Stock Leveraged (Bull) — AI, Semis & High-Beta Tech",Western Digital (WDC),+2x
 2020-01-02,WEBL,WEBL,0.0,29.184,0.0,0.0,0.0,0.0,0.0,0.0,0.0,BALANCED,0.0,"2. Technology, Semiconductor & Thematic (Bull)",Dow Jones Internet,+3x
 2020-01-03,WEBL,WEBL,2000.0,28.576,-0.0208,2000.0,2000.0,0.0,0.0,2000.0,2000.0,BALANCED,12.0,"2. Technology, Semiconductor & Thematic (Bull)",Dow Jones Internet,+3x
 2020-01-06,WEBL,WEBL,2000.0,29.726,0.0402,4000.0,2000.0,0.0,0.0,4000.0,4000.0,BALANCED,14.0,"2. Technology, Semiconductor & Thematic (Bull)",Dow Jones Internet,+3x
@@ -209759,6 +209821,8 @@ date,ticker,trackinsight_key,usd_flow,nav,perf_pct,cumulative_flow,daily_inflow,
 2026-11-20,WULX,WULX,0.0,4.45,-0.2994,51707000.0,0.0,0.0,-0.2121,-209000.0,2805000.0,BALANCED,-15.3028,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",TeraWulf (WULF),+2x
 2026-11-23,WULX,WULX,-351000.0,5.39,0.2124,51356000.0,0.0,-351000.0,-0.639,-224000.0,1576000.0,BALANCED,-27.9742,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",TeraWulf (WULF),+2x
 2026-11-24,WULX,WULX,0.0,4.5,-0.1656,51356000.0,0.0,0.0,-0.1917,-224000.0,1576000.0,BALANCED,-14.7923,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",TeraWulf (WULF),+2x
+2026-11-25,WULX,WULX,0.0,4.51,0.0032,51356000.0,0.0,0.0,-0.1917,-224000.0,2432000.0,BALANCED,-14.7923,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",TeraWulf (WULF),+2x
+2026-11-26,WULX,WULX,0.0,4.51,0.0,51356000.0,0.0,0.0,-0.1447,-351000.0,2432000.0,BALANCED,-13.6186,"5. Single-Stock Leveraged (Bull) — Mega-Cap Giants, Crypto & Consumer",TeraWulf (WULF),+2x
 2016-01-04,XBI,XBI,-44067000.0,67.8,-0.0342,-44067000.0,0.0,-44067000.0,0.0,-44067000.0,-44067000.0,BALANCED,-12.0,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",S&P Biotechnology Select Industry Index,1x
 2016-01-05,XBI,XBI,-6719000.0,67.19,-0.0089,-50786000.0,0.0,-6719000.0,0.0,-50786000.0,-50786000.0,BALANCED,-14.0,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",S&P Biotechnology Select Industry Index,1x
 2016-01-06,XBI,XBI,3216000.0,64.32,-0.0427,-47570000.0,3216000.0,0.0,0.0,-47570000.0,-47570000.0,BALANCED,-8.0,"10. Core Benchmarks, Factor Rotation & High-Beta Anchors",S&P Biotechnology Select Industry Index,1x
